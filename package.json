@@ -1,0 +1,37 @@
+{
+  "name": "sql-static-lineage-l1",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Evidence-bound SQL Static Lineage L1 vertical slice.",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "keywords": [
+    "sql",
+    "static-lineage",
+    "machine-facts",
+    "databricks"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run tests/machine-facts.test.ts tests/plan-adapter-regression.test.ts tests/task-inspection.test.ts",
+    "test:engine": "vitest run tests/plan-adapter-regression.test.ts",
+    "test:machine-facts": "vitest run tests/machine-facts.test.ts",
+    "test:consumer": "vitest run tests/task-inspection.test.ts",
+    "inspect": "tsx scripts/query/task-inspection.ts",
+    "format:check": "prettier --check package.json README.md docs tests/gold"
+  },
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "prettier": "^3.8.3",
+    "tsx": "^4.22.4",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "antlr4ng": "^3.0.16"
+  }
+}
