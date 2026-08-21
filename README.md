@@ -14,6 +14,7 @@
 - [迁移清单与来源证据](docs/migration-inventory.md)
 - [验收入口与 Gate](docs/acceptance.md)
 - [86840 Gold Case 入口](tests/gold/README.md)
+- [统一 Task/Table Input Pack V1](docs/input-pack.md)
 
 ## 最小运行入口
 
@@ -33,6 +34,7 @@ npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-
 src/                         parser/analyzer engine snapshot
 scripts/plans/               engine -> L1 observation adapter
 scripts/machine-facts/       per-task fact assembly and publication
+scripts/input/               external Task/Table input writer and hashing
 scripts/query/               validated Current Bundle loader and Reader
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
