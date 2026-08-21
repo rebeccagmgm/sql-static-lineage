@@ -1,2 +1,3 @@
 /node_modules/
+.evidence-cache/
 *.input-pack-status.json
