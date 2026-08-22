@@ -1559,13 +1559,14 @@ function lowerCase(node: ParserRuleContext): Expr {
 	const whens = collectOfRule(node, P.RULE_whenClause).map((wc) => {
 		const exprs = directChildrenOfRule(wc, P.RULE_expression);
 		const when = exprs[0] ? lowerExpression(exprs[0]) : otherExpr(wc);
+		const condition: Expr = operand
+			? { kind: "binary", op: "=", left: operand, right: when, cst: wc }
+			: when;
 		return {
 			// A simple CASE is equivalent to comparing the shared operand with
 			// each WHEN value. Preserve that operand in the shared IR so column
 			// collection and lineage do not silently lose the physical input.
-			when: operand
-				? { kind: "binary", op: "=", left: operand, right: when, cst: wc }
-				: when,
+			when: condition,
 			then: exprs[1] ? lowerExpression(exprs[1]) : otherExpr(wc),
 		};
 	});

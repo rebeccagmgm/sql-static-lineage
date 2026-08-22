@@ -2,11 +2,11 @@
 
 ## Gate definitions
 
-| Gate                           | Meaning                                                                                                 | Current state         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------- |
+| Gate                           | Meaning                                                                                                 | Current state             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `L1_TRUTH_READY`               | P0 Write identity, ordinal disposition, CTAS pairing, fail-closed errors and freshness regressions pass | `PENDING_ENGINE_BASELINE` |
-| `L1_CONTRACT_READY`            | Contract 2.0 Core, exact Schema closure, capability truth and Consumer boundary pass                    | `NOT_STARTED`         |
-| `CANONICAL_PROMOTION_PREPARED` | Frozen 86840/scope replay is deterministic and promotion attestation exists                             | `NOT_STARTED`         |
+| `L1_CONTRACT_READY`            | Contract 2.0 Core, exact Schema closure, capability truth and Consumer boundary pass                    | `NOT_STARTED`             |
+| `CANONICAL_PROMOTION_PREPARED` | Frozen 86840/scope replay is deterministic and promotion attestation exists                             | `NOT_STARTED`             |
 
 These gates are ordered. A green test or generated file never upgrades the next gate.
 
