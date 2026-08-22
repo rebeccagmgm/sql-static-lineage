@@ -850,13 +850,16 @@ function nativeHopProjection(
 			candidate_input_fields: candidateInputs,
 		};
 		if (request.expression.output_name_status === "STAR_EXPANSION" || request.expression.output === "*") {
+			const hasPhysicalOrigin = physicalInputs.length > 0;
 			roots.push({
 				...base,
 				head_hop_id: null,
-				coverage_state: "NOT_EVALUABLE",
-				projection_status: "NOT_EVALUABLE",
+				coverage_state: hasPhysicalOrigin ? "FLAT_ORIGIN_ONLY" : "NOT_EVALUABLE",
+				projection_status: hasPhysicalOrigin ? "PARTIAL_NATIVE" : "NOT_EVALUABLE",
 				reason_code: "NATIVE_STAR_COLUMN_ANCHOR_UNAVAILABLE",
-				reason: "Adapter-synthesized Star Expansion field has no native per-column Projection anchor",
+				reason: hasPhysicalOrigin
+					? "Schema-backed Star Expansion has physical origins, but no native per-column Projection anchor"
+					: "Star Expansion has no proven physical origin or native per-column Projection anchor",
 			});
 			continue;
 		}

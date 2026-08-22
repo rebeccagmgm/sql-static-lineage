@@ -421,7 +421,7 @@ function tableSummaryByName(
   };
 }
 
-function tableFromDirectEvidence(
+export function tableFromDirectEvidence(
   qualifiedName: string,
   requiredTaskId?: string,
   expectedDataSource?: string,

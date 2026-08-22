@@ -132,6 +132,61 @@ describe("plan adapter star expansion", () => {
 		expect(rootProject.expressions[0]?.input_columns).toBeUndefined();
 	});
 
+	it("classifies schema-backed star origins as partial without inventing a native hop", () => {
+		const sql = "SELECT * FROM demo.source";
+		const schema = new Schema({
+			"demo.source": { id: "int", amount: "decimal" },
+		});
+		const session = SqlSession.create(sql, "databricks", { schema });
+
+		const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+			dialect: "databricks",
+			schema,
+			include_expression_dependencies: true,
+		});
+
+		const starRoots = plan.lineage_hops.roots.filter((root) => root.root_expression_id.startsWith("root.project:expression:"));
+		expect(starRoots).toHaveLength(2);
+		expect(starRoots).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					head_hop_id: null,
+					coverage_state: "FLAT_ORIGIN_ONLY",
+					projection_status: "PARTIAL_NATIVE",
+					reason_code: "NATIVE_STAR_COLUMN_ANCHOR_UNAVAILABLE",
+					physical_input_fields: [{ table: "demo.source", column: "id" }],
+				}),
+				expect.objectContaining({
+					head_hop_id: null,
+					coverage_state: "FLAT_ORIGIN_ONLY",
+					projection_status: "PARTIAL_NATIVE",
+					physical_input_fields: [{ table: "demo.source", column: "amount" }],
+				}),
+			]),
+		);
+		expect(plan.lineage_hops.nodes).toEqual([]);
+		expect(plan.lineage_hops.edges).toEqual([]);
+	});
+
+	it("keeps star unevaluable when schema cannot prove its physical origins", () => {
+		const sql = "SELECT * FROM demo.source";
+		const session = SqlSession.create(sql, "databricks");
+
+		const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+			dialect: "databricks",
+			include_expression_dependencies: true,
+		});
+
+		expect(plan.lineage_hops.roots).toContainEqual(
+			expect.objectContaining({
+				coverage_state: "NOT_EVALUABLE",
+				projection_status: "NOT_EVALUABLE",
+				reason_code: "NATIVE_STAR_COLUMN_ANCHOR_UNAVAILABLE",
+				head_hop_id: null,
+			}),
+		);
+	});
+
 	it("preserves lateral output columns as derived outputs", () => {
 		const sql = "SELECT y.pos FROM demo.base t LATERAL VIEW posexplode(array(1)) y AS pos, val";
 		const session = SqlSession.create(sql, "databricks");
