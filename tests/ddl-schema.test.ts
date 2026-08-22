@@ -27,4 +27,23 @@ describe("DDL schema reader", () => {
 		expect(result.columns).toEqual([]);
 		expect(result.warnings).toContain("table column list not found");
 	});
+
+	it("derives output columns from a view defining SELECT", () => {
+		const result = parseDdlSchema(`
+			SELECT 'OPTION' DATA_TYPE,
+			       OT.INTERNAL_TRADE_ID AS CONTRACT_CODE,
+			       MAX(OD.INITIAL_NOTIONAL) INITIAL_NOTIONAL
+		FROM REF_OTC_OPTION_DEAL OD
+		UNION ALL
+		SELECT MAX(DATA_TYPE), CONTRACT_CODE, MAX(INITIAL_NOTIONAL)
+		FROM demo.trs
+		`);
+
+		expect(result.columns.map((column) => column.name)).toEqual([
+			"DATA_TYPE",
+			"CONTRACT_CODE",
+			"INITIAL_NOTIONAL",
+		]);
+		expect(result.warnings).toEqual([]);
+	});
 });

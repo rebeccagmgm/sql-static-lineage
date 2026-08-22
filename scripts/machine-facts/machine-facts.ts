@@ -1032,7 +1032,7 @@ export function validateBundle(bundleDir: string): string[] {
 			if ((dispositions.get(ordinal) ?? 0) > 1) errors.push(`producer ordinal has multiple dispositions ${write.write_observation_id}:${ordinal} (${source})`);
 		};
 		for (const binding of writeBindings) addDisposition(binding.source_ordinal, `binding:${binding.binding_id}`);
-		for (const gap of writeGaps) for (const ordinal of gap.uncovered_ordinals as unknown[]) if (Number.isInteger(ordinal)) addDisposition(ordinal, `gap:${gap.unknown_id}`);
+		for (const gap of writeGaps) for (const ordinal of gap.uncovered_ordinals as unknown[]) if (typeof ordinal === "number" && Number.isInteger(ordinal)) addDisposition(ordinal, `gap:${gap.unknown_id}`);
 		for (const ordinal of expected) if ((dispositions.get(ordinal) ?? 0) !== 1) errors.push(`producer ordinal does not have exactly one disposition ${write.write_observation_id}:${ordinal}`);
 		if (write.producer_enumeration_status === "NOT_EVALUABLE" && !unknownRecords.some((unknown) => unknown.write_observation_id === write.write_observation_id && unknown.reason_code === "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE")) {
 			errors.push(`field-producing Write lacks producer enumeration gap ${write.write_observation_id}`);

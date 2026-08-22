@@ -325,6 +325,12 @@ function openCliJson(args: readonly string[]): unknown {
   return JSON.parse(output);
 }
 
+function isMissingTableGuidError(error: unknown): boolean {
+  return /guid\s*(?:不存在|不存在于|does not exist|not found)/i.test(
+    String(error),
+  );
+}
+
 function baseQualifiedName(value: string): string {
   return value.replace(/@[^@]+$/, "");
 }
@@ -471,6 +477,11 @@ export function tableFromDirectEvidence(
     }
   }
   if (table === undefined) return undefined;
+  const searchDescription =
+    directOptionalString(table.description) ??
+    directOptionalString(table.comment);
+  if (searchDescription !== undefined)
+    table = { ...table, description: searchDescription };
   if (directOptionalString(table.description) === undefined) {
     try {
       const summary = tableSummaryByName(qualifiedName);
@@ -494,7 +505,13 @@ export function tableFromDirectEvidence(
     table.guid === "-"
   )
     return undefined;
-  const ddlResult = openCliJson(["szdata", "table-ddl", "--guid", table.guid]);
+  let ddlResult: unknown;
+  try {
+    ddlResult = openCliJson(["szdata", "table-ddl", "--guid", table.guid]);
+  } catch (error) {
+    if (isMissingTableGuidError(error)) return undefined;
+    throw error;
+  }
   const ddlRow = (Array.isArray(ddlResult) ? ddlResult : [ddlResult])[0];
   if (
     !ddlRow ||
@@ -607,14 +624,254 @@ function sqlEvidenceProvider(
   return directString(slotEvidence.evidenceProvider);
 }
 
+export function normalizeRepeatedSqlContent(content: string): {
+  content: string;
+  duplicateBlocksRemoved: boolean;
+} {
+  const normalized = content.replace(/\r\n?/g, "\n").trim();
+  const lines = normalized.split("\n");
+  const canonical = (value: string): string =>
+    value.replace(/\s+/g, " ").trim().toLowerCase();
+  const midpoint = Math.floor(lines.length / 2);
+  for (let offset = -2; offset <= 2; offset += 1) {
+    const split = midpoint + offset;
+    if (split <= 0 || split >= lines.length) continue;
+    const left = lines.slice(0, split).join("\n").trim();
+    const right = lines.slice(split).join("\n").trim();
+    if (left !== "" && canonical(left) === canonical(right)) {
+      return { content: `${left}\n`, duplicateBlocksRemoved: true };
+    }
+  }
+  return { content: `${normalized}\n`, duplicateBlocksRemoved: false };
+}
+
+const CONCATENATED_SQL_STATEMENT_STARTERS = new Set([
+  "ALTER",
+  "BEGIN",
+  "CALL",
+  "CREATE",
+  "DELETE",
+  "DESCRIBE",
+  "DROP",
+  "EXPLAIN",
+  "GRANT",
+  "INSERT",
+  "MERGE",
+  "SELECT",
+  "SET",
+  "SHOW",
+  "TRUNCATE",
+  "UPDATE",
+  "USE",
+  "WITH",
+]);
+
+const CONCATENATED_SQL_CONTINUATION_WORDS = new Set([
+  "ALL",
+  "AND",
+  "AS",
+  "DISTINCT",
+  "ELSE",
+  "EXCEPT",
+  "FROM",
+  "IN",
+  "INTERSECT",
+  "JOIN",
+  "ON",
+  "OR",
+  "THEN",
+  "UNION",
+  "WHEN",
+  "WHERE",
+]);
+
+function isSqlIdentifierStart(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z_]/.test(character);
+}
+
+function isSqlIdentifierPart(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z0-9_$]/.test(character);
+}
+
+/**
+ * Repairs a known task-source boundary artifact without dropping either SQL
+ * fragment. The source service can concatenate independently returned SQL
+ * bodies; when the next top-level statement starts on a new line, the parser
+ * needs an explicit separator.
+ */
+export function normalizeConcatenatedSqlStatements(content: string): {
+  content: string;
+  separatorsInserted: number;
+} {
+  const insertionPositions: number[] = [];
+  let blockComment = false;
+  let lineComment = false;
+  let quote: "'" | '"' | "`" | undefined;
+  let parenthesisDepth = 0;
+  let lineOnlyWhitespace = true;
+  let lineStart = 0;
+  let statementKeyword: string | undefined;
+  let topLevelSelectSeen = false;
+  let topLevelFromSeen = false;
+  let topLevelValuesSeen = false;
+  let lastTopLevelWord: string | undefined;
+  let lastSignificantCharacter: string | undefined;
+
+  const resetStatement = (): void => {
+    statementKeyword = undefined;
+    topLevelSelectSeen = false;
+    topLevelFromSeen = false;
+    topLevelValuesSeen = false;
+    lastTopLevelWord = undefined;
+  };
+
+  for (let index = 0; index < content.length; ) {
+    const character = content[index];
+    const nextCharacter = content[index + 1];
+
+    if (lineComment) {
+      if (character === "\n") {
+        lineComment = false;
+        lineOnlyWhitespace = true;
+        lineStart = index + 1;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (blockComment) {
+      if (character === "*" && nextCharacter === "/") {
+        blockComment = false;
+        index += 2;
+        continue;
+      }
+      if (character === "\n") {
+        lineOnlyWhitespace = true;
+        lineStart = index + 1;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (quote !== undefined) {
+      if (character === quote) {
+        if (content[index + 1] === quote) {
+          index += 2;
+          continue;
+        }
+        quote = undefined;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (character === "-" && nextCharacter === "-") {
+      lineComment = true;
+      index += 2;
+      continue;
+    }
+    if (character === "/" && nextCharacter === "*") {
+      blockComment = true;
+      index += 2;
+      continue;
+    }
+    if (character === "'" || character === '"' || character === "`") {
+      quote = character;
+      lineOnlyWhitespace = false;
+      lastSignificantCharacter = character;
+      index += 1;
+      continue;
+    }
+    if (/\s/.test(character)) {
+      if (character === "\n") {
+        lineOnlyWhitespace = true;
+        lineStart = index + 1;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (character === "(") {
+      parenthesisDepth += 1;
+      lineOnlyWhitespace = false;
+      lastSignificantCharacter = character;
+      index += 1;
+      continue;
+    }
+    if (character === ")") {
+      parenthesisDepth = Math.max(0, parenthesisDepth - 1);
+      lineOnlyWhitespace = false;
+      lastSignificantCharacter = character;
+      index += 1;
+      continue;
+    }
+    if (character === ";" && parenthesisDepth === 0) {
+      resetStatement();
+      lineOnlyWhitespace = false;
+      lastSignificantCharacter = character;
+      index += 1;
+      continue;
+    }
+
+    if (parenthesisDepth === 0 && isSqlIdentifierStart(character)) {
+      let end = index + 1;
+      while (isSqlIdentifierPart(content[end])) end += 1;
+      const word = content.slice(index, end).toUpperCase();
+      const isStatementStarter = CONCATENATED_SQL_STATEMENT_STARTERS.has(word);
+      const canStartNewStatement =
+        lineOnlyWhitespace &&
+        isStatementStarter &&
+        statementKeyword !== undefined &&
+        lastSignificantCharacter !== ";" &&
+        !CONCATENATED_SQL_CONTINUATION_WORDS.has(lastTopLevelWord ?? "") &&
+        (word !== "SELECT" ||
+          statementKeyword === "SELECT" ||
+          topLevelSelectSeen ||
+          topLevelFromSeen ||
+          topLevelValuesSeen);
+
+      if (canStartNewStatement) {
+        insertionPositions.push(lineStart);
+        resetStatement();
+      }
+
+      if (isStatementStarter && statementKeyword === undefined)
+        statementKeyword = word;
+      if (word === "SELECT") topLevelSelectSeen = true;
+      if (word === "FROM") topLevelFromSeen = true;
+      if (word === "VALUES") topLevelValuesSeen = true;
+      lastTopLevelWord = word;
+      lineOnlyWhitespace = false;
+      lastSignificantCharacter = character;
+      index = end;
+      continue;
+    }
+
+    lineOnlyWhitespace = false;
+    lastSignificantCharacter = character;
+    index += 1;
+  }
+
+  let normalized = content;
+  for (let index = insertionPositions.length - 1; index >= 0; index -= 1) {
+    const position = insertionPositions[index];
+    normalized = `${normalized.slice(0, position)};\n${normalized.slice(position)}`;
+  }
+  return {
+    content: normalized,
+    separatorsInserted: insertionPositions.length,
+  };
+}
+
 function toTaskEvidence(
   taskId: string,
   row: Record<string, unknown>,
-): TaskEvidence {
+): { evidence: TaskEvidence; warnings: string[] } {
   const slots = row.sqlSlots;
   const sql: Partial<
     Record<SqlSlot, { content: string; evidenceProvider: string }>
   > = {};
+  const warnings: string[] = [];
   if (slots && typeof slots === "object" && !Array.isArray(slots)) {
     for (const slot of SQL_SLOTS) {
       const entry = (slots as Record<string, unknown>)[slot];
@@ -640,25 +897,36 @@ function toTaskEvidence(
           : typeof record.source === "string" && record.source !== "-"
             ? record.source
             : "opencli:szdata.task-source";
-      sql[slot] = { content: record.sql, evidenceProvider: provider };
+      const repeated = normalizeRepeatedSqlContent(record.sql);
+      const separated = normalizeConcatenatedSqlStatements(repeated.content);
+      if (repeated.duplicateBlocksRemoved)
+        warnings.push(`SQL_DUPLICATE_BLOCK_REMOVED:${slot}`);
+      if (separated.separatorsInserted > 0)
+        warnings.push(
+          `SQL_STATEMENT_SEPARATOR_INSERTED:${slot}:${separated.separatorsInserted}`,
+        );
+      sql[slot] = { content: separated.content, evidenceProvider: provider };
     }
   }
   return {
-    taskId,
-    taskCategory: taskCategory(row.taskType, row.taskTypeName),
-    taskType: directString(row.taskType),
-    taskName: directOptionalString(row.taskName),
-    topicName: directOptionalString(row.topicName),
-    source: directValue(row.source),
-    target: directValue(row.target),
-    writeMode: directString(row.loadMode),
-    partition: targetPartitionFromSql(
-      sql.query && typeof sql.query.content === "string"
-        ? sql.query.content
-        : undefined,
-    ),
-    sql,
-    evidenceProvider: "opencli:szdata.task-source",
+    evidence: {
+      taskId,
+      taskCategory: taskCategory(row.taskType, row.taskTypeName),
+      taskType: directString(row.taskType),
+      taskName: directOptionalString(row.taskName),
+      topicName: directOptionalString(row.topicName),
+      source: directValue(row.source),
+      target: directValue(row.target),
+      writeMode: directString(row.loadMode),
+      partition: targetPartitionFromSql(
+        sql.query && typeof sql.query.content === "string"
+          ? sql.query.content
+          : undefined,
+      ),
+      sql,
+      evidenceProvider: "opencli:szdata.task-source",
+    },
+    warnings,
   };
 }
 
@@ -772,7 +1040,8 @@ export function collectOneTask(
     horaeFallback === undefined
       ? szdataRow
       : mergeHoraeSqlEvidence(szdataRow, horaeFallback);
-  const taskEvidence = toTaskEvidence(taskId, row);
+  const taskEvidenceResult = toTaskEvidence(taskId, row);
+  const taskEvidence = taskEvidenceResult.evidence;
   const staleLegacyTaskDirectories = findStaleLegacyTaskDirectories(
     dataRoot,
     taskId,
@@ -1035,6 +1304,7 @@ export function collectOneTask(
       .map((item) => item.qualifiedName),
     staleLegacyTaskDirectories,
     warnings: [
+      ...taskEvidenceResult.warnings,
       tableReferencesUnavailable.length > 0
         ? "TABLE_REFERENCE_UNAVAILABLE"
         : undefined,

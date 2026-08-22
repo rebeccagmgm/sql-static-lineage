@@ -39,6 +39,8 @@ import {
 } from "../scripts/input/task-batch.ts";
 import {
   findStaleLegacyTaskDirectories,
+  normalizeConcatenatedSqlStatements,
+  normalizeRepeatedSqlContent,
   taskCategory,
 } from "../scripts/input/collect-one-task-input-pack.ts";
 import {
@@ -98,6 +100,43 @@ describe("Input Pack V1", () => {
     expect(taskCategory("999", "platform-new-type")).toBe("platform-new-type");
     expect(taskCategory("999", "中文/非法类型")).toBe("taskType-999");
     expect(taskCategory("999", undefined)).toBe("taskType-999");
+  });
+
+  it("removes only an adjacent duplicate SQL block and records the clean content", () => {
+    const sql = `SELECT id\nFROM demo.source\n\nSELECT id\nFROM demo.source`;
+    expect(normalizeRepeatedSqlContent(sql)).toEqual({
+      content: "SELECT id\nFROM demo.source\n",
+      duplicateBlocksRemoved: true,
+    });
+    expect(normalizeRepeatedSqlContent("SELECT id\nFROM demo.source")).toEqual({
+      content: "SELECT id\nFROM demo.source\n",
+      duplicateBlocksRemoved: false,
+    });
+  });
+
+  it("separates concatenated top-level SQL statements without splitting INSERT SELECT or UNION", () => {
+    const concatenated =
+      "INSERT INTO demo.target\nSELECT id FROM demo.source\n\nSELECT id FROM demo.source";
+    expect(normalizeConcatenatedSqlStatements(concatenated)).toEqual({
+      content:
+        "INSERT INTO demo.target\nSELECT id FROM demo.source\n\n;\nSELECT id FROM demo.source",
+      separatorsInserted: 1,
+    });
+    expect(
+      normalizeConcatenatedSqlStatements(
+        "SELECT id FROM demo.source\nUNION\nSELECT id FROM demo.source",
+      ).separatorsInserted,
+    ).toBe(0);
+
+    expect(
+      normalizeConcatenatedSqlStatements(
+        "INSERT INTO demo.target VALUES (?)\n\nSELECT id FROM demo.source",
+      ),
+    ).toEqual({
+      content:
+        "INSERT INTO demo.target VALUES (?)\n\n;\nSELECT id FROM demo.source",
+      separatorsInserted: 1,
+    });
   });
 
   it("reports a legacy task directory when a category mapping changes", () => {
@@ -532,6 +571,9 @@ describe("Input Pack V1", () => {
     );
     expect(controlledTaskEndpointDataSource("hive2oracle", "target")).toBe(
       undefined,
+    );
+    expect(controlledTaskEndpointDataSource("oracle2hive", "source")).toBe(
+      "gforacle_gftzdb#gftzdb",
     );
     const table = cases["180065"].tables[0]!;
     expect(

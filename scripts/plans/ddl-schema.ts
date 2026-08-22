@@ -213,9 +213,116 @@ function columnNames(columns: readonly DdlColumn[]): string[] {
 	return names;
 }
 
+function topLevelKeywordIndex(text: string, keyword: string, start = 0): number {
+	let parentheses = 0;
+	const lower = text.toLowerCase();
+	const target = keyword.toLowerCase();
+	for (let index = start; index <= text.length - target.length; index += 1) {
+		const current = text[index]!;
+		if (current === "'" || current === '"' || current === "`") {
+			index = skipQuoted(text, index, current) - 1;
+			continue;
+		}
+		if (current === "-" && text[index + 1] === "-") {
+			const newline = text.indexOf("\n", index + 2);
+			index = newline < 0 ? text.length : newline;
+			continue;
+		}
+		if (current === "/" && text[index + 1] === "*") {
+			const close = text.indexOf("*/", index + 2);
+			index = close < 0 ? text.length : close + 1;
+			continue;
+		}
+		if (current === "(") {
+			parentheses += 1;
+			continue;
+		}
+		if (current === ")") {
+			parentheses = Math.max(0, parentheses - 1);
+			continue;
+		}
+		if (parentheses !== 0 || !lower.startsWith(target, index)) continue;
+		const before = text[index - 1];
+		const after = text[index + target.length];
+		if (!before || !/[A-Za-z0-9_$]/.test(before)) {
+			if (!after || !/[A-Za-z0-9_$]/.test(after)) return index;
+		}
+	}
+	return -1;
+}
+
+function topLevelWords(text: string): string[] {
+	const words: string[] = [];
+	let parentheses = 0;
+	for (let index = 0; index < text.length; index += 1) {
+		const current = text[index]!;
+		if (current === "'") {
+			index = skipQuoted(text, index, current) - 1;
+			continue;
+		}
+		if (current === '"' || current === "`") {
+			const identifier = readIdentifier(text, index);
+			if (!identifier) {
+				index = skipQuoted(text, index, current) - 1;
+				continue;
+			}
+			words.push(identifier.name);
+			index = identifier.end - 1;
+			continue;
+		}
+		if (current === "-" && text[index + 1] === "-") {
+			const newline = text.indexOf("\n", index + 2);
+			index = newline < 0 ? text.length : newline;
+			continue;
+		}
+		if (current === "/" && text[index + 1] === "*") {
+			const close = text.indexOf("*/", index + 2);
+			index = close < 0 ? text.length : close + 1;
+			continue;
+		}
+		if (current === "(") {
+			parentheses += 1;
+			continue;
+		}
+		if (current === ")") {
+			parentheses = Math.max(0, parentheses - 1);
+			continue;
+		}
+		if (parentheses !== 0 || !/[A-Za-z_]/.test(current)) continue;
+		const match = /^[A-Za-z_][A-Za-z0-9_$#]*/.exec(text.slice(index));
+		if (!match) continue;
+		words.push(match[0]!);
+		index += match[0]!.length - 1;
+	}
+	return words;
+}
+
+function parseSelectOutputColumns(sql: string): DdlColumn[] {
+	const select = topLevelKeywordIndex(sql, "select");
+	if (select < 0) return [];
+	const from = topLevelKeywordIndex(sql, "from", select + "select".length);
+	if (from < 0) return [];
+	const columns: DdlColumn[] = [];
+	for (const definition of splitTopLevel(sql.slice(select + "select".length, from))) {
+		const words = topLevelWords(definition);
+		if (words.length === 0) continue;
+		const alias = words[words.length - 1]!;
+		columns.push({ name: alias });
+	}
+	return columns;
+}
+
 export function parseDdlSchema(ddl: string): ParsedDdlSchema {
 	const create = /\bcreate\s+(?:external\s+)?table\b/i.exec(ddl);
-	if (!create) return { columns: [], partition_columns: [], warnings: ["CREATE TABLE not found"] };
+	if (!create) {
+		// SZData can return a view's defining SELECT through the table-ddl
+		// endpoint. Its output columns are still valid schema evidence for
+		// consumers of that view, even though there is no CREATE TABLE list.
+		const viewColumns = parseSelectOutputColumns(ddl);
+		if (viewColumns.length > 0)
+			return { columns: viewColumns, partition_columns: [], warnings: [] };
+		return { columns: [], partition_columns: [], warnings: ["CREATE TABLE not found"] };
+	}
 	const open = findOpenParenthesis(ddl, create.index + create[0].length);
 	if (open < 0) return { columns: [], partition_columns: [], warnings: ["table column list not found"] };
 	const close = matchingParenthesis(ddl, open);
