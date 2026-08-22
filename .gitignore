@@ -1,3 +1,9 @@
 /node_modules/
+/dist/
 .evidence-cache/
 *.input-pack-status.json
+
+# Local inspection outputs and temporary dependencies
+/tmp/node_modules/
+/tmp/inspect-results/
+/tmp/xlsx-inspect/
