@@ -40,9 +40,14 @@ function materializeFrozenInputPack(sourceRoot: string): string {
       };
       for (const sqlFile of task.sqlFiles ?? []) {
         const sqlPath = join(directory, sqlFile.path);
-        const bytes = readFileSync(sqlPath);
-        if (bytes.at(-1) === 0x0a)
-          writeFileSync(sqlPath, bytes.subarray(0, -1));
+        const normalized = readFileSync(sqlPath, "utf8").replaceAll(
+          "\r\n",
+          "\n",
+        );
+        writeFileSync(
+          sqlPath,
+          normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized,
+        );
       }
     }
   };
