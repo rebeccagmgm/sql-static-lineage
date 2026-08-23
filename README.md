@@ -17,6 +17,7 @@
 - [统一 Task/Table Input Pack V1](docs/input-pack.md)
 - [表级单跳对账器](docs/reconcile-one-hop.md)
 - [Table producer 反向索引](docs/producer-index.md)
+- [表级多跳数据路径](docs/reconcile-multi-hop.md)
 
 ## 最小运行入口
 
@@ -28,6 +29,7 @@ npm run typecheck
 npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-spec <question.json> --output <derived-output>
 npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--producer-index <producer-index.json>] --output <result.json>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
+npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
 ```
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
@@ -40,7 +42,7 @@ scripts/plans/               engine -> L1 observation adapter
 scripts/machine-facts/       per-task fact assembly and publication
 scripts/input/               external Task/Table input writer and hashing
 scripts/query/               validated Current Bundle loader and Reader
-scripts/reconcile/           Task --WRITE--> Table --READ--> Task one-hop reconciliation
+scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
 tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent
