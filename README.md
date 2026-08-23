@@ -16,6 +16,7 @@
 - [86840 Gold Case 入口](tests/gold/README.md)
 - [统一 Task/Table Input Pack V1](docs/input-pack.md)
 - [表级单跳对账器](docs/reconcile-one-hop.md)
+- [Table producer 反向索引](docs/producer-index.md)
 
 ## 最小运行入口
 
@@ -26,6 +27,7 @@ npm test
 npm run typecheck
 npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-spec <question.json> --output <derived-output>
 npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> --output <result.json>
+npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
 ```
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
