@@ -1,0 +1,1 @@
+create table d_ref_basket_constituent(key_instrument_id string comment '篮子证券内码',underlying_inst_id string comment '篮子成分证券内码',weight string comment '篮子成分比重',data_time string comment '【AI】数据时间') partitioned by (busi_date string) row format delimited fields terminated by ',' stored as textfile;
