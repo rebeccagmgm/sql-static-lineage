@@ -16,9 +16,14 @@ import {
 import {
   extractSqlDirectReads,
   extractSqlWrites,
+  producerIndexPathFromArgs,
   reconcileOneHop,
   type OpenCliRunner,
 } from "../scripts/reconcile/reconcile-one-hop.ts";
+import {
+  buildTableProducerIndex,
+  type TableProducerIndex,
+} from "../scripts/reconcile/producer-index.ts";
 
 function fixtureRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-one-hop-"));
@@ -34,30 +39,40 @@ function materializeFrozenInputPack(sourceRoot: string): string {
         visit(absolutePath);
         continue;
       }
-      if (entry.name !== "task.json") continue;
-      const task = JSON.parse(readFileSync(absolutePath, "utf8")) as {
-        sqlFiles?: { path: string }[];
-      };
-      for (const sqlFile of task.sqlFiles ?? []) {
-        const sqlPath = join(directory, sqlFile.path);
-        const normalized = readFileSync(sqlPath, "utf8").replaceAll(
+      const normalizeEvidenceFile = (relativePath: string): void => {
+        const evidencePath = join(directory, relativePath);
+        const normalized = readFileSync(evidencePath, "utf8").replaceAll(
           "\r\n",
           "\n",
         );
         writeFileSync(
-          sqlPath,
+          evidencePath,
           normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized,
         );
+      };
+      if (entry.name === "task.json") {
+        const task = JSON.parse(readFileSync(absolutePath, "utf8")) as {
+          sqlFiles?: { path: string }[];
+        };
+        for (const sqlFile of task.sqlFiles ?? []) {
+          normalizeEvidenceFile(sqlFile.path);
+        }
+      }
+      if (entry.name === "table.json") {
+        const table = JSON.parse(readFileSync(absolutePath, "utf8")) as {
+          ddlFile?: { path: string };
+        };
+        if (table.ddlFile) normalizeEvidenceFile(table.ddlFile.path);
       }
     }
   };
-  visit(join(dataRoot, "tasks"));
+  visit(dataRoot);
   return dataRoot;
 }
 
-function writeTable(dataRoot: string, qualifiedName: string): void {
+function writeTable(dataRoot: string, qualifiedName: string): string {
   const [schema, name] = qualifiedName.split(".");
-  writeTableInput(dataRoot, {
+  return writeTableInput(dataRoot, {
     platform: "hive",
     dataSource: "gfhive",
     qualifiedName,
@@ -67,7 +82,7 @@ function writeTable(dataRoot: string, qualifiedName: string): void {
     ddl: `CREATE TABLE ${qualifiedName} (id bigint)`,
     evidenceProvider: "fixture:table",
     collectedAt: "2026-08-23T00:00:00.000Z",
-  });
+  }).directory;
 }
 
 function writeTask(
@@ -81,6 +96,106 @@ function writeTask(
     collectedAt: "2026-08-23T00:00:00.000Z",
     ...evidence,
   });
+}
+
+function writeProducerIndexFixture(options?: { partial?: boolean }): {
+  dataRoot: string;
+  producerIndex: TableProducerIndex;
+} {
+  const dataRoot = fixtureRoot();
+  for (const table of ["src.shared", "mart.current", "raw.seed"])
+    writeTable(dataRoot, table);
+
+  writeTask(dataRoot, "current-indexed", {
+    sql: {
+      query: {
+        content:
+          "INSERT OVERWRITE TABLE mart.current SELECT id FROM src.shared",
+        evidenceProvider: "fixture:sql",
+      },
+    },
+    target: {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "mart.current",
+    },
+    targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    evidenceProvider: "fixture:task",
+  });
+  writeTask(dataRoot, "producer-direct", {
+    sql: {
+      query: {
+        content:
+          "INSERT OVERWRITE TABLE src.shared PARTITION (busi_date='2026-08-23') SELECT id FROM raw.seed",
+        evidenceProvider: "fixture:sql",
+      },
+    },
+    target: {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "src.shared",
+    },
+    targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    partition: { busi_date: "${busi_date}" },
+    evidenceProvider: "fixture:task",
+  });
+  writeTask(dataRoot, "producer-not-direct", {
+    sql: {
+      query: {
+        content: "INSERT INTO src.shared SELECT id FROM raw.seed",
+        evidenceProvider: "fixture:sql",
+      },
+    },
+    target: {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "src.shared",
+    },
+    targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
+    evidenceProvider:
+      "fixture:task+sql-mcp:explicit-table-target+opencli:szdata.table-guid",
+  });
+  writeTask(dataRoot, "candidate-unknown", {
+    target: {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "src.shared",
+    },
+    targetEvidenceKind: "TABLE_TASK_RELATION_DIRECTION_UNKNOWN",
+    evidenceProvider: "fixture:table-task-relation",
+  });
+
+  if (options?.partial) {
+    writeTask(dataRoot, "invalid-unrelated", {
+      sql: {
+        query: {
+          content: "SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: null,
+      targetEvidenceKind: null,
+      evidenceProvider: "fixture:task",
+    });
+    const invalidDirectory = join(
+      dataRoot,
+      "tasks",
+      "hiveTask-2.0",
+      "invalid-unrelated",
+    );
+    const invalidTask = JSON.parse(
+      readFileSync(join(invalidDirectory, "task.json"), "utf8"),
+    ) as { sqlFiles: { path: string }[] };
+    const invalidPath = join(invalidDirectory, invalidTask.sqlFiles[0]!.path);
+    writeFileSync(invalidPath, "SELECT changed_after_hash FROM raw.seed");
+  }
+
+  return {
+    dataRoot,
+    producerIndex: buildTableProducerIndex(dataRoot, {
+      now: () => "2026-08-23T00:30:00.000Z",
+    }),
+  };
 }
 
 describe("reconcileOneHop", () => {
@@ -132,6 +247,16 @@ describe("reconcileOneHop", () => {
     expect(
       extractSqlWrites(sql).map((item) => [item.writeKind, item.qualifiedName]),
     ).toEqual([["CTAS", "mart.real_ctas"]]);
+  });
+
+  it("rejects an explicit producer-index flag without a path", () => {
+    expect(() => producerIndexPathFromArgs(["--producer-index"])).toThrow(
+      "PRODUCER_INDEX_PATH_REQUIRED",
+    );
+    expect(() =>
+      producerIndexPathFromArgs(["--producer-index", "--output", "out.json"]),
+    ).toThrow("PRODUCER_INDEX_PATH_REQUIRED");
+    expect(producerIndexPathFromArgs(["--task-id", "1"])).toBeUndefined();
   });
 
   it("keeps schedule and confirmed data traversal separate without promoting candidates", () => {
@@ -236,6 +361,35 @@ describe("reconcileOneHop", () => {
       scheduleOnly: 1,
       unresolved: 1,
     });
+    expect(result.countSemantics).toEqual({
+      reconciliationStatusUnit: "RECONCILIATION_ITEM",
+      sqlDirectReadsUnit: "NORMALIZED_DIRECT_READ_REFERENCE",
+      scheduleParentsUnit: "DISTINCT_TASK",
+      statusesExclusivePerItem: true,
+      statusesExclusivePerPhysicalTable: false,
+    });
+    expect(result.coverage).toMatchObject({
+      semantics: "OBSERVED_EVIDENCE_ONLY",
+      directReadTables: {
+        total: 3,
+        identityResolved: 3,
+        identityUnresolved: 0,
+      },
+      scheduleParents: {
+        total: 4,
+        taskPackAvailable: 3,
+        taskPackMissing: 1,
+      },
+      retrieval: {
+        producerIndex: "NOT_REQUESTED",
+        liveTaskSourceAttempts: 1,
+        liveTaskSourceSuccesses: 1,
+        liveTaskSourceFailures: 0,
+      },
+      overlaps: {
+        sqlOnlyAndUnresolvedTables: 1,
+      },
+    });
     expect(result.nextScheduleTaskIds).toEqual([
       "parent1",
       "parent2",
@@ -327,6 +481,252 @@ describe("reconcileOneHop", () => {
         observedValue: "01",
       },
     ]);
+  });
+
+  it("consumes every confirmed producer for a read table without promoting non-confirmed candidates", () => {
+    const { dataRoot, producerIndex } = writeProducerIndexFixture();
+    expect(producerIndex.buildStatus).toBe("SUCCESS");
+    const calls: string[][] = [];
+    const runner: OpenCliRunner = (args) => {
+      calls.push([...args]);
+      if (args[0] === "horae")
+        return [
+          {
+            task_id: "producer-direct",
+            task_name: "direct producer",
+            direction: "上游",
+          },
+        ];
+      throw new Error(`task-source must not be called: ${args.join(" ")}`);
+    };
+
+    const result = reconcileOneHop("current-indexed", {
+      dataRoot,
+      producerIndex,
+      openCliRunner: runner,
+      now: () => "2026-08-23T01:02:03.000Z",
+    });
+
+    expect(result.producerIndex).toMatchObject({
+      status: "VALID_SUCCESS",
+      inputFingerprint: producerIndex.inputFingerprint,
+      contentHash: producerIndex.contentHash,
+    });
+    expect(result.dataPath.confirmedProducers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "producer-direct",
+          scheduleRelation: "DIRECT_PARENT",
+          table: expect.objectContaining({ qualifiedName: "src.shared" }),
+        }),
+        expect.objectContaining({
+          taskId: "producer-not-direct",
+          scheduleRelation: "NOT_DIRECT_PARENT",
+          table: expect.objectContaining({ qualifiedName: "src.shared" }),
+        }),
+      ]),
+    );
+    expect(result.dataPath.confirmedProducers).toHaveLength(2);
+    expect(result.nextDataTaskIds).toEqual([
+      "producer-direct",
+      "producer-not-direct",
+    ]);
+    expect(result.nextDataTaskIds).not.toContain("candidate-unknown");
+    expect(calls).toEqual([
+      [
+        "horae",
+        "relation",
+        "current-indexed",
+        "--direction",
+        "up",
+        "--depth",
+        "1",
+        "-f",
+        "json",
+      ],
+    ]);
+
+    // Reconciliation counts remain observation/item counts. Discovering another
+    // producer for the same physical table must not rewrite the schedule result.
+    expect(result.counts).toMatchObject({
+      sqlDirectReads: 1,
+      scheduleParents: 1,
+      matched: 1,
+      sqlOnly: 0,
+      unresolved: 0,
+    });
+    expect(result.coverage).toMatchObject({
+      semantics: "OBSERVED_EVIDENCE_ONLY",
+      directReadTables: {
+        total: 1,
+        identityResolved: 1,
+        identityUnresolved: 0,
+        withConfirmedProducer: 1,
+        withNonConfirmedOnly: 0,
+        withNoProducerObservation: 0,
+      },
+      producerEvidenceObservations: {
+        confirmedProducerEdges: 2,
+        confirmedWriteObservations: 4,
+        nonConfirmedRelationObservations: 1,
+        directionConfirmed: 4,
+        directionUnknown: 1,
+        identityResolved: 5,
+        identityUnresolved: 0,
+      },
+      retrieval: {
+        producerIndex: "VALID_SUCCESS",
+        liveTaskSourceAttempts: 0,
+        liveTaskSourceSuccesses: 0,
+        liveTaskSourceFailures: 0,
+      },
+      overlaps: {
+        confirmedAndNonConfirmedTables: 1,
+      },
+    });
+  });
+
+  it("fails closed before Horae or task-source when an explicit producer index is stale or invalid", () => {
+    const staleFixture = writeProducerIndexFixture();
+    writeTable(staleFixture.dataRoot, "src.added_after_index");
+    const calls: string[][] = [];
+    const runner: OpenCliRunner = (args) => {
+      calls.push([...args]);
+      return [];
+    };
+
+    expect(() =>
+      reconcileOneHop("current-indexed", {
+        dataRoot: staleFixture.dataRoot,
+        producerIndex: staleFixture.producerIndex,
+        openCliRunner: runner,
+      }),
+    ).toThrow(/producer index.*fingerprint|fingerprint.*producer index/i);
+    expect(calls).toEqual([]);
+
+    const invalidFixture = writeProducerIndexFixture();
+    const invalidIndex = {
+      ...invalidFixture.producerIndex,
+      contentHash: "0".repeat(64),
+    } as TableProducerIndex;
+    expect(() =>
+      reconcileOneHop("current-indexed", {
+        dataRoot: invalidFixture.dataRoot,
+        producerIndex: invalidIndex,
+        openCliRunner: runner,
+      }),
+    ).toThrow(/producer index.*contentHash|contentHash.*producer index/i);
+    expect(calls).toEqual([]);
+  });
+
+  it("consumes confirmed edges from a valid PARTIAL index while preserving its observed-evidence boundary", () => {
+    const { dataRoot, producerIndex } = writeProducerIndexFixture({
+      partial: true,
+    });
+    expect(producerIndex.buildStatus).toBe("PARTIAL");
+    const calls: string[][] = [];
+    const runner: OpenCliRunner = (args) => {
+      calls.push([...args]);
+      if (args[0] === "horae")
+        return [
+          {
+            task_id: "producer-direct",
+            task_name: "direct producer",
+            direction: "上游",
+          },
+        ];
+      throw new Error(`task-source must not be called: ${args.join(" ")}`);
+    };
+
+    const result = reconcileOneHop("current-indexed", {
+      dataRoot,
+      producerIndex,
+      openCliRunner: runner,
+    });
+
+    expect(result.producerIndex.status).toBe("VALID_PARTIAL");
+    expect(result.coverage).toMatchObject({
+      semantics: "OBSERVED_EVIDENCE_ONLY",
+      retrieval: {
+        producerIndex: "VALID_PARTIAL",
+        liveTaskSourceAttempts: 0,
+        liveTaskSourceSuccesses: 0,
+        liveTaskSourceFailures: 0,
+      },
+    });
+    expect(result.nextDataTaskIds).toEqual([
+      "producer-direct",
+      "producer-not-direct",
+    ]);
+    expect(result.nextDataTaskIds).not.toContain("candidate-unknown");
+    expect(result.boundaries).toMatchObject({
+      staticSqlOnly: true,
+      schedulerExecution: "NOT_EVALUATED",
+      runtimeDelivery: "NOT_EVALUATED",
+      businessCorrectness: "NOT_EVALUATED",
+      producerCandidatesAreWrites: false,
+      partitionScope: "TASK_TO_TABLE_WRITE",
+    });
+    expect(calls.every((args) => args[0] !== "szdata")).toBe(true);
+  });
+
+  it("does not let a related invalid Table Pack enter MATCHED in index mode", () => {
+    const dataRoot = fixtureRoot();
+    const tableDirectory = writeTable(dataRoot, "src.invalid_ddl");
+    writeTask(dataRoot, "current-invalid-ddl", {
+      sql: {
+        query: {
+          content: "SELECT id FROM src.invalid_ddl",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "producer-invalid-ddl", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.invalid_ddl",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    const ddlPath = join(tableDirectory, "ddl.sql");
+    writeFileSync(ddlPath, `${readFileSync(ddlPath, "utf8")} -- tampered`);
+    const producerIndex = buildTableProducerIndex(dataRoot);
+    expect(producerIndex.buildStatus).toBe("PARTIAL");
+    expect(producerIndex.confirmedProducerEdges).toEqual([]);
+
+    const calls: string[][] = [];
+    const result = reconcileOneHop("current-invalid-ddl", {
+      dataRoot,
+      producerIndex,
+      openCliRunner: (args) => {
+        calls.push([...args]);
+        if (args[0] === "horae")
+          return [{ task_id: "producer-invalid-ddl", direction: "上游" }];
+        throw new Error(`task-source must not be called: ${args.join(" ")}`);
+      },
+    });
+
+    expect(result.counts).toMatchObject({
+      matched: 0,
+      sqlOnly: 1,
+      unresolved: 1,
+    });
+    expect(result.reconciliation.map((item) => item.status)).toEqual([
+      "UNRESOLVED",
+      "SQL_ONLY",
+    ]);
+    expect(result.dataPath.confirmedProducers).toEqual([]);
+    expect(result.dataPath.nonConfirmedRelations).toEqual([
+      expect.objectContaining({
+        taskId: "producer-invalid-ddl",
+        directionStatus: "WRITE_CONFIRMED",
+      }),
+    ]);
+    expect(result.nextDataTaskIds).toEqual([]);
+    expect(calls).toHaveLength(1);
   });
 
   it("replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents", () => {
@@ -431,5 +831,39 @@ describe("reconcileOneHop", () => {
         }),
       ]),
     );
+
+    const producerIndex = buildTableProducerIndex(dataRoot, {
+      now: () => "2026-08-22T02:58:38.275Z",
+    });
+    expect(producerIndex.buildStatus).toBe("SUCCESS");
+    const indexedCalls: string[][] = [];
+    const indexedResult = reconcileOneHop(fixture.taskId, {
+      dataRoot,
+      producerIndex,
+      openCliRunner: (args) => {
+        indexedCalls.push([...args]);
+        if (args[0] === "horae") return fixture.horaeRows;
+        throw new Error(`INDEX_MODE_MUST_NOT_CALL:${args.join(" ")}`);
+      },
+      now: () => "2026-08-22T02:58:38.275Z",
+    });
+    expect(indexedResult.counts).toEqual({
+      sqlDirectReads: 27,
+      scheduleParents: 26,
+      matched: 22,
+      sqlOnly: 5,
+      scheduleOnly: 0,
+      unresolved: 4,
+    });
+    expect(indexedResult.producerIndex.status).toBe("VALID_SUCCESS");
+    expect(indexedResult.dataPath.confirmedProducers).toHaveLength(22);
+    expect(indexedResult.nextDataTaskIds).toHaveLength(22);
+    expect(indexedResult.coverage.retrieval).toEqual({
+      producerIndex: "VALID_SUCCESS",
+      liveTaskSourceAttempts: 0,
+      liveTaskSourceSuccesses: 0,
+      liveTaskSourceFailures: 0,
+    });
+    expect(indexedCalls).toHaveLength(1);
   });
 });

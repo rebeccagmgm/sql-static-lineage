@@ -20,6 +20,29 @@ import {
 } from "../input/input-pack.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
+import {
+  fingerprintTableProducerInputs,
+  loadTableProducerIndex,
+  lookupConfirmedProducers,
+  lookupNonConfirmedRelations,
+  validateTableProducerIndex,
+  type NonConfirmedRelation,
+  type ProducerTableIdentity,
+  type ProducerWriteObservation,
+  type TableProducerIndex,
+} from "./producer-index.ts";
+import {
+  extractSqlWrites,
+  partitionAssignments,
+  type PartitionAssignment,
+  type SqlWrite,
+} from "./sql-write-evidence.ts";
+
+export {
+  extractSqlWrites,
+  type PartitionAssignment,
+  type SqlWrite,
+} from "./sql-write-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -50,26 +73,11 @@ export interface PhysicalTableRef {
     "RESOLVED" | "QUALIFIED_NAME_ONLY" | "AMBIGUOUS" | "UNKNOWN";
 }
 
-export interface PartitionAssignment {
-  readonly field: string;
-  readonly expression: string;
-  readonly valueStatus: "OBSERVED_RENDERED_VALUE" | "RUNTIME_EXPRESSION";
-  readonly observedValue: string | null;
-}
-
 export interface SqlDirectRead {
   readonly qualifiedName: string;
   readonly statementIndexes: readonly number[];
   readonly syntaxDiagnosticCount: number;
   readonly parserUnknownCount: number;
-}
-
-export interface SqlWrite {
-  readonly qualifiedName: string;
-  readonly writeKind:
-    "INSERT_OVERWRITE" | "INSERT_INTO" | "MERGE_INTO" | "CTAS";
-  readonly statementSpan: { readonly start: number; readonly end: number };
-  readonly partition: readonly PartitionAssignment[];
 }
 
 interface TaskSqlFile {
@@ -140,6 +148,59 @@ export interface ReconciliationItem {
   readonly reason: string | null;
 }
 
+export type ProducerIndexConsumptionStatus =
+  "NOT_REQUESTED" | "VALID_SUCCESS" | "VALID_PARTIAL";
+
+export interface DataPathConfirmedProducer {
+  readonly table: PhysicalTableRef;
+  readonly taskId: string;
+  readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+  readonly writes: readonly (
+    ProducerWriteObservation | ConfirmedWriteObservation
+  )[];
+}
+
+export interface OneHopCoverage {
+  readonly semantics: "OBSERVED_EVIDENCE_ONLY";
+  readonly directReadTables: {
+    readonly total: number;
+    readonly identityResolved: number;
+    readonly identityUnresolved: number;
+    readonly withConfirmedProducer: number;
+    readonly withNonConfirmedOnly: number;
+    readonly withNoProducerObservation: number;
+  };
+  readonly scheduleParents: {
+    readonly total: number;
+    readonly taskPackAvailable: number;
+    readonly taskPackMissing: number;
+    readonly taskPackAmbiguous: number;
+    readonly taskPackInvalid: number;
+    readonly withConfirmedWrite: number;
+    readonly withNonConfirmedOnly: number;
+    readonly withNoWriteObservation: number;
+  };
+  readonly producerEvidenceObservations: {
+    readonly confirmedProducerEdges: number;
+    readonly confirmedWriteObservations: number;
+    readonly nonConfirmedRelationObservations: number;
+    readonly directionConfirmed: number;
+    readonly directionUnknown: number;
+    readonly identityResolved: number;
+    readonly identityUnresolved: number;
+  };
+  readonly retrieval: {
+    readonly producerIndex: ProducerIndexConsumptionStatus;
+    readonly liveTaskSourceAttempts: number;
+    readonly liveTaskSourceSuccesses: number;
+    readonly liveTaskSourceFailures: number;
+  };
+  readonly overlaps: {
+    readonly sqlOnlyAndUnresolvedTables: number;
+    readonly confirmedAndNonConfirmedTables: number;
+  };
+}
+
 export interface OneHopReconciliationResult {
   readonly schemaVersion: "1.0.0";
   readonly taskId: string;
@@ -169,6 +230,24 @@ export interface OneHopReconciliationResult {
     readonly scheduleOnly: number;
     readonly unresolved: number;
   };
+  readonly countSemantics: {
+    readonly reconciliationStatusUnit: "RECONCILIATION_ITEM";
+    readonly sqlDirectReadsUnit: "NORMALIZED_DIRECT_READ_REFERENCE";
+    readonly scheduleParentsUnit: "DISTINCT_TASK";
+    readonly statusesExclusivePerItem: true;
+    readonly statusesExclusivePerPhysicalTable: false;
+  };
+  readonly producerIndex: {
+    readonly status: ProducerIndexConsumptionStatus;
+    readonly contentHash: string | null;
+    readonly inputFingerprint: string | null;
+  };
+  readonly dataPath: {
+    readonly source: "PRODUCER_INDEX" | "LEGACY_SCHEDULE_RECONCILIATION";
+    readonly confirmedProducers: readonly DataPathConfirmedProducer[];
+    readonly nonConfirmedRelations: readonly NonConfirmedRelation[];
+  };
+  readonly coverage: OneHopCoverage;
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
   readonly issues: readonly string[];
@@ -186,6 +265,7 @@ export type OpenCliRunner = (args: readonly string[]) => unknown;
 
 export interface ReconcileOneHopOptions {
   readonly dataRoot: string;
+  readonly producerIndex?: TableProducerIndex;
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
   readonly taskSourceTimeoutSeconds?: number;
@@ -215,10 +295,38 @@ function tableIdentityKey(table: PhysicalTableRef): string | null {
     table.identityStatus !== "RESOLVED" ||
     !table.platform ||
     !table.dataSource ||
+    table.dataSource.toLowerCase() === "default" ||
     !table.qualifiedName
   )
     return null;
   return `${table.platform.toLowerCase()}|${table.dataSource.toLowerCase()}|${normalizeTable(table.qualifiedName)}`;
+}
+
+function producerIdentity(
+  table: PhysicalTableRef,
+): ProducerTableIdentity | null {
+  if (
+    table.identityStatus !== "RESOLVED" ||
+    !table.platform ||
+    !table.dataSource ||
+    !table.qualifiedName ||
+    table.dataSource.toLowerCase() === "default"
+  )
+    return null;
+  return {
+    platform: table.platform,
+    dataSource: table.dataSource,
+    qualifiedName: table.qualifiedName,
+  };
+}
+
+function intersectionSize(
+  left: ReadonlySet<string>,
+  right: ReadonlySet<string>,
+): number {
+  let count = 0;
+  for (const value of left) if (right.has(value)) count += 1;
+  return count;
 }
 
 function compareText(left: string | null, right: string | null): number {
@@ -334,183 +442,6 @@ export function extractSqlDirectReads(
     .sort((left, right) =>
       compareText(left.qualifiedName, right.qualifiedName),
     );
-}
-
-function splitTopLevelComma(value: string): string[] {
-  const result: string[] = [];
-  let start = 0;
-  let depth = 0;
-  let quote: "'" | '"' | "`" | null = null;
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index]!;
-    if (quote) {
-      if (character === quote && value[index - 1] !== "\\") quote = null;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === "(") depth += 1;
-    else if (character === ")") depth = Math.max(0, depth - 1);
-    else if (character === "," && depth === 0) {
-      result.push(value.slice(start, index));
-      start = index + 1;
-    }
-  }
-  result.push(value.slice(start));
-  return result.map((item) => item.trim()).filter(Boolean);
-}
-
-function partitionAssignments(value: string | null): PartitionAssignment[] {
-  if (!value) return [];
-  return splitTopLevelComma(value).map((assignment) => {
-    const equals = assignment.indexOf("=");
-    const field = (equals >= 0 ? assignment.slice(0, equals) : assignment)
-      .trim()
-      .replaceAll("`", "")
-      .toLowerCase();
-    const expression = (
-      equals >= 0 ? assignment.slice(equals + 1) : "UNKNOWN"
-    ).trim();
-    const literal = expression.match(/^'(.*)'$/s)?.[1] ?? null;
-    return {
-      field,
-      expression,
-      valueStatus:
-        literal === null ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
-      observedValue: literal,
-    };
-  });
-}
-
-function balancedParenthesized(
-  sql: string,
-  openingIndex: number,
-): { content: string; end: number } | null {
-  let depth = 0;
-  let quote: "'" | '"' | "`" | null = null;
-  for (let index = openingIndex; index < sql.length; index += 1) {
-    const character = sql[index]!;
-    if (quote) {
-      if (character === quote && sql[index - 1] !== "\\") quote = null;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === "(") depth += 1;
-    else if (character === ")") {
-      depth -= 1;
-      if (depth === 0)
-        return { content: sql.slice(openingIndex + 1, index), end: index + 1 };
-    }
-  }
-  return null;
-}
-
-function maskSqlCommentsAndStrings(sql: string): string {
-  const masked = [...sql];
-  let state: "CODE" | "SINGLE_QUOTE" | "LINE_COMMENT" | "BLOCK_COMMENT" =
-    "CODE";
-  for (let index = 0; index < sql.length; index += 1) {
-    const character = sql[index]!;
-    const next = sql[index + 1];
-    if (state === "SINGLE_QUOTE") {
-      if (character !== "\n" && character !== "\r") masked[index] = " ";
-      if (character === "\\" && index + 1 < sql.length) {
-        if (next !== "\n" && next !== "\r") masked[index + 1] = " ";
-        index += 1;
-      } else if (character === "'" && next === "'") {
-        masked[index + 1] = " ";
-        index += 1;
-      } else if (character === "'") state = "CODE";
-      continue;
-    }
-    if (state === "LINE_COMMENT") {
-      if (character === "\n" || character === "\r") state = "CODE";
-      else masked[index] = " ";
-      continue;
-    }
-    if (state === "BLOCK_COMMENT") {
-      if (character === "*" && next === "/") {
-        masked[index] = " ";
-        masked[index + 1] = " ";
-        index += 1;
-        state = "CODE";
-      } else if (character !== "\n" && character !== "\r") masked[index] = " ";
-      continue;
-    }
-    if (character === "'") {
-      masked[index] = " ";
-      state = "SINGLE_QUOTE";
-    } else if (character === "-" && next === "-") {
-      masked[index] = " ";
-      masked[index + 1] = " ";
-      index += 1;
-      state = "LINE_COMMENT";
-    } else if (character === "/" && next === "*") {
-      masked[index] = " ";
-      masked[index + 1] = " ";
-      index += 1;
-      state = "BLOCK_COMMENT";
-    }
-  }
-  return masked.join("");
-}
-
-export function extractSqlWrites(sql: string): SqlWrite[] {
-  const maskedSql = maskSqlCommentsAndStrings(sql);
-  const pattern =
-    /\b(INSERT\s+(OVERWRITE|INTO)\s+(?:TABLE\s+)?(?!DIRECTORY\b)|MERGE\s+INTO\s+)([`"A-Za-z0-9_.-]+)/gi;
-  const writes: SqlWrite[] = [];
-  for (const match of maskedSql.matchAll(pattern)) {
-    const start = match.index ?? 0;
-    const qualifiedName = normalizeTable(match[3]!);
-    const matchedText = match[1]!.toUpperCase();
-    const writeKind = matchedText.startsWith("MERGE")
-      ? "MERGE_INTO"
-      : match[2]!.toUpperCase() === "OVERWRITE"
-        ? "INSERT_OVERWRITE"
-        : "INSERT_INTO";
-    const afterTarget = start + match[0].length;
-    const tail = maskedSql.slice(afterTarget);
-    const partitionMatch = tail.match(/^\s*PARTITION\s*\(/i);
-    const openingIndex = partitionMatch
-      ? afterTarget + partitionMatch[0].lastIndexOf("(")
-      : -1;
-    const partition =
-      openingIndex >= 0 ? balancedParenthesized(sql, openingIndex) : null;
-    const statementEnd = maskedSql.indexOf(";", partition?.end ?? afterTarget);
-    writes.push({
-      qualifiedName,
-      writeKind,
-      statementSpan: {
-        start,
-        end: statementEnd >= 0 ? statementEnd : sql.length,
-      },
-      partition: partitionAssignments(partition?.content ?? null),
-    });
-  }
-  const ctasPattern =
-    /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"A-Za-z0-9_.-]+)\s+AS\s+(?=SELECT\b|WITH\b)/gi;
-  for (const match of maskedSql.matchAll(ctasPattern)) {
-    const start = match.index ?? 0;
-    const statementEnd = maskedSql.indexOf(";", start + match[0].length);
-    writes.push({
-      qualifiedName: normalizeTable(match[1]!),
-      writeKind: "CTAS",
-      statementSpan: {
-        start,
-        end: statementEnd >= 0 ? statementEnd : sql.length,
-      },
-      partition: [],
-    });
-  }
-  return writes.sort(
-    (left, right) => left.statementSpan.start - right.statementSpan.start,
-  );
 }
 
 function loadTaskPack(dataRoot: string, taskId: string): LoadedTaskPack {
@@ -845,6 +776,43 @@ function writesFromPack(
   return { confirmedWrites: mergeWrites(confirmedWrites), unconfirmedTargets };
 }
 
+function writesFromProducerIndex(
+  taskId: string,
+  index: TableProducerIndex,
+): {
+  confirmedWrites: ConfirmedWriteObservation[];
+  unconfirmedTargets: UnconfirmedTargetObservation[];
+} {
+  const confirmedWrites = index.confirmedProducerEdges
+    .filter((edge) => edge.taskId === taskId)
+    .map((edge) => {
+      const representative = edge.writes.find(
+        (write) =>
+          write.sqlWriteKind !== null || write.declaredWriteMode !== null,
+      );
+      const partitioned = edge.writes.find(
+        (write) => write.partition.length > 0,
+      );
+      return {
+        table: edge.table,
+        writeKind:
+          representative?.sqlWriteKind ??
+          representative?.declaredWriteMode ??
+          null,
+        partition: partitioned?.partition ?? [],
+        evidence: edge.writes.flatMap((write) => write.evidence),
+      };
+    });
+  const unconfirmedTargets = index.nonConfirmedRelations
+    .filter((relation) => relation.taskId === taskId)
+    .map((relation) => ({
+      qualifiedName: relation.tableRef.qualifiedName,
+      reason: relation.reasonCodes.join("|"),
+      evidence: relation.evidence,
+    }));
+  return { confirmedWrites, unconfirmedTargets };
+}
+
 function liveParent(
   taskId: string,
   runner: OpenCliRunner,
@@ -982,6 +950,25 @@ export function reconcileOneHop(
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0)
     throw new Error("INVALID_TASK_SOURCE_TIMEOUT");
 
+  const producerIndex = options.producerIndex ?? null;
+  let producerIndexStatus: ProducerIndexConsumptionStatus = "NOT_REQUESTED";
+  if (producerIndex) {
+    try {
+      validateTableProducerIndex(producerIndex);
+    } catch (error) {
+      throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
+    }
+    const currentFingerprint = fingerprintTableProducerInputs(dataRoot);
+    if (currentFingerprint !== producerIndex.inputFingerprint)
+      throw new Error(
+        "PRODUCER_INDEX_INPUT_FINGERPRINT_MISMATCH: producer index does not match dataRoot",
+      );
+    producerIndexStatus =
+      producerIndex.buildStatus === "PARTIAL"
+        ? "VALID_PARTIAL"
+        : "VALID_SUCCESS";
+  }
+
   const currentPack = loadTaskPack(dataRoot, taskId);
   if (
     currentPack.status !== "AVAILABLE" ||
@@ -1041,22 +1028,26 @@ export function reconcileOneHop(
     (left, right) => compareText(left.taskId, right.taskId),
   );
   const parents: ParentObservation[] = [];
+  let liveTaskSourceAttempts = 0;
+  let liveTaskSourceSuccesses = 0;
+  let liveTaskSourceFailures = 0;
   for (const scheduleParent of orderedScheduleParents) {
     const pack = loadTaskPack(dataRoot, scheduleParent.taskId);
-    const fromPack = writesFromPack(pack, catalog);
-    const live =
-      pack.status === "AVAILABLE"
-        ? {
-            confirmedWrites: [] as ConfirmedWriteObservation[],
-            issues: [] as string[],
-          }
-        : liveParent(
-            scheduleParent.taskId,
-            runner,
-            catalog,
-            now,
-            timeoutSeconds,
-          );
+    const fromPack = producerIndex
+      ? writesFromProducerIndex(scheduleParent.taskId, producerIndex)
+      : writesFromPack(pack, catalog);
+    const shouldUseLive = pack.status !== "AVAILABLE" && !producerIndex;
+    if (shouldUseLive) liveTaskSourceAttempts += 1;
+    const live = !shouldUseLive
+      ? {
+          confirmedWrites: [] as ConfirmedWriteObservation[],
+          issues: [] as string[],
+        }
+      : liveParent(scheduleParent.taskId, runner, catalog, now, timeoutSeconds);
+    if (shouldUseLive) {
+      if (live.confirmedWrites.length > 0) liveTaskSourceSuccesses += 1;
+      else liveTaskSourceFailures += 1;
+    }
     const confirmedWrites = mergeWrites([
       ...fromPack.confirmedWrites,
       ...live.confirmedWrites,
@@ -1139,6 +1130,214 @@ export function reconcileOneHop(
     });
   }
 
+  const confirmedProducers: DataPathConfirmedProducer[] = [];
+  const relatedNonConfirmedRelations: NonConfirmedRelation[] = [];
+  if (producerIndex) {
+    const seenEdges = new Set<string>();
+    const seenRelations = new Set<string>();
+    for (const read of directReads) {
+      const identity = producerIdentity(read.table);
+      if (!identity) continue;
+      for (const edge of lookupConfirmedProducers(producerIndex, identity)) {
+        const key = `${tableIdentityKey(edge.table)}\u0000${edge.taskId}`;
+        if (seenEdges.has(key)) continue;
+        seenEdges.add(key);
+        confirmedProducers.push({
+          table: edge.table,
+          taskId: edge.taskId,
+          scheduleRelation: scheduleParents.has(edge.taskId)
+            ? "DIRECT_PARENT"
+            : "NOT_DIRECT_PARENT",
+          writes: edge.writes,
+        });
+      }
+      for (const relation of lookupNonConfirmedRelations(
+        producerIndex,
+        identity,
+      )) {
+        const key = JSON.stringify(relation);
+        if (seenRelations.has(key)) continue;
+        seenRelations.add(key);
+        relatedNonConfirmedRelations.push(relation);
+      }
+    }
+  } else {
+    const byEdge = new Map<string, DataPathConfirmedProducer>();
+    for (const item of reconciliation) {
+      if (item.status !== "MATCHED" || !item.taskId || !item.write) continue;
+      const identity = tableIdentityKey(item.table);
+      if (!identity) continue;
+      const key = `${identity}\u0000${item.taskId}`;
+      const current = byEdge.get(key);
+      byEdge.set(
+        key,
+        current
+          ? { ...current, writes: [...current.writes, item.write] }
+          : {
+              table: item.table,
+              taskId: item.taskId,
+              scheduleRelation: "DIRECT_PARENT",
+              writes: [item.write],
+            },
+      );
+    }
+    confirmedProducers.push(...byEdge.values());
+  }
+  confirmedProducers.sort((left, right) =>
+    compareText(
+      `${tableIdentityKey(left.table) ?? ""}\u0000${left.taskId}`,
+      `${tableIdentityKey(right.table) ?? ""}\u0000${right.taskId}`,
+    ),
+  );
+
+  const confirmedTableKeys = new Set(
+    confirmedProducers
+      .map((item) => tableIdentityKey(item.table))
+      .filter((key): key is string => key !== null),
+  );
+  const nonConfirmedTableKeys = new Set(
+    (producerIndex
+      ? relatedNonConfirmedRelations.map((item) =>
+          tableIdentityKey(item.tableRef),
+        )
+      : reconciliation
+          .filter((item) => item.status === "UNRESOLVED")
+          .map((item) => tableIdentityKey(item.table))
+    ).filter((key): key is string => key !== null),
+  );
+  const resolvedDirectReadKeys = directReads
+    .map((item) => tableIdentityKey(item.table))
+    .filter((key): key is string => key !== null);
+  const directReadsWithConfirmed = resolvedDirectReadKeys.filter((key) =>
+    confirmedTableKeys.has(key),
+  ).length;
+  const directReadsWithNonConfirmedOnly = resolvedDirectReadKeys.filter(
+    (key) => !confirmedTableKeys.has(key) && nonConfirmedTableKeys.has(key),
+  ).length;
+
+  const sqlOnlyTableKeys = new Set(
+    reconciliation
+      .filter((item) => item.status === "SQL_ONLY")
+      .map((item) => tableIdentityKey(item.table))
+      .filter((key): key is string => key !== null),
+  );
+  const unresolvedTableKeys = new Set(
+    reconciliation
+      .filter((item) => item.status === "UNRESOLVED")
+      .map((item) => tableIdentityKey(item.table))
+      .filter((key): key is string => key !== null),
+  );
+
+  const producerWriteObservationCount = producerIndex
+    ? confirmedProducers.reduce((sum, item) => sum + item.writes.length, 0)
+    : parents.reduce((sum, parent) => sum + parent.confirmedWrites.length, 0);
+  const producerEdgeObservationCount = producerIndex
+    ? confirmedProducers.length
+    : parents.reduce((sum, parent) => sum + parent.confirmedWrites.length, 0);
+  const nonConfirmedObservationCount = producerIndex
+    ? relatedNonConfirmedRelations.length
+    : reconciliation.filter((item) => item.status === "UNRESOLVED").length;
+  const directionConfirmedCount = producerIndex
+    ? producerWriteObservationCount +
+      relatedNonConfirmedRelations.filter(
+        (item) => item.directionStatus === "WRITE_CONFIRMED",
+      ).length
+    : producerWriteObservationCount;
+  const directionUnknownCount = producerIndex
+    ? relatedNonConfirmedRelations.filter(
+        (item) => item.directionStatus === "UNKNOWN",
+      ).length
+    : nonConfirmedObservationCount;
+  const identityResolvedCount = producerIndex
+    ? producerWriteObservationCount +
+      relatedNonConfirmedRelations.filter(
+        (item) => tableIdentityKey(item.tableRef) !== null,
+      ).length
+    : parents.reduce(
+        (sum, parent) =>
+          sum +
+          parent.confirmedWrites.filter(
+            (write) => tableIdentityKey(write.table) !== null,
+          ).length,
+        0,
+      ) +
+      reconciliation.filter(
+        (item) =>
+          item.status === "UNRESOLVED" && tableIdentityKey(item.table) !== null,
+      ).length;
+  const identityUnresolvedCount =
+    producerWriteObservationCount +
+    nonConfirmedObservationCount -
+    identityResolvedCount;
+
+  const coverage: OneHopCoverage = {
+    semantics: "OBSERVED_EVIDENCE_ONLY",
+    directReadTables: {
+      total: directReads.length,
+      identityResolved: resolvedDirectReadKeys.length,
+      identityUnresolved: directReads.length - resolvedDirectReadKeys.length,
+      withConfirmedProducer: directReadsWithConfirmed,
+      withNonConfirmedOnly: directReadsWithNonConfirmedOnly,
+      withNoProducerObservation:
+        resolvedDirectReadKeys.length -
+        directReadsWithConfirmed -
+        directReadsWithNonConfirmedOnly,
+    },
+    scheduleParents: {
+      total: parents.length,
+      taskPackAvailable: parents.filter(
+        (item) => item.inputPackStatus === "AVAILABLE",
+      ).length,
+      taskPackMissing: parents.filter(
+        (item) => item.inputPackStatus === "MISSING",
+      ).length,
+      taskPackAmbiguous: parents.filter(
+        (item) => item.inputPackStatus === "AMBIGUOUS",
+      ).length,
+      taskPackInvalid: parents.filter(
+        (item) => item.inputPackStatus === "INVALID",
+      ).length,
+      withConfirmedWrite: parents.filter(
+        (item) => item.confirmedWrites.length > 0,
+      ).length,
+      withNonConfirmedOnly: parents.filter(
+        (item) =>
+          item.confirmedWrites.length === 0 &&
+          item.unconfirmedTargets.length > 0,
+      ).length,
+      withNoWriteObservation: parents.filter(
+        (item) =>
+          item.confirmedWrites.length === 0 &&
+          item.unconfirmedTargets.length === 0,
+      ).length,
+    },
+    producerEvidenceObservations: {
+      confirmedProducerEdges: producerEdgeObservationCount,
+      confirmedWriteObservations: producerWriteObservationCount,
+      nonConfirmedRelationObservations: nonConfirmedObservationCount,
+      directionConfirmed: directionConfirmedCount,
+      directionUnknown: directionUnknownCount,
+      identityResolved: identityResolvedCount,
+      identityUnresolved: identityUnresolvedCount,
+    },
+    retrieval: {
+      producerIndex: producerIndexStatus,
+      liveTaskSourceAttempts,
+      liveTaskSourceSuccesses,
+      liveTaskSourceFailures,
+    },
+    overlaps: {
+      sqlOnlyAndUnresolvedTables: intersectionSize(
+        sqlOnlyTableKeys,
+        unresolvedTableKeys,
+      ),
+      confirmedAndNonConfirmedTables: intersectionSize(
+        confirmedTableKeys,
+        nonConfirmedTableKeys,
+      ),
+    },
+  };
+
   const count = (status: ReconciliationStatus): number =>
     reconciliation.filter((item) => item.status === status).length;
   return {
@@ -1166,12 +1365,34 @@ export function reconcileOneHop(
       scheduleOnly: count("SCHEDULE_ONLY"),
       unresolved: count("UNRESOLVED"),
     },
+    countSemantics: {
+      reconciliationStatusUnit: "RECONCILIATION_ITEM",
+      sqlDirectReadsUnit: "NORMALIZED_DIRECT_READ_REFERENCE",
+      scheduleParentsUnit: "DISTINCT_TASK",
+      statusesExclusivePerItem: true,
+      statusesExclusivePerPhysicalTable: false,
+    },
+    producerIndex: {
+      status: producerIndexStatus,
+      contentHash: producerIndex?.contentHash ?? null,
+      inputFingerprint: producerIndex?.inputFingerprint ?? null,
+    },
+    dataPath: {
+      source: producerIndex
+        ? "PRODUCER_INDEX"
+        : "LEGACY_SCHEDULE_RECONCILIATION",
+      confirmedProducers,
+      nonConfirmedRelations: relatedNonConfirmedRelations,
+    },
+    coverage,
     nextScheduleTaskIds: uniqueSorted([...scheduleParents.keys()]),
-    nextDataTaskIds: uniqueSorted(
-      reconciliation
-        .filter((item) => item.status === "MATCHED" && item.taskId)
-        .map((item) => item.taskId!),
-    ),
+    nextDataTaskIds: producerIndex
+      ? uniqueSorted(confirmedProducers.map((item) => item.taskId))
+      : uniqueSorted(
+          reconciliation
+            .filter((item) => item.status === "MATCHED" && item.taskId)
+            .map((item) => item.taskId!),
+        ),
     issues: [
       ...catalog.issues,
       ...parents.flatMap((parent) => parent.issues),
@@ -1189,7 +1410,17 @@ export function reconcileOneHop(
 
 function option(args: readonly string[], name: string): string | undefined {
   const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
+  const value = index >= 0 ? args[index + 1] : undefined;
+  return value && !value.startsWith("--") ? value : undefined;
+}
+
+export function producerIndexPathFromArgs(
+  args: readonly string[],
+): string | undefined {
+  if (!args.includes("--producer-index")) return undefined;
+  const path = option(args, "--producer-index");
+  if (!path) throw new Error("PRODUCER_INDEX_PATH_REQUIRED");
+  return path;
 }
 
 function main(): void {
@@ -1200,11 +1431,15 @@ function main(): void {
   const dataRoot =
     option(args, "--data-root") ?? process.env.SQL_LINEAGE_DATA_ROOT;
   const output = option(args, "--output");
+  const producerIndexPath = producerIndexPathFromArgs(args);
   if (!taskId || !dataRoot)
     throw new Error(
-      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--output <json>]",
+      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--output <json>]",
     );
-  const result = reconcileOneHop(taskId, { dataRoot });
+  const producerIndex = producerIndexPath
+    ? loadTableProducerIndex(producerIndexPath)
+    : undefined;
+  const result = reconcileOneHop(taskId, { dataRoot, producerIndex });
   const serialized = `${JSON.stringify(result, null, 2)}\n`;
   if (output) {
     const outputPath = isAbsolute(output) ? output : resolve(output);

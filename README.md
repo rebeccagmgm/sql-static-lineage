@@ -26,7 +26,7 @@
 npm test
 npm run typecheck
 npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-spec <question.json> --output <derived-output>
-npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> --output <result.json>
+npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--producer-index <producer-index.json>] --output <result.json>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
 ```
 

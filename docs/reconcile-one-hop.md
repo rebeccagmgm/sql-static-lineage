@@ -9,10 +9,12 @@
 ## 入口
 
 ```text
-npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--output <result.json>]
+npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--output <result.json>]
 ```
 
 `--data-root` 指向 Task/Table Input Pack V1。未传 `--output` 时，结果只写到标准输出。
+
+`--producer-index` 是可选的离线 producer 反向索引。显式提供后会先校验 schema、`contentHash`，并重新计算当前 `data-root` 的 `inputFingerprint`；失效或过期直接失败，不回退到实时 producer 补证。`PARTIAL` 索引可以消费其中已确认的边，但覆盖语义仍为 `OBSERVED_EVIDENCE_ONLY`。
 
 ## 证据顺序
 
@@ -29,7 +31,21 @@ npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [-
 - `SCHEDULE_ONLY`：Horae 父任务有已确认 WRITE，但当前 SQL 未直接读取该表。
 - `UNRESOLVED`：有调度父任务或候选目标，但 WRITE 方向或物理身份证据不足。
 
-`nextScheduleTaskIds` 保留直接调度父任务；`nextDataTaskIds` 只包含形成 `MATCHED` 的父任务。候选任务、任务名、普通 `FROM/JOIN` 和分区值都不能单独把任务提升为 producer。
+`nextScheduleTaskIds` 保留直接调度父任务；在未传 producer index 的兼容模式下，`nextDataTaskIds` 只包含形成 `MATCHED` 的父任务。候选任务、任务名、普通 `FROM/JOIN` 和分区值都不能单独把任务提升为 producer。
+
+未传 producer index 时，`nextDataTaskIds` 保持上述兼容语义。显式提供 producer index 时，它改为当前 SQL READ 表对应的全部 confirmed producer Task；非 Horae 直接父任务在 `dataPath.confirmedProducers[].scheduleRelation` 中标为 `NOT_DIRECT_PARENT`，但不会被改写成 `MATCHED`。`dataPath.nonConfirmedRelations` 只用于审计和覆盖率，绝不进入递归节点。
+
+## Counts 与覆盖率口径
+
+原 `counts` 保持兼容，单位不是互斥物理表：
+
+- `matched` / `scheduleOnly` 是一个 `Task × Table` 对账 item。
+- `unresolved` 是没有 confirmed write 的调度父任务 item。
+- `sqlOnly` 是未被 confirmed Horae 直接父任务 WRITE 覆盖的 SQL direct-read reference。
+
+所以同一物理表可以同时出现 `SQL_ONLY` 与某个候选父任务的 `UNRESOLVED`；多个父任务写同一表时，`matched` 也可以大于 `sqlDirectReads`。输出中的 `countSemantics.statusesExclusivePerPhysicalTable=false` 明确记录这一点。
+
+`coverage` 使用整数分子/分母，不输出舍入百分比，并分开记录：direct-read 身份/producer 覆盖、调度父任务 Input Pack/WRITE 覆盖、producer 方向/身份观察、索引或实时补证来源，以及重叠表数量。`SUCCESS`、`VALID_SUCCESS` 都只说明已观察输入可用，不代表 producer 全覆盖。
 
 ## 边界
 

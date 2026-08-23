@@ -18,6 +18,7 @@ import {
 import {
   assertOutputOutsideDataRoot,
   buildTableProducerIndex,
+  fingerprintTableProducerInputs,
   loadTableProducerIndex,
   lookupConfirmedProducers,
   lookupNonConfirmedRelations,
@@ -236,6 +237,7 @@ describe("table producer index", () => {
     const first = buildTableProducerIndex(root, {
       now: () => "2026-08-23T01:00:00.000Z",
     });
+    expect(fingerprintTableProducerInputs(root)).toBe(first.inputFingerprint);
     const taskPath = join(root, "tasks", "hiveTask-2.0", "p1", "task.json");
     const recollectedTask = JSON.parse(readFileSync(taskPath, "utf8")) as {
       collectedAt: string;
