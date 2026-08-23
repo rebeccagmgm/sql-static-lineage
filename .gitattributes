@@ -1,0 +1,2 @@
+# Frozen evidence fixtures preserve source bytes used by content-hash assertions.
+tests/fixtures/reconcile-one-hop/86840-input-pack/** -whitespace

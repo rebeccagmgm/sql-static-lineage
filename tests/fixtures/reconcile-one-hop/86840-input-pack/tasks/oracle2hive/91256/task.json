@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "91256",
+  "sqlFiles": [
+    {
+      "slot": "query",
+      "path": "sql/query.sql",
+      "sha256": "428d3fd4f0db8bb06caec6667b0352a55a714177f31465ae96811033ca9360e2",
+      "evidenceProvider": "sql-mcp,schedule-detail"
+    }
+  ],
+  "collectedAt": "2026-08-21T19:38:40.146Z",
+  "taskCategory": "oracle2hive",
+  "taskType": "20",
+  "taskName": "odata_n_tit.d_trd_otc_contr_props_f",
+  "topicName": "ODATA_N_TIT",
+  "source": "oracle_tit_gftzdb_gfedw",
+  "target": {
+    "platform": "hive",
+    "qualifiedName": "odata_n_tit.d_trd_otc_contr_props",
+    "dataSource": "gfhive"
+  },
+  "targetEvidenceKind": "DIRECT_PLATFORM_TARGET",
+  "evidenceProvider": "opencli:szdata.task-source",
+  "contentHash": "3179068d5eff5a02493b61e569eea96b1f06626e1a8bf081fc97c0004ffef5e2"
+}
+

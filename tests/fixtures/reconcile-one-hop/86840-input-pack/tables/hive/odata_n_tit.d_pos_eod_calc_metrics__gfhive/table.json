@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_pos_eod_calc_metrics__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_pos_eod_calc_metrics",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "c6b280b0db3d7cdc22158a50f9a6c43a856093a1b998a162dc0cb1de65f2f3b8",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:51:19.461Z",
+  "guid": "d12828b5-6645-43bf-b454-c54d98acd5de",
+  "schema": "odata_n_tit",
+  "name": "d_pos_eod_calc_metrics",
+  "description": "日终持仓-指标计算结果表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "50a84e3b7f483c2101b43849c45964fb1fa3958da1fd8f779ffb479899b85388"
+}
+

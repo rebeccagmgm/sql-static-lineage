@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_margin_plan__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_margin_plan",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "f7d278ba86117a0edda409fab6054a50ef3441ff56300391ad4500acea421123",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:50:51.195Z",
+  "guid": "08fef371-2663-4755-913d-43f0275d2ed0",
+  "schema": "odata_n_tit",
+  "name": "d_margin_plan",
+  "description": "【AI】履保方案表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "95669598917bc474dd2406e55efa11dbd2eb62403f0ba3e6eddd9a746cfa672c"
+}
+

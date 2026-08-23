@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "78471",
+  "sqlFiles": [
+    {
+      "slot": "query",
+      "path": "sql/query.sql",
+      "sha256": "64c52de4289ad4b8caf7ae4f1ea63bdf5f437df04322fae2174eb5b549d28218",
+      "evidenceProvider": "sql-mcp,schedule-detail"
+    }
+  ],
+  "collectedAt": "2026-08-21T18:41:33.556Z",
+  "taskCategory": "oracle2hive",
+  "taskType": "20",
+  "taskName": "odata_n_tit.d_ref_option_deal_structure_f",
+  "topicName": "ODATA_N_TIT",
+  "source": "oracle_tit_gftzdb_gfedw",
+  "target": {
+    "platform": "hive",
+    "qualifiedName": "odata_n_tit.d_ref_option_deal_structure",
+    "dataSource": "gfhive"
+  },
+  "targetEvidenceKind": "DIRECT_PLATFORM_TARGET",
+  "evidenceProvider": "opencli:szdata.task-source",
+  "contentHash": "9c89c961768cbcf68083a1c701d4e9b3ae5e8384171f77fb75efb035d1fe6a55"
+}
+

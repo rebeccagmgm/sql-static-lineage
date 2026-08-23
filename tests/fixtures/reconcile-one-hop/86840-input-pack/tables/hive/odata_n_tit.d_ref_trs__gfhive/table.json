@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_trs__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_trs",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "918a12631ac1381b70716cd60183e64a04d97e54ab0d63c40437f975e317359f",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T18:56:36.647Z",
+  "guid": "4248f4da-34cb-406a-9987-1292f12e4711",
+  "schema": "odata_n_tit",
+  "name": "d_ref_trs",
+  "description": "场外交易-<font color='red'>TRS</font>",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "4d7a7addc5e84893751d6e6649447a48c5709cb8ab829e5467e88ad4b49d29e8"
+}
+

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_basket_constituent__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_basket_constituent",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "50e0efa680ef8cc3770612b4a75d78121c1c41db68d9c60bdd02668466dd6901",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:51:46.795Z",
+  "guid": "270f18dd-0d9b-4381-8ffb-ce3b3944af96",
+  "schema": "odata_n_tit",
+  "name": "d_ref_basket_constituent",
+  "description": "篮子成分表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "852f1d7004a7bef9151b5e7385ee103762c3de7fcfe71c285f90a12434f51483"
+}
+
