@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_ctpty_mapping__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_ctpty_mapping",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "21831eca761fb284fadc3d2d2d6293332664fcdd88e1cfb3954883fd0a712e5a",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:52:44.167Z",
+  "guid": "3e4ff895-4c75-4a6a-9333-dece9bf1dda5",
+  "schema": "odata_n_tit",
+  "name": "d_ref_ctpty_mapping",
+  "description": "交易参数-交易对手映射表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "f1d4618502661371d4cbbf0af30ca9f82657ff5bec1d1a1e891dbb631c72b5c9"
+}
+

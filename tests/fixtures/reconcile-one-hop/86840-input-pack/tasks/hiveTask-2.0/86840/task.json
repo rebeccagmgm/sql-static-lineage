@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "86840",
+  "sqlFiles": [
+    {
+      "slot": "create",
+      "path": "sql/create.sql",
+      "sha256": "a004dc5aeb139d6736b7744a9775a351f92f347ff0920690c5c631ad78b6b343",
+      "evidenceProvider": "sql-mcp"
+    },
+    {
+      "slot": "query",
+      "path": "sql/query.sql",
+      "sha256": "59f1a9a051cafe7b751a6b688a25748a25ecdc2753c0afe75fda23d4a5c199ec",
+      "evidenceProvider": "sql-mcp"
+    }
+  ],
+  "collectedAt": "2026-08-21T12:08:27.853Z",
+  "taskCategory": "hiveTask-2.0",
+  "taskType": "101",
+  "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO_TIT110",
+  "topicName": "EDW_SUM",
+  "target": {
+    "platform": "hive",
+    "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+    "dataSource": "gfhive"
+  },
+  "targetEvidenceKind": "TABLE_TASK_RELATION_DIRECTION_UNKNOWN",
+  "partition": {
+    "busi_date": "2026-05-24",
+    "grp_id": "01"
+  },
+  "evidenceProvider": "opencli:szdata.task-source,opencli:szdata.table-task-relation",
+  "contentHash": "7f0d55706bc024806e6df91ff06d5e9d5adfdcc1b8dab0c1ad49fb1bd7fb42a1"
+}
+

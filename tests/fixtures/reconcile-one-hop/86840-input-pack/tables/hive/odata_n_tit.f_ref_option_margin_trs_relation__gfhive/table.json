@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.f_ref_option_margin_trs_relation__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.f_ref_option_margin_trs_relation",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "50262bfe6b50b5ae86af5c3b9a3d6d10fbc7f3c73c1658bf5278fa0a2cf5adf5",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T14:00:42.634Z",
+  "guid": "acd79c12-43d3-4c3f-85cd-3f6fbbf572d0",
+  "schema": "odata_n_tit",
+  "name": "f_ref_option_margin_trs_relation",
+  "description": "期权合约与互换合约关联关系表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "6c9682ce0d851ef25129f7a5ace56d8d752cce01222cc29525b2af23a3eb694f"
+}
+

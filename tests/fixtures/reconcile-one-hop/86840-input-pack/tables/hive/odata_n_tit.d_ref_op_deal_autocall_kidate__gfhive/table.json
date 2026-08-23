@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_op_deal_autocall_kidate__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_op_deal_autocall_kidate",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "7ea66efba641659479ea00c0ec92e437bf3be4de16e5d750e1b24326a9dbd9c2",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:54:08.569Z",
+  "guid": "08f088f5-99de-4b94-8811-dd656a8907b3",
+  "schema": "odata_n_tit",
+  "name": "d_ref_op_deal_autocall_kidate",
+  "description": "【AI】场外交易-期权敲入观察日及票息信息",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "f9b838d5f07f789c4ed8533ed28a36020fa3a44616659613ad40bc358d12e871"
+}
+

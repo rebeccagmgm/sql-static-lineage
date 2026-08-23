@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_option_deal_cr__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_option_deal_cr",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "c1d3d770e7d58b4b1e71fccff7daaefe96a218f4bd6c14e1f75f3a412ce501c3",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:55:02.478Z",
+  "guid": "ab4ebf89-30d3-4ea3-91ef-63f169ea84fe",
+  "schema": "odata_n_tit",
+  "name": "d_ref_option_deal_cr",
+  "description": "【AI】场外交易-期权合约结构-票息表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "43708a53e9a3b34a6dacdd1b7c2b33cd524f1ef853e5c583a50eecef5fb42ece"
+}
+

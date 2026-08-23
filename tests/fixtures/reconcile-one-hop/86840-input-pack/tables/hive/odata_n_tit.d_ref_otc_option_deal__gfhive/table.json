@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_otc_option_deal__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_otc_option_deal",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "827ad6f8919be85fa23a4754aa1777ee926c66c96c1c0b6fb71f5c222127ebde",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:57:14.944Z",
+  "guid": "21587e80-bb82-4283-bfb1-5b357162e54d",
+  "schema": "odata_n_tit",
+  "name": "d_ref_otc_option_deal",
+  "description": "场外交易-期权交易合同要素表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "093c5aab0584d0fbbf995a9e7a2a6473d66de8f1a49ef781c30bc2153d1cb0b8"
+}
+

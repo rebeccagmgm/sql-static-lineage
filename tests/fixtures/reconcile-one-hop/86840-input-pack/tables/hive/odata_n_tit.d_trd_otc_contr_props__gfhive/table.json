@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_trd_otc_contr_props__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_trd_otc_contr_props",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "3edd00b9a73f8befa8df92e831f26b9fca8d21b7f0126f8e0edc7e0fd47b5e0a",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:59:52.023Z",
+  "guid": "2543497c-9066-422c-94a8-af93627915c0",
+  "schema": "odata_n_tit",
+  "name": "d_trd_otc_contr_props",
+  "description": "【AI】交易-场外合约结构-其他属性表",
+  "partitionFields": [
+    "busi_date"
+  ],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "66c908df30757f966080fe2f3e55fb7905d163909f28540055a4de38a2d947a5"
+}
+

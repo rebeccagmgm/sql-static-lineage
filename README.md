@@ -6,7 +6,7 @@
 
 - 整理状态：`COMPLETE`。新目录已经有单一 L1 scope、架构、迁移清单和验收入口。
 - 代码迁移状态：`BASELINE_MIGRATED`。已迁移 parser/analyzer engine、P0 写入绑定基线、Schema/Plan adapter 和 Task Inspection Consumer。
-- 算法验收状态：`PENDING`。当前迁移代码仍产生 Contract `1.3.0`；Reader 会把它标为 `LEGACY_NOT_L1`。这不是 Contract 2.0，也不是 86840 的闭合结论。
+- 算法验收状态：Contract 2.0 仍为 `PENDING`；表级单跳 P0 已通过 86840 冻结证据回放（26 个直接父任务、27 张直接读表、26 个 `MATCHED`、1 个 `SQL_ONLY`）。单跳验收不等同于 Contract 2.0 或完整 L1 闭合。
 
 唯一主线和边界见：
 
@@ -15,6 +15,7 @@
 - [验收入口与 Gate](docs/acceptance.md)
 - [86840 Gold Case 入口](tests/gold/README.md)
 - [统一 Task/Table Input Pack V1](docs/input-pack.md)
+- [表级单跳对账器](docs/reconcile-one-hop.md)
 
 ## 最小运行入口
 
@@ -24,6 +25,7 @@
 npm test
 npm run typecheck
 npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-spec <question.json> --output <derived-output>
+npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> --output <result.json>
 ```
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
@@ -36,9 +38,11 @@ scripts/plans/               engine -> L1 observation adapter
 scripts/machine-facts/       per-task fact assembly and publication
 scripts/input/               external Task/Table input writer and hashing
 scripts/query/               validated Current Bundle loader and Reader
+scripts/reconcile/           Task --WRITE--> Table --READ--> Task one-hop reconciliation
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
-tests/gold/                  86840 acceptance entry; evidence is intentionally absent
+tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent
+tests/fixtures/reconcile-one-hop/  表级单跳 86840 冻结证据夹具
 docs/                        scope, migration, acceptance and review records
 ```
 

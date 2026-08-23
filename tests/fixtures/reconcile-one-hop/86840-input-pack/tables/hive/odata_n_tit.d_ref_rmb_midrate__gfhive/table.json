@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "stableTableId": "odata_n_tit.d_ref_rmb_midrate__gfhive",
+  "platform": "hive",
+  "dataSource": "gfhive",
+  "qualifiedName": "odata_n_tit.d_ref_rmb_midrate",
+  "objectType": "hive_table",
+  "ddlFile": {
+    "path": "ddl.sql",
+    "sha256": "f5721269a0461e2aeb82b7b99b49396ee7326962680f76a0b773ca80c12e6a95",
+    "evidenceProvider": "opencli:szdata table-search+table-ddl"
+  },
+  "collectedAt": "2026-08-21T13:57:41.640Z",
+  "guid": "0b32d5bd-33d4-469c-a6f8-6a84ba4ed4a8",
+  "schema": "odata_n_tit",
+  "name": "d_ref_rmb_midrate",
+  "partitionFields": [],
+  "evidenceProvider": "opencli:szdata table-search+table-ddl",
+  "contentHash": "a0c29082011a5fad8f3a317aaf9d3dd508411f094b9f0c65fca069ffa752fe51"
+}
+

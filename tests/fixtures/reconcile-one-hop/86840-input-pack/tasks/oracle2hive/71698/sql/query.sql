@@ -1,0 +1,13 @@
+select
+KEY_OTC_TRADE_ID     
+,KEY_INSTRUMENT_ID   
+,BUSINESS_TYPE       
+,KEY_BOOK_ID         
+,INTERNAL_TRADE_ID   
+,CREATED_DATETIME    
+,CREATED_BY          
+,UPDATED_DATETIME    
+,UPDATED_BY          
+,to_char(SYSDATE,'YYYY-MM-DD HH24:MI:SS') as DATA_TIME
+from titans_dm.TRD_OTC_TRADE
+
