@@ -35,7 +35,7 @@ import {
   extractSqlWrites,
   type PartitionAssignment,
   type SqlWrite,
-} from "./reconcile-one-hop.ts";
+} from "./sql-write-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -740,6 +740,21 @@ function writeSortKey(write: ProducerWriteObservation): string {
     write.sqlWriteKind ?? "",
     write.declaredWriteMode ?? "",
   ].join("\u0000");
+}
+
+export function fingerprintTableProducerInputs(dataRootInput: string): string {
+  const dataRoot = resolve(dataRootInput);
+  const initialRawFingerprint = rawTreeFingerprint(dataRoot);
+  const taskPacks = namedPackFiles(join(dataRoot, "tasks"), "task.json").map(
+    (path) => loadTaskPack(dataRoot, path),
+  );
+  const tablePacks = namedPackFiles(join(dataRoot, "tables"), "table.json").map(
+    (path) => loadTablePack(dataRoot, path),
+  );
+  const fingerprint = buildInputFingerprint(dataRoot, taskPacks, tablePacks);
+  if (rawTreeFingerprint(dataRoot) !== initialRawFingerprint)
+    throw new Error("INPUT_CHANGED_DURING_FINGERPRINT");
+  return fingerprint;
 }
 
 export function buildTableProducerIndex(
