@@ -18,6 +18,10 @@ import {
   type TaskEvidence,
 } from "./input-pack.ts";
 import {
+  buildSimpleTaskPartitionMap,
+  isDatabaseSourceToHiveTask,
+} from "./task-partition-evidence.ts";
+import {
   controlledTaskEndpointDataSource,
   enrichTaskEndpoint,
   inputCollectionStatus,
@@ -167,6 +171,17 @@ export type TaskCollectionSummary = {
   staleLegacyTaskDirectories: string[];
 };
 
+/**
+ * A non-physical endpoint label is an evidence gap, not proof that a
+ * physical Table Pack is missing. Only an unavailable table lookup may move
+ * a task to the physical-table not-found archive.
+ */
+export function hasPhysicalTableEvidenceGap(
+  summary: Pick<TaskCollectionSummary, "tablesUnavailable">,
+): boolean {
+  return summary.tablesUnavailable.length > 0;
+}
+
 export type CollectOneTaskOptions = {
   /** Direct Horae cycle evidence supplied by the batch inventory lookup. */
   scheduleCycle?: string | null;
@@ -202,46 +217,6 @@ function directStringArray(value: unknown): string[] | undefined {
   return result.every((item): item is string => item !== undefined)
     ? result
     : undefined;
-}
-
-function splitSqlList(value: string): string[] {
-  const parts: string[] = [];
-  let start = 0;
-  let quote: string | undefined;
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index]!;
-    if (quote !== undefined) {
-      if (character === quote && value[index - 1] !== "\\") quote = undefined;
-    } else if (character === "'" || character === '"') {
-      quote = character;
-    } else if (character === ",") {
-      parts.push(value.slice(start, index).trim());
-      start = index + 1;
-    }
-  }
-  parts.push(value.slice(start).trim());
-  return parts.filter(Boolean);
-}
-
-function targetPartitionFromSql(
-  querySql: string | undefined,
-): Record<string, string> | undefined {
-  if (querySql === undefined) return undefined;
-  const match = querySql.match(
-    /\binsert\s+(?:overwrite|into)\s+table\s+[`"]?[^\s(`"]+[`"]?\s+partition\s*\(([^)]*)\)/i,
-  );
-  if (!match) return undefined;
-  const partition: Record<string, string> = {};
-  for (const assignment of splitSqlList(match[1]!)) {
-    const parsed = assignment.match(
-      /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:'([^']*)'|"([^"]*)"|([^\s]+))$/,
-    );
-    if (!parsed) return undefined;
-    const value = parsed[2] ?? parsed[3] ?? parsed[4];
-    if (value === undefined || value.trim() === "") return undefined;
-    partition[parsed[1]!] = value;
-  }
-  return Object.keys(partition).length > 0 ? partition : undefined;
 }
 
 function tableTaskIds(value: unknown): string[] | undefined {
@@ -385,9 +360,8 @@ function runOpenCli(
   });
 }
 
-function openCliTaskSource(taskId: string): Record<string, unknown> {
-  throttleOpenCli();
-  const output = runOpenCli([
+export function taskSourceCommandArguments(taskId: string): readonly string[] {
+  return [
     "szdata",
     "task-source",
     "--task-id",
@@ -400,7 +374,12 @@ function openCliTaskSource(taskId: string): Record<string, unknown> {
     "ephemeral",
     "-f",
     "json",
-  ]);
+  ];
+}
+
+function openCliTaskSource(taskId: string): Record<string, unknown> {
+  throttleOpenCli();
+  const output = runOpenCli(taskSourceCommandArguments(taskId));
   const parsed: unknown = JSON.parse(output);
   const row = Array.isArray(parsed) ? parsed[0] : parsed;
   if (!row || typeof row !== "object" || Array.isArray(row))
@@ -1208,6 +1187,111 @@ function isSqlIdentifierPart(character: string | undefined): boolean {
   return character !== undefined && /[A-Za-z0-9_$]/.test(character);
 }
 
+function nextSqlWord(content: string, start: number): string | undefined {
+  let index = start;
+  while (index < content.length && /\s/.test(content[index])) index += 1;
+  const match = /^[A-Za-z_][A-Za-z0-9_$]*/.exec(content.slice(index));
+  return match?.[0].toUpperCase();
+}
+
+/**
+ * Removes separator artifacts written by the pre-v1 collector. A semicolon
+ * inside an open subquery, or a duplicate semicolon after an already closed
+ * statement, is not a valid statement boundary. Semicolons in literals and
+ * comments are left untouched.
+ */
+export function repairLegacyStatementSeparators(content: string): {
+  content: string;
+  separatorsRemoved: number;
+} {
+  const removals = new Set<number>();
+  let blockComment = false;
+  let lineComment = false;
+  let quote: "'" | '"' | "`" | undefined;
+  let parenthesisDepth = 0;
+  let lastSignificantWasSemicolon = false;
+  const continuationWords = new Set([
+    "SELECT",
+    "WITH",
+    "UNION",
+    "FROM",
+    "JOIN",
+    "CASE",
+    "WHEN",
+    "ELSE",
+  ]);
+
+  for (let index = 0; index < content.length;) {
+    const character = content[index];
+    const nextCharacter = content[index + 1];
+    if (lineComment) {
+      if (character === "\n") lineComment = false;
+      index += 1;
+      continue;
+    }
+    if (blockComment) {
+      if (character === "*" && nextCharacter === "/") {
+        blockComment = false;
+        index += 2;
+      } else index += 1;
+      continue;
+    }
+    if (quote !== undefined) {
+      if (character === quote) {
+        if (nextCharacter === quote) index += 2;
+        else {
+          quote = undefined;
+          index += 1;
+        }
+      } else index += 1;
+      continue;
+    }
+    if (character === "-" && nextCharacter === "-") {
+      lineComment = true;
+      index += 2;
+      continue;
+    }
+    if (character === "/" && nextCharacter === "*") {
+      blockComment = true;
+      index += 2;
+      continue;
+    }
+    if (character === "'" || character === '"' || character === "`") {
+      quote = character;
+      lastSignificantWasSemicolon = false;
+      index += 1;
+      continue;
+    }
+    if (character === ";") {
+      const nextWord = nextSqlWord(content, index + 1);
+      if (
+        lastSignificantWasSemicolon ||
+        (parenthesisDepth > 0 &&
+          nextWord !== undefined &&
+          continuationWords.has(nextWord))
+      )
+        removals.add(index);
+      else lastSignificantWasSemicolon = true;
+      index += 1;
+      continue;
+    }
+    if (/\s/.test(character)) {
+      index += 1;
+      continue;
+    }
+    if (character === "(") parenthesisDepth += 1;
+    else if (character === ")" && parenthesisDepth > 0) parenthesisDepth -= 1;
+    lastSignificantWasSemicolon = false;
+    index += 1;
+  }
+
+  if (removals.size === 0) return { content, separatorsRemoved: 0 };
+  return {
+    content: [...content].filter((_, index) => !removals.has(index)).join(""),
+    separatorsRemoved: removals.size,
+  };
+}
+
 /**
  * Repairs a known task-source boundary artifact without dropping either SQL
  * fragment. The source service can concatenate independently returned SQL
@@ -1394,20 +1478,35 @@ export function normalizeCollectedSqlSlot(
   warnings: string[];
 } {
   const repeated = normalizeRepeatedSqlContent(content);
-  const separated = normalizeConcatenatedSqlStatements(repeated.content);
+  const inlineRepaired = repairInlineSqlCommentBoundaries(repeated.content);
+  const legacy = repairLegacyStatementSeparators(inlineRepaired.content);
+  const separated = normalizeConcatenatedSqlStatements(legacy.content);
   const warnings: string[] = [];
   if (repeated.duplicateBlocksRemoved)
     warnings.push(`SQL_DUPLICATE_BLOCK_REMOVED:${slot}`);
-  if (separated.inlineCommentBoundariesInserted > 0) {
+  if (legacy.separatorsRemoved > 0) {
+    warnings.push(
+      `SQL_LEGACY_SEPARATOR_REPAIRED:${slot}:${legacy.separatorsRemoved}`,
+    );
+    evidenceProvider = `${evidenceProvider},collector:legacy-separator-repair-v1`;
+  }
+  const inlineCommentBoundariesInserted =
+    inlineRepaired.boundariesInserted +
+    separated.inlineCommentBoundariesInserted;
+  const inlineCommentBoundaryKinds = [
+    ...inlineRepaired.boundaryKinds,
+    ...separated.inlineCommentBoundaryKinds,
+  ];
+  if (inlineCommentBoundariesInserted > 0) {
     const counts = new Map<InlineSqlCommentBoundaryKind, number>();
-    for (const kind of separated.inlineCommentBoundaryKinds)
+    for (const kind of inlineCommentBoundaryKinds)
       counts.set(kind, (counts.get(kind) ?? 0) + 1);
     const evidence = [...counts.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([kind, count]) => `${kind}=${count}`)
       .join(",");
     warnings.push(
-      `SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:${slot}:${separated.inlineCommentBoundariesInserted}:${evidence}`,
+      `SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:${slot}:${inlineCommentBoundariesInserted}:${evidence}`,
     );
     evidenceProvider = `${evidenceProvider},collector:inline-comment-boundary-repair-v1`;
   }
@@ -1476,11 +1575,13 @@ function toTaskEvidence(
       source: directValue(row.source),
       target: directValue(row.target),
       writeMode: directString(row.loadMode),
-      partition: targetPartitionFromSql(
-        sql.query && typeof sql.query.content === "string"
-          ? sql.query.content
-          : undefined,
-      ),
+      schedulerEvidence:
+        directString(row.hivePartition) === undefined
+          ? undefined
+          : {
+              hivePartition: directString(row.hivePartition),
+              evidenceProvider: "opencli:szdata.task-source",
+            },
       sql,
       evidenceProvider: "opencli:szdata.task-source",
     },
@@ -1770,23 +1871,43 @@ export function collectOneTask(
       : sqlTargetTable !== undefined && sqlTargetProvider !== undefined
         ? `${taskEvidence.evidenceProvider ?? "opencli:szdata.task-source"},${sqlTargetProvider},sql-mcp:explicit-table-target,opencli:szdata.table`
         : taskEvidence.evidenceProvider;
+  const enrichedTarget = enrichTaskEndpoint(
+    targetValueForEvidence,
+    targetResolution.conflict
+      ? undefined
+      : (targetResolution.table ?? fallbackTarget),
+  );
   const enrichedTaskEvidence: TaskEvidence = {
     ...taskEvidence,
     source: enrichTaskEndpoint(
       taskEvidence.source,
       sourceResolution.conflict ? undefined : sourceResolution.table,
     ),
-    target: enrichTaskEndpoint(
-      targetValueForEvidence,
-      targetResolution.conflict
-        ? undefined
-        : (targetResolution.table ?? fallbackTarget),
-    ),
+    target: enrichedTarget,
     targetEvidenceKind: targetEvidenceKindFor(
       targetValueForEvidence,
       taskRelationTarget,
       sqlTargetTable,
     ),
+    partition: buildSimpleTaskPartitionMap({
+      taskTarget:
+        directTableName(enrichedTarget) ??
+        taskRelationTarget?.qualifiedName ??
+        sqlTargetTable?.qualifiedName,
+      tables: tableResults
+        .map((item) => item.evidence)
+        .filter((item): item is TableEvidence => item !== undefined),
+      schedulerEvidence: taskEvidence.schedulerEvidence,
+      sql: Object.fromEntries(
+        Object.entries(taskEvidence.sql ?? {}).map(([slot, evidence]) => [
+          slot,
+          typeof evidence === "string" ? evidence : evidence?.content,
+        ]),
+      ) as Partial<Record<SqlSlot, string>>,
+      allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(
+        taskEvidence.taskCategory,
+      ),
+    }),
     evidenceProvider: taskEvidenceProvider,
   };
   const result = writeTaskInput(dataRoot, enrichedTaskEvidence);

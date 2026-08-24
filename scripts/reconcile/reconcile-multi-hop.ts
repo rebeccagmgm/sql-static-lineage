@@ -461,7 +461,7 @@ export function validateMultiHopReconciliation(
         requireString(partition.field, "partition.field");
         requireString(partition.expression, "partition.expression");
         if (
-          !["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION"].includes(
+          !["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION", "UNKNOWN"].includes(
             String(partition.valueStatus),
           ) ||
           !(

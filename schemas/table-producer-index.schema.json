@@ -52,9 +52,24 @@
         "field": { "type": "string", "minLength": 1 },
         "expression": { "type": "string", "minLength": 1 },
         "valueStatus": {
-          "enum": ["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION"]
+          "enum": ["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION", "UNKNOWN"]
         },
         "observedValue": { "type": ["string", "null"] }
+      }
+    },
+    "scriptEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidenceProvider"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "codePathStatus": { "type": "string", "minLength": 1 },
+        "codePath": { "type": "string", "minLength": 1 },
+        "scriptParams": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "repositoryPath": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "evidenceProvider": { "type": "string", "minLength": 1 }
       }
     },
     "evidence": {
@@ -123,6 +138,15 @@
         },
         "dataPathRole": {
           "enum": ["PRODUCER", "MUTATION_ONLY", "UNKNOWN"]
+        },
+        "scriptEvidence": { "$ref": "#/$defs/scriptEvidence" },
+        "partitionStatus": {
+          "enum": ["NOT_PARTITIONED", "COMPLETE", "INCOMPLETE", "UNKNOWN", "CONFLICT", "LEGACY_UNKNOWN"]
+        },
+        "partitionReasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
         },
         "partition": {
           "type": "array",

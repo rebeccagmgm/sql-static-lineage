@@ -48,6 +48,7 @@ import {
 import {
   environmentMilliseconds,
   findStaleLegacyTaskDirectories,
+  hasPhysicalTableEvidenceGap,
   normalizeCollectedSqlSlot,
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
@@ -635,7 +636,7 @@ describe("Input Pack V1", () => {
         expect(sqlFiles.map((file) => file.slot)).toEqual(["create", "query"]);
       if (taskId === "246247") expect(task.writeMode).toBe("truncate");
       if (taskId === "39045" || taskId === "180065" || taskId === "246247")
-        expect(task.partition).toBeNull();
+        expect(task.partition).toMatchObject({ status: "UNKNOWN" });
       if (taskId === "180065")
         expect(
           readFileSync(join(taskResult.directory, "sql", "query.sql"), "utf8"),
@@ -837,6 +838,19 @@ describe("Input Pack V1", () => {
       qualifiedName: "dm_otc.position",
       dataSource: "hive-test",
     });
+  });
+
+  it("does not archive a task when only a non-physical endpoint label is unavailable", () => {
+    expect(
+      hasPhysicalTableEvidenceGap({
+        tablesUnavailable: [],
+      }),
+    ).toBe(false);
+    expect(
+      hasPhysicalTableEvidenceGap({
+        tablesUnavailable: ["odata_n_tit.target"],
+      }),
+    ).toBe(true);
   });
 
   it("rejects display labels as table platforms and preserves deleted status", () => {

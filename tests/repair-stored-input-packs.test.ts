@@ -15,7 +15,7 @@ describe("stored Input Pack SQL repair", () => {
     const dataRoot = mkdtempSync(join(tmpdir(), "stored-pack-repair-"));
     const taskDirectory = join(dataRoot, "tasks", "hiveTask", "103935");
     const sql =
-      "CREATE TABLE x AS SELECT a -- first ,'b' AS b FROM ( SELECT c FROM db.t ) A;\n";
+      "CREATE TABLE x AS SELECT a -- first ,'b' AS b FROM (; SELECT c FROM db.t ) A;;\n";
     const task: Record<string, unknown> = {
       schemaVersion: "1.0.0",
       taskId: "103935",
@@ -50,7 +50,10 @@ describe("stored Input Pack SQL repair", () => {
     const applied = repairStoredInputPacks({ dataRoot, apply: true, backupRoot });
     expect(applied.changedTaskPacks).toBe(1);
     expect(readFileSync(join(backupRoot, "tasks", "hiveTask", "103935", "sql", "create.sql"), "utf8")).toBe(sql);
-    expect(readFileSync(join(taskDirectory, "sql", "create.sql"), "utf8")).not.toBe(sql);
+    const repaired = readFileSync(join(taskDirectory, "sql", "create.sql"), "utf8");
+    expect(repaired).not.toBe(sql);
+    expect(repaired).not.toContain("FROM (;\n");
+    expect(repaired).not.toContain(";;");
     expect(JSON.parse(readFileSync(join(taskDirectory, "task.json"), "utf8")).contentHash).not.toBe(task.contentHash);
 
     const secondDryRun = repairStoredInputPacks({ dataRoot, apply: false });

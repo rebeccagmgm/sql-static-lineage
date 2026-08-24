@@ -35,6 +35,7 @@ import {
 } from "./producer-index.ts";
 import {
   extractSqlWrites,
+  partitionValueStatus,
   partitionAssignments,
   type PartitionAssignment,
   type SqlWrite,
@@ -672,9 +673,56 @@ function inputPackSqlEvidence(file: TaskSqlFile): EvidenceObservation {
   };
 }
 
-function partitionFromDocument(value: unknown): PartitionAssignment[] {
+function partitionFromDocument(
+  value: unknown,
+  target?: string | null,
+  sqlSlot: string | null = null,
+  statementOrdinal: number | null = null,
+): PartitionAssignment[] {
   const record = asRecord(value);
   if (!record) return [];
+  if (Array.isArray(record.targets)) {
+    const targetKey = target === null || target === undefined
+      ? undefined
+      : normalizeTable(target);
+    const targetEvidence = record.targets.find((item) => {
+      const candidate = asRecord(item);
+      return candidate !== null &&
+        (targetKey === undefined ||
+          normalizeTable(String(candidate.target)) === targetKey);
+    });
+    const writes = asRecord(targetEvidence)?.writes;
+    const matchedWrite = Array.isArray(writes)
+      ? writes.find((item) => {
+          const write = asRecord(item);
+          return write !== null &&
+            (sqlSlot === null
+              ? write.sqlSlot === null
+              : write.sqlSlot === sqlSlot) &&
+            (statementOrdinal === null ||
+              write.statementOrdinal === statementOrdinal);
+        })
+      : undefined;
+    const write = asRecord(matchedWrite);
+    if (!write || !Array.isArray(write.assignments)) return [];
+    return write.assignments.flatMap((item): PartitionAssignment[] => {
+      const assignment = asRecord(item);
+      if (!assignment) return [];
+      const status = String(assignment.status);
+      return [{
+        field: String(assignment.field).toLowerCase(),
+        expression:
+          assignment.expression === null
+            ? "UNKNOWN"
+            : String(assignment.expression),
+        valueStatus: partitionValueStatus(status),
+        observedValue:
+          status === "CONFIRMED" && assignment.value !== null
+            ? String(assignment.value)
+            : null,
+      }];
+    });
+  }
   return Object.entries(record)
     .sort(([left], [right]) => compareText(left, right))
     .map(([field, rawValue]) => {
@@ -770,7 +818,10 @@ function writesFromPack(
       confirmedWrites.push({
         table: target.table,
         writeKind: stringValue(pack.document.writeMode),
-        partition: partitionFromDocument(pack.document.partition),
+        partition: partitionFromDocument(
+          pack.document.partition,
+          target.table.qualifiedName,
+        ),
         evidence: [packEvidence, target.evidence],
       });
     else
@@ -794,7 +845,12 @@ function writesFromPack(
       confirmedWrites.push({
         table: resolved.table,
         writeKind: sqlWrite.writeKind,
-        partition: sqlWrite.partition,
+        partition: partitionFromDocument(
+          pack.document.partition,
+          resolved.table.qualifiedName,
+          file.slot,
+          sqlWrite.statementOrdinal,
+        ),
         evidence: [
           inputPackSqlEvidence(file),
           {
