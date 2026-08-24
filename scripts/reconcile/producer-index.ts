@@ -128,6 +128,48 @@ export interface BuildTableProducerIndexOptions {
   readonly now?: () => string;
 }
 
+/**
+ * A sidecar snapshot of the inputs used to build a producer index.  It is
+ * deliberately separate from TableProducerIndex so existing consumers keep
+ * the V1 artifact contract unchanged.
+ */
+export interface TableProducerInputManifestPack {
+  readonly packType: "TASK" | "TABLE";
+  readonly path: string;
+  readonly contentHash?: string;
+  readonly invalidReason?: string;
+  readonly files: readonly {
+    readonly path: string;
+    readonly sha256: string;
+  }[];
+}
+
+export interface TableProducerInputManifest {
+  readonly schemaVersion: "1.0.0";
+  readonly artifactType: "TABLE_PRODUCER_INPUT_MANIFEST";
+  readonly generatedAt: string;
+  readonly generation: number;
+  readonly inputFingerprint: string;
+  readonly packs: readonly TableProducerInputManifestPack[];
+  readonly contentHash: string;
+}
+
+export interface TableProducerInputChanges {
+  readonly status: "INITIAL" | "UNCHANGED" | "CHANGED";
+  readonly changedPacks: readonly string[];
+}
+
+export interface UpdateTableProducerIndexOptions {
+  readonly now?: () => string;
+}
+
+export interface UpdateTableProducerIndexResult {
+  readonly index: TableProducerIndex;
+  readonly manifest: TableProducerInputManifest;
+  readonly changes: TableProducerInputChanges;
+  readonly reused: boolean;
+}
+
 interface LoadedTaskPack {
   readonly status: "AVAILABLE" | "INVALID";
   readonly taskId: string;
@@ -268,12 +310,12 @@ function rawPackFiles(dataRoot: string, packPath: string): JsonValue[] {
     ) as JsonValue[];
 }
 
-function buildInputFingerprint(
+function buildInputManifestPacks(
   dataRoot: string,
   taskPacks: readonly LoadedTaskPack[],
   tablePacks: readonly LoadedTablePack[],
-): string {
-  const inputs: JsonValue[] = [];
+): TableProducerInputManifestPack[] {
+  const inputs: TableProducerInputManifestPack[] = [];
   for (const pack of taskPacks) {
     if (pack.status === "AVAILABLE" && pack.document) {
       inputs.push({
@@ -290,7 +332,10 @@ function buildInputFingerprint(
         packType: "TASK",
         path: relativeLocator(dataRoot, pack.taskPath),
         invalidReason: pack.issue ?? "UNKNOWN",
-        files: rawPackFiles(dataRoot, pack.taskPath),
+        files: rawPackFiles(
+          dataRoot,
+          pack.taskPath,
+        ) as unknown as TableProducerInputManifestPack["files"],
       });
     }
   }
@@ -316,7 +361,10 @@ function buildInputFingerprint(
         packType: "TABLE",
         path: relativeLocator(dataRoot, pack.tablePath),
         invalidReason: pack.issue ?? "UNKNOWN",
-        files: rawPackFiles(dataRoot, pack.tablePath),
+        files: rawPackFiles(
+          dataRoot,
+          pack.tablePath,
+        ) as unknown as TableProducerInputManifestPack["files"],
       });
     }
   }
@@ -328,7 +376,23 @@ function buildInputFingerprint(
       `${String(rightRecord.packType)}\u0000${String(rightRecord.path)}`,
     );
   });
-  return sha256Text(canonicalJson(inputs));
+  return inputs;
+}
+
+function buildInputFingerprint(
+  dataRoot: string,
+  taskPacks: readonly LoadedTaskPack[],
+  tablePacks: readonly LoadedTablePack[],
+): string {
+  return sha256Text(
+    canonicalJson(
+      buildInputManifestPacks(
+        dataRoot,
+        taskPacks,
+        tablePacks,
+      ) as unknown as JsonValue,
+    ),
+  );
 }
 
 function rawTreeFingerprint(dataRoot: string): string {
@@ -755,6 +819,46 @@ export function fingerprintTableProducerInputs(dataRootInput: string): string {
   if (rawTreeFingerprint(dataRoot) !== initialRawFingerprint)
     throw new Error("INPUT_CHANGED_DURING_FINGERPRINT");
   return fingerprint;
+}
+
+function manifestHash(
+  manifest: Omit<TableProducerInputManifest, "contentHash">,
+): string {
+  return canonicalHash(manifest as unknown as JsonValue, [
+    "generatedAt",
+    "contentHash",
+  ]);
+}
+
+export function buildTableProducerInputManifest(
+  dataRootInput: string,
+  options: { readonly generation?: number; readonly now?: () => string } = {},
+): TableProducerInputManifest {
+  const dataRoot = resolve(dataRootInput);
+  const initialRawFingerprint = rawTreeFingerprint(dataRoot);
+  const taskPacks = namedPackFiles(join(dataRoot, "tasks"), "task.json").map(
+    (path) => loadTaskPack(dataRoot, path),
+  );
+  const tablePacks = namedPackFiles(join(dataRoot, "tables"), "table.json").map(
+    (path) => loadTablePack(dataRoot, path),
+  );
+  const packs = buildInputManifestPacks(dataRoot, taskPacks, tablePacks);
+  const inputFingerprint = sha256Text(
+    canonicalJson(packs as unknown as JsonValue),
+  );
+  if (rawTreeFingerprint(dataRoot) !== initialRawFingerprint)
+    throw new Error("INPUT_CHANGED_DURING_MANIFEST");
+  const withoutHash: Omit<TableProducerInputManifest, "contentHash"> = {
+    schemaVersion: "1.0.0",
+    artifactType: "TABLE_PRODUCER_INPUT_MANIFEST",
+    generatedAt: (options.now ?? (() => new Date().toISOString()))(),
+    generation: options.generation ?? 1,
+    inputFingerprint,
+    packs,
+  };
+  if (!Number.isInteger(withoutHash.generation) || withoutHash.generation < 1)
+    throw new Error("MANIFEST_GENERATION_INVALID");
+  return { ...withoutHash, contentHash: manifestHash(withoutHash) };
 }
 
 export function buildTableProducerIndex(
@@ -1442,6 +1546,139 @@ export function validateTableProducerIndex(
     throw new Error("Producer index contentHash does not match artifact");
 }
 
+export function validateTableProducerInputManifest(
+  value: unknown,
+): asserts value is TableProducerInputManifest {
+  const manifest = asRecord(value);
+  if (!manifest) throw new Error("Producer input manifest must be an object");
+  requireExactKeys(
+    manifest,
+    [
+      "schemaVersion",
+      "artifactType",
+      "generatedAt",
+      "generation",
+      "inputFingerprint",
+      "packs",
+      "contentHash",
+    ],
+    "producerInputManifest",
+  );
+  if (manifest.schemaVersion !== "1.0.0")
+    throw new Error("Unsupported producer input manifest schemaVersion");
+  if (manifest.artifactType !== "TABLE_PRODUCER_INPUT_MANIFEST")
+    throw new Error("Invalid producer input manifest artifactType");
+  requireString(manifest.generatedAt, "generatedAt");
+  if (!Number.isInteger(manifest.generation) || Number(manifest.generation) < 1)
+    throw new Error("generation must be a positive integer");
+  requireSha256(manifest.inputFingerprint, "inputFingerprint");
+  if (!Array.isArray(manifest.packs)) throw new Error("packs must be an array");
+  for (const [index, rawPack] of manifest.packs.entries()) {
+    const field = `packs[${index}]`;
+    const pack = requireRecord(rawPack, field);
+    const packKeys = Object.keys(pack);
+    if (
+      packKeys.some(
+        (key) =>
+          ![
+            "packType",
+            "path",
+            "contentHash",
+            "invalidReason",
+            "files",
+          ].includes(key),
+      )
+    )
+      throw new Error(`${field} has an unexpected field`);
+    for (const required of ["packType", "path", "files"])
+      if (!(required in pack))
+        throw new Error(`${field}.${required} is required`);
+    if (pack.packType !== "TASK" && pack.packType !== "TABLE")
+      throw new Error(`${field}.packType is invalid`);
+    requireString(pack.path, `${field}.path`);
+    if (pack.contentHash !== undefined)
+      requireSha256(pack.contentHash, `${field}.contentHash`);
+    if (pack.invalidReason !== undefined)
+      requireString(pack.invalidReason, `${field}.invalidReason`);
+    if (pack.contentHash === undefined && pack.invalidReason === undefined)
+      throw new Error(`${field} must have contentHash or invalidReason`);
+    if (!Array.isArray(pack.files))
+      throw new Error(`${field}.files must be an array`);
+    for (const [fileIndex, rawFile] of pack.files.entries()) {
+      const fileField = `${field}.files[${fileIndex}]`;
+      const file = requireRecord(rawFile, fileField);
+      requireExactKeys(file, ["path", "sha256"], fileField);
+      requireString(file.path, `${fileField}.path`);
+      requireSha256(file.sha256, `${fileField}.sha256`);
+    }
+  }
+  requireSha256(manifest.contentHash, "contentHash");
+  const expectedHash = manifestHash(
+    manifest as unknown as Omit<TableProducerInputManifest, "contentHash">,
+  );
+  if (manifest.contentHash !== expectedHash)
+    throw new Error(
+      "Producer input manifest contentHash does not match artifact",
+    );
+  const expectedFingerprint = sha256Text(
+    canonicalJson(manifest.packs as unknown as JsonValue),
+  );
+  if (manifest.inputFingerprint !== expectedFingerprint)
+    throw new Error(
+      "Producer input manifest inputFingerprint does not match packs",
+    );
+}
+
+function readTableProducerInputManifest(
+  path: string,
+): TableProducerInputManifest {
+  const value = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  validateTableProducerInputManifest(value);
+  return value;
+}
+
+export function loadTableProducerInputManifest(
+  pathInput: string,
+): TableProducerInputManifest {
+  return readTableProducerInputManifest(resolve(pathInput));
+}
+
+function manifestPackKey(pack: TableProducerInputManifestPack): string {
+  return `${pack.packType}:${pack.path}`;
+}
+
+export function compareTableProducerInputManifests(
+  previous: TableProducerInputManifest | null,
+  current: TableProducerInputManifest,
+): TableProducerInputChanges {
+  if (!previous) {
+    return {
+      status: "INITIAL",
+      changedPacks: current.packs.map(manifestPackKey).sort(compareText),
+    };
+  }
+  const previousByKey = new Map(
+    previous.packs.map((pack) => [
+      manifestPackKey(pack),
+      canonicalJson(pack as unknown as JsonValue),
+    ]),
+  );
+  const currentByKey = new Map(
+    current.packs.map((pack) => [
+      manifestPackKey(pack),
+      canonicalJson(pack as unknown as JsonValue),
+    ]),
+  );
+  const keys = new Set([...previousByKey.keys(), ...currentByKey.keys()]);
+  const changedPacks = [...keys]
+    .filter((key) => previousByKey.get(key) !== currentByKey.get(key))
+    .sort(compareText);
+  return {
+    status: changedPacks.length === 0 ? "UNCHANGED" : "CHANGED",
+    changedPacks,
+  };
+}
+
 function readTableProducerIndex(path: string): TableProducerIndex {
   const value = JSON.parse(readFileSync(path, "utf8")) as unknown;
   validateTableProducerIndex(value);
@@ -1508,6 +1745,106 @@ export function writeTableProducerIndex(
   return { changed: true, path, contentHash: index.contentHash };
 }
 
+export function writeTableProducerInputManifest(
+  pathInput: string,
+  manifest: TableProducerInputManifest,
+): {
+  readonly changed: boolean;
+  readonly path: string;
+  readonly contentHash: string;
+} {
+  validateTableProducerInputManifest(manifest);
+  const path = resolve(pathInput);
+  if (existsSync(path)) {
+    try {
+      const current = loadTableProducerInputManifest(path);
+      if (current.contentHash === manifest.contentHash)
+        return { changed: false, path, contentHash: manifest.contentHash };
+    } catch {
+      // Replace invalid output atomically below.
+    }
+  }
+  mkdirSync(dirname(path), { recursive: true });
+  const staged = `${path}.staged-${randomUUID()}`;
+  const backup = `${path}.previous`;
+  const hadTarget = existsSync(path);
+  writeFileSync(staged, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  try {
+    loadTableProducerInputManifest(staged);
+  } catch (error) {
+    rmSync(staged, { force: true });
+    throw error;
+  }
+  if (hadTarget) {
+    if (existsSync(backup)) rmSync(backup, { force: true });
+    renameSync(path, backup);
+  }
+  try {
+    renameSync(staged, path);
+  } catch (error) {
+    if (existsSync(staged)) rmSync(staged, { force: true });
+    if (hadTarget && existsSync(backup)) renameSync(backup, path);
+    throw error;
+  }
+  if (hadTarget) rmSync(backup, { force: true });
+  return { changed: true, path, contentHash: manifest.contentHash };
+}
+
+export function updateTableProducerIndex(
+  dataRootInput: string,
+  indexPathInput: string,
+  manifestPathInput: string,
+  options: UpdateTableProducerIndexOptions = {},
+): UpdateTableProducerIndexResult {
+  const now = options.now ?? (() => new Date().toISOString());
+  const indexPath = resolve(indexPathInput);
+  const manifestPath = resolve(manifestPathInput);
+  let previousIndex: TableProducerIndex | null = null;
+  let previousManifest: TableProducerInputManifest | null = null;
+  if (existsSync(indexPath)) {
+    try {
+      previousIndex = loadTableProducerIndex(indexPath);
+    } catch {
+      previousIndex = null;
+    }
+  }
+  if (existsSync(manifestPath)) {
+    try {
+      previousManifest = loadTableProducerInputManifest(manifestPath);
+    } catch {
+      previousManifest = null;
+    }
+  }
+  const baseManifest = buildTableProducerInputManifest(dataRootInput, {
+    generation: 1,
+    now,
+  });
+  const generation = previousManifest
+    ? baseManifest.inputFingerprint === previousManifest.inputFingerprint
+      ? previousManifest.generation
+      : previousManifest.generation + 1
+    : 1;
+  const manifest: TableProducerInputManifest = {
+    ...baseManifest,
+    generation,
+    contentHash: manifestHash({ ...baseManifest, generation }),
+  };
+  const changes = compareTableProducerInputManifests(
+    previousManifest,
+    manifest,
+  );
+  const reused =
+    previousIndex !== null &&
+    previousIndex.inputFingerprint === manifest.inputFingerprint &&
+    changes.status !== "CHANGED";
+  const index = reused
+    ? previousIndex!
+    : buildTableProducerIndex(dataRootInput, { now });
+  writeTableProducerIndex(indexPath, index);
+  writeTableProducerInputManifest(manifestPath, manifest);
+  return { index, manifest, changes, reused };
+}
+
 export function assertOutputOutsideDataRoot(
   dataRootInput: string,
   outputInput: string,
@@ -1542,6 +1879,31 @@ function main(): void {
     throw new Error(
       "usage: npm run producer-index -- --data-root <input-pack-root> [--output <json>]",
     );
+  if (args.includes("--update")) {
+    if (!output)
+      throw new Error(
+        "usage: npm run producer-index:update -- --data-root <input-pack-root> --output <producer-index.json> [--manifest <manifest.json>]",
+      );
+    const resolvedOutput = resolve(output);
+    const manifest = resolve(
+      option(args, "--manifest") ?? `${resolvedOutput}.manifest.json`,
+    );
+    assertOutputOutsideDataRoot(dataRoot, resolvedOutput);
+    assertOutputOutsideDataRoot(dataRoot, manifest);
+    const result = updateTableProducerIndex(dataRoot, resolvedOutput, manifest);
+    process.stdout.write(
+      `${JSON.stringify({
+        reused: result.reused,
+        changes: result.changes,
+        indexPath: resolvedOutput,
+        manifestPath: manifest,
+        generation: result.manifest.generation,
+        counts: result.index.counts,
+        buildStatus: result.index.buildStatus,
+      })}\n`,
+    );
+    return;
+  }
   const artifact = buildTableProducerIndex(dataRoot);
   if (output) {
     const resolvedOutput = resolve(output);

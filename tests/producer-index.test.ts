@@ -18,12 +18,15 @@ import {
 import {
   assertOutputOutsideDataRoot,
   buildTableProducerIndex,
+  buildTableProducerInputManifest,
+  compareTableProducerInputManifests,
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
   lookupConfirmedProducers,
   lookupNonConfirmedRelations,
   validateTableProducerIndex,
   writeTableProducerIndex,
+  updateTableProducerIndex,
 } from "../scripts/reconcile/producer-index.ts";
 
 function dataRoot(): string {
@@ -272,6 +275,75 @@ describe("table producer index", () => {
         reasonCodes: ["TASK_PACK_INVALID"],
       }),
     ]);
+  });
+
+  it("reuses an unchanged snapshot and advances generation after a pack changes", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.a");
+    writeTask(root, "p1", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const outputRoot = dataRoot();
+    const indexPath = join(outputRoot, "producer-index.json");
+    const manifestPath = join(outputRoot, "producer-index.manifest.json");
+    const first = updateTableProducerIndex(root, indexPath, manifestPath, {
+      now: () => "2026-08-23T01:00:00.000Z",
+    });
+    expect(first.reused).toBe(false);
+    expect(first.changes).toEqual({
+      status: "INITIAL",
+      changedPacks: [
+        "TABLE:tables/hive/" +
+          readdirSync(join(root, "tables", "hive"))[0] +
+          "/table.json",
+        "TASK:tasks/hiveTask-2.0/p1/task.json",
+      ].sort(),
+    });
+    expect(first.manifest.generation).toBe(1);
+
+    const second = updateTableProducerIndex(root, indexPath, manifestPath, {
+      now: () => "2026-08-23T02:00:00.000Z",
+    });
+    expect(second.reused).toBe(true);
+    expect(second.changes).toEqual({ status: "UNCHANGED", changedPacks: [] });
+    expect(second.manifest.generation).toBe(1);
+    expect(second.index.generatedAt).toBe(first.index.generatedAt);
+
+    writeTask(root, "p2", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const third = updateTableProducerIndex(root, indexPath, manifestPath, {
+      now: () => "2026-08-23T03:00:00.000Z",
+    });
+    expect(third.reused).toBe(false);
+    expect(third.changes.status).toBe("CHANGED");
+    expect(third.changes.changedPacks).toContain(
+      "TASK:tasks/hiveTask-2.0/p2/task.json",
+    );
+    expect(third.manifest.generation).toBe(2);
+    expect(
+      lookupConfirmedProducers(third.index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["p1", "p2"]);
+    expect(
+      buildTableProducerInputManifest(root, { generation: 2 }).inputFingerprint,
+    ).toBe(third.manifest.inputFingerprint);
+    expect(
+      compareTableProducerInputManifests(first.manifest, third.manifest).status,
+    ).toBe("CHANGED");
   });
 
   it("does not resolve an explicit SQL write through an ambiguous table name", () => {

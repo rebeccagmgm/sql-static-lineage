@@ -33,6 +33,7 @@
     "reconcile-one-hop": "tsx scripts/reconcile/reconcile-one-hop.ts",
     "reconcile-multi-hop": "tsx scripts/reconcile/reconcile-multi-hop.ts",
     "producer-index": "tsx scripts/reconcile/producer-index.ts",
+    "producer-index:update": "tsx scripts/reconcile/producer-index.ts --update",
     "input-pack:tasks": "tsx scripts/input/collect-task-input-pack.ts",
     "preinspect": "npm run prepare:deps",
     "inspect": "tsx scripts/query/task-inspection.ts",
