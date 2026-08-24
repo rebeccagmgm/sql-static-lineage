@@ -292,6 +292,14 @@ describe("Input Pack V1", () => {
         "PDATA_N.UNRELATED_TASK",
       ),
     ).toBeUndefined();
+    expect(
+      findSqlTargetEvidence(
+        { truncate: "DELETE FROM PDATA_N.T98_OTC_OPT_COMP_SUB_TRD_BASE_INFO" },
+        "PDATA_N.T98_OTC_OPT_COMP_SUB_TRD_BASE_INFO_TIT125_h15",
+      ),
+    ).toMatchObject({
+      statementKind: "DELETE_TABLE",
+    });
   });
 
   it("canonicalizes JSON keys and excludes volatile fields from content hashes", () => {

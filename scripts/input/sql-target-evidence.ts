@@ -4,7 +4,11 @@ export type SqlTargetSlot =
 export interface SqlTargetEvidence {
   readonly qualifiedName: string;
   readonly slot: SqlTargetSlot;
-  readonly statementKind: "CREATE_TABLE" | "INSERT_TABLE" | "TRUNCATE_TABLE";
+  readonly statementKind:
+    | "CREATE_TABLE"
+    | "INSERT_TABLE"
+    | "TRUNCATE_TABLE"
+    | "DELETE_TABLE";
 }
 
 const TARGET_PATTERNS: readonly {
@@ -25,6 +29,11 @@ const TARGET_PATTERNS: readonly {
     statementKind: "TRUNCATE_TABLE",
     pattern:
       /\btruncate\s+table\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
+  },
+  {
+    statementKind: "DELETE_TABLE",
+    pattern:
+      /\bdelete\s+from\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
   },
 ];
 
