@@ -11,14 +11,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  canonicalHash,
   writeTableInput,
   writeTaskInput,
+  type JsonValue,
   type TaskEvidence,
 } from "../scripts/input/input-pack.ts";
 import {
   assertOutputOutsideDataRoot,
   buildTableProducerIndex,
   buildTableProducerInputManifest,
+  classifyProducerWriteObservation,
   compareTableProducerInputManifests,
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
@@ -131,6 +134,7 @@ describe("table producer index", () => {
       targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
       evidenceProvider:
         "sql-mcp:explicit-table-target+opencli:szdata.table-guid",
+      sql: { query: "INSERT INTO TABLE lake.a SELECT id FROM source.remote" },
     });
     writeTask(root, "candidate", {
       target: {
@@ -221,9 +225,272 @@ describe("table producer index", () => {
       taskPacksIndexed: 5,
       confirmedTables: 2,
       confirmedProducerEdges: 3,
-      confirmedWriteObservations: 4,
+      confirmedWriteObservations: 5,
       candidateObservations: 2,
     });
+    expect(
+      index.confirmedProducerEdges
+        .flatMap((edge) => edge.writes)
+        .filter((write) => write.observationKind === "DIRECT_TARGET"),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+          writeDirection: "WRITE_CONFIRMED",
+          operationClass: "PLATFORM_TRANSFER",
+          dataPathRole: "PRODUCER",
+        }),
+      ]),
+    );
+    expect(
+      index.confirmedProducerEdges.find((edge) => edge.taskId === "p2")
+        ?.writes[0],
+    ).toMatchObject({
+      targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "UNKNOWN",
+      dataPathRole: "PRODUCER",
+    });
+  });
+
+  it("normalizes transfer and mutation Task shapes without relying on INSERT", () => {
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        declaredWriteMode: "append",
+        sqlWriteKind: null,
+      }),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "PLATFORM_TRANSFER",
+      dataPathRole: "PRODUCER",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        declaredWriteMode: "truncate",
+        sqlWriteKind: null,
+      }),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "TRUNCATE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        declaredWriteMode: "delete",
+        sqlWriteKind: null,
+      }),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "DELETE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(
+      classifyProducerWriteObservation(
+        {
+          observationKind: "DIRECT_TARGET",
+          declaredWriteMode: null,
+          sqlWriteKind: null,
+        },
+        {
+          sqlTargetStatementKind: "DELETE_TABLE",
+        },
+      ),
+    ).toMatchObject({
+      operationClass: "DELETE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "SQL_EXPLICIT_WRITE",
+        declaredWriteMode: null,
+        sqlWriteKind: "CTAS",
+      }),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "CTAS",
+      dataPathRole: "PRODUCER",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
+        declaredWriteMode: null,
+        sqlWriteKind: null,
+      }),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "UNKNOWN",
+      dataPathRole: "UNKNOWN",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        declaredWriteMode: "not-truncate",
+        sqlWriteKind: null,
+      }),
+    ).toMatchObject({
+      operationClass: "UNKNOWN",
+      dataPathRole: "UNKNOWN",
+    });
+    expect(
+      classifyProducerWriteObservation({
+        observationKind: "DIRECT_TARGET",
+        declaredWriteMode: "delete_and_insert",
+        sqlWriteKind: null,
+      }),
+    ).toMatchObject({
+      operationClass: "UNKNOWN",
+      dataPathRole: "UNKNOWN",
+    });
+  });
+
+  it("keeps legacy V1 producer observations readable without semantic fields", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.legacy");
+    writeTask(root, "legacy", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.legacy",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const current = buildTableProducerIndex(root);
+    const legacy = JSON.parse(JSON.stringify(current)) as Record<
+      string,
+      unknown
+    >;
+    const edges = legacy.confirmedProducerEdges as Array<
+      Record<string, unknown>
+    >;
+    const writes = edges[0]!.writes as Array<Record<string, unknown>>;
+    for (const write of writes) {
+      delete write.targetEvidenceKind;
+      delete write.writeDirection;
+      delete write.operationClass;
+      delete write.dataPathRole;
+    }
+    legacy.contentHash = canonicalHash(legacy as unknown as JsonValue, [
+      "generatedAt",
+      "contentHash",
+    ]);
+    expect(() => validateTableProducerIndex(legacy)).not.toThrow();
+  });
+
+  it("keeps platform transfer targets distinct from mutation-only writes", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.transfer");
+    writeTable(root, "lake.truncate");
+    writeTable(root, "lake.delete");
+    writeTable(root, "lake.truncate_exact");
+    writeTable(root, "lake.create_exact");
+    writeTask(root, "transfer-select", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.transfer",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      writeMode: "append",
+      sql: { query: "SELECT id FROM source.remote" },
+    });
+    writeTask(root, "truncate-task", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.truncate",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      writeMode: "truncate",
+      sql: { truncate: "TRUNCATE TABLE lake.truncate" },
+    });
+    writeTask(root, "delete-task", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.delete",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      writeMode: "delete",
+      sql: { truncate: "DELETE FROM lake.delete WHERE id = 1" },
+    });
+    writeTask(root, "truncate-exact", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.truncate_exact",
+      },
+      targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
+      evidenceProvider: "sql-mcp:explicit-table-target+opencli:szdata.table",
+      sql: { truncate: "TRUNCATE TABLE lake.truncate_exact" },
+    });
+    writeTask(root, "create-exact", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.create_exact",
+      },
+      targetEvidenceKind: "SQL_EXACT_TABLE_TARGET",
+      evidenceProvider: "sql-mcp:explicit-table-target+opencli:szdata.table",
+      sql: { create: "CREATE TABLE lake.create_exact (id bigint)" },
+    });
+
+    const index = buildTableProducerIndex(root);
+    const writeFor = (qualifiedName: string) =>
+      index.confirmedProducerEdges.find(
+        (edge) => edge.table.qualifiedName === qualifiedName,
+      )!.writes[0]!;
+    expect(writeFor("lake.transfer")).toMatchObject({
+      operationClass: "PLATFORM_TRANSFER",
+      dataPathRole: "PRODUCER",
+    });
+    expect(writeFor("lake.truncate")).toMatchObject({
+      operationClass: "TRUNCATE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(writeFor("lake.delete")).toMatchObject({
+      operationClass: "DELETE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(writeFor("lake.truncate_exact")).toMatchObject({
+      operationClass: "TRUNCATE",
+      dataPathRole: "MUTATION_ONLY",
+    });
+    expect(writeFor("lake.create_exact")).toMatchObject({
+      operationClass: "UNKNOWN",
+      dataPathRole: "UNKNOWN",
+    });
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.truncate",
+      }),
+    ).toEqual([]);
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.truncate_exact",
+      }),
+    ).toEqual([]);
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.create_exact",
+      }),
+    ).toEqual([]);
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.transfer",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["transfer-select"]);
   });
 
   it("is deterministic apart from generatedAt and changes its fingerprint with input bytes", () => {

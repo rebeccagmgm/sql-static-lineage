@@ -52,6 +52,26 @@ platform + dataSource + qualifiedName + taskId
 
 普通 `FROM/JOIN`、任务名、候选顺序和分区值不能生成 producer edge。
 
+## 异构 Task 的写入语义
+
+Task 不要求 SQL 中出现 `INSERT`。`DIRECT_PLATFORM_TARGET` 是平台直接给出的目标端点证据，适用于 SQL 只是 `SELECT` 但平台任务负责把结果转存到目标表的形态；`SQL_EXACT_TABLE_TARGET` 是结构化 SQL/Table/DDL 目标证据。两者都不等同于运行成功或业务正确性。
+
+每条新生成的 `writes[]` observation 会保留三个兼容扩展字段：
+
+- `writeDirection`：当前 confirmed observation 为 `WRITE_CONFIRMED`；关系方向不明的候选仍在 `nonConfirmedRelations` 中保持 `UNKNOWN`。
+- `operationClass`：`INSERT_OVERWRITE`、`INSERT_INTO`、`MERGE_INTO`、`CTAS`、`PLATFORM_TRANSFER`、`DELETE`、`TRUNCATE` 或 `UNKNOWN`。
+- `dataPathRole`：`PRODUCER`、`MUTATION_ONLY` 或 `UNKNOWN`。
+
+目标证据还会保留 `targetEvidenceKind`（`DIRECT_PLATFORM_TARGET` 或 `SQL_EXACT_TABLE_TARGET`），用于区分平台目标与结构化 SQL/Table 目标；旧 artifact 没有该字段时仍按原 V1 规则读取。
+
+对于 `SQL_EXACT_TABLE_TARGET`，索引会重新查看 SQL slot 的结构化目标：INSERT 目标可进入 `PRODUCER`，TRUNCATE 进入 `MUTATION_ONLY`，纯 CREATE 或无法判定的目标保持 `UNKNOWN`，不会仅凭 target 字段升级为数据 producer。
+
+平台目标但没有 SQL `INSERT` 的 Task 通常归为 `PLATFORM_TRANSFER/PRODUCER`。声明为 `delete` 或 `truncate` 的目标写入，或 SQL slot 中能与目标表对应的 `DELETE FROM`/`TRUNCATE TABLE`，归为 `MUTATION_ONLY`：它确认修改了表，但不应被解释为产生了新的上游数据。旧的 V1 artifact 可以省略这三个字段，消费者按原有 `observationKind`、`sqlWriteKind` 和 `declaredWriteMode` 解释。
+
+边界：只有 SQL 中单独出现 `DELETE FROM`/`TRUNCATE TABLE`、而没有可确认的目标证据时，当前 SQL WRITE 提取器不会把它生成 producer observation；这类 SQL-only 形态不能据此确认 producer，也不会进入 `lookupConfirmedProducers()`，仍需保留为未覆盖证据边界。
+
+`lookupConfirmedProducers()` 只返回至少有一条 `dataPathRole=PRODUCER` observation 的边；全为 `MUTATION_ONLY` 的写入仍保留在 artifact 中供审计，但不会进入单跳/多跳的数据 producer 查询。
+
 同一表允许多个 producer Task。同一 Task 对同一表的多次 WRITE 收在该 edge 的 `writes[]` 中，每条 observation 分别保留 direct target 或 SQL write 类型、声明写模式、SQL write kind、分区和 provenance，不选择“最像”的一条。
 
 ## Non-confirmed relations

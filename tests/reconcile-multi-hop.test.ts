@@ -301,6 +301,37 @@ describe("reconcileMultiHop", () => {
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it("does not recurse through a mutation-only table write", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.mutated");
+    writeReader(root, "A", ["lake.mutated"]);
+    writeTask(root, "truncate-task", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.mutated",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      writeMode: "truncate",
+      sql: { truncate: "TRUNCATE TABLE lake.mutated" },
+    });
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const result = run(root, index, "A", { maxDepth: 2 });
+
+    expect(result.taskNodes.map((node) => node.taskId)).toEqual(["A"]);
+    expect(result.producerBridges).toEqual([]);
+    expect(result.writeEdges).toEqual([]);
+    expect(result.terminals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "A",
+          reason: "NO_CONFIRMED_PRODUCER_OBSERVED",
+          table: expect.objectContaining({ qualifiedName: "lake.mutated" }),
+        }),
+      ]),
+    );
+  });
+
   it("keeps every confirmed producer for one table but never recurses through a non-confirmed candidate", () => {
     const root = dataRoot();
     writeTable(root, "lake.shared");
@@ -908,6 +939,16 @@ describe("reconcileMultiHop", () => {
         (schema.properties[field]!.items as Record<string, unknown>)
           .additionalProperties,
       ).toBe(false);
+    const writeObservation = (
+      schema as unknown as { $defs: Record<string, unknown> }
+    ).$defs.writeObservation as { properties: Record<string, unknown> };
+    for (const field of [
+      "targetEvidenceKind",
+      "writeDirection",
+      "operationClass",
+      "dataPathRole",
+    ])
+      expect(writeObservation.properties[field]).toBeDefined();
     expect(schema.properties.coverage!.additionalProperties).toBe(false);
   });
 

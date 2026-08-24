@@ -92,6 +92,9 @@
         "observationKind": {
           "enum": ["DIRECT_TARGET", "SQL_EXPLICIT_WRITE"]
         },
+        "targetEvidenceKind": {
+          "enum": ["DIRECT_PLATFORM_TARGET", "SQL_EXACT_TABLE_TARGET"]
+        },
         "declaredWriteMode": { "type": ["string", "null"] },
         "sqlWriteKind": {
           "type": ["string", "null"],
@@ -102,6 +105,24 @@
             "CTAS",
             null
           ]
+        },
+        "writeDirection": {
+          "enum": ["WRITE_CONFIRMED"]
+        },
+        "operationClass": {
+          "enum": [
+            "INSERT_OVERWRITE",
+            "INSERT_INTO",
+            "MERGE_INTO",
+            "CTAS",
+            "PLATFORM_TRANSFER",
+            "DELETE",
+            "TRUNCATE",
+            "UNKNOWN"
+          ]
+        },
+        "dataPathRole": {
+          "enum": ["PRODUCER", "MUTATION_ONLY", "UNKNOWN"]
         },
         "partition": {
           "type": "array",
