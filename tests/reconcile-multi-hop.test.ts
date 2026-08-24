@@ -1,5 +1,6 @@
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -32,6 +33,17 @@ import {
 import type { TerminalTableConfig } from "../scripts/reconcile/terminal-table-config.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";
+
+const frozen86840It = existsSync(
+  join(
+    import.meta.dirname,
+    "fixtures",
+    "reconcile-one-hop",
+    "86840-input-pack",
+  ),
+)
+  ? it
+  : it.skip;
 
 function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-multi-hop-"));
@@ -867,7 +879,7 @@ describe("reconcileMultiHop", () => {
     );
   });
 
-  it("replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal", () => {
+  frozen86840It("replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal", () => {
     const fixtureRoot = join(
       import.meta.dirname,
       "fixtures",

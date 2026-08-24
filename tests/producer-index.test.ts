@@ -32,6 +32,17 @@ import {
   updateTableProducerIndex,
 } from "../scripts/reconcile/producer-index.ts";
 
+const frozen86840It = existsSync(
+  join(
+    import.meta.dirname,
+    "fixtures",
+    "reconcile-one-hop",
+    "86840-input-pack",
+  ),
+)
+  ? it
+  : it.skip;
+
 function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-producer-index-"));
 }
@@ -1011,7 +1022,7 @@ describe("table producer index", () => {
     expect(loadTableProducerIndex(output).buildStatus).toBe("PARTIAL");
   });
 
-  it("indexes the 22 frozen local 86840 producers without using supplemental responses", () => {
+  frozen86840It("indexes the 22 frozen local 86840 producers without using supplemental responses", () => {
     const fixtureRoot = join(
       process.cwd(),
       "tests",
