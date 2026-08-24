@@ -1,1 +1,0 @@
-create table d_ref_rmb_midrate(currency string comment '【AI】币种',quote_date string comment '【AI】报价日期',midrate string comment '【AI】中间价',updated_datetime string comment '【AI】更新时间',data_time string comment '数据时间',busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as textfile;
