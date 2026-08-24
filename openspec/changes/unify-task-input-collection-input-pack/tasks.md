@@ -38,3 +38,5 @@
 - [x] 4.15 对类型映射变更后的旧 Task category 目录输出 `staleLegacyTaskDirectories`，不自动删除旧数据；已收录编码优先于冲突的过时平台类型名称，并记录字典来源。
 - [x] 4.16 为所有 OpenCLI 进程调用设置默认超时；非物理 source/target 引用输出 warning 并将采集状态标为 `PARTIAL`，避免无限等待或把端点缺口报告为成功。
 - [x] 4.17 在 data root 外增加按 taskId 持久化的采集状态文件；校验 Task/SQL 与已写 Table/DDL Hash 后，只有成功且无告警的任务下次跳过，部分成功/失败/旧目录告警或资产被删改的任务重试，并提供 `--force`、`--status-file` 和最终汇总进度。
+- [x] 4.18 对大批量状态 checkpoint 增加 task 数量与状态文件字节双阈值；超过 100 个 taskId 或 2 MiB 告警，超过 200 个 taskId 或 8 MiB 在 OpenCLI 前拒绝，并允许通过环境变量显式覆盖默认限流/超时策略。
+- [x] 4.19 修正大批次可观测性与副作用顺序：汇总同时输出初始/最终 status 文件大小，硬拒绝先于 malformed Table repair，并在运行中 checkpoint 跨过 8 MiB 时停止剩余 task；限流/超时环境变量必须为正整数。

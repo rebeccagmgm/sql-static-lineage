@@ -20,6 +20,11 @@ import {
   type TaskReadEvidence,
   type TaskReadTableRef,
 } from "./task-read-evidence.ts";
+import {
+  loadTerminalTableConfig,
+  matchingTerminalRole,
+  type TerminalTableConfig,
+} from "./terminal-table-config.ts";
 
 type ExpansionStatus = "EXPANDED" | "TERMINAL" | "TRUNCATED";
 
@@ -32,7 +37,8 @@ export type MultiHopTerminalReason =
   | "MAX_TASKS_REACHED"
   | "MAX_EDGES_REACHED"
   | "CYCLE"
-  | "ALREADY_DISCOVERED";
+  | "ALREADY_DISCOVERED"
+  | "REFERENCE_CONFIG";
 
 export interface MultiHopTaskNode {
   readonly taskId: string;
@@ -92,6 +98,10 @@ export interface MultiHopReconciliationResult {
     readonly contentHash: string;
     readonly inputFingerprint: string;
     readonly status: "VALID_SUCCESS" | "VALID_PARTIAL";
+  };
+  readonly terminalTableConfig: {
+    readonly version: string;
+    readonly stopRoles: readonly string[];
   };
   readonly taskNodes: readonly MultiHopTaskNode[];
   readonly tableNodes: readonly MultiHopTableNode[];
@@ -161,6 +171,7 @@ export interface ReconcileMultiHopOptions {
   readonly maxEdges: number;
   readonly now?: () => string;
   readonly rootOneHop?: OneHopReconciliationResult;
+  readonly terminalTableConfig?: TerminalTableConfig;
 }
 
 function requireRecord(value: unknown, field: string): Record<string, unknown> {
@@ -695,6 +706,7 @@ export function reconcileMultiHop(
   requireLimit(options.maxTasks, "max_tasks", 1);
   requireLimit(options.maxEdges, "max_edges", 1);
   validateTableProducerIndex(options.producerIndex);
+  const terminalTableConfig = options.terminalTableConfig;
   const repository = buildTaskReadEvidenceRepository(options.dataRoot);
   const currentFingerprint = fingerprintTableProducerInputs(options.dataRoot);
   if (currentFingerprint !== options.producerIndex.inputFingerprint)
@@ -882,6 +894,26 @@ export function reconcileMultiHop(
         });
         continue;
       }
+      const terminalRole = terminalTableConfig
+        ? matchingTerminalRole(
+            terminalTableConfig,
+            read.tableRef.qualifiedName,
+          )
+        : null;
+      if (terminalRole) {
+        readsWithoutConfirmedProducer += 1;
+        addTerminal({
+          taskId: current.taskId,
+          depth: current.depth,
+          reason: "REFERENCE_CONFIG",
+          table: read.tableRef,
+          detail: {
+            role: terminalRole,
+            configVersion: terminalTableConfig?.version,
+          },
+        });
+        continue;
+      }
       const identity: ProducerTableIdentity = {
         platform: read.tableRef.platform,
         dataSource: read.tableRef.dataSource,
@@ -1048,6 +1080,10 @@ export function reconcileMultiHop(
       inputFingerprint: options.producerIndex.inputFingerprint,
       status: producerIndexStatus,
     },
+    terminalTableConfig: {
+      version: terminalTableConfig?.version ?? "disabled",
+      stopRoles: terminalTableConfig?.stopRoles ?? [],
+    },
     taskNodes: orderedTaskNodes,
     tableNodes: orderedTableNodes,
     readEdges: orderedReadEdges,
@@ -1129,6 +1165,7 @@ interface CliOptions {
   maxDepth: number;
   maxTasks: number;
   maxEdges: number;
+  terminalTableConfigPath: string;
 }
 
 function parseCli(argv: readonly string[]): CliOptions {
@@ -1142,6 +1179,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--max-depth",
     "--max-tasks",
     "--max-edges",
+    "--terminal-table-config",
   ]);
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -1181,12 +1219,18 @@ function parseCli(argv: readonly string[]): CliOptions {
     maxDepth: integer("--max-depth", 3),
     maxTasks: integer("--max-tasks", 100),
     maxEdges: integer("--max-edges", 500),
+    terminalTableConfigPath:
+      values.get("--terminal-table-config") ??
+      "config/multi-hop-terminal-table-rules.json",
   };
 }
 
 function main(): void {
   const cli = parseCli(process.argv.slice(2));
   const producerIndex = loadTableProducerIndex(cli.producerIndexPath);
+  const terminalTableConfig = loadTerminalTableConfig(
+    resolve(cli.terminalTableConfigPath),
+  );
   const rootOneHop = cli.rootOneHopPath
     ? (JSON.parse(readFileSync(resolve(cli.rootOneHopPath), "utf8")) as unknown)
     : undefined;
@@ -1196,6 +1240,7 @@ function main(): void {
     maxDepth: cli.maxDepth,
     maxTasks: cli.maxTasks,
     maxEdges: cli.maxEdges,
+    terminalTableConfig,
     ...(rootOneHop
       ? { rootOneHop: rootOneHop as OneHopReconciliationResult }
       : {}),

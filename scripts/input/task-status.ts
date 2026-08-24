@@ -15,7 +15,14 @@ import {
   validateTaskDocument,
 } from "./input-pack.ts";
 
-export type PersistedTaskStatus = "SUCCESS" | "PARTIAL" | "FAILED";
+export type PersistedTaskStatus =
+  | "SUCCESS"
+  | "PARTIAL"
+  | "FAILED"
+  | "EXCLUDED";
+export type TaskExclusionReason =
+  | "HORAE_TASK_NOT_FOUND"
+  | "PHYSICAL_TABLE_NOT_FOUND";
 
 export type TaskAssetStatus = {
   directory: string;
@@ -27,6 +34,7 @@ export type TaskStatusRecord = {
   status: PersistedTaskStatus;
   taskCategory?: string;
   taskType?: string | null;
+  exclusionReason?: TaskExclusionReason;
   directory?: string;
   changed?: boolean;
   contentHash?: string;
@@ -92,10 +100,25 @@ function validateRecord(
   const candidate = record as Partial<TaskStatusRecord>;
   if (
     candidate.taskId !== taskId ||
-    !["SUCCESS", "PARTIAL", "FAILED"].includes(candidate.status ?? "") ||
+    !["SUCCESS", "PARTIAL", "FAILED", "EXCLUDED"].includes(
+      candidate.status ?? "",
+    ) ||
     typeof candidate.updatedAt !== "string"
   )
     throw new Error(`Invalid task status record: ${taskId}`);
+  if (
+    candidate.exclusionReason !== undefined &&
+    candidate.exclusionReason !== "HORAE_TASK_NOT_FOUND" &&
+    candidate.exclusionReason !== "PHYSICAL_TABLE_NOT_FOUND"
+  )
+    throw new Error(
+      `Invalid ${taskId}.exclusionReason in Input Pack status file`,
+    );
+  if (
+    candidate.status === "EXCLUDED" &&
+    candidate.exclusionReason === undefined
+  )
+    throw new Error(`Excluded task status requires a reason: ${taskId}`);
   if (candidate.contentHash !== undefined)
     validateSha256(candidate.contentHash, `${taskId}.contentHash`);
   if (

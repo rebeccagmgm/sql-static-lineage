@@ -20,6 +20,10 @@
 import { readFileSync } from "node:fs";
 import type { Scope, ScopeTree } from "../../src/scope/scope.js";
 import { resolveColumnSource } from "../../src/sema/resolve.js";
+import {
+  displayName,
+  foldIdentifier,
+} from "../../src/dialect-behavior/public-fold.js";
 import type { SchemaProvider } from "../../src/qualify/schema-provider.js";
 import type {
   AggregateRelation,
@@ -172,9 +176,9 @@ function inputColumnsFor(
       const table = origin.table.join(".");
       if (!schemaContainsField(schema, table, origin.column, dialect)) continue;
       out.push({
-        name: origin.column,
+        name: displayName(origin.column, dialect),
         clause,
-        physical: [{ table, column: origin.column }],
+        physical: [{ table, column: displayName(origin.column, dialect) }],
         resolution: "PHYSICAL",
       });
     }
@@ -423,10 +427,13 @@ function schemaContainsField(
     ) => Array<{ name?: string }> | undefined;
   } | null;
   const columns = provider?.columnsFor?.(table.split("."), dialect);
+  const foldedColumn = foldIdentifier(column, dialect);
   return (
     Array.isArray(columns) &&
     columns.some(
-      (candidate) => candidate.name?.toLowerCase() === column.toLowerCase(),
+      (candidate) =>
+        candidate.name !== undefined &&
+        foldIdentifier(candidate.name, dialect) === foldedColumn,
     )
   );
 }
@@ -538,7 +545,7 @@ function resolveSetopOutput(
       kind: "PHYSICAL",
       physical: hop.terminal.map((origin) => ({
         table: origin.table.join("."),
-        column: origin.column,
+        column: displayName(origin.column, cell.scopes.root.dialect),
       })),
     };
   }
@@ -695,10 +702,13 @@ function resolvePhysical(
       ) => Array<{ name?: string }> | undefined;
     };
     const columns = provider.columnsFor?.(table, dialect);
+    const foldedColumn = foldIdentifier(column, dialect);
     return (
       Array.isArray(columns) &&
       columns.some(
-        (candidate) => candidate.name?.toLowerCase() === column.toLowerCase(),
+        (candidate) =>
+          candidate.name !== undefined &&
+          foldIdentifier(candidate.name, dialect) === foldedColumn,
       )
     );
   };
@@ -797,6 +807,22 @@ function resolvePhysical(
           continue;
         }
       }
+      if (source && source.kind !== "table" && source.kind !== "lateral") {
+        const derivedFromAlias =
+          source.kind === "subquery"
+            ? source.source.alias
+            : source.kind === "cte"
+              ? source.ref.def.name
+              : source.kind === "pivot"
+                ? source.alias
+                : ref.qualifier ?? source.kind;
+        if (derivedFromAlias !== undefined) {
+          ref.resolution = "DERIVED_OUTPUT";
+          ref.derived_from = `SUBQUERY_OUTPUT:${derivedFromAlias}.${ref.name}`;
+          delete withOff._cellOffset;
+          continue;
+        }
+      }
     }
     if (!ref.qualifier && scope.sources.size === 1) {
       const onlySource = [...scope.sources.values()][0];
@@ -833,6 +859,24 @@ function resolvePhysical(
           delete withOff._cellOffset;
           continue;
         }
+        const boundOnlySource =
+          resolveColumnSource(
+            scope,
+            [ref.name],
+            schema as SchemaProvider,
+          )?.source;
+        if (boundOnlySource?.kind === "subquery") {
+          ref.resolution = "DERIVED_OUTPUT";
+          ref.derived_from = `SUBQUERY_OUTPUT:${boundOnlySource.source.alias ?? ref.name}.${ref.name}`;
+          delete withOff._cellOffset;
+          continue;
+        }
+        if (boundOnlySource?.kind === "cte") {
+          ref.resolution = "DERIVED_OUTPUT";
+          ref.derived_from = `SUBQUERY_OUTPUT:${boundOnlySource.ref.def.name}.${ref.name}`;
+          delete withOff._cellOffset;
+          continue;
+        }
       }
     }
     if (!ref.qualifier) {
@@ -844,6 +888,20 @@ function resolvePhysical(
       if (bound?.source.kind === "lateral") {
         ref.resolution = "DERIVED_OUTPUT";
         ref.derived_from = `LATERAL_OUTPUT:${bound.source.source.alias ?? ref.name}.${ref.name}`;
+        delete withOff._cellOffset;
+        continue;
+      }
+      if (bound?.source.kind !== undefined && bound.source.kind !== "table") {
+        const derivedFromAlias =
+          bound.source.kind === "subquery"
+            ? bound.source.source.alias ?? ref.name
+            : bound.source.kind === "cte"
+              ? bound.source.ref.def.name
+              : bound.source.kind === "pivot"
+                ? bound.source.alias
+                : bound.source.kind;
+        ref.resolution = "DERIVED_OUTPUT";
+        ref.derived_from = `SUBQUERY_OUTPUT:${derivedFromAlias}.${ref.name}`;
         delete withOff._cellOffset;
         continue;
       }
@@ -859,7 +917,7 @@ function resolvePhysical(
     ) {
       ref.physical = hop.terminal.map((o) => ({
         table: o.table.join("."),
-        column: o.column,
+        column: displayName(o.column, dialect),
       }));
       ref.resolution = "PHYSICAL";
     } else {
@@ -1174,7 +1232,7 @@ function nativeHopProjection(
       const terminalFields = Array.isArray(hop.terminal)
         ? hop.terminal.map((origin) => ({
             table: origin.table.join("."),
-            column: origin.column,
+            column: displayName(origin.column, dialect),
           }))
         : [];
       const via = [];
@@ -1459,6 +1517,7 @@ export function buildPlanFacts(
         output_columns: outCols ?? inferredOutputs,
       };
       relations.push(s);
+      relationScopes.set(id, scope);
       if (branchIds.length === 0) {
         unknowns.push({
           node_id: id,
@@ -1497,7 +1556,10 @@ export function buildPlanFacts(
       if (src.kind === "table" || src.kind === "cte") {
         const id = `${path}.read.${key}`;
         const rel = src.source.relation;
-        if (rel?.fqn) physical.add(rel.fqn);
+        // CTE references are logical read nodes, not physical input tables.
+        // Keep them in the relation graph (with is_cte=true), but do not ask
+        // the external table catalog for a schema named after the CTE.
+        if (src.kind === "table" && rel?.fqn) physical.add(rel.fqn);
         const r: ReadRelation = {
           id,
           type: "read",
@@ -1783,7 +1845,7 @@ export function buildPlanFacts(
       const cols: ExpandedColumn[] = [];
       for (const [key, src] of scope.sources) {
         if (qlast && foldKey(key) !== foldKey(String(qlast))) continue; // 限定 star 只取匹配绑定
-        if (src.kind === "table" || src.kind === "cte") {
+        if (src.kind === "table") {
           const fqn = src.source.relation?.fqn;
           if (!schema || !fqn) return null; // 缺 schema 无法枚举
           const c = (schema as any).columnsFor(fqn.split("."), dialect);
@@ -1804,8 +1866,18 @@ export function buildPlanFacts(
                 : undefined,
             })),
           );
-        } else if (src.kind === "subquery" && src.scope) {
-          const subId = buildScope(src.scope, `${path}.${key}`);
+        } else if (
+          (src.kind === "subquery" && src.scope) ||
+          (src.kind === "cte" && src.ref?.scope)
+        ) {
+          // A CTE is a derived relation too. Its source relation is only a
+          // logical read node (for example `ind_t`); the output columns come
+          // from the referenced CTE scope, especially when that scope is a
+          // UNION/UNION ALL set-op. Falling back to the external schema here
+          // incorrectly reports `cte.*` as unknown.
+          const sourceScope =
+            src.kind === "subquery" ? src.scope : src.ref.scope;
+          const subId = buildScope(sourceScope, `${path}.${key}`);
           const sub = relations.find((r) => r.id === subId);
           const subOut = sub?.output_columns;
           if (!Array.isArray(subOut) || subOut.length === 0) return null;
@@ -1816,9 +1888,29 @@ export function buildPlanFacts(
           cols.push(
             ...(subOut as string[]).map((name) => ({
               name,
-              input_columns: projectExpressions.find(
-                (expression) => expression.output === name,
-              )?.input_columns,
+              input_columns:
+                projectExpressions.find((expression) => expression.output === name)
+                  ?.input_columns ??
+                (sourceScope.body.kind === "setop"
+                  ? (() => {
+                      const resolved = resolveSetopOutput(
+                        cell,
+                        schema,
+                        sourceScope,
+                        name,
+                        undefined,
+                      );
+                      return resolved?.kind === "PHYSICAL"
+                        ? resolved.physical.map((origin) => ({
+                            name: origin.column,
+                            qualifier: key,
+                            clause: "projection" as const,
+                            physical: [origin],
+                            resolution: "PHYSICAL" as const,
+                          }))
+                        : undefined;
+                    })()
+                  : undefined),
             })),
           );
         } else if (src.kind === "lateral") {
@@ -2129,10 +2221,67 @@ export function buildPlanFacts(
 
   // ---- 物理解析: 所有条件/谓词/分组列追到基表 ----
   if (schema) {
-    // Resolve child scopes before their parent projects. buildScope appends a
-    // derived scope's relations before its enclosing project, so preserve that
-    // construction order when derived outputs inherit child project facts.
-    for (const r of relations) {
+    // Resolve a source scope before the scope that consumes it. CTEs are
+    // siblings in Scope.children (and can depend on earlier CTEs), so parent
+    // depth alone is insufficient: MAPPING must wait for CONTRACT_MAPPING,
+    // even though both are direct children of the query scope. Preserve the
+    // original relation order within each scope after this dependency order.
+    const scopeDependencies = (scope: Scope): Scope[] => {
+      const dependencies: Scope[] = [];
+      const add = (candidate: Scope | undefined): void => {
+        if (candidate && candidate !== scope && !dependencies.includes(candidate))
+          dependencies.push(candidate);
+      };
+      for (const source of scope.sources.values()) {
+        if (source.kind === "cte") add(source.ref.scope);
+        else if (
+          source.kind === "subquery" ||
+          source.kind === "graphtable" ||
+          source.kind === "relation"
+        )
+          add(source.scope);
+      }
+      if (scope.body.kind === "setop" && scope.branches) {
+        add(scope.branches.left);
+        add(scope.branches.right);
+      }
+      return dependencies;
+    };
+    const scopesInRelationOrder: Scope[] = [];
+    const seenScopes = new Set<Scope>();
+    for (const relation of relations) {
+      const scope = relationScopes.get(relation.id);
+      if (scope && !seenScopes.has(scope)) {
+        seenScopes.add(scope);
+        scopesInRelationOrder.push(scope);
+      }
+    }
+    const orderedScopes: Scope[] = [];
+    const visitingScopes = new Set<Scope>();
+    const visitedScopes = new Set<Scope>();
+    const visitScope = (scope: Scope): void => {
+      if (visitedScopes.has(scope)) return;
+      if (visitingScopes.has(scope)) return; // defensive cycle break
+      visitingScopes.add(scope);
+      for (const dependency of scopeDependencies(scope)) visitScope(dependency);
+      visitingScopes.delete(scope);
+      visitedScopes.add(scope);
+      orderedScopes.push(scope);
+    };
+    for (const scope of scopesInRelationOrder) visitScope(scope);
+    const scopeOrder = new Map(orderedScopes.map((scope, index) => [scope, index]));
+    const resolutionRelations = relations
+      .map((relation, index) => ({
+        relation,
+        index,
+        scopeOrder:
+          scopeOrder.get(relationScopes.get(relation.id)!) ?? Number.MAX_SAFE_INTEGER,
+      }))
+      .sort(
+        (left, right) => left.scopeOrder - right.scopeOrder || left.index - right.index,
+      )
+      .map(({ relation }) => relation);
+    for (const r of resolutionRelations) {
       const scope = relationScopes.get(r.id);
       if (!scope) continue;
       if (r.type === "join")

@@ -36,6 +36,8 @@
     "taskType": { "type": ["string", "null"], "minLength": 1 },
     "taskName": { "type": ["string", "null"], "minLength": 1 },
     "topicName": { "type": ["string", "null"], "minLength": 1 },
+    "scheduleCycle": { "type": ["string", "null"], "minLength": 1 },
+    "scheduleStatus": { "type": ["string", "null"], "minLength": 1 },
     "source": {
       "oneOf": [
         { "type": "null" },

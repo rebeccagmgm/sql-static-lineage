@@ -11,6 +11,7 @@ export const CONTROLLED_TASK_ENDPOINT_DATA_SOURCES: Readonly<
   oracle2hive: { source: "gforacle_gftzdb#gftzdb" },
   mysql2hive: { target: "gfhive" },
   hive2oracle: { source: "gfhive" },
+  hive2starrocks: { source: "gfhive", target: "gfstarrocks_idms_all" },
   sparkIndex: { source: "gfhive", target: "gfhive" },
   "hiveTask-2.0": { source: "gfhive", target: "gfhive" },
 };

@@ -36,6 +36,10 @@ export interface TaskEvidence {
   readonly taskType?: string | null;
   readonly taskName?: string | null;
   readonly topicName?: string | null;
+  /** Direct Horae scheduling-cycle label, when available. */
+  readonly scheduleCycle?: string | null;
+  /** Direct Horae task-status code/label, when available. */
+  readonly scheduleStatus?: string | null;
   /** Direct platform endpoint config; table endpoints may include dataSource. */
   readonly source?: JsonValue | null;
   /** Direct platform endpoint config; table endpoints may include dataSource. */
@@ -51,6 +55,20 @@ export interface TaskEvidence {
   readonly sql?: Partial<Record<SqlSlot, SqlSlotEvidence | string | null>>;
   readonly evidenceProvider?: string;
   readonly collectedAt?: string;
+}
+
+export function isManualScheduleCycle(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    ["手工", "手动", "manual"].includes(value.trim().toLowerCase())
+  );
+}
+
+export function isFrozenScheduleStatus(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    ["F", "冻结", "FROZEN"].includes(value.trim().toUpperCase())
+  );
 }
 
 export interface TableEvidence {
@@ -312,6 +330,8 @@ function buildTaskDocument(evidence: TaskEvidence): {
     taskType: evidence.taskType,
     taskName: evidence.taskName,
     topicName: evidence.topicName,
+    scheduleCycle: evidence.scheduleCycle,
+    scheduleStatus: evidence.scheduleStatus,
     source: evidence.source,
     target: evidence.target,
     targetEvidenceKind: evidence.targetEvidenceKind,
@@ -331,6 +351,8 @@ function buildTaskDocument(evidence: TaskEvidence): {
     "taskType",
     "taskName",
     "topicName",
+    "scheduleCycle",
+    "scheduleStatus",
     "writeMode",
     "evidenceProvider",
   ])
@@ -398,6 +420,8 @@ export function validateTaskDocument(
     "taskType",
     "taskName",
     "topicName",
+    "scheduleCycle",
+    "scheduleStatus",
     "source",
     "target",
     "targetEvidenceKind",
@@ -437,6 +461,8 @@ export function validateTaskDocument(
   for (const field of [
     "taskCategory",
     "taskType",
+    "scheduleCycle",
+    "scheduleStatus",
     "writeMode",
     "evidenceProvider",
   ])

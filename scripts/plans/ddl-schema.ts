@@ -391,6 +391,23 @@ function isContained(root: string, candidate: string): boolean {
 	return rel === "" || (!rel.startsWith("..") && !rel.includes(":") && !rel.startsWith("/"));
 }
 
+function sameSuffix(path: string, suffix: string): boolean {
+	const pathParts = path.toLowerCase().split(".").filter(Boolean);
+	const suffixParts = suffix.toLowerCase().split(".").filter(Boolean);
+	if (suffixParts.length === 0 || suffixParts.length > pathParts.length) return false;
+	const offset = pathParts.length - suffixParts.length;
+	return suffixParts.every((part, index) => pathParts[offset + index] === part);
+}
+
+function isTestSchemaCandidate(qualifiedName: string): boolean {
+  const schemaParts = qualifiedName.split(".").slice(0, -1);
+  return schemaParts.some(
+    (part) =>
+      part.toLowerCase() === "gfstest" ||
+      /(?:^|[._-])(?:test|uat)(?:[._-]|$)/i.test(part),
+  );
+}
+
 export function loadSchemaFromTablesRoot(tablesRoot: string, requiredTables: readonly string[] = []): LoadedDdlSchema {
 	const wanted = new Map(requiredTables.map((name) => [name.toLowerCase(), name]));
 	const documents = new Map<string, { readonly document: TableDocument; readonly path: string }>();
@@ -418,10 +435,29 @@ export function loadSchemaFromTablesRoot(tablesRoot: string, requiredTables: rea
 	const missing: string[] = [];
 
 	for (const requestedName of names) {
-		const entry = documents.get(requestedName.toLowerCase());
+		const exactEntry = documents.get(requestedName.toLowerCase());
+		const suffixEntries = exactEntry
+			? []
+			: [...documents.values()].filter(({ document }) => sameSuffix(document.qualifiedName, requestedName));
+		const nonTestSuffixEntries = suffixEntries.filter(
+			({ document }) => !isTestSchemaCandidate(document.qualifiedName),
+		);
+		const entry = exactEntry ??
+			(nonTestSuffixEntries.length === 1
+				? nonTestSuffixEntries[0]
+				: suffixEntries.length === 1
+					? suffixEntries[0]
+					: undefined);
 		if (!entry) {
 			missing.push(requestedName);
-			issues.push({ code: "MISSING_TABLE", qualified_name: requestedName, message: "no matching table.json" });
+			issues.push({
+				code: "MISSING_TABLE",
+				qualified_name: requestedName,
+				message:
+					suffixEntries.length > 1
+						? `ambiguous table.json suffix match (${suffixEntries.length} candidates)`
+						: "no matching table.json",
+			});
 			continue;
 		}
 		const { document, path: tableJsonPath } = entry;

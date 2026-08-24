@@ -29,6 +29,7 @@ import {
   reconcileMultiHop,
   validateMultiHopReconciliation,
 } from "../scripts/reconcile/reconcile-multi-hop.ts";
+import type { TerminalTableConfig } from "../scripts/reconcile/terminal-table-config.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";
 
@@ -139,6 +140,7 @@ function run(
     maxEdges?: number;
     now?: () => string;
     rootOneHop?: OneHopReconciliationResult;
+    terminalTableConfig?: TerminalTableConfig;
   } = {},
 ) {
   return reconcileMultiHop(taskId, {
@@ -149,6 +151,9 @@ function run(
     maxEdges: options.maxEdges ?? 500,
     now: options.now ?? (() => FIXED_NOW),
     ...(options.rootOneHop ? { rootOneHop: options.rootOneHop } : {}),
+    ...(options.terminalTableConfig
+      ? { terminalTableConfig: options.terminalTableConfig }
+      : {}),
   });
 }
 
@@ -236,6 +241,44 @@ function materializeFrozenInputPack(sourceRoot: string): string {
 }
 
 describe("reconcileMultiHop", () => {
+  it("stops at a configured reference/config table before producer lookup", () => {
+    const root = dataRoot();
+    writeTable(root, "dm_index_n.tag_def");
+    writeTable(root, "lake.source");
+    writeReader(root, "A", ["dm_index_n.tag_def"]);
+    writeProducer(root, "B", "dm_index_n.tag_def", ["lake.source"]);
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+
+    const result = run(root, index, "A", {
+      terminalTableConfig: {
+        version: "test-1",
+        stopRoles: ["REFERENCE_CONFIG"],
+        roles: {
+          REFERENCE_CONFIG: { qualifiedNameTerms: ["tag_def"] },
+        },
+      },
+    });
+
+    expect(result.taskNodes.map((node) => node.taskId)).toEqual(["A"]);
+    expect(result.producerBridges).toEqual([]);
+    expect(result.terminals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "A",
+          reason: "REFERENCE_CONFIG",
+          table: expect.objectContaining({
+            qualifiedName: "dm_index_n.tag_def",
+          }),
+          detail: { role: "REFERENCE_CONFIG", configVersion: "test-1" },
+        }),
+      ]),
+    );
+    expect(result.terminalTableConfig).toEqual({
+      version: "test-1",
+      stopRoles: ["REFERENCE_CONFIG"],
+    });
+  });
+
   it("traverses a linear producer chain to depth two and exposes the graph contract", () => {
     const root = dataRoot();
     for (const table of ["lake.t1", "lake.t2"]) writeTable(root, table);

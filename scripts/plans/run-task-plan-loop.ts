@@ -30,6 +30,24 @@ type RunResult = {
   error?: string;
 };
 
+function isNonBlockingTestSchemaName(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const normalized = value.trim();
+  return (
+    /^gfstest\./i.test(normalized) ||
+    /(?:^|[._-])(?:test|uat)(?:[._-]|$)/i.test(normalized)
+  );
+}
+
+function isNonBlockingTestSchemaContext(
+  value: unknown,
+  taskName: unknown,
+): boolean {
+  return (
+    isNonBlockingTestSchemaName(value) || isNonBlockingTestSchemaName(taskName)
+  );
+}
+
 const repoRoot = resolve(import.meta.dirname, "../..");
 const defaultDataRoot = resolve(repoRoot, "../sql-static-lineage-data");
 const inspector = join(repoRoot, "tmp", "inspect-plan-adapter-task.ts");
@@ -216,6 +234,8 @@ function summarizeInspection(
   let unknownCount = 0;
   let schemaMissingCount = 0;
   let schemaIssueCount = 0;
+  let ignoredTestSchemaMissingCount = 0;
+  let ignoredTestSchemaIssueCount = 0;
   let physicalInputCount = 0;
   const coverage: Record<string, number> = {};
 
@@ -228,12 +248,29 @@ function summarizeInspection(
     summary.schema_load && typeof summary.schema_load === "object"
       ? (summary.schema_load as JsonObject)
       : undefined;
-  schemaMissingCount = Array.isArray(schemaLoad?.missing)
-    ? schemaLoad.missing.length
-    : 0;
-  schemaIssueCount = Array.isArray(schemaLoad?.issues)
-    ? schemaLoad.issues.length
-    : 0;
+  const missingTables = Array.isArray(schemaLoad?.missing)
+    ? schemaLoad.missing.filter(
+        (value): value is string => typeof value === "string",
+      )
+    : [];
+  const schemaIssues = Array.isArray(schemaLoad?.issues)
+    ? schemaLoad.issues.filter(
+        (value): value is JsonObject =>
+          typeof value === "object" && value !== null,
+      )
+    : [];
+  const taskName =
+    summary.task && typeof summary.task === "object"
+      ? (summary.task as JsonObject).name
+      : undefined;
+  schemaMissingCount = missingTables.length;
+  schemaIssueCount = schemaIssues.length;
+  ignoredTestSchemaMissingCount = missingTables.filter(
+    (value) => isNonBlockingTestSchemaContext(value, taskName),
+  ).length;
+  ignoredTestSchemaIssueCount = schemaIssues.filter((issue) =>
+    isNonBlockingTestSchemaContext(issue.qualified_name, taskName),
+  ).length;
 
   for (const file of files) {
     if (!file || typeof file !== "object") continue;
@@ -270,8 +307,8 @@ function summarizeInspection(
   const status =
     syntaxErrorCount > 0 ||
     unknownCount > 0 ||
-    schemaMissingCount > 0 ||
-    schemaIssueCount > 0
+    schemaMissingCount - ignoredTestSchemaMissingCount > 0 ||
+    schemaIssueCount - ignoredTestSchemaIssueCount > 0
       ? "PARTIAL"
       : "SUCCESS";
 
@@ -292,6 +329,12 @@ function summarizeInspection(
     unknown_count: unknownCount,
     schema_missing_count: schemaMissingCount,
     schema_issue_count: schemaIssueCount,
+    ...(ignoredTestSchemaMissingCount > 0
+      ? { ignored_test_schema_missing_count: ignoredTestSchemaMissingCount }
+      : {}),
+    ...(ignoredTestSchemaIssueCount > 0
+      ? { ignored_test_schema_issue_count: ignoredTestSchemaIssueCount }
+      : {}),
     coverage,
     ...(syntaxErrorCount > 0
       ? { error: `syntax_errors=${syntaxErrorCount}` }
@@ -315,6 +358,8 @@ function inspectOne(
     slot,
     "--data-root",
     dataRoot,
+    "--tables-root",
+    join(dataRoot, "tables"),
   ];
   if (fetchSzdata) args.push("--fetch-szdata");
 

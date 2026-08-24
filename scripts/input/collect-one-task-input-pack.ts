@@ -1,9 +1,17 @@
-import { existsSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+} from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import {
   writeTableInput,
   writeTaskInput,
+  isFrozenScheduleStatus,
+  isManualScheduleCycle,
   type JsonValue,
   type SqlSlot,
   type TableEvidence,
@@ -16,7 +24,7 @@ import {
   shouldUseTaskRelationFallback,
   targetEvidenceKindFor,
 } from "./task-endpoints.ts";
-import { findSqlTargetEvidence } from "./sql-target-evidence.ts";
+import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
 import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
 
 const SQL_SLOTS: readonly SqlSlot[] = [
@@ -32,8 +40,105 @@ const DATA_SOURCE_ID_OVERRIDES: Readonly<Record<string, string>> = {
 };
 const KNOWN_DATA_SOURCE_IDS = new Set(["gfhive", "gforacle_gftzdb#gftzdb"]);
 const DEFAULT_DATA_SOURCE_ID = "default";
-const OPENCLI_MIN_INTERVAL_MS = 3000;
-const OPENCLI_DEFAULT_TIMEOUT_MS = 30000;
+
+type CachedTableEvidence = TableEvidence;
+let persistedTableCacheRoot: string | undefined;
+let persistedTableCache = new Map<string, CachedTableEvidence[]>();
+const directEvidenceCache = new Map<string, TableEvidence | undefined>();
+
+function cachedTableKey(qualifiedName: string): string {
+  return qualifiedName.trim().toLowerCase();
+}
+
+export function loadPersistedTableCache(dataRoot: string): void {
+  if (persistedTableCacheRoot === dataRoot) return;
+  persistedTableCacheRoot = dataRoot;
+  persistedTableCache = new Map();
+  const tablesRoot = join(dataRoot, "tables");
+  if (!existsSync(tablesRoot)) return;
+  for (const platformEntry of readdirSync(tablesRoot, { withFileTypes: true })) {
+    if (!platformEntry.isDirectory()) continue;
+    const platformRoot = join(tablesRoot, platformEntry.name);
+    for (const tableEntry of readdirSync(platformRoot, { withFileTypes: true })) {
+      if (!tableEntry.isDirectory()) continue;
+      const tableRoot = join(platformRoot, tableEntry.name);
+      try {
+        const document = JSON.parse(
+          readFileSync(join(tableRoot, "table.json"), "utf8"),
+        ) as Record<string, unknown>;
+        const ddl = readFileSync(join(tableRoot, "ddl.sql"), "utf8");
+        if (
+          typeof document.qualifiedName !== "string" ||
+          typeof document.dataSource !== "string" ||
+          typeof document.platform !== "string" ||
+          typeof document.objectType !== "string" ||
+          ddl.trim() === ""
+        )
+          continue;
+        const evidence: CachedTableEvidence = {
+          guid: typeof document.guid === "string" ? document.guid : undefined,
+          platform: document.platform,
+          dataSource: document.dataSource,
+          qualifiedName: document.qualifiedName,
+          schema: typeof document.schema === "string" ? document.schema : undefined,
+          name: typeof document.name === "string" ? document.name : undefined,
+          description:
+            typeof document.description === "string" ? document.description : undefined,
+          objectType: document.objectType,
+          status: typeof document.status === "string" ? document.status : undefined,
+          primaryKey: Array.isArray(document.primaryKey)
+            ? document.primaryKey.map(String)
+            : undefined,
+          partitionFields: Array.isArray(document.partitionFields)
+            ? document.partitionFields.map(String)
+            : undefined,
+          ddl,
+          evidenceProvider:
+            typeof document.evidenceProvider === "string"
+              ? `${document.evidenceProvider},local:tables-cache`
+              : "local:tables-cache",
+          collectedAt:
+            typeof document.collectedAt === "string" ? document.collectedAt : undefined,
+        };
+        const key = cachedTableKey(evidence.qualifiedName);
+        const entries = persistedTableCache.get(key) ?? [];
+        entries.push(evidence);
+        persistedTableCache.set(key, entries);
+      } catch {
+        // A malformed or incomplete cache entry must fall back to SZData.
+      }
+    }
+  }
+}
+
+export function environmentMilliseconds(
+  name: string,
+  fallback: number,
+): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0)
+    throw new Error(`${name} must be a positive integer in milliseconds`);
+  return value;
+}
+
+const OPENCLI_MIN_INTERVAL_MS = environmentMilliseconds(
+  "INPUT_PACK_OPENCLI_MIN_INTERVAL_MS",
+  3000,
+);
+const OPENCLI_DEFAULT_TIMEOUT_MS = environmentMilliseconds(
+  "INPUT_PACK_OPENCLI_TIMEOUT_MS",
+  30000,
+);
+const HORAE_FALLBACK_TIMEOUT_MS = environmentMilliseconds(
+  "INPUT_PACK_HORAE_TIMEOUT_MS",
+  5000,
+);
+const HORAE_SEARCH_TIMEOUT_MS = environmentMilliseconds(
+  "INPUT_PACK_HORAE_SEARCH_TIMEOUT_MS",
+  30000,
+);
 let lastOpenCliCallAt = 0;
 
 export type TaskCollectionSummary = {
@@ -50,6 +155,13 @@ export type TaskCollectionSummary = {
   tableReferencesUnavailable: string[];
   warnings: string[];
   staleLegacyTaskDirectories: string[];
+};
+
+export type CollectOneTaskOptions = {
+  /** Direct Horae cycle evidence supplied by the batch inventory lookup. */
+  scheduleCycle?: string | null;
+  /** Direct Horae status evidence supplied by the batch inventory lookup. */
+  scheduleStatus?: string | null;
 };
 
 function directValue(value: unknown): JsonValue | undefined {
@@ -203,6 +315,36 @@ export function findStaleLegacyTaskDirectories(
     .map((entry) => join("tasks", entry.name, taskId));
 }
 
+/**
+ * Moves existing Task Pack directories for a task to a separate archive root.
+ * The move is intentionally non-overwriting: an archive conflict must stop
+ * the batch rather than risk losing or replacing evidence.
+ */
+export function relocateTaskPacks(
+  dataRoot: string,
+  archiveRoot: string,
+  taskId: string,
+): string[] {
+  if (taskId.includes("\\") || taskId.includes("/")) return [];
+  const sourceTasksRoot = join(dataRoot, "tasks");
+  if (!existsSync(sourceTasksRoot)) return [];
+  const moved: string[] = [];
+  for (const entry of readdirSync(sourceTasksRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const source = join(sourceTasksRoot, entry.name, taskId);
+    if (!existsSync(join(source, "task.json"))) continue;
+    const destination = join(archiveRoot, "tasks", entry.name, taskId);
+    if (existsSync(destination))
+      throw new Error(
+        `MANUAL_TASK_ARCHIVE_CONFLICT:${source}:${destination}`,
+      );
+    mkdirSync(join(archiveRoot, "tasks", entry.name), { recursive: true });
+    renameSync(source, destination);
+    moved.push(destination);
+  }
+  return moved;
+}
+
 function throttleOpenCli(): void {
   const remaining = OPENCLI_MIN_INTERVAL_MS - (Date.now() - lastOpenCliCallAt);
   if (remaining > 0)
@@ -247,7 +389,7 @@ function openCliTaskSource(taskId: string): Record<string, unknown> {
     "--window",
     "background",
     "--site-session",
-    "persistent",
+    "ephemeral",
     "-f",
     "json",
   ]);
@@ -262,13 +404,138 @@ function openCliHoraeDetail(taskId: string): Record<string, unknown> {
   throttleOpenCli();
   const output = runOpenCli(
     ["horae", "detail", taskId, "-f", "json"],
-    { OPENCLI_BROWSER_COMMAND_TIMEOUT: "5" },
-    5000,
+    {
+      OPENCLI_BROWSER_COMMAND_TIMEOUT: String(
+        Math.ceil(HORAE_FALLBACK_TIMEOUT_MS / 1000),
+      ),
+    },
+    HORAE_FALLBACK_TIMEOUT_MS,
   );
   const parsed: unknown = JSON.parse(output);
   const row = Array.isArray(parsed) ? parsed[0] : parsed;
   if (!row || typeof row !== "object" || Array.isArray(row)) return {};
   return row as Record<string, unknown>;
+}
+
+function openCliHoraeSearch(
+  taskIds: readonly string[],
+  status?: string,
+  cycle?: string,
+): unknown {
+  throttleOpenCli();
+  const query = [
+    "horae",
+    "search",
+    taskIds.join(","),
+    "--type",
+    "I",
+  ];
+  if (status !== undefined) query.push("--status", status);
+  if (cycle !== undefined) query.push("--cycle", cycle);
+  query.push(
+    "--page",
+    "1",
+    "--size",
+    String(taskIds.length),
+    "-f",
+    "json",
+  );
+  const output = runOpenCli(
+    query,
+    undefined,
+    HORAE_SEARCH_TIMEOUT_MS,
+  );
+  return JSON.parse(output);
+}
+
+/**
+ * Returns the exact task IDs that Horae labels as manual or frozen in a
+ * bounded batch. The query is restricted to the requested IDs instead of
+ * scanning the full Horae task catalog.
+ */
+export type TaskSchedulingClassification = {
+  exclusionReason:
+    | "MANUAL_OR_FROZEN"
+    | "HORAE_TASK_NOT_FOUND"
+    | "PHYSICAL_TABLE_NOT_FOUND";
+  scheduleCycle?: string;
+  scheduleStatus?: string;
+};
+
+export function findExcludedTaskIds(
+  taskIds: readonly string[],
+): Map<string, TaskSchedulingClassification> {
+  const requested = new Set(taskIds);
+  const excluded = new Map<string, TaskSchedulingClassification>();
+  const chunkSize = 100;
+  for (let offset = 0; offset < taskIds.length; offset += chunkSize) {
+    const chunk = taskIds.slice(offset, offset + chunkSize);
+    const allRows = openCliHoraeSearch(chunk, "");
+    const allRecords = Array.isArray(allRows) ? allRows : [allRows];
+    const foundTaskIds = new Set<string>();
+    for (const value of allRecords) {
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        continue;
+      const taskId = directString((value as Record<string, unknown>).id);
+      if (taskId !== undefined && requested.has(taskId))
+        foundTaskIds.add(taskId);
+    }
+    for (const taskId of chunk) {
+      if (!foundTaskIds.has(taskId))
+        excluded.set(taskId, { exclusionReason: "HORAE_TASK_NOT_FOUND" });
+    }
+    for (const query of [
+      { status: "Y", cycle: "手工" },
+      { status: "F" },
+    ]) {
+      const rows = openCliHoraeSearch(chunk, query.status, query.cycle);
+      const records = Array.isArray(rows) ? rows : [rows];
+      for (const value of records) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          continue;
+        const record = value as Record<string, unknown>;
+        const taskId = directString(record.id);
+        if (taskId === undefined || !requested.has(taskId)) continue;
+        if (
+          excluded.get(taskId)?.exclusionReason ===
+          "HORAE_TASK_NOT_FOUND"
+        )
+          continue;
+        const cycle = directString(record.cycle);
+        if (query.cycle !== undefined && !isManualScheduleCycle(cycle))
+          continue;
+        const status =
+          directString(record.status) ?? directString(record.taskStatus);
+        excluded.set(taskId, {
+          exclusionReason: "MANUAL_OR_FROZEN",
+          ...(cycle ? { scheduleCycle: cycle } : {}),
+          ...(query.status === "F" &&
+          isFrozenScheduleStatus(status ?? query.status)
+            ? { scheduleStatus: status ?? query.status }
+            : {}),
+        });
+      }
+    }
+  }
+  for (const taskId of taskIds) {
+    if (excluded.has(taskId)) continue;
+    let detail: Record<string, unknown>;
+    try {
+      detail = openCliHoraeDetail(taskId);
+    } catch (error) {
+      throw new Error(`TASK_SCHEDULING_DETAIL_LOOKUP_FAILED:${taskId}`, {
+        cause: error,
+      });
+    }
+    if (Object.keys(detail).length === 0) {
+      excluded.set(taskId, { exclusionReason: "HORAE_TASK_NOT_FOUND" });
+    } else if (isManualScheduleCycle(detail.cycle))
+      excluded.set(taskId, {
+        exclusionReason: "MANUAL_OR_FROZEN",
+        scheduleCycle: directString(detail.cycle),
+      });
+  }
+  return excluded;
 }
 
 const HORAE_SQL_FIELDS: Readonly<Record<SqlSlot, readonly string[]>> = {
@@ -427,46 +694,70 @@ function tableSummaryByName(
   };
 }
 
-export function tableFromDirectEvidence(
+export type TableEvidenceLookupOptions = {
+  /** Prefer the exact db/table lookup before the broader search endpoint. */
+  preferDirectLookup?: boolean;
+  /** Use only the exact db/table endpoint; useful for bounded repair scans. */
+  directOnly?: boolean;
+  /** Do not make a second metadata call only to refresh a missing description. */
+  skipDescriptionRefresh?: boolean;
+};
+
+function tableFromDirectEvidenceUncached(
   qualifiedName: string,
   requiredTaskId?: string,
   expectedDataSource?: string,
+  options: TableEvidenceLookupOptions = {},
 ): TableEvidence | undefined {
   let table: Record<string, unknown> | undefined;
   let tableDiscovery = "table-search";
-  if (requiredTaskId === undefined) {
+  if (options.preferDirectLookup) {
     try {
-      const searched = openCliJson([
-        "szdata",
-        "table-search",
-        "--keyword",
-        qualifiedName,
-        "--type",
-        "003000",
-        "--size",
-        "10",
-      ]);
-      const candidates = (
-        Array.isArray(searched) ? searched : [searched]
-      ).filter((item): item is Record<string, unknown> => {
-        if (!item || typeof item !== "object" || Array.isArray(item))
-          return false;
-        return (
-          typeof item.qualifiedName === "string" &&
-          baseQualifiedName(item.qualifiedName).toLowerCase() ===
-            qualifiedName.toLowerCase()
-        );
-      });
-      table = selectTableCandidate(
-        candidates,
-        qualifiedName,
-        expectedDataSource,
-      );
+      table = tableSummaryByName(qualifiedName);
+      if (table !== undefined) tableDiscovery = "table";
     } catch {
       table = undefined;
     }
   }
-  if (table === undefined) {
+  if (requiredTaskId === undefined && !options.directOnly) {
+    if (table === undefined) {
+      try {
+        const searched = openCliJson([
+          "szdata",
+          "table-search",
+          "--keyword",
+          qualifiedName,
+          "--type",
+          "003000",
+          "--size",
+          "10",
+        ]);
+        const candidates = (
+          Array.isArray(searched) ? searched : [searched]
+        ).filter((item): item is Record<string, unknown> => {
+          if (!item || typeof item !== "object" || Array.isArray(item))
+            return false;
+          return (
+            typeof item.qualifiedName === "string" &&
+            baseQualifiedName(item.qualifiedName).toLowerCase() ===
+              qualifiedName.toLowerCase()
+          );
+        });
+        table = selectTableCandidate(
+          candidates,
+          qualifiedName,
+          expectedDataSource,
+        );
+      } catch {
+        table = undefined;
+      }
+    }
+  }
+  if (
+    table === undefined &&
+    !options.preferDirectLookup &&
+    !options.directOnly
+  ) {
     try {
       table = tableSummaryByName(qualifiedName);
       if (table !== undefined)
@@ -482,7 +773,10 @@ export function tableFromDirectEvidence(
     directOptionalString(table.comment);
   if (searchDescription !== undefined)
     table = { ...table, description: searchDescription };
-  if (directOptionalString(table.description) === undefined) {
+  if (
+    !options.skipDescriptionRefresh &&
+    directOptionalString(table.description) === undefined
+  ) {
     try {
       const summary = tableSummaryByName(qualifiedName);
       const description =
@@ -569,6 +863,44 @@ export function tableFromDirectEvidence(
     ddl: ddlRow.ddl,
     evidenceProvider: `opencli:szdata ${tableDiscovery}+table-ddl`,
   };
+}
+
+export function tableFromDirectEvidence(
+  qualifiedName: string,
+  requiredTaskId?: string,
+  expectedDataSource?: string,
+  options: TableEvidenceLookupOptions = {},
+): TableEvidence | undefined {
+  const cacheKey = `${cachedTableKey(qualifiedName)}@@${
+    expectedDataSource?.toLowerCase() ?? "*"
+  }@@${requiredTaskId ?? "*"}`;
+  if (directEvidenceCache.has(cacheKey))
+    return directEvidenceCache.get(cacheKey);
+
+  const persisted = persistedTableCache.get(cachedTableKey(qualifiedName)) ?? [];
+  const persistedMatches = persisted.filter(
+    (item) =>
+      (expectedDataSource === undefined ||
+        item.dataSource.toLowerCase() === expectedDataSource.toLowerCase()) &&
+      (requiredTaskId === undefined ||
+        // A persisted Table is reusable only for direct evidence. A task
+        // relation lookup still needs the live relation check below.
+        item.evidenceProvider.includes("table-task-relation") === false),
+  );
+  if (requiredTaskId === undefined && persistedMatches.length === 1) {
+    const evidence = persistedMatches[0];
+    directEvidenceCache.set(cacheKey, evidence);
+    return evidence;
+  }
+
+  const evidence = tableFromDirectEvidenceUncached(
+    qualifiedName,
+    requiredTaskId,
+    expectedDataSource,
+    options,
+  );
+  if (evidence !== undefined) directEvidenceCache.set(cacheKey, evidence);
+  return evidence;
 }
 
 function taskNameTableCandidate(taskName: unknown): string | undefined {
@@ -725,7 +1057,7 @@ export function normalizeConcatenatedSqlStatements(content: string): {
     lastTopLevelWord = undefined;
   };
 
-  for (let index = 0; index < content.length; ) {
+  for (let index = 0; index < content.length;) {
     const character = content[index];
     const nextCharacter = content[index + 1];
 
@@ -915,6 +1247,8 @@ function toTaskEvidence(
       taskType: directString(row.taskType),
       taskName: directOptionalString(row.taskName),
       topicName: directOptionalString(row.topicName),
+      scheduleCycle: directOptionalString(row.scheduleCycle ?? row.cycle),
+      scheduleStatus: directOptionalString(row.scheduleStatus),
       source: directValue(row.source),
       target: directValue(row.target),
       writeMode: directString(row.loadMode),
@@ -991,8 +1325,18 @@ function endpointResolution(
 export function collectOneTask(
   dataRoot: string,
   taskId: string,
+  options: CollectOneTaskOptions = {},
 ): TaskCollectionSummary {
-  const szdataRow = openCliTaskSource(taskId);
+  loadPersistedTableCache(dataRoot);
+  const szdataRow: Record<string, unknown> = {
+    ...openCliTaskSource(taskId),
+    ...(options.scheduleCycle === undefined
+      ? {}
+      : { scheduleCycle: options.scheduleCycle }),
+    ...(options.scheduleStatus === undefined
+      ? {}
+      : { scheduleStatus: options.scheduleStatus }),
+  };
   let horaeFallback: Record<string, unknown> | undefined;
   let horaeFallbackStatus:
     "NOT_NEEDED" | "RECOVERED" | "PARTIAL" | "NO_SQL" | "TIMEOUT" | "FAILED" =
@@ -1082,28 +1426,38 @@ export function collectOneTask(
       ])
       .filter((entry): entry is [string, string] => entry[1] !== undefined),
   ) as Partial<Record<SqlSlot, string>>;
-  const sqlTarget =
-    shouldUseTaskRelationFallback(row.source, row.target) &&
-    (taskEvidence.target === undefined || taskEvidence.target === null)
-      ? findSqlTargetEvidence(
-          sqlTargetInputs,
-          directString(taskEvidence.taskName),
-        )
-      : undefined;
+  const directTargetResult = tableResults.find((item) => item.side === "target");
+  const sqlTarget = findSqlFinalTargetEvidence(
+    sqlTargetInputs,
+    directString(taskEvidence.taskName),
+  );
   const sqlRelationTarget =
     sqlTarget ??
-    (shouldUseTaskRelationFallback(row.source, row.target) &&
-    (taskEvidence.target === undefined || taskEvidence.target === null)
-      ? findSqlTargetEvidence(
-          sqlTargetInputs,
-          directString(taskEvidence.taskName),
-          { allowSchemaOnlyQualification: true },
-        )
-      : undefined);
+    findSqlFinalTargetEvidence(
+      sqlTargetInputs,
+      directString(taskEvidence.taskName),
+      { allowSchemaOnlyQualification: true },
+    );
+  const effectiveSqlTarget = sqlTarget ?? sqlRelationTarget;
+  const directTargetQualifiedName =
+    directTargetResult?.qualifiedName ?? directTableName(row.target);
+  const sqlTargetNeedsCollection =
+    effectiveSqlTarget !== undefined &&
+    (directTargetResult?.evidence === undefined ||
+      directTargetQualifiedName?.toLowerCase() !==
+        effectiveSqlTarget.qualifiedName.toLowerCase());
+  const hasSameTaskRelationTarget = tableResults.some(
+    (item) =>
+      item.side === "target" &&
+      item.evidence?.evidenceProvider.includes("table-task-relation") &&
+      effectiveSqlTarget !== undefined &&
+      item.qualifiedName.toLowerCase() ===
+        effectiveSqlTarget.qualifiedName.toLowerCase(),
+  );
   const sqlTargetProvider =
-    sqlTarget === undefined
+    effectiveSqlTarget === undefined
       ? undefined
-      : sqlEvidenceProvider(taskEvidence, sqlTarget.slot);
+      : sqlEvidenceProvider(taskEvidence, effectiveSqlTarget.slot);
   const sqlTargetHasSqlMcpEvidence =
     sqlTargetProvider
       ?.split(",")
@@ -1136,24 +1490,26 @@ export function collectOneTask(
   }
   let sqlTargetTable: TableEvidence | undefined;
   if (
-    shouldUseTaskRelationFallback(row.source, row.target) &&
-    !tableResults.some(
-      (item) =>
-        item.side === "target" &&
-        item.evidence?.evidenceProvider.includes("table-task-relation"),
-    ) &&
-    (taskEvidence.target === undefined || taskEvidence.target === null) &&
+    sqlTargetNeedsCollection &&
+    !hasSameTaskRelationTarget &&
     sqlTargetHasSqlMcpEvidence
   ) {
-    if (sqlTarget !== undefined) {
+    if (effectiveSqlTarget !== undefined) {
+      for (let index = tableResults.length - 1; index >= 0; index -= 1) {
+        if (
+          tableResults[index]?.side === "target" &&
+          tableResults[index]?.evidence === undefined
+        )
+          tableResults.splice(index, 1);
+      }
       sqlTargetTable = tableFromDirectEvidence(
-        sqlTarget.qualifiedName,
+        effectiveSqlTarget.qualifiedName,
         undefined,
         controlledTaskEndpointDataSource(taskEvidence.taskCategory, "target"),
       );
       tableResults.push({
         side: "target",
-        qualifiedName: sqlTarget.qualifiedName,
+        qualifiedName: effectiveSqlTarget.qualifiedName,
         evidence: sqlTargetTable,
       });
     }
@@ -1177,7 +1533,8 @@ export function collectOneTask(
   )?.evidence;
   const fallbackTarget = taskRelationTarget ?? sqlTargetTable;
   const targetValueForEvidence =
-    taskEvidence.target === null && fallbackTarget !== undefined
+    (sqlTargetTable !== undefined && directTargetResult?.evidence === undefined) ||
+    (taskEvidence.target === null && fallbackTarget !== undefined)
       ? undefined
       : taskEvidence.target;
   const taskEvidenceProvider =
