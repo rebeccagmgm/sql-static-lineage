@@ -392,6 +392,53 @@ export function validateMultiHopReconciliation(
         ].includes(write.sqlWriteKind as string | null)
       )
         throw new Error("SQL_WRITE_KIND_INVALID");
+      if (
+        write.writeDirection !== undefined &&
+        write.writeDirection !== "WRITE_CONFIRMED"
+      )
+        throw new Error("WRITE_DIRECTION_INVALID");
+      if (
+        write.targetEvidenceKind !== undefined &&
+        !["DIRECT_PLATFORM_TARGET", "SQL_EXACT_TABLE_TARGET"].includes(
+          String(write.targetEvidenceKind),
+        )
+      )
+        throw new Error("TARGET_EVIDENCE_KIND_INVALID");
+      if (
+        observationKind === "SQL_EXPLICIT_WRITE" &&
+        write.targetEvidenceKind !== undefined
+      )
+        throw new Error("WRITE_TARGET_EVIDENCE_MIXED");
+      if (
+        write.operationClass !== undefined &&
+        ![
+          "INSERT_OVERWRITE",
+          "INSERT_INTO",
+          "MERGE_INTO",
+          "CTAS",
+          "PLATFORM_TRANSFER",
+          "DELETE",
+          "TRUNCATE",
+          "UNKNOWN",
+        ].includes(String(write.operationClass))
+      )
+        throw new Error("OPERATION_CLASS_INVALID");
+      if (
+        write.dataPathRole !== undefined &&
+        !["PRODUCER", "MUTATION_ONLY", "UNKNOWN"].includes(
+          String(write.dataPathRole),
+        )
+      )
+        throw new Error("DATA_PATH_ROLE_INVALID");
+      if (
+        write.operationClass !== undefined &&
+        write.dataPathRole !== undefined &&
+        ((["DELETE", "TRUNCATE"] as readonly string[]).includes(
+          String(write.operationClass),
+        ) !==
+          (write.dataPathRole === "MUTATION_ONLY"))
+      )
+        throw new Error("WRITE_SEMANTICS_MISMATCH");
       for (const [partitionIndex, partitionValue] of requireArray(
         write.partition,
         `writeEdges[${index}].writes[${writeIndex}].partition`,

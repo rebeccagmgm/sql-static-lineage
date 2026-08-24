@@ -36,6 +36,7 @@ import {
   type PartitionAssignment,
   type SqlWrite,
 } from "./sql-write-evidence.ts";
+import { findSqlTargetEvidence } from "../input/sql-target-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -64,12 +65,121 @@ export interface ProducerEvidence {
   readonly detail?: JsonRecord;
 }
 
+export type ProducerWriteDirection = "WRITE_CONFIRMED";
+
+export type ProducerOperationClass =
+  | "INSERT_OVERWRITE"
+  | "INSERT_INTO"
+  | "MERGE_INTO"
+  | "CTAS"
+  | "PLATFORM_TRANSFER"
+  | "DELETE"
+  | "TRUNCATE"
+  | "UNKNOWN";
+
+export type ProducerDataPathRole = "PRODUCER" | "MUTATION_ONLY" | "UNKNOWN";
+
+export interface ProducerWriteSemantics {
+  readonly writeDirection: ProducerWriteDirection;
+  readonly operationClass: ProducerOperationClass;
+  readonly dataPathRole: ProducerDataPathRole;
+}
+
 export interface ProducerWriteObservation {
   readonly observationKind: "DIRECT_TARGET" | "SQL_EXPLICIT_WRITE";
   readonly declaredWriteMode: string | null;
   readonly sqlWriteKind: SqlWrite["writeKind"] | null;
   readonly partition: readonly PartitionAssignment[];
   readonly evidence: readonly ProducerEvidence[];
+  /** Optional target evidence discriminator for newly built observations. */
+  readonly targetEvidenceKind?:
+    "DIRECT_PLATFORM_TARGET" | "SQL_EXACT_TABLE_TARGET";
+  /** Optional on legacy V1 artifacts; newly built observations include it. */
+  readonly writeDirection?: ProducerWriteDirection;
+  /** Optional on legacy V1 artifacts; newly built observations include it. */
+  readonly operationClass?: ProducerOperationClass;
+  /** Optional on legacy V1 artifacts; newly built observations include it. */
+  readonly dataPathRole?: ProducerDataPathRole;
+}
+
+function normalizedWriteMode(value: string | null): string {
+  return (value ?? "").trim().toLowerCase().replaceAll("-", "_");
+}
+
+/**
+ * Normalizes heterogeneous Task evidence without using task-category names as
+ * business rules. A direct platform target is a confirmed write direction,
+ * even when the SQL slot is a SELECT; DELETE/TRUNCATE are table mutations but
+ * are not data-producing paths.
+ */
+export function classifyProducerWriteObservation(
+  write: Pick<
+    ProducerWriteObservation,
+    | "observationKind"
+    | "declaredWriteMode"
+    | "sqlWriteKind"
+    | "targetEvidenceKind"
+  >,
+  context: Readonly<{
+    readonly sqlTargetStatementKind?:
+      "CREATE_TABLE" | "INSERT_TABLE" | "TRUNCATE_TABLE" | "DELETE_TABLE";
+  }> = {},
+): ProducerWriteSemantics {
+  if (write.sqlWriteKind !== null)
+    return {
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: write.sqlWriteKind,
+      dataPathRole: "PRODUCER",
+    };
+  const mode = normalizedWriteMode(write.declaredWriteMode);
+  const mutationClass: Readonly<Record<string, "DELETE" | "TRUNCATE">> = {
+    delete: "DELETE",
+    truncate: "TRUNCATE",
+  };
+  const mutation = mutationClass[mode];
+  if (
+    mutation === "TRUNCATE" ||
+    context.sqlTargetStatementKind === "TRUNCATE_TABLE"
+  )
+    return {
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "TRUNCATE",
+      dataPathRole: "MUTATION_ONLY",
+    };
+  if (
+    mutation === "DELETE" ||
+    context.sqlTargetStatementKind === "DELETE_TABLE"
+  )
+    return {
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "DELETE",
+      dataPathRole: "MUTATION_ONLY",
+    };
+  if (write.targetEvidenceKind === "SQL_EXACT_TABLE_TARGET") {
+    if (context.sqlTargetStatementKind === "INSERT_TABLE")
+      return {
+        writeDirection: "WRITE_CONFIRMED",
+        operationClass: "UNKNOWN",
+        dataPathRole: "PRODUCER",
+      };
+    return {
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "UNKNOWN",
+      dataPathRole: "UNKNOWN",
+    };
+  }
+  if (write.observationKind === "DIRECT_TARGET")
+    if (mode === "" || mode === "append" || mode === "overwrite")
+      return {
+        writeDirection: "WRITE_CONFIRMED",
+        operationClass: "PLATFORM_TRANSFER",
+        dataPathRole: "PRODUCER",
+      };
+  return {
+    writeDirection: "WRITE_CONFIRMED",
+    operationClass: "UNKNOWN",
+    dataPathRole: "UNKNOWN",
+  };
 }
 
 export interface ConfirmedProducerEdge {
@@ -203,6 +313,25 @@ interface TableCatalog {
   readonly validPacks: readonly LoadedTablePack[];
   readonly byIdentity: ReadonlyMap<string, readonly LoadedTablePack[]>;
   readonly byQualifiedName: ReadonlyMap<string, readonly LoadedTablePack[]>;
+}
+
+function sqlTargetStatementKindForPack(
+  pack: LoadedTaskPack,
+):
+  | "CREATE_TABLE"
+  | "INSERT_TABLE"
+  | "TRUNCATE_TABLE"
+  | "DELETE_TABLE"
+  | undefined {
+  const sql = Object.fromEntries(
+    pack.sqlFiles.map((file) => [file.slot, file.content]),
+  ) as Partial<
+    Record<"create" | "query" | "prepare" | "truncate" | "finish", string>
+  >;
+  return findSqlTargetEvidence(
+    sql,
+    stringValue(pack.document?.taskName) ?? undefined,
+  )?.statementKind;
 }
 
 interface ResolvedTable {
@@ -953,12 +1082,20 @@ export function buildTableProducerIndex(
       if (resolvedTarget.confirmable) {
         const table = resolvedTarget.table as ProducerTableIdentity;
         const declaredWriteMode = stringValue(document.writeMode);
-        addWrite(pack, table, {
+        const write = {
           observationKind: "DIRECT_TARGET",
           declaredWriteMode,
           sqlWriteKind: null,
           partition: declaredPartition(document.partition),
           evidence: [packObservation, ...resolvedTarget.evidence],
+          targetEvidenceKind: evidenceKind as
+            "DIRECT_PLATFORM_TARGET" | "SQL_EXACT_TABLE_TARGET",
+        } as const;
+        addWrite(pack, table, {
+          ...write,
+          ...classifyProducerWriteObservation(write, {
+            sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
+          }),
         });
       } else {
         const reason =
@@ -1003,7 +1140,7 @@ export function buildTableProducerIndex(
           },
         };
         if (resolvedTarget.confirmable) {
-          addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
+          const observation = {
             observationKind: "SQL_EXPLICIT_WRITE",
             declaredWriteMode: null,
             sqlWriteKind: write.writeKind,
@@ -1014,6 +1151,12 @@ export function buildTableProducerIndex(
               parseObservation,
               ...resolvedTarget.evidence,
             ],
+          } as const;
+          addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
+            ...observation,
+            ...classifyProducerWriteObservation(observation, {
+              sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
+            }),
           });
         } else {
           nonConfirmedRelations.push(
@@ -1120,7 +1263,14 @@ export function lookupConfirmedProducers(
   };
   const key = identityKey(normalized);
   return index.confirmedProducerEdges.filter(
-    (edge) => identityKey(edge.table) === key,
+    (edge) =>
+      identityKey(edge.table) === key &&
+      edge.writes.some(
+        (write) =>
+          (write.dataPathRole ??
+            classifyProducerWriteObservation(write).dataPathRole) ===
+          "PRODUCER",
+      ),
   );
 }
 
@@ -1261,17 +1411,29 @@ function validatePartition(value: unknown, field: string): void {
 
 function validateWrite(value: unknown, field: string): void {
   const write = requireRecord(value, field);
-  requireExactKeys(
-    write,
-    [
-      "observationKind",
-      "declaredWriteMode",
-      "sqlWriteKind",
-      "partition",
-      "evidence",
-    ],
-    field,
+  const requiredKeys = [
+    "observationKind",
+    "declaredWriteMode",
+    "sqlWriteKind",
+    "partition",
+    "evidence",
+  ] as const;
+  const allowedKeys = [
+    ...requiredKeys,
+    "targetEvidenceKind",
+    "writeDirection",
+    "operationClass",
+    "dataPathRole",
+  ];
+  const unexpected = Object.keys(write).filter(
+    (key) => !allowedKeys.includes(key),
   );
+  if (unexpected.length > 0)
+    throw new Error(
+      `${field} has unexpected field ${unexpected.sort(compareText)[0]}`,
+    );
+  for (const key of requiredKeys)
+    if (!(key in write)) throw new Error(`${field}.${key} is required`);
   if (
     write.observationKind !== "DIRECT_TARGET" &&
     write.observationKind !== "SQL_EXPLICIT_WRITE"
@@ -1292,6 +1454,58 @@ function validateWrite(value: unknown, field: string): void {
     (write.declaredWriteMode !== null || write.sqlWriteKind === null)
   )
     throw new Error(`${field} mixes SQL and declared write evidence`);
+  if (
+    write.targetEvidenceKind !== undefined &&
+    write.targetEvidenceKind !== "DIRECT_PLATFORM_TARGET" &&
+    write.targetEvidenceKind !== "SQL_EXACT_TABLE_TARGET"
+  )
+    throw new Error(`${field}.targetEvidenceKind is invalid`);
+  if (
+    write.observationKind === "SQL_EXPLICIT_WRITE" &&
+    write.targetEvidenceKind !== undefined
+  )
+    throw new Error(`${field} mixes target and SQL parse evidence`);
+  if (
+    write.writeDirection !== undefined &&
+    write.writeDirection !== "WRITE_CONFIRMED"
+  )
+    throw new Error(`${field}.writeDirection is invalid`);
+  const operationClasses: readonly ProducerOperationClass[] = [
+    "INSERT_OVERWRITE",
+    "INSERT_INTO",
+    "MERGE_INTO",
+    "CTAS",
+    "PLATFORM_TRANSFER",
+    "DELETE",
+    "TRUNCATE",
+    "UNKNOWN",
+  ];
+  if (
+    write.operationClass !== undefined &&
+    !operationClasses.includes(
+      String(write.operationClass) as ProducerOperationClass,
+    )
+  )
+    throw new Error(`${field}.operationClass is invalid`);
+  const dataPathRoles: readonly ProducerDataPathRole[] = [
+    "PRODUCER",
+    "MUTATION_ONLY",
+    "UNKNOWN",
+  ];
+  if (
+    write.dataPathRole !== undefined &&
+    !dataPathRoles.includes(String(write.dataPathRole) as ProducerDataPathRole)
+  )
+    throw new Error(`${field}.dataPathRole is invalid`);
+  if (
+    write.operationClass !== undefined &&
+    write.dataPathRole !== undefined &&
+    (["DELETE", "TRUNCATE"] as readonly string[]).includes(
+      String(write.operationClass),
+    ) !==
+      (write.dataPathRole === "MUTATION_ONLY")
+  )
+    throw new Error(`${field} operationClass/dataPathRole mismatch`);
   if (!Array.isArray(write.partition))
     throw new Error(`${field}.partition must be an array`);
   write.partition.forEach((item, index) =>

@@ -22,10 +22,12 @@ import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
 import {
   fingerprintTableProducerInputs,
+  classifyProducerWriteObservation,
   loadTableProducerIndex,
   lookupConfirmedProducers,
   lookupNonConfirmedRelations,
   validateTableProducerIndex,
+  type ProducerDataPathRole,
   type NonConfirmedRelation,
   type ProducerTableIdentity,
   type ProducerWriteObservation,
@@ -713,6 +715,36 @@ function mergeWrites(
   );
 }
 
+function dataPathRoleOfWrite(
+  write: ProducerWriteObservation | ConfirmedWriteObservation,
+): ProducerDataPathRole {
+  if ("dataPathRole" in write && write.dataPathRole !== undefined)
+    return write.dataPathRole;
+  if ("observationKind" in write)
+    return classifyProducerWriteObservation(write).dataPathRole;
+  const mode = (write.writeKind ?? "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("-", "_");
+  if (mode === "delete" || mode === "truncate") return "MUTATION_ONLY";
+  if (
+    mode === "" ||
+    mode === "append" ||
+    mode === "overwrite" ||
+    ["INSERT_OVERWRITE", "INSERT_INTO", "MERGE_INTO", "CTAS"].includes(
+      mode.toUpperCase(),
+    )
+  )
+    return "PRODUCER";
+  return "UNKNOWN";
+}
+
+function isDataPathMutationOnly(
+  write: ProducerWriteObservation | ConfirmedWriteObservation,
+): boolean {
+  return dataPathRoleOfWrite(write) === "MUTATION_ONLY";
+}
+
 function writesFromPack(
   pack: LoadedTaskPack,
   catalog: TableCatalog,
@@ -1141,6 +1173,10 @@ export function reconcileOneHop(
       for (const edge of lookupConfirmedProducers(producerIndex, identity)) {
         const key = `${tableIdentityKey(edge.table)}\u0000${edge.taskId}`;
         if (seenEdges.has(key)) continue;
+        const producerWrites = edge.writes.filter(
+          (write) => !isDataPathMutationOnly(write),
+        );
+        if (producerWrites.length === 0) continue;
         seenEdges.add(key);
         confirmedProducers.push({
           table: edge.table,
@@ -1148,7 +1184,7 @@ export function reconcileOneHop(
           scheduleRelation: scheduleParents.has(edge.taskId)
             ? "DIRECT_PARENT"
             : "NOT_DIRECT_PARENT",
-          writes: edge.writes,
+          writes: producerWrites,
         });
       }
       for (const relation of lookupNonConfirmedRelations(
@@ -1164,7 +1200,13 @@ export function reconcileOneHop(
   } else {
     const byEdge = new Map<string, DataPathConfirmedProducer>();
     for (const item of reconciliation) {
-      if (item.status !== "MATCHED" || !item.taskId || !item.write) continue;
+      if (
+        item.status !== "MATCHED" ||
+        !item.taskId ||
+        !item.write ||
+        isDataPathMutationOnly(item.write)
+      )
+        continue;
       const identity = tableIdentityKey(item.table);
       if (!identity) continue;
       const key = `${identity}\u0000${item.taskId}`;

@@ -586,6 +586,57 @@ describe("reconcileOneHop", () => {
     });
   });
 
+  it("keeps mutation-only writes on the schedule path but out of data traversal", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "src.mutated");
+    writeTable(dataRoot, "mart.current");
+    writeTask(dataRoot, "current-mutation", {
+      sql: {
+        query: {
+          content: "SELECT id FROM src.mutated",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "mutation-parent", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.mutated",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      writeMode: "truncate",
+      sql: { truncate: "TRUNCATE TABLE src.mutated" },
+      evidenceProvider: "fixture:task",
+    });
+    const producerIndex = buildTableProducerIndex(dataRoot);
+    const result = reconcileOneHop("current-mutation", {
+      dataRoot,
+      producerIndex,
+      openCliRunner: (args) =>
+        args[0] === "horae"
+          ? [{ task_id: "mutation-parent", direction: "上游" }]
+          : null,
+    });
+    expect(result.nextScheduleTaskIds).toEqual(["mutation-parent"]);
+    expect(result.nextDataTaskIds).toEqual([]);
+    expect(result.dataPath.confirmedProducers).toEqual([]);
+    expect(result.reconciliation).toEqual([
+      expect.objectContaining({
+        status: "MATCHED",
+        taskId: "mutation-parent",
+        table: expect.objectContaining({ qualifiedName: "src.mutated" }),
+      }),
+    ]);
+  });
+
   it("fails closed before Horae or task-source when an explicit producer index is stale or invalid", () => {
     const staleFixture = writeProducerIndexFixture();
     writeTable(staleFixture.dataRoot, "src.added_after_index");
