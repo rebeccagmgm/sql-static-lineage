@@ -9,6 +9,9 @@ export interface SqlTargetEvidence {
     | "INSERT_TABLE"
     | "TRUNCATE_TABLE"
     | "DELETE_TABLE";
+  /** Offset of the target token in its SQL slot, used only for local ordering. */
+  readonly targetStart?: number;
+  readonly targetEnd?: number;
 }
 
 const TARGET_PATTERNS: readonly {
@@ -132,16 +135,11 @@ function qualifyUnqualifiedTarget(
   return `${taskTable.slice(0, separator)}.${target}`;
 }
 
-/**
- * Finds an unambiguous SQL-declared table target. This is deliberately limited
- * to structural write/DDL clauses; ordinary table mentions and task names do
- * not create evidence by themselves.
- */
-export function findSqlTargetEvidence(
+function collectSqlTargetEvidence(
   sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
-  taskName?: string,
-  options: Readonly<{ allowSchemaOnlyQualification?: boolean }> = {},
-): SqlTargetEvidence | undefined {
+  taskName: string | undefined,
+  options: Readonly<{ allowSchemaOnlyQualification?: boolean }>,
+): SqlTargetEvidence[] {
   const found: SqlTargetEvidence[] = [];
   for (const slot of [
     "create",
@@ -156,7 +154,8 @@ export function findSqlTargetEvidence(
     for (const { statementKind, pattern } of TARGET_PATTERNS) {
       pattern.lastIndex = 0;
       for (const match of withoutComments.matchAll(pattern)) {
-        const parsed = normalizeQualifiedName(match[1]!);
+        const rawTarget = match[1]!;
+        const parsed = normalizeQualifiedName(rawTarget);
         if (parsed === undefined) continue;
         const qualifiedName = qualifyUnqualifiedTarget(
           parsed,
@@ -164,17 +163,156 @@ export function findSqlTargetEvidence(
           options.allowSchemaOnlyQualification === true,
         );
         if (qualifiedName === undefined) continue;
-        found.push({ qualifiedName, slot, statementKind });
+        const matchStart = match.index ?? 0;
+        const targetStart = matchStart + match[0].indexOf(rawTarget);
+        found.push({
+          qualifiedName,
+          slot,
+          statementKind,
+          targetStart,
+          targetEnd: targetStart + rawTarget.length,
+        });
       }
     }
   }
+  return found;
+}
+
+const SQL_SLOT_ORDER: readonly SqlTargetSlot[] = [
+  "create",
+  "query",
+  "prepare",
+  "truncate",
+  "finish",
+];
+
+function slotOrder(slot: SqlTargetSlot): number {
+  return SQL_SLOT_ORDER.indexOf(slot);
+}
+
+function evidencePosition(evidence: SqlTargetEvidence): [number, number] {
+  return [slotOrder(evidence.slot), evidence.targetStart ?? -1];
+}
+
+function isAfter(
+  candidate: SqlTargetEvidence,
+  other: SqlTargetEvidence,
+): boolean {
+  const [candidateSlot, candidateOffset] = evidencePosition(candidate);
+  const [otherSlot, otherOffset] = evidencePosition(other);
+  return (
+    candidateSlot > otherSlot ||
+    (candidateSlot === otherSlot && candidateOffset > otherOffset)
+  );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function targetReferencePattern(qualifiedName: string): RegExp {
+  const parts = qualifiedName.split(".");
+  const qualified = parts
+    .map((part) => escapeRegExp(part))
+    .join("\\s*\\.\\s*");
+  const leaf = escapeRegExp(parts[parts.length - 1]!);
+  return new RegExp(
+    `(?:^|[^A-Za-z0-9_$#-])(?:${qualified}|${leaf})(?![A-Za-z0-9_$#-])`,
+    "i",
+  );
+}
+
+/**
+ * A write is terminal only when its target is not referenced by a later SQL
+ * statement in the same task. Comments and string literals are masked before
+ * this check, so a log message or embedded example cannot keep a target alive.
+ */
+function isReferencedLaterInTask(
+  evidence: SqlTargetEvidence,
+  sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
+): boolean {
+  const pattern = targetReferencePattern(evidence.qualifiedName);
+  for (const slot of SQL_SLOT_ORDER) {
+    if (slotOrder(slot) < slotOrder(evidence.slot)) continue;
+    const content = sql[slot];
+    if (typeof content !== "string" || content.trim() === "") continue;
+    const masked = maskCommentsAndStringLiterals(content);
+    const searchFrom =
+      slot === evidence.slot ? (evidence.targetEnd ?? 0) : 0;
+    const laterContent = masked.slice(searchFrom);
+    if (pattern.test(laterContent)) return true;
+  }
+  return false;
+}
+
+function uniqueSqlTargetEvidence(
+  found: readonly SqlTargetEvidence[],
+): SqlTargetEvidence[] | undefined {
   const unique = new Map<string, SqlTargetEvidence>();
   for (const evidence of found) {
     const key = evidence.qualifiedName.toLowerCase();
     const existing = unique.get(key);
     if (existing === undefined) unique.set(key, evidence);
-    else if (existing.qualifiedName !== evidence.qualifiedName)
-      return undefined;
+    else if (existing.qualifiedName !== evidence.qualifiedName) return undefined;
   }
-  return unique.size === 1 ? [...unique.values()][0] : undefined;
+  return [...unique.values()];
+}
+
+/**
+ * Finds an unambiguous SQL-declared table target. This is deliberately limited
+ * to structural write/DDL clauses; ordinary table mentions and task names do
+ * not create evidence by themselves.
+ */
+export function findSqlTargetEvidence(
+  sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
+  taskName?: string,
+  options: Readonly<{ allowSchemaOnlyQualification?: boolean }> = {},
+): SqlTargetEvidence | undefined {
+  const unique = uniqueSqlTargetEvidence(
+    collectSqlTargetEvidence(sql, taskName, options),
+  );
+  return unique?.length === 1 ? unique[0] : undefined;
+}
+
+/**
+ * Finds the final DML target in a task whose SQL also materializes temporary
+ * tables. A task-name match is only used to choose among INSERT targets; the
+ * caller must still obtain physical Table evidence before publishing it.
+ */
+export function findSqlFinalTargetEvidence(
+  sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
+  taskName?: string,
+  options: Readonly<{ allowSchemaOnlyQualification?: boolean }> = {},
+): SqlTargetEvidence | undefined {
+  const allEvidence = collectSqlTargetEvidence(sql, taskName, options);
+  const byName = new Map<string, SqlTargetEvidence>();
+  for (const evidence of allEvidence) {
+    const key = evidence.qualifiedName.toLowerCase();
+    const existing = byName.get(key);
+    if (
+      existing === undefined ||
+      (existing.statementKind !== "INSERT_TABLE" &&
+        evidence.statementKind === "INSERT_TABLE") ||
+      (existing.statementKind === evidence.statementKind &&
+        isAfter(evidence, existing))
+    )
+      byName.set(key, evidence);
+  }
+  const inserts = [...byName.values()].filter(
+    (evidence) => evidence.statementKind === "INSERT_TABLE",
+  );
+  if (inserts.length === 0)
+    return byName.size === 1 ? [...byName.values()][0] : undefined;
+  const terminalInserts = inserts.filter(
+    (evidence) => !isReferencedLaterInTask(evidence, sql),
+  );
+  const taskTable = taskName ? taskNameBaseTable(taskName) : undefined;
+  const taskMatch = taskTable
+    ? terminalInserts.filter(
+        (evidence) =>
+          evidence.qualifiedName.toLowerCase() === taskTable.toLowerCase(),
+      )
+    : [];
+  if (taskMatch.length === 1) return taskMatch[0];
+  return terminalInserts.length === 1 ? terminalInserts[0] : undefined;
 }

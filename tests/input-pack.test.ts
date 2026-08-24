@@ -17,6 +17,8 @@ import {
   assertExistingTableLayout,
   createTableDocument,
   createTaskDocument,
+  isFrozenScheduleStatus,
+  isManualScheduleCycle,
   quarantineMalformedTableDirectories,
   sha256Text,
   stableTableId,
@@ -32,15 +34,22 @@ import {
   shouldUseTaskRelationFallback,
   targetEvidenceKindFor,
 } from "../scripts/input/task-endpoints.ts";
-import { findSqlTargetEvidence } from "../scripts/input/sql-target-evidence.ts";
 import {
+  findSqlFinalTargetEvidence,
+  findSqlTargetEvidence,
+} from "../scripts/input/sql-target-evidence.ts";
+import {
+  assertInputPackBatchSize,
   exitCodeForTaskBatch,
   runTaskBatch,
+  StopTaskBatch,
 } from "../scripts/input/task-batch.ts";
 import {
+  environmentMilliseconds,
   findStaleLegacyTaskDirectories,
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
+  relocateTaskPacks,
   taskCategory,
 } from "../scripts/input/collect-one-task-input-pack.ts";
 import {
@@ -75,6 +84,55 @@ describe("Input Pack V1", () => {
     expect(tableSchema.properties).not.toHaveProperty("tableRef");
   });
 
+  it("preserves direct Horae schedule-cycle evidence and recognizes manual labels", () => {
+    const document = createTaskDocument({
+      taskId: "manual-1",
+      taskCategory: "sparkIndex",
+      taskName: "manual-task",
+      scheduleCycle: "手工",
+      evidenceProvider: "fixture:task",
+    });
+    expect(document.scheduleCycle).toBe("手工");
+    expect(isManualScheduleCycle(document.scheduleCycle)).toBe(true);
+    expect(isManualScheduleCycle("每日")).toBe(false);
+    validateTaskDocument(document);
+  });
+
+  it("preserves frozen Horae status in the Task Pack contract", () => {
+    const document = createTaskDocument({
+      taskId: "frozen-1",
+      taskCategory: "sparkIndex",
+      scheduleStatus: "F",
+      evidenceProvider: "fixture:task",
+    });
+    expect(document.scheduleStatus).toBe("F");
+    expect(isFrozenScheduleStatus(document.scheduleStatus)).toBe(true);
+    expect(isFrozenScheduleStatus("冻结")).toBe(true);
+    expect(isFrozenScheduleStatus("Y")).toBe(false);
+    validateTaskDocument(document);
+  });
+
+  it("relocates an existing manual Task Pack without overwriting evidence", () => {
+    const root = dataRoot();
+    const archive = dataRoot();
+    const written = writeTaskInput(root, {
+      taskId: "manual-1",
+      taskCategory: "sparkIndex",
+      scheduleCycle: "手工",
+      evidenceProvider: "fixture:task",
+    });
+
+    const moved = relocateTaskPacks(root, archive, "manual-1");
+
+    expect(moved).toEqual([
+      join(archive, "tasks", "sparkIndex", "manual-1"),
+    ]);
+    expect(existsSync(written.directory)).toBe(false);
+    expect(
+      existsSync(join(archive, "tasks", "sparkIndex", "manual-1", "task.json")),
+    ).toBe(true);
+  });
+
   it("continues after one task failure and returns a failing aggregate signal", () => {
     const attempted: string[] = [];
     const failures: string[] = [];
@@ -92,6 +150,45 @@ describe("Input Pack V1", () => {
     expect(hadFailure).toBe(true);
     expect(exitCodeForTaskBatch(hadFailure)).toBe(1);
     expect(exitCodeForTaskBatch(false)).toBe(0);
+  });
+
+  it("stops a batch without reporting a post-checkpoint size stop as task failure", () => {
+    const attempted: string[] = [];
+    const failures: string[] = [];
+    const hadFailure = runTaskBatch(
+      "fixture-root",
+      ["first", "second"],
+      (_root, taskId) => {
+        attempted.push(taskId);
+        if (taskId === "first") throw new StopTaskBatch("checkpoint limit");
+      },
+      (taskId) => failures.push(taskId),
+    );
+    expect(attempted).toEqual(["first"]);
+    expect(failures).toEqual([]);
+    expect(hadFailure).toBe(false);
+  });
+
+  it("enforces the batch size limit and positive environment overrides", () => {
+    expect(() => assertInputPackBatchSize(200)).not.toThrow();
+    expect(() => assertInputPackBatchSize(201)).toThrow(/at most 200/);
+    const variable = "INPUT_PACK_TEST_MILLISECONDS";
+    const previous = process.env[variable];
+    try {
+      delete process.env[variable];
+      expect(environmentMilliseconds(variable, 3000)).toBe(3000);
+      process.env[variable] = "1";
+      expect(environmentMilliseconds(variable, 3000)).toBe(1);
+      for (const invalid of ["0", "-1", "1.5", "invalid"]) {
+        process.env[variable] = invalid;
+        expect(() => environmentMilliseconds(variable, 3000)).toThrow(
+          /positive integer/,
+        );
+      }
+    } finally {
+      if (previous === undefined) delete process.env[variable];
+      else process.env[variable] = previous;
+    }
   });
 
   it("uses the authoritative Horae type dictionary for task categories", () => {
@@ -210,6 +307,41 @@ describe("Input Pack V1", () => {
     expect(canSkipSuccessfulTask(partial.tasks["244616"], root)).toBe(false);
   });
 
+  it("persists a Horae-not-found exclusion for later batches", () => {
+    const root = dataRoot();
+    const statusFile = `${root}.input-pack-status.json`;
+    const status = loadTaskStatus(statusFile, root);
+    updateTaskStatus(status, {
+      taskId: "73322",
+      status: "EXCLUDED",
+      exclusionReason: "HORAE_TASK_NOT_FOUND",
+      changed: false,
+      warnings: [],
+      staleLegacyTaskDirectories: [],
+    });
+    saveTaskStatus(statusFile, status);
+
+    const loaded = loadTaskStatus(statusFile, root);
+    expect(loaded.tasks["73322"]).toMatchObject({
+      status: "EXCLUDED",
+      exclusionReason: "HORAE_TASK_NOT_FOUND",
+    });
+
+    updateTaskStatus(loaded, {
+      taskId: "166630",
+      status: "EXCLUDED",
+      exclusionReason: "PHYSICAL_TABLE_NOT_FOUND",
+      changed: false,
+      warnings: [],
+      staleLegacyTaskDirectories: [],
+    });
+    saveTaskStatus(statusFile, loaded);
+    expect(loadTaskStatus(statusFile, root).tasks["166630"]).toMatchObject({
+      status: "EXCLUDED",
+      exclusionReason: "PHYSICAL_TABLE_NOT_FOUND",
+    });
+  });
+
   it("rejects status files inside the Input Pack data root and recovers an orphan checkpoint", () => {
     const root = dataRoot();
     expect(() =>
@@ -299,6 +431,46 @@ describe("Input Pack V1", () => {
       ),
     ).toMatchObject({
       statementKind: "DELETE_TABLE",
+    });
+  });
+
+  it("selects the task-matching final INSERT among intermediate materializations", () => {
+    const sql = {
+      create:
+        "CREATE TABLE pwc_psn_sys_user_roles_temp AS SELECT 1; CREATE TABLE pwc_psn_sys_user_roles AS SELECT 1",
+      query:
+        "INSERT OVERWRITE TABLE pwc_psn_sys_user_roles_temp SELECT 1; INSERT OVERWRITE TABLE pwc_psn_sys_user_roles SELECT 1",
+    };
+    expect(
+      findSqlTargetEvidence(sql, "dm_ctms_n.ctms_pwc_psn_sys_user_roles"),
+    ).toBeUndefined();
+    expect(
+      findSqlFinalTargetEvidence(
+        sql,
+        "dm_ctms_n.pwc_psn_sys_user_roles",
+      ),
+    ).toMatchObject({
+      qualifiedName: "dm_ctms_n.pwc_psn_sys_user_roles",
+      statementKind: "INSERT_TABLE",
+    });
+  });
+
+  it("selects a later terminal INSERT when the task name has a different suffix", () => {
+    const sql = {
+      query:
+        "INSERT OVERWRITE TABLE pwc_psn_sys_user_roles_temp SELECT 1; " +
+        "INSERT OVERWRITE TABLE pwc_psn_sys_user_roles " +
+        "SELECT 1 FROM pwc_psn_sys_user_roles_temp",
+    };
+    expect(
+      findSqlFinalTargetEvidence(
+        sql,
+        "dm_ctms_n.ctms_pwc_psn_sys_user_roles",
+        { allowSchemaOnlyQualification: true },
+      ),
+    ).toMatchObject({
+      qualifiedName: "dm_ctms_n.pwc_psn_sys_user_roles",
+      statementKind: "INSERT_TABLE",
     });
   });
 
@@ -579,6 +751,12 @@ describe("Input Pack V1", () => {
     );
     expect(controlledTaskEndpointDataSource("hive2oracle", "target")).toBe(
       undefined,
+    );
+    expect(controlledTaskEndpointDataSource("hive2starrocks", "source")).toBe(
+      "gfhive",
+    );
+    expect(controlledTaskEndpointDataSource("hive2starrocks", "target")).toBe(
+      "gfstarrocks_idms_all",
     );
     expect(controlledTaskEndpointDataSource("oracle2hive", "source")).toBe(
       "gforacle_gftzdb#gftzdb",

@@ -25,6 +25,8 @@ import {
   canonicalJson,
   sha256File,
   sha256Text,
+  isFrozenScheduleStatus,
+  isManualScheduleCycle,
   validateTableDocument,
   validateTaskDocument,
   type JsonValue,
@@ -203,7 +205,7 @@ export interface NonConfirmedRelation {
 }
 
 export interface TableProducerIndex {
-  readonly schemaVersion: "1.0.0";
+  readonly schemaVersion: "1.1.0" | "1.0.0";
   readonly artifactType: "TABLE_PRODUCER_INDEX";
   readonly generatedAt: string;
   readonly buildStatus: "SUCCESS" | "PARTIAL";
@@ -211,6 +213,8 @@ export interface TableProducerIndex {
   readonly inputFingerprint: string;
   readonly confirmedProducerEdges: readonly ConfirmedProducerEdge[];
   readonly nonConfirmedRelations: readonly NonConfirmedRelation[];
+  /** Intermediate SQL materializations are retained for audit, not as unresolved producer relations. */
+  readonly intermediateMaterializations: readonly NonConfirmedRelation[];
   readonly counts: {
     readonly taskPacksDiscovered: number;
     readonly taskPacksIndexed: number;
@@ -220,6 +224,7 @@ export interface TableProducerIndex {
     readonly confirmedProducerEdges: number;
     readonly confirmedWriteObservations: number;
     readonly candidateObservations: number;
+    readonly intermediateMaterializations: number;
     readonly invalidTaskPacks: number;
     readonly invalidTablePacks: number;
   };
@@ -341,7 +346,8 @@ interface ResolvedTable {
   readonly reason: string | null;
 }
 
-const ARTIFACT_SCHEMA_VERSION = "1.0.0" as const;
+const ARTIFACT_SCHEMA_VERSION = "1.1.0" as const;
+const LEGACY_ARTIFACT_SCHEMA_VERSION = "1.0.0" as const;
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -850,6 +856,61 @@ function resolveSqlTarget(
   };
 }
 
+function resolveSqlTargetForTask(
+  catalog: TableCatalog,
+  qualifiedName: string,
+  taskTarget: unknown,
+  taskName?: unknown,
+  useTaskSchemaFallback = false,
+): ResolvedTable {
+  const normalized = normalizeQualifiedName(qualifiedName);
+  if (normalized.includes(".")) return resolveSqlTarget(catalog, normalized);
+
+  const target = asRecord(taskTarget);
+  const targetQualifiedName = stringValue(target?.qualifiedName);
+  if (!targetQualifiedName || !targetQualifiedName.includes(".")) {
+    if (useTaskSchemaFallback) {
+      const taskNameValue = stringValue(taskName);
+      const separator = taskNameValue?.indexOf(".") ?? -1;
+      if (separator > 0) {
+        const taskSchema = normalizeQualifiedName(
+          taskNameValue!.slice(0, separator),
+        );
+        return resolveSqlTarget(catalog, `${taskSchema}.${normalized}`);
+      }
+    }
+    return resolveSqlTarget(catalog, normalized);
+  }
+
+  const targetParts = targetQualifiedName.split(".");
+  const targetName = targetParts[targetParts.length - 1]!;
+  if (normalizeToken(targetName) !== normalizeToken(normalized))
+    return resolveSqlTarget(catalog, normalized);
+
+  const resolved = resolveExplicitTarget(catalog, taskTarget);
+  if (resolved.confirmable) return resolved;
+  return {
+    ...resolved,
+    reason: "SQL_WRITE_TABLE_IDENTITY_UNRESOLVED",
+  };
+}
+
+function producerTableKey(table: ProducerTableRef): string | null {
+  if (
+    !table.platform ||
+    !table.dataSource ||
+    !table.qualifiedName ||
+    table.identityStatus !== "RESOLVED"
+  )
+    return null;
+  return identityKey(table as ProducerTableIdentity);
+}
+
+function hasTaskSchema(taskName: unknown): boolean {
+  const value = stringValue(taskName);
+  return (value?.indexOf(".") ?? -1) > 0;
+}
+
 function taskEvidence(
   dataRoot: string,
   pack: LoadedTaskPack,
@@ -873,6 +934,118 @@ function sqlEvidence(file: LoadedSqlFile): ProducerEvidence {
     sha256: file.sha256,
     detail: { slot: file.slot, relativePath: file.path },
   };
+}
+
+function maskSqlForTableReference(sql: string): string {
+  const output = [...sql];
+  let state: "NORMAL" | "SINGLE_QUOTE" | "LINE_COMMENT" | "BLOCK_COMMENT" =
+    "NORMAL";
+  for (let index = 0; index < output.length; index += 1) {
+    const current = sql[index]!;
+    const next = sql[index + 1];
+    if (state === "NORMAL") {
+      if (current === "'") {
+        output[index] = " ";
+        state = "SINGLE_QUOTE";
+      } else if (current === "-" && next === "-") {
+        output[index] = " ";
+        output[index + 1] = " ";
+        index += 1;
+        state = "LINE_COMMENT";
+      } else if (current === "/" && next === "*") {
+        output[index] = " ";
+        output[index + 1] = " ";
+        index += 1;
+        state = "BLOCK_COMMENT";
+      }
+      continue;
+    }
+    if (state === "SINGLE_QUOTE") {
+      if (current === "\n" || current === "\r") continue;
+      output[index] = " ";
+      if (current === "\\" && index + 1 < output.length) {
+        output[index + 1] = " ";
+        index += 1;
+      } else if (current === "'" && next === "'") {
+        output[index + 1] = " ";
+        index += 1;
+      } else if (current === "'") state = "NORMAL";
+      continue;
+    }
+    if (state === "LINE_COMMENT") {
+      if (current === "\n" || current === "\r") state = "NORMAL";
+      else output[index] = " ";
+      continue;
+    }
+    if (current === "*" && next === "/") {
+      output[index] = " ";
+      output[index + 1] = " ";
+      index += 1;
+      state = "NORMAL";
+    } else if (current !== "\n" && current !== "\r") output[index] = " ";
+  }
+  return output.join("");
+}
+
+function tableReferencePattern(name: string): RegExp {
+  const parts = name.split(".").map((part) => {
+    const escaped = part.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+    return `(?:[\`\"]?${escaped}[\`\"]?)`;
+  });
+  return new RegExp(
+    `(^|[^A-Za-z0-9_$#-])(${parts.join("\\s*\\.\\s*")})(?=$|[^A-Za-z0-9_$#-])`,
+    "i",
+  );
+}
+
+function maskSqlWriteTargets(sql: string): string {
+  const masked = maskSqlForTableReference(sql);
+  const output = [...masked];
+  for (const write of extractSqlWrites(sql)) {
+    const statement = masked.slice(
+      write.statementSpan.start,
+      write.statementSpan.end,
+    );
+    const match = tableReferencePattern(write.qualifiedName).exec(statement);
+    const target = match?.[2];
+    if (match?.index === undefined || !target) continue;
+    const targetStart =
+      write.statementSpan.start + match.index + match[0].lastIndexOf(target);
+    output.fill(" ", targetStart, targetStart + target.length);
+  }
+  return output.join("");
+}
+
+function containsTableReadReference(
+  sql: string,
+  qualifiedName: string,
+): boolean {
+  const names = qualifiedName.includes(".")
+    ? [qualifiedName, qualifiedName.slice(qualifiedName.lastIndexOf(".") + 1)]
+    : [qualifiedName];
+  const masked = maskSqlWriteTargets(sql);
+  return names.some((name) => tableReferencePattern(name).test(masked));
+}
+
+function isIntraTaskIntermediateMaterialization(
+  pack: LoadedTaskPack,
+  file: LoadedSqlFile,
+  write: SqlWrite,
+): boolean {
+  const fileIndex = pack.sqlFiles.indexOf(file);
+  if (fileIndex < 0) return false;
+  if (
+    containsTableReadReference(
+      file.content.slice(write.statementSpan.end),
+      write.qualifiedName,
+    )
+  )
+    return true;
+  return pack.sqlFiles
+    .slice(fileIndex + 1)
+    .some((laterFile) =>
+      containsTableReadReference(laterFile.content, write.qualifiedName),
+    );
 }
 
 function declaredPartition(value: unknown): PartitionAssignment[] {
@@ -1015,6 +1188,7 @@ export function buildTableProducerIndex(
     { edge: ConfirmedProducerEdge; writes: ProducerWriteObservation[] }
   >();
   const nonConfirmedRelations: NonConfirmedRelation[] = [];
+  const intermediateMaterializations: NonConfirmedRelation[] = [];
   const issues: string[] = [];
 
   const addWrite = (
@@ -1072,8 +1246,15 @@ export function buildTableProducerIndex(
       continue;
     }
     const document = pack.document;
+    if (
+      isManualScheduleCycle(document.scheduleCycle) ||
+      isFrozenScheduleStatus(document.scheduleStatus)
+    )
+      continue;
     const packObservation = taskEvidence(dataRoot, pack);
     const evidenceKind = stringValue(document.targetEvidenceKind);
+    let unresolvedTargetRelation: NonConfirmedRelation | null = null;
+    const confirmedSqlTargetKeys = new Set<string>();
     if (
       evidenceKind === "DIRECT_PLATFORM_TARGET" ||
       evidenceKind === "SQL_EXACT_TABLE_TARGET"
@@ -1116,17 +1297,28 @@ export function buildTableProducerIndex(
         evidenceKind === "TABLE_TASK_RELATION_DIRECTION_UNKNOWN"
           ? "TABLE_TASK_RELATION_DIRECTION_UNKNOWN"
           : "TARGET_DIRECTION_UNCONFIRMED";
-      nonConfirmedRelations.push(
-        nonConfirmed(pack, resolvedTarget.table, reason, [
-          packObservation,
-          ...resolvedTarget.evidence,
-        ]),
+      unresolvedTargetRelation = nonConfirmed(
+        pack,
+        resolvedTarget.table,
+        reason,
+        [packObservation, ...resolvedTarget.evidence],
       );
     }
 
     for (const file of pack.sqlFiles) {
       for (const write of extractSqlWrites(file.content)) {
-        const resolvedTarget = resolveSqlTarget(catalog, write.qualifiedName);
+        const isIntermediate = isIntraTaskIntermediateMaterialization(
+          pack,
+          file,
+          write,
+        );
+        const resolvedTarget = resolveSqlTargetForTask(
+          catalog,
+          write.qualifiedName,
+          document.target,
+          document.taskName,
+          !isIntermediate,
+        );
         const sqlObservation = sqlEvidence(file);
         const parseObservation: ProducerEvidence = {
           source: "SQL_PARSE",
@@ -1139,18 +1331,35 @@ export function buildTableProducerIndex(
             sqlWriteKind: write.writeKind,
           },
         };
-        if (resolvedTarget.confirmable) {
+        const unresolvedReason = isIntermediate
+          ? "SQL_INTRA_TASK_INTERMEDIATE_IDENTITY_UNRESOLVED"
+          : !write.qualifiedName.includes(".") &&
+              hasTaskSchema(document.taskName)
+            ? "SQL_FINAL_TARGET_PHYSICAL_IDENTITY_UNRESOLVED"
+            : (resolvedTarget.reason ?? "SQL_WRITE_TABLE_IDENTITY_UNRESOLVED");
+        const relationEvidence = [
+          packObservation,
+          sqlObservation,
+          parseObservation,
+          ...resolvedTarget.evidence,
+        ];
+        if (isIntermediate) {
+          intermediateMaterializations.push(
+            nonConfirmed(
+              pack,
+              resolvedTarget.table,
+              unresolvedReason,
+              relationEvidence,
+              "WRITE_CONFIRMED",
+            ),
+          );
+        } else if (resolvedTarget.confirmable) {
           const observation = {
             observationKind: "SQL_EXPLICIT_WRITE",
             declaredWriteMode: null,
             sqlWriteKind: write.writeKind,
             partition: write.partition,
-            evidence: [
-              packObservation,
-              sqlObservation,
-              parseObservation,
-              ...resolvedTarget.evidence,
-            ],
+            evidence: relationEvidence,
           } as const;
           addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
             ...observation,
@@ -1158,24 +1367,29 @@ export function buildTableProducerIndex(
               sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
             }),
           });
+          const tableKey = producerTableKey(resolvedTarget.table);
+          if (tableKey) confirmedSqlTargetKeys.add(tableKey);
         } else {
-          nonConfirmedRelations.push(
-            nonConfirmed(
-              pack,
-              resolvedTarget.table,
-              resolvedTarget.reason ?? "SQL_WRITE_TABLE_IDENTITY_UNRESOLVED",
-              [
-                packObservation,
-                sqlObservation,
-                parseObservation,
-                ...resolvedTarget.evidence,
-              ],
-              "WRITE_CONFIRMED",
-            ),
+          const relation = nonConfirmed(
+            pack,
+            resolvedTarget.table,
+            unresolvedReason,
+            relationEvidence,
+            "WRITE_CONFIRMED",
           );
+          nonConfirmedRelations.push(relation);
         }
       }
     }
+    const unresolvedTableKey = unresolvedTargetRelation
+      ? producerTableKey(unresolvedTargetRelation.tableRef)
+      : null;
+    if (
+      unresolvedTargetRelation &&
+      (unresolvedTableKey === null ||
+        !confirmedSqlTargetKeys.has(unresolvedTableKey))
+    )
+      nonConfirmedRelations.push(unresolvedTargetRelation);
     // A task name or a read-only SQL file is not a producer relation, even as
     // a low-confidence candidate. Only an observed target/write contributes.
   }
@@ -1194,6 +1408,9 @@ export function buildTableProducerIndex(
       ),
     );
   nonConfirmedRelations.sort((left, right) =>
+    compareText(relationSortKey(left), relationSortKey(right)),
+  );
+  intermediateMaterializations.sort((left, right) =>
     compareText(relationSortKey(left), relationSortKey(right)),
   );
   issues.sort(compareText);
@@ -1215,6 +1432,7 @@ export function buildTableProducerIndex(
     inputFingerprint: buildInputFingerprint(dataRoot, taskPacks, tablePacks),
     confirmedProducerEdges,
     nonConfirmedRelations,
+    intermediateMaterializations,
     counts: {
       taskPacksDiscovered: taskPacks.length,
       taskPacksIndexed: taskPacks.length - invalidTaskPacks,
@@ -1229,6 +1447,7 @@ export function buildTableProducerIndex(
         0,
       ),
       candidateObservations: nonConfirmedRelations.length,
+      intermediateMaterializations: intermediateMaterializations.length,
       invalidTaskPacks,
       invalidTablePacks,
     },
@@ -1518,30 +1737,92 @@ function validateWrite(value: unknown, field: string): void {
   );
 }
 
+function validateNonConfirmedRelation(rawRelation: unknown, field: string): void {
+  const relation = requireRecord(rawRelation, field);
+  requireExactKeys(
+    relation,
+    [
+      "taskId",
+      "taskCategory",
+      "taskContentHash",
+      "tableRef",
+      "directionStatus",
+      "reasonCodes",
+      "evidence",
+    ],
+    field,
+  );
+  requireString(relation.taskId, `${field}.taskId`);
+  if (relation.taskCategory !== null)
+    requireString(relation.taskCategory, `${field}.taskCategory`);
+  if (relation.taskContentHash !== null)
+    requireSha256(relation.taskContentHash, `${field}.taskContentHash`);
+  validateTableRef(relation.tableRef, `${field}.tableRef`);
+  if (
+    relation.directionStatus !== "WRITE_CONFIRMED" &&
+    relation.directionStatus !== "UNKNOWN"
+  )
+    throw new Error(`${field}.directionStatus is invalid`);
+  if (!Array.isArray(relation.reasonCodes) || relation.reasonCodes.length === 0)
+    throw new Error(`${field}.reasonCodes must be a non-empty array`);
+  const reasons = relation.reasonCodes.map((reason, reasonIndex) =>
+    requireString(reason, `${field}.reasonCodes[${reasonIndex}]`),
+  );
+  if (new Set(reasons).size !== reasons.length)
+    throw new Error(`${field}.reasonCodes must be unique`);
+  if (!Array.isArray(relation.evidence))
+    throw new Error(`${field}.evidence must be an array`);
+  relation.evidence.forEach((item, evidenceIndex) =>
+    validateEvidence(item, `${field}.evidence[${evidenceIndex}]`),
+  );
+}
+
 export function validateTableProducerIndex(
   value: unknown,
 ): asserts value is TableProducerIndex {
   const artifact = asRecord(value);
   if (!artifact) throw new Error("Producer index must be a JSON object");
+  const legacyArtifact =
+    artifact.schemaVersion === LEGACY_ARTIFACT_SCHEMA_VERSION &&
+    !("intermediateMaterializations" in artifact);
   requireExactKeys(
     artifact,
-    [
-      "schemaVersion",
-      "artifactType",
-      "generatedAt",
-      "buildStatus",
-      "coverageSemantics",
-      "inputFingerprint",
-      "confirmedProducerEdges",
-      "nonConfirmedRelations",
-      "counts",
-      "issues",
-      "boundaries",
-      "contentHash",
-    ],
+    legacyArtifact
+      ? [
+          "schemaVersion",
+          "artifactType",
+          "generatedAt",
+          "buildStatus",
+          "coverageSemantics",
+          "inputFingerprint",
+          "confirmedProducerEdges",
+          "nonConfirmedRelations",
+          "counts",
+          "issues",
+          "boundaries",
+          "contentHash",
+        ]
+      : [
+          "schemaVersion",
+          "artifactType",
+          "generatedAt",
+          "buildStatus",
+          "coverageSemantics",
+          "inputFingerprint",
+          "confirmedProducerEdges",
+          "nonConfirmedRelations",
+          "intermediateMaterializations",
+          "counts",
+          "issues",
+          "boundaries",
+          "contentHash",
+        ],
     "producerIndex",
   );
-  if (artifact.schemaVersion !== ARTIFACT_SCHEMA_VERSION)
+  if (
+    artifact.schemaVersion !== ARTIFACT_SCHEMA_VERSION &&
+    !legacyArtifact
+  )
     throw new Error("Unsupported producer index schemaVersion");
   if (artifact.artifactType !== "TABLE_PRODUCER_INDEX")
     throw new Error("Invalid producer index artifactType");
@@ -1606,47 +1887,16 @@ export function validateTableProducerIndex(
   if (!Array.isArray(artifact.nonConfirmedRelations))
     throw new Error("nonConfirmedRelations must be an array");
   for (const [index, rawRelation] of artifact.nonConfirmedRelations.entries()) {
-    const field = `nonConfirmedRelations[${index}]`;
-    const relation = requireRecord(rawRelation, field);
-    requireExactKeys(
-      relation,
-      [
-        "taskId",
-        "taskCategory",
-        "taskContentHash",
-        "tableRef",
-        "directionStatus",
-        "reasonCodes",
-        "evidence",
-      ],
-      field,
-    );
-    requireString(relation.taskId, `${field}.taskId`);
-    if (relation.taskCategory !== null)
-      requireString(relation.taskCategory, `${field}.taskCategory`);
-    if (relation.taskContentHash !== null)
-      requireSha256(relation.taskContentHash, `${field}.taskContentHash`);
-    validateTableRef(relation.tableRef, `${field}.tableRef`);
-    if (
-      relation.directionStatus !== "WRITE_CONFIRMED" &&
-      relation.directionStatus !== "UNKNOWN"
-    )
-      throw new Error(`${field}.directionStatus is invalid`);
-    if (
-      !Array.isArray(relation.reasonCodes) ||
-      relation.reasonCodes.length === 0
-    )
-      throw new Error(`${field}.reasonCodes must be a non-empty array`);
-    const reasons = relation.reasonCodes.map((reason, reasonIndex) =>
-      requireString(reason, `${field}.reasonCodes[${reasonIndex}]`),
-    );
-    if (new Set(reasons).size !== reasons.length)
-      throw new Error(`${field}.reasonCodes must be unique`);
-    if (!Array.isArray(relation.evidence))
-      throw new Error(`${field}.evidence must be an array`);
-    relation.evidence.forEach((item, evidenceIndex) =>
-      validateEvidence(item, `${field}.evidence[${evidenceIndex}]`),
-    );
+    validateNonConfirmedRelation(rawRelation, `nonConfirmedRelations[${index}]`);
+  }
+  if (!legacyArtifact) {
+    if (!Array.isArray(artifact.intermediateMaterializations))
+      throw new Error("intermediateMaterializations must be an array");
+    for (const [index, rawRelation] of artifact.intermediateMaterializations.entries())
+      validateNonConfirmedRelation(
+        rawRelation,
+        `intermediateMaterializations[${index}]`,
+      );
   }
   const counts = requireRecord(artifact.counts, "counts");
   const countFields = [
@@ -1660,6 +1910,7 @@ export function validateTableProducerIndex(
     "confirmedProducerEdges",
     "confirmedWriteObservations",
     "candidateObservations",
+    ...(legacyArtifact ? [] : ["intermediateMaterializations"]),
   ] as const;
   requireExactKeys(counts, countFields, "counts");
   for (const field of countFields)
@@ -1715,6 +1966,12 @@ export function validateTableProducerIndex(
     confirmedProducerEdges: confirmedEdges.length,
     confirmedWriteObservations: expectedWriteObservations,
     candidateObservations: artifact.nonConfirmedRelations.length,
+    ...(legacyArtifact
+      ? {}
+      : {
+          intermediateMaterializations:
+            (artifact.intermediateMaterializations as unknown[]).length,
+        }),
   };
   for (const [field, expected] of Object.entries(derivedCounts))
     if (Number(counts[field]) !== expected)

@@ -19,13 +19,20 @@ type ChildResult = {
 type CandidateResult = {
   index: number;
   task_id: string;
-  status: "SUCCESS" | "PARTIAL" | "FAILED" | "TIMEOUT";
+  status: "SUCCESS" | "PARTIAL" | "FAILED" | "TIMEOUT" | "IGNORED";
   hard_failure: boolean;
   error?: string;
   rate_limit_signal?: boolean;
   external_infrastructure_signal?: boolean;
+  recovery_attempted?: boolean;
   summary_path?: string;
   log_path: string;
+};
+
+type CandidateRun = {
+  result: CandidateResult;
+  rateLimitSignal: boolean;
+  externalInfrastructureSignal: boolean;
 };
 
 const repoRoot = resolve(import.meta.dirname, "../..");
@@ -156,9 +163,14 @@ function hasRateLimitSignal(text: string): boolean {
 }
 
 function hasExternalInfrastructureSignal(text: string): boolean {
+  if (/detached while handling command/i.test(text)) return true;
   return /(?:DNS_PROBE_FINISHED_NXDOMAIN|getaddrinfo\s+ENOTFOUND|pre-navigation[^\r\n]{0,120}(?:timed out|timeout)|browser navigate command timed out|failed to read the ['\"]cookie['\"] property|site reachability\/browser extension|metadata MCP:\s*UNAVAILABLE|portalSession:\s*UNKNOWN)/i.test(
     text,
   );
+}
+
+function hasIgnorableGfFdmTestSignal(text: string): boolean {
+  return /Cannot map code project\/repository prefix:\s*GF_FDM_TEST/i.test(text);
 }
 
 async function main(): Promise<void> {
@@ -170,9 +182,20 @@ async function main(): Promise<void> {
   const offset = Number(option("--offset") ?? "0");
   const limit = option("--limit") === undefined ? undefined : positiveInt("--limit", 1);
   const batchSize = positiveInt("--batch-size", 10);
+  // OpenCLI's browser-backed SZData session cannot safely navigate two tabs
+  // at once. Keep external collection serial; parallelism can be introduced
+  // later for the local-only inspection phase.
+  const concurrency = positiveInt("--concurrency", 1);
+  if (concurrency > 1)
+    throw new Error(
+      "--concurrency > 1 is unsafe while SZData collection uses the shared browser session; use 1",
+    );
   const timeoutMs = positiveInt("--task-timeout-ms", 120_000);
   const maxConsecutiveFailures = positiveInt("--max-consecutive-failures", 3);
   const maxFailureRate = fraction("--max-failure-rate", 0.3);
+  const ignoreExternalInfrastructure = process.argv.includes(
+    "--ignore-external-infrastructure",
+  );
 
   if (!existsSync(taskIdFile)) throw new Error(`task id file not found: ${taskIdFile}`);
   if (!Number.isInteger(offset) || offset < 0) throw new Error("--offset must be a non-negative integer");
@@ -206,9 +229,11 @@ async function main(): Promise<void> {
       processed_count: results.length,
       remaining_count: allTaskIds.length - offset - results.length,
       batch_size: batchSize,
+      concurrency,
       task_timeout_ms: timeoutMs,
       max_consecutive_failures: maxConsecutiveFailures,
       max_failure_rate: maxFailureRate,
+      ignore_external_infrastructure: ignoreExternalInfrastructure,
       paused: currentPaused,
       pause_reason: currentPauseReason,
       counts: {
@@ -216,6 +241,7 @@ async function main(): Promise<void> {
         partial: results.filter((item) => item.status === "PARTIAL").length,
         failed: results.filter((item) => item.status === "FAILED").length,
         timeout: results.filter((item) => item.status === "TIMEOUT").length,
+        ignored: results.filter((item) => item.status === "IGNORED").length,
       },
       results,
     };
@@ -225,8 +251,7 @@ async function main(): Promise<void> {
     writeFileSync(outputPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   };
 
-  for (let index = 0; index < taskIds.length; index += 1) {
-    const taskId = taskIds[index]!;
+  async function runCandidate(index: number, taskId: string): Promise<CandidateRun> {
     const absoluteIndex = offset + index;
     console.error(JSON.stringify({
       progress: "candidate_started",
@@ -235,22 +260,40 @@ async function main(): Promise<void> {
       task_id: taskId,
     }));
 
-    const child = await runChild(
-      [
-        loopScript,
-        "--task-ids",
-        taskId,
-        "--collect-task-input",
-        "--fetch-szdata",
-      ],
-      timeoutMs,
-    );
+    const childArgs = [
+      loopScript,
+      "--task-ids",
+      taskId,
+      "--collect-task-input",
+      "--fetch-szdata",
+    ];
+    let child = await runChild(childArgs, timeoutMs);
+    let logText = `${child.stdout}\n--- STDERR ---\n${child.stderr}`;
+    let recoveryAttempted = false;
+    // A timeout during the SZData-backed run can be caused by metadata
+    // retrieval, while the local task/table evidence is already sufficient to
+    // produce a truthful PARTIAL result. Retry once without SZData before
+    // classifying the candidate as a hard batch failure.
+    if (child.timedOut) {
+      recoveryAttempted = true;
+      const localFallback = await runChild(
+        [
+          loopScript,
+          "--task-ids",
+          taskId,
+          "--collect-task-input",
+          "--no-fetch-szdata",
+        ],
+        timeoutMs,
+      );
+      logText += `\n--- LOCAL INPUT FALLBACK ---\n${localFallback.stdout}\n--- STDERR ---\n${localFallback.stderr}`;
+      child = localFallback;
+    }
+    // Do not automatically bind or open the SZData portal here. The existing
+    // browser session should be reused; on bridge/infrastructure failure the
+    // caller must pause instead of refreshing or retrying through a new page.
     const logPath = join(logRoot, `${absoluteIndex + 1}-${taskId}.log`);
-    writeFileSync(
-      logPath,
-      `${child.stdout}\n--- STDERR ---\n${child.stderr}`,
-      "utf8",
-    );
+    writeFileSync(logPath, logText, "utf8");
 
     const summaryEvent = lastJsonLine(child.stdout);
     const summaryPath =
@@ -276,12 +319,20 @@ async function main(): Promise<void> {
         `child exit code ${child.exitCode}`;
     }
 
-    const rateLimitSignal = hasRateLimitSignal(
+    // Keep signals from every attempt. A timed-out SZData attempt may be
+    // followed by a successful local fallback; replacing `child` must not
+    // erase a rate-limit or infrastructure signal from the first attempt.
+    const allAttemptText = `${logText}\n${error ?? ""}`;
+    const rateLimitSignal = hasRateLimitSignal(allAttemptText);
+    const externalInfrastructureSignal =
+      hasExternalInfrastructureSignal(allAttemptText);
+    const ignorableGfFdmTest = hasIgnorableGfFdmTestSignal(
       `${child.stdout}\n${child.stderr}\n${error ?? ""}`,
     );
-    const externalInfrastructureSignal = hasExternalInfrastructureSignal(
-      `${child.stdout}\n${child.stderr}\n${error ?? ""}`,
-    );
+    const ignoredExternalInfrastructure =
+      ignoreExternalInfrastructure && externalInfrastructureSignal;
+    if (ignorableGfFdmTest) status = "IGNORED";
+    else if (ignoredExternalInfrastructure) status = "IGNORED";
     const hardFailure = status === "FAILED" || status === "TIMEOUT";
     consecutiveFailures = hardFailure ? consecutiveFailures + 1 : 0;
     const result: CandidateResult = {
@@ -294,42 +345,89 @@ async function main(): Promise<void> {
       ...(externalInfrastructureSignal
         ? { external_infrastructure_signal: true }
         : {}),
+      ...(recoveryAttempted ? { recovery_attempted: true } : {}),
+      ...(ignorableGfFdmTest ? { ignored_reason: "GF_FDM_TEST" } : {}),
+      ...(ignoredExternalInfrastructure
+        ? { ignored_reason: "EXTERNAL_INFRASTRUCTURE" }
+        : {}),
       ...(summaryPath ? { summary_path: summaryPath } : {}),
       log_path: logPath,
     };
-    results.push(result);
-    persistSummary(false, undefined);
     console.error(JSON.stringify({ progress: "candidate_finished", ...result }));
+    return { result, rateLimitSignal, externalInfrastructureSignal: externalInfrastructureSignal && !ignoredExternalInfrastructure };
+  }
 
-    if (rateLimitSignal) {
+  for (let batchStart = 0; batchStart < taskIds.length && !paused; batchStart += batchSize) {
+    const batchEnd = Math.min(batchStart + batchSize, taskIds.length);
+    const batchRuns = new Array<CandidateRun | undefined>(batchEnd - batchStart);
+    let next = 0;
+    async function worker(): Promise<void> {
+      while (true) {
+        const local = next++;
+        if (local >= batchRuns.length || paused) return;
+        const index = batchStart + local;
+        const run = await runCandidate(index, taskIds[index]!);
+        batchRuns[local] = run;
+        // Persist after every completed candidate so an interruption or an
+        // immediate rate-limit stop leaves a usable checkpoint, even before
+        // the enclosing batch reaches its checkpoint boundary.
+        results.push(run.result);
+        persistSummary(false, undefined);
+
+        // With serial execution, stop before starting the next candidate as
+        // soon as the child reports a rate-limit or infrastructure signal.
+        // The batch-level check below remains as a safety net for callers
+        // that later introduce bounded concurrency.
+        if (run.rateLimitSignal) {
+          paused = true;
+          pauseReason =
+            "explicit rate-limit/throttling signal detected in child output";
+          return;
+        }
+        if (run.externalInfrastructureSignal) {
+          paused = true;
+          pauseReason =
+            "external SZData/browser/network infrastructure failure detected";
+          return;
+        }
+      }
+    }
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, batchRuns.length) }, () => worker()),
+    );
+    const rateLimitRun = batchRuns.find(
+      (run) => run?.rateLimitSignal === true,
+    );
+    const infrastructureRun = batchRuns.find(
+      (run) => run?.externalInfrastructureSignal === true,
+    );
+    if (rateLimitRun !== undefined) {
       paused = true;
       pauseReason = "explicit rate-limit/throttling signal detected in child output";
-      break;
-    }
-
-    if (externalInfrastructureSignal) {
+    } else if (infrastructureRun !== undefined) {
       paused = true;
-      pauseReason =
-        "external SZData/browser/network infrastructure failure detected";
-      break;
+      pauseReason = "external SZData/browser/network infrastructure failure detected";
     }
-
-    const batchResults = results.slice(-batchSize);
+    const batchResults = batchRuns
+      .filter((run): run is CandidateRun => run !== undefined)
+      .map((run) => run.result);
     const batchHardFailures = batchResults.filter((item) => item.hard_failure).length;
+    consecutiveFailures = batchResults.at(-1)?.hard_failure
+      ? consecutiveFailures + 1
+      : 0;
     if (
-      consecutiveFailures >= maxConsecutiveFailures ||
-      batchHardFailures / batchResults.length >= maxFailureRate
+      !paused &&
+      (consecutiveFailures >= maxConsecutiveFailures ||
+        batchHardFailures / Math.max(batchResults.length, 1) >= maxFailureRate)
     ) {
       paused = true;
       pauseReason =
         consecutiveFailures >= maxConsecutiveFailures
           ? `consecutive hard failures reached ${maxConsecutiveFailures}`
           : `hard failure rate reached ${maxFailureRate} in the latest ${batchResults.length} task(s)`;
-      break;
     }
-
-    if ((index + 1) % batchSize === 0)
-      console.error(JSON.stringify({ progress: "batch_checkpoint", completed: absoluteIndex + 1, total: allTaskIds.length }));
+    if (!paused && batchResults.length === batchEnd - batchStart)
+      console.error(JSON.stringify({ progress: "batch_checkpoint", completed: offset + batchEnd - 1, total: allTaskIds.length }));
   }
 
   persistSummary(paused, pauseReason);

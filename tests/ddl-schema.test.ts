@@ -1,5 +1,12 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseDdlSchema } from "../scripts/plans/ddl-schema.ts";
+import {
+	loadSchemaFromTablesRoot,
+	parseDdlSchema,
+} from "../scripts/plans/ddl-schema.ts";
+import { writeTableInput, type TableEvidence } from "../scripts/input/input-pack.ts";
 
 describe("DDL schema reader", () => {
 	it("reads Hive columns and appends partition columns", () => {
@@ -45,5 +52,75 @@ describe("DDL schema reader", () => {
 			"INITIAL_NOTIONAL",
 		]);
 		expect(result.warnings).toEqual([]);
+	});
+
+	it("uses a unique qualified table as evidence for an unqualified reference", () => {
+		const dataRoot = mkdtempSync(join(tmpdir(), "ddl-schema-"));
+		try {
+			const evidence: TableEvidence = {
+				platform: "hive",
+				dataSource: "gfhive",
+				qualifiedName: "PDATA_N.T03_AGT_RELA_H",
+				objectType: "TABLE",
+				ddl: "CREATE TABLE PDATA_N.T03_AGT_RELA_H (agt_id string, src_tbl string)",
+				evidenceProvider: "test",
+			};
+			writeTableInput(dataRoot, evidence);
+
+			const result = loadSchemaFromTablesRoot(
+				join(dataRoot, "tables"),
+				["T03_AGT_RELA_H"],
+			);
+
+			expect(result.missing).toEqual([]);
+			expect(result.issues).toEqual([]);
+			expect(result.loaded.map((item) => item.qualified_name)).toEqual([
+				"PDATA_N.T03_AGT_RELA_H",
+			]);
+			expect(result.schema.columnsFor(["T03_AGT_RELA_H"], "databricks")).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ name: "agt_id" }),
+				]),
+			);
+		} finally {
+			rmSync(dataRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("prefers the unique non-test schema over a test suffix candidate", () => {
+		const dataRoot = mkdtempSync(join(tmpdir(), "ddl-schema-"));
+		try {
+			for (const [qualifiedName, column] of [
+				["dm_otc_test.T98_OTC_DERI_COMP_SALE_INFO", "test_only"],
+				["PDATA_N.T98_OTC_DERI_COMP_SALE_INFO", "production_field"],
+			] as const) {
+				writeTableInput(dataRoot, {
+					platform: "hive",
+					dataSource: "gfhive",
+					qualifiedName,
+					objectType: "TABLE",
+					ddl: `CREATE TABLE ${qualifiedName} (${column} string)`,
+					evidenceProvider: "test",
+				});
+			}
+
+			const result = loadSchemaFromTablesRoot(
+				join(dataRoot, "tables"),
+				["T98_OTC_DERI_COMP_SALE_INFO"],
+			);
+
+			expect(result.missing).toEqual([]);
+			expect(result.issues).toEqual([]);
+			expect(result.loaded.map((item) => item.qualified_name)).toEqual([
+				"PDATA_N.T98_OTC_DERI_COMP_SALE_INFO",
+			]);
+			expect(result.schema.columnsFor(["T98_OTC_DERI_COMP_SALE_INFO"], "databricks")).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ name: "production_field" }),
+				]),
+			);
+		} finally {
+			rmSync(dataRoot, { recursive: true, force: true });
+		}
 	});
 });

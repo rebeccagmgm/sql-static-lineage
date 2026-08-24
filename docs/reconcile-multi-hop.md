@@ -8,6 +8,8 @@
 
 递归节点始终是 Task，Table 只是任务间的数据桥梁。遍历只消费经过校验的 Task/Table Input Pack V1 和 `TABLE_PRODUCER_INDEX` confirmed edge；不调用 Horae、SZData/OpenCLI，不把任务名、候选顺序或 UNKNOWN 关系升级成 producer。
 
+命令默认加载 `config/multi-hop-terminal-table-rules.json`。配置命中的表会记录为 `REFERENCE_CONFIG` terminal，并且不会查询其 confirmed producer；也可用 `--terminal-table-config <path>` 显式指定另一份 JSON 配置。该配置只控制多跳递归边界，不改变 Input Pack 或静态 SQL 血缘产物。
+
 ## 运行
 
 ```text
@@ -19,6 +21,7 @@ npm run reconcile-multi-hop -- \
   --max-tasks 100 \
   --max-edges 500 \
   [--root-one-hop <frozen-one-hop.json>] \
+  [--terminal-table-config <terminal-table-rules.json>] \
   [--output <multi-hop.json>]
 ```
 

@@ -19,7 +19,10 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { SqlSession } from "../src/index.js";
 import { buildPlanFacts } from "../scripts/plans/plan-adapter.ts";
-import { loadSchemaFromTablesRoot } from "../scripts/plans/ddl-schema.ts";
+import {
+  loadSchemaFromTablesRoot,
+  parseDdlSchema,
+} from "../scripts/plans/ddl-schema.ts";
 import {
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
@@ -147,7 +150,14 @@ function inspectSql(
       ? { input_normalization_warnings: normalized.warnings }
       : {}),
     statements: session.doc.statements.flatMap((cell, statementIndex) => {
-      if (cell.text.trim() === "") return [];
+      // query.sql can carry operational DROP/TRUNCATE statements between DML
+      // blocks. They are not lineage-bearing query plans and must not become
+      // empty project Unknowns in the consumer summary.
+      if (
+        cell.text.trim() === "" ||
+        (cell.category !== "query" && cell.category !== "dml")
+      )
+        return [];
       const plan = buildPlanFacts(cell, sql, {
         statement_index: statementIndex,
         dialect: dialect as any,
@@ -206,6 +216,11 @@ function discoverPhysicalInputs(
     const sql = normalizeSqlForInspection(readFileSync(filePath, "utf8")).content;
     const session = SqlSession.create(sql, dialect as any);
     for (const [statementIndex, cell] of session.doc.statements.entries()) {
+      if (
+        cell.text.trim() === "" ||
+        (cell.category !== "query" && cell.category !== "dml")
+      )
+        continue;
       const plan = buildPlanFacts(cell, sql, {
         statement_index: statementIndex,
         dialect: dialect as any,
@@ -216,6 +231,107 @@ function discoverPhysicalInputs(
     }
   }
   return [...names].sort((left, right) => left.localeCompare(right));
+}
+
+function normalizeTableName(value: string): string {
+  return value
+    .split(".")
+    .map((part) => part.trim().replace(/^`|`$/g, "").replace(/^\"|\"$/g, ""))
+    .join(".")
+    .toLowerCase();
+}
+
+/**
+ * A task-local CTAS is a schema source for later SQL slots in the same task.
+ * It is intentionally kept in memory: it is not external table evidence and
+ * must not be written into tables/.
+ */
+function discoverLocalTaskSchemas(
+  taskDir: string,
+  dialect: string,
+): Map<string, string[]> {
+  const createPath = join(taskDir, "sql", "create.sql");
+  if (!existsSync(createPath)) return new Map();
+  const sql = normalizeSqlForInspection(readFileSync(createPath, "utf8")).content;
+  const session = SqlSession.create(sql, dialect as any);
+  const local = new Map<string, string[]>();
+  for (const [statementIndex, cell] of session.doc.statements.entries()) {
+    if (cell.category !== "ddl") continue;
+    const target = /\bcreate\s+(?:temporary\s+)?table\s+(?:if\s+not\s+exists\s+)?([`\"A-Za-z0-9_$.-]+)/i.exec(cell.text)?.[1];
+    if (!target) continue;
+    const ddl = parseDdlSchema(cell.text);
+    if (ddl.columns.length > 0) {
+      local.set(
+        normalizeTableName(target),
+        ddl.columns.map((column) => column.name),
+      );
+      continue;
+    }
+    if (!/\bas\s+(?:select|with)\b/i.test(cell.text)) continue;
+    const plan = buildPlanFacts(cell, sql, {
+      statement_index: statementIndex,
+      dialect: dialect as any,
+      include_expression_dependencies: true,
+    });
+    const project = [...plan.relations].reverse().find(
+      (relation) => relation.type === "project" && Array.isArray(relation.output_columns),
+    );
+    if (project?.output_columns?.length) {
+      local.set(normalizeTableName(target), [...project.output_columns]);
+    }
+  }
+  return local;
+}
+
+function withLocalCtasSchema(
+  schema: any,
+  localCtas: Map<string, string[]>,
+): any {
+  if (!schema || localCtas.size === 0) return schema;
+  return {
+    world: "open",
+    version: Number(schema.version ?? 0) + 1,
+    columnsFor(parts: string[], dialect?: string) {
+      return localCtas.get(normalizeTableName(parts.join(".")))?.map((name) => ({ name, type: "unknown" }))
+        ?? schema.columnsFor(parts, dialect);
+    },
+    tableCandidates(parts: string[], dialect?: string) {
+      const key = normalizeTableName(parts.join("."));
+      return localCtas.has(key) ? [parts] : schema.tableCandidates(parts, dialect);
+    },
+    childrenOf: schema.childrenOf.bind(schema),
+    tables: schema.tables.bind(schema),
+  };
+}
+
+function mergeLocalTaskSchemas(
+  schemaLoad: any,
+  localSchemas: Map<string, string[]>,
+  taskDir: string,
+): any {
+  if (!schemaLoad || localSchemas.size === 0) return schemaLoad;
+  const localMissing = new Set(
+    schemaLoad.missing.filter((name: string) =>
+      localSchemas.has(normalizeTableName(name)),
+    ),
+  );
+  if (localMissing.size === 0) return schemaLoad;
+  return {
+    ...schemaLoad,
+    schema: withLocalCtasSchema(schemaLoad.schema, localSchemas),
+    loaded: [
+      ...schemaLoad.loaded,
+      ...[...localMissing].map((qualified_name) => ({
+        qualified_name,
+        columns: localSchemas.get(normalizeTableName(qualified_name))!,
+        path: `${join(taskDir, "sql", "create.sql")}#DDL`,
+      })),
+    ],
+    missing: schemaLoad.missing.filter((name: string) => !localMissing.has(name)),
+    issues: schemaLoad.issues.filter(
+      (issue: any) => !issue.qualified_name || !localMissing.has(issue.qualified_name),
+    ),
+  };
 }
 
 function main(): void {
@@ -267,6 +383,8 @@ function main(): void {
   let schemaLoad = tablesRoot
     ? loadSchemaFromTablesRoot(tablesRoot, physicalInputs)
     : undefined;
+  const localCtas = discoverLocalTaskSchemas(taskDir, dialect);
+  schemaLoad = mergeLocalTaskSchemas(schemaLoad, localCtas, taskDir);
   let fetchSummary: JsonRecord | undefined;
   if (fetchSzdata && tablesRoot && schemaLoad) {
     const requestedFetchNames = [...schemaLoad.missing];
@@ -302,7 +420,11 @@ function main(): void {
         });
       }
     }
-    schemaLoad = loadSchemaFromTablesRoot(tablesRoot, physicalInputs);
+    schemaLoad = mergeLocalTaskSchemas(
+      loadSchemaFromTablesRoot(tablesRoot, physicalInputs),
+      localCtas,
+      taskDir,
+    );
     fetchSummary = {
       requested: requestedFetchNames.length,
       fetched: fetched.length,

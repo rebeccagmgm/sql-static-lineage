@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "stopRoles": ["REFERENCE_CONFIG"],
+  "roles": {
+    "REFERENCE_CONFIG": {
+      "qualifiedNameExact": [
+        "temp_n.client_label"
+      ],
+      "qualifiedNameTerms": [
+        "tag_def",
+        "label_def",
+        "grp_def",
+        "metric_def",
+        "indicator_def",
+        "_config",
+        "_cfg",
+        "_param",
+        "_dict",
+        "_ref_"
+      ]
+    }
+  }
+}

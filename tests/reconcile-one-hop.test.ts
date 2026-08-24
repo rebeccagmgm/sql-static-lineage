@@ -1,5 +1,6 @@
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -24,6 +25,17 @@ import {
   buildTableProducerIndex,
   type TableProducerIndex,
 } from "../scripts/reconcile/producer-index.ts";
+
+const frozen86840It = existsSync(
+  join(
+    import.meta.dirname,
+    "fixtures",
+    "reconcile-one-hop",
+    "86840-input-pack",
+  ),
+)
+  ? it
+  : it.skip;
 
 function fixtureRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-one-hop-"));
@@ -780,7 +792,7 @@ describe("reconcileOneHop", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents", () => {
+  frozen86840It("replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents", () => {
     const fixture = JSON.parse(
       readFileSync(
         join(

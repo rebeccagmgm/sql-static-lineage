@@ -2,6 +2,23 @@ export type TaskCollector = (dataRoot: string, taskId: string) => unknown;
 
 export type TaskFailureReporter = (taskId: string, error: unknown) => void;
 
+export const INPUT_PACK_BATCH_SIZE_WARNING_THRESHOLD = 100;
+export const INPUT_PACK_BATCH_SIZE_HARD_LIMIT = 200;
+
+export function assertInputPackBatchSize(taskCount: number): void {
+  if (taskCount > INPUT_PACK_BATCH_SIZE_HARD_LIMIT)
+    throw new Error(
+      `Too many task IDs (${taskCount}); split the batch into at most ${INPUT_PACK_BATCH_SIZE_HARD_LIMIT} task IDs`,
+    );
+}
+
+export class StopTaskBatch extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StopTaskBatch";
+  }
+}
+
 export function exitCodeForTaskBatch(hadFailure: boolean): number {
   return hadFailure ? 1 : 0;
 }
@@ -22,8 +39,14 @@ export function runTaskBatch(
     try {
       collectTask(dataRoot, taskId);
     } catch (error) {
+      if (error instanceof StopTaskBatch) break;
       hadFailure = true;
-      reportFailure(taskId, error);
+      try {
+        reportFailure(taskId, error);
+      } catch (reportError) {
+        if (reportError instanceof StopTaskBatch) break;
+        throw reportError;
+      }
     }
   }
   return hadFailure;

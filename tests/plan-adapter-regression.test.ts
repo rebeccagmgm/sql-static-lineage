@@ -7,7 +7,15 @@ describe("plan adapter star expansion", () => {
   it("uses the Oracle-compatible parser profile for Oracle source tasks", () => {
     expect(taskSqlDialect("oracle2hive")).toBe("duckdb");
     expect(taskSqlDialect("oracle2oracle")).toBe("duckdb");
+    expect(taskSqlDialect("postgre2hive")).toBe("duckdb");
+    expect(taskSqlDialect("postgre2postgre")).toBe("duckdb");
     expect(taskSqlDialect("hive2oracle")).toBe("databricks");
+  });
+
+  it("parses PostgreSQL three-part quoted source names with the PostgreSQL-compatible profile", () => {
+    const sql = 'SELECT id FROM aums."a_epa"."tcust_rela"';
+    const session = SqlSession.create(sql, taskSqlDialect("postgre2hive"));
+    expect(session.doc.statements[0]?.errors).toBe(0);
   });
 
   it("preserves native physical origins through a nested scalar subquery", () => {
@@ -135,6 +143,38 @@ describe("plan adapter star expansion", () => {
         derived_from: "SYSTEM_VALUE:SYSDATE",
       },
     ]);
+  });
+
+  it("resolves backtick-quoted columns against schema evidence", () => {
+    const sql =
+      "SELECT t.id FROM demo.trade t JOIN demo.mapping m ON t.id = m.`condition`";
+    const schema = new Schema({
+      "demo.trade": { id: "int" },
+      "demo.mapping": { condition: "string" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+
+    const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    expect(plan.unknowns).toEqual([]);
+    const join = plan.relations.find(
+      (relation) => relation.type === "join",
+    );
+    expect(join?.type).toBe("join");
+    if (join?.type !== "join") throw new Error("join relation missing");
+    expect(join.condition_columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "`condition`",
+          resolution: "PHYSICAL",
+          physical: [{ table: "demo.mapping", column: "condition" }],
+        }),
+      ]),
+    );
   });
 
   it("surfaces native lineage failures as plan unknowns", () => {
@@ -462,6 +502,37 @@ describe("plan adapter star expansion", () => {
     expect(rootProject.expressions[0]?.input_columns).toMatchObject([
       {
         name: "record_id",
+        resolution: "PHYSICAL",
+        physical: [{ table: "demo.base", column: "id" }],
+      },
+    ]);
+  });
+
+  it("resolves a set-operation CTE that depends on an earlier CTE", () => {
+    const sql =
+      "WITH base AS (SELECT id AS record_id FROM demo.base), mapped AS (SELECT record_id FROM base UNION ALL SELECT record_id FROM base) SELECT m.record_id FROM mapped m";
+    const session = SqlSession.create(sql, "databricks");
+    const schema = new Schema({
+      "demo.base": { id: "int" },
+    });
+    const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    expect(plan.unknowns).toEqual([]);
+    expect(plan.physical_inputs).toEqual(["demo.base"]);
+    const rootProject = plan.relations.find(
+      (relation) =>
+        relation.id === "root.project" && relation.type === "project",
+    );
+    if (rootProject?.type !== "project")
+      throw new Error("root project relation missing");
+    expect(rootProject.expressions[0]?.input_columns).toMatchObject([
+      {
+        name: "record_id",
+        qualifier: "m",
         resolution: "PHYSICAL",
         physical: [{ table: "demo.base", column: "id" }],
       },

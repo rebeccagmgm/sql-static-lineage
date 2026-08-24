@@ -32,6 +32,17 @@ import {
   updateTableProducerIndex,
 } from "../scripts/reconcile/producer-index.ts";
 
+const frozen86840It = existsSync(
+  join(
+    import.meta.dirname,
+    "fixtures",
+    "reconcile-one-hop",
+    "86840-input-pack",
+  ),
+)
+  ? it
+  : it.skip;
+
 function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-producer-index-"));
 }
@@ -111,6 +122,42 @@ function writeTask(
 }
 
 describe("table producer index", () => {
+  it("excludes tasks with direct manual Horae cycle evidence", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.a");
+    writeTask(root, "manual", {
+      scheduleCycle: "手工",
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    writeTask(root, "scheduled", {
+      scheduleCycle: "每日",
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+
+    const index = buildTableProducerIndex(root);
+
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["scheduled"]);
+    expect(index.nonConfirmedRelations).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ taskId: "manual" })]),
+    );
+  });
+
   it("indexes only confirmed writes while retaining candidates and every write observation", () => {
     const root = dataRoot();
     writeTable(root, "lake.a");
@@ -253,6 +300,117 @@ describe("table producer index", () => {
     });
   });
 
+  it("uses a Task Pack target to qualify an unqualified SQL write", () => {
+    const root = dataRoot();
+    writeTable(root, "pdata_n.acct_fundacct_base_info_s");
+    writeTask(root, "task-target-schema", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_n.acct_fundacct_base_info_s",
+      },
+      targetEvidenceKind: "TABLE_TASK_RELATION_DIRECTION_UNKNOWN",
+      evidenceProvider: "opencli:szdata.table-task-relation",
+      sql: {
+        query: "INSERT OVERWRITE TABLE acct_fundacct_base_info_s SELECT 1",
+      },
+    });
+
+    const index = buildTableProducerIndex(root);
+
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_n.acct_fundacct_base_info_s",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["task-target-schema"]);
+    expect(
+      lookupNonConfirmedRelations(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_n.acct_fundacct_base_info_s",
+      }),
+    ).toEqual([]);
+    expect(index.nonConfirmedRelations).toEqual([]);
+  });
+
+  it("uses the Task Pack schema to qualify a terminal SQL write without recollection", () => {
+    const root = dataRoot();
+    writeTask(root, "task-schema-final", {
+      taskName: "dm_ctms_n.ctms_pwc_psn_sys_user_roles",
+      sql: {
+        query: [
+          "INSERT OVERWRITE TABLE pwc_psn_sys_user_roles_temp SELECT 1;",
+          "INSERT OVERWRITE TABLE pwc_psn_sys_user_roles SELECT 1 FROM pwc_psn_sys_user_roles_temp;",
+        ].join("\n"),
+      },
+    });
+
+    const index = buildTableProducerIndex(root);
+
+    expect(index.nonConfirmedRelations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "task-schema-final",
+          tableRef: expect.objectContaining({
+            qualifiedName: "dm_ctms_n.pwc_psn_sys_user_roles",
+            identityStatus: "QUALIFIED_NAME_ONLY",
+          }),
+          reasonCodes: ["SQL_FINAL_TARGET_PHYSICAL_IDENTITY_UNRESOLVED"],
+        }),
+      ]),
+    );
+    expect(index.nonConfirmedRelations).toHaveLength(1);
+    expect(index.intermediateMaterializations).toEqual([
+      expect.objectContaining({
+        taskId: "task-schema-final",
+        tableRef: expect.objectContaining({
+          qualifiedName: "pwc_psn_sys_user_roles_temp",
+        }),
+        reasonCodes: ["SQL_INTRA_TASK_INTERMEDIATE_IDENTITY_UNRESOLVED"],
+      }),
+    ]);
+  });
+
+  it("does not expose a resolved intermediate write as a confirmed producer", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.intermediate");
+    writeTable(root, "lake.final");
+    writeTask(root, "resolved-intermediate", {
+      sql: {
+        query:
+          "CREATE TABLE lake.intermediate AS SELECT 1; INSERT OVERWRITE TABLE lake.final SELECT * FROM lake.intermediate",
+      },
+    });
+
+    const index = buildTableProducerIndex(root);
+
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.intermediate",
+      }),
+    ).toEqual([]);
+    expect(
+      lookupConfirmedProducers(index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.final",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["resolved-intermediate"]);
+    expect(index.intermediateMaterializations).toEqual([
+      expect.objectContaining({
+        taskId: "resolved-intermediate",
+        tableRef: expect.objectContaining({
+          qualifiedName: "lake.intermediate",
+          identityStatus: "RESOLVED",
+        }),
+      }),
+    ]);
+  });
+
   it("normalizes transfer and mutation Task shapes without relying on INSERT", () => {
     expect(
       classifyProducerWriteObservation({
@@ -373,6 +531,9 @@ describe("table producer index", () => {
       delete write.operationClass;
       delete write.dataPathRole;
     }
+    legacy.schemaVersion = "1.0.0";
+    delete legacy.intermediateMaterializations;
+    delete (legacy.counts as Record<string, unknown>).intermediateMaterializations;
     legacy.contentHash = canonicalHash(legacy as unknown as JsonValue, [
       "generatedAt",
       "contentHash",
@@ -861,7 +1022,7 @@ describe("table producer index", () => {
     expect(loadTableProducerIndex(output).buildStatus).toBe("PARTIAL");
   });
 
-  it("indexes the 22 frozen local 86840 producers without using supplemental responses", () => {
+  frozen86840It("indexes the 22 frozen local 86840 producers without using supplemental responses", () => {
     const fixtureRoot = join(
       process.cwd(),
       "tests",

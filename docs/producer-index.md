@@ -16,7 +16,7 @@ npm run producer-index -- --data-root <input-pack-root> [--output <producer-inde
 
 输出文件必须位于 Input Pack 根目录之外。未传 `--output` 时只写标准输出。
 
-V1 的 `producer-index` 命令仍是显式全量重建。`inputFingerprint` 来自排序后的相对输入路径及实际内容哈希；`contentHash` 覆盖除 `generatedAt` 和自身以外的完整语义内容。数组使用固定 code-unit 顺序，绝对根路径不进入 artifact。
+当前 `producer-index` artifact 为 schema `1.1.0`；它新增独立的 `intermediateMaterializations` 数组，旧的 schema `1.0.0` artifact 仍可读取。命令仍是显式全量重建。`inputFingerprint` 来自排序后的相对输入路径及实际内容哈希；`contentHash` 覆盖除 `generatedAt` 和自身以外的完整语义内容。数组使用固定 code-unit 顺序，绝对根路径不进入 artifact。
 
 ## 持续更新（快照复用 + 变化检测）
 
@@ -52,6 +52,11 @@ platform + dataSource + qualifiedName + taskId
 
 普通 `FROM/JOIN`、任务名、候选顺序和分区值不能生成 producer edge。
 
+Task Pack 带有 Horae 直接周期证据 `scheduleCycle=手工`/`手动`，或任务状态
+证据 `scheduleStatus=F`（冻结）时，该任务不进入 producer index 的 confirmed
+edge 或 non-confirmed relation；原始 Task Pack 仍保留在隔离区，便于审计。
+周期和状态未知不会被猜成手工或冻结。
+
 ## 异构 Task 的写入语义
 
 Task 不要求 SQL 中出现 `INSERT`。`DIRECT_PLATFORM_TARGET` 是平台直接给出的目标端点证据，适用于 SQL 只是 `SELECT` 但平台任务负责把结果转存到目标表的形态；`SQL_EXACT_TABLE_TARGET` 是结构化 SQL/Table/DDL 目标证据。两者都不等同于运行成功或业务正确性。
@@ -76,10 +81,13 @@ Task 不要求 SQL 中出现 `INSERT`。`DIRECT_PLATFORM_TARGET` 是平台直接
 
 ## Non-confirmed relations
 
-方向未知、表身份缺失或多义、输入损坏等观察保存在 `nonConfirmedRelations`，不进入 confirmed 查询。`directionStatus` 与 `tableRef.identityStatus` 正交：显式 SQL WRITE 即使缺少唯一物理身份，方向仍为 `WRITE_CONFIRMED`；候选 target 则保持 `UNKNOWN`。
+方向未知、表身份缺失或多义、输入损坏等最终关系保存在 `nonConfirmedRelations`，不进入 confirmed 查询。中间 SQL 物化单独保存在 `intermediateMaterializations`，不计入最终 producer 缺口。`directionStatus` 与 `tableRef.identityStatus` 正交：显式 SQL WRITE 即使缺少唯一物理身份，方向仍为 `WRITE_CONFIRMED`；候选 target 则保持 `UNKNOWN`。
 
 - `TABLE_TASK_RELATION_DIRECTION_UNKNOWN` 即使包含完整三元组也仍是 UNKNOWN。
 - qualified SQL WRITE 找不到唯一 Table Pack 时保留为未确认观察，不静默丢弃。
+- 对无 schema 的终端 SQL WRITE，如果 Task Pack 的 `taskName` 提供 schema，索引会用同 Task 的 SQL 引用关系判断它是否为终端写入，并补全限定名；这不依赖重新调用 SZData。缺少 Table Pack 时，原因标为 `SQL_FINAL_TARGET_PHYSICAL_IDENTITY_UNRESOLVED`，表示逻辑目标已识别、物理身份尚未确认。
+- 如果一个 SQL WRITE 的目标在同一 Task 的后续 SQL 中又被读取，且物理 Table Pack 不存在，索引会将观察放入 `intermediateMaterializations`，原因标为 `SQL_INTRA_TASK_INTERMEDIATE_IDENTITY_UNRESOLVED`。这只是“同 Task 中间物化”的证据分类，不会把它升级为 producer，也不会把它计入最终 producer 缺口。
+- `SQL_WRITE_TABLE_IDENTITY_UNRESOLVED` 和 `SQL_FINAL_TARGET_PHYSICAL_IDENTITY_UNRESOLVED` 仅表示最终 SQL WRITE 仍无法确认唯一物理身份，计入 `nonConfirmedRelations`。
 - `dataSource=default` 是未解析占位值，不能显示为 `identityStatus=RESOLVED`。
 - 坏 Input Pack 只隔离对应输入；artifact 标为 `PARTIAL`，其他有效 producer edge 仍可使用。
 

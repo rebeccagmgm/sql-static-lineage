@@ -35,6 +35,7 @@
     "producer-index": "tsx scripts/reconcile/producer-index.ts",
     "producer-index:update": "tsx scripts/reconcile/producer-index.ts --update",
     "input-pack:tasks": "tsx scripts/input/collect-task-input-pack.ts",
+    "repair:missing-table-packs": "tsx scripts/input/repair-missing-table-packs.ts",
     "preinspect": "npm run prepare:deps",
     "inspect": "tsx scripts/query/task-inspection.ts",
     "preformat:check": "npm run prepare:deps",
