@@ -56,10 +56,14 @@ export function loadPersistedTableCache(dataRoot: string): void {
   persistedTableCache = new Map();
   const tablesRoot = join(dataRoot, "tables");
   if (!existsSync(tablesRoot)) return;
-  for (const platformEntry of readdirSync(tablesRoot, { withFileTypes: true })) {
+  for (const platformEntry of readdirSync(tablesRoot, {
+    withFileTypes: true,
+  })) {
     if (!platformEntry.isDirectory()) continue;
     const platformRoot = join(tablesRoot, platformEntry.name);
-    for (const tableEntry of readdirSync(platformRoot, { withFileTypes: true })) {
+    for (const tableEntry of readdirSync(platformRoot, {
+      withFileTypes: true,
+    })) {
       if (!tableEntry.isDirectory()) continue;
       const tableRoot = join(platformRoot, tableEntry.name);
       try {
@@ -80,12 +84,16 @@ export function loadPersistedTableCache(dataRoot: string): void {
           platform: document.platform,
           dataSource: document.dataSource,
           qualifiedName: document.qualifiedName,
-          schema: typeof document.schema === "string" ? document.schema : undefined,
+          schema:
+            typeof document.schema === "string" ? document.schema : undefined,
           name: typeof document.name === "string" ? document.name : undefined,
           description:
-            typeof document.description === "string" ? document.description : undefined,
+            typeof document.description === "string"
+              ? document.description
+              : undefined,
           objectType: document.objectType,
-          status: typeof document.status === "string" ? document.status : undefined,
+          status:
+            typeof document.status === "string" ? document.status : undefined,
           primaryKey: Array.isArray(document.primaryKey)
             ? document.primaryKey.map(String)
             : undefined,
@@ -98,7 +106,9 @@ export function loadPersistedTableCache(dataRoot: string): void {
               ? `${document.evidenceProvider},local:tables-cache`
               : "local:tables-cache",
           collectedAt:
-            typeof document.collectedAt === "string" ? document.collectedAt : undefined,
+            typeof document.collectedAt === "string"
+              ? document.collectedAt
+              : undefined,
         };
         const key = cachedTableKey(evidence.qualifiedName);
         const entries = persistedTableCache.get(key) ?? [];
@@ -335,9 +345,7 @@ export function relocateTaskPacks(
     if (!existsSync(join(source, "task.json"))) continue;
     const destination = join(archiveRoot, "tasks", entry.name, taskId);
     if (existsSync(destination))
-      throw new Error(
-        `MANUAL_TASK_ARCHIVE_CONFLICT:${source}:${destination}`,
-      );
+      throw new Error(`MANUAL_TASK_ARCHIVE_CONFLICT:${source}:${destination}`);
     mkdirSync(join(archiveRoot, "tasks", entry.name), { recursive: true });
     renameSync(source, destination);
     moved.push(destination);
@@ -423,28 +431,11 @@ function openCliHoraeSearch(
   cycle?: string,
 ): unknown {
   throttleOpenCli();
-  const query = [
-    "horae",
-    "search",
-    taskIds.join(","),
-    "--type",
-    "I",
-  ];
+  const query = ["horae", "search", taskIds.join(","), "--type", "I"];
   if (status !== undefined) query.push("--status", status);
   if (cycle !== undefined) query.push("--cycle", cycle);
-  query.push(
-    "--page",
-    "1",
-    "--size",
-    String(taskIds.length),
-    "-f",
-    "json",
-  );
-  const output = runOpenCli(
-    query,
-    undefined,
-    HORAE_SEARCH_TIMEOUT_MS,
-  );
+  query.push("--page", "1", "--size", String(taskIds.length), "-f", "json");
+  const output = runOpenCli(query, undefined, HORAE_SEARCH_TIMEOUT_MS);
   return JSON.parse(output);
 }
 
@@ -455,9 +446,7 @@ function openCliHoraeSearch(
  */
 export type TaskSchedulingClassification = {
   exclusionReason:
-    | "MANUAL_OR_FROZEN"
-    | "HORAE_TASK_NOT_FOUND"
-    | "PHYSICAL_TABLE_NOT_FOUND";
+    "MANUAL_OR_FROZEN" | "HORAE_TASK_NOT_FOUND" | "PHYSICAL_TABLE_NOT_FOUND";
   scheduleCycle?: string;
   scheduleStatus?: string;
 };
@@ -474,8 +463,7 @@ export function findExcludedTaskIds(
     const allRecords = Array.isArray(allRows) ? allRows : [allRows];
     const foundTaskIds = new Set<string>();
     for (const value of allRecords) {
-      if (!value || typeof value !== "object" || Array.isArray(value))
-        continue;
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
       const taskId = directString((value as Record<string, unknown>).id);
       if (taskId !== undefined && requested.has(taskId))
         foundTaskIds.add(taskId);
@@ -484,10 +472,7 @@ export function findExcludedTaskIds(
       if (!foundTaskIds.has(taskId))
         excluded.set(taskId, { exclusionReason: "HORAE_TASK_NOT_FOUND" });
     }
-    for (const query of [
-      { status: "Y", cycle: "手工" },
-      { status: "F" },
-    ]) {
+    for (const query of [{ status: "Y", cycle: "手工" }, { status: "F" }]) {
       const rows = openCliHoraeSearch(chunk, query.status, query.cycle);
       const records = Array.isArray(rows) ? rows : [rows];
       for (const value of records) {
@@ -496,10 +481,7 @@ export function findExcludedTaskIds(
         const record = value as Record<string, unknown>;
         const taskId = directString(record.id);
         if (taskId === undefined || !requested.has(taskId)) continue;
-        if (
-          excluded.get(taskId)?.exclusionReason ===
-          "HORAE_TASK_NOT_FOUND"
-        )
+        if (excluded.get(taskId)?.exclusionReason === "HORAE_TASK_NOT_FOUND")
           continue;
         const cycle = directString(record.cycle);
         if (query.cycle !== undefined && !isManualScheduleCycle(cycle))
@@ -877,7 +859,8 @@ export function tableFromDirectEvidence(
   if (directEvidenceCache.has(cacheKey))
     return directEvidenceCache.get(cacheKey);
 
-  const persisted = persistedTableCache.get(cachedTableKey(qualifiedName)) ?? [];
+  const persisted =
+    persistedTableCache.get(cachedTableKey(qualifiedName)) ?? [];
   const persistedMatches = persisted.filter(
     (item) =>
       (expectedDataSource === undefined ||
@@ -1017,6 +1000,206 @@ const CONCATENATED_SQL_CONTINUATION_WORDS = new Set([
   "WHERE",
 ]);
 
+export type InlineSqlCommentBoundaryKind =
+  | "COMMA_SELECT_ITEM"
+  | "FROM_SUBQUERY"
+  | "UNION_SELECT"
+  | "CASE_WHEN"
+  | "CASE_ELSE"
+  | "TYPED_JOIN"
+  | "JOIN_ON";
+
+type InlineSqlCommentBoundary = {
+  index: number;
+  kind: InlineSqlCommentBoundaryKind;
+};
+
+const SQL_IDENTIFIER_PATTERN = String.raw`(?:[A-Za-z_][A-Za-z0-9_$]*|\x60[^\x60]+\x60|"[^"]+")`;
+const SQL_QUALIFIED_IDENTIFIER_PATTERN = String.raw`${SQL_IDENTIFIER_PATTERN}(?:\s*\.\s*${SQL_IDENTIFIER_PATTERN})+`;
+const SQL_SIMPLE_VALUE_PATTERN = String.raw`(?:N?'(?:''|[^'])*'|[-+]?\d+(?:\.\d+)?|NULL|${SQL_QUALIFIED_IDENTIFIER_PATTERN}|${SQL_IDENTIFIER_PATTERN})`;
+
+function inlineCommentBoundaryCandidates(
+  comment: string,
+  followingContent: string,
+): InlineSqlCommentBoundary[] {
+  const candidates: InlineSqlCommentBoundary[] = [];
+  const patterns: ReadonlyArray<{
+    kind: InlineSqlCommentBoundaryKind;
+    pattern: RegExp;
+  }> = [
+    {
+      kind: "COMMA_SELECT_ITEM",
+      pattern: new RegExp(
+        String.raw`,\s*${SQL_SIMPLE_VALUE_PATTERN}\s+AS\s+${SQL_IDENTIFIER_PATTERN}\b`,
+        "gi",
+      ),
+    },
+    {
+      kind: "UNION_SELECT",
+      pattern: /\bUNION\s+(?:ALL\s+)?SELECT\b/gi,
+    },
+    {
+      kind: "CASE_WHEN",
+      pattern: new RegExp(
+        String.raw`\bWHEN\s+${SQL_QUALIFIED_IDENTIFIER_PATTERN}\s+IS\s+(?:NOT\s+)?NULL\b`,
+        "gi",
+      ),
+    },
+    {
+      kind: "CASE_ELSE",
+      pattern: new RegExp(
+        String.raw`\bELSE\s+${SQL_SIMPLE_VALUE_PATTERN}\s+END\b`,
+        "gi",
+      ),
+    },
+    {
+      kind: "TYPED_JOIN",
+      pattern: new RegExp(
+        String.raw`\b(?:FULL\s+OUTER|LEFT\s+OUTER|RIGHT\s+OUTER|INNER|CROSS)\s+JOIN\s+(?:\(|${SQL_QUALIFIED_IDENTIFIER_PATTERN})`,
+        "gi",
+      ),
+    },
+    {
+      kind: "JOIN_ON",
+      pattern: new RegExp(
+        String.raw`\bON\s+${SQL_QUALIFIED_IDENTIFIER_PATTERN}\s*(?:=|<>|!=|<=|>=|<|>)\s*${SQL_QUALIFIED_IDENTIFIER_PATTERN}\b`,
+        "gi",
+      ),
+    },
+  ];
+
+  for (const { kind, pattern } of patterns) {
+    for (const match of comment.matchAll(pattern)) {
+      if (match.index === undefined) continue;
+      candidates.push({ index: match.index, kind });
+    }
+  }
+
+  const fromSubquery = /\bFROM\s*\(/gi;
+  for (const match of comment.matchAll(fromSubquery)) {
+    if (match.index === undefined) continue;
+    const afterOpeningParenthesis = comment
+      .slice(match.index + match[0].length)
+      .trimStart();
+    const continuesInline = /^(?:SELECT|WITH)\b/i.test(afterOpeningParenthesis);
+    const continuesOnNextLine =
+      afterOpeningParenthesis === "" &&
+      /^(?:SELECT|WITH)\b/i.test(followingContent);
+    if (continuesInline || continuesOnNextLine)
+      candidates.push({ index: match.index, kind: "FROM_SUBQUERY" });
+  }
+
+  return candidates
+    .filter(({ index }) => {
+      const precedingComment = comment.slice(0, index);
+      const nestedComment = precedingComment.lastIndexOf("--");
+      return precedingComment.slice(nestedComment + 2).trim() !== "";
+    })
+    .sort((left, right) => left.index - right.index);
+}
+
+/**
+ * Repairs only strongly structured SQL continuations that a flattened inline
+ * `--` comment would otherwise swallow. String literals, quoted identifiers,
+ * block comments, line-only comments, and ordinary prose remain byte-for-byte
+ * unchanged.
+ */
+export function repairInlineSqlCommentBoundaries(content: string): {
+  content: string;
+  boundariesInserted: number;
+  boundaryKinds: readonly InlineSqlCommentBoundaryKind[];
+} {
+  const insertions = new Map<number, InlineSqlCommentBoundaryKind>();
+  let blockComment = false;
+  let quote: "'" | '"' | "`" | undefined;
+  let lineHasSqlCode = false;
+
+  for (let index = 0; index < content.length;) {
+    const character = content[index];
+    const nextCharacter = content[index + 1];
+
+    if (blockComment) {
+      if (character === "*" && nextCharacter === "/") {
+        blockComment = false;
+        index += 2;
+        continue;
+      }
+      if (character === "\n") lineHasSqlCode = false;
+      index += 1;
+      continue;
+    }
+
+    if (quote !== undefined) {
+      if (character === quote) {
+        if (content[index + 1] === quote) {
+          index += 2;
+          continue;
+        }
+        quote = undefined;
+      }
+      if (character === "\n") lineHasSqlCode = false;
+      index += 1;
+      continue;
+    }
+
+    if (character === "/" && nextCharacter === "*") {
+      blockComment = true;
+      index += 2;
+      continue;
+    }
+    if (character === "'" || character === '"' || character === "`") {
+      quote = character;
+      lineHasSqlCode = true;
+      index += 1;
+      continue;
+    }
+    if (character === "-" && nextCharacter === "-") {
+      const lineEnd = content.indexOf("\n", index + 2);
+      const commentEnd = lineEnd === -1 ? content.length : lineEnd;
+      if (lineHasSqlCode) {
+        const comment = content.slice(index + 2, commentEnd);
+        const followingContent =
+          lineEnd === -1
+            ? ""
+            : (content
+                .slice(lineEnd + 1)
+                .match(/^(?:[ \t]*\n)*[ \t]*(.*)/)?.[1] ?? "");
+        for (const candidate of inlineCommentBoundaryCandidates(
+          comment,
+          followingContent,
+        )) {
+          const absoluteIndex = index + 2 + candidate.index;
+          if (!insertions.has(absoluteIndex))
+            insertions.set(absoluteIndex, candidate.kind);
+        }
+      }
+      index = commentEnd;
+      continue;
+    }
+    if (character === "\n") {
+      lineHasSqlCode = false;
+      index += 1;
+      continue;
+    }
+    if (!/\s/.test(character)) lineHasSqlCode = true;
+    index += 1;
+  }
+
+  const orderedInsertions = [...insertions.entries()].sort(
+    ([left], [right]) => left - right,
+  );
+  let normalized = content;
+  for (let index = orderedInsertions.length - 1; index >= 0; index -= 1) {
+    const position = orderedInsertions[index][0];
+    normalized = `${normalized.slice(0, position)}\n${normalized.slice(position)}`;
+  }
+  return {
+    content: normalized,
+    boundariesInserted: orderedInsertions.length,
+    boundaryKinds: orderedInsertions.map(([, kind]) => kind),
+  };
+}
+
 function isSqlIdentifierStart(character: string | undefined): boolean {
   return character !== undefined && /[A-Za-z_]/.test(character);
 }
@@ -1034,7 +1217,11 @@ function isSqlIdentifierPart(character: string | undefined): boolean {
 export function normalizeConcatenatedSqlStatements(content: string): {
   content: string;
   separatorsInserted: number;
+  inlineCommentBoundariesInserted: number;
+  inlineCommentBoundaryKinds: readonly InlineSqlCommentBoundaryKind[];
 } {
+  const repaired = repairInlineSqlCommentBoundaries(content);
+  content = repaired.content;
   const insertionPositions: number[] = [];
   let blockComment = false;
   let lineComment = false;
@@ -1192,6 +1379,46 @@ export function normalizeConcatenatedSqlStatements(content: string): {
   return {
     content: normalized,
     separatorsInserted: insertionPositions.length,
+    inlineCommentBoundariesInserted: repaired.boundariesInserted,
+    inlineCommentBoundaryKinds: repaired.boundaryKinds,
+  };
+}
+
+export function normalizeCollectedSqlSlot(
+  content: string,
+  slot: SqlSlot,
+  evidenceProvider: string,
+): {
+  content: string;
+  evidenceProvider: string;
+  warnings: string[];
+} {
+  const repeated = normalizeRepeatedSqlContent(content);
+  const separated = normalizeConcatenatedSqlStatements(repeated.content);
+  const warnings: string[] = [];
+  if (repeated.duplicateBlocksRemoved)
+    warnings.push(`SQL_DUPLICATE_BLOCK_REMOVED:${slot}`);
+  if (separated.inlineCommentBoundariesInserted > 0) {
+    const counts = new Map<InlineSqlCommentBoundaryKind, number>();
+    for (const kind of separated.inlineCommentBoundaryKinds)
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    const evidence = [...counts.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([kind, count]) => `${kind}=${count}`)
+      .join(",");
+    warnings.push(
+      `SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:${slot}:${separated.inlineCommentBoundariesInserted}:${evidence}`,
+    );
+    evidenceProvider = `${evidenceProvider},collector:inline-comment-boundary-repair-v1`;
+  }
+  if (separated.separatorsInserted > 0)
+    warnings.push(
+      `SQL_STATEMENT_SEPARATOR_INSERTED:${slot}:${separated.separatorsInserted}`,
+    );
+  return {
+    content: separated.content,
+    evidenceProvider,
+    warnings,
   };
 }
 
@@ -1229,15 +1456,12 @@ function toTaskEvidence(
           : typeof record.source === "string" && record.source !== "-"
             ? record.source
             : "opencli:szdata.task-source";
-      const repeated = normalizeRepeatedSqlContent(record.sql);
-      const separated = normalizeConcatenatedSqlStatements(repeated.content);
-      if (repeated.duplicateBlocksRemoved)
-        warnings.push(`SQL_DUPLICATE_BLOCK_REMOVED:${slot}`);
-      if (separated.separatorsInserted > 0)
-        warnings.push(
-          `SQL_STATEMENT_SEPARATOR_INSERTED:${slot}:${separated.separatorsInserted}`,
-        );
-      sql[slot] = { content: separated.content, evidenceProvider: provider };
+      const normalized = normalizeCollectedSqlSlot(record.sql, slot, provider);
+      warnings.push(...normalized.warnings);
+      sql[slot] = {
+        content: normalized.content,
+        evidenceProvider: normalized.evidenceProvider,
+      };
     }
   }
   return {
@@ -1426,7 +1650,9 @@ export function collectOneTask(
       ])
       .filter((entry): entry is [string, string] => entry[1] !== undefined),
   ) as Partial<Record<SqlSlot, string>>;
-  const directTargetResult = tableResults.find((item) => item.side === "target");
+  const directTargetResult = tableResults.find(
+    (item) => item.side === "target",
+  );
   const sqlTarget = findSqlFinalTargetEvidence(
     sqlTargetInputs,
     directString(taskEvidence.taskName),
@@ -1533,7 +1759,8 @@ export function collectOneTask(
   )?.evidence;
   const fallbackTarget = taskRelationTarget ?? sqlTargetTable;
   const targetValueForEvidence =
-    (sqlTargetTable !== undefined && directTargetResult?.evidence === undefined) ||
+    (sqlTargetTable !== undefined &&
+      directTargetResult?.evidence === undefined) ||
     (taskEvidence.target === null && fallbackTarget !== undefined)
       ? undefined
       : taskEvidence.target;

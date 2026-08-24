@@ -30,6 +30,7 @@ import {
   reconcileMultiHop,
   validateMultiHopReconciliation,
 } from "../scripts/reconcile/reconcile-multi-hop.ts";
+import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/task-read-evidence.ts";
 import type { TerminalTableConfig } from "../scripts/reconcile/terminal-table-config.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";
@@ -253,6 +254,62 @@ function materializeFrozenInputPack(sourceRoot: string): string {
 }
 
 describe("reconcileMultiHop", () => {
+  it("qualifies bare reads only when the Task Pack proves a default schema", () => {
+    const root = dataRoot();
+    writeTable(root, "pdata_news_n.t02_scr_base_info");
+    writeTask(root, "103234", {
+      taskName: "pdata_news_n.t02_tit_scr_base_info_TIT_ref_instrument_grp01",
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_news_n.t02_tit_scr_base_info",
+      },
+      targetEvidenceKind: "TABLE_TASK_RELATION_DIRECTION_UNKNOWN",
+      sql: { query: "SELECT b.id FROM t02_scr_base_info b" },
+      evidenceProvider: "fixture:table-task-relation",
+    });
+    writeTask(root, "missing-schema", {
+      sql: { query: "SELECT b.id FROM t02_scr_base_info b" },
+    });
+    writeTask(root, "conflicting-schema", {
+      taskName: "pdata_news_n.some_output",
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "other_schema.some_output",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      sql: { query: "SELECT b.id FROM t02_scr_base_info b" },
+    });
+
+    const repository = buildTaskReadEvidenceRepository(root);
+
+    expect(repository.getTaskReads("103234").directReads).toEqual([
+      expect.objectContaining({
+        tableRef: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "pdata_news_n.t02_scr_base_info",
+          identityStatus: "RESOLVED",
+        },
+        resolutionStatus: "RESOLVED",
+      }),
+    ]);
+    for (const taskId of ["missing-schema", "conflicting-schema"])
+      expect(repository.getTaskReads(taskId).directReads).toEqual([
+        expect.objectContaining({
+          tableRef: {
+            platform: null,
+            dataSource: null,
+            qualifiedName: "t02_scr_base_info",
+            identityStatus: "QUALIFIED_NAME_ONLY",
+          },
+          resolutionStatus: "NON_RESOLVED",
+          blockReason: "TABLE_IDENTITY_UNRESOLVED",
+        }),
+      ]);
+  });
+
   it("stops at a configured reference/config table before producer lookup", () => {
     const root = dataRoot();
     writeTable(root, "dm_index_n.tag_def");

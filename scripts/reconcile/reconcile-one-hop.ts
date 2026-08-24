@@ -39,6 +39,10 @@ import {
   type PartitionAssignment,
   type SqlWrite,
 } from "./sql-write-evidence.ts";
+import {
+  inferTaskDefaultSchema,
+  qualifyBareTableName,
+} from "./task-default-schema.ts";
 
 export {
   extractSqlWrites,
@@ -917,14 +921,19 @@ function currentDirectReads(
   if (!pack.document || !pack.taskPath)
     throw new Error("CURRENT_TASK_INPUT_PACK_UNAVAILABLE");
   const dialect = taskSqlDialect(String(pack.document.taskCategory));
+  const defaultSchema = inferTaskDefaultSchema(pack.document);
   const byTable = new Map<string, DirectReadObservation>();
   for (const file of pack.sqlFiles) {
     for (const read of extractSqlDirectReads(file.content, dialect)) {
-      const resolved = resolveCatalogTable(catalog, read.qualifiedName);
-      const key = normalizeTable(read.qualifiedName);
+      const qualifiedName = qualifyBareTableName(
+        read.qualifiedName,
+        defaultSchema,
+      );
+      const resolved = resolveCatalogTable(catalog, qualifiedName);
+      const key = normalizeTable(qualifiedName);
       const observation: DirectReadObservation = {
         table: resolved.table,
-        sql: read,
+        sql: { ...read, qualifiedName },
         evidence: [
           inputPackSqlEvidence(file),
           {
@@ -936,6 +945,14 @@ function currentDirectReads(
               dialect,
               syntaxDiagnosticCount: read.syntaxDiagnosticCount,
               parserUnknownCount: read.parserUnknownCount,
+              ...(defaultSchema &&
+              qualifiedName !== normalizeTable(read.qualifiedName)
+                ? {
+                    parsedQualifiedName: normalizeTable(read.qualifiedName),
+                    taskDefaultSchema: defaultSchema.schema,
+                    taskDefaultSchemaEvidence: defaultSchema.evidenceSources,
+                  }
+                : {}),
             },
           },
           resolved.evidence,

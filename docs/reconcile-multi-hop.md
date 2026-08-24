@@ -40,6 +40,7 @@ npm run reconcile-multi-hop -- \
 
 Task READ 仓库在启动时一次建立严格 Task/Table catalog，随后按 Task 懒解析 SQL。Task Pack、SQL、Table Pack、DDL 任一 hash 失败均 fail closed 到对应分支。
 
+- 裸表名仅在 Task Pack 的限定任务名可证明默认 schema 且未与限定 target 冲突时继承该 schema；证据缺失或冲突时保持 `QUALIFIED_NAME_ONLY`。
 - SQL syntax diagnostic 会阻断该 statement，reason 为 `SQL_PARSE_FAILED`。
 - parser 的 `body` / `branches` topology unknown 会阻断该 statement。
 - `native_lineage` / `output_columns` 属于字段层缺口，不阻断表级 READ。

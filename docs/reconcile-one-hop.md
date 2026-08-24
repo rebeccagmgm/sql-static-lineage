@@ -18,7 +18,7 @@ npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [-
 
 ## 证据顺序
 
-1. 当前任务直接读表：读取并校验 Task Input Pack 中各 SQL 文件的 SHA-256，再使用现有 `SqlSession + buildPlanFacts` 提取物理读表。
+1. 当前任务直接读表：读取并校验 Task Input Pack 中各 SQL 文件的 SHA-256，再使用现有 `SqlSession + buildPlanFacts` 提取物理读表。裸表名仅在 Task Pack 的限定任务名可证明默认 schema 且未与限定 target 冲突时继承该 schema；否则保留未解析状态。
 2. 调度骨架：只查询 `horae relation <taskId> --direction up --depth 1`。
 3. 父任务写表：优先使用方向明确的 `DIRECT_PLATFORM_TARGET` / `SQL_EXACT_TABLE_TARGET` 和显式 SQL WRITE；父任务 Input Pack 缺失时才查询 `szdata task-source`。
 4. 表身份：使用 Table Input Pack 将 `qualifiedName` 解析为唯一的 `platform + dataSource + qualifiedName`。缺失或多义身份不能形成 `MATCHED`。

@@ -26,6 +26,10 @@ import {
 } from "../input/input-pack.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
+import {
+  inferTaskDefaultSchema,
+  qualifyBareTableName,
+} from "./task-default-schema.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -554,6 +558,7 @@ function parseTaskReads(
   const statementIssues: TaskReadStatementIssue[] = [];
   const issues: string[] = [];
   const dialect = taskSqlDialect(String(pack.document.taskCategory)) as Dialect;
+  const defaultSchema = inferTaskDefaultSchema(pack.document);
 
   for (const file of pack.sqlFiles) {
     const inputEvidence = sqlEvidence(file);
@@ -619,7 +624,11 @@ function parseTaskReads(
         });
       }
       for (const physicalInput of physicalInputs) {
-        const resolved = resolveReadTable(catalog, physicalInput);
+        const qualifiedInput = qualifyBareTableName(
+          physicalInput,
+          defaultSchema,
+        );
+        const resolved = resolveReadTable(catalog, qualifiedInput);
         const identityResolved =
           resolved.tableRef.identityStatus === "RESOLVED";
         const blockReason =
@@ -635,6 +644,14 @@ function parseTaskReads(
             statementIndex,
             diagnosticCount: cell.diagnostics.length,
             topologyUnknownFields,
+            ...(defaultSchema &&
+            qualifiedInput !== normalizeTable(physicalInput)
+              ? {
+                  parsedQualifiedName: normalizeTable(physicalInput),
+                  taskDefaultSchema: defaultSchema.schema,
+                  taskDefaultSchemaEvidence: defaultSchema.evidenceSources,
+                }
+              : {}),
           },
         };
         const key = resolved.tableRef.qualifiedName;

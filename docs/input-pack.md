@@ -74,6 +74,32 @@ The external data root has only these asset families:
 
 `create.sql` is the platform task's original CREATE slot. `ddl.sql` is the current physical-table DDL obtained from metadata or a controlled read-only source. Neither is generated from the other.
 
+Before SQL slots are written, the collector conservatively restores a newline
+when an inline `--` field comment has swallowed a strongly structured SQL
+continuation such as `, <value> AS <column>`, `FROM (` followed by
+`SELECT`/`WITH`, `UNION ... SELECT`, CASE `WHEN`/`ELSE`, or typed JOIN/ON
+syntax. It does not rewrite strings, block comments, line-only comments, or
+ordinary prose. Each repair adds an
+`SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:<slot>:<count>:<kinds>` warning and the
+SQL slot provenance token `collector:inline-comment-boundary-repair-v1`; the
+stored SQL therefore remains traceable as normalized source evidence rather
+than byte-identical platform text.
+
+To migrate already stored Task Packs without recollecting platform evidence, run
+the same normalizer in dry-run mode first:
+
+```powershell
+npm run input-pack:repair-stored -- --data-root "<input-pack-root>"
+```
+
+Add `--apply` only after reviewing the summary. The migration validates each
+existing SQL hash, stages each changed Task Pack, writes a new SQL hash and
+`contentHash`, and copies the original directory to a timestamped
+`.input-pack-repair-backups/` root before replacement. Packs with invalid
+structure or mismatched hashes are skipped and reported; they are never
+silently rewritten. The migration is idempotent, so a second dry-run over the
+same root should report zero changes.
+
 When the original query slot explicitly contains a target `INSERT ... PARTITION(key=value)` clause, the collector records those static target-write values in `task.json.partition`. It does not record `WHERE` predicates, window-function `PARTITION BY`, or source Hive read partitions.
 
 `canonicalJson` recursively sorts object keys while preserving array order. `sha256Text` hashes the exact UTF-8 bytes that will be written. Task/Table `contentHash` excludes only `collectedAt` and itself. Every task type uses the same task.json envelope: `taskId`, `taskCategory`, direct `taskType`, direct `taskName`/schedule name when supplied, direct `topicName` when supplied, direct `source`/`target`, direct endpoint `dataSource` when the platform or a directly matched Table supplies it, direct `writeMode`, direct target `partition`, and actual SQL slots. `taskCategory` comes from the separate controlled Horae type dictionary; for example, type `30` is `hive2mysql`, while an unmapped code remains `taskType-<code>`. The current dictionary is sourced from `05_l_lb_task_type_Horae任务类型字典_20260819.xlsx` (columns `type_id`/`type_desc`, 60 rows). When a mapped numeric code and a stale platform type name disagree, the dictionary mapping wins; a direct platform type name is used only when the code is not in the dictionary. A physical endpoint is represented uniformly as `{ platform, qualifiedName, dataSource }` only when its identity is directly confirmed; without Table evidence, the original endpoint value remains unchanged. The controlled platform mapping is `sparkIndex → gfhive`, `hiveTask-2.0 → gfhive`, `mysql2hive.target → gfhive`, `hive2oracle.source → gfhive`, and `hive2starrocks.source → gfhive` / `hive2starrocks.target → gfstarrocks_idms_all`; it is used to select/check Table candidates, not to fabricate endpoint objects. If task-source omits source/target, the collector first checks the direct `szdata table` task relation and uses `targetEvidenceKind=TABLE_TASK_RELATION_DIRECTION_UNKNOWN` when that relation lists the task ID. If a direct platform target exists but its Table Pack is unavailable, the collector may use a structurally identified terminal SQL target as a replacement only after Table validation; if the direct target is already resolved but SQL proves a distinct terminal write, it collects that additional Table Pack without replacing the direct target. A terminal SQL target may inherit only the task schema for an unqualified table token; the final physical identity still requires a unique `szdata table`/GUID and current DDL. Ordinary `FROM`/`JOIN` mentions and task-name matching alone are rejected. For 86840 this records `PDATA_N.T98_OTC_DERI_COMP_SALE_INFO` through the relation evidence; 163712 can use its explicit `INSERT OVERWRITE TABLE` target after Table validation. Task directories are grouped as `tasks/<taskCategory>/<taskId>`. If a category mapping changes and an older `tasks/<old-category>/<taskId>/task.json` remains, the collector does not delete it; the new run reports it as `staleLegacyTaskDirectories` and the old directory must be migrated or quarantined before treating the root as single-current-state. A table directory uses the readable identity `<qualifiedName>__<dataSource>`; the platform GUID, when present, remains in `table.json` and is not used as the directory name.

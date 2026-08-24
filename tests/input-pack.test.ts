@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { SqlSession } from "../src/session.ts";
 import { cases } from "./fixtures/input-pack/cases.ts";
 import {
   canonicalHash,
@@ -47,6 +48,7 @@ import {
 import {
   environmentMilliseconds,
   findStaleLegacyTaskDirectories,
+  normalizeCollectedSqlSlot,
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
   relocateTaskPacks,
@@ -124,9 +126,7 @@ describe("Input Pack V1", () => {
 
     const moved = relocateTaskPacks(root, archive, "manual-1");
 
-    expect(moved).toEqual([
-      join(archive, "tasks", "sparkIndex", "manual-1"),
-    ]);
+    expect(moved).toEqual([join(archive, "tasks", "sparkIndex", "manual-1")]);
     expect(existsSync(written.directory)).toBe(false);
     expect(
       existsSync(join(archive, "tasks", "sparkIndex", "manual-1", "task.json")),
@@ -218,6 +218,8 @@ describe("Input Pack V1", () => {
       content:
         "INSERT INTO demo.target\nSELECT id FROM demo.source\n\n;\nSELECT id FROM demo.source",
       separatorsInserted: 1,
+      inlineCommentBoundariesInserted: 0,
+      inlineCommentBoundaryKinds: [],
     });
     expect(
       normalizeConcatenatedSqlStatements(
@@ -233,7 +235,64 @@ describe("Input Pack V1", () => {
       content:
         "INSERT INTO demo.target VALUES (?)\n\n;\nSELECT id FROM demo.source",
       separatorsInserted: 1,
+      inlineCommentBoundariesInserted: 0,
+      inlineCommentBoundaryKinds: [],
     });
+  });
+
+  it("repairs 103935-style inline field comments before statement separation", () => {
+    const compressed = [
+      "CREATE TABLE demo.base (id STRING);",
+      "CREATE TABLE demo.today AS SELECT src_id AS id --协议编号 ,'TIT' AS src --数据来源 FROM (",
+      "  SELECT src_id FROM raw.source",
+      ") A;",
+      "CREATE TABLE demo.mid AS SELECT CASE WHEN A.id IS NULL THEN 'I' --新增 WHEN A.id IS NOT NULL THEN 'U' --变更 ELSE 'S' END AS change_type --状态 FROM (SELECT id FROM demo.a) A --历史 FULL OUTER JOIN demo.b B --当天 ON A.id = B.id;",
+    ].join("\n");
+    const repeated = normalizeRepeatedSqlContent(compressed);
+    const normalized = normalizeConcatenatedSqlStatements(repeated.content);
+    const session = SqlSession.create(normalized.content, "databricks");
+    const statements = session.doc.statements.filter(
+      (cell) => cell.text.trim() !== "",
+    );
+
+    expect(statements).toHaveLength(3);
+    expect(statements.slice(1).flatMap((cell) => cell.diagnostics)).toEqual([]);
+    expect(normalized.content).toContain("--协议编号 \n,'TIT' AS src");
+    expect(normalized.content).toContain("--新增 \nWHEN A.id IS NOT NULL");
+    expect(normalized.content).toContain("--当天 \nON A.id = B.id");
+    expect(normalized.inlineCommentBoundariesInserted).toBe(7);
+
+    const collected = normalizeCollectedSqlSlot(
+      compressed,
+      "create",
+      "fixture:task-source",
+    );
+    expect(collected.warnings).toContain(
+      "SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:create:7:CASE_ELSE=1,CASE_WHEN=1,COMMA_SELECT_ITEM=1,FROM_SUBQUERY=2,JOIN_ON=1,TYPED_JOIN=1",
+    );
+    expect(collected.evidenceProvider).toBe(
+      "fixture:task-source,collector:inline-comment-boundary-repair-v1",
+    );
+    expect(
+      normalizeConcatenatedSqlStatements(normalized.content)
+        .inlineCommentBoundariesInserted,
+    ).toBe(0);
+  });
+
+  it("does not repair SQL-like text inside strings, block comments, or ordinary line comments", () => {
+    const safe = [
+      "SELECT '-- note ,''x'' AS fake FROM ( UNION ALL SELECT' AS txt;",
+      "SELECT 1 /* -- note ,'x' AS fake WHEN x THEN y FROM ( */;",
+      "SELECT id -- ordinary note mentioning FROM and WHEN without a SQL continuation",
+      "FROM demo.source;",
+      "-- example only: ,'x' AS fake FROM ( UNION ALL SELECT",
+      "SELECT 2;",
+    ].join("\n");
+    const repeated = normalizeRepeatedSqlContent(safe);
+
+    expect(normalizeConcatenatedSqlStatements(repeated.content).content).toBe(
+      repeated.content,
+    );
   });
 
   it("reports a legacy task directory when a category mapping changes", () => {
@@ -445,10 +504,7 @@ describe("Input Pack V1", () => {
       findSqlTargetEvidence(sql, "dm_ctms_n.ctms_pwc_psn_sys_user_roles"),
     ).toBeUndefined();
     expect(
-      findSqlFinalTargetEvidence(
-        sql,
-        "dm_ctms_n.pwc_psn_sys_user_roles",
-      ),
+      findSqlFinalTargetEvidence(sql, "dm_ctms_n.pwc_psn_sys_user_roles"),
     ).toMatchObject({
       qualifiedName: "dm_ctms_n.pwc_psn_sys_user_roles",
       statementKind: "INSERT_TABLE",
@@ -463,11 +519,9 @@ describe("Input Pack V1", () => {
         "SELECT 1 FROM pwc_psn_sys_user_roles_temp",
     };
     expect(
-      findSqlFinalTargetEvidence(
-        sql,
-        "dm_ctms_n.ctms_pwc_psn_sys_user_roles",
-        { allowSchemaOnlyQualification: true },
-      ),
+      findSqlFinalTargetEvidence(sql, "dm_ctms_n.ctms_pwc_psn_sys_user_roles", {
+        allowSchemaOnlyQualification: true,
+      }),
     ).toMatchObject({
       qualifiedName: "dm_ctms_n.pwc_psn_sys_user_roles",
       statementKind: "INSERT_TABLE",
