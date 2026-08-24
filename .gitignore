@@ -7,4 +7,5 @@
 /tmp/node_modules/
 /tmp/inspect-results/
 /tmp/xlsx-inspect/
+/tmp/risk-control-rerun-lineage-*/
 /tests/fixtures/reconcile-one-hop/86840-input-pack/
