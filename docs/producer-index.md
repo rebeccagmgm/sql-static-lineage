@@ -16,7 +16,25 @@ npm run producer-index -- --data-root <input-pack-root> [--output <producer-inde
 
 输出文件必须位于 Input Pack 根目录之外。未传 `--output` 时只写标准输出。
 
-V1 使用全量重建。`inputFingerprint` 来自排序后的相对输入路径及实际内容哈希；`contentHash` 覆盖除 `generatedAt` 和自身以外的完整语义内容。数组使用固定 code-unit 顺序，绝对根路径不进入 artifact。
+V1 的 `producer-index` 命令仍是显式全量重建。`inputFingerprint` 来自排序后的相对输入路径及实际内容哈希；`contentHash` 覆盖除 `generatedAt` 和自身以外的完整语义内容。数组使用固定 code-unit 顺序，绝对根路径不进入 artifact。
+
+## 持续更新（快照复用 + 变化检测）
+
+对批量任务使用独立的更新命令，并让所有对账任务复用同一个索引快照：
+
+```text
+npm run producer-index:update -- --data-root <input-pack-root> \
+  --output <producer-index.json> [--manifest <producer-index.manifest.json>]
+```
+
+命令在索引文件旁生成一个独立的 `TABLE_PRODUCER_INPUT_MANIFEST`。manifest 保存本次 Input Pack 的 `inputFingerprint`、Task/Table Pack 输入摘要和单调递增的 `generation`：
+
+- 输入未变化且旧索引、manifest 均可验证时，直接复用旧索引，不重新解析 SQL；
+- 首次运行或发现新增、修改、删除 Pack 时，安全回退到一次全量重建，并递增 generation；
+- 索引和 manifest 都通过临时文件校验后原子发布，旧文件损坏时不静默沿用；
+- `changedPacks` 只用于审计和调度判断，不把候选关系升级为 confirmed producer。
+
+当前这是“快照复用 + 变化检测”，不是 Task/Table 级增量重算：发生变化时仍会全量重建。manifest 本身仍需读取并校验当前 Input Pack，因而它不能消除首次扫描成本；它避免的是稳定快照反复解析全部 SQL。定期全量校验和真正的按 Pack 增量合并尚未实现。
 
 ## Confirmed producer 门槛
 
