@@ -139,7 +139,7 @@ export function environmentMilliseconds(
 
 const OPENCLI_MIN_INTERVAL_MS = environmentMilliseconds(
   "INPUT_PACK_OPENCLI_MIN_INTERVAL_MS",
-  3000,
+  1000,
 );
 const OPENCLI_DEFAULT_TIMEOUT_MS = environmentMilliseconds(
   "INPUT_PACK_OPENCLI_TIMEOUT_MS",
@@ -430,6 +430,17 @@ export type TaskSchedulingClassification = {
   scheduleStatus?: string;
 };
 
+export function isExcludedHoraeSearchRecord(
+  record: Record<string, unknown>,
+  query: { readonly status: string; readonly cycle?: string },
+): boolean {
+  const cycle = directString(record.cycle);
+  if (query.cycle !== undefined && !isManualScheduleCycle(cycle)) return false;
+  const status =
+    directString(record.status) ?? directString(record.taskStatus);
+  return query.status !== "F" || isFrozenScheduleStatus(status);
+}
+
 export function findExcludedTaskIds(
   taskIds: readonly string[],
 ): Map<string, TaskSchedulingClassification> {
@@ -462,9 +473,8 @@ export function findExcludedTaskIds(
         if (taskId === undefined || !requested.has(taskId)) continue;
         if (excluded.get(taskId)?.exclusionReason === "HORAE_TASK_NOT_FOUND")
           continue;
+        if (!isExcludedHoraeSearchRecord(record, query)) continue;
         const cycle = directString(record.cycle);
-        if (query.cycle !== undefined && !isManualScheduleCycle(cycle))
-          continue;
         const status =
           directString(record.status) ?? directString(record.taskStatus);
         excluded.set(taskId, {

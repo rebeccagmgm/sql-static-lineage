@@ -1,0 +1,307 @@
+import type { Expr } from "../../../src/ir/ir.js";
+import type {
+	ColumnRef,
+	ExpressionFacts,
+	PredicateOperand,
+	PredicateTree,
+} from "../plan-contract.js";
+import { fullTextOf, spanOfCst } from "./plan-text.js";
+
+type RefWithOffset = ColumnRef & { _cellOffset?: number };
+
+/** 递归提取表达式树里的列引用。 */
+export function collectColumns(
+	e: Expr | null | undefined,
+	clause: ColumnRef["clause"],
+	out: ColumnRef[],
+): void {
+	if (!e) return;
+	switch (e.kind) {
+		case "column":
+			out.push({
+				name: e.parts[e.parts.length - 1] ?? "?",
+				qualifier: e.parts.length > 1 ? e.parts[0] : undefined,
+				clause,
+				physical: null,
+				_cellOffset: e.partSpans?.[0]?.start,
+			} as RefWithOffset);
+			return;
+		case "binary":
+			collectColumns(e.left, clause, out);
+			collectColumns(e.right, clause, out);
+			return;
+		case "unary":
+			collectColumns(e.operand, clause, out);
+			return;
+		case "function":
+			for (const a of e.args) collectColumns(a, clause, out);
+			return;
+		case "case":
+			for (const w of e.whens) {
+				collectColumns(w.when, clause, out);
+				collectColumns(w.then, clause, out);
+			}
+			if (e.elseExpr) collectColumns(e.elseExpr, clause, out);
+			return;
+		case "cast":
+			collectColumns(e.expr, clause, out);
+			return;
+		case "predicate":
+			collectColumns(e.operand, clause, out);
+			for (const a of e.args ?? []) collectColumns(a, clause, out);
+			return;
+		case "subscript":
+			collectColumns(e.base, clause, out);
+			if (e.index) collectColumns(e.index, clause, out);
+			return;
+		default:
+			return;
+	}
+}
+
+function normalizedLiteralValue(text: string): string | null {
+	const trimmed = text.trim();
+	if (trimmed.length >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'"))
+		return trimmed.slice(1, -1).replaceAll("''", "'");
+	if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"'))
+		return trimmed.slice(1, -1).replaceAll('""', '"');
+	if (/^(?:[-+]?\d+(?:\.\d+)?|true|false)$/iu.test(trimmed))
+		return trimmed;
+	return null;
+}
+
+function predicateColumnRef(
+	e: Extract<Expr, { kind: "column" }>,
+	clause: ColumnRef["clause"],
+): ColumnRef {
+	return {
+		name: e.parts[e.parts.length - 1] ?? "?",
+		qualifier: e.parts.length > 1 ? e.parts[0] : undefined,
+		clause,
+		physical: null,
+		_cellOffset: e.partSpans?.[0]?.start,
+	} as RefWithOffset;
+}
+
+function predicateOperand(
+	e: Expr,
+	sql: string,
+	cellBase: number,
+	clause: ColumnRef["clause"],
+): PredicateOperand {
+	const expression = fullTextOf(sql, cellBase, e.cst);
+	if (e.kind === "column")
+		return {
+			kind: "COLUMN",
+			expression,
+			column: predicateColumnRef(e, clause),
+		};
+	if (e.kind === "literal")
+		return {
+			kind: "LITERAL",
+			expression: e.text,
+			observedValue: normalizedLiteralValue(e.text),
+		};
+	if (e.kind === "parameter" || e.kind === "variable")
+		return {
+			kind: "RUNTIME_EXPRESSION",
+			expression,
+			inputColumns: [],
+		};
+	const inputColumns: ColumnRef[] = [];
+	collectColumns(e, clause, inputColumns);
+	return { kind: "OTHER", expression, inputColumns };
+}
+
+export function predicateTreeOf(
+	e: Expr,
+	sql: string,
+	cellBase: number,
+	clause: ColumnRef["clause"],
+): PredicateTree {
+	const span = spanOfCst(cellBase, e.cst);
+	if (e.kind === "binary") {
+		const op = e.op.toLowerCase();
+		if (op === "and" || op === "or")
+			return {
+				kind: op.toUpperCase() as "AND" | "OR",
+				children: [
+					predicateTreeOf(e.left, sql, cellBase, clause),
+					predicateTreeOf(e.right, sql, cellBase, clause),
+				],
+				span,
+			};
+		return {
+			kind: "ATOM",
+			operator:
+				({
+					"=": "EQ",
+					"<": "LT",
+					"<=": "LTE",
+					">": "GT",
+					">=": "GTE",
+				} as Record<
+					string,
+					"EQ" | "LT" | "LTE" | "GT" | "GTE"
+				>)[op] ?? "OTHER",
+			operands: [
+				predicateOperand(e.left, sql, cellBase, clause),
+				predicateOperand(e.right, sql, cellBase, clause),
+			],
+			span,
+		};
+	}
+	if (e.kind === "unary" && e.op.toLowerCase() === "not")
+		return {
+			kind: "NOT",
+			child: predicateTreeOf(e.operand, sql, cellBase, clause),
+			span,
+		};
+	if (e.kind === "predicate") {
+		const op = e.op.toLowerCase();
+		const operator =
+			op === "in" ? "IN" : op === "between" ? "BETWEEN" : "OTHER";
+		const atom: PredicateTree = {
+			kind: "ATOM",
+			operator,
+			operands: [
+				predicateOperand(e.operand, sql, cellBase, clause),
+				...e.args.map((arg) =>
+					predicateOperand(arg, sql, cellBase, clause),
+				),
+			],
+			span,
+		};
+		return e.negated ? { kind: "NOT", child: atom, span } : atom;
+	}
+	return {
+		kind: "ATOM",
+		operator: "OTHER",
+		operands: [predicateOperand(e, sql, cellBase, clause)],
+		span,
+	};
+}
+
+export function predicateColumnsOf(
+	tree: PredicateTree,
+	output: ColumnRef[] = [],
+): ColumnRef[] {
+	if (tree.kind === "AND" || tree.kind === "OR")
+		for (const child of tree.children) predicateColumnsOf(child, output);
+	else if (tree.kind === "NOT") predicateColumnsOf(tree.child, output);
+	else if (tree.kind === "ATOM")
+		for (const operand of tree.operands) {
+			if (operand.kind === "COLUMN") output.push(operand.column);
+			else if (operand.kind === "OTHER") output.push(...operand.inputColumns);
+		}
+	return output;
+}
+
+/** 直接遍历 sql-static-lineage IR，保留表达式判断所需的结构事实。 */
+export function expressionFacts(
+	e: Expr | null | undefined,
+): ExpressionFacts {
+	const operators = new Set<string>();
+	const literals = new Set<string>();
+	const functions = new Set<string>();
+	const predicates = new Map<string, { operator: string; negated: boolean }>();
+	const comparisons: ExpressionFacts["comparisons"] = [];
+	const collectLiterals = (
+		node: Expr | null | undefined,
+		out: string[],
+	): void => {
+		if (!node) return;
+		if (node.kind === "literal") {
+			out.push(node.text);
+			return;
+		}
+		if (node.kind === "binary") {
+			collectLiterals(node.left, out);
+			collectLiterals(node.right, out);
+		} else if (node.kind === "unary") collectLiterals(node.operand, out);
+		else if (node.kind === "function")
+			for (const arg of node.args) collectLiterals(arg, out);
+		else if (node.kind === "case") {
+			for (const branch of node.whens) {
+				collectLiterals(branch.when, out);
+				collectLiterals(branch.then, out);
+			}
+			collectLiterals(node.elseExpr, out);
+		} else if (node.kind === "cast") collectLiterals(node.expr, out);
+		else if (node.kind === "predicate") {
+			collectLiterals(node.operand, out);
+			for (const arg of node.args) collectLiterals(arg, out);
+		}
+	};
+	const visit = (node: Expr | null | undefined): void => {
+		if (!node) return;
+		switch (node.kind) {
+			case "literal":
+				literals.add(node.text);
+				return;
+			case "binary":
+				operators.add(node.op.toLowerCase());
+				if (["=", "!=", "<>", "<", "<=", ">", ">="].includes(node.op.toLowerCase())) {
+					const refs: ColumnRef[] = [];
+					const comparisonLiterals: string[] = [];
+					collectColumns(node, "where", refs);
+					collectLiterals(node, comparisonLiterals);
+					comparisons.push({
+						operator: node.op.toLowerCase(),
+						columns: [...new Set(refs.map((ref) => ref.name.toLowerCase()))],
+						literals: [...new Set(comparisonLiterals)],
+					});
+				}
+				visit(node.left);
+				visit(node.right);
+				return;
+			case "unary":
+				operators.add(node.op.toLowerCase());
+				visit(node.operand);
+				return;
+			case "function":
+				functions.add(node.name.toLowerCase());
+				for (const arg of node.args) visit(arg);
+				return;
+			case "case":
+				for (const branch of node.whens) {
+					visit(branch.when);
+					visit(branch.then);
+				}
+				visit(node.elseExpr);
+				return;
+			case "cast":
+				visit(node.expr);
+				return;
+			case "predicate": {
+				const operator = node.op.toLowerCase();
+				predicates.set(`${operator}:${node.negated}`, {
+					operator,
+					negated: node.negated,
+				});
+				visit(node.operand);
+				for (const arg of node.args) visit(arg);
+				return;
+			}
+			case "subscript":
+				visit(node.base);
+				visit(node.index);
+				visit(node.end);
+				visit(node.step);
+				return;
+			case "lambda":
+				visit(node.body);
+				return;
+			default:
+				return;
+		}
+	};
+	visit(e);
+	return {
+		operators: [...operators],
+		literals: [...literals],
+		functions: [...functions],
+		predicates: [...predicates.values()],
+		comparisons,
+	};
+}

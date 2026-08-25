@@ -85,7 +85,11 @@ function materializeFrozenInputPack(sourceRoot: string): string {
   return dataRoot;
 }
 
-function writeTable(dataRoot: string, qualifiedName: string): string {
+function writeTable(
+  dataRoot: string,
+  qualifiedName: string,
+  partitionFields?: readonly string[],
+): string {
   const [schema, name] = qualifiedName.split(".");
   return writeTableInput(dataRoot, {
     platform: "hive",
@@ -94,9 +98,16 @@ function writeTable(dataRoot: string, qualifiedName: string): string {
     schema,
     name,
     objectType: "TABLE",
-    ddl: `CREATE TABLE ${qualifiedName} (id bigint)`,
+    ddl: `CREATE TABLE ${qualifiedName} (id bigint)${
+      partitionFields && partitionFields.length > 0
+        ? ` PARTITIONED BY (${partitionFields
+            .map((field) => `${field} string`)
+            .join(", ")})`
+        : ""
+    }`,
     evidenceProvider: "fixture:table",
     collectedAt: "2026-08-23T00:00:00.000Z",
+    ...(partitionFields === undefined ? {} : { partitionFields }),
   }).directory;
 }
 
@@ -346,6 +357,169 @@ describe("reconcileOneHop", () => {
         ],
       }),
     ]);
+  });
+
+  it("uses adaptor predicates and table partition metadata for one-hop matching", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "src.partitioned", ["busi_date"]);
+    writeTable(dataRoot, "raw.seed");
+    writeTable(dataRoot, "mart.current");
+    writeTask(dataRoot, "current-partitioned", {
+      sql: {
+        query: {
+          content:
+            "SELECT id FROM src.partitioned WHERE busi_date = '2026-08-23'; SELECT id FROM src.partitioned WHERE busi_date = '2026-08-24'",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "producer-partitioned", {
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE src.partitioned PARTITION (busi_date = '2026-08-23') SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: { busi_date: "2026-08-23" },
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "producer-partitioned-2", {
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE src.partitioned PARTITION (busi_date = '2026-08-24') SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: { busi_date: "2026-08-24" },
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "producer-partitioned-3", {
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE src.partitioned PARTITION (busi_date = '2026-08-25') SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: { busi_date: "2026-08-25" },
+      evidenceProvider: "fixture:task",
+    });
+
+    const producerIndex = buildTableProducerIndex(dataRoot);
+    const result = reconcileOneHop("current-partitioned", {
+      dataRoot,
+      producerIndex,
+      openCliRunner: () => [],
+    });
+    expect(result.currentTask.directReads[0]?.readPartitionScopes).toHaveLength(
+      2,
+    );
+    expect(
+      result.currentTask.directReads[0]?.readPartitionScopes.map(
+        (occurrence) => occurrence.scope.status,
+      ),
+    ).toEqual(["CONSTRAINED", "CONSTRAINED"]);
+    expect(result.partitionAwareNextDataTaskIds).toEqual({
+      proven: ["producer-partitioned", "producer-partitioned-2"],
+      possible: [],
+      unknown: [],
+    });
+    expect(result.nextDataTaskIds).toEqual([
+      "producer-partitioned",
+      "producer-partitioned-2",
+      "producer-partitioned-3",
+    ]);
+    expect(
+      result.dataPath.confirmedProducers.find(
+        (producer) => producer.taskId === "producer-partitioned-3",
+      )?.partitionMatch.status,
+    ).toBe("PROVEN_DISJOINT");
+    expect(result.coverage.partitionScopes.multiProducerTables).toBe(1);
+  });
+
+  it("fails closed when one filter cannot be bound to one physical input", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "src.partitioned", ["busi_date"]);
+    writeTable(dataRoot, "raw.seed");
+    writeTable(dataRoot, "mart.current");
+    writeTask(dataRoot, "current-ambiguous-filter", {
+      sql: {
+        query: {
+          content:
+            "SELECT p.id FROM src.partitioned p JOIN raw.seed s ON p.id = s.id WHERE p.busi_date = '2026-08-23'",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "producer-ambiguous-filter", {
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE src.partitioned PARTITION (busi_date = '2026-08-23') SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "src.partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: { busi_date: "2026-08-23" },
+      evidenceProvider: "fixture:task",
+    });
+
+    const result = reconcileOneHop("current-ambiguous-filter", {
+      dataRoot,
+      producerIndex: buildTableProducerIndex(dataRoot),
+      openCliRunner: () => [],
+    });
+    const sourceRead = result.currentTask.directReads.find(
+      (read) => read.table.qualifiedName === "src.partitioned",
+    );
+    expect(sourceRead?.readPartitionScopes[0]?.scope.status).toBe("UNKNOWN");
+    expect(sourceRead?.readPartitionScopes[0]?.scope.reasonCodes).toContain(
+      "PARTITION_FILTER_BINDING_AMBIGUOUS",
+    );
+    expect(result.partitionAwareNextDataTaskIds).toEqual({
+      proven: [],
+      possible: [],
+      unknown: ["producer-ambiguous-filter"],
+    });
   });
 
   it("ignores write-like comments and strings while retaining CTAS", () => {

@@ -4,8 +4,11 @@ import {
   lookupConfirmedProducers,
   lookupProducerWritesByTask,
   lookupProducersByTablePartition,
+  matchProducersByReadScope,
   type PartitionQuery,
 } from "../scripts/query/producer-index-query.ts";
+import type { ReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts";
+import { resolveReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts";
 import type {
   ProducerTableIdentity,
   TableProducerIndex,
@@ -112,6 +115,102 @@ const index = {
 } as unknown as TableProducerIndex;
 
 describe("producer-index-query", () => {
+  it("does not infer a direct partition constraint through a function", () => {
+    const column = {
+      name: "busi_date",
+      clause: "where" as const,
+      physical: [{ table: "src.partitioned", column: "busi_date" }],
+    };
+    const result = resolveReadPartitionScope({
+      tableQualifiedName: "src.partitioned",
+      partitionFields: ["busi_date"],
+      predicate: {
+        kind: "ATOM",
+        operator: "EQ",
+        operands: [
+          {
+            kind: "OTHER",
+            expression: "date(busi_date)",
+            inputColumns: [column],
+          },
+          {
+            kind: "LITERAL",
+            expression: "'2026-08-23'",
+            observedValue: "2026-08-23",
+          },
+        ],
+        span: { start: 0, end: 20 },
+      },
+    });
+    expect(result.status).toBe("UNKNOWN");
+    expect(result.reasonCodes).toContain(
+      "PARTITION_COLUMN_PHYSICAL_ORIGIN_UNRESOLVED",
+    );
+  });
+
+  function scope(
+    observedValue: string,
+    operator: "EQ" | "IN" = "EQ",
+  ): ReadPartitionScope {
+    return {
+      status: "CONSTRAINED",
+      partitionFields: ["busi_date"],
+      predicate: {
+        kind: "ATOM",
+        field: "busi_date",
+        operator,
+        values: [
+          {
+            kind: "LITERAL",
+            expression: `'${observedValue}'`,
+            observedValue,
+          },
+        ],
+      },
+      reasonCodes: [],
+      evidence: [],
+    };
+  }
+
+  it("distinguishes proven, possible, and disjoint partition matches", () => {
+    const exactIndex = {
+      ...index,
+      confirmedProducerEdges: [
+        {
+          ...index.confirmedProducerEdges[0]!,
+          writes: [
+            write([
+              {
+                field: "busi_date",
+                expression: "'2026-05-24'",
+                valueStatus: "OBSERVED_RENDERED_VALUE",
+                observedValue: "2026-05-24",
+              },
+            ]),
+          ],
+        },
+      ],
+    } as TableProducerIndex;
+
+    expect(
+      matchProducersByReadScope(
+        exactIndex,
+        table,
+        scope("2026-05-24"),
+      )[0]?.status,
+    ).toBe("PROVEN_OVERLAP");
+    expect(
+      matchProducersByReadScope(
+        exactIndex,
+        table,
+        scope("2026-05-25"),
+      )[0]?.status,
+    ).toBe("PROVEN_DISJOINT");
+    expect(
+      matchProducersByReadScope(index, table, scope("2026-05-24"))[0]?.status,
+    ).toBe("POSSIBLE_OVERLAP");
+  });
+
   it("looks up confirmed producers and writes by task", () => {
     expect(
       lookupConfirmedProducers(index, table).map((item) => item.taskId),

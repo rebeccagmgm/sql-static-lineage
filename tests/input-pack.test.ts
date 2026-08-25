@@ -49,6 +49,7 @@ import {
   environmentMilliseconds,
   findStaleLegacyTaskDirectories,
   hasPhysicalTableEvidenceGap,
+  isExcludedHoraeSearchRecord,
   normalizeCollectedSqlSlot,
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
@@ -114,6 +115,27 @@ describe("Input Pack V1", () => {
     expect(isFrozenScheduleStatus("冻结")).toBe(true);
     expect(isFrozenScheduleStatus("Y")).toBe(false);
     validateTaskDocument(document);
+  });
+
+  it("does not classify a normal task as frozen when the search filter is loose", () => {
+    expect(
+      isExcludedHoraeSearchRecord(
+        { id: "102845", cycle: "每日", status: "正常" },
+        { status: "F" },
+      ),
+    ).toBe(false);
+    expect(
+      isExcludedHoraeSearchRecord(
+        { id: "frozen-1", cycle: "每日", status: "F" },
+        { status: "F" },
+      ),
+    ).toBe(true);
+    expect(
+      isExcludedHoraeSearchRecord(
+        { id: "manual-1", cycle: "每日", status: "Y" },
+        { status: "Y", cycle: "手工" },
+      ),
+    ).toBe(false);
   });
 
   it("relocates an existing manual Task Pack without overwriting evidence", () => {

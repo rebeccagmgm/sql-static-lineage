@@ -82,6 +82,51 @@ export interface ExpressionFacts {
 	comparisons: { operator: string; columns: string[]; literals: string[] }[];
 }
 
+export type PredicateAtomOperator =
+	| "EQ"
+	| "LT"
+	| "LTE"
+	| "GT"
+	| "GTE"
+	| "IN"
+	| "BETWEEN"
+	| "OTHER";
+
+export type PredicateOperand =
+	| {
+			kind: "COLUMN";
+			expression: string;
+			column: ColumnRef;
+	  }
+	| {
+			kind: "LITERAL";
+			expression: string;
+			observedValue: string | null;
+	  }
+	| {
+			kind: "RUNTIME_EXPRESSION" | "OTHER";
+			expression: string;
+			inputColumns: ColumnRef[];
+	  };
+
+export type PredicateTree =
+	| {
+			kind: "AND" | "OR";
+			children: PredicateTree[];
+			span: SourceSpan;
+	  }
+	| {
+			kind: "NOT";
+			child: PredicateTree;
+			span: SourceSpan;
+	  }
+	| {
+			kind: "ATOM";
+			operator: PredicateAtomOperator;
+			operands: PredicateOperand[];
+			span: SourceSpan;
+	  };
+
 export type WindowInputRole = "VALUE" | "WINDOW_PARTITION" | "WINDOW_ORDER";
 export type WindowNullOrdering = "FIRST" | "LAST" | "UNSPECIFIED";
 
@@ -189,6 +234,8 @@ export interface FilterRelation extends BaseRelation {
 	predicate_columns: ColumnRef[];
 	/** 可选：由 WHERE IR 直接提取的结构事实。 */
 	predicate_facts?: ExpressionFacts;
+	/** 可选：保留 WHERE 的布尔结构、操作数绑定和源位置。 */
+	predicate_tree?: PredicateTree;
 }
 
 /** 连接 (JOIN)。左深链: 每层 scope 的 join 节点串成 left→right 链。 */
