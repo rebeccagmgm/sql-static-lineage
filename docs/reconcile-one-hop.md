@@ -9,24 +9,30 @@
 ## 入口
 
 ```text
-npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--output <result.json>]
+npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--output <result.json>] [--summary-output <summary.json>]
+
+# 发现缺失父任务后自动补采 Input Pack、重建索引并重跑
+npm run reconcile-one-hop:autofill -- --task-id <taskId> --data-root <input-pack-root> --producer-index <index.json> [--output <result.json>] [--summary-output <summary.json>] [--force]
 ```
 
-处理多个根任务时，使用批量入口复用一次 Table catalog 和 input fingerprint：
+处理多个根任务时，使用批量入口复用一次 Table catalog；需要严格校验 input fingerprint 时显式加开关：
 
 ```text
 npm run reconcile-one-hop:batch -- \
   --task-ids <task-id-1,task-id-2,...> \
   --data-root <input-pack-root> \
   --producer-index <index.json> \
+  [--verify-input-fingerprint] \
   --output-dir <result-dir>
 ```
 
-批量入口会在开始时校验 producer index，并在批次结束时复核 Input Pack 指纹；批次运行期间不要修改 `tasks/` 或 `tables/`。
+批量入口默认不扫描全量 Input Pack；传入 `--verify-input-fingerprint` 后，会在开始时校验并在批次结束时复核 Input Pack 指纹。批次运行期间不要修改 `tasks/` 或 `tables/`。
 
 `--data-root` 指向 Task/Table Input Pack V1。未传 `--output` 时，结果只写到标准输出。
 
-`--producer-index` 是可选的离线 producer 反向索引。显式提供后会先校验 schema、`contentHash`，并重新计算当前 `data-root` 的 `inputFingerprint`；失效或过期直接失败，不回退到实时 producer 补证。`PARTIAL` 索引可以消费其中已确认的边，但覆盖语义仍为 `OBSERVED_EVIDENCE_ONLY`。
+传入 `--output` 后会同时生成同目录的 `<name>.summary.json` 简要版；也可以用 `--summary-output` 指定摘要路径。完整 JSON 保留证据、父任务详情和逐项对账；摘要只保留表名、Task ID、counts、下一步 Task ID、问题列表和按任务定位的 `issueDetails`，其中 `missingTaskInputPackTaskIds` 可直接列出缺少 Input Pack 的父任务。
+
+`--producer-index` 是可选的离线 producer 反向索引。显式提供后会校验 schema 和 `contentHash`；默认不重新扫描当前 `data-root`。传入 `--verify-input-fingerprint` 后，才会重新计算 `inputFingerprint`，用于严格确认索引没有过期；失效或过期直接失败，不回退到实时 producer 补证。`PARTIAL` 索引可以消费其中已确认的边，但覆盖语义仍为 `OBSERVED_EVIDENCE_ONLY`。
 
 ## 证据顺序
 

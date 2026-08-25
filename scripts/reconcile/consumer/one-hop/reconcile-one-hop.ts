@@ -6,7 +6,7 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SqlSession } from "../../../../src/session.ts";
 import type { Dialect } from "../../../../src/dialect.ts";
@@ -154,6 +154,13 @@ export interface ParentObservation {
   readonly issues: readonly string[];
 }
 
+export interface OneHopIssueDetail {
+  readonly code: string;
+  readonly scope: "TABLE_CATALOG" | "SCHEDULE_PARENT";
+  readonly taskId: string | null;
+  readonly taskName: string | null;
+}
+
 export interface ReconciliationItem {
   readonly status: ReconciliationStatus;
   readonly taskId: string | null;
@@ -267,6 +274,7 @@ export interface OneHopReconciliationResult {
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
   readonly issues: readonly string[];
+  readonly issueDetails: readonly OneHopIssueDetail[];
   readonly boundaries: {
     readonly staticSqlOnly: true;
     readonly schedulerExecution: "NOT_EVALUATED";
@@ -277,11 +285,40 @@ export interface OneHopReconciliationResult {
   };
 }
 
+export interface OneHopSummary {
+  readonly schemaVersion: "1.0.0";
+  readonly artifactType: "ONE_HOP_RECONCILIATION_SUMMARY";
+  readonly taskId: string;
+  readonly generatedAt: string;
+  readonly directReadTables: readonly (string | null)[];
+  readonly scheduleParentTaskIds: readonly string[];
+  readonly confirmedProducers: readonly {
+    readonly taskId: string;
+    readonly table: string | null;
+    readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+  }[];
+  readonly counts: OneHopReconciliationResult["counts"];
+  readonly producerIndex: {
+    readonly status: ProducerIndexConsumptionStatus;
+  };
+  readonly dataPath: {
+    readonly source: OneHopReconciliationResult["dataPath"]["source"];
+    readonly confirmedProducerCount: number;
+    readonly nonConfirmedRelationCount: number;
+  };
+  readonly nextScheduleTaskIds: readonly string[];
+  readonly nextDataTaskIds: readonly string[];
+  readonly issues: readonly string[];
+  readonly issueDetails: readonly OneHopIssueDetail[];
+  readonly missingTaskInputPackTaskIds: readonly string[];
+}
+
 export type OpenCliRunner = (args: readonly string[]) => unknown;
 
 export interface ReconcileOneHopOptions {
   readonly dataRoot: string;
   readonly producerIndex?: TableProducerIndex;
+  readonly verifyInputFingerprint?: boolean;
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
   readonly taskSourceTimeoutSeconds?: number;
@@ -351,6 +388,42 @@ function compareText(left: string | null, right: string | null): number {
 
 function uniqueSorted(values: readonly string[]): string[] {
   return [...new Set(values)].sort(compareText);
+}
+
+function issueDetailsForOneHop(
+  catalog: TableCatalog,
+  parents: readonly ParentObservation[],
+): readonly OneHopIssueDetail[] {
+  const details: OneHopIssueDetail[] = [
+    ...catalog.issues.map((code) => ({
+      code,
+      scope: "TABLE_CATALOG" as const,
+      taskId: null,
+      taskName: null,
+    })),
+    ...parents.flatMap((parent) =>
+      parent.issues.map((code) => ({
+        code,
+        scope: "SCHEDULE_PARENT" as const,
+        taskId: parent.taskId,
+        taskName: parent.taskName,
+      })),
+    ),
+  ];
+  const seen = new Set<string>();
+  return details
+    .filter((detail) => {
+      const key = `${detail.scope}\u0000${detail.taskId ?? ""}\u0000${detail.code}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) =>
+      compareText(
+        `${left.scope}\u0000${left.taskId ?? ""}\u0000${left.code}`,
+        `${right.scope}\u0000${right.taskId ?? ""}\u0000${right.code}`,
+      ),
+    );
 }
 
 function safeMessage(error: unknown): string {
@@ -1095,8 +1168,9 @@ function reconcileOneHopInternal(
       throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
     }
     if (
-      preparedContext.inputFingerprint === null ||
-      preparedContext.inputFingerprint !== producerIndex.inputFingerprint
+      options.verifyInputFingerprint === true &&
+      (preparedContext.inputFingerprint === null ||
+        preparedContext.inputFingerprint !== producerIndex.inputFingerprint)
     )
       throw new Error(
         "PRODUCER_INDEX_INPUT_FINGERPRINT_MISMATCH: producer index does not match dataRoot",
@@ -1488,6 +1562,12 @@ function reconcileOneHopInternal(
 
   const count = (status: ReconciliationStatus): number =>
     reconciliation.filter((item) => item.status === status).length;
+  const issues = [
+    ...catalog.issues,
+    ...parents.flatMap((parent) => parent.issues),
+  ].sort(compareText);
+  const issueDetails = issueDetailsForOneHop(catalog, parents);
+
   return {
     schemaVersion: "1.0.0",
     taskId,
@@ -1541,10 +1621,8 @@ function reconcileOneHopInternal(
             .filter((item) => item.status === "MATCHED" && item.taskId)
             .map((item) => item.taskId!),
         ),
-    issues: [
-      ...catalog.issues,
-      ...parents.flatMap((parent) => parent.issues),
-    ].sort(compareText),
+    issues,
+    issueDetails,
     boundaries: {
       staticSqlOnly: true,
       schedulerExecution: "NOT_EVALUATED",
@@ -1561,9 +1639,61 @@ export function reconcileOneHop(
   options: ReconcileOneHopOptions,
 ): OneHopReconciliationResult {
   const preparedContext = prepareOneHopContext(options.dataRoot, {
-    includeFingerprint: options.producerIndex !== undefined,
+    includeFingerprint:
+      options.producerIndex !== undefined &&
+      options.verifyInputFingerprint === true,
   });
   return reconcileOneHopInternal(taskId, options, preparedContext);
+}
+
+export function summarizeOneHop(
+  result: OneHopReconciliationResult,
+): OneHopSummary {
+  return {
+    schemaVersion: "1.0.0",
+    artifactType: "ONE_HOP_RECONCILIATION_SUMMARY",
+    taskId: result.taskId,
+    generatedAt: result.generatedAt,
+    directReadTables: [
+      ...new Set(
+        result.currentTask.directReads.map((read) => read.table.qualifiedName),
+      ),
+    ].sort((left, right) => compareText(left ?? "", right ?? "")),
+    scheduleParentTaskIds: result.schedule.parents.map(
+      (parent) => parent.taskId,
+    ),
+    confirmedProducers: result.dataPath.confirmedProducers.map((producer) => ({
+      taskId: producer.taskId,
+      table: producer.table.qualifiedName,
+      scheduleRelation: producer.scheduleRelation,
+    })),
+    counts: result.counts,
+    producerIndex: { status: result.producerIndex.status },
+    dataPath: {
+      source: result.dataPath.source,
+      confirmedProducerCount: result.dataPath.confirmedProducers.length,
+      nonConfirmedRelationCount: result.dataPath.nonConfirmedRelations.length,
+    },
+    nextScheduleTaskIds: result.nextScheduleTaskIds,
+    nextDataTaskIds: result.nextDataTaskIds,
+    issues: result.issues,
+    issueDetails: result.issueDetails,
+    missingTaskInputPackTaskIds: uniqueSorted(
+      result.issueDetails
+        .filter(
+          (detail) =>
+            detail.code === "TASK_INPUT_PACK_MISSING" && detail.taskId,
+        )
+        .map((detail) => detail.taskId!),
+    ),
+  };
+}
+
+export function summaryPathFromOutput(outputPath: string): string {
+  const extension = extname(outputPath);
+  return extension
+    ? `${outputPath.slice(0, -extension.length)}.summary${extension}`
+    : `${outputPath}.summary.json`;
 }
 
 export function reconcileOneHopBatch(
@@ -1571,7 +1701,9 @@ export function reconcileOneHopBatch(
   options: ReconcileOneHopOptions,
 ): readonly OneHopReconciliationResult[] {
   const preparedContext = prepareOneHopContext(options.dataRoot, {
-    includeFingerprint: options.producerIndex !== undefined,
+    includeFingerprint:
+      options.producerIndex !== undefined &&
+      options.verifyInputFingerprint === true,
   });
   const results = taskIds.map((taskId) =>
     reconcileOneHopInternal(taskId, options, preparedContext),
@@ -1608,24 +1740,44 @@ function main(): void {
   const dataRoot =
     option(args, "--data-root") ?? process.env.SQL_LINEAGE_DATA_ROOT;
   const output = option(args, "--output");
+  const summaryOutput = option(args, "--summary-output");
   const producerIndexPath = producerIndexPathFromArgs(args);
+  const verifyInputFingerprint = args.includes("--verify-input-fingerprint");
   if (!taskId || !dataRoot)
     throw new Error(
-      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--output <json>]",
+      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--verify-input-fingerprint] [--output <json>] [--summary-output <summary.json>]",
     );
   const producerIndex = producerIndexPath
     ? loadTableProducerIndex(producerIndexPath)
     : undefined;
-  const result = reconcileOneHop(taskId, { dataRoot, producerIndex });
+  const result = reconcileOneHop(taskId, {
+    dataRoot,
+    producerIndex,
+    verifyInputFingerprint,
+  });
   const serialized = `${JSON.stringify(result, null, 2)}\n`;
+  const summary = `${JSON.stringify(summarizeOneHop(result), null, 2)}\n`;
+  let outputPath: string | null = null;
+  let summaryPath: string | null = null;
   if (output) {
-    const outputPath = isAbsolute(output) ? output : resolve(output);
+    outputPath = isAbsolute(output) ? output : resolve(output);
     mkdirSync(dirname(outputPath), { recursive: true });
     writeFileSync(outputPath, serialized, "utf8");
+  }
+  if (summaryOutput || outputPath) {
+    summaryPath = summaryOutput
+      ? isAbsolute(summaryOutput)
+        ? summaryOutput
+        : resolve(summaryOutput)
+      : summaryPathFromOutput(outputPath!);
+    mkdirSync(dirname(summaryPath), { recursive: true });
+    writeFileSync(summaryPath, summary, "utf8");
+  }
+  if (outputPath || summaryPath)
     process.stdout.write(
-      `${JSON.stringify({ output: outputPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds })}\n`,
+      `${JSON.stringify({ output: outputPath, summaryOutput: summaryPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds })}\n`,
     );
-  } else process.stdout.write(serialized);
+  else process.stdout.write(serialized);
 }
 
 if (

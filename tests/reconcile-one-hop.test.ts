@@ -20,6 +20,8 @@ import {
   reconcileOneHopBatch,
   producerIndexPathFromArgs,
   reconcileOneHop,
+  summarizeOneHop,
+  summaryPathFromOutput,
   type OpenCliRunner,
 } from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
@@ -212,7 +214,42 @@ function writeProducerIndexFixture(options?: { partial?: boolean }): {
 }
 
 describe("reconcileOneHop", () => {
-  it("reuses a prepared catalog and fingerprint for a batch root", () => {
+  it("builds a concise sidecar summary without embedding evidence", () => {
+    const fixture = writeProducerIndexFixture();
+    const result = reconcileOneHop("current-indexed", {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: () => [],
+      now: () => "2026-08-23T00:30:00.000Z",
+    });
+
+    const summary = summarizeOneHop(result);
+    expect(summary).toMatchObject({
+      artifactType: "ONE_HOP_RECONCILIATION_SUMMARY",
+      taskId: "current-indexed",
+      counts: result.counts,
+      producerIndex: { status: "VALID_SUCCESS" },
+      nextDataTaskIds: result.nextDataTaskIds,
+    });
+    expect(summary.directReadTables).toEqual(["src.shared"]);
+    expect(summary.missingTaskInputPackTaskIds).toEqual([]);
+    expect(summary.confirmedProducers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "producer-direct",
+          table: "src.shared",
+          scheduleRelation: "NOT_DIRECT_PARENT",
+        }),
+      ]),
+    );
+    expect(summary).not.toHaveProperty("parents");
+    expect(summary).not.toHaveProperty("reconciliation");
+    expect(summaryPathFromOutput("results/86840.json")).toBe(
+      "results/86840.summary.json",
+    );
+  });
+
+  it("reuses a prepared catalog for a batch root", () => {
     const fixture = writeProducerIndexFixture();
     const standalone = reconcileOneHop("current-indexed", {
       dataRoot: fixture.dataRoot,
@@ -473,6 +510,19 @@ describe("reconcileOneHop", () => {
       "parent4",
     ]);
     expect(result.nextDataTaskIds).toEqual(["parent1", "parent4"]);
+    expect(result.issueDetails).toEqual(
+      expect.arrayContaining([
+        {
+          code: "TASK_INPUT_PACK_MISSING",
+          scope: "SCHEDULE_PARENT",
+          taskId: "parent4",
+          taskName: "live parent",
+        },
+      ]),
+    );
+    expect(summarizeOneHop(result).missingTaskInputPackTaskIds).toEqual([
+      "parent4",
+    ]);
     expect(
       result.reconciliation.map((item) => [
         item.status,
@@ -726,6 +776,7 @@ describe("reconcileOneHop", () => {
       reconcileOneHop("current-indexed", {
         dataRoot: staleFixture.dataRoot,
         producerIndex: staleFixture.producerIndex,
+        verifyInputFingerprint: true,
         openCliRunner: runner,
       }),
     ).toThrow(/producer index.*fingerprint|fingerprint.*producer index/i);
@@ -744,6 +795,17 @@ describe("reconcileOneHop", () => {
       }),
     ).toThrow(/producer index.*contentHash|contentHash.*producer index/i);
     expect(calls).toEqual([]);
+  });
+
+  it("skips the full input fingerprint check unless explicitly requested", () => {
+    const staleFixture = writeProducerIndexFixture();
+    writeTable(staleFixture.dataRoot, "src.added_after_index");
+    const result = reconcileOneHop("current-indexed", {
+      dataRoot: staleFixture.dataRoot,
+      producerIndex: staleFixture.producerIndex,
+      openCliRunner: () => [],
+    });
+    expect(result.producerIndex.status).toBe("VALID_SUCCESS");
   });
 
   it("consumes confirmed edges from a valid PARTIAL index while preserving its observed-evidence boundary", () => {
@@ -856,7 +918,9 @@ describe("reconcileOneHop", () => {
     expect(calls).toHaveLength(1);
   });
 
-  frozen86840It("replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents", () => {
+  frozen86840It(
+    "replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents",
+    () => {
       const fixture = JSON.parse(
         readFileSync(
           join(
@@ -913,7 +977,8 @@ describe("reconcileOneHop", () => {
         if (args[0] === "horae") return fixture.horaeRows;
         const parentTaskId = args[args.indexOf("--task-id") + 1]!;
         const response = fixture.supplementalResponses[parentTaskId];
-      if (!response) throw new Error(`UNEXPECTED_TASK_SOURCE:${parentTaskId}`);
+        if (!response)
+          throw new Error(`UNEXPECTED_TASK_SOURCE:${parentTaskId}`);
         return response;
       };
 
@@ -992,5 +1057,6 @@ describe("reconcileOneHop", () => {
         liveTaskSourceFailures: 0,
       });
       expect(indexedCalls).toHaveLength(1);
-  });
+    },
+  );
 });
