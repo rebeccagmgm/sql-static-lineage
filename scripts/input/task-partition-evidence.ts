@@ -1662,6 +1662,79 @@ function targetStatus(
   return { status: "COMPLETE", reasonCodes: ["PARTITION_EVIDENCE_COMPLETE"] };
 }
 
+function sourceTemporalPartitionStatus(
+  input: TaskPartitionBuildInput,
+  target: string,
+  partitionFields: readonly string[],
+  writes: readonly TaskPartitionWrite[],
+): { readonly status: TaskPartitionStatus; readonly reasonCodes: readonly string[] } | undefined {
+  if (
+    input.allowSourceTemporalPartitionDefault !== true ||
+    input.taskTarget === undefined ||
+    !sameTable(input.taskTarget, target) ||
+    partitionFields.length !== 1 ||
+    partitionFields[0]?.toLowerCase() !== "busi_date" ||
+    writes.some((write) => write.status === "CONFLICT")
+  )
+    return undefined;
+  if (
+    writes.some(
+      (write) => write.status === "INCOMPLETE" || write.status === "UNKNOWN",
+    )
+  )
+    return {
+      status: "COMPLETE",
+      reasonCodes: ["PARTITION_TEMPLATE_FROM_TARGET_AND_SCHEDULER"],
+    };
+  return undefined;
+}
+
+function summaryCompletionStatus(
+  input: TaskPartitionBuildInput,
+  target: string,
+  partitionFields: readonly string[],
+  writes: readonly TaskPartitionWrite[],
+  state: ReturnType<typeof targetStatus>,
+): ReturnType<typeof targetStatus> {
+  if (
+    state.status !== "INCOMPLETE" ||
+    input.taskTarget === undefined ||
+    !sameTable(input.taskTarget, target) ||
+    partitionFields.length === 0 ||
+    writes.some((write) => write.status === "CONFLICT") ||
+    (!input.sparkIndexMode &&
+      input.allowSourceTemporalPartitionDefault !== true &&
+      !(
+        partitionFields.length === 1 &&
+        partitionFields[0]?.toLowerCase() === "busi_date"
+      )) ||
+    (!input.sparkIndexMode &&
+      !writes.some(
+        (write) => write.sqlSlot !== null && write.mode !== "UNKNOWN",
+      ) &&
+      input.allowSourceTemporalPartitionDefault !== true)
+  )
+    return state;
+  const summary = buildDynamicPartitionValue(
+    {
+      target,
+      tableStatus: "PARTITIONED",
+      fields: partitionFields,
+      status: state.status,
+      writes,
+      reasonCodes: state.reasonCodes,
+    },
+    input.sql,
+    true,
+  );
+  return summary === undefined
+    ? state
+    : {
+        status: "COMPLETE",
+        reasonCodes: ["PARTITION_SUMMARY_COMPLETE"],
+      };
+}
+
 export function buildTaskPartitionEvidence(
   input: TaskPartitionBuildInput,
 ): TaskPartitionEvidence {
@@ -1739,11 +1812,25 @@ export function buildTaskPartitionEvidence(
               ),
             ]
           : [];
-    const state = targetStatus(
+    const rawState = targetStatus(
       partitionFieldEvidence.known,
       partitionFields,
       effectiveWrites,
     );
+    const state =
+      sourceTemporalPartitionStatus(
+        input,
+        target,
+        partitionFields,
+        effectiveWrites,
+      ) ??
+      summaryCompletionStatus(
+        input,
+        target,
+        partitionFields,
+        effectiveWrites,
+        rawState,
+      );
     return {
       target,
       tableStatus: !partitionFieldEvidence.known

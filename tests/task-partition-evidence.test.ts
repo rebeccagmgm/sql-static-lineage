@@ -676,6 +676,62 @@ describe("task partition map fallback", () => {
     });
   });
 
+  it("marks a defaulted single busi_date source partition complete", () => {
+    expect(
+      buildTaskPartitionEvidence({
+        taskTarget: "odata_n_tit.d_v_wm_cashflow_report_tit",
+        tables: [
+          {
+            ...table(["busi_date"]),
+            qualifiedName: "odata_n_tit.d_v_wm_cashflow_report_tit",
+          },
+        ],
+        sql: {
+          query:
+            "SELECT TRANSFER_ID, DATA_TIME FROM TITANS_DM.V_WM_CASHFLOW_REPORT_TIT",
+        },
+        allowImplicitQueryOutput: false,
+        allowSourceTemporalPartitionDefault: true,
+      }),
+    ).toMatchObject({
+      status: "COMPLETE",
+      reasonCodes: ["PARTITION_TEMPLATE_FROM_TARGET_AND_SCHEDULER"],
+      targets: [
+        {
+          status: "COMPLETE",
+          reasonCodes: ["PARTITION_TEMPLATE_FROM_TARGET_AND_SCHEDULER"],
+          writes: [
+            {
+              status: "INCOMPLETE",
+              assignments: [{ status: "UNKNOWN" }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("marks a sparkIndex task complete when its fallback summary is available", () => {
+    expect(
+      buildTaskPartitionEvidence({
+        taskTarget: target,
+        tables: [table(["busi_date"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date) SELECT id FROM source_table",
+        },
+      }),
+    ).toMatchObject({
+      status: "COMPLETE",
+      targets: [
+        {
+          status: "COMPLETE",
+        },
+      ],
+    });
+  });
+
   it("excludes the platform synthetic insert target from partition evidence", () => {
     const evidence = buildTaskPartitionEvidence({
       taskTarget: "features.client_label_latest",
