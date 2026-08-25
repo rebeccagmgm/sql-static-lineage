@@ -18,7 +18,7 @@ import {
   type TaskEvidence,
 } from "./input-pack.ts";
 import {
-  buildSimpleTaskPartitionMap,
+  buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
 } from "./task-partition-evidence.ts";
 import {
@@ -1889,7 +1889,7 @@ export function collectOneTask(
       taskRelationTarget,
       sqlTargetTable,
     ),
-    partition: buildSimpleTaskPartitionMap({
+    partition: buildCompactTaskPartition({
       taskTarget:
         directTableName(enrichedTarget) ??
         taskRelationTarget?.qualifiedName ??
@@ -1907,6 +1907,7 @@ export function collectOneTask(
       allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(
         taskEvidence.taskCategory,
       ),
+      sparkIndexMode: taskEvidence.taskCategory === "sparkIndex",
     }),
     evidenceProvider: taskEvidenceProvider,
   };

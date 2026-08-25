@@ -45,7 +45,12 @@
 #### Scenario: 目标写入分区
 
 - **WHEN** 平台明确返回目标写入分区 `busi_date=${busi_date}` 和 `grp_id=01`
-- **THEN** `task.json.partition` 必须保存为对应键值对象
+- **THEN** `task.json.partition` 必须保存为对应的紧凑键值对象
+
+#### Scenario: 多组目标写入分区
+
+- **WHEN** 同一任务的 SQL 分支分别完整写入 `grp_id=01` 和 `grp_id=02`，且目标表分区字段为 `grp_id,busi_date`
+- **THEN** `task.json.partition` MUST 保存为两个紧凑键值对象组成的数组，并保持每个 `grp_id` 与其余分区字段的配对关系
 
 #### Scenario: 读取条件不是目标分区
 
@@ -55,7 +60,7 @@
 #### Scenario: 原始 SQL 明确声明目标写入分区
 
 - **WHEN** 原始 query 槽位明确包含 `INSERT OVERWRITE TABLE ... PARTITION(busi_date='2026-05-24', grp_id='01')`
-- **THEN** `task.json.partition` MUST 保存这组目标写入键值；系统只能读取目标 INSERT 的静态分区赋值，不能把 `WHERE`、窗口函数 `PARTITION BY` 或源表读取分区写入该字段
+- **THEN** `task.json.partition` MUST 保存这组目标写入键值；系统只能读取目标 INSERT 的静态分区赋值，不能把 `WHERE`、窗口函数 `PARTITION BY`、`SELECT *` 的同名过滤条件或源表读取分区写入该字段
 
 #### Scenario: 不保存分析结果
 
@@ -158,7 +163,7 @@
 #### Scenario: 未取得分区证据
 
 - **WHEN** 采集未能确定目标写入是否使用分区
-- **THEN** `task.json` 必须省略 partition 字段，不能写成 `null` 或空对象
+- **THEN** `task.json` 必须省略 partition 字段，不能写成 `null`、空对象或内部证据树
 
 ### Requirement: 更新必须保持上一份有效数据
 

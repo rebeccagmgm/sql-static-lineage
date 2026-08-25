@@ -51,6 +51,9 @@ export interface TaskSchedulerEvidence {
   readonly evidenceProvider: string;
 }
 
+export type TaskPartitionMap = Readonly<Record<string, string>>;
+export type TaskPartitionValue = TaskPartitionMap | readonly TaskPartitionMap[];
+
 export type TaskPartitionStatus =
   "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
 
@@ -86,6 +89,8 @@ export interface TaskPartitionWrite {
   readonly mode: "STATIC" | "DYNAMIC" | "MIXED" | "NONE" | "UNKNOWN";
   readonly status: TaskPartitionStatus;
   readonly assignments: readonly TaskPartitionAssignment[];
+  /** Internal-only complete assignment sets for multiple SQL write branches. */
+  readonly assignmentVariants?: readonly (readonly TaskPartitionAssignment[])[];
   readonly evidence: readonly TaskPartitionEvidenceRef[];
   readonly reasonCodes: readonly string[];
 }
@@ -126,9 +131,8 @@ export interface TaskEvidence {
     | "SQL_EXACT_TABLE_TARGET"
     | null;
   readonly writeMode?: string | null;
-  /** New structured contract; legacy map remains accepted for old fixtures only. */
-  readonly partition?:
-    TaskPartitionEvidence | Readonly<Record<string, string>> | null;
+  /** Confirmed target partition values; arrays preserve multiple partition instances. */
+  readonly partition?: TaskPartitionValue | null;
   readonly schedulerEvidence?: TaskSchedulerEvidence;
   readonly codeEvidence?: TaskCodeEvidence;
   readonly sql?: Partial<Record<SqlSlot, SqlSlotEvidence | string | null>>;
@@ -237,6 +241,25 @@ function requireOptionalNonEmpty(
     (typeof value !== "string" || value.trim() === "" || value.trim() === "-")
   ) {
     fail(`${field} must be omitted, null, or a non-empty string`);
+  }
+}
+
+function validateTaskPartitionValue(
+  value: unknown,
+  field = "task.partition",
+): asserts value is TaskPartitionValue {
+  const maps = Array.isArray(value) ? value : [value];
+  if (maps.length === 0) fail(`${field} must not be an empty array`);
+  for (const [index, map] of maps.entries()) {
+    const mapField = Array.isArray(value) ? `${field}[${index}]` : field;
+    if (!isObject(map) || Object.keys(map).length === 0)
+      fail(`${mapField} must be a non-empty object`);
+    for (const [key, partitionValue] of Object.entries(map)) {
+      requireNonEmpty(key, "partition key");
+      if (typeof partitionValue !== "string")
+        fail(`${mapField}.${key} must be a string`);
+      requireNonEmpty(partitionValue, `${mapField}.${key}`);
+    }
   }
 }
 
@@ -746,18 +769,7 @@ function buildTaskDocument(evidence: TaskEvidence): {
       `task.${field}`,
     );
   if (document.partition !== undefined && document.partition !== null) {
-    if (
-      !isObject(document.partition) ||
-      Object.keys(document.partition).length === 0
-    )
-      fail("task.partition must be null or a non-empty object");
-    if ("status" in document.partition)
-      validateTaskPartitionEvidence(document.partition);
-    else
-      for (const [key, value] of Object.entries(document.partition)) {
-        requireNonEmpty(key, "partition key");
-        requireNonEmpty(String(value), `partition.${key}`);
-      }
+    validateTaskPartitionValue(document.partition);
   }
   if (document.schedulerEvidence !== undefined)
     validateTaskSchedulerEvidence(document.schedulerEvidence);
@@ -865,18 +877,7 @@ export function validateTaskDocument(
       `task.${field}`,
     );
   if (document.partition !== undefined && document.partition !== null) {
-    if (
-      !isObject(document.partition) ||
-      Object.keys(document.partition).length === 0
-    )
-      fail("task.partition must be null or a non-empty object");
-    if ("status" in document.partition)
-      validateTaskPartitionEvidence(document.partition);
-    else
-      for (const [key, value] of Object.entries(document.partition)) {
-        requireNonEmpty(key, "partition key");
-        requireNonEmpty(String(value), `partition.${key}`);
-      }
+    validateTaskPartitionValue(document.partition);
   }
   if (document.schedulerEvidence !== undefined)
     validateTaskSchedulerEvidence(document.schedulerEvidence);

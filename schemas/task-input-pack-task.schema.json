@@ -94,6 +94,16 @@
           "additionalProperties": { "type": "string", "minLength": 1 },
           "propertyNames": { "pattern": "^[^=\\s]+$" },
           "minProperties": 1
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 },
+            "propertyNames": { "pattern": "^[^=\\s]+$" },
+            "minProperties": 1
+          }
         }
       ]
     },

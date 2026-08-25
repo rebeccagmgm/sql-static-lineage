@@ -3,14 +3,6 @@ import type {
   TaskEvidence,
 } from "../../../scripts/input/input-pack.ts";
 
-function fixturePartition() {
-  return {
-    status: "UNKNOWN" as const,
-    targets: [],
-    reasonCodes: ["FIXTURE_PARTITION_EVIDENCE_NOT_MODELED"],
-  };
-}
-
 export const cases: Record<
   string,
   { task: TaskEvidence; tables: TableEvidence[] }
@@ -23,7 +15,7 @@ export const cases: Record<
       source: { platform: "mysql", qualifiedName: "otc_src.deal" },
       target: { platform: "hive", qualifiedName: "dm_otc.deal" },
       writeMode: "append",
-      partition: fixturePartition(),
+      partition: null,
       evidenceProvider: "fixture-horae",
       sql: {
         query: {
@@ -60,7 +52,7 @@ export const cases: Record<
       source: { platform: "hive", qualifiedName: "dm_otc.position" },
       target: { platform: "oracle", qualifiedName: "otc_position" },
       writeMode: "truncate",
-      partition: fixturePartition(),
+      partition: null,
       evidenceProvider: "fixture-horae",
       sql: {
         query: {
@@ -103,7 +95,7 @@ export const cases: Record<
       source: { platform: "hive", qualifiedName: "dm_otc.source_case" },
       target: { platform: "hive", qualifiedName: "dm_otc.target_case" },
       writeMode: "overwrite",
-      partition: fixturePartition(),
+      partition: null,
       evidenceProvider: "fixture-horae",
       sql: {
         create: {
@@ -137,7 +129,6 @@ export const cases: Record<
       source: { platform: "hive", qualifiedName: "dm_otc.source_case" },
       target: { platform: "oracle", qualifiedName: "otc_case" },
       writeMode: "truncate",
-      partition: fixturePartition(),
       evidenceProvider: "fixture-horae",
       sql: {
         truncate: {

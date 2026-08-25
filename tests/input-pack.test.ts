@@ -85,6 +85,7 @@ describe("Input Pack V1", () => {
     expect(tableSchema.additionalProperties).toBe(false);
     expect(taskSchema.properties).not.toHaveProperty("inputs");
     expect(tableSchema.properties).not.toHaveProperty("tableRef");
+    expect(taskSchema.$defs).not.toHaveProperty("partitionEvidence");
   });
 
   it("preserves direct Horae schedule-cycle evidence and recognizes manual labels", () => {
@@ -635,8 +636,9 @@ describe("Input Pack V1", () => {
       if (taskId === "86840")
         expect(sqlFiles.map((file) => file.slot)).toEqual(["create", "query"]);
       if (taskId === "246247") expect(task.writeMode).toBe("truncate");
-      if (taskId === "39045" || taskId === "180065" || taskId === "246247")
-        expect(task.partition).toMatchObject({ status: "UNKNOWN" });
+      if (taskId === "39045" || taskId === "180065" || taskId === "86840")
+        expect(task.partition).toBeNull();
+      if (taskId === "246247") expect(task).not.toHaveProperty("partition");
       if (taskId === "180065")
         expect(
           readFileSync(join(taskResult.directory, "sql", "query.sql"), "utf8"),

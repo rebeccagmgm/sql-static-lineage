@@ -49,7 +49,7 @@ sql-static-lineage-data/
 
 - `source` 与 `target` 是平台配置事实，不是 Analyzer 生成的读写关系。
 - `writeMode` 保存平台原值；即使 `truncate` 槽内容是 `DELETE`，也不改写为 `overwrite`。
-- `partition` 只表示目标写入分区。目标确认无分区时为 `null`；未取得时字段不存在；源表读取分区和普通 WHERE 条件不进入该字段。
+- `partition` 只表示目标写入分区。唯一确认一组完整分区字段值时保存紧凑键值对象；同一任务确认多组完整写入分区时保存对象数组，并保持每组字段值的配对关系；目标确认无分区时为 `null`；证据不足时字段不存在。详细的目标、写入、赋值和 reasonCodes 只用于内部判定，不写入 Input Pack。源表读取分区、普通 WHERE 条件以及无法证明输出序号的 `SELECT *` 不进入该字段。
 - `sqlFiles` 只允许 `create`、`query`、`prepare`、`truncate`、`finish` 等实际槽位。文件名跟随槽位，内容保持平台原文。
 - 每个 SQL 文件索引保存相对路径、文件 SHA-256 和直接证据提供方。
 - `taskCategory` 使用独立的数综 Horae 类型字典文件进行受控映射，例如 `19 → mysql2hive`、`30 → hive2mysql`、`24 → hive2oracle`、`101 → hiveTask-2.0`；当前来源是 `05_l_lb_task_type_Horae任务类型字典_20260819.xlsx` 的 `type_id/type_desc`（60 条）。已收录编码以字典为准，平台返回的过时 `taskTypeName` 不得覆盖它；仅当编码未收录时才使用平台直接类型名称，仍无名称则保留为 `taskType-<code>`。不从 SQL、source/target 或任务名称猜测。更新字典不改变 `task.json.taskType` 的原始编码。

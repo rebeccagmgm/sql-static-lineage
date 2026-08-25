@@ -8,6 +8,8 @@ import type {
   TaskPartitionAssignment,
   TaskPartitionEvidence,
   TaskPartitionEvidenceRef,
+  TaskPartitionMap,
+  TaskPartitionValue,
   TaskPartitionStatus,
   TaskPartitionTarget,
   TaskPartitionWrite,
@@ -50,6 +52,7 @@ export interface TaskPartitionBuildInput {
    * as oracle2hive provide source SQL here, not target-write SQL.
    */
   readonly allowImplicitQueryOutput?: boolean;
+  readonly sparkIndexMode?: boolean;
 }
 
 export interface SimpleTaskPartitionMapInput {
@@ -58,10 +61,20 @@ export interface SimpleTaskPartitionMapInput {
   readonly sql: SqlBySlot;
   readonly schedulerEvidence?: TaskSchedulerEvidence;
   readonly allowImplicitQueryOutput?: boolean;
+  /** Enable the broader target-expression projection used by sparkIndex. */
+  readonly sparkIndexMode?: boolean;
 }
 
 function normalize(value: string): string {
   return value.replaceAll("`", "").replaceAll('"', "").trim().toLowerCase();
+}
+
+const SYNTHETIC_WRITE_TARGETS = new Set([
+  "placeholder_insert_db.placeholder_insert_table",
+]);
+
+function isSyntheticWriteTarget(value: string): boolean {
+  return SYNTHETIC_WRITE_TARGETS.has(normalize(value));
 }
 
 function sameTable(left: string, right: string): boolean {
@@ -71,10 +84,11 @@ function sameTable(left: string, right: string): boolean {
 function sameTableName(left: string, right: string): boolean {
   const normalizedLeft = normalize(left);
   const normalizedRight = normalize(right);
-  return (
-    normalizedLeft === normalizedRight ||
-    normalizedLeft.split(".").at(-1) === normalizedRight.split(".").at(-1)
-  );
+  if (normalizedLeft === normalizedRight) return true;
+  const leftParts = normalizedLeft.split(".");
+  const rightParts = normalizedRight.split(".");
+  if (leftParts.length > 1 && rightParts.length > 1) return false;
+  return leftParts.at(-1) === rightParts.at(-1);
 }
 
 function staticPartitionValue(expression: string): string | undefined {
@@ -137,34 +151,152 @@ export function buildSimpleTaskPartitionMap(
       sameTable(target.target, input.taskTarget),
   );
   const result: Record<string, string> = {};
+  const resultKeys: Record<string, string> = {};
   for (const target of targets) {
     for (const write of target.writes) {
       for (const assignment of write.assignments) {
-        const value = simplePartitionValue(assignment);
+        const value = simplePartitionValue(assignment, input.sparkIndexMode === true);
         if (value === undefined) continue;
+        const key = partitionAssignmentComparisonKey(assignment);
         const previous = result[assignment.field];
-        if (previous !== undefined && previous !== value) return undefined;
+        if (
+          previous !== undefined &&
+          resultKeys[assignment.field] !== key
+        )
+          return undefined;
         result[assignment.field] = value;
+        resultKeys[assignment.field] = key;
       }
     }
   }
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+/**
+ * Public Input Pack value.  The detailed evidence tree is deliberately kept
+ * internal to the resolver; task.json only carries a value map when the
+ * target write is uniquely proven, null when the target is proven
+ * non-partitioned, and otherwise omits the field.
+ */
+export function buildCompactTaskPartition(
+  input: SimpleTaskPartitionMapInput,
+): TaskPartitionValue | null | undefined {
+  const evidence = buildTaskPartitionEvidence(input);
+  const requestedTarget = input.taskTarget;
+  const target =
+    requestedTarget === undefined
+      ? evidence.targets.length === 1
+        ? evidence.targets[0]
+        : undefined
+      : evidence.targets.find((item) =>
+          sameTable(item.target, requestedTarget),
+        );
+  if (target === undefined) return undefined;
+  if (target.tableStatus === "NOT_PARTITIONED") return null;
+  if (
+    target.tableStatus !== "PARTITIONED" ||
+    target.status === "UNKNOWN" ||
+    target.status === "CONFLICT"
+  )
+    return undefined;
+  const map = input.sparkIndexMode
+    ? buildSparkIndexPartitionValue(target)
+    : target.status === "COMPLETE"
+      ? buildSimpleTaskPartitionMap(input)
+      : undefined;
+  if (map === undefined) return undefined;
+  if (!Array.isArray(map)) {
+    const singleMap = map as TaskPartitionMap;
+    if (target.fields.some((field) => singleMap[field] === undefined))
+      return undefined;
+  }
+  return map;
+}
+
+function buildSparkIndexPartitionValue(
+  target: TaskPartitionTarget,
+): TaskPartitionValue | undefined {
+  const maps: TaskPartitionMap[] = [];
+  for (const write of target.writes) {
+    const variants = write.assignmentVariants ?? [write.assignments];
+    const writeMaps = variants
+      .map((assignments) => partitionMapFromAssignments(assignments, target.fields))
+      .filter((map): map is TaskPartitionMap => map !== undefined);
+    if (writeMaps.length !== variants.length) return undefined;
+    maps.push(...writeMaps);
+  }
+  const uniqueMaps = maps.filter(
+    (map, index, values) =>
+      values.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(map)) ===
+      index,
+  );
+  if (uniqueMaps.length === 0) return undefined;
+  return uniqueMaps.length === 1 ? uniqueMaps[0]! : uniqueMaps;
+}
+
+function partitionMapFromAssignments(
+  assignments: readonly TaskPartitionAssignment[],
+  fields: readonly string[],
+): TaskPartitionMap | undefined {
+  const result: Record<string, string> = {};
+  for (const assignment of assignments) {
+    const value = simplePartitionValue(assignment, true);
+    if (value === undefined) continue;
+    const previous = result[assignment.field];
+    if (previous !== undefined && previous !== value) return undefined;
+    result[assignment.field] = value;
+  }
+  const dateField = fields.find(
+    (field) => field.toLowerCase() === "busi_date",
+  );
+  if (dateField !== undefined) result[dateField] = "${YYYY-MM-DD}";
+  return fields.some((field) => result[field] === undefined)
+    ? undefined
+    : result;
+}
+
 function simplePartitionValue(
   assignment: TaskPartitionAssignment,
+  sparkIndexMode: boolean,
 ): string | undefined {
   if (assignment.status === "CONFIRMED" && assignment.value !== null)
-    return assignment.value;
+    return sparkIndexMode
+      ? canonicalizePartitionValue(assignment.value) ?? undefined
+      : assignment.value;
   if (
     assignment.status === "RUNTIME_EXPRESSION" &&
-    assignment.expression !== null
+    assignment.expression !== null &&
+    (sparkIndexMode
+      ? isSerializablePartitionExpression(assignment.expression)
+      : isRuntimeExpression(assignment.expression))
   ) {
     const expression = assignment.expression.trim();
     const quoted = expression.match(/^(['"])(.*)\1$/s);
     return quoted?.[2] ?? expression;
   }
   return undefined;
+}
+
+function isSerializablePartitionExpression(expression: string): boolean {
+  const trimmed = expression.trim();
+  return (
+    trimmed !== "" &&
+    !/^[A-Za-z_][A-Za-z0-9_$]*$/u.test(trimmed)
+  );
+}
+
+function partitionAssignmentComparisonKey(
+  assignment: TaskPartitionAssignment,
+): string {
+  if (assignment.status === "CONFIRMED" && assignment.expression !== null) {
+    const literal = literalValue(assignment.expression);
+    if (literal !== null) return `literal:${literal}`;
+  }
+  if (assignment.status === "CONFIRMED" && assignment.value !== null)
+    return `value:${assignment.value}`;
+  if (assignment.expression !== null)
+    return `expression:${assignment.expression.trim().replaceAll(/\s+/gu, " ")}`;
+  return `${assignment.status}:${assignment.reason ?? ""}`;
 }
 
 function resolveWriteTarget(
@@ -456,6 +588,15 @@ function literalValue(expression: string): string | null {
     : null;
 }
 
+function canonicalizePartitionValue(value: string | null): string | null {
+  if (value === null || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return value;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+    ? value
+    : "${YYYY-MM-DD}";
+}
+
 function sqlRef(slot: SqlSlot, write: SqlWrite): TaskPartitionEvidenceRef {
   return {
     source: "INPUT_PACK_SQL",
@@ -562,19 +703,26 @@ function dynamicAssignments(
   sql: string,
   write: SqlWrite,
   evidence: readonly TaskPartitionEvidenceRef[],
+  allowMultiplePartitionInstances = false,
 ): {
   readonly assignments: readonly TaskPartitionAssignment[];
+  readonly variants?: readonly (readonly TaskPartitionAssignment[])[];
   readonly reason: string | undefined;
 } {
   const projection = projectionItems(sql, write);
-  if ("reason" in projection)
+  if ("reason" in projection) {
     return {
       assignments: fieldNames.map((field) =>
         unknownAssignment(field, evidence, projection.reason),
       ),
       reason: projection.reason,
     };
-  if (projection.items.length < fieldNames.length)
+  }
+  const branches =
+    projection.branches.length > 0
+      ? projection.branches
+      : [{ sql: "", items: projection.items }];
+  if (branches.some((branch) => branch.items.length < fieldNames.length))
     return {
       assignments: fieldNames.map((field) =>
         unknownAssignment(
@@ -585,42 +733,65 @@ function dynamicAssignments(
       ),
       reason: "DYNAMIC_PARTITION_OUTPUT_TOO_SHORT",
     };
-  const start = projection.items.length - fieldNames.length;
-  const assignments: TaskPartitionAssignment[] = [];
   let aliasMismatch = false;
+  const branchAssignments = branches.map((branch, branchIndex) =>
+    fieldNames.map((field, index) => {
+      const parsed = expressionAndAlias(
+        branch.items[branch.items.length - fieldNames.length + index]!,
+      );
+      if (parsed.alias !== undefined && parsed.alias !== field.toLowerCase())
+        aliasMismatch = true;
+      return assignmentFromExpression(
+        field,
+        parsed.expression,
+        "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
+        [
+          ...evidence,
+          {
+            source: "INPUT_PACK_SQL" as const,
+            locator: "dynamic-output-ordinal",
+            detail: `branch=${branchIndex + 1};ordinal=${branch.items.length - fieldNames.length + index + 1};alias=${parsed.alias ?? "-"}`,
+          },
+        ],
+      );
+    }),
+  );
+  const assignments: TaskPartitionAssignment[] = [];
+  let unionConflict = false;
   fieldNames.forEach((field, index) => {
-    const parsed = expressionAndAlias(projection.items[start + index]!);
-    if (parsed.alias !== undefined && parsed.alias !== field.toLowerCase()) {
-      aliasMismatch = true;
+    const fieldAssignments = branchAssignments.map((branch) => branch[index]!);
+    const branchKeys = fieldAssignments.map((assignment) =>
+      partitionAssignmentComparisonKey(assignment),
+    );
+    if (!allowMultiplePartitionInstances && new Set(branchKeys).size > 1) {
+      unionConflict = true;
       assignments.push(
-        assignmentFromExpression(
+        unknownAssignment(
           field,
-          parsed.expression,
-          "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
-          [
-            ...evidence,
-            {
-              source: "INPUT_PACK_SQL",
-              locator: "dynamic-output-ordinal",
-              detail: `alias=${parsed.alias};alias is not used as the binding key`,
-            },
-          ],
+          evidence,
+          "DYNAMIC_PARTITION_UNION_BRANCH_CONFLICT",
+          "CONFLICT",
         ),
       );
       return;
     }
-    assignments.push(
-      assignmentFromExpression(
-        field,
-        parsed.expression,
-        "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
-        evidence,
-      ),
+    const unresolved = fieldAssignments.find(
+      (assignment) =>
+        assignment.status === "UNKNOWN" || assignment.status === "CONFLICT",
     );
+    assignments.push(unresolved ?? fieldAssignments[0]!);
   });
   return {
     assignments,
-    reason: aliasMismatch ? "DYNAMIC_PARTITION_ALIAS_NOT_USED" : undefined,
+    variants:
+      allowMultiplePartitionInstances && branchAssignments.length > 1
+        ? branchAssignments
+        : undefined,
+    reason: unionConflict
+      ? "DYNAMIC_PARTITION_UNION_BRANCH_CONFLICT"
+      : aliasMismatch
+        ? "DYNAMIC_PARTITION_ALIAS_NOT_USED"
+        : undefined,
   };
 }
 
@@ -637,17 +808,45 @@ function partitionFieldsFromCreateSql(sql: string | undefined): string[] {
     .filter((field): field is string => field !== undefined);
 }
 
+function partitionFieldsFromMatchingCreateSql(
+  sql: string | undefined,
+  target: string,
+): string[] {
+  if (sql === undefined) return [];
+  const createPattern =
+    /\bCREATE\s+(?:EXTERNAL\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((?:[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?\s*\.\s*)?[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?)/giu;
+  const creates = [...sql.matchAll(createPattern)];
+  const index = creates.findIndex((match) => {
+    const createTarget = match[1]?.replaceAll(/\s+/gu, "");
+    return createTarget !== undefined && sameTableName(createTarget, target);
+  });
+  if (index < 0) return [];
+  const start = creates[index]!.index;
+  const end = creates[index + 1]?.index ?? sql.length;
+  return partitionFieldsFromCreateSql(sql.slice(start, end));
+}
+
 function partitionFieldsFor(
   table: TableEvidence | undefined,
   createSql: string | undefined,
+  target: string,
 ): {
   readonly fields: readonly string[];
+  readonly known: boolean;
   readonly usedCreateFallback: boolean;
 } {
   if (Array.isArray(table?.partitionFields))
-    return { fields: table.partitionFields, usedCreateFallback: false };
-  const fields = partitionFieldsFromCreateSql(createSql);
-  return { fields, usedCreateFallback: fields.length > 0 };
+    return {
+      fields: table.partitionFields,
+      known: true,
+      usedCreateFallback: false,
+    };
+  const fields = partitionFieldsFromMatchingCreateSql(createSql, target);
+  return {
+    fields,
+    known: fields.length > 0,
+    usedCreateFallback: fields.length > 0,
+  };
 }
 
 function resolveOutputReference(
@@ -682,12 +881,32 @@ function resolveOutputReference(
   };
 }
 
+function outputReferenceCandidates(field: string, sql: string): string[] {
+  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const valuePattern =
+    "(?:'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?)";
+  const identifierQuote = "[" + String.fromCharCode(34, 96) + "]?";
+  return [
+    ...sql.matchAll(
+      new RegExp(
+        `(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
+        "giu",
+      ),
+    ),
+  ]
+    .map((match) => match[1])
+    .filter((value): value is string => value !== undefined)
+    .filter((value, index, values) => values.indexOf(value) === index);
+}
+
 function directQueryProjection(
   fields: readonly string[],
   sql: string,
   evidence: readonly TaskPartitionEvidenceRef[],
+  allowMultiplePartitionInstances = false,
 ): {
   readonly assignments: readonly TaskPartitionAssignment[];
+  readonly variants?: readonly (readonly TaskPartitionAssignment[])[];
   readonly reason?: string;
 } {
   const projection = projectionItems(sql, {
@@ -706,7 +925,11 @@ function directQueryProjection(
       ),
       reason: projection.reason,
     };
-  if (projection.items.length < fields.length)
+  const branches =
+    projection.branches.length > 0
+      ? projection.branches
+      : [{ sql, items: projection.items }];
+  if (branches.some((branch) => branch.items.length < fields.length))
     return {
       assignments: fields.map((field) =>
         unknownAssignment(
@@ -718,33 +941,84 @@ function directQueryProjection(
       reason: "DYNAMIC_PARTITION_OUTPUT_TOO_SHORT",
     };
 
-  const start = projection.items.length - fields.length;
+  const branchAssignments = branches.flatMap((branch, branchIndex) => {
+    let variants: TaskPartitionAssignment[][] = [[]];
+    fields.forEach((field, index) => {
+      const start = branch.items.length - fields.length;
+      const parsed = expressionAndAlias(branch.items[start + index]!);
+      const resolved = resolveOutputReference(
+        parsed.expression,
+        field,
+        branch.sql,
+      );
+      const expressions =
+        resolved.expression === undefined && allowMultiplePartitionInstances
+          ? outputReferenceCandidates(field, branch.sql)
+          : resolved.expression === undefined
+            ? []
+            : [resolved.expression];
+      const candidates =
+        expressions.length > 0
+          ? expressions.map((expression) =>
+              assignmentFromExpression(
+                field,
+                expression,
+                "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
+                [
+                  ...evidence,
+                  {
+                    source: "INPUT_PACK_SQL",
+                    locator: "sql/query.sql#implicit-target-output",
+                    detail: `branch=${branchIndex + 1};ordinal=${start + index + 1};alias=${parsed.alias ?? "-"}`,
+                  },
+                ],
+              ),
+            )
+          : [
+              unknownAssignment(
+                field,
+                evidence,
+                resolved.reason ??
+                  "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED",
+              ),
+            ];
+      variants = variants.flatMap((prefix) =>
+        candidates.map((candidate) => [...prefix, candidate]),
+      );
+    });
+    return variants;
+  });
   const assignments = fields.map((field, index) => {
-    const parsed = expressionAndAlias(projection.items[start + index]!);
-    const resolved = resolveOutputReference(parsed.expression, field, sql);
-    if (resolved.expression === undefined)
+    const fieldAssignments = branchAssignments.map((branch) => branch[index]!);
+    const unresolved = fieldAssignments.find(
+      (assignment) =>
+        assignment.status === "UNKNOWN" || assignment.status === "CONFLICT",
+    );
+    if (unresolved !== undefined) return unresolved;
+    const branchKeys = fieldAssignments.map((assignment) =>
+      partitionAssignmentComparisonKey(assignment),
+    );
+    if (
+      !allowMultiplePartitionInstances &&
+      new Set(branchKeys).size > 1
+    )
       return unknownAssignment(
         field,
-        evidence,
-        resolved.reason ?? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED",
+        fieldAssignments.flatMap((assignment) => assignment.evidence),
+        "DYNAMIC_PARTITION_UNION_BRANCH_CONFLICT",
+        "CONFLICT",
       );
-    return assignmentFromExpression(
-      field,
-      resolved.expression,
-      "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
-      [
-        ...evidence,
-        {
-          source: "INPUT_PACK_SQL",
-          locator: "sql/query.sql#implicit-target-output",
-          detail: `ordinal=${start + index + 1};alias=${parsed.alias ?? "-"}`,
-        },
-      ],
-    );
+    return fieldAssignments[0]!;
   });
   return {
     assignments,
-    reason: assignments.find((item) => item.status === "UNKNOWN")?.reason,
+    variants:
+      allowMultiplePartitionInstances && branchAssignments.length > 1
+        ? branchAssignments
+        : undefined,
+    reason: assignments.find(
+      (item) => item.status === "UNKNOWN" || item.status === "CONFLICT",
+    )?.reason,
   };
 }
 
@@ -818,8 +1092,9 @@ function buildSqlWrite(
   createSql: string | undefined,
   schedulerEvidence?: TaskSchedulerEvidence,
   codeEvidence?: TaskCodeEvidence,
+  sparkIndexMode = false,
 ): TaskPartitionWrite {
-  const partitionFields = partitionFieldsFor(table, createSql);
+  const partitionFields = partitionFieldsFor(table, createSql, target);
   const tableFields = partitionFields.fields;
   const mappingEvidence = [
     ...(table === undefined ? [] : [tableRef(table)]),
@@ -840,7 +1115,7 @@ function buildSqlWrite(
     ...schedulerRefs(schedulerEvidence),
     ...codeRefs(codeEvidence),
   ];
-  if (table === undefined)
+  if (table === undefined || !partitionFields.known)
     return {
       target,
       sqlSlot,
@@ -872,50 +1147,66 @@ function buildSqlWrite(
   );
   let dynamic: {
     readonly assignments: readonly TaskPartitionAssignment[];
+    readonly variants?: readonly (readonly TaskPartitionAssignment[])[];
     readonly reason: string | undefined;
   } = { assignments: [], reason: undefined };
   if (dynamicFields.length > 0)
-    dynamic = dynamicAssignments(dynamicFields, sql, write, mappingEvidence);
-  const schedulerValues = explicitFieldValues(schedulerEvidence?.hivePartition);
-  const assignments = tableFields.map((field) => {
-    const key = field.toLowerCase();
-    const staticAssignment = staticAssignments.get(key);
-    const dynamicAssignment = dynamic.assignments.find(
-      (item) => item.field.toLowerCase() === key,
+    dynamic = dynamicAssignments(
+      dynamicFields,
+      sql,
+      write,
+      mappingEvidence,
+      sparkIndexMode,
     );
-    const assignment =
-      staticAssignment !== undefined
-        ? assignmentFromExpression(
-            field,
-            staticAssignment.expression,
-            "STATIC_SQL_ASSIGNMENT",
-            mappingEvidence,
-          )
-        : (dynamicAssignment ??
-          unknownAssignment(
-            field,
-            mappingEvidence,
-            "PARTITION_FIELD_NOT_PRESENT_IN_WRITE",
-          ));
-    const schedulerValue = schedulerValues.get(key);
-    if (
-      assignment.status === "CONFIRMED" &&
-      assignment.value !== null &&
-      schedulerValue !== undefined &&
-      !isRuntimeExpression(schedulerValue) &&
-      assignment.value !== schedulerValue
-    )
-      return {
-        ...assignment,
-        value: null,
-        status: "CONFLICT" as const,
-        mappingMethod: "CONFLICT" as const,
-        evidence: [...mappingEvidence, ...schedulerRefs(schedulerEvidence)],
-        reason: `SQL_SCHEDULER_PARTITION_CONFLICT:sql=${assignment.value};scheduler=${schedulerValue}`,
-      };
-    return assignment;
-  });
-  const statuses = assignments.map((item) => item.status);
+  const schedulerValues = explicitFieldValues(schedulerEvidence?.hivePartition);
+  const buildAssignments = (
+    dynamicAssignmentsForVariant: readonly TaskPartitionAssignment[],
+  ): readonly TaskPartitionAssignment[] =>
+    tableFields.map((field) => {
+      const key = field.toLowerCase();
+      const staticAssignment = staticAssignments.get(key);
+      const dynamicAssignment = dynamicAssignmentsForVariant.find(
+        (item) => item.field.toLowerCase() === key,
+      );
+      const assignment =
+        staticAssignment !== undefined
+          ? assignmentFromExpression(
+              field,
+              staticAssignment.expression,
+              "STATIC_SQL_ASSIGNMENT",
+              mappingEvidence,
+            )
+          : (dynamicAssignment ??
+            unknownAssignment(
+              field,
+              mappingEvidence,
+              "PARTITION_FIELD_NOT_PRESENT_IN_WRITE",
+            ));
+      const schedulerValue = schedulerValues.get(key);
+      if (
+        assignment.status === "CONFIRMED" &&
+        assignment.value !== null &&
+        schedulerValue !== undefined &&
+        !isRuntimeExpression(schedulerValue) &&
+        assignment.value !== schedulerValue
+      )
+        return {
+          ...assignment,
+          value: null,
+          status: "CONFLICT" as const,
+          mappingMethod: "CONFLICT" as const,
+          evidence: [...mappingEvidence, ...schedulerRefs(schedulerEvidence)],
+          reason: `SQL_SCHEDULER_PARTITION_CONFLICT:sql=${assignment.value};scheduler=${schedulerValue}`,
+        };
+      return assignment;
+    });
+  const assignments = buildAssignments(dynamic.assignments);
+  const assignmentVariants = dynamic.variants?.map(buildAssignments);
+  const statuses = (
+    assignmentVariants === undefined
+      ? assignments
+      : assignmentVariants.flat()
+  ).map((item) => item.status);
   const status: TaskPartitionStatus = statuses.includes("CONFLICT")
     ? "CONFLICT"
     : statuses.includes("UNKNOWN")
@@ -937,6 +1228,9 @@ function buildSqlWrite(
     mode: write.partitionMode,
     status,
     assignments,
+    ...(assignmentVariants === undefined
+      ? {}
+      : { assignmentVariants }),
     evidence: writeEvidence,
     reasonCodes: [...new Set(reasonCodes)],
   };
@@ -957,8 +1251,9 @@ function buildDirectWrite(
   schedulerEvidence?: TaskSchedulerEvidence,
   codeEvidence?: TaskCodeEvidence,
   allowImplicitQueryOutput = true,
+  sparkIndexMode = false,
 ): TaskPartitionWrite {
-  const partitionFields = partitionFieldsFor(table, createSql);
+  const partitionFields = partitionFieldsFor(table, createSql, target);
   const evidence: TaskPartitionEvidenceRef[] = [
     ...(table === undefined ? [] : [tableRef(table)]),
     ...(partitionFields.usedCreateFallback
@@ -974,7 +1269,21 @@ function buildDirectWrite(
     ...schedulerRefs(schedulerEvidence),
     ...codeRefs(codeEvidence),
   ];
-  if (partitionFields.fields.length === 0 && table !== undefined)
+  if (!partitionFields.known)
+    return {
+      target,
+      sqlSlot: null,
+      statementOrdinal: null,
+      mode: "UNKNOWN",
+      status: "UNKNOWN",
+      assignments: [],
+      evidence:
+        evidence.length > 0
+          ? evidence
+          : [{ source: "SCHEDULER_CONFIG", locator: "task.target" }],
+      reasonCodes: ["TABLE_PACK_PARTITION_FIELDS_UNAVAILABLE"],
+    };
+  if (partitionFields.fields.length === 0)
     return {
       target,
       sqlSlot: null,
@@ -1014,7 +1323,7 @@ function buildDirectWrite(
       : directQueryProjection(fields, querySql, [
           ...writeEvidence,
           ...queryEvidence,
-        ]);
+        ], sparkIndexMode);
   const addEvidence = addPartition?.evidence ?? [];
   const unknownAssignmentEvidence = [
     ...(table === undefined ? [] : [tableRef(table)]),
@@ -1023,60 +1332,69 @@ function buildDirectWrite(
     ...queryEvidence,
   ];
   const schedulerValues = explicitFieldValues(schedulerEvidence?.hivePartition);
-  const assignments = fields.map((field) => {
-    const key = field.toLowerCase();
-    const schedulerValue = schedulerValues.get(key);
-    const queryAssignment = queryAssignments?.assignments.find(
-      (item) => item.field.toLowerCase() === key,
-    );
-    const addAssignment = addPartition?.assignments.find(
-      (item) => item.field.toLowerCase() === key,
-    );
-    if (schedulerValue !== undefined) {
-      const schedulerAssignment = assignmentFromExplicitConfig(
-        field,
-        schedulerValue,
-        "SCHEDULER_EXPLICIT_FIELD_VALUE",
-        schedulerAssignmentEvidence,
+  const buildAssignments = (
+    queryAssignmentsForVariant: readonly TaskPartitionAssignment[] | undefined,
+  ): readonly TaskPartitionAssignment[] =>
+    fields.map((field) => {
+      const key = field.toLowerCase();
+      const schedulerValue = schedulerValues.get(key);
+      const queryAssignment = queryAssignmentsForVariant?.find(
+        (item) => item.field.toLowerCase() === key,
       );
-      if (
-        queryAssignment?.status === "CONFIRMED" &&
-        schedulerAssignment.status === "CONFIRMED" &&
-        queryAssignment.value !== schedulerAssignment.value
-      )
-        return {
-          ...unknownAssignment(
-            field,
-            [...schedulerAssignment.evidence, ...queryAssignment.evidence],
-            "SQL_SCHEDULER_PARTITION_CONFLICT",
-            "CONFLICT",
-          ),
-          mappingMethod: "CONFLICT" as const,
-        };
-      return schedulerAssignment;
-    }
-    if (addAssignment !== undefined && addAssignment.status !== "UNKNOWN")
-      return addAssignment;
-    if (queryAssignment !== undefined && queryAssignment.status !== "UNKNOWN")
-      return queryAssignment;
-    return unknownAssignment(
-      field,
-      unknownAssignmentEvidence.length > 0
-        ? unknownAssignmentEvidence
-        : writeEvidence,
-      queryAssignments?.reason ??
-        (!allowImplicitQueryOutput
-          ? "SOURCE_SQL_NOT_TARGET_WRITE"
-          : codeEvidence?.scriptParams === undefined
-            ? "EXPLICIT_PARTITION_VALUE_NOT_FOUND"
-            : "SCRIPT_PARAMS_NOT_PARTITION_MAPPING"),
-    );
-  });
-  const status: TaskPartitionStatus = assignments.some(
+      const addAssignment = addPartition?.assignments.find(
+        (item) => item.field.toLowerCase() === key,
+      );
+      if (schedulerValue !== undefined) {
+        const schedulerAssignment = assignmentFromExplicitConfig(
+          field,
+          schedulerValue,
+          "SCHEDULER_EXPLICIT_FIELD_VALUE",
+          schedulerAssignmentEvidence,
+        );
+        if (
+          queryAssignment?.status === "CONFIRMED" &&
+          schedulerAssignment.status === "CONFIRMED" &&
+          queryAssignment.value !== schedulerAssignment.value
+        )
+          return {
+            ...unknownAssignment(
+              field,
+              [...schedulerAssignment.evidence, ...queryAssignment.evidence],
+              "SQL_SCHEDULER_PARTITION_CONFLICT",
+              "CONFLICT",
+            ),
+            mappingMethod: "CONFLICT" as const,
+          };
+        return schedulerAssignment;
+      }
+      if (addAssignment !== undefined && addAssignment.status !== "UNKNOWN")
+        return addAssignment;
+      if (queryAssignment !== undefined && queryAssignment.status !== "UNKNOWN")
+        return queryAssignment;
+      return unknownAssignment(
+        field,
+        unknownAssignmentEvidence.length > 0
+          ? unknownAssignmentEvidence
+          : writeEvidence,
+        queryAssignments?.reason ??
+          (!allowImplicitQueryOutput
+            ? "SOURCE_SQL_NOT_TARGET_WRITE"
+            : codeEvidence?.scriptParams === undefined
+              ? "EXPLICIT_PARTITION_VALUE_NOT_FOUND"
+              : "SCRIPT_PARAMS_NOT_PARTITION_MAPPING"),
+      );
+    });
+  const assignments = buildAssignments(queryAssignments?.assignments);
+  const assignmentVariants = queryAssignments?.variants?.map(
+    (variant) => buildAssignments(variant),
+  );
+  const statusAssignments =
+    assignmentVariants === undefined ? assignments : assignmentVariants.flat();
+  const status: TaskPartitionStatus = statusAssignments.some(
     (item) => item.status === "CONFLICT",
   )
     ? "CONFLICT"
-    : assignments.some((item) => item.status === "UNKNOWN")
+    : statusAssignments.some((item) => item.status === "UNKNOWN")
       ? "INCOMPLETE"
       : "COMPLETE";
   return {
@@ -1093,6 +1411,9 @@ function buildDirectWrite(
           : "UNKNOWN",
     status,
     assignments,
+    ...(assignmentVariants === undefined
+      ? {}
+      : { assignmentVariants }),
     evidence: [...writeEvidence, ...queryEvidence, ...addEvidence],
     reasonCodes: [
       ...(status === "CONFLICT" ? ["SQL_SCHEDULER_PARTITION_CONFLICT"] : []),
@@ -1109,14 +1430,14 @@ function buildDirectWrite(
 }
 
 function targetStatus(
-  table: TableEvidence | undefined,
+  partitionFieldsKnown: boolean,
   partitionFields: readonly string[],
   writes: readonly TaskPartitionWrite[],
 ): {
   readonly status: TaskPartitionStatus;
   readonly reasonCodes: readonly string[];
 } {
-  if (table === undefined && partitionFields.length === 0)
+  if (!partitionFieldsKnown)
     return {
       status: "UNKNOWN",
       reasonCodes: ["TABLE_PACK_PARTITION_FIELDS_UNAVAILABLE"],
@@ -1151,12 +1472,14 @@ export function buildTaskPartitionEvidence(
   const sqlWrites = Object.entries(input.sql).flatMap(([slot, content]) =>
     content === undefined
       ? []
-      : extractSqlWrites(content).map((write) => ({
-          slot: slot as SqlSlot,
-          content,
-          write,
-          target: resolveWriteTarget(input.taskTarget, write.qualifiedName),
-        })),
+      : extractSqlWrites(content)
+          .filter((write) => !isSyntheticWriteTarget(write.qualifiedName))
+          .map((write) => ({
+            slot: slot as SqlSlot,
+            content,
+            write,
+            target: resolveWriteTarget(input.taskTarget, write.qualifiedName),
+          })),
   );
   const targetNames = [
     ...(input.taskTarget === undefined ? [] : [input.taskTarget]),
@@ -1170,7 +1493,8 @@ export function buildTaskPartitionEvidence(
       sameTable(candidate.qualifiedName, target),
     );
     const createSql = input.sql.create;
-    const partitionFields = partitionFieldsFor(table, createSql).fields;
+    const partitionFieldEvidence = partitionFieldsFor(table, createSql, target);
+    const partitionFields = partitionFieldEvidence.fields;
     const addPartition = addPartitionFromSql(
       partitionFields,
       target,
@@ -1188,6 +1512,7 @@ export function buildTaskPartitionEvidence(
           createSql,
           input.schedulerEvidence,
           input.codeEvidence,
+          input.sparkIndexMode === true,
         ),
       );
     const effectiveWrites =
@@ -1204,20 +1529,22 @@ export function buildTaskPartitionEvidence(
                 input.schedulerEvidence,
                 input.codeEvidence,
                 input.allowImplicitQueryOutput,
+                input.sparkIndexMode === true,
               ),
             ]
           : [];
-    const state = targetStatus(table, partitionFields, effectiveWrites);
+    const state = targetStatus(
+      partitionFieldEvidence.known,
+      partitionFields,
+      effectiveWrites,
+    );
     return {
       target,
-      tableStatus:
-        table === undefined
-          ? partitionFields.length > 0
-            ? "PARTITIONED"
-            : "UNKNOWN"
-          : partitionFields.length === 0
-            ? "NOT_PARTITIONED"
-            : "PARTITIONED",
+      tableStatus: !partitionFieldEvidence.known
+        ? "UNKNOWN"
+        : partitionFields.length === 0
+          ? "NOT_PARTITIONED"
+          : "PARTITIONED",
       fields: partitionFields,
       status: state.status,
       writes: effectiveWrites,
