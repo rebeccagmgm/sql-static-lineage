@@ -15,6 +15,7 @@ interface CliOptions {
   readonly dataRoot: string;
   readonly producerIndexPath: string;
   readonly outputDir: string;
+  readonly verifyInputFingerprint: boolean;
 }
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
@@ -23,6 +24,7 @@ export interface ReconcileOneHopBatchOptions {
   readonly taskIds: readonly string[];
   readonly dataRoot: string;
   readonly producerIndex: TableProducerIndex;
+  readonly verifyInputFingerprint?: boolean;
 }
 
 function parseTaskIds(value: string): readonly string[] {
@@ -37,14 +39,23 @@ function parseTaskIds(value: string): readonly string[] {
 
 function parseCli(argv: readonly string[]): CliOptions {
   const values = new Map<string, string>();
+  const verifyFlag = "--verify-input-fingerprint";
   const allowed = new Set([
     "--task-ids",
     "--data-root",
     "--producer-index",
     "--output-dir",
+    verifyFlag,
   ]);
-  for (let index = 0; index < argv.length; index += 2) {
+  let verifyInputFingerprint = false;
+  for (let index = 0; index < argv.length; ) {
     const flag = argv[index];
+    if (flag === verifyFlag) {
+      if (verifyInputFingerprint) throw new Error(`DUPLICATE_ARGUMENT:${flag}`);
+      verifyInputFingerprint = true;
+      index += 1;
+      continue;
+    }
     const value = argv[index + 1];
     if (
       !flag?.startsWith("--") ||
@@ -55,6 +66,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     if (!allowed.has(flag)) throw new Error(`UNKNOWN_ARGUMENT:${flag}`);
     if (values.has(flag)) throw new Error(`DUPLICATE_ARGUMENT:${flag}`);
     values.set(flag, value);
+    index += 2;
   }
   const required = (flag: string): string => {
     const value = values.get(flag);
@@ -69,6 +81,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     dataRoot: required("--data-root"),
     producerIndexPath: required("--producer-index"),
     outputDir: required("--output-dir"),
+    verifyInputFingerprint,
   };
 }
 
@@ -78,6 +91,7 @@ export function reconcileOneHopBatch(
   return reconcileOneHopRoots(options.taskIds, {
     dataRoot: options.dataRoot,
     producerIndex: options.producerIndex,
+    verifyInputFingerprint: options.verifyInputFingerprint,
   });
 }
 
