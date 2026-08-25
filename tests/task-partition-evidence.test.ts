@@ -163,8 +163,7 @@ describe("task partition map fallback", () => {
         tables: [table(["busi_date"])],
         sparkIndexMode: true,
         sql: {
-          query:
-            "SELECT id, '2026-05-24' AS busi_date FROM source_table",
+          query: "SELECT id, '2026-05-24' AS busi_date FROM source_table",
         },
       }),
     ).toEqual({ busi_date: "${YYYY-MM-DD}" });
@@ -218,6 +217,67 @@ describe("task partition map fallback", () => {
         },
       }),
     ).toEqual({ busi_date: "${YYYY-MM-DD}" });
+  });
+
+  it("defaults an unresolved busi_mon partition to the month template", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_mon"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_mon) SELECT id, busi_mon FROM source_table",
+        },
+      }),
+    ).toEqual({ busi_mon: "${YYYYMM}" });
+  });
+
+  it("preserves a relative previous-month template for busi_mon", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_mon"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "SELECT id, busi_mon FROM source_table WHERE busi_mon = substr(add_months('${YYYY-MM-DD}', -1), 1, 7)",
+        },
+      }),
+    ).toEqual({ busi_mon: "${YYYY-MM,-1M}" });
+  });
+
+  it("derives year and month-number templates only from temporal SQL evidence", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_year"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "SELECT substr(busi_date, 1, 4) AS busi_year FROM source_table",
+        },
+      }),
+    ).toEqual({ busi_year: "${YYYY}" });
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["mon_no"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "SELECT substr('${yyyyMMdd}', 1, 6) AS mon_no FROM source_table",
+        },
+      }),
+    ).toEqual({ mon_no: "${YYYYMM}" });
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["mon_no"])],
+        sparkIndexMode: true,
+        sql: { query: "SELECT mon_no FROM source_table" },
+      }),
+    ).toBeUndefined();
   });
 
   it("combines the busi_date default with proven other partition fields", () => {
