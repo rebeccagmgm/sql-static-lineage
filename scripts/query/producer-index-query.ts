@@ -15,6 +15,13 @@ import type {
   ReadPartitionScope,
   ReadPartitionValue,
 } from "../evidence/sql-read-scope.ts";
+import {
+  datePartitionValuesCompatible,
+  isDatePartitionField,
+  isDateRuntimeTemplate,
+  isIsoDate,
+  normalizePartitionToken,
+} from "../evidence/partition-value-normalizer.ts";
 
 export type PartitionQuery = Readonly<Record<string, string>>;
 
@@ -70,12 +77,13 @@ interface ProducerIndexPartitionMatchOutput {
   }[];
 }
 
-function isIsoDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/u.test(value);
+function normalizeRuntimeExpression(value: string): string | null {
+  const normalized = normalizePartitionToken(value);
+  return normalized === "" || normalized === "unknown" ? null : normalized;
 }
 
 function isDateTemplate(value: string): boolean {
-  return value === "${YYYY-MM-DD}";
+  return isDateRuntimeTemplate(value);
 }
 
 function tableIdentityKey(table: ProducerTableIdentity): string {
@@ -265,6 +273,36 @@ function writeValue(
   return { value: expression, dynamic: true };
 }
 
+function runtimeExpressionsEqual(
+  readValue: ReadPartitionValue,
+  writeAssignment: ProducerWriteObservation["partition"][number],
+): boolean {
+  if (readValue.kind !== "RUNTIME_EXPRESSION") return false;
+  const readExpression = normalizeRuntimeExpression(readValue.expression);
+  const writeExpression = normalizeRuntimeExpression(
+    writeAssignment.expression,
+  );
+  return readExpression !== null && readExpression === writeExpression;
+}
+
+function hasRuntimeDatePartition(
+  write: ProducerWriteObservation,
+): boolean {
+  return write.partition.some(
+    (assignment) =>
+      isDatePartitionField(assignment.field) &&
+      assignment.valueStatus === "RUNTIME_EXPRESSION" &&
+      isDateTemplate(assignment.expression),
+  );
+}
+
+function fieldsOfPartitionConstraint(
+  tree: PartitionConstraintTree,
+): readonly string[] {
+  if (tree.kind === "ATOM") return [tree.field];
+  return tree.children.flatMap(fieldsOfPartitionConstraint);
+}
+
 function readValueIsDynamic(value: ReadPartitionValue): boolean {
   return value.kind !== "LITERAL" || value.observedValue === null;
 }
@@ -298,13 +336,27 @@ function matchAtom(
       status: "UNKNOWN",
       reasonCodes: ["WRITE_PARTITION_VALUE_UNKNOWN"],
     };
-  if (actual.dynamic)
+  const values = tree.values;
+  if (actual.dynamic) {
+    if (
+      isDatePartitionField(tree.field) &&
+      values.length > 0 &&
+      values.every((value) => value.kind === "LITERAL" && value.observedValue !== null && isIsoDate(value.observedValue))
+    )
+      return {
+        status: "PROVEN_OVERLAP",
+        reasonCodes: ["DATE_PARTITION_DEFAULTED"],
+      };
+    if (values.length === 1 && runtimeExpressionsEqual(values[0]!, assignment))
+      return {
+        status: "PROVEN_OVERLAP",
+        reasonCodes: ["PARTITION_RUNTIME_TEMPLATE_EQUAL"],
+      };
     return {
       status: "POSSIBLE_OVERLAP",
       reasonCodes: ["WRITE_PARTITION_RUNTIME_EXPRESSION"],
     };
-
-  const values = tree.values;
+  }
   if (values.some(readValueIsDynamic))
     return {
       status: "POSSIBLE_OVERLAP",
@@ -379,6 +431,29 @@ function combineWriteMatches(
   return { status: "UNKNOWN", reasonCodes };
 }
 
+function combinePartialReadMatches(
+  matches: readonly { status: WriteMatchStatus; reasonCodes: readonly string[] }[],
+  readReasons: readonly string[],
+): { status: WriteMatchStatus; reasonCodes: readonly string[] } {
+  const reasonCodes = [
+    ...new Set([...readReasons, ...matches.flatMap((match) => match.reasonCodes)]),
+  ].sort();
+  if (matches.some((match) => match.status === "PROVEN_OVERLAP"))
+    return { status: "PROVEN_OVERLAP", reasonCodes };
+  if (matches.some((match) => match.status === "POSSIBLE_OVERLAP"))
+    return { status: "POSSIBLE_OVERLAP", reasonCodes };
+  if (matches.every((match) => match.status === "PROVEN_DISJOINT"))
+    return { status: "PROVEN_DISJOINT", reasonCodes };
+  return { status: "UNKNOWN", reasonCodes };
+}
+
+function retainCandidateOnUncertainMatch(
+  match: { status: WriteMatchStatus; reasonCodes: readonly string[] },
+): { status: WriteMatchStatus; reasonCodes: readonly string[] } {
+  if (match.status === "PROVEN_DISJOINT") return match;
+  return match;
+}
+
 function matchConstraint(
   tree: PartitionConstraintTree,
   write: ProducerWriteObservation,
@@ -413,9 +488,11 @@ export function matchProducersByReadScope(
           table: edge.table,
           writes: producerWrites,
           status: "PROVEN_OVERLAP" as const,
-          reasonCodes: [],
+          reasonCodes: producerWrites.some(hasRuntimeDatePartition)
+            ? ["DATE_PARTITION_DEFAULTED"]
+            : [],
         };
-      if (readScope.status === "UNKNOWN" || readScope.status === "PARTIAL")
+      if (readScope.status === "UNKNOWN" && !readScope.predicate)
         return {
           taskId: edge.taskId,
           taskCategory: edge.taskCategory,
@@ -424,6 +501,24 @@ export function matchProducersByReadScope(
           status: "UNKNOWN" as const,
           reasonCodes: [...readScope.reasonCodes, "READ_PARTITION_SCOPE_INCOMPLETE"],
         };
+      if (
+        readScope.status === "CONSTRAINED" &&
+        readScope.predicate &&
+        producerWrites.some(hasRuntimeDatePartition)
+      ) {
+        const constrainedFields = new Set(
+          fieldsOfPartitionConstraint(readScope.predicate),
+        );
+        if (![...constrainedFields].some(isDatePartitionField))
+          return {
+            taskId: edge.taskId,
+            taskCategory: edge.taskCategory,
+            table: edge.table,
+            writes: producerWrites,
+            status: "PROVEN_OVERLAP" as const,
+            reasonCodes: ["DATE_PARTITION_DEFAULTED"],
+          };
+      }
       if (!readScope.predicate)
         return {
           taskId: edge.taskId,
@@ -436,7 +531,10 @@ export function matchProducersByReadScope(
       const matches = producerWrites.map((write) =>
         matchConstraint(readScope.predicate!, write),
       );
-      const combined = combineWriteMatches("OR", matches);
+      const combined =
+        readScope.status === "PARTIAL"
+          ? combinePartialReadMatches(matches, readScope.reasonCodes)
+          : combineWriteMatches("OR", matches);
       return {
         taskId: edge.taskId,
         taskCategory: edge.taskCategory,

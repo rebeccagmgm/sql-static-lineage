@@ -42,6 +42,10 @@ import {
   type PartitionAssignment,
   type SqlWrite,
 } from "../../evidence/sql-write-evidence.ts";
+import {
+  datePartitionValuesCompatible,
+  isDatePartitionField,
+} from "../../evidence/partition-value-normalizer.ts";
 import { findSqlTargetEvidence } from "../../input/shared/sql-target-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
@@ -1217,9 +1221,8 @@ function matchDeclaredPartitionsToSqlWrite(
       const observedValue = sqlAssignment.observedValue;
       if (observedValue === null) return false;
       if (
-        declared.field === "busi_date" &&
-        declared.expression === "${YYYY-MM-DD}" &&
-        /^\d{4}-\d{2}-\d{2}$/u.test(observedValue)
+        isDatePartitionField(declared.field) &&
+        datePartitionValuesCompatible(declared.expression, observedValue)
       )
         return true;
       if (declared.expression === "*") return true;

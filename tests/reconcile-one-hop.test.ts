@@ -447,6 +447,7 @@ describe("reconcileOneHop", () => {
       ),
     ).toEqual(["CONSTRAINED", "CONSTRAINED"]);
     expect(result.partitionAwareNextDataTaskIds).toEqual({
+      candidates: ["producer-partitioned", "producer-partitioned-2"],
       proven: ["producer-partitioned", "producer-partitioned-2"],
       possible: [],
       unknown: [],
@@ -516,6 +517,7 @@ describe("reconcileOneHop", () => {
       "READ_OCCURRENCE_CROSS_TABLE_PREDICATE_NOT_PUSHDOWN",
     );
     expect(result.partitionAwareNextDataTaskIds).toEqual({
+      candidates: ["producer-ambiguous-filter"],
       proven: ["producer-ambiguous-filter"],
       possible: [],
       unknown: [],

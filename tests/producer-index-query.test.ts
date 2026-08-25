@@ -208,7 +208,31 @@ describe("producer-index-query", () => {
     ).toBe("PROVEN_DISJOINT");
     expect(
       matchProducersByReadScope(index, table, scope("2026-05-24"))[0]?.status,
-    ).toBe("POSSIBLE_OVERLAP");
+    ).toBe("PROVEN_OVERLAP");
+  });
+
+  it("proves equal runtime templates regardless of case", () => {
+    const readScope: ReadPartitionScope = {
+      status: "CONSTRAINED",
+      partitionFields: ["busi_date"],
+      predicate: {
+        kind: "ATOM",
+        field: "busi_date",
+        operator: "EQ",
+        values: [
+          {
+            kind: "RUNTIME_EXPRESSION",
+            expression: "'${yyyy-MM-dd}'",
+            observedValue: null,
+          },
+        ],
+      },
+      reasonCodes: [],
+      evidence: [],
+    };
+    const result = matchProducersByReadScope(index, table, readScope)[0];
+    expect(result?.status).toBe("PROVEN_OVERLAP");
+    expect(result?.reasonCodes).toContain("PARTITION_RUNTIME_TEMPLATE_EQUAL");
   });
 
   it("looks up confirmed producers and writes by task", () => {

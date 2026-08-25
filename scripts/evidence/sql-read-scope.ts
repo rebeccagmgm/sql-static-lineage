@@ -85,12 +85,22 @@ function physicalColumns(operand: PredicateOperand): readonly ColumnRef[] {
 }
 
 function valueOf(operand: PredicateOperand): ReadPartitionValue | null {
-  if (operand.kind === "LITERAL")
+  if (operand.kind === "LITERAL") {
+    const expression = operand.expression.trim();
+    const observedValue = operand.observedValue?.trim() ?? null;
+    const templateValue = observedValue ?? expression.replace(/^['"]|['"]$/gu, "");
+    if (/^\$\{[^}]+\}$/u.test(templateValue.trim()))
+      return {
+        kind: "RUNTIME_EXPRESSION",
+        expression: templateValue.trim(),
+        observedValue: null,
+      };
     return {
-      kind: operand.observedValue === null ? "UNKNOWN" : "LITERAL",
-      expression: operand.expression,
-      observedValue: operand.observedValue,
+      kind: observedValue === null ? "UNKNOWN" : "LITERAL",
+      expression,
+      observedValue,
     };
+  }
   if (operand.kind === "RUNTIME_EXPRESSION")
     return {
       kind: "RUNTIME_EXPRESSION",
@@ -187,20 +197,21 @@ function combine(
       predicate: null,
       reasonCodes: [...reasonCodes, "PARTITION_OR_BRANCH_NOT_CONSTRAINED"],
     };
-  if (relevant.some((child) => child.status === "UNKNOWN"))
-    return {
-      status: "UNKNOWN",
-      predicate: null,
-      reasonCodes: [...reasonCodes, "PARTITION_PREDICATE_UNKNOWN"],
-    };
   const predicateChildren = relevant
     .map((child) => child.predicate)
     .filter((child): child is PartitionConstraintTree => child !== null);
   if (predicateChildren.length === 0)
     return {
-      status: "PARTIAL",
+      status: relevant.some((child) => child.status === "UNKNOWN")
+        ? "UNKNOWN"
+        : "PARTIAL",
       predicate: null,
-      reasonCodes: [...reasonCodes, "PARTITION_PREDICATE_PARTIAL"],
+      reasonCodes: [
+        ...reasonCodes,
+        ...(relevant.some((child) => child.status === "UNKNOWN")
+          ? ["PARTITION_PREDICATE_UNKNOWN"]
+          : ["PARTITION_PREDICATE_PARTIAL"]),
+      ],
     };
   if (
     kind === "OR" &&

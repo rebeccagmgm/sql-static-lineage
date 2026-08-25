@@ -62,6 +62,11 @@ import {
 } from "./internal/plan-text.js";
 import { assemblePlanFacts } from "./internal/plan-output.js";
 import {
+  buildScopePlanIndex,
+  legacySourceBindingKey,
+  type SelectScopePlan,
+} from "./internal/plan-scope-plan.js";
+import {
   lineageAt,
   lineageOf,
   type LineageHop,
@@ -815,6 +820,8 @@ function resolvePhysical(
 export interface PlanAdapterOptions {
   statement_index?: number;
   adapter_version?: string;
+  /** Internal parity switch; default keeps the parallel ScopePlan path. */
+  scope_projection?: "legacy" | "parallel";
   /** 可选 schema (sql-static-lineage Schema 实例), 提供后条件列 physical 解析启用。 */
   schema?: unknown;
   /** 方言 (用于 schema 列折叠), 默认 databricks。 */
@@ -1292,6 +1299,10 @@ export function buildPlanFacts(
   sql: string,
   opts?: PlanAdapterOptions,
 ): PlanFacts {
+  const scopePlanIndex =
+    opts?.scope_projection === "legacy"
+      ? null
+      : buildScopePlanIndex(cell.scopes);
   const relations: PlanRelation[] = [];
   const unknowns: PlanFacts["unknowns"] = [];
   const nativeLineageFailures = new Set<string>();
@@ -1418,6 +1429,19 @@ export function buildPlanFacts(
       return id;
     }
 
+    // Keep the old source/Join interpretation available only through the
+    // explicit legacy parity mode. The default parallel path consumes the
+    // normalized ScopePlan and records an evidence gap when it cannot bind.
+    const scopePlan = scopePlanIndex?.byScope.get(scope);
+    const selectPlan: SelectScopePlan | null =
+      scopePlan?.kind === "select" ? scopePlan : null;
+    const projectedJoinOrderStable =
+      scopePlanIndex !== null &&
+      selectPlan !== null &&
+      selectPlan.joins.every(
+        (join, ordinal) => join.sourceIndex === ordinal + 1,
+      );
+
     // ---- 1. read 节点: 每个 table/cte 源一个; lateral 源 → expand ----
     const nodeIds = new Map<string, string>(); // 绑定 key → 节点 id
     for (const [key, src] of scope.sources) {
@@ -1477,36 +1501,22 @@ export function buildPlanFacts(
     const fromEntries = body.from ?? [];
     for (let fi = 0; fi < fromEntries.length; fi++) {
       const f = fromEntries[fi] as SelectExpr["from"][number];
-      // 找绑定 key
-      let boundKey: string | null = null;
-      for (const { key: k, source: s } of scope.sourceList) {
-        if (s.kind === "table" || s.kind === "cte") {
-          const alias = s.source.alias;
-          if (
-            f.kind === "table" &&
-            ((f.alias && alias?.toLowerCase() === f.alias.toLowerCase()) ||
-              (!f.alias &&
-                (s.source.relation?.name ?? "") === f.relation.name))
-          ) {
-            boundKey = k;
-            break;
-          }
-        } else if (s.kind === "subquery" && s.source.alias === f.alias) {
-          boundKey = k;
-          break;
-        } else if (s.kind === "lateral" && s.source.alias === f.alias) {
-          boundKey = k;
-          break;
-        }
-      }
+      const normalizedFrom = selectPlan?.from[fi];
+      let boundKey =
+        scopePlanIndex === null
+          ? legacySourceBindingKey(scope, f)
+          : normalizedFrom?.bindingKey &&
+              scope.sources.has(normalizedFrom.bindingKey)
+            ? normalizedFrom.bindingKey
+            : null;
       if (!boundKey) {
-        // 兜底: 无别名表 → sources 里唯一的无别名 table
-        for (const { key: k, source: s } of scope.sourceList) {
-          if (s.kind === "table" && !s.source.alias) {
-            boundKey = k;
-            break;
-          }
-        }
+        unknowns.push({
+          node_id: `${path}.from.${fi}`,
+          field: "source_binding",
+          reason: "ScopePlan 无法将 FROM source 绑定到 Scope source",
+          span: spanOfCst(cellBase, f.cst),
+        });
+        continue;
       }
       const isLateral = scope.sources.get(boundKey ?? "")?.kind === "lateral";
       const nodeId = boundKey
@@ -1531,7 +1541,10 @@ export function buildPlanFacts(
         continue;
       }
       // join 节点 (左深链)
-      const joinRec = (body.joins ?? [])[fi - 1];
+      const joinRec =
+        scopePlanIndex === null || !projectedJoinOrderStable
+          ? (body.joins ?? [])[fi - 1]
+          : selectPlan?.joins.find((join) => join.sourceIndex === fi)?.join;
       const id = `${path}.join.${fi}`;
       const conditionTree = joinRec?.on
         ? predicateTreeOf(joinRec.on, sql, cellBase, "join")

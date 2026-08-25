@@ -334,9 +334,16 @@ export interface OneHopReconciliationResult {
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
   readonly partitionAwareNextDataTaskIds: {
+    /** All producer candidates not proven disjoint by partition evidence. */
+    readonly candidates: readonly string[];
     readonly proven: readonly string[];
     readonly possible: readonly string[];
     readonly unknown: readonly string[];
+  };
+  readonly finalUpstreamTaskIds: {
+    readonly primary: readonly string[];
+    readonly additional: readonly string[];
+    readonly decision: "SCHEDULE_DATA_INTERSECTION" | "DATA_FALLBACK" | "SCHEDULE_FALLBACK";
   };
   readonly issues: readonly string[];
   readonly issueDetails: readonly OneHopIssueDetail[];
@@ -375,6 +382,7 @@ export interface OneHopSummary {
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
   readonly partitionAwareNextDataTaskIds: OneHopReconciliationResult["partitionAwareNextDataTaskIds"];
+  readonly finalUpstreamTaskIds: OneHopReconciliationResult["finalUpstreamTaskIds"];
   readonly partitionScopes: OneHopCoverage["partitionScopes"];
   readonly issues: readonly string[];
   readonly issueDetails: readonly OneHopIssueDetail[];
@@ -1290,9 +1298,12 @@ function currentDirectReads(
       const scope = {
         ...resolvedScope,
         status:
-          occurrence.bindingStatus === "UNKNOWN"
-            ? ("UNKNOWN" as const)
-            : resolvedScope.status,
+          resolvedScope.status === "UNPARTITIONED" ||
+          resolvedScope.predicate !== null
+            ? resolvedScope.status
+            : occurrence.bindingStatus === "UNKNOWN"
+              ? ("UNKNOWN" as const)
+              : resolvedScope.status,
         reasonCodes: [
           ...new Set([
             ...resolvedScope.reasonCodes,
@@ -1762,6 +1773,37 @@ function reconcileOneHopInternal(
       }, 0),
     0,
   );
+  const scheduleTaskIds = new Set(scheduleParents.keys());
+  const dataCandidateTaskIds = new Set(
+    [...partitionAwareTaskStatuses]
+      .filter(([, status]) => status !== "UNKNOWN")
+      .map(([taskId]) => taskId),
+  );
+  const primaryIntersection = [...dataCandidateTaskIds].filter((taskId) =>
+    scheduleTaskIds.has(taskId),
+  );
+  const finalUpstreamTaskIds =
+    primaryIntersection.length > 0
+      ? {
+          primary: uniqueSorted(primaryIntersection),
+          additional: uniqueSorted(
+            [...dataCandidateTaskIds].filter(
+              (taskId) => !primaryIntersection.includes(taskId),
+            ),
+          ),
+          decision: "SCHEDULE_DATA_INTERSECTION" as const,
+        }
+      : dataCandidateTaskIds.size > 0
+        ? {
+            primary: uniqueSorted([...dataCandidateTaskIds]),
+            additional: [],
+            decision: "DATA_FALLBACK" as const,
+          }
+        : {
+            primary: uniqueSorted([...scheduleTaskIds]),
+            additional: [],
+            decision: "SCHEDULE_FALLBACK" as const,
+          };
 
   const confirmedTableKeys = new Set(
     confirmedProducers
@@ -1990,6 +2032,7 @@ function reconcileOneHopInternal(
             .map((item) => item.taskId!),
         ),
     partitionAwareNextDataTaskIds: {
+      candidates: uniqueSorted([...partitionAwareTaskStatuses.keys()]),
       proven: uniqueSorted(
         [...partitionAwareTaskStatuses]
           .filter(([, status]) => status === "PROVEN_OVERLAP")
@@ -2006,6 +2049,7 @@ function reconcileOneHopInternal(
           .map(([taskId]) => taskId),
       ),
     },
+    finalUpstreamTaskIds,
     issues,
     issueDetails,
     boundaries: {
@@ -2063,6 +2107,7 @@ export function summarizeOneHop(
     nextScheduleTaskIds: result.nextScheduleTaskIds,
     nextDataTaskIds: result.nextDataTaskIds,
     partitionAwareNextDataTaskIds: result.partitionAwareNextDataTaskIds,
+    finalUpstreamTaskIds: result.finalUpstreamTaskIds,
     partitionScopes: result.coverage.partitionScopes,
     issues: result.issues,
     issueDetails: result.issueDetails,
@@ -2163,7 +2208,7 @@ function main(): void {
   }
   if (outputPath || summaryPath)
     process.stdout.write(
-      `${JSON.stringify({ output: outputPath, summaryOutput: summaryPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds, partitionAwareNextDataTaskIds: result.partitionAwareNextDataTaskIds })}\n`,
+      `${JSON.stringify({ output: outputPath, summaryOutput: summaryPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds, partitionAwareNextDataTaskIds: result.partitionAwareNextDataTaskIds, finalUpstreamTaskIds: result.finalUpstreamTaskIds })}\n`,
     );
   else process.stdout.write(serialized);
 }
