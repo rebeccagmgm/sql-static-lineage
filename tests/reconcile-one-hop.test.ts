@@ -464,7 +464,7 @@ describe("reconcileOneHop", () => {
     expect(result.coverage.partitionScopes.multiProducerTables).toBe(1);
   });
 
-  it("fails closed when one filter cannot be bound to one physical input", () => {
+  it("binds a table-specific filter while retaining the cross-table JOIN as evidence", () => {
     const dataRoot = fixtureRoot();
     writeTable(dataRoot, "src.partitioned", ["busi_date"]);
     writeTable(dataRoot, "raw.seed");
@@ -511,14 +511,14 @@ describe("reconcileOneHop", () => {
     const sourceRead = result.currentTask.directReads.find(
       (read) => read.table.qualifiedName === "src.partitioned",
     );
-    expect(sourceRead?.readPartitionScopes[0]?.scope.status).toBe("UNKNOWN");
+    expect(sourceRead?.readPartitionScopes[0]?.scope.status).toBe("CONSTRAINED");
     expect(sourceRead?.readPartitionScopes[0]?.scope.reasonCodes).toContain(
-      "PARTITION_FILTER_BINDING_AMBIGUOUS",
+      "READ_OCCURRENCE_CROSS_TABLE_PREDICATE_NOT_PUSHDOWN",
     );
     expect(result.partitionAwareNextDataTaskIds).toEqual({
-      proven: [],
+      proven: ["producer-ambiguous-filter"],
       possible: [],
-      unknown: ["producer-ambiguous-filter"],
+      unknown: [],
     });
   });
 

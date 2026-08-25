@@ -36,6 +36,11 @@
 //   - Window 输入按一次表达式绑定保留 VALUE / WINDOW_PARTITION / WINDOW_ORDER
 //     角色、ordinal、span、物理解析状态；
 //   - Window ORDER 输入保留 ASC/DESC 与 NULLS FIRST/LAST/UNSPECIFIED。
+//
+// v1.3.0 变更:
+//   - Filter / Join 保留 predicate tree，并标注表达式子查询；
+//   - relation 增加 scope_id，文档级 facts 增加 CTE / derived scope_bindings；
+//   - 允许读取侧按物理 ReadRelation occurrence 回溯而不按表名去重。
 // ============================================================================
 
 /** 可溯源的源文本区间 (文档坐标, end 为 exclusive)。 */
@@ -202,6 +207,8 @@ interface BaseRelation {
 	output_columns: string[] | null;
 	/** 输入节点 id (read 无; project/filter/aggregate 有; join 用 left/right)。 */
 	source?: string;
+	/** 所属 query scope 的稳定路径；用于跨 CTE/子查询边界回溯。 */
+	scope_id?: string;
 }
 
 /** 物理表读取 (TableSource / CTE 引用)。 */
@@ -236,6 +243,8 @@ export interface FilterRelation extends BaseRelation {
 	predicate_facts?: ExpressionFacts;
 	/** 可选：保留 WHERE 的布尔结构、操作数绑定和源位置。 */
 	predicate_tree?: PredicateTree;
+	/** true = WHERE 表达式含 EXISTS/IN/scalar subquery 等表达式子查询。 */
+	contains_subquery?: boolean;
 }
 
 /** 连接 (JOIN)。左深链: 每层 scope 的 join 节点串成 left→right 链。 */
@@ -256,6 +265,10 @@ export interface JoinRelation extends BaseRelation {
 	condition_columns: ColumnRef[];
 	/** 可选：由 JOIN 条件 IR 直接提取的结构事实。 */
 	condition_facts?: ExpressionFacts;
+	/** 可选：保留 ON 条件的布尔结构、操作数绑定和源位置。 */
+	condition_tree?: PredicateTree;
+	/** true = ON 表达式含表达式子查询。 */
+	contains_subquery?: boolean;
 	/** true = USING (col, ...) 形式 (无 ON)。 */
 	using?: boolean;
 }
@@ -312,6 +325,26 @@ export type PlanRelation =
 	| SetopRelation
 	| OtherRelation;
 
+/**
+ * Scope source mapping needed when a logical CTE/derived read is represented by
+ * a read node in the enclosing scope but its physical reads live in a child
+ * scope.  The mapping is additive and legacy PlanFacts may omit it.
+ */
+export interface PlanScopeBinding {
+	/** Enclosing scope path. */
+	scope_id: string;
+	/** Logical source relation in the enclosing scope. */
+	relation_id: string;
+	/** Binding key visible to the enclosing scope. */
+	binding: string;
+	/** Source kind as resolved by the scope layer. */
+	source_kind: "cte" | "subquery" | "relation" | "graphtable" | "pivot";
+	/** Target child scope path, null when the adaptor could not map it. */
+	target_scope_id: string | null;
+	/** Target child scope's root relation, null when the adaptor could not map it. */
+	target_relation_id: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // 文档级事实
 // ---------------------------------------------------------------------------
@@ -335,6 +368,8 @@ export interface PlanFacts {
 	roots: string[];
 	/** 全部物理表 (去重, 按首次出现顺序)。 */
 	physical_inputs: string[];
+	/** CTE/derived scope mappings. Optional for legacy PlanFacts bundles. */
+	scope_bindings?: PlanScopeBinding[];
 	/** 失败/缺失保留清单: 每个条目 = 一处无法完整提取的结构 + 原因。 */
 	unknowns: {
 		node_id: string;

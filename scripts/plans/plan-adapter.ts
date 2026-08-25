@@ -41,6 +41,7 @@ import type {
   PlanRelation,
   ProjectRelation,
   ReadRelation,
+  PlanScopeBinding,
   SetopRelation,
   SourceSpan,
   WindowInputBinding,
@@ -70,6 +71,48 @@ import { originsOf } from "../../src/lineage/lineage.js";
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
+
+/** Detect expression subqueries from the IR instead of scanning SQL text. */
+function containsExpressionSubquery(e: Expr | null | undefined): boolean {
+  if (!e) return false;
+  switch (e.kind) {
+    case "subquery":
+    case "exists":
+      return true;
+    case "binary":
+      return containsExpressionSubquery(e.left) || containsExpressionSubquery(e.right);
+    case "unary":
+      return containsExpressionSubquery(e.operand);
+    case "function":
+      return e.args.some((arg) => containsExpressionSubquery(arg));
+    case "case":
+      return (
+        e.whens.some(
+          (branch) =>
+            containsExpressionSubquery(branch.when) ||
+            containsExpressionSubquery(branch.then),
+        ) || containsExpressionSubquery(e.elseExpr)
+      );
+    case "cast":
+      return containsExpressionSubquery(e.expr);
+    case "predicate":
+      return (
+        containsExpressionSubquery(e.operand) ||
+        e.args.some((arg) => containsExpressionSubquery(arg))
+      );
+    case "lambda":
+      return containsExpressionSubquery(e.body);
+    case "subscript":
+      return (
+        containsExpressionSubquery(e.base) ||
+        containsExpressionSubquery(e.index) ||
+        containsExpressionSubquery(e.end) ||
+        containsExpressionSubquery(e.step)
+      );
+    default:
+      return false;
+  }
+}
 
 /**
  * Keep the adapter's syntactic references, but add the physical origins already
@@ -289,12 +332,21 @@ function nativeLineageErrorMessage(error: unknown): string {
 }
 
 /** Remove duplicate physical origins after syntactic refs and native origins meet. */
-function dedupePhysicalInputColumns(refs: ColumnRef[]): ColumnRef[] {
+function dedupePhysicalInputColumns(
+  refs: ColumnRef[],
+  preserveOccurrenceQualifier = false,
+): ColumnRef[] {
   const seen = new Set<string>();
   return refs.flatMap((ref) => {
     if (ref.resolution !== "PHYSICAL" || !ref.physical?.length) return [ref];
+    const qualifier = preserveOccurrenceQualifier
+      ? (ref.qualifier?.toLowerCase() ?? "")
+      : "";
     const physical = ref.physical.filter((item) => {
-      const key = `${item.table}.${item.column}`.toLowerCase();
+      // A physical field can occur through two aliases of the same table.
+      // Keep those READ-occurrence bindings distinct; only duplicate evidence
+      // for the same syntactic qualifier is removed.
+      const key = `${qualifier}\u0000${item.table}.${item.column}`.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1230,10 +1282,10 @@ function nativeHopProjection(
   };
 }
 
-const CONTRACT_VERSION = "1.2.0";
-const ADAPTER_VERSION = "0.3.0";
-const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.2.0";
-export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.3.0";
+const CONTRACT_VERSION = "1.3.0";
+const ADAPTER_VERSION = "0.4.0";
+const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.3.0";
+export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.4.0";
 
 export function buildPlanFacts(
   cell: { scopes: ScopeTree; span: { start: number } },
@@ -1246,6 +1298,14 @@ export function buildPlanFacts(
   const physical = new Set<string>();
   const relationScopes = new Map<string, Scope>();
   const scopeRelationIds = new Map<Scope, string>();
+  const scopePathByScope = new Map<Scope, string>();
+  const pendingScopeBindings: {
+    readonly scope_id: string;
+    readonly relation_id: string;
+    readonly binding: string;
+    readonly source_kind: PlanScopeBinding["source_kind"];
+    readonly target_scope: Scope;
+  }[] = [];
   const projectionLocators = new Map<
     Scope,
     Map<Projection, { relationId: string; expressionId: string }>
@@ -1280,6 +1340,7 @@ export function buildPlanFacts(
   const rootIds = new Map<Scope, string>();
 
   function buildScope(scope: Scope, path: string): string {
+    if (!scopePathByScope.has(scope)) scopePathByScope.set(scope, path);
     if (rootIds.has(scope)) return rootIds.get(scope)!;
     const body = scope.body;
     const outCols = Array.isArray(scope.outputs) ? scope.outputs : null;
@@ -1379,6 +1440,7 @@ export function buildPlanFacts(
           output_columns: null,
         };
         relations.push(r);
+        relationScopes.set(id, scope);
         nodeIds.set(key, id);
       } else if (src.kind === "lateral") {
         const id = `${path}.expand.${key}`;
@@ -1392,6 +1454,7 @@ export function buildPlanFacts(
           output_columns: null,
         };
         relations.push(e);
+        relationScopes.set(id, scope);
         nodeIds.set(key, id);
       }
     }
@@ -1416,11 +1479,14 @@ export function buildPlanFacts(
       const f = fromEntries[fi] as SelectExpr["from"][number];
       // 找绑定 key
       let boundKey: string | null = null;
-      for (const [k, s] of scope.sources) {
+      for (const { key: k, source: s } of scope.sourceList) {
         if (s.kind === "table" || s.kind === "cte") {
+          const alias = s.source.alias;
           if (
             f.kind === "table" &&
-            (s.source.relation?.name ?? "") === f.relation.name
+            ((f.alias && alias?.toLowerCase() === f.alias.toLowerCase()) ||
+              (!f.alias &&
+                (s.source.relation?.name ?? "") === f.relation.name))
           ) {
             boundKey = k;
             break;
@@ -1435,7 +1501,7 @@ export function buildPlanFacts(
       }
       if (!boundKey) {
         // 兜底: 无别名表 → sources 里唯一的无别名 table
-        for (const [k, s] of scope.sources) {
+        for (const { key: k, source: s } of scope.sourceList) {
           if (s.kind === "table" && !s.source.alias) {
             boundKey = k;
             break;
@@ -1467,7 +1533,11 @@ export function buildPlanFacts(
       // join 节点 (左深链)
       const joinRec = (body.joins ?? [])[fi - 1];
       const id = `${path}.join.${fi}`;
-      const joinCols = joinRec?.on
+      const conditionTree = joinRec?.on
+        ? predicateTreeOf(joinRec.on, sql, cellBase, "join")
+        : null;
+      const treeColumns = conditionTree ? predicateColumnsOf(conditionTree) : [];
+      const inputColumns = joinRec?.on
         ? inputColumnsFor(
             joinRec.on,
             scope,
@@ -1484,6 +1554,18 @@ export function buildPlanFacts(
               ),
           )
         : [];
+      const treeOffsets = new Set(
+        treeColumns
+          .map((ref) => (ref as RefWithOffset)._cellOffset)
+          .filter((offset): offset is number => offset !== undefined),
+      );
+      const joinCols = [
+        ...treeColumns,
+        ...inputColumns.filter((ref) => {
+          const offset = (ref as RefWithOffset)._cellOffset;
+          return offset === undefined || !treeOffsets.has(offset);
+        }),
+      ];
       const j: JoinRelation = {
         id,
         type: "join",
@@ -1508,6 +1590,10 @@ export function buildPlanFacts(
         condition_facts: opts?.include_expression_dependencies
           ? expressionFacts(joinRec?.on)
           : undefined,
+        condition_tree: conditionTree ?? undefined,
+        contains_subquery: joinRec?.on
+          ? containsExpressionSubquery(joinRec.on) || undefined
+          : undefined,
         using: joinRec?.using ? true : undefined,
         span: joinRec ? spanOf(cellBase, joinRec.cst) : spanOf(cellBase, f.cst),
         provenance: "extracted",
@@ -1516,6 +1602,42 @@ export function buildPlanFacts(
       relations.push(j);
       relationScopes.set(id, scope);
       chainTail = id;
+    }
+
+    // Keep the source-to-child scope edge explicit.  CTE reads are logical
+    // read nodes in the enclosing scope, so the relation graph alone cannot
+    // connect them to the child project that exposes their physical inputs.
+    for (const [key, source] of scope.sources) {
+      const sourceKind =
+        source.kind === "cte" ||
+        source.kind === "subquery" ||
+        source.kind === "relation" ||
+        source.kind === "graphtable" ||
+        source.kind === "pivot"
+          ? source.kind
+          : null;
+      if (!sourceKind) continue;
+      const targetScope =
+        source.kind === "cte"
+          ? source.ref.scope
+          : source.kind === "subquery" ||
+              source.kind === "relation" ||
+              source.kind === "graphtable"
+            ? source.scope
+            : undefined;
+      if (!targetScope) continue;
+      const relationId =
+        source.kind === "subquery"
+          ? sourceNodeId(key, source)
+          : nodeIds.get(key);
+      if (!relationId) continue;
+      pendingScopeBindings.push({
+        scope_id: path,
+        relation_id: relationId,
+        binding: key,
+        source_kind: sourceKind,
+        target_scope: targetScope,
+      });
     }
 
     // ---- 3. filter 节点 ----
@@ -1565,6 +1687,8 @@ export function buildPlanFacts(
           ? expressionFacts(body.where)
           : undefined,
         predicate_tree: predicateTree,
+        contains_subquery:
+          containsExpressionSubquery(body.where) || undefined,
         span: spanOf(cellBase, body.where.cst),
         provenance: "extracted",
         output_columns: null,
@@ -1876,6 +2000,17 @@ export function buildPlanFacts(
   }
 
   roots.push(buildScope(root, "root"));
+
+  const scopeBindings: PlanScopeBinding[] = pendingScopeBindings.map(
+    (pending) => ({
+      scope_id: pending.scope_id,
+      relation_id: pending.relation_id,
+      binding: pending.binding,
+      source_kind: pending.source_kind,
+      target_scope_id: scopePathByScope.get(pending.target_scope) ?? null,
+      target_relation_id: rootIds.get(pending.target_scope) ?? null,
+    }),
+  );
 
   // Keep the native IR objects alive long enough to invoke lineageOf().  The
   // writer later globalizes these local locators; it must not try to recover
@@ -2198,13 +2333,20 @@ export function buildPlanFacts(
   // the first evidence-bearing ref and remove only duplicate physical origins;
   // unresolved and SQL-candidate refs remain untouched.
   for (const relation of relations) {
+    const relationScope = relationScopes.get(relation.id);
+    const scopeId = relationScope
+      ? scopePathByScope.get(relationScope)
+      : undefined;
+    if (scopeId) relation.scope_id = scopeId;
     if (relation.type === "join") {
       relation.condition_columns = dedupePhysicalInputColumns(
         relation.condition_columns,
+        true,
       );
     } else if (relation.type === "filter") {
       relation.predicate_columns = dedupePhysicalInputColumns(
         relation.predicate_columns,
+        true,
       );
     } else if (relation.type === "aggregate") {
       relation.group_by = dedupePhysicalInputColumns(relation.group_by);
@@ -2268,6 +2410,7 @@ export function buildPlanFacts(
     relations,
     roots,
     physicalInputs: [...physical],
+    scopeBindings,
     unknowns,
     lineageHops,
   });
