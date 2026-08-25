@@ -1907,6 +1907,9 @@ export function collectOneTask(
       allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(
         taskEvidence.taskCategory,
       ),
+      allowSourceTemporalPartitionDefault: isDatabaseSourceToHiveTask(
+        taskEvidence.taskCategory,
+      ),
       sparkIndexMode: taskEvidence.taskCategory === "sparkIndex",
     }),
     evidenceProvider: taskEvidenceProvider,

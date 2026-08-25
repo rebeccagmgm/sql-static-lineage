@@ -52,6 +52,12 @@ export interface TaskPartitionBuildInput {
    * as oracle2hive provide source SQL here, not target-write SQL.
    */
   readonly allowImplicitQueryOutput?: boolean;
+  /**
+   * Allow a database-source task to emit the target's known temporal
+   * partition template without treating source SQL projection as a target
+   * write. This is used for oracle2hive-like ingestion tasks.
+   */
+  readonly allowSourceTemporalPartitionDefault?: boolean;
   readonly sparkIndexMode?: boolean;
 }
 
@@ -61,6 +67,7 @@ export interface SimpleTaskPartitionMapInput {
   readonly sql: SqlBySlot;
   readonly schedulerEvidence?: TaskSchedulerEvidence;
   readonly allowImplicitQueryOutput?: boolean;
+  readonly allowSourceTemporalPartitionDefault?: boolean;
   /** Enable the broader target-expression projection used by sparkIndex. */
   readonly sparkIndexMode?: boolean;
 }
@@ -72,6 +79,7 @@ function normalize(value: string): string {
 const SYNTHETIC_WRITE_TARGETS = new Set([
   "placeholder_insert_db.placeholder_insert_table",
 ]);
+const SPARK_INDEX_DYNAMIC_PARTITION_WILDCARD = "*";
 
 function isSyntheticWriteTarget(value: string): boolean {
   return SYNTHETIC_WRITE_TARGETS.has(normalize(value));
@@ -135,6 +143,43 @@ export function collectStaticPartitionValues(
   return values;
 }
 
+function statementReadsTarget(statement: string, target: string): boolean {
+  const tableName = normalize(target).split(".").at(-1);
+  if (tableName === undefined) return false;
+  const escapedTableName = tableName.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return new RegExp(
+    `\\b(?:FROM|JOIN)\\s+(?:[A-Za-z_][A-Za-z0-9_$]*\\.)?${escapedTableName}(?![A-Za-z0-9_$])`,
+    "iu",
+  ).test(statement);
+}
+
+function inferredPartitionValuesForWrite(
+  target: string,
+  fields: readonly string[],
+  sql: string,
+  write: SqlWrite,
+  createSql: string | undefined,
+): ReadonlyMap<string, string> {
+  const statement = sql.slice(write.statementSpan.start, write.statementSpan.end);
+  const statementValues = statementReadsTarget(statement, target)
+    ? fields.map((field) => collectStaticPartitionValues(field, statement))
+    : fields.map(() => new Set<string>());
+  const createValues = fields.map((field) =>
+    createSql === undefined
+      ? new Set<string>()
+      : collectStaticPartitionValues(field, createSql),
+  );
+  const result = new Map<string, string>();
+  fields.forEach((field, index) => {
+    const values = new Set([
+      ...(statementValues[index] ?? []),
+      ...(createValues[index] ?? []),
+    ]);
+    if (values.size === 1) result.set(field.toLowerCase(), [...values][0]!);
+  });
+  return result;
+}
+
 /**
  * Emits only the target table's physical partition map. Source predicates,
  * such as a source table's BUSI_DATE, are intentionally outside this map.
@@ -175,22 +220,29 @@ export function buildSimpleTaskPartitionMap(
 /**
  * Public Input Pack value.  The detailed evidence tree is deliberately kept
  * internal to the resolver; task.json only carries a value map when the
- * target write is uniquely proven, null when the target is proven
- * non-partitioned, and otherwise omits the field.
+ * target write is uniquely proven. In sparkIndex mode, a confirmed target
+ * partition field whose dynamic value cannot be enumerated is represented by
+ * `*`; null still means the target is proven non-partitioned, and unavailable
+ * target/partition evidence still omits the field.
  */
 export function buildCompactTaskPartition(
   input: SimpleTaskPartitionMapInput,
 ): TaskPartitionValue | null | undefined {
   const evidence = buildTaskPartitionEvidence(input);
   const requestedTarget = input.taskTarget;
+  const partitionedTargets = evidence.targets.filter(
+    (item) => item.tableStatus === "PARTITIONED",
+  );
   const target =
     requestedTarget === undefined
-      ? evidence.targets.length === 1
-        ? evidence.targets[0]
-        : undefined
+      ? partitionedTargets.length === 1
+        ? partitionedTargets[0]
+        : evidence.targets.length === 1
+          ? evidence.targets[0]
+          : undefined
       : evidence.targets.find((item) =>
           sameTable(item.target, requestedTarget),
-        );
+      );
   if (target === undefined) return undefined;
   if (target.tableStatus === "NOT_PARTITIONED") return null;
   if (
@@ -199,11 +251,14 @@ export function buildCompactTaskPartition(
     target.status === "CONFLICT"
   )
     return undefined;
-  const map = input.sparkIndexMode
-    ? buildSparkIndexPartitionValue(target, input.sql)
-    : target.status === "COMPLETE"
-      ? buildSimpleTaskPartitionMap(input)
-      : undefined;
+  const map =
+    input.sparkIndexMode === true
+      ? buildDynamicPartitionValue(target, input.sql, true)
+      : target.status === "COMPLETE" ||
+          hasTargetWriteEvidence(target) ||
+          input.allowSourceTemporalPartitionDefault === true
+        ? buildDynamicPartitionValue(target, input.sql, true)
+        : undefined;
   if (map === undefined) return undefined;
   if (!Array.isArray(map)) {
     const singleMap = map as TaskPartitionMap;
@@ -213,9 +268,18 @@ export function buildCompactTaskPartition(
   return map;
 }
 
-function buildSparkIndexPartitionValue(
+function hasTargetWriteEvidence(target: TaskPartitionTarget): boolean {
+  return target.writes.some(
+    (write) =>
+      write.sqlSlot !== null &&
+      write.mode !== "UNKNOWN",
+  );
+}
+
+function buildDynamicPartitionValue(
   target: TaskPartitionTarget,
   sqlBySlot: Partial<Record<SqlSlot, string>>,
+  useTemporalTemplates: boolean,
 ): TaskPartitionValue | undefined {
   const maps: TaskPartitionMap[] = [];
   for (const write of target.writes) {
@@ -226,6 +290,7 @@ function buildSparkIndexPartitionValue(
           assignments,
           target.fields,
           write.sqlSlot === null ? undefined : sqlBySlot[write.sqlSlot],
+          useTemporalTemplates,
         ),
       )
       .filter((map): map is TaskPartitionMap => map !== undefined);
@@ -246,6 +311,7 @@ function partitionMapFromAssignments(
   assignments: readonly TaskPartitionAssignment[],
   fields: readonly string[],
   sql: string | undefined,
+  useTemporalTemplates: boolean,
 ): TaskPartitionMap | undefined {
   const result: Record<string, string> = {};
   for (const assignment of assignments) {
@@ -256,12 +322,14 @@ function partitionMapFromAssignments(
     result[assignment.field] = value;
   }
   for (const field of fields) {
-    const defaultValue = sparkIndexTemporalPartitionDefault(field, sql);
+    const defaultValue = useTemporalTemplates
+      ? sparkIndexTemporalPartitionDefault(field, sql)
+      : undefined;
     if (defaultValue !== undefined) result[field] = defaultValue;
+    else if (result[field] === undefined)
+      result[field] = SPARK_INDEX_DYNAMIC_PARTITION_WILDCARD;
   }
-  return fields.some((field) => result[field] === undefined)
-    ? undefined
-    : result;
+  return result;
 }
 
 function sparkIndexTemporalPartitionDefault(
@@ -709,6 +777,21 @@ function canonicalizePartitionValue(value: string | null): string | null {
     : "${YYYY-MM-DD}";
 }
 
+function temporalPartitionBranchesEquivalent(
+  field: string,
+  sql: string,
+  assignments: readonly TaskPartitionAssignment[],
+): boolean {
+  if (field.toLowerCase() !== "busi_date") return false;
+  if (sparkIndexTemporalPartitionDefault(field, sql) === undefined) return false;
+  return assignments.every(
+    (assignment) =>
+      assignment.status === "RUNTIME_EXPRESSION" ||
+      (assignment.status === "CONFIRMED" &&
+        canonicalizePartitionValue(assignment.value) === "${YYYY-MM-DD}"),
+  );
+}
+
 function sqlRef(slot: SqlSlot, write: SqlWrite): TaskPartitionEvidenceRef {
   return {
     source: "INPUT_PACK_SQL",
@@ -875,7 +958,11 @@ function dynamicAssignments(
     const branchKeys = fieldAssignments.map((assignment) =>
       partitionAssignmentComparisonKey(assignment),
     );
-    if (!allowMultiplePartitionInstances && new Set(branchKeys).size > 1) {
+    if (
+      !allowMultiplePartitionInstances &&
+      new Set(branchKeys).size > 1 &&
+      !temporalPartitionBranchesEquivalent(field, sql, fieldAssignments)
+    ) {
       unionConflict = true;
       assignments.push(
         unknownAssignment(
@@ -1202,6 +1289,7 @@ function buildSqlWrite(
   schedulerEvidence?: TaskSchedulerEvidence,
   codeEvidence?: TaskCodeEvidence,
   sparkIndexMode = false,
+  partitionValueHints?: ReadonlyMap<string, string>,
 ): TaskPartitionWrite {
   const partitionFields = partitionFieldsFor(table, createSql, target);
   const tableFields = partitionFields.fields;
@@ -1224,7 +1312,7 @@ function buildSqlWrite(
     ...schedulerRefs(schedulerEvidence),
     ...codeRefs(codeEvidence),
   ];
-  if (table === undefined || !partitionFields.known)
+  if (!partitionFields.known)
     return {
       target,
       sqlSlot,
@@ -1249,8 +1337,11 @@ function buildSqlWrite(
   const staticAssignments = new Map(
     write.partition
       .filter((item) => item.expression !== "UNKNOWN")
-      .map((item) => [item.field.toLowerCase(), item]),
+      .map((item) => [item.field.toLowerCase(), item.expression]),
   );
+  for (const [field, expression] of partitionValueHints ?? [])
+    if (!staticAssignments.has(field.toLowerCase()))
+      staticAssignments.set(field.toLowerCase(), `'${expression}'`);
   const dynamicFields = write.partitionFields.filter(
     (field) => !staticAssignments.has(field.toLowerCase()),
   );
@@ -1265,7 +1356,7 @@ function buildSqlWrite(
       sql,
       write,
       mappingEvidence,
-      sparkIndexMode,
+      true,
     );
   const schedulerValues = explicitFieldValues(schedulerEvidence?.hivePartition);
   const buildAssignments = (
@@ -1281,7 +1372,7 @@ function buildSqlWrite(
         staticAssignment !== undefined
           ? assignmentFromExpression(
               field,
-              staticAssignment.expression,
+              staticAssignment,
               "STATIC_SQL_ASSIGNMENT",
               mappingEvidence,
             )
@@ -1429,7 +1520,7 @@ function buildDirectWrite(
           fields,
           querySql,
           [...writeEvidence, ...queryEvidence],
-          sparkIndexMode,
+          true,
         );
   const addEvidence = addPartition?.evidence ?? [];
   const unknownAssignmentEvidence = [
@@ -1618,6 +1709,16 @@ export function buildTaskPartitionEvidence(
           input.schedulerEvidence,
           input.codeEvidence,
           input.sparkIndexMode === true,
+          input.taskTarget !== undefined &&
+            sameTable(input.taskTarget, target)
+            ? inferredPartitionValuesForWrite(
+                target,
+                partitionFields,
+                item.content,
+                item.write,
+                createSql,
+              )
+            : undefined,
         ),
       );
     const effectiveWrites =
@@ -1656,7 +1757,12 @@ export function buildTaskPartitionEvidence(
       reasonCodes: state.reasonCodes,
     };
   });
-  const statuses = targets.map((target) => target.status);
+  const publicTargets =
+    input.taskTarget === undefined
+      ? targets.filter((target) => target.tableStatus === "PARTITIONED")
+      : targets.filter((target) => sameTable(target.target, input.taskTarget!));
+  const statusTargets = publicTargets.length === 1 ? publicTargets : targets;
+  const statuses = statusTargets.map((target) => target.status);
   const status: TaskPartitionStatus =
     targets.length === 0
       ? "UNKNOWN"
@@ -1670,7 +1776,7 @@ export function buildTaskPartitionEvidence(
               ? "INCOMPLETE"
               : "COMPLETE";
   const reasonCodes = [
-    ...new Set(targets.flatMap((target) => target.reasonCodes)),
+    ...new Set(statusTargets.flatMap((target) => target.reasonCodes)),
   ];
   return {
     status,
