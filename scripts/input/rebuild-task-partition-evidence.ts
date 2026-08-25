@@ -292,6 +292,9 @@ export function main(): void {
         allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(
           loaded.document.taskCategory,
         ),
+        allowSourceTemporalPartitionDefault: isDatabaseSourceToHiveTask(
+          loaded.document.taskCategory,
+        ),
         sparkIndexMode: loaded.document.taskCategory === "sparkIndex",
       });
       const partition = buildCompactTaskPartition({
@@ -301,6 +304,9 @@ export function main(): void {
         schedulerEvidence: loaded.document.schedulerEvidence as unknown as
           TaskSchedulerEvidence | undefined,
         allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(
+          loaded.document.taskCategory,
+        ),
+        allowSourceTemporalPartitionDefault: isDatabaseSourceToHiveTask(
           loaded.document.taskCategory,
         ),
         sparkIndexMode: loaded.document.taskCategory === "sparkIndex",

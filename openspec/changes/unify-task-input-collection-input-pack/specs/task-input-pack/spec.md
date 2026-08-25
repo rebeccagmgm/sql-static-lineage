@@ -57,6 +57,11 @@
 - **WHEN** `sparkIndex` 目标表的分区字段为 `busi_mon`，SQL 只能证明该字段来自运行时月份参数或其 SQL 可证明的相对月份表达式
 - **THEN** 系统 MUST 按 SQL 形态保存 `${YYYYMM}`、`${YYYY-MM}` 或带相对月份偏移的模板；不能因为字段不是 `busi_date` 就直接省略，同时不能为非时间分区字段生成默认值
 
+#### Scenario: 动态分区范围通配符
+
+- **WHEN** SQL 写入类任务已确认目标表及其分区字段和目标写入，但 SQL 不能枚举某个动态分区字段的具体写入值
+- **THEN** 系统 MUST 在该字段保存 `*` 表示动态写入范围；`*` 不得解释为具体分区值，目标表或目标分区字段证据不可用时仍 MUST 省略整个 `partition`
+
 #### Scenario: 读取条件不是目标分区
 
 - **WHEN** SQL 只包含 `WHERE busi_date='${yyyy-MM-dd}'`，或者平台字段表示源 Hive 读取分区

@@ -30,7 +30,7 @@ describe("task partition map fallback", () => {
     ).toBeNull();
   });
 
-  it("omits partition when the target partition value is incomplete", () => {
+  it("keeps a wildcard for an incomplete dynamic partition value", () => {
     expect(
       buildCompactTaskPartition({
         taskTarget: target,
@@ -40,10 +40,10 @@ describe("task partition map fallback", () => {
             "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date='2026-08-22', grp_id) SELECT id, grp_id FROM source_table;",
         },
       }),
-    ).toBeUndefined();
+    ).toEqual({ busi_date: "${YYYY-MM-DD}", grp_id: "*" });
   });
 
-  it("omits partition when any write to the target remains incomplete", () => {
+  it("keeps the target partition shape when one write value is incomplete", () => {
     expect(
       buildCompactTaskPartition({
         taskTarget: target,
@@ -53,10 +53,50 @@ describe("task partition map fallback", () => {
             "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date='2026-08-22') SELECT id FROM source_a; INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date) SELECT * FROM source_b;",
         },
       }),
-    ).toBeUndefined();
+    ).toEqual({ busi_date: "${YYYY-MM-DD}" });
   });
 
-  it("omits partition when UNION branches disagree on a dynamic value", () => {
+  it("uses the date template for a complete target with a runtime date expression", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["src_tbl", "busi_date"])],
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(src_tbl, busi_date) SELECT id, src_tbl, SUBSTR(source_date, 1, 10) AS busi_date FROM source_table;",
+        },
+      }),
+    ).toEqual({ src_tbl: "*", busi_date: "${YYYY-MM-DD}" });
+  });
+
+  it("normalizes UNION date aliases before checking for a partition conflict", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_date"])],
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date) SELECT A.busi_date AS busi_date FROM source_a A UNION ALL SELECT B.busi_date AS busi_date FROM source_b B;",
+        },
+      }),
+    ).toEqual({ busi_date: "${YYYY-MM-DD}" });
+  });
+
+  it("selects the unique partitioned final target when temp targets lack table packs", () => {
+    expect(
+      buildCompactTaskPartition({
+        tables: [],
+        sql: {
+          create:
+            "CREATE TABLE t02_tit_scr_trd_cal (id string) PARTITIONED BY (src_id string, grp_id string); CREATE TABLE t02_tit_scr_trd_cal_tit_temp AS SELECT 1; CREATE TABLE t02_tit_scr_trd_cal_tit_temp_not AS SELECT 1;",
+          query:
+            "INSERT OVERWRITE TABLE t02_tit_scr_trd_cal_tit_temp SELECT 1; INSERT OVERWRITE TABLE t02_tit_scr_trd_cal_tit_temp_not SELECT 1; INSERT OVERWRITE TABLE t02_tit_scr_trd_cal PARTITION(src_id='TIT', grp_id='01') SELECT 1, 2;",
+        },
+      }),
+    ).toEqual({ src_id: "TIT", grp_id: "01" });
+  });
+
+  it("preserves distinct confirmed UNION partition values as an array", () => {
     expect(
       buildCompactTaskPartition({
         taskTarget: target,
@@ -66,10 +106,10 @@ describe("task partition map fallback", () => {
             "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(grp_id) SELECT id, '01' AS grp_id FROM source_a UNION ALL SELECT id, '02' AS grp_id FROM source_b;",
         },
       }),
-    ).toBeUndefined();
+    ).toEqual([{ grp_id: "01" }, { grp_id: "02" }]);
   });
 
-  it("omits an implicit target partition when UNION branches disagree", () => {
+  it("preserves distinct confirmed implicit UNION partition values as an array", () => {
     expect(
       buildCompactTaskPartition({
         taskTarget: target,
@@ -79,7 +119,7 @@ describe("task partition map fallback", () => {
             "SELECT id, '01' AS grp_id FROM source_a UNION ALL SELECT id, '02' AS grp_id FROM source_b;",
         },
       }),
-    ).toBeUndefined();
+    ).toEqual([{ grp_id: "01" }, { grp_id: "02" }]);
   });
 
   it("omits partition when table metadata does not say whether fields exist", () => {
@@ -90,6 +130,30 @@ describe("task partition map fallback", () => {
         sql: { query: "SELECT id FROM source_table" },
       }),
     ).toBeUndefined();
+  });
+
+  it("does not wildcard a source-extraction query without target-write evidence", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_date"])],
+        allowImplicitQueryOutput: false,
+        sql: { query: "SELECT id, busi_date FROM source_table" },
+      }),
+    ).toBeUndefined();
+  });
+
+  it("defaults a known target busi_date for database-source ingestion", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_date"])],
+        allowImplicitQueryOutput: false,
+        allowSourceTemporalPartitionDefault: true,
+        schedulerEvidence: { hivePartition: "${YYYY-MM-DD}" },
+        sql: { query: "SELECT id FROM oracle_source_table" },
+      }),
+    ).toEqual({ busi_date: "${YYYY-MM-DD}" });
   });
 
   it("accepts a single uniquely identified target when task target is absent", () => {
@@ -219,6 +283,19 @@ describe("task partition map fallback", () => {
     ).toEqual({ busi_date: "${YYYY-MM-DD}" });
   });
 
+  it("defaults busi_date for an implicit final target write", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_date"])],
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt SELECT source_rows.*, '2026-05-24' AS busi_date FROM source_rows",
+        },
+      }),
+    ).toEqual({ busi_date: "${YYYY-MM-DD}" });
+  });
+
   it("defaults an unresolved busi_mon partition to the month template", () => {
     expect(
       buildCompactTaskPartition({
@@ -277,7 +354,7 @@ describe("task partition map fallback", () => {
         sparkIndexMode: true,
         sql: { query: "SELECT mon_no FROM source_table" },
       }),
-    ).toBeUndefined();
+    ).toEqual({ mon_no: "*" });
   });
 
   it("combines the busi_date default with proven other partition fields", () => {
@@ -294,7 +371,7 @@ describe("task partition map fallback", () => {
     ).toEqual({ grp_id: "01", busi_date: "${YYYY-MM-DD}" });
   });
 
-  it("does not emit a partial map when another partition field is unknown", () => {
+  it("uses a wildcard when another sparkIndex partition field is unknown", () => {
     expect(
       buildCompactTaskPartition({
         taskTarget: target,
@@ -305,7 +382,20 @@ describe("task partition map fallback", () => {
             "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(grp_id, busi_date) SELECT id, grp_id, busi_date FROM source_table",
         },
       }),
-    ).toBeUndefined();
+    ).toEqual({ grp_id: "*", busi_date: "${YYYY-MM-DD}" });
+  });
+
+  it("uses a wildcard for an unenumerated sparkIndex partition value", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["tag_id", "busi_mon"])],
+        sparkIndexMode: true,
+        sql: {
+          query: "SELECT id, tag_id, '${yyyyMM}' AS busi_mon FROM source_table",
+        },
+      }),
+    ).toEqual({ tag_id: "*", busi_mon: "${YYYYMM}" });
   });
 
   it("canonicalizes concrete dates before comparing partition branches", () => {
@@ -336,6 +426,23 @@ describe("task partition map fallback", () => {
     ).toEqual([
       { grp_id: "01", busi_date: "${YYYY-MM-DD}" },
       { grp_id: "02", busi_date: "${YYYY-MM-DD}" },
+    ]);
+  });
+
+  it("preserves multiple ordinary SQL partition instances as an array", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["busi_date", "src_id"])],
+        sql: {
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date, src_id) SELECT id, '2026-05-24' AS busi_date, 'brk_2' AS src_id FROM source_a UNION ALL SELECT id, '2026-05-24' AS busi_date, 'brk_3' AS src_id FROM source_b; INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(busi_date='2026-05-24', src_id='ecif') SELECT id FROM source_c;",
+        },
+      }),
+    ).toEqual([
+      { busi_date: "${YYYY-MM-DD}", src_id: "brk_2" },
+      { busi_date: "${YYYY-MM-DD}", src_id: "brk_3" },
+      { busi_date: "${YYYY-MM-DD}", src_id: "ecif" },
     ]);
   });
 
@@ -380,6 +487,22 @@ describe("task partition map fallback", () => {
         },
       }),
     ).toBeUndefined();
+  });
+
+  it("uses a final target filter and temp value flow without making temp a conflict", () => {
+    const targetTable = table(["src_tbl"]);
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [targetTable],
+        sql: {
+          create:
+            "CREATE TABLE dm_index_n.index_grp_cust_acct_cnt (id bigint) PARTITIONED BY (src_tbl string); CREATE TABLE temp.index_stage AS SELECT 'ODATA_N_TIT.D_MARGIN_ACCOUNT' AS src_tbl;",
+          query:
+            "INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(src_tbl) SELECT * FROM dm_index_n.index_grp_cust_acct_cnt WHERE src_tbl='ODATA_N_TIT.D_MARGIN_ACCOUNT'; INSERT OVERWRITE TABLE dm_index_n.index_grp_cust_acct_cnt PARTITION(src_tbl) SELECT id, src_tbl FROM temp.index_stage;",
+        },
+      }),
+    ).toEqual({ src_tbl: "ODATA_N_TIT.D_MARGIN_ACCOUNT" });
   });
 
   it("keeps wildcard source-filter evidence explicitly incomplete", () => {
