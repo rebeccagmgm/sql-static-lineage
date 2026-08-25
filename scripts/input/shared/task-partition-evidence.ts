@@ -1,7 +1,7 @@
 import {
   extractSqlWrites,
   type SqlWrite,
-} from "../evidence/sql-write-evidence.ts";
+} from "../../evidence/sql-write-evidence.ts";
 import type {
   SqlSlot,
   TableEvidence,

@@ -23,7 +23,7 @@ import {
   validateTaskDocument,
   type TableDocument,
   type TaskDocument,
-} from "../../../input/input-pack.ts";
+} from "../../../input/shared/input-pack.ts";
 import { buildPlanFacts } from "../../../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
 import {

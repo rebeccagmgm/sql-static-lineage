@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalHash, type JsonValue } from "../../../input/input-pack.ts";
+import { canonicalHash, type JsonValue } from "../../../input/shared/input-pack.ts";
 import type { OneHopReconciliationResult } from "../one-hop/reconcile-one-hop.ts";
 import {
   fingerprintTableProducerInputs,

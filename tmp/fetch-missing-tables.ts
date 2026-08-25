@@ -1,4 +1,4 @@
-import { writeTableInput } from "../scripts/input/input-pack.ts";
+import { writeTableInput } from "../scripts/input/shared/input-pack.ts";
 import { execSync } from "node:child_process";
 
 type CliResult = { [key: string]: unknown };

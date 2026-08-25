@@ -27,9 +27,9 @@ import {
   normalizeConcatenatedSqlStatements,
   normalizeRepeatedSqlContent,
   tableFromDirectEvidence,
-} from "../scripts/input/collect-one-task-input-pack.ts";
-import { writeTableInput } from "../scripts/input/input-pack.ts";
-import { controlledTaskEndpointDataSource } from "../scripts/input/task-endpoints.ts";
+} from "../scripts/input/mainline/collect-one-task-input-pack.ts";
+import { writeTableInput } from "../scripts/input/shared/input-pack.ts";
+import { controlledTaskEndpointDataSource } from "../scripts/input/shared/task-endpoints.ts";
 import { taskSqlDialect } from "../scripts/plans/task-sql-dialect.ts";
 
 type JsonRecord = Record<string, unknown>;

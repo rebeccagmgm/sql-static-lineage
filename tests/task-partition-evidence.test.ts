@@ -3,7 +3,7 @@ import {
   buildCompactTaskPartition,
   buildSimpleTaskPartitionMap,
   buildTaskPartitionEvidence,
-} from "../scripts/input/task-partition-evidence.ts";
+} from "../scripts/input/shared/task-partition-evidence.ts";
 
 const target = "dm_index_n.index_grp_cust_acct_cnt";
 

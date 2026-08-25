@@ -1,7 +1,7 @@
 import type {
   TableEvidence,
   TaskEvidence,
-} from "../../../scripts/input/input-pack.ts";
+} from "../../../scripts/input/shared/input-pack.ts";
 
 export const cases: Record<
   string,

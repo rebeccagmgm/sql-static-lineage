@@ -4,8 +4,8 @@ import {
   loadPersistedTableCache,
   tableFromDirectEvidence,
   type TableEvidence,
-} from "./collect-one-task-input-pack.ts";
-import { writeTableInput } from "./input-pack.ts";
+} from "../mainline/collect-one-task-input-pack.ts";
+import { writeTableInput } from "../shared/input-pack.ts";
 
 type ProducerIndexLike = {
   nonConfirmedRelations?: readonly {

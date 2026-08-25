@@ -16,7 +16,7 @@ import {
   writeTaskInput,
   type JsonValue,
   type TaskEvidence,
-} from "../scripts/input/input-pack.ts";
+} from "../scripts/input/shared/input-pack.ts";
 import {
   assertOutputOutsideDataRoot,
   buildTableProducerIndex,

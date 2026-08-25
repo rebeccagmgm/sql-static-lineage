@@ -42,7 +42,7 @@ npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input
 src/                         parser/analyzer engine snapshot
 scripts/plans/               engine -> L1 observation adapter
 scripts/machine-facts/       per-task fact assembly and publication
-scripts/input/               external Task/Table input writer and hashing
+scripts/input/               external Task/Table input collection, contracts and repairs
 scripts/query/               validated Current Bundle loader and Reader
 scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
 schemas/                     current baseline schemas; Contract 2.0 remains pending

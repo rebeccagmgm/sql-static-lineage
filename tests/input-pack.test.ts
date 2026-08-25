@@ -27,24 +27,24 @@ import {
   validateTaskDocument,
   writeTableInput,
   writeTaskInput,
-} from "../scripts/input/input-pack.ts";
+} from "../scripts/input/shared/input-pack.ts";
 import {
   controlledTaskEndpointDataSource,
   enrichTaskEndpoint,
   inputCollectionStatus,
   shouldUseTaskRelationFallback,
   targetEvidenceKindFor,
-} from "../scripts/input/task-endpoints.ts";
+} from "../scripts/input/shared/task-endpoints.ts";
 import {
   findSqlFinalTargetEvidence,
   findSqlTargetEvidence,
-} from "../scripts/input/sql-target-evidence.ts";
+} from "../scripts/input/shared/sql-target-evidence.ts";
 import {
   assertInputPackBatchSize,
   exitCodeForTaskBatch,
   runTaskBatch,
   StopTaskBatch,
-} from "../scripts/input/task-batch.ts";
+} from "../scripts/input/mainline/task-batch.ts";
 import {
   environmentMilliseconds,
   findStaleLegacyTaskDirectories,
@@ -54,14 +54,14 @@ import {
   normalizeRepeatedSqlContent,
   relocateTaskPacks,
   taskCategory,
-} from "../scripts/input/collect-one-task-input-pack.ts";
+} from "../scripts/input/mainline/collect-one-task-input-pack.ts";
 import {
   assertStatusFileOutsideDataRoot,
   canSkipSuccessfulTask,
   loadTaskStatus,
   saveTaskStatus,
   updateTaskStatus,
-} from "../scripts/input/task-status.ts";
+} from "../scripts/input/mainline/task-status.ts";
 
 function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-static-lineage-input-pack-"));
