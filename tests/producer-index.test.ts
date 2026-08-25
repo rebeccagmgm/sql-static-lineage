@@ -30,7 +30,7 @@ import {
   validateTableProducerIndex,
   writeTableProducerIndex,
   updateTableProducerIndex,
-} from "../scripts/reconcile/producer-index.ts";
+} from "../scripts/reconcile/producer/producer-index.ts";
 
 const frozen86840It = existsSync(
   join(

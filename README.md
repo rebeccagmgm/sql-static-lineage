@@ -28,8 +28,10 @@ npm test
 npm run typecheck
 npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-spec <question.json> --output <derived-output>
 npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--producer-index <producer-index.json>] --output <result.json>
+npm run reconcile-one-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
 npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
+npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 ```
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。

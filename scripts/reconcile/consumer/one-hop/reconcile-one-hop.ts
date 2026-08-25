@@ -8,8 +8,8 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SqlSession } from "../../src/session.ts";
-import type { Dialect } from "../../src/dialect.ts";
+import { SqlSession } from "../../../../src/session.ts";
+import type { Dialect } from "../../../../src/dialect.ts";
 import {
   sha256File,
   validateTableDocument,
@@ -17,9 +17,9 @@ import {
   type JsonValue,
   type TaskDocument,
   type TableDocument,
-} from "../input/input-pack.ts";
-import { buildPlanFacts } from "../plans/plan-adapter.ts";
-import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
+} from "../../../input/input-pack.ts";
+import { buildPlanFacts } from "../../../plans/plan-adapter.ts";
+import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
 import {
   fingerprintTableProducerInputs,
   classifyProducerWriteObservation,
@@ -32,24 +32,24 @@ import {
   type ProducerTableIdentity,
   type ProducerWriteObservation,
   type TableProducerIndex,
-} from "./producer-index.ts";
+} from "../../producer/producer-index.ts";
 import {
   extractSqlWrites,
   partitionValueStatus,
   partitionAssignments,
   type PartitionAssignment,
   type SqlWrite,
-} from "./sql-write-evidence.ts";
+} from "../../../evidence/sql-write-evidence.ts";
 import {
   inferTaskDefaultSchema,
   qualifyBareTableName,
-} from "./task-default-schema.ts";
+} from "../../shared/task-default-schema.ts";
 
 export {
   extractSqlWrites,
   type PartitionAssignment,
   type SqlWrite,
-} from "./sql-write-evidence.ts";
+} from "../../../evidence/sql-write-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -113,6 +113,12 @@ interface TableCatalogEntry {
 interface TableCatalog {
   readonly byQualifiedName: ReadonlyMap<string, readonly TableCatalogEntry[]>;
   readonly issues: readonly string[];
+}
+
+interface OneHopPreparedContext {
+  readonly dataRoot: string;
+  readonly inputFingerprint: string | null;
+  readonly tableCatalog: TableCatalog;
 }
 
 export interface DirectReadObservation {
@@ -673,6 +679,21 @@ function inputPackSqlEvidence(file: TaskSqlFile): EvidenceObservation {
   };
 }
 
+export function prepareOneHopContext(
+  dataRootInput: string,
+  options: { readonly includeFingerprint?: boolean } = {},
+): OneHopPreparedContext {
+  const dataRoot = resolve(dataRootInput);
+  return {
+    dataRoot,
+    inputFingerprint:
+      options.includeFingerprint === false
+        ? null
+        : fingerprintTableProducerInputs(dataRoot),
+    tableCatalog: loadTableCatalog(dataRoot),
+  };
+}
+
 function partitionFromDocument(
   value: unknown,
   target?: string | null,
@@ -682,25 +703,30 @@ function partitionFromDocument(
   const record = asRecord(value);
   if (!record) return [];
   if (Array.isArray(record.targets)) {
-    const targetKey = target === null || target === undefined
-      ? undefined
-      : normalizeTable(target);
+    const targetKey =
+      target === null || target === undefined
+        ? undefined
+        : normalizeTable(target);
     const targetEvidence = record.targets.find((item) => {
       const candidate = asRecord(item);
-      return candidate !== null &&
+      return (
+        candidate !== null &&
         (targetKey === undefined ||
-          normalizeTable(String(candidate.target)) === targetKey);
+          normalizeTable(String(candidate.target)) === targetKey)
+      );
     });
     const writes = asRecord(targetEvidence)?.writes;
     const matchedWrite = Array.isArray(writes)
       ? writes.find((item) => {
           const write = asRecord(item);
-          return write !== null &&
+          return (
+            write !== null &&
             (sqlSlot === null
               ? write.sqlSlot === null
               : write.sqlSlot === sqlSlot) &&
             (statementOrdinal === null ||
-              write.statementOrdinal === statementOrdinal);
+              write.statementOrdinal === statementOrdinal)
+          );
         })
       : undefined;
     const write = asRecord(matchedWrite);
@@ -709,18 +735,20 @@ function partitionFromDocument(
       const assignment = asRecord(item);
       if (!assignment) return [];
       const status = String(assignment.status);
-      return [{
-        field: String(assignment.field).toLowerCase(),
-        expression:
-          assignment.expression === null
-            ? "UNKNOWN"
-            : String(assignment.expression),
-        valueStatus: partitionValueStatus(status),
-        observedValue:
-          status === "CONFIRMED" && assignment.value !== null
-            ? String(assignment.value)
-            : null,
-      }];
+      return [
+        {
+          field: String(assignment.field).toLowerCase(),
+          expression:
+            assignment.expression === null
+              ? "UNKNOWN"
+              : String(assignment.expression),
+          valueStatus: partitionValueStatus(status),
+          observedValue:
+            status === "CONFIRMED" && assignment.value !== null
+              ? String(assignment.value)
+              : null,
+        },
+      ];
     });
   }
   return Object.entries(record)
@@ -1043,9 +1071,10 @@ function currentDirectReads(
   );
 }
 
-export function reconcileOneHop(
+function reconcileOneHopInternal(
   taskId: string,
   options: ReconcileOneHopOptions,
+  preparedContext: OneHopPreparedContext,
 ): OneHopReconciliationResult {
   if (!SAFE_TASK_ID.test(taskId)) throw new Error("INVALID_TASK_ID");
   const dataRoot = resolve(options.dataRoot);
@@ -1063,8 +1092,10 @@ export function reconcileOneHop(
     } catch (error) {
       throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
     }
-    const currentFingerprint = fingerprintTableProducerInputs(dataRoot);
-    if (currentFingerprint !== producerIndex.inputFingerprint)
+    if (
+      preparedContext.inputFingerprint === null ||
+      preparedContext.inputFingerprint !== producerIndex.inputFingerprint
+    )
       throw new Error(
         "PRODUCER_INDEX_INPUT_FINGERPRINT_MISMATCH: producer index does not match dataRoot",
       );
@@ -1083,7 +1114,7 @@ export function reconcileOneHop(
     throw new Error(
       `CURRENT_TASK_INPUT_PACK_${currentPack.status}:${currentPack.issues.join(";")}`,
     );
-  const catalog = loadTableCatalog(dataRoot);
+  const catalog = preparedContext.tableCatalog;
   const directReads = currentDirectReads(currentPack, catalog);
 
   const horaeArgs = [
@@ -1521,6 +1552,35 @@ export function reconcileOneHop(
       partitionScope: "TASK_TO_TABLE_WRITE",
     },
   };
+}
+
+export function reconcileOneHop(
+  taskId: string,
+  options: ReconcileOneHopOptions,
+): OneHopReconciliationResult {
+  const preparedContext = prepareOneHopContext(options.dataRoot, {
+    includeFingerprint: options.producerIndex !== undefined,
+  });
+  return reconcileOneHopInternal(taskId, options, preparedContext);
+}
+
+export function reconcileOneHopBatch(
+  taskIds: readonly string[],
+  options: ReconcileOneHopOptions,
+): readonly OneHopReconciliationResult[] {
+  const preparedContext = prepareOneHopContext(options.dataRoot, {
+    includeFingerprint: options.producerIndex !== undefined,
+  });
+  const results = taskIds.map((taskId) =>
+    reconcileOneHopInternal(taskId, options, preparedContext),
+  );
+  if (
+    preparedContext.inputFingerprint !== null &&
+    fingerprintTableProducerInputs(options.dataRoot) !==
+      preparedContext.inputFingerprint
+  )
+    throw new Error("INPUT_CHANGED_DURING_ONE_HOP_BATCH");
+  return results;
 }
 
 function option(args: readonly string[], name: string): string | undefined {

@@ -1,7 +1,7 @@
 import {
   extractSqlWrites,
   type SqlWrite,
-} from "../reconcile/sql-write-evidence.ts";
+} from "../evidence/sql-write-evidence.ts";
 import type {
   SqlSlot,
   TableEvidence,
@@ -1071,13 +1071,25 @@ function resolveOutputReference(
     ),
   ];
   if (matches.length === 1) return { expression: matches[0]![1] };
+  if (matches.length > 1)
+    return {
+      expression: undefined,
+      reason: "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
+    };
+  const filteredValues = [...collectStaticPartitionValues(field, sql)];
+  if (filteredValues.length === 1)
+    return { expression: quoteSqlLiteral(filteredValues[0]!) };
   return {
     expression: undefined,
     reason:
-      matches.length === 0
+      filteredValues.length === 0
         ? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED"
         : "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
   };
+}
+
+function quoteSqlLiteral(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
 }
 
 function outputReferenceCandidates(field: string, sql: string): string[] {
@@ -1085,7 +1097,7 @@ function outputReferenceCandidates(field: string, sql: string): string[] {
   const valuePattern =
     "(?:'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?)";
   const identifierQuote = "[" + String.fromCharCode(34, 96) + "]?";
-  return [
+  const aliasCandidates = [
     ...sql.matchAll(
       new RegExp(
         `(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
@@ -1096,6 +1108,10 @@ function outputReferenceCandidates(field: string, sql: string): string[] {
     .map((match) => match[1])
     .filter((value): value is string => value !== undefined)
     .filter((value, index, values) => values.indexOf(value) === index);
+  return [
+    ...aliasCandidates,
+    ...[...collectStaticPartitionValues(field, sql)].map(quoteSqlLiteral),
+  ].filter((value, index, values) => values.indexOf(value) === index);
 }
 
 function directQueryProjection(

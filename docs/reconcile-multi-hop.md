@@ -25,6 +25,20 @@ npm run reconcile-multi-hop -- \
   [--output <multi-hop.json>]
 ```
 
+多个根任务可以使用批量入口，避免每个根任务重复扫描整套 Task/Table Pack：
+
+```text
+npm run reconcile-multi-hop:batch -- \
+  --task-ids <task-id-1,task-id-2,...> \
+  --data-root <input-pack-root> \
+  --producer-index <producer-index.json> \
+  --output-dir <result-dir> \
+  [--root-one-hop-dir <one-hop-result-dir>] \
+  [--max-depth 3] [--max-tasks 100] [--max-edges 500]
+```
+
+`--root-one-hop-dir` 中可放置 `reconcile-<taskId>.json` 或 `<taskId>.json`。批量入口只建立一次 evidence repository，开始时校验并在结束时复核 `inputFingerprint`，然后复用给所有根任务；批次运行期间不要修改 `tasks/` 或 `tables/`。
+
 启动时会校验 producer index 的结构、`contentHash` 和当前 Input Pack 的 `inputFingerprint`。显式索引失效或陈旧时直接失败，不回退到实时补证。`PARTIAL` 索引可以消费其中 confirmed edge，但结果标为 `PARTIAL_EVIDENCE`。
 
 ## 遍历与预算

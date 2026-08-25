@@ -286,6 +286,37 @@ describe("task partition map fallback", () => {
     ).toEqual({ busi_date: "${YYYY-MM-DD}" });
   });
 
+  it("uses a unique same-query filter value for an implicit partition output", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["src_tbl", "busi_date"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "SELECT id, src_tbl, busi_date FROM source_table WHERE src_tbl = 'ODATA_N_TIT.D_V_REPORT_SWAP_TP_A1016_LS' AND busi_date = '${yyyy-MM-dd}'",
+        },
+      }),
+    ).toEqual({
+      src_tbl: "ODATA_N_TIT.D_V_REPORT_SWAP_TP_A1016_LS",
+      busi_date: "${YYYY-MM-DD}",
+    });
+  });
+
+  it("keeps multiple implicit alias branches when only one branch uses AS", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: target,
+        tables: [table(["system_name"])],
+        sparkIndexMode: true,
+        sql: {
+          query:
+            "SELECT id, system_name FROM (SELECT id, '股衍' AS system_name FROM source_a UNION ALL SELECT id, '固收' system_name FROM source_b) s",
+        },
+      }),
+    ).toEqual([{ system_name: "股衍" }, { system_name: "固收" }]);
+  });
+
   it("defaults busi_date for an implicit final target write", () => {
     expect(
       buildCompactTaskPartition({

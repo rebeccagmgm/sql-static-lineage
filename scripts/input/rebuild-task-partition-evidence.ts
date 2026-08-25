@@ -25,7 +25,7 @@ import {
   type TaskDocument,
   type TableEvidence,
 } from "./input-pack.ts";
-import { extractSqlWrites } from "../reconcile/sql-write-evidence.ts";
+import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
