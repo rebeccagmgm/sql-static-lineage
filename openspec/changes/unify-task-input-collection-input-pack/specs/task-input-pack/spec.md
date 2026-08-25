@@ -52,6 +52,11 @@
 - **WHEN** 同一任务的 SQL 分支分别完整写入 `grp_id=01` 和 `grp_id=02`，且目标表分区字段为 `grp_id,busi_date`
 - **THEN** `task.json.partition` MUST 保存为两个紧凑键值对象组成的数组，并保持每个 `grp_id` 与其余分区字段的配对关系
 
+#### Scenario: 时间粒度分区模板
+
+- **WHEN** `sparkIndex` 目标表的分区字段为 `busi_mon`，SQL 只能证明该字段来自运行时月份参数或其 SQL 可证明的相对月份表达式
+- **THEN** 系统 MUST 按 SQL 形态保存 `${YYYYMM}`、`${YYYY-MM}` 或带相对月份偏移的模板；不能因为字段不是 `busi_date` 就直接省略，同时不能为非时间分区字段生成默认值
+
 #### Scenario: 读取条件不是目标分区
 
 - **WHEN** SQL 只包含 `WHERE busi_date='${yyyy-MM-dd}'`，或者平台字段表示源 Hive 读取分区

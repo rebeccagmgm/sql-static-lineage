@@ -155,14 +155,14 @@ export function buildSimpleTaskPartitionMap(
   for (const target of targets) {
     for (const write of target.writes) {
       for (const assignment of write.assignments) {
-        const value = simplePartitionValue(assignment, input.sparkIndexMode === true);
+        const value = simplePartitionValue(
+          assignment,
+          input.sparkIndexMode === true,
+        );
         if (value === undefined) continue;
         const key = partitionAssignmentComparisonKey(assignment);
         const previous = result[assignment.field];
-        if (
-          previous !== undefined &&
-          resultKeys[assignment.field] !== key
-        )
+        if (previous !== undefined && resultKeys[assignment.field] !== key)
           return undefined;
         result[assignment.field] = value;
         resultKeys[assignment.field] = key;
@@ -200,7 +200,7 @@ export function buildCompactTaskPartition(
   )
     return undefined;
   const map = input.sparkIndexMode
-    ? buildSparkIndexPartitionValue(target)
+    ? buildSparkIndexPartitionValue(target, input.sql)
     : target.status === "COMPLETE"
       ? buildSimpleTaskPartitionMap(input)
       : undefined;
@@ -215,20 +215,28 @@ export function buildCompactTaskPartition(
 
 function buildSparkIndexPartitionValue(
   target: TaskPartitionTarget,
+  sqlBySlot: Partial<Record<SqlSlot, string>>,
 ): TaskPartitionValue | undefined {
   const maps: TaskPartitionMap[] = [];
   for (const write of target.writes) {
     const variants = write.assignmentVariants ?? [write.assignments];
     const writeMaps = variants
-      .map((assignments) => partitionMapFromAssignments(assignments, target.fields))
+      .map((assignments) =>
+        partitionMapFromAssignments(
+          assignments,
+          target.fields,
+          write.sqlSlot === null ? undefined : sqlBySlot[write.sqlSlot],
+        ),
+      )
       .filter((map): map is TaskPartitionMap => map !== undefined);
     if (writeMaps.length !== variants.length) return undefined;
     maps.push(...writeMaps);
   }
   const uniqueMaps = maps.filter(
     (map, index, values) =>
-      values.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(map)) ===
-      index,
+      values.findIndex(
+        (candidate) => JSON.stringify(candidate) === JSON.stringify(map),
+      ) === index,
   );
   if (uniqueMaps.length === 0) return undefined;
   return uniqueMaps.length === 1 ? uniqueMaps[0]! : uniqueMaps;
@@ -237,6 +245,7 @@ function buildSparkIndexPartitionValue(
 function partitionMapFromAssignments(
   assignments: readonly TaskPartitionAssignment[],
   fields: readonly string[],
+  sql: string | undefined,
 ): TaskPartitionMap | undefined {
   const result: Record<string, string> = {};
   for (const assignment of assignments) {
@@ -246,13 +255,119 @@ function partitionMapFromAssignments(
     if (previous !== undefined && previous !== value) return undefined;
     result[assignment.field] = value;
   }
-  const dateField = fields.find(
-    (field) => field.toLowerCase() === "busi_date",
-  );
-  if (dateField !== undefined) result[dateField] = "${YYYY-MM-DD}";
+  for (const field of fields) {
+    const defaultValue = sparkIndexTemporalPartitionDefault(field, sql);
+    if (defaultValue !== undefined) result[field] = defaultValue;
+  }
   return fields.some((field) => result[field] === undefined)
     ? undefined
     : result;
+}
+
+function sparkIndexTemporalPartitionDefault(
+  field: string,
+  sql: string | undefined,
+): string | undefined {
+  const normalizedField = field.toLowerCase();
+  const content = sql ?? "";
+  if (normalizedField === "busi_date") return "${YYYY-MM-DD}";
+  if (normalizedField === "busi_year") {
+    return hasTemporalToken(content, "year") || hasTemporalSubstring(content, 4)
+      ? "${YYYY}"
+      : undefined;
+  }
+  if (normalizedField === "mon_no") {
+    return hasTemporalToken(content, "month") ||
+      hasTemporalSubstring(content, 6)
+      ? "${YYYYMM}"
+      : undefined;
+  }
+  if (normalizedField !== "busi_mon") return undefined;
+
+  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const aliasExpressions = [
+    ...content.matchAll(
+      new RegExp(
+        "([^;\\n]+?)\\s+AS\\s+[\"'`]?" +
+          escapedField +
+          "[\"'`]?(?![A-Za-z0-9_$])",
+        "giu",
+      ),
+    ),
+  ].map((match) => match[1] ?? "");
+  const aliasTemplates = aliasExpressions
+    .map(temporalTemplateFromExpression)
+    .filter((value): value is string => value !== undefined);
+  if (aliasTemplates.length > 0) return mostCommonTemplate(aliasTemplates);
+
+  const fieldExpressions = [
+    ...content.matchAll(new RegExp(`\\b${field}\\s*=\\s*([^;\\n]+)`, "giu")),
+  ].map((match) => match[1] ?? "");
+  const fieldTemplates = fieldExpressions
+    .map(temporalTemplateFromExpression)
+    .filter((value): value is string => value !== undefined);
+  if (fieldTemplates.length > 0) return mostCommonTemplate(fieldTemplates);
+
+  const token = content.match(
+    /\$\{(yyyy(?:-MM)?|YYYY(?:-MM)?)(,[-+]?\d+[mMdDyY])?\}/u,
+  );
+  if (token?.[1] !== undefined) {
+    const format = token[1].toLowerCase() === "yyyy-mm" ? "YYYY-MM" : "YYYYMM";
+    return `\${${format}${token[2] ?? ""}}`;
+  }
+  return "${YYYYMM}";
+}
+
+function hasTemporalToken(content: string, kind: "year" | "month"): boolean {
+  return kind === "year"
+    ? /\$\{yyyy(?:-MM-dd|MMdd|MM)?\}/iu.test(content)
+    : /\$\{yyyy(?:MMdd|MM|-MM)?\}/iu.test(content);
+}
+
+function hasTemporalSubstring(content: string, length: 4 | 6): boolean {
+  return new RegExp(
+    `(?:substr|substring)\\s*\\([^,]+,\\s*1\\s*,\\s*${length}\\s*\\)`,
+    "iu",
+  ).test(content);
+}
+
+function temporalTemplateFromExpression(
+  expression: string,
+): string | undefined {
+  const token = expression.match(
+    /\$\{(yyyy(?:-MM)?|YYYY(?:-MM)?)(,[-+]?\d+[mMdDyY])?\}/u,
+  );
+  if (token?.[1] !== undefined) {
+    const format = token[1].toLowerCase() === "yyyy-mm" ? "YYYY-MM" : "YYYYMM";
+    return `\${${format}${token[2] ?? ""}}`;
+  }
+  const offset = expression.match(/add_months\s*\([^,]+,\s*(-?\d+)\s*\)/iu);
+  if (offset?.[1] !== undefined) {
+    const monthOffset = `${Number(offset[1]) >= 0 ? "+" : ""}${Number(offset[1])}M`;
+    return /1\s*,\s*7\s*\)/u.test(expression)
+      ? `\${YYYY-MM,${monthOffset}}`
+      : `\${YYYYMM,${monthOffset}}`;
+  }
+  if (
+    /regexp_replace\s*\(/iu.test(expression) &&
+    /1\s*,\s*6\s*\)/u.test(expression)
+  )
+    return "${YYYYMM}";
+  if (/1\s*,\s*7\s*\)/u.test(expression)) return "${YYYY-MM}";
+  if (/1\s*,\s*6\s*\)/u.test(expression)) return "${YYYYMM}";
+  return undefined;
+}
+
+function mostCommonTemplate(values: readonly string[]): string {
+  return values
+    .map((value, index) => ({
+      value,
+      count: values.filter((candidate) => candidate === value).length,
+      index,
+    }))
+    .sort(
+      (left, right) => right.count - left.count || left.index - right.index,
+    )[0]!.value;
 }
 
 function simplePartitionValue(
@@ -261,7 +376,7 @@ function simplePartitionValue(
 ): string | undefined {
   if (assignment.status === "CONFIRMED" && assignment.value !== null)
     return sparkIndexMode
-      ? canonicalizePartitionValue(assignment.value) ?? undefined
+      ? (canonicalizePartitionValue(assignment.value) ?? undefined)
       : assignment.value;
   if (
     assignment.status === "RUNTIME_EXPRESSION" &&
@@ -279,10 +394,7 @@ function simplePartitionValue(
 
 function isSerializablePartitionExpression(expression: string): boolean {
   const trimmed = expression.trim();
-  return (
-    trimmed !== "" &&
-    !/^[A-Za-z_][A-Za-z0-9_$]*$/u.test(trimmed)
-  );
+  return trimmed !== "" && !/^[A-Za-z_][A-Za-z0-9_$]*$/u.test(trimmed);
 }
 
 function partitionAssignmentComparisonKey(
@@ -998,10 +1110,7 @@ function directQueryProjection(
     const branchKeys = fieldAssignments.map((assignment) =>
       partitionAssignmentComparisonKey(assignment),
     );
-    if (
-      !allowMultiplePartitionInstances &&
-      new Set(branchKeys).size > 1
-    )
+    if (!allowMultiplePartitionInstances && new Set(branchKeys).size > 1)
       return unknownAssignment(
         field,
         fieldAssignments.flatMap((assignment) => assignment.evidence),
@@ -1203,9 +1312,7 @@ function buildSqlWrite(
   const assignments = buildAssignments(dynamic.assignments);
   const assignmentVariants = dynamic.variants?.map(buildAssignments);
   const statuses = (
-    assignmentVariants === undefined
-      ? assignments
-      : assignmentVariants.flat()
+    assignmentVariants === undefined ? assignments : assignmentVariants.flat()
   ).map((item) => item.status);
   const status: TaskPartitionStatus = statuses.includes("CONFLICT")
     ? "CONFLICT"
@@ -1228,9 +1335,7 @@ function buildSqlWrite(
     mode: write.partitionMode,
     status,
     assignments,
-    ...(assignmentVariants === undefined
-      ? {}
-      : { assignmentVariants }),
+    ...(assignmentVariants === undefined ? {} : { assignmentVariants }),
     evidence: writeEvidence,
     reasonCodes: [...new Set(reasonCodes)],
   };
@@ -1320,10 +1425,12 @@ function buildDirectWrite(
   const queryAssignments =
     querySql === undefined || !allowImplicitQueryOutput
       ? undefined
-      : directQueryProjection(fields, querySql, [
-          ...writeEvidence,
-          ...queryEvidence,
-        ], sparkIndexMode);
+      : directQueryProjection(
+          fields,
+          querySql,
+          [...writeEvidence, ...queryEvidence],
+          sparkIndexMode,
+        );
   const addEvidence = addPartition?.evidence ?? [];
   const unknownAssignmentEvidence = [
     ...(table === undefined ? [] : [tableRef(table)]),
@@ -1385,8 +1492,8 @@ function buildDirectWrite(
       );
     });
   const assignments = buildAssignments(queryAssignments?.assignments);
-  const assignmentVariants = queryAssignments?.variants?.map(
-    (variant) => buildAssignments(variant),
+  const assignmentVariants = queryAssignments?.variants?.map((variant) =>
+    buildAssignments(variant),
   );
   const statusAssignments =
     assignmentVariants === undefined ? assignments : assignmentVariants.flat();
@@ -1411,9 +1518,7 @@ function buildDirectWrite(
           : "UNKNOWN",
     status,
     assignments,
-    ...(assignmentVariants === undefined
-      ? {}
-      : { assignmentVariants }),
+    ...(assignmentVariants === undefined ? {} : { assignmentVariants }),
     evidence: [...writeEvidence, ...queryEvidence, ...addEvidence],
     reasonCodes: [
       ...(status === "CONFLICT" ? ["SQL_SCHEDULER_PARTITION_CONFLICT"] : []),
