@@ -25,12 +25,14 @@ import {
   compareTableProducerInputManifests,
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
-  lookupConfirmedProducers,
-  lookupNonConfirmedRelations,
   validateTableProducerIndex,
   writeTableProducerIndex,
   updateTableProducerIndex,
 } from "../scripts/reconcile/producer/producer-index.ts";
+import {
+  lookupConfirmedProducers,
+  lookupNonConfirmedRelations,
+} from "../scripts/query/producer-index-query.ts";
 
 const frozen86840It = existsSync(
   join(
