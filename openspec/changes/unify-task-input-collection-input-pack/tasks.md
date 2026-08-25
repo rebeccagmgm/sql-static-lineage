@@ -10,7 +10,8 @@
 - [x] 2.1 从统一 OpenCLI 任务证据生成 `tasks/<task-category>/<taskId>/task.json`，所有 task type 使用统一字段契约；只映射平台直接字段和受控任务类型分类并记录实际证据提供方，不根据 SQL 补造平台配置；SzData SQL 明确 unavailable 时，按槽位尝试现有只读 Horae detail 作为补充来源。
 - [x] 2.2 将实际存在的 create/query/prepare/truncate/finish 槽位按原名称和原文写入 `sql/`，逐文件计算 SHA-256；不存在的槽位不创建文件。
 - [x] 2.3 保留平台原始 writeMode，并仅在平台明确返回目标写入分区时生成 partition；验证 WHERE 条件和源 Hive 读取分区不会进入目标 partition。
-- [x] 2.4 使用 staging、Schema/Hash 校验和原子替换更新 Task；Hash 未变不更新，失败时保留上一份有效 Task。
+- [x] 2.4 将目标 partition 统一为紧凑三态：唯一完整值写键值对象、确认无分区写 `null`、证据不足省略；内部证据树不得落盘。
+- [x] 2.5 使用 staging、Schema/Hash 校验和原子替换更新 Task；Hash 未变不更新，失败时保留上一份有效 Task。
 
 ## 3. 实现 Table 最新状态落盘
 

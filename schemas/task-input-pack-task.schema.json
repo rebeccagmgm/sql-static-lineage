@@ -21,6 +21,30 @@
         "qualifiedName": { "type": ["string", "null"] },
         "dataSource": { "type": ["string", "null"] }
       }
+    },
+    "codeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidenceProvider"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "codePathStatus": { "type": "string", "minLength": 1 },
+        "codePath": { "type": "string", "minLength": 1 },
+        "scriptParams": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "repositoryPath": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "evidenceProvider": { "type": "string", "minLength": 1 }
+      }
+    },
+    "schedulerEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceProvider"],
+      "properties": {
+        "hivePartition": { "type": "string", "minLength": 1 },
+        "evidenceProvider": { "type": "string", "minLength": 1 }
+      }
     }
   },
   "properties": {
@@ -70,9 +94,21 @@
           "additionalProperties": { "type": "string", "minLength": 1 },
           "propertyNames": { "pattern": "^[^=\\s]+$" },
           "minProperties": 1
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 },
+            "propertyNames": { "pattern": "^[^=\\s]+$" },
+            "minProperties": 1
+          }
         }
       ]
     },
+    "schedulerEvidence": { "$ref": "#/$defs/schedulerEvidence" },
+    "codeEvidence": { "$ref": "#/$defs/codeEvidence" },
     "sqlFiles": {
       "type": "array",
       "items": {

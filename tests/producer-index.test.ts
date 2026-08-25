@@ -300,6 +300,39 @@ describe("table producer index", () => {
     });
   });
 
+  it("binds a simple direct-target partition map to the producer", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.partitioned");
+    writeTask(root, "implicit-partition", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: { busi_date: "${YYYY-MM-DD}" },
+    });
+
+    const index = buildTableProducerIndex(root);
+    expect(index.confirmedProducerEdges).toEqual([
+      expect.objectContaining({
+        taskId: "implicit-partition",
+        writes: [
+          expect.objectContaining({
+            partition: [
+              {
+                field: "busi_date",
+                expression: "${YYYY-MM-DD}",
+                observedValue: null,
+                valueStatus: "RUNTIME_EXPRESSION",
+              },
+            ],
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it("uses a Task Pack target to qualify an unqualified SQL write", () => {
     const root = dataRoot();
     writeTable(root, "pdata_n.acct_fundacct_base_info_s");
@@ -533,7 +566,8 @@ describe("table producer index", () => {
     }
     legacy.schemaVersion = "1.0.0";
     delete legacy.intermediateMaterializations;
-    delete (legacy.counts as Record<string, unknown>).intermediateMaterializations;
+    delete (legacy.counts as Record<string, unknown>)
+      .intermediateMaterializations;
     legacy.contentHash = canonicalHash(legacy as unknown as JsonValue, [
       "generatedAt",
       "contentHash",
@@ -1022,43 +1056,46 @@ describe("table producer index", () => {
     expect(loadTableProducerIndex(output).buildStatus).toBe("PARTIAL");
   });
 
-  frozen86840It("indexes the 22 frozen local 86840 producers without using supplemental responses", () => {
-    const fixtureRoot = join(
-      process.cwd(),
-      "tests",
-      "fixtures",
-      "reconcile-one-hop",
-    );
-    const evidence = JSON.parse(
-      readFileSync(join(fixtureRoot, "86840-evidence.json"), "utf8"),
-    ) as {
-      horaeRows: { task_id: string }[];
-      supplementalResponses: Record<string, unknown>;
-    };
-    const supplementalTaskIds = new Set(
-      Object.keys(evidence.supplementalResponses),
-    );
-    const expectedLocalTaskIds = evidence.horaeRows
-      .map((row) => row.task_id)
-      .filter((taskId) => !supplementalTaskIds.has(taskId))
-      .sort();
+  frozen86840It(
+    "indexes the 22 frozen local 86840 producers without using supplemental responses",
+    () => {
+      const fixtureRoot = join(
+        process.cwd(),
+        "tests",
+        "fixtures",
+        "reconcile-one-hop",
+      );
+      const evidence = JSON.parse(
+        readFileSync(join(fixtureRoot, "86840-evidence.json"), "utf8"),
+      ) as {
+        horaeRows: { task_id: string }[];
+        supplementalResponses: Record<string, unknown>;
+      };
+      const supplementalTaskIds = new Set(
+        Object.keys(evidence.supplementalResponses),
+      );
+      const expectedLocalTaskIds = evidence.horaeRows
+        .map((row) => row.task_id)
+        .filter((taskId) => !supplementalTaskIds.has(taskId))
+        .sort();
 
-    const index = buildTableProducerIndex(
-      materializeFrozenInputPack(join(fixtureRoot, "86840-input-pack")),
-      { now: () => "2026-08-23T04:00:00.000Z" },
-    );
+      const index = buildTableProducerIndex(
+        materializeFrozenInputPack(join(fixtureRoot, "86840-input-pack")),
+        { now: () => "2026-08-23T04:00:00.000Z" },
+      );
 
-    expect(index.buildStatus, JSON.stringify(index.issues, null, 2)).toBe(
-      "SUCCESS",
-    );
-    expect(
-      index.confirmedProducerEdges.map((edge) => edge.taskId).sort(),
-    ).toEqual(expectedLocalTaskIds);
-    expect(index.confirmedProducerEdges).toHaveLength(22);
-    expect(
-      index.confirmedProducerEdges.some((edge) =>
-        supplementalTaskIds.has(edge.taskId),
-      ),
-    ).toBe(false);
-  });
+      expect(index.buildStatus, JSON.stringify(index.issues, null, 2)).toBe(
+        "SUCCESS",
+      );
+      expect(
+        index.confirmedProducerEdges.map((edge) => edge.taskId).sort(),
+      ).toEqual(expectedLocalTaskIds);
+      expect(index.confirmedProducerEdges).toHaveLength(22);
+      expect(
+        index.confirmedProducerEdges.some((edge) =>
+          supplementalTaskIds.has(edge.taskId),
+        ),
+      ).toBe(false);
+    },
+  );
 });

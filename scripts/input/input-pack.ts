@@ -30,6 +30,86 @@ export interface SqlSlotEvidence {
   readonly evidenceProvider?: string;
 }
 
+/**
+ * Evidence returned by task-source when the configured original script is
+ * fetched. Script parameters describe scheduler/code configuration; they are
+ * deliberately not a partition map or a rendered runtime invocation.
+ */
+export interface TaskCodeEvidence {
+  readonly status: string;
+  readonly codePathStatus?: string;
+  readonly codePath?: string;
+  readonly scriptParams?: string;
+  readonly repository?: string;
+  readonly repositoryPath?: string;
+  readonly commit?: string;
+  readonly evidenceProvider: string;
+}
+
+export interface TaskSchedulerEvidence {
+  readonly hivePartition?: string;
+  readonly evidenceProvider: string;
+}
+
+export type TaskPartitionMap = Readonly<Record<string, string>>;
+export type TaskPartitionValue = TaskPartitionMap | readonly TaskPartitionMap[];
+
+export type TaskPartitionStatus =
+  "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
+
+export type TaskPartitionAssignmentStatus =
+  "CONFIRMED" | "RUNTIME_EXPRESSION" | "UNKNOWN" | "CONFLICT";
+
+export interface TaskPartitionEvidenceRef {
+  readonly source:
+    "TABLE_PACK" | "INPUT_PACK_SQL" | "SCHEDULER_CONFIG" | "CODE_EVIDENCE";
+  readonly locator: string;
+  readonly detail?: string;
+}
+
+export interface TaskPartitionAssignment {
+  readonly field: string;
+  readonly expression: string | null;
+  readonly value: string | null;
+  readonly status: TaskPartitionAssignmentStatus;
+  readonly mappingMethod:
+    | "STATIC_SQL_ASSIGNMENT"
+    | "DYNAMIC_PARTITION_OUTPUT_ORDINAL"
+    | "SCHEDULER_EXPLICIT_FIELD_VALUE"
+    | "UNKNOWN"
+    | "CONFLICT";
+  readonly evidence: readonly TaskPartitionEvidenceRef[];
+  readonly reason?: string;
+}
+
+export interface TaskPartitionWrite {
+  readonly target: string;
+  readonly sqlSlot: SqlSlot | null;
+  readonly statementOrdinal: number | null;
+  readonly mode: "STATIC" | "DYNAMIC" | "MIXED" | "NONE" | "UNKNOWN";
+  readonly status: TaskPartitionStatus;
+  readonly assignments: readonly TaskPartitionAssignment[];
+  /** Internal-only complete assignment sets for multiple SQL write branches. */
+  readonly assignmentVariants?: readonly (readonly TaskPartitionAssignment[])[];
+  readonly evidence: readonly TaskPartitionEvidenceRef[];
+  readonly reasonCodes: readonly string[];
+}
+
+export interface TaskPartitionTarget {
+  readonly target: string;
+  readonly tableStatus: "PARTITIONED" | "NOT_PARTITIONED" | "UNKNOWN";
+  readonly fields: readonly string[];
+  readonly status: TaskPartitionStatus;
+  readonly writes: readonly TaskPartitionWrite[];
+  readonly reasonCodes: readonly string[];
+}
+
+export interface TaskPartitionEvidence {
+  readonly status: TaskPartitionStatus;
+  readonly targets: readonly TaskPartitionTarget[];
+  readonly reasonCodes: readonly string[];
+}
+
 export interface TaskEvidence {
   readonly taskId: string;
   readonly taskCategory?: string | null;
@@ -51,7 +131,10 @@ export interface TaskEvidence {
     | "SQL_EXACT_TABLE_TARGET"
     | null;
   readonly writeMode?: string | null;
-  readonly partition?: Readonly<Record<string, string>> | null;
+  /** Confirmed target partition values; arrays preserve multiple partition instances. */
+  readonly partition?: TaskPartitionValue | null;
+  readonly schedulerEvidence?: TaskSchedulerEvidence;
+  readonly codeEvidence?: TaskCodeEvidence;
   readonly sql?: Partial<Record<SqlSlot, SqlSlotEvidence | string | null>>;
   readonly evidenceProvider?: string;
   readonly collectedAt?: string;
@@ -161,6 +244,25 @@ function requireOptionalNonEmpty(
   }
 }
 
+function validateTaskPartitionValue(
+  value: unknown,
+  field = "task.partition",
+): asserts value is TaskPartitionValue {
+  const maps = Array.isArray(value) ? value : [value];
+  if (maps.length === 0) fail(`${field} must not be an empty array`);
+  for (const [index, map] of maps.entries()) {
+    const mapField = Array.isArray(value) ? `${field}[${index}]` : field;
+    if (!isObject(map) || Object.keys(map).length === 0)
+      fail(`${mapField} must be a non-empty object`);
+    for (const [key, partitionValue] of Object.entries(map)) {
+      requireNonEmpty(key, "partition key");
+      if (typeof partitionValue !== "string")
+        fail(`${mapField}.${key} must be a string`);
+      requireNonEmpty(partitionValue, `${mapField}.${key}`);
+    }
+  }
+}
+
 function safeSegment(value: string, field: string): string {
   requireNonEmpty(value, field);
   if (
@@ -236,6 +338,310 @@ function validateNoPlaceholders(value: unknown, path: string): void {
       validateNoPlaceholders(item, `${path}.${key}`),
     );
   }
+}
+
+export function validateTaskCodeEvidence(
+  value: unknown,
+  field = "task.codeEvidence",
+): asserts value is TaskCodeEvidence {
+  if (!isObject(value)) fail(`${field} must be an object`);
+  const allowed = new Set([
+    "status",
+    "codePathStatus",
+    "codePath",
+    "scriptParams",
+    "repository",
+    "repositoryPath",
+    "commit",
+    "evidenceProvider",
+  ]);
+  for (const key of Object.keys(value))
+    if (!allowed.has(key)) fail(`${field}.${key} is not allowed`);
+  if (typeof value.status !== "string")
+    fail(`${field}.status must be a string`);
+  requireNonEmpty(value.status, `${field}.status`);
+  for (const key of [
+    "codePathStatus",
+    "codePath",
+    "scriptParams",
+    "repository",
+    "repositoryPath",
+    "commit",
+    "evidenceProvider",
+  ])
+    requireOptionalNonEmpty(
+      value[key] as string | null | undefined,
+      `${field}.${key}`,
+    );
+  if (value.evidenceProvider === undefined || value.evidenceProvider === null)
+    fail(`${field}.evidenceProvider is required`);
+}
+
+function validatePartitionEvidenceRef(
+  value: unknown,
+  field: string,
+): asserts value is TaskPartitionEvidenceRef {
+  if (!isObject(value)) fail(`${field} must be an object`);
+  const allowed = new Set(["source", "locator", "detail"]);
+  for (const key of Object.keys(value))
+    if (!allowed.has(key)) fail(`${field}.${key} is not allowed`);
+  if (
+    ![
+      "TABLE_PACK",
+      "INPUT_PACK_SQL",
+      "SCHEDULER_CONFIG",
+      "CODE_EVIDENCE",
+    ].includes(String(value.source))
+  )
+    fail(`${field}.source is invalid`);
+  requireNonEmpty(String(value.locator), `${field}.locator`);
+  requireOptionalNonEmpty(
+    value.detail as string | undefined,
+    `${field}.detail`,
+  );
+}
+
+function validateTaskPartitionEvidence(
+  value: unknown,
+  field = "task.partition",
+): asserts value is TaskPartitionEvidence {
+  if (!isObject(value)) fail(`${field} must be an object`);
+  const allowed = new Set(["status", "targets", "reasonCodes"]);
+  for (const key of Object.keys(value))
+    if (!allowed.has(key)) fail(`${field}.${key} is not allowed`);
+  const statuses: readonly TaskPartitionStatus[] = [
+    "NOT_PARTITIONED",
+    "COMPLETE",
+    "INCOMPLETE",
+    "UNKNOWN",
+    "CONFLICT",
+  ];
+  if (!statuses.includes(value.status as TaskPartitionStatus))
+    fail(`${field}.status is invalid`);
+  if (!Array.isArray(value.targets)) fail(`${field}.targets must be an array`);
+  if (!Array.isArray(value.reasonCodes) || value.reasonCodes.length === 0)
+    fail(`${field}.reasonCodes must be a non-empty array`);
+  value.reasonCodes.forEach((reason, index) =>
+    requireNonEmpty(String(reason), `${field}.reasonCodes[${index}]`),
+  );
+  (value.targets as unknown[]).forEach((rawTarget, targetIndex) => {
+    const targetField = `${field}.targets[${targetIndex}]`;
+    if (!isObject(rawTarget)) fail(`${targetField} must be an object`);
+    const targetAllowed = new Set([
+      "target",
+      "tableStatus",
+      "fields",
+      "status",
+      "writes",
+      "reasonCodes",
+    ]);
+    for (const key of Object.keys(rawTarget))
+      if (!targetAllowed.has(key)) fail(`${targetField}.${key} is not allowed`);
+    requireNonEmpty(String(rawTarget.target), `${targetField}.target`);
+    if (
+      rawTarget.tableStatus !== "PARTITIONED" &&
+      rawTarget.tableStatus !== "NOT_PARTITIONED" &&
+      rawTarget.tableStatus !== "UNKNOWN"
+    )
+      fail(`${targetField}.tableStatus is invalid`);
+    if (!Array.isArray(rawTarget.fields))
+      fail(`${targetField}.fields must be an array`);
+    rawTarget.fields.forEach((fieldName, fieldIndex) =>
+      requireNonEmpty(
+        String(fieldName),
+        `${targetField}.fields[${fieldIndex}]`,
+      ),
+    );
+    if (!statuses.includes(rawTarget.status as TaskPartitionStatus))
+      fail(`${targetField}.status is invalid`);
+    if (!Array.isArray(rawTarget.writes))
+      fail(`${targetField}.writes must be an array`);
+    if (
+      !Array.isArray(rawTarget.reasonCodes) ||
+      rawTarget.reasonCodes.length === 0
+    )
+      fail(`${targetField}.reasonCodes must be a non-empty array`);
+    rawTarget.reasonCodes.forEach((reason, reasonIndex) =>
+      requireNonEmpty(
+        String(reason),
+        `${targetField}.reasonCodes[${reasonIndex}]`,
+      ),
+    );
+    (rawTarget.writes as unknown[]).forEach((rawWrite, writeIndex) => {
+      const writeField = `${targetField}.writes[${writeIndex}]`;
+      if (!isObject(rawWrite)) fail(`${writeField} must be an object`);
+      const writeAllowed = new Set([
+        "target",
+        "sqlSlot",
+        "statementOrdinal",
+        "mode",
+        "status",
+        "assignments",
+        "evidence",
+        "reasonCodes",
+      ]);
+      for (const key of Object.keys(rawWrite))
+        if (!writeAllowed.has(key)) fail(`${writeField}.${key} is not allowed`);
+      requireNonEmpty(String(rawWrite.target), `${writeField}.target`);
+      if (
+        rawWrite.sqlSlot !== null &&
+        !(SQL_SLOTS as readonly unknown[]).includes(rawWrite.sqlSlot)
+      )
+        fail(`${writeField}.sqlSlot is invalid`);
+      if (
+        rawWrite.statementOrdinal !== null &&
+        (!Number.isInteger(rawWrite.statementOrdinal) ||
+          Number(rawWrite.statementOrdinal) < 1)
+      )
+        fail(`${writeField}.statementOrdinal is invalid`);
+      if (
+        !["STATIC", "DYNAMIC", "MIXED", "NONE", "UNKNOWN"].includes(
+          String(rawWrite.mode),
+        )
+      )
+        fail(`${writeField}.mode is invalid`);
+      if (!statuses.includes(rawWrite.status as TaskPartitionStatus))
+        fail(`${writeField}.status is invalid`);
+      if (!Array.isArray(rawWrite.assignments))
+        fail(`${writeField}.assignments must be an array`);
+      if (!Array.isArray(rawWrite.evidence) || rawWrite.evidence.length === 0)
+        fail(`${writeField}.evidence must be a non-empty array`);
+      rawWrite.evidence.forEach((item, evidenceIndex) =>
+        validatePartitionEvidenceRef(
+          item,
+          `${writeField}.evidence[${evidenceIndex}]`,
+        ),
+      );
+      if (
+        !Array.isArray(rawWrite.reasonCodes) ||
+        rawWrite.reasonCodes.length === 0
+      )
+        fail(`${writeField}.reasonCodes must be a non-empty array`);
+      rawWrite.reasonCodes.forEach((reason, reasonIndex) =>
+        requireNonEmpty(
+          String(reason),
+          `${writeField}.reasonCodes[${reasonIndex}]`,
+        ),
+      );
+      (rawWrite.assignments as unknown[]).forEach(
+        (rawAssignment, assignmentIndex) => {
+          const assignmentField = `${writeField}.assignments[${assignmentIndex}]`;
+          if (!isObject(rawAssignment))
+            fail(`${assignmentField} must be an object`);
+          const assignmentAllowed = new Set([
+            "field",
+            "expression",
+            "value",
+            "status",
+            "mappingMethod",
+            "evidence",
+            "reason",
+          ]);
+          for (const key of Object.keys(rawAssignment))
+            if (!assignmentAllowed.has(key))
+              fail(`${assignmentField}.${key} is not allowed`);
+          requireNonEmpty(
+            String(rawAssignment.field),
+            `${assignmentField}.field`,
+          );
+          if (
+            rawAssignment.expression !== null &&
+            typeof rawAssignment.expression !== "string"
+          )
+            fail(`${assignmentField}.expression must be a string or null`);
+          if (
+            rawAssignment.value !== null &&
+            typeof rawAssignment.value !== "string"
+          )
+            fail(`${assignmentField}.value must be a string or null`);
+          if (
+            ![
+              "CONFIRMED",
+              "RUNTIME_EXPRESSION",
+              "UNKNOWN",
+              "CONFLICT",
+            ].includes(String(rawAssignment.status))
+          )
+            fail(`${assignmentField}.status is invalid`);
+          if (
+            ![
+              "STATIC_SQL_ASSIGNMENT",
+              "DYNAMIC_PARTITION_OUTPUT_ORDINAL",
+              "SCHEDULER_EXPLICIT_FIELD_VALUE",
+              "UNKNOWN",
+              "CONFLICT",
+            ].includes(String(rawAssignment.mappingMethod))
+          )
+            fail(`${assignmentField}.mappingMethod is invalid`);
+          if (
+            !Array.isArray(rawAssignment.evidence) ||
+            rawAssignment.evidence.length === 0
+          )
+            fail(`${assignmentField}.evidence must be a non-empty array`);
+          if (
+            rawAssignment.status === "CONFIRMED" &&
+            (typeof rawAssignment.expression !== "string" ||
+              typeof rawAssignment.value !== "string")
+          )
+            fail(`${assignmentField} CONFIRMED requires expression and value`);
+          if (
+            rawAssignment.status === "RUNTIME_EXPRESSION" &&
+            (typeof rawAssignment.expression !== "string" ||
+              rawAssignment.value !== null)
+          )
+            fail(
+              `${assignmentField} RUNTIME_EXPRESSION requires expression and null value`,
+            );
+          if (
+            (rawAssignment.status === "UNKNOWN" ||
+              rawAssignment.status === "CONFLICT") &&
+            rawAssignment.value !== null
+          )
+            fail(
+              `${assignmentField} ${rawAssignment.status} requires null value`,
+            );
+          rawAssignment.evidence.forEach((item, evidenceIndex) =>
+            validatePartitionEvidenceRef(
+              item,
+              `${assignmentField}.evidence[${evidenceIndex}]`,
+            ),
+          );
+          requireOptionalNonEmpty(
+            rawAssignment.reason as string | undefined,
+            `${assignmentField}.reason`,
+          );
+        },
+      );
+    });
+  });
+}
+
+function validateTaskSchedulerEvidence(
+  value: unknown,
+): asserts value is TaskSchedulerEvidence {
+  if (!isObject(value)) fail("task.schedulerEvidence must be an object");
+  const allowed = new Set(["hivePartition", "evidenceProvider"]);
+  for (const key of Object.keys(value))
+    if (!allowed.has(key)) fail(`task.schedulerEvidence.${key} is not allowed`);
+  requireOptionalNonEmpty(
+    value.hivePartition as string | undefined,
+    "task.schedulerEvidence.hivePartition",
+  );
+  requireNonEmpty(
+    String(value.evidenceProvider),
+    "task.schedulerEvidence.evidenceProvider",
+  );
+}
+
+function isStructuredTaskPartitionEvidence(
+  value: unknown,
+): value is TaskPartitionEvidence {
+  return (
+    isObject(value) &&
+    typeof value.status === "string" &&
+    Array.isArray(value.targets) &&
+    Array.isArray(value.reasonCodes)
+  );
 }
 
 export function canonicalJson(value: JsonValue): string {
@@ -337,6 +743,8 @@ function buildTaskDocument(evidence: TaskEvidence): {
     targetEvidenceKind: evidence.targetEvidenceKind,
     writeMode: evidence.writeMode,
     partition: evidence.partition,
+    schedulerEvidence: evidence.schedulerEvidence,
+    codeEvidence: evidence.codeEvidence,
     evidenceProvider: evidence.evidenceProvider,
   })) {
     if (value !== undefined) document[key] = value as JsonValue;
@@ -361,16 +769,12 @@ function buildTaskDocument(evidence: TaskEvidence): {
       `task.${field}`,
     );
   if (document.partition !== undefined && document.partition !== null) {
-    if (
-      !isObject(document.partition) ||
-      Object.keys(document.partition).length === 0
-    )
-      fail("task.partition must be null or a non-empty object");
-    for (const [key, value] of Object.entries(document.partition)) {
-      requireNonEmpty(key, "partition key");
-      requireNonEmpty(String(value), `partition.${key}`);
-    }
+    validateTaskPartitionValue(document.partition);
   }
+  if (document.schedulerEvidence !== undefined)
+    validateTaskSchedulerEvidence(document.schedulerEvidence);
+  if (document.codeEvidence !== undefined)
+    validateTaskCodeEvidence(document.codeEvidence);
   const sql: { slot: SqlSlot; content: string; evidenceProvider: string }[] =
     [];
   for (const slot of SQL_SLOTS) {
@@ -427,6 +831,8 @@ export function validateTaskDocument(
     "targetEvidenceKind",
     "writeMode",
     "partition",
+    "schedulerEvidence",
+    "codeEvidence",
     "sqlFiles",
     "evidenceProvider",
     "collectedAt",
@@ -470,13 +876,13 @@ export function validateTaskDocument(
       document[field] as string | null | undefined,
       `task.${field}`,
     );
-  if (
-    document.partition !== undefined &&
-    document.partition !== null &&
-    (!isObject(document.partition) ||
-      Object.keys(document.partition).length === 0)
-  )
-    fail("task.partition must be null or a non-empty object");
+  if (document.partition !== undefined && document.partition !== null) {
+    validateTaskPartitionValue(document.partition);
+  }
+  if (document.schedulerEvidence !== undefined)
+    validateTaskSchedulerEvidence(document.schedulerEvidence);
+  if (document.codeEvidence !== undefined)
+    validateTaskCodeEvidence(document.codeEvidence);
   if (
     document.targetEvidenceKind !== undefined &&
     document.targetEvidenceKind !== null &&

@@ -95,7 +95,7 @@ export const cases: Record<
       source: { platform: "hive", qualifiedName: "dm_otc.source_case" },
       target: { platform: "hive", qualifiedName: "dm_otc.target_case" },
       writeMode: "overwrite",
-      partition: { busi_date: "${busi_date}" },
+      partition: null,
       evidenceProvider: "fixture-horae",
       sql: {
         create: {
@@ -129,7 +129,6 @@ export const cases: Record<
       source: { platform: "hive", qualifiedName: "dm_otc.source_case" },
       target: { platform: "oracle", qualifiedName: "otc_case" },
       writeMode: "truncate",
-      partition: null,
       evidenceProvider: "fixture-horae",
       sql: {
         truncate: {

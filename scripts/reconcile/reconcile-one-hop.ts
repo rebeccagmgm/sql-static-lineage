@@ -35,10 +35,15 @@ import {
 } from "./producer-index.ts";
 import {
   extractSqlWrites,
+  partitionValueStatus,
   partitionAssignments,
   type PartitionAssignment,
   type SqlWrite,
 } from "./sql-write-evidence.ts";
+import {
+  inferTaskDefaultSchema,
+  qualifyBareTableName,
+} from "./task-default-schema.ts";
 
 export {
   extractSqlWrites,
@@ -668,9 +673,56 @@ function inputPackSqlEvidence(file: TaskSqlFile): EvidenceObservation {
   };
 }
 
-function partitionFromDocument(value: unknown): PartitionAssignment[] {
+function partitionFromDocument(
+  value: unknown,
+  target?: string | null,
+  sqlSlot: string | null = null,
+  statementOrdinal: number | null = null,
+): PartitionAssignment[] {
   const record = asRecord(value);
   if (!record) return [];
+  if (Array.isArray(record.targets)) {
+    const targetKey = target === null || target === undefined
+      ? undefined
+      : normalizeTable(target);
+    const targetEvidence = record.targets.find((item) => {
+      const candidate = asRecord(item);
+      return candidate !== null &&
+        (targetKey === undefined ||
+          normalizeTable(String(candidate.target)) === targetKey);
+    });
+    const writes = asRecord(targetEvidence)?.writes;
+    const matchedWrite = Array.isArray(writes)
+      ? writes.find((item) => {
+          const write = asRecord(item);
+          return write !== null &&
+            (sqlSlot === null
+              ? write.sqlSlot === null
+              : write.sqlSlot === sqlSlot) &&
+            (statementOrdinal === null ||
+              write.statementOrdinal === statementOrdinal);
+        })
+      : undefined;
+    const write = asRecord(matchedWrite);
+    if (!write || !Array.isArray(write.assignments)) return [];
+    return write.assignments.flatMap((item): PartitionAssignment[] => {
+      const assignment = asRecord(item);
+      if (!assignment) return [];
+      const status = String(assignment.status);
+      return [{
+        field: String(assignment.field).toLowerCase(),
+        expression:
+          assignment.expression === null
+            ? "UNKNOWN"
+            : String(assignment.expression),
+        valueStatus: partitionValueStatus(status),
+        observedValue:
+          status === "CONFIRMED" && assignment.value !== null
+            ? String(assignment.value)
+            : null,
+      }];
+    });
+  }
   return Object.entries(record)
     .sort(([left], [right]) => compareText(left, right))
     .map(([field, rawValue]) => {
@@ -766,7 +818,10 @@ function writesFromPack(
       confirmedWrites.push({
         table: target.table,
         writeKind: stringValue(pack.document.writeMode),
-        partition: partitionFromDocument(pack.document.partition),
+        partition: partitionFromDocument(
+          pack.document.partition,
+          target.table.qualifiedName,
+        ),
         evidence: [packEvidence, target.evidence],
       });
     else
@@ -790,7 +845,12 @@ function writesFromPack(
       confirmedWrites.push({
         table: resolved.table,
         writeKind: sqlWrite.writeKind,
-        partition: sqlWrite.partition,
+        partition: partitionFromDocument(
+          pack.document.partition,
+          resolved.table.qualifiedName,
+          file.slot,
+          sqlWrite.statementOrdinal,
+        ),
         evidence: [
           inputPackSqlEvidence(file),
           {
@@ -917,14 +977,19 @@ function currentDirectReads(
   if (!pack.document || !pack.taskPath)
     throw new Error("CURRENT_TASK_INPUT_PACK_UNAVAILABLE");
   const dialect = taskSqlDialect(String(pack.document.taskCategory));
+  const defaultSchema = inferTaskDefaultSchema(pack.document);
   const byTable = new Map<string, DirectReadObservation>();
   for (const file of pack.sqlFiles) {
     for (const read of extractSqlDirectReads(file.content, dialect)) {
-      const resolved = resolveCatalogTable(catalog, read.qualifiedName);
-      const key = normalizeTable(read.qualifiedName);
+      const qualifiedName = qualifyBareTableName(
+        read.qualifiedName,
+        defaultSchema,
+      );
+      const resolved = resolveCatalogTable(catalog, qualifiedName);
+      const key = normalizeTable(qualifiedName);
       const observation: DirectReadObservation = {
         table: resolved.table,
-        sql: read,
+        sql: { ...read, qualifiedName },
         evidence: [
           inputPackSqlEvidence(file),
           {
@@ -936,6 +1001,14 @@ function currentDirectReads(
               dialect,
               syntaxDiagnosticCount: read.syntaxDiagnosticCount,
               parserUnknownCount: read.parserUnknownCount,
+              ...(defaultSchema &&
+              qualifiedName !== normalizeTable(read.qualifiedName)
+                ? {
+                    parsedQualifiedName: normalizeTable(read.qualifiedName),
+                    taskDefaultSchema: defaultSchema.schema,
+                    taskDefaultSchemaEvidence: defaultSchema.evidenceSources,
+                  }
+                : {}),
             },
           },
           resolved.evidence,

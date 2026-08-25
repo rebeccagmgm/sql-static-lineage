@@ -1,8 +1,19 @@
 export interface PartitionAssignment {
   readonly field: string;
   readonly expression: string;
-  readonly valueStatus: "OBSERVED_RENDERED_VALUE" | "RUNTIME_EXPRESSION";
+  readonly valueStatus:
+    | "OBSERVED_RENDERED_VALUE"
+    | "RUNTIME_EXPRESSION"
+    | "UNKNOWN";
   readonly observedValue: string | null;
+}
+
+export function partitionValueStatus(
+  status: string,
+): PartitionAssignment["valueStatus"] {
+  if (status === "CONFIRMED") return "OBSERVED_RENDERED_VALUE";
+  if (status === "RUNTIME_EXPRESSION") return "RUNTIME_EXPRESSION";
+  return "UNKNOWN";
 }
 
 export interface SqlWrite {
@@ -10,6 +21,10 @@ export interface SqlWrite {
   readonly writeKind:
     "INSERT_OVERWRITE" | "INSERT_INTO" | "MERGE_INTO" | "CTAS";
   readonly statementSpan: { readonly start: number; readonly end: number };
+  /** One-based write order within the SQL slot. */
+  readonly statementOrdinal: number;
+  readonly partitionMode: "NONE" | "STATIC" | "DYNAMIC" | "MIXED" | "UNKNOWN";
+  readonly partitionFields: readonly string[];
   readonly partition: readonly PartitionAssignment[];
 }
 
@@ -56,7 +71,12 @@ export function partitionAssignments(
     const expression = (
       equals >= 0 ? assignment.slice(equals + 1) : "UNKNOWN"
     ).trim();
-    const literal = expression.match(/^'(.*)'$/s)?.[1] ?? null;
+    const literal =
+      expression.match(/^'(.*)'$/s)?.[1] ??
+      expression.match(/^"(.*)"$/s)?.[1] ??
+      (/^(?:[-+]?\d+(?:\.\d+)?|true|false|null)$/i.test(expression)
+        ? expression
+        : null);
     return {
       field,
       expression,
@@ -65,6 +85,26 @@ export function partitionAssignments(
       observedValue: literal,
     };
   });
+}
+
+function partitionShape(value: string | null): {
+  readonly mode: SqlWrite["partitionMode"];
+  readonly fields: readonly string[];
+} {
+  if (!value) return { mode: "NONE", fields: [] };
+  const fields = splitTopLevelComma(value).map((assignment) => {
+    const equals = assignment.indexOf("=");
+    return (equals >= 0 ? assignment.slice(0, equals) : assignment)
+      .trim()
+      .replaceAll("`", "")
+      .toLowerCase();
+  });
+  const hasStatic = splitTopLevelComma(value).some((item) => item.includes("="));
+  const hasDynamic = splitTopLevelComma(value).some((item) => !item.includes("="));
+  return {
+    mode: hasStatic && hasDynamic ? "MIXED" : hasStatic ? "STATIC" : "DYNAMIC",
+    fields,
+  };
 }
 
 function balancedParenthesized(
@@ -165,6 +205,8 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
       : -1;
     const partition =
       openingIndex >= 0 ? balancedParenthesized(sql, openingIndex) : null;
+    const partitionContent = partition?.content ?? null;
+    const shape = partitionShape(partitionContent);
     const statementEnd = maskedSql.indexOf(";", partition?.end ?? afterTarget);
     writes.push({
       qualifiedName,
@@ -173,7 +215,10 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
         start,
         end: statementEnd >= 0 ? statementEnd : sql.length,
       },
-      partition: partitionAssignments(partition?.content ?? null),
+      statementOrdinal: 0,
+      partitionMode: shape.mode,
+      partitionFields: shape.fields,
+      partition: partitionAssignments(partitionContent),
     });
   }
   const ctasPattern =
@@ -188,10 +233,15 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
         start,
         end: statementEnd >= 0 ? statementEnd : sql.length,
       },
+      statementOrdinal: 0,
+      partitionMode: "NONE",
+      partitionFields: [],
       partition: [],
     });
   }
-  return writes.sort(
+  return writes
+    .sort(
     (left, right) => left.statementSpan.start - right.statementSpan.start,
-  );
+    )
+    .map((write, index) => ({ ...write, statementOrdinal: index + 1 }));
 }

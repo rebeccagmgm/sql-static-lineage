@@ -211,6 +211,47 @@ function writeProducerIndexFixture(options?: { partial?: boolean }): {
 }
 
 describe("reconcileOneHop", () => {
+  it("qualifies a bare read with the proven Task Pack schema", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "pdata_news_n.t02_scr_base_info");
+    writeTask(dataRoot, "103234", {
+      taskName: "pdata_news_n.t02_tit_scr_base_info_TIT_ref_instrument_grp01",
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_news_n.t02_tit_scr_base_info",
+      },
+      targetEvidenceKind: "TABLE_TASK_RELATION_DIRECTION_UNKNOWN",
+      sql: {
+        query: {
+          content: "SELECT b.id FROM t02_scr_base_info b",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      evidenceProvider: "fixture:table-task-relation",
+    });
+
+    const result = reconcileOneHop("103234", {
+      dataRoot,
+      openCliRunner: () => [],
+      now: () => "2026-08-24T00:00:00.000Z",
+    });
+
+    expect(result.currentTask.directReads).toEqual([
+      expect.objectContaining({
+        table: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "pdata_news_n.t02_scr_base_info",
+          identityStatus: "RESOLVED",
+        },
+        sql: expect.objectContaining({
+          qualifiedName: "pdata_news_n.t02_scr_base_info",
+        }),
+      }),
+    ]);
+  });
+
   it("extracts direct reads and partitioned writes with SQL provenance", () => {
     const sql = `
       INSERT OVERWRITE TABLE mart.output

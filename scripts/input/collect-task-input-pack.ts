@@ -7,6 +7,7 @@ import {
 import {
   collectOneTask,
   findExcludedTaskIds,
+  hasPhysicalTableEvidenceGap,
   relocateTaskPacks,
   taskCategory,
   type TaskCollectionSummary,
@@ -321,9 +322,7 @@ const hadFailure = runTaskBatch(
       ...(excludedTaskInfo.get(taskId) ?? {}),
     });
     const persisted: TaskCollectionSummary = summary;
-    const physicalTableNotFound =
-      persisted.tablesUnavailable.length > 0 ||
-      persisted.tableReferencesUnavailable.length > 0;
+    const physicalTableNotFound = hasPhysicalTableEvidenceGap(persisted);
     if (physicalTableNotFound) {
       const moved = relocateTaskPacks(
         taskDataRoot,

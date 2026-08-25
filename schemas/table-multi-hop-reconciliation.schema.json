@@ -113,7 +113,7 @@
         "field": { "type": "string", "minLength": 1 },
         "expression": { "type": "string", "minLength": 1 },
         "valueStatus": {
-          "enum": ["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION"]
+          "enum": ["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION", "UNKNOWN"]
         },
         "observedValue": { "type": ["string", "null"] }
       }

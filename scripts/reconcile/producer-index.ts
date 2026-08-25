@@ -29,12 +29,16 @@ import {
   isManualScheduleCycle,
   validateTableDocument,
   validateTaskDocument,
+  validateTaskCodeEvidence,
+  type TaskCodeEvidence,
+  type TaskPartitionStatus,
   type JsonValue,
   type TableDocument,
   type TaskDocument,
 } from "../input/input-pack.ts";
 import {
   extractSqlWrites,
+  partitionValueStatus,
   type PartitionAssignment,
   type SqlWrite,
 } from "./sql-write-evidence.ts";
@@ -92,6 +96,11 @@ export interface ProducerWriteObservation {
   readonly declaredWriteMode: string | null;
   readonly sqlWriteKind: SqlWrite["writeKind"] | null;
   readonly partition: readonly PartitionAssignment[];
+  /** Status copied from the collection-time Task Pack partition contract. */
+  readonly partitionStatus?: TaskPartitionStatus | "LEGACY_UNKNOWN";
+  readonly partitionReasonCodes?: readonly string[];
+  /** Scheduler/code configuration evidence; never substituted for partition. */
+  readonly scriptEvidence?: TaskCodeEvidence;
   readonly evidence: readonly ProducerEvidence[];
   /** Optional target evidence discriminator for newly built observations. */
   readonly targetEvidenceKind?:
@@ -1048,10 +1057,87 @@ function isIntraTaskIntermediateMaterialization(
     );
 }
 
-function declaredPartition(value: unknown): PartitionAssignment[] {
+function declaredPartition(
+  value: unknown,
+  target: string | undefined,
+  sqlSlot: string | null,
+  statementOrdinal: number | null,
+): {
+  readonly assignments: PartitionAssignment[];
+  readonly status: TaskPartitionStatus | "LEGACY_UNKNOWN";
+  readonly reasonCodes: readonly string[];
+} {
   const record = asRecord(value);
-  if (!record) return [];
-  return Object.entries(record)
+  if (!record) {
+    return {
+      assignments: [],
+      status: "LEGACY_UNKNOWN",
+      reasonCodes: ["TASK_PARTITION_CONTRACT_UNAVAILABLE"],
+    };
+  }
+  if (Array.isArray(record.targets)) {
+    const targetKey =
+      target === undefined ? undefined : normalizeQualifiedName(target);
+    const targets = record.targets.filter(
+      (item): item is Record<string, unknown> =>
+        asRecord(item) !== null &&
+        (targetKey === undefined ||
+          normalizeQualifiedName(String(asRecord(item)!.target)) === targetKey),
+    );
+    const targetEvidence = targets[0];
+    const writes = asRecord(targetEvidence)?.writes;
+    const matched = Array.isArray(writes)
+      ? (writes.find((item) => {
+          const write = asRecord(item);
+          if (write === null) return false;
+          return (
+            (sqlSlot === null
+              ? write.sqlSlot === null
+              : write.sqlSlot === sqlSlot) &&
+            (statementOrdinal === null ||
+              write.statementOrdinal === statementOrdinal)
+          );
+        }) ??
+        (sqlSlot === null && statementOrdinal === null && writes.length === 1
+          ? writes[0]
+          : undefined))
+      : undefined;
+    const write = asRecord(matched);
+    const assignments = Array.isArray(write?.assignments)
+      ? write.assignments.flatMap((item): PartitionAssignment[] => {
+          const assignment = asRecord(item);
+          if (!assignment) return [];
+          const status = String(assignment.status);
+          return [
+            {
+              field: String(assignment.field).toLowerCase(),
+              expression:
+                assignment.expression === null
+                  ? "UNKNOWN"
+                  : String(assignment.expression),
+              valueStatus: partitionValueStatus(status),
+              observedValue:
+                status === "CONFIRMED" && assignment.value !== null
+                  ? String(assignment.value)
+                  : null,
+            },
+          ];
+        })
+      : [];
+    return {
+      assignments,
+      status:
+        write !== null
+          ? (String(write.status) as TaskPartitionStatus)
+          : "UNKNOWN",
+      reasonCodes: Array.isArray(write?.reasonCodes)
+        ? write.reasonCodes.map(String)
+        : ["TASK_PARTITION_WRITE_NOT_FOUND"],
+    };
+  }
+  // Explicit compatibility for pre-contract Task Packs. This branch is not
+  // used for new collection output and never reads SQL or script parameters.
+  const assignments = Object.entries(record)
     .sort(([left], [right]) => compareText(left, right))
     .map(([field, raw]) => {
       const expression = String(raw);
@@ -1065,6 +1151,14 @@ function declaredPartition(value: unknown): PartitionAssignment[] {
         observedValue: runtime ? null : expression,
       };
     });
+  return {
+    assignments,
+    status: assignments.length > 0 ? "COMPLETE" : "LEGACY_UNKNOWN",
+    reasonCodes:
+      assignments.length > 0
+        ? ["PARTITION_EVIDENCE_COMPLETE"]
+        : ["LEGACY_PARTITION_MAP"],
+  };
 }
 
 function nonConfirmed(
@@ -1246,6 +1340,9 @@ export function buildTableProducerIndex(
       continue;
     }
     const document = pack.document;
+    const scriptEvidence = asRecord(document.codeEvidence)
+      ? (document.codeEvidence as unknown as TaskCodeEvidence)
+      : undefined;
     if (
       isManualScheduleCycle(document.scheduleCycle) ||
       isFrozenScheduleStatus(document.scheduleStatus)
@@ -1263,11 +1360,20 @@ export function buildTableProducerIndex(
       if (resolvedTarget.confirmable) {
         const table = resolvedTarget.table as ProducerTableIdentity;
         const declaredWriteMode = stringValue(document.writeMode);
+        const partition = declaredPartition(
+          document.partition,
+          table.qualifiedName,
+          null,
+          null,
+        );
         const write = {
           observationKind: "DIRECT_TARGET",
           declaredWriteMode,
           sqlWriteKind: null,
-          partition: declaredPartition(document.partition),
+          partition: partition.assignments,
+          partitionStatus: partition.status,
+          partitionReasonCodes: partition.reasonCodes,
+          ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
           evidence: [packObservation, ...resolvedTarget.evidence],
           targetEvidenceKind: evidenceKind as
             "DIRECT_PLATFORM_TARGET" | "SQL_EXACT_TABLE_TARGET",
@@ -1354,11 +1460,28 @@ export function buildTableProducerIndex(
             ),
           );
         } else if (resolvedTarget.confirmable) {
+          const partition = declaredPartition(
+            document.partition,
+            resolvedTarget.table?.qualifiedName ?? undefined,
+            file.slot,
+            write.statementOrdinal,
+          );
+          const effectivePartition =
+            partition.assignments.length > 0
+              ? partition
+              : {
+                  assignments: write.partition,
+                  status: "LEGACY_UNKNOWN" as const,
+                  reasonCodes: ["SQL_WRITE_PARTITION_FALLBACK"],
+                };
           const observation = {
             observationKind: "SQL_EXPLICIT_WRITE",
             declaredWriteMode: null,
             sqlWriteKind: write.writeKind,
-            partition: write.partition,
+            partition: effectivePartition.assignments,
+            partitionStatus: effectivePartition.status,
+            partitionReasonCodes: effectivePartition.reasonCodes,
+            ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
             evidence: relationEvidence,
           } as const;
           addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
@@ -1618,7 +1741,8 @@ function validatePartition(value: unknown, field: string): void {
   requireString(partition.expression, `${field}.expression`);
   if (
     partition.valueStatus !== "OBSERVED_RENDERED_VALUE" &&
-    partition.valueStatus !== "RUNTIME_EXPRESSION"
+    partition.valueStatus !== "RUNTIME_EXPRESSION" &&
+    partition.valueStatus !== "UNKNOWN"
   )
     throw new Error(`${field}.valueStatus is invalid`);
   if (
@@ -1639,6 +1763,9 @@ function validateWrite(value: unknown, field: string): void {
   ] as const;
   const allowedKeys = [
     ...requiredKeys,
+    "scriptEvidence",
+    "partitionStatus",
+    "partitionReasonCodes",
     "targetEvidenceKind",
     "writeDirection",
     "operationClass",
@@ -1679,6 +1806,32 @@ function validateWrite(value: unknown, field: string): void {
     write.targetEvidenceKind !== "SQL_EXACT_TABLE_TARGET"
   )
     throw new Error(`${field}.targetEvidenceKind is invalid`);
+  if (write.scriptEvidence !== undefined)
+    validateTaskCodeEvidence(write.scriptEvidence, `${field}.scriptEvidence`);
+  if (
+    write.partitionStatus !== undefined &&
+    ![
+      "NOT_PARTITIONED",
+      "COMPLETE",
+      "INCOMPLETE",
+      "UNKNOWN",
+      "CONFLICT",
+      "LEGACY_UNKNOWN",
+    ].includes(String(write.partitionStatus))
+  )
+    throw new Error(`${field}.partitionStatus is invalid`);
+  if (write.partitionReasonCodes !== undefined) {
+    if (
+      !Array.isArray(write.partitionReasonCodes) ||
+      write.partitionReasonCodes.length === 0
+    )
+      throw new Error(
+        `${field}.partitionReasonCodes must be a non-empty array`,
+      );
+    write.partitionReasonCodes.forEach((reason, index) =>
+      requireString(reason, `${field}.partitionReasonCodes[${index}]`),
+    );
+  }
   if (
     write.observationKind === "SQL_EXPLICIT_WRITE" &&
     write.targetEvidenceKind !== undefined
@@ -1737,7 +1890,10 @@ function validateWrite(value: unknown, field: string): void {
   );
 }
 
-function validateNonConfirmedRelation(rawRelation: unknown, field: string): void {
+function validateNonConfirmedRelation(
+  rawRelation: unknown,
+  field: string,
+): void {
   const relation = requireRecord(rawRelation, field);
   requireExactKeys(
     relation,
@@ -1819,10 +1975,7 @@ export function validateTableProducerIndex(
         ],
     "producerIndex",
   );
-  if (
-    artifact.schemaVersion !== ARTIFACT_SCHEMA_VERSION &&
-    !legacyArtifact
-  )
+  if (artifact.schemaVersion !== ARTIFACT_SCHEMA_VERSION && !legacyArtifact)
     throw new Error("Unsupported producer index schemaVersion");
   if (artifact.artifactType !== "TABLE_PRODUCER_INDEX")
     throw new Error("Invalid producer index artifactType");
@@ -1887,12 +2040,18 @@ export function validateTableProducerIndex(
   if (!Array.isArray(artifact.nonConfirmedRelations))
     throw new Error("nonConfirmedRelations must be an array");
   for (const [index, rawRelation] of artifact.nonConfirmedRelations.entries()) {
-    validateNonConfirmedRelation(rawRelation, `nonConfirmedRelations[${index}]`);
+    validateNonConfirmedRelation(
+      rawRelation,
+      `nonConfirmedRelations[${index}]`,
+    );
   }
   if (!legacyArtifact) {
     if (!Array.isArray(artifact.intermediateMaterializations))
       throw new Error("intermediateMaterializations must be an array");
-    for (const [index, rawRelation] of artifact.intermediateMaterializations.entries())
+    for (const [
+      index,
+      rawRelation,
+    ] of artifact.intermediateMaterializations.entries())
       validateNonConfirmedRelation(
         rawRelation,
         `intermediateMaterializations[${index}]`,
@@ -1969,8 +2128,9 @@ export function validateTableProducerIndex(
     ...(legacyArtifact
       ? {}
       : {
-          intermediateMaterializations:
-            (artifact.intermediateMaterializations as unknown[]).length,
+          intermediateMaterializations: (
+            artifact.intermediateMaterializations as unknown[]
+          ).length,
         }),
   };
   for (const [field, expected] of Object.entries(derivedCounts))
