@@ -2,7 +2,10 @@ import { fileURLToPath } from "node:url";
 import { isAbsolute, resolve } from "node:path";
 
 import {
+  classifyProducerWriteObservation,
   loadTableProducerIndex,
+  type ConfirmedProducerEdge,
+  type NonConfirmedRelation,
   type ProducerTableIdentity,
   type ProducerWriteObservation,
   type TableProducerIndex,
@@ -26,6 +29,11 @@ export interface ProducerIndexPartitionMatch {
   readonly taskCategory: string;
   readonly table: ProducerTableIdentity;
   readonly writes: readonly ProducerWriteObservation[];
+}
+
+export interface ProducerTaskWriteLookup {
+  readonly confirmedWrites: readonly ConfirmedProducerEdge[];
+  readonly nonConfirmedRelations: readonly NonConfirmedRelation[];
 }
 
 interface ProducerIndexPartitionMatchOutput {
@@ -52,7 +60,13 @@ function isDateTemplate(value: string): boolean {
 
 function tableIdentityKey(table: ProducerTableIdentity): string {
   return [table.platform, table.dataSource, table.qualifiedName]
-    .map((value) => String(value).trim().toLowerCase().replaceAll("`", ""))
+    .map((value) =>
+      String(value)
+        .trim()
+        .toLowerCase()
+        .replaceAll("`", "")
+        .replaceAll('"', ""),
+    )
     .join("\u0000");
 }
 
@@ -65,6 +79,66 @@ function normalizeTableQuery(table: ProducerTableQuery): ProducerTableQuery {
     ...(table.dataSource === undefined
       ? {}
       : { dataSource: table.dataSource.trim().toLowerCase() }),
+  };
+}
+
+function normalizeProducerTable(
+  table: ProducerTableIdentity,
+): ProducerTableIdentity {
+  return {
+    platform: table.platform.trim().toLowerCase(),
+    dataSource: table.dataSource.trim().toLowerCase(),
+    qualifiedName: table.qualifiedName
+      .trim()
+      .toLowerCase()
+      .replaceAll("`", "")
+      .replaceAll('"', ""),
+  };
+}
+
+export function lookupConfirmedProducers(
+  index: TableProducerIndex,
+  table: ProducerTableIdentity,
+): readonly ConfirmedProducerEdge[] {
+  const key = tableIdentityKey(normalizeProducerTable(table));
+  return index.confirmedProducerEdges.filter(
+    (edge) =>
+      tableIdentityKey(edge.table) === key &&
+      edge.writes.some(
+        (write) =>
+          (write.dataPathRole ??
+            classifyProducerWriteObservation(write).dataPathRole) ===
+          "PRODUCER",
+      ),
+  );
+}
+
+export function lookupNonConfirmedRelations(
+  index: TableProducerIndex,
+  table: ProducerTableIdentity,
+): readonly NonConfirmedRelation[] {
+  const normalized = normalizeProducerTable(table);
+  return index.nonConfirmedRelations.filter((relation) => {
+    const ref = relation.tableRef;
+    return (
+      ref.qualifiedName === normalized.qualifiedName &&
+      (ref.platform === null || ref.platform === normalized.platform) &&
+      (ref.dataSource === null || ref.dataSource === normalized.dataSource)
+    );
+  });
+}
+
+export function lookupProducerWritesByTask(
+  index: TableProducerIndex,
+  taskId: string,
+): ProducerTaskWriteLookup {
+  return {
+    confirmedWrites: index.confirmedProducerEdges.filter(
+      (edge) => edge.taskId === taskId,
+    ),
+    nonConfirmedRelations: index.nonConfirmedRelations.filter(
+      (relation) => relation.taskId === taskId,
+    ),
   };
 }
 

@@ -24,8 +24,6 @@ import {
   fingerprintTableProducerInputs,
   classifyProducerWriteObservation,
   loadTableProducerIndex,
-  lookupConfirmedProducers,
-  lookupNonConfirmedRelations,
   validateTableProducerIndex,
   type ProducerDataPathRole,
   type NonConfirmedRelation,
@@ -33,6 +31,11 @@ import {
   type ProducerWriteObservation,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
+import {
+  lookupConfirmedProducers,
+  lookupNonConfirmedRelations,
+  lookupProducerWritesByTask,
+} from "../../../query/producer-index-query.ts";
 import {
   extractSqlWrites,
   partitionValueStatus,
@@ -903,8 +906,8 @@ function writesFromProducerIndex(
   confirmedWrites: ConfirmedWriteObservation[];
   unconfirmedTargets: UnconfirmedTargetObservation[];
 } {
-  const confirmedWrites = index.confirmedProducerEdges
-    .filter((edge) => edge.taskId === taskId)
+  const indexedWrites = lookupProducerWritesByTask(index, taskId);
+  const confirmedWrites = indexedWrites.confirmedWrites
     .map((edge) => {
       const representative = edge.writes.find(
         (write) =>
@@ -923,8 +926,7 @@ function writesFromProducerIndex(
         evidence: edge.writes.flatMap((write) => write.evidence),
       };
     });
-  const unconfirmedTargets = index.nonConfirmedRelations
-    .filter((relation) => relation.taskId === taskId)
+  const unconfirmedTargets = indexedWrites.nonConfirmedRelations
     .map((relation) => ({
       qualifiedName: relation.tableRef.qualifiedName,
       reason: relation.reasonCodes.join("|"),

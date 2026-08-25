@@ -6,12 +6,12 @@ import type { OneHopReconciliationResult } from "../one-hop/reconcile-one-hop.ts
 import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
-  lookupConfirmedProducers,
   validateTableProducerIndex,
   type ProducerTableIdentity,
   type ProducerWriteObservation,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
+import { lookupConfirmedProducers } from "../../../query/producer-index-query.ts";
 import {
   buildTaskReadEvidenceRepository,
   type TaskReadEvidenceRepository,

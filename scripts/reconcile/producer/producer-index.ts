@@ -1710,47 +1710,6 @@ export function buildTableProducerIndex(
   };
 }
 
-export function lookupConfirmedProducers(
-  index: TableProducerIndex,
-  table: ProducerTableIdentity,
-): readonly ConfirmedProducerEdge[] {
-  const normalized: ProducerTableIdentity = {
-    platform: normalizeToken(table.platform),
-    dataSource: normalizeToken(table.dataSource),
-    qualifiedName: normalizeQualifiedName(table.qualifiedName),
-  };
-  const key = identityKey(normalized);
-  return index.confirmedProducerEdges.filter(
-    (edge) =>
-      identityKey(edge.table) === key &&
-      edge.writes.some(
-        (write) =>
-          (write.dataPathRole ??
-            classifyProducerWriteObservation(write).dataPathRole) ===
-          "PRODUCER",
-      ),
-  );
-}
-
-export function lookupNonConfirmedRelations(
-  index: TableProducerIndex,
-  table: ProducerTableIdentity,
-): readonly NonConfirmedRelation[] {
-  const normalized: ProducerTableIdentity = {
-    platform: normalizeToken(table.platform),
-    dataSource: normalizeToken(table.dataSource),
-    qualifiedName: normalizeQualifiedName(table.qualifiedName),
-  };
-  return index.nonConfirmedRelations.filter((relation) => {
-    const ref = relation.tableRef;
-    return (
-      ref.qualifiedName === normalized.qualifiedName &&
-      (ref.platform === null || ref.platform === normalized.platform) &&
-      (ref.dataSource === null || ref.dataSource === normalized.dataSource)
-    );
-  });
-}
-
 const SHA256 = /^[a-f0-9]{64}$/;
 
 function requireRecord(value: unknown, field: string): JsonRecord {

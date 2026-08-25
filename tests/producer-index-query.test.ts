@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  lookupConfirmedProducers,
+  lookupProducerWritesByTask,
   lookupProducersByTablePartition,
   type PartitionQuery,
 } from "../scripts/query/producer-index-query.ts";
@@ -110,6 +112,16 @@ const index = {
 } as unknown as TableProducerIndex;
 
 describe("producer-index-query", () => {
+  it("looks up confirmed producers and writes by task", () => {
+    expect(
+      lookupConfirmedProducers(index, table).map((item) => item.taskId),
+    ).toEqual(["207229"]);
+    expect(lookupProducerWritesByTask(index, "207229")).toMatchObject({
+      confirmedWrites: [expect.objectContaining({ taskId: "207229" })],
+      nonConfirmedRelations: [],
+    });
+  });
+
   it("matches a direct target with a date template and partition wildcard", () => {
     const result = lookupProducersByTablePartition(index, {
       table,
