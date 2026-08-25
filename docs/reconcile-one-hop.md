@@ -40,7 +40,7 @@ npm run reconcile-one-hop:batch -- \
 2. 调度骨架：只查询 `horae relation <taskId> --direction up --depth 1`。
 3. 父任务写表：优先使用方向明确的 `DIRECT_PLATFORM_TARGET` / `SQL_EXACT_TABLE_TARGET` 和显式 SQL WRITE；父任务 Input Pack 缺失时才查询 `szdata task-source`。
 4. 表身份：使用 Table Input Pack 将 `qualifiedName` 解析为唯一的 `platform + dataSource + qualifiedName`。缺失或多义身份不能形成 `MATCHED`。
-5. READ 分区范围：按 SQL occurrence 结合 Table Pack `partitionFields`（缺失时回退 DDL）解析 `readPartitionScopes`。只使用静态 SQL 谓词；调度分区、脚本参数和运行实例不补 READ 分区。
+5. READ 分区范围：先沿 PlanFacts 的 `source`、`Join.left/right`、setop 和显式 CTE scope mapping 回溯到每个物理 `ReadRelation` occurrence，再结合 Table Pack `partitionFields`（缺失时回退 DDL）解析 `readPartitionScopes`。同一物理表的多次 READ 不提前去重；每个 occurrence 保留独立 predicate tree、source span、relation path 和归属证据。只使用静态 SQL 谓词；调度分区、脚本参数和运行实例不补 READ 分区。
 6. producer 分区匹配：对同表 producer 的 WRITE observation 计算 `PROVEN_OVERLAP`、`POSSIBLE_OVERLAP`、`PROVEN_DISJOINT` 或 `UNKNOWN`。这是旁路判断，不改变旧表级 `nextDataTaskIds`。
 
 ## 状态
@@ -54,7 +54,7 @@ npm run reconcile-one-hop:batch -- \
 
 未传 producer index 时，`nextDataTaskIds` 保持上述兼容语义。显式提供 producer index 时，它改为当前 SQL READ 表对应的全部 confirmed producer Task；非 Horae 直接父任务在 `dataPath.confirmedProducers[].scheduleRelation` 中标为 `NOT_DIRECT_PARENT`，但不会被改写成 `MATCHED`。`dataPath.nonConfirmedRelations` 只用于审计和覆盖率，绝不进入递归节点。
 
-输出 artifact 版本为 `1.1.0`。`currentTask.directReads[].readPartitionScopes` 保留 occurrence 级范围；`dataPath.confirmedProducers[].partitionMatch` 保留匹配状态、原因和参与比较的 WRITE observation。新增 `partitionAwareNextDataTaskIds.proven/possible/unknown`：只有确定不相交的 producer 不进入这些集合；旧 `nextDataTaskIds` 仍是表级 confirmed producer 集合。
+输出 artifact 版本为 `1.1.0`。`currentTask.directReads[].readPartitionScopes` 保留 occurrence 级范围；其中 `predicateEvidence` 区分可安全归属、局部未知和不可下推的 Filter/Join 子树，并保留完整 predicate tree、source span、reason codes 与 relation path。`dataPath.confirmedProducers[].partitionMatch` 保留匹配状态、原因和参与比较的 WRITE observation。新增 `partitionAwareNextDataTaskIds.proven/possible/unknown`：只有确定不相交的 producer 不进入这些集合；旧 `nextDataTaskIds` 仍是表级 confirmed producer 集合。
 
 ## Counts 与覆盖率口径
 

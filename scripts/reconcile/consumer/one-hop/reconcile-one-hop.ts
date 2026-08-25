@@ -24,6 +24,10 @@ import {
   parseDdlSchema,
 } from "../../../plans/ddl-schema.ts";
 import type { PredicateTree } from "../../../plans/plan-contract.ts";
+import {
+  resolveReadOccurrences,
+  type ReadOccurrencePredicateEvidence,
+} from "../../../plans/read-occurrence-resolver.ts";
 import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
 import {
   fingerprintTableProducerInputs,
@@ -105,8 +109,13 @@ export interface SqlDirectRead {
 interface SqlDirectReadOccurrence {
   readonly qualifiedName: string;
   readonly statementIndex: number;
+  readonly occurrenceId: string;
+  readonly readRelationId: string;
   readonly predicateTree: PredicateTree | null;
-  readonly partitionPredicateBindingUnknown: boolean;
+  readonly predicateEvidence: readonly ReadOccurrencePredicateEvidence[];
+  readonly bindingStatus: "UNCONSTRAINED" | "CONSTRAINED" | "UNKNOWN";
+  readonly reasonCodes: readonly string[];
+  readonly relationPath: readonly string[];
   readonly syntaxDiagnosticCount: number;
   readonly parserUnknownCount: number;
 }
@@ -149,7 +158,12 @@ interface OneHopPreparedContext {
 }
 
 export interface DirectReadPartitionScopeObservation {
+  readonly occurrenceId: string;
+  readonly readRelationId: string;
   readonly statementIndex: number;
+  readonly relationPath: readonly string[];
+  readonly predicateTree: PredicateTree | null;
+  readonly predicateEvidence: readonly ReadOccurrencePredicateEvidence[];
   readonly scope: ReadPartitionScope;
 }
 
@@ -564,18 +578,17 @@ function extractSqlDirectReadOccurrences(
         ? { schema, include_expression_dependencies: true }
         : {}),
     });
-    const filters = plan.relations.filter((relation) => relation.type === "filter");
-    const filter = filters.length === 1 ? filters[0] : undefined;
-    const predicateTree =
-      filter?.type === "filter" ? filter.predicate_tree ?? null : null;
-    const partitionPredicateBindingUnknown =
-      filters.length > 1 || (filters.length > 0 && plan.physical_inputs.length > 1);
-    for (const qualifiedName of plan.physical_inputs) {
+    for (const occurrence of resolveReadOccurrences(plan)) {
       occurrences.push({
-        qualifiedName: normalizeTable(qualifiedName),
+        qualifiedName: normalizeTable(occurrence.table),
         statementIndex,
-        predicateTree,
-        partitionPredicateBindingUnknown,
+        occurrenceId: `${statementIndex}:${occurrence.occurrenceId}`,
+        readRelationId: occurrence.readRelationId,
+        predicateTree: occurrence.predicateTree,
+        predicateEvidence: occurrence.predicateEvidence,
+        bindingStatus: occurrence.bindingStatus,
+        reasonCodes: occurrence.reasonCodes,
+        relationPath: occurrence.relationPath,
         syntaxDiagnosticCount: cell.diagnostics.length,
         parserUnknownCount: plan.unknowns.length,
       });
@@ -1267,21 +1280,29 @@ function currentDirectReads(
           observedAt: resolved.evidence.observedAt,
         },
       ];
-      const scope = occurrence.partitionPredicateBindingUnknown
-        ? {
-            status: "UNKNOWN" as const,
-            partitionFields: resolved.partitionFields ?? [],
-            predicate: null,
-            reasonCodes: ["PARTITION_FILTER_BINDING_AMBIGUOUS"],
-            evidence: scopeEvidence,
-          }
-        : resolveReadPartitionScope({
-            predicate: occurrence.predicateTree,
-            tableQualifiedName: resolved.table.qualifiedName ?? qualifiedName,
-            partitionFields: resolved.partitionFields,
-            partitionReasonCodes: resolved.partitionReasonCodes,
-            evidence: scopeEvidence,
-          });
+      const resolvedScope = resolveReadPartitionScope({
+        predicate: occurrence.predicateTree,
+        tableQualifiedName: resolved.table.qualifiedName ?? qualifiedName,
+        partitionFields: resolved.partitionFields,
+        partitionReasonCodes: resolved.partitionReasonCodes,
+        evidence: scopeEvidence,
+      });
+      const scope = {
+        ...resolvedScope,
+        status:
+          occurrence.bindingStatus === "UNKNOWN"
+            ? ("UNKNOWN" as const)
+            : resolvedScope.status,
+        reasonCodes: [
+          ...new Set([
+            ...resolvedScope.reasonCodes,
+            ...occurrence.reasonCodes,
+            ...(occurrence.bindingStatus === "UNKNOWN"
+              ? ["READ_OCCURRENCE_PREDICATE_BINDING_UNKNOWN"]
+              : []),
+          ]),
+        ].sort(),
+      };
       const read: SqlDirectRead = {
         qualifiedName,
         statementIndexes: [occurrence.statementIndex],
@@ -1292,7 +1313,15 @@ function currentDirectReads(
         table: resolved.table,
         sql: read,
         readPartitionScopes: [
-          { statementIndex: occurrence.statementIndex, scope },
+          {
+            occurrenceId: `${file.slot}#${occurrence.occurrenceId}`,
+            readRelationId: occurrence.readRelationId,
+            statementIndex: occurrence.statementIndex,
+            relationPath: occurrence.relationPath,
+            predicateTree: occurrence.predicateTree,
+            predicateEvidence: occurrence.predicateEvidence,
+            scope,
+          },
         ],
         evidence: [
           inputPackSqlEvidence(file),
@@ -1307,6 +1336,11 @@ function currentDirectReads(
               parserUnknownCount: occurrence.parserUnknownCount,
               readPartitionScopeStatus: scope.status,
               readPartitionScopeReasonCodes: scope.reasonCodes,
+              readOccurrenceId: `${file.slot}#${occurrence.occurrenceId}`,
+              readRelationId: occurrence.readRelationId,
+              readRelationPath: occurrence.relationPath,
+              readPredicateBindingStatus: occurrence.bindingStatus,
+              readPredicateEvidence: occurrence.predicateEvidence,
               ...(defaultSchema &&
               qualifiedName !== normalizeTable(occurrence.qualifiedName)
                 ? {
