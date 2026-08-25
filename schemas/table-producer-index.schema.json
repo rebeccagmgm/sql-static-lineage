@@ -13,6 +13,7 @@
     "inputFingerprint",
     "confirmedProducerEdges",
     "nonConfirmedRelations",
+    "intermediateMaterializations",
     "counts",
     "issues",
     "boundaries",
@@ -161,7 +162,7 @@
     }
   },
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
+    "schemaVersion": { "const": "1.1.0" },
     "artifactType": { "const": "TABLE_PRODUCER_INDEX" },
     "generatedAt": { "type": "string", "minLength": 1 },
     "buildStatus": { "enum": ["SUCCESS", "PARTIAL"] },
@@ -242,6 +243,10 @@
         }
       }
     },
+    "intermediateMaterializations": {
+      "type": "array",
+      "items": { "$ref": "#/properties/nonConfirmedRelations/items" }
+    },
     "counts": {
       "type": "object",
       "additionalProperties": false,
@@ -255,7 +260,8 @@
         "confirmedTables",
         "confirmedProducerEdges",
         "confirmedWriteObservations",
-        "candidateObservations"
+        "candidateObservations",
+        "intermediateMaterializations"
       ],
       "properties": {
         "taskPacksDiscovered": { "type": "integer", "minimum": 0 },
@@ -267,7 +273,8 @@
         "confirmedTables": { "type": "integer", "minimum": 0 },
         "confirmedProducerEdges": { "type": "integer", "minimum": 0 },
         "confirmedWriteObservations": { "type": "integer", "minimum": 0 },
-        "candidateObservations": { "type": "integer", "minimum": 0 }
+        "candidateObservations": { "type": "integer", "minimum": 0 },
+        "intermediateMaterializations": { "type": "integer", "minimum": 0 }
       }
     },
     "issues": {

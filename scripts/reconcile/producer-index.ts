@@ -329,6 +329,12 @@ interface TableCatalog {
   readonly byQualifiedName: ReadonlyMap<string, readonly LoadedTablePack[]>;
 }
 
+interface DeclaredPartition {
+  readonly assignments: readonly PartitionAssignment[];
+  readonly status: TaskPartitionStatus | "LEGACY_UNKNOWN";
+  readonly reasonCodes: readonly string[];
+}
+
 function sqlTargetStatementKindForPack(
   pack: LoadedTaskPack,
 ):
@@ -730,6 +736,17 @@ function buildCatalog(tablePacks: readonly LoadedTablePack[]): TableCatalog {
   return { validPacks, byIdentity, byQualifiedName };
 }
 
+function partitionFieldsForTable(
+  catalog: TableCatalog,
+  table: ProducerTableIdentity | undefined,
+): readonly string[] | null {
+  if (!table) return null;
+  const packs = catalog.byIdentity.get(identityKey(table)) ?? [];
+  const fields = packs[0]?.document?.partitionFields;
+  if (!Array.isArray(fields)) return null;
+  return fields.map(String).filter((field) => field.trim().length > 0);
+}
+
 function resolvedRef(table: ProducerTableIdentity): ProducerTableRef {
   return { ...table, identityStatus: "RESOLVED" };
 }
@@ -1057,23 +1074,39 @@ function isIntraTaskIntermediateMaterialization(
     );
 }
 
-function declaredPartition(
+function declaredPartitions(
   value: unknown,
   target: string | undefined,
   sqlSlot: string | null,
   statementOrdinal: number | null,
-): {
-  readonly assignments: PartitionAssignment[];
-  readonly status: TaskPartitionStatus | "LEGACY_UNKNOWN";
-  readonly reasonCodes: readonly string[];
-} {
+  tablePartitionFields: readonly string[] | null,
+): readonly DeclaredPartition[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) =>
+      declaredPartitions(
+        item,
+        target,
+        sqlSlot,
+        statementOrdinal,
+        tablePartitionFields,
+      ),
+    );
+  }
   const record = asRecord(value);
   if (!record) {
-    return {
-      assignments: [],
-      status: "LEGACY_UNKNOWN",
-      reasonCodes: ["TASK_PARTITION_CONTRACT_UNAVAILABLE"],
-    };
+    return [
+      {
+        assignments: [],
+        status:
+          tablePartitionFields !== null && tablePartitionFields.length === 0
+            ? "NOT_PARTITIONED"
+            : "LEGACY_UNKNOWN",
+        reasonCodes:
+          tablePartitionFields !== null && tablePartitionFields.length === 0
+            ? ["TABLE_NOT_PARTITIONED"]
+            : ["TASK_PARTITION_CONTRACT_UNAVAILABLE"],
+      },
+    ];
   }
   if (Array.isArray(record.targets)) {
     const targetKey =
@@ -1124,16 +1157,18 @@ function declaredPartition(
           ];
         })
       : [];
-    return {
-      assignments,
-      status:
-        write !== null
-          ? (String(write.status) as TaskPartitionStatus)
-          : "UNKNOWN",
-      reasonCodes: Array.isArray(write?.reasonCodes)
-        ? write.reasonCodes.map(String)
-        : ["TASK_PARTITION_WRITE_NOT_FOUND"],
-    };
+    return [
+      {
+        assignments,
+        status:
+          write !== null
+            ? (String(write.status) as TaskPartitionStatus)
+            : "UNKNOWN",
+        reasonCodes: Array.isArray(write?.reasonCodes)
+          ? write.reasonCodes.map(String)
+          : ["TASK_PARTITION_WRITE_NOT_FOUND"],
+      },
+    ];
   }
   // Explicit compatibility for pre-contract Task Packs. This branch is not
   // used for new collection output and never reads SQL or script parameters.
@@ -1151,14 +1186,77 @@ function declaredPartition(
         observedValue: runtime ? null : expression,
       };
     });
-  return {
-    assignments,
-    status: assignments.length > 0 ? "COMPLETE" : "LEGACY_UNKNOWN",
-    reasonCodes:
-      assignments.length > 0
-        ? ["PARTITION_EVIDENCE_COMPLETE"]
-        : ["LEGACY_PARTITION_MAP"],
-  };
+  return [
+    {
+      assignments,
+      status: assignments.length > 0 ? "COMPLETE" : "LEGACY_UNKNOWN",
+      reasonCodes:
+        assignments.length > 0
+          ? ["PARTITION_EVIDENCE_COMPLETE"]
+          : ["LEGACY_PARTITION_MAP"],
+    },
+  ];
+}
+
+function matchDeclaredPartitionsToSqlWrite(
+  partitions: readonly DeclaredPartition[],
+  sqlPartition: readonly PartitionAssignment[],
+): readonly DeclaredPartition[] {
+  const observed = sqlPartition.filter(
+    (assignment) =>
+      assignment.valueStatus === "OBSERVED_RENDERED_VALUE" &&
+      assignment.observedValue !== null,
+  );
+  if (observed.length === 0) return partitions;
+  return partitions.filter((partition) =>
+    observed.every((sqlAssignment) => {
+      const declared = partition.assignments.find(
+        (assignment) => assignment.field === sqlAssignment.field,
+      );
+      if (!declared) return false;
+      const observedValue = sqlAssignment.observedValue;
+      if (observedValue === null) return false;
+      if (
+        declared.field === "busi_date" &&
+        declared.expression === "${YYYY-MM-DD}" &&
+        /^\d{4}-\d{2}-\d{2}$/u.test(observedValue)
+      )
+        return true;
+      if (declared.expression === "*") return true;
+      const declaredValue =
+        declared.observedValue ?? declared.expression.replace(/^['"]|['"]$/gu, "");
+      return declaredValue === observedValue;
+    }),
+  );
+}
+
+function normalizeLegacySqlPartition(
+  assignments: readonly PartitionAssignment[],
+): readonly PartitionAssignment[] {
+  return assignments.map((assignment) => {
+    const field = assignment.field.toLowerCase();
+    const rawValue = assignment.observedValue ?? assignment.expression;
+    const unquotedValue = rawValue.replace(/^['"]|['"]$/gu, "");
+    if (
+      field === "busi_date" &&
+      (/^\d{4}-\d{2}-\d{2}$/u.test(unquotedValue) ||
+        assignment.expression === "UNKNOWN")
+    )
+      return {
+        ...assignment,
+        expression: "${YYYY-MM-DD}",
+        valueStatus: "RUNTIME_EXPRESSION" as const,
+        observedValue: null,
+      };
+    if (assignment.expression === "UNKNOWN")
+      return {
+        ...assignment,
+        expression: "*",
+        valueStatus: "UNKNOWN" as const,
+        observedValue: null,
+      };
+    return assignment;
+  });
 }
 
 function nonConfirmed(
@@ -1360,30 +1458,33 @@ export function buildTableProducerIndex(
       if (resolvedTarget.confirmable) {
         const table = resolvedTarget.table as ProducerTableIdentity;
         const declaredWriteMode = stringValue(document.writeMode);
-        const partition = declaredPartition(
+        const partitions = declaredPartitions(
           document.partition,
           table.qualifiedName,
           null,
           null,
+          partitionFieldsForTable(catalog, table),
         );
-        const write = {
-          observationKind: "DIRECT_TARGET",
-          declaredWriteMode,
-          sqlWriteKind: null,
-          partition: partition.assignments,
-          partitionStatus: partition.status,
-          partitionReasonCodes: partition.reasonCodes,
-          ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
-          evidence: [packObservation, ...resolvedTarget.evidence],
-          targetEvidenceKind: evidenceKind as
-            "DIRECT_PLATFORM_TARGET" | "SQL_EXACT_TABLE_TARGET",
-        } as const;
-        addWrite(pack, table, {
-          ...write,
-          ...classifyProducerWriteObservation(write, {
-            sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
-          }),
-        });
+        for (const partition of partitions) {
+          const write = {
+            observationKind: "DIRECT_TARGET",
+            declaredWriteMode,
+            sqlWriteKind: null,
+            partition: partition.assignments,
+            partitionStatus: partition.status,
+            partitionReasonCodes: partition.reasonCodes,
+            ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
+            evidence: [packObservation, ...resolvedTarget.evidence],
+            targetEvidenceKind: evidenceKind as
+              "DIRECT_PLATFORM_TARGET" | "SQL_EXACT_TABLE_TARGET",
+          } as const;
+          addWrite(pack, table, {
+            ...write,
+            ...classifyProducerWriteObservation(write, {
+              sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
+            }),
+          });
+        }
       } else {
         const reason =
           resolvedTarget.reason ?? "TARGET_TABLE_IDENTITY_UNRESOLVED";
@@ -1460,36 +1561,51 @@ export function buildTableProducerIndex(
             ),
           );
         } else if (resolvedTarget.confirmable) {
-          const partition = declaredPartition(
+          const partitions = declaredPartitions(
             document.partition,
             resolvedTarget.table?.qualifiedName ?? undefined,
             file.slot,
             write.statementOrdinal,
+            partitionFieldsForTable(
+              catalog,
+              resolvedTarget.table?.identityStatus === "RESOLVED"
+                ? (resolvedTarget.table as ProducerTableIdentity)
+                : undefined,
+            ),
           );
-          const effectivePartition =
-            partition.assignments.length > 0
-              ? partition
-              : {
-                  assignments: write.partition,
+          const matchedPartitions = matchDeclaredPartitionsToSqlWrite(
+            partitions,
+            write.partition,
+          );
+          const effectivePartitions = matchedPartitions.every(
+            (partition) => partition.status === "LEGACY_UNKNOWN",
+          )
+            ? [
+                {
+                  assignments: normalizeLegacySqlPartition(write.partition),
                   status: "LEGACY_UNKNOWN" as const,
                   reasonCodes: ["SQL_WRITE_PARTITION_FALLBACK"],
-                };
-          const observation = {
-            observationKind: "SQL_EXPLICIT_WRITE",
-            declaredWriteMode: null,
-            sqlWriteKind: write.writeKind,
-            partition: effectivePartition.assignments,
-            partitionStatus: effectivePartition.status,
-            partitionReasonCodes: effectivePartition.reasonCodes,
-            ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
-            evidence: relationEvidence,
-          } as const;
-          addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
-            ...observation,
-            ...classifyProducerWriteObservation(observation, {
-              sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
-            }),
-          });
+                },
+              ]
+            : matchedPartitions;
+          for (const effectivePartition of effectivePartitions) {
+            const observation = {
+              observationKind: "SQL_EXPLICIT_WRITE",
+              declaredWriteMode: null,
+              sqlWriteKind: write.writeKind,
+              partition: effectivePartition.assignments,
+              partitionStatus: effectivePartition.status,
+              partitionReasonCodes: effectivePartition.reasonCodes,
+              ...(scriptEvidence === undefined ? {} : { scriptEvidence }),
+              evidence: relationEvidence,
+            } as const;
+            addWrite(pack, resolvedTarget.table as ProducerTableIdentity, {
+              ...observation,
+              ...classifyProducerWriteObservation(observation, {
+                sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
+              }),
+            });
+          }
           const tableKey = producerTableKey(resolvedTarget.table);
           if (tableKey) confirmedSqlTargetKeys.add(tableKey);
         } else {

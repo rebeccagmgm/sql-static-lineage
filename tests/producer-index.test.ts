@@ -92,6 +92,7 @@ function writeTable(
   root: string,
   qualifiedName: string,
   dataSource = "gfhive",
+  partitionFields?: readonly string[],
 ): string {
   const [schema, name] = qualifiedName.split(".");
   return writeTableInput(root, {
@@ -102,6 +103,7 @@ function writeTable(
     name,
     objectType: "TABLE",
     ddl: `CREATE TABLE ${qualifiedName} (id bigint)`,
+    ...(partitionFields === undefined ? {} : { partitionFields }),
     evidenceProvider: "fixture:table",
     collectedAt: "2026-08-23T00:00:00.000Z",
   }).directory;
@@ -331,6 +333,137 @@ describe("table producer index", () => {
         ],
       }),
     ]);
+  });
+
+  it("preserves multiple compact partition maps as multiple write observations", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.multi_partitioned", "gfhive", [
+      "busi_date",
+      "grp_id",
+    ]);
+    writeTask(root, "multi-partition-map", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.multi_partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: [
+        { busi_date: "${YYYY-MM-DD}", grp_id: "01" },
+        { busi_date: "${YYYY-MM-DD}", grp_id: "02" },
+      ],
+    });
+
+    const index = buildTableProducerIndex(root);
+    const writes = index.confirmedProducerEdges[0]?.writes ?? [];
+
+    expect(writes).toHaveLength(2);
+    expect(writes.map((write) => write.partitionStatus)).toEqual([
+      "COMPLETE",
+      "COMPLETE",
+    ]);
+    expect(writes.map((write) =>
+      Object.fromEntries(
+        write.partition.map((assignment) => [
+          assignment.field,
+          assignment.expression,
+        ]),
+      ),
+    )).toEqual([
+      { busi_date: "${YYYY-MM-DD}", grp_id: "01" },
+      { busi_date: "${YYYY-MM-DD}", grp_id: "02" },
+    ]);
+  });
+
+  it("classifies a table with no partition fields as NOT_PARTITIONED", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.non_partitioned", "gfhive", []);
+    writeTask(root, "non-partitioned-target", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.non_partitioned",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+
+    const index = buildTableProducerIndex(root);
+    expect(index.confirmedProducerEdges[0]?.writes[0]).toMatchObject({
+      partition: [],
+      partitionStatus: "NOT_PARTITIONED",
+      partitionReasonCodes: ["TABLE_NOT_PARTITIONED"],
+    });
+  });
+
+  it("matches compact partition variants to static SQL writes", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.sql_multi_partitioned", "gfhive", [
+      "busi_date",
+      "grp_id",
+    ]);
+    writeTask(root, "sql-multi-partition-map", {
+      partition: [
+        { busi_date: "${YYYY-MM-DD}", grp_id: "01" },
+        { busi_date: "${YYYY-MM-DD}", grp_id: "02" },
+      ],
+      sql: {
+        query: [
+          "INSERT OVERWRITE TABLE lake.sql_multi_partitioned PARTITION (busi_date, grp_id) SELECT 1;",
+          "INSERT OVERWRITE TABLE lake.sql_multi_partitioned PARTITION (busi_date='2026-08-23', grp_id='02') SELECT 2;",
+        ].join("\n"),
+      },
+    });
+
+    const index = buildTableProducerIndex(root);
+    const writes = index.confirmedProducerEdges[0]?.writes ?? [];
+
+    expect(writes).toHaveLength(3);
+    expect(writes[0]?.partition).toEqual([
+      expect.objectContaining({ field: "busi_date" }),
+      expect.objectContaining({ field: "grp_id", observedValue: "01" }),
+    ]);
+    expect(writes[1]?.partition).toEqual([
+      expect.objectContaining({ field: "busi_date" }),
+      expect.objectContaining({ field: "grp_id", observedValue: "02" }),
+    ]);
+    expect(writes[2]?.partition).toEqual([
+      expect.objectContaining({ field: "busi_date" }),
+      expect.objectContaining({ field: "grp_id", observedValue: "02" }),
+    ]);
+  });
+
+  it("normalizes legacy SQL fallback dates and unresolved fields", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.legacy_partitioned", "gfhive", [
+      "busi_date",
+      "grp_id",
+    ]);
+    writeTask(root, "legacy-sql-partition", {
+      sql: {
+        query:
+          "INSERT OVERWRITE TABLE lake.legacy_partitioned PARTITION (busi_date, grp_id) SELECT 1",
+      },
+    });
+
+    const index = buildTableProducerIndex(root);
+    expect(index.confirmedProducerEdges[0]?.writes[0]).toMatchObject({
+      partition: [
+        {
+          field: "busi_date",
+          expression: "${YYYY-MM-DD}",
+          valueStatus: "RUNTIME_EXPRESSION",
+          observedValue: null,
+        },
+        {
+          field: "grp_id",
+          expression: "*",
+          valueStatus: "UNKNOWN",
+          observedValue: null,
+        },
+      ],
+      partitionStatus: "LEGACY_UNKNOWN",
+      partitionReasonCodes: ["SQL_WRITE_PARTITION_FALLBACK"],
+    });
   });
 
   it("uses a Task Pack target to qualify an unqualified SQL write", () => {
