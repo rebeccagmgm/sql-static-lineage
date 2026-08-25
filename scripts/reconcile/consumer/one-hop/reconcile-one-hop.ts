@@ -1774,28 +1774,66 @@ function reconcileOneHopInternal(
     0,
   );
   const scheduleTaskIds = new Set(scheduleParents.keys());
-  const dataCandidateTaskIds = new Set(
+  const allDataCandidateTaskIds = new Set(partitionAwareTaskStatuses.keys());
+  const usableDataOnlyTaskIds = new Set(
     [...partitionAwareTaskStatuses]
       .filter(([, status]) => status !== "UNKNOWN")
       .map(([taskId]) => taskId),
   );
-  const primaryIntersection = [...dataCandidateTaskIds].filter((taskId) =>
+  const scheduledTableKeys = new Set(
+    parents
+      .flatMap((parent) =>
+        parent.confirmedWrites.map((write) => tableIdentityKey(write.table)),
+      )
+      .filter((key): key is string => key !== null),
+  );
+  for (const parent of parents) {
+    if (!parent.taskName) continue;
+    const separator = parent.taskName.indexOf(".");
+    if (separator <= 0 || separator === parent.taskName.length - 1) continue;
+    const schema = parent.taskName.slice(0, separator).trim();
+    const tableName = parent.taskName
+      .slice(separator + 1)
+      .trim()
+      .replace(/_TIT\d+(?:_H\d+)?$/i, "");
+    if (!schema || !tableName) continue;
+    const taskNameTable = resolveCatalogTable(
+      catalog,
+      `${schema}.${tableName}`,
+    ).table;
+    const tableKey = tableIdentityKey(taskNameTable);
+    if (tableKey) scheduledTableKeys.add(tableKey);
+  }
+  const dataTaskTableKeys = new Map<string, Set<string>>();
+  for (const producer of confirmedProducers) {
+    const tableKey = tableIdentityKey(producer.table);
+    if (!tableKey) continue;
+    const taskTables =
+      dataTaskTableKeys.get(producer.taskId) ?? new Set<string>();
+    taskTables.add(tableKey);
+    dataTaskTableKeys.set(producer.taskId, taskTables);
+  }
+  const primaryIntersection = [...allDataCandidateTaskIds].filter((taskId) =>
     scheduleTaskIds.has(taskId),
   );
+  const additionalDataTaskIds = [...usableDataOnlyTaskIds].filter((taskId) => {
+    if (primaryIntersection.includes(taskId)) return false;
+    const taskTables = dataTaskTableKeys.get(taskId);
+    if (!taskTables || taskTables.size === 0) return true;
+    return ![...taskTables].some((tableKey) =>
+      scheduledTableKeys.has(tableKey),
+    );
+  });
   const finalUpstreamTaskIds =
     primaryIntersection.length > 0
       ? {
           primary: uniqueSorted(primaryIntersection),
-          additional: uniqueSorted(
-            [...dataCandidateTaskIds].filter(
-              (taskId) => !primaryIntersection.includes(taskId),
-            ),
-          ),
+          additional: uniqueSorted(additionalDataTaskIds),
           decision: "SCHEDULE_DATA_INTERSECTION" as const,
         }
-      : dataCandidateTaskIds.size > 0
+      : usableDataOnlyTaskIds.size > 0
         ? {
-            primary: uniqueSorted([...dataCandidateTaskIds]),
+            primary: uniqueSorted([...usableDataOnlyTaskIds]),
             additional: [],
             decision: "DATA_FALLBACK" as const,
           }

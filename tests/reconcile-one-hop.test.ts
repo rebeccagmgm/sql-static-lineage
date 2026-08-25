@@ -465,6 +465,70 @@ describe("reconcileOneHop", () => {
     expect(result.coverage.partitionScopes.multiProducerTables).toBe(1);
   });
 
+  it("prefers a scheduled producer when data-only producers write the same table", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "src.shared");
+    writeTable(dataRoot, "mart.current");
+    writeTable(dataRoot, "raw.seed");
+    writeTask(dataRoot, "current-same-table", {
+      sql: {
+        query: {
+          content: "SELECT id FROM src.shared",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    for (const taskId of ["scheduled-producer", "alternate-producer"]) {
+      writeTask(dataRoot, taskId, {
+        sql: {
+          query: {
+            content:
+              "INSERT OVERWRITE TABLE src.shared SELECT id FROM raw.seed",
+            evidenceProvider: "fixture:sql",
+          },
+        },
+        target: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "src.shared",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        evidenceProvider: "fixture:task",
+      });
+    }
+
+    const result = reconcileOneHop("current-same-table", {
+      dataRoot,
+      producerIndex: buildTableProducerIndex(dataRoot),
+      openCliRunner: (args) =>
+        args[0] === "horae"
+          ? [{ task_id: "scheduled-producer", direction: "上游" }]
+          : [],
+    });
+
+    expect(result.nextDataTaskIds).toEqual([
+      "alternate-producer",
+      "scheduled-producer",
+    ]);
+    expect(result.finalUpstreamTaskIds).toEqual({
+      primary: ["scheduled-producer"],
+      additional: [],
+      decision: "SCHEDULE_DATA_INTERSECTION",
+    });
+    expect(
+      result.dataPath.confirmedProducers.find(
+        (producer) => producer.taskId === "alternate-producer",
+      )?.scheduleRelation,
+    ).toBe("NOT_DIRECT_PARENT");
+  });
+
   it("binds a table-specific filter while retaining the cross-table JOIN as evidence", () => {
     const dataRoot = fixtureRoot();
     writeTable(dataRoot, "src.partitioned", ["busi_date"]);
