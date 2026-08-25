@@ -16,22 +16,23 @@ import {
   writeTaskInput,
   type JsonValue,
   type TaskEvidence,
-} from "../scripts/input/input-pack.ts";
+} from "../scripts/input/shared/input-pack.ts";
 import {
   buildTableProducerIndex,
   fingerprintTableProducerInputs,
   type TableProducerIndex,
-} from "../scripts/reconcile/producer-index.ts";
+} from "../scripts/reconcile/producer/producer-index.ts";
 import {
   reconcileOneHop,
   type OneHopReconciliationResult,
-} from "../scripts/reconcile/reconcile-one-hop.ts";
+} from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
+  reconcileMultiHopBatch,
   reconcileMultiHop,
   validateMultiHopReconciliation,
-} from "../scripts/reconcile/reconcile-multi-hop.ts";
-import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/task-read-evidence.ts";
-import type { TerminalTableConfig } from "../scripts/reconcile/terminal-table-config.ts";
+} from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
+import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/consumer/multi-hop/task-read-evidence.ts";
+import type { TerminalTableConfig } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";
 
@@ -411,6 +412,26 @@ describe("reconcileMultiHop", () => {
       },
     });
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("reuses a prepared evidence context without changing the graph result", () => {
+    const root = dataRoot();
+    for (const table of ["lake.t1", "lake.t2"]) writeTable(root, table);
+    writeReader(root, "A", ["lake.t1"]);
+    writeProducer(root, "B", "lake.t1", ["lake.t2"]);
+    writeProducer(root, "C", "lake.t2");
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const standalone = run(root, index, "A", { maxDepth: 2 });
+    const [prepared] = reconcileMultiHopBatch([{ taskId: "A" }], {
+      dataRoot: root,
+      producerIndex: index,
+      maxDepth: 2,
+      maxTasks: 100,
+      maxEdges: 500,
+      now: () => FIXED_NOW,
+    });
+
+    expect(semanticSnapshot(prepared!)).toEqual(semanticSnapshot(standalone));
   });
 
   it("does not recurse through a mutation-only table write", () => {
@@ -937,47 +958,47 @@ describe("reconcileMultiHop", () => {
   });
 
   frozen86840It("replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal", () => {
-    const fixtureRoot = join(
-      import.meta.dirname,
-      "fixtures",
-      "reconcile-one-hop",
-    );
-    const frozenEvidence = JSON.parse(
-      readFileSync(join(fixtureRoot, "86840-evidence.json"), "utf8"),
-    ) as { horaeRows: Record<string, unknown>[] };
-    const root = materializeFrozenInputPack(
-      join(fixtureRoot, "86840-input-pack"),
-    );
-    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+      const fixtureRoot = join(
+        import.meta.dirname,
+        "fixtures",
+        "reconcile-one-hop",
+      );
+      const frozenEvidence = JSON.parse(
+        readFileSync(join(fixtureRoot, "86840-evidence.json"), "utf8"),
+      ) as { horaeRows: Record<string, unknown>[] };
+      const root = materializeFrozenInputPack(
+        join(fixtureRoot, "86840-input-pack"),
+      );
+      const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
     const snapshot = rootOneHop(root, index, "86840", frozenEvidence.horaeRows);
 
-    const result = run(root, index, "86840", {
-      maxDepth: 1,
-      maxTasks: 100,
-      maxEdges: 500,
-      rootOneHop: snapshot,
-    });
+      const result = run(root, index, "86840", {
+        maxDepth: 1,
+        maxTasks: 100,
+        maxEdges: 500,
+        rootOneHop: snapshot,
+      });
 
-    expect(result.readEdges).toHaveLength(27);
-    expect(result.producerBridges).toHaveLength(22);
-    expect(result.taskNodes).toHaveLength(23);
-    expect(result.scheduleSkeleton.parents).toHaveLength(26);
-    expect(result.terminals).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          taskId: "86840",
-          table: expect.objectContaining({
-            qualifiedName: "pdata_n.ref_dw_cd_val",
+      expect(result.readEdges).toHaveLength(27);
+      expect(result.producerBridges).toHaveLength(22);
+      expect(result.taskNodes).toHaveLength(23);
+      expect(result.scheduleSkeleton.parents).toHaveLength(26);
+      expect(result.terminals).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            taskId: "86840",
+            table: expect.objectContaining({
+              qualifiedName: "pdata_n.ref_dw_cd_val",
+            }),
+            reason: "NO_CONFIRMED_PRODUCER_OBSERVED",
           }),
-          reason: "NO_CONFIRMED_PRODUCER_OBSERVED",
-        }),
-      ]),
-    );
-    expect(
-      result.producerBridges.some(
-        (bridge) => bridge.table.qualifiedName === "pdata_n.ref_dw_cd_val",
-      ),
-    ).toBe(false);
+        ]),
+      );
+      expect(
+        result.producerBridges.some(
+          (bridge) => bridge.table.qualifiedName === "pdata_n.ref_dw_cd_val",
+        ),
+      ).toBe(false);
   });
 
   it("publishes and enforces a closed multi-hop artifact contract", () => {

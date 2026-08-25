@@ -1,8 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalHash, type JsonValue } from "../input/input-pack.ts";
-import type { OneHopReconciliationResult } from "./reconcile-one-hop.ts";
+import { canonicalHash, type JsonValue } from "../../../input/shared/input-pack.ts";
+import type { OneHopReconciliationResult } from "../one-hop/reconcile-one-hop.ts";
 import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
@@ -11,9 +11,10 @@ import {
   type ProducerTableIdentity,
   type ProducerWriteObservation,
   type TableProducerIndex,
-} from "./producer-index.ts";
+} from "../../producer/producer-index.ts";
 import {
   buildTaskReadEvidenceRepository,
+  type TaskReadEvidenceRepository,
   type TaskDirectReadObservation,
   type TaskInputPackStatus,
   type TaskReadBlockReason,
@@ -172,6 +173,12 @@ export interface ReconcileMultiHopOptions {
   readonly now?: () => string;
   readonly rootOneHop?: OneHopReconciliationResult;
   readonly terminalTableConfig?: TerminalTableConfig;
+}
+
+interface MultiHopPreparedContext {
+  readonly dataRoot: string;
+  readonly repository: TaskReadEvidenceRepository;
+  readonly inputFingerprint: string;
 }
 
 function requireRecord(value: unknown, field: string): Record<string, unknown> {
@@ -444,10 +451,10 @@ export function validateMultiHopReconciliation(
       if (
         write.operationClass !== undefined &&
         write.dataPathRole !== undefined &&
-        ((["DELETE", "TRUNCATE"] as readonly string[]).includes(
+        (["DELETE", "TRUNCATE"] as readonly string[]).includes(
           String(write.operationClass),
         ) !==
-          (write.dataPathRole === "MUTATION_ONLY"))
+          (write.dataPathRole === "MUTATION_ONLY")
       )
         throw new Error("WRITE_SEMANTICS_MISMATCH");
       for (const [partitionIndex, partitionValue] of requireArray(
@@ -461,9 +468,11 @@ export function validateMultiHopReconciliation(
         requireString(partition.field, "partition.field");
         requireString(partition.expression, "partition.expression");
         if (
-          !["OBSERVED_RENDERED_VALUE", "RUNTIME_EXPRESSION", "UNKNOWN"].includes(
-            String(partition.valueStatus),
-          ) ||
+          ![
+            "OBSERVED_RENDERED_VALUE",
+            "RUNTIME_EXPRESSION",
+            "UNKNOWN",
+          ].includes(String(partition.valueStatus)) ||
           !(
             partition.observedValue === null ||
             typeof partition.observedValue === "string"
@@ -664,6 +673,23 @@ function requireLimit(value: number, name: string, minimum: number): void {
     throw new Error(`${name.toUpperCase()}_INVALID`);
 }
 
+/**
+ * Build the expensive, immutable evidence context once for a batch of roots.
+ * The producer index fingerprint is still checked against the same snapshot,
+ * but Task/Table Pack discovery and parsing are shared by every root.
+ */
+function prepareMultiHopContext(
+  dataRootInput: string,
+): MultiHopPreparedContext {
+  const repository = buildTaskReadEvidenceRepository(dataRootInput);
+  const inputFingerprint = fingerprintTableProducerInputs(dataRootInput);
+  return {
+    dataRoot: repository.dataRoot,
+    repository,
+    inputFingerprint,
+  };
+}
+
 function hasTaskPath(
   fromTaskId: string,
   toTaskId: string,
@@ -697,9 +723,10 @@ function sortTerminals(
   );
 }
 
-export function reconcileMultiHop(
+function reconcileMultiHopInternal(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
+  preparedContext: MultiHopPreparedContext,
 ): MultiHopReconciliationResult {
   if (rootTaskId.trim() === "") throw new Error("TASK_ID_REQUIRED");
   requireLimit(options.maxDepth, "max_depth", 0);
@@ -707,9 +734,10 @@ export function reconcileMultiHop(
   requireLimit(options.maxEdges, "max_edges", 1);
   validateTableProducerIndex(options.producerIndex);
   const terminalTableConfig = options.terminalTableConfig;
-  const repository = buildTaskReadEvidenceRepository(options.dataRoot);
-  const currentFingerprint = fingerprintTableProducerInputs(options.dataRoot);
-  if (currentFingerprint !== options.producerIndex.inputFingerprint)
+  const repository = preparedContext.repository;
+  if (
+    preparedContext.inputFingerprint !== options.producerIndex.inputFingerprint
+  )
     throw new Error("PRODUCER_INDEX_STALE");
   if (options.rootOneHop)
     validateRootOneHopSnapshot(
@@ -895,10 +923,7 @@ export function reconcileMultiHop(
         continue;
       }
       const terminalRole = terminalTableConfig
-        ? matchingTerminalRole(
-            terminalTableConfig,
-            read.tableRef.qualifiedName,
-          )
+        ? matchingTerminalRole(terminalTableConfig, read.tableRef.qualifiedName)
         : null;
       if (terminalRole) {
         readsWithoutConfirmedProducer += 1;
@@ -1154,6 +1179,45 @@ export function reconcileMultiHop(
   };
   validateMultiHopReconciliation(result);
   return result;
+}
+
+export function reconcileMultiHop(
+  rootTaskId: string,
+  options: ReconcileMultiHopOptions,
+): MultiHopReconciliationResult {
+  return reconcileMultiHopInternal(
+    rootTaskId,
+    options,
+    prepareMultiHopContext(options.dataRoot),
+  );
+}
+
+export interface MultiHopBatchRoot {
+  readonly taskId: string;
+  readonly rootOneHop?: OneHopReconciliationResult;
+}
+
+export function reconcileMultiHopBatch(
+  roots: readonly MultiHopBatchRoot[],
+  options: Omit<ReconcileMultiHopOptions, "rootOneHop">,
+): readonly MultiHopReconciliationResult[] {
+  const preparedContext = prepareMultiHopContext(options.dataRoot);
+  const results = roots.map((root) =>
+    reconcileMultiHopInternal(
+      root.taskId,
+      {
+        ...options,
+        ...(root.rootOneHop ? { rootOneHop: root.rootOneHop } : {}),
+      },
+      preparedContext,
+    ),
+  );
+  if (
+    fingerprintTableProducerInputs(options.dataRoot) !==
+    preparedContext.inputFingerprint
+  )
+    throw new Error("INPUT_CHANGED_DURING_MULTI_HOP_BATCH");
+  return results;
 }
 
 interface CliOptions {

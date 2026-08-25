@@ -3,7 +3,7 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import {
   assertExistingTableLayout,
   quarantineMalformedTableDirectories,
-} from "./input-pack.ts";
+} from "../shared/input-pack.ts";
 import {
   collectOneTask,
   findExcludedTaskIds,

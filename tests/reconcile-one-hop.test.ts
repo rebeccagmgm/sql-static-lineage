@@ -13,18 +13,19 @@ import {
   writeTableInput,
   writeTaskInput,
   type TaskEvidence,
-} from "../scripts/input/input-pack.ts";
+} from "../scripts/input/shared/input-pack.ts";
 import {
   extractSqlDirectReads,
   extractSqlWrites,
+  reconcileOneHopBatch,
   producerIndexPathFromArgs,
   reconcileOneHop,
   type OpenCliRunner,
-} from "../scripts/reconcile/reconcile-one-hop.ts";
+} from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
   buildTableProducerIndex,
   type TableProducerIndex,
-} from "../scripts/reconcile/producer-index.ts";
+} from "../scripts/reconcile/producer/producer-index.ts";
 
 const frozen86840It = existsSync(
   join(
@@ -211,6 +212,28 @@ function writeProducerIndexFixture(options?: { partial?: boolean }): {
 }
 
 describe("reconcileOneHop", () => {
+  it("reuses a prepared catalog and fingerprint for a batch root", () => {
+    const fixture = writeProducerIndexFixture();
+    const standalone = reconcileOneHop("current-indexed", {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: () => [],
+      now: () => "2026-08-23T00:30:00.000Z",
+    });
+    const [prepared] = reconcileOneHopBatch(["current-indexed"], {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: () => [],
+      now: () => "2026-08-23T00:30:00.000Z",
+    });
+
+    const omitVolatile = (value: typeof standalone) => {
+      const { generatedAt: _generatedAt, ...stable } = value;
+      return stable;
+    };
+    expect(omitVolatile(prepared!)).toEqual(omitVolatile(standalone));
+  });
+
   it("qualifies a bare read with the proven Task Pack schema", () => {
     const dataRoot = fixtureRoot();
     writeTable(dataRoot, "pdata_news_n.t02_scr_base_info");
@@ -834,140 +857,140 @@ describe("reconcileOneHop", () => {
   });
 
   frozen86840It("replays the frozen real 86840 Input Pack through 22 local and 4 supplemental parents", () => {
-    const fixture = JSON.parse(
-      readFileSync(
-        join(
-          process.cwd(),
-          "tests",
-          "fixtures",
-          "reconcile-one-hop",
-          "86840-evidence.json",
+      const fixture = JSON.parse(
+        readFileSync(
+          join(
+            process.cwd(),
+            "tests",
+            "fixtures",
+            "reconcile-one-hop",
+            "86840-evidence.json",
+          ),
+          "utf8",
         ),
-        "utf8",
-      ),
-    ) as {
-      taskId: string;
-      frozenFrom: {
-        currentTaskContentHash: string;
-        querySha256: string;
+      ) as {
+        taskId: string;
+        frozenFrom: {
+          currentTaskContentHash: string;
+          querySha256: string;
+        };
+        expected: {
+          sqlDirectReads: number;
+          scheduleParents: number;
+          matched: number;
+          sqlOnly: number;
+          scheduleOnly: number;
+          unresolved: number;
+          sqlOnlyQualifiedName: string;
+        };
+        horaeRows: Record<string, unknown>[];
+        supplementalResponses: Record<string, Record<string, unknown>>;
       };
-      expected: {
-        sqlDirectReads: number;
-        scheduleParents: number;
-        matched: number;
-        sqlOnly: number;
-        scheduleOnly: number;
-        unresolved: number;
-        sqlOnlyQualifiedName: string;
+      const frozenInputPackRoot = join(
+        process.cwd(),
+        "tests",
+        "fixtures",
+        "reconcile-one-hop",
+        "86840-input-pack",
+      );
+      const dataRoot = materializeFrozenInputPack(frozenInputPackRoot);
+      const currentTask = JSON.parse(
+        readFileSync(
+          join(dataRoot, "tasks", "hiveTask-2.0", "86840", "task.json"),
+          "utf8",
+        ),
+      ) as {
+        contentHash: string;
+        sqlFiles: { slot: string; sha256: string }[];
       };
-      horaeRows: Record<string, unknown>[];
-      supplementalResponses: Record<string, Record<string, unknown>>;
-    };
-    const frozenInputPackRoot = join(
-      process.cwd(),
-      "tests",
-      "fixtures",
-      "reconcile-one-hop",
-      "86840-input-pack",
-    );
-    const dataRoot = materializeFrozenInputPack(frozenInputPackRoot);
-    const currentTask = JSON.parse(
-      readFileSync(
-        join(dataRoot, "tasks", "hiveTask-2.0", "86840", "task.json"),
-        "utf8",
-      ),
-    ) as {
-      contentHash: string;
-      sqlFiles: { slot: string; sha256: string }[];
-    };
-    expect(currentTask.contentHash).toBe(
-      fixture.frozenFrom.currentTaskContentHash,
-    );
-    expect(
-      currentTask.sqlFiles.find((file) => file.slot === "query")?.sha256,
-    ).toBe(fixture.frozenFrom.querySha256);
-    const runner: OpenCliRunner = (args) => {
-      if (args[0] === "horae") return fixture.horaeRows;
-      const parentTaskId = args[args.indexOf("--task-id") + 1]!;
-      const response = fixture.supplementalResponses[parentTaskId];
-      if (!response) throw new Error(`UNEXPECTED_TASK_SOURCE:${parentTaskId}`);
-      return response;
-    };
-
-    const result = reconcileOneHop(fixture.taskId, {
-      dataRoot,
-      openCliRunner: runner,
-      now: () => "2026-08-22T02:58:38.275Z",
-    });
-
-    const { sqlOnlyQualifiedName, ...expectedCounts } = fixture.expected;
-    expect(result.counts).toEqual(expectedCounts);
-    expect(
-      result.reconciliation.filter((item) => item.status === "SQL_ONLY"),
-    ).toEqual([
-      expect.objectContaining({
-        taskId: null,
-        table: expect.objectContaining({
-          qualifiedName: sqlOnlyQualifiedName,
-        }),
-      }),
-    ]);
-    expect(result.nextScheduleTaskIds).toHaveLength(
-      fixture.expected.scheduleParents,
-    );
-    expect(result.nextDataTaskIds).toHaveLength(fixture.expected.matched);
-    expect(result.currentTask.directReads[0]?.evidence).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          source: "INPUT_PACK_SQL",
-          provider: "sql-mcp",
-        }),
-      ]),
-    );
-    expect(
-      result.parents.find((parent) => parent.taskId === "102845")
-        ?.confirmedWrites[0]?.evidence,
-    ).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          source: "INPUT_PACK_TASK",
-          provider: expect.stringContaining("opencli:szdata.task-source"),
-        }),
-      ]),
-    );
-
-    const producerIndex = buildTableProducerIndex(dataRoot, {
-      now: () => "2026-08-22T02:58:38.275Z",
-    });
-    expect(producerIndex.buildStatus).toBe("SUCCESS");
-    const indexedCalls: string[][] = [];
-    const indexedResult = reconcileOneHop(fixture.taskId, {
-      dataRoot,
-      producerIndex,
-      openCliRunner: (args) => {
-        indexedCalls.push([...args]);
+      expect(currentTask.contentHash).toBe(
+        fixture.frozenFrom.currentTaskContentHash,
+      );
+      expect(
+        currentTask.sqlFiles.find((file) => file.slot === "query")?.sha256,
+      ).toBe(fixture.frozenFrom.querySha256);
+      const runner: OpenCliRunner = (args) => {
         if (args[0] === "horae") return fixture.horaeRows;
-        throw new Error(`INDEX_MODE_MUST_NOT_CALL:${args.join(" ")}`);
-      },
-      now: () => "2026-08-22T02:58:38.275Z",
-    });
-    expect(indexedResult.counts).toEqual({
-      sqlDirectReads: 27,
-      scheduleParents: 26,
-      matched: 22,
-      sqlOnly: 5,
-      scheduleOnly: 0,
-      unresolved: 4,
-    });
-    expect(indexedResult.producerIndex.status).toBe("VALID_SUCCESS");
-    expect(indexedResult.dataPath.confirmedProducers).toHaveLength(22);
-    expect(indexedResult.nextDataTaskIds).toHaveLength(22);
-    expect(indexedResult.coverage.retrieval).toEqual({
-      producerIndex: "VALID_SUCCESS",
-      liveTaskSourceAttempts: 0,
-      liveTaskSourceSuccesses: 0,
-      liveTaskSourceFailures: 0,
-    });
-    expect(indexedCalls).toHaveLength(1);
+        const parentTaskId = args[args.indexOf("--task-id") + 1]!;
+        const response = fixture.supplementalResponses[parentTaskId];
+      if (!response) throw new Error(`UNEXPECTED_TASK_SOURCE:${parentTaskId}`);
+        return response;
+      };
+
+      const result = reconcileOneHop(fixture.taskId, {
+        dataRoot,
+        openCliRunner: runner,
+        now: () => "2026-08-22T02:58:38.275Z",
+      });
+
+      const { sqlOnlyQualifiedName, ...expectedCounts } = fixture.expected;
+      expect(result.counts).toEqual(expectedCounts);
+      expect(
+        result.reconciliation.filter((item) => item.status === "SQL_ONLY"),
+      ).toEqual([
+        expect.objectContaining({
+          taskId: null,
+          table: expect.objectContaining({
+            qualifiedName: sqlOnlyQualifiedName,
+          }),
+        }),
+      ]);
+      expect(result.nextScheduleTaskIds).toHaveLength(
+        fixture.expected.scheduleParents,
+      );
+      expect(result.nextDataTaskIds).toHaveLength(fixture.expected.matched);
+      expect(result.currentTask.directReads[0]?.evidence).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: "INPUT_PACK_SQL",
+            provider: "sql-mcp",
+          }),
+        ]),
+      );
+      expect(
+        result.parents.find((parent) => parent.taskId === "102845")
+          ?.confirmedWrites[0]?.evidence,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: "INPUT_PACK_TASK",
+            provider: expect.stringContaining("opencli:szdata.task-source"),
+          }),
+        ]),
+      );
+
+      const producerIndex = buildTableProducerIndex(dataRoot, {
+        now: () => "2026-08-22T02:58:38.275Z",
+      });
+      expect(producerIndex.buildStatus).toBe("SUCCESS");
+      const indexedCalls: string[][] = [];
+      const indexedResult = reconcileOneHop(fixture.taskId, {
+        dataRoot,
+        producerIndex,
+        openCliRunner: (args) => {
+          indexedCalls.push([...args]);
+          if (args[0] === "horae") return fixture.horaeRows;
+          throw new Error(`INDEX_MODE_MUST_NOT_CALL:${args.join(" ")}`);
+        },
+        now: () => "2026-08-22T02:58:38.275Z",
+      });
+      expect(indexedResult.counts).toEqual({
+        sqlDirectReads: 27,
+        scheduleParents: 26,
+        matched: 22,
+        sqlOnly: 5,
+        scheduleOnly: 0,
+        unresolved: 4,
+      });
+      expect(indexedResult.producerIndex.status).toBe("VALID_SUCCESS");
+      expect(indexedResult.dataPath.confirmedProducers).toHaveLength(22);
+      expect(indexedResult.nextDataTaskIds).toHaveLength(22);
+      expect(indexedResult.coverage.retrieval).toEqual({
+        producerIndex: "VALID_SUCCESS",
+        liveTaskSourceAttempts: 0,
+        liveTaskSourceSuccesses: 0,
+        liveTaskSourceFailures: 0,
+      });
+      expect(indexedCalls).toHaveLength(1);
   });
 });

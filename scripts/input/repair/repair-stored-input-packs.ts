@@ -18,8 +18,8 @@ import {
   SQL_SLOTS,
   type SqlSlot,
   type TaskDocument,
-} from "./input-pack.ts";
-import { normalizeCollectedSqlSlot } from "./collect-one-task-input-pack.ts";
+} from "../shared/input-pack.ts";
+import { normalizeCollectedSqlSlot } from "../mainline/collect-one-task-input-pack.ts";
 
 const MIGRATION_PROVENANCE = "migration:input-pack-sql-normalizer-v1";
 

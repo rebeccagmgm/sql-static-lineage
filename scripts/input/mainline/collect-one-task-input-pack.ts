@@ -16,20 +16,20 @@ import {
   type SqlSlot,
   type TableEvidence,
   type TaskEvidence,
-} from "./input-pack.ts";
+} from "../shared/input-pack.ts";
 import {
   buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
-} from "./task-partition-evidence.ts";
+} from "../shared/task-partition-evidence.ts";
 import {
   controlledTaskEndpointDataSource,
   enrichTaskEndpoint,
   inputCollectionStatus,
   shouldUseTaskRelationFallback,
   targetEvidenceKindFor,
-} from "./task-endpoints.ts";
-import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
-import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
+} from "../shared/task-endpoints.ts";
+import { findSqlFinalTargetEvidence } from "../shared/sql-target-evidence.ts";
+import taskTypeCodeMap from "../shared/task-type-map.json" with { type: "json" };
 
 const SQL_SLOTS: readonly SqlSlot[] = [
   "create",

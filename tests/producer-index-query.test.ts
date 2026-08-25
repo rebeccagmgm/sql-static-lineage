@@ -1,0 +1,171 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  lookupProducersByTablePartition,
+  type PartitionQuery,
+} from "../scripts/query/producer-index-query.ts";
+import type {
+  ProducerTableIdentity,
+  TableProducerIndex,
+} from "../scripts/reconcile/producer/producer-index.ts";
+
+const table: ProducerTableIdentity = {
+  platform: "hive",
+  dataSource: "gfhive",
+  qualifiedName: "dm_cisp_n.otc_deri_swap_trd_equi_pymt_det",
+};
+
+function write(
+  partition: Array<{
+    field: string;
+    expression: string;
+    valueStatus: "OBSERVED_RENDERED_VALUE" | "RUNTIME_EXPRESSION" | "UNKNOWN";
+    observedValue: string | null;
+  }>,
+) {
+  return {
+    observationKind: "DIRECT_TARGET" as const,
+    declaredWriteMode: null,
+    sqlWriteKind: null,
+    partition,
+    partitionStatus: "COMPLETE" as const,
+    partitionReasonCodes: ["PARTITION_EVIDENCE_COMPLETE"],
+    evidence: [
+      {
+        source: "INPUT_PACK_TASK" as const,
+        provider: "test",
+        locator: "tasks/sparkIndex/207229/task.json",
+        observedAt: null,
+        contentHash: "a".repeat(64),
+      },
+      {
+        source: "TABLE_PACK" as const,
+        provider: "test",
+        locator: "tables/hive/table/table.json",
+        observedAt: null,
+        contentHash: "b".repeat(64),
+      },
+    ],
+    writeDirection: "WRITE_CONFIRMED" as const,
+    operationClass: "PLATFORM_TRANSFER" as const,
+    dataPathRole: "PRODUCER" as const,
+  };
+}
+
+const index = {
+  schemaVersion: "1.1.0",
+  artifactType: "TABLE_PRODUCER_INDEX",
+  generatedAt: "2026-08-25T00:00:00.000Z",
+  buildStatus: "SUCCESS",
+  coverageSemantics: "OBSERVED_EVIDENCE_ONLY",
+  inputFingerprint: "c".repeat(64),
+  confirmedProducerEdges: [
+    {
+      taskId: "207229",
+      taskCategory: "sparkIndex",
+      taskContentHash: "a".repeat(64),
+      table: { ...table, identityStatus: "RESOLVED" as const },
+      writes: [
+        write([
+          {
+            field: "src_tbl",
+            expression: "*",
+            valueStatus: "OBSERVED_RENDERED_VALUE",
+            observedValue: "*",
+          },
+          {
+            field: "busi_date",
+            expression: "${YYYY-MM-DD}",
+            valueStatus: "RUNTIME_EXPRESSION",
+            observedValue: null,
+          },
+        ]),
+      ],
+    },
+  ],
+  nonConfirmedRelations: [],
+  intermediateMaterializations: [],
+  counts: {
+    taskPacksDiscovered: 1,
+    taskPacksIndexed: 1,
+    invalidTaskPacks: 0,
+    tablePacksDiscovered: 1,
+    tablePacksIndexed: 1,
+    invalidTablePacks: 0,
+    confirmedTables: 1,
+    confirmedProducerEdges: 1,
+    confirmedWriteObservations: 1,
+    candidateObservations: 0,
+    intermediateMaterializations: 0,
+  },
+  issues: [],
+  boundaries: {
+    openCli: "NOT_USED",
+    partitionScope: "TASK_TO_TABLE_WRITE",
+    schedulerExecution: "NOT_EVALUATED",
+    runtimeDelivery: "NOT_EVALUATED",
+    businessCorrectness: "NOT_EVALUATED",
+  },
+  contentHash: "d".repeat(64),
+} as unknown as TableProducerIndex;
+
+describe("producer-index-query", () => {
+  it("matches a direct target with a date template and partition wildcard", () => {
+    const result = lookupProducersByTablePartition(index, {
+      table,
+      partition: { src_tbl: "*", busi_date: "2026-05-24" },
+    });
+    expect(result.map((item) => item.taskId)).toEqual(["207229"]);
+  });
+
+  it("matches the same template when the query uses the template", () => {
+    const partition: PartitionQuery = {
+      src_tbl: "*",
+      busi_date: "${YYYY-MM-DD}",
+    };
+    const result = lookupProducersByTablePartition(index, { table, partition });
+    expect(result).toHaveLength(1);
+  });
+
+  it("matches all producer writes when only the physical table is provided", () => {
+    const result = lookupProducersByTablePartition(index, {
+      table: { qualifiedName: table.qualifiedName },
+    });
+    expect(result.map((item) => item.taskId)).toEqual(["207229"]);
+    expect(result[0]?.writes).toHaveLength(1);
+  });
+
+  it("returns all physical identities when the table name is shared", () => {
+    const firstEdge = index.confirmedProducerEdges[0]!;
+    const ambiguous = {
+      ...index,
+      confirmedProducerEdges: [
+        ...index.confirmedProducerEdges,
+        {
+          ...firstEdge,
+          taskId: "other-task",
+          table: { ...firstEdge.table, dataSource: "other" },
+        },
+      ],
+    } as TableProducerIndex;
+    const result = lookupProducersByTablePartition(ambiguous, {
+      table: { qualifiedName: table.qualifiedName },
+    });
+    expect(result.map((item) => item.taskId)).toEqual(["207229", "other-task"]);
+  });
+
+  it("does not match a different physical table or missing partition field", () => {
+    expect(
+      lookupProducersByTablePartition(index, {
+        table: { ...table, dataSource: "other" },
+        partition: { src_tbl: "*", busi_date: "2026-05-24" },
+      }),
+    ).toEqual([]);
+    expect(
+      lookupProducersByTablePartition(index, {
+        table,
+        partition: { grp_id: "01" },
+      }),
+    ).toEqual([]);
+  });
+});

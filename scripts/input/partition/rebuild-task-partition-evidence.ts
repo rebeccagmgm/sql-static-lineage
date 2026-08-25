@@ -13,7 +13,7 @@ import {
   buildCompactTaskPartition,
   buildTaskPartitionEvidence,
   isDatabaseSourceToHiveTask,
-} from "./task-partition-evidence.ts";
+} from "../shared/task-partition-evidence.ts";
 import {
   SQL_SLOTS,
   canonicalHash,
@@ -24,8 +24,8 @@ import {
   type TaskSchedulerEvidence,
   type TaskDocument,
   type TableEvidence,
-} from "./input-pack.ts";
-import { extractSqlWrites } from "../reconcile/sql-write-evidence.ts";
+} from "../shared/input-pack.ts";
+import { extractSqlWrites } from "../../evidence/sql-write-evidence.ts";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);

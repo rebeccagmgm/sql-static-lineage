@@ -35,14 +35,14 @@ import {
   type JsonValue,
   type TableDocument,
   type TaskDocument,
-} from "../input/input-pack.ts";
+} from "../../input/shared/input-pack.ts";
 import {
   extractSqlWrites,
   partitionValueStatus,
   type PartitionAssignment,
   type SqlWrite,
-} from "./sql-write-evidence.ts";
-import { findSqlTargetEvidence } from "../input/sql-target-evidence.ts";
+} from "../../evidence/sql-write-evidence.ts";
+import { findSqlTargetEvidence } from "../../input/shared/sql-target-evidence.ts";
 
 type JsonRecord = Record<string, unknown>;
 

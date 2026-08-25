@@ -13,8 +13,8 @@ import {
   canonicalHash,
   type JsonValue,
   type TaskDocument,
-} from "../scripts/input/input-pack.ts";
-import { rewriteStoredTaskPartition } from "../scripts/input/rebuild-task-partition-evidence.ts";
+} from "../scripts/input/shared/input-pack.ts";
+import { rewriteStoredTaskPartition } from "../scripts/input/partition/rebuild-task-partition-evidence.ts";
 
 function storedTask(): Record<string, unknown> {
   return {

@@ -13,7 +13,7 @@ import {
   sha256File,
   validateTableDocument,
   validateTaskDocument,
-} from "./input-pack.ts";
+} from "../shared/input-pack.ts";
 
 export type PersistedTaskStatus =
   | "SUCCESS"

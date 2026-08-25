@@ -36,6 +36,40 @@ npm run producer-index:update -- --data-root <input-pack-root> \
 
 当前这是“快照复用 + 变化检测”，不是 Task/Table 级增量重算：发生变化时仍会全量重建。manifest 本身仍需读取并校验当前 Input Pack，因而它不能消除首次扫描成本；它避免的是稳定快照反复解析全部 SQL。定期全量校验和真正的按 Pack 增量合并尚未实现。
 
+## 按物理表和分区查询 producer Task
+
+查询脚本只读取已有的 producer-index，不重新扫描 Input Pack，也不重新解析 SQL：
+
+```text
+npm run producer-index:query -- --index <producer-index.json> \
+  --table <qualified-name> \
+  [--partition "field=value,field=value"]
+```
+
+`--platform` 和 `--data-source` 可选。省略时，脚本会返回该 qualified name 下所有匹配的物理身份和 producer Task；传入这两个参数时才限制为指定物理身份。
+
+例如：
+
+```text
+npm run producer-index:query -- \
+  --index <producer-index.json> \
+  --platform hive \
+  --data-source gfhive \
+  --table dm_cisp_n.otc_deri_swap_trd_equi_pymt_det \
+  --partition "src_tbl=*,busi_date=2026-05-24"
+```
+
+分区匹配支持：
+
+- 静态值精确匹配；
+- `${YYYY-MM-DD}` 匹配具体日期；
+- `*` 匹配任意值；
+- 一个 Task 的多个写入分支分别保留在结果中。
+
+省略 `--partition` 时，返回该物理表的全部 confirmed producer Task。
+
+输出只返回 Task 和匹配写入摘要；完整证据仍从 `current.json` 的 `evidence` 或对应 Input Pack 读取。
+
 ## Confirmed producer 门槛
 
 confirmed edge 的逻辑键为：

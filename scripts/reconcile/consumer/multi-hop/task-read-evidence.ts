@@ -14,8 +14,8 @@ import {
   resolve,
   sep,
 } from "node:path";
-import type { Dialect } from "../../src/dialect.ts";
-import { SqlSession } from "../../src/session.ts";
+import type { Dialect } from "../../../../src/dialect.ts";
+import { SqlSession } from "../../../../src/session.ts";
 import {
   sha256Bytes,
   sha256File,
@@ -23,13 +23,13 @@ import {
   validateTaskDocument,
   type TableDocument,
   type TaskDocument,
-} from "../input/input-pack.ts";
-import { buildPlanFacts } from "../plans/plan-adapter.ts";
-import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
+} from "../../../input/shared/input-pack.ts";
+import { buildPlanFacts } from "../../../plans/plan-adapter.ts";
+import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
 import {
   inferTaskDefaultSchema,
   qualifyBareTableName,
-} from "./task-default-schema.ts";
+} from "../../shared/task-default-schema.ts";
 
 type JsonRecord = Record<string, unknown>;
 

@@ -12,6 +12,18 @@
 npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--output <result.json>]
 ```
 
+处理多个根任务时，使用批量入口复用一次 Table catalog 和 input fingerprint：
+
+```text
+npm run reconcile-one-hop:batch -- \
+  --task-ids <task-id-1,task-id-2,...> \
+  --data-root <input-pack-root> \
+  --producer-index <index.json> \
+  --output-dir <result-dir>
+```
+
+批量入口会在开始时校验 producer index，并在批次结束时复核 Input Pack 指纹；批次运行期间不要修改 `tasks/` 或 `tables/`。
+
 `--data-root` 指向 Task/Table Input Pack V1。未传 `--output` 时，结果只写到标准输出。
 
 `--producer-index` 是可选的离线 producer 反向索引。显式提供后会先校验 schema、`contentHash`，并重新计算当前 `data-root` 的 `inputFingerprint`；失效或过期直接失败，不回退到实时 producer 补证。`PARTIAL` 索引可以消费其中已确认的边，但覆盖语义仍为 `OBSERVED_EVIDENCE_ONLY`。

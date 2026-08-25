@@ -7,8 +7,8 @@ import {
   canonicalHash,
   sha256Text,
   type JsonValue,
-} from "../scripts/input/input-pack.ts";
-import { repairStoredInputPacks } from "../scripts/input/repair-stored-input-packs.ts";
+} from "../scripts/input/shared/input-pack.ts";
+import { repairStoredInputPacks } from "../scripts/input/repair/repair-stored-input-packs.ts";
 
 describe("stored Input Pack SQL repair", () => {
   it("repairs a forward-compatible stored pack, backs it up, and is idempotent", () => {

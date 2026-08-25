@@ -6,7 +6,7 @@ import {
 	loadSchemaFromTablesRoot,
 	parseDdlSchema,
 } from "../scripts/plans/ddl-schema.ts";
-import { writeTableInput, type TableEvidence } from "../scripts/input/input-pack.ts";
+import { writeTableInput, type TableEvidence } from "../scripts/input/shared/input-pack.ts";
 
 describe("DDL schema reader", () => {
 	it("reads Hive columns and appends partition columns", () => {
