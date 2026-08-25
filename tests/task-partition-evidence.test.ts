@@ -150,7 +150,10 @@ describe("task partition map fallback", () => {
         tables: [table(["busi_date"])],
         allowImplicitQueryOutput: false,
         allowSourceTemporalPartitionDefault: true,
-        schedulerEvidence: { hivePartition: "${YYYY-MM-DD}" },
+        schedulerEvidence: {
+          hivePartition: "${YYYY-MM-DD}",
+          evidenceProvider: "fixture:scheduler",
+        },
         sql: { query: "SELECT id FROM oracle_source_table" },
       }),
     ).toEqual({ busi_date: "${YYYY-MM-DD}" });
