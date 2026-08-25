@@ -19,6 +19,11 @@ import {
   type TableDocument,
 } from "../../../input/shared/input-pack.ts";
 import { buildPlanFacts } from "../../../plans/plan-adapter.ts";
+import {
+  loadSchemaFromTablesRoot,
+  parseDdlSchema,
+} from "../../../plans/ddl-schema.ts";
+import type { PredicateTree } from "../../../plans/plan-contract.ts";
 import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
 import {
   fingerprintTableProducerInputs,
@@ -33,9 +38,16 @@ import {
 } from "../../producer/producer-index.ts";
 import {
   lookupConfirmedProducers,
+  matchProducersByReadScope,
   lookupNonConfirmedRelations,
   lookupProducerWritesByTask,
+  type ProducerPartitionMatch,
+  type ProducerPartitionMatchStatus,
 } from "../../../query/producer-index-query.ts";
+import {
+  resolveReadPartitionScope,
+  type ReadPartitionScope,
+} from "../../../evidence/sql-read-scope.ts";
 import {
   extractSqlWrites,
   partitionValueStatus,
@@ -90,6 +102,15 @@ export interface SqlDirectRead {
   readonly parserUnknownCount: number;
 }
 
+interface SqlDirectReadOccurrence {
+  readonly qualifiedName: string;
+  readonly statementIndex: number;
+  readonly predicateTree: PredicateTree | null;
+  readonly partitionPredicateBindingUnknown: boolean;
+  readonly syntaxDiagnosticCount: number;
+  readonly parserUnknownCount: number;
+}
+
 interface TaskSqlFile {
   readonly slot: string;
   readonly path: string;
@@ -111,6 +132,8 @@ interface LoadedTaskPack {
 interface TableCatalogEntry {
   readonly table: PhysicalTableRef;
   readonly evidence: EvidenceObservation;
+  readonly partitionFields: readonly string[] | null;
+  readonly partitionReasonCodes: readonly string[];
 }
 
 interface TableCatalog {
@@ -122,12 +145,19 @@ interface OneHopPreparedContext {
   readonly dataRoot: string;
   readonly inputFingerprint: string | null;
   readonly tableCatalog: TableCatalog;
+  readonly schema: unknown;
+}
+
+export interface DirectReadPartitionScopeObservation {
+  readonly statementIndex: number;
+  readonly scope: ReadPartitionScope;
 }
 
 export interface DirectReadObservation {
   readonly table: PhysicalTableRef;
   readonly sql: SqlDirectRead;
   readonly evidence: readonly EvidenceObservation[];
+  readonly readPartitionScopes: readonly DirectReadPartitionScopeObservation[];
 }
 
 export interface ConfirmedWriteObservation {
@@ -178,6 +208,11 @@ export interface DataPathConfirmedProducer {
   readonly table: PhysicalTableRef;
   readonly taskId: string;
   readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+  readonly partitionMatch: {
+    readonly status: ProducerPartitionMatchStatus;
+    readonly reasonCodes: readonly string[];
+    readonly writes: readonly ProducerWriteObservation[];
+  };
   readonly writes: readonly (
     ProducerWriteObservation | ConfirmedWriteObservation
   )[];
@@ -222,10 +257,21 @@ export interface OneHopCoverage {
     readonly sqlOnlyAndUnresolvedTables: number;
     readonly confirmedAndNonConfirmedTables: number;
   };
+  readonly partitionScopes: {
+    readonly readOccurrences: number;
+    readonly statusCounts: Readonly<Record<ReadPartitionScope["status"], number>>;
+    readonly producerMatchCounts: Readonly<
+      Record<ProducerPartitionMatchStatus, number>
+    >;
+    readonly provenTaskIds: number;
+    readonly possibleTaskIds: number;
+    readonly unknownTaskIds: number;
+    readonly multiProducerTables: number;
+  };
 }
 
 export interface OneHopReconciliationResult {
-  readonly schemaVersion: "1.0.0";
+  readonly schemaVersion: "1.1.0";
   readonly taskId: string;
   readonly generatedAt: string;
   readonly currentTask: {
@@ -273,10 +319,16 @@ export interface OneHopReconciliationResult {
   readonly coverage: OneHopCoverage;
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
+  readonly partitionAwareNextDataTaskIds: {
+    readonly proven: readonly string[];
+    readonly possible: readonly string[];
+    readonly unknown: readonly string[];
+  };
   readonly issues: readonly string[];
   readonly issueDetails: readonly OneHopIssueDetail[];
   readonly boundaries: {
     readonly staticSqlOnly: true;
+    readonly readPartitionScope: "STATIC_SQL_PREDICATE";
     readonly schedulerExecution: "NOT_EVALUATED";
     readonly runtimeDelivery: "NOT_EVALUATED";
     readonly businessCorrectness: "NOT_EVALUATED";
@@ -286,7 +338,7 @@ export interface OneHopReconciliationResult {
 }
 
 export interface OneHopSummary {
-  readonly schemaVersion: "1.0.0";
+  readonly schemaVersion: "1.1.0";
   readonly artifactType: "ONE_HOP_RECONCILIATION_SUMMARY";
   readonly taskId: string;
   readonly generatedAt: string;
@@ -308,6 +360,8 @@ export interface OneHopSummary {
   };
   readonly nextScheduleTaskIds: readonly string[];
   readonly nextDataTaskIds: readonly string[];
+  readonly partitionAwareNextDataTaskIds: OneHopReconciliationResult["partitionAwareNextDataTaskIds"];
+  readonly partitionScopes: OneHopCoverage["partitionScopes"];
   readonly issues: readonly string[];
   readonly issueDetails: readonly OneHopIssueDetail[];
   readonly missingTaskInputPackTaskIds: readonly string[];
@@ -490,7 +544,49 @@ export function extractSqlDirectReads(
   sql: string,
   dialect: Dialect,
 ): SqlDirectRead[] {
+  return aggregateSqlDirectReads(
+    extractSqlDirectReadOccurrences(sql, dialect),
+  );
+}
+
+function extractSqlDirectReadOccurrences(
+  sql: string,
+  dialect: Dialect,
+  schema?: unknown,
+): SqlDirectReadOccurrence[] {
   const session = SqlSession.create(sql, dialect);
+  const occurrences: SqlDirectReadOccurrence[] = [];
+  for (const [statementIndex, cell] of session.doc.statements.entries()) {
+    const plan = buildPlanFacts(cell, sql, {
+      statement_index: statementIndex,
+      dialect,
+      ...(schema !== undefined
+        ? { schema, include_expression_dependencies: true }
+        : {}),
+    });
+    const filters = plan.relations.filter((relation) => relation.type === "filter");
+    const filter = filters.length === 1 ? filters[0] : undefined;
+    const predicateTree =
+      filter?.type === "filter" ? filter.predicate_tree ?? null : null;
+    const partitionPredicateBindingUnknown =
+      filters.length > 1 || (filters.length > 0 && plan.physical_inputs.length > 1);
+    for (const qualifiedName of plan.physical_inputs) {
+      occurrences.push({
+        qualifiedName: normalizeTable(qualifiedName),
+        statementIndex,
+        predicateTree,
+        partitionPredicateBindingUnknown,
+        syntaxDiagnosticCount: cell.diagnostics.length,
+        parserUnknownCount: plan.unknowns.length,
+      });
+    }
+  }
+  return occurrences;
+}
+
+function aggregateSqlDirectReads(
+  occurrences: readonly SqlDirectReadOccurrence[],
+): SqlDirectRead[] {
   const byTable = new Map<
     string,
     {
@@ -500,24 +596,18 @@ export function extractSqlDirectReads(
       parserUnknownCount: number;
     }
   >();
-  for (const [statementIndex, cell] of session.doc.statements.entries()) {
-    const plan = buildPlanFacts(cell, sql, {
-      statement_index: statementIndex,
-      dialect,
-    });
-    for (const qualifiedName of plan.physical_inputs) {
-      const key = normalizeTable(qualifiedName);
-      const current = byTable.get(key) ?? {
-        display: key,
-        statementIndexes: new Set<number>(),
-        syntaxDiagnosticCount: 0,
-        parserUnknownCount: 0,
-      };
-      current.statementIndexes.add(statementIndex);
-      current.syntaxDiagnosticCount += cell.diagnostics.length;
-      current.parserUnknownCount += plan.unknowns.length;
-      byTable.set(key, current);
-    }
+  for (const occurrence of occurrences) {
+    const key = normalizeTable(occurrence.qualifiedName);
+    const current = byTable.get(key) ?? {
+      display: key,
+      statementIndexes: new Set<number>(),
+      syntaxDiagnosticCount: 0,
+      parserUnknownCount: 0,
+    };
+    current.statementIndexes.add(occurrence.statementIndex);
+    current.syntaxDiagnosticCount += occurrence.syntaxDiagnosticCount;
+    current.parserUnknownCount += occurrence.parserUnknownCount;
+    byTable.set(key, current);
   }
   return [...byTable.values()]
     .map((item) => ({
@@ -634,6 +724,46 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
         const document = raw as TableDocument & JsonRecord;
         const qualifiedName = String(document.qualifiedName);
         const key = normalizeTable(qualifiedName);
+        const explicitPartitionFields = Array.isArray(
+          document.partitionFields,
+        )
+          ? uniqueSorted(
+              document.partitionFields
+                .map(String)
+                .filter((field) => field.trim() !== ""),
+            )
+          : null;
+        const ddlFile = asRecord(document.ddlFile);
+        const ddlRelativePath = stringValue(ddlFile?.path);
+        let ddlPartitionFields: readonly string[] | null = null;
+        if (ddlRelativePath) {
+          const ddlPath = resolve(dirname(tablePath), ddlRelativePath);
+          const ddlHash = stringValue(ddlFile?.sha256);
+          if (
+            existsSync(ddlPath) &&
+            (!ddlHash || sha256File(ddlPath) === ddlHash)
+          ) {
+            const parsed = parseDdlSchema(readFileSync(ddlPath, "utf8"));
+            if (parsed.warnings.length === 0)
+              ddlPartitionFields = uniqueSorted(parsed.partition_columns);
+          }
+        }
+        const partitionFields =
+          explicitPartitionFields ?? ddlPartitionFields;
+        const partitionReasonCodes =
+          explicitPartitionFields !== null &&
+          ddlPartitionFields !== null &&
+          !sameStringSet(explicitPartitionFields, ddlPartitionFields)
+            ? ["PARTITION_FIELD_CONFLICT"]
+            : explicitPartitionFields !== null
+              ? [
+                  explicitPartitionFields.length === 0
+                    ? "TABLE_PACK_NON_PARTITIONED"
+                    : "TABLE_PACK_PARTITION_FIELDS",
+                ]
+              : ddlPartitionFields !== null
+                ? ["DDL_PARTITION_FIELDS_FALLBACK"]
+                : ["PARTITION_FIELDS_UNAVAILABLE"];
         const entry: TableCatalogEntry = {
           table: {
             platform: String(document.platform),
@@ -648,6 +778,11 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
             observedAt: String(document.collectedAt),
             contentHash: String(document.contentHash),
           },
+          partitionFields:
+            partitionReasonCodes.includes("PARTITION_FIELD_CONFLICT")
+              ? null
+              : partitionFields,
+          partitionReasonCodes,
         };
         byQualifiedName.set(key, [...(byQualifiedName.get(key) ?? []), entry]);
       } catch (error) {
@@ -658,6 +793,12 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
     }
   }
   return { byQualifiedName, issues };
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  const normalize = (values: readonly string[]) =>
+    [...new Set(values.map((value) => normalizeTable(value)))].sort();
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
 }
 
 function resolveCatalogTable(
@@ -679,6 +820,8 @@ function resolveCatalogTable(
         observedAt: null,
         detail: { reason: "QUALIFIED_NAME_MISSING" },
       },
+      partitionFields: null,
+      partitionReasonCodes: ["PARTITION_FIELDS_UNAVAILABLE"],
     };
   const key = normalizeTable(qualifiedName);
   const candidates = catalog.byQualifiedName.get(key) ?? [];
@@ -703,6 +846,11 @@ function resolveCatalogTable(
       observedAt: null,
       detail: { candidateCount: candidates.length },
     },
+    partitionFields: null,
+    partitionReasonCodes:
+      candidates.length > 1
+        ? ["TABLE_IDENTITY_AMBIGUOUS"]
+        : ["PARTITION_FIELDS_UNAVAILABLE"],
   };
 }
 
@@ -721,15 +869,18 @@ function targetTable(
     const platform = stringValue(record.platform);
     const dataSource = stringValue(record.dataSource);
     if (platform && dataSource && qualifiedName)
-      return {
-        table: {
-          platform,
-          dataSource,
-          qualifiedName: normalizeTable(qualifiedName),
-          identityStatus: "RESOLVED",
-        },
-        evidence: resolveCatalogTable(catalog, qualifiedName).evidence,
-      };
+      return (() => {
+        const catalogEntry = resolveCatalogTable(catalog, qualifiedName);
+        return {
+          ...catalogEntry,
+          table: {
+            platform,
+            dataSource,
+            qualifiedName: normalizeTable(qualifiedName),
+            identityStatus: "RESOLVED" as const,
+          },
+        };
+      })();
   }
   return resolveCatalogTable(catalog, qualifiedName);
 }
@@ -767,6 +918,9 @@ export function prepareOneHopContext(
         ? null
         : fingerprintTableProducerInputs(dataRoot),
     tableCatalog: loadTableCatalog(dataRoot),
+    schema: existsSync(join(dataRoot, "tables"))
+      ? loadSchemaFromTablesRoot(join(dataRoot, "tables")).schema
+      : null,
   };
 }
 
@@ -1076,6 +1230,7 @@ function liveParent(
 function currentDirectReads(
   pack: LoadedTaskPack,
   catalog: TableCatalog,
+  schema: unknown,
 ): DirectReadObservation[] {
   if (!pack.document || !pack.taskPath)
     throw new Error("CURRENT_TASK_INPUT_PACK_UNAVAILABLE");
@@ -1083,31 +1238,79 @@ function currentDirectReads(
   const defaultSchema = inferTaskDefaultSchema(pack.document);
   const byTable = new Map<string, DirectReadObservation>();
   for (const file of pack.sqlFiles) {
-    for (const read of extractSqlDirectReads(file.content, dialect)) {
+    for (const occurrence of extractSqlDirectReadOccurrences(
+      file.content,
+      dialect,
+      schema,
+    )) {
       const qualifiedName = qualifyBareTableName(
-        read.qualifiedName,
+        occurrence.qualifiedName,
         defaultSchema,
       );
       const resolved = resolveCatalogTable(catalog, qualifiedName);
       const key = normalizeTable(qualifiedName);
+      const scopeEvidence = [
+        {
+          source: "SQL_PARSE" as const,
+          provider: "sql-static-lineage:plan-adapter",
+          locator: `${file.absolutePath}#statement=${occurrence.statementIndex}`,
+          observedAt: null,
+          detail: {
+            dialect,
+            statementIndex: occurrence.statementIndex,
+          },
+        },
+        {
+          source: "TABLE_PACK" as const,
+          provider: resolved.evidence.provider,
+          locator: resolved.evidence.locator,
+          observedAt: resolved.evidence.observedAt,
+        },
+      ];
+      const scope = occurrence.partitionPredicateBindingUnknown
+        ? {
+            status: "UNKNOWN" as const,
+            partitionFields: resolved.partitionFields ?? [],
+            predicate: null,
+            reasonCodes: ["PARTITION_FILTER_BINDING_AMBIGUOUS"],
+            evidence: scopeEvidence,
+          }
+        : resolveReadPartitionScope({
+            predicate: occurrence.predicateTree,
+            tableQualifiedName: resolved.table.qualifiedName ?? qualifiedName,
+            partitionFields: resolved.partitionFields,
+            partitionReasonCodes: resolved.partitionReasonCodes,
+            evidence: scopeEvidence,
+          });
+      const read: SqlDirectRead = {
+        qualifiedName,
+        statementIndexes: [occurrence.statementIndex],
+        syntaxDiagnosticCount: occurrence.syntaxDiagnosticCount,
+        parserUnknownCount: occurrence.parserUnknownCount,
+      };
       const observation: DirectReadObservation = {
         table: resolved.table,
-        sql: { ...read, qualifiedName },
+        sql: read,
+        readPartitionScopes: [
+          { statementIndex: occurrence.statementIndex, scope },
+        ],
         evidence: [
           inputPackSqlEvidence(file),
           {
             source: "SQL_PARSE",
             provider: "sql-static-lineage:plan-adapter",
-            locator: `${file.absolutePath}#statements=${read.statementIndexes.join(",")}`,
+            locator: `${file.absolutePath}#statement=${occurrence.statementIndex}`,
             observedAt: null,
             detail: {
               dialect,
-              syntaxDiagnosticCount: read.syntaxDiagnosticCount,
-              parserUnknownCount: read.parserUnknownCount,
+              syntaxDiagnosticCount: occurrence.syntaxDiagnosticCount,
+              parserUnknownCount: occurrence.parserUnknownCount,
+              readPartitionScopeStatus: scope.status,
+              readPartitionScopeReasonCodes: scope.reasonCodes,
               ...(defaultSchema &&
-              qualifiedName !== normalizeTable(read.qualifiedName)
+              qualifiedName !== normalizeTable(occurrence.qualifiedName)
                 ? {
-                    parsedQualifiedName: normalizeTable(read.qualifiedName),
+                    parsedQualifiedName: normalizeTable(occurrence.qualifiedName),
                     taskDefaultSchema: defaultSchema.schema,
                     taskDefaultSchemaEvidence: defaultSchema.evidenceSources,
                   }
@@ -1135,6 +1338,10 @@ function currentDirectReads(
                 parserUnknownCount:
                   current.sql.parserUnknownCount + read.parserUnknownCount,
               },
+              readPartitionScopes: [
+                ...current.readPartitionScopes,
+                ...observation.readPartitionScopes,
+              ],
               evidence: [...current.evidence, ...observation.evidence],
             }
           : observation,
@@ -1144,6 +1351,42 @@ function currentDirectReads(
   return [...byTable.values()].sort((left, right) =>
     compareText(left.table.qualifiedName, right.table.qualifiedName),
   );
+}
+
+function partitionMatchRank(status: ProducerPartitionMatchStatus): number {
+  return status === "PROVEN_OVERLAP"
+    ? 4
+    : status === "POSSIBLE_OVERLAP"
+      ? 3
+      : status === "UNKNOWN"
+        ? 2
+        : 1;
+}
+
+function mergePartitionMatch(
+  left: ProducerPartitionMatch | undefined,
+  right: ProducerPartitionMatch,
+): ProducerPartitionMatch {
+  if (!left) return right;
+  const status =
+    partitionMatchRank(left.status) >= partitionMatchRank(right.status)
+      ? left.status
+      : right.status;
+  const writes = new Map(
+    [...left.writes, ...right.writes].map((write) => [
+      JSON.stringify(write),
+      write,
+    ]),
+  );
+  return {
+    ...left,
+    status,
+    reasonCodes: uniqueSorted([
+      ...left.reasonCodes,
+      ...right.reasonCodes,
+    ]),
+    writes: [...writes.values()],
+  };
 }
 
 function reconcileOneHopInternal(
@@ -1191,7 +1434,11 @@ function reconcileOneHopInternal(
       `CURRENT_TASK_INPUT_PACK_${currentPack.status}:${currentPack.issues.join(";")}`,
     );
   const catalog = preparedContext.tableCatalog;
-  const directReads = currentDirectReads(currentPack, catalog);
+  const directReads = currentDirectReads(
+    currentPack,
+    catalog,
+    preparedContext.schema,
+  );
 
   const horaeArgs = [
     "horae",
@@ -1344,12 +1591,26 @@ function reconcileOneHopInternal(
 
   const confirmedProducers: DataPathConfirmedProducer[] = [];
   const relatedNonConfirmedRelations: NonConfirmedRelation[] = [];
+  const partitionMatchesByEdge = new Map<string, ProducerPartitionMatch>();
   if (producerIndex) {
     const seenEdges = new Set<string>();
     const seenRelations = new Set<string>();
     for (const read of directReads) {
       const identity = producerIdentity(read.table);
       if (!identity) continue;
+      for (const occurrence of read.readPartitionScopes) {
+        for (const match of matchProducersByReadScope(
+          producerIndex,
+          identity,
+          occurrence.scope,
+        )) {
+          const key = `${match.table.platform.toLowerCase()}|${match.table.dataSource.toLowerCase()}|${normalizeTable(match.table.qualifiedName)}\u0000${match.taskId}`;
+          partitionMatchesByEdge.set(
+            key,
+            mergePartitionMatch(partitionMatchesByEdge.get(key), match),
+          );
+        }
+      }
       for (const edge of lookupConfirmedProducers(producerIndex, identity)) {
         const key = `${tableIdentityKey(edge.table)}\u0000${edge.taskId}`;
         if (seenEdges.has(key)) continue;
@@ -1358,12 +1619,20 @@ function reconcileOneHopInternal(
         );
         if (producerWrites.length === 0) continue;
         seenEdges.add(key);
+        const partitionMatch = partitionMatchesByEdge.get(key);
         confirmedProducers.push({
           table: edge.table,
           taskId: edge.taskId,
           scheduleRelation: scheduleParents.has(edge.taskId)
             ? "DIRECT_PARENT"
             : "NOT_DIRECT_PARENT",
+          partitionMatch: {
+            status: partitionMatch?.status ?? "UNKNOWN",
+            reasonCodes: partitionMatch?.reasonCodes ?? [
+              "READ_PARTITION_SCOPE_UNAVAILABLE",
+            ],
+            writes: partitionMatch?.writes ?? [],
+          },
           writes: producerWrites,
         });
       }
@@ -1399,6 +1668,11 @@ function reconcileOneHopInternal(
               table: item.table,
               taskId: item.taskId,
               scheduleRelation: "DIRECT_PARENT",
+              partitionMatch: {
+                status: "UNKNOWN",
+                reasonCodes: ["LEGACY_SCHEDULE_RECONCILIATION"],
+                writes: [],
+              },
               writes: [item.write],
             },
       );
@@ -1410,6 +1684,49 @@ function reconcileOneHopInternal(
       `${tableIdentityKey(left.table) ?? ""}\u0000${left.taskId}`,
       `${tableIdentityKey(right.table) ?? ""}\u0000${right.taskId}`,
     ),
+  );
+
+  const partitionAwareTaskStatuses = new Map<
+    string,
+    Exclude<ProducerPartitionMatchStatus, "PROVEN_DISJOINT">
+  >();
+  const partitionMatchCounts: Record<ProducerPartitionMatchStatus, number> = {
+    PROVEN_OVERLAP: 0,
+    POSSIBLE_OVERLAP: 0,
+    PROVEN_DISJOINT: 0,
+    UNKNOWN: 0,
+  };
+  const producersByTable = new Map<string, number>();
+  for (const producer of confirmedProducers) {
+    partitionMatchCounts[producer.partitionMatch.status] += 1;
+    if (producer.partitionMatch.status !== "PROVEN_DISJOINT") {
+      const current = partitionAwareTaskStatuses.get(producer.taskId);
+      const next = producer.partitionMatch.status;
+      if (!current || partitionMatchRank(next) > partitionMatchRank(current))
+        partitionAwareTaskStatuses.set(
+          producer.taskId,
+          next as Exclude<ProducerPartitionMatchStatus, "PROVEN_DISJOINT">,
+        );
+    }
+    const tableKey = tableIdentityKey(producer.table);
+    if (tableKey)
+      producersByTable.set(tableKey, (producersByTable.get(tableKey) ?? 0) + 1);
+  }
+  const readScopeStatusCounts: Record<ReadPartitionScope["status"], number> = {
+    UNPARTITIONED: 0,
+    ALL_PARTITIONS: 0,
+    CONSTRAINED: 0,
+    PARTIAL: 0,
+    UNKNOWN: 0,
+  };
+  const readPartitionOccurrenceCount = directReads.reduce(
+    (sum, read) =>
+      sum +
+      read.readPartitionScopes.reduce((inner, occurrence) => {
+        readScopeStatusCounts[occurrence.scope.status] += 1;
+        return inner + 1;
+      }, 0),
+    0,
   );
 
   const confirmedTableKeys = new Set(
@@ -1558,6 +1875,23 @@ function reconcileOneHopInternal(
         nonConfirmedTableKeys,
       ),
     },
+    partitionScopes: {
+      readOccurrences: readPartitionOccurrenceCount,
+      statusCounts: readScopeStatusCounts,
+      producerMatchCounts: partitionMatchCounts,
+      provenTaskIds: [...partitionAwareTaskStatuses.values()].filter(
+        (status) => status === "PROVEN_OVERLAP",
+      ).length,
+      possibleTaskIds: [...partitionAwareTaskStatuses.values()].filter(
+        (status) => status === "POSSIBLE_OVERLAP",
+      ).length,
+      unknownTaskIds: [...partitionAwareTaskStatuses.values()].filter(
+        (status) => status === "UNKNOWN",
+      ).length,
+      multiProducerTables: [...producersByTable.values()].filter(
+        (count) => count > 1,
+      ).length,
+    },
   };
 
   const count = (status: ReconciliationStatus): number =>
@@ -1569,7 +1903,7 @@ function reconcileOneHopInternal(
   const issueDetails = issueDetailsForOneHop(catalog, parents);
 
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     taskId,
     generatedAt: now(),
     currentTask: {
@@ -1621,10 +1955,28 @@ function reconcileOneHopInternal(
             .filter((item) => item.status === "MATCHED" && item.taskId)
             .map((item) => item.taskId!),
         ),
+    partitionAwareNextDataTaskIds: {
+      proven: uniqueSorted(
+        [...partitionAwareTaskStatuses]
+          .filter(([, status]) => status === "PROVEN_OVERLAP")
+          .map(([taskId]) => taskId),
+      ),
+      possible: uniqueSorted(
+        [...partitionAwareTaskStatuses]
+          .filter(([, status]) => status === "POSSIBLE_OVERLAP")
+          .map(([taskId]) => taskId),
+      ),
+      unknown: uniqueSorted(
+        [...partitionAwareTaskStatuses]
+          .filter(([, status]) => status === "UNKNOWN")
+          .map(([taskId]) => taskId),
+      ),
+    },
     issues,
     issueDetails,
     boundaries: {
       staticSqlOnly: true,
+      readPartitionScope: "STATIC_SQL_PREDICATE",
       schedulerExecution: "NOT_EVALUATED",
       runtimeDelivery: "NOT_EVALUATED",
       businessCorrectness: "NOT_EVALUATED",
@@ -1650,7 +2002,7 @@ export function summarizeOneHop(
   result: OneHopReconciliationResult,
 ): OneHopSummary {
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     artifactType: "ONE_HOP_RECONCILIATION_SUMMARY",
     taskId: result.taskId,
     generatedAt: result.generatedAt,
@@ -1676,6 +2028,8 @@ export function summarizeOneHop(
     },
     nextScheduleTaskIds: result.nextScheduleTaskIds,
     nextDataTaskIds: result.nextDataTaskIds,
+    partitionAwareNextDataTaskIds: result.partitionAwareNextDataTaskIds,
+    partitionScopes: result.coverage.partitionScopes,
     issues: result.issues,
     issueDetails: result.issueDetails,
     missingTaskInputPackTaskIds: uniqueSorted(
@@ -1775,7 +2129,7 @@ function main(): void {
   }
   if (outputPath || summaryPath)
     process.stdout.write(
-      `${JSON.stringify({ output: outputPath, summaryOutput: summaryPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds })}\n`,
+      `${JSON.stringify({ output: outputPath, summaryOutput: summaryPath, taskId, counts: result.counts, nextScheduleTaskIds: result.nextScheduleTaskIds, nextDataTaskIds: result.nextDataTaskIds, partitionAwareNextDataTaskIds: result.partitionAwareNextDataTaskIds })}\n`,
     );
   else process.stdout.write(serialized);
 }

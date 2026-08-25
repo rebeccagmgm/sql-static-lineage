@@ -10,6 +10,11 @@ import {
   type ProducerWriteObservation,
   type TableProducerIndex,
 } from "../reconcile/producer/producer-index.ts";
+import type {
+  PartitionConstraintTree,
+  ReadPartitionScope,
+  ReadPartitionValue,
+} from "../evidence/sql-read-scope.ts";
 
 export type PartitionQuery = Readonly<Record<string, string>>;
 
@@ -29,6 +34,21 @@ export interface ProducerIndexPartitionMatch {
   readonly taskCategory: string;
   readonly table: ProducerTableIdentity;
   readonly writes: readonly ProducerWriteObservation[];
+}
+
+export type ProducerPartitionMatchStatus =
+  | "PROVEN_OVERLAP"
+  | "POSSIBLE_OVERLAP"
+  | "PROVEN_DISJOINT"
+  | "UNKNOWN";
+
+export interface ProducerPartitionMatch {
+  readonly taskId: string;
+  readonly taskCategory: string;
+  readonly table: ProducerTableIdentity;
+  readonly writes: readonly ProducerWriteObservation[];
+  readonly status: ProducerPartitionMatchStatus;
+  readonly reasonCodes: readonly string[];
 }
 
 export interface ProducerTaskWriteLookup {
@@ -207,6 +227,226 @@ function partitionMatches(
     const assignment = byField.get(field.toLowerCase());
     return assignment !== undefined && valueMatches(assignment, String(wanted));
   });
+}
+
+type WriteMatchStatus = ProducerPartitionMatchStatus;
+
+function compareLiteralValues(
+  left: string,
+  right: string,
+): number | null {
+  const leftNumber = Number(left);
+  const rightNumber = Number(right);
+  if (
+    Number.isFinite(leftNumber) &&
+    Number.isFinite(rightNumber) &&
+    left.trim() !== "" &&
+    right.trim() !== ""
+  )
+    return leftNumber === rightNumber ? 0 : leftNumber < rightNumber ? -1 : 1;
+  if (/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/u.test(left) &&
+      /^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/u.test(right))
+    return left === right ? 0 : left < right ? -1 : 1;
+  return null;
+}
+
+function writeValue(
+  assignment: ProducerWriteObservation["partition"][number],
+): { readonly value: string; readonly dynamic: boolean } | null {
+  const observed = assignment.observedValue;
+  if (observed !== null) {
+    const normalized = observed.trim();
+    if (normalized === "*") return { value: normalized, dynamic: true };
+    return { value: normalized, dynamic: false };
+  }
+  const expression = assignment.expression.trim();
+  if (!expression) return null;
+  if (expression === "*") return { value: expression, dynamic: true };
+  return { value: expression, dynamic: true };
+}
+
+function readValueIsDynamic(value: ReadPartitionValue): boolean {
+  return value.kind !== "LITERAL" || value.observedValue === null;
+}
+
+function matchAtom(
+  tree: Extract<PartitionConstraintTree, { kind: "ATOM" }>,
+  write: ProducerWriteObservation,
+): { status: WriteMatchStatus; reasonCodes: readonly string[] } {
+  if (
+    write.partitionStatus !== undefined &&
+    !["COMPLETE", "NOT_PARTITIONED"].includes(write.partitionStatus)
+  )
+    return {
+      status: "UNKNOWN",
+      reasonCodes: [
+        "WRITE_PARTITION_EVIDENCE_INCOMPLETE",
+        ...(write.partitionReasonCodes ?? []),
+      ],
+    };
+  const assignment = write.partition.find(
+    (item) => item.field.toLowerCase() === tree.field.toLowerCase(),
+  );
+  if (!assignment)
+    return {
+      status: "UNKNOWN",
+      reasonCodes: ["WRITE_PARTITION_FIELD_MISSING"],
+    };
+  const actual = writeValue(assignment);
+  if (!actual)
+    return {
+      status: "UNKNOWN",
+      reasonCodes: ["WRITE_PARTITION_VALUE_UNKNOWN"],
+    };
+  if (actual.dynamic)
+    return {
+      status: "POSSIBLE_OVERLAP",
+      reasonCodes: ["WRITE_PARTITION_RUNTIME_EXPRESSION"],
+    };
+
+  const values = tree.values;
+  if (values.some(readValueIsDynamic))
+    return {
+      status: "POSSIBLE_OVERLAP",
+      reasonCodes: ["READ_PARTITION_RUNTIME_EXPRESSION"],
+    };
+  const literals = values.map((value) => value.observedValue!);
+  if (tree.operator === "EQ" || tree.operator === "IN") {
+    return literals.includes(actual.value)
+      ? { status: "PROVEN_OVERLAP", reasonCodes: [] }
+      : { status: "PROVEN_DISJOINT", reasonCodes: ["PARTITION_VALUE_DISJOINT"] };
+  }
+  if (tree.operator === "BETWEEN" && literals.length === 2) {
+    const lower = compareLiteralValues(actual.value, literals[0]!);
+    const upper = compareLiteralValues(actual.value, literals[1]!);
+    if (lower === null || upper === null)
+      return {
+        status: "UNKNOWN",
+        reasonCodes: ["PARTITION_RANGE_COMPARISON_UNSUPPORTED"],
+      };
+    return lower >= 0 && upper <= 0
+      ? { status: "PROVEN_OVERLAP", reasonCodes: [] }
+      : { status: "PROVEN_DISJOINT", reasonCodes: ["PARTITION_RANGE_DISJOINT"] };
+  }
+  if (literals.length !== 1)
+    return {
+      status: "UNKNOWN",
+      reasonCodes: ["PARTITION_PREDICATE_FORM_UNSUPPORTED"],
+    };
+  const comparison = compareLiteralValues(actual.value, literals[0]!);
+  if (comparison === null)
+    return {
+      status: "UNKNOWN",
+      reasonCodes: ["PARTITION_RANGE_COMPARISON_UNSUPPORTED"],
+    };
+  const proven =
+    tree.operator === "LT"
+      ? comparison < 0
+      : tree.operator === "LTE"
+        ? comparison <= 0
+        : tree.operator === "GT"
+          ? comparison > 0
+          : tree.operator === "GTE"
+            ? comparison >= 0
+            : false;
+  return proven
+    ? { status: "PROVEN_OVERLAP", reasonCodes: [] }
+    : { status: "PROVEN_DISJOINT", reasonCodes: ["PARTITION_RANGE_DISJOINT"] };
+}
+
+function combineWriteMatches(
+  kind: "AND" | "OR",
+  children: readonly { status: WriteMatchStatus; reasonCodes: readonly string[] }[],
+): { status: WriteMatchStatus; reasonCodes: readonly string[] } {
+  const reasonCodes = [
+    ...new Set(children.flatMap((child) => child.reasonCodes)),
+  ].sort();
+  if (kind === "AND") {
+    if (children.some((child) => child.status === "PROVEN_DISJOINT"))
+      return { status: "PROVEN_DISJOINT", reasonCodes };
+    if (children.some((child) => child.status === "UNKNOWN"))
+      return { status: "UNKNOWN", reasonCodes };
+    if (children.some((child) => child.status === "POSSIBLE_OVERLAP"))
+      return { status: "POSSIBLE_OVERLAP", reasonCodes };
+    return { status: "PROVEN_OVERLAP", reasonCodes };
+  }
+  if (children.some((child) => child.status === "PROVEN_OVERLAP"))
+    return { status: "PROVEN_OVERLAP", reasonCodes };
+  if (children.every((child) => child.status === "PROVEN_DISJOINT"))
+    return { status: "PROVEN_DISJOINT", reasonCodes };
+  if (children.some((child) => child.status === "POSSIBLE_OVERLAP"))
+    return { status: "POSSIBLE_OVERLAP", reasonCodes };
+  return { status: "UNKNOWN", reasonCodes };
+}
+
+function matchConstraint(
+  tree: PartitionConstraintTree,
+  write: ProducerWriteObservation,
+): { status: WriteMatchStatus; reasonCodes: readonly string[] } {
+  if (tree.kind === "ATOM") return matchAtom(tree, write);
+  return combineWriteMatches(
+    tree.kind,
+    tree.children.map((child) => matchConstraint(child, write)),
+  );
+}
+
+export function matchProducersByReadScope(
+  index: TableProducerIndex,
+  table: ProducerTableIdentity,
+  readScope: ReadPartitionScope,
+): readonly ProducerPartitionMatch[] {
+  const edges = lookupConfirmedProducers(index, table);
+  return edges
+    .map((edge) => {
+      const producerWrites = edge.writes.filter(
+        (write) =>
+          (write.dataPathRole ?? classifyProducerWriteObservation(write).dataPathRole) ===
+          "PRODUCER",
+      );
+      if (
+        readScope.status === "UNPARTITIONED" ||
+        readScope.status === "ALL_PARTITIONS"
+      )
+        return {
+          taskId: edge.taskId,
+          taskCategory: edge.taskCategory,
+          table: edge.table,
+          writes: producerWrites,
+          status: "PROVEN_OVERLAP" as const,
+          reasonCodes: [],
+        };
+      if (readScope.status === "UNKNOWN" || readScope.status === "PARTIAL")
+        return {
+          taskId: edge.taskId,
+          taskCategory: edge.taskCategory,
+          table: edge.table,
+          writes: producerWrites,
+          status: "UNKNOWN" as const,
+          reasonCodes: [...readScope.reasonCodes, "READ_PARTITION_SCOPE_INCOMPLETE"],
+        };
+      if (!readScope.predicate)
+        return {
+          taskId: edge.taskId,
+          taskCategory: edge.taskCategory,
+          table: edge.table,
+          writes: producerWrites,
+          status: "UNKNOWN" as const,
+          reasonCodes: ["READ_PARTITION_PREDICATE_MISSING"],
+        };
+      const matches = producerWrites.map((write) =>
+        matchConstraint(readScope.predicate!, write),
+      );
+      const combined = combineWriteMatches("OR", matches);
+      return {
+        taskId: edge.taskId,
+        taskCategory: edge.taskCategory,
+        table: edge.table,
+        writes: producerWrites,
+        status: combined.status,
+        reasonCodes: combined.reasonCodes,
+      };
+    })
+    .sort((left, right) => left.taskId.localeCompare(right.taskId));
 }
 
 export function lookupProducersByTablePartition(

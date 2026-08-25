@@ -30,7 +30,6 @@ import type {
   ColumnRef,
   ExprSpec,
   ExpandRelation,
-  ExpressionFacts,
   FilterRelation,
   GrainInference,
   JoinRelation,
@@ -49,6 +48,19 @@ import type {
 } from "./plan-contract.js";
 import type { Projection, SelectExpr, Expr } from "../../src/ir/ir.js";
 import {
+  collectColumns,
+  expressionFacts,
+  predicateColumnsOf,
+  predicateTreeOf,
+} from "./internal/plan-expressions.js";
+import {
+  displayTextOf,
+  fullTextOf,
+  spanOf,
+  spanOfCst,
+} from "./internal/plan-text.js";
+import { assemblePlanFacts } from "./internal/plan-output.js";
+import {
   lineageAt,
   lineageOf,
   type LineageHop,
@@ -58,100 +70,6 @@ import { originsOf } from "../../src/lineage/lineage.js";
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
-
-/** IR 节点 (cell 坐标) → 文档坐标 SourceSpan。 */
-type SpanNode = {
-  start?: { start?: number } | null;
-  stop?: { stop?: number } | null;
-};
-
-function spanOf(
-  cellBase: number,
-  node: SpanNode | null | undefined,
-): SourceSpan {
-  const start = node?.start?.start;
-  const stop = node?.stop?.stop;
-  if (start === undefined || stop === undefined)
-    return { start: cellBase, end: cellBase };
-  return {
-    start: cellBase + start,
-    end: cellBase + stop + 1,
-  };
-}
-
-function spanOfCst(cellBase: number, cst: unknown): SourceSpan {
-  return spanOf(cellBase, cst as SpanNode);
-}
-
-const DISPLAY_MAX = 120;
-/** 完整原文 (machine truth)。 */
-function fullTextOf(
-  sql: string,
-  cellBase: number,
-  node: SpanNode | null | undefined,
-): string {
-  const s = spanOf(cellBase, node);
-  return sql.slice(s.start, s.end).replace(/\s+/g, " ").trim();
-}
-/** 截断预览 (人看)。 */
-function displayTextOf(
-  sql: string,
-  cellBase: number,
-  node: SpanNode | null | undefined,
-): string {
-  const t = fullTextOf(sql, cellBase, node);
-  return t.length > DISPLAY_MAX ? t.slice(0, DISPLAY_MAX) + "…" : t;
-}
-
-/** 递归提取表达式树里的列引用 (IR Expr 遍历), 携带列名 token 的 cell 偏移供物理解析。 */
-function collectColumns(
-  e: Expr | null | undefined,
-  clause: ColumnRef["clause"],
-  out: ColumnRef[],
-): void {
-  if (!e) return;
-  switch (e.kind) {
-    case "column":
-      out.push({
-        name: e.parts[e.parts.length - 1] ?? "?",
-        qualifier: e.parts.length > 1 ? e.parts[0] : undefined,
-        clause,
-        physical: null, // 由 resolvePhysical 填充
-        _cellOffset: e.partSpans?.[0]?.start, // 列名 token 起点 (cell 坐标)
-      } as ColumnRef & { _cellOffset?: number });
-      return;
-    case "binary":
-      collectColumns(e.left, clause, out);
-      collectColumns(e.right, clause, out);
-      return;
-    case "unary":
-      collectColumns(e.operand, clause, out);
-      return;
-    case "function":
-      for (const a of e.args) collectColumns(a, clause, out);
-      return;
-    case "case":
-      for (const w of e.whens) {
-        collectColumns(w.when, clause, out);
-        collectColumns(w.then, clause, out);
-      }
-      if (e.elseExpr) collectColumns(e.elseExpr, clause, out);
-      return;
-    case "cast":
-      collectColumns(e.expr, clause, out);
-      return;
-    case "predicate":
-      collectColumns(e.operand, clause, out);
-      for (const a of e.args ?? []) collectColumns(a, clause, out);
-      return;
-    case "subscript":
-      collectColumns(e.base, clause, out);
-      if (e.index) collectColumns(e.index, clause, out);
-      return;
-    default:
-      return;
-  }
-}
 
 /**
  * Keep the adapter's syntactic references, but add the physical origins already
@@ -560,117 +478,6 @@ function resolveSetopOutput(
     scope,
   );
   return candidate ? { kind: "SQL_CANDIDATE", candidates: candidate } : null;
-}
-
-/** 直接遍历 sql-static-lineage IR，保留连接/过滤/表达式判断所需的结构事实。 */
-function expressionFacts(e: Expr | null | undefined): ExpressionFacts {
-  const operators = new Set<string>();
-  const literals = new Set<string>();
-  const functions = new Set<string>();
-  const predicates = new Map<string, { operator: string; negated: boolean }>();
-  const comparisons: ExpressionFacts["comparisons"] = [];
-  const collectLiterals = (
-    node: Expr | null | undefined,
-    out: string[],
-  ): void => {
-    if (!node) return;
-    if (node.kind === "literal") {
-      out.push(node.text);
-      return;
-    }
-    if (node.kind === "binary") {
-      collectLiterals(node.left, out);
-      collectLiterals(node.right, out);
-    } else if (node.kind === "unary") collectLiterals(node.operand, out);
-    else if (node.kind === "function")
-      for (const arg of node.args) collectLiterals(arg, out);
-    else if (node.kind === "case") {
-      for (const branch of node.whens) {
-        collectLiterals(branch.when, out);
-        collectLiterals(branch.then, out);
-      }
-      collectLiterals(node.elseExpr, out);
-    } else if (node.kind === "cast") collectLiterals(node.expr, out);
-    else if (node.kind === "predicate") {
-      collectLiterals(node.operand, out);
-      for (const arg of node.args) collectLiterals(arg, out);
-    }
-  };
-  const visit = (node: Expr | null | undefined): void => {
-    if (!node) return;
-    switch (node.kind) {
-      case "literal":
-        literals.add(node.text);
-        return;
-      case "binary":
-        operators.add(node.op.toLowerCase());
-        if (
-          ["=", "!=", "<>", "<", "<=", ">", ">="].includes(
-            node.op.toLowerCase(),
-          )
-        ) {
-          const refs: ColumnRef[] = [];
-          const comparisonLiterals: string[] = [];
-          collectColumns(node, "where", refs);
-          collectLiterals(node, comparisonLiterals);
-          comparisons.push({
-            operator: node.op.toLowerCase(),
-            columns: [...new Set(refs.map((ref) => ref.name.toLowerCase()))],
-            literals: [...new Set(comparisonLiterals)],
-          });
-        }
-        visit(node.left);
-        visit(node.right);
-        return;
-      case "unary":
-        operators.add(node.op.toLowerCase());
-        visit(node.operand);
-        return;
-      case "function":
-        functions.add(node.name.toLowerCase());
-        for (const arg of node.args) visit(arg);
-        return;
-      case "case":
-        for (const branch of node.whens) {
-          visit(branch.when);
-          visit(branch.then);
-        }
-        visit(node.elseExpr);
-        return;
-      case "cast":
-        visit(node.expr);
-        return;
-      case "predicate": {
-        const operator = node.op.toLowerCase();
-        predicates.set(`${operator}:${node.negated}`, {
-          operator,
-          negated: node.negated,
-        });
-        visit(node.operand);
-        for (const arg of node.args) visit(arg);
-        return;
-      }
-      case "subscript":
-        visit(node.base);
-        visit(node.index);
-        visit(node.end);
-        visit(node.step);
-        return;
-      case "lambda":
-        visit(node.body);
-        return;
-      default:
-        return;
-    }
-  };
-  visit(e);
-  return {
-    operators: [...operators],
-    literals: [...literals],
-    functions: [...functions],
-    predicates: [...predicates.values()],
-    comparisons,
-  };
 }
 
 /** 物理解析: 用 sql-static-lineage lineageAt 把列引用追到基表 (喂 schema 后)。
@@ -1714,7 +1521,14 @@ export function buildPlanFacts(
     // ---- 3. filter 节点 ----
     if (body.where) {
       const id = `${path}.filter`;
-      const whereCols = inputColumnsFor(
+      const predicateTree = predicateTreeOf(
+        body.where,
+        sql,
+        cellBase,
+        "where",
+      );
+      const treeColumns = predicateColumnsOf(predicateTree);
+      const inputColumns = inputColumnsFor(
         body.where,
         scope,
         "where",
@@ -1729,6 +1543,18 @@ export function buildPlanFacts(
             error,
           ),
       );
+      const treeOffsets = new Set(
+        treeColumns
+          .map((ref) => (ref as RefWithOffset)._cellOffset)
+          .filter((offset): offset is number => offset !== undefined),
+      );
+      const whereCols = [
+        ...treeColumns,
+        ...inputColumns.filter((ref) => {
+          const offset = (ref as RefWithOffset)._cellOffset;
+          return offset === undefined || !treeOffsets.has(offset);
+        }),
+      ];
       const f: FilterRelation = {
         id,
         type: "filter",
@@ -1738,6 +1564,7 @@ export function buildPlanFacts(
         predicate_facts: opts?.include_expression_dependencies
           ? expressionFacts(body.where)
           : undefined,
+        predicate_tree: predicateTree,
         span: spanOf(cellBase, body.where.cst),
         provenance: "extracted",
         output_columns: null,
@@ -2426,27 +2253,24 @@ export function buildPlanFacts(
     // 非仓库内运行时 fallback
   }
 
-  return {
-    meta: {
-      contract_version: opts?.include_expression_dependencies
-        ? EXPRESSION_DEPENDENCY_CONTRACT_VERSION
-        : CONTRACT_VERSION,
-      adapter_version:
-        opts?.adapter_version ??
-        (opts?.include_expression_dependencies
-          ? EXPRESSION_DEPENDENCY_ADAPTER_VERSION
-          : ADAPTER_VERSION),
-      parser: { engine: "sql-static-lineage", version: parserVersion },
-      dialect: root.dialect ?? "unknown",
-      statement_index: opts?.statement_index ?? 0,
-      generated_at: new Date().toISOString(),
-    },
+  return assemblePlanFacts({
+    contractVersion: opts?.include_expression_dependencies
+      ? EXPRESSION_DEPENDENCY_CONTRACT_VERSION
+      : CONTRACT_VERSION,
+    adapterVersion:
+      opts?.adapter_version ??
+      (opts?.include_expression_dependencies
+        ? EXPRESSION_DEPENDENCY_ADAPTER_VERSION
+        : ADAPTER_VERSION),
+    parserVersion,
+    dialect: root.dialect ?? "unknown",
+    statementIndex: opts?.statement_index ?? 0,
     relations,
     roots,
-    physical_inputs: [...physical],
+    physicalInputs: [...physical],
     unknowns,
-    lineage_hops: lineageHops,
-  };
+    lineageHops,
+  });
 }
 
 // ---------------------------------------------------------------------------

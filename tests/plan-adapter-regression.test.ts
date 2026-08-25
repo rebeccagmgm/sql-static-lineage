@@ -2,8 +2,109 @@ import { describe, expect, it } from "vitest";
 import { Schema, SqlSession } from "../src/index.js";
 import { buildPlanFacts } from "../scripts/plans/plan-adapter.ts";
 import { taskSqlDialect } from "../scripts/plans/task-sql-dialect.ts";
+import { resolveReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts";
 
 describe("plan adapter star expansion", () => {
+  it("retains structured filter predicates and physical partition origins", () => {
+    const sql =
+      "SELECT id FROM demo.events e WHERE e.busi_date = '2026-08-23' AND e.grp_id IN ('01', '02')";
+    const schema = new Schema({
+      "demo.events": { busi_date: "date", grp_id: "string", id: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+    const filter = plan.relations.find(
+      (relation) => relation.type === "filter",
+    );
+    if (filter?.type !== "filter") throw new Error("filter relation missing");
+    expect(filter.predicate_tree).toMatchObject({
+      kind: "AND",
+      children: [
+        {
+          kind: "ATOM",
+          operator: "EQ",
+          operands: [
+            {
+              kind: "COLUMN",
+              column: {
+                physical: [{ table: "demo.events", column: "busi_date" }],
+              },
+            },
+            { kind: "LITERAL", observedValue: "2026-08-23" },
+          ],
+        },
+        {
+          kind: "ATOM",
+          operator: "IN",
+          operands: [
+            {
+              kind: "COLUMN",
+              column: {
+                physical: [{ table: "demo.events", column: "grp_id" }],
+              },
+            },
+            { kind: "LITERAL", observedValue: "01" },
+            { kind: "LITERAL", observedValue: "02" },
+          ],
+        },
+      ],
+    });
+    const readScope = resolveReadPartitionScope({
+      predicate: filter.predicate_tree ?? null,
+      tableQualifiedName: "demo.events",
+      partitionFields: ["busi_date"],
+    });
+    expect(readScope).toMatchObject({
+      status: "CONSTRAINED",
+      predicate: {
+        kind: "ATOM",
+        field: "busi_date",
+        operator: "EQ",
+      },
+    });
+  });
+
+  it("keeps unsafe partition boolean branches partial or unknown", () => {
+    const schema = new Schema({
+      "demo.events": { busi_date: "date", grp_id: "string", id: "int" },
+    });
+    for (const [sql, partitionFields, expectedStatus] of [
+      [
+        "SELECT id FROM demo.events WHERE busi_date = '2026-08-23' OR grp_id = '01'",
+        ["busi_date", "grp_id"],
+        "PARTIAL",
+      ],
+      [
+        "SELECT id FROM demo.events WHERE NOT (busi_date = '2026-08-23')",
+        ["busi_date"],
+        "UNKNOWN",
+      ],
+    ] as const) {
+      const session = SqlSession.create(sql, "databricks", { schema });
+      const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+        dialect: "databricks",
+        schema,
+        include_expression_dependencies: true,
+      });
+      const filter = plan.relations.find(
+        (relation) => relation.type === "filter",
+      );
+      if (filter?.type !== "filter")
+        throw new Error("filter relation missing");
+      expect(
+        resolveReadPartitionScope({
+          predicate: filter.predicate_tree ?? null,
+          tableQualifiedName: "demo.events",
+          partitionFields,
+        }).status,
+      ).toBe(expectedStatus);
+    }
+  });
+
   it("uses the Oracle-compatible parser profile for Oracle source tasks", () => {
     expect(taskSqlDialect("oracle2hive")).toBe("duckdb");
     expect(taskSqlDialect("oracle2oracle")).toBe("duckdb");
