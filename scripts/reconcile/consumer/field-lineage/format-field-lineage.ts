@@ -58,6 +58,7 @@ export function formatFieldLineageSummary(artifact: FieldLineageArtifact): strin
 		`字段级跨 Task 血缘：${artifact.request.rootTaskId}`,
 		`状态: ${artifact.overallStatus} | facts policy: ${artifact.request.factsPolicy}`,
 		`根表: ${artifact.request.rootTable}`,
+		`字段范围: ${artifact.request.rootFieldSelection === "ALL_TARGET_COLUMNS" ? "目标表全部字段" : "用户指定字段"}`,
 		`根字段: ${artifact.request.rootFields.join(", ")}`,
 		"",
 		"全量上游 Task 树",

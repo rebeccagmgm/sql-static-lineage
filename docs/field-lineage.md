@@ -35,7 +35,7 @@ SQL slot 准备规则：
 3. statement 身份使用 Task ID、原 slot 名和 slot 内 ordinal。
 4. 没有 `query` 时，只允许唯一一个结构上产生字段的 slot；多个候选或没有候选时返回 `SQL_SLOT_SELECTION_AMBIGUOUS`。
 
-SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在平台目标唯一、目标 Schema 可用、查询 producer 唯一、非分区目标列与输出 ordinal 完整对应，并且分区处理可证明时，才使用 `PLATFORM_TARGET_QUERY_OUTPUT`。
+SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在平台目标唯一、目标 Schema 可用、查询 producer 唯一、非分区目标列与输出 ordinal 完整对应，并且分区处理可证明时，才使用 `PLATFORM_TARGET_QUERY_OUTPUT`。同一 Input Pack 中语义等价的重复查询输出候选会在派生分析视图中去重；原始 SQL slot 仍按原字节保留，真正不同的候选仍 fail-closed。
 
 ## 第二步：生成字段 multi-hop
 
@@ -46,7 +46,8 @@ npm run reconcile-field-lineage -- \
   --multi-hop-artifact <table-multi-hop.json> \
   --task-id 155015 \
   --target-table dm_rsk_n.v_risk_audit_log \
-  --fields entity_id,entity_field_name,modify_date \
+  [--write-observation-id <write-observation-id>] \
+  [--fields entity_id,entity_field_name,modify_date] \
   --facts-policy allow-legacy-partial \
   --max-depth 8 \
   --max-states 500 \
@@ -55,17 +56,27 @@ npm run reconcile-field-lineage -- \
   --summary-output <field-lineage.txt>
 ```
 
+字段血缘根按 `task_id + write_observation_id + physical_target` 定位。若目标表与
+Task Pack 的平台目标不同，必须显式提供 `--write-observation-id`；Consumer 不会
+仅凭表名在多个 SQL Write 中猜选。平台目标与根目标相同的旧调用，仍可由当前
+Machine Facts 推导该目标下的 Write Observation 集合。
+
 当字段链需要使用第二层及更深层的调度证据时，先为对应非根 Task 生成冻结的 one-hop artifact，并在表级 multi-hop 命令中通过 `--one-hop-snapshots <a.json,b.json>` 传入。每份快照必须与当前 producer-index 的 content hash 和 Input Pack fingerprint 一致；不一致时 multi-hop 会 fail-closed。
 
 CLI 默认先从主 Input Pack 为表级 artifact 中可用的 Task 准备 Machine Facts。已有受控 facts 且不希望重建时可传 `--no-prepare-facts`。
+
+省略 `--fields` 时，流程从根 Write Observation 的物理目标 Table Pack 的全部 Schema 列建立字段入口，再沿每个字段的可证明值流裁剪无关上游分支。显式传入 `--fields` 时仍只分析指定列。若当前 Task 自身与字段来源是同一物理目标表，其历史同表 producer 只保留为 `CANDIDATE`，不递归进入值流树。
 
 `--facts-policy` 默认是 `current-only`。当前 Contract 1.3 必须显式使用 `allow-legacy-partial`，路径状态保持 `PROVISIONAL_LEGACY`，整体结果不得为 `COMPLETE`。
 
 ## 图语义
 
 - 主树只包含 `VALUE_FLOW`：目标输出字段表达式到 Schema-backed 物理输入字段，再精确桥接到上游 Task 的同一物理目标字段。
-- 跨 SQL slot 的临时 CTAS 字段使用 `TASK_LOCAL_SCHEMA_BACKED`，只在当前 Task 内回溯；它们不能成为跨 Task 物理桥。
+- 跨 SQL slot 的临时 CTAS 或 field-producing INSERT 字段使用 `TASK_LOCAL_SCHEMA_BACKED`，只在当前 Task 内回溯；它们不能成为跨 Task 物理桥。
+- Machine Facts 额外发布 `task-local-materializations.jsonl`。只有同一 Task、同一物理表、写入语句严格早于读取语句且 output binding 唯一匹配的记录才是 `RESOLVED`；多次写入或绑定不完整时保留 `AMBIGUOUS/UNRESOLVED`。
+- 字段 consumer 优先消费 Task-local materialization，再消费跨 Task `primary`。同 Task 自生产不会进入 Task frontier，也不会把 `additional` 提升为 `primary`。
 - `ROWSET_CONTROL` 单独列出 Join、filter、aggregate、set operation、window 和 distinct。不能证明跨 CTE/子查询作用域时记录 `ROWSET_SCOPE_UNRESOLVED`。
+- 控制证据中的 physical ref 若为裸表名，仅在 Table Pack 中能唯一匹配到物理表时补全；当前 Task 的临时 CTAS 表则使用同 Task 的 `schema-refs`。多候选、缺失或别名无法由物理证据闭合时仍保持 `ROWSET_FIELD_IDENTITY_UNRESOLVED`。
 - 只递归每层 `finalUpstreamTaskIds.primary`。
 - `additional` 记录为 `CANDIDATE`，但不递归。
 - `unknown` 在字段相关时保留为 `CANDIDATE` 并生成 gap，但不建立 `VALUE_FLOW`、不递归；物理身份不一致、缺失/排除 Task Pack、facts 不可用、cycle 和安全上限也都停止对应分支并生成 gap。

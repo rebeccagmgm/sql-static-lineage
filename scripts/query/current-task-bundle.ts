@@ -31,6 +31,7 @@ const REQUIRED_L1_FILES = [
 	"field-expression-nodes.jsonl",
 	"column-lineage-edges.jsonl",
 	"output-field-bindings.jsonl",
+	"task-local-materializations.jsonl",
 	"unknowns.jsonl",
 	"schema-refs.jsonl",
 	"capability-summary.json",
@@ -377,9 +378,13 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 			bundleDir,
 		});
 
+	const declaredFiles = outputRecords.map((output) => String(output.path));
 	const files = isL1
-		? REQUIRED_L1_FILES.filter((file) => file !== "capability-summary.json" || existsSync(join(bundleDir, file)))
-		: outputRecords.map((output) => String(output.path));
+		? [...new Set([
+				...REQUIRED_L1_FILES.filter((file) => file !== "capability-summary.json" || existsSync(join(bundleDir, file))),
+				...declaredFiles,
+			])]
+		: declaredFiles;
 	const records: Record<string, JsonRecord[]> = {};
 	const evidence: Record<string, string> = {};
 	try {

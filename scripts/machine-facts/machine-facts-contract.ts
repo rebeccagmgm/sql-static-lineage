@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
-export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.5";
+export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.7";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type OutcomeClass = "UNKNOWN" | "NOT_EVALUABLE" | "NOT_APPLICABLE" | "FAILURE";
@@ -74,6 +74,7 @@ export interface MachineFactsManifest {
 		readonly lineage_hop_partial_roots: number;
 		readonly lineage_hop_not_evaluable_roots: number;
 		readonly output_field_bindings: number;
+		readonly task_local_materializations: number;
 		readonly unknowns: number;
 		readonly unknowns_by_outcome: Readonly<Record<OutcomeClass, number>>;
 	};
@@ -104,6 +105,24 @@ export interface SchemaReferenceRecord {
 	readonly [key: string]: unknown;
 }
 export interface DatasetIoRecord { readonly task_id: string; readonly direction: string; readonly dataset_id: string; readonly physical_dataset: string; readonly provenance: string; readonly resolution_status: string; readonly [key: string]: unknown; }
+export interface TaskLocalMaterializationRecord {
+	readonly bridge_id: string;
+	readonly task_id: string;
+	readonly logical_source_id: string;
+	readonly physical_dataset: string;
+	readonly column: string;
+	readonly write_observation_id: string | null;
+	readonly write_statement_id: string | null;
+	readonly read_statement_id: string;
+	readonly write_statement_index: number;
+	readonly read_statement_index: number;
+	readonly output_binding_id: string | null;
+	readonly read_expression_ids: readonly string[];
+	readonly status: "RESOLVED" | "AMBIGUOUS" | "UNRESOLVED";
+	readonly provenance: "SAME_TASK_SQL_WRITE_READ";
+	readonly evidence_refs: readonly string[];
+	readonly [key: string]: unknown;
+}
 export interface RelationNodeRecord { readonly relation_id: string; readonly task_id: string; readonly statement_id: string; readonly relation_type: string; readonly source_span: unknown; readonly provenance: string; readonly relation: unknown; readonly [key: string]: unknown; }
 export interface RelationEdgeRecord { readonly edge_id: string; readonly task_id: string; readonly statement_id: string; readonly from_relation_id: string; readonly to_relation_id: string; readonly edge_type: string; readonly provenance: string; readonly source_span: unknown; readonly [key: string]: unknown; }
 export type WindowInputRole = "VALUE" | "WINDOW_PARTITION" | "WINDOW_ORDER";
@@ -201,7 +220,7 @@ export interface OutputFieldBindingRecord {
 export interface UnknownOutcomeRecord { readonly outcome_class: OutcomeClass; readonly reason_code: string; readonly message: string; readonly [key: string]: unknown; }
 export interface SourceArtifactRecord { readonly schema_version: string; readonly task_id: string; readonly logical_source_id: string; readonly sql_snapshot: string; readonly sql_sha256: string; readonly byte_length: number; readonly encoding: string; readonly sql_slot?: string; readonly [key: string]: unknown; }
 export interface TaskFactIndexRecord { readonly task_id: string; readonly logical_source_id: string; readonly sql_sha256: string; readonly manifest_sha256: string; readonly bundle_path: string; readonly status: "SUCCESS"; readonly [key: string]: unknown; }
-export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | DatasetIoRecord | RelationNodeRecord | RelationEdgeRecord | FieldExpressionRecord | ColumnLineageRecord | LineageHopRootRecord | LineageHopNodeRecord | LineageHopEdgeRecord | OutputFieldBindingRecord | UnknownOutcomeRecord | SourceArtifactRecord | TaskFactIndexRecord;
+export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | DatasetIoRecord | TaskLocalMaterializationRecord | RelationNodeRecord | RelationEdgeRecord | FieldExpressionRecord | ColumnLineageRecord | LineageHopRootRecord | LineageHopNodeRecord | LineageHopEdgeRecord | OutputFieldBindingRecord | UnknownOutcomeRecord | SourceArtifactRecord | TaskFactIndexRecord;
 
 export interface GenericTaskProfile {
 	readonly task_id: string;
@@ -212,6 +231,7 @@ export interface GenericTaskProfile {
 	readonly input_pack_provenance?: InputPackProvenance;
 	readonly platform_target_query_output?: PlatformTargetQueryOutput;
 	readonly write_partition_evidence?: WritePartitionEvidence;
+	readonly sql_write_partition_evidence?: readonly SqlWritePartitionEvidence[];
 }
 
 export interface InputPackProvenance {
@@ -241,6 +261,15 @@ export interface WritePartitionEvidence {
 	readonly status: "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
 	readonly partition_columns: readonly string[];
 	readonly evidence_refs: readonly string[];
+}
+
+export interface SqlWritePartitionEvidence extends WritePartitionEvidence {
+	readonly target: string;
+	readonly sql_slot?: string;
+	readonly statement_ordinal?: number;
+	/** Zero-based character offsets within the source SQL slot. */
+	readonly statement_start?: number;
+	readonly statement_end?: number;
 }
 
 export interface GenericAnalysisProfile {
