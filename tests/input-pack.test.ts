@@ -52,6 +52,7 @@ import {
   isExcludedHoraeSearchRecord,
   normalizeCollectedSqlSlot,
   normalizeConcatenatedSqlStatements,
+  repairOrphanedSqlCommentContinuations,
   normalizeRepeatedSqlContent,
   relocateTaskPacks,
   taskCategory,
@@ -354,6 +355,45 @@ describe("Input Pack V1", () => {
     expect(
       SqlSession.create(collected.content, "databricks").syntaxDiagnostics,
     ).toEqual([]);
+  });
+
+  it("restores orphaned comment continuations in task-source SQL", () => {
+    const sql = [
+      "SELECT User_Id -- 用户编号;",
+      "",
+      "CONCAT('HPB020-', L_OPERATOR_NO)",
+      ", substr(User_Id, 8) AS src_user_id",
+      "FROM demo.users;",
+      "SELECT cust_type_cd, --客户类型代码 0 个人;",
+      "",
+      "1 机构;",
+      "",
+      "3 产品",
+      ", period_type",
+      "FROM demo.customer_types;",
+      "SELECT value --case when x is null",
+      "else fallback end",
+      ", x FROM demo.values;",
+      "SELECT '<br>交易对手B(比例)' AS note;",
+    ].join("\n");
+
+    const repaired = repairOrphanedSqlCommentContinuations(sql);
+    expect(repaired.continuationLinesRepaired).toBe(4);
+    expect(repaired.content).toContain(
+      "-- CONCAT('HPB020-', L_OPERATOR_NO)",
+    );
+    expect(repaired.content).toContain("-- 1 机构;");
+    expect(repaired.content).toContain("-- else fallback end");
+    expect(repaired.content).not.toContain("-- <br>交易对手B");
+
+    const collected = normalizeCollectedSqlSlot(
+      sql,
+      "query",
+      "fixture:task-source",
+    );
+    expect(collected.warnings).toContain(
+      "SQL_ORPHANED_COMMENT_CONTINUATION_REPAIRED:query:4",
+    );
   });
 
   it("does not repair SQL-like text inside strings, block comments, or ordinary line comments", () => {

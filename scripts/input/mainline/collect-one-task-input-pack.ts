@@ -949,6 +949,51 @@ export function normalizeRepeatedSqlContent(content: string): {
   return { content: `${normalized}\n`, duplicateBlocksRemoved: false };
 }
 
+function looksLikeOrphanedCommentContinuation(line: string): boolean {
+  const trimmed = line.trim();
+  return (
+    /^CONCAT\s*\(/i.test(trimmed) ||
+    /^ELSE\s+.+\s+END\s*$/i.test(trimmed) ||
+    /^<br>/i.test(trimmed) ||
+    /^\d+\s+[\u3400-\u9fff]/.test(trimmed) ||
+    /^[A-Z]\s+[\u3400-\u9fff]/.test(trimmed) ||
+    /^[A-Za-z_][A-Za-z0-9_]*:[^\s]+/.test(trimmed) ||
+    /^[\u3400-\u9fff]/.test(trimmed)
+  );
+}
+
+/**
+ * Restores line-comment markers lost when multi-line task-source comments were
+ * flattened. Only annotation-shaped lines immediately following a comment
+ * ending in a semicolon, or a commented CASE fragment, are changed.
+ */
+export function repairOrphanedSqlCommentContinuations(content: string): {
+  content: string;
+  continuationLinesRepaired: number;
+} {
+  const lines = content.split("\n");
+  let continuationLinesRepaired = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    if (/^\s*--/.test(line) || !looksLikeOrphanedCommentContinuation(line))
+      continue;
+    let previousIndex = index - 1;
+    while (previousIndex >= 0 && /^\s*$/.test(lines[previousIndex] ?? ""))
+      previousIndex -= 1;
+    if (previousIndex < 0) continue;
+    const previous = lines[previousIndex] ?? "";
+    const commentIndex = previous.indexOf("--");
+    if (commentIndex < 0) continue;
+    const comment = previous.slice(commentIndex + 2);
+    if (!/[;；]\s*$/.test(comment) && !/\bCASE\b/i.test(comment))
+      continue;
+    const indentation = /^\s*/.exec(line)?.[0] ?? "";
+    lines[index] = `${indentation}-- ${line.slice(indentation.length)}`;
+    continuationLinesRepaired += 1;
+  }
+  return { content: lines.join("\n"), continuationLinesRepaired };
+}
+
 const CONCATENATED_SQL_STATEMENT_STARTERS = new Set([
   "ALTER",
   "BEGIN",
@@ -1499,12 +1544,19 @@ export function normalizeCollectedSqlSlot(
   warnings: string[];
 } {
   const repeated = normalizeRepeatedSqlContent(content);
-  const inlineRepaired = repairInlineSqlCommentBoundaries(repeated.content);
+  const orphaned = repairOrphanedSqlCommentContinuations(repeated.content);
+  const inlineRepaired = repairInlineSqlCommentBoundaries(orphaned.content);
   const legacy = repairLegacyStatementSeparators(inlineRepaired.content);
   const separated = normalizeConcatenatedSqlStatements(legacy.content);
   const warnings: string[] = [];
   if (repeated.duplicateBlocksRemoved)
     warnings.push(`SQL_DUPLICATE_BLOCK_REMOVED:${slot}`);
+  if (orphaned.continuationLinesRepaired > 0) {
+    warnings.push(
+      `SQL_ORPHANED_COMMENT_CONTINUATION_REPAIRED:${slot}:${orphaned.continuationLinesRepaired}`,
+    );
+    evidenceProvider = `${evidenceProvider},collector:orphaned-comment-continuation-repair-v1`;
+  }
   if (legacy.separatorsRemoved > 0) {
     warnings.push(
       `SQL_LEGACY_SEPARATOR_REPAIRED:${slot}:${legacy.separatorsRemoved}`,
