@@ -390,22 +390,24 @@ function schemaBundleForTask(
 
 function schemaProvider(schemaBundle: JsonRecord): Schema {
 	const mapping: SchemaMapping = {};
+	const addTable = (qualifiedName: string, table: SchemaMapping): void => {
+		const parts = qualifiedName.split(".").filter(Boolean);
+		if (parts.length === 0) return;
+		let namespace = mapping;
+		for (const part of parts.slice(0, -1)) {
+			const current = namespace[part];
+			if (typeof current !== "object" || current === null || "nullable" in current) namespace[part] = {};
+			namespace = namespace[part] as SchemaMapping;
+		}
+		namespace[parts[parts.length - 1]!] = table;
+	};
 	for (const record of schemaBundle.records as JsonRecord[]) {
 		if (record.status !== "SUCCESS" || !Array.isArray(record.columns) || !record.qualified_name) continue;
 		const table: SchemaMapping = Object.fromEntries(
 			record.columns.map((column: JsonRecord) => [String(column.name), "unknown"]),
 		);
-		const parts = String(record.qualified_name).split(".").filter(Boolean);
-		if (parts.length === 0) continue;
-		let namespace = mapping;
-		for (const part of parts.slice(0, -1)) {
-			const current = namespace[part];
-			if (typeof current !== "object" || current === null || "nullable" in current) {
-				namespace[part] = {};
-			}
-			namespace = namespace[part] as SchemaMapping;
-		}
-		namespace[parts[parts.length - 1]!] = table;
+		addTable(String(record.qualified_name), table);
+		for (const alias of Array.isArray(record.aliases) ? record.aliases : []) addTable(String(alias), table);
 	}
 	return new Schema(mapping);
 }
@@ -625,6 +627,10 @@ function contextHash(task: GenericTaskProfile, profile: GenericAnalysisProfile, 
 		logical_source_id: logicalSourceId,
 		dialect: profile.dialect,
 		declared_outputs: normalizeWrites(task),
+		sql_slot: task.sql_slot ?? null,
+		input_pack_provenance: task.input_pack_provenance ?? null,
+		platform_target_query_output: task.platform_target_query_output ?? null,
+		write_partition_evidence: task.write_partition_evidence ?? null,
 		include_expression_dependencies: true,
 	}));
 }
@@ -837,6 +843,63 @@ function planRecords(
 					});
 				}
 			}
+		}
+	}
+
+	// A set operation owns the output ordinal consumed by INSERT/CTAS even
+	// though the parser records concrete expressions on its leaf branches.
+	// Project the union of each branch ordinal's physical origins onto a stable
+	// SETOP_OUTPUT expression without pretending that one branch is primary.
+	const relationNodeById = new Map(relations.map((node) => [String(node.relation_id), node]));
+	const leafRelationIds = (relationId: string, active = new Set<string>()): string[] => {
+		if (active.has(relationId)) return [];
+		const node = relationNodeById.get(relationId);
+		if (!node || node.relation_type !== "setop") return [relationId];
+		const nextActive = new Set([...active, relationId]);
+		return (Array.isArray(node.relation?.branches) ? node.relation.branches : [])
+			.flatMap((branch: string) => leafRelationIds(String(branch), nextActive));
+	};
+	for (const node of relations.filter((candidate) => candidate.relation_type === "setop")) {
+		const outputNames = Array.isArray(node.relation?.output_columns) ? node.relation.output_columns.map(String) : [];
+		const leaves = new Set(leafRelationIds(String(node.relation_id)));
+		for (const [ordinal, outputName] of outputNames.entries()) {
+			const branchExpressions = fields.filter((field) => leaves.has(String(field.relation_id)) && field.ordinal === ordinal);
+			if (branchExpressions.length === 0) continue;
+			const inputFields = [...new Map(branchExpressions.flatMap((field) => field.input_fields ?? []).map((field: JsonRecord) => [String(field.field_id), field])).values()];
+			const candidateFields = [...new Map(branchExpressions.flatMap((field) => field.candidate_input_fields ?? []).map((field: JsonRecord) => [String(field.field_id), field])).values()];
+			const unresolvedColumns = branchExpressions.flatMap((field) => field.unresolved_input_columns ?? []);
+			const expressionId = `${String(node.relation_id)}:expression:setop_output:${ordinal}`;
+			const dependencyStatus: InputDependencyStatus = inputFields.length > 0
+				? candidateFields.length > 0 || unresolvedColumns.length > 0 ? "PARTIAL" : "PHYSICAL"
+				: candidateFields.length > 0 ? "SQL_CANDIDATE"
+					: unresolvedColumns.length > 0 ? "UNRESOLVED" : "NO_PHYSICAL_INPUT";
+			fields.push({
+				expression_id: expressionId,
+				task_id: task.task_id,
+				statement_id: statementId,
+				relation_id: node.relation_id,
+				role: "SETOP_OUTPUT",
+				ordinal,
+				output_name: outputName,
+				output_name_status: "EXPLICIT",
+				expression_text: `${String(node.relation?.setop ?? "setop").toUpperCase()}_OUTPUT(${outputName})`,
+				source_span: node.source_span,
+				input_fields: inputFields,
+				candidate_input_fields: candidateFields,
+				unresolved_input_columns: unresolvedColumns,
+				input_dependency_status: dependencyStatus,
+				artifact_id: artifactId,
+			});
+			for (const input of inputFields)
+				lineage.push({
+					edge_id: `lineage:${String(input.field_id)}:${expressionId}`,
+					task_id: task.task_id,
+					statement_id: statementId,
+					from_field_id: input.field_id,
+					to_expression_id: expressionId,
+					method: "SQL_SETOP_BRANCH_LINEAGE",
+					resolution_provenance: "SCHEMA_BOUND",
+				});
 		}
 	}
 
@@ -1095,6 +1158,8 @@ function buildTaskBundle(
 		sql_sha256: sqlHash,
 		byte_length: sqlBytes.length,
 		encoding: "UTF-8",
+		...(task.sql_slot ? { sql_slot: task.sql_slot } : {}),
+		...(task.sql_segments ? { sql_segments: task.sql_segments } : {}),
 	};
 	writeCanonical(join(staging, "source-artifact.json"), sourceArtifact);
 
@@ -1110,6 +1175,13 @@ function buildTaskBundle(
 	const outputBindings: OutputFieldBindingRecord[] = [];
 	const unknowns: UnknownOutcomeRecord[] = [];
 	const writeContexts: WriteOutputContext[] = [];
+	const queryOutputCandidates: Array<{
+		readonly statementId: string;
+		readonly statementIndex: number;
+		readonly statementType: string;
+		readonly rawSql: string;
+		readonly expressions: readonly FieldExpressionRecord[];
+	}> = [];
 	const schemaRefs: SchemaReferenceRecord[] = (schemaBundle.records as JsonRecord[]).map((record, index) => ({
 		schema_ref_id: `schema-ref:${logicalSourceId}:${index}`,
 		logical_source_id: logicalSourceId,
@@ -1130,9 +1202,18 @@ function buildTaskBundle(
 	let planAdapterVersion = "unknown";
 	const parserSql = sanitizeSqlForParser(sql);
 	const session = SqlSession.create(parserSql.sql, profile.dialect as any, { schema });
+	const segmentOrdinals = new Map<string, number>();
 	for (const [statementIndex, cell] of session.doc.statements.entries()) {
-		const statementId = `task:${task.task_id}:statement:${statementIndex}`;
 		const span = { start: cell.span.start, end: cell.span.end };
+		let significantStart = span.start;
+		while (significantStart < span.end && /\s/.test(sql[significantStart] ?? "")) significantStart += 1;
+		const segment = task.sql_segments?.find((candidate) => significantStart >= candidate.start && span.end <= candidate.end);
+		const localOrdinal = segment ? (segmentOrdinals.get(segment.slot) ?? 0) : statementIndex;
+		if (segment) segmentOrdinals.set(segment.slot, localOrdinal + 1);
+		const statementSlot = segment?.slot ?? task.sql_slot;
+		const statementId = statementSlot
+			? `task:${task.task_id}:slot:${statementSlot}:statement:${localOrdinal}`
+			: `task:${task.task_id}:statement:${statementIndex}`;
 		const rawSql = sql.slice(span.start, span.end);
 		const parsedWrite = parseSqlWrite(rawSql);
 		const statementType = classifyStatement(rawSql);
@@ -1166,10 +1247,13 @@ function buildTaskBundle(
 		unknowns.push(...records.unknowns);
 		datasetIo.push(...records.reads);
 		const rootRelationIds = new Set(plan.roots.map((rootId) => globalRelationId(task.task_id, statementIndex, rootId)));
+		const producerExpressions = records.fields.filter((expression) => rootRelationIds.has(expression.relation_id));
+		const producerOrdinals = producerExpressions.map((expression) => expression.ordinal).sort((left, right) => left - right);
+		const producerComplete = producerOrdinals.length > 0 && producerOrdinals.every((ordinal, index) => ordinal === index);
+		if (!parsedWrite && (statementType === "SELECT" || statementType === "WITH_QUERY") && producerComplete) {
+			queryOutputCandidates.push({ statementId, statementIndex, statementType, rawSql, expressions: producerExpressions });
+		}
 		if (parsedWrite) {
-			const producerExpressions = records.fields.filter((expression) => rootRelationIds.has(expression.relation_id));
-			const producerOrdinals = producerExpressions.map((expression) => expression.ordinal).sort((left, right) => left - right);
-			const producerComplete = producerOrdinals.length > 0 && producerOrdinals.every((ordinal, index) => ordinal === index);
 			const hasCtasBoundary = statementType === "CREATE_TABLE" && /\bAS\s+(?:SELECT|WITH)\b/i.test(rawSql);
 			const writeKind = statementType === "CREATE_TABLE" ? (hasCtasBoundary ? "CTAS" : "CREATE_TABLE") : statementType;
 			const fieldProducing = hasCtasBoundary || statementType === "INSERT_OVERWRITE" || statementType === "INSERT_INTO";
@@ -1203,12 +1287,70 @@ function buildTaskBundle(
 				queryBoundaryProven: hasCtasBoundary,
 				producerEnumerationStatus,
 				expressions: producerExpressions,
+				evidenceKind: "SQL_EXPLICIT_WRITE",
+				partitionStatus: task.write_partition_evidence?.status,
+				partitionColumns: task.write_partition_evidence?.partition_columns,
+				evidenceRefs: task.write_partition_evidence?.evidence_refs,
 			});
 		}
 		if (cell.errors > 0) {
 			for (const diagnostic of cell.diagnostics) {
 				unknowns.push({ task_id: task.task_id, statement_id: statementId, outcome_class: "UNKNOWN", reason_code: "SYNTAX_DIAGNOSTIC", message: diagnostic.message, source_locator: { start: diagnostic.offset ?? span.start, end: (diagnostic.offset ?? span.start) + diagnostic.length } });
 			}
+		}
+	}
+	const platformTargetName = task.platform_target_query_output ? normalizeName(task.platform_target_query_output.target) : null;
+	const hasExplicitPlatformTargetWrite = platformTargetName !== null && writeContexts.some((write) => {
+		const candidate = normalizeName(write.target);
+		return candidate === platformTargetName || candidate.split(".").at(-1) === platformTargetName.split(".").at(-1);
+	});
+	if (task.platform_target_query_output && !hasExplicitPlatformTargetWrite) {
+		const target = normalizeName(task.platform_target_query_output.target);
+		if (queryOutputCandidates.length === 1) {
+			const candidate = queryOutputCandidates[0]!;
+			const writeObservationId = `write-observation:${task.task_id}:platform-target:${candidate.statementIndex}`;
+			datasetIo.push({
+				task_id: task.task_id,
+				statement_id: candidate.statementId,
+				direction: "WRITE",
+				dataset_id: datasetId(logicalSourceId, target),
+				physical_dataset: target,
+				provenance: "PLATFORM_TARGET",
+				resolution_status: "RESOLVED",
+				write_observation_id: writeObservationId,
+				write_kind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				write_statement_id: candidate.statementId,
+				query_producer_statement_id: candidate.statementId,
+				producer_ordinals: candidate.expressions.map((expression) => expression.ordinal),
+				producer_enumeration_status: "COMPLETE",
+				field_producing: true,
+				source_as_boundary: { proven: true, statement_span: statements.find((statement) => statement.statement_id === candidate.statementId)?.span ?? null },
+			});
+			writeContexts.push({
+				writeObservationId,
+				statementId: candidate.statementId,
+				statementType: "PLATFORM_TARGET_QUERY",
+				writeKind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				rawSql: candidate.rawSql,
+				target,
+				queryProducerStatementId: candidate.statementId,
+				queryBoundaryProven: true,
+				producerEnumerationStatus: "COMPLETE",
+				expressions: candidate.expressions,
+				evidenceKind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				partitionStatus: task.platform_target_query_output.partition_status,
+				partitionColumns: task.platform_target_query_output.partition_columns,
+				evidenceRefs: task.platform_target_query_output.evidence_refs,
+			});
+		} else {
+			unknowns.push({
+				unknown_id: `unknown:platform-target:${task.task_id}:query-boundary`,
+				task_id: task.task_id,
+				outcome_class: "NOT_EVALUABLE",
+				reason_code: "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE",
+				message: `platform target requires exactly one enumerable query producer; observed ${queryOutputCandidates.length}`,
+				subject: target,
+			});
 		}
 	}
 	const outputBindingResult = deriveOutputFieldBindings({
@@ -1233,8 +1375,17 @@ function buildTaskBundle(
 	for (const write of normalizeWrites(task)) {
 		datasetIo.push({ task_id: task.task_id, direction: "WRITE", dataset_id: datasetId(logicalSourceId, write), physical_dataset: write, provenance: "PROFILE_DECLARED", resolution_status: "DECLARED" });
 	}
-	if (normalizeWrites(task).length > 0 && !datasetIo.some((item) => item.provenance === "SQL_PARSE" && item.direction === "WRITE")) {
-		unknowns.push({ task_id: task.task_id, outcome_class: "NOT_EVALUABLE", reason_code: "OUTPUT_BINDING_NOT_PROVABLE", message: "Profile declared output has no unambiguous SQL output field binding" });
+	const declaredWritesWithoutBindings = normalizeWrites(task).filter((write) =>
+		!outputBindings.some((binding) => normalizeName(binding.target_dataset) === write),
+	);
+	if (declaredWritesWithoutBindings.length > 0) {
+		unknowns.push({
+			task_id: task.task_id,
+			outcome_class: "NOT_EVALUABLE",
+			reason_code: "OUTPUT_BINDING_NOT_PROVABLE",
+			message: "Profile declared output has no unambiguous SQL output field binding",
+			subject: declaredWritesWithoutBindings.join(","),
+		});
 	}
 	const unknownsByOutcome = Object.fromEntries(
 		(["UNKNOWN", "NOT_EVALUABLE", "NOT_APPLICABLE", "FAILURE"] as const).map((outcome) => [outcome, unknowns.filter((item) => item.outcome_class === outcome).length]),
@@ -1268,6 +1419,7 @@ function buildTaskBundle(
 			schema_bundle_sha256: schemaBundleHash,
 			schema_snapshot: schemaSnapshot,
 			analysis_config_sha256: contextHash(task, profile, logicalSourceId),
+			...(task.input_pack_provenance ? { input_pack: task.input_pack_provenance } : {}),
 		},
 		method: {
 			dialect: profile.dialect,

@@ -40,6 +40,10 @@ export interface WriteOutputContext {
 	readonly queryBoundaryProven: boolean;
 	readonly producerEnumerationStatus: "COMPLETE" | "NOT_EVALUABLE" | "NOT_APPLICABLE";
 	readonly expressions: readonly FieldExpressionRecord[];
+	readonly evidenceKind?: "SQL_EXPLICIT_WRITE" | "PLATFORM_TARGET_QUERY_OUTPUT";
+	readonly partitionStatus?: "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
+	readonly partitionColumns?: readonly string[];
+	readonly evidenceRefs?: readonly string[];
 }
 
 export interface OutputBindingResult {
@@ -324,10 +328,12 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 	for (const write of input.writes) {
 		const isInsert = write.statementType === "INSERT_OVERWRITE" || write.statementType === "INSERT_INTO";
 		const isCtas = write.writeKind === "CTAS";
-		if (!isInsert && !isCtas) continue;
+		const isPlatformTarget = write.evidenceKind === "PLATFORM_TARGET_QUERY_OUTPUT";
+		if (!isInsert && !isCtas && !isPlatformTarget) continue;
 		const parsedInsert = isInsert ? parseInsert(write.rawSql) : null;
 		const create = creates.find((candidate) => candidate.statementId === write.statementId) ?? null;
-		const expressions = [...write.expressions].sort((left, right) => left.ordinal - right.ordinal);
+		let expressions = [...write.expressions].sort((left, right) => left.ordinal - right.ordinal);
+		let provenDynamicColumns: string[] = [];
 		const uncovered = expressions.map((expression) => expression.ordinal);
 		if (write.producerEnumerationStatus === "NOT_EVALUABLE" && expressions.length === 0) {
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE", "field-producing Write has no enumerable producer output ordinals", write.target, { uncovered_ordinals: [] }));
@@ -337,21 +343,42 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE", "CTAS query producer boundary is not proven", write.target, { uncovered_ordinals: uncovered }));
 			continue;
 		}
+		if (isPlatformTarget && !write.queryBoundaryProven) {
+			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE", "platform target requires exactly one enumerable query producer", write.target, { uncovered_ordinals: uncovered }));
+			continue;
+		}
+		if (
+			isPlatformTarget &&
+			write.partitionStatus !== "NOT_PARTITIONED" &&
+			write.partitionStatus !== "COMPLETE"
+		) {
+			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_PARTITION_NOT_PROVABLE", `platform target partition handling is ${write.partitionStatus ?? "UNKNOWN"}`, write.target, { uncovered_ordinals: uncovered }));
+			continue;
+		}
 		if (isInsert && !parsedInsert) {
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "OUTPUT_BINDING_NOT_PROVABLE", "INSERT target could not be parsed", write.target, { uncovered_ordinals: uncovered }));
 			continue;
 		}
 		if (isInsert && parsedInsert!.dynamicPartitionColumns.length > 0) {
-			unknowns.push(gap(
-				input,
-				write,
-				"NOT_EVALUABLE",
-				"DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
-				`dynamic partition columns require engine-specific output mapping: ${parsedInsert!.dynamicPartitionColumns.join(", ")}`,
-				parsedInsert!.target,
-				{ uncovered_ordinals: uncovered },
-			));
-			continue;
+			const dynamicColumns = parsedInsert!.dynamicPartitionColumns.map(normalizeName);
+			const provenColumns = (write.partitionColumns ?? []).map(normalizeName);
+			const partitionProven =
+				write.partitionStatus === "COMPLETE" &&
+				dynamicColumns.length === provenColumns.length &&
+				dynamicColumns.every((column, index) => column === provenColumns[index]);
+			if (!partitionProven || expressions.length <= dynamicColumns.length) {
+				unknowns.push(gap(
+					input,
+					write,
+					"NOT_EVALUABLE",
+					"DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
+					`dynamic partition columns require complete Input Pack ordinal evidence: ${dynamicColumns.join(", ")}`,
+					parsedInsert!.target,
+					{ uncovered_ordinals: uncovered, input_pack_partition_status: write.partitionStatus ?? "UNKNOWN" },
+				));
+				continue;
+			}
+			provenDynamicColumns = dynamicColumns;
 		}
 		if (expressions.length === 0 || expressions.some((expression, ordinal) => expression.ordinal !== ordinal)) {
 			const reason = write.producerEnumerationStatus === "NOT_EVALUABLE" ? "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE" : isCtas ? "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE" : "OUTPUT_BINDING_NOT_PROVABLE";
@@ -363,12 +390,16 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 		const schemaRef = schemaForTarget(target, input.schemaRefs, input.declaredWrites);
 		const dataset = resolvedDataset(target, schemaRef, input.declaredWrites);
 		const physicalColumns = nonPartitionColumns(schemaRef);
+		if (isPlatformTarget && !schemaRef) {
+			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_SCHEMA_NOT_PROVABLE", "platform target query output requires target Table Pack Schema evidence", dataset, { uncovered_ordinals: uncovered }));
+			continue;
+		}
 		const createCandidates = creates.filter((candidate) => targetMatches(candidate.target, target));
 		const targetCreate = createCandidates.length === 1 ? createCandidates[0]! : create;
 		let targetColumns: string[];
 		let targetOrdinals: number[];
 		let bindingMethod: OutputFieldBindingRecord["binding_method"];
-		let evidenceRefs: string[] = [write.statementId];
+		let evidenceRefs: string[] = [write.statementId, ...(write.evidenceRefs ?? [])];
 
 		const explicitTargetColumns = parsedInsert?.targetColumns ?? [];
 		if (explicitTargetColumns.length > 0) {
@@ -380,9 +411,13 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			targetOrdinals = targetColumns.map((_, ordinal) => ordinal);
 			bindingMethod = "SQL_CREATE_POSITIONAL";
 			evidenceRefs.push(targetCreate.statementId);
-		} else if (physicalColumns.length === expressions.length) {
-			targetColumns = physicalColumns;
-			targetOrdinals = targetColumns.map((_, ordinal) => ordinal);
+		} else if (physicalColumns.length + provenDynamicColumns.length === expressions.length) {
+			targetColumns = [...physicalColumns, ...provenDynamicColumns];
+			const fullSchemaColumns = (schemaRef?.physical_columns ?? []).map((column) => normalizeName(String(column)));
+			targetOrdinals = targetColumns.map((column, ordinal) => {
+				const schemaOrdinal = fullSchemaColumns.indexOf(normalizeName(column));
+				return schemaOrdinal >= 0 ? schemaOrdinal : ordinal;
+			});
 			bindingMethod = "TARGET_SCHEMA_POSITIONAL";
 		} else {
 			unknowns.push(gap(
@@ -418,7 +453,7 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 					targetSchemaStatus = "MATCH";
 				}
 			}
-		} else if (schemaRef && !sameColumns(targetColumns, physicalColumns)) {
+		} else if (schemaRef && provenDynamicColumns.length === 0 && !sameColumns(targetColumns, physicalColumns)) {
 			if (prefixColumns(targetColumns, physicalColumns)) {
 				targetSchemaStatus = "DRIFT_EXTRA_TARGET_COLUMNS";
 				const extras = physicalColumns.slice(targetColumns.length);
@@ -457,8 +492,13 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 				binding_method: bindingMethod,
 				binding_status: "RESOLVED",
 				target_schema_status: targetSchemaStatus,
-				static_partition_columns: parsedInsert?.staticPartitionColumns ?? [],
-				evidence_refs: evidenceRefs,
+				static_partition_columns: [
+					...(parsedInsert?.staticPartitionColumns ?? []),
+					...(parsedInsert?.dynamicPartitionColumns ?? []),
+					...(!parsedInsert ? (write.partitionColumns ?? []) : []),
+				],
+				evidence_refs: [...new Set(evidenceRefs)].sort(),
+				evidence_kind: isPlatformTarget ? "PLATFORM_TARGET_QUERY_OUTPUT" : "SQL_EXPLICIT_WRITE",
 			});
 		}
 	}

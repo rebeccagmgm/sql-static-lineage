@@ -1513,6 +1513,7 @@ interface CliOptions {
   dataRoot: string;
   producerIndexPath: string;
   rootOneHopPath: string | null;
+  oneHopSnapshotPaths: readonly string[];
   outputPath: string | null;
   maxDepth: number;
   maxTasks: number;
@@ -1527,6 +1528,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--data-root",
     "--producer-index",
     "--root-one-hop",
+    "--one-hop-snapshots",
     "--output",
     "--max-depth",
     "--max-tasks",
@@ -1567,6 +1569,10 @@ function parseCli(argv: readonly string[]): CliOptions {
     dataRoot: required("--data-root"),
     producerIndexPath: required("--producer-index"),
     rootOneHopPath: values.get("--root-one-hop") ?? null,
+    oneHopSnapshotPaths: (values.get("--one-hop-snapshots") ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
     outputPath: values.get("--output") ?? null,
     maxDepth: integer("--max-depth", 3),
     maxTasks: integer("--max-tasks", 100),
@@ -1586,6 +1592,17 @@ function main(): void {
   const rootOneHop = cli.rootOneHopPath
     ? (JSON.parse(readFileSync(resolve(cli.rootOneHopPath), "utf8")) as unknown)
     : undefined;
+  const oneHopSnapshots = new Map<string, OneHopReconciliationResult>();
+  for (const snapshotPath of cli.oneHopSnapshotPaths) {
+    const snapshot = JSON.parse(
+      readFileSync(resolve(snapshotPath), "utf8"),
+    ) as OneHopReconciliationResult;
+    if (!snapshot.taskId?.trim()) throw new Error("ONE_HOP_SNAPSHOT_TASK_ID_REQUIRED");
+    if (snapshot.taskId === cli.taskId) throw new Error("ROOT_ONE_HOP_MUST_USE_ROOT_FLAG");
+    if (oneHopSnapshots.has(snapshot.taskId))
+      throw new Error(`ONE_HOP_SNAPSHOT_DUPLICATE:${snapshot.taskId}`);
+    oneHopSnapshots.set(snapshot.taskId, snapshot);
+  }
   const result = reconcileMultiHop(cli.taskId, {
     dataRoot: cli.dataRoot,
     producerIndex,
@@ -1593,6 +1610,7 @@ function main(): void {
     maxTasks: cli.maxTasks,
     maxEdges: cli.maxEdges,
     terminalTableConfig,
+    ...(oneHopSnapshots.size > 0 ? { oneHopSnapshots } : {}),
     ...(rootOneHop
       ? { rootOneHop: rootOneHop as OneHopReconciliationResult }
       : {}),

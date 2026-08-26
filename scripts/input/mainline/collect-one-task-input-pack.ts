@@ -29,6 +29,8 @@ import {
   targetEvidenceKindFor,
 } from "../shared/task-endpoints.ts";
 import { findSqlFinalTargetEvidence } from "../shared/sql-target-evidence.ts";
+import { normalizeRepeatedSqlForAnalysis } from "../shared/sql-analysis-normalization.ts";
+import { extractSqlReadTableNames } from "../shared/sql-table-references.ts";
 import taskTypeCodeMap from "../shared/task-type-map.json" with { type: "json" };
 
 const SQL_SLOTS: readonly SqlSlot[] = [
@@ -932,21 +934,12 @@ export function normalizeRepeatedSqlContent(content: string): {
   content: string;
   duplicateBlocksRemoved: boolean;
 } {
-  const normalized = content.replace(/\r\n?/g, "\n").trim();
-  const lines = normalized.split("\n");
-  const canonical = (value: string): string =>
-    value.replace(/\s+/g, " ").trim().toLowerCase();
-  const midpoint = Math.floor(lines.length / 2);
-  for (let offset = -2; offset <= 2; offset += 1) {
-    const split = midpoint + offset;
-    if (split <= 0 || split >= lines.length) continue;
-    const left = lines.slice(0, split).join("\n").trim();
-    const right = lines.slice(split).join("\n").trim();
-    if (left !== "" && canonical(left) === canonical(right)) {
-      return { content: `${left}\n`, duplicateBlocksRemoved: true };
-    }
-  }
-  return { content: `${normalized}\n`, duplicateBlocksRemoved: false };
+  const normalized = normalizeRepeatedSqlForAnalysis(content);
+  const original = `${content.replace(/\r\n?/g, "\n").trim()}\n`;
+  return {
+    content: normalized,
+    duplicateBlocksRemoved: normalized !== original,
+  };
 }
 
 function looksLikeOrphanedCommentContinuation(line: string): boolean {
@@ -1796,30 +1789,59 @@ export function collectOneTask(
     taskEvidence.taskCategory ?? "unknown",
   );
   const sqlSlots = availableSqlSlots(row);
-  const tableRequests = (["source", "target"] as const)
+  const directTableRequests = (["source", "target"] as const)
     .map((side) => ({ side, qualifiedName: directTableName(row[side]) }))
     .filter(
       (item): item is { side: "source" | "target"; qualifiedName: string } =>
         item.qualifiedName !== undefined,
     );
-  const tableNames = tableRequests.map((item) => item.qualifiedName);
-  const tableReferencesUnavailable = [row.source, row.target]
-    .map((value) => (typeof value === "string" ? value.trim() : undefined))
+  const sqlReadTableNames = Object.values(taskEvidence.sql ?? {})
+    .flatMap((evidence) =>
+      extractSqlReadTableNames(
+        typeof evidence === "string" ? evidence : evidence?.content ?? "",
+      ),
+    );
+  const tableRequests = [
+    ...directTableRequests,
+    ...sqlReadTableNames.map((qualifiedName) => ({
+      side: "sql-read" as const,
+      qualifiedName,
+    })),
+  ].filter(
+    (item, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.qualifiedName.toLowerCase() ===
+            item.qualifiedName.toLowerCase() &&
+          candidate.side === item.side,
+      ) === index,
+  );
+  const tableReferencesUnavailable = (["source", "target"] as const)
+    .map((side) => ({
+      side,
+      value: typeof row[side] === "string" ? row[side].trim() : undefined,
+    }))
     .filter(
-      (value): value is string =>
+      ({ side, value }) =>
         value !== undefined &&
         value !== "" &&
         value !== "-" &&
-        !directTableName(value),
-    );
+        !directTableName(value) &&
+        controlledTaskEndpointDataSource(taskEvidence.taskCategory, side) ===
+          undefined,
+    )
+    .map(({ value }) => value)
+    .filter((value): value is string => value !== undefined);
   const tableResults = tableRequests.map(({ side, qualifiedName }) => ({
     side,
     qualifiedName,
     evidence: tableFromDirectEvidence(
       qualifiedName,
       undefined,
-      directEndpointDataSource(row, side) ??
-        controlledTaskEndpointDataSource(taskEvidence.taskCategory, side),
+      side === "sql-read"
+        ? controlledTaskEndpointDataSource(taskEvidence.taskCategory, "source")
+        : directEndpointDataSource(row, side) ??
+            controlledTaskEndpointDataSource(taskEvidence.taskCategory, side),
     ),
   }));
   const sqlTargetInputs = Object.fromEntries(

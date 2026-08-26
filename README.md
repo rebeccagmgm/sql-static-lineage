@@ -18,6 +18,7 @@
 - [表级单跳对账器](docs/reconcile-one-hop.md)
 - [Table producer 反向索引](docs/producer-index.md)
 - [表级多跳数据路径](docs/reconcile-multi-hop.md)
+- [Input Pack 驱动的跨 Task 字段血缘](docs/field-lineage.md)
 
 ## 最小运行入口
 
@@ -30,10 +31,12 @@ npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-
 npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--producer-index <producer-index.json>] --output <result.json>
 npm run reconcile-one-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
-npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
+npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> [--root-one-hop <root-one-hop.json>] [--one-hop-snapshots <child-a.json,child-b.json>] --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
 npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 3 --max-tasks 100 --max-edges 500 --output <result.json> --report <autofill-report.json>
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
+npm run input-pack:machine-facts -- --data-root <input-pack-root> --task-id 155015,114026,105387 --output <facts-root>
+npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <facts-root> --multi-hop-artifact <table-multi-hop.json> --task-id 155015 --target-table dm_rsk_n.v_risk_audit_log --fields entity_id,entity_field_name --facts-policy allow-legacy-partial --output <field-lineage.json> --summary-output <field-lineage.txt>
 ```
 
 该命令先输出压缩后的 `viz-model-181058.json`，再渲染离线 HTML；同一物理表的多个
@@ -50,6 +53,7 @@ scripts/machine-facts/       per-task fact assembly and publication
 scripts/input/               external Task/Table input collection, contracts and repairs
 scripts/query/               validated Current Bundle loader and Reader
 scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
+scripts/reconcile/consumer/field-lineage/  bounded cross-Task VALUE_FLOW and ROWSET_CONTROL projection
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
 tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent

@@ -207,6 +207,40 @@ describe("read occurrence predicate resolver", () => {
     expect(scope.predicate).toBeNull();
   });
 
+  it("matches a resolved qualified table to its SQL-visible bare table name", () => {
+    const scope = resolveReadPartitionScope({
+      predicate: {
+        kind: "ATOM",
+        operator: "IN",
+        operands: [
+          {
+            kind: "COLUMN",
+            expression: "src_tbl",
+            column: {
+              name: "src_tbl",
+              clause: "where",
+              physical: [{ table: "T03_AGT_STATI_INFO_H", column: "src_tbl" }],
+            },
+          },
+          {
+            kind: "LITERAL",
+            expression: "'ODATA_N_TIT.D_TRD_OTC_TRADE'",
+            observedValue: "ODATA_N_TIT.D_TRD_OTC_TRADE",
+          },
+        ],
+        span: { start: 0, end: 1 },
+      },
+      tableQualifiedName: "pdata_n.t03_agt_stati_info_h",
+      partitionFields: ["src_tbl"],
+    });
+    expect(scope.status).toBe("CONSTRAINED");
+    expect(scope.predicate).toMatchObject({
+      kind: "ATOM",
+      field: "src_tbl",
+      operator: "IN",
+    });
+  });
+
   it("keeps local filters while marking a correlated EXISTS as unknown", () => {
     const { occurrences } = resolve(
       "SELECT a.id FROM demo.a a WHERE a.busi_date = '2026-08-23' AND EXISTS (SELECT 1 FROM demo.b b WHERE b.id = a.id)",

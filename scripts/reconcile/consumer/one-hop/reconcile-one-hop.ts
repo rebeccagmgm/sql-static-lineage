@@ -75,6 +75,7 @@ import {
   inferTaskDefaultSchema,
   qualifyBareTableName,
 } from "../../shared/task-default-schema.ts";
+import { normalizeRepeatedSqlForAnalysis } from "../../../input/shared/sql-analysis-normalization.ts";
 
 export {
   extractSqlWrites,
@@ -397,6 +398,21 @@ export interface OneHopSummary {
     readonly taskId: string;
     readonly table: string | null;
     readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+    readonly partitionMatch: {
+      readonly status: ProducerPartitionMatchStatus;
+      readonly reasonCodes: readonly string[];
+      readonly partitions: readonly (readonly PartitionAssignment[])[];
+    };
+  }[];
+  readonly excludedProducers: readonly {
+    readonly taskId: string;
+    readonly table: string | null;
+    readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+    readonly partitionMatch: {
+      readonly status: ProducerPartitionMatchStatus;
+      readonly reasonCodes: readonly string[];
+      readonly partitions: readonly (readonly PartitionAssignment[])[];
+    };
   }[];
   readonly counts: OneHopReconciliationResult["counts"];
   readonly producerIndex: {
@@ -405,6 +421,7 @@ export interface OneHopSummary {
   readonly dataPath: {
     readonly source: OneHopReconciliationResult["dataPath"]["source"];
     readonly confirmedProducerCount: number;
+    readonly excludedProducerCount: number;
     readonly nonConfirmedRelationCount: number;
   };
   readonly nextScheduleTaskIds: readonly string[];
@@ -622,10 +639,11 @@ function extractSqlDirectReadOccurrences(
   dialect: Dialect,
   schema?: unknown,
 ): SqlDirectReadOccurrence[] {
-  const session = SqlSession.create(sql, dialect);
+  const analysisSql = normalizeRepeatedSqlForAnalysis(sql);
+  const session = SqlSession.create(analysisSql, dialect);
   const occurrences: SqlDirectReadOccurrence[] = [];
   for (const [statementIndex, cell] of session.doc.statements.entries()) {
-    const plan = buildPlanFacts(cell, sql, {
+    const plan = buildPlanFacts(cell, analysisSql, {
       statement_index: statementIndex,
       dialect,
       ...(schema !== undefined
@@ -2406,6 +2424,36 @@ export function reconcileOneHopWithPreparedContext(
 export function summarizeOneHop(
   result: OneHopReconciliationResult,
 ): OneHopSummary {
+  const toSummaryProducer = (producer: DataPathConfirmedProducer) => {
+    const partitions = new Map<string, readonly PartitionAssignment[]>();
+    for (const write of producer.partitionMatch.writes) {
+      const partition = [...write.partition].sort((left, right) =>
+        compareText(
+          `${left.field}|${left.expression}|${left.observedValue ?? ""}|${left.valueStatus}`,
+          `${right.field}|${right.expression}|${right.observedValue ?? ""}|${right.valueStatus}`,
+        ),
+      );
+      partitions.set(JSON.stringify(partition), partition);
+    }
+    return {
+      taskId: producer.taskId,
+      table: producer.table.qualifiedName,
+      scheduleRelation: producer.scheduleRelation,
+      partitionMatch: {
+        status: producer.partitionMatch.status,
+        reasonCodes: producer.partitionMatch.reasonCodes,
+        partitions: [...partitions.entries()]
+          .sort(([left], [right]) => compareText(left, right))
+          .map(([, partition]) => partition),
+      },
+    };
+  };
+  const excludedProducers = result.dataPath.confirmedProducers.filter(
+    (producer) => producer.partitionMatch.status === "PROVEN_DISJOINT",
+  );
+  const confirmedProducers = result.dataPath.confirmedProducers.filter(
+    (producer) => producer.partitionMatch.status !== "PROVEN_DISJOINT",
+  );
   return {
     schemaVersion: "1.1.0",
     artifactType: "ONE_HOP_RECONCILIATION_SUMMARY",
@@ -2419,16 +2467,14 @@ export function summarizeOneHop(
     scheduleParentTaskIds: result.schedule.parents.map(
       (parent) => parent.taskId,
     ),
-    confirmedProducers: result.dataPath.confirmedProducers.map((producer) => ({
-      taskId: producer.taskId,
-      table: producer.table.qualifiedName,
-      scheduleRelation: producer.scheduleRelation,
-    })),
+    confirmedProducers: confirmedProducers.map(toSummaryProducer),
+    excludedProducers: excludedProducers.map(toSummaryProducer),
     counts: result.counts,
     producerIndex: { status: result.producerIndex.status },
     dataPath: {
       source: result.dataPath.source,
-      confirmedProducerCount: result.dataPath.confirmedProducers.length,
+      confirmedProducerCount: confirmedProducers.length,
+      excludedProducerCount: excludedProducers.length,
       nonConfirmedRelationCount: result.dataPath.nonConfirmedRelations.length,
     },
     nextScheduleTaskIds: result.nextScheduleTaskIds,

@@ -600,7 +600,21 @@ describe("table producer index", () => {
     ).toEqual({
       writeDirection: "WRITE_CONFIRMED",
       operationClass: "TRUNCATE",
-      dataPathRole: "MUTATION_ONLY",
+        dataPathRole: "MUTATION_ONLY",
+    });
+    expect(
+      classifyProducerWriteObservation(
+        {
+          observationKind: "DIRECT_TARGET",
+          declaredWriteMode: "truncate",
+          sqlWriteKind: null,
+        },
+        { hasFieldProducingSql: true },
+      ),
+    ).toEqual({
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "PLATFORM_TRANSFER",
+      dataPathRole: "PRODUCER",
     });
     expect(
       classifyProducerWriteObservation({

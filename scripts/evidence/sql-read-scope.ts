@@ -5,20 +5,10 @@ import type {
 } from "../plans/plan-contract.ts";
 
 export type ReadPartitionScopeStatus =
-  | "UNPARTITIONED"
-  | "ALL_PARTITIONS"
-  | "CONSTRAINED"
-  | "PARTIAL"
-  | "UNKNOWN";
+  "UNPARTITIONED" | "ALL_PARTITIONS" | "CONSTRAINED" | "PARTIAL" | "UNKNOWN";
 
 export type ReadPartitionOperator =
-  | "EQ"
-  | "LT"
-  | "LTE"
-  | "GT"
-  | "GTE"
-  | "IN"
-  | "BETWEEN";
+  "EQ" | "LT" | "LTE" | "GT" | "GTE" | "IN" | "BETWEEN";
 
 export interface ReadPartitionValue {
   readonly kind: "LITERAL" | "RUNTIME_EXPRESSION" | "UNKNOWN";
@@ -66,6 +56,25 @@ function normalize(value: string): string {
   return value.trim().replaceAll("`", "").replaceAll('"', "").toLowerCase();
 }
 
+/**
+ * Plan facts may retain the SQL-visible bare table name even after the caller
+ * has resolved the READ occurrence to a physical qualified name from the
+ * Input Pack.  Once that physical identity is already resolved, the final
+ * identifier component is a safe equivalence check; it does not infer a
+ * schema or choose among catalog candidates.
+ */
+function tableReferenceMatches(
+  physicalTable: string,
+  qualifiedTable: string,
+): boolean {
+  const physical = normalize(physicalTable);
+  const qualified = normalize(qualifiedTable);
+  if (physical === qualified) return true;
+  if (physical.includes(".")) return false;
+  const qualifiedParts = qualified.split(".");
+  return qualifiedParts.length > 1 && qualifiedParts.at(-1) === physical;
+}
+
 function uniqueSorted(values: readonly string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
@@ -88,7 +97,8 @@ function valueOf(operand: PredicateOperand): ReadPartitionValue | null {
   if (operand.kind === "LITERAL") {
     const expression = operand.expression.trim();
     const observedValue = operand.observedValue?.trim() ?? null;
-    const templateValue = observedValue ?? expression.replace(/^['"]|['"]$/gu, "");
+    const templateValue =
+      observedValue ?? expression.replace(/^['"]|['"]$/gu, "");
     if (/^\$\{[^}]+\}$/u.test(templateValue.trim()))
       return {
         kind: "RUNTIME_EXPRESSION",
@@ -119,7 +129,7 @@ function columnFor(
   if (columns.length !== 1) return undefined;
   const refs = columns[0]!.physical ?? [];
   const candidates = refs
-    .filter((ref) => normalize(ref.table) === tableName)
+    .filter((ref) => tableReferenceMatches(ref.table, tableName))
     .map((ref) => normalize(ref.column));
   if (candidates.length !== 1) return undefined;
   const field = candidates[0]!;
@@ -190,7 +200,9 @@ function combine(
   const relevant = children.filter((child) => child.status !== "IRRELEVANT");
   if (relevant.length === 0)
     return { status: "IRRELEVANT", predicate: null, reasonCodes: [] };
-  const reasonCodes = uniqueSorted(relevant.flatMap((child) => child.reasonCodes));
+  const reasonCodes = uniqueSorted(
+    relevant.flatMap((child) => child.reasonCodes),
+  );
   if (kind === "OR" && relevant.length !== children.length)
     return {
       status: "PARTIAL",
@@ -239,8 +251,7 @@ function evaluate(
   tableName: string,
   fields: ReadonlySet<string>,
 ): Evaluation {
-  if (!tree)
-    return { status: "IRRELEVANT", predicate: null, reasonCodes: [] };
+  if (!tree) return { status: "IRRELEVANT", predicate: null, reasonCodes: [] };
   if (tree.kind === "ATOM") return atomEvaluation(tree, tableName, fields);
   if (tree.kind === "NOT") {
     const child = evaluate(tree.child, tableName, fields);
@@ -317,9 +328,7 @@ export function resolveReadPartitionScope(options: {
     };
   return {
     status:
-      evaluation.status === "SUPPORTED"
-        ? "CONSTRAINED"
-        : evaluation.status,
+      evaluation.status === "SUPPORTED" ? "CONSTRAINED" : evaluation.status,
     partitionFields,
     predicate: evaluation.predicate,
     reasonCodes: evaluation.reasonCodes,

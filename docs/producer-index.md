@@ -105,7 +105,7 @@ Task 不要求 SQL 中出现 `INSERT`。`DIRECT_PLATFORM_TARGET` 是平台直接
 
 对于 `SQL_EXACT_TABLE_TARGET`，索引会重新查看 SQL slot 的结构化目标：INSERT 目标可进入 `PRODUCER`，TRUNCATE 进入 `MUTATION_ONLY`，纯 CREATE 或无法判定的目标保持 `UNKNOWN`，不会仅凭 target 字段升级为数据 producer。
 
-平台目标但没有 SQL `INSERT` 的 Task 通常归为 `PLATFORM_TRANSFER/PRODUCER`。声明为 `delete` 或 `truncate` 的目标写入，或 SQL slot 中能与目标表对应的 `DELETE FROM`/`TRUNCATE TABLE`，归为 `MUTATION_ONLY`：它确认修改了表，但不应被解释为产生了新的上游数据。旧的 V1 artifact 可以省略这三个字段，消费者按原有 `observationKind`、`sqlWriteKind` 和 `declaredWriteMode` 解释。
+平台目标但没有 SQL `INSERT` 的 Task 通常归为 `PLATFORM_TRANSFER/PRODUCER`。声明为 `delete` 或 `truncate` 的目标写入，或 SQL slot 中能与目标表对应的 `DELETE FROM`/`TRUNCATE TABLE`，在没有字段生产 SQL 时归为 `MUTATION_ONLY`：它确认修改了表，但不应被解释为产生了新的上游数据。若同一 Task 同时存在可枚举的 `SELECT`/CTAS/INSERT 查询输出，`truncate` 只是装载前清理动作，整体仍归为 `PLATFORM_TRANSFER/PRODUCER`。旧的 V1 artifact 可以省略这三个字段，消费者按原有 `observationKind`、`sqlWriteKind` 和 `declaredWriteMode` 解释。
 
 边界：只有 SQL 中单独出现 `DELETE FROM`/`TRUNCATE TABLE`、而没有可确认的目标证据时，当前 SQL WRITE 提取器不会把它生成 producer observation；这类 SQL-only 形态不能据此确认 producer，也不会进入 `lookupConfirmedProducers()`，仍需保留为未覆盖证据边界。
 

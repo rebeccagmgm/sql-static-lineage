@@ -359,6 +359,13 @@ describe("reconcileOneHop", () => {
     ]);
   });
 
+  it("extracts reads from a repeated platform response without duplicating the read", () => {
+    const sql = "SELECT id FROM src.a\n\nSELECT id FROM src.a";
+    expect(extractSqlDirectReads(sql, "databricks")).toEqual([
+      expect.objectContaining({ qualifiedName: "src.a" }),
+    ]);
+  });
+
   it("uses adaptor predicates and table partition metadata for one-hop matching", () => {
     const dataRoot = fixtureRoot();
     writeTable(dataRoot, "src.partitioned", ["busi_date"]);
@@ -462,6 +469,35 @@ describe("reconcileOneHop", () => {
         (producer) => producer.taskId === "producer-partitioned-3",
       )?.partitionMatch.status,
     ).toBe("PROVEN_DISJOINT");
+    const summary = summarizeOneHop(result);
+    expect(summary.confirmedProducers.map((producer) => producer.taskId)).toEqual([
+      "producer-partitioned",
+      "producer-partitioned-2",
+    ]);
+    expect(summary.confirmedProducers[0]?.partitionMatch.status).toBe(
+      "PROVEN_OVERLAP",
+    );
+    expect(summary.confirmedProducers[0]?.partitionMatch.partitions).toEqual([
+      [
+        expect.objectContaining({
+          field: "busi_date",
+          observedValue: "2026-08-23",
+        }),
+      ],
+    ]);
+    expect(summary.excludedProducers).toEqual([
+      expect.objectContaining({
+        taskId: "producer-partitioned-3",
+        partitionMatch: expect.objectContaining({
+          status: "PROVEN_DISJOINT",
+          reasonCodes: ["PARTITION_VALUE_DISJOINT"],
+        }),
+      }),
+    ]);
+    expect(summary.dataPath).toMatchObject({
+      confirmedProducerCount: 2,
+      excludedProducerCount: 1,
+    });
     expect(result.coverage.partitionScopes.multiProducerTables).toBe(1);
   });
 

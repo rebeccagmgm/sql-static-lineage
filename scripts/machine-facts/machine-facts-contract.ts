@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
-export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.0";
+export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.5";
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type OutcomeClass = "UNKNOWN" | "NOT_EVALUABLE" | "NOT_APPLICABLE" | "FAILURE";
@@ -50,6 +50,7 @@ export interface MachineFactsManifest {
 		readonly schema_bundle_sha256: string;
 		readonly schema_snapshot: string;
 		readonly analysis_config_sha256: string;
+		readonly input_pack?: InputPackProvenance;
 	};
 	readonly method: {
 		readonly dialect: string;
@@ -194,10 +195,11 @@ export interface OutputFieldBindingRecord {
 	readonly target_schema_status: "MATCH" | "DRIFT_EXTRA_TARGET_COLUMNS" | "NOT_AVAILABLE";
 	readonly static_partition_columns: readonly string[];
 	readonly evidence_refs: readonly string[];
+	readonly evidence_kind?: "SQL_EXPLICIT_WRITE" | "PLATFORM_TARGET_QUERY_OUTPUT";
 	readonly [key: string]: unknown;
 }
 export interface UnknownOutcomeRecord { readonly outcome_class: OutcomeClass; readonly reason_code: string; readonly message: string; readonly [key: string]: unknown; }
-export interface SourceArtifactRecord { readonly schema_version: string; readonly task_id: string; readonly logical_source_id: string; readonly sql_snapshot: string; readonly sql_sha256: string; readonly byte_length: number; readonly encoding: string; readonly [key: string]: unknown; }
+export interface SourceArtifactRecord { readonly schema_version: string; readonly task_id: string; readonly logical_source_id: string; readonly sql_snapshot: string; readonly sql_sha256: string; readonly byte_length: number; readonly encoding: string; readonly sql_slot?: string; readonly [key: string]: unknown; }
 export interface TaskFactIndexRecord { readonly task_id: string; readonly logical_source_id: string; readonly sql_sha256: string; readonly manifest_sha256: string; readonly bundle_path: string; readonly status: "SUCCESS"; readonly [key: string]: unknown; }
 export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | DatasetIoRecord | RelationNodeRecord | RelationEdgeRecord | FieldExpressionRecord | ColumnLineageRecord | LineageHopRootRecord | LineageHopNodeRecord | LineageHopEdgeRecord | OutputFieldBindingRecord | UnknownOutcomeRecord | SourceArtifactRecord | TaskFactIndexRecord;
 
@@ -205,6 +207,40 @@ export interface GenericTaskProfile {
 	readonly task_id: string;
 	readonly sql_snapshot: string;
 	readonly writes?: string | readonly string[];
+	readonly sql_slot?: string;
+	readonly sql_segments?: readonly { readonly slot: string; readonly start: number; readonly end: number }[];
+	readonly input_pack_provenance?: InputPackProvenance;
+	readonly platform_target_query_output?: PlatformTargetQueryOutput;
+	readonly write_partition_evidence?: WritePartitionEvidence;
+}
+
+export interface InputPackProvenance {
+	readonly schema_version: "machine-facts-input-pack-provenance-v1";
+	readonly data_root: string;
+	readonly task_locator: string;
+	readonly task_content_hash: string;
+	readonly sql_slot: string;
+	readonly sql_locator: string;
+	readonly sql_sha256: string;
+	readonly sql_sources?: readonly { readonly slot: string; readonly locator: string; readonly sha256: string }[];
+	readonly analysis_sql_sha256?: string;
+	readonly table_locator: string;
+	readonly table_content_hash: string;
+	readonly ddl_locator: string;
+	readonly ddl_sha256: string;
+}
+
+export interface PlatformTargetQueryOutput {
+	readonly target: string;
+	readonly partition_status: "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
+	readonly partition_columns: readonly string[];
+	readonly evidence_refs: readonly string[];
+}
+
+export interface WritePartitionEvidence {
+	readonly status: "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
+	readonly partition_columns: readonly string[];
+	readonly evidence_refs: readonly string[];
 }
 
 export interface GenericAnalysisProfile {

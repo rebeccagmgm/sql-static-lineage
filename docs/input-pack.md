@@ -21,13 +21,18 @@ without deletion. Use `--not-found-data-root <path>` to choose another
 external archive root. A later batch skips the recorded ID; `--force` retries
 the Horae lookup.
 
-If collection succeeds technically but the configured source/target physical
-table cannot be confirmed, the Task Pack is classified as
+If collection succeeds technically but a required physical source/target table
+cannot be confirmed, the Task Pack is classified as
 `EXCLUDED/PHYSICAL_TABLE_NOT_FOUND` and moved to the same not-found archive.
 This prevents a partial, non-physical endpoint from entering the main Input
-Pack on later batches.
+Pack on later batches. A controlled database-to-Hive task may expose a data
+source identifier rather than a physical source-table name in `source`; that
+identifier is not treated as a table. The collector conservatively discovers
+physical `FROM`/`JOIN` references from the SQL slots and resolves them against
+the task category's controlled source data source before deciding whether the
+source evidence is missing.
 
-The input writer accepts direct evidence already obtained by the existing OpenCLI adapters. The batch entrypoint parses the task IDs, performs the bounded Horae manual-task lookup, and invokes one isolated single-task collector per ID. The production collector invokes the existing `opencli szdata task-source`, `table-search`, `table`, and `table-ddl` commands, and only when SzData reports SQL unavailable it tries the existing read-only `opencli horae detail` command for missing SQL slots. Normal OpenCLI calls have a 30-second process timeout; the Horae fallback has a five-second limit. Timeout or no-SQL results are reported in the command summary and leave the slot unavailable. It does not call HTTP, a database, or a source-control API directly, and it does not import the SQL parser/analyzer.
+The input writer accepts direct evidence already obtained by the existing OpenCLI adapters. The batch entrypoint parses the task IDs, performs the bounded Horae manual-task lookup, and invokes one isolated single-task collector per ID. The production collector invokes the existing `opencli szdata task-source`, `table-search`, `table`, and `table-ddl` commands, and only when SzData reports SQL unavailable it tries the existing read-only `opencli horae detail` command for missing SQL slots. Normal OpenCLI calls have a 30-second process timeout; the Horae fallback has a five-second limit. Timeout or no-SQL results are reported in the command summary and leave the slot unavailable. It does not call HTTP, a database, or a source-control API directly, and it does not import the SQL parser/analyzer; SQL table discovery is limited to a conservative `FROM`/`JOIN` reference extractor.
 
 To repair missing Table Pack evidence from a producer-index report, use the
 bounded repair command below. It reads only the selected task category,
@@ -79,7 +84,10 @@ not normalize comments, insert statement separators, or otherwise rewrite the
 SQL before storing `sql/<slot>.sql`; these files are canonical source evidence
 and their hashes cover the returned bytes. If a parser needs a conservative
 repair for a malformed legacy artifact, that repair must be performed in a
-derived analysis view and must not replace the canonical SQL file.
+derived analysis view and must not replace the canonical SQL file. The
+Input Pack-driven Machine Facts builder uses this boundary explicitly: raw SQL
+is frozen and hashed as source evidence, while a parser-only view may remove an
+adjacent repeated response block before statement enumeration.
 
 Legacy stored Task Packs may contain SQL that was rewritten by an older
 collector. Before using the normalizer migration, prefer recollecting the Task

@@ -138,6 +138,8 @@ export function classifyProducerWriteObservation(
   context: Readonly<{
     readonly sqlTargetStatementKind?:
       "CREATE_TABLE" | "INSERT_TABLE" | "TRUNCATE_TABLE" | "DELETE_TABLE";
+    /** A truncate/replace task can still be a data producer when a query slot supplies rows. */
+    readonly hasFieldProducingSql?: boolean;
   }> = {},
 ): ProducerWriteSemantics {
   if (write.sqlWriteKind !== null)
@@ -152,6 +154,12 @@ export function classifyProducerWriteObservation(
     truncate: "TRUNCATE",
   };
   const mutation = mutationClass[mode];
+  if (mutation === "TRUNCATE" && context.hasFieldProducingSql === true)
+    return {
+      writeDirection: "WRITE_CONFIRMED",
+      operationClass: "PLATFORM_TRANSFER",
+      dataPathRole: "PRODUCER",
+    };
   if (
     mutation === "TRUNCATE" ||
     context.sqlTargetStatementKind === "TRUNCATE_TABLE"
@@ -356,6 +364,19 @@ function sqlTargetStatementKindForPack(
     sql,
     stringValue(pack.document?.taskName) ?? undefined,
   )?.statementKind;
+}
+
+function hasFieldProducingSql(pack: LoadedTaskPack): boolean {
+  return pack.sqlFiles.some((file) => {
+    const sql = file.content
+      .replace(/--[^\r\n]*/g, " ")
+      .replace(/\/\*[\s\S]*?\*\//g, " ");
+    return (
+      /\b(?:SELECT|WITH)\b/i.test(sql) ||
+      /\bINSERT\s+(?:OVERWRITE|INTO)\b[\s\S]*\bSELECT\b/i.test(sql) ||
+      /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\b[\s\S]*\bAS\s+(?:SELECT|WITH)\b/i.test(sql)
+    );
+  });
 }
 
 interface ResolvedTable {
@@ -1485,6 +1506,7 @@ export function buildTableProducerIndex(
             ...write,
             ...classifyProducerWriteObservation(write, {
               sqlTargetStatementKind: sqlTargetStatementKindForPack(pack),
+              hasFieldProducingSql: hasFieldProducingSql(pack),
             }),
           });
         }
