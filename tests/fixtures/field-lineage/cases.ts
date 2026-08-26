@@ -49,7 +49,7 @@ export function createSyntheticFieldLineageInputPack(dataRoot: string): void {
       },
       query: {
         content:
-          "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m WHERE m.filter_key <> 'X';",
+          "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM mid m WHERE m.filter_key <> 'X';",
         evidenceProvider: "synthetic:test",
       },
     },

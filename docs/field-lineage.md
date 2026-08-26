@@ -66,6 +66,7 @@ CLI 默认先从主 Input Pack 为表级 artifact 中可用的 Task 准备 Machi
 - 主树只包含 `VALUE_FLOW`：目标输出字段表达式到 Schema-backed 物理输入字段，再精确桥接到上游 Task 的同一物理目标字段。
 - 跨 SQL slot 的临时 CTAS 字段使用 `TASK_LOCAL_SCHEMA_BACKED`，只在当前 Task 内回溯；它们不能成为跨 Task 物理桥。
 - `ROWSET_CONTROL` 单独列出 Join、filter、aggregate、set operation、window 和 distinct。不能证明跨 CTE/子查询作用域时记录 `ROWSET_SCOPE_UNRESOLVED`。
+- 控制证据中的 physical ref 若为裸表名，仅在 Table Pack 中能唯一匹配到物理表时补全；当前 Task 的临时 CTAS 表则使用同 Task 的 `schema-refs`。多候选、缺失或别名无法由物理证据闭合时仍保持 `ROWSET_FIELD_IDENTITY_UNRESOLVED`。
 - 只递归每层 `finalUpstreamTaskIds.primary`。
 - `additional` 记录为 `CANDIDATE`，但不递归。
 - `unknown` 在字段相关时保留为 `CANDIDATE` 并生成 gap，但不建立 `VALUE_FLOW`、不递归；物理身份不一致、缺失/排除 Task Pack、facts 不可用、cycle 和安全上限也都停止对应分支并生成 gap。
