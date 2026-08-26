@@ -991,6 +991,7 @@ const CONCATENATED_SQL_CONTINUATION_WORDS = new Set([
 
 export type InlineSqlCommentBoundaryKind =
   | "COMMA_SELECT_ITEM"
+  | "COMMA_COLUMN_DEFINITION"
   | "FROM_SUBQUERY"
   | "UNION_SELECT"
   | "CASE_WHEN"
@@ -1012,6 +1013,16 @@ function inlineCommentBoundaryCandidates(
   followingContent: string,
 ): InlineSqlCommentBoundary[] {
   const candidates: InlineSqlCommentBoundary[] = [];
+  const followingColumnDefinition =
+    /^\s*[A-Za-z_][A-Za-z0-9_$]*\s+(?:STRING|CHAR|VARCHAR|DECIMAL|NUMERIC|TINYINT|SMALLINT|INT|INTEGER|BIGINT|FLOAT|DOUBLE|BOOLEAN|DATE|TIMESTAMP|BINARY|ARRAY|MAP|STRUCT)\b/i.test(
+      followingContent,
+    );
+  if (/,\s*$/.test(comment) && followingColumnDefinition) {
+    candidates.push({
+      index: comment.lastIndexOf(","),
+      kind: "COMMA_COLUMN_DEFINITION",
+    });
+  }
   const patterns: ReadonlyArray<{
     kind: InlineSqlCommentBoundaryKind;
     pattern: RegExp;

@@ -332,6 +332,30 @@ describe("Input Pack V1", () => {
     ).toBe(0);
   });
 
+  it("repairs a DDL column comma swallowed by an inline comment", () => {
+    const sql =
+      "CREATE TABLE demo.base (\n" +
+      "  first_col STRING COMMENT 'first' -- added later,\n" +
+      "  second_col STRING COMMENT 'second'\n" +
+      ");";
+
+    const collected = normalizeCollectedSqlSlot(
+      sql,
+      "create",
+      "fixture:task-source",
+    );
+
+    expect(collected.content).toContain(
+      "-- added later\n,\n  second_col STRING",
+    );
+    expect(collected.warnings).toContain(
+      "SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:create:1:COMMA_COLUMN_DEFINITION=1",
+    );
+    expect(
+      SqlSession.create(collected.content, "databricks").syntaxDiagnostics,
+    ).toEqual([]);
+  });
+
   it("does not repair SQL-like text inside strings, block comments, or ordinary line comments", () => {
     const safe = [
       "SELECT '-- note ,''x'' AS fake FROM ( UNION ALL SELECT' AS txt;",
