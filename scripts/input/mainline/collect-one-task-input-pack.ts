@@ -1531,7 +1531,12 @@ export function normalizeCollectedSqlSlot(
   };
 }
 
-function toTaskEvidence(
+/**
+ * Convert the platform task-source row into Task Evidence without rewriting
+ * SQL. The SQL body is canonical source evidence; parser repairs, when ever
+ * needed, belong to a derived analysis view and must not replace this value.
+ */
+export function toTaskEvidence(
   taskId: string,
   row: Record<string, unknown>,
 ): { evidence: TaskEvidence; warnings: string[] } {
@@ -1565,11 +1570,12 @@ function toTaskEvidence(
           : typeof record.source === "string" && record.source !== "-"
             ? record.source
             : "opencli:szdata.task-source";
-      const normalized = normalizeCollectedSqlSlot(record.sql, slot, provider);
-      warnings.push(...normalized.warnings);
+      // Keep the exact platform-returned SQL in the canonical Input Pack.
+      // Do not run comment/separator repair here: those transforms are
+      // derived analysis concerns and must never overwrite source evidence.
       sql[slot] = {
-        content: normalized.content,
-        evidenceProvider: normalized.evidenceProvider,
+        content: record.sql,
+        evidenceProvider: provider,
       };
     }
   }

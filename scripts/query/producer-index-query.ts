@@ -124,21 +124,85 @@ function normalizeProducerTable(
   };
 }
 
-export function lookupConfirmedProducers(
-  index: TableProducerIndex,
-  table: ProducerTableIdentity,
-): readonly ConfirmedProducerEdge[] {
-  const key = tableIdentityKey(normalizeProducerTable(table));
-  return index.confirmedProducerEdges.filter(
-    (edge) =>
-      tableIdentityKey(edge.table) === key &&
+interface ProducerIndexLookupCache {
+  readonly confirmedByTable: ReadonlyMap<
+    string,
+    readonly ConfirmedProducerEdge[]
+  >;
+  readonly nonConfirmedByQualifiedName: ReadonlyMap<
+    string,
+    readonly NonConfirmedRelation[]
+  >;
+  readonly confirmedByTask: ReadonlyMap<
+    string,
+    readonly ConfirmedProducerEdge[]
+  >;
+  readonly nonConfirmedByTask: ReadonlyMap<
+    string,
+    readonly NonConfirmedRelation[]
+  >;
+}
+
+const lookupCaches = new WeakMap<TableProducerIndex, ProducerIndexLookupCache>();
+
+function appendToMap<T>(map: Map<string, T[]>, key: string, value: T): void {
+  const values = map.get(key);
+  if (values) values.push(value);
+  else map.set(key, [value]);
+}
+
+function lookupCache(index: TableProducerIndex): ProducerIndexLookupCache {
+  const cached = lookupCaches.get(index);
+  if (cached) return cached;
+  const confirmedByTable = new Map<string, ConfirmedProducerEdge[]>();
+  const nonConfirmedByQualifiedName = new Map<string, NonConfirmedRelation[]>();
+  const confirmedByTask = new Map<string, ConfirmedProducerEdge[]>();
+  const nonConfirmedByTask = new Map<string, NonConfirmedRelation[]>();
+  for (const edge of index.confirmedProducerEdges) {
+    if (
       edge.writes.some(
         (write) =>
           (write.dataPathRole ??
             classifyProducerWriteObservation(write).dataPathRole) ===
           "PRODUCER",
-      ),
-  );
+      )
+    )
+      appendToMap(
+        confirmedByTable,
+        tableIdentityKey(normalizeProducerTable(edge.table)),
+        edge,
+      );
+    appendToMap(confirmedByTask, edge.taskId, edge);
+  }
+  for (const relation of index.nonConfirmedRelations) {
+    if (relation.tableRef.qualifiedName)
+      appendToMap(
+        nonConfirmedByQualifiedName,
+        relation.tableRef.qualifiedName
+          .trim()
+          .toLowerCase()
+          .replaceAll("`", "")
+          .replaceAll('"', ""),
+        relation,
+      );
+    appendToMap(nonConfirmedByTask, relation.taskId, relation);
+  }
+  const built = {
+    confirmedByTable,
+    nonConfirmedByQualifiedName,
+    confirmedByTask,
+    nonConfirmedByTask,
+  };
+  lookupCaches.set(index, built);
+  return built;
+}
+
+export function lookupConfirmedProducers(
+  index: TableProducerIndex,
+  table: ProducerTableIdentity,
+): readonly ConfirmedProducerEdge[] {
+  const key = tableIdentityKey(normalizeProducerTable(table));
+  return lookupCache(index).confirmedByTable.get(key) ?? [];
 }
 
 export function lookupNonConfirmedRelations(
@@ -146,7 +210,11 @@ export function lookupNonConfirmedRelations(
   table: ProducerTableIdentity,
 ): readonly NonConfirmedRelation[] {
   const normalized = normalizeProducerTable(table);
-  return index.nonConfirmedRelations.filter((relation) => {
+  return (
+    lookupCache(index).nonConfirmedByQualifiedName.get(
+      normalized.qualifiedName,
+    ) ?? []
+  ).filter((relation) => {
     const ref = relation.tableRef;
     return (
       ref.qualifiedName === normalized.qualifiedName &&
@@ -160,13 +228,10 @@ export function lookupProducerWritesByTask(
   index: TableProducerIndex,
   taskId: string,
 ): ProducerTaskWriteLookup {
+  const cache = lookupCache(index);
   return {
-    confirmedWrites: index.confirmedProducerEdges.filter(
-      (edge) => edge.taskId === taskId,
-    ),
-    nonConfirmedRelations: index.nonConfirmedRelations.filter(
-      (relation) => relation.taskId === taskId,
-    ),
+    confirmedWrites: cache.confirmedByTask.get(taskId) ?? [],
+    nonConfirmedRelations: cache.nonConfirmedByTask.get(taskId) ?? [],
   };
 }
 

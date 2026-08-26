@@ -1,8 +1,15 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalHash, type JsonValue } from "../../../input/shared/input-pack.ts";
-import type { OneHopReconciliationResult } from "../one-hop/reconcile-one-hop.ts";
+import {
+  canonicalHash,
+  type JsonValue,
+} from "../../../input/shared/input-pack.ts";
+import {
+  prepareOneHopContext,
+  reconcileOneHopWithPreparedContext,
+  type OneHopReconciliationResult,
+} from "../one-hop/reconcile-one-hop.ts";
 import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
@@ -11,7 +18,6 @@ import {
   type ProducerWriteObservation,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
-import { lookupConfirmedProducers } from "../../../query/producer-index-query.ts";
 import {
   buildTaskReadEvidenceRepository,
   type TaskReadEvidenceRepository,
@@ -48,6 +54,16 @@ export interface MultiHopTaskNode {
   readonly taskInputPackStatus: TaskInputPackStatus | null;
   readonly taskContentHash: string | null;
   readonly evidence: readonly TaskReadEvidence[];
+  readonly upstreamDecision: MultiHopUpstreamDecision | null;
+}
+
+export interface MultiHopUpstreamDecision {
+  readonly source: "ONE_HOP_FINAL_UPSTREAM";
+  readonly primary: readonly string[];
+  readonly additional: readonly string[];
+  readonly unknown: readonly string[];
+  readonly decision: OneHopReconciliationResult["finalUpstreamTaskIds"]["decision"];
+  readonly evidence: readonly unknown[];
 }
 
 export interface MultiHopTableNode {
@@ -82,6 +98,13 @@ export interface MultiHopProducerBridge {
   readonly producerDepth: number;
 }
 
+export interface MultiHopScheduleEdge {
+  readonly consumerTaskId: string;
+  readonly producerTaskId: string;
+  readonly producerDepth: number;
+  readonly evidence: readonly unknown[];
+}
+
 export interface MultiHopTerminal {
   readonly taskId: string;
   readonly depth: number;
@@ -109,6 +132,7 @@ export interface MultiHopReconciliationResult {
   readonly readEdges: readonly MultiHopReadEdge[];
   readonly writeEdges: readonly MultiHopWriteEdge[];
   readonly producerBridges: readonly MultiHopProducerBridge[];
+  readonly scheduleEdges: readonly MultiHopScheduleEdge[];
   readonly terminals: readonly MultiHopTerminal[];
   readonly scheduleSkeleton: {
     readonly boundary: "ROOT_DEPTH_1_ONLY";
@@ -148,6 +172,7 @@ export interface MultiHopReconciliationResult {
     readonly readEdges: number;
     readonly writeEdges: number;
     readonly producerBridges: number;
+    readonly scheduleEdges: number;
     readonly terminals: number;
   };
   readonly countSemantics: "NODE_AND_UNIQUE_EDGE_COUNTS";
@@ -172,6 +197,8 @@ export interface ReconcileMultiHopOptions {
   readonly maxEdges: number;
   readonly now?: () => string;
   readonly rootOneHop?: OneHopReconciliationResult;
+  /** Frozen one-hop snapshots for non-root tasks, when scheduler evidence is available offline. */
+  readonly oneHopSnapshots?: ReadonlyMap<string, OneHopReconciliationResult>;
   readonly terminalTableConfig?: TerminalTableConfig;
 }
 
@@ -179,6 +206,7 @@ interface MultiHopPreparedContext {
   readonly dataRoot: string;
   readonly repository: TaskReadEvidenceRepository;
   readonly inputFingerprint: string;
+  readonly oneHopContext: ReturnType<typeof prepareOneHopContext>;
 }
 
 function requireRecord(value: unknown, field: string): Record<string, unknown> {
@@ -312,6 +340,31 @@ export function validateMultiHopReconciliation(
     )
       throw new Error("TASK_NODE_STATUS_INVALID");
     validateArtifactEvidence(node.evidence, `taskNodes[${index}].evidence`);
+    if (node.upstreamDecision !== null) {
+      const decision = requireRecord(
+        node.upstreamDecision,
+        `taskNodes[${index}].upstreamDecision`,
+      );
+      if (decision.source !== "ONE_HOP_FINAL_UPSTREAM")
+        throw new Error("TASK_NODE_UPSTREAM_SOURCE_INVALID");
+      for (const field of ["primary", "additional", "unknown"])
+        requireArray(
+          decision[field],
+          `taskNodes[${index}].upstreamDecision.${field}`,
+        );
+      if (
+        ![
+          "SCHEDULE_DATA_INTERSECTION",
+          "DATA_FALLBACK",
+          "SCHEDULE_FALLBACK",
+        ].includes(String(decision.decision))
+      )
+        throw new Error("TASK_NODE_UPSTREAM_DECISION_INVALID");
+      requireArray(
+        decision.evidence,
+        `taskNodes[${index}].upstreamDecision.evidence`,
+      );
+    }
   }
   if (!taskIds.has(rootTaskId)) throw new Error("ROOT_TASK_NODE_MISSING");
   const tableNodes = requireArray(artifact.tableNodes, "tableNodes");
@@ -533,6 +586,34 @@ export function validateMultiHopReconciliation(
       throw new Error("PRODUCER_BRIDGE_EDGE_MISSING");
     bridgeKeys.add(key);
   }
+  const scheduleEdges = requireArray(artifact.scheduleEdges, "scheduleEdges");
+  const scheduleEdgeKeys = new Set<string>();
+  for (const [index, item] of scheduleEdges.entries()) {
+    const edge = requireRecord(item, `scheduleEdges[${index}]`);
+    const consumer = requireString(
+      edge.consumerTaskId,
+      `scheduleEdges[${index}].consumerTaskId`,
+    );
+    const producer = requireString(
+      edge.producerTaskId,
+      `scheduleEdges[${index}].producerTaskId`,
+    );
+    if (!taskIds.has(consumer) || !taskIds.has(producer))
+      throw new Error("SCHEDULE_EDGE_TASK_MISSING");
+    if (
+      !Number.isSafeInteger(edge.producerDepth) ||
+      Number(edge.producerDepth) < 1
+    )
+      throw new Error("SCHEDULE_EDGE_DEPTH_INVALID");
+    const key = `${consumer}\u0000${producer}`;
+    if (scheduleEdgeKeys.has(key)) throw new Error("SCHEDULE_EDGE_DUPLICATE");
+    scheduleEdgeKeys.add(key);
+    validateArtifactEvidence(
+      edge.evidence,
+      `scheduleEdges[${index}].evidence`,
+      { allowedSources: ["HORAE_RELATION"], requireNonEmpty: true },
+    );
+  }
   const terminals = requireArray(artifact.terminals, "terminals");
   const counts = requireRecord(artifact.counts, "counts");
   const expectedCounts = {
@@ -541,6 +622,7 @@ export function validateMultiHopReconciliation(
     readEdges: readEdges.length,
     writeEdges: writeEdges.length,
     producerBridges: bridges.length,
+    scheduleEdges: scheduleEdges.length,
     terminals: terminals.length,
   };
   for (const [field, expected] of Object.entries(expectedCounts))
@@ -584,6 +666,7 @@ interface MutableTaskNode {
   taskInputPackStatus: TaskInputPackStatus | null;
   taskContentHash: string | null;
   evidence: readonly TaskReadEvidence[];
+  upstreamDecision: MultiHopUpstreamDecision | null;
 }
 
 function compareText(left: string, right: string): number {
@@ -640,15 +723,27 @@ function validateRootOneHopSnapshot(
         throw new Error("ROOT_ONE_HOP_INVALID");
     }
   }
+  const final = asRecord(snapshot.finalUpstreamTaskIds);
+  if (
+    !final ||
+    !Array.isArray(final.primary) ||
+    !Array.isArray(final.additional) ||
+    ![
+      "SCHEDULE_DATA_INTERSECTION",
+      "DATA_FALLBACK",
+      "SCHEDULE_FALLBACK",
+    ].includes(String(final.decision))
+  )
+    throw new Error("ROOT_ONE_HOP_INVALID");
 }
 
 function tableKey(table: {
   readonly platform: string | null;
   readonly dataSource: string | null;
-  readonly qualifiedName: string;
+  readonly qualifiedName: string | null;
 }): string {
   return [table.platform ?? "", table.dataSource ?? "", table.qualifiedName]
-    .map((value) => value.trim().toLowerCase())
+    .map((value) => (value ?? "").trim().toLowerCase())
     .join("\u0000");
 }
 
@@ -680,13 +775,22 @@ function requireLimit(value: number, name: string, minimum: number): void {
  */
 function prepareMultiHopContext(
   dataRootInput: string,
+  inputFingerprint: string,
 ): MultiHopPreparedContext {
-  const repository = buildTaskReadEvidenceRepository(dataRootInput);
-  const inputFingerprint = fingerprintTableProducerInputs(dataRootInput);
+  const repository = buildTaskReadEvidenceRepository(dataRootInput, {
+    taskLoading: "LAZY",
+    tableLoading: "METADATA_ONLY",
+    trustedTreeFingerprint: inputFingerprint,
+  });
   return {
     dataRoot: repository.dataRoot,
     repository,
     inputFingerprint,
+    oneHopContext: prepareOneHopContext(repository.dataRoot, {
+      includeFingerprint: false,
+      trustedInputFingerprint: inputFingerprint,
+      schemaLoading: "TASK_SCOPED",
+    }),
   };
 }
 
@@ -751,6 +855,13 @@ function reconcileMultiHopInternal(
   const readEdges = new Map<string, MultiHopReadEdge>();
   const writeEdges = new Map<string, MultiHopWriteEdge>();
   const bridges = new Map<string, MultiHopProducerBridge>();
+  const scheduleEdges = new Map<string, MultiHopScheduleEdge>();
+  const producerTaskContentHashes = new Map(
+    options.producerIndex.confirmedProducerEdges.map((edge) => [
+      edge.taskId,
+      edge.taskContentHash,
+    ]),
+  );
   const terminals: MultiHopTerminal[] = [];
   const terminalKeys = new Set<string>();
   const adjacency = new Map<string, Set<string>>();
@@ -808,6 +919,7 @@ function reconcileMultiHopInternal(
     taskInputPackStatus: null,
     taskContentHash: null,
     evidence: [],
+    upstreamDecision: null,
   });
 
   while (frontier.length > 0 && !traversalStopped) {
@@ -845,6 +957,60 @@ function reconcileMultiHopInternal(
       });
       continue;
     }
+    const frozenOneHop =
+      current.taskId === rootTaskId
+        ? options.rootOneHop
+        : options.oneHopSnapshots?.get(current.taskId);
+    let oneHop: OneHopReconciliationResult;
+    if (frozenOneHop) {
+      validateRootOneHopSnapshot(
+        frozenOneHop,
+        current.taskId,
+        options.producerIndex,
+      );
+      oneHop = frozenOneHop;
+    } else {
+      // Multi-hop is an offline artifact builder.  An absent snapshot means
+      // no scheduler rows are available, so one-hop must not silently fall
+      // back to its default Horae runner.
+      oneHop = reconcileOneHopWithPreparedContext(
+        current.taskId,
+        {
+          dataRoot: options.dataRoot,
+          producerIndex: options.producerIndex,
+          verifyInputFingerprint: true,
+          scheduleRows: [],
+          now,
+        },
+        preparedContext.oneHopContext,
+      );
+    }
+    const partitionUnknownTaskIds = new Set(
+      oneHop.partitionAwareNextDataTaskIds.unknown,
+    );
+    const recursivePrimaryTaskIds = new Set(
+      oneHop.finalUpstreamTaskIds.primary.filter(
+        (taskId) => !partitionUnknownTaskIds.has(taskId),
+      ),
+    );
+    const upstreamEvidence = [
+      ...oneHop.schedule.evidence,
+      ...oneHop.schedule.parents.flatMap((parent) => parent.evidence),
+      ...oneHop.dataPath.confirmedProducers.flatMap((producer) =>
+        producer.writes.flatMap((write) => write.evidence),
+      ),
+      ...oneHop.dataPath.nonConfirmedRelations.flatMap(
+        (relation) => relation.evidence,
+      ),
+    ];
+    node.upstreamDecision = {
+      source: "ONE_HOP_FINAL_UPSTREAM",
+      primary: oneHop.finalUpstreamTaskIds.primary,
+      additional: oneHop.finalUpstreamTaskIds.additional,
+      unknown: oneHop.partitionAwareNextDataTaskIds.unknown,
+      decision: oneHop.finalUpstreamTaskIds.decision,
+      evidence: upstreamEvidence,
+    };
     for (const statementIssue of taskReads.statementIssues)
       addTerminal({
         taskId: current.taskId,
@@ -945,8 +1111,24 @@ function reconcileMultiHopInternal(
         qualifiedName: read.tableRef.qualifiedName,
       };
       const producers = [
-        ...lookupConfirmedProducers(options.producerIndex, identity),
-      ].sort((left, right) => compareText(left.taskId, right.taskId));
+        ...oneHop.dataPath.confirmedProducers
+          .filter(
+            (producer) =>
+              tableKey(producer.table) === tableKey({ ...identity }),
+          )
+          .map((producer) => ({
+            taskId: producer.taskId,
+            taskContentHash:
+              producerTaskContentHashes.get(producer.taskId) ?? null,
+            table: identity,
+            writes: producer.writes as readonly ProducerWriteObservation[],
+          })),
+      ].sort(
+        (left, right) =>
+          Number(!recursivePrimaryTaskIds.has(left.taskId)) -
+            Number(!recursivePrimaryTaskIds.has(right.taskId)) ||
+          compareText(left.taskId, right.taskId),
+      );
       if (producers.length === 0) {
         readsWithoutConfirmedProducer += 1;
         addTerminal({
@@ -960,6 +1142,7 @@ function reconcileMultiHopInternal(
       readsWithConfirmedProducer += 1;
       for (const producer of producers) {
         if (traversalStopped) break;
+        const isPrimary = recursivePrimaryTaskIds.has(producer.taskId);
         const currentWriteKey = writeKey(producer.taskId, identity);
         const writeEdgeExists = writeEdges.has(currentWriteKey);
         const producerNodeExists = taskNodes.has(producer.taskId);
@@ -1009,6 +1192,17 @@ function reconcileMultiHopInternal(
             producerTaskId: producer.taskId,
             producerDepth: current.depth + 1,
           });
+        if (!producerNodeExists)
+          taskNodes.set(producer.taskId, {
+            taskId: producer.taskId,
+            minDepth: current.depth + 1,
+            expansionStatus: "TERMINAL",
+            taskInputPackStatus: null,
+            taskContentHash: producer.taskContentHash,
+            evidence: [],
+            upstreamDecision: null,
+          });
+        if (!isPrimary) continue;
         const nextTasks = adjacency.get(current.taskId) ?? new Set<string>();
         const createsCycle = hasTaskPath(
           producer.taskId,
@@ -1037,16 +1231,93 @@ function reconcileMultiHopInternal(
           });
           continue;
         }
-        taskNodes.set(producer.taskId, {
-          taskId: producer.taskId,
-          minDepth: current.depth + 1,
-          expansionStatus: "TERMINAL",
-          taskInputPackStatus: null,
-          taskContentHash: producer.taskContentHash,
-          evidence: [],
-        });
         frontier.push({ taskId: producer.taskId, depth: current.depth + 1 });
       }
+    }
+
+    // A schedule-primary parent may have no confirmed local WRITE bridge.  It
+    // is still a valid one-hop recursion entry, but it must remain visibly
+    // schedule-sourced rather than being fabricated as a Table bridge.
+    const scheduleParentsById = new Map(
+      oneHop.schedule.parents.map((parent) => [parent.taskId, parent]),
+    );
+    for (const producerTaskId of oneHop.finalUpstreamTaskIds.primary) {
+      const parent = scheduleParentsById.get(producerTaskId);
+      if (!parent) continue;
+      const producerDepth = current.depth + 1;
+      if (parent) {
+        const scheduleKey = `${current.taskId}\u0000${producerTaskId}`;
+        if (!scheduleEdges.has(scheduleKey))
+          scheduleEdges.set(scheduleKey, {
+            consumerTaskId: current.taskId,
+            producerTaskId,
+            producerDepth,
+            evidence: parent.evidence,
+          });
+      }
+      const shouldRecurse = recursivePrimaryTaskIds.has(producerTaskId);
+      if (shouldRecurse) {
+        const nextTasks = adjacency.get(current.taskId) ?? new Set<string>();
+        const createsCycle = hasTaskPath(
+          producerTaskId,
+          current.taskId,
+          adjacency,
+        );
+        nextTasks.add(producerTaskId);
+        adjacency.set(current.taskId, nextTasks);
+        if (createsCycle || producerTaskId === current.taskId) {
+          addTerminal({
+            taskId: producerTaskId,
+            depth: producerDepth,
+            reason: "CYCLE",
+            detail: { consumerTaskId: current.taskId },
+          });
+          continue;
+        }
+      }
+      const existingNode = taskNodes.get(producerTaskId);
+      const alreadyQueued = frontier.some(
+        (pending) => pending.taskId === producerTaskId,
+      );
+      if (
+        shouldRecurse &&
+        existingNode &&
+        (existingNode.expansionStatus === "EXPANDED" || alreadyQueued)
+      ) {
+          addTerminal({
+            taskId: producerTaskId,
+            depth: producerDepth,
+            reason: "ALREADY_DISCOVERED",
+            detail: { consumerTaskId: current.taskId },
+          });
+        continue;
+      }
+      if (!existingNode && taskNodes.size >= options.maxTasks) {
+        node.expansionStatus = "TRUNCATED";
+        markTruncated(
+          "MAX_TASKS_REACHED",
+          {
+            taskId: producerTaskId,
+            depth: producerDepth,
+            reason: "MAX_TASKS_REACHED",
+            detail: { consumerTaskId: current.taskId },
+          },
+          true,
+        );
+        break;
+      }
+      if (!existingNode)
+        taskNodes.set(producerTaskId, {
+          taskId: producerTaskId,
+          minDepth: producerDepth,
+          expansionStatus: "TERMINAL",
+          taskInputPackStatus: null,
+          taskContentHash: null,
+          evidence: [],
+          upstreamDecision: null,
+        });
+      if (shouldRecurse)
+        frontier.push({ taskId: producerTaskId, depth: producerDepth });
     }
   }
 
@@ -1083,6 +1354,12 @@ function reconcileMultiHopInternal(
       bridgeKey(right.consumerTaskId, right.table, right.producerTaskId),
     ),
   );
+  const orderedScheduleEdges = [...scheduleEdges.values()].sort((left, right) =>
+    compareText(
+      `${left.consumerTaskId}\u0000${left.producerTaskId}`,
+      `${right.consumerTaskId}\u0000${right.producerTaskId}`,
+    ),
+  );
   const orderedTerminals = [...terminals].sort(sortTerminals);
   const producerIndexStatus =
     options.producerIndex.buildStatus === "PARTIAL"
@@ -1114,6 +1391,7 @@ function reconcileMultiHopInternal(
     readEdges: orderedReadEdges,
     writeEdges: orderedWriteEdges,
     producerBridges: orderedBridges,
+    scheduleEdges: orderedScheduleEdges,
     terminals: orderedTerminals,
     scheduleSkeleton: {
       boundary: "ROOT_DEPTH_1_ONLY" as const,
@@ -1123,16 +1401,16 @@ function reconcileMultiHopInternal(
       semantics: "OBSERVED_EVIDENCE_ONLY" as const,
       status:
         producerIndexStatus === "VALID_PARTIAL" ||
-        repository.counts.invalidTaskPacks > 0 ||
-        repository.counts.invalidTablePacks > 0 ||
+        options.producerIndex.counts.invalidTaskPacks > 0 ||
+        options.producerIndex.counts.invalidTablePacks > 0 ||
         truncationReason !== null
           ? ("PARTIAL_EVIDENCE" as const)
           : ("COMPLETE_OBSERVED_EVIDENCE" as const),
       producerIndexStatus,
-      taskPacksDiscovered: repository.counts.taskPacksDiscovered,
-      taskPacksInvalid: repository.counts.invalidTaskPacks,
-      tablePacksDiscovered: repository.counts.tablePacksDiscovered,
-      tablePacksInvalid: repository.counts.invalidTablePacks,
+      taskPacksDiscovered: options.producerIndex.counts.taskPacksDiscovered,
+      taskPacksInvalid: options.producerIndex.counts.invalidTaskPacks,
+      tablePacksDiscovered: options.producerIndex.counts.tablePacksDiscovered,
+      tablePacksInvalid: options.producerIndex.counts.invalidTablePacks,
       eligibleReadEdges: orderedReadEdges.filter(
         (edge) => edge.recursionStatus === "ELIGIBLE",
       ).length,
@@ -1156,10 +1434,11 @@ function reconcileMultiHopInternal(
       readEdges: orderedReadEdges.length,
       writeEdges: orderedWriteEdges.length,
       producerBridges: orderedBridges.length,
+      scheduleEdges: orderedScheduleEdges.length,
       terminals: orderedTerminals.length,
     },
     countSemantics: "NODE_AND_UNIQUE_EDGE_COUNTS" as const,
-    issues: repository.issues,
+    issues: options.producerIndex.issues,
     boundaries: {
       staticSqlOnly: true as const,
       openCli: "NOT_USED" as const,
@@ -1185,10 +1464,13 @@ export function reconcileMultiHop(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
 ): MultiHopReconciliationResult {
+  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
+  if (inputFingerprint !== options.producerIndex.inputFingerprint)
+    throw new Error("PRODUCER_INDEX_STALE");
   return reconcileMultiHopInternal(
     rootTaskId,
     options,
-    prepareMultiHopContext(options.dataRoot),
+    prepareMultiHopContext(options.dataRoot, inputFingerprint),
   );
 }
 
@@ -1201,7 +1483,13 @@ export function reconcileMultiHopBatch(
   roots: readonly MultiHopBatchRoot[],
   options: Omit<ReconcileMultiHopOptions, "rootOneHop">,
 ): readonly MultiHopReconciliationResult[] {
-  const preparedContext = prepareMultiHopContext(options.dataRoot);
+  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
+  if (inputFingerprint !== options.producerIndex.inputFingerprint)
+    throw new Error("PRODUCER_INDEX_STALE");
+  const preparedContext = prepareMultiHopContext(
+    options.dataRoot,
+    inputFingerprint,
+  );
   const results = roots.map((root) =>
     reconcileMultiHopInternal(
       root.taskId,

@@ -34,6 +34,12 @@ npm run reconcile-one-hop:batch -- \
 
 `--producer-index` 是可选的离线 producer 反向索引。显式提供后会校验 schema 和 `contentHash`；默认不重新扫描当前 `data-root`。传入 `--verify-input-fingerprint` 后，才会重新计算 `inputFingerprint`，用于严格确认索引没有过期；失效或过期直接失败，不回退到实时 producer 补证。`PARTIAL` 索引可以消费其中已确认的边，但覆盖语义仍为 `OBSERVED_EVIDENCE_ONLY`。
 
+库调用方可通过 `scheduleRows` 显式注入已冻结的 Horae relation 行；传入该字段后不会调用默认 OpenCLI/Horae runner，调度 evidence 的 `observedAt` 保持为 `null`。multi-hop 使用这个离线边界，并以 `finalUpstreamTaskIds.primary` 作为递归入口。
+
+独立 one-hop 默认仍构建完整 DDL Schema。multi-hop 通过 prepared context 使用
+`TASK_SCOPED` Schema：先识别当前 Task 涉及的物理表，再只加载这些表的 DDL，保持
+相同的 expression dependency 与分区范围判定，不把全量 DDL Schema 常驻内存。
+
 ## 证据顺序
 
 1. 当前任务直接读表：读取并校验 Task Input Pack 中各 SQL 文件的 SHA-256，再使用现有 `SqlSession + buildPlanFacts` 提取物理读表。one-hop 会加载 Table Pack DDL schema，并启用 adaptor 的 expression dependency，把 WHERE 谓词保留为 `AND` / `OR` / `NOT` 结构和物理列来源；裸表名仅在 Task Pack 的限定任务名可证明默认 schema 且未与限定 target 冲突时继承该 schema；否则保留未解析状态。

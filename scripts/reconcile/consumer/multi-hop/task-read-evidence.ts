@@ -124,6 +124,24 @@ export interface TaskReadEvidenceRepository {
   };
   readonly issues: readonly string[];
   readonly getTaskReads: (taskId: string) => TaskReadResult;
+  readonly diagnostics: () => {
+    readonly taskPacksLoaded: number;
+    readonly sqlFilesLoaded: number;
+    readonly cachedTaskReadResults: number;
+  };
+}
+
+export interface BuildTaskReadEvidenceRepositoryOptions {
+  /**
+   * LAZY validates Task Pack metadata during discovery, but defers SQL file I/O
+   * and validation until getTaskReads visits that Task. The default EAGER mode
+   * preserves the standalone repository's full-catalog validation contract.
+   */
+  readonly taskLoading?: "EAGER" | "LAZY";
+  /** Defer DDL file hashing when a verified producer-index snapshot covers it. */
+  readonly tableLoading?: "EAGER" | "METADATA_ONLY";
+  /** A fingerprint already verified by the caller against the same snapshot. */
+  readonly trustedTreeFingerprint?: string;
 }
 
 interface LoadedSqlFile {
@@ -271,7 +289,11 @@ function taskPackEvidence(
   };
 }
 
-function loadTaskPack(dataRoot: string, taskPath: string): LoadedTaskPack {
+function loadTaskPack(
+  dataRoot: string,
+  taskPath: string,
+  loadSqlContent = true,
+): LoadedTaskPack {
   const directoryTaskId = basename(dirname(taskPath));
   const directoryCategory = basename(dirname(dirname(taskPath)));
   try {
@@ -299,6 +321,7 @@ function loadTaskPack(dataRoot: string, taskPath: string): LoadedTaskPack {
       const absolutePath = resolve(dirname(taskPath), relativePath);
       if (!isWithin(dirname(taskPath), absolutePath))
         throw new Error("SQL_FILE_PATH_ESCAPE");
+      if (!loadSqlContent) continue;
       if (!existsSync(absolutePath))
         throw new Error(`SQL_FILE_MISSING:${slot}`);
       if (
@@ -345,6 +368,26 @@ function loadTaskPack(dataRoot: string, taskPath: string): LoadedTaskPack {
   }
 }
 
+function deferTaskPack(dataRoot: string, taskPath: string): LoadedTaskPack {
+  const taskId = basename(dirname(taskPath));
+  const taskCategory = basename(dirname(dirname(taskPath)));
+  return {
+    status: "AVAILABLE",
+    taskId,
+    taskCategory: taskCategory || null,
+    taskPath,
+    document: null,
+    sqlFiles: [],
+    issue: null,
+    evidence: {
+      source: "INPUT_PACK_TASK",
+      provider: "input-pack:task",
+      locator: relativeLocator(dataRoot, taskPath),
+      observedAt: null,
+    },
+  };
+}
+
 function tablePackEvidence(
   dataRoot: string,
   tablePath: string,
@@ -362,7 +405,11 @@ function tablePackEvidence(
   };
 }
 
-function loadTablePack(dataRoot: string, tablePath: string): LoadedTablePack {
+function loadTablePack(
+  dataRoot: string,
+  tablePath: string,
+  validateDdl = true,
+): LoadedTablePack {
   try {
     const segments = relativeLocator(dataRoot, tablePath).split("/");
     if (segments.length !== 4 || segments[0] !== "tables")
@@ -381,15 +428,17 @@ function loadTablePack(dataRoot: string, tablePath: string): LoadedTablePack {
     const ddlPath = resolve(dirname(tablePath), String(ddlFile.path));
     if (!isWithin(dirname(tablePath), ddlPath))
       throw new Error("DDL_FILE_PATH_ESCAPE");
-    if (!existsSync(ddlPath)) throw new Error("DDL_FILE_MISSING");
-    if (
-      lstatSync(ddlPath).isSymbolicLink() ||
-      !isWithin(realpathSync(dirname(tablePath)), realpathSync(ddlPath))
-    )
-      throw new Error("DDL_FILE_PATH_ESCAPE");
-    const ddlBytes = readFileSync(ddlPath);
-    if (sha256Bytes(ddlBytes) !== String(ddlFile.sha256))
-      throw new Error("DDL_FILE_HASH_MISMATCH");
+    if (validateDdl) {
+      if (!existsSync(ddlPath)) throw new Error("DDL_FILE_MISSING");
+      if (
+        lstatSync(ddlPath).isSymbolicLink() ||
+        !isWithin(realpathSync(dirname(tablePath)), realpathSync(ddlPath))
+      )
+        throw new Error("DDL_FILE_PATH_ESCAPE");
+      const ddlBytes = readFileSync(ddlPath);
+      if (sha256Bytes(ddlBytes) !== String(ddlFile.sha256))
+        throw new Error("DDL_FILE_HASH_MISMATCH");
+    }
     const dataSource = normalizeToken(String(document.dataSource));
     const table: TaskReadTableRef = {
       platform: normalizeToken(String(document.platform)),
@@ -727,13 +776,23 @@ function unavailableResult(
 
 export function buildTaskReadEvidenceRepository(
   dataRootInput: string,
+  options: BuildTaskReadEvidenceRepositoryOptions = {},
 ): TaskReadEvidenceRepository {
   const dataRoot = resolve(dataRootInput);
-  const initialTreeFingerprint = fingerprintInputTree(dataRoot);
+  const taskLoading = options.taskLoading ?? "EAGER";
+  const tableLoading = options.tableLoading ?? "EAGER";
+  const initialTreeFingerprint =
+    options.trustedTreeFingerprint ?? fingerprintInputTree(dataRoot);
   const taskPaths = discoverNamedFiles(join(dataRoot, "tasks"), "task.json");
   const tablePaths = discoverNamedFiles(join(dataRoot, "tables"), "table.json");
-  const taskPacks = taskPaths.map((path) => loadTaskPack(dataRoot, path));
-  const tablePacks = tablePaths.map((path) => loadTablePack(dataRoot, path));
+  const taskPacks = taskPaths.map((path) =>
+    taskLoading === "LAZY" && options.trustedTreeFingerprint
+      ? deferTaskPack(dataRoot, path)
+      : loadTaskPack(dataRoot, path, taskLoading === "EAGER"),
+  );
+  const tablePacks = tablePaths.map((path) =>
+    loadTablePack(dataRoot, path, tableLoading === "EAGER"),
+  );
   const tableCatalog = buildTableCatalog(tablePacks);
   const byTaskId = new Map<string, LoadedTaskPack[]>();
   for (const pack of taskPacks)
@@ -763,8 +822,20 @@ export function buildTaskReadEvidenceRepository(
       ),
   ].sort(compareText);
   const cache = new Map<string, TaskReadResult>();
-  const finalTreeFingerprint = fingerprintInputTree(dataRoot);
-  if (finalTreeFingerprint !== initialTreeFingerprint)
+  const diagnostics = {
+    taskPacksLoaded: taskLoading === "EAGER" ? taskPacks.length : 0,
+    sqlFilesLoaded:
+      taskLoading === "EAGER"
+        ? taskPacks.reduce((count, pack) => count + pack.sqlFiles.length, 0)
+        : 0,
+  };
+  const finalTreeFingerprint = options.trustedTreeFingerprint
+    ? initialTreeFingerprint
+    : fingerprintInputTree(dataRoot);
+  if (
+    options.trustedTreeFingerprint === undefined &&
+    finalTreeFingerprint !== initialTreeFingerprint
+  )
     throw new Error("INPUT_CHANGED_DURING_TASK_READ_REPOSITORY_BUILD");
 
   const getTaskReads = (taskId: string): TaskReadResult => {
@@ -777,7 +848,21 @@ export function buildTaskReadEvidenceRepository(
       );
     const cached = cache.get(taskId);
     if (cached) return cached;
-    const packs = byTaskId.get(taskId) ?? [];
+    const discoveredPacks = byTaskId.get(taskId) ?? [];
+    const packs =
+      taskLoading === "LAZY" && discoveredPacks.length > 0
+        ? (() => {
+            const loaded = discoveredPacks.map((pack) =>
+              loadTaskPack(dataRoot, pack.taskPath, true),
+            );
+            diagnostics.taskPacksLoaded += loaded.length;
+            diagnostics.sqlFilesLoaded += loaded.reduce(
+              (count, pack) => count + pack.sqlFiles.length,
+              0,
+            );
+            return loaded;
+          })()
+        : discoveredPacks;
     let result: TaskReadResult;
     if (packs.length === 0)
       result = unavailableResult(
@@ -829,5 +914,9 @@ export function buildTaskReadEvidenceRepository(
     },
     issues,
     getTaskReads,
+    diagnostics: () => ({
+      ...diagnostics,
+      cachedTaskReadResults: cache.size,
+    }),
   };
 }

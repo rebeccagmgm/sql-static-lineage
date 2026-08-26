@@ -74,19 +74,17 @@ The external data root has only these asset families:
 
 `create.sql` is the platform task's original CREATE slot. `ddl.sql` is the current physical-table DDL obtained from metadata or a controlled read-only source. Neither is generated from the other.
 
-Before SQL slots are written, the collector conservatively restores a newline
-when an inline `--` field comment has swallowed a strongly structured SQL
-continuation such as `, <value> AS <column>`, `FROM (` followed by
-`SELECT`/`WITH`, `UNION ... SELECT`, CASE `WHEN`/`ELSE`, or typed JOIN/ON
-syntax. It does not rewrite strings, block comments, line-only comments, or
-ordinary prose. Each repair adds an
-`SQL_INLINE_COMMENT_BOUNDARY_REPAIRED:<slot>:<count>:<kinds>` warning and the
-SQL slot provenance token `collector:inline-comment-boundary-repair-v1`; the
-stored SQL therefore remains traceable as normalized source evidence rather
-than byte-identical platform text.
+SQL slots are written exactly as returned by the platform. The collector does
+not normalize comments, insert statement separators, or otherwise rewrite the
+SQL before storing `sql/<slot>.sql`; these files are canonical source evidence
+and their hashes cover the returned bytes. If a parser needs a conservative
+repair for a malformed legacy artifact, that repair must be performed in a
+derived analysis view and must not replace the canonical SQL file.
 
-To migrate already stored Task Packs without recollecting platform evidence, run
-the same normalizer in dry-run mode first:
+Legacy stored Task Packs may contain SQL that was rewritten by an older
+collector. Before using the normalizer migration, prefer recollecting the Task
+Pack from the platform so the canonical SQL is restored. If migration is
+unavoidable, run it in dry-run mode first:
 
 ```powershell
 npm run input-pack:repair-stored -- --data-root "<input-pack-root>"

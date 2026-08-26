@@ -73,7 +73,7 @@ function parseCli(args: readonly string[]): CliOptions {
   };
 }
 
-function runCollector(
+export function runCollector(
   dataRoot: string,
   taskIds: readonly string[],
   force: boolean,

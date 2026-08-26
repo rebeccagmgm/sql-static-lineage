@@ -15,6 +15,7 @@
     "readEdges",
     "writeEdges",
     "producerBridges",
+    "scheduleEdges",
     "terminals",
     "scheduleSkeleton",
     "coverage",
@@ -89,6 +90,41 @@
         "locator": { "type": "string", "minLength": 1 },
         "observedAt": { "type": ["string", "null"] },
         "detail": { "type": "object" }
+      }
+    },
+    "upstreamDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "primary",
+        "additional",
+        "unknown",
+        "decision",
+        "evidence"
+      ],
+      "properties": {
+        "source": { "const": "ONE_HOP_FINAL_UPSTREAM" },
+        "primary": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "additional": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "unknown": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "decision": {
+          "enum": [
+            "SCHEDULE_DATA_INTERSECTION",
+            "DATA_FALLBACK",
+            "SCHEDULE_FALLBACK"
+          ]
+        },
+        "evidence": { "type": "array", "items": { "type": "object" } }
       }
     },
     "producerIdentity": {
@@ -215,7 +251,8 @@
           "expansionStatus",
           "taskInputPackStatus",
           "taskContentHash",
-          "evidence"
+          "evidence",
+          "upstreamDecision"
         ],
         "properties": {
           "taskId": { "type": "string", "minLength": 1 },
@@ -237,6 +274,12 @@
           "evidence": {
             "type": "array",
             "items": { "$ref": "#/$defs/evidence" }
+          },
+          "upstreamDecision": {
+            "anyOf": [
+              { "$ref": "#/$defs/upstreamDecision" },
+              { "type": "null" }
+            ]
           }
         }
       }
@@ -333,6 +376,29 @@
           "table": { "$ref": "#/$defs/producerIdentity" },
           "producerTaskId": { "type": "string", "minLength": 1 },
           "producerDepth": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "scheduleEdges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "consumerTaskId",
+          "producerTaskId",
+          "producerDepth",
+          "evidence"
+        ],
+        "properties": {
+          "consumerTaskId": { "type": "string", "minLength": 1 },
+          "producerTaskId": { "type": "string", "minLength": 1 },
+          "producerDepth": { "type": "integer", "minimum": 1 },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/scheduleEvidence" }
+          }
         }
       }
     },
@@ -450,6 +516,7 @@
         "readEdges",
         "writeEdges",
         "producerBridges",
+        "scheduleEdges",
         "terminals"
       ],
       "properties": {
@@ -458,6 +525,7 @@
         "readEdges": { "type": "integer", "minimum": 0 },
         "writeEdges": { "type": "integer", "minimum": 0 },
         "producerBridges": { "type": "integer", "minimum": 0 },
+        "scheduleEdges": { "type": "integer", "minimum": 0 },
         "terminals": { "type": "integer", "minimum": 0 }
       }
     },

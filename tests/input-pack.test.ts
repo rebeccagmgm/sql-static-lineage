@@ -55,6 +55,7 @@ import {
   normalizeRepeatedSqlContent,
   relocateTaskPacks,
   taskCategory,
+  toTaskEvidence,
 } from "../scripts/input/mainline/collect-one-task-input-pack.ts";
 import {
   assertStatusFileOutsideDataRoot,
@@ -69,6 +70,34 @@ function dataRoot(): string {
 }
 
 describe("Input Pack V1", () => {
+  it("preserves platform SQL bytes instead of normalizing canonical evidence", () => {
+    const rawSql =
+      "CREATE TABLE demo.today AS SELECT id --编号 ,CASE WHEN x IS NULL THEN 1 ELSE 0 END AS flag FROM (\n;\nSELECT id FROM raw.source\n) A;";
+    const result = toTaskEvidence("105387", {
+      taskType: "hiveTask",
+      sqlSlots: {
+        create: {
+          available: true,
+          source: "sql-mcp",
+          sources: ["sql-mcp"],
+          sql: rawSql,
+        },
+      },
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.evidence.sql?.create).toEqual({
+      content: rawSql,
+      evidenceProvider: "sql-mcp",
+    });
+
+    const root = dataRoot();
+    const written = writeTaskInput(root, result.evidence);
+    expect(
+      readFileSync(join(written.directory, "sql", "create.sql"), "utf8"),
+    ).toBe(rawSql);
+  });
+
   it("publishes strict task and table JSON Schema contracts", () => {
     const taskSchema = JSON.parse(
       readFileSync(

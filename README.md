@@ -31,8 +31,13 @@ npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--pr
 npm run reconcile-one-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
 npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
+npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 3 --max-tasks 100 --max-edges 500 --output <result.json> --report <autofill-report.json>
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
+npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
 ```
+
+该命令先输出压缩后的 `viz-model-181058.json`，再渲染离线 HTML；同一物理表的多个
+Task 会合并到表节点中，并在详情里保留各 Task 的分区证据。
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
 

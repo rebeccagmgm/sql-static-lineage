@@ -255,6 +255,37 @@ function materializeFrozenInputPack(sourceRoot: string): string {
 }
 
 describe("reconcileMultiHop", () => {
+  it("loads Task SQL only when a lazy repository visits that Task", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.source");
+    for (let index = 0; index < 24; index += 1)
+      writeReader(root, `reader-${index}`, ["lake.source"]);
+
+    const repository = buildTaskReadEvidenceRepository(root, {
+      taskLoading: "LAZY",
+    });
+
+    expect(repository.diagnostics()).toEqual({
+      taskPacksLoaded: 0,
+      sqlFilesLoaded: 0,
+      cachedTaskReadResults: 0,
+    });
+
+    repository.getTaskReads("reader-0");
+    expect(repository.diagnostics()).toEqual({
+      taskPacksLoaded: 1,
+      sqlFilesLoaded: 1,
+      cachedTaskReadResults: 1,
+    });
+
+    repository.getTaskReads("reader-0");
+    expect(repository.diagnostics()).toEqual({
+      taskPacksLoaded: 1,
+      sqlFilesLoaded: 1,
+      cachedTaskReadResults: 1,
+    });
+  });
+
   it("qualifies bare reads only when the Task Pack proves a default schema", () => {
     const root = dataRoot();
     writeTable(root, "pdata_news_n.t02_scr_base_info");
@@ -412,6 +443,139 @@ describe("reconcileMultiHop", () => {
       },
     });
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("uses each task's final upstream primary as the only BFS entry", () => {
+    const root = dataRoot();
+    for (const table of [
+      "lake.primary",
+      "lake.additional",
+      "lake.primary-upstream",
+      "lake.additional-upstream",
+    ])
+      writeTable(root, table);
+    writeReader(root, "A", ["lake.primary", "lake.additional"]);
+    writeProducer(root, "scheduled-primary", "lake.primary", [
+      "lake.primary-upstream",
+    ]);
+    writeProducer(root, "additional-producer", "lake.additional", [
+      "lake.additional-upstream",
+    ]);
+    writeProducer(root, "primary-upstream", "lake.primary-upstream");
+    writeProducer(root, "additional-upstream", "lake.additional-upstream");
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const snapshot = rootOneHop(root, index, "A", [
+      { task_id: "scheduled-primary", direction: "上游" },
+    ]);
+
+    expect(snapshot.finalUpstreamTaskIds).toEqual({
+      primary: ["scheduled-primary"],
+      additional: ["additional-producer"],
+      decision: "SCHEDULE_DATA_INTERSECTION",
+    });
+    const result = run(root, index, "A", {
+      maxDepth: 2,
+      rootOneHop: snapshot,
+    });
+
+    expect(result.taskNodes.map((node) => node.taskId)).toEqual([
+      "A",
+      "additional-producer",
+      "scheduled-primary",
+      "primary-upstream",
+    ]);
+    expect(result.taskNodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "additional-producer",
+          expansionStatus: "TERMINAL",
+          upstreamDecision: null,
+        }),
+        expect.objectContaining({
+          taskId: "scheduled-primary",
+          expansionStatus: "EXPANDED",
+        }),
+      ]),
+    );
+    expect(result.taskNodes.map((node) => node.taskId)).not.toContain(
+      "additional-upstream",
+    );
+    expect(result.scheduleEdges).toEqual([
+      expect.objectContaining({
+        consumerTaskId: "A",
+        producerTaskId: "scheduled-primary",
+        producerDepth: 1,
+      }),
+    ]);
+  });
+
+  it("retains a partition-unknown primary but never recurses through it", () => {
+    const root = dataRoot();
+    for (const table of ["lake.input", "lake.upstream"])
+      writeTable(root, table);
+    writeReader(root, "A", ["lake.input"]);
+    writeProducer(root, "B", "lake.input", ["lake.upstream"]);
+    writeProducer(root, "C", "lake.upstream");
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const snapshot = rootOneHop(root, index, "A", [
+      { task_id: "B", direction: "上游" },
+    ]);
+    const unknownSnapshot: OneHopReconciliationResult = {
+      ...snapshot,
+      partitionAwareNextDataTaskIds: {
+        candidates: [],
+        proven: [],
+        possible: [],
+        unknown: ["B"],
+      },
+    };
+
+    const result = run(root, index, "A", {
+      maxDepth: 2,
+      rootOneHop: unknownSnapshot,
+    });
+
+    expect(result.taskNodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "B",
+          expansionStatus: "TERMINAL",
+          upstreamDecision: null,
+        }),
+      ]),
+    );
+    expect(result.taskNodes.map((node) => node.taskId)).not.toContain("C");
+    expect(result.taskNodes[0]?.upstreamDecision).toMatchObject({
+      primary: ["B"],
+      unknown: ["B"],
+    });
+  });
+
+  it("uses an explicit offline one-hop input and never invokes default Horae", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.input");
+    writeReader(root, "A", ["lake.input"]);
+    writeProducer(root, "B", "lake.input");
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+
+    const result = run(root, index, "A", { maxDepth: 1 });
+
+    expect(result.taskNodes[0]?.upstreamDecision).toMatchObject({
+      source: "ONE_HOP_FINAL_UPSTREAM",
+      primary: ["B"],
+      additional: [],
+      unknown: [],
+      decision: "DATA_FALLBACK",
+    });
+    expect(result.taskNodes[0]?.upstreamDecision?.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: "HORAE_RELATION",
+          provider: "offline:horae.relation",
+          observedAt: null,
+        }),
+      ]),
+    );
   });
 
   it("reuses a prepared evidence context without changing the graph result", () => {
@@ -957,7 +1121,9 @@ describe("reconcileMultiHop", () => {
     );
   });
 
-  frozen86840It("replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal", () => {
+  frozen86840It(
+    "replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal",
+    () => {
       const fixtureRoot = join(
         import.meta.dirname,
         "fixtures",
@@ -970,7 +1136,12 @@ describe("reconcileMultiHop", () => {
         join(fixtureRoot, "86840-input-pack"),
       );
       const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
-    const snapshot = rootOneHop(root, index, "86840", frozenEvidence.horaeRows);
+      const snapshot = rootOneHop(
+        root,
+        index,
+        "86840",
+        frozenEvidence.horaeRows,
+      );
 
       const result = run(root, index, "86840", {
         maxDepth: 1,
@@ -999,7 +1170,8 @@ describe("reconcileMultiHop", () => {
           (bridge) => bridge.table.qualifiedName === "pdata_n.ref_dw_cd_val",
         ),
       ).toBe(false);
-  });
+    },
+  );
 
   it("publishes and enforces a closed multi-hop artifact contract", () => {
     const root = dataRoot();

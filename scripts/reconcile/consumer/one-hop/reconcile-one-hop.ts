@@ -6,10 +6,22 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, extname, isAbsolute, join, resolve } from "node:path";
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { fileURLToPath } from "node:url";
 import { SqlSession } from "../../../../src/session.ts";
 import type { Dialect } from "../../../../src/dialect.ts";
+import {
+  Schema,
+  type SchemaMapping,
+} from "../../../../src/qualify/schema.ts";
 import {
   sha256File,
   validateTableDocument,
@@ -143,11 +155,26 @@ interface TableCatalogEntry {
   readonly evidence: EvidenceObservation;
   readonly partitionFields: readonly string[] | null;
   readonly partitionReasonCodes: readonly string[];
+  readonly ddlPath: string | null;
+  readonly ddlSha256: string | null;
 }
 
 interface TableCatalog {
-  readonly byQualifiedName: ReadonlyMap<string, readonly TableCatalogEntry[]>;
-  readonly issues: readonly string[];
+  readonly byQualifiedName: Map<string, readonly TableCatalogEntry[]>;
+  readonly issues: string[];
+  readonly lazyDdl: boolean;
+  readonly ddlCache: Map<string, TableDdlDetails>;
+  readonly lazyTablePathsByQualifiedName: ReadonlyMap<
+    string,
+    readonly string[]
+  >;
+  readonly loadedTableKeys: Set<string>;
+}
+
+interface TableDdlDetails {
+  readonly columns: readonly string[];
+  readonly partitionFields: readonly string[] | null;
+  readonly warnings: readonly string[];
 }
 
 interface OneHopPreparedContext {
@@ -155,6 +182,7 @@ interface OneHopPreparedContext {
   readonly inputFingerprint: string | null;
   readonly tableCatalog: TableCatalog;
   readonly schema: unknown;
+  readonly validatedProducerIndexes: WeakSet<TableProducerIndex>;
 }
 
 export interface DirectReadPartitionScopeObservation {
@@ -395,6 +423,11 @@ export interface ReconcileOneHopOptions {
   readonly dataRoot: string;
   readonly producerIndex?: TableProducerIndex;
   readonly verifyInputFingerprint?: boolean;
+  /**
+   * Offline Horae relation rows supplied by a caller which already owns the
+   * scheduler evidence.  When present, no OpenCLI runner is invoked.
+   */
+  readonly scheduleRows?: readonly Record<string, unknown>[];
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
   readonly taskSourceTimeoutSeconds?: number;
@@ -417,6 +450,16 @@ function stringValue(value: unknown): string | null {
 
 function normalizeTable(value: string): string {
   return value.replaceAll("`", "").replaceAll('"', "").trim().toLowerCase();
+}
+
+function isWithin(root: string, candidate: string): boolean {
+  const relation = relative(resolve(root), resolve(candidate));
+  return (
+    relation !== "" &&
+    relation !== ".." &&
+    !relation.startsWith(`..${sep}`) &&
+    !isAbsolute(relation)
+  );
 }
 
 function tableIdentityKey(table: PhysicalTableRef): string | null {
@@ -528,7 +571,10 @@ function rowsOf(value: unknown): JsonRecord[] {
   return [];
 }
 
-export function defaultOpenCliRunner(args: readonly string[]): unknown {
+export function defaultOpenCliRunner(
+  args: readonly string[],
+  timeoutMs = OPENCLI_PROCESS_TIMEOUT_MS,
+): unknown {
   const windowsLauncher = join(process.env.APPDATA ?? "", "npm", "opencli.ps1");
   const executable =
     process.platform === "win32" ? "powershell.exe" : "opencli";
@@ -550,7 +596,7 @@ export function defaultOpenCliRunner(args: readonly string[]): unknown {
     cwd: process.cwd(),
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
-    timeout: OPENCLI_PROCESS_TIMEOUT_MS,
+    timeout: timeoutMs,
   });
   if (result.error || result.status !== 0)
     throw new Error(
@@ -724,12 +770,24 @@ function loadTaskPack(dataRoot: string, taskId: string): LoadedTaskPack {
   }
 }
 
-function loadTableCatalog(dataRoot: string): TableCatalog {
+function loadTableCatalog(
+  dataRoot: string,
+  options: { readonly lazyDdl?: boolean } = {},
+): TableCatalog {
   const tablesRoot = join(dataRoot, "tables");
   const byQualifiedName = new Map<string, TableCatalogEntry[]>();
   const issues: string[] = [];
+  const lazyTablePathsByQualifiedName = new Map<string, string[]>();
+  const loadedTableKeys = new Set<string>();
   if (!existsSync(tablesRoot))
-    return { byQualifiedName, issues: ["TABLES_ROOT_MISSING"] };
+    return {
+      byQualifiedName,
+      issues: ["TABLES_ROOT_MISSING"],
+      lazyDdl: options.lazyDdl === true,
+      ddlCache: new Map(),
+      lazyTablePathsByQualifiedName,
+      loadedTableKeys,
+    };
   for (const platform of readdirSync(tablesRoot, {
     withFileTypes: true,
   }).filter((entry) => entry.isDirectory())) {
@@ -739,6 +797,19 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
     }).filter((entry) => entry.isDirectory())) {
       const tablePath = join(platformRoot, tableDirectory.name, "table.json");
       if (!existsSync(tablePath)) continue;
+      if (options.lazyDdl === true) {
+        const separator = tableDirectory.name.lastIndexOf("__");
+        if (separator <= 0) {
+          issues.push(`TABLE_DIRECTORY_ID_INVALID:${dirname(tablePath)}`);
+          continue;
+        }
+        const key = normalizeTable(tableDirectory.name.slice(0, separator));
+        lazyTablePathsByQualifiedName.set(key, [
+          ...(lazyTablePathsByQualifiedName.get(key) ?? []),
+          tablePath,
+        ]);
+        continue;
+      }
       try {
         const raw = JSON.parse(readFileSync(tablePath, "utf8")) as unknown;
         validateTableDocument(raw);
@@ -756,13 +827,17 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
           : null;
         const ddlFile = asRecord(document.ddlFile);
         const ddlRelativePath = stringValue(ddlFile?.path);
+        const ddlPath = ddlRelativePath
+          ? resolve(dirname(tablePath), ddlRelativePath)
+          : null;
+        if (ddlPath && !isWithin(dirname(tablePath), ddlPath))
+          throw new Error("DDL_FILE_PATH_ESCAPE");
+        const ddlSha256 = stringValue(ddlFile?.sha256);
         let ddlPartitionFields: readonly string[] | null = null;
-        if (ddlRelativePath) {
-          const ddlPath = resolve(dirname(tablePath), ddlRelativePath);
-          const ddlHash = stringValue(ddlFile?.sha256);
+        if (ddlPath) {
           if (
             existsSync(ddlPath) &&
-            (!ddlHash || sha256File(ddlPath) === ddlHash)
+            (!ddlSha256 || sha256File(ddlPath) === ddlSha256)
           ) {
             const parsed = parseDdlSchema(readFileSync(ddlPath, "utf8"));
             if (parsed.warnings.length === 0)
@@ -804,6 +879,8 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
               ? null
               : partitionFields,
           partitionReasonCodes,
+          ddlPath,
+          ddlSha256,
         };
         byQualifiedName.set(key, [...(byQualifiedName.get(key) ?? []), entry]);
       } catch (error) {
@@ -813,13 +890,129 @@ function loadTableCatalog(dataRoot: string): TableCatalog {
       }
     }
   }
-  return { byQualifiedName, issues };
+  return {
+    byQualifiedName,
+    issues,
+    lazyDdl: options.lazyDdl === true,
+    ddlCache: new Map(),
+    lazyTablePathsByQualifiedName,
+    loadedTableKeys,
+  };
+}
+
+function loadLazyTableCatalogKey(catalog: TableCatalog, key: string): void {
+  if (!catalog.lazyDdl || catalog.loadedTableKeys.has(key)) return;
+  catalog.loadedTableKeys.add(key);
+  for (const tablePath of catalog.lazyTablePathsByQualifiedName.get(key) ?? []) {
+    try {
+      const raw = JSON.parse(readFileSync(tablePath, "utf8")) as unknown;
+      validateTableDocument(raw);
+      const document = raw as TableDocument & JsonRecord;
+      const documentKey = normalizeTable(String(document.qualifiedName));
+      if (documentKey !== key) throw new Error("TABLE_DIRECTORY_ID_MISMATCH");
+      const explicitPartitionFields = Array.isArray(document.partitionFields)
+        ? uniqueSorted(
+            document.partitionFields
+              .map(String)
+              .filter((field) => field.trim() !== ""),
+          )
+        : null;
+      const ddlFile = asRecord(document.ddlFile);
+      const ddlRelativePath = stringValue(ddlFile?.path);
+      const ddlPath = ddlRelativePath
+        ? resolve(dirname(tablePath), ddlRelativePath)
+        : null;
+      if (ddlPath && !isWithin(dirname(tablePath), ddlPath))
+        throw new Error("DDL_FILE_PATH_ESCAPE");
+      const entry: TableCatalogEntry = {
+        table: {
+          platform: String(document.platform),
+          dataSource: String(document.dataSource),
+          qualifiedName: documentKey,
+          identityStatus: "RESOLVED",
+        },
+        evidence: {
+          source: "TABLE_PACK",
+          provider: String(document.evidenceProvider ?? "input-pack:table"),
+          locator: tablePath,
+          observedAt: String(document.collectedAt),
+          contentHash: String(document.contentHash),
+        },
+        partitionFields: explicitPartitionFields,
+        partitionReasonCodes:
+          explicitPartitionFields === null
+            ? ["PARTITION_FIELDS_UNAVAILABLE"]
+            : [
+                explicitPartitionFields.length === 0
+                  ? "TABLE_PACK_NON_PARTITIONED"
+                  : "TABLE_PACK_PARTITION_FIELDS",
+              ],
+        ddlPath,
+        ddlSha256: stringValue(ddlFile?.sha256),
+      };
+      catalog.byQualifiedName.set(key, [
+        ...(catalog.byQualifiedName.get(key) ?? []),
+        entry,
+      ]);
+    } catch (error) {
+      catalog.issues.push(
+        `TABLE_INPUT_PACK_INVALID:${tablePath}:${safeMessage(error)}`,
+      );
+    }
+  }
 }
 
 function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
   const normalize = (values: readonly string[]) =>
     [...new Set(values.map((value) => normalizeTable(value)))].sort();
   return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
+
+function loadTableDdlDetails(
+  catalog: TableCatalog,
+  entry: TableCatalogEntry,
+): TableDdlDetails {
+  if (!entry.ddlPath)
+    return { columns: [], partitionFields: null, warnings: ["DDL_MISSING"] };
+  const cached = catalog.ddlCache.get(entry.ddlPath);
+  if (cached) return cached;
+  let details: TableDdlDetails;
+  if (
+    !existsSync(entry.ddlPath) ||
+    (entry.ddlSha256 && sha256File(entry.ddlPath) !== entry.ddlSha256)
+  )
+    details = {
+      columns: [],
+      partitionFields: null,
+      warnings: ["DDL_UNAVAILABLE_OR_HASH_MISMATCH"],
+    };
+  else {
+    const parsed = parseDdlSchema(readFileSync(entry.ddlPath, "utf8"));
+    details = {
+      columns: uniqueSorted(parsed.columns.map((column) => column.name)),
+      partitionFields:
+        parsed.warnings.length === 0
+          ? uniqueSorted(parsed.partition_columns)
+          : null,
+      warnings: parsed.warnings,
+    };
+  }
+  catalog.ddlCache.set(entry.ddlPath, details);
+  return details;
+}
+
+function hydrateTableCatalogEntry(
+  catalog: TableCatalog,
+  entry: TableCatalogEntry,
+): TableCatalogEntry {
+  if (!catalog.lazyDdl || entry.partitionFields !== null) return entry;
+  const ddl = loadTableDdlDetails(catalog, entry);
+  if (ddl.partitionFields === null) return entry;
+  return {
+    ...entry,
+    partitionFields: ddl.partitionFields,
+    partitionReasonCodes: ["DDL_PARTITION_FIELDS_FALLBACK"],
+  };
 }
 
 function resolveCatalogTable(
@@ -843,15 +1036,19 @@ function resolveCatalogTable(
       },
       partitionFields: null,
       partitionReasonCodes: ["PARTITION_FIELDS_UNAVAILABLE"],
+      ddlPath: null,
+      ddlSha256: null,
     };
   const key = normalizeTable(qualifiedName);
+  loadLazyTableCatalogKey(catalog, key);
   const candidates = catalog.byQualifiedName.get(key) ?? [];
   const identities = new Map<string, TableCatalogEntry>();
   for (const candidate of candidates) {
     const identity = tableIdentityKey(candidate.table);
     if (identity) identities.set(identity, candidate);
   }
-  if (identities.size === 1) return [...identities.values()][0]!;
+  if (identities.size === 1)
+    return hydrateTableCatalogEntry(catalog, [...identities.values()][0]!);
   return {
     table: {
       platform: null,
@@ -872,6 +1069,8 @@ function resolveCatalogTable(
       candidates.length > 1
         ? ["TABLE_IDENTITY_AMBIGUOUS"]
         : ["PARTITION_FIELDS_UNAVAILABLE"],
+    ddlPath: null,
+    ddlSha256: null,
   };
 }
 
@@ -929,19 +1128,26 @@ function inputPackSqlEvidence(file: TaskSqlFile): EvidenceObservation {
 
 export function prepareOneHopContext(
   dataRootInput: string,
-  options: { readonly includeFingerprint?: boolean } = {},
+  options: {
+    readonly includeFingerprint?: boolean;
+    readonly trustedInputFingerprint?: string;
+    readonly schemaLoading?: "EAGER" | "TASK_SCOPED";
+  } = {},
 ): OneHopPreparedContext {
   const dataRoot = resolve(dataRootInput);
+  const taskScopedSchema = options.schemaLoading === "TASK_SCOPED";
   return {
     dataRoot,
     inputFingerprint:
-      options.includeFingerprint === false
+      options.trustedInputFingerprint ??
+      (options.includeFingerprint === false
         ? null
-        : fingerprintTableProducerInputs(dataRoot),
-    tableCatalog: loadTableCatalog(dataRoot),
-    schema: existsSync(join(dataRoot, "tables"))
+        : fingerprintTableProducerInputs(dataRoot)),
+    tableCatalog: loadTableCatalog(dataRoot, { lazyDdl: taskScopedSchema }),
+    schema: !taskScopedSchema && existsSync(join(dataRoot, "tables"))
       ? loadSchemaFromTablesRoot(join(dataRoot, "tables")).schema
       : null,
+    validatedProducerIndexes: new WeakSet<TableProducerIndex>(),
   };
 }
 
@@ -1248,6 +1454,64 @@ function liveParent(
   }
 }
 
+function addSchemaMapping(
+  mapping: SchemaMapping,
+  qualifiedName: string,
+  columns: readonly string[],
+): void {
+  const parts = qualifiedName.split(".").filter(Boolean);
+  if (parts.length === 0 || columns.length === 0) return;
+  let namespace = mapping;
+  for (const part of parts.slice(0, -1)) {
+    const existing = namespace[part];
+    if (
+      typeof existing !== "object" ||
+      existing === null ||
+      "nullable" in existing
+    )
+      namespace[part] = {};
+    namespace = namespace[part] as SchemaMapping;
+  }
+  namespace[parts.at(-1)!] = Object.fromEntries(
+    columns.map((column) => [column, "unknown"]),
+  );
+}
+
+function taskScopedSchema(
+  pack: LoadedTaskPack,
+  catalog: TableCatalog,
+): unknown {
+  if (!pack.document) return undefined;
+  const dialect = taskSqlDialect(String(pack.document.taskCategory));
+  const defaultSchema = inferTaskDefaultSchema(pack.document);
+  const tableNames = new Set<string>();
+  for (const file of pack.sqlFiles)
+    for (const occurrence of extractSqlDirectReadOccurrences(
+      file.content,
+      dialect,
+    ))
+      tableNames.add(
+        qualifyBareTableName(occurrence.qualifiedName, defaultSchema),
+      );
+
+  const mapping: SchemaMapping = {};
+  for (const tableName of tableNames) {
+    const entry = resolveCatalogTable(catalog, tableName);
+    if (!entry.table.qualifiedName) continue;
+    const ddl = loadTableDdlDetails(catalog, entry);
+    addSchemaMapping(mapping, entry.table.qualifiedName, ddl.columns);
+  }
+  const schema = new Schema(mapping);
+  return {
+    world: "open" as const,
+    version: schema.version,
+    columnsFor: schema.columnsFor.bind(schema),
+    tableCandidates: schema.tableCandidates.bind(schema),
+    childrenOf: schema.childrenOf.bind(schema),
+    tables: schema.tables.bind(schema),
+  };
+}
+
 function currentDirectReads(
   pack: LoadedTaskPack,
   catalog: TableCatalog,
@@ -1257,12 +1521,15 @@ function currentDirectReads(
     throw new Error("CURRENT_TASK_INPUT_PACK_UNAVAILABLE");
   const dialect = taskSqlDialect(String(pack.document.taskCategory));
   const defaultSchema = inferTaskDefaultSchema(pack.document);
+  const effectiveSchema = catalog.lazyDdl
+    ? taskScopedSchema(pack, catalog)
+    : schema;
   const byTable = new Map<string, DirectReadObservation>();
   for (const file of pack.sqlFiles) {
     for (const occurrence of extractSqlDirectReadOccurrences(
       file.content,
       dialect,
-      schema,
+      effectiveSchema,
     )) {
       const qualifiedName = qualifyBareTableName(
         occurrence.qualifiedName,
@@ -1450,10 +1717,13 @@ function reconcileOneHopInternal(
   const producerIndex = options.producerIndex ?? null;
   let producerIndexStatus: ProducerIndexConsumptionStatus = "NOT_REQUESTED";
   if (producerIndex) {
-    try {
-      validateTableProducerIndex(producerIndex);
-    } catch (error) {
-      throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
+    if (!preparedContext.validatedProducerIndexes.has(producerIndex)) {
+      try {
+        validateTableProducerIndex(producerIndex);
+      } catch (error) {
+        throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
+      }
+      preparedContext.validatedProducerIndexes.add(producerIndex);
     }
     if (
       options.verifyInputFingerprint === true &&
@@ -1496,15 +1766,25 @@ function reconcileOneHopInternal(
     "-f",
     "json",
   ];
-  const scheduleObservedAt = now();
+  const offlineScheduleRows = options.scheduleRows !== undefined;
   const scheduleEvidence: EvidenceObservation = {
     source: "HORAE_RELATION",
-    provider: "opencli:horae.relation",
-    locator: `opencli ${horaeArgs.join(" ")}`,
-    observedAt: scheduleObservedAt,
-    detail: { direction: "up", depth: 1 },
+    provider: offlineScheduleRows
+      ? "offline:horae.relation"
+      : "opencli:horae.relation",
+    locator: offlineScheduleRows
+      ? "offline schedule evidence input"
+      : `opencli ${horaeArgs.join(" ")}`,
+    observedAt: offlineScheduleRows ? null : now(),
+    detail: {
+      direction: "up",
+      depth: 1,
+      ...(offlineScheduleRows
+        ? { rowsProvided: options.scheduleRows!.length }
+        : {}),
+    },
   };
-  const scheduleRows = rowsOf(runner(horaeArgs));
+  const scheduleRows = options.scheduleRows ?? rowsOf(runner(horaeArgs));
   const scheduleParents = new Map<
     string,
     { taskId: string; taskName: string | null; evidence: EvidenceObservation[] }
@@ -2111,6 +2391,15 @@ export function reconcileOneHop(
       options.producerIndex !== undefined &&
       options.verifyInputFingerprint === true,
   });
+  return reconcileOneHopInternal(taskId, options, preparedContext);
+}
+
+/** Reuse a catalog/fingerprint prepared for a bounded batch caller. */
+export function reconcileOneHopWithPreparedContext(
+  taskId: string,
+  options: ReconcileOneHopOptions,
+  preparedContext: ReturnType<typeof prepareOneHopContext>,
+): OneHopReconciliationResult {
   return reconcileOneHopInternal(taskId, options, preparedContext);
 }
 
