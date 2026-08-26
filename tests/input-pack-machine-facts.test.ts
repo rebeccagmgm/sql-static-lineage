@@ -8,7 +8,10 @@ import {
   prepareInputPackTask,
   runInputPackMachineFacts,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
-import { writeTaskInput } from "../scripts/input/shared/input-pack.ts";
+import {
+  writeTableInput,
+  writeTaskInput,
+} from "../scripts/input/shared/input-pack.ts";
 import { createSyntheticFieldLineageInputPack } from "./fixtures/field-lineage/cases.ts";
 
 function fixture() {
@@ -66,6 +69,77 @@ describe("Input Pack-driven Machine Facts", () => {
     ).toHaveLength(0);
   });
 
+  it("publishes a resolved Task-local bridge for an INSERT OVERWRITE followed by a later read", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.local_stage",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.local_stage (stage_a STRING, stage_b STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "1200",
+      taskCategory: "sparkIndex",
+      taskName: "demo.local.materialization",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.local_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; SELECT stage_a AS out_a, stage_b AS out_b FROM demo.local_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1200"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "1200",
+      "bundle",
+    );
+    const bridges = jsonl(
+      join(bundle, "task-local-materializations.jsonl"),
+    );
+    expect(bridges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          physical_dataset: "demo.local_stage",
+          column: "stage_a",
+          status: "RESOLVED",
+          provenance: "SAME_TASK_SQL_WRITE_READ",
+        }),
+        expect.objectContaining({
+          physical_dataset: "demo.local_stage",
+          column: "stage_b",
+          status: "RESOLVED",
+          provenance: "SAME_TASK_SQL_WRITE_READ",
+        }),
+      ]),
+    );
+    expect(
+      bridges.filter((bridge) => bridge.status === "RESOLVED"),
+    ).toHaveLength(2);
+  });
+
   it("selects query, preserves provenance, and binds platform query output", () => {
     const f = fixture();
     const prepared = prepareInputPackTask({
@@ -97,6 +171,57 @@ describe("Input Pack-driven Machine Facts", () => {
         (binding) => binding.evidence_kind === "PLATFORM_TARGET_QUERY_OUTPUT",
       ),
     ).toBe(true);
+  });
+
+  it("deduplicates semantically equivalent query outputs before platform binding", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1300",
+      taskCategory: "sparkIndex",
+      taskName: "demo.repeated.query.outputs",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m; SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1300"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "1300",
+      "bundle",
+    );
+    const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
+    expect(bindings).toHaveLength(2);
+    expect(
+      bindings.every(
+        (binding) => binding.evidence_kind === "PLATFORM_TARGET_QUERY_OUTPUT",
+      ),
+    ).toBe(true);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) =>
+          unknown.reason_code === "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE",
+      ),
+    ).toBe(false);
   });
 
   it("keeps explicit SQL writes distinct", () => {
@@ -198,6 +323,176 @@ describe("Input Pack-driven Machine Facts", () => {
     ).toEqual(["p"]);
   });
 
+  it("uses each explicit SQL write target's schema and partition evidence", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "cross-target-writes",
+      taskCategory: "hiveTask",
+      taskName: "cross.target.writes",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.root SELECT src_a, src_a FROM demo.extra; INSERT OVERWRITE TABLE demo.partitioned PARTITION(p) SELECT src_a, 'A' AS p FROM demo.extra;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["cross-target-writes"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "cross-target-writes",
+      "bundle",
+    );
+    const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
+    expect(bindings).toHaveLength(4);
+    expect(
+      bindings.filter((binding) => binding.target_dataset === "demo.root"),
+    ).toHaveLength(2);
+    const partitionBindings = bindings.filter(
+      (binding) => binding.target_dataset === "demo.partitioned",
+    );
+    expect(partitionBindings).toHaveLength(2);
+    expect(
+      partitionBindings.every(
+        (binding) => {
+          const columns = Array.isArray(binding.static_partition_columns)
+            ? binding.static_partition_columns
+            : [];
+          return columns.length === 1 && columns[0] === "p";
+        },
+      ),
+    ).toBe(true);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) => unknown.reason_code === "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
+      ),
+    ).toBe(false);
+  });
+
+  it("matches partition evidence by source span after non-write statements", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "partition-write-span",
+      taskCategory: "hiveTask",
+      taskName: "partition.write.span",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT src_a AS out_a, src_a AS out_b FROM demo.extra; " +
+            "INSERT OVERWRITE TABLE demo.partitioned PARTITION(p) SELECT src_a, 'A' AS p FROM demo.extra; " +
+            "INSERT OVERWRITE TABLE demo.partitioned PARTITION(p) SELECT src_a, 'B' AS p FROM demo.extra;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["partition-write-span"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "partition-write-span",
+      "bundle",
+    );
+    const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
+    expect(
+      bindings.filter((binding) => binding.target_dataset === "demo.partitioned"),
+    ).toHaveLength(4);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) => unknown.reason_code === "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
+      ),
+    ).toBe(false);
+  });
+
+  it("matches canonical partition evidence to a bare SQL write target", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "pdata_n.bare_target",
+      objectType: "hive_table",
+      partitionFields: ["p"],
+      ddl: "CREATE TABLE pdata_n.bare_target (value_col STRING) PARTITIONED BY (p STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "bare-target-evidence",
+      taskCategory: "hiveTask",
+      taskName: "bare.target.evidence",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "pdata_n.bare_target",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE BARE_TARGET PARTITION(p) SELECT src_a, 'A' AS p FROM demo.extra;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["bare-target-evidence"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "bare-target-evidence",
+      "bundle",
+    );
+    const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
+    expect(bindings).toHaveLength(2);
+    expect(bindings.every((binding) => binding.target_dataset === "pdata_n.bare_target")).toBe(true);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) => unknown.reason_code === "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
+      ),
+    ).toBe(false);
+  });
+
   it("freezes every canonical SQL slot while analyzing Task-local CTAS in one derived snapshot", () => {
     const f = fixture();
     const prepared = prepareInputPackTask({
@@ -249,5 +544,65 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(targets).toEqual(
       new Set(["demo.root", "temp.local_stage", "temp.mid_stage"]),
     );
+  });
+
+  it("terminates derived SQL slots without changing canonical SQL or slot statement IDs", () => {
+    const f = fixture();
+    const querySql =
+      "SELECT src_a FROM demo.extra; SELECT src_a FROM (SELECT src_a FROM demo.extra) castTable";
+    const finishSql =
+      "CREATE TABLE demo.boundary AS SELECT src_a FROM demo.extra";
+    writeTaskInput(f.dataRoot, {
+      taskId: "boundary",
+      taskCategory: "sparkIndex",
+      taskName: "multi.slot.boundary",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: { content: querySql, evidenceProvider: "synthetic:test" },
+        finish: { content: finishSql, evidenceProvider: "synthetic:test" },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const prepared = prepareInputPackTask({
+      dataRoot: f.dataRoot,
+      taskId: "boundary",
+    });
+    expect(prepared.sqlSources.map((source) => source.content)).toEqual([
+      querySql,
+      finishSql,
+    ]);
+    expect(prepared.sql.content).toBe(
+      `${querySql}\n;\n${finishSql}\n`,
+    );
+    expect(prepared.sqlSegments).toEqual([
+      { slot: "query", start: 0, end: querySql.length + 2 },
+      {
+        slot: "finish",
+        start: querySql.length + 3,
+        end: querySql.length + 3 + finishSql.length + 1,
+      },
+    ]);
+
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["boundary"],
+      outputRoot: f.factsRoot,
+    });
+    const statements = jsonl(
+      join(f.factsRoot, "registry", "tasks", "boundary", "bundle", "statements.jsonl"),
+    );
+    expect(statements.map((statement) => statement.statement_id)).toEqual([
+      "task:boundary:slot:query:statement:0",
+      "task:boundary:slot:query:statement:1",
+      "task:boundary:slot:finish:statement:0",
+    ]);
   });
 });

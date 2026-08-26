@@ -1,6 +1,6 @@
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
 
-export const FIELD_LINEAGE_SCHEMA_VERSION = "1.0.0" as const;
+export const FIELD_LINEAGE_SCHEMA_VERSION = "1.1.0" as const;
 export const FIELD_LINEAGE_ARTIFACT_TYPE = "FIELD_MULTI_HOP_RECONCILIATION" as const;
 
 export type FieldEvidenceStatus =
@@ -20,10 +20,20 @@ export interface PhysicalFieldIdentity {
 	readonly identityStatus: "SCHEMA_BACKED" | "TASK_LOCAL_SCHEMA_BACKED";
 }
 
+export interface PhysicalTableIdentity {
+	readonly platform: string;
+	readonly dataSource: string;
+	readonly stableTableId: string;
+	readonly qualifiedName: string;
+}
+
 export interface FieldLineageRequest {
 	readonly rootTaskId: string;
 	readonly rootTable: string;
+	/** Selected Write Observations for this root target. */
+	readonly rootWriteObservationIds: readonly string[];
 	readonly rootFields: readonly string[];
+	readonly rootFieldSelection?: "EXPLICIT" | "ALL_TARGET_COLUMNS";
 	readonly factsPolicy: FactsPolicy;
 }
 
@@ -227,6 +237,13 @@ export function validateFieldLineageArtifact(value: unknown): string[] {
 	if (!nonEmpty(artifact.generatedAt)) errors.push("generatedAt is required");
 	if (!artifact.request || !nonEmpty(artifact.request.rootTaskId) || !nonEmpty(artifact.request.rootTable))
 		errors.push("request root identity is incomplete");
+	if (
+		!Array.isArray(artifact.request?.rootWriteObservationIds) ||
+		artifact.request.rootWriteObservationIds.length === 0 ||
+		artifact.request.rootWriteObservationIds.some((id) => !nonEmpty(id)) ||
+		new Set(artifact.request.rootWriteObservationIds).size !== artifact.request.rootWriteObservationIds.length
+	)
+		errors.push("request root Write Observations are incomplete");
 	if (!Array.isArray(artifact.request?.rootFields) || artifact.request.rootFields.length === 0)
 		errors.push("at least one explicit root field is required");
 	if (!["current-only", "allow-legacy-partial"].includes(artifact.request?.factsPolicy))

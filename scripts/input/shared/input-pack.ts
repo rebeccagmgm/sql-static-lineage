@@ -86,6 +86,8 @@ export interface TaskPartitionWrite {
   readonly target: string;
   readonly sqlSlot: SqlSlot | null;
   readonly statementOrdinal: number | null;
+  /** Character offsets within the source SQL slot for an explicit write. */
+  readonly statementSpan?: { readonly start: number; readonly end: number };
   readonly mode: "STATIC" | "DYNAMIC" | "MIXED" | "NONE" | "UNKNOWN";
   readonly status: TaskPartitionStatus;
   readonly assignments: readonly TaskPartitionAssignment[];

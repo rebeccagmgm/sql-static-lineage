@@ -15,9 +15,13 @@ import {
 	sha256File,
 	validateTableDocument,
 	validateTaskDocument,
+	type SqlSlot,
+	type TableEvidence,
 	type TableDocument,
 	type TaskDocument,
 } from "../input/shared/input-pack.ts";
+import { buildTaskPartitionEvidence } from "../input/shared/task-partition-evidence.ts";
+import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { loadSchemaFromTablesRoot, parseDdlSchema } from "../plans/ddl-schema.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
@@ -30,6 +34,7 @@ import {
 	type GenericTaskProfile,
 	type InputPackProvenance,
 	type PlatformTargetQueryOutput,
+	type SqlWritePartitionEvidence,
 } from "./machine-facts-contract.ts";
 import { rebuildIndex, runTask, type ProfileRunResult, type TaskRunResult } from "./machine-facts.ts";
 
@@ -97,6 +102,7 @@ export interface RunInputPackMachineFactsOptions {
 	readonly dataRoot: string;
 	readonly taskIds: readonly string[];
 	readonly outputRoot: string;
+	readonly tableCatalog?: PhysicalTableCatalog;
 	readonly beforeFinalVerification?: (taskId: string) => void;
 }
 
@@ -301,6 +307,81 @@ function partitionStatus(
 	return { partition_status: complete ? "COMPLETE" : "INCOMPLETE", partition_columns: columns };
 }
 
+function sameTableReference(left: string, right: string): boolean {
+	const normalize = (value: string): string => normalizeName(value);
+	const normalizedLeft = normalize(left);
+	const normalizedRight = normalize(right);
+	return (
+		normalizedLeft === normalizedRight ||
+		normalizedLeft.split(".").at(-1) === normalizedRight.split(".").at(-1)
+	);
+}
+
+function sqlWritePartitionEvidence(
+	dataRoot: string,
+	task: TaskDocument & JsonRecord,
+	taskTarget: PhysicalTableCatalogEntry,
+	catalog: PhysicalTableCatalog,
+	sources: readonly SelectedLineageSql[],
+): readonly SqlWritePartitionEvidence[] {
+	const tables: TableEvidence[] = catalog.entries.map((entry) => ({
+		platform: entry.platform,
+		dataSource: entry.dataSource,
+		qualifiedName: entry.qualifiedName,
+		objectType: "TABLE",
+		partitionFields: entry.partitionFields,
+		ddl: readFileSync(entry.ddlPath, "utf8"),
+		evidenceProvider: `input-pack:${entry.tableContentHash}`,
+	}));
+	const sql = Object.fromEntries(sources.map((source) => [source.slot, source.content])) as Partial<Record<SqlSlot, string>>;
+	const evidence = buildTaskPartitionEvidence({
+		taskTarget: taskTarget.qualifiedName,
+		tables,
+		sql,
+		sparkIndexMode: String(task.taskCategory).toLowerCase() === "sparkindex",
+	});
+	return evidence.targets
+		.filter((target) => target.writes.length > 0)
+		.flatMap((target) => {
+			const tableEntry = uniquePhysicalTableForReference(catalog, target.target);
+			return target.writes.map((write) => {
+				const source = write.sqlSlot === null
+					? undefined
+					: sources.find((candidate) => candidate.slot === write.sqlSlot);
+				const sqlWrite = source === undefined
+					? undefined
+					: extractSqlWrites(source.content).find(
+							(candidate) =>
+								sameTableReference(candidate.qualifiedName, target.target) &&
+								candidate.statementOrdinal === write.statementOrdinal,
+						);
+				const evidenceRefs = [
+					...write.evidence.map((item) => `${item.source}:${item.locator}`),
+					...(tableEntry
+						? [
+							`TABLE_PACK:${relativeLocator(dataRoot, tableEntry.tablePath)}`,
+							`DDL:${relativeLocator(dataRoot, tableEntry.ddlPath)}`,
+						]
+						: []),
+				];
+				return {
+					target: normalizeName(target.target),
+					...(write.sqlSlot === null ? {} : { sql_slot: write.sqlSlot }),
+					statement_ordinal: write.statementOrdinal === null ? undefined : write.statementOrdinal - 1,
+					...(sqlWrite === undefined
+						? {}
+						: {
+								statement_start: sqlWrite.statementSpan.start,
+								statement_end: sqlWrite.statementSpan.end,
+							}),
+					status: tableEntry === undefined ? "UNKNOWN" : write.status,
+					partition_columns: tableEntry === undefined ? [] : target.fields,
+					evidence_refs: [...new Set(evidenceRefs)].sort(compareText),
+				};
+			});
+		});
+}
+
 function schemaBundle(catalog: PhysicalTableCatalog, logicalSourceId: string): JsonRecord {
 	const tailCounts = new Map<string, number>();
 	for (const entry of catalog.entries) {
@@ -339,10 +420,42 @@ function addSchemaMapping(mapping: SchemaMapping, qualifiedName: string, columns
 	current[parts.at(-1)!] = Object.fromEntries(columns.map((column) => [normalizeName(column), "unknown"]));
 }
 
-function taskLocalCtasTarget(sql: string): string | null {
-	const match = /\bcreate\s+table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)[\s\S]*?\bas\s+(?:select|with)\b/i.exec(sql);
-	if (!match?.[1]) return null;
-	return normalizeName(match[1].replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", ""));
+function taskLocalWriteTarget(sql: string): string | null {
+	const create = /\bcreate\s+table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)[\s\S]*?\bas\s+(?:select|with)\b/i.exec(sql);
+	const insert = /\binsert\s+(?:overwrite|into)\s+(?:table\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
+	const raw = create?.[1] ?? insert?.[1];
+	if (!raw) return null;
+	return normalizeName(raw.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", ""));
+}
+
+function hasUniquePhysicalTable(
+	catalog: PhysicalTableCatalog,
+	target: string,
+): boolean {
+	const normalized = normalizeName(target);
+	if ((catalog.byQualifiedName.get(normalized) ?? []).length === 1) return true;
+	const tail = normalized.split(".").at(-1) ?? normalized;
+	return catalog.entries.filter(
+		(entry) =>
+			normalizeName(entry.qualifiedName.split(".").at(-1) ?? entry.qualifiedName) ===
+			tail,
+	).length === 1;
+}
+
+function uniquePhysicalTableForReference(
+	catalog: PhysicalTableCatalog,
+	target: string,
+): PhysicalTableCatalogEntry | undefined {
+	const normalized = normalizeName(target);
+	const exact = catalog.byQualifiedName.get(normalized) ?? [];
+	if (exact.length === 1) return exact[0];
+	const tail = normalized.split(".").at(-1) ?? normalized;
+	const matches = catalog.entries.filter(
+		(entry) =>
+			normalizeName(entry.qualifiedName.split(".").at(-1) ?? entry.qualifiedName) ===
+			tail,
+	);
+	return matches.length === 1 ? matches[0] : undefined;
 }
 
 function deriveTaskLocalSchemas(
@@ -358,8 +471,8 @@ function deriveTaskLocalSchemas(
 		const split = SqlSession.create(source.analysisContent, dialect, { schema: new Schema(mapping) });
 		for (const cell of split.doc.statements) {
 			const rawSql = source.analysisContent.slice(cell.span.start, cell.span.end);
-			const target = taskLocalCtasTarget(rawSql);
-			if (!target) continue;
+			const target = taskLocalWriteTarget(rawSql);
+			if (!target || hasUniquePhysicalTable(catalog, target)) continue;
 			const session = SqlSession.create(rawSql, dialect, { schema: new Schema(mapping) });
 			const statement = session.doc.statements[0];
 			if (!statement) continue;
@@ -380,7 +493,7 @@ function deriveTaskLocalSchemas(
 				qualified_name: target,
 				guid: null,
 				status: "SUCCESS",
-				source: `input-pack-task-local-ctas:${taskId}:${source.slot}`,
+				source: `input-pack-task-local-write:${taskId}:${source.slot}`,
 				metadata_qualified_name: target,
 				ddl_sha256: null,
 				table_status: "TASK_LOCAL",
@@ -405,7 +518,16 @@ function combinedLineageSql(
 	let content = "";
 	const segments: { slot: string; start: number; end: number }[] = [];
 	for (const source of sources) {
-		if (content.length > 0 && !content.endsWith("\n")) content += "\n";
+		if (content.length > 0) {
+			const trimmedEnd = content.trimEnd().length;
+			if (!content.slice(0, trimmedEnd).endsWith(";")) {
+				// Keep the derived terminator inside the preceding segment so its parser span
+				// remains attributable to the original slot.
+				content += ";";
+				segments[segments.length - 1]!.end = content.length;
+			}
+			if (!content.endsWith("\n")) content += "\n";
+		}
 		const start = content.length;
 		content += source.analysisContent;
 		segments.push({ slot: source.slot, start, end: content.length });
@@ -491,6 +613,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 				evidence_refs: [provenance.task_locator, provenance.table_locator, provenance.ddl_locator],
 			} satisfies PlatformTargetQueryOutput
 		: undefined;
+	const explicitWritePartitionEvidence = sqlWritePartitionEvidence(dataRoot, task, target, catalog, combined.sources);
 	const profileTask: GenericTaskProfile = {
 		task_id: options.taskId,
 		sql_snapshot: combined.sql.path,
@@ -502,6 +625,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 			partition_columns: partitionStatus(task, target).partition_columns,
 			evidence_refs: [provenance.task_locator, provenance.table_locator, provenance.ddl_locator],
 		},
+		...(explicitWritePartitionEvidence.length > 0 ? { sql_write_partition_evidence: explicitWritePartitionEvidence } : {}),
 		...(platformOutput ? { platform_target_query_output: platformOutput } : {}),
 	};
 	options.beforeFinalVerification?.();
@@ -551,7 +675,7 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 	if (options.taskIds.length === 0) throw new Error("TASK_ID_REQUIRED");
 	const outputRoot = resolve(options.outputRoot);
 	mkdirSync(outputRoot, { recursive: true });
-	const catalog = loadPhysicalTableCatalog(options.dataRoot);
+	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(options.dataRoot);
 	const tasks: TaskRunResult[] = [];
 	const preparedSummary: InputPackMachineFactsRunResult["prepared"][number][] = [];
 	for (const taskId of [...new Set(options.taskIds)].sort(compareText)) {

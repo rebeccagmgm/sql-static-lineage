@@ -29,6 +29,7 @@ import {
   type FieldLineageNode,
   type FieldLineageTableEdge,
   type FieldProducerCandidate,
+  type PhysicalTableIdentity,
   type PhysicalFieldIdentity,
   type RowsetControlAnnotation,
 } from "./field-lineage-contract.ts";
@@ -54,6 +55,7 @@ export interface ReconcileFieldLineageOptions {
   readonly tableLineage: TableLineageArtifact;
   readonly rootTaskId: string;
   readonly rootTable: string;
+  readonly rootWriteObservationIds?: readonly string[];
   readonly rootFields: readonly string[];
   readonly factsPolicy: FactsPolicy;
   readonly maxDepth: number;
@@ -134,6 +136,26 @@ function taskTarget(
       physicalTableKey({ platform, dataSource, qualifiedName }),
     ) ?? null
   );
+}
+
+function rootPhysicalTarget(
+  catalog: PhysicalTableCatalog,
+  rootPack: TaskPack,
+  rootTable: string,
+): PhysicalTableCatalogEntry {
+  const candidates = catalog.byQualifiedName.get(normalizeName(rootTable)) ?? [];
+  if (candidates.length === 1) return candidates[0]!;
+  if (rootPack.target) {
+    const sameSource = candidates.filter(
+      (candidate) =>
+        candidate.platform === rootPack.target!.platform &&
+        candidate.dataSource === rootPack.target!.dataSource,
+    );
+    if (sameSource.length === 1) return sameSource[0]!;
+  }
+  if (candidates.length === 0)
+    throw new Error(`ROOT_TARGET_IDENTITY_UNRESOLVED:${normalizeName(rootTable)}`);
+  throw new Error(`ROOT_TARGET_IDENTITY_AMBIGUOUS:${normalizeName(rootTable)}`);
 }
 
 function loadTaskPacks(
@@ -235,6 +257,7 @@ function targetBindings(
   load: CurrentBundleLoad,
   targetQualifiedName: string,
   field: PhysicalFieldIdentity,
+  writeObservationIds?: ReadonlySet<string>,
 ): JsonRecord[] {
   return (load.records["output-field-bindings.jsonl"] ?? [])
     .filter(
@@ -242,6 +265,8 @@ function targetBindings(
         normalizeName(String(binding.target_dataset ?? "")) ===
           normalizeName(targetQualifiedName) &&
         normalizeName(String(binding.target_field ?? "")) === field.column &&
+        (writeObservationIds === undefined ||
+          writeObservationIds.has(String(binding.write_observation_id ?? ""))) &&
         binding.binding_status === "RESOLVED",
     )
     .sort((left, right) =>
@@ -250,6 +275,76 @@ function targetBindings(
         String(right.binding_id ?? ""),
       ),
     );
+}
+
+function writeObservationIdsForTarget(
+  load: CurrentBundleLoad,
+  taskId: string,
+  target: PhysicalTableIdentity,
+): string[] {
+  return [
+    ...new Set(
+      (load.records["dataset-io.jsonl"] ?? [])
+        .filter(
+          (record) =>
+            record.task_id === taskId &&
+            record.direction === "WRITE" &&
+            typeof record.write_observation_id === "string" &&
+            normalizeName(String(record.physical_dataset ?? "")) ===
+              normalizeName(target.qualifiedName),
+        )
+        .map((record) => String(record.write_observation_id)),
+    ),
+  ].sort(compareText);
+}
+
+function assertRootWriteObservation(
+  load: CurrentBundleLoad,
+  taskId: string,
+  target: PhysicalTableIdentity,
+  writeObservationId: string,
+): void {
+  const matched = (load.records["dataset-io.jsonl"] ?? []).some(
+    (record) =>
+      record.task_id === taskId &&
+      record.direction === "WRITE" &&
+      record.write_observation_id === writeObservationId &&
+      normalizeName(String(record.physical_dataset ?? "")) ===
+        normalizeName(target.qualifiedName),
+  );
+  if (!matched)
+    throw new Error(`ROOT_WRITE_OBSERVATION_NOT_FOUND:${writeObservationId}`);
+}
+
+function taskLocalMaterializationBindingIds(
+  load: CurrentBundleLoad,
+  taskId: string,
+  field: PhysicalFieldIdentity,
+): string[] {
+  return [
+    ...new Set(
+      (load.records["task-local-materializations.jsonl"] ?? [])
+        .filter(
+          (record) =>
+            record.task_id === taskId &&
+            record.status === "RESOLVED" &&
+            normalizeName(String(record.physical_dataset ?? "")) ===
+              normalizeName(field.qualifiedName) &&
+            normalizeName(String(record.column ?? "")) === field.column &&
+            typeof record.output_binding_id === "string" &&
+            record.output_binding_id.length > 0,
+        )
+        .map((record) => String(record.output_binding_id)),
+    ),
+  ].sort(compareText);
+}
+
+function isTaskLocalSchemaSource(source: unknown, taskId: string): boolean {
+  const value = String(source ?? "");
+  return (
+    value.startsWith(`input-pack-task-local-ctas:${taskId}:`) ||
+    value.startsWith(`input-pack-task-local-write:${taskId}:`)
+  );
 }
 
 function expressionFor(
@@ -295,9 +390,7 @@ function sourceFields(
       const localSchemas = (load.records["schema-refs.jsonl"] ?? []).filter(
         (record) =>
           normalizeName(String(record.qualified_name ?? "")) === tableName &&
-          String(record.source ?? "").startsWith(
-            `input-pack-task-local-ctas:${taskId}:`,
-          ) &&
+          isTaskLocalSchemaSource(record.source, taskId) &&
           Array.isArray(record.physical_columns) &&
           record.physical_columns
             .map((value) => normalizeName(String(value)))
@@ -473,6 +566,22 @@ function producerMatchesField(
   );
 }
 
+function producerTargetsConsumerTable(
+  taskPacks: ReadonlyMap<string, TaskPack>,
+  consumerTaskId: string,
+  producerTaskId: string,
+): boolean {
+  const consumerTarget = taskPacks.get(consumerTaskId)?.target;
+  const producerTarget = taskPacks.get(producerTaskId)?.target;
+  return (
+    consumerTarget !== null &&
+    consumerTarget !== undefined &&
+    producerTarget !== null &&
+    producerTarget !== undefined &&
+    physicalTableKey(consumerTarget) === physicalTableKey(producerTarget)
+  );
+}
+
 function collectPhysicalPairs(
   value: unknown,
   output: { table: string; column: string }[] = [],
@@ -514,9 +623,7 @@ function taskLocalPhysicalField(
   const matches = (load.records["schema-refs.jsonl"] ?? []).filter(
     (record) =>
       normalizeName(String(record.qualified_name ?? "")) === pair.table &&
-      String(record.source ?? "").startsWith(
-        `input-pack-task-local-ctas:${node.taskId}:`,
-      ) &&
+      isTaskLocalSchemaSource(record.source, node.taskId) &&
       Array.isArray(record.physical_columns) &&
       record.physical_columns
         .map((value) => normalizeName(String(value)))
@@ -654,7 +761,6 @@ export function reconcileFieldLineage(
 ): FieldLineageArtifact {
   if (!options.rootTaskId.trim()) throw new Error("ROOT_TASK_ID_REQUIRED");
   if (!options.rootTable.trim()) throw new Error("ROOT_TABLE_REQUIRED");
-  if (options.rootFields.length === 0) throw new Error("ROOT_FIELDS_REQUIRED");
   for (const [name, value, minimum] of [
     ["maxDepth", options.maxDepth, 0],
     ["maxStates", options.maxStates, 1],
@@ -676,11 +782,22 @@ export function reconcileFieldLineage(
     throw new Error(`ROOT_TASK_INPUT_PACK_MISSING:${options.rootTaskId}`);
   if (!rootPack.target)
     throw new Error(`ROOT_TARGET_IDENTITY_UNRESOLVED:${options.rootTaskId}`);
-  if (
-    normalizeName(rootPack.target.qualifiedName) !==
-    normalizeName(options.rootTable)
-  )
-    throw new Error("ROOT_TABLE_MISMATCH");
+  const rootTarget = rootPhysicalTarget(catalog, rootPack, options.rootTable);
+
+  const rootFieldSelection =
+    options.rootFields.length > 0 ? "EXPLICIT" : "ALL_TARGET_COLUMNS";
+  const rootFields = [
+    ...new Set(
+      (options.rootFields.length > 0
+        ? options.rootFields
+        : rootTarget.columns
+      )
+        .map(normalizeName)
+        .filter(Boolean),
+    ),
+  ].sort(compareText);
+  if (rootFields.length === 0)
+    throw new Error("ROOT_TARGET_SCHEMA_EMPTY");
 
   const nodes = new Map<string, FieldLineageNode>();
   const edges = new Map<string, FieldLineageEdge>();
@@ -705,14 +822,40 @@ export function reconcileFieldLineage(
     factsCache.set(taskId, loaded);
     return loaded;
   };
+  const rootFacts = loadFacts(options.rootTaskId);
+  const rootObservationIds = writeObservationIdsForTarget(
+    rootFacts,
+    options.rootTaskId,
+    rootTarget,
+  );
+  const rootTargetMatchesPlatformTarget =
+    normalizeName(rootPack.target.qualifiedName) ===
+    normalizeName(rootTarget.qualifiedName);
+  const selectedRootObservationIds = options.rootWriteObservationIds
+    ? [...new Set(options.rootWriteObservationIds.map((id) => id.trim()).filter(Boolean))].sort(compareText)
+    : rootTargetMatchesPlatformTarget
+      ? rootObservationIds
+      : [];
+  if (selectedRootObservationIds.length === 0)
+    throw new Error(
+      rootObservationIds.length === 0
+        ? `ROOT_WRITE_OBSERVATION_NOT_FOUND_FOR_TARGET:${normalizeName(rootTarget.qualifiedName)}`
+        : `ROOT_WRITE_OBSERVATION_REQUIRED:${normalizeName(rootTarget.qualifiedName)}`,
+    );
+  for (const writeObservationId of selectedRootObservationIds)
+    assertRootWriteObservation(
+      rootFacts,
+      options.rootTaskId,
+      rootTarget,
+      writeObservationId,
+    );
+  const rootWriteObservationSet = new Set(selectedRootObservationIds);
   const addGap = (gap: FieldLineageGap): void => {
     gaps.set(gap.gapId, gap);
   };
 
-  for (const requestedField of [
-    ...new Set(options.rootFields.map(normalizeName)),
-  ].sort(compareText)) {
-    const field = physicalField(rootPack.target, requestedField);
+  for (const requestedField of rootFields) {
+    const field = physicalField(rootTarget, requestedField);
     if (!field) throw new Error(`ROOT_FIELD_NOT_IN_SCHEMA:${requestedField}`);
     frontier.push({
       taskId: options.rootTaskId,
@@ -812,6 +955,9 @@ export function reconcileFieldLineage(
         load,
         current.field.qualifiedName,
         current.field,
+        current.depth === 0 && current.nodeId === null
+          ? rootWriteObservationSet
+          : undefined,
       );
       if (bindings.length === 0) {
         const unresolvedNodeId = nodeId(current.taskId, current.field, null);
@@ -926,6 +1072,9 @@ export function reconcileFieldLineage(
       load,
       current.field.qualifiedName,
       current.field,
+      current.depth === 0 && current.nodeId === null
+        ? rootWriteObservationSet
+        : undefined,
     ).find((candidate) => candidate.binding_id === current.bindingId);
     if (!binding) {
       addGap({
@@ -1030,8 +1179,16 @@ export function reconcileFieldLineage(
         physicalTableKey(rawSource) !== physicalTableKey(pack.target)
           ? targetBindings(load, rawSource.qualifiedName, rawSource)
           : [];
+      const taskLocalMaterializationBindings =
+        taskLocalMaterializationBindingIds(load, current.taskId, rawSource);
+      const localBindingIds = [
+        ...new Set([
+          ...taskLocalBindings.map((binding) => String(binding.binding_id)),
+          ...taskLocalMaterializationBindings,
+        ]),
+      ].filter(Boolean).sort(compareText);
       const source: PhysicalFieldIdentity =
-        taskLocalBindings.length > 0
+        localBindingIds.length > 0
           ? {
               ...rawSource,
               stableTableId: `task-local:${current.taskId}:${rawSource.qualifiedName}`,
@@ -1082,20 +1239,35 @@ export function reconcileFieldLineage(
         ],
       });
       if (source.identityStatus === "TASK_LOCAL_SCHEMA_BACKED") {
-        frontier.push({
-          taskId: current.taskId,
-          field: source,
-          bindingId: null,
-          nodeId: null,
-          depth: current.depth,
-          active: current.active,
-          incoming: {
-            sourceNodeId: sourceId,
-            consumerTaskId: current.taskId,
-            producerTaskId: null,
-            evidenceStatus,
-          },
-        });
+        for (const bindingId of localBindingIds) {
+          const localNodeId = nodeId(current.taskId, source, bindingId);
+          if (!nodes.has(localNodeId))
+            nodes.set(localNodeId, {
+              nodeId: localNodeId,
+              taskId: current.taskId,
+              taskName: nonEmpty(pack.document.taskName),
+              depth: current.depth,
+              field: source,
+              bindingId,
+              expressionId: null,
+              expressionText: null,
+              evidenceStatus,
+            });
+          frontier.push({
+            taskId: current.taskId,
+            field: source,
+            bindingId,
+            nodeId: localNodeId,
+            depth: current.depth,
+            active: current.active,
+            incoming: {
+              sourceNodeId: sourceId,
+              consumerTaskId: current.taskId,
+              producerTaskId: null,
+              evidenceStatus,
+            },
+          });
+        }
         continue;
       }
 
@@ -1114,14 +1286,40 @@ export function reconcileFieldLineage(
         });
         continue;
       }
-      for (const additionalTaskId of decision.additional.filter((taskId) =>
-        producerMatchesField(
-          options.tableLineage,
+      const sameTableProducerIds = [
+        ...new Set([
+          ...decision.primary,
+          ...decision.additional,
+          ...decision.unknown,
+        ]),
+      ].filter((producerTaskId) =>
+        producerTargetsConsumerTable(
           taskPacks,
           current.taskId,
-          taskId,
-          source,
+          producerTaskId,
         ),
+      );
+      for (const producerTaskId of sameTableProducerIds) {
+        const candidateId = `candidate:${current.taskId}:${producerTaskId}:${physicalFieldKey(source)}`;
+        candidates.set(candidateId, {
+          candidateId,
+          consumerTaskId: current.taskId,
+          producerTaskId,
+          field: source,
+          evidenceStatus: "CANDIDATE",
+          reasonCode: "SAME_PHYSICAL_TABLE_PRODUCER_NOT_RECURSED",
+        });
+      }
+      for (const additionalTaskId of decision.additional.filter(
+        (taskId) =>
+          !sameTableProducerIds.includes(taskId) &&
+          producerMatchesField(
+            options.tableLineage,
+            taskPacks,
+            current.taskId,
+            taskId,
+            source,
+          ),
       )) {
         const candidateId = `candidate:${current.taskId}:${additionalTaskId}:${physicalFieldKey(source)}`;
         candidates.set(candidateId, {
@@ -1133,14 +1331,16 @@ export function reconcileFieldLineage(
           reasonCode: "ONE_HOP_ADDITIONAL_NOT_RECURSED",
         });
       }
-      const relevantUnknowns = decision.unknown.filter((taskId) =>
-        producerMatchesField(
-          options.tableLineage,
-          taskPacks,
-          current.taskId,
-          taskId,
-          source,
-        ),
+      const relevantUnknowns = decision.unknown.filter(
+        (taskId) =>
+          !sameTableProducerIds.includes(taskId) &&
+          producerMatchesField(
+            options.tableLineage,
+            taskPacks,
+            current.taskId,
+            taskId,
+            source,
+          ),
       );
       for (const unknownTaskId of relevantUnknowns) {
         const candidateId = `candidate:${current.taskId}:${unknownTaskId}:${physicalFieldKey(source)}`;
@@ -1163,14 +1363,16 @@ export function reconcileFieldLineage(
           evidenceRefs: [],
         });
       }
-      const producers = decision.primary.filter((taskId) =>
-        producerMatchesField(
-          options.tableLineage,
-          taskPacks,
-          current.taskId,
-          taskId,
-          source,
-        ),
+      const producers = decision.primary.filter(
+        (taskId) =>
+          !sameTableProducerIds.includes(taskId) &&
+          producerMatchesField(
+            options.tableLineage,
+            taskPacks,
+            current.taskId,
+            taskId,
+            source,
+          ),
       );
       for (const producerTaskId of producers) {
         if (current.depth >= options.maxDepth) {
@@ -1272,7 +1474,9 @@ export function reconcileFieldLineage(
     request: {
       rootTaskId: options.rootTaskId,
       rootTable: normalizeName(options.rootTable),
-      rootFields: options.rootFields,
+      rootWriteObservationIds: selectedRootObservationIds,
+      rootFields,
+      rootFieldSelection,
       factsPolicy: options.factsPolicy,
     },
     overallStatus,

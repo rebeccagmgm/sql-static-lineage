@@ -36,7 +36,7 @@ npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
 npm run input-pack:machine-facts -- --data-root <input-pack-root> --task-id 155015,114026,105387 --output <facts-root>
-npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <facts-root> --multi-hop-artifact <table-multi-hop.json> --task-id 155015 --target-table dm_rsk_n.v_risk_audit_log --fields entity_id,entity_field_name --facts-policy allow-legacy-partial --output <field-lineage.json> --summary-output <field-lineage.txt>
+npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <facts-root> --multi-hop-artifact <table-multi-hop.json> --task-id 155015 --target-table dm_rsk_n.v_risk_audit_log [--write-observation-id <write-observation-id>] [--fields entity_id,entity_field_name] --facts-policy allow-legacy-partial --output <field-lineage.json> --summary-output <field-lineage.txt>
 ```
 
 该命令先输出压缩后的 `viz-model-181058.json`，再渲染离线 HTML；同一物理表的多个

@@ -34,6 +34,7 @@ import {
 	type StatementRecord,
 	type SchemaReferenceRecord,
 	type DatasetIoRecord,
+	type TaskLocalMaterializationRecord,
 	type RelationNodeRecord,
 	type RelationEdgeRecord,
 	type FieldExpressionRecord,
@@ -48,6 +49,43 @@ import {
 type JsonRecord = Record<string, any>;
 type SourceSpan = { start: number; end: number };
 type SchemaAvailability = ReadonlySet<string> | Pick<Schema, "columnsFor">;
+
+function compareText(left: string, right: string): number {
+	return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function equivalentQueryOutputSignature(
+	expressions: readonly FieldExpressionRecord[],
+): string {
+	return canonicalJson(
+		expressions
+			.map((expression) => ({
+				ordinal: expression.ordinal,
+				output_name: expression.output_name ?? null,
+				output_name_status: expression.output_name_status ?? null,
+				expression_text: expression.expression_text,
+				input_fields: expression.input_fields,
+				candidate_input_fields: expression.candidate_input_fields ?? [],
+				unresolved_input_columns: expression.unresolved_input_columns,
+			}))
+			.sort((left, right) => left.ordinal - right.ordinal),
+	);
+}
+
+function dedupeEquivalentQueryOutputs<T extends {
+	readonly statementIndex: number;
+	readonly expressions: readonly FieldExpressionRecord[];
+}>(candidates: readonly T[]): T[] {
+	const seen = new Set<string>();
+	return [...candidates]
+		.sort((left, right) => left.statementIndex - right.statementIndex)
+		.filter((candidate) => {
+			const signature = equivalentQueryOutputSignature(candidate.expressions);
+			if (seen.has(signature)) return false;
+			seen.add(signature);
+			return true;
+		});
+}
 
 function hasSchemaTable(table: string, available: SchemaAvailability, dialect: string): boolean {
 	const provider = available as Partial<Pick<Schema, "columnsFor">>;
@@ -243,6 +281,13 @@ function safeTask(task: GenericTaskProfile): void {
 function normalizeWrites(task: GenericTaskProfile): string[] {
 	if (!task.writes) return [];
 	return (Array.isArray(task.writes) ? [...task.writes] : [task.writes]).filter(Boolean).map(normalizeName);
+}
+
+function sameTableReference(left: string, right: string): boolean {
+	const normalizedLeft = normalizeName(left);
+	const normalizedRight = normalizeName(right);
+	return normalizedLeft === normalizedRight ||
+		normalizedLeft.split(".").at(-1) === normalizedRight.split(".").at(-1);
 }
 
 function classifyStatement(text: string): string {
@@ -631,6 +676,7 @@ function contextHash(task: GenericTaskProfile, profile: GenericAnalysisProfile, 
 		input_pack_provenance: task.input_pack_provenance ?? null,
 		platform_target_query_output: task.platform_target_query_output ?? null,
 		write_partition_evidence: task.write_partition_evidence ?? null,
+		sql_write_partition_evidence: task.sql_write_partition_evidence ?? null,
 		include_expression_dependencies: true,
 	}));
 }
@@ -1254,6 +1300,16 @@ function buildTaskBundle(
 			queryOutputCandidates.push({ statementId, statementIndex, statementType, rawSql, expressions: producerExpressions });
 		}
 		if (parsedWrite) {
+			const sourceStatementStart = segment === undefined
+				? significantStart
+				: significantStart - segment.start;
+			const partitionEvidence = task.sql_write_partition_evidence?.find((item) =>
+				sameTableReference(item.target, parsedWrite) &&
+				(item.sql_slot === undefined || item.sql_slot === statementSlot) &&
+				(item.statement_start !== undefined
+					? item.statement_start === sourceStatementStart
+					: item.statement_ordinal === undefined || item.statement_ordinal === localOrdinal),
+			);
 			const hasCtasBoundary = statementType === "CREATE_TABLE" && /\bAS\s+(?:SELECT|WITH)\b/i.test(rawSql);
 			const writeKind = statementType === "CREATE_TABLE" ? (hasCtasBoundary ? "CTAS" : "CREATE_TABLE") : statementType;
 			const fieldProducing = hasCtasBoundary || statementType === "INSERT_OVERWRITE" || statementType === "INSERT_INTO";
@@ -1288,9 +1344,9 @@ function buildTaskBundle(
 				producerEnumerationStatus,
 				expressions: producerExpressions,
 				evidenceKind: "SQL_EXPLICIT_WRITE",
-				partitionStatus: task.write_partition_evidence?.status,
-				partitionColumns: task.write_partition_evidence?.partition_columns,
-				evidenceRefs: task.write_partition_evidence?.evidence_refs,
+				partitionStatus: partitionEvidence?.status,
+				partitionColumns: partitionEvidence?.partition_columns,
+				evidenceRefs: partitionEvidence?.evidence_refs,
 			});
 		}
 		if (cell.errors > 0) {
@@ -1306,8 +1362,9 @@ function buildTaskBundle(
 	});
 	if (task.platform_target_query_output && !hasExplicitPlatformTargetWrite) {
 		const target = normalizeName(task.platform_target_query_output.target);
-		if (queryOutputCandidates.length === 1) {
-			const candidate = queryOutputCandidates[0]!;
+		const uniqueQueryOutputCandidates = dedupeEquivalentQueryOutputs(queryOutputCandidates);
+		if (uniqueQueryOutputCandidates.length === 1) {
+			const candidate = uniqueQueryOutputCandidates[0]!;
 			const writeObservationId = `write-observation:${task.task_id}:platform-target:${candidate.statementIndex}`;
 			datasetIo.push({
 				task_id: task.task_id,
@@ -1348,7 +1405,7 @@ function buildTaskBundle(
 				task_id: task.task_id,
 				outcome_class: "NOT_EVALUABLE",
 				reason_code: "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE",
-				message: `platform target requires exactly one enumerable query producer; observed ${queryOutputCandidates.length}`,
+				message: `platform target requires exactly one enumerable query producer; observed ${uniqueQueryOutputCandidates.length} distinct outputs from ${queryOutputCandidates.length} candidates`,
 				subject: target,
 			});
 		}
@@ -1363,6 +1420,14 @@ function buildTaskBundle(
 	});
 	outputBindings.push(...outputBindingResult.bindings);
 	unknowns.push(...outputBindingResult.unknowns);
+	const taskLocalMaterializations = deriveTaskLocalMaterializations(
+		task.task_id,
+		logicalSourceId,
+		statements,
+		datasetIo,
+		expressions,
+		outputBindings,
+	);
 	const dedupedUnknowns = new Set<string>();
 	const retainedUnknowns = unknowns.filter((item) => {
 		if (item.reason_code !== "SCHEMA_BINDING_NOT_EVALUABLE" || !item.message.startsWith("physical references lack schema evidence:")) return true;
@@ -1375,7 +1440,13 @@ function buildTaskBundle(
 	for (const write of normalizeWrites(task)) {
 		datasetIo.push({ task_id: task.task_id, direction: "WRITE", dataset_id: datasetId(logicalSourceId, write), physical_dataset: write, provenance: "PROFILE_DECLARED", resolution_status: "DECLARED" });
 	}
+	const fieldProducingDatasets = new Set(
+		datasetIo
+			.filter((record) => record.direction === "WRITE" && record.field_producing === true)
+			.map((record) => normalizeName(record.physical_dataset)),
+	);
 	const declaredWritesWithoutBindings = normalizeWrites(task).filter((write) =>
+		fieldProducingDatasets.has(write) &&
 		!outputBindings.some((binding) => normalizeName(binding.target_dataset) === write),
 	);
 	if (declaredWritesWithoutBindings.length > 0) {
@@ -1403,6 +1474,7 @@ function buildTaskBundle(
 		["lineage-hop-nodes.jsonl", [], "machine-facts-lineage-hop-nodes-v1"],
 		["lineage-hop-edges.jsonl", [], "machine-facts-lineage-hop-edges-v1"],
 		["output-field-bindings.jsonl", outputBindings, "machine-facts-output-field-bindings-v1"],
+		["task-local-materializations.jsonl", taskLocalMaterializations, "machine-facts-task-local-materializations-v1"],
 		["unknowns.jsonl", unknowns, "machine-facts-unknowns-v1"],
 	] as const) {
 		const result = writeJsonl(join(staging, name), records);
@@ -1443,6 +1515,7 @@ function buildTaskBundle(
 			lineage_hop_partial_roots: hopRoots.filter((root) => root.projection_status === "PARTIAL_NATIVE").length,
 			lineage_hop_not_evaluable_roots: hopRoots.filter((root) => root.projection_status === "NOT_EVALUABLE").length,
 			output_field_bindings: outputBindings.length,
+			task_local_materializations: taskLocalMaterializations.length,
 			unknowns: unknowns.length,
 			unknowns_by_outcome: unknownsByOutcome,
 		},
@@ -1595,6 +1668,115 @@ function parseArgs(args: string[]): { profile: string; output: string; sourceId?
 		output: value("--output", "machine-facts"),
 		sourceId: args.includes("--source-id") ? value("--source-id", "") : undefined,
 	};
+}
+
+function deriveTaskLocalMaterializations(
+	taskId: string,
+	logicalSourceId: string,
+	statements: readonly StatementRecord[],
+	datasetIo: readonly DatasetIoRecord[],
+	expressions: readonly FieldExpressionRecord[],
+	outputBindings: readonly OutputFieldBindingRecord[],
+): TaskLocalMaterializationRecord[] {
+	const statementIndexes = new Map(statements.map((statement) => [statement.statement_id, statement.statement_index]));
+	const writes = datasetIo.filter((record) => record.direction === "WRITE" && typeof record.write_observation_id === "string");
+	const writeByObservation = new Map(writes.map((write) => [String(write.write_observation_id), write]));
+	const bindingsByObservation = new Map<string, OutputFieldBindingRecord[]>();
+	for (const binding of outputBindings) {
+		const values = bindingsByObservation.get(binding.write_observation_id) ?? [];
+		values.push(binding);
+		bindingsByObservation.set(binding.write_observation_id, values);
+	}
+	const fieldsByStatement = new Map<string, Map<string, { readonly table: string; readonly column: string; readonly expressionIds: Set<string> }>>();
+	for (const expression of expressions) {
+		const fields = fieldsByStatement.get(expression.statement_id) ?? new Map();
+		for (const raw of expression.input_fields) {
+			const input = typeof raw === "object" && raw !== null ? raw as JsonRecord : null;
+			const table = normalizeName(String(input?.table ?? ""));
+			const column = normalizeName(String(input?.column ?? ""));
+			if (!table || !column) continue;
+			const key = `${table}\u0000${column}`;
+			const current = fields.get(key) ?? { table, column, expressionIds: new Set<string>() };
+			current.expressionIds.add(expression.expression_id);
+			fields.set(key, current);
+		}
+		fieldsByStatement.set(expression.statement_id, fields);
+	}
+	const records: TaskLocalMaterializationRecord[] = [];
+	const reads = datasetIo.filter((record) => record.direction === "READ");
+	for (const read of reads) {
+		const readStatementId = String(read.statement_id ?? "");
+		const readStatementIndex = statementIndexes.get(readStatementId);
+		const physicalDataset = normalizeName(String(read.physical_dataset ?? ""));
+		if (!readStatementId || readStatementIndex === undefined || !physicalDataset) continue;
+		const fields = [...(fieldsByStatement.get(readStatementId)?.values() ?? [])]
+			.filter((field) => field.table === physicalDataset)
+			.sort((left, right) => compareText(`${left.table}.${left.column}`, `${right.table}.${right.column}`));
+		if (fields.length === 0) continue;
+		const priorWrites = writes
+			.filter((write) => {
+				const writeStatementId = String(write.write_statement_id ?? write.statement_id ?? "");
+				const writeStatementIndex = statementIndexes.get(writeStatementId);
+				return normalizeName(String(write.physical_dataset ?? "")) === physicalDataset && writeStatementIndex !== undefined && writeStatementIndex < readStatementIndex;
+			})
+			.sort((left, right) => (statementIndexes.get(String(left.write_statement_id ?? left.statement_id ?? "")) ?? 0) - (statementIndexes.get(String(right.write_statement_id ?? right.statement_id ?? "")) ?? 0) || compareText(String(left.write_observation_id), String(right.write_observation_id)));
+		if (priorWrites.length === 0) continue;
+		for (const field of fields) {
+			const candidates = priorWrites.flatMap((write) =>
+				(bindingsByObservation.get(String(write.write_observation_id)) ?? []).filter((binding) =>
+					normalizeName(binding.target_dataset) === physicalDataset && normalizeName(binding.target_field) === field.column,
+				),
+			);
+			const bridgeId = `task-local-materialization:${taskId}:${readStatementId}:${physicalDataset}:${field.column}`;
+			const evidenceRefs = ["statements.jsonl", "dataset-io.jsonl", "field-expression-nodes.jsonl", "output-field-bindings.jsonl"] as const;
+			if (priorWrites.length === 1 && candidates.length === 1) {
+				const binding = candidates[0]!;
+				const write = writeByObservation.get(binding.write_observation_id);
+				const writeStatementId = String(write?.write_statement_id ?? write?.statement_id ?? binding.write_statement_id);
+				const writeStatementIndex = statementIndexes.get(writeStatementId);
+				if (write && writeStatementIndex !== undefined) {
+					records.push({
+						bridge_id: bridgeId,
+						task_id: taskId,
+						logical_source_id: logicalSourceId,
+						physical_dataset: physicalDataset,
+						column: field.column,
+						write_observation_id: binding.write_observation_id,
+						write_statement_id: writeStatementId,
+						read_statement_id: readStatementId,
+						write_statement_index: writeStatementIndex,
+						read_statement_index: readStatementIndex,
+						output_binding_id: binding.binding_id,
+						read_expression_ids: [...field.expressionIds].sort(compareText),
+						status: "RESOLVED",
+						provenance: "SAME_TASK_SQL_WRITE_READ",
+						evidence_refs: evidenceRefs,
+					});
+					continue;
+				}
+			}
+			records.push({
+				bridge_id: bridgeId,
+				task_id: taskId,
+				logical_source_id: logicalSourceId,
+				physical_dataset: physicalDataset,
+				column: field.column,
+				write_observation_id: null,
+				write_statement_id: null,
+				read_statement_id: readStatementId,
+				write_statement_index: priorWrites.length === 1
+					? statementIndexes.get(String(priorWrites[0]!.write_statement_id ?? priorWrites[0]!.statement_id ?? "")) ?? -1
+					: -1,
+				read_statement_index: readStatementIndex,
+				output_binding_id: null,
+				read_expression_ids: [...field.expressionIds].sort(compareText),
+				status: candidates.length > 1 || priorWrites.length > 1 ? "AMBIGUOUS" : "UNRESOLVED",
+				provenance: "SAME_TASK_SQL_WRITE_READ",
+				evidence_refs: evidenceRefs,
+			});
+		}
+	}
+	return [...records].sort((left, right) => compareText(left.bridge_id, right.bridge_id));
 }
 
 if (process.argv[1] && basename(process.argv[1]).startsWith("machine-facts")) {

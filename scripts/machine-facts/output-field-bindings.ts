@@ -347,6 +347,9 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE", "platform target requires exactly one enumerable query producer", write.target, { uncovered_ordinals: uncovered }));
 			continue;
 		}
+		const target = parsedInsert?.target ?? create?.target ?? write.target;
+		const schemaRef = schemaForTarget(target, input.schemaRefs, input.declaredWrites);
+		const dataset = resolvedDataset(target, schemaRef, input.declaredWrites);
 		if (
 			isPlatformTarget &&
 			write.partitionStatus !== "NOT_PARTITIONED" &&
@@ -386,9 +389,6 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			continue;
 		}
 
-		const target = parsedInsert?.target ?? create?.target ?? write.target;
-		const schemaRef = schemaForTarget(target, input.schemaRefs, input.declaredWrites);
-		const dataset = resolvedDataset(target, schemaRef, input.declaredWrites);
 		const physicalColumns = nonPartitionColumns(schemaRef);
 		if (isPlatformTarget && !schemaRef) {
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_SCHEMA_NOT_PROVABLE", "platform target query output requires target Table Pack Schema evidence", dataset, { uncovered_ordinals: uncovered }));

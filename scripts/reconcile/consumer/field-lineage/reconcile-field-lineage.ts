@@ -2,7 +2,10 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { basename, dirname, join, resolve } from "node:path";
 
 import { canonicalJson } from "../../../machine-facts/machine-facts-contract.ts";
-import { runInputPackMachineFacts } from "../../../machine-facts/input-pack-machine-facts.ts";
+import {
+	loadPhysicalTableCatalog,
+	runInputPackMachineFacts,
+} from "../../../machine-facts/input-pack-machine-facts.ts";
 import { reconcileFieldLineage } from "./field-lineage.ts";
 import { formatFieldLineageSummary } from "./format-field-lineage.ts";
 import type { FactsPolicy } from "./field-lineage-contract.ts";
@@ -13,6 +16,7 @@ interface CliOptions {
 	readonly multiHopArtifact: string;
 	readonly taskId: string;
 	readonly targetTable: string;
+	readonly writeObservationIds?: readonly string[];
 	readonly fields: readonly string[];
 	readonly factsPolicy: FactsPolicy;
 	readonly maxDepth: number;
@@ -42,11 +46,13 @@ function parseCli(args: readonly string[]): CliOptions {
 	const multiHopArtifact = option(args, "--multi-hop-artifact");
 	const taskId = option(args, "--task-id");
 	const targetTable = option(args, "--target-table");
+	const writeObservationIdsValue = option(args, "--write-observation-ids") ?? option(args, "--write-observation-id") ?? option(args, "--root-write-observation-id");
+	const writeObservationIds = writeObservationIdsValue?.split(",").map((value) => value.trim()).filter(Boolean);
 	const fields = (option(args, "--fields") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
 	const output = option(args, "--output");
 	const factsPolicy = (option(args, "--facts-policy") ?? "current-only") as FactsPolicy;
-	if (!dataRoot || !factsRoot || !multiHopArtifact || !taskId || !targetTable || fields.length === 0 || !output)
-		throw new Error("usage: reconcile-field-lineage --data-root <path> --facts-root <path> --multi-hop-artifact <json> --task-id <id> --target-table <qualified> --fields <a,b> --output <json> [--summary-output <txt>] [--facts-policy current-only|allow-legacy-partial]");
+	if (!dataRoot || !factsRoot || !multiHopArtifact || !taskId || !targetTable || !output)
+		throw new Error("usage: reconcile-field-lineage --data-root <path> --facts-root <facts-root> --multi-hop-artifact <json> --task-id <id> --target-table <qualified> [--write-observation-id <id[,id...]>] [--fields <a,b>] --output <json> [--summary-output <txt>] [--facts-policy current-only|allow-legacy-partial]");
 	if (factsPolicy !== "current-only" && factsPolicy !== "allow-legacy-partial") throw new Error("--facts-policy is invalid");
 	return {
 		dataRoot,
@@ -54,6 +60,7 @@ function parseCli(args: readonly string[]): CliOptions {
 		multiHopArtifact,
 		taskId,
 		targetTable,
+		writeObservationIds,
 		fields,
 		factsPolicy,
 		maxDepth: integerOption(args, "--max-depth", 8),
@@ -83,33 +90,53 @@ function availableTaskIds(dataRoot: string): Set<string> {
 
 export function runFieldLineageCli(options: CliOptions): ReturnType<typeof reconcileFieldLineage> {
 	const tableLineage = JSON.parse(readFileSync(resolve(options.multiHopArtifact), "utf8")) as Record<string, unknown>;
-	if (options.prepareFacts) {
-		const available = availableTaskIds(options.dataRoot);
-		const taskIds = new Set<string>([options.taskId]);
-		for (const raw of Array.isArray(tableLineage.taskNodes) ? tableLineage.taskNodes : []) {
-			if (raw && typeof raw === "object" && typeof (raw as { taskId?: unknown }).taskId === "string") taskIds.add((raw as { taskId: string }).taskId);
-		}
-		for (const taskId of [...taskIds].filter((id) => available.has(id)).sort()) {
-			try {
-				runInputPackMachineFacts({ dataRoot: options.dataRoot, taskIds: [taskId], outputRoot: options.factsRoot });
-			} catch (error) {
-				if (taskId === options.taskId) throw error;
-				process.stderr.write(`Machine Facts preparation skipped ${taskId}: ${error instanceof Error ? error.message : String(error)}\n`);
-			}
-		}
-	}
-	const artifact = reconcileFieldLineage({
+	const reconcile = (): ReturnType<typeof reconcileFieldLineage> => reconcileFieldLineage({
 		dataRoot: options.dataRoot,
 		factsRoot: options.factsRoot,
 		tableLineage,
 		rootTaskId: options.taskId,
 		rootTable: options.targetTable,
+		rootWriteObservationIds: options.writeObservationIds,
 		rootFields: options.fields,
 		factsPolicy: options.factsPolicy,
 		maxDepth: options.maxDepth,
 		maxStates: options.maxStates,
 		maxPaths: options.maxPaths,
 	});
+	let artifact: ReturnType<typeof reconcileFieldLineage>;
+	if (options.prepareFacts) {
+		const available = availableTaskIds(options.dataRoot);
+		const tableCatalog = loadPhysicalTableCatalog(options.dataRoot);
+		const attempted = new Set<string>();
+		const prepare = (taskIds: readonly string[]): void => {
+			for (const taskId of [...new Set(taskIds)].filter((id) => available.has(id) && !attempted.has(id)).sort()) {
+				attempted.add(taskId);
+				try {
+					runInputPackMachineFacts({
+						dataRoot: options.dataRoot,
+						taskIds: [taskId],
+						outputRoot: options.factsRoot,
+						tableCatalog,
+					});
+				} catch (error) {
+					if (taskId === options.taskId) throw error;
+					process.stderr.write(`Machine Facts preparation skipped ${taskId}: ${error instanceof Error ? error.message : String(error)}\n`);
+				}
+			}
+		};
+
+		prepare([options.taskId]);
+		artifact = reconcile();
+		while (true) {
+			const missingTaskIds = artifact.gaps
+				.filter((gap) => gap.reasonCode === "MACHINE_FACTS_UNAVAILABLE")
+				.map((gap) => gap.taskId)
+				.filter((taskId) => available.has(taskId) && !attempted.has(taskId));
+			if (missingTaskIds.length === 0) break;
+			prepare(missingTaskIds);
+			artifact = reconcile();
+		}
+	} else artifact = reconcile();
 	const output = resolve(options.output);
 	mkdirSync(dirname(output), { recursive: true });
 	writeFileSync(output, `${canonicalJson(artifact)}\n`, "utf8");
