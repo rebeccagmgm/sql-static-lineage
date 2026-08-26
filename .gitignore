@@ -2,6 +2,7 @@
 /dist/
 .evidence-cache/
 *.input-pack-status.json
+desktop.ini
 
 # Local inspection outputs and temporary dependencies
 /tmp/node_modules/
