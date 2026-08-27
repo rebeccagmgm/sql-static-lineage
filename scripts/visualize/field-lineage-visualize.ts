@@ -404,7 +404,7 @@ function relationTitle(relationType: string, relationId: string): string {
   }
 }
 
-function taskFieldNodeIds(
+function selectedFieldNodes(
   artifact: FieldLineageVisualizationArtifact,
   field: string,
 ): { readonly nodeIds: readonly string[]; readonly taskIds: readonly string[] } {
@@ -447,22 +447,42 @@ function codeFlowForField(
   artifact: FieldLineageVisualizationArtifact,
   field: string,
   factsByTask: ReadonlyMap<string, CodeFactBundle | null>,
-  stepByKey: Map<string, FieldLineageCodeFlowStep>,
+  stepById: Map<string, FieldLineageCodeFlowStep>,
 ): FieldLineageCodeFlowField {
   const nodeById = new Map(artifact.nodes.map((node) => [node.nodeId, node]));
-  const selected = taskFieldNodeIds(artifact, field);
+  const selected = selectedFieldNodes(artifact, field);
+  const selectedNodeIds = new Set(selected.nodeIds);
+  const boundaryNodeIds = new Set(
+    artifact.rootNodeIds.filter((nodeId) => selectedNodeIds.has(nodeId)),
+  );
+  artifact.edges.forEach((edge) => {
+    if (!selectedNodeIds.has(edge.fromNodeId) || !selectedNodeIds.has(edge.toNodeId)) return;
+    const from = nodeById.get(edge.fromNodeId);
+    const to = nodeById.get(edge.toNodeId);
+    if (from && to && from.taskId !== to.taskId) boundaryNodeIds.add(edge.fromNodeId);
+  });
   const nodesByTask = new Map<string, FieldLineageNode[]>();
-  selected.nodeIds.forEach((nodeId) => {
+  [...boundaryNodeIds].forEach((nodeId) => {
     const node = nodeById.get(nodeId);
     if (!node) return;
     const nodes = nodesByTask.get(node.taskId) ?? [];
     nodes.push(node);
     nodesByTask.set(node.taskId, nodes);
   });
+  selected.taskIds.forEach((taskId) => {
+    if (nodesByTask.has(taskId)) return;
+    const fallback = selected.nodeIds
+      .map((nodeId) => nodeById.get(nodeId))
+      .find((node) => node?.taskId === taskId);
+    if (fallback) nodesByTask.set(taskId, [fallback]);
+  });
+
   const stepIds: string[] = [];
+  const stepIdSet = new Set<string>();
   const appendStep = (step: FieldLineageCodeFlowStep): void => {
-    if (stepIds.includes(step.stepId)) return;
-    stepByKey.set(step.stepId, stepByKey.get(step.stepId) ?? step);
+    if (stepIdSet.has(step.stepId)) return;
+    stepIdSet.add(step.stepId);
+    stepById.set(step.stepId, stepById.get(step.stepId) ?? step);
     stepIds.push(step.stepId);
   };
   let factsBacked = false;
@@ -530,7 +550,6 @@ function codeFlowForField(
         if (input.table) relevantTables.add(input.table);
       });
     });
-
     expressions.forEach((expression) => {
       const expressionId = recordString(expression, "expression_id");
       const expressionText = recordString(expression, "expression_text");
@@ -581,7 +600,6 @@ function codeFlowForField(
         relationQueue.push(parentId);
       }
     }
-
     const candidates: CodeRelationCandidate[] = [];
     for (const [relationId, distance] of distanceByRelation) {
       const relation = relationById.get(relationId);
@@ -679,7 +697,6 @@ function codeFlowForField(
         });
         factsBacked = true;
       });
-
     if (expressions.length === 0 && candidates.length === 0) {
       nodes.forEach((node) => {
         if (!node.expressionText) return;
@@ -781,6 +798,7 @@ export function renderFieldLineageHtml(
 .task-flow{min-width:0;max-width:100%;width:100%;overflow-x:auto}.branch-detail-body{min-width:0;overflow:hidden}
 .impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
 .code-layout{max-width:1400px;margin:0 auto;padding:18px 22px}.code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.code-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.code-picker select{min-width:240px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--text);font:inherit}.code-status{color:var(--muted);font-size:12px;text-align:right}.code-status strong{color:var(--flow);font-weight:600}.code-flow{display:grid;gap:10px}.code-step{border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:7px;background:var(--surface);overflow:hidden}.code-step[data-mode="EXPRESSION_ONLY"]{border-left-color:var(--candidate)}.code-step summary{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;list-style:none}.code-step summary::-webkit-details-marker{display:none}.code-step summary::before{content:"›";color:var(--flow);font-size:20px;transition:transform .15s ease}.code-step[open] summary::before{transform:rotate(90deg)}.code-step summary:hover{background:var(--surface-2)}.code-step-index{color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.code-step-title{font-weight:600;overflow-wrap:anywhere}.code-step-meta{color:var(--muted);font-size:11px;text-align:right;white-space:nowrap}.code-step-body{padding:0 13px 13px;border-top:1px solid var(--line)}.code-step-note{display:flex;gap:8px;flex-wrap:wrap;padding:9px 0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.code-step-note strong{color:var(--flow);font-weight:500}.sql-code{margin:0;max-height:390px;overflow:auto;padding:14px 16px;background:#111a22;color:#dce7ed;border:1px solid #2b3a45;border-radius:6px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;tab-size:2;white-space:pre}.sql-keyword{color:#7dd3fc;font-weight:600}.sql-function{color:#c4b5fd}.sql-string{color:#fbbf80}.sql-number{color:#f0abfc}.sql-comment{color:#7f9ba8;font-style:italic}.sql-parameter{color:#86efac}.sql-identifier{color:#d7dee4}.sql-operator{color:#fda4af}.code-empty{padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--muted)}@media(max-width:720px){.code-layout{padding:14px}.code-toolbar{display:block}.code-status{text-align:left;margin-top:8px}.code-picker select{min-width:0;max-width:100%}.code-step summary{grid-template-columns:24px minmax(0,1fr)}.code-step-meta{grid-column:2;text-align:left;white-space:normal}.sql-code{font-size:11px}}
+.code-task-divider{margin-top:10px;padding:7px 3px 2px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -875,7 +893,16 @@ function codeStepHtml(step,index){
   const span=step.sourceSpan?"SQL span "+step.sourceSpan.start+"–"+step.sourceSpan.end:"未提供 SQL span";
   const evidence=step.evidenceMode==="FACTS_BACKED"?"facts 原始片段":"字段产物表达式";
   const taskName=step.taskName?" · "+step.taskName:"";
-  return '<details class="code-step" data-mode="'+esc(step.evidenceMode)+'"'+(index<2?' open':'')+'><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"><div class="code-step-note"><strong>'+esc(evidence)+'</strong><span>'+esc(span)+'</span>'+(step.relationId?'<span>'+esc(step.relationId)+'</span>':'')+'</div><pre class="sql-code"><code>'+highlightSql(step.sourceText)+'</code></pre></div></details>';
+  return '<details class="code-step" data-step-id="'+esc(step.stepId)+'" data-mode="'+esc(step.evidenceMode)+'"'+(index<2?' open':'')+'><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"></div></details>';
+}
+function hydrateCodeStep(detail){
+  if(detail.dataset.hydrated==="true")return;
+  const step=codeStepById.get(detail.dataset.stepId),body=detail.querySelector(".code-step-body");
+  if(!step||!body)return;
+  const span=step.sourceSpan?"SQL span "+step.sourceSpan.start+"–"+step.sourceSpan.end:"未提供 SQL span";
+  const evidence=step.evidenceMode==="FACTS_BACKED"?"facts 原始片段":"字段产物表达式";
+  body.innerHTML='<div class="code-step-note"><strong>'+esc(evidence)+'</strong><span>'+esc(span)+'</span>'+(step.relationId?'<span>'+esc(step.relationId)+'</span>':'')+'</div><pre class="sql-code"><code>'+highlightSql(step.sourceText)+'</code></pre>';
+  detail.dataset.hydrated="true";
 }
 function renderCode(field){
   const flow=CODE_FLOW.fields[field]||{stepIds:[],taskIds:[],status:"UNAVAILABLE",note:"当前字段没有可展示的代码证据。"};
@@ -883,7 +910,16 @@ function renderCode(field){
   const statusLabel=flow.status==="FACTS_BACKED"?"FACTS SQL":flow.status==="EXPRESSION_ONLY"?"仅表达式":"不可用";
   codeStatus.innerHTML='<strong>'+esc(statusLabel)+'</strong> · '+esc(flow.note)+' · '+flow.stepIds.length+' 个代码步骤';
   const steps=flow.stepIds.map((stepId)=>codeStepById.get(stepId)).filter(Boolean);
-  codeFlow.innerHTML=steps.length?steps.map((step,index)=>codeStepHtml(step,index)).join(""): '<div class="code-empty">'+esc(flow.note)+'</div>';
+  if(!steps.length){codeFlow.innerHTML='<div class="code-empty">'+esc(flow.note)+'</div>';return;}
+  let previousTask="",html="";
+  steps.forEach((step,index)=>{
+    if(step.taskId!==previousTask){html+='<div class="code-task-divider">Task '+esc(step.taskId)+(step.taskName?' · '+esc(step.taskName):'')+'</div>';previousTask=step.taskId;}
+    html+=codeStepHtml(step,index);
+  });
+  codeFlow.innerHTML=html;
+  const details=[...codeFlow.querySelectorAll(".code-step")];
+  details.forEach((detail)=>detail.addEventListener("toggle",()=>{if(detail.open)hydrateCodeStep(detail)}));
+  details.slice(0,2).forEach((detail)=>hydrateCodeStep(detail));
 }
 codeFieldSelect.innerHTML=fields.map((field)=>'<option value="'+esc(field)+'">'+esc(field)+'</option>').join("");
 codeFieldSelect.addEventListener("change",()=>render(codeFieldSelect.value));

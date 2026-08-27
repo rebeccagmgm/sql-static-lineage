@@ -1469,7 +1469,7 @@ describe("field multi-hop lineage", () => {
     expect(validateFieldLineageArtifact(artifact)).toEqual([]);
   });
 
-  it("bridges a bare-name Task-local write when the Task default schema is present", () => {
+  it("bridges a bare-name Task-local materialization and keeps it attached to its preceding write", () => {
     const parent = mkdtempSync(join(tmpdir(), "field-lineage-task-local-schema-"));
     const dataRoot = join(parent, "data");
     const factsRoot = join(parent, "facts");
