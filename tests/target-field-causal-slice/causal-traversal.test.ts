@@ -203,6 +203,14 @@ describe("causal traversal", () => {
     expect(rootResult.paths.map((path) => path.pathId)).toEqual(
       [...rootResult.paths.map((path) => path.pathId)].sort(),
     );
+    expect(
+      rootResult.paths
+        .flatMap((path) => path.edges)
+        .filter((edge) => edge.fromTaskId !== edge.toTaskId)
+        .map((edge) => edge.readOccurrenceId)
+        .filter((value): value is string => value !== undefined)
+        .sort(),
+    ).toEqual(["read-a", "read-b"]);
   });
 
   it("keeps fieldless relation dependencies and blocks closure without a relation expander", () => {

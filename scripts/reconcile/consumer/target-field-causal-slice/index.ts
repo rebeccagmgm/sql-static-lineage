@@ -5,3 +5,6 @@ export * from "./semantic-dependency-normalizer.ts";
 export * from "./calcite-semantic-mapping.ts";
 export * from "./candidate-universe.ts";
 export * from "./causal-traversal.ts";
+export * from "./causal-assessment.ts";
+export * from "./causal-negative-proof.ts";
+export * from "./rerun-sets.ts";

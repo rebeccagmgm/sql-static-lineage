@@ -109,11 +109,14 @@ export interface CausalTraversalGap {
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly subject: SemanticSubject | null;
+  /** Absent means global to the subject; present means this exact read occurrence only. */
+  readonly readOccurrenceId?: string;
   /** Owns budget, closure, and gap classification independently of local edge semantics. */
   readonly rootDependenceKind: RootDependenceKind;
   readonly frontierKind: TraversalFrontierKind;
   readonly reasonCode:
     | "TASK_SEMANTIC_FACTS_MISSING"
+    | "SEMANTIC_SUBJECT_DEPENDENCY_MISSING"
     | "PHYSICAL_EXPANSION_UNAVAILABLE"
     | "RELATION_EXPANSION_UNAVAILABLE"
     | "REQUIRED_EVIDENCE_UNRESOLVED"
@@ -139,6 +142,8 @@ export interface CausalTraversalPathEdge {
   readonly frontierKind: TraversalFrontierKind;
   readonly pathCertainty: PathCertainty;
   readonly dependencyId: string | null;
+  /** Present on cross-Task physical bridges; required for occurrence-exact assessment mapping. */
+  readonly readOccurrenceId?: string;
   readonly evidenceRefs: readonly string[];
 }
 
@@ -190,6 +195,7 @@ type TraversalSubject = {
   readonly active: ReadonlySet<string>;
   readonly path: readonly CausalTraversalPathEdge[];
   readonly readOccurrenceId?: string;
+  readonly relationTerminalObserved?: boolean;
 };
 
 type MutableRootResult = {
@@ -347,6 +353,7 @@ function makeGap(input: {
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly subject: SemanticSubject | null;
+  readonly readOccurrenceId?: string;
   readonly rootDependenceKind: RootDependenceKind;
   readonly frontierKind: TraversalFrontierKind;
   readonly reasonCode: CausalTraversalGap["reasonCode"];
@@ -361,6 +368,7 @@ function makeGap(input: {
         rootTargetFieldId: input.rootTargetFieldId,
         taskId: input.taskId,
         subject: input.subject,
+        readOccurrenceId: input.readOccurrenceId ?? null,
         rootDependenceKind: input.rootDependenceKind,
         frontierKind: input.frontierKind,
         reasonCode: input.reasonCode,
@@ -459,6 +467,9 @@ function makeLocalEdge(args: {
     frontierKind: frontier,
     pathCertainty: args.pathCertainty,
     dependencyId: args.dependencyId,
+    ...(args.readOccurrenceId === undefined
+      ? {}
+      : { readOccurrenceId: args.readOccurrenceId }),
     evidenceRefs: sortedUnique(args.evidenceRefs),
   };
 }
@@ -517,6 +528,7 @@ function addDependencyGap(
       rootTargetFieldId: result.root.rootTargetFieldId,
       taskId: state.taskId,
       subject: edge.fromSubject,
+      readOccurrenceId: state.readOccurrenceId,
       rootDependenceKind,
       frontierKind: frontierKind(edge.localEdgeKind),
       reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
@@ -535,8 +547,11 @@ function processRoot(
   const result = createMutableRoot(root);
   const frontier: TraversalSubject[] = [initialState(root)];
 
-  const expandPhysicalState = (state: TraversalSubject): void => {
-    if (state.localEdgeKind === null || state.subject.subjectKind !== "PHYSICAL_FIELD") return;
+  const expandPhysicalState = (
+    state: TraversalSubject,
+  ): "NOT_APPLICABLE" | "BLOCKED" | "EXPANDED" | "TERMINAL" => {
+    if (state.localEdgeKind === null || state.subject.subjectKind !== "PHYSICAL_FIELD")
+      return "NOT_APPLICABLE";
     const kind = state.frontierKind;
     const active = new Set([...state.active, activeKey(state)]);
     if (state.readOccurrenceId !== undefined)
@@ -550,24 +565,26 @@ function processRoot(
         rootTargetFieldId: root.rootTargetFieldId,
         taskId: state.taskId,
         subject: state.subject,
+        readOccurrenceId: state.readOccurrenceId,
         rootDependenceKind: state.rootDependenceKind,
         frontierKind: kind,
         reasonCode: "PHYSICAL_EXPANSION_UNAVAILABLE",
         message: "canonical physical-field expansion callback is unavailable",
       }));
-      return;
+      return "BLOCKED";
     }
     if (!physicalField) {
       addGap(result, makeGap({
         rootTargetFieldId: root.rootTargetFieldId,
         taskId: state.taskId,
         subject: state.subject,
+        readOccurrenceId: state.readOccurrenceId,
         rootDependenceKind: state.rootDependenceKind,
         frontierKind: kind,
         reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
         message: `physical identity ${state.subject.physicalFieldId} cannot be resolved for canonical expansion`,
       }));
-      return;
+      return "BLOCKED";
     }
     const expansion = input.expandPhysicalField({
       rootTargetFieldId: root.rootTargetFieldId,
@@ -586,6 +603,7 @@ function processRoot(
         rootTargetFieldId: root.rootTargetFieldId,
         taskId: expansionGap.taskId,
         subject: state.subject,
+        readOccurrenceId: state.readOccurrenceId,
         rootDependenceKind: state.rootDependenceKind,
         frontierKind: kind,
         reasonCode: expansionGap.reasonCode.startsWith("MAX_DEPTH")
@@ -595,7 +613,8 @@ function processRoot(
         evidenceRefs: expansionGap.evidenceRefs,
       }));
     }
-    if (expansion.ambiguous) return;
+    if (expansion.ambiguous) return "BLOCKED";
+    let expandedProducer = false;
     for (const producer of expansion.producers) {
       const producerCertainty = worstCertainty(
         state.pathCertainty,
@@ -639,6 +658,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: state.taskId,
             subject: producerSubject,
+            readOccurrenceId: occurrenceId,
             rootDependenceKind: state.rootDependenceKind,
             frontierKind: "VALUE",
             reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
@@ -670,6 +690,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: producer.producerTaskId,
             subject: producerSubject,
+            readOccurrenceId: occurrenceId,
             rootDependenceKind: state.rootDependenceKind,
             frontierKind: "VALUE",
             reasonCode: "CYCLE",
@@ -681,6 +702,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: producer.producerTaskId,
             subject: producerSubject,
+            readOccurrenceId: occurrenceId,
             rootDependenceKind: state.rootDependenceKind,
             frontierKind: "VALUE",
             reasonCode: "MAX_DEPTH_REACHED",
@@ -689,9 +711,14 @@ function processRoot(
           }));
         } else {
           frontier.push(next);
+          expandedProducer = true;
         }
       }
     }
+    if (expandedProducer) return "EXPANDED";
+    return expansion.producers.length === 0 && expansion.gaps.length === 0
+      ? "TERMINAL"
+      : "BLOCKED";
   };
 
   while (frontier.length > 0) {
@@ -724,6 +751,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: state.taskId,
             subject: state.subject,
+            readOccurrenceId: state.readOccurrenceId,
             rootDependenceKind: state.rootDependenceKind,
             frontierKind: state.frontierKind,
             reasonCode: `MAX_${limits.prefix}_STATES_REACHED`,
@@ -743,7 +771,7 @@ function processRoot(
         state.pathCertainty,
         state.rootDependenceKind,
       );
-    expandPhysicalState(state);
+    const physicalExpansionState = expandPhysicalState(state);
 
     const dependencies = normalizationFor(input, state.taskId, state.subject);
     if (dependencies === null) {
@@ -753,10 +781,31 @@ function processRoot(
           rootTargetFieldId: root.rootTargetFieldId,
           taskId: state.taskId,
           subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
           rootDependenceKind: state.rootDependenceKind,
           frontierKind: state.frontierKind,
           reasonCode: "TASK_SEMANTIC_FACTS_MISSING",
           message: `no semantic dependency normalization is available for ${subjectKey(state.subject)}`,
+        }),
+      );
+      continue;
+    }
+    if (
+      dependencies.length === 0 &&
+      physicalExpansionState !== "TERMINAL" &&
+      state.relationTerminalObserved !== true
+    ) {
+      addGap(
+        result,
+        makeGap({
+          rootTargetFieldId: root.rootTargetFieldId,
+          taskId: state.taskId,
+          subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
+          rootDependenceKind: state.rootDependenceKind,
+          frontierKind: state.frontierKind,
+          reasonCode: "SEMANTIC_SUBJECT_DEPENDENCY_MISSING",
+          message: `semantic facts do not contain a dependency targeting ${subjectKey(state.subject)}`,
         }),
       );
       continue;
@@ -783,6 +832,7 @@ function processRoot(
         pathCertainty: nextCertainty,
         dependencyId: dependency.dependencyId,
         evidenceRefs: dependency.proofRefs.map((ref) => ref.refId),
+        readOccurrenceId: state.readOccurrenceId,
       });
       const path = [...state.path, edge];
       const dependencyLimits = limitFor(nextRootDependenceKind, options);
@@ -796,6 +846,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: state.taskId,
             subject: dependency.fromSubject,
+            readOccurrenceId: state.readOccurrenceId,
             rootDependenceKind: nextRootDependenceKind,
             frontierKind: nextKind,
             reasonCode: `MAX_${dependencyLimits.prefix}_PATHS_REACHED`,
@@ -829,6 +880,7 @@ function processRoot(
         pathCertainty: nextCertainty,
         active: currentActive,
         path,
+        readOccurrenceId: state.readOccurrenceId,
       };
       if (
         currentActive.has(activeKey(next)) ||
@@ -842,6 +894,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: state.taskId,
             subject: dependency.fromSubject,
+            readOccurrenceId: state.readOccurrenceId,
             rootDependenceKind: nextRootDependenceKind,
             frontierKind: nextKind,
             reasonCode: "CYCLE",
@@ -858,6 +911,7 @@ function processRoot(
             rootTargetFieldId: root.rootTargetFieldId,
             taskId: state.taskId,
             subject: dependency.fromSubject,
+            readOccurrenceId: state.readOccurrenceId,
             rootDependenceKind: nextRootDependenceKind,
             frontierKind: nextKind,
             reasonCode: "MAX_DEPTH_REACHED",
@@ -875,6 +929,7 @@ function processRoot(
               rootTargetFieldId: root.rootTargetFieldId,
               taskId: state.taskId,
               subject: dependency.fromSubject,
+              readOccurrenceId: state.readOccurrenceId,
               rootDependenceKind: nextRootDependenceKind,
               frontierKind: nextKind,
               reasonCode: "RELATION_EXPANSION_UNAVAILABLE",
@@ -913,6 +968,8 @@ function processRoot(
             pathCertainty: occurrenceCertainty,
             active: currentActive,
             path: next.path,
+            readOccurrenceId: state.readOccurrenceId,
+            relationTerminalObserved: true,
           };
           if (!currentActive.has(activeKey(nextRelation))) frontier.push(nextRelation);
         }

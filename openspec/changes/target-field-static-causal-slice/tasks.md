@@ -32,9 +32,9 @@
 
 - [x] 5.1 Project Candidate Universe from the matching table multi-hop artifact, including ROOT_WRITE, PHYSICAL_PRODUCER, SCHEDULE_ONLY, UNBOUND_READ, BLOCKED_READ, and coverage boundaries.
 - [x] 5.2 Generate stable candidate branch IDs without producerRole and validate that every root-target-field × candidate-branch pair is represented exactly once.
-- [ ] 5.3 Implement positive evidence closure and `CONFIRMED_RELATED / CONDITIONAL_RELATED / UNKNOWN` assessments with mandatory proof/gap references.
-- [ ] 5.4 Implement negative proof and known-cut propagation for `PROVEN_UNRELATED`, restricted to fully observed and already enumerated candidate subtrees.
-- [ ] 5.5 Generate the minimum confirmed rerun set and conservative safety rerun set with target-field, candidate-branch, proof, and gap references.
+- [x] 5.3 Implement positive evidence closure and `CONFIRMED_RELATED / CONDITIONAL_RELATED / UNKNOWN` assessments with mandatory proof/gap references.
+- [x] 5.4 Implement negative proof and known-cut propagation for `PROVEN_UNRELATED`, restricted to fully observed and already enumerated candidate subtrees.
+- [x] 5.5 Generate the minimum confirmed rerun set and conservative safety rerun set with target-field, candidate-branch, proof, and gap references.
 
 ## 6. Independent artifact, CLI, summary, and HTML
 
