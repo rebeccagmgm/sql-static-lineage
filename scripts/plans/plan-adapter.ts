@@ -263,7 +263,7 @@ function expressionRoleBindings(
 		const offset = (ref as RefWithOffset)._cellOffset;
 		if (offset != null && !byOffset.has(offset)) byOffset.set(offset, ref);
 	}
-	return expressionRoleNodes(expression).map((role) => {
+	return expressionRoleNodes(expression, dialect).map((role) => {
 		const inputColumns = inputColumnsFor(
 			role.expression,
 			scope,
@@ -414,7 +414,7 @@ function windowSpecOf(
 			status: "UNKNOWN",
 			expression_text: null,
 			display_text: null,
-			span: null,
+			span: spanOf(cellBase, window.cst as any),
 			input_columns: [],
 			reason: "canonical WindowSpec IR does not expose frame bounds",
 		},
@@ -1619,6 +1619,7 @@ export function buildPlanFacts(
         field: "span",
         reason:
           "Top-N full construct span is UNKNOWN: Scope does not expose a trustworthy owning QueryExpr/CST span",
+        span: spanOf(cellBase, scope.body.cst),
       });
     }
     const topN: TopNRelation = {
@@ -1690,6 +1691,7 @@ export function buildPlanFacts(
           node_id: id,
           field: "branches",
           reason: "setop 无 branches (sql-static-lineage 未建模分支)",
+          span: spanOf(cellBase, body.cst),
         });
       }
       rootIds.set(scope, id);
@@ -1712,6 +1714,7 @@ export function buildPlanFacts(
         node_id: id,
         field: "body",
         reason: `body.kind=${body.kind} 未建模 (v1 范围: select)`,
+        span: spanOf(cellBase, body.cst),
       });
       rootIds.set(scope, id);
       return id;
@@ -1743,6 +1746,13 @@ export function buildPlanFacts(
         const r: ReadRelation = {
           id,
           type: "read",
+			read_occurrence_id: id,
+			read_occurrence: {
+				occurrence_id: id,
+				relation_id: id,
+				scope_id: path,
+				source_span: spanOf(cellBase, src.source.cst),
+			},
           table: rel?.fqn ?? key,
           binding: key,
           columns: null, // 列清单需 qualify 展开, v1 不填充
@@ -1942,29 +1952,33 @@ export function buildPlanFacts(
     }
 
     // ---- 3. filter 节点 ----
-    if (body.where) {
-      const id = `${path}.filter`;
+    const addFilter = (
+      clause: FilterRelation["clause"],
+      predicate: Expr,
+      source: string | undefined,
+    ): string => {
+      const id = `${path}.filter${clause === "where" ? "" : `.${clause}`}`;
       const predicateTree = predicateTreeOf(
-        body.where,
+        predicate,
         sql,
         cellBase,
-        "where",
+        clause,
       );
       const treeColumns = predicateColumnsOf(predicateTree);
       const inputColumns = inputColumnsFor(
-        body.where,
+        predicate,
         scope,
-        "where",
+        clause,
         schema,
         dialect,
         true,
         (error) =>
-          recordNativeLineageFailure(
-            id,
-            "where",
-            spanOfCst(cellBase, body.where!.cst),
-            error,
-          ),
+              recordNativeLineageFailure(
+                id,
+                clause,
+                spanOfCst(cellBase, predicate.cst),
+                error,
+              ),
       );
       const treeOffsets = new Set(
         treeColumns
@@ -1981,24 +1995,27 @@ export function buildPlanFacts(
       const f: FilterRelation = {
         id,
         type: "filter",
-        predicate_expr: fullTextOf(sql, cellBase, body.where.cst),
-        predicate_display: displayTextOf(sql, cellBase, body.where.cst),
+        clause,
+        predicate_expr: fullTextOf(sql, cellBase, predicate.cst),
+        predicate_display: displayTextOf(sql, cellBase, predicate.cst),
         predicate_columns: whereCols,
         predicate_facts: opts?.include_expression_dependencies
-          ? expressionFacts(body.where)
+          ? expressionFacts(predicate)
           : undefined,
         predicate_tree: predicateTree,
         contains_subquery:
-          containsExpressionSubquery(body.where) || undefined,
-        span: spanOf(cellBase, body.where.cst),
+          containsExpressionSubquery(predicate) || undefined,
+        span: spanOf(cellBase, predicate.cst),
         provenance: "extracted",
         output_columns: null,
-        source: chainTail ?? undefined,
+        source,
       };
       relations.push(f);
       relationScopes.set(id, scope);
       chainTail = id;
-    }
+      return id;
+    };
+    if (body.where) addFilter("where", body.where, chainTail ?? undefined);
 
     // ---- 4. aggregate 节点 ----
     const gbExprs = body.groupBy ?? [];
@@ -2265,7 +2282,7 @@ export function buildPlanFacts(
                 ),
             )
           : undefined;
-        const exprSpec: ExprSpec = {
+      const exprSpec: ExprSpec = {
           output,
           output_name_status: anonymous ? "ANONYMOUS_EXPRESSION" : "EXPLICIT",
           expr_kind: expr.kind,
@@ -2301,7 +2318,16 @@ export function buildPlanFacts(
 			...(opts?.include_expression_dependencies
 				? { expression_roles: expressionRoles }
 				: {}),
-		};
+        };
+        if (exprSpec.window_spec?.frame?.status === "UNKNOWN") {
+          unknowns.push({
+            node_id: pid,
+            field: `expressions[${outNames.length}].window.frame`,
+            reason:
+              "window frame semantics are UNKNOWN: canonical WindowSpec IR does not expose frame bounds",
+            span: exprSpec.window_spec.source_span,
+          });
+        }
         shareWindowInputRefs(exprSpec);
         exprs.push(exprSpec);
         outNames.push(output);
@@ -2320,6 +2346,7 @@ export function buildPlanFacts(
     relations.push(pr);
     relationScopes.set(pid, scope);
     scopeRelationIds.set(scope, pid);
+    chainTail = pid;
     if (!computedOut) {
       unknowns.push({
         node_id: pid,
@@ -2328,9 +2355,13 @@ export function buildPlanFacts(
         span: spanOf(cellBase, body.cst),
       });
     }
-    rootIds.set(scope, pid);
+    if (body.having)
+      addFilter("having", body.having, chainTail ?? undefined);
+    if (body.qualify)
+      addFilter("qualify", body.qualify, chainTail ?? undefined);
 
-    addTopN(scope, path, pid, computedOut ?? outCols);
+    rootIds.set(scope, chainTail ?? pid);
+    addTopN(scope, path, chainTail ?? pid, computedOut ?? outCols);
 
     // 表达式子查询 / CTE 子块
     for (const [childIndex, child] of scope.children.entries()) {

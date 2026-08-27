@@ -71,8 +71,12 @@ function simpleCaseSelector(
  */
 export function expressionRoleNodes(
 	e: Expr | null | undefined,
+	dialect = "databricks",
 ): ExpressionRoleNode[] {
 	const out: ExpressionRoleNode[] = [];
+	const dialectName = dialect.toLowerCase();
+	const isDatabricksIsNull =
+		dialectName === "databricks" || dialectName === "spark";
 	const visit = (node: Expr | null | undefined, path: string): void => {
 		if (!node) return;
 		if (node.kind === "case") {
@@ -119,7 +123,9 @@ export function expressionRoleNodes(
 				name === "coalesce" ||
 				name === "ifnull" ||
 				name === "nvl" ||
-				name === "isnull";
+				(name === "isnull" &&
+					!isDatabricksIsNull &&
+					node.args.length >= 2);
 			for (const [ordinal, arg] of node.args.entries()) {
 				if (isIf && ordinal < 3) {
 					out.push({

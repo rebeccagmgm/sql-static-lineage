@@ -89,6 +89,8 @@ function context(options: {
   readonly artifactWriteEvidence?: boolean;
   readonly mismatchedProducerTarget?: boolean;
   readonly legacyScheduleFallback?: boolean;
+  readonly missingProducerPack?: boolean;
+  readonly exposeRelationNodes?: boolean;
 } = {}) {
   const sourceTable = table("demo.source", ["src_a"]);
   const consumerTable = table("demo.root", ["out_a"]);
@@ -127,7 +129,10 @@ function context(options: {
         ],
       }
     : {};
-  const consumerLoad = load("100", {});
+  const consumerLoad = load(
+    "100",
+    options.exposeRelationNodes ? { "relation-nodes.jsonl": [] } : {},
+  );
   const producerLoad = load("200", producerRecords);
   const source: PhysicalFieldIdentity = {
     platform: "hive",
@@ -189,7 +194,10 @@ function context(options: {
         : {}),
     },
     taskPacks: {
-      get: (taskId) => ({ "100": consumer, "200": producer }[taskId]),
+      get: (taskId) =>
+        taskId === "200" && options.missingProducerPack
+          ? undefined
+          : { "100": consumer, "200": producer }[taskId],
     },
     loadFacts: (taskId) => (taskId === "100" ? consumerLoad : producerLoad),
     factsPolicy: "current-only",
@@ -287,6 +295,39 @@ describe("physical field expander", () => {
     expect(result.producers[0]!.producerBindings).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ write_observation_id: "write-observation:200:1" }),
+      ]),
+    );
+  });
+
+  it("keeps the legacy bridge reason when the producer Task pack is missing", () => {
+    const { expander, consumer, consumerLoad, source } = context({
+      missingProducerPack: true,
+      exposeRelationNodes: true,
+    });
+    const result = expander.expand({
+      consumerTaskId: "100",
+      consumerPack: consumer,
+      consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source,
+      expressionText: "s.src_a",
+      depth: 0,
+      maxDepth: 4,
+    });
+
+    expect(result.gaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          reasonCode: "CROSS_TASK_BRIDGE_EVIDENCE_INCOMPLETE",
+          taskId: "200",
+        }),
+      ]),
+    );
+    expect(result.gaps).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          reasonCode: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN",
+        }),
       ]),
     );
   });

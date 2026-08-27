@@ -380,6 +380,14 @@ function globalizeRelation(taskId: string, statementIndex: number, relation: Jso
 	const mapId = (id: string): string => globalRelationId(taskId, statementIndex, id);
 	const converted = stripVolatile(relation) as JsonRecord;
 	converted.id = mapId(relation.id);
+	if (relation.type === "read") {
+		converted.read_occurrence_id = mapId(String(relation.read_occurrence_id ?? relation.id));
+		if (converted.read_occurrence && typeof converted.read_occurrence === "object") {
+			const occurrence = converted.read_occurrence as JsonRecord;
+			occurrence.occurrence_id = converted.read_occurrence_id;
+			occurrence.relation_id = converted.id;
+		}
+	}
 	if (relation.source) converted.source = mapId(relation.source);
 	if (relation.left) converted.left = mapId(relation.left);
 	if (relation.right) converted.right = mapId(relation.right);
@@ -591,6 +599,7 @@ function fieldInputsForRefs(logicalSourceId: string, refs: readonly JsonRecord[]
 function windowSpecRecord(logicalSourceId: string, expression: JsonRecord): JsonRecord | undefined {
 	const spec = expression.window_spec as JsonRecord | undefined;
 	if (!spec || !Array.isArray(spec.input_bindings)) return undefined;
+	const frame = spec.frame as JsonRecord | undefined;
 	return {
 		expression_text: spec.expression_text ?? "",
 		display_text: spec.display_text ?? "",
@@ -613,6 +622,20 @@ function windowSpecRecord(logicalSourceId: string, expression: JsonRecord): Json
 					: {}),
 			};
 		}),
+		...(frame
+			? {
+				frame: {
+					status: frame.status ?? "UNKNOWN",
+					expression_text: frame.expression_text ?? null,
+					display_text: frame.display_text ?? null,
+					source_span: frame.span ?? null,
+					input_fields: fieldInputsForRefs(logicalSourceId, Array.isArray(frame.input_columns) ? frame.input_columns : []).inputFields,
+					unresolved_input_columns: unresolvedInputColumns({ input_columns: Array.isArray(frame.input_columns) ? frame.input_columns : [] }),
+					input_dependency_status: inputDependencyStatus({ input_columns: Array.isArray(frame.input_columns) ? frame.input_columns : [] }),
+					...(frame.reason ? { reason: frame.reason } : {}),
+				},
+			}
+			: {}),
 	};
 }
 
@@ -809,6 +832,14 @@ function planRecords(
 	const relationIds = new Set(plan.relations.map((relation) => globalRelationId(task.task_id, statementIndex, relation.id)));
 
 	for (const table of plan.physical_inputs) {
+		const readOccurrences = planRelations
+			.filter((relation) => relation.type === "read" && relation.is_cte !== true && normalizeName(String(relation.table ?? "")) === normalizeName(table))
+			.map((relation) => ({
+				occurrence_id: globalRelationId(task.task_id, statementIndex, String(relation.read_occurrence_id ?? relation.id)),
+				relation_id: globalRelationId(task.task_id, statementIndex, String(relation.id)),
+				scope_id: relation.scope_id ?? null,
+				source_span: relation.read_occurrence?.source_span ?? relation.span ?? null,
+			}));
 		reads.push({
 			task_id: task.task_id,
 			statement_id: statementId,
@@ -817,6 +848,7 @@ function planRecords(
 			physical_dataset: normalizeName(table),
 			provenance: "SQL_PLAN",
 			resolution_status: "RESOLVED",
+			read_occurrences: readOccurrences,
 		});
 	}
 
@@ -911,11 +943,31 @@ function planRecords(
 					output_name: expression.output,
 					output_name_status: expression.output_name_status ?? "UNKNOWN",
 					expression_text: expression.expr_text,
+					display_text: expression.display_text ?? expression.expr_text,
 					source_span: expressionSpan,
 					input_fields: uniqueInputs,
 					candidate_input_fields: uniqueCandidates,
 					unresolved_input_columns: unresolvedInputColumns(expression),
 					input_dependency_status: inputDependencyStatus({ input_columns: effectiveInputRefs }),
+					expression_roles: (expression.expression_roles as JsonRecord[] | undefined)?.map((role) => {
+						const roleRefs = Array.isArray(role.input_columns) ? role.input_columns : [];
+						const roleFields = fieldInputsForRefs(logicalSourceId, roleRefs);
+						return {
+							operator: role.operator,
+							role: role.role,
+							effects: role.effects ?? [],
+							path: role.path,
+							...(role.branch_ordinal === undefined ? {} : { branch_ordinal: role.branch_ordinal }),
+							ordinal: role.ordinal,
+							expression_text: role.expression_text,
+							display_text: role.display_text ?? role.expression_text,
+							source_span: role.span,
+							input_fields: roleFields.inputFields,
+							candidate_input_fields: roleFields.candidateFields,
+							unresolved_input_columns: unresolvedInputColumns({ input_columns: roleRefs }),
+							input_dependency_status: inputDependencyStatus({ input_columns: roleRefs }),
+						};
+					}),
 					window_spec: windowSpecRecord(logicalSourceId, expression),
 					artifact_id: artifactId,
 				});
@@ -983,6 +1035,7 @@ function planRecords(
 				output_name: outputName,
 				output_name_status: "EXPLICIT",
 				expression_text: `${String(node.relation?.setop ?? "setop").toUpperCase()}_OUTPUT(${outputName})`,
+				display_text: `${String(node.relation?.setop ?? "setop").toUpperCase()}_OUTPUT(${outputName})`,
 				source_span: node.source_span,
 				input_fields: inputFields,
 				candidate_input_fields: candidateFields,

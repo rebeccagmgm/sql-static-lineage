@@ -53,6 +53,12 @@ export interface PhysicalFieldExpanderContext {
   readonly factsPolicy: FactsPolicy;
 }
 
+export type PhysicalFieldEvidenceMode = "LEGACY_COMPAT" | "STRICT_CAUSAL";
+
+export interface PhysicalFieldExpanderOptions {
+  readonly evidenceMode?: PhysicalFieldEvidenceMode;
+}
+
 export interface PhysicalFieldExpansionRequest {
   readonly consumerTaskId: string;
   readonly consumerPack: PhysicalFieldExpanderTaskPack;
@@ -63,6 +69,12 @@ export interface PhysicalFieldExpansionRequest {
   readonly expression?: JsonRecord;
   readonly depth: number;
   readonly maxDepth: number;
+  /** Optional causal-consumer metadata; kept out of legacy decisions. */
+  readonly candidateBranchId?: string;
+  readonly rootDependenceKind?: string;
+  readonly localDependenceKind?: string;
+  readonly pathCertainty?: string;
+  readonly relationState?: JsonRecord;
 }
 
 export interface PhysicalFieldProducerExpansion {
@@ -616,12 +628,209 @@ function producerMatchesField(
   return targetField !== null && physicalFieldKey(targetField) === physicalFieldKey(field);
 }
 
+function canonicalRelationIdentity(value: unknown): string | null {
+  const raw = nonEmpty(value);
+  if (!raw) return null;
+  const withoutQueryPrefix = raw
+    .replace(/^query#[^:]+:/i, "")
+    .replace(/^\d+:/, "");
+  const marker = withoutQueryPrefix.lastIndexOf(":relation:");
+  return normalizeName(
+    marker >= 0 ? withoutQueryPrefix.slice(marker + ":relation:".length) : withoutQueryPrefix,
+  );
+}
+
+function sameRelationIdentity(left: unknown, right: unknown): boolean {
+  const leftIdentity = canonicalRelationIdentity(left);
+  const rightIdentity = canonicalRelationIdentity(right);
+  return leftIdentity !== null && leftIdentity === rightIdentity;
+}
+
+function statementIndexForRelation(
+  load: CurrentBundleLoad,
+  relation: JsonRecord,
+): number | null {
+  const statementId = nonEmpty(relation.statement_id);
+  const statement = (load.records["statements.jsonl"] ?? []).find(
+    (candidate) => String(candidate.statement_id ?? "") === statementId,
+  );
+  if (Number.isSafeInteger(statement?.statement_index))
+    return Number(statement?.statement_index);
+  return String(relation.relation_id ?? "").match(/:statement:(\d+):relation:/)?.[1]
+    ? Number(String(relation.relation_id).match(/:statement:(\d+):relation:/)?.[1])
+    : null;
+}
+
+function statementIndexForId(
+  load: CurrentBundleLoad,
+  statementId: unknown,
+): number | null {
+  const normalizedStatementId = nonEmpty(statementId);
+  if (!normalizedStatementId) return null;
+  const statement = (load.records["statements.jsonl"] ?? []).find(
+    (candidate) => String(candidate.statement_id ?? "") === normalizedStatementId,
+  );
+  const statementIndex = statement?.statement_index;
+  if (Number.isSafeInteger(statementIndex)) return Number(statementIndex);
+  const match = normalizedStatementId.match(/:statement:(\d+)(?::|$)/);
+  return match ? Number(match[1]) : null;
+}
+
+function relationPathBinding(relationPath: readonly string[]): string | null {
+  for (const rawPathItem of relationPath) {
+    const pathItem = canonicalRelationIdentity(rawPathItem);
+    if (!pathItem) continue;
+    const parts = pathItem.split(".");
+    const readIndex = parts.indexOf("read");
+    if (readIndex < 0) continue;
+    const binding =
+      parts[readIndex + 1] === parts.at(-1)
+        ? parts[readIndex - 1]
+        : parts[readIndex + 1] ?? parts[readIndex - 1];
+    if (binding && binding !== "read") return binding;
+  }
+  return null;
+}
+
+function validateConsumerReadOccurrence(
+  load: CurrentBundleLoad,
+  field: PhysicalFieldIdentity,
+  occurrence: JsonRecord,
+): { readonly valid: boolean; readonly reason: string | null } {
+  const occurrenceId = nonEmpty(occurrence.occurrenceId);
+  const readRelationId = nonEmpty(occurrence.readRelationId);
+  const statementIndex = occurrence.statementIndex;
+  const relationPath = occurrence.relationPath;
+  if (
+    !occurrenceId ||
+    !readRelationId ||
+    !Number.isSafeInteger(statementIndex) ||
+    !Array.isArray(relationPath) ||
+    relationPath.length === 0 ||
+    relationPath.some((item) => !nonEmpty(item))
+  )
+    return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_EVIDENCE_MISMATCH" };
+
+  // Older callers did not load relation-nodes into their synthetic bundles.
+  // Keep that compatibility shape working, while an explicitly present file
+  // is authoritative and must prove the occurrence below.
+  if (!Object.prototype.hasOwnProperty.call(load.records, "relation-nodes.jsonl"))
+    return { valid: true, reason: null };
+
+  const qualifiedTable = normalizeName(field.qualifiedName);
+  const tableTail = qualifiedTable.split(".").at(-1) ?? qualifiedTable;
+  const expectedBinding = relationPathBinding(relationPath);
+  const matchingRead = (load.records["relation-nodes.jsonl"] ?? []).find((node) => {
+    const relation = asRecord(node.relation);
+    const relationTable = normalizeName(String(relation?.table ?? ""));
+    const bareTableIsSupported =
+      relationTable === tableTail &&
+      (load.records["dataset-io.jsonl"] ?? []).some(
+        (record) =>
+          record.direction === "READ" &&
+          record.task_id === load.taskId &&
+          normalizeName(String(record.physical_dataset ?? "")).split(".").at(-1) ===
+            tableTail,
+      );
+    if (
+      String(node.task_id ?? "") !== load.taskId ||
+      String(node.relation_type ?? relation?.type ?? "") !== "read" ||
+      (relationTable !== qualifiedTable && !bareTableIsSupported)
+    )
+      return false;
+    const actualOccurrenceId =
+      relation?.read_occurrence_id ??
+      asRecord(relation?.read_occurrence)?.occurrence_id ??
+      node.read_occurrence_id;
+    const actualRelationId =
+      node.relation_id ??
+      relation?.id ??
+      asRecord(relation?.read_occurrence)?.relation_id;
+    const exactIdentity =
+      sameRelationIdentity(actualOccurrenceId, occurrenceId) &&
+      sameRelationIdentity(actualRelationId, readRelationId);
+    const legacyIdentity =
+      expectedBinding !== null &&
+      normalizeName(String(relation?.binding ?? "")) === expectedBinding &&
+      normalizeName(String(relation?.scope_id ?? "")).split(".")[0] ===
+        normalizeName(
+          String(canonicalRelationIdentity(relationPath[0]) ?? "").split(".")[0],
+        );
+    return (
+      (exactIdentity || legacyIdentity) &&
+      statementIndexForRelation(load, node) === statementIndex
+    );
+  });
+  if (!matchingRead)
+    return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_NOT_PROVEN" };
+
+  const matchingDatasetRead = (load.records["dataset-io.jsonl"] ?? []).some(
+    (record) => {
+      if (
+        record.direction !== "READ" ||
+        String(record.task_id ?? "") !== load.taskId
+      )
+        return false;
+      const dataset = normalizeName(String(record.physical_dataset ?? ""));
+      if (dataset !== qualifiedTable && dataset.split(".").at(-1) !== tableTail)
+        return false;
+      const readOccurrences = Array.isArray(record.read_occurrences)
+        ? record.read_occurrences
+        : [];
+      return (
+        statementIndexForId(load, record.statement_id) === statementIndex &&
+        readOccurrences.some((rawOccurrence) => {
+          const readOccurrence = asRecord(rawOccurrence);
+          return (
+            readOccurrence !== null &&
+            sameRelationIdentity(
+              readOccurrence.occurrence_id,
+              matchingRead.relation?.read_occurrence_id ??
+                matchingRead.read_occurrence_id,
+            ) &&
+            sameRelationIdentity(readOccurrence.relation_id, matchingRead.relation_id)
+          );
+        })
+      );
+    },
+  );
+  if (!matchingDatasetRead)
+    return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_NOT_PROVEN" };
+
+  const relation = asRecord(matchingRead.relation);
+  const expectedScope = nonEmpty(occurrence.scopeId ?? occurrence.scope_id);
+  const actualScope = nonEmpty(relation?.scope_id ?? asRecord(relation?.read_occurrence)?.scope_id);
+  if (expectedScope !== null && actualScope !== expectedScope)
+    return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_EVIDENCE_MISMATCH" };
+  return { valid: true, reason: null };
+}
+
+function bridgeGroupsForProducer(
+  bridges: readonly JsonRecord[],
+  producerTaskId: string,
+): readonly (readonly JsonRecord[])[] {
+  const matching = bridges.filter(
+    (bridge) => String(bridge.producerTaskId ?? "") === producerTaskId,
+  );
+  if (matching.length === 0) return [[]];
+  const groups = new Map<string, JsonRecord[]>();
+  for (const bridge of matching) {
+    const occurrenceId = nonEmpty(asRecord(bridge.readOccurrence)?.occurrenceId);
+    const key = occurrenceId ?? "<legacy-no-occurrence>";
+    groups.set(key, [...(groups.get(key) ?? []), bridge]);
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) => compareText(left, right))
+    .map(([, group]) => group);
+}
+
 export function outputBindingsFor(
   load: CurrentBundleLoad,
   targetQualifiedName: string,
   field: PhysicalFieldIdentity,
   writeObservationIds?: ReadonlySet<string>,
   expectedTarget?: PhysicalTableCatalogEntry,
+  evidenceMode: PhysicalFieldEvidenceMode = "LEGACY_COMPAT",
 ): JsonRecord[] {
   const normalizedTarget = normalizeName(targetQualifiedName);
   const expectedTargetName = expectedTarget ? normalizeName(expectedTarget.qualifiedName) : null;
@@ -636,18 +845,38 @@ export function outputBindingsFor(
     : false;
   return (load.records["output-field-bindings.jsonl"] ?? [])
     .filter(
-      (binding) =>
-        binding.task_id === load.taskId &&
-        (normalizeName(String(binding.target_dataset ?? "")) === normalizedTarget ||
+      (binding) => {
+        const writeObservationId = nonEmpty(binding.write_observation_id);
+        const write = (load.records["dataset-io.jsonl"] ?? []).find(
+          (record) =>
+            record.direction === "WRITE" &&
+            record.task_id === load.taskId &&
+            nonEmpty(record.write_observation_id) === writeObservationId,
+        );
+        const bindingWriteStatementId = nonEmpty(binding.write_statement_id);
+        const writeStatementId = nonEmpty(
+          write?.write_statement_id ?? write?.statement_id,
+        );
+        const bindingStatementId = nonEmpty(binding.statement_id);
+        const writeRecordStatementId = nonEmpty(write?.statement_id);
+        return (
+          binding.task_id === load.taskId &&
+         (normalizeName(String(binding.target_dataset ?? "")) === normalizedTarget ||
           (hasDeclaredPhysicalTarget &&
             expectedTargetTail !== null &&
             normalizeName(String(binding.target_dataset ?? "")) === expectedTargetTail &&
-            normalizedTarget === expectedTargetName &&
-            binding.task_id === load.taskId)) &&
-        normalizeName(String(binding.target_field ?? "")) === field.column &&
-        (writeObservationIds === undefined ||
-          writeObservationIds.has(String(binding.write_observation_id ?? ""))) &&
-        binding.binding_status === "RESOLVED",
+             normalizedTarget === expectedTargetName &&
+             binding.task_id === load.taskId)) &&
+         normalizeName(String(binding.target_field ?? "")) === field.column &&
+         (evidenceMode === "LEGACY_COMPAT" ||
+           (bindingWriteStatementId === null || bindingWriteStatementId === writeStatementId)) &&
+         (evidenceMode === "LEGACY_COMPAT" ||
+           (bindingStatementId === null || bindingStatementId === writeRecordStatementId)) &&
+         (writeObservationIds === undefined ||
+           writeObservationIds.has(String(binding.write_observation_id ?? ""))) &&
+          binding.binding_status === "RESOLVED"
+        );
+      },
     )
     .sort((left, right) => compareText(String(left.binding_id ?? ""), String(right.binding_id ?? "")));
 }
@@ -700,20 +929,41 @@ function producerWriteRecords(
   );
 }
 
-function sqlParseStart(write: JsonRecord): number | null {
+function sqlParseSpan(
+  write: JsonRecord,
+): { readonly start: number; readonly end: number } | null {
   for (const rawEvidence of Array.isArray(write.evidence) ? write.evidence : []) {
     const evidence = asRecord(rawEvidence);
     if (String(evidence?.source ?? "") !== "SQL_PARSE") continue;
     const detail = asRecord(evidence?.detail);
-    const statementStart = detail?.statementStart;
-    if (Number.isSafeInteger(statementStart)) return Number(statementStart);
-    const start = String(evidence?.locator ?? "").match(/#char=(\d+)(?:-\d+)?$/)?.[1];
-    if (start !== undefined) return Number(start);
+    if (
+      Number.isSafeInteger(detail?.statementStart) &&
+      Number.isSafeInteger(detail?.statementEnd)
+    )
+      return {
+        start: Number(detail?.statementStart),
+        end: Number(detail?.statementEnd),
+      };
+    const match = String(evidence?.locator ?? "").match(/#char=(\d+)-(\d+)$/);
+    if (match) return { start: Number(match[1]), end: Number(match[2]) };
   }
   return null;
 }
 
-function writeMatchesArtifact(
+function spanEquals(
+  value: unknown,
+  expected: { readonly start: number; readonly end: number },
+): boolean {
+  const span = asRecord(value);
+  return (
+    Number.isSafeInteger(span?.start) &&
+    Number.isSafeInteger(span?.end) &&
+    Number(span?.start) === expected.start &&
+    Number(span?.end) === expected.end
+  );
+}
+
+function strictWriteMatchesArtifact(
   artifactWrite: JsonRecord,
   producerRecord: JsonRecord,
   producerLoad: CurrentBundleLoad,
@@ -728,7 +978,63 @@ function writeMatchesArtifact(
       normalizeName(String(producerRecord.write_kind ?? "")) !== normalizeName(expectedKind)
     )
       return false;
-    const expectedStart = sqlParseStart(artifactWrite);
+    const expectedSpan = sqlParseSpan(artifactWrite);
+    if (expectedSpan === null) return false;
+    const expectedStatementId = nonEmpty(
+      artifactWrite.writeStatementId ??
+        artifactWrite.write_statement_id ??
+        artifactWrite.statementId,
+    );
+    const statementId = String(
+      producerRecord.write_statement_id ?? producerRecord.statement_id ?? "",
+    );
+    if (expectedStatementId !== null && expectedStatementId !== statementId)
+      return false;
+    const statement = (producerLoad.records["statements.jsonl"] ?? []).find(
+      (candidate) => String(candidate.statement_id ?? "") === statementId,
+    );
+    const span = asRecord(statement?.span);
+    const boundary = asRecord(producerRecord.source_as_boundary)?.statement_span;
+    const boundarySpan = asRecord(boundary);
+    return spanEquals(span, expectedSpan) || spanEquals(boundarySpan, expectedSpan);
+  }
+  if (observationKind === "DIRECT_TARGET")
+    return (
+      provenance === "PLATFORM_TARGET" ||
+      String(producerRecord.write_kind ?? "") === "PLATFORM_TARGET_QUERY_OUTPUT"
+    );
+  return false;
+}
+
+function legacySqlParseStart(write: JsonRecord): number | null {
+  for (const rawEvidence of Array.isArray(write.evidence) ? write.evidence : []) {
+    const evidence = asRecord(rawEvidence);
+    if (String(evidence?.source ?? "") !== "SQL_PARSE") continue;
+    const detail = asRecord(evidence?.detail);
+    const statementStart = detail?.statementStart;
+    if (Number.isSafeInteger(statementStart)) return Number(statementStart);
+    const start = String(evidence?.locator ?? "").match(/#char=(\d+)(?:-\d+)?$/)?.[1];
+    if (start !== undefined) return Number(start);
+  }
+  return null;
+}
+
+function legacyWriteMatchesArtifact(
+  artifactWrite: JsonRecord,
+  producerRecord: JsonRecord,
+  producerLoad: CurrentBundleLoad,
+): boolean {
+  const observationKind = String(artifactWrite.observationKind ?? "");
+  const provenance = String(producerRecord.provenance ?? "");
+  if (observationKind === "SQL_EXPLICIT_WRITE") {
+    if (provenance !== "SQL_PARSE") return false;
+    const expectedKind = nonEmpty(artifactWrite.sqlWriteKind);
+    if (
+      expectedKind !== null &&
+      normalizeName(String(producerRecord.write_kind ?? "")) !== normalizeName(expectedKind)
+    )
+      return false;
+    const expectedStart = legacySqlParseStart(artifactWrite);
     if (expectedStart === null) return true;
     const statementId = String(
       producerRecord.write_statement_id ?? producerRecord.statement_id ?? "",
@@ -751,7 +1057,7 @@ function writeMatchesArtifact(
   return false;
 }
 
-function producerWriteProof(
+function legacyProducerWriteProof(
   tableLineage: JsonRecord,
   producerTaskId: string,
   field: PhysicalFieldIdentity,
@@ -760,7 +1066,11 @@ function producerWriteProof(
 ): ProducerWriteProof {
   const explicitIds = new Set(bridges.flatMap(writeObservationIds));
   if (producerLoad === null)
-    return { ids: new Set(), status: "MISSING", reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN" };
+    return {
+      ids: new Set(),
+      status: "MISSING",
+      reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN",
+    };
   const records = producerWriteRecords(producerTaskId, field, producerLoad);
   const recordById = new Map(
     records.map((record) => [String(record.write_observation_id), record]),
@@ -769,7 +1079,11 @@ function producerWriteProof(
     const valid = [...explicitIds].every((id) => recordById.has(id));
     return valid
       ? { ids: explicitIds, status: "PROVEN", reason: null }
-      : { ids: new Set(), status: "MISSING", reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN" };
+      : {
+          ids: new Set(),
+          status: "MISSING",
+          reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN",
+        };
   }
 
   const edges = artifactWriteEdgesFor(tableLineage, producerTaskId, field);
@@ -806,11 +1120,15 @@ function producerWriteProof(
   const matchedIds = new Set<string>();
   let ambiguous = false;
   for (const artifactWrite of artifactWrites) {
-    const embeddedIds = writeObservationIds(artifactWrite).filter((id) => recordById.has(id));
+    const embeddedIds = writeObservationIds(artifactWrite).filter((id) =>
+      recordById.has(id),
+    );
     const matches = embeddedIds.length > 0
       ? [...new Set(embeddedIds)]
       : records
-          .filter((record) => writeMatchesArtifact(artifactWrite, record, producerLoad))
+          .filter((record) =>
+            legacyWriteMatchesArtifact(artifactWrite, record, producerLoad),
+          )
           .map((record) => String(record.write_observation_id));
     if (matches.length !== 1) {
       ambiguous = true;
@@ -819,6 +1137,126 @@ function producerWriteProof(
     matchedIds.add(matches[0]!);
   }
   if (ambiguous || matchedIds.size !== 1)
+    return {
+      ids: new Set(),
+      status: "AMBIGUOUS",
+      reason: "PRODUCER_WRITE_OBSERVATION_AMBIGUOUS",
+    };
+  return { ids: matchedIds, status: "PROVEN", reason: null };
+}
+
+function strictProducerWriteProof(
+  tableLineage: JsonRecord,
+  producerTaskId: string,
+  field: PhysicalFieldIdentity,
+  bridges: readonly JsonRecord[],
+  producerLoad: CurrentBundleLoad | null,
+): ProducerWriteProof {
+  const explicitIds = new Set(bridges.flatMap(writeObservationIds));
+  if (producerLoad === null) {
+    return { ids: new Set(), status: "MISSING", reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN" };
+  }
+  const records = producerWriteRecords(producerTaskId, field, producerLoad);
+  const recordById = new Map(
+    records.map((record) => [String(record.write_observation_id), record]),
+  );
+  const edges = artifactWriteEdgesFor(tableLineage, producerTaskId, field);
+  const artifactWrites = edges.flatMap((edge) =>
+    (Array.isArray(edge.writes) ? edge.writes : []).map(asRecord).filter(
+      (write): write is JsonRecord => write !== null,
+    ),
+  );
+  const ambiguous = (): ProducerWriteProof => ({
+    ids: new Set(),
+    status: records.length === 0 ? "MISSING" : "AMBIGUOUS",
+    reason:
+      records.length === 0
+        ? "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN"
+        : "PRODUCER_WRITE_OBSERVATION_AMBIGUOUS",
+  });
+
+  if (artifactWrites.length === 0) {
+    if (explicitIds.size > 0 || edges.length !== 0 || records.length !== 1)
+      return ambiguous();
+    const record = records[0]!;
+    const statementId = nonEmpty(record.write_statement_id ?? record.statement_id);
+    const boundary = asRecord(record.source_as_boundary)?.statement_span;
+    const statement = (producerLoad.records["statements.jsonl"] ?? []).find(
+      (candidate) => String(candidate.statement_id ?? "") === statementId,
+    );
+    const hasExactWriteSpan =
+      statementId !== null &&
+      Number.isSafeInteger(boundary?.start) &&
+      Number.isSafeInteger(boundary?.end) &&
+      spanEquals(statement?.span, {
+        start: Number(boundary?.start),
+        end: Number(boundary?.end),
+      });
+    const hasExactPlatformWrite =
+      String(record.provenance ?? "") === "PLATFORM_TARGET" &&
+      String(record.write_kind ?? "") === "PLATFORM_TARGET_QUERY_OUTPUT";
+    const hasExactBinding = (producerLoad.records["output-field-bindings.jsonl"] ?? []).some(
+      (binding) =>
+        binding.task_id === producerTaskId &&
+        binding.binding_status === "RESOLVED" &&
+        normalizeName(String(binding.target_dataset ?? "")) ===
+          normalizeName(field.qualifiedName) &&
+        normalizeName(String(binding.target_field ?? "")) === normalizeName(field.column) &&
+        String(binding.write_observation_id ?? "") ===
+          String(record.write_observation_id ?? ""),
+    );
+    return (hasExactWriteSpan || hasExactPlatformWrite) && hasExactBinding
+      ? {
+          ids: new Set([String(record.write_observation_id)]),
+          status: "PROVEN",
+          reason: null,
+        }
+      : ambiguous();
+  }
+  if (edges.length !== 1) return ambiguous();
+
+  const exactSpanKeys = new Map<string, Set<string>>();
+  for (const artifactWrite of artifactWrites) {
+    const span = sqlParseSpan(artifactWrite);
+    if (!span) continue;
+    const writeKey = writeObservationIds(artifactWrite).join("\u0000") || "<unbound>";
+    const spanKey = `${span.start}:${span.end}`;
+    exactSpanKeys.set(writeKey, new Set([...(exactSpanKeys.get(writeKey) ?? []), spanKey]));
+  }
+  if ([...exactSpanKeys.values()].some((spans) => spans.size > 1))
+    return ambiguous();
+
+  const matchedIds = new Set<string>();
+  let hasAmbiguousMatch = false;
+  const usedIds = new Set<string>();
+  for (const artifactWrite of artifactWrites) {
+    const embeddedIds = writeObservationIds(artifactWrite).filter(
+      (id) =>
+        recordById.has(id) &&
+        strictWriteMatchesArtifact(artifactWrite, recordById.get(id)!, producerLoad),
+    );
+    const matches = embeddedIds.length > 0
+      ? [...new Set(embeddedIds)]
+      : records
+          .filter((record) =>
+            strictWriteMatchesArtifact(artifactWrite, record, producerLoad),
+          )
+          .map((record) => String(record.write_observation_id));
+    const scopedMatches = explicitIds.size > 0
+      ? matches.filter((id) => explicitIds.has(id))
+      : matches;
+    if (scopedMatches.length !== 1 || usedIds.has(scopedMatches[0]!)) {
+      hasAmbiguousMatch = true;
+      continue;
+    }
+    usedIds.add(scopedMatches[0]!);
+    matchedIds.add(scopedMatches[0]!);
+  }
+  if (
+    hasAmbiguousMatch ||
+    matchedIds.size !== 1 ||
+    (explicitIds.size > 0 && [...explicitIds].some((id) => !matchedIds.has(id)))
+  )
     return {
       ids: new Set(),
       status: "AMBIGUOUS",
@@ -836,17 +1274,33 @@ function bridgeEvidence(
   producerLoad: CurrentBundleLoad | null,
   producerBindings: readonly JsonRecord[],
   provenWriteObservationIds: ReadonlySet<string>,
+  evidenceMode: PhysicalFieldEvidenceMode,
+  candidateBranchId: string | undefined,
   writeProofReason: string | null,
 ): { readonly valid: boolean; readonly refs: readonly string[]; readonly reason: string | null } {
+  const strict = evidenceMode === "STRICT_CAUSAL";
   const refs = new Set<string>();
   const occurrenceIds = new Set<string>();
   let valid = bridges.length > 0;
+  let evidenceReason: string | null = strict ? writeProofReason : null;
   for (const bridge of bridges) {
     const occurrence = asRecord(bridge.readOccurrence);
     const occurrenceId = nonEmpty(occurrence?.occurrenceId);
     const readRelationId = nonEmpty(occurrence?.readRelationId);
     const statementIndex = occurrence?.statementIndex;
     const relationPath = occurrence?.relationPath;
+    if (strict && occurrence !== null) {
+      const readCheck = validateConsumerReadOccurrence(
+        consumerLoad,
+        field,
+        occurrence,
+      );
+      if (!readCheck.valid) {
+        valid = false;
+        evidenceReason ??= readCheck.reason;
+        continue;
+      }
+    }
     if (
       !occurrenceId ||
       !readRelationId ||
@@ -855,6 +1309,8 @@ function bridgeEvidence(
       relationPath.some((item) => !nonEmpty(item))
     ) {
       valid = false;
+      if (strict && occurrence !== null)
+        evidenceReason ??= "CONSUMER_READ_OCCURRENCE_EVIDENCE_MISMATCH";
       continue;
     }
     occurrenceIds.add(occurrenceId);
@@ -863,11 +1319,22 @@ function bridgeEvidence(
   if (occurrenceIds.size === 0) valid = false;
   if (producerLoad === null) valid = false;
   const writeIds = new Set<string>();
+  const bindingIds = new Set<string>();
   for (const binding of producerBindings) {
     const bindingId = nonEmpty(binding.binding_id);
     const writeObservationId = nonEmpty(binding.write_observation_id);
-    if (!bindingId || !writeObservationId) {
+    if (
+      !bindingId ||
+      !writeObservationId ||
+      (strict &&
+        (bindingIds.has(bindingId) ||
+          String(binding.task_id ?? "") !== producerTaskId ||
+          String(binding.binding_status ?? "") !== "RESOLVED" ||
+          normalizeName(String(binding.target_field ?? "")) !==
+            normalizeName(field.column)))
+    ) {
       valid = false;
+      if (strict) evidenceReason ??= "PRODUCER_OUTPUT_BINDING_NOT_PROVEN";
       continue;
     }
     const write = (producerLoad?.records["dataset-io.jsonl"] ?? []).find(
@@ -881,12 +1348,32 @@ function bridgeEvidence(
     );
     if (!write) {
       valid = false;
+      if (strict) evidenceReason ??= "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN";
       continue;
+    }
+    if (strict) {
+      const bindingStatementId = nonEmpty(binding.write_statement_id);
+      const writeStatementId = nonEmpty(
+        write.write_statement_id ?? write.statement_id,
+      );
+      if (bindingStatementId !== null && bindingStatementId !== writeStatementId) {
+        valid = false;
+        evidenceReason ??= "PRODUCER_OUTPUT_BINDING_NOT_PROVEN";
+        continue;
+      }
+      bindingIds.add(bindingId);
+      if (writeIds.has(writeObservationId)) {
+        valid = false;
+        evidenceReason ??= "PRODUCER_OUTPUT_BINDING_AMBIGUOUS";
+        continue;
+      }
     }
     writeIds.add(writeObservationId);
     refs.add(`field-lineage:producer-write:${producerTaskId}:${writeObservationId}:${bindingId}`);
   }
   if (writeIds.size === 0) valid = false;
+  if (candidateBranchId)
+    refs.add(`field-lineage:candidate-branch:${candidateBranchId}`);
   for (const ref of [
     consumerLoad.evidence["dataset-io.jsonl"],
     consumerLoad.evidence["relation-nodes.jsonl"],
@@ -897,7 +1384,11 @@ function bridgeEvidence(
   return {
     valid,
     refs: [...refs].sort(compareText),
-    reason: valid ? null : "CROSS_TASK_BRIDGE_EVIDENCE_INCOMPLETE",
+    reason: valid
+      ? null
+      : strict
+        ? evidenceReason ?? "CROSS_TASK_BRIDGE_EVIDENCE_INCOMPLETE"
+        : "CROSS_TASK_BRIDGE_EVIDENCE_INCOMPLETE",
   };
 }
 
@@ -922,7 +1413,14 @@ function gap(
 }
 
 export class PhysicalFieldExpander {
-  public constructor(private readonly context: PhysicalFieldExpanderContext) {}
+  private readonly evidenceMode: PhysicalFieldEvidenceMode;
+
+  public constructor(
+    private readonly context: PhysicalFieldExpanderContext,
+    options: PhysicalFieldExpanderOptions = {},
+  ) {
+    this.evidenceMode = options.evidenceMode ?? "LEGACY_COMPAT";
+  }
 
   public expand(request: PhysicalFieldExpansionRequest): PhysicalFieldExpansion {
     const selected = selectBridges(
@@ -978,14 +1476,17 @@ export class PhysicalFieldExpander {
           primary: selected.selected
             .filter((bridge) => bridgeRole(bridge) === "PRIMARY")
             .map((bridge) => String(bridge.producerTaskId))
+            .filter((taskId, index, taskIds) => taskIds.indexOf(taskId) === index)
             .sort(compareText),
           additional: selected.selected
             .filter((bridge) => ["ADDITIONAL", "CANDIDATE"].includes(String(bridgeRole(bridge))))
             .map((bridge) => String(bridge.producerTaskId))
+            .filter((taskId, index, taskIds) => taskIds.indexOf(taskId) === index)
             .sort(compareText),
           unknown: selected.selected
             .filter((bridge) => bridgeRole(bridge) === "UNKNOWN")
             .map((bridge) => String(bridge.producerTaskId))
+            .filter((taskId, index, taskIds) => taskIds.indexOf(taskId) === index)
             .sort(compareText),
         }
       : tableDecision;
@@ -1062,19 +1563,30 @@ export class PhysicalFieldExpander {
         );
         continue;
       }
-      const producerPack = this.context.taskPacks.get(producerTaskId) ?? null;
-      if (producerPack && isSkippedLineageTask(producerPack.document)) continue;
-      const bridge = selected.selected.filter(
-        (candidate) => String(candidate.producerTaskId) === producerTaskId,
-      );
-      const producerLoad = producerPack ? this.context.loadFacts(producerTaskId) : null;
-      const writeProof = producerWriteProof(
-        this.context.tableLineage,
+      const bridgeGroups = bridgeGroupsForProducer(
+        selected.selected,
         producerTaskId,
-        request.source,
-        bridge,
-        producerLoad,
       );
+      for (const bridge of bridgeGroups) {
+        const producerPack = this.context.taskPacks.get(producerTaskId) ?? null;
+        if (producerPack && isSkippedLineageTask(producerPack.document)) continue;
+      const producerLoad = producerPack ? this.context.loadFacts(producerTaskId) : null;
+      const writeProof =
+        this.evidenceMode === "STRICT_CAUSAL"
+          ? strictProducerWriteProof(
+              this.context.tableLineage,
+              producerTaskId,
+              request.source,
+              bridge,
+              producerLoad,
+            )
+          : legacyProducerWriteProof(
+              this.context.tableLineage,
+              producerTaskId,
+              request.source,
+              bridge,
+              producerLoad,
+            );
       const producerBindings =
         fieldMatches &&
         producerPack &&
@@ -1086,6 +1598,7 @@ export class PhysicalFieldExpander {
             request.source,
             writeProof.ids,
             producerPack.target ?? undefined,
+            this.evidenceMode,
           )
         : [];
       const producerFactsStatus = producerLoad
@@ -1119,6 +1632,8 @@ export class PhysicalFieldExpander {
         producerLoad,
         producerBindings,
         writeProof.ids,
+        this.evidenceMode,
+        request.candidateBranchId,
         writeProof.reason,
       );
       let evidenceStatus: PhysicalFieldProducerExpansion["evidenceStatus"] =
@@ -1206,7 +1721,7 @@ export class PhysicalFieldExpander {
         producerPack,
         producerField,
         producerBindings,
-        bridge: bridge[0] ?? null,
+        bridge: bridge.length === 1 ? bridge.at(0) ?? null : null,
         bridges: bridge,
         producerRole: "PRIMARY",
         evidenceStatus,
@@ -1219,6 +1734,7 @@ export class PhysicalFieldExpander {
             evidenceStatus !== "UNRESOLVED",
         ),
       });
+      }
     }
     return {
       classified: selected.classified,
@@ -1232,8 +1748,9 @@ export class PhysicalFieldExpander {
 
 export function createPhysicalFieldExpander(
   context: PhysicalFieldExpanderContext,
+  options: PhysicalFieldExpanderOptions = {},
 ): PhysicalFieldExpander {
-  return new PhysicalFieldExpander(context);
+  return new PhysicalFieldExpander(context, options);
 }
 
 export function loadPhysicalFieldExpanderTaskPacks(

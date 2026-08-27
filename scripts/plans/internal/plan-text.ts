@@ -29,23 +29,23 @@ export function spanOfCst(
 
 const DISPLAY_MAX = 120;
 
-/** 完整表达式文本 (不截断，空白按现有 adapter 规则规范化)。 */
+/** 完整表达式文本 (不截断，逐字保留 source span 内的原始字节)。 */
 export function fullTextOf(
 	sql: string,
 	cellBase: number,
 	node: SpanNode | null | undefined,
 ): string {
 	const s = spanOf(cellBase, node);
-	return sql.slice(s.start, s.end).replace(/\s+/g, " ").trim();
+	return sql.slice(s.start, s.end);
 }
 
-/** 截断预览 (人看)。 */
+/** 规范化并截断的显示文本 (人看，不能作为 source evidence)。 */
 export function displayTextOf(
 	sql: string,
 	cellBase: number,
 	node: SpanNode | null | undefined,
 ): string {
-	const text = fullTextOf(sql, cellBase, node);
+	const text = fullTextOf(sql, cellBase, node).replace(/\s+/g, " ").trim();
 	return text.length > DISPLAY_MAX
 		? text.slice(0, DISPLAY_MAX) + "…"
 		: text;

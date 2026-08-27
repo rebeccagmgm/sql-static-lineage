@@ -813,4 +813,48 @@ describe("machine facts contract", () => {
 		expect(unknowns.some((item) => item.reason_code === "SYNTAX_DIAGNOSTIC")).toBe(false);
 	});
 
+	it("carries Plan Facts raw/display, roles, clauses, occurrences, window frame, and Top-N into Machine Facts", () => {
+		const f = fixture();
+		writeFileSync(
+			f.sql,
+			"SELECT COALESCE(\n  t.a,\n  t.b\n) AS result, SUM(t.a) OVER (PARTITION BY t.k ORDER BY t.ts DESC ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS total FROM demo.source t WHERE t.a > 0 ORDER BY t.ts DESC LIMIT 2;\nSELECT t.k, COUNT(*) AS n FROM demo.source t WHERE t.a > 0 GROUP BY t.k HAVING COUNT(*) > 1 QUALIFY t.k > 0;\n",
+			"utf8",
+		);
+		const schemaPath = join(f.root, "schema.json");
+		const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+		schema.records[0].columns = [
+			{ name: "id", partition: false },
+			{ name: "a", partition: false },
+			{ name: "b", partition: false },
+			{ name: "k", partition: false },
+			{ name: "ts", partition: false },
+		];
+		writeFileSync(schemaPath, JSON.stringify(schema), "utf8");
+
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const expressions = jsonl("field-expression-nodes.jsonl");
+		const relations = jsonl("relation-nodes.jsonl");
+		const reads = jsonl("dataset-io.jsonl").filter((record) => record.direction === "READ");
+		const unknowns = jsonl("unknowns.jsonl");
+		const coalesce = expressions.find((record) => record.expression_text.includes("COALESCE"));
+		const window = expressions.find((record) => record.window_spec);
+
+		expect(coalesce).toMatchObject({
+			display_text: "COALESCE( t.a, t.b ) AS result",
+			expression_roles: expect.arrayContaining([
+				expect.objectContaining({ operator: "COALESCE", role: "COALESCE_ARGUMENT" }),
+			]),
+		});
+		expect(coalesce.expression_text).toContain("\n");
+		expect(window.window_spec.frame).toMatchObject({ status: "UNKNOWN", source_span: expect.any(Object) });
+		expect(relations.filter((record) => record.relation_type === "filter").map((record) => record.relation.clause)).toEqual(["where", "where", "having", "qualify"]);
+		expect(relations.some((record) => record.relation_type === "top_n" && record.relation.limit.fetch === undefined && record.relation.limit.kind === "LIMIT")).toBe(true);
+		expect(reads[0]?.read_occurrences).toEqual(expect.arrayContaining([
+			expect.objectContaining({ occurrence_id: expect.stringContaining("relation"), relation_id: expect.stringContaining("relation"), source_span: expect.any(Object) }),
+		]));
+		expect(unknowns.some((record) => record.reason_code === "PLAN_FACT_UNRESOLVED" && record.source_locator?.start !== undefined)).toBe(true);
+	});
+
 });

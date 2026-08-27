@@ -258,6 +258,15 @@ interface BaseRelation {
 /** 物理表读取 (TableSource / CTE 引用)。 */
 export interface ReadRelation extends BaseRelation {
 	type: "read";
+	/** Stable occurrence identity for this physical read in its owning scope. */
+	read_occurrence_id: string;
+	/** Source-located identity facts retained for occurrence-aware consumers. */
+	read_occurrence: {
+		occurrence_id: string;
+		relation_id: string;
+		scope_id: string;
+		source_span: SourceSpan;
+	};
 	/** 完整表名 (relation.fqn, 含库前缀, 如 "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO")。 */
 	table: string;
 	/** 本层绑定名 (别名或表名, scope.sources 的 key —— 即 join 条件里的限定符)。 */
@@ -277,6 +286,8 @@ export interface ProjectRelation extends BaseRelation {
 /** 过滤 (WHERE 谓词)。 */
 export interface FilterRelation extends BaseRelation {
 	type: "filter";
+	/** Explicit clause identity; filters are not interchangeable across query stages. */
+	clause: "where" | "having" | "qualify";
 	/** 谓词完整原文 (machine truth)。 */
 	predicate_expr: string;
 	/** 谓词截断预览 (人看)。 */
