@@ -148,6 +148,50 @@ describe("producer-index-query", () => {
     );
   });
 
+  it("recognizes a year-to-date busi_date range on a composite partition", () => {
+    const column = {
+      name: "busi_date",
+      clause: "where" as const,
+      physical: [{ table: "src.partitioned", column: "busi_date" }],
+    };
+    const result = resolveReadPartitionScope({
+      tableQualifiedName: "src.partitioned",
+      partitionFields: ["busi_date", "grp_id"],
+      predicate: {
+        kind: "ATOM",
+        operator: "BETWEEN",
+        operands: [
+          { kind: "COLUMN", expression: "busi_date", column },
+          {
+            kind: "OTHER",
+            expression: "concat(substr('${YYYY-MM-DD}',1,5),'01-01')",
+            inputColumns: [],
+          },
+          {
+            kind: "LITERAL",
+            expression: "'${YYYY-MM-DD}'",
+            observedValue: "${YYYY-MM-DD}",
+          },
+        ],
+        span: { start: 0, end: 70 },
+      },
+    });
+
+    expect(result.status).toBe("PARTIAL");
+    expect(result.predicate).toMatchObject({
+      kind: "ATOM",
+      field: "busi_date",
+      operator: "BETWEEN",
+      values: [
+        { kind: "RUNTIME_EXPRESSION" },
+        { kind: "RUNTIME_EXPRESSION" },
+      ],
+    });
+    expect(
+      matchProducersByReadScope(index, table, result)[0]?.status,
+    ).toBe("POSSIBLE_OVERLAP");
+  });
+
   function scope(
     observedValue: string,
     operator: "EQ" | "IN" = "EQ",

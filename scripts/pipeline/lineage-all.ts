@@ -450,7 +450,7 @@ function runTask(options: LineageAllOptions, taskId: string, artifactRoot: strin
       const fieldPath = join(stagedDir, "field-lineage.json");
       writeJson(fieldPath, fieldArtifact);
       const fieldHtml = join(stagedDir, "views", "field-lineage.html");
-      deps.visualizeFieldLineage({ artifactPath: fieldPath, outputPath: fieldHtml });
+      deps.visualizeFieldLineage({ artifactPath: fieldPath, outputPath: fieldHtml, factsRoot });
       files.push("field-lineage.json", "views/field-lineage.html");
     }
     publishStagedTask(stagedDir, paths.directory, artifactRoot);

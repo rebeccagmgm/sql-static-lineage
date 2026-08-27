@@ -2,12 +2,176 @@ import type { Expr } from "../../../src/ir/ir.js";
 import type {
 	ColumnRef,
 	ExpressionFacts,
+	ExpressionRole,
+	ExpressionRoleEffect,
 	PredicateOperand,
 	PredicateTree,
 } from "../plan-contract.js";
 import { fullTextOf, spanOfCst } from "./plan-text.js";
 
 type RefWithOffset = ColumnRef & { _cellOffset?: number };
+
+type ExprCst = {
+	start?: { start?: number } | null;
+	stop?: { stop?: number } | null;
+};
+
+export interface ExpressionRoleNode {
+	operator: "CASE" | "IF" | "COALESCE";
+	role: ExpressionRole;
+	effects: ExpressionRoleEffect[];
+	path: string;
+	branch_ordinal?: number;
+	ordinal: number;
+	expression: Expr;
+}
+
+/**
+ * Simple CASE is lowered to one synthetic equality per WHEN.  The equality's
+ * CST is the whole WHEN section in the canonical IR, so it is not a
+ * trustworthy source span for the selector role.  The shared left operand is
+ * the canonical CASE subject and keeps its own exact CST span.
+ */
+function simpleCaseSelector(
+	whens: readonly { when: Expr }[],
+): Expr | undefined {
+	if (whens.length === 0) return undefined;
+	const comparisons = whens.map(({ when }) => {
+		if (when.kind !== "binary" || when.op !== "=") return undefined;
+		const cst = when.cst as ExprCst;
+		const left = when.left.cst as ExprCst;
+		const right = when.right.cst as ExprCst;
+		const cstStart = cst.start?.start;
+		const cstStop = cst.stop?.stop;
+		const leftStart = left.start?.start;
+		const rightStop = right.stop?.stop;
+		// A searched CASE comparison normally has the same CST envelope as its
+		// operands.  A simple CASE comparison is lowered with the WHEN section
+		// (or the complete CASE in one dialect) as its CST, which extends beyond
+		// at least one canonical operand.
+		return cstStart !== undefined &&
+			cstStop !== undefined &&
+			leftStart !== undefined &&
+			rightStop !== undefined &&
+			(cstStart !== leftStart || cstStop !== rightStop)
+			? when
+			: undefined;
+	});
+	const selector = comparisons[0]?.left;
+	if (!selector) return undefined;
+	return comparisons.every((comparison) => comparison?.left === selector)
+		? selector
+		: undefined;
+}
+
+/**
+ * Project only roles that are explicit in the canonical expression IR.  This
+ * deliberately does not inspect expression text, so an unmodelled expression
+ * remains absent/unknown instead of being classified by a string heuristic.
+ */
+export function expressionRoleNodes(
+	e: Expr | null | undefined,
+): ExpressionRoleNode[] {
+	const out: ExpressionRoleNode[] = [];
+	const visit = (node: Expr | null | undefined, path: string): void => {
+		if (!node) return;
+		if (node.kind === "case") {
+			const selector = simpleCaseSelector(node.whens);
+			for (const [ordinal, branch] of node.whens.entries()) {
+				out.push({
+					operator: "CASE",
+					role: "BRANCH_SELECTOR",
+					effects: ["BRANCH_SELECTION"],
+					path: `${path}.when[${ordinal}]`,
+					branch_ordinal: ordinal,
+					ordinal,
+					expression: selector ?? branch.when,
+				});
+				out.push({
+					operator: "CASE",
+					role: "RESULT_VALUE",
+					effects: ["VALUE_CONTRIBUTION"],
+					path: `${path}.then[${ordinal}]`,
+					branch_ordinal: ordinal,
+					ordinal,
+					expression: branch.then,
+				});
+				visit(branch.when, `${path}.when[${ordinal}]`);
+				visit(branch.then, `${path}.then[${ordinal}]`);
+			}
+			if (node.elseExpr) {
+				out.push({
+					operator: "CASE",
+					role: "RESULT_VALUE",
+					effects: ["VALUE_CONTRIBUTION"],
+					path: `${path}.else`,
+					ordinal: node.whens.length,
+					expression: node.elseExpr,
+				});
+				visit(node.elseExpr, `${path}.else`);
+			}
+			return;
+		}
+		if (node.kind === "function") {
+			const name = node.name.toLowerCase();
+			const isIf = name === "if" || name === "iif";
+			const isCoalesce =
+				name === "coalesce" ||
+				name === "ifnull" ||
+				name === "nvl" ||
+				name === "isnull";
+			for (const [ordinal, arg] of node.args.entries()) {
+				if (isIf && ordinal < 3) {
+					out.push({
+						operator: "IF",
+						role: ordinal === 0 ? "BRANCH_SELECTOR" : "RESULT_VALUE",
+						effects:
+							ordinal === 0
+								? ["BRANCH_SELECTION"]
+								: ["VALUE_CONTRIBUTION"],
+						path: `${path}.arg[${ordinal}]`,
+						branch_ordinal: ordinal > 0 ? ordinal - 1 : undefined,
+						ordinal,
+						expression: arg,
+					});
+				} else if (isCoalesce) {
+					out.push({
+						operator: "COALESCE",
+						role: "COALESCE_ARGUMENT",
+						effects: ["VALUE_CONTRIBUTION", "BRANCH_SELECTION"],
+						path: `${path}.arg[${ordinal}]`,
+						ordinal,
+						expression: arg,
+					});
+				}
+				visit(arg, `${path}.arg[${ordinal}]`);
+			}
+			return;
+		}
+		if (node.kind === "binary") {
+			visit(node.left, `${path}.left`);
+			visit(node.right, `${path}.right`);
+		} else if (node.kind === "unary") visit(node.operand, `${path}.operand`);
+		else if (node.kind === "cast") visit(node.expr, `${path}.expr`);
+		else if (node.kind === "predicate") {
+			visit(node.operand, `${path}.operand`);
+			for (const [ordinal, arg] of node.args.entries())
+				visit(arg, `${path}.arg[${ordinal}]`);
+		} else if (node.kind === "subscript") {
+			visit(node.base, `${path}.base`);
+			visit(node.index, `${path}.index`);
+			visit(node.end, `${path}.end`);
+			visit(node.step, `${path}.step`);
+		} else if (node.kind === "lambda") visit(node.body, `${path}.body`);
+		else if (node.kind === "with") {
+			for (const [ordinal, binding] of node.bindings.entries())
+				visit(binding.value, `${path}.binding[${ordinal}]`);
+			visit(node.result, `${path}.result`);
+		}
+	};
+	visit(e, "root");
+	return out;
+}
 
 /** 递归提取表达式树里的列引用。 */
 export function collectColumns(

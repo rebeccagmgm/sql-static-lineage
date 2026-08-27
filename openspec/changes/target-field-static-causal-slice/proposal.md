@@ -1,0 +1,29 @@
+## Why
+
+现有字段 multi-hop 能证明跨 Task 的 `VALUE_FLOW`，也能附着部分 `ROWSET_CONTROL`，但控制字段不会继续递归，表达式控制、无字段关系依赖和候选分支的负向证明仍不完备。直接引入 Calcite 或 SQLGlot 替换现有解析主链会破坏 SQL span、物理字段身份和证据边界，因此需要在现有 Machine Facts 之上增加保守的目标字段静态因果切片层，并用 Calcite 仅做离线语义校验。
+
+## What Changes
+
+- 新增正交的 semantic dependency 模型，区分值贡献、表达式分支、行成员、重复度、分组、排序、窗口、集合和关系存在性影响。
+- 将 ROWSET/EXPRESSION/WINDOW/RELATION 控制从注解升级为可遍历、可审计且有独立预算的因果分支，同时保留现有 `VALUE_FLOW` 主边兼容性。
+- 按单个目标字段建立 Candidate Universe 和 `CONFIRMED_RELATED / CONDITIONAL_RELATED / PROVEN_UNRELATED / UNKNOWN` 结论，任何 Unknown 均绑定 gap，任何无关结论均绑定 negative proof。
+- 统一 VALUE 与控制依赖的物理字段 resolver、producer bridge 和 occurrence-specific evidence refs。
+- 发布向后兼容的新 field-lineage artifact，并从 canonical JSON 生成最小确定重跑集、保守安全集、摘要和 HTML。
+- 增加固定版本的 Calcite 离线 JSONL 校验器和独立测试命令；它不进入默认生产流程，也不能单独产生 `PROVEN_UNRELATED`。
+
+## Capabilities
+
+### New Capabilities
+
+- `target-field-static-causal-slice`: 在完整静态候选上游空间内，对每个目标字段生成 evidence-conservative 的 value/control/relation 因果切片、四分类结论、重跑集合和 Calcite 离线差分结果。
+
+### Modified Capabilities
+
+无。
+
+## Impact
+
+- 影响 Plan Facts 的表达式/关系语义投影、field-lineage traversal、artifact contract/validator、文本摘要与 HTML renderer。
+- 保留现有 TypeScript parser、immutable IR、Machine Facts、表级 producer 判断和 Input Pack 缓存；不引入 SQLGlot/DataHub 运行依赖。
+- 新增独立、非默认的 Java/Calcite 测试工具；默认 `npm test` 和生产 CLI 不依赖 Java。
+- 209119 验收只复用已有 Input Pack、Machine Facts 与 table artifact，执行 field-only 重算，不触发全量采集。

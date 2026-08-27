@@ -1,4 +1,5 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   writeTableInput,
@@ -305,5 +306,97 @@ export function syntheticTableLineage() {
         table: { ...table, qualifiedName: "demo.mid" },
       },
     ],
+  };
+}
+
+function tableNameVariants(value: string): string[] {
+  const normalized = value
+    .trim()
+    .replace(/^[`\"]|[`\"]$/g, "")
+    .toLowerCase();
+  if (!normalized) return [];
+  return [normalized, normalized.split(".").at(-1)!];
+}
+
+function tableNamesMatch(left: string, right: string): boolean {
+  const rightVariants = new Set(tableNameVariants(right));
+  return tableNameVariants(left).some((variant) => rightVariants.has(variant));
+}
+
+export function syntheticTableLineageWithFacts(
+  factsRoot: string,
+  tableLineage: ReturnType<typeof syntheticTableLineage> = syntheticTableLineage(),
+) {
+  const roleByTaskPair = new Map<string, "PRIMARY" | "ADDITIONAL" | "UNKNOWN">();
+  for (const rawNode of tableLineage.taskNodes) {
+    const decision = rawNode.upstreamDecision;
+    for (const producerTaskId of decision.primary)
+      roleByTaskPair.set(`${rawNode.taskId}\u0000${producerTaskId}`, "PRIMARY");
+    for (const producerTaskId of decision.additional)
+      roleByTaskPair.set(`${rawNode.taskId}\u0000${producerTaskId}`, "ADDITIONAL");
+    for (const producerTaskId of decision.unknown)
+      roleByTaskPair.set(`${rawNode.taskId}\u0000${producerTaskId}`, "UNKNOWN");
+  }
+  const relationNodesByTask = new Map<string, Record<string, unknown>[]>();
+  for (const taskId of new Set(
+    tableLineage.producerBridges.map((bridge) => String(bridge.consumerTaskId)),
+  )) {
+    const path = join(
+      factsRoot,
+      "registry",
+      "tasks",
+      taskId,
+      "bundle",
+      "relation-nodes.jsonl",
+    );
+    const records = readFileSync(path, "utf8")
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    relationNodesByTask.set(taskId, records);
+  }
+
+  return {
+    ...tableLineage,
+    producerBridges: tableLineage.producerBridges.map((bridge) => {
+      const bridgeRecord = bridge as Record<string, unknown>;
+      const producerRole =
+        bridgeRecord.producerRole ??
+        roleByTaskPair.get(
+          `${bridge.consumerTaskId}\u0000${bridge.producerTaskId}`,
+        );
+      if (bridgeRecord.readOccurrence && producerRole)
+        return { ...bridge, producerRole };
+      const bridgeTable = bridge.table as Record<string, unknown>;
+      const bridgeTableName = String(bridgeTable.qualifiedName ?? "");
+      const relation = (relationNodesByTask.get(String(bridge.consumerTaskId)) ?? []).find(
+        (candidate) => {
+          const nested = candidate.relation as Record<string, unknown> | undefined;
+          return (
+            candidate.relation_type === "read" &&
+            typeof nested?.table === "string" &&
+            tableNamesMatch(nested.table, bridgeTableName)
+          );
+        },
+      );
+      if (!relation) return producerRole ? { ...bridge, producerRole } : bridge;
+      const fullRelationId = String(relation.relation_id ?? "");
+      const relativeRelationId =
+        fullRelationId.split(":relation:")[1] ?? fullRelationId;
+      const statementIndex = Number(
+        String(relation.statement_id ?? "").match(/:statement:(\d+)$/)?.[1] ??
+          0,
+      );
+      return {
+        ...bridge,
+        ...(producerRole ? { producerRole } : {}),
+        readOccurrence: {
+          occurrenceId: `query#${statementIndex}:${relativeRelationId}`,
+          readRelationId: relativeRelationId,
+          statementIndex,
+          relationPath: [relativeRelationId],
+        },
+      };
+    }),
   };
 }

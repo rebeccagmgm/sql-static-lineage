@@ -1,0 +1,153 @@
+## Context
+
+现有主链为 `parse → lower → resolveScopes → qualify → lineage → Plan Facts → Machine Facts → table/field reconciliation`。`src` 提供多方言 immutable IR、原始 token/expression/span 和 schema-aware 字段绑定；Plan Facts 已保存 read/project/filter/join/aggregate/expand/setop、predicate tree、window input role、scope 与物理来源；field-lineage 以精确物理字段和表级 primary producer bridge 递归，但控制依赖仍是 annotation，且所有根字段共享 traversal visited/budget。
+
+现有 change `input-pack-driven-field-lineage` 已完成，不能被本变更回写或改写历史要求。本变更在其 canonical artifact 和现有 pipeline 之上增量演进。当前仓库是 Node/TypeScript；Java 仅作为非默认测试工具可用。
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- 建立面向目标字段的统一静态依赖模型和保守证明流程。
+- 让控制字段与 relation-level dependency 可跨 Task 递归，但不污染 VALUE_FLOW 主图。
+- 对每个目标字段和已知候选分支给出完整、可验证、不可静默遗漏的 assessment。
+- 复用 Calcite 的 metadata 语义与测试资产，同时保留现有证据主链和部署方式。
+- 允许 209119 只做 field-only 增量重算。
+
+**Non-Goals:**
+
+- 不重写或替换现有 parser、IR、scope、qualification、Machine Facts 和 producer-index。
+- 不承诺纯静态 Precision/Recall 或真实运行因果关系。
+- 不在首版把 Calcite 作为生产依赖或默认 artifact 生成器。
+- 不从源码字符串、字段名相似度、Task 类型或运行假设猜测缺失身份和 scope。
+- 不在本变更中接入运行实例参数、真实分区变化或数据内容验证。
+
+## Decisions
+
+### 1. Canonical facts and semantic conclusions remain separate
+
+`src`、Plan Facts 和 Machine Facts 继续回答“SQL/Schema/Task 中确定观察到了什么”；新增 semantic layer 回答“这些 operator facts 对指定 target criterion 可能产生什么影响”。Semantic layer 只引用 canonical fact/evidence ID，不写回原始 IR 或 Machine Facts。
+
+替代方案是用 Calcite `SqlNode/RelNode` 替换当前 IR，或把当前 Plan Facts 全量转换为 `RelNode`。这会形成双 IR、丢失 source span/模板语义并重做方言适配，因此不采用。
+
+### 2. SemanticDependency uses orthogonal dimensions
+
+内部统一类型包括：
+
+```text
+subjectKind: PHYSICAL_FIELD | RELATION_OCCURRENCE
+effectKind: VALUE_CONTRIBUTION | BRANCH_SELECTION | ROW_MEMBERSHIP |
+            MULTIPLICITY | GROUPING | ORDERING | WINDOW_CONTEXT |
+            SET_MEMBERSHIP | RELATION_EXISTENCE
+operatorKind: PROJECT | FILTER | JOIN | AGGREGATE | DISTINCT | SETOP |
+              WINDOW | TOP_N | SUBQUERY | RELATION
+rootDependenceKind: VALUE_TO_TARGET | CONTROL_TO_TARGET | RELATION_TO_TARGET
+localEdgeKind: VALUE_FLOW | EXPRESSION_CONTROL | ROWSET_CONTROL |
+               WINDOW_CONTEXT | RELATION_CONTEXT
+```
+
+局部边保留真实 operator 语义；path 使用 `rootDependenceKind` 解释该分支最终为什么影响 root target。普通 window value input 是 VALUE_FLOW，partition/order/frame 是 WINDOW_CONTEXT；ORDER BY 只有和 LIMIT/TOP/FETCH 共同作用时才成为 ROWSET_CONTROL。
+
+### 3. Dependency normalization precedes traversal
+
+先从 Plan Facts 生成稳定、可去重的 dependency definitions，再为每个 root criterion 生成 applications 和 edges。Operator support matrix 明确每个 relation/expression role 的支持级别和 proof obligation。
+
+- CASE/IF：条件为 BRANCH_SELECTION，结果分支为 VALUE_CONTRIBUTION。
+- COALESCE：参数提供候选值并参与分支选择，两种作用分别建边。
+- JOIN：condition field 提供结构依赖；join type 决定 row membership/multiplicity 方向；unique key 只细化 fanout。
+- GROUP BY/DISTINCT/SETOP：分别表达 grouping、dedup 和 set membership。
+- COUNT(*)、literal-from-relation、EXISTS、CROSS JOIN：使用 relation occurrence subject。
+- 未覆盖 operator 创建 support gap，成为 negative proof 的硬阻断条件。
+
+### 4. VALUE and CONTROL share one physical resolver and expander
+
+抽取公共 physical field resolver：qualified identity → Task default schema qualification → unique Table Pack/catalog leaf match → task-local schema-backed identity。VALUE 与控制依赖必须调用同一入口。
+
+抽取公共 physical field expander：加载 producer bridge、read occurrence、producer write、Input Pack/Machine Facts、next output binding 和 evidence refs。调用方只传 root criterion、root/local dependence kind、path certainty、field/relation state 与 candidate branch；不得复制 producer selection 算法。
+
+跨 Task edge 必须引用 candidateBranchId、read occurrence evidence、consumer physical input、producer write 和 producer output binding。无法形成连续 refs 时停止为 gap。
+
+### 5. Each root target field owns independent traversal state
+
+每个 target field 独立执行 slicing；definitions、physical nodes 和 evidence objects 通过 canonical ID 共享，visited/cycle/frontier/path certainty/assessment 不共享。状态 key 至少包含 rootTargetField、taskId、subject、binding/relation occurrence、rootDependenceKind 和 localEdgeKind。
+
+VALUE 与 CONTROL 使用独立 `maxValueStates/maxValuePaths` 和 `maxControlStates/maxControlPaths`，共享 `maxDepth`。CONTROL budget 截断只影响控制 completeness；任何截断都会阻止受影响分支产生 negative proof。
+
+### 6. Candidate Universe is projected, not rediscovered
+
+Candidate Universe 读取当前 fingerprint 对应的 table multi-hop artifact：
+
+- ROOT_WRITE
+- PHYSICAL_PRODUCER（consumer + producer + physical table + read occurrence）
+- SCHEDULE_ONLY
+- UNBOUND_READ
+- BLOCKED_READ / UNIVERSE_BOUNDARY
+
+`producerRole` 不进入 branch ID，以保证 additional/primary 等证据判断变化时 ID 稳定。Field slicer 不重新运行 producer selection，也不创建 table artifact 未枚举的上游实体。
+
+### 7. Positive path propagation and final assessment are separate
+
+Traversal 只传播 PathCertainty：CONFIRMED、CONDITIONAL、UNKNOWN。Evidence closure 读取完整 candidate pair universe 后生成最终 CausalAssessment。
+
+- 完整 confirmed positive path → CONFIRMED_RELATED。
+- positive path 包含 provisional/runtime condition → CONDITIONAL_RELATED。
+- 必要 identity/scope/operator/budget 缺失 → UNKNOWN + gap。
+- 完整负向搜索、无 positive dependency、无 gap/limit/unmodeled operator、具备 negative proof → PROVEN_UNRELATED。
+
+PROVEN_UNRELATED cut 只可传播给 Candidate Universe 中已经枚举且可证明位于 cut 后的分支，proof reason 为 `INHERITED_FROM_PROVEN_UNRELATED_CUT`。
+
+### 8. Artifact 1.2.0 preserves old VALUE_FLOW readers
+
+现有 `edges` 字段继续只接收 `VALUE_FLOW`。Artifact 增加 definitions/applications/control edges、candidate universe、assessments、proofs、separate limits、metrics 和 rerun sets。Validator 强制：
+
+- 每个 rootField×candidateBranch 恰好一个 assessment。
+- UNKNOWN 至少一个 gap ref。
+- CONFIRMED_RELATED proof path 证据连续。
+- PROVEN_UNRELATED negative proof obligations 完整。
+- confirmed 数量大于零时 closure rate 为 1.0；否则 NOT_APPLICABLE。
+- Precision/Recall 固定 NOT_EVALUATED。
+
+旧版 artifact reader 保留；新 renderer 对缺少 1.2.0 字段的旧 artifact 使用 legacy view，不伪造 assessment。
+
+### 9. Renderer is a pure canonical artifact consumer
+
+文本和 HTML 只读取 artifact：展示逐目标字段最小确定集、保守安全集、candidate branch 分类、proof/gap、value/control limits 和 operator support。Renderer 不重新构图或推断 Task 是否相关。现有 root-reachable VALUE_FLOW 展示继续保留。
+
+### 10. Calcite starts as a differential oracle
+
+在独立工具目录固定 Calcite 1.42.0，提供 JSONL stdin/stdout 协议。输入包含标准化 schema、SQL/dialect hint 和 requested metadata；输出 observation、operator/table/column mapping、unsupported/failed reason 和 Calcite/version fingerprints。
+
+首版只在独立测试命令运行：默认 `npm test`、field CLI 和 pipeline 不启动 Java。Differential reconciler 生成测试报告：AGREED、NATIVE_ONLY、CALCITE_ONLY_UNMAPPABLE、NOT_EVALUATED、CONFLICT。Calcite 结果不直接进入 canonical artifact；稳定且可映射的差异先转成 Native regression fixture 和规则。
+
+生产侧车是后续独立 change。准入条件为：真实 Horae/Hive/Spark 语料的解析和 occurrence mapping 稳定、能显著减少 Unknown、冲突全部可检测、性能和 Java 运维成本可接受。
+
+### 11. 209119 uses field-only replay
+
+CLI 在现有 Input Pack fingerprint、Machine Facts、producer index 和 table artifact 一致时跳过采集与全量 producer-index 构建，只重算 field semantic facts、causal slice、artifact、summary 和 HTML。fingerprint 不一致时 fail closed，并明确要求重建哪一层输入。
+
+### 12. Module boundaries follow proof stages
+
+将当前单体 field-lineage 逻辑逐步拆为 contract、physical resolver、dependency normalization、physical expander、causal traversal、candidate universe、assessment/evidence closure 和 orchestration。拆分按证明阶段而非 operator 数量，避免 VALUE/CONTROL 形成两套 producer 算法。现有 CLI 和 renderer 使用 orchestration/contract，不直接访问内部 traversal state。
+
+## Risks / Trade-offs
+
+- [Operator semantics scope expands quickly] → 先冻结 support matrix；任何未覆盖 cell 产生 Unknown，不用启发式补齐。
+- [Control traversal causes graph explosion] → VALUE/CONTROL 独立预算、稳定状态 key、definition 去重和 per-root slicing。
+- [Candidate Universe inherits incomplete table evidence] → 显式 coverage boundary；禁止生成 PROVEN_UNRELATED。
+- [Physical resolver refactor changes existing VALUE paths] → 先用当前 field-lineage fixtures 锁定 VALUE_FLOW，再让 control 共用同一 resolver。
+- [Artifact 1.2.0 breaks renderer/consumer] → 保留 `edges=VALUE_FLOW`、旧版 reader 和版本化 validator；HTML 纯渲染。
+- [Calcite dialect differs from Horae Hive/Spark] → 仅离线、结果带 NOT_EVALUATED/UNSUPPORTED，不进入 confirmed proof。
+- [Calcite metadata still lacks base table constraints] → Unknown 保留；不把 metadata absence 当 negative proof。
+- [209119 artifacts are stale or browser-locked] → 校验 fingerprint 后写 staging，并使用现有可恢复发布流程；不在 field-only 过程中重命名未确认的目录。
+
+## Migration Plan
+
+1. 增加 semantic contract/support matrix 与合成 fixtures，不改变现有 artifact 输出。
+2. 统一 resolver 并回归现有 VALUE_FLOW/ROWSET_CONTROL 行为。
+3. 增加 definitions/applications、Native transfer rules 和公共 expander。
+4. 启用 per-root value/control traversal、Candidate Universe 与 assessment validator。
+5. 发布 artifact 1.2.0、旧版 reader、summary/HTML 和 rerun sets。
+6. 增加非默认 Calcite oracle 与 differential tests。
+7. 使用已固定 fingerprint 的 209119 做 field-only 验收并生成 JSON/HTML。
+
+回滚时关闭 1.2.0 输出入口并恢复旧 orchestrator；旧 Input Pack、Machine Facts、producer index 和 table artifact 不迁移、不重写。Calcite 工具独立，可直接从测试流程移除。

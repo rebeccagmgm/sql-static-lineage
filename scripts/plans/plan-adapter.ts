@@ -26,12 +26,13 @@ import {
 } from "../../src/dialect-behavior/public-fold.js";
 import type { SchemaProvider } from "../../src/qualify/schema-provider.js";
 import type {
-  AggregateRelation,
-  ColumnRef,
-  ExprSpec,
-  ExpandRelation,
-  FilterRelation,
-  GrainInference,
+	AggregateRelation,
+	ColumnRef,
+	ExprSpec,
+	ExpressionRoleBinding,
+	ExpandRelation,
+	FilterRelation,
+	GrainInference,
   JoinRelation,
   PlanFacts,
   PlanLineageHopEdge,
@@ -42,17 +43,21 @@ import type {
   ProjectRelation,
   ReadRelation,
   PlanScopeBinding,
-  SetopRelation,
-  SourceSpan,
-  WindowInputBinding,
-  WindowSpecFacts,
+	SetopRelation,
+	SourceSpan,
+	TopNInputBinding,
+	TopNLimitFacts,
+	TopNRelation,
+	WindowInputBinding,
+	WindowSpecFacts,
 } from "./plan-contract.js";
 import type { Projection, SelectExpr, Expr } from "../../src/ir/ir.js";
 import {
-  collectColumns,
-  expressionFacts,
-  predicateColumnsOf,
-  predicateTreeOf,
+	collectColumns,
+	expressionFacts,
+	expressionRoleNodes,
+	predicateColumnsOf,
+	predicateTreeOf,
 } from "./internal/plan-expressions.js";
 import {
   displayTextOf,
@@ -157,8 +162,10 @@ function inputColumnsFor(
 }
 
 type CstLike = {
-  parentCtx?: CstLike | null;
-  parent?: CstLike | null;
+	start?: { start?: number } | null;
+	stop?: { stop?: number } | null;
+	parentCtx?: CstLike | null;
+	parent?: CstLike | null;
   constructor?: { name?: string };
   getChildCount?: () => number;
   getChild?: (index: number) => unknown;
@@ -173,7 +180,25 @@ function sortItemOf(expr: Expr): CstLike | null {
     if (node.constructor?.name === "SortItemContext") return node;
     node = node.parentCtx ?? node.parent ?? null;
   }
-  return null;
+	return null;
+}
+
+/**
+ * Some lowerers currently leak a frame-bound expression into partitionBy
+ * while WindowSpec has no frame field.  Use only the CST parent structure as a
+ * guard against publishing that bound as a partition input; the frame itself
+ * remains UNKNOWN below.  No SQL text is inspected or reconstructed here.
+ */
+function isWindowFrameExpression(expr: Expr): boolean {
+	let node: CstLike | null =
+		((expr as Expr & { cst?: CstLike }).cst as CstLike | undefined) ?? null;
+	while (node) {
+		const name = node.constructor?.name?.toLowerCase() ?? "";
+		if (name.includes("windowframe") || name.includes("framebound"))
+			return true;
+		node = node.parentCtx ?? node.parent ?? null;
+	}
+	return false;
 }
 
 /** Read only direction/NULLS tokens from the owning sort item; never infer NULLS defaults. */
@@ -219,6 +244,59 @@ function shareWindowInputRefs(expression: ExprSpec): void {
       return offset == null ? ref : (byOffset.get(offset) ?? ref);
     });
   }
+}
+
+function expressionRoleBindings(
+	expression: Expr,
+	sql: string,
+	cellBase: number,
+	scope: Scope,
+	schema: unknown,
+	dialect: string,
+	includeDependencies: boolean,
+	onNativeLineageError: (error: unknown) => void,
+): ExpressionRoleBinding[] {
+	if (!includeDependencies) return [];
+	const all = expressionInputColumns(expression);
+	const byOffset = new Map<number, ColumnRef>();
+	for (const ref of all) {
+		const offset = (ref as RefWithOffset)._cellOffset;
+		if (offset != null && !byOffset.has(offset)) byOffset.set(offset, ref);
+	}
+	return expressionRoleNodes(expression).map((role) => {
+		const inputColumns = inputColumnsFor(
+			role.expression,
+			scope,
+			"projection",
+			schema,
+			dialect,
+			true,
+			onNativeLineageError,
+		).map((ref) => {
+			const offset = (ref as RefWithOffset)._cellOffset;
+			return offset == null ? ref : (byOffset.get(offset) ?? ref);
+		});
+		return {
+			operator: role.operator,
+			role: role.role,
+			effects: role.effects,
+			path: role.path,
+			...(role.branch_ordinal === undefined
+				? {}
+				: { branch_ordinal: role.branch_ordinal }),
+			ordinal: role.ordinal,
+			expression_text: fullTextOf(sql, cellBase, role.expression.cst),
+			display_text: displayTextOf(sql, cellBase, role.expression.cst),
+			span: spanOf(cellBase, role.expression.cst),
+			input_columns: inputColumns,
+		};
+	});
+}
+
+function expressionInputColumns(expression: Expr): ColumnRef[] {
+	const refs: ColumnRef[] = [];
+	collectColumns(expression, "projection", refs);
+	return refs;
 }
 
 function windowInputBinding(
@@ -293,9 +371,10 @@ function windowSpecOf(
         onNativeLineageError,
       ),
     );
-  for (const [ordinal, input] of window.partitionBy.entries())
-    input_bindings.push(
-      windowInputBinding(
+	for (const [ordinal, input] of window.partitionBy.entries()) {
+		if (isWindowFrameExpression(input)) continue;
+		input_bindings.push(
+			windowInputBinding(
         "WINDOW_PARTITION",
         ordinal,
         input,
@@ -306,8 +385,9 @@ function windowSpecOf(
         dialect,
         includeDependencies,
         onNativeLineageError,
-      ),
-    );
+			),
+		);
+	}
   for (const [ordinal, input] of window.orderBy.entries())
     input_bindings.push(
       windowInputBinding(
@@ -323,12 +403,105 @@ function windowSpecOf(
         onNativeLineageError,
       ),
     );
-  return {
-    source_span: spanOf(cellBase, window.cst as any),
-    expression_text: fullTextOf(sql, cellBase, window.cst as any),
-    display_text: displayTextOf(sql, cellBase, window.cst as any),
-    input_bindings,
-  };
+	return {
+		source_span: spanOf(cellBase, window.cst as any),
+		expression_text: fullTextOf(sql, cellBase, window.cst as any),
+		display_text: displayTextOf(sql, cellBase, window.cst as any),
+		input_bindings,
+		// WindowSpec in the canonical IR currently has no frame member. Keep the
+		// dependency surface explicit without inspecting the CST or SQL text.
+		frame: {
+			status: "UNKNOWN",
+			expression_text: null,
+			display_text: null,
+			span: null,
+			input_columns: [],
+			reason: "canonical WindowSpec IR does not expose frame bounds",
+		},
+	};
+}
+
+function topNInputBinding(
+	role: TopNInputBinding["role"],
+	ordinal: number,
+	input: Expr,
+	sql: string,
+	cellBase: number,
+	scope: Scope,
+	schema: unknown,
+	dialect: string,
+	includeDependencies: boolean,
+	onNativeLineageError: (error: unknown) => void,
+): TopNInputBinding {
+	const binding: TopNInputBinding = {
+		role,
+		ordinal,
+		expression_text: fullTextOf(sql, cellBase, input.cst),
+		display_text: displayTextOf(sql, cellBase, input.cst),
+		span: spanOf(cellBase, input.cst),
+		input_columns: includeDependencies
+			? inputColumnsFor(
+					input,
+					scope,
+					role === "ORDER" ? "orderBy" : "limit",
+					schema,
+					dialect,
+					true,
+					onNativeLineageError,
+				)
+			: [],
+	};
+	if (role === "ORDER") Object.assign(binding, orderSemanticsOf(input));
+	return binding;
+}
+
+function cstParent(node: CstLike | null): CstLike | null {
+	return node?.parent ?? node?.parentCtx ?? null;
+}
+
+function cstContains(outer: CstLike, inner: CstLike): boolean {
+	const outerStart = outer.start?.start;
+	const outerStop = outer.stop?.stop;
+	const innerStart = inner.start?.start;
+	const innerStop = inner.stop?.stop;
+	return (
+		outerStart !== undefined &&
+		outerStop !== undefined &&
+		innerStart !== undefined &&
+		innerStop !== undefined &&
+		outerStart <= innerStart &&
+		outerStop >= innerStop
+	);
+}
+
+/**
+ * Find the owning query CST only when it is a named query/select container and
+ * contains both the relation body and every Top-N input.  Scope intentionally
+ * does not carry QueryExpr.cst, so a missing trustworthy ancestor stays null;
+ * expression-span min/max must not be used as a fabricated SQL span.
+ */
+function topNSpanOf(
+	scope: Scope,
+	inputs: readonly Expr[],
+	cellBase: number,
+): SourceSpan | null {
+	const anchors = [
+		scope.body.cst as unknown as CstLike,
+		...inputs.map((input) => input.cst as unknown as CstLike),
+	];
+	let candidate: CstLike | null = anchors[0] ?? null;
+	while (candidate) {
+		const name = candidate.constructor?.name?.toLowerCase() ?? "";
+		const isQueryContainer =
+			(name.includes("query") || name.includes("select")) &&
+			!name.includes("multistatement");
+		if (isQueryContainer && anchors.every((anchor) => cstContains(candidate!, anchor))) {
+			const span = spanOf(cellBase, candidate);
+			if (span.end > span.start) return span;
+		}
+		candidate = cstParent(candidate);
+	}
+	return null;
 }
 
 function nativeLineageErrorMessage(error: unknown): string {
@@ -1289,10 +1462,10 @@ function nativeHopProjection(
   };
 }
 
-const CONTRACT_VERSION = "1.3.0";
-const ADAPTER_VERSION = "0.4.0";
-const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.3.0";
-export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.4.0";
+const CONTRACT_VERSION = "1.4.0";
+const ADAPTER_VERSION = "0.5.0";
+const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.4.0";
+export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.5.0";
 
 export function buildPlanFacts(
   cell: { scopes: ScopeTree; span: { start: number } },
@@ -1350,6 +1523,121 @@ export function buildPlanFacts(
   // 每个 scope 的根节点 id 缓存 (子查询源可能被多次引用, 如 join 右臂 + from 列表)
   const rootIds = new Map<Scope, string>();
 
+  function addTopN(
+    scope: Scope,
+    path: string,
+    sourceId: string,
+    outputColumns: string[] | null,
+  ): string {
+    const limitInfo = scope.limit;
+    const limitInputs = [limitInfo?.top, limitInfo?.offset, limitInfo?.fetch].filter(
+      (input): input is Expr => input !== undefined,
+    );
+    if (!limitInfo || limitInputs.length === 0) return sourceId;
+
+    const topNId = `${path}.top_n`;
+    const onNativeLineageError = (error: unknown): void =>
+      recordNativeLineageFailure(
+        topNId,
+        "limit",
+        spanOf(cellBase, scope.body.cst),
+        error,
+      );
+    const includeDependencies = Boolean(opts?.include_expression_dependencies);
+    const orderBy = (scope.orderBy ?? []).map((input, ordinal) =>
+      topNInputBinding(
+        "ORDER",
+        ordinal,
+        input,
+        sql,
+        cellBase,
+        scope,
+        schema,
+        dialect,
+        includeDependencies,
+        onNativeLineageError,
+      ),
+    );
+	const topNLimit: TopNLimitFacts = {
+		kind:
+			dialect === "tsql" && limitInfo.top
+				? "TOP"
+				: limitInfo.offset || limitInfo.fetch
+					? "OFFSET_FETCH"
+					: "LIMIT",
+      percent: limitInfo.percent || undefined,
+      with_ties: limitInfo.withTies || undefined,
+    };
+    if (limitInfo.top)
+      topNLimit.top = topNInputBinding(
+        "LIMIT",
+        0,
+        limitInfo.top,
+        sql,
+        cellBase,
+        scope,
+        schema,
+        dialect,
+        includeDependencies,
+        onNativeLineageError,
+      );
+    if (limitInfo.offset)
+      topNLimit.offset = topNInputBinding(
+        "OFFSET",
+        0,
+        limitInfo.offset,
+        sql,
+        cellBase,
+        scope,
+        schema,
+        dialect,
+        includeDependencies,
+        onNativeLineageError,
+      );
+    if (limitInfo.fetch)
+      topNLimit.fetch = topNInputBinding(
+        "FETCH",
+        0,
+        limitInfo.fetch,
+        sql,
+        cellBase,
+        scope,
+        schema,
+        dialect,
+        includeDependencies,
+        onNativeLineageError,
+      );
+
+	const topNSpan = topNSpanOf(
+		scope,
+		[...(scope.orderBy ?? []), ...limitInputs],
+		cellBase,
+	);
+    if (!topNSpan) {
+      unknowns.push({
+        node_id: topNId,
+        field: "span",
+        reason:
+          "Top-N full construct span is UNKNOWN: Scope does not expose a trustworthy owning QueryExpr/CST span",
+      });
+    }
+    const topN: TopNRelation = {
+      id: topNId,
+      type: "top_n",
+      source: sourceId,
+      order_by: orderBy,
+      limit: topNLimit,
+      span_status: topNSpan ? "EXTRACTED" : "UNKNOWN",
+      span: topNSpan,
+      provenance: topNSpan ? "extracted" : "unknown",
+      output_columns: outputColumns,
+    };
+    relations.push(topN);
+    relationScopes.set(topNId, scope);
+    rootIds.set(scope, topNId);
+    return topNId;
+  }
+
   function buildScope(scope: Scope, path: string): string {
     if (!scopePathByScope.has(scope)) scopePathByScope.set(scope, path);
     if (rootIds.has(scope)) return rootIds.get(scope)!;
@@ -1405,7 +1693,7 @@ export function buildPlanFacts(
         });
       }
       rootIds.set(scope, id);
-      return id;
+      return addTopN(scope, path, id, outCols ?? inferredOutputs);
     }
 
     // 非 select/setop body (pipe/…) → other 节点显式保留
@@ -1777,11 +2065,31 @@ export function buildPlanFacts(
               expr_text: fullTextOf(sql, cellBase, p.cst),
               display_text: displayTextOf(sql, cellBase, p.cst),
               span: spanOf(cellBase, p.cst),
-              input_columns: inputColumns.length > 0 ? inputColumns : undefined,
-              expression_facts: opts?.include_expression_dependencies
-                ? expressionFacts(p.expr)
-                : undefined,
-            };
+				input_columns: inputColumns.length > 0 ? inputColumns : undefined,
+				expression_facts: opts?.include_expression_dependencies
+					? expressionFacts(p.expr)
+					: undefined,
+				...(opts?.include_expression_dependencies
+					? {
+							expression_roles: expressionRoleBindings(
+								p.expr,
+								sql,
+								cellBase,
+								scope,
+								schema,
+								dialect,
+								true,
+								(error) =>
+									recordNativeLineageFailure(
+										id,
+										"projection",
+										spanOf(cellBase, p.cst),
+										error,
+									),
+								),
+						}
+					: {}),
+			};
           }),
         span:
           gbExprs.length > 0
@@ -1939,6 +2247,24 @@ export function buildPlanFacts(
                 ),
             )
           : [];
+        const expressionRoles = opts?.include_expression_dependencies
+          ? expressionRoleBindings(
+              expr,
+              sql,
+              cellBase,
+              scope,
+              schema,
+              dialect,
+              true,
+              (error) =>
+                recordNativeLineageFailure(
+                  pid,
+                  "projection",
+                  spanOf(cellBase, p.cst),
+                  error,
+                ),
+            )
+          : undefined;
         const exprSpec: ExprSpec = {
           output,
           output_name_status: anonymous ? "ANONYMOUS_EXPRESSION" : "EXPLICIT",
@@ -1968,11 +2294,14 @@ export function buildPlanFacts(
           expr_text: fullTextOf(sql, cellBase, p.cst),
           display_text: displayTextOf(sql, cellBase, p.cst),
           span: spanOf(cellBase, p.cst),
-          input_columns: inputColumns.length > 0 ? inputColumns : undefined,
-          expression_facts: opts?.include_expression_dependencies
-            ? expressionFacts(expr)
-            : undefined,
-        };
+			input_columns: inputColumns.length > 0 ? inputColumns : undefined,
+			expression_facts: opts?.include_expression_dependencies
+				? expressionFacts(expr)
+				: undefined,
+			...(opts?.include_expression_dependencies
+				? { expression_roles: expressionRoles }
+				: {}),
+		};
         shareWindowInputRefs(exprSpec);
         exprs.push(exprSpec);
         outNames.push(output);
@@ -2001,6 +2330,8 @@ export function buildPlanFacts(
     }
     rootIds.set(scope, pid);
 
+    addTopN(scope, path, pid, computedOut ?? outCols);
+
     // 表达式子查询 / CTE 子块
     for (const [childIndex, child] of scope.children.entries()) {
       if (!rootIds.has(child))
@@ -2009,7 +2340,7 @@ export function buildPlanFacts(
           `${path}.(child${childIndex === 0 ? "" : `-${childIndex}`})`,
         );
     }
-    return pid;
+    return rootIds.get(scope) ?? pid;
   }
 
   roots.push(buildScope(root, "root"));
@@ -2103,9 +2434,9 @@ export function buildPlanFacts(
   // `deal`'s `SELECT *` project instead of asking lineageAt to cross an alias
   // boundary it does not own.
   const resolveDerivedOutput: DerivedOutputResolver = (scope, name) => {
-    const rootId = rootIds.get(scope);
     const project = relations.find(
-      (relation) => relation.id === rootId && relation.type === "project",
+      (relation) =>
+        relationScopes.get(relation.id) === scope && relation.type === "project",
     ) as ProjectRelation | undefined;
     const expression = project?.expressions.find(
       (candidate) => candidate.output.toLowerCase() === name.toLowerCase(),
@@ -2180,9 +2511,9 @@ export function buildPlanFacts(
       return { kind: "DERIVED_OUTPUT" };
     }
     // An expression with no column inputs is still a derived output when it
-    // is a function, CASE, cast, or arithmetic expression rather than a
-    // literal. Do not turn a computed constant/system value into a fake
-    // physical-field Unknown at a derived-table or set-op boundary.
+  // is a function, CASE, cast, or arithmetic expression rather than a
+  // literal. Do not turn a computed constant/system value into a fake
+  // physical-field Unknown at a derived-table or set-op boundary.
     if (
       physical.length === 0 &&
       candidates.length === 0 &&
@@ -2308,6 +2639,18 @@ export function buildPlanFacts(
               systemValueNames,
               resolveDerivedOutput,
             );
+          for (const role of measure.expression_roles ?? [])
+            resolvePhysical(
+              cell,
+              schema,
+              scope,
+              r.id,
+              role.input_columns,
+              unknowns,
+              dialect,
+              systemValueNames,
+              resolveDerivedOutput,
+            );
         }
       } else if (r.type === "project") {
         for (const expression of r.expressions) {
@@ -2336,6 +2679,46 @@ export function buildPlanFacts(
               resolveDerivedOutput,
             );
           }
+          for (const role of expression.expression_roles ?? [])
+            resolvePhysical(
+              cell,
+              schema,
+              scope,
+              r.id,
+              role.input_columns,
+              unknowns,
+              dialect,
+              systemValueNames,
+              resolveDerivedOutput,
+            );
+        }
+      } else if (r.type === "top_n") {
+        for (const input of r.order_by) {
+          resolvePhysical(
+            cell,
+            schema,
+            scope,
+            r.id,
+            input.input_columns,
+            unknowns,
+            dialect,
+            systemValueNames,
+            resolveDerivedOutput,
+          );
+        }
+        for (const input of [r.limit.top, r.limit.offset, r.limit.fetch]) {
+          if (!input) continue;
+          resolvePhysical(
+            cell,
+            schema,
+            scope,
+            r.id,
+            input.input_columns,
+            unknowns,
+            dialect,
+            systemValueNames,
+            resolveDerivedOutput,
+          );
         }
       }
     }
@@ -2368,6 +2751,8 @@ export function buildPlanFacts(
           measure.input_columns = dedupePhysicalInputColumns(
             measure.input_columns,
           );
+        for (const role of measure.expression_roles ?? [])
+          role.input_columns = dedupePhysicalInputColumns(role.input_columns);
       }
     } else if (relation.type === "project") {
       for (const expression of relation.expressions) {
@@ -2379,6 +2764,19 @@ export function buildPlanFacts(
           binding.input_columns = dedupePhysicalInputColumns(
             binding.input_columns,
           );
+        for (const role of expression.expression_roles ?? [])
+          role.input_columns = dedupePhysicalInputColumns(role.input_columns);
+      }
+    } else if (relation.type === "top_n") {
+      for (const input of relation.order_by)
+        input.input_columns = dedupePhysicalInputColumns(input.input_columns);
+      for (const input of [
+        relation.limit.top,
+        relation.limit.offset,
+        relation.limit.fetch,
+      ]) {
+        if (input)
+          input.input_columns = dedupePhysicalInputColumns(input.input_columns);
       }
     }
   }
@@ -2511,6 +2909,11 @@ export function propagateGrain(facts: PlanFacts): Map<string, GrainState> {
           note: `${r.setop.toUpperCase()}${r.all ? " ALL" : ""}: 分支合并, 输出行数 = 各分支之和/去重, grain 键不保证`,
         });
         break;
+      case "top_n": {
+        const src = st.get(r.source);
+        st.set(r.id, src ? { ...src } : { grain: null, note: "上游未知" });
+        break;
+      }
     }
   }
   return st;
@@ -2668,6 +3071,21 @@ export function inferGrain(facts: PlanFacts): GrainInference[] {
           requires: r.all
             ? []
             : ["各分支行数 + 去重语义 (UNION) 或集合基数 (EXCEPT/INTERSECT)"],
+        });
+        break;
+      }
+      case "top_n": {
+        const source = states.get(r.source);
+        out.push({
+          node_id: r.id,
+          grain_candidate: source?.grain ?? null,
+          cardinality: "non-increasing",
+          confidence: "high",
+          evidence: [
+            "Top-N / row-limiting relation: output rows cannot exceed its input",
+            r.order_by.length > 0 ? "query-level ORDER BY is preserved" : "no query-level ORDER BY",
+          ],
+          requires: [],
         });
         break;
       }

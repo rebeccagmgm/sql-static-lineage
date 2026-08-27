@@ -1,5 +1,5 @@
 // ============================================================================
-// Logical Plan Facts —— JSON 契约 v1.1（仿 Substrait Relation 缩小版）
+// Logical Plan Facts —— JSON 契约 v1.4.0（仿 Substrait Relation 缩小版）
 //
 // 设计原则:
 //   1. 事实 / 推断分离 —— 本契约只承载"从 sql-static-lineage IR 确定性提取"的事实;
@@ -19,7 +19,7 @@
 //   - ColumnRef.physical 改为数组 (case 多分支可能多源), 接 schema 后填充
 //   - GrainInference 增加 fanout 模型字段 (cardinality_effect/per_input_rows/grain_effect)
 //
-// v1 范围: 7 类关系节点 read/project/filter/join/aggregate/expand/setop;
+// v1 范围: 8 类关系节点 read/project/filter/join/aggregate/expand/setop/top_n;
 //          window 作为 project expression 的属性 (不单列节点);
 //          pipe 等未建模 body 显式标 type="other" 保留。
 //
@@ -41,6 +41,10 @@
 //   - Filter / Join 保留 predicate tree，并标注表达式子查询；
 //   - relation 增加 scope_id，文档级 facts 增加 CTE / derived scope_bindings；
 //   - 允许读取侧按物理 ReadRelation occurrence 回溯而不按表名去重。
+//
+// v1.4.0 变更:
+//   - expression roles, query-level Top-N, and explicit UNKNOWN window frames
+//     are serialized; these fields require the v1.4.0 contract/cache identity.
 // ============================================================================
 
 /** 可溯源的源文本区间 (文档坐标, end 为 exclusive)。 */
@@ -64,6 +68,7 @@ export interface ColumnRef {
 		| "having"
 		| "qualify"
 		| "orderBy"
+		| "limit"
 		| "windowPartition"
 		| "windowOrder";
 	/** 物理解析结果 (喂 schema 后): 追到基表的 库.表 + 物理列。
@@ -161,6 +166,43 @@ export interface WindowSpecFacts {
 	expression_text: string;
 	display_text: string;
 	input_bindings: WindowInputBinding[];
+	/** Frame syntax is not represented by the current canonical WindowSpec IR. */
+	frame?: WindowFrameFacts;
+}
+
+export interface WindowFrameFacts {
+	/** UNKNOWN is explicit: the adapter must not infer frame syntax from SQL text. */
+	status: "EXTRACTED" | "UNKNOWN";
+	/** Null means the canonical IR has no frame expression/span to project. */
+	expression_text: string | null;
+	display_text: string | null;
+	span: SourceSpan | null;
+	input_columns: ColumnRef[];
+	reason?: string;
+}
+
+export type ExpressionRole =
+	| "BRANCH_SELECTOR"
+	| "RESULT_VALUE"
+	| "COALESCE_ARGUMENT";
+export type ExpressionRoleEffect =
+	| "VALUE_CONTRIBUTION"
+	| "BRANCH_SELECTION";
+
+/** A structured role for one direct or nested expression operand. */
+export interface ExpressionRoleBinding {
+	operator: "CASE" | "IF" | "COALESCE";
+	role: ExpressionRole;
+	effects: ExpressionRoleEffect[];
+	/** Stable path within the owning expression, e.g. case.when[0]. */
+	path: string;
+	/** Branch ordinal for CASE/IF result and selector operands. */
+	branch_ordinal?: number;
+	ordinal: number;
+	expression_text: string;
+	display_text: string;
+	span: SourceSpan;
+	input_columns: ColumnRef[];
 }
 
 /** 一个输出列的表达形式 —— project / aggregate 的表达式清单。 */
@@ -188,6 +230,8 @@ export interface ExprSpec {
 	input_columns?: ColumnRef[];
 	/** 可选：由 IR 提取的运算符、字面量、函数和谓词。 */
 	expression_facts?: ExpressionFacts;
+	/** Optional structured CASE/IF/COALESCE roles; absent when the IR has no such role. */
+	expression_roles?: ExpressionRoleBinding[];
 }
 
 // ---------------------------------------------------------------------------
@@ -198,7 +242,7 @@ interface BaseRelation {
 	/** 稳定 id: "{scope路径}.{类型}[.{序号}]"。scope 路径按 FROM 源 key 拼接,
 	 *  如 root.casttable.x.t.join.2 —— 同一 SQL 重复解析 id 不变。 */
 	id: string;
-	type: "read" | "project" | "filter" | "join" | "aggregate" | "expand" | "setop" | "other";
+	type: "read" | "project" | "filter" | "join" | "aggregate" | "expand" | "setop" | "top_n" | "other";
 	/** 该节点在源文本中的完整 span。 */
 	span: SourceSpan;
 	/** 节点完整性: "extracted" = 从 IR 完整提取; "unknown" = 结构部分缺失。 */
@@ -307,6 +351,41 @@ export interface SetopRelation extends BaseRelation {
 	branches: string[];
 }
 
+export type TopNInputRole = "ORDER" | "LIMIT" | "OFFSET" | "FETCH";
+
+/** One IR-backed input to a query-level ORDER BY/LIMIT/TOP/OFFSET-FETCH. */
+export interface TopNInputBinding {
+	role: TopNInputRole;
+	ordinal: number;
+	expression_text: string;
+	display_text: string;
+	span: SourceSpan;
+	input_columns: ColumnRef[];
+	direction?: "ASC" | "DESC";
+	nulls?: WindowNullOrdering;
+}
+
+export interface TopNLimitFacts {
+	kind: "TOP" | "LIMIT" | "OFFSET_FETCH";
+	top?: TopNInputBinding;
+	offset?: TopNInputBinding;
+	fetch?: TopNInputBinding;
+	percent?: boolean;
+	with_ties?: boolean;
+}
+
+/** Query-level row limiting. Created only when the canonical IR exposes a limit input. */
+export interface TopNRelation extends Omit<BaseRelation, "span" | "type"> {
+	type: "top_n";
+	source: string;
+	order_by: TopNInputBinding[];
+	limit: TopNLimitFacts;
+	/** Whether the relation span covers the complete canonical Top-N construct. */
+	span_status: "EXTRACTED" | "UNKNOWN";
+	/** Null when Scope does not expose a trustworthy owning QueryExpr/CST span. */
+	span: SourceSpan | null;
+}
+
 /** v1 未建模结构 (pipe 等), 显式保留而非丢弃。 */
 export interface OtherRelation extends BaseRelation {
 	type: "other";
@@ -323,6 +402,7 @@ export type PlanRelation =
 	| AggregateRelation
 	| ExpandRelation
 	| SetopRelation
+	| TopNRelation
 	| OtherRelation;
 
 /**

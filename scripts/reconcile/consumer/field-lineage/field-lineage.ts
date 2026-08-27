@@ -24,7 +24,6 @@ import {
 } from "../../../query/current-task-bundle.ts";
 import {
   inferTaskDefaultSchema,
-  qualifyBareTableName,
   type TaskDefaultSchema,
 } from "../../shared/task-default-schema.ts";
 import {
@@ -43,6 +42,14 @@ import {
   type PhysicalFieldIdentity,
   type RowsetControlAnnotation,
 } from "./field-lineage-contract.ts";
+import {
+	physicalFieldForTable,
+	resolvePhysicalInputField,
+} from "./physical-field-resolver.ts";
+import {
+  createPhysicalFieldExpander,
+  type PhysicalFieldExpander,
+} from "./physical-field-expander.ts";
 
 type TaskPack = {
   readonly document: TaskDocument & JsonRecord;
@@ -76,11 +83,6 @@ type BundleIndexes = {
 	readonly controlsByStatement: ReadonlyMap<string, readonly JsonRecord[]>;
 };
 
-type LineageIndexes = {
-	readonly decisions: ReadonlyMap<string, LineageDecision>;
-	readonly bridges: ReadonlyMap<string, readonly JsonRecord[]>;
-};
-
 export interface ReconcileFieldLineageOptions {
 	readonly dataRoot: string;
 	readonly factsRoot: string;
@@ -112,7 +114,11 @@ type TraversalState = {
     readonly sourceNodeId: string;
     readonly consumerTaskId: string;
     readonly producerTaskId: string | null;
-    readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY";
+    readonly evidenceStatus:
+      | "CONFIRMED"
+      | "PROVISIONAL_LEGACY"
+      | "UNRESOLVED";
+    readonly evidenceRefs: readonly string[];
   } | null;
 };
 
@@ -250,23 +256,6 @@ function excludedTaskDetail(
   } catch {
     return null;
   }
-}
-
-function physicalField(
-  table: PhysicalTableCatalogEntry,
-  columnInput: string,
-): PhysicalFieldIdentity | null {
-  const column = normalizeName(columnInput);
-  if (!table.columns.some((candidate) => normalizeName(candidate) === column))
-    return null;
-  return {
-    platform: table.platform,
-    dataSource: table.dataSource,
-    stableTableId: table.stableTableId,
-    qualifiedName: table.qualifiedName,
-    column,
-    identityStatus: "SCHEMA_BACKED",
-  };
 }
 
 function nodeId(
@@ -416,14 +405,6 @@ function taskLocalMaterializationBindingIds(
   ].sort(compareText);
 }
 
-function isTaskLocalSchemaSource(source: unknown, taskId: string): boolean {
-  const value = String(source ?? "");
-  return (
-    value.startsWith(`input-pack-task-local-ctas:${taskId}:`) ||
-    value.startsWith(`input-pack-task-local-write:${taskId}:`)
-	);
-}
-
 const bundleIndexesCache = new WeakMap<object, BundleIndexes>();
 
 function bundleIndexesFor(load: CurrentBundleLoad): BundleIndexes {
@@ -512,56 +493,30 @@ function sourceFields(
     const rawTableName = normalizeName(String(input?.table ?? ""));
     const column = normalizeName(String(input?.column ?? ""));
     if (!rawTableName || !column) continue;
-    const tableName = qualifyBareTableName(rawTableName, defaultSchema);
-    const exact = catalog.byQualifiedName.get(tableName) ?? [];
-    const tailMatches = rawTableName.includes(".") || defaultSchema !== null
-      ? []
-      : catalog.entries.filter(
-          (entry) =>
-            normalizeName(entry.qualifiedName).split(".").at(-1) === rawTableName,
-        );
-    const tables =
-      exact.length > 0 ? exact : tailMatches.length === 1 ? tailMatches : [];
-    if (tables.length !== 1) {
-      const localSchemas = (load.records["schema-refs.jsonl"] ?? []).filter(
-        (record) =>
-          normalizeName(String(record.qualified_name ?? "")) === rawTableName &&
-          isTaskLocalSchemaSource(record.source, taskId) &&
-          Array.isArray(record.physical_columns) &&
-          record.physical_columns
-            .map((value) => normalizeName(String(value)))
-            .includes(column),
-      );
-      if (localSchemas.length === 1) {
-        const field: PhysicalFieldIdentity = {
-          platform: taskTarget.platform,
-          dataSource: taskTarget.dataSource,
-          stableTableId: `task-local:${taskId}:${tableName}`,
-          qualifiedName: tableName,
-          column,
-          identityStatus: "TASK_LOCAL_SCHEMA_BACKED",
-        };
-        fields.set(physicalFieldKey(field), field);
-        continue;
-      }
+    const resolution = resolvePhysicalInputField(
+      {
+        catalog,
+        taskId,
+        defaultSchema,
+        fallbackTable: taskTarget,
+        schemaRefs: load.records["schema-refs.jsonl"] ?? [],
+      },
+      { table: rawTableName, column },
+    );
+    if (resolution.status === "UNRESOLVED") {
       unresolved.push({
-        table: tableName,
+        table: resolution.table,
         column,
         reason:
-          tables.length === 0
+          resolution.reason === "TABLE_PACK_MISSING"
             ? "SOURCE_TABLE_PACK_MISSING"
-            : "SOURCE_TABLE_IDENTITY_AMBIGUOUS",
+            : resolution.reason === "TABLE_IDENTITY_AMBIGUOUS"
+              ? "SOURCE_TABLE_IDENTITY_AMBIGUOUS"
+              : "SOURCE_FIELD_NOT_IN_SCHEMA",
       });
       continue;
     }
-    const field = physicalField(tables[0]!, column);
-    if (!field)
-      unresolved.push({
-        table: tableName,
-        column,
-        reason: "SOURCE_FIELD_NOT_IN_SCHEMA",
-      });
-    else fields.set(physicalFieldKey(field), field);
+    fields.set(physicalFieldKey(resolution.field), resolution.field);
   }
   return {
     fields: [...fields.values()].sort((left, right) =>
@@ -599,509 +554,6 @@ function lineageDecisions(tableLineage: TableLineageArtifact): ReadonlyMap<strin
 	return result;
 }
 
-function bridgeIndex(tableLineage: TableLineageArtifact): ReadonlyMap<string, readonly JsonRecord[]> {
-	const result = new Map<string, JsonRecord[]>();
-	for (const raw of Array.isArray(tableLineage.producerBridges) ? tableLineage.producerBridges : []) {
-		const bridge = asRecord(raw);
-		if (!bridge) continue;
-		const consumerTaskId = nonEmpty(bridge?.consumerTaskId);
-		const producerTaskId = nonEmpty(bridge?.producerTaskId);
-		if (!consumerTaskId || !producerTaskId) continue;
-		const key = `${consumerTaskId}\u0000${producerTaskId}`;
-		const values = result.get(key) ?? [];
-		values.push(bridge);
-		result.set(key, values);
-	}
-	return result;
-}
-
-function bridgeMatches(
-	bridgesByTaskPair: ReadonlyMap<string, readonly JsonRecord[]>,
-	consumerTaskId: string,
-	producerTaskId: string,
-	field: PhysicalFieldIdentity,
-): boolean {
-	const relevant = bridgesByTaskPair.get(`${consumerTaskId}\u0000${producerTaskId}`) ?? [];
-  if (relevant.length === 0) return false;
-  return relevant.some((raw) => {
-    const table = asRecord(asRecord(raw)?.table);
-    return (
-      normalizeName(String(table?.qualifiedName ?? "")) ===
-        normalizeName(field.qualifiedName) &&
-      normalizeName(String(table?.platform ?? "")) ===
-        normalizeName(field.platform) &&
-      normalizeName(String(table?.dataSource ?? "")) ===
-        normalizeName(field.dataSource)
-    );
-  });
-}
-
-type ClassifiedProducerRole =
-  | "PRIMARY"
-  | "ADDITIONAL"
-  | "UNKNOWN"
-  | "CANDIDATE";
-
-function bridgeRole(bridge: JsonRecord): ClassifiedProducerRole | null {
-  const role = String(bridge.producerRole ?? "");
-  return ["PRIMARY", "ADDITIONAL", "UNKNOWN", "CANDIDATE"].includes(
-    role,
-  )
-    ? (role as ClassifiedProducerRole)
-    : null;
-}
-
-function expressionQualifiersForColumn(
-  expressionText: string,
-  column: string,
-): readonly string[] {
-  const escapedColumn = column.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    `(?:^|[^\\w$])["\\x60]?([A-Za-z_][\\w$]*)["\\x60]?\\s*\\.\\s*["\\x60]?${escapedColumn}["\\x60]?(?![\\w$])`,
-    "gi",
-  );
-  const qualifiers = new Set<string>();
-  for (const match of expressionText.matchAll(pattern))
-    if (match[1]) qualifiers.add(normalizeName(match[1]));
-  return [...qualifiers].sort(compareText);
-}
-
-function bridgeTableMatchesField(
-  bridge: JsonRecord,
-  field: PhysicalFieldIdentity,
-): boolean {
-  const table = asRecord(bridge.table);
-  return (
-    normalizeName(String(table?.qualifiedName ?? "")) ===
-      normalizeName(field.qualifiedName) &&
-    normalizeName(String(table?.platform ?? "")) ===
-      normalizeName(field.platform) &&
-    normalizeName(String(table?.dataSource ?? "")) ===
-      normalizeName(field.dataSource)
-  );
-}
-
-type RawRelationExpression = {
-  readonly relationId: string;
-  readonly outputName: string;
-  readonly inputNames: readonly string[];
-  readonly qualifiers: readonly string[];
-  readonly raw: JsonRecord;
-};
-
-function rawRelationExpressions(
-  relationId: string,
-  value: unknown,
-): RawRelationExpression[] {
-  const result: RawRelationExpression[] = [];
-  const visit = (candidate: unknown): void => {
-    if (Array.isArray(candidate)) {
-      for (const item of candidate) visit(item);
-      return;
-    }
-    const record = asRecord(candidate);
-    if (!record) return;
-    const outputName = nonEmpty(record.output);
-    const inputColumns = Array.isArray(record.input_columns)
-      ? record.input_columns
-          .map(asRecord)
-          .filter((item): item is JsonRecord => item !== null)
-      : [];
-    if (outputName && inputColumns.length > 0) {
-      result.push({
-        relationId,
-        outputName: normalizeName(outputName),
-        inputNames: inputColumns
-          .map((input) => normalizeName(String(input.name ?? "")))
-          .filter(Boolean),
-        qualifiers: inputColumns
-          .map((input) => normalizeName(String(input.qualifier ?? "")))
-          .filter(Boolean),
-        raw: record,
-      });
-    }
-    for (const key of ["expressions", "measures"]) visit(record[key]);
-  };
-  visit(value);
-  return result;
-}
-
-function rawPhysicalInputs(
-  value: unknown,
-  field: PhysicalFieldIdentity,
-): boolean {
-  const record = asRecord(value);
-  const inputColumns = Array.isArray(record?.input_columns)
-    ? record.input_columns
-    : [];
-  return inputColumns.some((input) => {
-    const inputRecord = asRecord(input);
-    const physical = Array.isArray(inputRecord?.physical)
-      ? inputRecord.physical
-      : [];
-    return physical.some((item) => {
-      const physicalRecord = asRecord(item);
-      return (
-        normalizeName(String(physicalRecord?.table ?? "")) ===
-          normalizeName(field.qualifiedName) &&
-        normalizeName(String(physicalRecord?.column ?? "")) === field.column
-      );
-    });
-  });
-}
-
-function relationDistance(
-  indexes: BundleIndexes,
-  fromRelationId: string,
-  targetRelationId: string,
-): number {
-  const sameRelation = (left: string, right: string): boolean =>
-    left === right ||
-    left.endsWith(`:relation:${right}`) ||
-    right.endsWith(`:relation:${left}`);
-  if (sameRelation(fromRelationId, targetRelationId)) return 0;
-  const queue: Array<{ relationId: string; distance: number }> = [
-    { relationId: fromRelationId, distance: 0 },
-  ];
-  const seen = new Set<string>([fromRelationId]);
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const child of indexes.incomingRelations.get(current.relationId) ?? []) {
-      if (seen.has(child)) continue;
-      if (sameRelation(child, targetRelationId))
-        return current.distance + 1;
-      seen.add(child);
-      queue.push({ relationId: child, distance: current.distance + 1 });
-    }
-  }
-  return Number.POSITIVE_INFINITY;
-}
-
-function relationPathHasQualifier(
-  relationId: string,
-  qualifier: string,
-): boolean {
-  const normalized = normalizeName(qualifier);
-  if (!normalized) return false;
-  return relationId
-    .split(/[.:]/)
-    .some((part) => normalizeName(part) === normalized);
-}
-
-function derivedOccurrenceSelection(
-  load: CurrentBundleLoad,
-  expression: JsonRecord,
-  field: PhysicalFieldIdentity,
-  matching: readonly JsonRecord[],
-): ReadonlySet<string> {
-  const indexes = bundleIndexesFor(load);
-  const relationId = String(expression.relation_id ?? "");
-  const relation = indexes.relations.get(relationId);
-  if (!relationId || !relation) return new Set();
-
-  const expressionOutput = normalizeName(
-    String(expression.output_name ?? expression.output ?? ""),
-  );
-  const currentExpressions = rawRelationExpressions(
-    relationId,
-    relation.relation,
-  ).filter(
-    (candidate) =>
-      candidate.outputName === expressionOutput &&
-      rawPhysicalInputs(candidate.raw, field),
-  );
-  const inputNames = new Set(
-    currentExpressions.flatMap((candidate) => candidate.inputNames),
-  );
-  if (inputNames.size === 0) return new Set();
-
-  const descendants = new Set<string>();
-  const queue = [relationId];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (descendants.has(current)) continue;
-    descendants.add(current);
-    queue.push(...(indexes.incomingRelations.get(current) ?? []));
-  }
-
-  const rawCandidates: RawRelationExpression[] = [];
-  for (const candidateRelationId of descendants) {
-    if (candidateRelationId === relationId) continue;
-    const candidateRelation = indexes.relations.get(candidateRelationId);
-    if (!candidateRelation) continue;
-    for (const candidate of rawRelationExpressions(
-      candidateRelationId,
-      candidateRelation.relation,
-    )) {
-      if (
-        inputNames.has(candidate.outputName) &&
-        rawPhysicalInputs(candidate.raw, field)
-      )
-        rawCandidates.push(candidate);
-    }
-  }
-  if (rawCandidates.length === 0) return new Set();
-
-  const statementId = String(expression.statement_id ?? "");
-  const statementIndex = statementId.match(/:statement:(\d+)$/)?.[1] ?? null;
-  const scored = new Map<string, number>();
-  for (const bridge of matching) {
-    const occurrence = asRecord(bridge.readOccurrence);
-    const occurrenceId = nonEmpty(occurrence?.occurrenceId);
-    const readRelationId = nonEmpty(occurrence?.readRelationId);
-    if (!occurrenceId || !readRelationId) continue;
-    if (
-      statementIndex !== null &&
-      String(occurrence?.statementIndex ?? "") !== statementIndex
-    )
-      continue;
-    let best = Number.POSITIVE_INFINITY;
-    for (const candidate of rawCandidates) {
-      const distance = relationDistance(
-        indexes,
-        candidate.relationId,
-        readRelationId,
-      );
-      if (!Number.isFinite(distance)) continue;
-      const qualifierMatch = candidate.qualifiers.some((qualifier) =>
-        relationPathHasQualifier(readRelationId, qualifier),
-      );
-      best = Math.min(best, qualifierMatch ? 0 : distance);
-    }
-    if (Number.isFinite(best)) scored.set(occurrenceId, best);
-  }
-  if (scored.size === 0) return new Set();
-  const minimum = Math.min(...scored.values());
-  return new Set(
-    [...scored.entries()]
-      .filter(([, score]) => score === minimum)
-      .map(([occurrenceId]) => occurrenceId),
-  );
-}
-
-function classifiedBridgesForSource(
-  tableLineage: TableLineageArtifact,
-  consumerTaskId: string,
-  field: PhysicalFieldIdentity,
-  expressionText: string,
-  load?: CurrentBundleLoad,
-  expression?: JsonRecord,
-): {
-  readonly classified: boolean;
-  readonly ambiguous: boolean;
-  readonly selected: readonly JsonRecord[];
-  readonly matching: readonly JsonRecord[];
-} {
-  const matching = (
-    Array.isArray(tableLineage.producerBridges)
-      ? tableLineage.producerBridges
-      : []
-  )
-    .map(asRecord)
-    .filter(
-      (bridge): bridge is JsonRecord =>
-        bridge !== null &&
-        bridge.consumerTaskId === consumerTaskId &&
-        bridgeTableMatchesField(bridge, field),
-    );
-  const classified = matching.length > 0 && matching.every(bridgeRole);
-  if (!classified)
-    return { classified: false, ambiguous: false, selected: [], matching };
-  if (matching.every((bridge) => bridge.readOccurrence === null))
-    return { classified: true, ambiguous: false, selected: matching, matching };
-  const byOccurrence = new Map<string, JsonRecord[]>();
-  for (const bridge of matching) {
-    const occurrence = asRecord(bridge.readOccurrence);
-    const occurrenceId = nonEmpty(occurrence?.occurrenceId);
-    if (!occurrenceId)
-      return { classified: true, ambiguous: true, selected: [], matching };
-    const values = byOccurrence.get(occurrenceId) ?? [];
-    values.push(bridge);
-    byOccurrence.set(occurrenceId, values);
-  }
-  if (byOccurrence.size === 1)
-    return { classified: true, ambiguous: false, selected: matching, matching };
-  const producerSignatures = new Set(
-    [...byOccurrence.values()].map((bridges) =>
-      bridges
-        .map(
-          (bridge) =>
-            `${String(bridge.producerTaskId ?? "")}:${String(bridgeRole(bridge) ?? "")}`,
-        )
-        .sort(compareText)
-        .join("|"),
-    ),
-  );
-  if (producerSignatures.size === 1)
-    return { classified: true, ambiguous: false, selected: matching, matching };
-  const qualifiers = expressionQualifiersForColumn(expressionText, field.column);
-  if (qualifiers.length === 0 && load && expression) {
-    const occurrenceIds = derivedOccurrenceSelection(
-      load,
-      expression,
-      field,
-      matching,
-    );
-    if (occurrenceIds.size > 0) {
-      return {
-        classified: true,
-        ambiguous: false,
-        selected: matching.filter((bridge) =>
-          occurrenceIds.has(
-            String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
-          ),
-        ),
-        matching,
-      };
-    }
-  }
-  if (qualifiers.length === 0)
-    return { classified: true, ambiguous: true, selected: [], matching };
-  const selectedOccurrenceIds = new Set<string>();
-  for (const qualifier of qualifiers) {
-    const occurrenceIds = new Set(
-      matching
-        .filter((bridge) => {
-          const occurrence = asRecord(bridge.readOccurrence);
-          const relationIds = [
-            occurrence?.readRelationId,
-            ...(Array.isArray(occurrence?.relationPath)
-              ? occurrence.relationPath
-              : []),
-          ].map((value) => normalizeName(String(value ?? "")));
-          return relationIds.some((relationId) =>
-            relationId.split(".").includes(qualifier),
-          );
-        })
-        .map((bridge) =>
-          String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
-        )
-        .filter(Boolean),
-    );
-    if (occurrenceIds.size !== 1)
-      return { classified: true, ambiguous: true, selected: [], matching };
-    selectedOccurrenceIds.add([...occurrenceIds][0]!);
-  }
-  return {
-    classified: true,
-    ambiguous: false,
-    selected: matching.filter((bridge) =>
-      selectedOccurrenceIds.has(
-        String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
-      ),
-    ),
-    matching,
-  };
-}
-
-function hasConfirmedTaskEdge(
-  tableLineage: TableLineageArtifact,
-  consumerTaskId: string,
-  producerTaskId: string,
-): boolean {
-  const bridge = Array.isArray(tableLineage.producerBridges)
-    ? tableLineage.producerBridges
-    : [];
-  if (
-    bridge.some((raw) => {
-      const item = asRecord(raw);
-      return (
-        item?.consumerTaskId === consumerTaskId &&
-        item?.producerTaskId === producerTaskId
-      );
-    })
-  )
-    return true;
-  const schedule = Array.isArray(tableLineage.scheduleEdges)
-    ? tableLineage.scheduleEdges
-    : [];
-  return schedule.some((raw) => {
-    const item = asRecord(raw);
-    return (
-      item?.consumerTaskId === consumerTaskId &&
-      item?.producerTaskId === producerTaskId
-    );
-  });
-}
-
-function producerMatchesField(
-	tableLineage: TableLineageArtifact,
-	lineageIndexes: LineageIndexes,
-	taskPacks: TaskPackLookup,
-  consumerTaskId: string,
-  producerTaskId: string,
-  field: PhysicalFieldIdentity,
-): boolean {
-  if (!hasConfirmedTaskEdge(tableLineage, consumerTaskId, producerTaskId))
-    return false;
-  const target = taskPacks.get(producerTaskId)?.target;
-	if (target !== null && target !== undefined) {
-    const targetField = physicalField(target, field.column);
-    if (
-      targetField !== null &&
-      physicalFieldKey(targetField) === physicalFieldKey(field)
-    )
-      return true;
-    if (physicalTableKey(target) === physicalTableKey(field)) return false;
-  }
-	if (bridgeMatches(lineageIndexes.bridges, consumerTaskId, producerTaskId, field))
-    return true;
-
-  // A schedule-fallback parent can be surfaced as an unresolved stop only
-  // when the table artifact proves both a single primary parent and a single
-  // eligible consumer read.  This does not claim a producer field bridge; it
-  // merely lets the traversal report the unavailable/excluded parent instead
-  // of silently dropping the scheduler evidence.
-	const decision = lineageIndexes.decisions.get(consumerTaskId);
-  if (decision?.primary.length !== 1 || decision.primary[0] !== producerTaskId)
-    return false;
-  const hasScheduleEdge = (
-    Array.isArray(tableLineage.scheduleEdges) ? tableLineage.scheduleEdges : []
-  ).some((raw) => {
-    const edge = asRecord(raw);
-    return (
-      edge?.consumerTaskId === consumerTaskId &&
-      edge?.producerTaskId === producerTaskId
-    );
-  });
-  if (!hasScheduleEdge) return false;
-  const eligibleReads = (
-    Array.isArray(tableLineage.readEdges) ? tableLineage.readEdges : []
-  ).filter((raw) => {
-    const edge = asRecord(raw);
-    return (
-      edge?.consumerTaskId === consumerTaskId &&
-      edge?.recursionStatus === "ELIGIBLE"
-    );
-  });
-  if (eligibleReads.length !== 1) return false;
-  const table = asRecord(eligibleReads[0]?.table);
-  return (
-    normalizeName(String(table?.qualifiedName ?? "")) ===
-      normalizeName(field.qualifiedName) &&
-    normalizeName(String(table?.platform ?? "")) ===
-      normalizeName(field.platform) &&
-    normalizeName(String(table?.dataSource ?? "")) ===
-      normalizeName(field.dataSource)
-  );
-}
-
-function producerTargetsConsumerTable(
-	taskPacks: TaskPackLookup,
-  consumerTaskId: string,
-  producerTaskId: string,
-): boolean {
-  const consumerTarget = taskPacks.get(consumerTaskId)?.target;
-  const producerTarget = taskPacks.get(producerTaskId)?.target;
-  return (
-    consumerTarget !== null &&
-    consumerTarget !== undefined &&
-    producerTarget !== null &&
-    producerTarget !== undefined &&
-    physicalTableKey(consumerTarget) === physicalTableKey(producerTarget)
-  );
-}
-
 function collectPhysicalPairs(
   value: unknown,
   output: { table: string; column: string }[] = [],
@@ -1122,49 +574,12 @@ function collectPhysicalPairs(
   return output;
 }
 
-function physicalTablesForReference(
-  catalog: PhysicalTableCatalog,
-  tableName: string,
-): readonly PhysicalTableCatalogEntry[] {
-  const normalized = normalizeName(tableName);
-  const exact = catalog.byQualifiedName.get(normalized) ?? [];
-  if (exact.length > 0 || normalized.includes(".")) return exact;
-  return catalog.entries.filter(
-    (entry) =>
-      normalizeName(entry.qualifiedName).split(".").at(-1) === normalized,
-  );
-}
-
-function taskLocalPhysicalField(
-  load: CurrentBundleLoad,
-  node: FieldLineageNode,
-  pair: { table: string; column: string },
-): PhysicalFieldIdentity | null {
-  const matches = (load.records["schema-refs.jsonl"] ?? []).filter(
-    (record) =>
-      normalizeName(String(record.qualified_name ?? "")) === pair.table &&
-      isTaskLocalSchemaSource(record.source, node.taskId) &&
-      Array.isArray(record.physical_columns) &&
-      record.physical_columns
-        .map((value) => normalizeName(String(value)))
-        .includes(pair.column),
-  );
-  if (matches.length !== 1) return null;
-  return {
-    platform: node.field.platform,
-    dataSource: node.field.dataSource,
-    stableTableId: `task-local:${node.taskId}:${pair.table}`,
-    qualifiedName: pair.table,
-    column: pair.column,
-    identityStatus: "TASK_LOCAL_SCHEMA_BACKED",
-  };
-}
-
 function rowsetControlsFor(
 	load: CurrentBundleLoad,
 	node: FieldLineageNode,
 	expression: JsonRecord,
 	catalog: PhysicalTableCatalog,
+	defaultSchema: TaskDefaultSchema | null,
 	status: "CONFIRMED" | "PROVISIONAL_LEGACY",
 	indexes: BundleIndexes = bundleIndexesFor(load),
 ): RowsetControlAnnotation[] {
@@ -1185,14 +600,18 @@ function rowsetControlsFor(
     const fields = new Map<string, PhysicalFieldIdentity>();
     let unresolved = false;
     for (const pair of collectPhysicalPairs(relation.relation)) {
-      const tables = physicalTablesForReference(catalog, pair.table);
-      const field =
-        tables.length === 1
-          ? physicalField(tables[0]!, pair.column)
-          : tables.length === 0
-            ? taskLocalPhysicalField(load, node, pair)
-            : null;
-      if (field) fields.set(physicalFieldKey(field), field);
+      const resolution = resolvePhysicalInputField(
+        {
+          catalog,
+          taskId: node.taskId,
+          defaultSchema,
+          fallbackTable: node.field,
+          schemaRefs: load.records["schema-refs.jsonl"] ?? [],
+        },
+        pair,
+      );
+      if (resolution.status === "RESOLVED")
+        fields.set(physicalFieldKey(resolution.field), resolution.field);
       else unresolved = true;
     }
     output.push({
@@ -1310,11 +729,6 @@ export function reconcileFieldLineage(
 	const rootNodeIds: string[] = [];
 	const frontier: TraversalState[] = [];
 	const visited = new Set<string>();
-	const decisions = lineageDecisions(options.tableLineage);
-	const lineageIndexes: LineageIndexes = {
-		decisions,
-		bridges: bridgeIndex(options.tableLineage),
-	};
 	const limitReasons = new Set<
 		"MAX_DEPTH_REACHED" | "MAX_STATES_REACHED" | "MAX_PATHS_REACHED"
 	>();
@@ -1326,6 +740,14 @@ export function reconcileFieldLineage(
 		validateOutputHashes: "requested",
 	});
 	const loadFacts = (taskId: string): CurrentBundleLoad => factsReader.load(taskId);
+  const physicalFieldExpander: PhysicalFieldExpander = createPhysicalFieldExpander({
+    dataRoot,
+    catalog,
+    tableLineage: options.tableLineage,
+    taskPacks,
+    loadFacts,
+    factsPolicy: options.factsPolicy,
+  });
   const rootFacts = loadFacts(options.rootTaskId);
   const rootObservationIds = writeObservationIdsForTarget(
     rootFacts,
@@ -1374,12 +796,12 @@ export function reconcileFieldLineage(
       kind: "VALUE_FLOW",
       mapping: `${field.qualifiedName}.${field.column} -> ${field.qualifiedName}.${field.column}`,
       evidenceStatus: incoming.evidenceStatus,
-      evidenceRefs: [],
+      evidenceRefs: incoming.evidenceRefs,
     });
   };
 
   for (const requestedField of rootFields) {
-    const field = physicalField(rootTarget, requestedField);
+    const field = physicalFieldForTable(rootTarget, requestedField);
     if (!field) throw new Error(`ROOT_FIELD_NOT_IN_SCHEMA:${requestedField}`);
     frontier.push({
       taskId: options.rootTaskId,
@@ -1632,11 +1054,13 @@ export function reconcileFieldLineage(
     };
     nodes.set(currentNodeId, resolvedNode);
     if (current.depth === 0) startedRoots += 1;
+    const taskDefaultSchema = inferTaskDefaultSchema(pack.document);
     for (const control of rowsetControlsFor(
       load,
       resolvedNode,
       expression,
       catalog,
+      taskDefaultSchema,
       evidenceStatus,
     ))
       controls.set(control.controlId, control);
@@ -1647,7 +1071,7 @@ export function reconcileFieldLineage(
       load,
       current.taskId,
       pack.target,
-      inferTaskDefaultSchema(pack.document),
+      taskDefaultSchema,
     );
     for (const [kind, records] of [
       [
@@ -1777,258 +1201,103 @@ export function reconcileFieldLineage(
             nodeId: localNodeId,
             depth: current.depth,
             active: current.active,
-            incoming: {
-              sourceNodeId: sourceId,
-              consumerTaskId: current.taskId,
-              producerTaskId: null,
-              evidenceStatus,
-            },
+          incoming: {
+            sourceNodeId: sourceId,
+            consumerTaskId: current.taskId,
+            producerTaskId: null,
+            evidenceStatus,
+            evidenceRefs: [
+              load.evidence["field-expression-nodes.jsonl"] ?? load.bundleDir,
+              load.evidence["output-field-bindings.jsonl"] ?? load.bundleDir,
+            ],
+          },
           });
         }
         continue;
       }
 
-      const tableDecision = decisions.get(current.taskId);
-      const bridgeSelection = classifiedBridgesForSource(
-        options.tableLineage,
-        current.taskId,
+      const expansion = physicalFieldExpander.expand({
+        consumerTaskId: current.taskId,
+        consumerPack: pack,
+        consumerLoad: load,
+        sourceNodeId: sourceId,
         source,
-        String(expression.expression_text ?? ""),
-        load,
+        expressionText: String(expression.expression_text ?? ""),
         expression,
-      );
-      if (bridgeSelection.classified && bridgeSelection.ambiguous) {
-        for (const bridge of bridgeSelection.matching) {
-          const producerTaskId = nonEmpty(bridge.producerTaskId);
-          if (!producerTaskId) continue;
-          const candidateId = `candidate:occurrence-unbound:${current.taskId}:${producerTaskId}:${physicalFieldKey(source)}`;
-          candidates.set(candidateId, {
-            candidateId,
-            consumerTaskId: current.taskId,
-            producerTaskId,
-            field: source,
-            evidenceStatus: "CANDIDATE",
-            reasonCode: "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
-          });
-        }
-        addGap({
-          gapId: `gap:${sourceId}:read-occurrence-binding`,
-          taskId: current.taskId,
-          nodeId: sourceId,
-          field: source,
-          reasonCode: "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
-          message:
-            "the field expression cannot be uniquely bound to one of the repeated physical-table read occurrences",
-          evidenceStatus: "UNRESOLVED",
-          evidenceRefs: [
-            load.evidence["field-expression-nodes.jsonl"] ?? load.bundleDir,
-          ],
+        depth: current.depth,
+        maxDepth: options.maxDepth,
+      });
+      for (const expansionGap of expansion.gaps) addGap(expansionGap);
+      for (const candidate of expansion.candidates)
+        candidates.set(candidate.candidateId, {
+          ...candidate,
+          evidenceStatus: "CANDIDATE",
         });
-        continue;
-      }
-      const decision: LineageDecision | undefined = bridgeSelection.classified
-        ? {
-            primary: [
-              ...new Set(
-                bridgeSelection.selected
-                  .filter((bridge) => bridgeRole(bridge) === "PRIMARY")
-                  .map((bridge) => String(bridge.producerTaskId)),
-              ),
-            ].sort(compareText),
-            additional: [
-              ...new Set(
-                bridgeSelection.selected
-                  .filter((bridge) =>
-                    ["ADDITIONAL", "CANDIDATE"].includes(
-                      String(bridgeRole(bridge)),
-                    ),
-                  )
-                  .map((bridge) => String(bridge.producerTaskId)),
-              ),
-            ].sort(compareText),
-            unknown: [
-              ...new Set(
-                bridgeSelection.selected
-                  .filter((bridge) => bridgeRole(bridge) === "UNKNOWN")
-                  .map((bridge) => String(bridge.producerTaskId)),
-              ),
-            ].sort(compareText),
+      if (expansion.ambiguous) continue;
+      const nextActive = new Set([
+        ...current.active,
+        currentStateKey,
+      ]);
+      for (const producer of expansion.producers) {
+        if (!producer.producerField || !producer.shouldRecurse) continue;
+        const nextBindings = producer.producerBindings.length > 0
+          ? producer.producerBindings.map((binding) => String(binding.binding_id))
+          : [null];
+        for (const bindingId of nextBindings) {
+          const nextStateKey = stateKey(
+            producer.producerTaskId,
+            producer.producerField,
+            bindingId ?? "unresolved",
+          );
+          if (nextActive.has(nextStateKey)) {
+            addGap({
+              gapId: `gap:${sourceId}:cycle:${producer.producerTaskId}:${bindingId ?? "unresolved"}`,
+              taskId: producer.producerTaskId,
+              nodeId: sourceId,
+              field: producer.producerField,
+              reasonCode: "CYCLE",
+              message:
+                "field traversal returned to a Task/physical-field/output-binding state already active on this path",
+              evidenceStatus: "UNRESOLVED",
+              evidenceRefs: producer.evidenceRefs,
+            });
+            continue;
           }
-        : tableDecision;
-      if (!decision) {
-        addGap({
-          gapId: `gap:${sourceId}:table-lineage-decision`,
-          taskId: current.taskId,
-          nodeId: sourceId,
-          field: source,
-          reasonCode: "TABLE_LINEAGE_PRIMARY_DECISION_MISSING",
-          message:
-            "table-level artifact has no one-hop primary decision for this Task",
-          evidenceStatus: "UNRESOLVED",
-          evidenceRefs: [],
-        });
-        continue;
-      }
-      const sameTableProducerIds = [
-        ...new Set([
-          ...decision.primary,
-          ...decision.additional,
-          ...decision.unknown,
-        ]),
-      ].filter((producerTaskId) =>
-        hasConfirmedTaskEdge(options.tableLineage, current.taskId, producerTaskId) &&
-        producerTargetsConsumerTable(
-          taskPacks,
-          current.taskId,
-          producerTaskId,
-        ),
-      );
-      for (const producerTaskId of sameTableProducerIds) {
-        const candidateId = `candidate:${current.taskId}:${producerTaskId}:${physicalFieldKey(source)}`;
-        candidates.set(candidateId, {
-          candidateId,
-          consumerTaskId: current.taskId,
-          producerTaskId,
-          field: source,
-          evidenceStatus: "CANDIDATE",
-          reasonCode: "SAME_PHYSICAL_TABLE_PRODUCER_NOT_RECURSED",
-        });
-      }
-      for (const additionalTaskId of decision.additional.filter(
-        (taskId) =>
-          !sameTableProducerIds.includes(taskId) &&
-          producerMatchesField(
-            options.tableLineage,
-            lineageIndexes,
-            taskPacks,
-            current.taskId,
-            taskId,
-            source,
-          ),
-      )) {
-        const candidateId = `candidate:${current.taskId}:${additionalTaskId}:${physicalFieldKey(source)}`;
-        candidates.set(candidateId, {
-          candidateId,
-          consumerTaskId: current.taskId,
-          producerTaskId: additionalTaskId,
-          field: source,
-          evidenceStatus: "CANDIDATE",
-          reasonCode: "ONE_HOP_ADDITIONAL_NOT_RECURSED",
-        });
-      }
-      const relevantUnknowns = decision.unknown.filter(
-        (taskId) =>
-          !sameTableProducerIds.includes(taskId) &&
-          producerMatchesField(
-            options.tableLineage,
-            lineageIndexes,
-            taskPacks,
-            current.taskId,
-            taskId,
-            source,
-          ),
-      );
-      for (const unknownTaskId of relevantUnknowns) {
-        const candidateId = `candidate:${current.taskId}:${unknownTaskId}:${physicalFieldKey(source)}`;
-        candidates.set(candidateId, {
-          candidateId,
-          consumerTaskId: current.taskId,
-          producerTaskId: unknownTaskId,
-          field: source,
-          evidenceStatus: "CANDIDATE",
-          reasonCode: "ONE_HOP_UNKNOWN_NOT_RECURSED",
-        });
-        addGap({
-          gapId: `gap:upstream-unknown:${current.taskId}:${unknownTaskId}:${physicalFieldKey(source)}`,
-          taskId: unknownTaskId,
-          nodeId: null,
-          field: source,
-          reasonCode: "ONE_HOP_UPSTREAM_UNKNOWN",
-          message: `one-hop classifies Task ${unknownTaskId} as unknown for the current physical source field; the field branch is not recursed`,
-          evidenceStatus: "UNRESOLVED",
-          evidenceRefs: [],
-        });
-      }
-      const producers = decision.primary.filter(
-        (taskId) =>
-          !sameTableProducerIds.includes(taskId) &&
-          producerMatchesField(
-            options.tableLineage,
-            lineageIndexes,
-            taskPacks,
-            current.taskId,
-            taskId,
-            source,
-          ),
-      );
-      for (const producerTaskId of producers) {
-        if (current.depth >= options.maxDepth) {
-          limitReasons.add("MAX_DEPTH_REACHED");
-          addGap({
-            gapId: `gap:${sourceId}:max-depth:${producerTaskId}`,
-            taskId: current.taskId,
-            nodeId: sourceId,
-            field: source,
-            reasonCode: "MAX_DEPTH_REACHED",
-            message: `maximum depth ${options.maxDepth} reached before Task ${producerTaskId}`,
-            evidenceStatus: "UNRESOLVED",
-            evidenceRefs: [],
+          const producerNodeId = bindingId === null
+            ? null
+            : nodeId(producer.producerTaskId, producer.producerField, bindingId);
+          if (producerNodeId && !nodes.has(producerNodeId))
+            nodes.set(producerNodeId, {
+              nodeId: producerNodeId,
+              taskId: producer.producerTaskId,
+              taskName: nonEmpty(producer.producerPack?.document.taskName),
+              depth: current.depth + 1,
+              field: producer.producerField,
+              bindingId,
+              expressionId: null,
+              expressionText: null,
+              evidenceStatus: producer.evidenceStatus,
+            });
+          frontier.push({
+            taskId: producer.producerTaskId,
+            field: producer.producerField,
+            bindingId,
+            nodeId: producerNodeId,
+            depth: current.depth + 1,
+            active: nextActive,
+            incoming: {
+              sourceNodeId: sourceId,
+              consumerTaskId: current.taskId,
+              producerTaskId: producer.producerTaskId,
+              evidenceStatus:
+                producer.evidenceStatus === "CONFIRMED" ||
+                producer.evidenceStatus === "PROVISIONAL_LEGACY"
+                  ? producer.evidenceStatus
+                  : "UNRESOLVED",
+              evidenceRefs: producer.evidenceRefs,
+            },
           });
-          continue;
         }
-        const producerPack = taskPacks.get(producerTaskId);
-        if (producerPack && isSkippedLineageTask(producerPack.document))
-          continue;
-        if (!producerPack || !producerPack.target) {
-          const excluded = excludedTaskDetail(dataRoot, producerTaskId);
-          addGap({
-            gapId: `gap:${sourceId}:producer-pack:${producerTaskId}`,
-            taskId: producerTaskId,
-            nodeId: sourceId,
-            field: source,
-            reasonCode: excluded
-              ? "TASK_INPUT_PACK_EXCLUDED"
-              : "TASK_INPUT_PACK_MISSING",
-            message: excluded
-              ? `upstream Task Input Pack is excluded: ${excluded.reason}`
-              : "upstream Task Input Pack is missing",
-            evidenceStatus: "UNRESOLVED",
-            evidenceRefs: excluded?.evidence ?? [],
-          });
-          continue;
-        }
-        const producerField = physicalField(producerPack.target, source.column);
-        if (
-          !producerField ||
-          physicalFieldKey(producerField) !== physicalFieldKey(source)
-        ) {
-          addGap({
-            gapId: `gap:${sourceId}:physical-mismatch:${producerTaskId}`,
-            taskId: producerTaskId,
-            nodeId: sourceId,
-            field: source,
-            reasonCode: "PHYSICAL_FIELD_IDENTITY_MISMATCH",
-            message:
-              "producer target field does not exactly match the consumer physical source field",
-            evidenceStatus: "UNRESOLVED",
-            evidenceRefs: [],
-          });
-          continue;
-        }
-        frontier.push({
-          taskId: producerTaskId,
-          field: producerField,
-          bindingId: null,
-          nodeId: null,
-          depth: current.depth + 1,
-          active: current.active,
-          incoming: {
-            sourceNodeId: sourceId,
-            consumerTaskId: current.taskId,
-            producerTaskId,
-            evidenceStatus,
-          },
-        });
       }
     }
   }

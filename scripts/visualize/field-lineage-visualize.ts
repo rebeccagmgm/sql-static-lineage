@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -39,6 +39,34 @@ export interface FieldLineageImpactGraph {
   readonly tasks: readonly FieldLineageImpactTask[];
   readonly edges: readonly FieldLineageImpactEdge[];
   readonly truncated: boolean;
+}
+
+export interface FieldLineageCodeFlowStep {
+  readonly stepId: string;
+  readonly taskId: string;
+  readonly taskName: string | null;
+  readonly stage: string;
+  readonly title: string;
+  readonly relationType: string | null;
+  readonly relationId: string | null;
+  readonly statementId: string | null;
+  readonly sourceSpan: { readonly start: number; readonly end: number } | null;
+  readonly sourceText: string;
+  readonly evidenceMode: "FACTS_BACKED" | "EXPRESSION_ONLY";
+}
+
+export interface FieldLineageCodeFlowField {
+  readonly stepIds: readonly string[];
+  readonly taskIds: readonly string[];
+  readonly status: "FACTS_BACKED" | "EXPRESSION_ONLY" | "UNAVAILABLE";
+  readonly note: string;
+}
+
+export interface FieldLineageCodeFlowData {
+  readonly steps: readonly FieldLineageCodeFlowStep[];
+  readonly fields: Readonly<Record<string, FieldLineageCodeFlowField>>;
+  readonly factsTasks: readonly string[];
+  readonly missingTasks: readonly string[];
 }
 
 function impactFieldName(node: FieldLineageNode): string {
@@ -262,13 +290,478 @@ function readArtifact(path: string): FieldLineageVisualizationArtifact {
   return value as unknown as FieldLineageVisualizationArtifact;
 }
 
+type JsonRecord = Record<string, unknown>;
+
+interface CodeFactBundle {
+  readonly expressions: readonly JsonRecord[];
+  readonly relations: readonly JsonRecord[];
+  readonly relationEdges: readonly JsonRecord[];
+  readonly outputBindings: readonly JsonRecord[];
+}
+
+interface CodeRelationCandidate {
+  readonly record: JsonRecord;
+  readonly relationId: string;
+  readonly relationType: string;
+  readonly statementId: string | null;
+  readonly sourceSpan: { readonly start: number; readonly end: number } | null;
+  readonly sourceText: string;
+  readonly distance: number;
+}
+
+function readJsonlRecords(path: string): readonly JsonRecord[] {
+  if (!existsSync(path)) return [];
+  try {
+    const source = readFileSync(path, "utf8").trim();
+    if (!source) return [];
+    return source
+      .split(/\r?\n/)
+      .map((line) => {
+        try {
+          const value: unknown = JSON.parse(line);
+          return isRecord(value) ? value : undefined;
+        } catch {
+          return undefined;
+        }
+      })
+      .filter((value): value is JsonRecord => value !== undefined);
+  } catch {
+    return [];
+  }
+}
+
+function recordString(record: JsonRecord, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function recordSpan(
+  record: JsonRecord,
+  key = "source_span",
+): { readonly start: number; readonly end: number } | null {
+  const value = record[key];
+  if (!isRecord(value)) return null;
+  const start = value.start;
+  const end = value.end;
+  return typeof start === "number" && typeof end === "number" && start >= 0 && end >= start
+    ? { start, end }
+    : null;
+}
+
+function loadCodeFacts(
+  factsRoot: string | undefined,
+  taskId: string,
+): CodeFactBundle | null {
+  if (!factsRoot || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(taskId)) return null;
+  const bundleDir = join(resolve(factsRoot), "registry", "tasks", taskId, "bundle");
+  if (!existsSync(bundleDir)) return null;
+  return {
+    expressions: readJsonlRecords(join(bundleDir, "field-expression-nodes.jsonl")),
+    relations: readJsonlRecords(join(bundleDir, "relation-nodes.jsonl")),
+    relationEdges: readJsonlRecords(join(bundleDir, "relation-edges.jsonl")),
+    outputBindings: readJsonlRecords(join(bundleDir, "output-field-bindings.jsonl")),
+  };
+}
+
+function fieldRefs(value: unknown): readonly { readonly table: string; readonly column: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const table = typeof item.table === "string" ? item.table : "";
+    const column = typeof item.column === "string" ? item.column : "";
+    return table || column ? [{ table, column }] : [];
+  });
+}
+
+function regexEscape(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function containsSqlToken(source: string, token: string): boolean {
+  if (!token || token.length < 3) return false;
+  if (token.includes(".")) return source.toLocaleLowerCase().includes(token.toLocaleLowerCase());
+  return new RegExp(`(^|[^A-Za-z0-9_])${regexEscape(token)}(?=$|[^A-Za-z0-9_])`, "i").test(source);
+}
+
+function relationTitle(relationType: string, relationId: string): string {
+  if (relationId.endsWith("root.project")) return "目标字段投影";
+  if (relationId.includes(".(child)")) return "CTE / 子查询";
+  switch (relationType.toLowerCase()) {
+    case "read":
+      return "读取输入";
+    case "filter":
+      return "过滤条件";
+    case "join":
+      return "JOIN 关联";
+    case "aggregate":
+      return "聚合 / 分组";
+    case "setop":
+      return "UNION 分支汇聚";
+    case "project":
+      return "字段投影";
+    default:
+      return relationType || "SQL 关系";
+  }
+}
+
+function taskFieldNodeIds(
+  artifact: FieldLineageVisualizationArtifact,
+  field: string,
+): { readonly nodeIds: readonly string[]; readonly taskIds: readonly string[] } {
+  const nodeById = new Map(artifact.nodes.map((node) => [node.nodeId, node]));
+  const incomingByNode = new Map<string, FieldLineageEdge[]>();
+  artifact.edges.forEach((edge) => {
+    const incoming = incomingByNode.get(edge.toNodeId) ?? [];
+    incoming.push(edge);
+    incomingByNode.set(edge.toNodeId, incoming);
+  });
+  const roots = artifact.rootNodeIds
+    .map((nodeId) => nodeById.get(nodeId))
+    .filter((node): node is FieldLineageNode =>
+      effectiveNode(node) && node.field.column === field,
+    );
+  const seen = new Set<string>();
+  const taskIds: string[] = [];
+  const seenTasks = new Set<string>();
+  const queue = roots.map((node) => node.nodeId);
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    if (!nodeId || seen.has(nodeId)) continue;
+    const node = nodeById.get(nodeId);
+    if (!effectiveNode(node)) continue;
+    seen.add(nodeId);
+    if (!seenTasks.has(node.taskId)) {
+      seenTasks.add(node.taskId);
+      taskIds.push(node.taskId);
+    }
+    for (const edge of incomingByNode.get(nodeId) ?? []) {
+      if (edge.evidenceStatus === "UNRESOLVED") continue;
+      const parent = nodeById.get(edge.fromNodeId);
+      if (effectiveNode(parent) && !seen.has(parent.nodeId)) queue.push(parent.nodeId);
+    }
+  }
+  return { nodeIds: [...seen], taskIds };
+}
+
+function codeFlowForField(
+  artifact: FieldLineageVisualizationArtifact,
+  field: string,
+  factsByTask: ReadonlyMap<string, CodeFactBundle | null>,
+  stepByKey: Map<string, FieldLineageCodeFlowStep>,
+): FieldLineageCodeFlowField {
+  const nodeById = new Map(artifact.nodes.map((node) => [node.nodeId, node]));
+  const selected = taskFieldNodeIds(artifact, field);
+  const nodesByTask = new Map<string, FieldLineageNode[]>();
+  selected.nodeIds.forEach((nodeId) => {
+    const node = nodeById.get(nodeId);
+    if (!node) return;
+    const nodes = nodesByTask.get(node.taskId) ?? [];
+    nodes.push(node);
+    nodesByTask.set(node.taskId, nodes);
+  });
+  const stepIds: string[] = [];
+  const appendStep = (step: FieldLineageCodeFlowStep): void => {
+    if (stepIds.includes(step.stepId)) return;
+    stepByKey.set(step.stepId, stepByKey.get(step.stepId) ?? step);
+    stepIds.push(step.stepId);
+  };
+  let factsBacked = false;
+  const missingTasks: string[] = [];
+
+  selected.taskIds.forEach((taskId) => {
+    const nodes = nodesByTask.get(taskId) ?? [];
+    const facts = factsByTask.get(taskId) ?? null;
+    if (!facts) {
+      missingTasks.push(taskId);
+      nodes.forEach((node) => {
+        if (!node.expressionText) return;
+        appendStep({
+          stepId: `expression-only:${node.nodeId}`,
+          taskId: node.taskId,
+          taskName: node.taskName,
+          stage: "expression",
+          title: "字段表达式（仅字段产物）",
+          relationType: null,
+          relationId: null,
+          statementId: null,
+          sourceSpan: null,
+          sourceText: node.expressionText,
+          evidenceMode: "EXPRESSION_ONLY",
+        });
+      });
+      return;
+    }
+
+    const nodeExpressionIds = new Set(
+      nodes
+        .map((node) => node.expressionId)
+        .filter((value): value is string => typeof value === "string" && value.length > 0),
+    );
+    const relevantColumns = new Set(nodes.map((node) => node.field.column));
+    const relevantTables = new Set(nodes.map((node) => node.field.qualifiedName));
+    const outputBindingExpressionIds = new Set(
+      facts.outputBindings
+        .filter((binding) => {
+          const targetField = recordString(binding, "target_field");
+          return targetField !== null && relevantColumns.has(targetField);
+        })
+        .map((binding) => recordString(binding, "expression_id"))
+        .filter((value): value is string => value !== null),
+    );
+    outputBindingExpressionIds.forEach((value) => nodeExpressionIds.add(value));
+
+    const expressions = facts.expressions
+      .filter((expression) => {
+        const expressionId = recordString(expression, "expression_id");
+        const outputName = recordString(expression, "output_name");
+        return (
+          (expressionId !== null && nodeExpressionIds.has(expressionId)) ||
+          (outputName !== null && relevantColumns.has(outputName))
+        );
+      })
+      .sort((left, right) => (recordSpan(left)?.start ?? 0) - (recordSpan(right)?.start ?? 0));
+
+    const seedRelationIds = new Set<string>();
+    expressions.forEach((expression) => {
+      const relationId = recordString(expression, "relation_id");
+      if (relationId) seedRelationIds.add(relationId);
+      fieldRefs(expression.input_fields).forEach((input) => {
+        if (input.column) relevantColumns.add(input.column);
+        if (input.table) relevantTables.add(input.table);
+      });
+    });
+
+    expressions.forEach((expression) => {
+      const expressionId = recordString(expression, "expression_id");
+      const expressionText = recordString(expression, "expression_text");
+      if (!expressionId || !expressionText) return;
+      const outputName = recordString(expression, "output_name") ?? field;
+      const span = recordSpan(expression);
+      const stepId = `expression:${taskId}:${expressionId}`;
+      appendStep({
+        stepId,
+        taskId,
+        taskName: nodes[0]?.taskName ?? null,
+        stage: "expression",
+        title: `字段表达式 · ${outputName}`,
+        relationType: null,
+        relationId: recordString(expression, "relation_id"),
+        statementId: recordString(expression, "statement_id"),
+        sourceSpan: span,
+        sourceText: expressionText,
+        evidenceMode: "FACTS_BACKED",
+      });
+      factsBacked = true;
+    });
+
+    const relationById = new Map<string, JsonRecord>();
+    facts.relations.forEach((relation) => {
+      const relationId = recordString(relation, "relation_id");
+      if (relationId) relationById.set(relationId, relation);
+    });
+    const incomingByRelation = new Map<string, string[]>();
+    facts.relationEdges.forEach((edge) => {
+      const from = recordString(edge, "from_relation_id");
+      const to = recordString(edge, "to_relation_id");
+      if (!from || !to) return;
+      const incoming = incomingByRelation.get(to) ?? [];
+      incoming.push(from);
+      incomingByRelation.set(to, incoming);
+    });
+    const distanceByRelation = new Map<string, number>();
+    const relationQueue = [...seedRelationIds];
+    seedRelationIds.forEach((relationId) => distanceByRelation.set(relationId, 0));
+    while (relationQueue.length > 0) {
+      const relationId = relationQueue.shift();
+      if (!relationId) continue;
+      const distance = distanceByRelation.get(relationId) ?? 0;
+      for (const parentId of incomingByRelation.get(relationId) ?? []) {
+        if (distanceByRelation.has(parentId)) continue;
+        distanceByRelation.set(parentId, distance + 1);
+        relationQueue.push(parentId);
+      }
+    }
+
+    const candidates: CodeRelationCandidate[] = [];
+    for (const [relationId, distance] of distanceByRelation) {
+      const relation = relationById.get(relationId);
+      if (!relation) continue;
+      const sourceText = recordString(relation, "source_text");
+      if (!sourceText) continue;
+      candidates.push({
+        record: relation,
+        relationId,
+        relationType: recordString(relation, "relation_type") ?? "relation",
+        statementId: recordString(relation, "statement_id"),
+        sourceSpan: recordSpan(relation),
+        sourceText,
+        distance,
+      });
+    }
+    const extraRelations = facts.relations
+      .map((relation) => {
+        const relationId = recordString(relation, "relation_id");
+        const sourceText = recordString(relation, "source_text");
+        if (!relationId || !sourceText || distanceByRelation.has(relationId)) return null;
+        if (!relationId.includes(".(child)")) return null;
+        const relevant = [...relevantColumns, ...relevantTables].some((token) =>
+          containsSqlToken(sourceText, token),
+        );
+        if (!relevant) return null;
+        return {
+          record: relation,
+          relationId,
+          relationType: recordString(relation, "relation_type") ?? "relation",
+          statementId: recordString(relation, "statement_id"),
+          sourceSpan: recordSpan(relation),
+          sourceText,
+          distance: (Math.max(...distanceByRelation.values(), 0) + 1),
+        } satisfies CodeRelationCandidate;
+      })
+      .filter((value): value is CodeRelationCandidate => value !== null);
+    candidates.push(...extraRelations);
+
+    if (candidates.length === 0) {
+      facts.relations
+        .map((relation) => {
+          const relationId = recordString(relation, "relation_id");
+          const sourceText = recordString(relation, "source_text");
+          if (!relationId || !sourceText) return null;
+          const relevant = [...relevantColumns, ...relevantTables].some((token) =>
+            containsSqlToken(sourceText, token),
+          );
+          if (!relevant) return null;
+          return {
+            record: relation,
+            relationId,
+            relationType: recordString(relation, "relation_type") ?? "relation",
+            statementId: recordString(relation, "statement_id"),
+            sourceSpan: recordSpan(relation),
+            sourceText,
+            distance: 0,
+          } satisfies CodeRelationCandidate;
+        })
+        .filter((value): value is CodeRelationCandidate => value !== null)
+        .sort((left, right) => (right.sourceText.length - left.sourceText.length))
+        .slice(0, 4)
+        .forEach((candidate) => candidates.push(candidate));
+    }
+
+    const relationCandidates = new Map<string, CodeRelationCandidate>();
+    candidates.forEach((candidate) => {
+      const span = candidate.sourceSpan;
+      const key = `${candidate.relationType}|${span?.start ?? candidate.relationId}|${span?.end ?? candidate.sourceText}`;
+      const previous = relationCandidates.get(key);
+      if (!previous || candidate.sourceText.length > previous.sourceText.length) {
+        relationCandidates.set(key, candidate);
+      }
+    });
+    [...relationCandidates.values()]
+      .sort((left, right) => {
+        if (left.distance !== right.distance) return left.distance - right.distance;
+        return (right.sourceSpan?.start ?? 0) - (left.sourceSpan?.start ?? 0);
+      })
+      .slice(0, 32)
+      .forEach((candidate) => {
+        const stepId = `relation:${taskId}:${candidate.relationType}:${candidate.sourceSpan?.start ?? candidate.relationId}:${candidate.sourceSpan?.end ?? ""}`;
+        appendStep({
+          stepId,
+          taskId,
+          taskName: nodes[0]?.taskName ?? null,
+          stage: candidate.relationType,
+          title: relationTitle(candidate.relationType, candidate.relationId),
+          relationType: candidate.relationType,
+          relationId: candidate.relationId,
+          statementId: candidate.statementId,
+          sourceSpan: candidate.sourceSpan,
+          sourceText: candidate.sourceText,
+          evidenceMode: "FACTS_BACKED",
+        });
+        factsBacked = true;
+      });
+
+    if (expressions.length === 0 && candidates.length === 0) {
+      nodes.forEach((node) => {
+        if (!node.expressionText) return;
+        appendStep({
+          stepId: `expression-only:${node.nodeId}`,
+          taskId: node.taskId,
+          taskName: node.taskName,
+          stage: "expression",
+          title: "字段表达式（仅字段产物）",
+          relationType: null,
+          relationId: null,
+          statementId: null,
+          sourceSpan: null,
+          sourceText: node.expressionText,
+          evidenceMode: "EXPRESSION_ONLY",
+        });
+      });
+    }
+  });
+
+  const status = factsBacked
+    ? "FACTS_BACKED"
+    : stepIds.length > 0
+      ? "EXPRESSION_ONLY"
+      : "UNAVAILABLE";
+  const note =
+    status === "UNAVAILABLE"
+      ? "当前字段没有可展示的代码证据。"
+      : factsBacked
+        ? missingTasks.length > 0
+          ? `已展开 facts SQL；缺少 ${missingTasks.length} 个 Task 的当前 facts：${missingTasks.join("、")}`
+          : "已按目标字段的 Task 顺序展开原始 SQL 片段；点击步骤可查看代码。"
+        : "未加载可用 facts，当前仅展示字段产物中的表达式；不会推断缺失 SQL。";
+  return {
+    stepIds,
+    taskIds: selected.taskIds,
+    status,
+    note,
+  };
+}
+
+export function buildFieldLineageCodeFlowData(
+  artifact: FieldLineageVisualizationArtifact,
+  factsRoot?: string,
+): FieldLineageCodeFlowData {
+  const taskIds = [
+    ...new Set(
+      artifact.nodes
+        .filter((node) => effectiveNode(node))
+        .map((node) => node.taskId),
+    ),
+  ];
+  const factsByTask = new Map<string, CodeFactBundle | null>();
+  taskIds.forEach((taskId) => factsByTask.set(taskId, loadCodeFacts(factsRoot, taskId)));
+  const factsTasks = factsRoot
+    ? taskIds.filter((taskId) => factsByTask.get(taskId) !== null)
+    : [];
+  const missingTasks = factsRoot
+    ? taskIds.filter((taskId) => factsByTask.get(taskId) === null)
+    : [];
+  const stepByKey = new Map<string, FieldLineageCodeFlowStep>();
+  const fields: Record<string, FieldLineageCodeFlowField> = {};
+  [...new Set(artifact.request.rootFields)].forEach((field) => {
+    fields[field] = codeFlowForField(artifact, field, factsByTask, stepByKey);
+  });
+  return {
+    steps: [...stepByKey.values()],
+    fields,
+    factsTasks,
+    missingTasks,
+  };
+}
+
 export function renderFieldLineageHtml(
   artifact: FieldLineageVisualizationArtifact,
+  factsRoot?: string,
 ): string {
   const rootTaskId = escapeHtml(artifact.request.rootTaskId);
   const rootTable = escapeHtml(artifact.request.rootTable);
   const data = serialized({ ...artifact, rowsetControls: [] });
   const impactData = serialized(buildFieldLineageImpactGraph(artifact));
+  const codeFlowData = serialized(buildFieldLineageCodeFlowData(artifact, factsRoot));
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -287,11 +780,16 @@ export function renderFieldLineageHtml(
 .view-tabs{display:flex;gap:2px;margin-top:16px;padding:0 22px;background:var(--surface);border-bottom:1px solid var(--line)}.view-tab{padding:10px 18px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.view-tab:hover{color:var(--text)}.view-tab[aria-selected="true"]{border-bottom-color:var(--flow);color:var(--flow);font-weight:600}.view-hidden{display:none!important}.impact-layout{max-width:1400px;margin:0 auto;padding:14px 18px}.impact-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}.impact-title{font-size:17px;font-weight:600}.impact-subtitle{margin-top:3px;color:var(--muted);font-size:12px}.impact-summary{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}.impact-graph-shell{overflow:auto;padding:2px 2px 10px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-graph{position:relative;min-width:640px;min-height:220px}.impact-svg{position:absolute;inset:0;overflow:visible;pointer-events:none}.impact-svg path{fill:none;stroke:var(--flow);stroke-width:1.25;opacity:.7}.impact-svg text{fill:var(--muted);font-size:10px}.impact-card{position:absolute;width:210px;height:96px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line);border-top:3px solid var(--flow);border-radius:7px;box-shadow:0 1px 4px rgba(31,41,51,.05);overflow:hidden;text-align:left;color:var(--text);font:inherit}.impact-card-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-name{margin-top:2px;color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-summary{margin-top:8px;color:var(--flow);font-size:12px}.impact-note{margin:8px 2px 0;color:var(--muted);font-size:11px}.impact-unresolved{color:var(--candidate)}.impact-empty{padding:18px;color:var(--muted);text-align:center}@media(max-width:720px){.view-tabs{padding:0 14px}.impact-layout{padding:12px}.impact-header{display:block}.impact-summary{text-align:left;margin-top:6px;white-space:normal}.impact-card{width:190px}}
 .task-flow{min-width:0;max-width:100%;width:100%;overflow-x:auto}.branch-detail-body{min-width:0;overflow:hidden}
 .impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
+.code-layout{max-width:1400px;margin:0 auto;padding:18px 22px}.code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.code-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.code-picker select{min-width:240px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--text);font:inherit}.code-status{color:var(--muted);font-size:12px;text-align:right}.code-status strong{color:var(--flow);font-weight:600}.code-flow{display:grid;gap:10px}.code-step{border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:7px;background:var(--surface);overflow:hidden}.code-step[data-mode="EXPRESSION_ONLY"]{border-left-color:var(--candidate)}.code-step summary{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;list-style:none}.code-step summary::-webkit-details-marker{display:none}.code-step summary::before{content:"›";color:var(--flow);font-size:20px;transition:transform .15s ease}.code-step[open] summary::before{transform:rotate(90deg)}.code-step summary:hover{background:var(--surface-2)}.code-step-index{color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.code-step-title{font-weight:600;overflow-wrap:anywhere}.code-step-meta{color:var(--muted);font-size:11px;text-align:right;white-space:nowrap}.code-step-body{padding:0 13px 13px;border-top:1px solid var(--line)}.code-step-note{display:flex;gap:8px;flex-wrap:wrap;padding:9px 0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.code-step-note strong{color:var(--flow);font-weight:500}.sql-code{margin:0;max-height:390px;overflow:auto;padding:14px 16px;background:#111a22;color:#dce7ed;border:1px solid #2b3a45;border-radius:6px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;tab-size:2;white-space:pre}.sql-keyword{color:#7dd3fc;font-weight:600}.sql-function{color:#c4b5fd}.sql-string{color:#fbbf80}.sql-number{color:#f0abfc}.sql-comment{color:#7f9ba8;font-style:italic}.sql-parameter{color:#86efac}.sql-identifier{color:#d7dee4}.sql-operator{color:#fda4af}.code-empty{padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--muted)}@media(max-width:720px){.code-layout{padding:14px}.code-toolbar{display:block}.code-status{text-align:left;margin-top:8px}.code-picker select{min-width:0;max-width:100%}.code-step summary{grid-template-columns:24px minmax(0,1fr)}.code-step-meta{grid-column:2;text-align:left;white-space:normal}.sql-code{font-size:11px}}
 </style>
 </head>
 <body>
-<header><h1>字段血缘 · ${rootTaskId}</h1><p class="subtitle">目标表：${rootTable}</p><p class="meta">页面由 FIELD_MULTI_HOP_RECONCILIATION 产物驱动；只展示静态证据，不代表调度运行或数据正确性。</p><nav class="view-tabs" aria-label="血缘视图"><button type="button" class="view-tab" data-view="field" aria-selected="true">字段血缘</button><button type="button" class="view-tab" data-view="impact" aria-selected="false">影响范围</button></nav></header>
-<div id="field-lineage-app" class="layout">
+<header><h1>字段血缘 · ${rootTaskId}</h1><p class="subtitle">目标表：${rootTable}</p><p class="meta">页面由 FIELD_MULTI_HOP_RECONCILIATION 产物驱动；只展示静态证据，不代表调度运行或数据正确性。</p><nav class="view-tabs" aria-label="血缘视图"><button type="button" class="view-tab" data-view="code" aria-selected="true">代码流转</button><button type="button" class="view-tab" data-view="field" aria-selected="false">字段血缘</button><button type="button" class="view-tab" data-view="impact" aria-selected="false">影响范围</button></nav></header>
+<section id="code-view" class="code-layout" aria-labelledby="code-title">
+  <div class="code-toolbar"><div><h2 id="code-title">直接代码流转</h2><p class="subtitle">按目标字段 → 字段表达式 → SQL 关系 → 输入表展开；点击步骤查看原始 SQL 片段。</p></div><div class="code-picker"><label for="code-field-select">当前字段</label><select id="code-field-select"></select></div><div id="code-status" class="code-status"></div></div>
+  <div id="code-flow" class="code-flow" aria-labelledby="code-title"></div>
+</section>
+<div id="field-lineage-app" class="layout view-hidden">
   <aside class="panel"><section class="section"><h2>目标字段</h2><div class="field-list" id="field-list"></div></section><div class="legend"><span><i class="flow"></i>VALUE_FLOW</span><span><i class="candidate-mark"></i>CANDIDATE</span></div></aside>
   <main class="panel">
     <div class="counts" id="counts"></div>
@@ -310,17 +808,85 @@ export function renderFieldLineageHtml(
 <script>
 const DATA=${data};
 const IMPACT=${impactData};
+const CODE_FLOW=${codeFlowData};
 const IMPACT_TREE=${serialized(renderFieldLineageImpactTree(buildFieldLineageImpactGraph(artifact)))};
-const app=document.getElementById("field-lineage-app");
+const app=document.getElementById("field-lineage-app"),codeView=document.getElementById("code-view");
 const impactView=document.getElementById("impact-view"),impactTree=document.getElementById("impact-tree"),impactGraph=document.getElementById("impact-graph"),impactSvg=document.getElementById("impact-svg"),impactCards=document.getElementById("impact-cards"),impactNote=document.getElementById("impact-note");
 const nodeById=new Map(DATA.nodes.map((node)=>[node.nodeId,node]));
 const edgesByTo=new Map();
 for(const edge of DATA.edges){const list=edgesByTo.get(edge.toNodeId)||[];list.push(edge);edgesByTo.set(edge.toNodeId,list)}
 const rootIds=new Set(DATA.rootNodeIds);
 const fieldList=document.getElementById("field-list"),routes=document.getElementById("routes"),counts=document.getElementById("counts"),status=document.getElementById("status"),detailSource=document.getElementById("detail-source"),detailEvidence=document.getElementById("detail-evidence"),candidateBox=document.getElementById("candidates"),tableBox=document.getElementById("table-edges");
+const codeFlow=document.getElementById("code-flow"),codeStatus=document.getElementById("code-status"),codeFieldSelect=document.getElementById("code-field-select"),codeStepById=new Map(CODE_FLOW.steps.map((step)=>[step.stepId,step]));
 const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const nodeLabel=(node)=>node?{task:node.taskId,table:node.field.qualifiedName,column:node.field.column}:null;
 const fields=[...new Set(DATA.request.rootFields)].sort();
+const sqlKeywords=new Set("SELECT FROM WHERE JOIN LEFT RIGHT INNER OUTER FULL ON AS CASE WHEN THEN ELSE END GROUP BY HAVING ORDER BY UNION ALL DISTINCT INSERT INTO OVER PARTITION AND OR NOT NULL IS IN LIKE BETWEEN EXISTS CREATE TABLE VIEW WITH ALTER DROP UPDATE SET VALUES LIMIT CAST DATE CURRENT_DATE LATERAL CROSS USING ASC DESC COALESCE IF SUM COUNT MAX MIN AVG ROW_NUMBER RANK".split(" "));
+function highlightSql(value){
+  let html="",index=0;
+  const source=String(value??"");
+  while(index<source.length){
+    const current=source[index],next=source[index+1];
+    if(current==='-'&&next==='-'){
+      const end=source.indexOf("\\n",index)<0?source.length:source.indexOf("\\n",index);
+      html+='<span class="sql-comment">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    if(current==='/'&&next==='*'){
+      const close=source.indexOf("*/",index+2),end=close<0?source.length:close+2;
+      html+='<span class="sql-comment">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    if(current==="'"||current==='"'||current===String.fromCharCode(96)){
+      const quote=current;let end=index+1;
+      while(end<source.length){
+        if(source[end]===quote&&source[end+1]===quote){end+=2;continue}
+        if(source[end]===quote){end+=1;break}
+        end+=1;
+      }
+      const type=quote==="'"?"sql-string":"sql-identifier";
+      html+='<span class="'+type+'">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    if(current==='$'&&next==='{'){
+      const close=source.indexOf("}",index+2),end=close<0?source.length:close+1;
+      html+='<span class="sql-parameter">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    if(/[A-Za-z_]/.test(current)){
+      let end=index+1;
+      while(end<source.length&&/[A-Za-z0-9_$]/.test(source[end]))end+=1;
+      const word=source.slice(index,end),upper=word.toUpperCase();let probe=end;
+      while(probe<source.length&&/\\s/.test(source[probe]))probe+=1;
+      const type=source[probe]==="("?"sql-function":sqlKeywords.has(upper)?"sql-keyword":"sql-identifier";
+      html+='<span class="'+type+'">'+esc(word)+'</span>';index=end;continue;
+    }
+    if(/[0-9]/.test(current)){
+      let end=index+1;
+      while(end<source.length&&/[0-9.eE+-]/.test(source[end]))end+=1;
+      html+='<span class="sql-number">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    if("=<>!+-*/%".includes(current)){
+      let end=index+1;
+      if("=<>!".includes(current)&&"=<>".includes(next||""))end+=1;
+      html+='<span class="sql-operator">'+esc(source.slice(index,end))+'</span>';index=end;continue;
+    }
+    html+=esc(current);index+=1;
+  }
+  return html;
+}
+function codeStepHtml(step,index){
+  const span=step.sourceSpan?"SQL span "+step.sourceSpan.start+"–"+step.sourceSpan.end:"未提供 SQL span";
+  const evidence=step.evidenceMode==="FACTS_BACKED"?"facts 原始片段":"字段产物表达式";
+  const taskName=step.taskName?" · "+step.taskName:"";
+  return '<details class="code-step" data-mode="'+esc(step.evidenceMode)+'"'+(index<2?' open':'')+'><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"><div class="code-step-note"><strong>'+esc(evidence)+'</strong><span>'+esc(span)+'</span>'+(step.relationId?'<span>'+esc(step.relationId)+'</span>':'')+'</div><pre class="sql-code"><code>'+highlightSql(step.sourceText)+'</code></pre></div></details>';
+}
+function renderCode(field){
+  const flow=CODE_FLOW.fields[field]||{stepIds:[],taskIds:[],status:"UNAVAILABLE",note:"当前字段没有可展示的代码证据。"};
+  codeFieldSelect.value=field;
+  const statusLabel=flow.status==="FACTS_BACKED"?"FACTS SQL":flow.status==="EXPRESSION_ONLY"?"仅表达式":"不可用";
+  codeStatus.innerHTML='<strong>'+esc(statusLabel)+'</strong> · '+esc(flow.note)+' · '+flow.stepIds.length+' 个代码步骤';
+  const steps=flow.stepIds.map((stepId)=>codeStepById.get(stepId)).filter(Boolean);
+  codeFlow.innerHTML=steps.length?steps.map((step,index)=>codeStepHtml(step,index)).join(""): '<div class="code-empty">'+esc(flow.note)+'</div>';
+}
+codeFieldSelect.innerHTML=fields.map((field)=>'<option value="'+esc(field)+'">'+esc(field)+'</option>').join("");
+codeFieldSelect.addEventListener("change",()=>render(codeFieldSelect.value));
 function impactLayers(){
   const taskIds=IMPACT.tasks.map((task)=>task.taskId),taskSet=new Set(taskIds),indegree=new Map(taskIds.map((taskId)=>[taskId,0])),outgoing=new Map(taskIds.map((taskId)=>[taskId,[]]));
   IMPACT.edges.forEach((edge)=>{if(!taskSet.has(edge.fromTaskId)||!taskSet.has(edge.toTaskId))return;outgoing.get(edge.fromTaskId).push(edge.toTaskId);indegree.set(edge.toTaskId,indegree.get(edge.toTaskId)+1)});
@@ -363,7 +929,7 @@ function renderImpactGraph(){
   });
 }
 function switchView(view){
-  const isImpact=view==='impact';app.classList.toggle('view-hidden',isImpact);impactView.classList.toggle('view-hidden',!isImpact);document.querySelectorAll('.view-tab').forEach((tab)=>tab.setAttribute('aria-selected',String(tab.dataset.view===view)));if(isImpact)renderImpactGraph();
+  const isImpact=view==='impact',isCode=view==='code';app.classList.toggle('view-hidden',!(!isImpact&&!isCode));codeView.classList.toggle('view-hidden',!isCode);impactView.classList.toggle('view-hidden',!isImpact);document.querySelectorAll('.view-tab').forEach((tab)=>tab.setAttribute('aria-selected',String(tab.dataset.view===view)));if(isImpact)renderImpactGraph();
 }
 document.querySelectorAll('.view-tab').forEach((tab)=>tab.addEventListener('click',()=>switchView(tab.dataset.view)));
 function pathsFrom(rootId,limit=32){
@@ -587,6 +1153,7 @@ function render(field){
   status.innerHTML='当前字段：<strong>'+esc(field)+'</strong> · '+routeGroups.length+' 条来源分支（Task 链） · '+paths.length+' 条证据路径';
   detailSource.textContent=root?'目标绑定：Task '+root.taskId+' · '+root.field.qualifiedName+'.'+root.field.column:"目标字段绑定未找到";
   detailEvidence.textContent='证据状态：'+(root?.evidenceStatus||"UNRESOLVED")+' · gaps='+DATA.counts.gaps+(DATA.limits.truncated?' · 截断：'+DATA.limits.reasons.join("、"):"");
+  renderCode(field);
 }
 renderCounts();render(fields[0]||"");
 </script>
@@ -598,6 +1165,8 @@ renderCounts();render(fields[0]||"");
 export interface FieldLineageVisualizationOptions {
   readonly artifactPath: string;
   readonly outputPath: string;
+  /** Optional existing Machine Facts root used to enrich the static HTML view. */
+  readonly factsRoot?: string;
 }
 
 export function visualizeFieldLineage(
@@ -608,7 +1177,7 @@ export function visualizeFieldLineage(
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(
     outputPath,
-    renderFieldLineageHtml(readArtifact(artifactPath)),
+    renderFieldLineageHtml(readArtifact(artifactPath), options.factsRoot),
     "utf8",
   );
   return outputPath;
@@ -623,12 +1192,13 @@ function main(): void {
   const argv = process.argv.slice(2);
   const artifactPath = option(argv, "--artifact");
   const outputPath = option(argv, "--output");
+  const factsRoot = option(argv, "--facts-root");
   if (!artifactPath || !outputPath)
     throw new Error(
-      "usage: field-lineage-visualize --artifact <field-lineage.json> --output <field-lineage.html>",
+      "usage: field-lineage-visualize --artifact <field-lineage.json> --output <field-lineage.html> [--facts-root <field-facts>]",
     );
   process.stdout.write(
-    `${JSON.stringify({ output: visualizeFieldLineage({ artifactPath, outputPath }) })}\n`,
+    `${JSON.stringify({ output: visualizeFieldLineage({ artifactPath, outputPath, factsRoot }) })}\n`,
   );
 }
 

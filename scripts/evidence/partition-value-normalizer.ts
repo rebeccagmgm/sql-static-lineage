@@ -20,6 +20,19 @@ export function isDateRuntimeTemplate(value: string): boolean {
   return normalizePartitionToken(value) === "${yyyy-mm-dd}";
 }
 
+/**
+ * Recognize the canonical year-start expression used with the runtime
+ * business date.  This remains symbolic: it does not evaluate a runtime
+ * date, it only proves that the expression is a date-valued boundary derived
+ * from the same scheduler parameter.
+ */
+export function isYearStartDateRuntimeExpression(value: string): boolean {
+  const normalized = value.trim().replace(/\s+/gu, "").toLowerCase();
+  return /^concat\(substr\(['"]?\$\{yyyy-mm-dd\}['"]?,1,5\),['"]?01-01['"]?\)$/u.test(
+    normalized,
+  );
+}
+
 export function datePartitionValuesCompatible(
   left: string,
   right: string,

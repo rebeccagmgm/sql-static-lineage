@@ -23,6 +23,7 @@ import { runFieldLineageCli } from "../scripts/reconcile/consumer/field-lineage/
 import {
   createSyntheticFieldLineageInputPack,
   syntheticTableLineage,
+  syntheticTableLineageWithFacts,
 } from "./fixtures/field-lineage/cases.ts";
 
 function fixture(rootTaskName?: string) {
@@ -60,7 +61,10 @@ describe("field multi-hop lineage", () => {
     const artifact = reconcileFieldLineage({
       dataRoot: f.dataRoot,
       factsRoot: f.factsRoot,
-      tableLineage: syntheticTableLineage(),
+      tableLineage: syntheticTableLineageWithFacts(
+        f.factsRoot,
+        syntheticTableLineage(),
+      ),
       rootTaskId: "100",
       rootTable: "demo.root",
       rootFields: ["out_a"],
@@ -159,6 +163,19 @@ describe("field multi-hop lineage", () => {
           node.taskId === "100" &&
           node.field.qualifiedName === "demo.mid" &&
           node.field.column === "mid_a",
+      ),
+    ).toBe(true);
+    expect(
+      artifact.rowsetControls.some(
+        (control) =>
+          control.taskId === "100" &&
+          control.controlType === "filter" &&
+          control.reasonCode === null &&
+          control.fields.some(
+            (field) =>
+              field.qualifiedName === "demo.mid" &&
+              field.column === "filter_key",
+          ),
       ),
     ).toBe(true);
   });
@@ -290,10 +307,20 @@ describe("field multi-hop lineage", () => {
       collectedAt: "2026-01-01T00:00:00.000Z",
     });
     const tableLineage = syntheticTableLineage();
-    writeFileSync(
-      tableLineagePath,
-      `${JSON.stringify({
-        ...tableLineage,
+    const evidenceFactsRoot = join(parent, "evidence-facts");
+    runInputPackMachineFacts({
+      dataRoot,
+      taskIds: ["100", "200", "300"],
+      outputRoot: evidenceFactsRoot,
+    });
+    const tableLineageWithEvidence = syntheticTableLineageWithFacts(
+      evidenceFactsRoot,
+      tableLineage,
+    );
+    const tableLineageForCli = syntheticTableLineageWithFacts(
+      evidenceFactsRoot,
+      {
+        ...tableLineageWithEvidence,
         taskNodes: [
           ...tableLineage.taskNodes.map((node) =>
             node.taskId === "100"
@@ -313,7 +340,7 @@ describe("field multi-hop lineage", () => {
           },
         ],
         producerBridges: [
-          ...tableLineage.producerBridges,
+          ...tableLineageWithEvidence.producerBridges,
           {
             consumerTaskId: "100",
             producerTaskId: "610",
@@ -324,7 +351,11 @@ describe("field multi-hop lineage", () => {
             },
           },
         ],
-      })}\n`,
+      },
+    );
+    writeFileSync(
+      tableLineagePath,
+      `${JSON.stringify(tableLineageForCli)}\n`,
       "utf8",
     );
 
@@ -1438,6 +1469,137 @@ describe("field multi-hop lineage", () => {
     expect(validateFieldLineageArtifact(artifact)).toEqual([]);
   });
 
+  it("bridges a bare-name Task-local write when the Task default schema is present", () => {
+    const parent = mkdtempSync(join(tmpdir(), "field-lineage-task-local-schema-"));
+    const dataRoot = join(parent, "data");
+    const factsRoot = join(parent, "facts");
+    for (const table of [
+      { qualifiedName: "pdata_n.root", columns: "out_a STRING" },
+      { qualifiedName: "pdata_n.source", columns: "src_a STRING" },
+      { qualifiedName: "pdata_n.raw", columns: "raw_a STRING" },
+    ])
+      writeTableInput(dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: table.qualifiedName,
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: `CREATE TABLE ${table.qualifiedName} (${table.columns});`,
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    writeTaskInput(dataRoot, {
+      taskId: "100",
+      taskCategory: "hiveTask",
+      taskName: "pdata_n.root",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "pdata_n.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE otc_div_temp SELECT s.src_a AS allo_prop_3 FROM pdata_n.source s; SELECT t.allo_prop_3 AS out_a FROM otc_div_temp t;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "200",
+      taskCategory: "hiveTask",
+      taskName: "pdata_n.source.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "pdata_n.source",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE pdata_n.source SELECT raw_a AS src_a FROM pdata_n.raw;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    runInputPackMachineFacts({
+      dataRoot,
+      taskIds: ["100", "200"],
+      outputRoot: factsRoot,
+    });
+
+    const artifact = reconcileFieldLineage({
+      dataRoot,
+      factsRoot,
+      tableLineage: syntheticTableLineageWithFacts(factsRoot, {
+        ...syntheticTableLineage(),
+        rootTaskId: "100",
+        taskNodes: [
+          {
+            taskId: "100",
+            upstreamDecision: { primary: ["200"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "200",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "200",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "pdata_n.source",
+            },
+          },
+        ],
+      }),
+      rootTaskId: "100",
+      rootTable: "pdata_n.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+
+    expect(
+      artifact.nodes.some(
+        (node) =>
+          node.field.qualifiedName === "pdata_n.source" &&
+          node.field.column === "src_a",
+      ),
+    ).toBe(true);
+    expect(
+      artifact.nodes.some(
+        (node) =>
+          node.field.qualifiedName === "otc_div_temp" &&
+          node.field.column === "allo_prop_3" &&
+          node.bindingId === "output-binding:100:task:100:slot:query:statement:0:0" &&
+          node.expressionText?.includes("s.src_a AS allo_prop_3"),
+      ),
+    ).toBe(true);
+    expect(
+      artifact.edges.some(
+        (edge) =>
+          edge.mapping === "src_a -> allo_prop_3" &&
+          edge.toNodeId.includes("output-binding:100:task:100:slot:query:statement:0:0"),
+      ),
+    ).toBe(true);
+    expect(artifact.nodes.some((node) => node.taskId === "200")).toBe(true);
+    expect(artifact.edges.some((edge) => edge.producerTaskId === "200")).toBe(true);
+    expect(validateFieldLineageArtifact(artifact)).toEqual([]);
+  });
+
   it("connects a pre-bound Task-local materialization to an external producer path", () => {
     const f = fixture();
     writeTableInput(f.dataRoot, {
@@ -1500,7 +1662,7 @@ describe("field multi-hop lineage", () => {
     const artifact = reconcileFieldLineage({
       dataRoot: f.dataRoot,
       factsRoot: f.factsRoot,
-      tableLineage: {
+      tableLineage: syntheticTableLineageWithFacts(f.factsRoot, {
         ...syntheticTableLineage(),
         rootTaskId: "1200",
         taskNodes: [
@@ -1524,7 +1686,7 @@ describe("field multi-hop lineage", () => {
             },
           },
         ],
-      },
+      }),
       rootTaskId: "1200",
       rootTable: "demo.root",
       rootFields: ["out_a"],

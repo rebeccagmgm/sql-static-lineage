@@ -3,6 +3,7 @@ import type {
   PredicateOperand,
   PredicateTree,
 } from "../plans/plan-contract.ts";
+import { isYearStartDateRuntimeExpression } from "./partition-value-normalizer.ts";
 
 export type ReadPartitionScopeStatus =
   "UNPARTITIONED" | "ALL_PARTITIONS" | "CONSTRAINED" | "PARTIAL" | "UNKNOWN";
@@ -112,6 +113,16 @@ function valueOf(operand: PredicateOperand): ReadPartitionValue | null {
     };
   }
   if (operand.kind === "RUNTIME_EXPRESSION")
+    return {
+      kind: "RUNTIME_EXPRESSION",
+      expression: operand.expression,
+      observedValue: null,
+    };
+  if (
+    operand.kind === "OTHER" &&
+    operand.inputColumns.length === 0 &&
+    isYearStartDateRuntimeExpression(operand.expression)
+  )
     return {
       kind: "RUNTIME_EXPRESSION",
       expression: operand.expression,

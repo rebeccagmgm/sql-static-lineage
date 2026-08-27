@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Schema, SqlSession } from "../src/index.js";
-import { buildPlanFacts } from "../scripts/plans/plan-adapter.ts";
+import {
+  buildPlanFacts,
+  EXPRESSION_DEPENDENCY_ADAPTER_VERSION,
+} from "../scripts/plans/plan-adapter.ts";
 import { taskSqlDialect } from "../scripts/plans/task-sql-dialect.ts";
 import { resolveReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts";
+import { planAdapterRoleFixtures } from "./fixtures/plan-adapter/roles.ts";
 
 describe("plan adapter star expansion", () => {
   it("retains structured filter predicates and physical partition origins", () => {
@@ -707,3 +711,219 @@ describe("plan adapter star expansion", () => {
     });
   });
 });
+
+describe("plan adapter structured semantic roles", () => {
+  function buildFixture(name: string) {
+    const fixture = planAdapterRoleFixtures.find((item) => item.name === name);
+    if (!fixture) throw new Error(`fixture ${name} missing`);
+    const schema = new Schema(fixture.schema);
+    const dialect = fixture.dialect ?? "databricks";
+    const session = SqlSession.create(fixture.sql, dialect, { schema });
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect,
+      schema,
+      include_expression_dependencies: true,
+    });
+    const project = plan.relations.find(
+      (relation) => relation.type === "project",
+    );
+    if (project?.type !== "project") throw new Error("project relation missing");
+    return { fixture, plan, project, expression: project.expressions[0]! };
+  }
+
+  it.each(["case", "if"])(
+    "separates %s branch selectors from result values",
+    (name) => {
+      const { fixture, expression } = buildFixture(name);
+      expect(expression.expression_roles).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: "BRANCH_SELECTOR",
+            effects: ["BRANCH_SELECTION"],
+          }),
+          expect.objectContaining({
+            role: "RESULT_VALUE",
+            effects: ["VALUE_CONTRIBUTION"],
+          }),
+        ]),
+      );
+      for (const role of expression.expression_roles ?? []) {
+        expect(fixture.sql.slice(role.span.start, role.span.end)).toContain(
+          role.expression_text,
+        );
+      }
+    },
+  );
+
+  it("uses the canonical CASE subject span for simple CASE selectors", () => {
+    const { fixture, expression } = buildFixture("simple-case");
+    const selectors = (expression.expression_roles ?? []).filter(
+      (role) => role.role === "BRANCH_SELECTOR",
+    );
+
+    expect(selectors).toHaveLength(2);
+    for (const selector of selectors) {
+      expect(selector.expression_text).toBe("t.kind");
+      expect(fixture.sql.slice(selector.span.start, selector.span.end)).toBe(
+        selector.expression_text,
+      );
+      expect(selector.span).toEqual({
+        start: fixture.sql.indexOf("t.kind"),
+        end: fixture.sql.indexOf("t.kind") + "t.kind".length,
+      });
+    }
+  });
+
+  it("records COALESCE arguments as value and selection inputs", () => {
+    const { expression } = buildFixture("coalesce");
+    expect(expression.expression_roles).toHaveLength(3);
+    expect(expression.expression_roles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          operator: "COALESCE",
+          role: "COALESCE_ARGUMENT",
+          effects: ["VALUE_CONTRIBUTION", "BRANCH_SELECTION"],
+          ordinal: 0,
+        }),
+        expect.objectContaining({ ordinal: 2, expression_text: "0" }),
+      ]),
+    );
+  });
+
+  it("keeps unavailable window frame semantics explicitly unknown", () => {
+    const { expression } = buildFixture("window-frame");
+    expect(expression.window_spec?.input_bindings.map((item) => item.role)).toEqual([
+      "VALUE",
+      "WINDOW_PARTITION",
+      "WINDOW_ORDER",
+    ]);
+    expect(expression.window_spec?.input_bindings).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ expression_text: "2" })]),
+    );
+    expect(expression.window_spec?.frame).toEqual({
+      status: "UNKNOWN",
+      expression_text: null,
+      display_text: null,
+      span: null,
+      input_columns: [],
+      reason: "canonical WindowSpec IR does not expose frame bounds",
+    });
+  });
+
+  it("projects Top-N relation/control inputs from Scope IR", () => {
+    const { plan } = buildFixture("top-n");
+    const topN = plan.relations.find((relation) => relation.type === "top_n");
+    if (topN?.type !== "top_n") throw new Error("top_n relation missing");
+    expect(plan.roots).toEqual(["root.top_n"]);
+    expect(topN).toMatchObject({
+      id: "root.top_n",
+      source: "root.project",
+      order_by: [
+        expect.objectContaining({
+          role: "ORDER",
+          expression_text: "t.ts",
+          direction: "DESC",
+          nulls: "UNSPECIFIED",
+        }),
+      ],
+      limit: {
+        kind: "LIMIT",
+        top: expect.objectContaining({ role: "LIMIT", expression_text: "10" }),
+      },
+      span_status: "EXTRACTED",
+    });
+    expect(topN.span).toEqual({ start: 0, end: fixtureSql("top-n").length });
+  });
+
+  it("classifies OFFSET-only Top-N as OFFSET_FETCH", () => {
+    const { plan } = buildFixture("top-n-offset-only");
+    const topN = plan.relations.find((relation) => relation.type === "top_n");
+    if (topN?.type !== "top_n") throw new Error("top_n relation missing");
+
+    expect(topN.limit).toMatchObject({
+      kind: "OFFSET_FETCH",
+      offset: expect.objectContaining({ role: "OFFSET", expression_text: "5" }),
+    });
+    expect(topN.limit.fetch).toBeUndefined();
+  });
+
+  it.each(["top-n-setop", "top-n-except", "top-n-intersect"])(
+    "wraps a query-level Top-N around a %s root and preserves its full span",
+    (fixtureName) => {
+    const fixture = planAdapterRoleFixtures.find(
+      (item) => item.name === fixtureName,
+    )!;
+    const originalSql = fixture.sql;
+    const session = SqlSession.create(originalSql, "databricks");
+    const plan = buildPlanFacts(session.doc.statements[0]!, originalSql, {
+      dialect: "databricks",
+      include_expression_dependencies: true,
+    });
+    const topN = plan.relations.find((relation) => relation.type === "top_n");
+    if (topN?.type !== "top_n") throw new Error("top_n relation missing");
+
+    expect(plan.roots).toEqual(["root.top_n"]);
+    const setop = plan.relations.find((relation) => relation.id === "root.setop");
+    if (setop?.type !== "setop") throw new Error("setop relation missing");
+    expect(setop.setop).toBe(
+      fixtureName === "top-n-setop"
+        ? "union"
+        : fixtureName.replace("top-n-", ""),
+    );
+    expect(topN).toMatchObject({
+      id: "root.top_n",
+      source: "root.setop",
+      order_by: [
+        expect.objectContaining({
+          role: "ORDER",
+          expression_text: "a",
+          direction: "DESC",
+        }),
+      ],
+      limit: {
+        kind: "LIMIT",
+        top: expect.objectContaining({ role: "LIMIT", expression_text: "1" }),
+      },
+      span_status: "EXTRACTED",
+    });
+    expect(topN.span).toEqual({ start: 0, end: originalSql.length });
+    expect(originalSql.slice(topN.span!.start, topN.span!.end)).toBe(originalSql);
+    expect(plan.relations.filter((relation) => relation.type === "top_n")).toHaveLength(1);
+    },
+  );
+
+  it("bumps serialized plan and dependency-cache identities for the new fields", () => {
+    const fixture = planAdapterRoleFixtures.find((item) => item.name === "top-n")!;
+    const session = SqlSession.create(fixture.sql, "databricks");
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+    });
+    const dependencyPlan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+      include_expression_dependencies: true,
+    });
+
+    expect(plan.meta.contract_version).toBe("1.4.0");
+    expect(plan.meta.adapter_version).toBe("0.5.0");
+    expect(dependencyPlan.meta.contract_version).toBe("1.4.0");
+    expect(dependencyPlan.meta.adapter_version).toBe(
+      EXPRESSION_DEPENDENCY_ADAPTER_VERSION,
+    );
+    expect(dependencyPlan.meta.adapter_version).not.toBe("0.4.0");
+  });
+
+  it("does not add role fields when expression dependencies are disabled", () => {
+    const fixture = planAdapterRoleFixtures.find((item) => item.name === "case")!;
+    const session = SqlSession.create(fixture.sql, "databricks");
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+    });
+    const project = plan.relations.find((relation) => relation.type === "project");
+    if (project?.type !== "project") throw new Error("project relation missing");
+    expect("expression_roles" in project.expressions[0]!).toBe(false);
+  });
+});
+
+function fixtureSql(name: string): string {
+  return planAdapterRoleFixtures.find((item) => item.name === name)!.sql;
+}
