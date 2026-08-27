@@ -5,7 +5,10 @@ import {
   writeTaskInput,
 } from "../../../scripts/input/shared/input-pack.ts";
 
-export function createSyntheticFieldLineageInputPack(dataRoot: string): void {
+export function createSyntheticFieldLineageInputPack(
+  dataRoot: string,
+  options: { readonly rootTaskName?: string } = {},
+): void {
   for (const table of [
     { qualifiedName: "demo.root", columns: "out_a STRING, out_b STRING" },
     { qualifiedName: "demo.mid", columns: "mid_a STRING, filter_key STRING" },
@@ -34,7 +37,7 @@ export function createSyntheticFieldLineageInputPack(dataRoot: string): void {
   writeTaskInput(dataRoot, {
     taskId: "100",
     taskCategory: "sparkIndex",
-    taskName: "demo.root.task",
+    taskName: options.rootTaskName ?? "demo.root.task",
     target: {
       platform: "hive",
       dataSource: "warehouse",

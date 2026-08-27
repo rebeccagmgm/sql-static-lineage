@@ -347,7 +347,11 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			unknowns.push(gap(input, write, "NOT_EVALUABLE", "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE", "platform target requires exactly one enumerable query producer", write.target, { uncovered_ordinals: uncovered }));
 			continue;
 		}
-		const target = parsedInsert?.target ?? create?.target ?? write.target;
+		// The Write context carries the physical identity resolved from the task
+		// target/Table Pack. Do not replace it with parseInsert's lexical target:
+		// a bare INSERT target may have a task-local CREATE schema with the same
+		// tail but incomplete columns, while the physical Table Pack is complete.
+		const target = write.target;
 		const schemaRef = schemaForTarget(target, input.schemaRefs, input.declaredWrites);
 		const dataset = resolvedDataset(target, schemaRef, input.declaredWrites);
 		if (
@@ -419,6 +423,19 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 				return schemaOrdinal >= 0 ? schemaOrdinal : ordinal;
 			});
 			bindingMethod = "TARGET_SCHEMA_POSITIONAL";
+		} else if (
+			isPlatformTarget &&
+			schemaRef &&
+			schemaRef.physical_columns.length === expressions.length
+		) {
+			targetColumns = schemaRef.physical_columns.map((column) => normalizeName(String(column)));
+			targetOrdinals = targetColumns.map((column, ordinal) => {
+				const schemaOrdinal = schemaRef.physical_columns.findIndex(
+					(candidate) => normalizeName(String(candidate)) === column,
+				);
+				return schemaOrdinal >= 0 ? schemaOrdinal : ordinal;
+			});
+			bindingMethod = "TARGET_SCHEMA_POSITIONAL";
 		} else {
 			unknowns.push(gap(
 				input,
@@ -453,7 +470,12 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 					targetSchemaStatus = "MATCH";
 				}
 			}
-		} else if (schemaRef && provenDynamicColumns.length === 0 && !sameColumns(targetColumns, physicalColumns)) {
+		} else if (
+			schemaRef &&
+			provenDynamicColumns.length === 0 &&
+			bindingMethod !== "TARGET_SCHEMA_POSITIONAL" &&
+			!sameColumns(targetColumns, physicalColumns)
+		) {
 			if (prefixColumns(targetColumns, physicalColumns)) {
 				targetSchemaStatus = "DRIFT_EXTRA_TARGET_COLUMNS";
 				const extras = physicalColumns.slice(targetColumns.length);

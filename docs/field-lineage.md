@@ -50,8 +50,8 @@ npm run reconcile-field-lineage -- \
   [--fields entity_id,entity_field_name,modify_date] \
   --facts-policy allow-legacy-partial \
   --max-depth 8 \
-  --max-states 500 \
-  --max-paths 1000 \
+  --max-states 5000 \
+  --max-paths 10000 \
   --output <field-lineage.json> \
   --summary-output <field-lineage.txt>
 ```
@@ -67,7 +67,7 @@ CLI 默认先从主 Input Pack 为表级 artifact 中可用的 Task 准备 Machi
 
 省略 `--fields` 时，流程从根 Write Observation 的物理目标 Table Pack 的全部 Schema 列建立字段入口，再沿每个字段的可证明值流裁剪无关上游分支。显式传入 `--fields` 时仍只分析指定列。若当前 Task 自身与字段来源是同一物理目标表，其历史同表 producer 只保留为 `CANDIDATE`，不递归进入值流树。
 
-`--facts-policy` 默认是 `current-only`。当前 Contract 1.3 必须显式使用 `allow-legacy-partial`，路径状态保持 `PROVISIONAL_LEGACY`，整体结果不得为 `COMPLETE`。
+`--facts-policy` 默认是 `current-only`。版本等于当前 Machine Facts 发布器 Contract 的 Bundle（当前为 1.3.0）可形成 `CONFIRMED` 字段证据；只有非当前发布版本才按 legacy 处理。显式使用 `allow-legacy-partial` 时，legacy 路径状态为 `PROVISIONAL_LEGACY`，整体结果不得为 `COMPLETE`。
 
 ## 图语义
 
@@ -76,10 +76,12 @@ CLI 默认先从主 Input Pack 为表级 artifact 中可用的 Task 准备 Machi
 - Machine Facts 额外发布 `task-local-materializations.jsonl`。只有同一 Task、同一物理表、写入语句严格早于读取语句且 output binding 唯一匹配的记录才是 `RESOLVED`；多次写入或绑定不完整时保留 `AMBIGUOUS/UNRESOLVED`。
 - 字段 consumer 优先消费 Task-local materialization，再消费跨 Task `primary`。同 Task 自生产不会进入 Task frontier，也不会把 `additional` 提升为 `primary`。
 - `ROWSET_CONTROL` 单独列出 Join、filter、aggregate、set operation、window 和 distinct。不能证明跨 CTE/子查询作用域时记录 `ROWSET_SCOPE_UNRESOLVED`。
-- 控制证据中的 physical ref 若为裸表名，仅在 Table Pack 中能唯一匹配到物理表时补全；当前 Task 的临时 CTAS 表则使用同 Task 的 `schema-refs`。多候选、缺失或别名无法由物理证据闭合时仍保持 `ROWSET_FIELD_IDENTITY_UNRESOLVED`。
+- 控制证据中的 physical ref 若为裸表名，先继承当前 Task Pack 能证明的默认 schema（例如 Horae Hive 扩展信息中的 Hive 库），再按限定名匹配 Table Pack；没有默认 schema 时才要求裸表名在 Table Pack 中唯一匹配。当前 Task 的临时 CTAS 表则使用同 Task 的 `schema-refs`。多候选、缺失或别名无法由物理证据闭合时仍保持 `ROWSET_FIELD_IDENTITY_UNRESOLVED`。
 - 只递归每层 `finalUpstreamTaskIds.primary`。
 - `additional` 记录为 `CANDIDATE`，但不递归。
 - `unknown` 在字段相关时保留为 `CANDIDATE` 并生成 gap，但不建立 `VALUE_FLOW`、不递归；物理身份不一致、缺失/排除 Task Pack、facts 不可用、cycle 和安全上限也都停止对应分支并生成 gap。
+- `checkdbflag` 类检查任务不承载 SQL 字段生产，作为字段值流的非血缘终点跳过，不生成字段缺口；其他缺失或不可用 Task Pack 仍按证据缺口处理。
+- 字段穿透必须同时存在本层 multi-hop 的 `producerBridges` 或 `scheduleEdges` confirmed Task 边；只在全局 artifact 中发现同名 writer、但从 `rootNodeIds` 不可达的节点不能进入字段值流。
 
 物理字段桥接键为：
 

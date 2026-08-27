@@ -58,6 +58,8 @@ npm run reconcile-one-hop:batch -- \
 
 `nextScheduleTaskIds` 保留直接调度父任务；在未传 producer index 的兼容模式下，`nextDataTaskIds` 只包含形成 `MATCHED` 的父任务。候选任务、任务名、普通 `FROM/JOIN` 和分区值都不能单独把任务提升为 producer。
 
+`producer-index` 只提供所有静态 WRITE candidate；最终递归分类只由本层 one-hop 的物理身份、分区和调度证据共同决定。`finalUpstreamTaskIds.primary` 是唯一可递归集合，`additional` 是当前层候选，`unknown` 是证据不足或冲突的候选。若同一物理表/分区存在多个可能重叠的 `INSERT OVERWRITE` writer，且没有唯一调度父任务可以裁决，结果使用 `decision=MULTIPLE_OVERLAPPING_PRODUCERS`，将相关 Task 放入 `unknown`，不得放入 `primary`。
+
 未传 producer index 时，`nextDataTaskIds` 保持上述兼容语义。显式提供 producer index 时，完整 artifact 的 `dataPath.confirmedProducers` 保留当前 SQL READ 表对应的全部静态 confirmed producer Task，供审计和 multi-hop 使用；非 Horae 直接父任务在 `scheduleRelation` 中标为 `NOT_DIRECT_PARENT`，但不会被改写成 `MATCHED`。其中 `partitionMatch.status=PROVEN_DISJOINT` 的 producer 仍保留在完整 artifact，但不会进入 `partitionAwareNextDataTaskIds`。sidecar summary 会将这类 producer 从 `confirmedProducers` 移到 `excludedProducers`，并保留分区及排除原因。`dataPath.nonConfirmedRelations` 只用于审计和覆盖率，绝不进入递归节点。
 
 输出 artifact 版本为 `1.1.0`。`currentTask.directReads[].readPartitionScopes` 保留 occurrence 级范围；其中 `predicateEvidence` 区分可安全归属、局部未知和不可下推的 Filter/Join 子树，并保留完整 predicate tree、source span、reason codes 与 relation path。`dataPath.confirmedProducers[].partitionMatch` 保留匹配状态、原因和参与比较的 WRITE observation。新增 `partitionAwareNextDataTaskIds.proven/possible/unknown`：只有确定不相交的 producer 不进入这些集合；旧 `nextDataTaskIds` 仍是表级 confirmed producer 集合。

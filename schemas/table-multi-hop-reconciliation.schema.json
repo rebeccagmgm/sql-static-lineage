@@ -121,7 +121,8 @@
           "enum": [
             "SCHEDULE_DATA_INTERSECTION",
             "DATA_FALLBACK",
-            "SCHEDULE_FALLBACK"
+            "SCHEDULE_FALLBACK",
+            "MULTIPLE_OVERLAPPING_PRODUCERS"
           ]
         },
         "evidence": { "type": "array", "items": { "type": "object" } }
@@ -217,16 +218,18 @@
         "TABLE_IDENTITY_UNRESOLVED",
         "NO_DIRECT_READS",
         "NO_CONFIRMED_PRODUCER_OBSERVED",
+        "MULTIPLE_OVERLAPPING_PRODUCERS",
         "MAX_DEPTH_REACHED",
         "MAX_TASKS_REACHED",
         "MAX_EDGES_REACHED",
         "CYCLE",
-        "ALREADY_DISCOVERED"
+        "ALREADY_DISCOVERED",
+        "TASK_LOCAL_MATERIALIZATION"
       ]
     }
   },
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
+    "schemaVersion": { "const": "1.1.0" },
     "artifactType": { "const": "TABLE_MULTI_HOP_RECONCILIATION" },
     "rootTaskId": { "type": "string", "minLength": 1 },
     "generatedAt": { "type": "string", "minLength": 1 },
@@ -369,13 +372,42 @@
           "consumerTaskId",
           "table",
           "producerTaskId",
-          "producerDepth"
+          "producerDepth",
+          "producerRole",
+          "readOccurrence"
         ],
         "properties": {
           "consumerTaskId": { "type": "string", "minLength": 1 },
           "table": { "$ref": "#/$defs/producerIdentity" },
           "producerTaskId": { "type": "string", "minLength": 1 },
-          "producerDepth": { "type": "integer", "minimum": 1 }
+          "producerDepth": { "type": "integer", "minimum": 1 },
+          "producerRole": {
+            "enum": ["PRIMARY", "ADDITIONAL", "UNKNOWN", "CANDIDATE"]
+          },
+          "readOccurrence": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "occurrenceId",
+                  "readRelationId",
+                  "statementIndex",
+                  "relationPath"
+                ],
+                "properties": {
+                  "occurrenceId": { "type": "string", "minLength": 1 },
+                  "readRelationId": { "type": "string", "minLength": 1 },
+                  "statementIndex": { "type": "integer", "minimum": 0 },
+                  "relationPath": {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 }
+                  }
+                }
+              },
+              { "type": "null" }
+            ]
+          }
         }
       }
     },

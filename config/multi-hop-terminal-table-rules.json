@@ -4,7 +4,8 @@
   "roles": {
     "REFERENCE_CONFIG": {
       "qualifiedNameExact": [
-        "temp_n.client_label"
+        "temp_n.client_label",
+        "pdata_n.ref_cd_cvt_map"
       ],
       "qualifiedNameTerms": [
         "tag_def",
@@ -15,8 +16,7 @@
         "_config",
         "_cfg",
         "_param",
-        "_dict",
-        "_ref_"
+        "_dict"
       ]
     }
   }

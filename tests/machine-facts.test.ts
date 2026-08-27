@@ -135,6 +135,136 @@ describe("machine facts contract", () => {
 		expect(manifest.outputs.some((output: { path?: string }) => output.path === "output-field-bindings.jsonl")).toBe(true);
 	});
 
+	it("binds the query producer of a WITH-prefixed INSERT", () => {
+		const f = fixture();
+		writeFileSync(
+			f.sql,
+			"WITH source_rows AS (SELECT id FROM demo.source) INSERT OVERWRITE TABLE demo.target SELECT id FROM source_rows;\n",
+			"utf8",
+		);
+
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const expressions = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const writes = readFileSync(join(bundle, "dataset-io.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line))
+			.filter((record) => record.direction === "WRITE" && record.field_producing === true);
+
+		expect(statements[0]).toMatchObject({ statement_type: "INSERT_OVERWRITE", parse_status: "SUCCESS" });
+		expect(writes).toHaveLength(1);
+		expect(writes[0]).toMatchObject({
+			physical_dataset: "demo.target",
+			producer_enumeration_status: "COMPLETE",
+		});
+		expect(bindings).toHaveLength(1);
+		expect(bindings[0]).toMatchObject({
+			target_dataset: "demo.target",
+			target_field: "id",
+			expression_id: expressions.find((expression) => expression.relation_id.endsWith(":root.project"))?.expression_id,
+		});
+	});
+
+	it("keeps one Write Observation across a CTE, physical SELECT * subquery, and dynamic partition", () => {
+		const f = fixture();
+		const schemaPath = join(f.root, "schema.json");
+		const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+		schema.records = [
+			{
+				qualified_name: "demo.source",
+				status: "SUCCESS",
+				required_for_star: true,
+				columns: [{ name: "key_col", partition: false }, { name: "payload", partition: false }],
+			},
+			{
+				qualified_name: "demo.target",
+				status: "SUCCESS",
+				columns: [{ name: "out_col", partition: false }, { name: "busi_date", partition: true }],
+			},
+		];
+		writeFileSync(schemaPath, JSON.stringify(schema), "utf8");
+		const sql =
+			"WITH src AS (\n" +
+			"SELECT key_col FROM demo.source\n" +
+			")\n" +
+			"INSERT OVERWRITE TABLE demo.target PARTITION(busi_date)\n" +
+			"SELECT s.key_col AS out_col, '2026-01-01' AS busi_date\n" +
+			"FROM (SELECT * FROM demo.source) s\n" +
+			"JOIN src ON s.key_col = src.key_col;\n\n";
+		writeFileSync(f.sql, sql, "utf8");
+		const profile = JSON.parse(readFileSync(join(f.root, "profile.json"), "utf8"));
+		profile.tasks[0].sql_write_partition_evidence = [{
+			target: "demo.target",
+			statement_start: sql.indexOf("INSERT OVERWRITE"),
+			statement_end: sql.indexOf(";"),
+			status: "COMPLETE",
+			partition_columns: ["busi_date"],
+			evidence_refs: ["test:partition-span"],
+		}];
+		writeFileSync(join(f.root, "profile.json"), JSON.stringify(profile), "utf8");
+
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const statements = jsonl("statements.jsonl");
+		const writes = jsonl("dataset-io.jsonl").filter((record) => record.direction === "WRITE" && record.field_producing === true);
+		const bindings = jsonl("output-field-bindings.jsonl");
+		const unknowns = jsonl("unknowns.jsonl");
+		const expressions = jsonl("field-expression-nodes.jsonl");
+
+		expect(statements).toHaveLength(1);
+		expect(statements[0]).toMatchObject({ statement_type: "INSERT_OVERWRITE", parse_status: "SUCCESS" });
+		expect(writes).toHaveLength(1);
+		expect(writes[0]).toMatchObject({
+			physical_dataset: "demo.target",
+			write_observation_id: "write-observation:test-task:0",
+			statement_id: statements[0].statement_id,
+			write_statement_id: statements[0].statement_id,
+			query_producer_statement_id: statements[0].statement_id,
+			producer_enumeration_status: "COMPLETE",
+		});
+		expect(bindings).toHaveLength(2);
+		expect(bindings.find((binding) => binding.target_field === "out_col")).toMatchObject({
+			write_observation_id: writes[0].write_observation_id,
+			expression_id: expressions.find((expression) => expression.output_name === "out_col").expression_id,
+			static_partition_columns: ["busi_date"],
+		});
+		expect(bindings.find((binding) => binding.target_field === "busi_date")).toMatchObject({
+			write_observation_id: writes[0].write_observation_id,
+		});
+		expect(unknowns.some((unknown) => unknown.reason_code === "PLAN_FACT_UNRESOLVED")).toBe(false);
+	});
+
+	it("resolves a bare INSERT target to the declared physical table identity", () => {
+		const f = fixture();
+		const schemaPath = join(f.root, "schema.json");
+		const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+		schema.records = [
+			{ qualified_name: "demo.source", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+			{ qualified_name: "warehouse.demo.target", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+			{ qualified_name: "target", status: "SUCCESS", columns: [{ name: "legacy_only", partition: false }] },
+		];
+		writeFileSync(schemaPath, JSON.stringify(schema), "utf8");
+		writeFileSync(f.sql, "INSERT OVERWRITE TABLE target SELECT id FROM demo.source;\n", "utf8");
+		const profilePath = join(f.root, "profile.json");
+		const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+		profile.tasks[0].writes = "warehouse.demo.target";
+		writeFileSync(profilePath, JSON.stringify(profile), "utf8");
+
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const write = jsonl("dataset-io.jsonl").find((record) => record.direction === "WRITE" && record.field_producing === true);
+		const binding = jsonl("output-field-bindings.jsonl")[0];
+
+		expect(write).toMatchObject({ physical_dataset: "warehouse.demo.target" });
+		expect(binding).toMatchObject({ target_dataset: "warehouse.demo.target", target_field: "id" });
+	});
+
 	it("binds every resolvable multi-column CTAS producer ordinal to the same Write", () => {
 		const f = fixture();
 		const schemaPath = join(f.root, "schema.json");
@@ -597,6 +727,20 @@ describe("machine facts contract", () => {
 		expect(statements[0].parse_status).toBe("SUCCESS");
 		expect(unknowns).toHaveLength(1);
 		expect(unknowns[0]).toMatchObject({ outcome_class: "NOT_APPLICABLE", reason_code: "NON_QUERY_OUTPUT_NOT_APPLICABLE" });
+	});
+
+	it("skips DROP TABLE statements without emitting facts or unknowns", () => {
+		const f = fixture();
+		writeFileSync(f.sql, "DROP TABLE IF EXISTS demo.scratch;", "utf8");
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+
+		expect(statements).toHaveLength(0);
+		expect(unknowns).toHaveLength(0);
 	});
 
 	it("records syntax-only candidates when a single source schema is absent", () => {

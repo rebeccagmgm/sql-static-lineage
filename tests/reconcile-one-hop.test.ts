@@ -556,6 +556,7 @@ describe("reconcileOneHop", () => {
     expect(result.finalUpstreamTaskIds).toEqual({
       primary: ["scheduled-producer"],
       additional: [],
+      unknown: [],
       decision: "SCHEDULE_DATA_INTERSECTION",
     });
     expect(
@@ -563,6 +564,126 @@ describe("reconcileOneHop", () => {
         (producer) => producer.taskId === "alternate-producer",
       )?.scheduleRelation,
     ).toBe("NOT_DIRECT_PARENT");
+  });
+
+  it("fails closed when unscheduled overwrite producers overlap the same table", () => {
+    const dataRoot = fixtureRoot();
+    for (const table of ["src.shared", "mart.current", "raw.seed"])
+      writeTable(dataRoot, table);
+    writeTask(dataRoot, "current-overlap", {
+      sql: {
+        query: {
+          content: "SELECT id FROM src.shared",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    for (const taskId of ["overwrite-a", "overwrite-b"])
+      writeTask(dataRoot, taskId, {
+        sql: {
+          query: {
+            content:
+              "INSERT OVERWRITE TABLE src.shared SELECT id FROM raw.seed",
+            evidenceProvider: "fixture:sql",
+          },
+        },
+        target: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "src.shared",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        evidenceProvider: "fixture:task",
+      });
+
+    const result = reconcileOneHop("current-overlap", {
+      dataRoot,
+      producerIndex: buildTableProducerIndex(dataRoot),
+      openCliRunner: () => [],
+    });
+
+    expect(result.finalUpstreamTaskIds).toEqual({
+      primary: [],
+      additional: [],
+      unknown: ["overwrite-a", "overwrite-b"],
+      decision: "MULTIPLE_OVERLAPPING_PRODUCERS",
+    });
+  });
+
+  it("selects scheduled producers per read occurrence when one table is read through disjoint partitions", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "src.shared_history", ["src_tbl"]);
+    writeTable(dataRoot, "mart.current");
+    writeTable(dataRoot, "raw.seed");
+    writeTask(dataRoot, "current-occurrences", {
+      sql: {
+        query: {
+          content: `SELECT c.id AS trade_id, k.id AS book_id
+FROM (SELECT id FROM src.shared_history WHERE src_tbl = 'TRADE') c
+JOIN (SELECT id FROM src.shared_history WHERE src_tbl = 'BOOK') k
+  ON c.id = k.id`,
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    for (const [taskId, srcTbl] of [
+      ["book-direct", "BOOK"],
+      ["trade-direct", "TRADE"],
+      ["trade-alternate", "TRADE"],
+    ] as const) {
+      writeTask(dataRoot, taskId, {
+        sql: {
+          query: {
+            content: `INSERT OVERWRITE TABLE src.shared_history PARTITION (src_tbl='${srcTbl}') SELECT id FROM raw.seed`,
+            evidenceProvider: "fixture:sql",
+          },
+        },
+        target: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "src.shared_history",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: { src_tbl: srcTbl },
+        evidenceProvider: "fixture:task",
+      });
+    }
+
+    const result = reconcileOneHop("current-occurrences", {
+      dataRoot,
+      producerIndex: buildTableProducerIndex(dataRoot),
+      openCliRunner: (args) =>
+        args[0] === "horae"
+          ? [
+              { task_id: "book-direct", direction: "上游" },
+              { task_id: "trade-direct", direction: "上游" },
+            ]
+          : [],
+    });
+
+    expect(result.currentTask.directReads[0]?.readPartitionScopes).toHaveLength(
+      2,
+    );
+    expect(result.finalUpstreamTaskIds).toEqual({
+      primary: ["book-direct", "trade-direct"],
+      additional: [],
+      unknown: [],
+      decision: "SCHEDULE_DATA_INTERSECTION",
+    });
   });
 
   it("binds a table-specific filter while retaining the cross-table JOIN as evidence", () => {

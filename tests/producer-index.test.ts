@@ -25,6 +25,7 @@ import {
   compareTableProducerInputManifests,
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
+  pinTableProducerIndex,
   validateTableProducerIndex,
   writeTableProducerIndex,
   updateTableProducerIndex,
@@ -364,14 +365,16 @@ describe("table producer index", () => {
       "COMPLETE",
       "COMPLETE",
     ]);
-    expect(writes.map((write) =>
-      Object.fromEntries(
-        write.partition.map((assignment) => [
-          assignment.field,
-          assignment.expression,
-        ]),
+    expect(
+      writes.map((write) =>
+        Object.fromEntries(
+          write.partition.map((assignment) => [
+            assignment.field,
+            assignment.expression,
+          ]),
+        ),
       ),
-    )).toEqual([
+    ).toEqual([
       { busi_date: "${YYYY-MM-DD}", grp_id: "01" },
       { busi_date: "${YYYY-MM-DD}", grp_id: "02" },
     ]);
@@ -600,7 +603,7 @@ describe("table producer index", () => {
     ).toEqual({
       writeDirection: "WRITE_CONFIRMED",
       operationClass: "TRUNCATE",
-        dataPathRole: "MUTATION_ONLY",
+      dataPathRole: "MUTATION_ONLY",
     });
     expect(
       classifyProducerWriteObservation(
@@ -955,6 +958,64 @@ describe("table producer index", () => {
     expect(
       compareTableProducerInputManifests(first.manifest, third.manifest).status,
     ).toBe("CHANGED");
+  });
+
+  it("pins immutable producer-index cache entries by input fingerprint", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.a");
+    writeTask(root, "p1", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const cacheRoot = dataRoot();
+    const first = pinTableProducerIndex(root, cacheRoot, {
+      now: () => "2026-08-23T01:00:00.000Z",
+    });
+    expect(first.reused).toBe(false);
+    expect(first.indexPath).toContain(first.inputFingerprint);
+    expect(first.manifestPath).toContain(first.inputFingerprint);
+    expect(first.index.inputFingerprint).toBe(first.inputFingerprint);
+
+    const second = pinTableProducerIndex(root, cacheRoot, {
+      now: () => "2026-08-23T02:00:00.000Z",
+    });
+    expect(second.reused).toBe(true);
+    expect(second.indexPath).toBe(first.indexPath);
+    expect(second.index.generatedAt).toBe(first.index.generatedAt);
+
+    writeTask(root, "p2", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const third = pinTableProducerIndex(root, cacheRoot, {
+      now: () => "2026-08-23T03:00:00.000Z",
+    });
+    expect(third.reused).toBe(false);
+    expect(third.inputFingerprint).not.toBe(first.inputFingerprint);
+    expect(third.indexPath).not.toBe(first.indexPath);
+    expect(existsSync(first.indexPath)).toBe(true);
+    expect(
+      lookupConfirmedProducers(third.index, {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      }).map((edge) => edge.taskId),
+    ).toEqual(["p1", "p2"]);
+  });
+
+  it("keeps the pinned producer-index cache outside the Input Pack", () => {
+    const root = dataRoot();
+    expect(() =>
+      pinTableProducerIndex(root, join(root, "producer-index-cache")),
+    ).toThrow("OUTPUT_MUST_BE_OUTSIDE_INPUT_PACK_ROOT");
   });
 
   it("does not resolve an explicit SQL write through an ambiguous table name", () => {

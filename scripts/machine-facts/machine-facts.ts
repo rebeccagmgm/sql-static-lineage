@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, wri
 import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { Schema, SqlSession, type SchemaMapping } from "../../src/index.ts";
+import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { buildPlanFacts, EXPRESSION_DEPENDENCY_ADAPTER_VERSION } from "../plans/plan-adapter.ts";
 import type { PlanFacts } from "../plans/plan-contract.ts";
 import { deriveOutputFieldBindings, type WriteOutputContext } from "./output-field-bindings.ts";
@@ -108,6 +109,10 @@ export interface ProfileRunResult {
 	output_root: string;
 	tasks: TaskRunResult[];
 	index: { path: string; count: number; failures: string[] };
+}
+
+export interface IncrementalIndexOptions {
+	readonly taskResults: readonly TaskRunResult[];
 }
 
 const REQUIRED_DATASETS = [
@@ -293,9 +298,10 @@ function sameTableReference(left: string, right: string): boolean {
 function classifyStatement(text: string): string {
 	const normalized = text.trimStart().toUpperCase();
 	if (normalized.startsWith("CREATE TABLE")) return "CREATE_TABLE";
-	if (normalized.startsWith("INSERT OVERWRITE")) return "INSERT_OVERWRITE";
-	if (normalized.startsWith("INSERT INTO")) return "INSERT_INTO";
-	if (normalized.startsWith("MERGE INTO")) return "MERGE_INTO";
+	const extractedWrite = extractSqlWrites(text)[0];
+	if (extractedWrite?.writeKind === "INSERT_OVERWRITE") return "INSERT_OVERWRITE";
+	if (extractedWrite?.writeKind === "INSERT_INTO") return "INSERT_INTO";
+	if (extractedWrite?.writeKind === "MERGE_INTO") return "MERGE_INTO";
 	if (normalized.startsWith("WITH")) return "WITH_QUERY";
 	if (normalized.startsWith("SELECT")) return "SELECT";
 	return "OTHER";
@@ -303,9 +309,55 @@ function classifyStatement(text: string): string {
 
 function parseSqlWrite(text: string): string | null {
 	const match = text.match(
-	/^\s*(?:CREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?|INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
+		/^\s*(?:CREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?|INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
 	);
-	return match?.[1] ? normalizeName(match[1]) : null;
+	if (match?.[1]) return normalizeName(match[1]);
+	// Use the comment/string-aware extractor for DML that is preceded by a CTE.
+	// This keeps a literal or comment containing INSERT from becoming a write.
+	return extractSqlWrites(text).find((write) => write.writeKind !== "CTAS")?.qualifiedName ?? null;
+}
+
+function resolveDeclaredWriteTarget(task: GenericTaskProfile, target: string): string {
+	const normalizedTarget = normalizeName(target);
+	const declared = normalizeWrites(task);
+	const exact = declared.filter((candidate) => candidate === normalizedTarget);
+	if (exact.length === 1) return exact[0]!;
+	// A bare SQL target is resolved to the task's physical target only when the
+	// declaration supplies one unambiguous same-tail identity. Qualified SQL
+	// names remain untouched unless they match exactly.
+	if (normalizedTarget.split(".").length === 1) {
+		const sameTail = declared.filter((candidate) => sameTableReference(candidate, normalizedTarget));
+		if (sameTail.length === 1) return sameTail[0]!;
+	}
+	return normalizedTarget;
+}
+
+function maskWithInsertTargetForParser(sql: string): string {
+	if (!/^\s*WITH\b/i.test(sql)) return sql;
+	const masked = sql.replace(/'(?:''|[^'])*'|"(?:""|[^"])*"|`(?:``|[^`])*`|--[^\r\n]*|\/\*[\s\S]*?\*\//g, (value) =>
+		" ".repeat(value.length),
+	);
+	const write = masked.match(
+		/\b(?:INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
+	);
+	if (!write || write.index === undefined) return sql;
+	let end = write.index + write[0].length;
+	const partition = masked.slice(end).match(/^\s*PARTITION\s*\(/i);
+	if (partition) {
+		const opening = end + partition[0].lastIndexOf("(");
+		let depth = 0;
+		for (let index = opening; index < sql.length; index += 1) {
+			if (sql[index] === "(") depth += 1;
+			else if (sql[index] === ")") {
+				depth -= 1;
+				if (depth === 0) {
+					end = index + 1;
+					break;
+				}
+			}
+		}
+	}
+	return `${sql.slice(0, write.index)}${" ".repeat(end - write.index)}${sql.slice(end)}`;
 }
 
 function spanValid(span: unknown, text: string): span is SourceSpan {
@@ -395,14 +447,16 @@ function taskSchemaNames(task: GenericTaskProfile, profile: GenericAnalysisProfi
 	try {
 		const sql = readFileSync(resolve(workspace, task.sql_snapshot), "utf8");
 		const parserSql = sanitizeSqlForParser(sql);
+		const planSql = sanitizeSqlForParser(maskWithInsertTargetForParser(parserSql.sql));
 		const session = SqlSession.create(parserSql.sql, profile.dialect as any);
+		const planSession = SqlSession.create(planSql.sql, profile.dialect as any);
 		const names = new Set(normalizeWrites(task));
 		for (const [statementIndex, cell] of session.doc.statements.entries()) {
 			const rawSql = sql.slice(cell.span.start, cell.span.end);
 			const write = parseSqlWrite(rawSql);
 			if (write) names.add(write);
 			const plan = parserSql.restore(
-				buildPlanFacts(cell, sql, {
+				buildPlanFacts(planSession.doc.statements[statementIndex] ?? cell, planSql.sql, {
 					statement_index: statementIndex,
 					dialect: profile.dialect,
 					include_expression_dependencies: true,
@@ -1177,6 +1231,49 @@ function publishBundle(taskRoot: string, staging: string, manifest: MachineFacts
 	});
 }
 
+function reusableTaskResult(
+	taskRoot: string,
+	taskId: string,
+	logicalSourceId: string,
+	requested: AnalysisStatus["requested"],
+): TaskRunResult | null {
+	const status = readStatus(taskRoot);
+	if (
+		status === null ||
+		status.state !== "SUCCESS" ||
+		status.task_id !== taskId ||
+		status.logical_source_id !== logicalSourceId ||
+		status.current_manifest_sha256 === null
+	) return null;
+	if (
+		status.requested.sql_sha256 !== requested.sql_sha256 ||
+		status.requested.schema_bundle_sha256 !== requested.schema_bundle_sha256 ||
+		status.requested.analysis_config_sha256 !== requested.analysis_config_sha256 ||
+		status.requested.dialect !== requested.dialect
+	) return null;
+	const bundle = join(taskRoot, "bundle");
+	const manifestPath = join(bundle, "manifest.json");
+	if (!existsSync(manifestPath)) return null;
+	let manifest: MachineFactsManifest;
+	try {
+		manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as MachineFactsManifest;
+	} catch {
+		return null;
+	}
+	if (
+		validateBundle(bundle).length > 0 ||
+		manifest.task_id !== taskId ||
+		manifest.logical_source_id !== logicalSourceId ||
+		manifest.inputs.sql_sha256 !== requested.sql_sha256 ||
+		manifest.inputs.schema_bundle_sha256 !== requested.schema_bundle_sha256 ||
+		manifest.inputs.analysis_config_sha256 !== requested.analysis_config_sha256 ||
+		manifest.method.dialect !== requested.dialect
+	) return null;
+	const manifestHash = sha256(canonicalJson(manifest));
+	if (manifestHash !== status.current_manifest_sha256) return null;
+	return { task_id: taskId, state: "SUCCESS", status: "REUSED", manifest_sha256: manifestHash, failures: [] };
+}
+
 function buildTaskBundle(
 	task: GenericTaskProfile,
 	profile: GenericAnalysisProfile,
@@ -1247,23 +1344,31 @@ function buildTaskBundle(
 	let parserVersion = "unknown";
 	let planAdapterVersion = "unknown";
 	const parserSql = sanitizeSqlForParser(sql);
+	const planSql = sanitizeSqlForParser(maskWithInsertTargetForParser(parserSql.sql));
 	const session = SqlSession.create(parserSql.sql, profile.dialect as any, { schema });
+	const planSession = SqlSession.create(planSql.sql, profile.dialect as any, { schema });
 	const segmentOrdinals = new Map<string, number>();
 	for (const [statementIndex, cell] of session.doc.statements.entries()) {
 		const span = { start: cell.span.start, end: cell.span.end };
+		const rawSql = sql.slice(span.start, span.end);
+		if (rawSql.trim().length === 0) continue;
 		let significantStart = span.start;
 		while (significantStart < span.end && /\s/.test(sql[significantStart] ?? "")) significantStart += 1;
 		const segment = task.sql_segments?.find((candidate) => significantStart >= candidate.start && span.end <= candidate.end);
 		const localOrdinal = segment ? (segmentOrdinals.get(segment.slot) ?? 0) : statementIndex;
 		if (segment) segmentOrdinals.set(segment.slot, localOrdinal + 1);
+		if (/^DROP\s+TABLE\b/i.test(rawSql.trimStart())) continue;
 		const statementSlot = segment?.slot ?? task.sql_slot;
 		const statementId = statementSlot
 			? `task:${task.task_id}:slot:${statementSlot}:statement:${localOrdinal}`
 			: `task:${task.task_id}:statement:${statementIndex}`;
-		const rawSql = sql.slice(span.start, span.end);
 		const parsedWrite = parseSqlWrite(rawSql);
+		const extractedWrite = parsedWrite === null
+			? undefined
+			: extractSqlWrites(rawSql).find((write) => sameTableReference(write.qualifiedName, parsedWrite));
+		const writeTarget = parsedWrite === null ? null : resolveDeclaredWriteTarget(task, parsedWrite);
 		const statementType = classifyStatement(rawSql);
-		const plan: PlanFacts = parserSql.restore(buildPlanFacts(cell, sql, {
+		const plan: PlanFacts = parserSql.restore(buildPlanFacts(planSession.doc.statements[statementIndex] ?? cell, planSql.sql, {
 			statement_index: statementIndex,
 			dialect: profile.dialect,
 			schema,
@@ -1300,14 +1405,19 @@ function buildTaskBundle(
 			queryOutputCandidates.push({ statementId, statementIndex, statementType, rawSql, expressions: producerExpressions });
 		}
 		if (parsedWrite) {
-			const sourceStatementStart = segment === undefined
-				? significantStart
-				: significantStart - segment.start;
+			const sourceStatementBase = segment === undefined ? span.start : span.start - segment.start;
+			const sourceStatementStart = extractedWrite === undefined
+				? segment === undefined ? significantStart : significantStart - segment.start
+				: sourceStatementBase + extractedWrite.statementSpan.start;
+			const sourceStatementEnd = extractedWrite === undefined
+				? undefined
+				: sourceStatementBase + extractedWrite.statementSpan.end;
 			const partitionEvidence = task.sql_write_partition_evidence?.find((item) =>
-				sameTableReference(item.target, parsedWrite) &&
+				writeTarget !== null && sameTableReference(item.target, writeTarget) &&
 				(item.sql_slot === undefined || item.sql_slot === statementSlot) &&
 				(item.statement_start !== undefined
-					? item.statement_start === sourceStatementStart
+					? item.statement_start === sourceStatementStart &&
+						(item.statement_end === undefined || item.statement_end === sourceStatementEnd)
 					: item.statement_ordinal === undefined || item.statement_ordinal === localOrdinal),
 			);
 			const hasCtasBoundary = statementType === "CREATE_TABLE" && /\bAS\s+(?:SELECT|WITH)\b/i.test(rawSql);
@@ -1319,8 +1429,8 @@ function buildTaskBundle(
 				task_id: task.task_id,
 				statement_id: statementId,
 				direction: "WRITE",
-				dataset_id: datasetId(logicalSourceId, parsedWrite),
-				physical_dataset: parsedWrite,
+				dataset_id: datasetId(logicalSourceId, writeTarget!),
+				physical_dataset: writeTarget!,
 				provenance: "SQL_PARSE",
 				resolution_status: "RESOLVED",
 				write_observation_id: writeObservationId,
@@ -1338,7 +1448,7 @@ function buildTaskBundle(
 				statementType,
 				writeKind,
 				rawSql,
-				target: parsedWrite,
+				target: writeTarget!,
 				queryProducerStatementId: fieldProducing ? statementId : null,
 				queryBoundaryProven: hasCtasBoundary,
 				producerEnumerationStatus,
@@ -1551,6 +1661,8 @@ export function runTask(
 		return { task_id: task.task_id, state: "FAILED", status: "FAILED", failures: [failure] };
 	}
 	const requested = { sql_sha256: sqlHash, schema_bundle_sha256: schemaBundleHash, analysis_config_sha256: contextHash(task, profile, logicalSourceId), dialect: profile.dialect };
+	const reusable = reusableTaskResult(taskRoot, task.task_id, logicalSourceId, requested);
+	if (reusable !== null) return reusable;
 	writeStatus(taskRoot, { schema_version: MACHINE_FACTS_STATUS_VERSION, task_id: task.task_id, logical_source_id: logicalSourceId, state: "ANALYZING", requested, current_manifest_sha256: readStatus(taskRoot)?.current_manifest_sha256 ?? null });
 	let staging: string | null = null;
 	try {
@@ -1572,17 +1684,65 @@ export function runTask(
 	}
 }
 
+function readTaskFactIndexSchema(): { schema: JsonRecord | null; failure?: string } {
+	try {
+		return {
+			schema: (json<JsonRecord>(join(workspace, "schemas", "machine-facts-records.schema.json")).properties as JsonRecord)["task-fact-index.jsonl"] as JsonRecord,
+		};
+	} catch (error) {
+		return { schema: null, failure: `task-fact-index schema unavailable: ${error instanceof Error ? error.message : String(error)}` };
+	}
+}
+
+function taskFactIndexRecord(
+	root: string,
+	taskId: string,
+	): { record?: TaskFactIndexRecord; failure?: string } {
+	const taskRoot = join(root, "registry", "tasks", taskId);
+	let status: AnalysisStatus | null;
+	try {
+		status = readStatus(taskRoot);
+	} catch (error) {
+		return { failure: `${taskId}: invalid analysis-status.json (${error instanceof Error ? error.message : String(error)})` };
+	}
+	if (!status || status.state !== "SUCCESS")
+		return { failure: status?.state === "FAILED" ? `${taskId}: ${status.failure?.reason_code ?? "FAILED"}` : undefined };
+	const manifestPath = join(taskRoot, "bundle", "manifest.json");
+	if (!existsSync(manifestPath)) return { failure: `${taskId}: manifest missing` };
+	let manifest: MachineFactsManifest;
+	try {
+		manifest = json<MachineFactsManifest>(manifestPath);
+	} catch (error) {
+		return { failure: `${taskId}: invalid manifest (${error instanceof Error ? error.message : String(error)})` };
+	}
+	const manifestHash = sha256(canonicalJson(manifest));
+	if (
+		status.task_id !== taskId ||
+		status.task_id !== manifest.task_id ||
+		status.logical_source_id !== manifest.logical_source_id ||
+		status.current_manifest_sha256 !== manifestHash
+	)
+		return { failure: `${taskId}: status/manifest identity or hash mismatch` };
+	return {
+		record: {
+			task_id: taskId,
+			logical_source_id: manifest.logical_source_id,
+			sql_sha256: manifest.inputs.sql_sha256,
+			manifest_sha256: manifestHash,
+			bundle_path: relativeRoot(root, join(taskRoot, "bundle")),
+			status: "SUCCESS",
+		},
+	};
+}
+
 export function rebuildIndex(root: string): ProfileRunResult["index"] {
 	const indexDir = join(root, "indexes");
 	mkdirSync(indexDir, { recursive: true });
 	const records: JsonRecord[] = [];
 	const failures: string[] = [];
-	let indexSchema: JsonRecord | null = null;
-	try {
-		indexSchema = (json<JsonRecord>(join(workspace, "schemas", "machine-facts-records.schema.json")).properties as JsonRecord)["task-fact-index.jsonl"] as JsonRecord;
-	} catch (error) {
-		failures.push(`task-fact-index schema unavailable: ${error instanceof Error ? error.message : String(error)}`);
-	}
+	const indexSchemaResult = readTaskFactIndexSchema();
+	const indexSchema = indexSchemaResult.schema;
+	if (indexSchemaResult.failure) failures.push(indexSchemaResult.failure);
 	const tasksRoot = join(root, "registry", "tasks");
 	if (existsSync(tasksRoot)) {
 		for (const taskId of readdirSync(tasksRoot)) {
@@ -1628,6 +1788,72 @@ export function rebuildIndex(root: string): ProfileRunResult["index"] {
 	const path = join(indexDir, "task-fact-index.jsonl");
 	writeFileSync(path, canonicalJsonl(stableRecords(records, (record) => String(record.task_id))), "utf8");
 	return { path, count: records.length, failures };
+}
+
+/**
+ * Carry forward the last full index and replace only Tasks processed by the
+ * current batch. The runner has already validated newly built or reused
+ * bundles; rebuildIndex remains the explicit full integrity sweep.
+ */
+export function updateIndexIncrementally(
+	rootInput: string,
+	options: IncrementalIndexOptions,
+): ProfileRunResult["index"] {
+	const root = resolve(rootInput);
+	const indexDir = join(root, "indexes");
+	const path = join(indexDir, "task-fact-index.jsonl");
+	if (!existsSync(path)) return rebuildIndex(root);
+	let existing: JsonRecord[];
+	try {
+		const text = readFileSync(path, "utf8").trim();
+		existing = text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
+	} catch {
+		return rebuildIndex(root);
+	}
+	const records = new Map<string, TaskFactIndexRecord>();
+	for (const row of existing) {
+		if (
+			typeof row.task_id !== "string" ||
+			typeof row.logical_source_id !== "string" ||
+			typeof row.sql_sha256 !== "string" ||
+			typeof row.manifest_sha256 !== "string" ||
+			typeof row.bundle_path !== "string" ||
+			row.status !== "SUCCESS" ||
+			records.has(row.task_id)
+		)
+			return rebuildIndex(root);
+		records.set(row.task_id, row as TaskFactIndexRecord);
+	}
+
+	const indexSchemaResult = readTaskFactIndexSchema();
+	const failures = indexSchemaResult.failure ? [indexSchemaResult.failure] : [];
+	for (const result of options.taskResults) {
+		records.delete(result.task_id);
+		if (result.state !== "SUCCESS") {
+			if (result.failures.length > 0) failures.push(`${result.task_id}: ${result.failures.map((failure) => failure.message).join("; ")}`);
+			continue;
+		}
+		const candidate = taskFactIndexRecord(root, result.task_id);
+		if (!candidate.record) {
+			if (candidate.failure) failures.push(candidate.failure);
+			continue;
+		}
+		if (result.manifest_sha256 && result.manifest_sha256 !== candidate.record.manifest_sha256) {
+			failures.push(`${result.task_id}: result/manifest hash mismatch`);
+			continue;
+		}
+		const indexErrors = indexSchemaResult.schema
+			? validateJsonSchema(candidate.record, indexSchemaResult.schema, `task-fact-index.jsonl[${records.size}]`)
+			: ["task-fact-index schema unavailable"];
+		if (indexErrors.length > 0) {
+			failures.push(`${result.task_id}: ${indexErrors.join("; ")}`);
+			continue;
+		}
+		records.set(result.task_id, candidate.record);
+	}
+	mkdirSync(indexDir, { recursive: true });
+	writeFileSync(path, canonicalJsonl(stableRecords([...records.values()], (record) => String(record.task_id))), "utf8");
+	return { path, count: records.size, failures };
 }
 
 export function processProfile(profilePath: string, outputRoot: string, sourceIdOverride?: string): ProfileRunResult {

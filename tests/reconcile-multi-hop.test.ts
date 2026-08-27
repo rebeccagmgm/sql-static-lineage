@@ -51,7 +51,11 @@ function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-multi-hop-"));
 }
 
-function writeTable(root: string, qualifiedName: string): void {
+function writeTable(
+  root: string,
+  qualifiedName: string,
+  partitionFields?: readonly string[],
+): void {
   const [schema, name] = qualifiedName.split(".");
   writeTableInput(root, {
     platform: "hive",
@@ -60,9 +64,16 @@ function writeTable(root: string, qualifiedName: string): void {
     schema,
     name,
     objectType: "TABLE",
-    ddl: `CREATE TABLE ${qualifiedName} (id bigint)`,
+    ddl: `CREATE TABLE ${qualifiedName} (id bigint)${
+      partitionFields && partitionFields.length > 0
+        ? ` PARTITIONED BY (${partitionFields
+            .map((field) => `${field} string`)
+            .join(", ")})`
+        : ""
+    }`,
     evidenceProvider: "fixture:table",
     collectedAt: "2026-08-23T00:00:00.000Z",
+    ...(partitionFields === undefined ? {} : { partitionFields }),
   });
 }
 
@@ -471,6 +482,7 @@ describe("reconcileMultiHop", () => {
     expect(snapshot.finalUpstreamTaskIds).toEqual({
       primary: ["scheduled-primary"],
       additional: ["additional-producer"],
+      unknown: [],
       decision: "SCHEDULE_DATA_INTERSECTION",
     });
     const result = run(root, index, "A", {
@@ -507,6 +519,74 @@ describe("reconcileMultiHop", () => {
         producerDepth: 1,
       }),
     ]);
+  });
+
+  it("preserves occurrence-specific primary and candidate producer bridges", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.shared_history", ["src_tbl"]);
+    writeTable(root, "mart.current");
+    writeTable(root, "raw.seed");
+    writeTask(root, "A", {
+      sql: {
+        query: {
+          content: `SELECT c.id AS trade_id, k.id AS book_id
+FROM (SELECT id FROM lake.shared_history WHERE src_tbl = 'TRADE') c
+JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
+  ON c.id = k.id`,
+          evidenceProvider: "fixture:sql",
+        },
+      },
+    });
+    for (const [taskId, srcTbl] of [
+      ["book-direct", "BOOK"],
+      ["trade-direct", "TRADE"],
+      ["trade-alternate", "TRADE"],
+    ] as const)
+      writeTask(root, taskId, {
+        target: {
+          platform: "hive",
+          dataSource: "gfhive",
+          qualifiedName: "lake.shared_history",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: { src_tbl: srcTbl },
+        sql: {
+          query: {
+            content: `INSERT OVERWRITE TABLE lake.shared_history PARTITION (src_tbl='${srcTbl}') SELECT id FROM raw.seed`,
+            evidenceProvider: "fixture:sql",
+          },
+        },
+      });
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const snapshot = rootOneHop(root, index, "A", [
+      { task_id: "book-direct", direction: "上游" },
+      { task_id: "trade-direct", direction: "上游" },
+    ]);
+
+    const result = run(root, index, "A", {
+      maxDepth: 1,
+      rootOneHop: snapshot,
+    });
+
+    expect(
+      result.producerBridges.map((bridge) => ({
+        taskId: bridge.producerTaskId,
+        occurrenceId: bridge.readOccurrence?.occurrenceId,
+        role: bridge.producerRole,
+      })),
+    ).toEqual([
+      expect.objectContaining({ taskId: "book-direct", role: "PRIMARY" }),
+      expect.objectContaining({
+        taskId: "trade-alternate",
+        role: "CANDIDATE",
+      }),
+      expect.objectContaining({ taskId: "trade-direct", role: "PRIMARY" }),
+    ]);
+    expect(
+      result.producerBridges
+        .filter((bridge) => bridge.producerRole === "PRIMARY")
+        .map((bridge) => bridge.readOccurrence?.readRelationId),
+    ).toEqual(["root.k.read.shared_history", "root.c.read.shared_history"]);
   });
 
   it("retains a partition-unknown primary but never recurses through it", () => {
@@ -573,6 +653,48 @@ describe("reconcileMultiHop", () => {
           source: "HORAE_RELATION",
           provider: "offline:horae.relation",
           observedAt: null,
+        }),
+      ]),
+    );
+  });
+
+  it("does not recurse through multiple overlapping overwrite producers without schedule evidence", () => {
+    const root = dataRoot();
+    for (const table of ["lake.shared", "lake.current", "lake.seed"])
+      writeTable(root, table);
+    writeReader(root, "A", ["lake.shared"]);
+    writeProducer(root, "B", "lake.shared", ["lake.seed"]);
+    writeProducer(root, "C", "lake.shared", ["lake.seed"]);
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+
+    const result = run(root, index, "A", { maxDepth: 3 });
+
+    expect(result.taskNodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "B",
+          upstreamDecision: null,
+          expansionStatus: "TERMINAL",
+        }),
+        expect.objectContaining({
+          taskId: "C",
+          upstreamDecision: null,
+          expansionStatus: "TERMINAL",
+        }),
+      ]),
+    );
+    expect(result.taskNodes).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ taskId: "B", upstreamDecision: expect.anything() }),
+        expect.objectContaining({ taskId: "C", upstreamDecision: expect.anything() }),
+      ]),
+    );
+    expect(result.terminals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "A",
+          reason: "MULTIPLE_OVERLAPPING_PRODUCERS",
+          detail: expect.objectContaining({ action: "STOP_BRANCH" }),
         }),
       ]),
     );
@@ -899,6 +1021,36 @@ describe("reconcileMultiHop", () => {
         }),
       ]),
     );
+  });
+
+  it("skips external producer recursion for TEMP tables", () => {
+    const root = dataRoot();
+    writeTable(root, "temp.resolved_scratch");
+    writeReader(root, "A", ["temp.resolved_scratch", "temp.unresolved_scratch"]);
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+
+    const result = run(root, index, "A", { maxDepth: 2 });
+
+    expect(result.taskNodes.map((node) => node.taskId)).toEqual(["A"]);
+    expect(result.producerBridges).toEqual([]);
+    expect(result.terminals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "A",
+          reason: "TASK_LOCAL_MATERIALIZATION",
+          table: expect.objectContaining({ qualifiedName: "temp.resolved_scratch" }),
+          detail: { rule: "QUALIFIED_NAME_PREFIX", pattern: "TEMP.*" },
+        }),
+        expect.objectContaining({
+          taskId: "A",
+          reason: "TASK_LOCAL_MATERIALIZATION",
+          table: expect.objectContaining({ qualifiedName: "temp.unresolved_scratch" }),
+          detail: { rule: "QUALIFIED_NAME_PREFIX", pattern: "TEMP.*" },
+        }),
+      ]),
+    );
+    expect(terminalReasons(result)).not.toContain("NO_CONFIRMED_PRODUCER_OBSERVED");
+    expect(terminalReasons(result)).not.toContain("TABLE_IDENTITY_UNRESOLVED");
   });
 
   it("detects self and two-task cycles without repeatedly expanding tasks", () => {

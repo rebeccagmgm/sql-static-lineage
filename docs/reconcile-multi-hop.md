@@ -9,9 +9,10 @@
 递归节点始终是 Task，Table 只是任务间的数据桥梁。每个 Task 先执行/消费一次
 one-hop reconciliation；BFS 下一层只取该结果的
 `finalUpstreamTaskIds.primary`。`additional` 作为当前层的保留证据但不再展开，
-`partitionAwareNextDataTaskIds.unknown` 永不进入 frontier。遍历仍只消费经过校验的
-Task/Table Input Pack V1 和 `TABLE_PRODUCER_INDEX` confirmed edge；producer index
-只提供 Table READ/WRITE bridge 证据，不重新决定递归集合。
+`finalUpstreamTaskIds.unknown` 永不进入 frontier。遇到
+`MULTIPLE_OVERLAPPING_PRODUCERS` 时保留候选和 terminal 证据，但停止该表分支。
+遍历仍只消费经过校验的 Task/Table Input Pack V1 和 `TABLE_PRODUCER_INDEX`
+candidate/WRITE bridge；producer index 不重新决定递归集合。
 
 命令默认加载 `config/multi-hop-terminal-table-rules.json`。配置命中的表会记录为 `REFERENCE_CONFIG` terminal，并且不会查询其 confirmed producer；也可用 `--terminal-table-config <path>` 显式指定另一份 JSON 配置。该配置只控制多跳递归边界，不改变 Input Pack 或静态 SQL 血缘产物。
 
@@ -23,8 +24,8 @@ npm run reconcile-multi-hop -- \
   --data-root <input-pack-root> \
   --producer-index <producer-index.json> \
   --max-depth 3 \
-  --max-tasks 100 \
-  --max-edges 500 \
+  --max-tasks 1000 \
+  --max-edges 10000 \
   [--root-one-hop <frozen-one-hop.json>] \
   [--terminal-table-config <terminal-table-rules.json>] \
   [--output <multi-hop.json>]
@@ -39,7 +40,7 @@ npm run reconcile-multi-hop:batch -- \
   --producer-index <producer-index.json> \
   --output-dir <result-dir> \
   [--root-one-hop-dir <one-hop-result-dir>] \
-  [--max-depth 3] [--max-tasks 100] [--max-edges 500]
+  [--max-depth 3] [--max-tasks 1000] [--max-edges 10000]
 ```
 
 `--root-one-hop-dir` 中可放置 `reconcile-<taskId>.json` 或 `<taskId>.json`。批量入口只建立一次 evidence repository，开始时校验并在结束时复核 `inputFingerprint`，然后复用给所有根任务；批次运行期间不要修改 `tasks/` 或 `tables/`。
@@ -52,10 +53,11 @@ npm run reconcile-multi-hop:batch -- \
 npm run reconcile-multi-hop:autofill -- \
   --task-id <root-task-id> \
   --data-root <input-pack-root> \
-  --producer-index <producer-index.json> \
-  --max-depth 3 --max-tasks 100 --max-edges 500 \
+  --max-depth 3 --max-tasks 1000 --max-edges 10000 \
   --output <multi-hop.json> \
   --report <autofill-report.json> \
+  [--producer-index-cache-root <cache-root>] \
+  [--producer-index <legacy-fixed-index.json>] \
   [--trust-existing-index]
 ```
 
@@ -67,14 +69,24 @@ WRITE 被新索引确认后才成为 Table bridge；表详情中的 Task ID 本�
 下一轮仍只沿各 Task 的 `finalUpstreamTaskIds.primary` 前进。表详情发现但不属于 Horae
 直接父任务的生产者会保留在 `additional`，作为未展开 Task 节点和 Table bridge 展示，
 不会调用其 Horae 上游。发现失败、限流重试耗尽或补采后 Pack 仍不可用会写入 report，
-状态为 `PARTIAL`，不会冒充完整结果。默认表查询最多重试 3 次，OpenCLI 单次调用限制
-30 秒，并由 `maxRounds`、`maxDiscoveryTables`、`maxDiscoveredTasks` 控制外部补采规模。
+状态为 `PARTIAL`，不会冒充完整结果；不可用的任务不会再次进入 one-hop 递归，因此不会因
+缺失 Pack 让整条 autofill 命令异常退出。默认表查询最多重试 3 次，OpenCLI 单次调用限制
+30 秒，并由 `maxRounds`、`maxDiscoveryTables`、`maxDiscoveredTasks` 控制外部补采规模；默认值分别为 6、1000、5000。
 
-默认启动时严格计算当前 Input Pack fingerprint 并更新 index。只有调用方能保证
-`data-root` 是运行期间不可变的冻结快照时，才可显式传 `--trust-existing-index`，跳过
-启动阶段的全文件 hash，复用已通过结构/hash 校验且与 manifest fingerprint 一致的
-现有 index；一旦本次补采写入任何 Task Pack，后续仍强制增量更新 index。report 的
-`initialIndexMode` 会保留这一证据边界。
+表详情未返回 producer 时，Hive 表仍记录为
+`TABLE_PRODUCER_TASK_NOT_OBSERVED`；非 Hive 表不计入异常，而记录在 autofill report 的
+`nonHiveSourceBoundaries` 中。该标记只表示当前 Hive producer 追踪范围在此停止，不代表
+该表已被确认是全局最上游。
+
+默认启动时计算当前 Input Pack fingerprint，并在 data root 外部的
+`<data-root>.producer-index-cache/<inputFingerprint>/` 固定或复用对应 index。补采写入
+Task Pack 后会固定到新的 fingerprint 目录，旧缓存不被覆盖。可用
+`--producer-index-cache-root` 改变缓存根目录。
+
+显式传 `--producer-index` 时保留旧的固定路径更新行为。只有调用方能保证 `data-root`
+是运行期间不可变的冻结快照时，才可同时传 `--trust-existing-index`，跳过启动阶段的
+全文件 hash；该模式必须提供显式 index 及其 manifest。report 的 `initialIndexMode` 和
+`producerIndexInputFingerprint` 会保留这一证据边界。
 
 默认入口带有明确的 V8 old-space 边界：单根 384 MiB、批量 512 MiB。
 `bounded` 是同一配置的显式别名。内存充足且更关注吞吐时，可选择不设上限的
@@ -149,7 +161,9 @@ Task 时读取、校验和解析，解析完成后不保留 SQL 正文。one-hop
 可选 `rootOneHop` 是冻结的 root one-hop 证据快照，并参与 root 的
 `finalUpstreamTaskIds.primary` 选择。没有提供后续 Task 的 one-hop 快照时，multi-hop
 以显式离线空调度输入调用 one-hop：不会调用默认 Horae runner，此时 one-hop 只能在
-有足够 producer-index 证据时走 `DATA_FALLBACK`。有 scheduler primary 但没有
+有足够且不冲突的 producer-index 证据时走 `DATA_FALLBACK`；同表同分区的多个
+overwrite writer 无唯一调度裁决时走 `MULTIPLE_OVERLAPPING_PRODUCERS` 并停止该分支。
+有 scheduler primary 但没有
 Table WRITE bridge 的任务会通过 `scheduleEdges` 保留调度来源和 evidence，不会伪造
 Table bridge。
 
