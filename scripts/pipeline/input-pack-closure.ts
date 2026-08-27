@@ -11,6 +11,7 @@ import { validateTaskDocument, type TaskDocument } from "../input/shared/input-p
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_DISCOVERED_TASKS = 5000;
+const DEFAULT_MAX_DISCOVERY_TABLES = 1000;
 
 export interface InputPackClosureOptions {
   readonly taskId: string;
@@ -23,6 +24,8 @@ export interface InputPackClosureOptions {
   readonly maxDiscoveredTasks?: number;
   readonly discoveryAttempts?: number;
   readonly discoveryMinIntervalMs?: number;
+  /** Override table-level producer discovery in tests or offline runs. */
+  readonly discoverTableProducerTaskIds?: (qualifiedName: string) => readonly string[];
   readonly force?: boolean;
   readonly collectTaskPacks?: (dataRoot: string, taskIds: readonly string[], force: boolean) => void;
 }
@@ -34,6 +37,13 @@ export interface InputPackClosureResult {
   readonly rounds: number;
   readonly status: "COMPLETE" | "PARTIAL";
   readonly issues: readonly string[];
+  /** The exact immutable producer-index snapshot for the stabilized pack. */
+  readonly producerSnapshot?: {
+    readonly inputFingerprint: string;
+    readonly indexPath: string;
+    readonly manifestPath: string;
+    readonly reused: boolean;
+  };
 }
 
 function text(value: unknown): string {
@@ -98,6 +108,8 @@ function indexedProducerIds(index: TableProducerIndex, qualifiedName: string): s
 function requireLimits(options: InputPackClosureOptions): void {
   for (const [name, value] of [["maxDepth", options.maxDepth], ["maxTasks", options.maxTasks], ["maxRounds", options.maxRounds]] as const)
     if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name.toUpperCase()}_INVALID`);
+  const maxDiscoveryTables = options.maxDiscoveryTables ?? DEFAULT_MAX_DISCOVERY_TABLES;
+  if (!Number.isSafeInteger(maxDiscoveryTables) || maxDiscoveryTables < 1) throw new Error("MAX_DISCOVERY_TABLES_INVALID");
 }
 
 export function runInputPackClosure(options: InputPackClosureOptions): InputPackClosureResult {
@@ -107,19 +119,25 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
   if (!loadTask(dataRoot, options.taskId, indexTaskPackPaths(dataRoot))) throw new Error(`CURRENT_TASK_INPUT_PACK_MISSING:${options.taskId}`);
   const collect = options.collectTaskPacks ?? runCollector;
   const maxDiscoveredTasks = options.maxDiscoveredTasks ?? DEFAULT_MAX_DISCOVERED_TASKS;
+  const maxDiscoveryTables = options.maxDiscoveryTables ?? DEFAULT_MAX_DISCOVERY_TABLES;
+  const discover = options.discoverTableProducerTaskIds;
   const discovered = new Set<string>([options.taskId]);
   const discoveredDepth = new Map<string, number>([[options.taskId, 0]]);
   const collected = new Set<string>();
   const visited = new Set<string>();
   const issues: string[] = [];
   const producerCache = new Map<string, string[]>();
+  const queriedTables = new Set<string>();
   let rounds = 0;
   let stabilized = false;
+  let finalPin: ReturnType<typeof pinTableProducerIndex> | undefined;
 
   while (rounds < options.maxRounds) {
     rounds += 1;
     const taskPathIndex = indexTaskPackPaths(dataRoot);
-    const index: TableProducerIndex = pinTableProducerIndex(dataRoot, resolve(options.producerIndexCacheRoot)).index;
+    const pin = pinTableProducerIndex(dataRoot, resolve(options.producerIndexCacheRoot));
+    finalPin = pin;
+    const index: TableProducerIndex = pin.index;
     const queue: Array<{ taskId: string; depth: number }> = [...discoveredDepth.entries()]
       .filter(([taskId]) => !visited.has(taskId))
       .map(([taskId, depth]) => ({ taskId, depth }));
@@ -140,6 +158,16 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
         let producerIds = producerCache.get(qualifiedName);
         if (!producerIds) {
           producerIds = indexedProducerIds(index, qualifiedName);
+          if (discover && producerIds.length === 0 && !queriedTables.has(qualifiedName)) {
+            if (queriedTables.size >= maxDiscoveryTables) throw new Error("MAX_DISCOVERY_TABLES_REACHED");
+            queriedTables.add(qualifiedName);
+            try {
+              producerIds = [...discover(qualifiedName)];
+            } catch (error) {
+              issues.push(`TABLE_PRODUCER_DISCOVERY_FAILED:${qualifiedName}:${error instanceof Error ? error.message : String(error)}`);
+              producerIds = [];
+            }
+          }
           producerCache.set(qualifiedName, producerIds);
         }
         for (const producerId of producerIds) {
@@ -168,6 +196,10 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
   }
   if (!stabilized && rounds >= options.maxRounds) issues.push("MAX_AUTOFILL_ROUNDS_REACHED");
   const finalTaskPathIndex = indexTaskPackPaths(dataRoot);
+  // A final pin is required after the last collection round.  This is also
+  // the snapshot lineage:all must pass downstream, avoiding a second full
+  // manifest/fingerprint traversal.
+  if (!finalPin || !stabilized) finalPin = pinTableProducerIndex(dataRoot, resolve(options.producerIndexCacheRoot));
   const taskIds = unique([...visited, options.taskId].filter((taskId) => loadTask(dataRoot, taskId, finalTaskPathIndex) !== null));
   return {
     taskIds,
@@ -176,5 +208,11 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
     rounds,
     status: issues.length === 0 ? "COMPLETE" : "PARTIAL",
     issues: unique(issues),
+    producerSnapshot: {
+      inputFingerprint: finalPin.inputFingerprint,
+      indexPath: finalPin.indexPath,
+      manifestPath: finalPin.manifestPath,
+      reused: finalPin.reused,
+    },
   };
 }

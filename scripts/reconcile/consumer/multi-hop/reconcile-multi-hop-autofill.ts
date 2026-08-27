@@ -210,7 +210,7 @@ function scheduleRows(
   );
 }
 
-function queryProducerTaskIds(
+export function queryProducerTaskIds(
   qualifiedName: string,
   runner: OpenCliRunner,
   attempts: number,

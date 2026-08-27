@@ -87,6 +87,7 @@ function context(options: {
   readonly producerBinding?: boolean;
   readonly multipleWrites?: boolean;
   readonly artifactWriteEvidence?: boolean;
+  readonly artifactSqlStart?: number;
   readonly mismatchedProducerTarget?: boolean;
   readonly legacyScheduleFallback?: boolean;
 } = {}) {
@@ -174,7 +175,19 @@ function context(options: {
                     declaredWriteMode: null,
                     sqlWriteKind: "INSERT_OVERWRITE",
                     partition: [],
-                    evidence: [],
+                    evidence:
+                      options.artifactSqlStart === undefined
+                        ? []
+                        : [
+                            {
+                              source: "SQL_PARSE",
+                              locator: `query.sql#char=${options.artifactSqlStart}`,
+                              detail: {
+                                statementStart: options.artifactSqlStart,
+                                sqlWriteKind: "INSERT_OVERWRITE",
+                              },
+                            },
+                          ],
                   }
                 : {
                     observationKind: "DIRECT_TARGET",
@@ -289,6 +302,36 @@ describe("physical field expander", () => {
         expect.objectContaining({ write_observation_id: "write-observation:200:1" }),
       ]),
     );
+  });
+
+  it("uses a unique SQL write kind when parser spans are not byte-identical", () => {
+    const { expander, consumer, consumerLoad, source } = context({
+      occurrence,
+      producerBinding: true,
+      multipleWrites: true,
+      artifactSqlStart: 10,
+    });
+    const result = expander.expand({
+      consumerTaskId: "100",
+      consumerPack: consumer,
+      consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source,
+      expressionText: "s.src_a",
+      depth: 0,
+      maxDepth: 4,
+    });
+    expect(result.producers[0]).toMatchObject({
+      evidenceStatus: "CONFIRMED",
+      producerBindings: [
+        {
+          binding_id: "binding:200:0:0",
+          write_observation_id: "write-observation:200:0",
+        },
+      ],
+      shouldRecurse: true,
+    });
+    expect(result.gaps).toEqual([]);
   });
 
   it("does not fan out multiple writes without occurrence-specific write evidence", () => {

@@ -6,6 +6,7 @@ import {
   loadTableProducerIndex,
   updateTableProducerIndex,
 } from "../../producer/producer-index.ts";
+import { INPUT_PACK_BATCH_SIZE_HARD_LIMIT } from "../../../input/mainline/task-batch.ts";
 import {
   reconcileOneHop,
   summarizeOneHop,
@@ -79,26 +80,40 @@ export function runCollector(
   force: boolean,
 ): void {
   if (taskIds.length === 0) return;
-  const args = [collector, "--data-root", dataRoot, "--task-ids", taskIds.join(",")];
-  if (force) args.push("--force");
-  process.stderr.write(
-    `${JSON.stringify({
-      autofill: "INPUT_PACK_COLLECTION_STARTED",
-      taskIds,
-    })}\n`,
-  );
-  const result = spawnSync(process.execPath, [tsxCli, ...args], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-    windowsHide: true,
-  });
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  if (result.error || result.status !== 0)
-    throw new Error(
-      `INPUT_PACK_COLLECTION_FAILED:${result.error?.message ?? result.status ?? "unknown"}`,
+  for (const [batchIndex, batch] of inputPackTaskBatches(taskIds).entries()) {
+    const batchStart = batchIndex * INPUT_PACK_BATCH_SIZE_HARD_LIMIT;
+    const args = [collector, "--data-root", dataRoot, "--task-ids", batch.join(",")];
+    if (force) args.push("--force");
+    process.stderr.write(
+      `${JSON.stringify({
+        autofill: "INPUT_PACK_COLLECTION_STARTED",
+        taskIds: batch,
+        batchStart,
+        batchSize: batch.length,
+      })}\n`,
     );
+    const result = spawnSync(process.execPath, [tsxCli, ...args], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      windowsHide: true,
+    });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.error || result.status !== 0)
+      throw new Error(
+        `INPUT_PACK_COLLECTION_FAILED:${result.error?.message ?? result.status ?? "unknown"}`,
+      );
+  }
+}
+
+export function inputPackTaskBatches(
+  taskIds: readonly string[],
+): readonly (readonly string[])[] {
+  const batches: string[][] = [];
+  for (let start = 0; start < taskIds.length; start += INPUT_PACK_BATCH_SIZE_HARD_LIMIT)
+    batches.push([...taskIds.slice(start, start + INPUT_PACK_BATCH_SIZE_HARD_LIMIT)]);
+  return batches;
 }
 
 function writeResult(

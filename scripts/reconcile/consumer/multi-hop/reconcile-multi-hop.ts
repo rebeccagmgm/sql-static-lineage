@@ -212,6 +212,8 @@ export interface ReconcileMultiHopOptions {
   /** Frozen one-hop snapshots for non-root tasks, when scheduler evidence is available offline. */
   readonly oneHopSnapshots?: ReadonlyMap<string, OneHopReconciliationResult>;
   readonly terminalTableConfig?: TerminalTableConfig;
+  /** Fingerprint already verified by an owning pipeline snapshot. */
+  readonly trustedInputFingerprint?: string;
 }
 
 interface MultiHopPreparedContext {
@@ -1032,6 +1034,7 @@ function reconcileMultiHopInternal(
           dataRoot: options.dataRoot,
           producerIndex: options.producerIndex,
           verifyInputFingerprint: true,
+          trustedInputFingerprint: preparedContext.inputFingerprint,
           scheduleRows: [],
           now,
         },
@@ -1624,7 +1627,8 @@ export function reconcileMultiHop(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
 ): MultiHopReconciliationResult {
-  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
+  if (options.trustedInputFingerprint !== undefined && (!/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint) || options.producerIndex.inputFingerprint !== options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
+  const inputFingerprint = options.trustedInputFingerprint ?? fingerprintTableProducerInputs(options.dataRoot);
   if (inputFingerprint !== options.producerIndex.inputFingerprint)
     throw new Error("PRODUCER_INDEX_STALE");
   return reconcileMultiHopInternal(
@@ -1643,7 +1647,8 @@ export function reconcileMultiHopBatch(
   roots: readonly MultiHopBatchRoot[],
   options: Omit<ReconcileMultiHopOptions, "rootOneHop">,
 ): readonly MultiHopReconciliationResult[] {
-  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
+  if (options.trustedInputFingerprint !== undefined && (!/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint) || options.producerIndex.inputFingerprint !== options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
+  const inputFingerprint = options.trustedInputFingerprint ?? fingerprintTableProducerInputs(options.dataRoot);
   if (inputFingerprint !== options.producerIndex.inputFingerprint)
     throw new Error("PRODUCER_INDEX_STALE");
   const preparedContext = prepareMultiHopContext(
@@ -1661,6 +1666,7 @@ export function reconcileMultiHopBatch(
     ),
   );
   if (
+    options.trustedInputFingerprint === undefined &&
     fingerprintTableProducerInputs(options.dataRoot) !==
     preparedContext.inputFingerprint
   )

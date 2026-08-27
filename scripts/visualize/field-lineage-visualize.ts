@@ -677,7 +677,7 @@ function codeFlowForField(
     [...relationCandidates.values()]
       .sort((left, right) => {
         if (left.distance !== right.distance) return left.distance - right.distance;
-        return (right.sourceSpan?.start ?? 0) - (left.sourceSpan?.start ?? 0);
+        return (left.sourceSpan?.start ?? 0) - (right.sourceSpan?.start ?? 0);
       })
       .slice(0, 32)
       .forEach((candidate) => {
@@ -798,16 +798,12 @@ export function renderFieldLineageHtml(
 .task-flow{min-width:0;max-width:100%;width:100%;overflow-x:auto}.branch-detail-body{min-width:0;overflow:hidden}
 .impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
 .code-layout{max-width:1400px;margin:0 auto;padding:18px 22px}.code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.code-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.code-picker select{min-width:240px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--text);font:inherit}.code-status{color:var(--muted);font-size:12px;text-align:right}.code-status strong{color:var(--flow);font-weight:600}.code-flow{display:grid;gap:10px}.code-step{border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:7px;background:var(--surface);overflow:hidden}.code-step[data-mode="EXPRESSION_ONLY"]{border-left-color:var(--candidate)}.code-step summary{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;list-style:none}.code-step summary::-webkit-details-marker{display:none}.code-step summary::before{content:"›";color:var(--flow);font-size:20px;transition:transform .15s ease}.code-step[open] summary::before{transform:rotate(90deg)}.code-step summary:hover{background:var(--surface-2)}.code-step-index{color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.code-step-title{font-weight:600;overflow-wrap:anywhere}.code-step-meta{color:var(--muted);font-size:11px;text-align:right;white-space:nowrap}.code-step-body{padding:0 13px 13px;border-top:1px solid var(--line)}.code-step-note{display:flex;gap:8px;flex-wrap:wrap;padding:9px 0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.code-step-note strong{color:var(--flow);font-weight:500}.sql-code{margin:0;max-height:390px;overflow:auto;padding:14px 16px;background:#111a22;color:#dce7ed;border:1px solid #2b3a45;border-radius:6px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;tab-size:2;white-space:pre}.sql-keyword{color:#7dd3fc;font-weight:600}.sql-function{color:#c4b5fd}.sql-string{color:#fbbf80}.sql-number{color:#f0abfc}.sql-comment{color:#7f9ba8;font-style:italic}.sql-parameter{color:#86efac}.sql-identifier{color:#d7dee4}.sql-operator{color:#fda4af}.code-empty{padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--muted)}@media(max-width:720px){.code-layout{padding:14px}.code-toolbar{display:block}.code-status{text-align:left;margin-top:8px}.code-picker select{min-width:0;max-width:100%}.code-step summary{grid-template-columns:24px minmax(0,1fr)}.code-step-meta{grid-column:2;text-align:left;white-space:normal}.sql-code{font-size:11px}}
-.code-task-divider{margin-top:10px;padding:7px 3px 2px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--line)}
+.code-task-divider{margin-top:10px;padding:7px 3px 2px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--line)}.task-code{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.task-code>summary{color:var(--flow);font-size:12px;font-weight:500;cursor:pointer}.task-code-flow{display:grid;gap:8px;margin-top:8px}.task-code-note,.task-code-empty{margin-top:8px;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.task-code .code-step{background:var(--surface)}
 </style>
 </head>
 <body>
-<header><h1>字段血缘 · ${rootTaskId}</h1><p class="subtitle">目标表：${rootTable}</p><p class="meta">页面由 FIELD_MULTI_HOP_RECONCILIATION 产物驱动；只展示静态证据，不代表调度运行或数据正确性。</p><nav class="view-tabs" aria-label="血缘视图"><button type="button" class="view-tab" data-view="code" aria-selected="true">代码流转</button><button type="button" class="view-tab" data-view="field" aria-selected="false">字段血缘</button><button type="button" class="view-tab" data-view="impact" aria-selected="false">影响范围</button></nav></header>
-<section id="code-view" class="code-layout" aria-labelledby="code-title">
-  <div class="code-toolbar"><div><h2 id="code-title">直接代码流转</h2><p class="subtitle">按目标字段 → 字段表达式 → SQL 关系 → 输入表展开；点击步骤查看原始 SQL 片段。</p></div><div class="code-picker"><label for="code-field-select">当前字段</label><select id="code-field-select"></select></div><div id="code-status" class="code-status"></div></div>
-  <div id="code-flow" class="code-flow" aria-labelledby="code-title"></div>
-</section>
-<div id="field-lineage-app" class="layout view-hidden">
+<header><h1>字段血缘 · ${rootTaskId}</h1><p class="subtitle">目标表：${rootTable}</p><p class="meta">页面由 FIELD_MULTI_HOP_RECONCILIATION 产物驱动；只展示静态证据，不代表调度运行或数据正确性。</p><nav class="view-tabs" aria-label="血缘视图"><button type="button" class="view-tab" data-view="field" aria-selected="true">字段血缘</button><button type="button" class="view-tab" data-view="impact" aria-selected="false">影响范围</button></nav></header>
+<div id="field-lineage-app" class="layout">
   <aside class="panel"><section class="section"><h2>目标字段</h2><div class="field-list" id="field-list"></div></section><div class="legend"><span><i class="flow"></i>VALUE_FLOW</span><span><i class="candidate-mark"></i>CANDIDATE</span></div></aside>
   <main class="panel">
     <div class="counts" id="counts"></div>
@@ -828,14 +824,14 @@ const DATA=${data};
 const IMPACT=${impactData};
 const CODE_FLOW=${codeFlowData};
 const IMPACT_TREE=${serialized(renderFieldLineageImpactTree(buildFieldLineageImpactGraph(artifact)))};
-const app=document.getElementById("field-lineage-app"),codeView=document.getElementById("code-view");
+const app=document.getElementById("field-lineage-app");
 const impactView=document.getElementById("impact-view"),impactTree=document.getElementById("impact-tree"),impactGraph=document.getElementById("impact-graph"),impactSvg=document.getElementById("impact-svg"),impactCards=document.getElementById("impact-cards"),impactNote=document.getElementById("impact-note");
 const nodeById=new Map(DATA.nodes.map((node)=>[node.nodeId,node]));
 const edgesByTo=new Map();
 for(const edge of DATA.edges){const list=edgesByTo.get(edge.toNodeId)||[];list.push(edge);edgesByTo.set(edge.toNodeId,list)}
 const rootIds=new Set(DATA.rootNodeIds);
 const fieldList=document.getElementById("field-list"),routes=document.getElementById("routes"),counts=document.getElementById("counts"),status=document.getElementById("status"),detailSource=document.getElementById("detail-source"),detailEvidence=document.getElementById("detail-evidence"),candidateBox=document.getElementById("candidates"),tableBox=document.getElementById("table-edges");
-const codeFlow=document.getElementById("code-flow"),codeStatus=document.getElementById("code-status"),codeFieldSelect=document.getElementById("code-field-select"),codeStepById=new Map(CODE_FLOW.steps.map((step)=>[step.stepId,step]));
+const codeStepById=new Map(CODE_FLOW.steps.map((step)=>[step.stepId,step]));
 const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const nodeLabel=(node)=>node?{task:node.taskId,table:node.field.qualifiedName,column:node.field.column}:null;
 const fields=[...new Set(DATA.request.rootFields)].sort();
@@ -890,10 +886,8 @@ function highlightSql(value){
   return html;
 }
 function codeStepHtml(step,index){
-  const span=step.sourceSpan?"SQL span "+step.sourceSpan.start+"–"+step.sourceSpan.end:"未提供 SQL span";
-  const evidence=step.evidenceMode==="FACTS_BACKED"?"facts 原始片段":"字段产物表达式";
   const taskName=step.taskName?" · "+step.taskName:"";
-  return '<details class="code-step" data-step-id="'+esc(step.stepId)+'" data-mode="'+esc(step.evidenceMode)+'"'+(index<2?' open':'')+'><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"></div></details>';
+  return '<details class="code-step" data-step-id="'+esc(step.stepId)+'" data-mode="'+esc(step.evidenceMode)+'"><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"></div></details>';
 }
 function hydrateCodeStep(detail){
   if(detail.dataset.hydrated==="true")return;
@@ -904,25 +898,18 @@ function hydrateCodeStep(detail){
   body.innerHTML='<div class="code-step-note"><strong>'+esc(evidence)+'</strong><span>'+esc(span)+'</span>'+(step.relationId?'<span>'+esc(step.relationId)+'</span>':'')+'</div><pre class="sql-code"><code>'+highlightSql(step.sourceText)+'</code></pre>';
   detail.dataset.hydrated="true";
 }
-function renderCode(field){
-  const flow=CODE_FLOW.fields[field]||{stepIds:[],taskIds:[],status:"UNAVAILABLE",note:"当前字段没有可展示的代码证据。"};
-  codeFieldSelect.value=field;
-  const statusLabel=flow.status==="FACTS_BACKED"?"FACTS SQL":flow.status==="EXPRESSION_ONLY"?"仅表达式":"不可用";
-  codeStatus.innerHTML='<strong>'+esc(statusLabel)+'</strong> · '+esc(flow.note)+' · '+flow.stepIds.length+' 个代码步骤';
-  const steps=flow.stepIds.map((stepId)=>codeStepById.get(stepId)).filter(Boolean);
-  if(!steps.length){codeFlow.innerHTML='<div class="code-empty">'+esc(flow.note)+'</div>';return;}
-  let previousTask="",html="";
-  steps.forEach((step,index)=>{
-    if(step.taskId!==previousTask){html+='<div class="code-task-divider">Task '+esc(step.taskId)+(step.taskName?' · '+esc(step.taskName):'')+'</div>';previousTask=step.taskId;}
-    html+=codeStepHtml(step,index);
-  });
-  codeFlow.innerHTML=html;
-  const details=[...codeFlow.querySelectorAll(".code-step")];
-  details.forEach((detail)=>detail.addEventListener("toggle",()=>{if(detail.open)hydrateCodeStep(detail)}));
-  details.slice(0,2).forEach((detail)=>hydrateCodeStep(detail));
+function bindCodeSteps(container){
+  container.querySelectorAll(".code-step").forEach((detail)=>detail.addEventListener("toggle",()=>{if(detail.open)hydrateCodeStep(detail)}));
 }
-codeFieldSelect.innerHTML=fields.map((field)=>'<option value="'+esc(field)+'">'+esc(field)+'</option>').join("");
-codeFieldSelect.addEventListener("change",()=>render(codeFieldSelect.value));
+function codeEvidenceHtml(field,taskId){
+  const flow=CODE_FLOW.fields[field]||{stepIds:[],taskIds:[],status:"UNAVAILABLE",note:"当前字段没有可展示的代码证据。"};
+  const steps=flow.stepIds.map((stepId)=>codeStepById.get(stepId)).filter((step)=>step&&step.taskId===taskId);
+  const status=flow.status==="FACTS_BACKED"?"facts 原始片段":flow.status==="EXPRESSION_ONLY"?"字段产物表达式":"不可用";
+  const body=steps.length
+    ? '<div class="task-code-note">'+esc(status)+' · '+esc(flow.note)+'</div><div class="task-code-flow">'+steps.map((step,index)=>codeStepHtml(step,index)).join('')+'</div>'
+    : '<div class="task-code-empty">当前 Task 没有可绑定的代码证据；不会推断缺失 SQL。</div>';
+  return '<details class="task-code"><summary>查看代码证据 · '+steps.length+' 步</summary>'+body+'</details>';
+}
 function impactLayers(){
   const taskIds=IMPACT.tasks.map((task)=>task.taskId),taskSet=new Set(taskIds),indegree=new Map(taskIds.map((taskId)=>[taskId,0])),outgoing=new Map(taskIds.map((taskId)=>[taskId,[]]));
   IMPACT.edges.forEach((edge)=>{if(!taskSet.has(edge.fromTaskId)||!taskSet.has(edge.toTaskId))return;outgoing.get(edge.fromTaskId).push(edge.toTaskId);indegree.set(edge.toTaskId,indegree.get(edge.toTaskId)+1)});
@@ -965,7 +952,7 @@ function renderImpactGraph(){
   });
 }
 function switchView(view){
-  const isImpact=view==='impact',isCode=view==='code';app.classList.toggle('view-hidden',!(!isImpact&&!isCode));codeView.classList.toggle('view-hidden',!isCode);impactView.classList.toggle('view-hidden',!isImpact);document.querySelectorAll('.view-tab').forEach((tab)=>tab.setAttribute('aria-selected',String(tab.dataset.view===view)));if(isImpact)renderImpactGraph();
+  const isImpact=view==='impact';app.classList.toggle('view-hidden',isImpact);impactView.classList.toggle('view-hidden',!isImpact);document.querySelectorAll('.view-tab').forEach((tab)=>tab.setAttribute('aria-selected',String(tab.dataset.view===view)));if(isImpact)renderImpactGraph();
 }
 document.querySelectorAll('.view-tab').forEach((tab)=>tab.addEventListener('click',()=>switchView(tab.dataset.view)));
 function pathsFrom(rootId,limit=32){
@@ -1094,7 +1081,7 @@ function mergeTaskGroups(paths){
     return {...group,nodes};
   });
 }
-function taskGroupHtml(group){
+function taskGroupHtml(group,field){
   const nodes=group.nodes.slice().reverse();
   const fields=[];
   const mappings=new Set();
@@ -1107,7 +1094,7 @@ function taskGroupHtml(group){
     }
     fields.push('<div class="task-field"><span class="task-field-name">'+esc(label.table)+'.'+esc(label.column)+'</span><small>'+esc(formatExpression(item.node.expressionText||"字段绑定"))+'</small></div>');
   });
-  return '<div class="task-group"><div class="task-group-title">Task '+esc(group.taskId)+'</div>'+(group.taskName?'<span class="task-group-name">'+esc(group.taskName)+'</span>':'')+fields.join('')+'</div>';
+  return '<div class="task-group"><div class="task-group-title">Task '+esc(group.taskId)+'</div>'+(group.taskName?'<span class="task-group-name">'+esc(group.taskName)+'</span>':'')+fields.join('')+codeEvidenceHtml(field,group.taskId)+'</div>';
 }
 function evidenceBranchHtml(path,index){
   const nodes=path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).reverse();
@@ -1124,11 +1111,11 @@ function flowCardHtml(node,index,total){
   const operation=node.expressionText&&node.expressionText!=="字段绑定"?node.expressionText:node.field.identityStatus==="TASK_LOCAL_SCHEMA_BACKED"?'临时表字段':'字段绑定';
   return '<div class="flow-card '+className+'"><div class="flow-card-label">'+label+'</div><div class="flow-card-task">Task '+esc(node.taskId)+'</div><div class="flow-card-table">'+esc(node.field.qualifiedName)+'</div><div class="flow-card-column">'+esc(node.field.column)+'</div><div class="flow-card-op">'+esc(operation)+'</div></div>';
 }
-function taskFlowHtml(paths){
+function taskFlowHtml(paths,field){
   const groups=mergeTaskGroups(paths).slice().reverse();
   const pieces=[];
   groups.forEach((group,groupIndex)=>{
-    pieces.push(taskGroupHtml(group));
+    pieces.push(taskGroupHtml(group,field));
     if(groupIndex<groups.length-1){
       const currentIds=new Set(group.nodes.map((item)=>item.node.nodeId));
       const downstream=groups[groupIndex+1];
@@ -1139,9 +1126,9 @@ function taskFlowHtml(paths){
   });
   return pieces.join('');
 }
-function semanticBranchHtml(group,index){
+function semanticBranchHtml(group,index,field){
   const first=group.paths[0];
-  const flow=taskFlowHtml(group.paths);
+  const flow=taskFlowHtml(group.paths,field);
   const operations=[...new Set(group.paths.flatMap((path)=>path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).flatMap((node)=>{
     const values=[];
     if(node.field.identityStatus==="TASK_LOCAL_SCHEMA_BACKED")values.push('临时表物化');
@@ -1152,7 +1139,7 @@ function semanticBranchHtml(group,index){
   const tags=operations.length?operations.map((operation)=>'<span class="branch-tag">'+esc(operationLabel(operation))+'</span>').join(''):'<span class="branch-tag">字段直传</span>';
   return '<div class="semantic-branch"><div class="semantic-title">来源分支 '+(index+1)+' · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+flow+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div>';
 }
-function routeGroupHtml(group,index){
+function routeGroupHtml(group,index,field){
   const statusText=branchStatus(group.paths);
   const operations=[...new Set(group.paths.flatMap((path)=>path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).flatMap((node)=>{
     const values=[];
@@ -1161,11 +1148,11 @@ function routeGroupHtml(group,index){
     return values;
   })))];
   const tags=operations.length?operations.map((operation)=>'<span class="branch-tag">'+esc(operationLabel(operation))+'</span>').join(''):'<span class="branch-tag">字段直传</span>';
-  return '<details class="branch-detail"><summary><span class="branch-summary-index">来源分支 '+(index+1)+'</span><span class="branch-summary-chain">'+esc(group.key)+'</span><span class="branch-summary-meta">'+group.paths.length+' 条证据 · '+esc(statusText)+'</span></summary><div class="branch-detail-body"><div class="route"><div class="route-summary">同一任务链合并展示 · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+taskFlowHtml(group.paths)+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据（'+group.paths.length+' 条）</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div></div></details>';
+  return '<details class="branch-detail"><summary><span class="branch-summary-index">来源分支 '+(index+1)+'</span><span class="branch-summary-chain">'+esc(group.key)+'</span><span class="branch-summary-meta">'+group.paths.length+' 条证据 · '+esc(statusText)+'</span></summary><div class="branch-detail-body"><div class="route"><div class="route-summary">同一任务链合并展示 · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+taskFlowHtml(group.paths,field)+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据（'+group.paths.length+' 条）</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div></div></details>';
 }
 function multiBranchOverviewHtml(field,root,routeGroups,pathCount){
   const target=root?root.field.qualifiedName+'.'+root.field.column:field;
-  return '<div class="lineage-overview"><div class="overview-header"><div><div class="overview-kicker">多分支汇聚</div><div class="overview-title">'+esc(field)+'</div><div class="overview-target">目标绑定：'+esc(target)+'</div></div><div class="overview-summary">'+routeGroups.length+' 条来源分支<br>'+pathCount+' 条原始证据</div></div><div class="branch-list">'+routeGroups.map(routeGroupHtml).join('')+'</div></div>';
+  return '<div class="lineage-overview"><div class="overview-header"><div><div class="overview-kicker">多分支汇聚</div><div class="overview-title">'+esc(field)+'</div><div class="overview-target">目标绑定：'+esc(target)+'</div></div><div class="overview-summary">'+routeGroups.length+' 条来源分支<br>'+pathCount+' 条原始证据</div></div><div class="branch-list">'+routeGroups.map((group,index)=>routeGroupHtml(group,index,field)).join('')+'</div></div>';
 }
 function renderCandidates(field){
   const items=DATA.candidates.filter((candidate)=>!candidate.field||candidate.field.column===field);
@@ -1186,10 +1173,10 @@ function render(field){
   const pathNodeIds=new Set(paths.flatMap((path)=>path.nodes));renderTableEdges(pathNodeIds);
   const pathNote=pathResults.some((result)=>result.truncated)?'<div class="note">当前页面只显示每个根绑定最多 32 条路径；完整路径仍保留在 JSON 产物中。</div>':'';
   routes.innerHTML=pathNote+(paths.length?multiBranchOverviewHtml(field,root,routeGroups,paths.length):'<div class="empty">当前字段没有可展示的 VALUE_FLOW 路径</div>');
+  bindCodeSteps(routes);
   status.innerHTML='当前字段：<strong>'+esc(field)+'</strong> · '+routeGroups.length+' 条来源分支（Task 链） · '+paths.length+' 条证据路径';
   detailSource.textContent=root?'目标绑定：Task '+root.taskId+' · '+root.field.qualifiedName+'.'+root.field.column:"目标字段绑定未找到";
   detailEvidence.textContent='证据状态：'+(root?.evidenceStatus||"UNRESOLVED")+' · gaps='+DATA.counts.gaps+(DATA.limits.truncated?' · 截断：'+DATA.limits.reasons.join("、"):"");
-  renderCode(field);
 }
 renderCounts();render(fields[0]||"");
 </script>

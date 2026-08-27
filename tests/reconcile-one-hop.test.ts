@@ -225,6 +225,22 @@ function writeProducerIndexFixture(options?: { partial?: boolean }): {
 }
 
 describe("reconcileOneHop", () => {
+  it("uses authoritative task-keyed schedule evidence and preserves metadata", () => {
+    const fixture = writeProducerIndexFixture();
+    let calls = 0;
+    const evidence = new Map([
+      ["current-indexed", { rows: [{ task_id: "parent-a" }], provider: "opencli:horae.relation", locator: "test:a", observedAt: "2026-08-27T00:00:01.000Z" }],
+    ]);
+    const result = reconcileOneHop("current-indexed", { dataRoot: fixture.dataRoot, producerIndex: fixture.producerIndex, scheduleEvidenceByTaskId: evidence, openCliRunner: () => { calls += 1; return []; } });
+    expect(result.schedule.parents[0]?.taskId).toBe("parent-a");
+    expect(result.schedule.evidence[0]?.provider).toBe("opencli:horae.relation");
+    expect(result.schedule.evidence[0]?.locator).toBe("test:a");
+    expect(result.schedule.evidence[0]?.observedAt).toBe("2026-08-27T00:00:01.000Z");
+    expect(calls).toBe(0);
+    evidence.delete("current-indexed");
+    expect(() => reconcileOneHop("current-indexed", { dataRoot: fixture.dataRoot, producerIndex: fixture.producerIndex, scheduleEvidenceByTaskId: evidence, openCliRunner: () => { calls += 1; return []; } })).toThrow("SCHEDULE_EVIDENCE_MISSING");
+    expect(calls).toBe(0);
+  });
   it("builds a concise sidecar summary without embedding evidence", () => {
     const fixture = writeProducerIndexFixture();
     const result = reconcileOneHop("current-indexed", {

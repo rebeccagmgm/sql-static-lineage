@@ -472,6 +472,16 @@ export interface ReconcileOneHopOptions {
    * scheduler evidence.  When present, no OpenCLI runner is invoked.
    */
   readonly scheduleRows?: readonly Record<string, unknown>[];
+  /** Task-keyed scheduler evidence, supplied by a bounded live prefetch. */
+  readonly scheduleRowsByTaskId?: ReadonlyMap<string, readonly Record<string, unknown>[]> | Readonly<Record<string, readonly Record<string, unknown>[]>>;
+  /** Optional evidence metadata for task-keyed rows. */
+  readonly scheduleEvidenceByTaskId?: ReadonlyMap<string, {
+    readonly rows: readonly Record<string, unknown>[];
+    readonly provider?: string;
+    readonly locator?: string;
+    readonly observedAt?: string | null;
+  }>;
+  readonly trustedInputFingerprint?: string;
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
   readonly taskSourceTimeoutSeconds?: number;
@@ -1935,6 +1945,10 @@ function reconcileOneHopInternal(
     throw new Error("INVALID_TASK_SOURCE_TIMEOUT");
 
   const producerIndex = options.producerIndex ?? null;
+  if (options.trustedInputFingerprint !== undefined) {
+    if (options.verifyInputFingerprint !== true || !/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
+    if (producerIndex && producerIndex.inputFingerprint !== options.trustedInputFingerprint) throw new Error("TRUSTED_INPUT_FINGERPRINT_MISMATCH");
+  }
   let producerIndexStatus: ProducerIndexConsumptionStatus = "NOT_REQUESTED";
   if (producerIndex) {
     if (!preparedContext.validatedProducerIndexes.has(producerIndex)) {
@@ -1987,25 +2001,30 @@ function reconcileOneHopInternal(
     "-f",
     "json",
   ];
-  const offlineScheduleRows = options.scheduleRows !== undefined;
+  const keyedRows = options.scheduleRowsByTaskId instanceof Map
+    ? options.scheduleRowsByTaskId.get(taskId)
+    : options.scheduleRowsByTaskId
+      ? (options.scheduleRowsByTaskId as Readonly<Record<string, readonly Record<string, unknown>[]>>)[taskId]
+      : undefined;
+  const keyedEvidence = options.scheduleEvidenceByTaskId?.get(taskId);
+  if (options.scheduleEvidenceByTaskId && !keyedEvidence) throw new Error(`SCHEDULE_EVIDENCE_MISSING:${taskId}`);
+  if (options.scheduleRowsByTaskId && keyedRows === undefined) throw new Error(`SCHEDULE_ROWS_MISSING:${taskId}`);
+  const suppliedRows = keyedEvidence?.rows ?? keyedRows ?? options.scheduleRows;
+  const offlineScheduleRows = suppliedRows !== undefined;
   const scheduleEvidence: EvidenceObservation = {
     source: "HORAE_RELATION",
-    provider: offlineScheduleRows
-      ? "offline:horae.relation"
-      : "opencli:horae.relation",
-    locator: offlineScheduleRows
-      ? "offline schedule evidence input"
-      : `opencli ${horaeArgs.join(" ")}`,
-    observedAt: offlineScheduleRows ? null : now(),
+    provider: keyedEvidence?.provider ?? (offlineScheduleRows ? "offline:horae.relation" : "opencli:horae.relation"),
+    locator: keyedEvidence?.locator ?? (offlineScheduleRows ? "offline schedule evidence input" : `opencli ${horaeArgs.join(" ")}`),
+    observedAt: keyedEvidence?.observedAt ?? (offlineScheduleRows ? null : now()),
     detail: {
       direction: "up",
       depth: 1,
       ...(offlineScheduleRows
-        ? { rowsProvided: options.scheduleRows!.length }
+        ? { rowsProvided: suppliedRows!.length }
         : {}),
     },
   };
-  const scheduleRows = options.scheduleRows ?? rowsOf(runner(horaeArgs));
+  const scheduleRows = suppliedRows ?? rowsOf(runner(horaeArgs));
   const scheduleParents = new Map<
     string,
     { taskId: string; taskName: string | null; evidence: EvidenceObservation[] }
@@ -2684,9 +2703,11 @@ export function reconcileOneHop(
   options: ReconcileOneHopOptions,
 ): OneHopReconciliationResult {
   const preparedContext = prepareOneHopContext(options.dataRoot, {
+    trustedInputFingerprint: options.trustedInputFingerprint,
     includeFingerprint:
       options.producerIndex !== undefined &&
-      options.verifyInputFingerprint === true,
+      options.verifyInputFingerprint === true &&
+      options.trustedInputFingerprint === undefined,
   });
   return reconcileOneHopInternal(taskId, options, preparedContext);
 }
@@ -2786,14 +2807,17 @@ export function reconcileOneHopBatch(
   options: ReconcileOneHopOptions,
 ): readonly OneHopReconciliationResult[] {
   const preparedContext = prepareOneHopContext(options.dataRoot, {
+    trustedInputFingerprint: options.trustedInputFingerprint,
     includeFingerprint:
       options.producerIndex !== undefined &&
-      options.verifyInputFingerprint === true,
+      options.verifyInputFingerprint === true &&
+      options.trustedInputFingerprint === undefined,
   });
   const results = taskIds.map((taskId) =>
     reconcileOneHopInternal(taskId, options, preparedContext),
   );
   if (
+    options.trustedInputFingerprint === undefined &&
     preparedContext.inputFingerprint !== null &&
     fingerprintTableProducerInputs(options.dataRoot) !==
       preparedContext.inputFingerprint

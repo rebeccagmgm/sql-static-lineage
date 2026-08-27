@@ -717,6 +717,7 @@ function writeMatchesArtifact(
   artifactWrite: JsonRecord,
   producerRecord: JsonRecord,
   producerLoad: CurrentBundleLoad,
+  requireSqlSpan = true,
 ): boolean {
   const observationKind = String(artifactWrite.observationKind ?? "");
   const provenance = String(producerRecord.provenance ?? "");
@@ -728,6 +729,7 @@ function writeMatchesArtifact(
       normalizeName(String(producerRecord.write_kind ?? "")) !== normalizeName(expectedKind)
     )
       return false;
+    if (!requireSqlSpan) return true;
     const expectedStart = sqlParseStart(artifactWrite);
     if (expectedStart === null) return true;
     const statementId = String(
@@ -809,9 +811,19 @@ function producerWriteProof(
     const embeddedIds = writeObservationIds(artifactWrite).filter((id) => recordById.has(id));
     const matches = embeddedIds.length > 0
       ? [...new Set(embeddedIds)]
-      : records
-          .filter((record) => writeMatchesArtifact(artifactWrite, record, producerLoad))
-          .map((record) => String(record.write_observation_id));
+      : (() => {
+          const exactMatches = records
+            .filter((record) => writeMatchesArtifact(artifactWrite, record, producerLoad))
+            .map((record) => String(record.write_observation_id));
+          if (exactMatches.length > 0) return exactMatches;
+          // Table-level and producer facts may use different SQL span offsets;
+          // keep the fallback unique by physical table and write kind.
+          return records
+            .filter((record) =>
+              writeMatchesArtifact(artifactWrite, record, producerLoad, false),
+            )
+            .map((record) => String(record.write_observation_id));
+        })();
     if (matches.length !== 1) {
       ambiguous = true;
       continue;

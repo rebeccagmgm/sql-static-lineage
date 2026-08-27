@@ -4,7 +4,7 @@
 
 1. Input Pack 自动补齐（仅做任务/表的输入闭包，不产出 One-hop/Multi-hop）；
 2. 生成或复用长期 Machine Facts（`field-facts/`）；
-3. 固定 Producer Index，并生成本次任务的 one-hop 快照；
+3. 固定 Producer Index，并对闭包任务实时预取 Horae relation（全局并发默认不超过 4），生成 one-hop 快照；
 4. 基于冻结的 one-hop 快照生成 multi-hop；
 5. 按需生成字段血缘，并由 JSON 产物生成 HTML。
 
@@ -32,7 +32,7 @@ artifacts/tasks/<task-id>/
    └─ field-lineage.html    # 仅 --with-fields
 ```
 
-Machine Facts 使用输入根目录下已有的 `field-facts/` 长期缓存，并按任务输入内容哈希增量复用；它不会改变上述正式目录契约。Producer Index 的 fingerprint 缓存仍由现有实现维护在输入根目录之外，Input Pack 后续扩充时会在下一次运行中产生新的缓存版本。
+Machine Facts 使用输入根目录下已有的 `field-facts/` 长期缓存，并按任务输入内容哈希增量复用；它不会改变上述正式目录契约。Producer Index 的 fingerprint 缓存仍由现有实现维护在输入根目录之外，Input Pack 后续扩充时会在下一次运行中产生新的缓存版本。Horae relation 每次运行实时查询，不使用隐式调度缓存；查询失败、超时、非法 envelope 或缺失任务键都会 fail closed。所有下游阶段复用闭包返回的同一 Producer Index snapshot，并仅在发布前执行一次最终 Input Pack fingerprint 校验，发现中途变化则不覆盖正式产物。
 
 未显式传 `--max-depth` 时，编排器默认最多追溯 25 层；仍可用 `--max-depth` 覆盖。默认 `maxTasks=1000`、`maxEdges=10000`，Input Pack 闭包的默认发现上限为 5000；字段血缘另有 `maxStates=5000`、`maxPaths=10000` 的默认上限。这些仍是独立的 fail-closed 安全上限，也可通过各自命令行覆盖。
 

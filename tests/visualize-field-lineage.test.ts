@@ -136,7 +136,12 @@ describe("field lineage visualization", () => {
   it("renders a collapsed multi-branch overview and keeps route evidence inside details", () => {
     const html = renderFieldLineageHtml(artifact());
 
-    expect(html).toContain("代码流转");
+    expect(html).toContain("代码证据");
+    expect(html).toContain("task-code");
+    expect(html).toContain("codeEvidenceHtml(field,group.taskId)");
+    expect(html).toContain("taskGroupHtml(group,field)");
+    expect(html).not.toContain('data-view="code"');
+    expect(html).not.toContain('id="code-view"');
     expect(html).toContain("const CODE_FLOW=");
     expect(html).toContain("function highlightSql(value)");
     expect(html).toContain("sql-keyword");
