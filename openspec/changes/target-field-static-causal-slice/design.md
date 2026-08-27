@@ -12,7 +12,7 @@
 - 在同一仓库中建立可独立执行、验证、发布和回滚的 causal-slice consumer，不改变旧 field-lineage 的输出契约。
 - 让控制字段与 relation-level dependency 可跨 Task 递归，但不污染 VALUE_FLOW 主图。
 - 对每个目标字段和已知候选分支给出完整、可验证、不可静默遗漏的 assessment。
-- 复用 Calcite 的 metadata 语义与测试资产，同时保留现有证据主链和部署方式。
+- 让 Calcite 作为贯穿 Native 算子开发、回归和发布验收的并行语义校验轨，同时保留现有证据主链和默认部署方式。
 - 允许 209119 只做 field-only 增量重算。
 
 **Non-Goals:**
@@ -140,13 +140,17 @@ PROVEN_UNRELATED cut 只可传播给 Candidate Universe 中已经枚举且可证
 
 新文本和 HTML 只读取 causal-slice artifact：展示逐目标字段最小确定集、保守安全集、candidate branch 分类、proof/gap、value/control limits 和 operator support。Renderer 不重新构图或推断 Task 是否相关。旧 field-lineage renderer 保持原样；需要展示 legacy VALUE_FLOW 时，新 artifact 保存显式引用/投影。
 
-### 10. Calcite starts as a differential oracle
+### 10. Calcite is a continuous differential oracle with explicit shadow mode
 
 在独立工具目录固定 Calcite 1.42.0，提供 JSONL stdin/stdout 协议。输入包含标准化 schema、SQL/dialect hint 和 requested metadata；输出 observation、operator/table/column mapping、unsupported/failed reason 和 Calcite/version fingerprints。
 
-首版只在独立测试命令运行：默认 `npm test`、field CLI 和 pipeline 不启动 Java。Differential reconciler 生成测试报告：AGREED、NATIVE_ONLY、CALCITE_ONLY_UNMAPPABLE、NOT_EVALUATED、CONFLICT。Calcite 结果不直接进入 canonical artifact；稳定且可映射的差异先转成 Native regression fixture 和规则。
+Calcite 不再等到实现末尾才运行。CASE/IF/COALESCE、filter/join、aggregate/setop、window/Top-N、relation-context 每批 Native transfer rule 都必须同步维护差分 fixture，并在该批完成前运行独立 Calcite 命令。Differential reconciler 输出 `NATIVE_CONFIRMED`、`CALCITE_CORROBORATED`、`CALCITE_ONLY_UNMAPPABLE`、`NOT_EVALUATED` 和 `SEMANTIC_ENGINE_CONFLICT`，保留双方 observation、mapping refs 与版本 fingerprint。
 
-生产侧车是后续独立 change。准入条件为：真实 Horae/Hive/Spark 语料的解析和 occurrence mapping 稳定、能显著减少 Unknown、冲突全部可检测、性能和 Java 运维成本可接受。
+首版同时提供显式 `--semantic-oracle calcite` shadow 模式：仅在调用方主动启用且 Java 工具可用时运行，生成独立 differential report，并可在 causal-slice artifact 中写入不参与 content decision 的 validation summary。默认 `npm test`、causal-slice CLI 和 pipeline 不构建或启动 Java。Calcite observation 不直接生成 dependency/assessment；双方冲突必须通过 reconciler 转为 `SEMANTIC_ENGINE_CONFLICT` gap 并将相关 assessment 降为 `UNKNOWN`。
+
+Calcite differential 是每个 operator batch 的完成条件，但 Calcite unsupported/failure 不是 Native 结论的自动降级条件：已有 canonical proof 保持不变，报告记录 `NOT_EVALUATED`。只有双方针对同一已精确映射语义对象发生实质冲突时才降级。稳定且可映射的 Calcite 额外结论先沉淀为 Native regression fixture 和规则。
+
+生产决策侧车仍是后续独立 change。准入条件为：真实 Horae/Hive/Spark 语料的解析和 occurrence mapping 稳定、所有冲突可检测且 fail closed、209119 等真实任务证明能增加可映射 observation 或减少有意义的 Unknown 且不破坏 confirmed evidence closure、性能和 Java 运维成本可接受。
 
 ### 11. 209119 uses causal-slice-only replay
 
@@ -164,18 +168,18 @@ PROVEN_UNRELATED cut 只可传播给 Candidate Universe 中已经枚举且可证
 - [Physical resolver refactor changes existing VALUE paths] → 先用当前 field-lineage fixtures 锁定 VALUE_FLOW，再让 control 共用同一 resolver。
 - [独立 artifact 与旧 artifact 产生语义漂移] → 使用 fingerprint、canonical evidence refs 和差分测试显式绑定；任何不一致保留 Unknown。
 - [共享 resolver/expander 修改导致旧 VALUE 回归] → 兼容 re-export、冻结旧 field-lineage golden，并在新模块启用前完成 occurrence/read/write 证据校验。
-- [Calcite dialect differs from Horae Hive/Spark] → 仅离线、结果带 NOT_EVALUATED/UNSUPPORTED，不进入 confirmed proof。
+- [Calcite dialect differs from Horae Hive/Spark] → 差分结果带 NOT_EVALUATED/UNSUPPORTED；shadow 模式不进入 confirmed proof，冲突 fail closed。
 - [Calcite metadata still lacks base table constraints] → Unknown 保留；不把 metadata absence 当 negative proof。
 - [209119 artifacts are stale or browser-locked] → 校验 fingerprint 后写 staging，并使用现有可恢复发布流程；不在 field-only 过程中重命名未确认的目录。
 
 ## Migration Plan
 
 1. 冻结旧 field-lineage golden，并修复共享 Plan Facts/resolver/expander 的证据缺口，不改变旧 artifact 输出。
-2. 建立独立 causal-slice 目录、contract、schema 和 canonical evidence adapter；迁入 semantic contract/support matrix/normalizer。
-3. 完成 definitions/applications、Native transfer rules 和 shared expander 的 occurrence-specific 证据校验。
-4. 启用 per-root value/control traversal、Candidate Universe 与 assessment validator。
-5. 发布独立 causal-slice artifact、CLI、summary/HTML 和 rerun sets。
-6. 保持非默认 Calcite oracle 与 differential tests，差异只沉淀回 Native regression。
-7. 使用已固定 fingerprint 的 209119 做 causal-slice-only 验收并生成独立 JSON/摘要/HTML，同时验证旧 artifact 未变化。
+2. 建立独立 causal-slice 目录、contract、schema 和 canonical evidence adapter；迁入 semantic contract/support matrix/normalizer，并把 Calcite mapping contract 接入同一 operator matrix。
+3. 按 expression、rowset、aggregate/setop、window/Top-N、relation-context 批次完成 Native transfer rules；每批同步完成 Calcite fixture、mapping 和 differential gate。
+4. 完成 shared expander 的 occurrence-specific 证据校验，并启用 per-root value/control traversal。
+5. 建立 Candidate Universe、positive assessment 和 `negativeProofMode=SAFE_RULES_ONLY`；未满足负向证明义务的 pair 保持 Unknown。
+6. 发布独立 causal-slice artifact、CLI、summary/HTML、rerun sets，以及显式 Calcite shadow report/validation summary。
+7. 使用已固定 fingerprint 的 209119 做 causal-slice-only 验收并生成独立 JSON/摘要/HTML，同时验证旧 artifact 未变化，并用 shadow A/B 形成生产侧车 go/no-go 证据。
 
 回滚时关闭独立 causal-slice CLI/发布入口并删除其产物；旧 field-lineage、Input Pack、Machine Facts、producer index 和 table artifact 不迁移、不重写。Calcite 工具独立，可直接从差分测试流程移除。

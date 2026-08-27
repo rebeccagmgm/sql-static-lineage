@@ -117,12 +117,24 @@ VALUE 和所有控制字段 SHALL 使用同一物理字段 resolver，优先应�
 - **WHEN** 调用方选择保守安全集
 - **THEN** 所有无法证明无关的已知候选 Task 均进入结果，且 `PROVEN_UNRELATED` Task 不进入结果
 
-### Requirement: Calcite is an offline differential oracle in the first release
-系统 SHALL 提供固定版本、JSONL 输入输出的 Calcite 离线校验器，输出 expression lineage、predicates、unique keys、functional dependencies、table occurrences、row-count/cardinality metadata 以及 unsupported/failed 原因。默认生产 CLI 和默认 TypeScript 测试 MUST NOT 依赖 Java 或 Calcite。
+### Requirement: Calcite is a first-class differential validation track
+系统 SHALL 提供固定版本、JSONL 输入输出的 Calcite 语义校验器，输出 expression lineage、predicates、unique keys、functional dependencies、table occurrences、row-count/cardinality metadata 以及 unsupported/failed 原因。每批 Native operator transfer rule MUST 有对应的 Calcite differential fixture 或明确的 `NOT_EVALUATED` 原因；差分结果 SHALL 归类为 `NATIVE_CONFIRMED`、`CALCITE_CORROBORATED`、`CALCITE_ONLY_UNMAPPABLE`、`NOT_EVALUATED` 或 `SEMANTIC_ENGINE_CONFLICT`。默认生产 CLI 和默认 TypeScript 测试 MUST NOT 依赖 Java 或 Calcite。
+
+#### Scenario: Native operator rule is implemented
+- **WHEN** 新增或修改 Native CASE、JOIN、aggregate、set operation、window、Top-N 或 relation-context transfer rule
+- **THEN** 对应语料同时产生 Native 与 Calcite observation，并验证 occurrence、字段、operator 与 source evidence 映射；Calcite 不支持时必须记录 `NOT_EVALUATED`，不得静默跳过
+
+#### Scenario: Explicit Calcite shadow validation is requested
+- **WHEN** 调用方显式启用 Calcite shadow 模式且本机 Java/Calcite 工具可用
+- **THEN** 系统生成独立 differential report 和带版本 fingerprint 的 validation summary，但不得改写 canonical evidence、assessment 或重跑集合
 
 #### Scenario: Calcite adds an unmappable observation
 - **WHEN** Calcite 返回额外 metadata 但不能精确映射回 canonical relation occurrence、字段和 source evidence
 - **THEN** 该 observation 仅记录为辅助结果，不得进入 confirmed proof 或产生 `PROVEN_UNRELATED`
+
+#### Scenario: Native and Calcite conflict
+- **WHEN** 两个语义引擎对同一已映射 occurrence 和 operator 得出冲突结论
+- **THEN** differential report 记录双方 observation，相关结论降为带 `SEMANTIC_ENGINE_CONFLICT` gap 的 `UNKNOWN`，不得由配置选择性忽略冲突
 
 #### Scenario: Default test suite runs without Java
 - **WHEN** 执行仓库默认 `npm test`

@@ -51,10 +51,13 @@
 - [x] 7.2 Implement Calcite extraction for expression lineage, predicates, unique keys, functional dependencies, table occurrences, and row-count/cardinality metadata on the supported fixture subset.
 - [x] 7.3 Add a TypeScript differential reconciler that reports AGREED, NATIVE_ONLY, CALCITE_ONLY_UNMAPPABLE, NOT_EVALUATED, and CONFLICT without modifying canonical artifacts.
 - [x] 7.4 Add an independent Calcite build/test command and ensure default `npm test`, production CLI, and field-only reconciliation neither build nor start Java.
+- [ ] 7.5 Integrate Calcite mapping and differential fixtures into every Native operator batch; require an explicit `NOT_EVALUATED` reason for unsupported dialect/operator cases and preserve both observations on conflicts.
+- [ ] 7.6 Add explicit `--semantic-oracle calcite` shadow validation that emits a separate versioned differential report and optional non-decisional artifact validation summary without changing canonical dependencies, assessments, or rerun sets.
+- [ ] 7.7 Add differential release gates for occurrence/field/operator/source-evidence mapping, deterministic conflict-to-Unknown behavior, supported-corpus agreement, and 209119 shadow A/B sidecar go/no-go evidence.
 
 ## 8. Verification and bounded rollout
 
-- [ ] 8.1 Run focused canonical-facts, semantic, shared-evidence, traversal, candidate-universe, assessment, artifact, summary, HTML, legacy field-lineage compatibility, and Calcite differential tests.
+- [ ] 8.1 Run focused canonical-facts, per-operator Native/Calcite differential, shared-evidence, traversal, candidate-universe, assessment, artifact, summary, HTML, legacy field-lineage compatibility, shadow-mode, and Calcite differential tests.
 - [ ] 8.2 Run repository typecheck, default tests, build, and format checks; separately repair or classify the current task-inspection fixture drift and pre-existing formatting failures.
 - [ ] 8.3 Reconcile Task 209119 from existing matching immutable inputs, generate only causal-slice JSON/summary/HTML, and prove no full Task collection, old field-lineage rebuild, or producer-index rebuild occurred.
-- [ ] 8.4 Inspect 209119 minimum/safety rerun sets, proof continuity, Unknown gaps, candidate-pair coverage, limits, new HTML parity, and old artifact byte stability; record Calcite sidecar go/no-go evidence without enabling it in production.
+- [ ] 8.4 Inspect 209119 minimum/safety rerun sets, proof continuity, Unknown gaps, candidate-pair coverage, limits, new HTML parity, old artifact byte stability, and Native-vs-Calcite shadow A/B; record production-sidecar go/no-go evidence without enabling Calcite as a decision engine.
