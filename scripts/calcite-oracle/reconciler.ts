@@ -9,6 +9,7 @@ import type {
   DifferentialReconciliation,
   DifferentialResult,
   DifferentialStatus,
+  DifferentialReason,
 } from "./protocol.ts";
 
 const METADATA_KINDS: readonly CalciteOracleMetadataKind[] = [
@@ -51,11 +52,18 @@ function resultFor(
   native: DifferentialObservation,
   calcite: DifferentialObservation,
   forceNotEvaluated = false,
+  reason?: DifferentialReason,
 ): DifferentialResult {
   const nativeValues = [...native.values];
   const calciteValues = [...calcite.values];
   if (forceNotEvaluated) {
-    return { kind, status: "NOT_EVALUATED", nativeValues, calciteValues };
+    return {
+      kind,
+      status: "NOT_EVALUATED",
+      nativeValues,
+      calciteValues,
+      ...(reason ? { reason } : {}),
+    };
   }
 
   let status: DifferentialStatus;
@@ -73,7 +81,20 @@ function resultFor(
   }
 
   if (status !== "CONFLICT") {
-    return { kind, status, nativeValues, calciteValues };
+    return {
+      kind,
+      status,
+      nativeValues,
+      calciteValues,
+      ...(status === "NOT_EVALUATED"
+        ? {
+            reason: reason ?? {
+              code: "OBSERVATION_NOT_PROVIDED",
+              message: `No ${kind} observation was evaluated by either side.`,
+            },
+          }
+        : {}),
+    };
   }
 
   const nativeKeys = new Set(normalized(nativeValues));
@@ -120,11 +141,25 @@ export function reconcileCalciteResponse(
   native: DifferentialObservationSet,
   response: CalciteOracleResponse,
 ): DifferentialReconciliation {
+  const sidecarReason = response.error ?? {
+    code: response.status === "SUCCESS"
+      ? "CALCITE_OBSERVATION_NOT_PROVIDED"
+      : "CALCITE_SIDECAR_NOT_EVALUATED",
+    message: response.status === "SUCCESS"
+      ? "Calcite returned no observation for this metadata kind."
+      : `Calcite sidecar status is ${response.status}.`,
+  };
   const result = response.status === "SUCCESS"
     ? reconcileDifferential({ native, calcite: evaluatedObservations(response.observations) })
     : {
         results: METADATA_KINDS.map((kind) =>
-          resultFor(kind, valuesFrom(native, kind), { evaluated: false, values: [] }, true),
+          resultFor(
+            kind,
+            valuesFrom(native, kind),
+            { evaluated: false, values: [] },
+            true,
+            sidecarReason,
+          ),
         ),
       };
   return response.fingerprint === undefined

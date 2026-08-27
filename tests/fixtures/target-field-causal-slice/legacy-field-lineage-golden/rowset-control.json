@@ -1,0 +1,26 @@
+[
+  {
+    "controlId": "rowset-control:field-node:100:hive|warehouse|demo.root__warehouse|demo.root|out_a:output-binding:100:task:100:slot:query:statement:0:0:task:100:statement:0:relation:root.filter",
+    "taskId": "100",
+    "nodeId": "field-node:100:hive|warehouse|demo.root__warehouse|demo.root|out_a:output-binding:100:task:100:slot:query:statement:0:0",
+    "statementId": "task:100:slot:query:statement:0",
+    "relationId": "task:100:statement:0:relation:root.filter",
+    "controlType": "filter",
+    "fields": [
+      {
+        "platform": "hive",
+        "dataSource": "warehouse",
+        "stableTableId": "demo.mid__warehouse",
+        "qualifiedName": "demo.mid",
+        "column": "filter_key",
+        "identityStatus": "SCHEMA_BACKED"
+      }
+    ],
+    "sourceText": "m.filter_key <> 'X'",
+    "evidenceStatus": "PROVISIONAL_LEGACY",
+    "reasonCode": null,
+    "evidenceRefs": [
+      "machine-facts:registry/tasks/100/bundle/relation-nodes.jsonl"
+    ]
+  }
+]

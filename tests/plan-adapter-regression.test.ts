@@ -790,24 +790,127 @@ describe("plan adapter structured semantic roles", () => {
     );
   });
 
+  it("preserves source expression bytes and keeps normalized display text separate", () => {
+    const fixture = {
+      sql: "SELECT COALESCE(\n  t.a,\n  t.b\n) AS result FROM demo.t t",
+      schema: { "demo.t": { a: "int", b: "int" } },
+    };
+    const session = SqlSession.create(fixture.sql, "databricks");
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+      schema: new Schema(fixture.schema),
+      include_expression_dependencies: true,
+    });
+    const project = plan.relations.find((relation) => relation.type === "project");
+    if (project?.type !== "project") throw new Error("project relation missing");
+    const expression = project.expressions[0]!;
+
+    expect(expression.expr_text).toBe(
+      fixture.sql.slice(expression.span.start, expression.span.end),
+    );
+    expect(expression.display_text).toBe("COALESCE( t.a, t.b ) AS result");
+    expect(expression.expr_text).not.toBe(expression.display_text);
+  });
+
+  it("does not classify one-argument Databricks ISNULL as COALESCE", () => {
+    const fixture = {
+      sql: "SELECT ISNULL(t.a) AS result FROM demo.t t",
+      schema: { "demo.t": { a: "int" } },
+    };
+    const session = SqlSession.create(fixture.sql, "databricks");
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+      schema: new Schema(fixture.schema),
+      include_expression_dependencies: true,
+    });
+    const project = plan.relations.find((relation) => relation.type === "project");
+    if (project?.type !== "project") throw new Error("project relation missing");
+
+    expect(project.expressions[0]?.expression_roles ?? []).toEqual([]);
+  });
+
+  it("preserves WHERE, HAVING, and QUALIFY as distinct filter clauses", () => {
+    const fixture = {
+      sql: "SELECT t.k, COUNT(*) AS n FROM demo.t t WHERE t.a > 0 GROUP BY t.k HAVING COUNT(*) > 1 QUALIFY t.k > 0",
+      schema: { "demo.t": { k: "int", a: "int" } },
+    };
+    const session = SqlSession.create(fixture.sql, "databricks", {
+      schema: new Schema(fixture.schema),
+    });
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+      schema: new Schema(fixture.schema),
+      include_expression_dependencies: true,
+    });
+
+    expect(
+      plan.relations
+        .filter((relation) => relation.type === "filter")
+        .map((relation) => relation.type === "filter" && relation.clause),
+    ).toEqual(["where", "having", "qualify"]);
+  });
+
+  it("emits stable read occurrence provenance in Plan Facts", () => {
+    const fixture = {
+      sql: "SELECT x.a FROM demo.t x JOIN demo.t y ON x.a = y.a",
+      schema: { "demo.t": { a: "int" } },
+    };
+    const session = SqlSession.create(fixture.sql, "databricks", {
+      schema: new Schema(fixture.schema),
+    });
+    const plan = buildPlanFacts(session.doc.statements[0]!, fixture.sql, {
+      dialect: "databricks",
+      schema: new Schema(fixture.schema),
+      include_expression_dependencies: true,
+    });
+    const reads = plan.relations.filter((relation) => relation.type === "read");
+
+    expect(reads.map((read) => read.read_occurrence_id)).toEqual([
+      "root.read.x",
+      "root.read.y",
+    ]);
+    expect(reads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          scope_id: "root",
+          read_occurrence: expect.objectContaining({
+            relation_id: "root.read.x",
+            scope_id: "root",
+            source_span: expect.any(Object),
+          }),
+        }),
+      ]),
+    );
+  });
+
   it("keeps unavailable window frame semantics explicitly unknown", () => {
-    const { expression } = buildFixture("window-frame");
-    expect(expression.window_spec?.input_bindings.map((item) => item.role)).toEqual([
+    const { expression, plan } = buildFixture("window-frame");
+    const windowSpec = expression.window_spec;
+    if (!windowSpec) throw new Error("window spec missing");
+    expect(windowSpec.input_bindings.map((item) => item.role)).toEqual([
       "VALUE",
       "WINDOW_PARTITION",
       "WINDOW_ORDER",
     ]);
-    expect(expression.window_spec?.input_bindings).not.toEqual(
+    expect(windowSpec.input_bindings).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ expression_text: "2" })]),
     );
-    expect(expression.window_spec?.frame).toEqual({
+    expect(windowSpec.frame).toEqual({
       status: "UNKNOWN",
       expression_text: null,
       display_text: null,
-      span: null,
+      span: windowSpec.source_span,
       input_columns: [],
       reason: "canonical WindowSpec IR does not expose frame bounds",
     });
+    expect(plan.unknowns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: "expressions[0].window.frame",
+          span: windowSpec.source_span,
+        }),
+      ]),
+    );
   });
 
   it("projects Top-N relation/control inputs from Scope IR", () => {

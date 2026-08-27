@@ -72,13 +72,20 @@ describe("semantic dependency normalizer", () => {
   });
 
   it("splits CASE, IF, and COALESCE selector/value roles", () => {
-    const result = normalize(
-      semanticNormalizerPlan,
-      "target:expressions",
-      "project",
+    const definitions = [
+      ["amount_out", "target:case"],
+      ["score_out", "target:if"],
+      ["fallback_out", "target:coalesce"],
+    ].flatMap(([outputName, rootTargetFieldId]) =>
+      normalize(
+        semanticNormalizerPlan,
+        rootTargetFieldId,
+        "project",
+        outputName,
+      ).definitions,
     );
     const keys = new Set(
-      result.definitions.map(
+      definitions.map(
         (definition) =>
           `${definition.operatorVariant}:${definition.operatorRole}:${definition.effectKind}`,
       ),
@@ -92,15 +99,13 @@ describe("semantic dependency normalizer", () => {
   });
 
   it("normalizes rowset, join, grouping, setop, window, and Top-N controls", () => {
-    const result = normalizeSemanticDependencies({
-      plan: semanticNormalizerPlan,
-      roots: [
-        { rootTargetFieldId: "target:top", relationId: "top" },
-        { rootTargetFieldId: "target:union", relationId: "union_all" },
-      ],
-    });
+    const definitions = [
+      normalize(semanticNormalizerPlan, "target:top", "top", "score_out"),
+      normalize(semanticNormalizerPlan, "target:union", "union_all", "id"),
+      normalize(semanticNormalizerPlan, "target:window", "project", "rolling"),
+    ].flatMap((result) => result.definitions);
     const variants = new Set(
-      result.definitions.map((definition) => definition.operatorVariant),
+      definitions.map((definition) => definition.operatorVariant),
     );
     for (const variant of [
       "LEFT",
@@ -113,14 +118,14 @@ describe("semantic dependency normalizer", () => {
     ])
       expect(variants.has(variant), variant).toBe(true);
     expect(
-      result.definitions.some(
+      definitions.some(
         (definition) =>
           definition.operatorVariant === "WINDOW_PARTITION_BY" &&
           definition.localEdgeKind === "WINDOW_CONTEXT",
       ),
     ).toBe(true);
     expect(
-      result.definitions.some(
+      definitions.some(
         (definition) =>
           definition.operatorVariant === "LIMIT" &&
           definition.operatorRole === "ORDER_KEY",
@@ -133,6 +138,7 @@ describe("semantic dependency normalizer", () => {
       semanticNormalizerPlan,
       "target:aggregate",
       "aggregate",
+      "cnt",
     );
     expect(
       aggregate.definitions.filter(

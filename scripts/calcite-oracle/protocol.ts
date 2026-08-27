@@ -5,6 +5,77 @@ export const CALCITE_ORACLE_VERSION = "1.42.0" as const;
 
 export type CalciteOracleStatus = "SUCCESS" | "UNSUPPORTED" | "FAILED";
 
+/** The Native semantic batches covered by the current causal-slice rules. */
+export const CALCITE_NATIVE_OPERATOR_BATCHES = [
+  "EXPRESSION_CONTROLS",
+  "FILTERS_AND_JOINS",
+  "AGGREGATE_GROUPING_DISTINCT_SETOP",
+  "WINDOW_TOP_N",
+  "RELATION_CONTEXT",
+] as const;
+
+export type CalciteNativeOperatorBatch =
+  (typeof CALCITE_NATIVE_OPERATOR_BATCHES)[number];
+
+/** A source reference is exact: no whitespace or span normalization is done. */
+export interface CalciteCanonicalSourceEvidence {
+  readonly canonicalSource: string;
+  readonly sourceSpan: {
+    readonly start: number;
+    readonly end: number;
+  };
+  readonly sourceEvidenceId?: string;
+}
+
+/**
+ * The identity used to join a Calcite observation back to Native evidence.
+ * `fieldOrdinal` identifies an input field and `outputOrdinal` identifies an
+ * output expression; a relation-context observation may use outputOrdinal
+ * without a physical field id.
+ */
+export interface CalciteSemanticIdentity {
+  readonly batch: CalciteNativeOperatorBatch;
+  readonly relationOccurrenceId: string;
+  readonly fieldId?: string;
+  readonly fieldOrdinal?: number;
+  readonly outputOrdinal?: number;
+  readonly operatorKind: string;
+  readonly operatorVariant: string;
+  readonly operatorRole: string;
+  readonly sourceEvidence: CalciteCanonicalSourceEvidence;
+}
+
+export interface NativeSemanticObservation extends CalciteSemanticIdentity {
+  readonly observationId: string;
+  readonly values?: readonly unknown[];
+  readonly value?: unknown;
+}
+
+/**
+ * `relationOccurrenceId` is the Calcite-side occurrence until the mapping
+ * layer resolves it. Equal ids are accepted as an explicit identity mapping;
+ * otherwise an occurrence mapping must be supplied.
+ */
+export interface CalciteSemanticObservation extends CalciteSemanticIdentity {
+  readonly observationId: string;
+  /** Optional exact source evidence for the relation scan itself. */
+  readonly relationSourceEvidence?: CalciteCanonicalSourceEvidence;
+  readonly values?: readonly unknown[];
+  readonly value?: unknown;
+}
+
+export interface CalciteOccurrenceMapping {
+  readonly calciteRelationOccurrenceId: string;
+  readonly nativeRelationOccurrenceId: string;
+  /** Optional exact evidence for the relation occurrence itself. */
+  readonly sourceEvidence?: CalciteCanonicalSourceEvidence;
+}
+
+export interface DifferentialReason {
+  readonly code: string;
+  readonly message: string;
+}
+
 export type CalciteOracleMetadataKind =
   | "expressionLineage"
   | "predicates"
@@ -101,6 +172,8 @@ export interface CalciteOracleObservations {
   readonly functionalDependencies?: readonly CalciteOracleFunctionalDependencyObservation[];
   readonly tableOccurrences?: readonly CalciteOracleTableOccurrence[];
   readonly rowCountCardinality?: readonly CalciteOracleRowCountCardinality[];
+  /** First-class operator observations emitted by the differential adapter. */
+  readonly semanticObservations?: readonly CalciteSemanticObservation[];
 }
 
 export interface CalciteOracleFingerprint {
@@ -143,7 +216,11 @@ export type DifferentialStatus =
   | "NATIVE_ONLY"
   | "CALCITE_ONLY_UNMAPPABLE"
   | "NOT_EVALUATED"
-  | "CONFLICT";
+  | "CONFLICT"
+  // Current spec statuses. The legacy values above remain for old consumers.
+  | "NATIVE_CONFIRMED"
+  | "CALCITE_CORROBORATED"
+  | "SEMANTIC_ENGINE_CONFLICT";
 
 export interface DifferentialResult {
   readonly kind: DifferentialMetadataKind;
@@ -154,6 +231,7 @@ export interface DifferentialResult {
     readonly nativeOnly: readonly unknown[];
     readonly calciteOnly: readonly unknown[];
   };
+  readonly reason?: DifferentialReason;
 }
 
 export interface DifferentialReconciliation {

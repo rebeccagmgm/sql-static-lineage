@@ -104,7 +104,7 @@ export interface SchemaReferenceRecord {
 	readonly partition_columns: readonly string[];
 	readonly [key: string]: unknown;
 }
-export interface DatasetIoRecord { readonly task_id: string; readonly direction: string; readonly dataset_id: string; readonly physical_dataset: string; readonly provenance: string; readonly resolution_status: string; readonly [key: string]: unknown; }
+export interface DatasetIoRecord { readonly task_id: string; readonly direction: string; readonly dataset_id: string; readonly physical_dataset: string; readonly provenance: string; readonly resolution_status: string; readonly read_occurrences?: readonly unknown[]; readonly [key: string]: unknown; }
 export interface TaskLocalMaterializationRecord {
 	readonly bridge_id: string;
 	readonly task_id: string;
@@ -126,6 +126,21 @@ export interface TaskLocalMaterializationRecord {
 export interface RelationNodeRecord { readonly relation_id: string; readonly task_id: string; readonly statement_id: string; readonly relation_type: string; readonly source_span: unknown; readonly provenance: string; readonly relation: unknown; readonly [key: string]: unknown; }
 export interface RelationEdgeRecord { readonly edge_id: string; readonly task_id: string; readonly statement_id: string; readonly from_relation_id: string; readonly to_relation_id: string; readonly edge_type: string; readonly provenance: string; readonly source_span: unknown; readonly [key: string]: unknown; }
 export type WindowInputRole = "VALUE" | "WINDOW_PARTITION" | "WINDOW_ORDER";
+export interface ExpressionRoleBindingRecord {
+	readonly operator: "CASE" | "IF" | "COALESCE";
+	readonly role: "BRANCH_SELECTOR" | "RESULT_VALUE" | "COALESCE_ARGUMENT";
+	readonly effects: readonly ("VALUE_CONTRIBUTION" | "BRANCH_SELECTION")[];
+	readonly path: string;
+	readonly branch_ordinal?: number;
+	readonly ordinal: number;
+	readonly expression_text: string;
+	readonly display_text: string;
+	readonly source_span: unknown;
+	readonly input_fields: readonly unknown[];
+	readonly candidate_input_fields?: readonly unknown[];
+	readonly unresolved_input_columns: readonly unknown[];
+	readonly input_dependency_status: InputDependencyStatus;
+}
 export interface WindowInputBindingRecord {
 	readonly role: WindowInputRole;
 	readonly ordinal: number;
@@ -144,8 +159,18 @@ export interface WindowSpecRecord {
 	readonly display_text: string;
 	readonly source_span: unknown;
 	readonly input_bindings: readonly WindowInputBindingRecord[];
+	readonly frame?: {
+		readonly status: "EXTRACTED" | "UNKNOWN";
+		readonly expression_text: string | null;
+		readonly display_text: string | null;
+		readonly source_span: unknown;
+		readonly input_fields: readonly unknown[];
+		readonly unresolved_input_columns: readonly unknown[];
+		readonly input_dependency_status: InputDependencyStatus;
+		readonly reason?: string;
+	};
 }
-export interface FieldExpressionRecord { readonly expression_id: string; readonly task_id: string; readonly statement_id: string; readonly relation_id: string; readonly role: string; readonly ordinal: number; readonly expression_text: string; readonly source_span: unknown; readonly input_fields: readonly unknown[]; readonly candidate_input_fields?: readonly unknown[]; readonly unresolved_input_columns: readonly unknown[]; readonly input_dependency_status: InputDependencyStatus; readonly window_spec?: WindowSpecRecord; readonly artifact_id?: string; readonly [key: string]: unknown; }
+export interface FieldExpressionRecord { readonly expression_id: string; readonly task_id: string; readonly statement_id: string; readonly relation_id: string; readonly role: string; readonly ordinal: number; readonly output_name?: string; readonly output_name_status?: string; readonly expression_text: string; /** New bundles emit display_text; legacy bundles may omit it. */ readonly display_text?: string; readonly source_span: unknown; readonly input_fields: readonly unknown[]; readonly candidate_input_fields?: readonly unknown[]; readonly unresolved_input_columns: readonly unknown[]; readonly input_dependency_status: InputDependencyStatus; readonly expression_roles?: readonly ExpressionRoleBindingRecord[]; readonly window_spec?: WindowSpecRecord; readonly artifact_id?: string; readonly [key: string]: unknown; }
 export interface ColumnLineageRecord { readonly edge_id: string; readonly task_id: string; readonly statement_id: string; readonly from_field_id: string; readonly to_expression_id: string; readonly method: string; readonly resolution_provenance: string; readonly [key: string]: unknown; }
 export type HopCoverageState = "FULL_HOP" | "FLAT_ORIGIN_ONLY" | "UNKNOWN_COVERAGE" | "NOT_EVALUABLE";
 export type HopProjectionStatus = "PROJECTED" | "PARTIAL_NATIVE" | "NOT_EVALUABLE";

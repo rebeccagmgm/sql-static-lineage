@@ -11,6 +11,17 @@
 - **WHEN** 外部语义引擎与 canonical evidence pipeline 对同一 relation occurrence 得出冲突结论
 - **THEN** 系统保留双方证据并输出 `SEMANTIC_ENGINE_CONFLICT` 的 `UNKNOWN`，不得静默选择任一结果
 
+### Requirement: Causal slicing is an isolated evidence consumer
+系统 SHALL 将目标字段因果切片作为独立 consumer、artifact、CLI 和 renderer 发布。该 consumer MUST 只读消费匹配 fingerprint 的 Input Pack、Plan/Machine Facts、table multi-hop artifact 和共享物理 evidence adapter；MUST NOT 改写或替换旧 `FIELD_MULTI_HOP_RECONCILIATION` artifact、旧 field-lineage CLI 或旧 HTML。
+
+#### Scenario: Legacy field lineage remains unchanged
+- **WHEN** 调用方继续执行旧 field-lineage CLI 或读取旧 field-lineage artifact
+- **THEN** 系统保持旧 1.1 contract 与 renderer 行为，不要求存在 causal-slice artifact，也不从新模块回写 assessment
+
+#### Scenario: Causal slice fails independently
+- **WHEN** 新 consumer 因 Candidate Universe、semantic support 或 fingerprint 问题失败
+- **THEN** 失败仅影响 causal-slice 输出，已经存在的旧 field-lineage JSON/HTML 不得被删除、降级或重新计算
+
 ### Requirement: Semantic dependencies are orthogonal and auditable
 系统 SHALL 将依赖主体、影响类型、局部边语义和根目标影响原因分开表达。依赖主体 MUST 支持物理字段和 relation occurrence；影响类型 MUST 覆盖值贡献、表达式分支选择、行成员、重复度、分组、排序、窗口、集合成员和关系存在性。
 
@@ -84,8 +95,8 @@ VALUE 和所有控制字段 SHALL 使用同一物理字段 resolver，优先应�
 - **WHEN** 表级 coverage、operator support 或 traversal limits 任一不完整
 - **THEN** 受影响 assessment 为 `UNKNOWN`，不得使用“未找到路径”作为无关证明
 
-### Requirement: Canonical artifact exposes decisions, proofs, limits, and quality metrics
-新版本 field-lineage artifact SHALL 保留旧版 `VALUE_FLOW` edges 的读取兼容性，并新增 dependency definitions/applications/edges、Candidate Universe、逐目标 assessment、positive/negative proof、VALUE/CONTROL limits、gaps 和质量指标。HTML 与文本摘要 MUST 仅渲染 canonical artifact，不得重新计算因果结论。
+### Requirement: Independent causal-slice artifact exposes decisions, proofs, limits, and quality metrics
+系统 SHALL 发布独立、版本化且类型为 `TARGET_FIELD_CAUSAL_SLICE` 的 canonical artifact，包含 legacy VALUE_FLOW 引用、dependency definitions/applications/edges、Candidate Universe、逐目标 assessment、positive/negative proof、VALUE/CONTROL limits、gaps 和质量指标。causal-slice HTML 与文本摘要 MUST 仅渲染该 artifact，不得重新计算因果结论；旧 field-lineage artifact 保持独立。
 
 #### Scenario: Confirmed closure metric is reported
 - **WHEN** artifact 至少包含一个 `CONFIRMED_RELATED`
@@ -95,6 +106,10 @@ VALUE 和所有控制字段 SHALL 使用同一物理字段 resolver，优先应�
 - **WHEN** artifact 不包含 `CONFIRMED_RELATED`
 - **THEN** `confirmedEvidenceClosureRate` 为 `NOT_APPLICABLE`，Precision 与 Recall 均为 `NOT_EVALUATED`
 
+#### Scenario: Artifact names do not collide
+- **WHEN** 同一 Task 同时生成旧字段血缘和目标字段因果切片
+- **THEN** 两者使用不同 artifact type、文件名、content hash 和 renderer 输出，调用方可独立验证和发布
+
 ### Requirement: Rerun outputs distinguish certainty from safety
 系统 SHALL 从同一 canonical assessment 生成两套 Task 重跑清单：最小确定集仅包含 `CONFIRMED_RELATED`；保守安全集包含 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED` 和 `UNKNOWN`。任务进入清单时 MUST 保留触发它的目标字段、candidate branch 和 proof/gap refs。
 
@@ -102,20 +117,32 @@ VALUE 和所有控制字段 SHALL 使用同一物理字段 resolver，优先应�
 - **WHEN** 调用方选择保守安全集
 - **THEN** 所有无法证明无关的已知候选 Task 均进入结果，且 `PROVEN_UNRELATED` Task 不进入结果
 
-### Requirement: Calcite is an offline differential oracle in the first release
-系统 SHALL 提供固定版本、JSONL 输入输出的 Calcite 离线校验器，输出 expression lineage、predicates、unique keys、functional dependencies、table occurrences、row-count/cardinality metadata 以及 unsupported/failed 原因。默认生产 CLI 和默认 TypeScript 测试 MUST NOT 依赖 Java 或 Calcite。
+### Requirement: Calcite is a first-class differential validation track
+系统 SHALL 提供固定版本、JSONL 输入输出的 Calcite 语义校验器，输出 expression lineage、predicates、unique keys、functional dependencies、table occurrences、row-count/cardinality metadata 以及 unsupported/failed 原因。每批 Native operator transfer rule MUST 有对应的 Calcite differential fixture 或明确的 `NOT_EVALUATED` 原因；差分结果 SHALL 归类为 `NATIVE_CONFIRMED`、`CALCITE_CORROBORATED`、`CALCITE_ONLY_UNMAPPABLE`、`NOT_EVALUATED` 或 `SEMANTIC_ENGINE_CONFLICT`。默认生产 CLI 和默认 TypeScript 测试 MUST NOT 依赖 Java 或 Calcite。
+
+#### Scenario: Native operator rule is implemented
+- **WHEN** 新增或修改 Native CASE、JOIN、aggregate、set operation、window、Top-N 或 relation-context transfer rule
+- **THEN** 对应语料同时产生 Native 与 Calcite observation，并验证 occurrence、字段、operator 与 source evidence 映射；Calcite 不支持时必须记录 `NOT_EVALUATED`，不得静默跳过
+
+#### Scenario: Explicit Calcite shadow validation is requested
+- **WHEN** 调用方显式启用 Calcite shadow 模式且本机 Java/Calcite 工具可用
+- **THEN** 系统生成独立 differential report 和带版本 fingerprint 的 validation summary，但不得改写 canonical evidence、assessment 或重跑集合
 
 #### Scenario: Calcite adds an unmappable observation
 - **WHEN** Calcite 返回额外 metadata 但不能精确映射回 canonical relation occurrence、字段和 source evidence
 - **THEN** 该 observation 仅记录为辅助结果，不得进入 confirmed proof 或产生 `PROVEN_UNRELATED`
+
+#### Scenario: Native and Calcite conflict
+- **WHEN** 两个语义引擎对同一已映射 occurrence 和 operator 得出冲突结论
+- **THEN** differential report 记录双方 observation，相关结论降为带 `SEMANTIC_ENGINE_CONFLICT` gap 的 `UNKNOWN`，不得由配置选择性忽略冲突
 
 #### Scenario: Default test suite runs without Java
 - **WHEN** 执行仓库默认 `npm test`
 - **THEN** 测试不构建或启动 Calcite；Calcite 差分测试通过独立命令显式执行
 
 ### Requirement: Field-only reconciliation reuses existing immutable inputs
-针对已有 Task 的重新评估 SHALL 支持复用同一 Input Pack fingerprint、Machine Facts、producer index 和 table multi-hop artifact，仅重算 field causal slice、artifact 和 renderer。只有输入 fingerprint 缺失或不一致时才要求重建相应上游产物。
+针对已有 Task 的重新评估 SHALL 通过独立 causal-slice CLI 复用同一 Input Pack fingerprint、Machine Facts、producer index、table multi-hop artifact，并可引用匹配的旧 field-lineage artifact，仅重算 causal slice、其摘要和其 renderer。只有必要输入 fingerprint 缺失或不一致时才要求重建对应上游层；CLI MUST NOT 隐式触发全量采集或全量 producer-index 重建。
 
 #### Scenario: Re-evaluate task 209119
 - **WHEN** 209119 的现有 Input Pack、Machine Facts 和 table artifact fingerprint 一致
-- **THEN** 系统执行 field-only reconciliation 和 HTML 生成，不触发全量 Task 收集或全量 producer-index 重建
+- **THEN** 系统生成独立 causal-slice JSON/摘要/HTML，不触发全量 Task 收集、旧 field-lineage 重建或全量 producer-index 重建
