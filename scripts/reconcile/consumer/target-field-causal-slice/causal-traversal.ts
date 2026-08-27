@@ -72,6 +72,16 @@ export interface CausalTraversalInput {
     string,
     readonly SemanticDependencyNormalization[]
   >;
+  /** Optional target-directed loader. It may populate/cache only the requested subject. */
+  readonly loadSemanticDependencies?: (
+    taskId: string,
+    subject: SemanticSubject,
+  ) => readonly SemanticDependencyNormalization[] | null;
+  /** Fast path for large multi-root runs; returns only edges targeting the subject. */
+  readonly loadSemanticEdges?: (
+    taskId: string,
+    subject: SemanticSubject,
+  ) => readonly SemanticDependencyEdge[] | null;
   /** The canonical adapter-backed physical expansion callback. */
   readonly expandPhysicalField?: (
     request: PhysicalFieldTraversalRequest,
@@ -386,7 +396,15 @@ function normalizationFor(
   taskId: string,
   subject: SemanticSubject,
 ): readonly SemanticDependencyEdge[] | null {
-  const normalizations = input.semanticDependencies.get(taskId);
+  if (input.loadSemanticEdges) {
+    const edges = input.loadSemanticEdges(taskId, subject);
+    return edges === null
+      ? null
+      : [...edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId));
+  }
+  const normalizations = input.loadSemanticDependencies
+    ? input.loadSemanticDependencies(taskId, subject)
+    : input.semanticDependencies.get(taskId);
   if (!normalizations || normalizations.length === 0) return null;
   return normalizations
     .flatMap((normalization) => normalization.edges)
@@ -680,6 +698,17 @@ function processRoot(
           path: [...state.path, bridgeEdge],
           readOccurrenceId: occurrenceId,
         };
+        const hasMaterializedBridge = state.path.some(
+          (edge) => edge.fromTaskId !== edge.toTaskId,
+        );
+        if (producer.producerTaskId !== state.taskId || !hasMaterializedBridge)
+          addPath(
+            result,
+            root.rootTargetFieldId,
+            next.path,
+            producerCertainty,
+            state.rootDependenceKind,
+          );
         if (
           active.has(activeKey(next)) ||
           (next.readOccurrenceId !== undefined &&
@@ -763,14 +792,6 @@ function processRoot(
       categoryVisited.add(currentKey);
     }
     result.visited.add(currentKey);
-    if (state.path.length > 0)
-      addPath(
-        result,
-        root.rootTargetFieldId,
-        state.path,
-        state.pathCertainty,
-        state.rootDependenceKind,
-      );
     const physicalExpansionState = expandPhysicalState(state);
 
     const dependencies = normalizationFor(input, state.taskId, state.subject);

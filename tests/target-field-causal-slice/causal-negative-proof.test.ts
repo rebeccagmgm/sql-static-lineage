@@ -141,7 +141,7 @@ function traversal(
       maxControlPaths: 10000,
     },
     roots: [root],
-    sharedEvidenceRefs: [],
+    sharedEvidenceRefs: obligations.flatMap((obligation) => obligation.evidenceRefs),
     edges: paths.flatMap((path) => path.edges),
     gaps,
   };
@@ -270,6 +270,18 @@ describe("causal negative proof", () => {
       }],
     });
     expect(result.assessments[0]?.status).toBe("CONFIRMED_RELATED");
+    expect(result.negativeProofs).toHaveLength(0);
+  });
+
+  it("rejects obligation references that do not exist in canonical evidence", () => {
+    const candidateUniverse = universe();
+    const result = negative(candidateUniverse, traversal(), {
+      checkedObligations: obligations.map((obligation) => ({
+        ...obligation,
+        evidenceRefs: [`forged:${obligation.kind}`],
+      })),
+    });
+    expect(result.assessments[0]?.status).toBe("UNKNOWN");
     expect(result.negativeProofs).toHaveLength(0);
   });
 

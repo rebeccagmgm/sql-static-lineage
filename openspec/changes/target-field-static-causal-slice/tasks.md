@@ -38,12 +38,12 @@
 
 ## 6. Independent artifact, CLI, summary, and HTML
 
-- [ ] 6.1 Publish `TARGET_FIELD_CAUSAL_SLICE` contract/schema with definitions/applications/control edges, Candidate Universe, assessments, proofs, separate limits, metrics, rerun sets, canonical input fingerprints, and optional legacy VALUE evidence refs.
-- [ ] 6.2 Validate assessment-pair completeness, Unknown gaps, confirmed proof continuity, negative-proof obligations, non-vacuous closure metrics, NOT_EVALUATED Precision/Recall, deterministic ordering, content hash, and artifact-type isolation.
-- [ ] 6.3 Add `reconcile-target-field-causal-slice` CLI that verifies existing Input Pack/Machine Facts/producer-index/table-artifact fingerprints, reports the exact stale layer, and never triggers full collection, old field-lineage rebuild, or producer-index rebuild.
-- [ ] 6.4 Add a deterministic causal-slice text formatter for per-field classifications, proofs/gaps, operator support, limits, and both rerun sets from the independent canonical artifact only.
-- [ ] 6.5 Add `target-field-causal-slice-visualize.ts` as a pure renderer of the independent artifact; display value/control/relation paths, candidate coverage, assessments, limits, and rerun sets without importing traversal logic or modifying the old field-lineage renderer.
-- [ ] 6.6 Add isolated output publication for `target-field-causal-slice.json/.txt/.html`; publishing or failing the new outputs must leave existing `field-lineage.json` and HTML byte-identical.
+- [x] 6.1 Publish `TARGET_FIELD_CAUSAL_SLICE` contract/schema with definitions/applications/control edges, Candidate Universe, assessments, proofs, separate limits, metrics, rerun sets, canonical input fingerprints, and optional legacy VALUE evidence refs.
+- [x] 6.2 Validate assessment-pair completeness, Unknown gaps, confirmed proof continuity, negative-proof obligations, non-vacuous closure metrics, NOT_EVALUATED Precision/Recall, deterministic ordering, content hash, and artifact-type isolation.
+- [x] 6.3 Add `reconcile-target-field-causal-slice` CLI that verifies existing Input Pack/Machine Facts/producer-index/table-artifact fingerprints, reports the exact stale layer, and never triggers full collection, old field-lineage rebuild, or producer-index rebuild.
+- [x] 6.4 Add a deterministic causal-slice text formatter for per-field classifications, proofs/gaps, operator support, limits, and both rerun sets from the independent canonical artifact only.
+- [x] 6.5 Add `target-field-causal-slice-visualize.ts` as a pure renderer of the independent artifact; display value/control/relation paths, candidate coverage, assessments, limits, and rerun sets without importing traversal logic or modifying the old field-lineage renderer.
+- [x] 6.6 Add isolated output publication for `target-field-causal-slice.json/.txt/.html`; publishing or failing the new outputs must leave existing `field-lineage.json` and HTML byte-identical.
 
 ## 7. Calcite differential oracle
 
@@ -52,12 +52,12 @@
 - [x] 7.3 Add a TypeScript differential reconciler that reports AGREED, NATIVE_ONLY, CALCITE_ONLY_UNMAPPABLE, NOT_EVALUATED, and CONFLICT without modifying canonical artifacts.
 - [x] 7.4 Add an independent Calcite build/test command and ensure default `npm test`, production CLI, and field-only reconciliation neither build nor start Java.
 - [x] 7.5 Integrate Calcite mapping and differential fixtures into every Native operator batch; require an explicit `NOT_EVALUATED` reason for unsupported dialect/operator cases and preserve both observations on conflicts.
-- [ ] 7.6 Add explicit `--semantic-oracle calcite` shadow validation that emits a separate versioned differential report and optional non-decisional artifact validation summary without changing canonical dependencies, assessments, or rerun sets.
-- [ ] 7.7 Add differential release gates for occurrence/field/operator/source-evidence mapping, deterministic conflict-to-Unknown behavior, supported-corpus agreement, and 209119 shadow A/B sidecar go/no-go evidence.
+- [x] 7.6 Add explicit `--semantic-oracle calcite` shadow validation that emits a separate versioned differential report and optional non-decisional artifact validation summary without changing canonical dependencies, assessments, or rerun sets.
+- [x] 7.7 Add differential release gates for occurrence/field/operator/source-evidence mapping, deterministic conflict-to-Unknown behavior, supported-corpus agreement, and 209119 shadow A/B sidecar go/no-go evidence.
 
 ## 8. Verification and bounded rollout
 
-- [ ] 8.1 Run focused canonical-facts, per-operator Native/Calcite differential, shared-evidence, traversal, candidate-universe, assessment, artifact, summary, HTML, legacy field-lineage compatibility, shadow-mode, and Calcite differential tests.
-- [ ] 8.2 Run repository typecheck, default tests, build, and format checks; separately repair or classify the current task-inspection fixture drift and pre-existing formatting failures.
-- [ ] 8.3 Reconcile Task 209119 from existing matching immutable inputs, generate only causal-slice JSON/summary/HTML, and prove no full Task collection, old field-lineage rebuild, or producer-index rebuild occurred.
-- [ ] 8.4 Inspect 209119 minimum/safety rerun sets, proof continuity, Unknown gaps, candidate-pair coverage, limits, new HTML parity, old artifact byte stability, and Native-vs-Calcite shadow A/B; record production-sidecar go/no-go evidence without enabling Calcite as a decision engine.
+- [x] 8.1 Run focused canonical-facts, per-operator Native/Calcite differential, shared-evidence, traversal, candidate-universe, assessment, artifact, summary, HTML, legacy field-lineage compatibility, shadow-mode, and Calcite differential tests.
+- [x] 8.2 Run repository typecheck, default tests, build, and format checks; separately repair or classify the current task-inspection fixture drift and pre-existing formatting failures.
+- [x] 8.3 Reconcile Task 209119 from existing matching immutable inputs, generate only causal-slice JSON/summary/HTML, and prove no full Task collection, old field-lineage rebuild, or producer-index rebuild occurred.
+- [x] 8.4 Inspect 209119 minimum/safety rerun sets, proof continuity, Unknown gaps, candidate-pair coverage, limits, new HTML parity, old artifact byte stability, and Native-vs-Calcite shadow A/B; record production-sidecar go/no-go evidence without enabling Calcite as a decision engine.

@@ -49,6 +49,8 @@ export interface CandidateBranch {
   readonly producerTaskId: string | null;
   readonly table: CandidatePhysicalTable | null;
   readonly readOccurrence: CandidateReadOccurrence | null;
+  /** Exact root WRITE criterion; null for non-root branches. */
+  readonly writeObservationId?: string | null;
   /** Evidence judgment is metadata and deliberately excluded from branch ID. */
   readonly producerRole: string | null;
   readonly evidenceRefs: readonly CandidateEvidenceRef[];
@@ -80,6 +82,7 @@ export interface CandidateAssessmentPair {
 export interface CandidateUniverseProjectionInput {
   readonly rootTargetFields: readonly string[];
   readonly tableArtifact: unknown;
+  readonly rootWriteObservationIds?: readonly string[];
 }
 
 export interface CandidateAssessmentPairValidation {
@@ -227,6 +230,7 @@ function branchIdentity(input: {
   readonly producerTaskId: string | null;
   readonly table: CandidatePhysicalTable | null;
   readonly readOccurrence: CandidateReadOccurrence | null;
+  readonly writeObservationId: string | null;
   readonly boundaryReason: string | null;
 }): JsonValue {
   return {
@@ -235,6 +239,7 @@ function branchIdentity(input: {
     producerTaskId: input.producerTaskId,
     table: stableTableIdentity(input.table),
     readOccurrence: occurrenceIdentity(input.readOccurrence),
+    writeObservationId: input.writeObservationId,
     boundaryReason: input.boundaryReason,
   };
 }
@@ -246,6 +251,7 @@ function makeBranch(input: {
   readonly producerTaskId?: string | null;
   readonly table?: CandidatePhysicalTable | null;
   readonly readOccurrence?: CandidateReadOccurrence | null;
+  readonly writeObservationId?: string | null;
   readonly producerRole?: string | null;
   readonly evidenceRefs?: readonly CandidateEvidenceRef[];
   readonly gapRefs?: readonly string[];
@@ -255,6 +261,7 @@ function makeBranch(input: {
   const producerTaskId = input.producerTaskId ?? null;
   const table = input.table ?? null;
   const readOccurrence = input.readOccurrence ?? null;
+  const writeObservationId = input.writeObservationId ?? null;
   const boundaryReason = input.boundaryReason ?? null;
   const identity = branchIdentity({
     branchKind: input.branchKind,
@@ -262,6 +269,7 @@ function makeBranch(input: {
     producerTaskId,
     table,
     readOccurrence,
+    writeObservationId,
     boundaryReason,
   });
   return {
@@ -272,6 +280,7 @@ function makeBranch(input: {
     producerTaskId,
     table,
     readOccurrence,
+    writeObservationId,
     producerRole: input.producerRole ?? null,
     evidenceRefs: [...(input.evidenceRefs ?? [])].sort((a, b) =>
       a.evidenceRefId.localeCompare(b.evidenceRefId),
@@ -369,19 +378,30 @@ export function projectCandidateUniverse(
   const rootWrites = writeEdges.filter(
     (edge) => text(edge.producerTaskId) === rootTaskId,
   );
+  const selectedWriteObservationIds = sortedUnique(input.rootWriteObservationIds ?? []);
   if (rootWrites.length === 0) {
-    add(makeBranch({ rootTaskId, branchKind: "ROOT_WRITE", producerTaskId: rootTaskId }));
+    for (const writeObservationId of selectedWriteObservationIds.length > 0
+      ? selectedWriteObservationIds
+      : [null])
+      add(makeBranch({
+        rootTaskId,
+        branchKind: "ROOT_WRITE",
+        producerTaskId: rootTaskId,
+        writeObservationId,
+      }));
   } else {
     for (const write of rootWrites)
-      add(
-        makeBranch({
+      for (const writeObservationId of selectedWriteObservationIds.length > 0
+        ? selectedWriteObservationIds
+        : [null])
+        add(makeBranch({
           rootTaskId,
           branchKind: "ROOT_WRITE",
           producerTaskId: rootTaskId,
           table: tableOf(write.table),
           evidenceRefs: writeEvidenceRefs(write.writes),
-        }),
-      );
+          writeObservationId,
+        }));
   }
 
   const producerBridges = records(artifact.producerBridges);

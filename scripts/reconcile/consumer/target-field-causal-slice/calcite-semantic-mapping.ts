@@ -58,6 +58,12 @@ export interface CalciteSemanticBatchResult {
 
 export interface CalciteSemanticMappingReport {
   readonly fingerprint?: CalciteOracleFingerprint;
+  /** Required when a report is attached to a concrete causal-slice run. */
+  readonly source?: {
+    readonly inputFingerprint: string;
+    readonly nativeFingerprint: string;
+    readonly rootTaskId?: string;
+  };
   readonly batches: readonly CalciteSemanticBatchResult[];
   /** Flattened results are convenient for status-based release gates. */
   readonly results: readonly CalciteSemanticDifferentialResult[];

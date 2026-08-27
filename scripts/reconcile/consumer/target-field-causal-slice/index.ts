@@ -8,3 +8,8 @@ export * from "./causal-traversal.ts";
 export * from "./causal-assessment.ts";
 export * from "./causal-negative-proof.ts";
 export * from "./rerun-sets.ts";
+export * from "./causal-slice-contract.ts";
+export * from "./calcite-shadow-report.ts";
+export * from "./format-causal-slice.ts";
+export * from "./publish-causal-slice.ts";
+export * from "./reconcile-causal-slice.ts";

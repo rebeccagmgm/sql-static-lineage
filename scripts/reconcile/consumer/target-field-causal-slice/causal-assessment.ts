@@ -245,7 +245,14 @@ function assessmentId(
   gapRefs: readonly string[],
 ): string {
   return `causal-assessment:${sha256(
-    canonicalJson({ pairId, status, reasonCode, positiveProofIds, gapRefs }),
+    canonicalJson({
+      pairId,
+      status,
+      reasonCode,
+      positiveProofIds,
+      negativeProofIds: [],
+      gapRefs,
+    }),
   )}`;
 }
 

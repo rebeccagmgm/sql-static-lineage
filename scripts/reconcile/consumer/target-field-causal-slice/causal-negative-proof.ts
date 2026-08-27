@@ -252,41 +252,19 @@ function enumeratedCutPathEvidence(
   descendant: CandidateBranch,
 ): ReadonlySet<string> | null {
   const startTaskId = source.producerTaskId;
-  const targetTaskId = descendant.consumerTaskId;
-  if (!startTaskId || !targetTaskId || source.candidateBranchId === descendant.candidateBranchId)
+  if (
+    !startTaskId ||
+    descendant.consumerTaskId !== startTaskId ||
+    source.candidateBranchId === descendant.candidateBranchId
+  )
     return null;
-  const byConsumer = new Map<string, CandidateBranch[]>();
-  for (const branch of universe.branches) {
-    if (!branch.consumerTaskId || !branch.producerTaskId) continue;
-    const current = byConsumer.get(branch.consumerTaskId) ?? [];
-    current.push(branch);
-    byConsumer.set(branch.consumerTaskId, current);
-  }
-  const pending: Array<{ taskId: string; evidenceRefs: readonly string[] }> = [{
-    taskId: startTaskId,
-    evidenceRefs: source.evidenceRefs.map((ref) => ref.evidenceRefId),
-  }];
-  const visited = new Set<string>();
-  while (pending.length > 0) {
-    const current = pending.shift()!;
-    if (visited.has(current.taskId)) continue;
-    visited.add(current.taskId);
-    if (current.taskId === targetTaskId)
-      return new Set([
-        ...current.evidenceRefs,
-        ...descendant.evidenceRefs.map((ref) => ref.evidenceRefId),
-      ]);
-    for (const branch of byConsumer.get(current.taskId) ?? []) {
-      pending.push({
-        taskId: branch.producerTaskId!,
-        evidenceRefs: [
-          ...current.evidenceRefs,
-          ...branch.evidenceRefs.map((ref) => ref.evidenceRefId),
-        ],
-      });
-    }
-  }
-  return null;
+  if (!universe.branches.some((branch) =>
+    branch.candidateBranchId === descendant.candidateBranchId,
+  )) return null;
+  return new Set([
+    ...source.evidenceRefs.map((ref) => ref.evidenceRefId),
+    ...descendant.evidenceRefs.map((ref) => ref.evidenceRefId),
+  ]);
 }
 
 function cutMembershipIsProven(
@@ -375,7 +353,20 @@ function requestErrors(
   if (input.candidateUniverse.coverage.sourceLimitsTruncated)
     errors.push("CANDIDATE_UNIVERSE_LIMIT_TRUNCATED");
   if (branch?.gapRefs.length) errors.push(`CANDIDATE_BRANCH_GAPS:${request.candidateBranchId}`);
+  if (branch?.branchKind === "ROOT_WRITE")
+    errors.push(`ROOT_WRITE_NEGATIVE_PROOF_FORBIDDEN:${request.candidateBranchId}`);
   errors.push(...obligationErrors(request.checkedObligations, pairKey));
+  const knownEvidenceRefs = new Set([
+    ...input.candidateUniverse.branches.flatMap((candidate) =>
+      candidate.evidenceRefs.map((ref) => ref.evidenceRefId),
+    ),
+    ...input.traversal.sharedEvidenceRefs,
+    ...input.traversal.edges.flatMap((edge) => edge.evidenceRefs),
+  ]);
+  for (const obligation of request.checkedObligations)
+    for (const evidenceRef of obligation.evidenceRefs)
+      if (!knownEvidenceRefs.has(evidenceRef))
+        errors.push(`NEGATIVE_OBLIGATION_EVIDENCE_UNKNOWN:${pairKey}:${obligation.kind}:${evidenceRef}`);
 
   const root = traversalRoot(input.traversal, request.rootTargetFieldId);
   if (!root) {
