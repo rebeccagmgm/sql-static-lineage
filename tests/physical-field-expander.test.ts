@@ -86,6 +86,7 @@ function context(options: {
   readonly occurrence?: object;
   readonly producerBinding?: boolean;
   readonly multipleWrites?: boolean;
+  readonly artifactWriteEvidence?: boolean;
   readonly mismatchedProducerTarget?: boolean;
   readonly legacyScheduleFallback?: boolean;
 } = {}) {
@@ -162,7 +163,7 @@ function context(options: {
             }],
           }
         : {}),
-      ...(options.producerBinding
+      ...(options.producerBinding && options.artifactWriteEvidence !== false
         ? {
             writeEdges: [{
               producerTaskId: "200",
@@ -286,6 +287,37 @@ describe("physical field expander", () => {
     expect(result.producers[0]!.producerBindings).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ write_observation_id: "write-observation:200:1" }),
+      ]),
+    );
+  });
+
+  it("does not fan out multiple writes without occurrence-specific write evidence", () => {
+    const { expander, consumer, consumerLoad, source } = context({
+      occurrence,
+      producerBinding: true,
+      multipleWrites: true,
+      artifactWriteEvidence: false,
+    });
+    const result = expander.expand({
+      consumerTaskId: "100",
+      consumerPack: consumer,
+      consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source,
+      expressionText: "s.src_a",
+      depth: 0,
+      maxDepth: 4,
+    });
+    expect(result.producers[0]).toMatchObject({
+      evidenceStatus: "UNRESOLVED",
+      producerBindings: [],
+      shouldRecurse: false,
+    });
+    expect(result.gaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          reasonCode: "CROSS_TASK_BRIDGE_EVIDENCE_INCOMPLETE",
+        }),
       ]),
     );
   });

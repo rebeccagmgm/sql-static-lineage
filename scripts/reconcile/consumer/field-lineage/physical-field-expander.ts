@@ -705,8 +705,8 @@ function sqlParseStart(write: JsonRecord): number | null {
     const evidence = asRecord(rawEvidence);
     if (String(evidence?.source ?? "") !== "SQL_PARSE") continue;
     const detail = asRecord(evidence?.detail);
-    if (Number.isSafeInteger(detail?.statementStart))
-      return Number(detail.statementStart);
+    const statementStart = detail?.statementStart;
+    if (Number.isSafeInteger(statementStart)) return Number(statementStart);
     const start = String(evidence?.locator ?? "").match(/#char=(\d+)(?:-\d+)?$/)?.[1];
     if (start !== undefined) return Number(start);
   }
@@ -778,8 +778,30 @@ function producerWriteProof(
       (write): write is JsonRecord => write !== null,
     ),
   );
+  if (edges.length === 0 && artifactWrites.length === 0)
+    return records.length === 1
+      ? {
+          ids: new Set([String(records[0]!.write_observation_id)]),
+          status: "PROVEN",
+          reason: null,
+        }
+      : {
+          ids: new Set(),
+          status: records.length === 0 ? "MISSING" : "AMBIGUOUS",
+          reason:
+            records.length === 0
+              ? "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN"
+              : "PRODUCER_WRITE_OBSERVATION_AMBIGUOUS",
+        };
   if (edges.length !== 1 || artifactWrites.length === 0)
-    return { ids: new Set(), status: "MISSING", reason: "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN" };
+    return {
+      ids: new Set(),
+      status: records.length === 0 ? "MISSING" : "AMBIGUOUS",
+      reason:
+        records.length === 0
+          ? "PRODUCER_WRITE_OBSERVATION_NOT_PROVEN"
+          : "PRODUCER_WRITE_OBSERVATION_AMBIGUOUS",
+    };
 
   const matchedIds = new Set<string>();
   let ambiguous = false;
@@ -1053,7 +1075,11 @@ export class PhysicalFieldExpander {
         bridge,
         producerLoad,
       );
-      const producerBindings = producerPack && producerLoad && writeProof.status === "PROVEN"
+      const producerBindings =
+        fieldMatches &&
+        producerPack &&
+        producerLoad &&
+        writeProof.status === "PROVEN"
         ? outputBindingsFor(
             producerLoad,
             request.source.qualifiedName,
