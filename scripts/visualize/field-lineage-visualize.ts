@@ -53,6 +53,10 @@ export interface FieldLineageCodeFlowStep {
   readonly sourceSpan: { readonly start: number; readonly end: number } | null;
   readonly sourceText: string;
   readonly evidenceMode: "FACTS_BACKED" | "EXPRESSION_ONLY";
+  /** Fields explicitly projected or read by this facts-backed step. */
+  readonly inputFields: readonly string[];
+  readonly outputFields: readonly string[];
+  readonly relationObject: string | null;
 }
 
 export interface FieldLineageCodeFlowField {
@@ -373,6 +377,89 @@ function fieldRefs(value: unknown): readonly { readonly table: string; readonly 
   });
 }
 
+function fieldRefName(ref: { readonly table: string; readonly column: string }): string {
+  return ref.table && ref.column ? `${ref.table}.${ref.column}` : ref.column || ref.table;
+}
+
+function uniqueFieldNames(
+  refs: readonly { readonly table: string; readonly column: string }[],
+): readonly string[] {
+  return [...new Set(refs.map(fieldRefName).filter((value) => value.length > 0))];
+}
+
+function physicalFieldRefs(value: unknown): readonly { readonly table: string; readonly column: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const physical = fieldRefs(item.physical);
+    if (physical.length > 0) return physical;
+    const table = typeof item.table === "string" ? item.table : "";
+    const column = typeof item.column === "string" ? item.column : "";
+    return table || column ? [{ table, column }] : [];
+  });
+}
+
+function relationRecord(record: JsonRecord): JsonRecord {
+  return isRecord(record.relation) ? record.relation : {};
+}
+
+function relationObjectName(record: JsonRecord): string | null {
+  return recordString(relationRecord(record), "table");
+}
+
+function relationOutputFields(record: JsonRecord): readonly string[] {
+  const relation = relationRecord(record);
+  if (Array.isArray(relation.output_columns)) {
+    return relation.output_columns.filter((value): value is string => typeof value === "string");
+  }
+  if (!Array.isArray(relation.expressions)) return [];
+  return relation.expressions
+    .filter(isRecord)
+    .map((expression) => recordString(expression, "output") ?? recordString(expression, "output_name"))
+    .filter((value): value is string => value !== null);
+}
+
+function relationInputFields(record: JsonRecord): readonly string[] {
+  const relation = relationRecord(record);
+  if (!Array.isArray(relation.expressions)) return [];
+  return uniqueFieldNames(
+    relation.expressions.flatMap((expression) =>
+      isRecord(expression) ? physicalFieldRefs(expression.input_columns) : [],
+    ),
+  );
+}
+
+function downstreamRelationInputFields(
+  relationId: string,
+  relationById: ReadonlyMap<string, JsonRecord>,
+  outgoingByRelation: ReadonlyMap<string, readonly string[]>,
+): readonly string[] {
+  const queue = [...(outgoingByRelation.get(relationId) ?? [])];
+  const visited = new Set<string>();
+  const fields: { table: string; column: string }[] = [];
+  while (queue.length > 0) {
+    const nextId = queue.shift();
+    if (!nextId || visited.has(nextId)) continue;
+    visited.add(nextId);
+    const next = relationById.get(nextId);
+    if (!next) continue;
+    const nextFields = relationInputFields(next);
+    if (nextFields.length > 0) {
+      nextFields.forEach((value) => {
+        const separator = value.lastIndexOf(".");
+        fields.push(
+          separator < 0
+            ? { table: "", column: value }
+            : { table: value.slice(0, separator), column: value.slice(separator + 1) },
+        );
+      });
+      continue;
+    }
+    queue.push(...(outgoingByRelation.get(nextId) ?? []));
+  }
+  return [...new Set(fields.map(fieldRefName).filter((value) => value.length > 0))];
+}
+
 function regexEscape(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -507,6 +594,9 @@ function codeFlowForField(
           sourceSpan: null,
           sourceText: node.expressionText,
           evidenceMode: "EXPRESSION_ONLY",
+          inputFields: [],
+          outputFields: [node.field.column],
+          relationObject: null,
         });
       });
       return;
@@ -540,6 +630,9 @@ function codeFlowForField(
         );
       })
       .sort((left, right) => (recordSpan(left)?.start ?? 0) - (recordSpan(right)?.start ?? 0));
+    const selectedInputFields = uniqueFieldNames(
+      expressions.flatMap((expression) => fieldRefs(expression.input_fields)),
+    );
 
     const seedRelationIds = new Set<string>();
     expressions.forEach((expression) => {
@@ -556,6 +649,7 @@ function codeFlowForField(
       if (!expressionId || !expressionText) return;
       const outputName = recordString(expression, "output_name") ?? field;
       const span = recordSpan(expression);
+      const expressionInputFields = uniqueFieldNames(fieldRefs(expression.input_fields));
       const stepId = `expression:${taskId}:${expressionId}`;
       appendStep({
         stepId,
@@ -569,6 +663,9 @@ function codeFlowForField(
         sourceSpan: span,
         sourceText: expressionText,
         evidenceMode: "FACTS_BACKED",
+        inputFields: expressionInputFields,
+        outputFields: [outputName],
+        relationObject: null,
       });
       factsBacked = true;
     });
@@ -579,6 +676,7 @@ function codeFlowForField(
       if (relationId) relationById.set(relationId, relation);
     });
     const incomingByRelation = new Map<string, string[]>();
+    const outgoingByRelation = new Map<string, string[]>();
     facts.relationEdges.forEach((edge) => {
       const from = recordString(edge, "from_relation_id");
       const to = recordString(edge, "to_relation_id");
@@ -586,6 +684,9 @@ function codeFlowForField(
       const incoming = incomingByRelation.get(to) ?? [];
       incoming.push(from);
       incomingByRelation.set(to, incoming);
+      const outgoing = outgoingByRelation.get(from) ?? [];
+      outgoing.push(to);
+      outgoingByRelation.set(from, outgoing);
     });
     const distanceByRelation = new Map<string, number>();
     const relationQueue = [...seedRelationIds];
@@ -681,6 +782,16 @@ function codeFlowForField(
       })
       .slice(0, 32)
       .forEach((candidate) => {
+        const downstreamInputs =
+          candidate.relationType.toLowerCase() === "read"
+            ? downstreamRelationInputFields(candidate.relationId, relationById, outgoingByRelation)
+            : [];
+        const inputFields =
+          candidate.relationType.toLowerCase() === "read"
+            ? downstreamInputs.length > 0
+              ? downstreamInputs
+              : selectedInputFields
+            : relationInputFields(candidate.record);
         const stepId = `relation:${taskId}:${candidate.relationType}:${candidate.sourceSpan?.start ?? candidate.relationId}:${candidate.sourceSpan?.end ?? ""}`;
         appendStep({
           stepId,
@@ -694,6 +805,9 @@ function codeFlowForField(
           sourceSpan: candidate.sourceSpan,
           sourceText: candidate.sourceText,
           evidenceMode: "FACTS_BACKED",
+          inputFields,
+          outputFields: relationOutputFields(candidate.record),
+          relationObject: relationObjectName(candidate.record),
         });
         factsBacked = true;
       });
@@ -712,6 +826,9 @@ function codeFlowForField(
           sourceSpan: null,
           sourceText: node.expressionText,
           evidenceMode: "EXPRESSION_ONLY",
+          inputFields: [],
+          outputFields: [node.field.column],
+          relationObject: null,
         });
       });
     }
@@ -778,7 +895,6 @@ export function renderFieldLineageHtml(
   const rootTable = escapeHtml(artifact.request.rootTable);
   const data = serialized({ ...artifact, rowsetControls: [] });
   const impactData = serialized(buildFieldLineageImpactGraph(artifact));
-  const codeFlowData = serialized(buildFieldLineageCodeFlowData(artifact, factsRoot));
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -794,17 +910,16 @@ export function renderFieldLineageHtml(
 .task-flow{gap:12px;align-items:stretch;min-width:max-content;padding:3px 2px 8px}.task-flow .task-group{min-width:285px;max-width:365px;padding:14px 15px;box-shadow:0 2px 7px rgba(31,41,51,.06)}.task-flow .task-group-title{font-size:16px}.task-flow .task-group-name{font-size:12px}.task-flow .task-bridge{min-width:125px;max-width:155px}.task-flow .task-bridge small{max-width:155px;line-height:1.35}.task-field-name{font-size:13px;line-height:1.35}.task-field small{white-space:pre-line;line-height:1.4}.field-link{padding:8px 0;line-height:1.35;white-space:normal}
 .lineage-overview{display:grid;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 8px rgba(31,41,51,.05)}.overview-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}.overview-kicker{color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}.overview-title{margin-top:3px;font-size:18px;font-weight:600;overflow-wrap:anywhere}.overview-target{margin-top:5px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.overview-summary{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}.branch-list{display:grid;gap:8px}.branch-detail{border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface-2)}.branch-detail>summary{list-style:none;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}.branch-detail>summary::-webkit-details-marker{display:none}.branch-detail>summary::before{content:"›";color:var(--flow);font-size:18px;transition:transform .15s ease}.branch-detail[open]>summary::before{transform:rotate(90deg)}.branch-detail>summary:hover{background:var(--surface)}.branch-summary-index{color:var(--muted);font-size:12px;white-space:nowrap}.branch-summary-chain{min-width:0;overflow-wrap:anywhere;font-weight:500}.branch-summary-meta{color:var(--muted);font-size:12px;white-space:nowrap}.branch-detail-body{padding:0 10px 10px;border-top:1px solid var(--line)}.branch-detail-body .route{padding:10px;background:transparent;border:0;overflow:visible}.branch-detail-body .route-summary{display:none}.branch-detail-body .task-flow{margin-top:0}@media(max-width:720px){.overview-header{display:block}.overview-summary{text-align:left;margin-top:8px;white-space:normal}.branch-detail>summary{grid-template-columns:auto minmax(0,1fr)}.branch-summary-meta{grid-column:2;white-space:normal}}
 .panel:first-child{display:flex;flex-direction:column;max-height:calc(100vh - 28px);overflow:hidden}.panel:first-child .section:first-child{display:flex;flex:1 1 auto;flex-direction:column;min-height:0}.panel:first-child .field-list{flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:4px}@media(max-width:720px){.panel:first-child{display:block;max-height:none;overflow:visible}.panel:first-child .section:first-child{display:block}.panel:first-child .field-list{overflow:visible;padding-right:0}}
+.lineage-section{display:grid;gap:8px}.lineage-section-title{font-size:13px;font-weight:600}.provisional-section{border:1px solid var(--candidate);border-radius:7px;background:color-mix(in srgb,var(--candidate) 6%,var(--surface));overflow:hidden}.provisional-section>summary{padding:11px 12px;color:var(--candidate);font-weight:600;cursor:pointer}.provisional-section>.branch-list{padding:0 10px 10px}.provisional-note{padding:0 12px 10px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.branch-detail.provisional{border-color:color-mix(in srgb,var(--candidate) 55%,var(--line))}.branch-detail.provisional>summary::before{color:var(--candidate)}
 .view-tabs{display:flex;gap:2px;margin-top:16px;padding:0 22px;background:var(--surface);border-bottom:1px solid var(--line)}.view-tab{padding:10px 18px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.view-tab:hover{color:var(--text)}.view-tab[aria-selected="true"]{border-bottom-color:var(--flow);color:var(--flow);font-weight:600}.view-hidden{display:none!important}.impact-layout{max-width:1400px;margin:0 auto;padding:14px 18px}.impact-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}.impact-title{font-size:17px;font-weight:600}.impact-subtitle{margin-top:3px;color:var(--muted);font-size:12px}.impact-summary{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}.impact-graph-shell{overflow:auto;padding:2px 2px 10px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-graph{position:relative;min-width:640px;min-height:220px}.impact-svg{position:absolute;inset:0;overflow:visible;pointer-events:none}.impact-svg path{fill:none;stroke:var(--flow);stroke-width:1.25;opacity:.7}.impact-svg text{fill:var(--muted);font-size:10px}.impact-card{position:absolute;width:210px;height:96px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line);border-top:3px solid var(--flow);border-radius:7px;box-shadow:0 1px 4px rgba(31,41,51,.05);overflow:hidden;text-align:left;color:var(--text);font:inherit}.impact-card-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-name{margin-top:2px;color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-summary{margin-top:8px;color:var(--flow);font-size:12px}.impact-note{margin:8px 2px 0;color:var(--muted);font-size:11px}.impact-unresolved{color:var(--candidate)}.impact-empty{padding:18px;color:var(--muted);text-align:center}@media(max-width:720px){.view-tabs{padding:0 14px}.impact-layout{padding:12px}.impact-header{display:block}.impact-summary{text-align:left;margin-top:6px;white-space:normal}.impact-card{width:190px}}
 .task-flow{min-width:0;max-width:100%;width:100%;overflow-x:auto}.branch-detail-body{min-width:0;overflow:hidden}
 .impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
-.code-layout{max-width:1400px;margin:0 auto;padding:18px 22px}.code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.code-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.code-picker select{min-width:240px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--text);font:inherit}.code-status{color:var(--muted);font-size:12px;text-align:right}.code-status strong{color:var(--flow);font-weight:600}.code-flow{display:grid;gap:10px}.code-step{border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:7px;background:var(--surface);overflow:hidden}.code-step[data-mode="EXPRESSION_ONLY"]{border-left-color:var(--candidate)}.code-step summary{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;list-style:none}.code-step summary::-webkit-details-marker{display:none}.code-step summary::before{content:"›";color:var(--flow);font-size:20px;transition:transform .15s ease}.code-step[open] summary::before{transform:rotate(90deg)}.code-step summary:hover{background:var(--surface-2)}.code-step-index{color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.code-step-title{font-weight:600;overflow-wrap:anywhere}.code-step-meta{color:var(--muted);font-size:11px;text-align:right;white-space:nowrap}.code-step-body{padding:0 13px 13px;border-top:1px solid var(--line)}.code-step-note{display:flex;gap:8px;flex-wrap:wrap;padding:9px 0;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.code-step-note strong{color:var(--flow);font-weight:500}.sql-code{margin:0;max-height:390px;overflow:auto;padding:14px 16px;background:#111a22;color:#dce7ed;border:1px solid #2b3a45;border-radius:6px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;tab-size:2;white-space:pre}.sql-keyword{color:#7dd3fc;font-weight:600}.sql-function{color:#c4b5fd}.sql-string{color:#fbbf80}.sql-number{color:#f0abfc}.sql-comment{color:#7f9ba8;font-style:italic}.sql-parameter{color:#86efac}.sql-identifier{color:#d7dee4}.sql-operator{color:#fda4af}.code-empty{padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--muted)}@media(max-width:720px){.code-layout{padding:14px}.code-toolbar{display:block}.code-status{text-align:left;margin-top:8px}.code-picker select{min-width:0;max-width:100%}.code-step summary{grid-template-columns:24px minmax(0,1fr)}.code-step-meta{grid-column:2;text-align:left;white-space:normal}.sql-code{font-size:11px}}
-.code-task-divider{margin-top:10px;padding:7px 3px 2px;color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--line)}.task-code{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.task-code>summary{color:var(--flow);font-size:12px;font-weight:500;cursor:pointer}.task-code-flow{display:grid;gap:8px;margin-top:8px}.task-code-note,.task-code-empty{margin-top:8px;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.task-code .code-step{background:var(--surface)}
 </style>
 </head>
 <body>
 <header><h1>字段血缘 · ${rootTaskId}</h1><p class="subtitle">目标表：${rootTable}</p><p class="meta">页面由 FIELD_MULTI_HOP_RECONCILIATION 产物驱动；只展示静态证据，不代表调度运行或数据正确性。</p><nav class="view-tabs" aria-label="血缘视图"><button type="button" class="view-tab" data-view="field" aria-selected="true">字段血缘</button><button type="button" class="view-tab" data-view="impact" aria-selected="false">影响范围</button></nav></header>
 <div id="field-lineage-app" class="layout">
-  <aside class="panel"><section class="section"><h2>目标字段</h2><div class="field-list" id="field-list"></div></section><div class="legend"><span><i class="flow"></i>VALUE_FLOW</span><span><i class="candidate-mark"></i>CANDIDATE</span></div></aside>
+  <aside class="panel"><section class="section"><h2>目标字段</h2><div class="field-list" id="field-list"></div></section><div class="legend"><span><i class="flow"></i>CONFIRMED</span><span><i class="candidate-mark"></i>PROVISIONAL / CANDIDATE</span></div></aside>
   <main class="panel">
     <div class="counts" id="counts"></div>
     <section class="section"><h2>当前字段的多分支汇聚</h2><div id="routes" class="route-list" aria-live="polite"></div></section>
@@ -822,7 +937,6 @@ export function renderFieldLineageHtml(
 <script>
 const DATA=${data};
 const IMPACT=${impactData};
-const CODE_FLOW=${codeFlowData};
 const IMPACT_TREE=${serialized(renderFieldLineageImpactTree(buildFieldLineageImpactGraph(artifact)))};
 const app=document.getElementById("field-lineage-app");
 const impactView=document.getElementById("impact-view"),impactTree=document.getElementById("impact-tree"),impactGraph=document.getElementById("impact-graph"),impactSvg=document.getElementById("impact-svg"),impactCards=document.getElementById("impact-cards"),impactNote=document.getElementById("impact-note");
@@ -831,85 +945,9 @@ const edgesByTo=new Map();
 for(const edge of DATA.edges){const list=edgesByTo.get(edge.toNodeId)||[];list.push(edge);edgesByTo.set(edge.toNodeId,list)}
 const rootIds=new Set(DATA.rootNodeIds);
 const fieldList=document.getElementById("field-list"),routes=document.getElementById("routes"),counts=document.getElementById("counts"),status=document.getElementById("status"),detailSource=document.getElementById("detail-source"),detailEvidence=document.getElementById("detail-evidence"),candidateBox=document.getElementById("candidates"),tableBox=document.getElementById("table-edges");
-const codeStepById=new Map(CODE_FLOW.steps.map((step)=>[step.stepId,step]));
 const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const nodeLabel=(node)=>node?{task:node.taskId,table:node.field.qualifiedName,column:node.field.column}:null;
 const fields=[...new Set(DATA.request.rootFields)].sort();
-const sqlKeywords=new Set("SELECT FROM WHERE JOIN LEFT RIGHT INNER OUTER FULL ON AS CASE WHEN THEN ELSE END GROUP BY HAVING ORDER BY UNION ALL DISTINCT INSERT INTO OVER PARTITION AND OR NOT NULL IS IN LIKE BETWEEN EXISTS CREATE TABLE VIEW WITH ALTER DROP UPDATE SET VALUES LIMIT CAST DATE CURRENT_DATE LATERAL CROSS USING ASC DESC COALESCE IF SUM COUNT MAX MIN AVG ROW_NUMBER RANK".split(" "));
-function highlightSql(value){
-  let html="",index=0;
-  const source=String(value??"");
-  while(index<source.length){
-    const current=source[index],next=source[index+1];
-    if(current==='-'&&next==='-'){
-      const end=source.indexOf("\\n",index)<0?source.length:source.indexOf("\\n",index);
-      html+='<span class="sql-comment">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    if(current==='/'&&next==='*'){
-      const close=source.indexOf("*/",index+2),end=close<0?source.length:close+2;
-      html+='<span class="sql-comment">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    if(current==="'"||current==='"'||current===String.fromCharCode(96)){
-      const quote=current;let end=index+1;
-      while(end<source.length){
-        if(source[end]===quote&&source[end+1]===quote){end+=2;continue}
-        if(source[end]===quote){end+=1;break}
-        end+=1;
-      }
-      const type=quote==="'"?"sql-string":"sql-identifier";
-      html+='<span class="'+type+'">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    if(current==='$'&&next==='{'){
-      const close=source.indexOf("}",index+2),end=close<0?source.length:close+1;
-      html+='<span class="sql-parameter">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    if(/[A-Za-z_]/.test(current)){
-      let end=index+1;
-      while(end<source.length&&/[A-Za-z0-9_$]/.test(source[end]))end+=1;
-      const word=source.slice(index,end),upper=word.toUpperCase();let probe=end;
-      while(probe<source.length&&/\\s/.test(source[probe]))probe+=1;
-      const type=source[probe]==="("?"sql-function":sqlKeywords.has(upper)?"sql-keyword":"sql-identifier";
-      html+='<span class="'+type+'">'+esc(word)+'</span>';index=end;continue;
-    }
-    if(/[0-9]/.test(current)){
-      let end=index+1;
-      while(end<source.length&&/[0-9.eE+-]/.test(source[end]))end+=1;
-      html+='<span class="sql-number">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    if("=<>!+-*/%".includes(current)){
-      let end=index+1;
-      if("=<>!".includes(current)&&"=<>".includes(next||""))end+=1;
-      html+='<span class="sql-operator">'+esc(source.slice(index,end))+'</span>';index=end;continue;
-    }
-    html+=esc(current);index+=1;
-  }
-  return html;
-}
-function codeStepHtml(step,index){
-  const taskName=step.taskName?" · "+step.taskName:"";
-  return '<details class="code-step" data-step-id="'+esc(step.stepId)+'" data-mode="'+esc(step.evidenceMode)+'"><summary><span class="code-step-index">'+String(index+1).padStart(2,"0")+'</span><span class="code-step-title">'+esc(step.title)+'</span><span class="code-step-meta">Task '+esc(step.taskId)+esc(taskName)+'</span></summary><div class="code-step-body"></div></details>';
-}
-function hydrateCodeStep(detail){
-  if(detail.dataset.hydrated==="true")return;
-  const step=codeStepById.get(detail.dataset.stepId),body=detail.querySelector(".code-step-body");
-  if(!step||!body)return;
-  const span=step.sourceSpan?"SQL span "+step.sourceSpan.start+"–"+step.sourceSpan.end:"未提供 SQL span";
-  const evidence=step.evidenceMode==="FACTS_BACKED"?"facts 原始片段":"字段产物表达式";
-  body.innerHTML='<div class="code-step-note"><strong>'+esc(evidence)+'</strong><span>'+esc(span)+'</span>'+(step.relationId?'<span>'+esc(step.relationId)+'</span>':'')+'</div><pre class="sql-code"><code>'+highlightSql(step.sourceText)+'</code></pre>';
-  detail.dataset.hydrated="true";
-}
-function bindCodeSteps(container){
-  container.querySelectorAll(".code-step").forEach((detail)=>detail.addEventListener("toggle",()=>{if(detail.open)hydrateCodeStep(detail)}));
-}
-function codeEvidenceHtml(field,taskId){
-  const flow=CODE_FLOW.fields[field]||{stepIds:[],taskIds:[],status:"UNAVAILABLE",note:"当前字段没有可展示的代码证据。"};
-  const steps=flow.stepIds.map((stepId)=>codeStepById.get(stepId)).filter((step)=>step&&step.taskId===taskId);
-  const status=flow.status==="FACTS_BACKED"?"facts 原始片段":flow.status==="EXPRESSION_ONLY"?"字段产物表达式":"不可用";
-  const body=steps.length
-    ? '<div class="task-code-note">'+esc(status)+' · '+esc(flow.note)+'</div><div class="task-code-flow">'+steps.map((step,index)=>codeStepHtml(step,index)).join('')+'</div>'
-    : '<div class="task-code-empty">当前 Task 没有可绑定的代码证据；不会推断缺失 SQL。</div>';
-  return '<details class="task-code"><summary>查看代码证据 · '+steps.length+' 步</summary>'+body+'</details>';
-}
 function impactLayers(){
   const taskIds=IMPACT.tasks.map((task)=>task.taskId),taskSet=new Set(taskIds),indegree=new Map(taskIds.map((taskId)=>[taskId,0])),outgoing=new Map(taskIds.map((taskId)=>[taskId,[]]));
   IMPACT.edges.forEach((edge)=>{if(!taskSet.has(edge.fromTaskId)||!taskSet.has(edge.toTaskId))return;outgoing.get(edge.fromTaskId).push(edge.toTaskId);indegree.set(edge.toTaskId,indegree.get(edge.toTaskId)+1)});
@@ -1000,15 +1038,6 @@ function pathTaskGroups(path){
 function pathTaskChain(path){
   return pathTaskGroups(path).slice().reverse().map((group)=>group.taskId).join(" → ");
 }
-function groupPathsByTaskChain(paths){
-  const groups=new Map();
-  paths.forEach((path)=>{
-    const key=pathTaskChain(path);
-    const group=groups.get(key)||{key,paths:[]};
-    group.paths.push(path);groups.set(key,group);
-  });
-  return [...groups.values()];
-}
 function humanPathNodes(path){
   const result=[];
   path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).reverse().forEach((node)=>{
@@ -1031,6 +1060,11 @@ function groupPathsBySemantic(paths){
     group.paths.push(path);groups.set(key,group);
   });
   return [...groups.values()];
+}
+function routeGroupTitle(group){
+  const first=group.paths[0];
+  if(!first)return "Task 链";
+  return pathTaskChain(first);
 }
 function formatExpression(value){
   return String(value??"")
@@ -1056,6 +1090,13 @@ function branchStatus(paths){
   const nodeStatuses=[...new Set(paths.flatMap((path)=>path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).map((node)=>node.evidenceStatus)))];
   return nodeStatuses.join('、')||'UNRESOLVED';
 }
+function pathEvidenceStatus(path){
+  const statuses=[...path.nodes.map((id)=>nodeById.get(id)?.evidenceStatus),...path.edges.map((edge)=>edge.evidenceStatus)].filter(Boolean);
+  if(statuses.includes('UNRESOLVED'))return 'UNRESOLVED';
+  if(statuses.includes('PROVISIONAL_LEGACY'))return 'PROVISIONAL_LEGACY';
+  return statuses.length?'CONFIRMED':'UNRESOLVED';
+}
+function confirmedPath(path){return pathEvidenceStatus(path)==='CONFIRMED'}
 function nodeEvidence(node){
   const source=String(node.bindingId||node.nodeId||"");
   const match=source.match(/slot:([^:]+):statement:(\d+):(\d+)/);
@@ -1094,7 +1135,7 @@ function taskGroupHtml(group,field){
     }
     fields.push('<div class="task-field"><span class="task-field-name">'+esc(label.table)+'.'+esc(label.column)+'</span><small>'+esc(formatExpression(item.node.expressionText||"字段绑定"))+'</small></div>');
   });
-  return '<div class="task-group"><div class="task-group-title">Task '+esc(group.taskId)+'</div>'+(group.taskName?'<span class="task-group-name">'+esc(group.taskName)+'</span>':'')+fields.join('')+codeEvidenceHtml(field,group.taskId)+'</div>';
+  return '<div class="task-group"><div class="task-group-title">Task '+esc(group.taskId)+'</div>'+(group.taskName?'<span class="task-group-name">'+esc(group.taskName)+'</span>':'')+fields.join('')+'</div>';
 }
 function evidenceBranchHtml(path,index){
   const nodes=path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).reverse();
@@ -1139,7 +1180,7 @@ function semanticBranchHtml(group,index,field){
   const tags=operations.length?operations.map((operation)=>'<span class="branch-tag">'+esc(operationLabel(operation))+'</span>').join(''):'<span class="branch-tag">字段直传</span>';
   return '<div class="semantic-branch"><div class="semantic-title">来源分支 '+(index+1)+' · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+flow+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div>';
 }
-function routeGroupHtml(group,index,field){
+function routeGroupHtml(group,index,field,provisional){
   const statusText=branchStatus(group.paths);
   const operations=[...new Set(group.paths.flatMap((path)=>path.nodes.map((id)=>nodeById.get(id)).filter(Boolean).flatMap((node)=>{
     const values=[];
@@ -1148,11 +1189,19 @@ function routeGroupHtml(group,index,field){
     return values;
   })))];
   const tags=operations.length?operations.map((operation)=>'<span class="branch-tag">'+esc(operationLabel(operation))+'</span>').join(''):'<span class="branch-tag">字段直传</span>';
-  return '<details class="branch-detail"><summary><span class="branch-summary-index">来源分支 '+(index+1)+'</span><span class="branch-summary-chain">'+esc(group.key)+'</span><span class="branch-summary-meta">'+group.paths.length+' 条证据 · '+esc(statusText)+'</span></summary><div class="branch-detail-body"><div class="route"><div class="route-summary">同一任务链合并展示 · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+taskFlowHtml(group.paths,field)+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据（'+group.paths.length+' 条）</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div></div></details>';
+  const className=provisional?'branch-detail provisional':'branch-detail';
+  const label=provisional?'临时证据 ':'确认分支 ';
+  return '<details class="'+className+'"><summary><span class="branch-summary-index">'+label+(index+1)+'</span><span class="branch-summary-chain">'+esc(routeGroupTitle(group))+'</span><span class="branch-summary-meta">'+group.paths.length+' 条证据 · '+esc(statusText)+'</span></summary><div class="branch-detail-body"><div class="route"><div class="route-summary">同一语义路径合并展示 · '+group.paths.length+' 条原始证据</div><div class="flow-cards task-flow">'+taskFlowHtml(group.paths,field)+'</div><div class="branch-tags">'+tags+'</div><div class="semantic-meta">证据状态：'+esc(statusText)+' · 原始证据保留在下方技术详情</div><details class="technical-evidence"><summary>查看技术证据（'+group.paths.length+' 条）</summary><div class="evidence-list">'+group.paths.map(evidenceBranchHtml).join('')+'</div></details></div></div></details>';
 }
-function multiBranchOverviewHtml(field,root,routeGroups,pathCount){
+function multiBranchOverviewHtml(field,root,confirmedGroups,provisionalGroups,confirmedPathCount,provisionalPathCount){
   const target=root?root.field.qualifiedName+'.'+root.field.column:field;
-  return '<div class="lineage-overview"><div class="overview-header"><div><div class="overview-kicker">多分支汇聚</div><div class="overview-title">'+esc(field)+'</div><div class="overview-target">目标绑定：'+esc(target)+'</div></div><div class="overview-summary">'+routeGroups.length+' 条来源分支<br>'+pathCount+' 条原始证据</div></div><div class="branch-list">'+routeGroups.map((group,index)=>routeGroupHtml(group,index,field)).join('')+'</div></div>';
+  const confirmed = confirmedGroups.length
+    ? '<div class="lineage-section"><div class="lineage-section-title">已确认值流 · '+confirmedGroups.length+' 条分支</div><div class="branch-list">'+confirmedGroups.map((group,index)=>routeGroupHtml(group,index,field,false)).join('')+'</div></div>'
+    : '<div class="empty">暂无 CONFIRMED 主路径。临时/历史证据不会冒充已确认值流。</div>';
+  const provisional = provisionalGroups.length
+    ? '<details class="provisional-section" open><summary>临时 / 历史证据 · '+provisionalGroups.length+' 条分支 · '+provisionalPathCount+' 条路径</summary><div class="provisional-note">这些路径来自 legacy 或非完整证据，只用于审阅候选来源，不计入已确认主路径。</div><div class="branch-list">'+provisionalGroups.map((group,index)=>routeGroupHtml(group,index,field,true)).join('')+'</div></details>'
+    : '';
+  return '<div class="lineage-overview"><div class="overview-header"><div><div class="overview-kicker">多分支汇聚</div><div class="overview-title">'+esc(field)+'</div><div class="overview-target">目标绑定：'+esc(target)+'</div></div><div class="overview-summary">'+confirmedGroups.length+' 条确认分支<br>'+provisionalGroups.length+' 条临时证据分支<br>'+String(confirmedPathCount+provisionalPathCount)+' 条原始证据</div></div>'+confirmed+provisional+'</div>';
 }
 function renderCandidates(field){
   const items=DATA.candidates.filter((candidate)=>!candidate.field||candidate.field.column===field);
@@ -1167,14 +1216,17 @@ function render(field){
   const roots=DATA.rootNodeIds.map((id)=>nodeById.get(id)).filter((node)=>node&&node.field.column===field);
   const pathResults=roots.map((node)=>pathsFrom(node.nodeId));
   const paths=pathResults.flatMap((result)=>result.paths);
-  const routeGroups=groupPathsByTaskChain(paths);
+  const confirmedPaths=paths.filter(confirmedPath);
+  const provisionalPaths=paths.filter((path)=>!confirmedPath(path));
+  const confirmedGroups=groupPathsBySemantic(confirmedPaths);
+  const provisionalGroups=groupPathsBySemantic(provisionalPaths);
   const root=roots[0];
   renderFields(field);renderCandidates(field);
   const pathNodeIds=new Set(paths.flatMap((path)=>path.nodes));renderTableEdges(pathNodeIds);
   const pathNote=pathResults.some((result)=>result.truncated)?'<div class="note">当前页面只显示每个根绑定最多 32 条路径；完整路径仍保留在 JSON 产物中。</div>':'';
-  routes.innerHTML=pathNote+(paths.length?multiBranchOverviewHtml(field,root,routeGroups,paths.length):'<div class="empty">当前字段没有可展示的 VALUE_FLOW 路径</div>');
+  routes.innerHTML=pathNote+(paths.length?multiBranchOverviewHtml(field,root,confirmedGroups,provisionalGroups,confirmedPaths.length,provisionalPaths.length):'<div class="empty">当前字段没有可展示的 VALUE_FLOW 路径</div>');
   bindCodeSteps(routes);
-  status.innerHTML='当前字段：<strong>'+esc(field)+'</strong> · '+routeGroups.length+' 条来源分支（Task 链） · '+paths.length+' 条证据路径';
+  status.innerHTML='当前字段：<strong>'+esc(field)+'</strong> · '+confirmedGroups.length+' 条已确认值流 · '+provisionalGroups.length+' 条临时证据 · '+paths.length+' 条证据路径';
   detailSource.textContent=root?'目标绑定：Task '+root.taskId+' · '+root.field.qualifiedName+'.'+root.field.column:"目标字段绑定未找到";
   detailEvidence.textContent='证据状态：'+(root?.evidenceStatus||"UNRESOLVED")+' · gaps='+DATA.counts.gaps+(DATA.limits.truncated?' · 截断：'+DATA.limits.reasons.join("、"):"");
 }

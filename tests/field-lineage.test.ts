@@ -17,7 +17,10 @@ import {
   canonicalizeFieldLineageArtifact,
   validateFieldLineageArtifact,
 } from "../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
-import { reconcileFieldLineage } from "../scripts/reconcile/consumer/field-lineage/field-lineage.ts";
+import {
+  reconcileFieldLineage,
+  valueContributionInputFields,
+} from "../scripts/reconcile/consumer/field-lineage/field-lineage.ts";
 import { formatFieldLineageSummary } from "../scripts/reconcile/consumer/field-lineage/format-field-lineage.ts";
 import { runFieldLineageCli } from "../scripts/reconcile/consumer/field-lineage/reconcile-field-lineage.ts";
 import {
@@ -40,6 +43,45 @@ function fixture(rootTaskName?: string) {
 }
 
 describe("field multi-hop lineage", () => {
+  it("uses VALUE_CONTRIBUTION roles instead of aggregate input scope", () => {
+    const fields = valueContributionInputFields(
+      {
+        measures: [
+          {
+            output: "Allo_Prop_1",
+            expression_roles: [
+              {
+                effects: ["BRANCH_SELECTION"],
+                input_columns: [
+                  {
+                    physical: [
+                      { table: "demo.source", column: "contract_code" },
+                    ],
+                  },
+                ],
+              },
+              {
+                effects: ["VALUE_CONTRIBUTION"],
+                input_columns: [
+                  {
+                    physical: [
+                      { table: "demo.source", column: "allocation_proportion" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      "allo_prop_1",
+    );
+
+    expect(fields).toEqual([
+      { table: "demo.source", column: "allocation_proportion" },
+    ]);
+  });
+
   it("publishes the versioned canonical JSON Schema", () => {
     const schema = JSON.parse(
       readFileSync(

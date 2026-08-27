@@ -81,6 +81,7 @@ type BundleIndexes = {
 	readonly relations: ReadonlyMap<string, JsonRecord>;
 	readonly incomingRelations: ReadonlyMap<string, readonly string[]>;
 	readonly controlsByStatement: ReadonlyMap<string, readonly JsonRecord[]>;
+	readonly valueInputFieldsByExpressionId: ReadonlyMap<string, readonly JsonRecord[]>;
 };
 
 export interface ReconcileFieldLineageOptions {
@@ -438,11 +439,22 @@ function bundleIndexesFor(load: CurrentBundleLoad): BundleIndexes {
 		values.push(relation);
 		controlsByStatement.set(statementId, values);
 	}
+	const valueInputFieldsByExpressionId = new Map<string, readonly JsonRecord[]>();
+	for (const [expressionId, expression] of expressions) {
+		const relation = relations.get(String(expression.relation_id ?? ""));
+		const valueInputs = valueContributionInputFields(
+			relation?.relation,
+			String(expression.output_name ?? expression.output ?? ""),
+		);
+		if (valueInputs !== null)
+			valueInputFieldsByExpressionId.set(expressionId, valueInputs);
+	}
 	const indexes: BundleIndexes = {
 		expressions,
 		relations,
 		incomingRelations,
 		controlsByStatement,
+		valueInputFieldsByExpressionId,
 	};
 	bundleIndexesCache.set(load, indexes);
 	return indexes;
@@ -463,6 +475,68 @@ const INPUT_DEPENDENCY_STATUSES = new Set<InputDependencyStatus>([
 	"UNRESOLVED",
 	"NO_PHYSICAL_INPUT",
 ]);
+
+export function valueContributionInputFields(
+	value: unknown,
+	outputName: string,
+): JsonRecord[] | null {
+	const normalizedOutput = normalizeName(outputName);
+	if (!normalizedOutput) return null;
+	const matches: JsonRecord[] = [];
+	const visit = (candidate: unknown): void => {
+		if (Array.isArray(candidate)) {
+			for (const item of candidate) visit(item);
+			return;
+		}
+		const record = asRecord(candidate);
+		if (!record) return;
+		const candidateOutput = normalizeName(
+			String(record.output ?? record.output_name ?? ""),
+		);
+		if (
+			candidateOutput === normalizedOutput &&
+			Array.isArray(record.expression_roles) &&
+			record.expression_roles.length > 0
+		)
+			matches.push(record);
+		for (const key of ["expressions", "measures"]) visit(record[key]);
+	};
+	visit(value);
+	if (matches.length === 0) return null;
+
+	const fields = new Map<string, JsonRecord>();
+	for (const match of matches) {
+		const roles = Array.isArray(match.expression_roles)
+			? match.expression_roles
+			: [];
+		for (const rawRole of roles) {
+			const role = asRecord(rawRole);
+			const effects = Array.isArray(role?.effects)
+				? role.effects.map((effect) => normalizeName(String(effect)))
+				: [];
+			if (!effects.includes("value_contribution")) continue;
+			const inputColumns = Array.isArray(role?.input_columns)
+				? role.input_columns
+				: [];
+			for (const rawInput of inputColumns) {
+				const input = asRecord(rawInput);
+				const physical = Array.isArray(input?.physical)
+					? input.physical
+					: [];
+				for (const rawField of physical) {
+					const field = asRecord(rawField);
+					const table = normalizeName(String(field?.table ?? ""));
+					const column = normalizeName(String(field?.column ?? ""));
+					if (!table || !column) continue;
+					fields.set(`${table}.${column}`, { table, column });
+				}
+			}
+		}
+	}
+	return [...fields.values()].sort((left, right) =>
+		compareText(`${left.table}.${left.column}`, `${right.table}.${right.column}`),
+	);
+}
 
 function expressionInputDependencyStatus(
 	expression: JsonRecord,
@@ -486,9 +560,13 @@ function sourceFields(
 } {
   const fields = new Map<string, PhysicalFieldIdentity>();
   const unresolved: { table: string; column: string; reason: string }[] = [];
-  for (const raw of Array.isArray(expression.input_fields)
+  const indexedValueInputs = bundleIndexesFor(load).valueInputFieldsByExpressionId.get(
+    String(expression.expression_id ?? ""),
+  );
+  const inputFields = indexedValueInputs ?? (Array.isArray(expression.input_fields)
     ? expression.input_fields
-    : []) {
+    : []);
+  for (const raw of inputFields) {
     const input = asRecord(raw);
     const rawTableName = normalizeName(String(input?.table ?? ""));
     const column = normalizeName(String(input?.column ?? ""));

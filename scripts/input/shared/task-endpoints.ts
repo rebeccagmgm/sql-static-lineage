@@ -16,11 +16,50 @@ export const CONTROLLED_TASK_ENDPOINT_DATA_SOURCES: Readonly<
   "hiveTask-2.0": { source: "gfhive", target: "gfhive" },
 };
 
+/**
+ * The task category is the controlled evidence for the endpoint platform
+ * when a task source is only a connector/data-source label. This is used to
+ * validate a table candidate after its physical DDL has been loaded; it does
+ * not manufacture a physical table identity.
+ */
+export const CONTROLLED_TASK_ENDPOINT_PLATFORMS: Readonly<
+  Record<string, Readonly<{ source?: string; target?: string }>>
+> = {
+  mysql2hive: { source: "mysql", target: "hive" },
+  oracle2hive: { source: "oracle", target: "hive" },
+  td2hive: { source: "td", target: "hive" },
+  mongo2hive: { source: "mongo", target: "hive" },
+  postgre2hive: { source: "postgres", target: "hive" },
+  pg2hive: { source: "postgres", target: "hive" },
+  postgres2hive: { source: "postgres", target: "hive" },
+  sqlserver2hive: { source: "sqlserver", target: "hive" },
+  oceanbase2hive: { source: "oceanbase", target: "hive" },
+  dolphindb2hive: { source: "dolphindb", target: "hive" },
+  oracle2mysql: { source: "oracle", target: "mysql" },
+  hive2mysql: { source: "hive", target: "mysql" },
+  hive2oracle: { source: "hive", target: "oracle" },
+  hive2td: { source: "hive", target: "td" },
+  hive2sqlserver: { source: "hive", target: "sqlserver" },
+  hive2mongo: { source: "hive", target: "mongo" },
+  hive2oceanbase: { source: "hive", target: "oceanbase" },
+  hive2dolphindb: { source: "hive", target: "dolphindb" },
+  sparkIndex: { source: "hive", target: "hive" },
+  "hiveTask-2.0": { source: "hive", target: "hive" },
+  hive2starrocks: { source: "hive", target: "starrocks" },
+};
+
 export function controlledTaskEndpointDataSource(
   taskCategory: string | null | undefined,
   side: "source" | "target",
 ): string | undefined {
   return CONTROLLED_TASK_ENDPOINT_DATA_SOURCES[taskCategory ?? ""]?.[side];
+}
+
+export function controlledTaskEndpointPlatform(
+  taskCategory: string | null | undefined,
+  side: "source" | "target",
+): string | undefined {
+  return CONTROLLED_TASK_ENDPOINT_PLATFORMS[taskCategory ?? ""]?.[side];
 }
 
 export function inputCollectionStatus(

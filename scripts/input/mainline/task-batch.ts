@@ -3,7 +3,7 @@ export type TaskCollector = (dataRoot: string, taskId: string) => unknown;
 export type TaskFailureReporter = (taskId: string, error: unknown) => void;
 
 export const INPUT_PACK_BATCH_SIZE_WARNING_THRESHOLD = 100;
-export const INPUT_PACK_BATCH_SIZE_HARD_LIMIT = 200;
+export const INPUT_PACK_BATCH_SIZE_HARD_LIMIT = 1000;
 
 export function assertInputPackBatchSize(taskCount: number): void {
   if (taskCount > INPUT_PACK_BATCH_SIZE_HARD_LIMIT)

@@ -57,10 +57,10 @@ function writeTask(rootPath: string, taskId: string, sql: string, target?: strin
 describe("input pack closure", () => {
   it("splits collection requests at the collector hard limit", () => {
     const batches = inputPackTaskBatches(
-      Array.from({ length: 401 }, (_, index) => String(index + 1)),
+      Array.from({ length: 1201 }, (_, index) => String(index + 1)),
     );
-    expect(batches.map((batch) => batch.length)).toEqual([200, 200, 1]);
-    expect(batches.flat()).toHaveLength(401);
+    expect(batches.map((batch) => batch.length)).toEqual([1000, 201]);
+    expect(batches.flat()).toHaveLength(1201);
   });
 
   it("discovers and collects a producer when the table is missing from the local index", () => {

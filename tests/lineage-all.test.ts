@@ -159,6 +159,11 @@ describe("lineage:all", () => {
     } });
     expect(result.status).toBe("SUCCESS"); expect(autofillCalls).toBe(1); expect(collected).toEqual(["producer-new"]); expect(rendered).toEqual(["first", "final"]);
     expect(readFileSync(formalArtifactPaths(join(root, "artifacts"), "root").tableHtml, "utf8")).toBe("<html>final</html>\n");
+    const closure = JSON.parse(readFileSync(formalArtifactPaths(join(root, "artifacts"), "root").inputPackClosure, "utf8")) as Record<string, any>;
+    expect(closure.initialTaskIds).toEqual(["root"]);
+    expect(closure.taskIds).toEqual(["root", "producer-new"]);
+    expect(closure.fieldDrivenProducerTables).toEqual(["mart.missing"]);
+    expect(closure.fieldDrivenCollectedTaskIds).toEqual(["producer-new"]);
   });
 
   it("publishes the fixed task directory and removes stale optional files", () => {

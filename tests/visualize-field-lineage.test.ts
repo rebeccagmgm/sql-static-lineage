@@ -136,16 +136,20 @@ describe("field lineage visualization", () => {
   it("renders a collapsed multi-branch overview and keeps route evidence inside details", () => {
     const html = renderFieldLineageHtml(artifact());
 
-    expect(html).toContain("代码证据");
-    expect(html).toContain("task-code");
-    expect(html).toContain("codeEvidenceHtml(field,group.taskId)");
     expect(html).toContain("taskGroupHtml(group,field)");
+    expect(html).toContain("const confirmedGroups=groupPathsBySemantic(confirmedPaths);");
+    expect(html).toContain("const provisionalGroups=groupPathsBySemantic(provisionalPaths);");
+    expect(html).toContain("function routeGroupTitle(group)");
+    expect(html).toContain("routeGroupTitle(group)");
+    expect(html).toContain("return pathTaskChain(first);");
+    expect(html).not.toContain("const fieldChain=humanPathNodes(first)");
+    expect(html).not.toContain("const routeGroups=groupPathsByTaskChain(paths);");
     expect(html).not.toContain('data-view="code"');
     expect(html).not.toContain('id="code-view"');
-    expect(html).toContain("const CODE_FLOW=");
-    expect(html).toContain("function highlightSql(value)");
-    expect(html).toContain("sql-keyword");
-    expect(html).toContain("EXPRESSION_ONLY");
+    expect(html).not.toContain("代码证据");
+    expect(html).not.toContain("CODE_FLOW");
+    expect(html).not.toContain("task-code");
+    expect(html).not.toContain("highlightSql");
     expect(html).toContain("影响范围");
     expect(html).toContain("调度影响范围");
     expect(html).toContain("链路总览");
@@ -161,9 +165,11 @@ describe("field lineage visualization", () => {
     expect(html).toContain("overflow-y:auto");
     expect(html).toContain("min-width:0;max-width:100%;width:100%;overflow-x:auto");
     expect(html).toContain('class="lineage-overview"');
-    expect(html).toContain("routeGroups.length+' 条来源分支");
-    expect(html).toContain('class="branch-detail"');
-    expect(html).toContain("来源分支 '+(index+1)");
+    expect(html).toContain("confirmedGroups.length+' 条确认分支");
+    expect(html).toContain("临时 / 历史证据");
+    expect(html).toContain("const className=provisional?'branch-detail provisional':'branch-detail';");
+    expect(html).toContain("确认分支 ");
+    expect(html).toContain("临时证据 ");
     expect(html).toContain("查看技术证据（'+group.paths.length+' 条）");
     expect(html).not.toContain('<details class="branch-detail" open>');
   });

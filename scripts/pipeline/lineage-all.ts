@@ -70,6 +70,43 @@ export interface PrefetchedScheduleEvidence {
   readonly observedAt: string;
 }
 
+export interface InputPackClosureArtifact {
+  readonly schemaVersion: "1.0.0";
+  readonly artifactType: "INPUT_PACK_CLOSURE";
+  readonly generatedAt: string;
+  readonly rootTaskId: string;
+  readonly requestedFields: readonly string[];
+  readonly initialTaskIds: readonly string[];
+  readonly taskIds: readonly string[];
+  readonly discoveredTaskIds: readonly string[];
+  readonly collectedTaskIds: readonly string[];
+  readonly fieldDrivenProducerTables: readonly string[];
+  readonly fieldDrivenProducerTaskIds: readonly string[];
+  readonly fieldDrivenCollectedTaskIds: readonly string[];
+  readonly rounds: {
+    readonly inputPack: number;
+    readonly fieldAutofill: number;
+    readonly total: number;
+  };
+  readonly status: "COMPLETE" | "PARTIAL";
+  readonly issues: readonly string[];
+  readonly producerSnapshot: {
+    readonly inputFingerprint: string;
+    readonly indexPath: string | null;
+    readonly manifestPath: string | null;
+  };
+  readonly boundaries: {
+    readonly directIndirectClassification: "IN_MULTI_HOP_ARTIFACT";
+    readonly fieldAutofillRerunsRootClosure: false;
+  };
+}
+
+function sortedUnique(values: readonly string[]): string[] {
+  return [...new Set(values.filter(Boolean))].sort((left, right) =>
+    left.localeCompare(right, "en-US", { numeric: true }),
+  );
+}
+
 function defaultSleep(milliseconds: number): void {
   if (milliseconds <= 0) return;
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
@@ -341,6 +378,7 @@ export function formalArtifactPaths(artifactRootInput: string, taskId: string): 
   readonly oneHop: string;
   readonly multiHop: string;
   readonly fieldLineage: string;
+  readonly inputPackClosure: string;
   readonly views: string;
   readonly tableHtml: string;
   readonly fieldHtml: string;
@@ -352,6 +390,7 @@ export function formalArtifactPaths(artifactRootInput: string, taskId: string): 
     oneHop: join(directory, "one-hop.json"),
     multiHop: join(directory, "multi-hop.json"),
     fieldLineage: join(directory, "field-lineage.json"),
+    inputPackClosure: join(directory, "input-pack-closure.json"),
     views: join(directory, "views"),
     tableHtml: join(directory, "views", "table-lineage.html"),
     fieldHtml: join(directory, "views", "field-lineage.html"),
@@ -552,11 +591,17 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
     const producerCacheRoot = `${resolve(options.dataRoot)}.producer-index-cache`;
     const factsRoot = resolve(options.factsRoot ?? join(options.dataRoot, "field-facts"));
     const queriedFieldTables = new Set<string>();
+    const fieldDrivenProducerTables = new Set<string>();
+    const fieldDrivenProducerTaskIds = new Set<string>();
+    const fieldDrivenCollectedTaskIds = new Set<string>();
+    let initialClosure: InputPackClosureResult | null = null;
     let fieldAutofillRounds = 0;
     let finalRawRootOneHop: OneHopReconciliationResult | null = null;
     let finalFormalMultiHop: ReturnType<typeof reconcileMultiHop> | null = null;
     let finalFieldArtifact: FieldLineageArtifact | null = null;
     let finalTrustedInputFingerprint: string | null = null;
+    let finalProducerIndexPath: string | null = null;
+    let finalProducerManifestPath: string | null = null;
     let taskNodeIds: string[] | null = null;
     const multiHopPath = join(stagedDir, "multi-hop.json");
     const oneHopPath = join(stagedDir, "one-hop.json");
@@ -583,6 +628,7 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           force: options.force,
         });
         if (autofill.status !== "COMPLETE") throw new Error(`INPUT_PACK_CLOSURE_PARTIAL:${autofill.issues.join(";")}`);
+        initialClosure = autofill;
         // Closure owns the immutable snapshot. Reuse it rather than pinning
         // and fingerprinting the entire Input Pack a second time.
         const snapshot = autofill.producerSnapshot;
@@ -590,16 +636,20 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           ? deps.loadProducerIndex(snapshot.indexPath)
           : deps.producerIndex(resolve(options.dataRoot), producerCacheRoot).index;
         trustedInputFingerprint = snapshot?.inputFingerprint ?? producer.inputFingerprint;
+        finalProducerIndexPath = snapshot?.indexPath ?? null;
+        finalProducerManifestPath = snapshot?.manifestPath ?? null;
         taskNodeIds = [...new Set(autofill.taskIds)];
       } else {
         // A field-driven collection adds only the producer task(s) observed on
         // the missing field path. Re-running the root closure here would
         // recursively expand every read of those tasks, including unrelated
-        // JOINs, which is the source of the 200-task fan-out. Re-pin the index
+        // JOINs, which is the source of the large task fan-out. Re-pin the index
         // against the expanded pack and keep the existing task frontier.
         const repinned = deps.producerIndex(resolve(options.dataRoot), producerCacheRoot);
         producer = repinned.index;
         trustedInputFingerprint = producer.inputFingerprint;
+        finalProducerIndexPath = repinned.indexPath ?? null;
+        finalProducerManifestPath = repinned.manifestPath ?? null;
       }
       const facts = deps.machineFacts({ dataRoot: resolve(options.dataRoot), taskIds: taskNodeIds, outputRoot: factsRoot, indexMode: "incremental" });
       const failedFacts = facts.tasks.filter((fact) => fact.status === "FAILED" || fact.state === "FAILED");
@@ -656,10 +706,14 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         const fieldTables = fieldSourceTablesMissingProducerBridge(fieldArtifact, formalMultiHop);
         const producerTaskIds = new Set<string>();
         for (const qualifiedName of fieldTables) {
+          fieldDrivenProducerTables.add(qualifiedName);
           if (queriedFieldTables.has(qualifiedName)) continue;
           queriedFieldTables.add(qualifiedName);
-          for (const producerTaskId of deps.fieldProducerDiscovery(qualifiedName))
-            if (SAFE_TASK_ID.test(producerTaskId)) producerTaskIds.add(producerTaskId);
+          for (const producerTaskId of deps.fieldProducerDiscovery(qualifiedName)) {
+            if (!SAFE_TASK_ID.test(producerTaskId)) continue;
+            fieldDrivenProducerTaskIds.add(producerTaskId);
+            producerTaskIds.add(producerTaskId);
+          }
         }
         const knownTaskIds: Set<string> = new Set(taskNodeIds ?? []);
         const collectIds: string[] = [...producerTaskIds]
@@ -669,6 +723,7 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           if (fieldAutofillRounds >= (options.maxRounds ?? DEFAULT_MAX_ROUNDS)) throw new Error("MAX_FIELD_AUTOFILL_ROUNDS_REACHED");
           deps.collectTaskPacks(resolve(options.dataRoot), collectIds, options.force === true);
           const collectedIds = collectIds.filter((candidate) => taskPackExists(options.dataRoot, candidate));
+          for (const collectedId of collectedIds) fieldDrivenCollectedTaskIds.add(collectedId);
           taskNodeIds = [...new Set([...taskNodeIds, ...collectedIds])];
           fieldAutofillRounds += 1;
           continue;
@@ -683,7 +738,46 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
     if (!finalRawRootOneHop || !finalFormalMultiHop) throw new Error(`FINAL_LINEAGE_SNAPSHOT_MISSING:${taskId}`);
     writeJson(oneHopPath, finalRawRootOneHop);
     writeJson(multiHopPath, finalFormalMultiHop);
-    const files = ["one-hop.json", "multi-hop.json"];
+    const closurePath = join(stagedDir, "input-pack-closure.json");
+    const finalTaskNodeIds = taskNodeIds ?? [];
+    const closureArtifact: InputPackClosureArtifact = {
+      schemaVersion: "1.0.0",
+      artifactType: "INPUT_PACK_CLOSURE",
+      generatedAt: new Date().toISOString(),
+      rootTaskId: taskId,
+      requestedFields: options.fields ?? [],
+      initialTaskIds: initialClosure?.taskIds ?? [],
+      taskIds: finalTaskNodeIds,
+      discoveredTaskIds: sortedUnique([
+        ...(initialClosure?.discoveredTaskIds ?? []),
+        ...fieldDrivenProducerTaskIds,
+      ]),
+      collectedTaskIds: sortedUnique([
+        ...(initialClosure?.collectedTaskIds ?? []),
+        ...fieldDrivenCollectedTaskIds,
+      ]),
+      fieldDrivenProducerTables: sortedUnique([...fieldDrivenProducerTables]),
+      fieldDrivenProducerTaskIds: sortedUnique([...fieldDrivenProducerTaskIds]),
+      fieldDrivenCollectedTaskIds: sortedUnique([...fieldDrivenCollectedTaskIds]),
+      rounds: {
+        inputPack: initialClosure?.rounds ?? 0,
+        fieldAutofill: fieldAutofillRounds,
+        total: (initialClosure?.rounds ?? 0) + fieldAutofillRounds,
+      },
+      status: initialClosure?.status ?? "COMPLETE",
+      issues: initialClosure?.issues ?? [],
+      producerSnapshot: {
+        inputFingerprint: finalTrustedInputFingerprint ?? "",
+        indexPath: finalProducerIndexPath,
+        manifestPath: finalProducerManifestPath,
+      },
+      boundaries: {
+        directIndirectClassification: "IN_MULTI_HOP_ARTIFACT",
+        fieldAutofillRerunsRootClosure: false,
+      },
+    };
+    writeJson(closurePath, closureArtifact);
+    const files = ["input-pack-closure.json", "one-hop.json", "multi-hop.json"];
     if (fieldAutofillRounds > 0) {
       deps.visualizeMultiHop({ taskId, artifactPath: multiHopPath, outputPath: tableHtml, vizModelPath: join(stagedDir, "viz-model.json") });
       if (existsSync(join(stagedDir, "viz-model.json"))) rmSync(join(stagedDir, "viz-model.json"), { force: true });

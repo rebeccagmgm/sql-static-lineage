@@ -23,6 +23,7 @@ import {
 } from "../shared/task-partition-evidence.ts";
 import {
   controlledTaskEndpointDataSource,
+  controlledTaskEndpointPlatform,
   enrichTaskEndpoint,
   inputCollectionStatus,
   shouldUseTaskRelationFallback,
@@ -235,10 +236,48 @@ function tableTaskIds(value: unknown): string[] | undefined {
   return ids.length > 0 ? ids : undefined;
 }
 
-function selectTableCandidate(
+function compactIdentity(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function longestSharedIdentity(value: string, candidate: string): number {
+  let longest = 0;
+  for (let start = 0; start < value.length; start += 1) {
+    for (let end = start + 1; end <= value.length; end += 1) {
+      if (end - start <= longest) continue;
+      if (candidate.includes(value.slice(start, end))) longest = end - start;
+    }
+  }
+  return longest;
+}
+
+function sourceAffinityScore(
+  sourceHint: string,
+  candidate: Record<string, unknown> | TableEvidence,
+): number {
+  const candidateRecord = candidate as Record<string, unknown>;
+  const rawQualifiedName =
+    typeof candidateRecord.qualifiedName === "string"
+      ? candidateRecord.qualifiedName
+      : undefined;
+  if (rawQualifiedName === undefined) return 0;
+  const physicalSource = dataSourceIdentifier(
+    candidateRecord,
+    rawQualifiedName,
+  );
+  if (physicalSource === undefined) return 0;
+  const sharedIdentity = longestSharedIdentity(
+    compactIdentity(sourceHint),
+    compactIdentity(physicalSource),
+  );
+  return sharedIdentity >= 4 ? sharedIdentity : 0;
+}
+
+export function selectTableCandidate(
   candidates: readonly Record<string, unknown>[],
   qualifiedName: string,
   expectedDataSource?: string,
+  sourceHint?: string,
 ): Record<string, unknown> | undefined {
   const sourceCandidates =
     expectedDataSource === undefined
@@ -258,13 +297,32 @@ function selectTableCandidate(
       typeof item.qualifiedName === "string" &&
       baseQualifiedName(item.qualifiedName) === qualifiedName,
   );
-  if (exactCase.length === 1) return exactCase[0];
   const caseInsensitive = sourceCandidates.filter(
     (item) =>
       typeof item.qualifiedName === "string" &&
       baseQualifiedName(item.qualifiedName).toLowerCase() ===
         qualifiedName.toLowerCase(),
   );
+  // A source hint is allowed to resolve case variants as well. Ingest SQL
+  // often uppercases the source schema while metadata keeps the physical
+  // MySQL name lowercase; restricting the hint to exact-case candidates
+  // would discard the useful physical candidate before ranking it.
+  const matchingCandidates =
+    sourceHint !== undefined
+      ? caseInsensitive
+      : exactCase.length > 0
+        ? exactCase
+        : caseInsensitive;
+  if (sourceHint !== undefined && matchingCandidates.length > 1) {
+    const scored = matchingCandidates.map((candidate) => ({
+      candidate,
+      score: sourceAffinityScore(sourceHint, candidate),
+    }));
+    const maxScore = Math.max(...scored.map((item) => item.score));
+    const best = scored.filter((item) => item.score === maxScore);
+    if (maxScore > 0 && best.length === 1) return best[0]!.candidate;
+  }
+  if (exactCase.length === 1) return exactCase[0];
   return caseInsensitive.length === 1 ? caseInsensitive[0] : undefined;
 }
 
@@ -372,8 +430,6 @@ export function taskSourceCommandArguments(taskId: string): readonly string[] {
     "true",
     "--window",
     "background",
-    "--site-session",
-    "ephemeral",
     "-f",
     "json",
   ];
@@ -697,6 +753,10 @@ export type TableEvidenceLookupOptions = {
   directOnly?: boolean;
   /** Do not make a second metadata call only to refresh a missing description. */
   skipDescriptionRefresh?: boolean;
+  /** A connector/source label used only to rank otherwise ambiguous candidates. */
+  sourceHint?: string;
+  /** The physical platform expected from the controlled task category. */
+  expectedPlatform?: string;
 };
 
 function tableFromDirectEvidenceUncached(
@@ -743,6 +803,7 @@ function tableFromDirectEvidenceUncached(
           candidates,
           qualifiedName,
           expectedDataSource,
+          options.sourceHint,
         );
       } catch {
         table = undefined;
@@ -832,6 +893,11 @@ function tableFromDirectEvidenceUncached(
   if (platform === undefined || dataSource === undefined) return undefined;
   if (expectedDataSource !== undefined && dataSource !== expectedDataSource)
     return undefined;
+  if (
+    options.expectedPlatform !== undefined &&
+    platform !== options.expectedPlatform.toLowerCase()
+  )
+    return undefined;
   const canonicalQualifiedName = baseQualifiedName(
     typeof ddlRow.qualifiedName === "string"
       ? ddlRow.qualifiedName
@@ -869,7 +935,9 @@ export function tableFromDirectEvidence(
 ): TableEvidence | undefined {
   const cacheKey = `${cachedTableKey(qualifiedName)}@@${
     expectedDataSource?.toLowerCase() ?? "*"
-  }@@${requiredTaskId ?? "*"}`;
+  }@@${requiredTaskId ?? "*"}@@${
+    options.sourceHint?.toLowerCase() ?? "*"
+  }@@${options.expectedPlatform?.toLowerCase() ?? "*"}`;
   if (directEvidenceCache.has(cacheKey))
     return directEvidenceCache.get(cacheKey);
 
@@ -884,7 +952,14 @@ export function tableFromDirectEvidence(
         // relation lookup still needs the live relation check below.
         item.evidenceProvider.includes("table-task-relation") === false),
   );
-  if (requiredTaskId === undefined && persistedMatches.length === 1) {
+  if (
+    requiredTaskId === undefined &&
+    persistedMatches.length === 1 &&
+    (options.sourceHint === undefined ||
+      sourceAffinityScore(options.sourceHint, persistedMatches[0]!) > 0) &&
+    (options.expectedPlatform === undefined ||
+      persistedMatches[0]!.platform === options.expectedPlatform.toLowerCase())
+  ) {
     const evidence = persistedMatches[0];
     directEvidenceCache.set(cacheKey, evidence);
     return evidence;
@@ -1715,6 +1790,18 @@ function directEndpointDataSource(
   );
 }
 
+function endpointSourceHint(value: unknown): string | undefined {
+  if (typeof value === "string") return directString(value);
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return undefined;
+  const endpoint = value as Record<string, unknown>;
+  return (
+    directString(endpoint.dataSource) ??
+    directString(endpoint.dataSourceId) ??
+    directString(endpoint.dataSourceCode)
+  );
+}
+
 function endpointResolution(
   taskCategory: string | null | undefined,
   side: "source" | "target",
@@ -1858,6 +1945,20 @@ export function collectOneTask(
         ? controlledTaskEndpointDataSource(taskEvidence.taskCategory, "source")
         : directEndpointDataSource(row, side) ??
             controlledTaskEndpointDataSource(taskEvidence.taskCategory, side),
+      side === "sql-read"
+        ? {
+            sourceHint: endpointSourceHint(row.source),
+            expectedPlatform: controlledTaskEndpointPlatform(
+              taskEvidence.taskCategory,
+              "source",
+            ),
+          }
+        : {
+            expectedPlatform: controlledTaskEndpointPlatform(
+              taskEvidence.taskCategory,
+              side,
+            ),
+          },
     ),
   }));
   const sqlTargetInputs = Object.fromEntries(

@@ -30,6 +30,7 @@ import {
 } from "../scripts/input/shared/input-pack.ts";
 import {
   controlledTaskEndpointDataSource,
+  controlledTaskEndpointPlatform,
   enrichTaskEndpoint,
   inputCollectionStatus,
   shouldUseTaskRelationFallback,
@@ -55,6 +56,7 @@ import {
   repairOrphanedSqlCommentContinuations,
   normalizeRepeatedSqlContent,
   relocateTaskPacks,
+  selectTableCandidate,
   taskCategory,
   toTaskEvidence,
   unresolvedPhysicalEndpointReference,
@@ -225,8 +227,8 @@ describe("Input Pack V1", () => {
   });
 
   it("enforces the batch size limit and positive environment overrides", () => {
-    expect(() => assertInputPackBatchSize(200)).not.toThrow();
-    expect(() => assertInputPackBatchSize(201)).toThrow(/at most 200/);
+    expect(() => assertInputPackBatchSize(1000)).not.toThrow();
+    expect(() => assertInputPackBatchSize(1001)).toThrow(/at most 1000/);
     const variable = "INPUT_PACK_TEST_MILLISECONDS";
     const previous = process.env[variable];
     try {
@@ -646,6 +648,20 @@ describe("Input Pack V1", () => {
     });
   });
 
+  it("keeps a target that is read inside its own INSERT statement", () => {
+    const sql = {
+      query:
+        "INSERT OVERWRITE TABLE dm_index_n.grp_def PARTITION (grp_type_code='OFFLINE_CUST') " +
+        "SELECT grp_id FROM dm_index_n.grp_def WHERE grp_type_code='OFFLINE_CUST';",
+    };
+    expect(
+      findSqlFinalTargetEvidence(sql, "dm_index_n.grp_def_OFFLINE_CUST"),
+    ).toMatchObject({
+      qualifiedName: "dm_index_n.grp_def",
+      statementKind: "INSERT_TABLE",
+    });
+  });
+
   it("canonicalizes JSON keys and excludes volatile fields from content hashes", () => {
     const first = {
       z: 1,
@@ -919,6 +935,12 @@ describe("Input Pack V1", () => {
     expect(controlledTaskEndpointDataSource("mysql2hive", "target")).toBe(
       "gfhive",
     );
+    expect(controlledTaskEndpointPlatform("mysql2hive", "source")).toBe(
+      "mysql",
+    );
+    expect(controlledTaskEndpointPlatform("mysql2hive", "target")).toBe(
+      "hive",
+    );
     expect(controlledTaskEndpointDataSource("hive2oracle", "source")).toBe(
       "gfhive",
     );
@@ -969,6 +991,38 @@ describe("Input Pack V1", () => {
       qualifiedName: "dm_otc.position",
       dataSource: "hive-test",
     });
+  });
+
+  it("uses a task source hint to disambiguate physical table candidates", () => {
+    const candidates = [
+      {
+        guid: "oracle-1",
+        qualifiedName: "GF_OTC.CONTRACT_INTRODUCTION@gforacle_jgjdb1#jgjdb",
+        dataSource: "金管家综合服务系统",
+      },
+      {
+        guid: "mysql",
+        qualifiedName: "gf_otc.contract_introduction@gfmysql_gf_otc",
+        dataSource: "OTC运营管理系统",
+      },
+      {
+        guid: "oracle-2",
+        qualifiedName: "GF_OTC.CONTRACT_INTRODUCTION@gforacle_jgjdb2#jgjdb",
+        dataSource: "OTC综合业务平台",
+      },
+    ];
+
+    expect(
+      selectTableCandidate(candidates, "GF_OTC.CONTRACT_INTRODUCTION"),
+    ).toBeUndefined();
+    expect(
+      selectTableCandidate(
+        candidates,
+        "GF_OTC.CONTRACT_INTRODUCTION",
+        undefined,
+        "ds_n_tdsql_ois_gf_otc",
+      )?.guid,
+    ).toBe("mysql");
   });
 
   it("does not archive a task when only a non-physical endpoint label is unavailable", () => {

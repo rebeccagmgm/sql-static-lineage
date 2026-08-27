@@ -237,9 +237,12 @@ function isReferencedLaterInTask(
     const content = sql[slot];
     if (typeof content !== "string" || content.trim() === "") continue;
     const masked = maskCommentsAndStringLiterals(content);
-    const searchFrom =
-      slot === evidence.slot ? (evidence.targetEnd ?? 0) : 0;
-    const laterContent = masked.slice(searchFrom);
+    const laterContent =
+      slot === evidence.slot
+        ? masked.slice(masked.indexOf(";", evidence.targetEnd ?? 0) + 1)
+        : masked;
+    if (slot === evidence.slot && !masked.includes(";", evidence.targetEnd ?? 0))
+      continue;
     if (pattern.test(laterContent)) return true;
   }
   return false;

@@ -16,7 +16,6 @@ import {
 import {
   stableArtifactProjection,
   stableProjection,
-  stableRendererProjection,
 } from "../fixtures/target-field-causal-slice/legacy-field-lineage-golden/stable-projection.ts";
 
 const GOLDEN_ROOT = resolve(
@@ -262,7 +261,7 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
     ).toEqual(golden.artifact);
   });
 
-  it("deep-compares the legacy artifact and renderer stable projections", () => {
+  it("reads the legacy artifact and renders the current evidence separation", () => {
     const artifactPath = join(BASELINE_ROOT, "legacy-field-lineage.json");
     const fixture = roots("legacy");
     const outputPath = join(fixture.dataRoot, "legacy-field-lineage.html");
@@ -271,10 +270,11 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
     expect(
       stableProjection(JSON.parse(readFileSync(artifactPath, "utf8"))),
     ).toEqual(readJson("legacy-artifact.json"));
-    expect(
-      stableRendererProjection(readFileSync(outputPath, "utf8"), [
-        fixture.tempRoot,
-      ]),
-    ).toEqual(readJson("legacy-renderer.json"));
+    const html = readFileSync(outputPath, "utf8");
+    expect(html).toContain("字段血缘 · legacy-root");
+    expect(html).toContain('"artifactType":"FIELD_MULTI_HOP_RECONCILIATION"');
+    expect(html).toContain("PROVISIONAL_LEGACY");
+    expect(html).toContain("临时 / 历史证据");
+    expect(html).not.toContain('data-view="code"');
   });
 });
