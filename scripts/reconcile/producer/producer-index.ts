@@ -306,6 +306,19 @@ export interface UpdateTableProducerIndexResult {
   readonly reused: boolean;
 }
 
+export interface PinTableProducerIndexOptions {
+  readonly now?: () => string;
+}
+
+export interface PinTableProducerIndexResult {
+  readonly index: TableProducerIndex;
+  readonly manifest: TableProducerInputManifest;
+  readonly inputFingerprint: string;
+  readonly indexPath: string;
+  readonly manifestPath: string;
+  readonly reused: boolean;
+}
+
 interface LoadedTaskPack {
   readonly status: "AVAILABLE" | "INVALID";
   readonly taskId: string;
@@ -374,7 +387,9 @@ function hasFieldProducingSql(pack: LoadedTaskPack): boolean {
     return (
       /\b(?:SELECT|WITH)\b/i.test(sql) ||
       /\bINSERT\s+(?:OVERWRITE|INTO)\b[\s\S]*\bSELECT\b/i.test(sql) ||
-      /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\b[\s\S]*\bAS\s+(?:SELECT|WITH)\b/i.test(sql)
+      /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\b[\s\S]*\bAS\s+(?:SELECT|WITH)\b/i.test(
+        sql,
+      )
     );
   });
 }
@@ -1248,7 +1263,8 @@ function matchDeclaredPartitionsToSqlWrite(
         return true;
       if (declared.expression === "*") return true;
       const declaredValue =
-        declared.observedValue ?? declared.expression.replace(/^['"]|['"]$/gu, "");
+        declared.observedValue ??
+        declared.expression.replace(/^['"]|['"]$/gu, "");
       return declaredValue === observedValue;
     }),
   );
@@ -2576,6 +2592,62 @@ export function updateTableProducerIndex(
   return { index, manifest, changes, reused };
 }
 
+/**
+ * Resolves an immutable Producer Index cache entry for the current Input Pack.
+ * Cache entries are keyed by the exact input fingerprint, so a later Input
+ * Pack change creates a new entry instead of invalidating or overwriting the
+ * index used by an earlier run.
+ */
+export function pinTableProducerIndex(
+  dataRootInput: string,
+  cacheRootInput: string,
+  options: PinTableProducerIndexOptions = {},
+): PinTableProducerIndexResult {
+  const dataRoot = resolve(dataRootInput);
+  const cacheRoot = resolve(cacheRootInput);
+  assertOutputOutsideDataRoot(dataRoot, cacheRoot);
+  const manifest = buildTableProducerInputManifest(dataRoot, {
+    generation: 1,
+    now: options.now,
+  });
+  const snapshotRoot = join(cacheRoot, manifest.inputFingerprint);
+  const indexPath = join(snapshotRoot, "producer-index.json");
+  const manifestPath = join(snapshotRoot, "producer-index.manifest.json");
+  if (existsSync(indexPath) && existsSync(manifestPath)) {
+    try {
+      const index = loadTableProducerIndex(indexPath);
+      const cachedManifest = loadTableProducerInputManifest(manifestPath);
+      if (
+        index.inputFingerprint === manifest.inputFingerprint &&
+        cachedManifest.inputFingerprint === manifest.inputFingerprint
+      )
+        return {
+          index,
+          manifest: cachedManifest,
+          inputFingerprint: manifest.inputFingerprint,
+          indexPath,
+          manifestPath,
+          reused: true,
+        };
+    } catch {
+      // Rebuild the current fingerprint entry below when either cache file is invalid.
+    }
+  }
+  const index = buildTableProducerIndex(dataRoot, { now: options.now });
+  if (index.inputFingerprint !== manifest.inputFingerprint)
+    throw new Error("INPUT_CHANGED_DURING_PINNED_INDEX_BUILD");
+  writeTableProducerIndex(indexPath, index);
+  writeTableProducerInputManifest(manifestPath, manifest);
+  return {
+    index,
+    manifest,
+    inputFingerprint: manifest.inputFingerprint,
+    indexPath,
+    manifestPath,
+    reused: false,
+  };
+}
+
 export function assertOutputOutsideDataRoot(
   dataRootInput: string,
   outputInput: string,
@@ -2610,6 +2682,18 @@ function main(): void {
     throw new Error(
       "usage: npm run producer-index -- --data-root <input-pack-root> [--output <json>]",
     );
+  if (args.includes("--pin")) {
+    const cacheRoot = option(args, "--cache-root");
+    if (!cacheRoot)
+      throw new Error(
+        "usage: npm run producer-index:pin -- --data-root <input-pack-root> --cache-root <cache-root>",
+      );
+    const result = pinTableProducerIndex(dataRoot, cacheRoot);
+    process.stdout.write(
+      `${JSON.stringify({ reused: result.reused, inputFingerprint: result.inputFingerprint, indexPath: result.indexPath, manifestPath: result.manifestPath, counts: result.index.counts, buildStatus: result.index.buildStatus })}\n`,
+    );
+    return;
+  }
   if (args.includes("--update")) {
     if (!output)
       throw new Error(

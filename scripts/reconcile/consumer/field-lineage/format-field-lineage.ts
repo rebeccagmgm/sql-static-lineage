@@ -39,8 +39,30 @@ function fieldLabel(node: FieldLineageNode): string {
 	return `${node.field.qualifiedName}.${node.field.column}`;
 }
 
+function rootReachableNodeIds(artifact: FieldLineageArtifact): ReadonlySet<string> {
+	const reverse = new Map<string, string[]>();
+	for (const edge of artifact.edges) {
+		const incoming = reverse.get(edge.toNodeId) ?? [];
+		incoming.push(edge.fromNodeId);
+		reverse.set(edge.toNodeId, incoming);
+	}
+	const reachable = new Set<string>();
+	const pending = [...artifact.rootNodeIds];
+	while (pending.length > 0) {
+		const nodeId = pending.pop()!;
+		if (reachable.has(nodeId)) continue;
+		reachable.add(nodeId);
+		pending.push(...(reverse.get(nodeId) ?? []));
+	}
+	return reachable;
+}
+
 export function formatFieldLineageSummary(artifact: FieldLineageArtifact): string {
 	const names = taskNames(artifact);
+	const reachableNodeIds = rootReachableNodeIds(artifact);
+	const reachableEdges = artifact.edges.filter(
+		(edge) => reachableNodeIds.has(edge.fromNodeId) && reachableNodeIds.has(edge.toNodeId),
+	);
 	const tableChildren = new Map<string, { taskId: string; marker?: string }[]>();
 	for (const edge of artifact.tableEdges) {
 		const values = tableChildren.get(edge.consumerTaskId) ?? [];
@@ -48,7 +70,7 @@ export function formatFieldLineageSummary(artifact: FieldLineageArtifact): strin
 		tableChildren.set(edge.consumerTaskId, values);
 	}
 	const fieldChildren = new Map<string, { taskId: string }[]>();
-	for (const edge of artifact.edges) {
+	for (const edge of reachableEdges) {
 		if (!edge.producerTaskId) continue;
 		const values = fieldChildren.get(edge.consumerTaskId) ?? [];
 		if (!values.some((item) => item.taskId === edge.producerTaskId)) values.push({ taskId: edge.producerTaskId });
@@ -70,7 +92,7 @@ export function formatFieldLineageSummary(artifact: FieldLineageArtifact): strin
 		"字段映射",
 	];
 	const nodeById = new Map(artifact.nodes.map((node) => [node.nodeId, node]));
-	const mappings = artifact.edges
+	const mappings = reachableEdges
 		.map((edge) => ({ edge, from: nodeById.get(edge.fromNodeId), to: nodeById.get(edge.toNodeId) }))
 		.filter((item): item is typeof item & { from: FieldLineageNode; to: FieldLineageNode } => Boolean(item.from && item.to))
 		.sort((left, right) => compareText(`${left.edge.consumerTaskId}|${left.edge.edgeId}`, `${right.edge.consumerTaskId}|${right.edge.edgeId}`));

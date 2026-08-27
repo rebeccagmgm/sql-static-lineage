@@ -31,8 +31,8 @@ npm run inspect -- --facts-root <current-facts-root> --task-id 86840 --question-
 npm run reconcile-one-hop -- --task-id 86840 --data-root <input-pack-root> [--producer-index <producer-index.json>] --output <result.json>
 npm run reconcile-one-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run producer-index -- --data-root <input-pack-root> --output <producer-index.json>
-npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> [--root-one-hop <root-one-hop.json>] [--one-hop-snapshots <child-a.json,child-b.json>] --max-depth 2 --max-tasks 100 --max-edges 500 --output <result.json>
-npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --producer-index <producer-index.json> --max-depth 3 --max-tasks 100 --max-edges 500 --output <result.json> --report <autofill-report.json>
+npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --producer-index <producer-index.json> [--root-one-hop <root-one-hop.json>] [--one-hop-snapshots <child-a.json,child-b.json>] --max-depth 2 --max-tasks 1000 --max-edges 10000 --output <result.json>
+npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --max-depth 3 --max-tasks 1000 --max-edges 10000 --output <result.json> --report <autofill-report.json>
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
 npm run input-pack:machine-facts -- --data-root <input-pack-root> --task-id 155015,114026,105387 --output <facts-root>

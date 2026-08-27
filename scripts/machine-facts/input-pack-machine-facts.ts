@@ -8,6 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { performance } from "node:perf_hooks";
 
 import { Schema, SqlSession, type SchemaMapping } from "../../src/index.ts";
 
@@ -22,10 +23,11 @@ import {
 } from "../input/shared/input-pack.ts";
 import { buildTaskPartitionEvidence } from "../input/shared/task-partition-evidence.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
-import { loadSchemaFromTablesRoot, parseDdlSchema } from "../plans/ddl-schema.ts";
+import { parseDdlSchema } from "../plans/ddl-schema.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
 import { normalizeRepeatedSqlForAnalysis } from "../input/shared/sql-analysis-normalization.ts";
+import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
 import {
 	canonicalJson,
 	normalizeName,
@@ -36,7 +38,13 @@ import {
 	type PlatformTargetQueryOutput,
 	type SqlWritePartitionEvidence,
 } from "./machine-facts-contract.ts";
-import { rebuildIndex, runTask, type ProfileRunResult, type TaskRunResult } from "./machine-facts.ts";
+import {
+	rebuildIndex,
+	runTask,
+	updateIndexIncrementally,
+	type ProfileRunResult,
+	type TaskRunResult,
+} from "./machine-facts.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -59,6 +67,11 @@ export interface PhysicalTableCatalog {
 	readonly issues: readonly string[];
 	readonly byPhysicalKey: ReadonlyMap<string, PhysicalTableCatalogEntry>;
 	readonly byQualifiedName: ReadonlyMap<string, readonly PhysicalTableCatalogEntry[]>;
+	readonly byNameTail: ReadonlyMap<string, readonly PhysicalTableCatalogEntry[]>;
+}
+
+export interface PhysicalTableCatalogOptions {
+	readonly lazyDdl?: boolean;
 }
 
 export interface SelectedLineageSql {
@@ -94,7 +107,9 @@ export interface PreparedInputPackTask {
 export interface PrepareInputPackTaskOptions {
 	readonly dataRoot: string;
 	readonly taskId: string;
+	readonly taskPath?: string;
 	readonly tableCatalog?: PhysicalTableCatalog;
+	readonly ddlCache?: Map<string, string>;
 	readonly beforeFinalVerification?: () => void;
 }
 
@@ -103,6 +118,8 @@ export interface RunInputPackMachineFactsOptions {
 	readonly taskIds: readonly string[];
 	readonly outputRoot: string;
 	readonly tableCatalog?: PhysicalTableCatalog;
+	readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
+	readonly indexMode?: "full" | "incremental";
 	readonly beforeFinalVerification?: (taskId: string) => void;
 }
 
@@ -110,6 +127,10 @@ export interface InputPackMachineFactsRunResult {
 	readonly output_root: string;
 	readonly tasks: readonly TaskRunResult[];
 	readonly index: ProfileRunResult["index"];
+	readonly timings: {
+		readonly index_ms: number;
+		readonly index_mode: "full" | "incremental";
+	};
 	readonly prepared: readonly {
 		readonly taskId: string;
 		readonly sqlSlot: string;
@@ -163,6 +184,17 @@ function discoverNamedFiles(root: string, name: string): string[] {
 	};
 	visit(resolve(root));
 	return result.sort(compareText);
+}
+
+export function indexTaskInputPacks(dataRootInput: string): ReadonlyMap<string, readonly string[]> {
+	const grouped = new Map<string, string[]>();
+	for (const taskPath of discoverNamedFiles(join(resolve(dataRootInput), "tasks"), "task.json")) {
+		const taskId = basename(dirname(taskPath));
+		const paths = grouped.get(taskId) ?? [];
+		paths.push(taskPath);
+		grouped.set(taskId, paths);
+	}
+	return new Map([...grouped.entries()].map(([taskId, paths]) => [taskId, [...paths].sort(compareText)]));
 }
 
 function verifiedFile(path: string, expectedHash: string, reason: string): Buffer {
@@ -231,7 +263,10 @@ export function selectLineageSql(
 	return { selected: candidates[0]!, sources: loaded, hashes };
 }
 
-export function loadPhysicalTableCatalog(dataRootInput: string): PhysicalTableCatalog {
+export function loadPhysicalTableCatalog(
+	dataRootInput: string,
+	options: PhysicalTableCatalogOptions = {},
+): PhysicalTableCatalog {
 	const dataRoot = resolve(dataRootInput);
 	const entries: PhysicalTableCatalogEntry[] = [];
 	const issues: string[] = [];
@@ -246,10 +281,26 @@ export function loadPhysicalTableCatalog(dataRootInput: string): PhysicalTableCa
 			if (!ddlRelative || !ddlHash) throw new Error("DDL_INDEX_INVALID");
 			const ddlPath = resolve(dirname(tablePath), ddlRelative);
 			if (!isWithin(dirname(tablePath), ddlPath)) throw new Error("DDL_PATH_UNSAFE");
-			const ddl = verifiedFile(ddlPath, ddlHash, "DDL").toString("utf8");
-			const parsed = parseDdlSchema(ddl);
-			const columns = parsed.columns.map((column) => normalizeName(column.name));
-			if (columns.length === 0) throw new Error(`DDL_COLUMNS_UNAVAILABLE:${parsed.warnings.join(",")}`);
+			let loadedColumns: readonly string[] | undefined;
+			let attemptedColumns = false;
+			const getColumns = (): readonly string[] => {
+				if (attemptedColumns) return loadedColumns ?? [];
+				attemptedColumns = true;
+				try {
+					const ddl = verifiedFile(ddlPath, ddlHash, "DDL").toString("utf8");
+					const parsed = parseDdlSchema(ddl);
+					const columns = parsed.columns.map((column) => normalizeName(column.name));
+					if (columns.length === 0) throw new Error(`DDL_COLUMNS_UNAVAILABLE:${parsed.warnings.join(",")}`);
+					loadedColumns = columns;
+				} catch (error) {
+					if (!options.lazyDdl) throw error;
+					issues.push(`${relativeLocator(dataRoot, tablePath)}:${error instanceof Error ? error.message : String(error)}`);
+					loadedColumns = [];
+				}
+				return loadedColumns;
+			};
+			const columns = options.lazyDdl ? undefined : getColumns();
+			if (!options.lazyDdl && columns?.length === 0) throw new Error(`DDL_COLUMNS_UNAVAILABLE:${ddlPath}`);
 			entries.push({
 				platform: String(document.platform),
 				dataSource: String(document.dataSource),
@@ -259,7 +310,9 @@ export function loadPhysicalTableCatalog(dataRootInput: string): PhysicalTableCa
 				partitionFields: Array.isArray(document.partitionFields)
 					? document.partitionFields.map((field) => normalizeName(String(field)))
 					: null,
-				columns,
+				get columns() {
+					return columns ?? getColumns();
+				},
 				tablePath,
 				ddlPath,
 				tableContentHash: String(document.contentHash),
@@ -276,6 +329,13 @@ export function loadPhysicalTableCatalog(dataRootInput: string): PhysicalTableCa
 		names.push(entry);
 		grouped.set(normalizeName(entry.qualifiedName), names);
 	}
+	const tailGrouped = new Map<string, PhysicalTableCatalogEntry[]>();
+	for (const entry of entries) {
+		const tail = normalizeName(entry.qualifiedName.split(".").at(-1) ?? entry.qualifiedName);
+		const names = tailGrouped.get(tail) ?? [];
+		names.push(entry);
+		tailGrouped.set(tail, names);
+	}
 	const byPhysicalKey = new Map<string, PhysicalTableCatalogEntry>();
 	for (const entry of entries) {
 		const key = physicalTableKey(entry);
@@ -287,6 +347,7 @@ export function loadPhysicalTableCatalog(dataRootInput: string): PhysicalTableCa
 		issues: issues.sort(compareText),
 		byPhysicalKey,
 		byQualifiedName: new Map([...grouped.entries()].map(([key, values]) => [key, [...values].sort((a, b) => compareText(physicalTableKey(a), physicalTableKey(b)))])),
+		byNameTail: new Map([...tailGrouped.entries()].map(([key, values]) => [key, [...values].sort((a, b) => compareText(physicalTableKey(a), physicalTableKey(b)))])),
 	};
 }
 
@@ -322,15 +383,23 @@ function sqlWritePartitionEvidence(
 	task: TaskDocument & JsonRecord,
 	taskTarget: PhysicalTableCatalogEntry,
 	catalog: PhysicalTableCatalog,
+	schemaEntries: readonly PhysicalTableCatalogEntry[],
 	sources: readonly SelectedLineageSql[],
+	ddlCache?: Map<string, string>,
 ): readonly SqlWritePartitionEvidence[] {
-	const tables: TableEvidence[] = catalog.entries.map((entry) => ({
+	const tables: TableEvidence[] = schemaEntries.map((entry) => ({
 		platform: entry.platform,
 		dataSource: entry.dataSource,
 		qualifiedName: entry.qualifiedName,
 		objectType: "TABLE",
 		partitionFields: entry.partitionFields,
-		ddl: readFileSync(entry.ddlPath, "utf8"),
+		ddl: (() => {
+			const cached = ddlCache?.get(entry.ddlPath);
+			if (cached !== undefined) return cached;
+			const ddl = verifiedFile(entry.ddlPath, entry.ddlSha256, "DDL").toString("utf8");
+			ddlCache?.set(entry.ddlPath, ddl);
+			return ddl;
+		})(),
 		evidenceProvider: `input-pack:${entry.tableContentHash}`,
 	}));
 	const sql = Object.fromEntries(sources.map((source) => [source.slot, source.content])) as Partial<Record<SqlSlot, string>>;
@@ -382,7 +451,11 @@ function sqlWritePartitionEvidence(
 		});
 }
 
-function schemaBundle(catalog: PhysicalTableCatalog, logicalSourceId: string): JsonRecord {
+function schemaBundle(
+	catalog: PhysicalTableCatalog,
+	logicalSourceId: string,
+	entries: readonly PhysicalTableCatalogEntry[] = catalog.entries,
+): JsonRecord {
 	const tailCounts = new Map<string, number>();
 	for (const entry of catalog.entries) {
 		const tail = entry.qualifiedName.split(".").at(-1)!;
@@ -391,7 +464,7 @@ function schemaBundle(catalog: PhysicalTableCatalog, logicalSourceId: string): J
 	return {
 		schema_version: "machine-facts-schema-bundle-v1",
 		logical_source_id: logicalSourceId,
-		records: catalog.entries.map((entry) => ({
+		records: entries.map((entry) => ({
 			qualified_name: entry.qualifiedName,
 			guid: entry.guid,
 			status: "SUCCESS",
@@ -458,14 +531,54 @@ function uniquePhysicalTableForReference(
 	return matches.length === 1 ? matches[0] : undefined;
 }
 
+function taskSchemaEntries(
+	catalog: PhysicalTableCatalog,
+	target: PhysicalTableCatalogEntry,
+	sources: readonly SelectedLineageSql[],
+	dialect: "databricks" | "duckdb",
+): readonly PhysicalTableCatalogEntry[] {
+	const references = new Set<string>([target.qualifiedName]);
+	for (const source of sources) {
+		for (const name of extractSqlReadTableNames(source.analysisContent)) references.add(name);
+		for (const write of extractSqlWrites(source.content)) references.add(write.qualifiedName);
+		try {
+			const session = SqlSession.create(source.analysisContent, dialect);
+			for (const [statementIndex, cell] of session.doc.statements.entries()) {
+				const plan = buildPlanFacts(cell, source.analysisContent, {
+					statement_index: statementIndex,
+					dialect,
+					include_expression_dependencies: false,
+				});
+				for (const name of plan.physical_inputs) references.add(name);
+			}
+		} catch {
+			// Keep the conservative text discovery above when a source cannot be parsed.
+		}
+	}
+	const selected = new Set<PhysicalTableCatalogEntry>([target]);
+	for (const reference of references) {
+		const normalized = normalizeName(reference);
+		const exact = catalog.byQualifiedName.get(normalized) ?? [];
+		if (exact.length > 0) {
+			for (const entry of exact) selected.add(entry);
+			continue;
+		}
+		const tail = normalized.split(".").at(-1) ?? normalized;
+		const suffixMatches = catalog.byNameTail.get(tail) ?? [];
+		if (suffixMatches.length === 1) selected.add(suffixMatches[0]!);
+	}
+	return catalog.entries.filter((entry) => selected.has(entry));
+}
+
 function deriveTaskLocalSchemas(
 	catalog: PhysicalTableCatalog,
+	schemaEntries: readonly PhysicalTableCatalogEntry[],
 	sources: readonly SelectedLineageSql[],
 	taskId: string,
 	dialect: "databricks" | "duckdb",
 ): JsonRecord[] {
 	const mapping: SchemaMapping = {};
-	for (const entry of catalog.entries) addSchemaMapping(mapping, entry.qualifiedName, entry.columns);
+	for (const entry of schemaEntries) addSchemaMapping(mapping, entry.qualifiedName, entry.columns);
 	const records: JsonRecord[] = [];
 	for (const source of sources) {
 		const split = SqlSession.create(source.analysisContent, dialect, { schema: new Schema(mapping) });
@@ -558,36 +671,39 @@ function verifyStableInputs(hashes: ReadonlyMap<string, string>): void {
 export function prepareInputPackTask(options: PrepareInputPackTaskOptions): PreparedInputPackTask {
 	const dataRoot = resolve(options.dataRoot);
 	if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(options.taskId)) throw new Error("TASK_ID_INVALID");
-	const taskPaths = discoverNamedFiles(join(dataRoot, "tasks"), "task.json").filter((path) => basename(dirname(path)) === options.taskId);
+	const taskPaths = options.taskPath === undefined
+		? discoverNamedFiles(join(dataRoot, "tasks"), "task.json").filter((path) => basename(dirname(path)) === options.taskId)
+		: [resolve(options.taskPath)];
 	if (taskPaths.length === 0) throw new Error(`TASK_INPUT_PACK_MISSING:${options.taskId}`);
 	if (taskPaths.length !== 1) throw new Error(`TASK_INPUT_PACK_AMBIGUOUS:${options.taskId}`);
 	const taskPath = taskPaths[0]!;
+	if (basename(dirname(taskPath)) !== options.taskId) throw new Error(`TASK_INPUT_PACK_PATH_MISMATCH:${options.taskId}`);
+	if (!isWithin(join(dataRoot, "tasks"), taskPath)) throw new Error(`TASK_INPUT_PACK_PATH_UNSAFE:${options.taskId}`);
 	const taskRaw: unknown = JSON.parse(readFileSync(taskPath, "utf8"));
 	validateTaskDocument(taskRaw);
 	const task = taskRaw as TaskDocument & JsonRecord;
 	if (task.taskId !== options.taskId) throw new Error(`TASK_IDENTITY_MISMATCH:${options.taskId}`);
 	const selected = selectLineageSql(dataRoot, taskPath, task);
 	const combined = combinedLineageSql(selected.sources, selected.selected);
-	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot);
+	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
 	const targetRef = targetRecord(task);
 	const target = catalog.byPhysicalKey.get(physicalTableKey(targetRef));
 	if (!target) throw new Error(`TARGET_TABLE_PACK_MISSING:${physicalTableKey(targetRef)}`);
-	const loadedTargetSchema = loadSchemaFromTablesRoot(join(dataRoot, "tables"), [target.qualifiedName]);
-	if (loadedTargetSchema.missing.length > 0 || !loadedTargetSchema.loaded.some((entry) => normalizeName(entry.qualified_name) === target.qualifiedName))
-		throw new Error(`TARGET_SCHEMA_NOT_PROVABLE:${target.qualifiedName}`);
 	const logicalSourceId = `${normalizeToken(target.platform)}-${normalizeToken(target.dataSource)}`;
 	const dialect = taskSqlDialect(String(task.taskCategory));
-	const baseBundle = schemaBundle(catalog, logicalSourceId);
+	const schemaEntries = taskSchemaEntries(catalog, target, combined.sources, dialect);
+	if (target.columns.length === 0) throw new Error(`TARGET_SCHEMA_NOT_PROVABLE:${target.qualifiedName}`);
+	const baseBundle = schemaBundle(catalog, logicalSourceId, schemaEntries);
 	const bundle = {
 		...baseBundle,
 		records: [
 			...((baseBundle.records as JsonRecord[]) ?? []),
-			...deriveTaskLocalSchemas(catalog, combined.sources, options.taskId, dialect),
+			...deriveTaskLocalSchemas(catalog, schemaEntries, combined.sources, options.taskId, dialect),
 		],
 	};
 	const bundleHash = sha256(canonicalJson(bundle));
 	const inputHashes = new Map(selected.hashes);
-	for (const entry of catalog.entries) {
+	for (const entry of schemaEntries) {
 		inputHashes.set(entry.tablePath, sha256File(entry.tablePath));
 		inputHashes.set(entry.ddlPath, entry.ddlSha256);
 	}
@@ -613,7 +729,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 				evidence_refs: [provenance.task_locator, provenance.table_locator, provenance.ddl_locator],
 			} satisfies PlatformTargetQueryOutput
 		: undefined;
-	const explicitWritePartitionEvidence = sqlWritePartitionEvidence(dataRoot, task, target, catalog, combined.sources);
+	const explicitWritePartitionEvidence = sqlWritePartitionEvidence(dataRoot, task, target, catalog, schemaEntries, combined.sources, options.ddlCache);
 	const profileTask: GenericTaskProfile = {
 		task_id: options.taskId,
 		sql_snapshot: combined.sql.path,
@@ -675,35 +791,66 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 	if (options.taskIds.length === 0) throw new Error("TASK_ID_REQUIRED");
 	const outputRoot = resolve(options.outputRoot);
 	mkdirSync(outputRoot, { recursive: true });
-	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(options.dataRoot);
+	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(options.dataRoot, { lazyDdl: true });
+	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(options.dataRoot);
+	const ddlCache = new Map<string, string>();
 	const tasks: TaskRunResult[] = [];
 	const preparedSummary: InputPackMachineFactsRunResult["prepared"][number][] = [];
 	for (const taskId of [...new Set(options.taskIds)].sort(compareText)) {
-		const prepared = prepareInputPackTask({
-			dataRoot: options.dataRoot,
-			taskId,
-			tableCatalog: catalog,
-			beforeFinalVerification: options.beforeFinalVerification ? () => options.beforeFinalVerification!(taskId) : undefined,
-		});
-		freezeRawSqlSources(outputRoot, prepared);
-		const frozenPath = frozenSqlPath(outputRoot, prepared);
-		const profileTask: GenericTaskProfile = { ...prepared.profileTask, sql_snapshot: frozenPath };
-		const profile: GenericAnalysisProfile = {
-			schema_version: "input-pack-machine-facts-v1",
-			dialect: prepared.dialect,
-			logical_source_id: prepared.logicalSourceId,
-			tasks: [profileTask],
-		};
-		tasks.push(runTask(profileTask, profile, prepared.logicalSourceId, outputRoot, prepared.schemaBundle, prepared.schemaBundleHash));
-		preparedSummary.push({
-			taskId,
-			sqlSlot: prepared.sql.slot,
-			target: prepared.target.qualifiedName,
-			taskContentHash: String(prepared.task.contentHash),
-			tableContentHash: prepared.target.tableContentHash,
-		});
+		const taskPaths = taskPathIndex.get(taskId) ?? [];
+		try {
+			if (taskPaths.length === 0) throw new Error(`TASK_INPUT_PACK_MISSING:${taskId}`);
+			if (taskPaths.length !== 1) throw new Error(`TASK_INPUT_PACK_AMBIGUOUS:${taskId}`);
+			const prepared = prepareInputPackTask({
+				dataRoot: options.dataRoot,
+				taskId,
+				taskPath: taskPaths[0],
+				tableCatalog: catalog,
+				ddlCache,
+				beforeFinalVerification: options.beforeFinalVerification ? () => options.beforeFinalVerification!(taskId) : undefined,
+			});
+			freezeRawSqlSources(outputRoot, prepared);
+			const frozenPath = frozenSqlPath(outputRoot, prepared);
+			const profileTask: GenericTaskProfile = { ...prepared.profileTask, sql_snapshot: frozenPath };
+			const profile: GenericAnalysisProfile = {
+				schema_version: "input-pack-machine-facts-v1",
+				dialect: prepared.dialect,
+				logical_source_id: prepared.logicalSourceId,
+				tasks: [profileTask],
+			};
+			tasks.push(runTask(profileTask, profile, prepared.logicalSourceId, outputRoot, prepared.schemaBundle, prepared.schemaBundleHash));
+			preparedSummary.push({
+				taskId,
+				sqlSlot: prepared.sql.slot,
+				target: prepared.target.qualifiedName,
+				taskContentHash: String(prepared.task.contentHash),
+				tableContentHash: prepared.target.tableContentHash,
+			});
+		} catch (error) {
+			tasks.push({
+				task_id: taskId,
+				state: "FAILED",
+				status: "FAILED",
+				failures: [{
+					outcome_class: "FAILURE",
+					reason_code: "INPUT_PACK_PREPARATION_FAILED",
+					message: error instanceof Error ? error.message : String(error),
+				}],
+			});
+		}
 	}
-	return { output_root: outputRoot, tasks, index: rebuildIndex(outputRoot), prepared: preparedSummary };
+	const indexMode = options.indexMode ?? "full";
+	const indexStarted = performance.now();
+	const index = indexMode === "incremental"
+		? updateIndexIncrementally(outputRoot, { taskResults: tasks })
+		: rebuildIndex(outputRoot);
+	return {
+		output_root: outputRoot,
+		tasks,
+		index,
+		timings: { index_ms: performance.now() - indexStarted, index_mode: indexMode },
+		prepared: preparedSummary,
+	};
 }
 
 function option(args: readonly string[], name: string): string | undefined {

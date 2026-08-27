@@ -35,16 +35,21 @@ import {
 
 type ExpansionStatus = "EXPANDED" | "TERMINAL" | "TRUNCATED";
 
+const DEFAULT_MAX_TASKS = 1000;
+const DEFAULT_MAX_EDGES = 10000;
+
 export type MultiHopTerminalReason =
   | Exclude<TaskInputPackStatus, "TASK_INPUT_PACK_AVAILABLE">
   | TaskReadBlockReason
   | "NO_DIRECT_READS"
   | "NO_CONFIRMED_PRODUCER_OBSERVED"
+  | "MULTIPLE_OVERLAPPING_PRODUCERS"
   | "MAX_DEPTH_REACHED"
   | "MAX_TASKS_REACHED"
   | "MAX_EDGES_REACHED"
   | "CYCLE"
   | "ALREADY_DISCOVERED"
+  | "TASK_LOCAL_MATERIALIZATION"
   | "REFERENCE_CONFIG";
 
 export interface MultiHopTaskNode {
@@ -96,6 +101,13 @@ export interface MultiHopProducerBridge {
   readonly table: ProducerTableIdentity;
   readonly producerTaskId: string;
   readonly producerDepth: number;
+  readonly producerRole: "PRIMARY" | "ADDITIONAL" | "UNKNOWN" | "CANDIDATE";
+  readonly readOccurrence: {
+    readonly occurrenceId: string;
+    readonly readRelationId: string;
+    readonly statementIndex: number;
+    readonly relationPath: readonly string[];
+  } | null;
 }
 
 export interface MultiHopScheduleEdge {
@@ -114,7 +126,7 @@ export interface MultiHopTerminal {
 }
 
 export interface MultiHopReconciliationResult {
-  readonly schemaVersion: "1.0.0";
+  readonly schemaVersion: "1.1.0";
   readonly artifactType: "TABLE_MULTI_HOP_RECONCILIATION";
   readonly rootTaskId: string;
   readonly generatedAt: string;
@@ -305,7 +317,7 @@ export function validateMultiHopReconciliation(
 ): asserts value is MultiHopReconciliationResult {
   const artifact = requireRecord(value, "artifact");
   if (
-    artifact.schemaVersion !== "1.0.0" ||
+    artifact.schemaVersion !== "1.1.0" ||
     artifact.artifactType !== "TABLE_MULTI_HOP_RECONCILIATION" ||
     artifact.countSemantics !== "NODE_AND_UNIQUE_EDGE_COUNTS"
   )
@@ -357,6 +369,7 @@ export function validateMultiHopReconciliation(
           "SCHEDULE_DATA_INTERSECTION",
           "DATA_FALLBACK",
           "SCHEDULE_FALLBACK",
+          "MULTIPLE_OVERLAPPING_PRODUCERS",
         ].includes(String(decision.decision))
       )
         throw new Error("TASK_NODE_UPSTREAM_DECISION_INVALID");
@@ -573,7 +586,40 @@ export function validateMultiHopReconciliation(
       `producerBridges[${index}].table`,
       true,
     ) as ProducerTableIdentity;
-    const key = bridgeKey(consumer, table, producer);
+    if (
+      !Number.isSafeInteger(bridge.producerDepth) ||
+      Number(bridge.producerDepth) < 1
+    )
+      throw new Error("PRODUCER_BRIDGE_DEPTH_INVALID");
+    if (
+      !["PRIMARY", "ADDITIONAL", "UNKNOWN", "CANDIDATE"].includes(
+        String(bridge.producerRole),
+      )
+    )
+      throw new Error("PRODUCER_BRIDGE_ROLE_INVALID");
+    let occurrenceId: string | null = null;
+    if (bridge.readOccurrence !== null) {
+      const occurrence = requireRecord(
+        bridge.readOccurrence,
+        `producerBridges[${index}].readOccurrence`,
+      );
+      occurrenceId = requireString(
+        occurrence.occurrenceId,
+        `producerBridges[${index}].readOccurrence.occurrenceId`,
+      );
+      requireString(
+        occurrence.readRelationId,
+        `producerBridges[${index}].readOccurrence.readRelationId`,
+      );
+      if (!Number.isSafeInteger(occurrence.statementIndex))
+        throw new Error("PRODUCER_BRIDGE_OCCURRENCE_INVALID");
+      for (const relationId of requireArray(
+        occurrence.relationPath,
+        `producerBridges[${index}].readOccurrence.relationPath`,
+      ))
+        requireString(relationId, "producerBridge.relationPath[]");
+    }
+    const key = bridgeKey(consumer, table, producer, occurrenceId);
     if (bridgeKeys.has(key)) throw new Error("PRODUCER_BRIDGE_DUPLICATE");
     if (!tableKeys.has(tableKey(table)))
       throw new Error("PRODUCER_BRIDGE_TABLE_MISSING");
@@ -728,10 +774,12 @@ function validateRootOneHopSnapshot(
     !final ||
     !Array.isArray(final.primary) ||
     !Array.isArray(final.additional) ||
+    !Array.isArray(final.unknown) ||
     ![
       "SCHEDULE_DATA_INTERSECTION",
       "DATA_FALLBACK",
       "SCHEDULE_FALLBACK",
+      "MULTIPLE_OVERLAPPING_PRODUCERS",
     ].includes(String(final.decision))
   )
     throw new Error("ROOT_ONE_HOP_INVALID");
@@ -751,6 +799,10 @@ function readKey(taskId: string, table: TaskReadTableRef): string {
   return `${taskId}\u0000${tableKey(table)}`;
 }
 
+function isTaskLocalTempTable(qualifiedName: string): boolean {
+  return /^temp\./i.test(qualifiedName.trim());
+}
+
 function writeKey(taskId: string, table: ProducerTableIdentity): string {
   return `${taskId}\u0000${tableKey(table)}`;
 }
@@ -759,8 +811,9 @@ function bridgeKey(
   consumerTaskId: string,
   table: ProducerTableIdentity,
   producerTaskId: string,
+  occurrenceId: string | null,
 ): string {
-  return `${consumerTaskId}\u0000${tableKey(table)}\u0000${producerTaskId}`;
+  return `${consumerTaskId}\u0000${tableKey(table)}\u0000${producerTaskId}\u0000${occurrenceId ?? ""}`;
 }
 
 function requireLimit(value: number, name: string, minimum: number): void {
@@ -1007,7 +1060,12 @@ function reconcileMultiHopInternal(
       source: "ONE_HOP_FINAL_UPSTREAM",
       primary: oneHop.finalUpstreamTaskIds.primary,
       additional: oneHop.finalUpstreamTaskIds.additional,
-      unknown: oneHop.partitionAwareNextDataTaskIds.unknown,
+      unknown: [
+        ...new Set([
+          ...oneHop.finalUpstreamTaskIds.unknown,
+          ...oneHop.partitionAwareNextDataTaskIds.unknown,
+        ]),
+      ].sort(compareText),
       decision: oneHop.finalUpstreamTaskIds.decision,
       evidence: upstreamEvidence,
     };
@@ -1062,6 +1120,16 @@ function reconcileMultiHopInternal(
         });
       }
       tableNodes.set(tableKey(read.tableRef), { ...read.tableRef });
+      if (isTaskLocalTempTable(read.tableRef.qualifiedName)) {
+        addTerminal({
+          taskId: current.taskId,
+          depth: current.depth,
+          reason: "TASK_LOCAL_MATERIALIZATION",
+          table: read.tableRef,
+          detail: { rule: "QUALIFIED_NAME_PREFIX", pattern: "TEMP.*" },
+        });
+        continue;
+      }
       if (read.recursionStatus === "BLOCKED") {
         readsWithoutConfirmedProducer += 1;
         addTerminal({
@@ -1129,7 +1197,62 @@ function reconcileMultiHopInternal(
             Number(!recursivePrimaryTaskIds.has(right.taskId)) ||
           compareText(left.taskId, right.taskId),
       );
-      if (producers.length === 0) {
+      const occurrenceDecisions = (
+        oneHop.dataPath.readOccurrenceDecisions ?? []
+      ).filter(
+        (decision) => tableKey(decision.table) === tableKey({ ...identity }),
+      );
+      type ProducerBinding = {
+        readonly producer: (typeof producers)[number];
+        readonly producerRole: MultiHopProducerBridge["producerRole"];
+        readonly readOccurrence: MultiHopProducerBridge["readOccurrence"];
+      };
+      const producerBindings: ProducerBinding[] = producers
+        .flatMap<ProducerBinding>((producer) => {
+          if (occurrenceDecisions.length === 0) {
+            const producerRole = oneHop.finalUpstreamTaskIds.primary.includes(
+              producer.taskId,
+            )
+              ? ("PRIMARY" as const)
+              : oneHop.finalUpstreamTaskIds.additional.includes(producer.taskId)
+                ? ("ADDITIONAL" as const)
+                : oneHop.finalUpstreamTaskIds.unknown.includes(producer.taskId)
+                  ? ("UNKNOWN" as const)
+                  : ("CANDIDATE" as const);
+            return [{ producer, producerRole, readOccurrence: null }];
+          }
+          return occurrenceDecisions
+            .filter((decision) =>
+              decision.candidates.some(
+                (candidate) => candidate.taskId === producer.taskId,
+              ),
+            )
+            .map((decision) => ({
+              producer,
+              producerRole: decision.primary.includes(producer.taskId)
+                ? ("PRIMARY" as const)
+                : decision.additional.includes(producer.taskId)
+                  ? ("ADDITIONAL" as const)
+                  : decision.unknown.includes(producer.taskId)
+                    ? ("UNKNOWN" as const)
+                    : ("CANDIDATE" as const),
+              readOccurrence: {
+                occurrenceId: decision.occurrenceId,
+                readRelationId: decision.readRelationId,
+                statementIndex: decision.statementIndex,
+                relationPath: decision.relationPath,
+              },
+            }));
+        })
+        .sort(
+          (left, right) =>
+            compareText(left.producer.taskId, right.producer.taskId) ||
+            compareText(
+              left.readOccurrence?.occurrenceId ?? "",
+              right.readOccurrence?.occurrenceId ?? "",
+            ),
+        );
+      if (producerBindings.length === 0) {
         readsWithoutConfirmedProducer += 1;
         addTerminal({
           taskId: current.taskId,
@@ -1139,10 +1262,34 @@ function reconcileMultiHopInternal(
         });
         continue;
       }
+      const unknownProducers = producerBindings.filter(
+        (binding) => binding.producerRole === "UNKNOWN",
+      );
+      if (
+        unknownProducers.length > 0 &&
+        oneHop.finalUpstreamTaskIds.decision ===
+          "MULTIPLE_OVERLAPPING_PRODUCERS"
+      ) {
+        addTerminal({
+          taskId: current.taskId,
+          depth: current.depth,
+          reason: "MULTIPLE_OVERLAPPING_PRODUCERS",
+          table: identity,
+          detail: {
+            producerTaskIds: unknownProducers.map(
+              ({ producer }) => producer.taskId,
+            ),
+            action: "STOP_BRANCH",
+          },
+        });
+      }
       readsWithConfirmedProducer += 1;
-      for (const producer of producers) {
+      for (const binding of producerBindings) {
         if (traversalStopped) break;
-        const isPrimary = recursivePrimaryTaskIds.has(producer.taskId);
+        const { producer, producerRole, readOccurrence } = binding;
+        const isPrimary =
+          producerRole === "PRIMARY" &&
+          recursivePrimaryTaskIds.has(producer.taskId);
         const currentWriteKey = writeKey(producer.taskId, identity);
         const writeEdgeExists = writeEdges.has(currentWriteKey);
         const producerNodeExists = taskNodes.has(producer.taskId);
@@ -1184,6 +1331,7 @@ function reconcileMultiHopInternal(
           current.taskId,
           identity,
           producer.taskId,
+          readOccurrence?.occurrenceId ?? null,
         );
         if (!bridges.has(currentBridgeKey))
           bridges.set(currentBridgeKey, {
@@ -1191,6 +1339,8 @@ function reconcileMultiHopInternal(
             table: identity,
             producerTaskId: producer.taskId,
             producerDepth: current.depth + 1,
+            producerRole,
+            readOccurrence,
           });
         if (!producerNodeExists)
           taskNodes.set(producer.taskId, {
@@ -1350,8 +1500,18 @@ function reconcileMultiHopInternal(
   );
   const orderedBridges = [...bridges.values()].sort((left, right) =>
     compareText(
-      bridgeKey(left.consumerTaskId, left.table, left.producerTaskId),
-      bridgeKey(right.consumerTaskId, right.table, right.producerTaskId),
+      bridgeKey(
+        left.consumerTaskId,
+        left.table,
+        left.producerTaskId,
+        left.readOccurrence?.occurrenceId ?? null,
+      ),
+      bridgeKey(
+        right.consumerTaskId,
+        right.table,
+        right.producerTaskId,
+        right.readOccurrence?.occurrenceId ?? null,
+      ),
     ),
   );
   const orderedScheduleEdges = [...scheduleEdges.values()].sort((left, right) =>
@@ -1373,7 +1533,7 @@ function reconcileMultiHopInternal(
     }))
     .sort((left, right) => compareText(left.taskId, right.taskId));
   const withoutHash = {
-    schemaVersion: "1.0.0" as const,
+    schemaVersion: "1.1.0" as const,
     artifactType: "TABLE_MULTI_HOP_RECONCILIATION" as const,
     rootTaskId,
     generatedAt: now(),
@@ -1575,8 +1735,8 @@ function parseCli(argv: readonly string[]): CliOptions {
       .filter(Boolean),
     outputPath: values.get("--output") ?? null,
     maxDepth: integer("--max-depth", 3),
-    maxTasks: integer("--max-tasks", 100),
-    maxEdges: integer("--max-edges", 500),
+    maxTasks: integer("--max-tasks", DEFAULT_MAX_TASKS),
+    maxEdges: integer("--max-edges", DEFAULT_MAX_EDGES),
     terminalTableConfigPath:
       values.get("--terminal-table-config") ??
       "config/multi-hop-terminal-table-rules.json",

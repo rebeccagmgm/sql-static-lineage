@@ -1,4 +1,8 @@
-import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
+import {
+	canonicalJson,
+	sha256,
+	type InputDependencyStatus,
+} from "../../../machine-facts/machine-facts-contract.ts";
 
 export const FIELD_LINEAGE_SCHEMA_VERSION = "1.1.0" as const;
 export const FIELD_LINEAGE_ARTIFACT_TYPE = "FIELD_MULTI_HOP_RECONCILIATION" as const;
@@ -46,6 +50,8 @@ export interface FieldLineageNode {
 	readonly bindingId: string | null;
 	readonly expressionId: string | null;
 	readonly expressionText: string | null;
+	/** Machine Facts classification for the output expression's physical inputs. */
+	readonly inputDependencyStatus?: InputDependencyStatus;
 	readonly evidenceStatus: Exclude<FieldEvidenceStatus, "CANDIDATE">;
 }
 

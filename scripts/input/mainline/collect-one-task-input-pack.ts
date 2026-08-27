@@ -604,6 +604,29 @@ function directTableName(value: unknown): string | undefined {
   return qualifiedName.includes(".") ? qualifiedName : undefined;
 }
 
+/**
+ * Returns only direct endpoint values that are expected to be physical table
+ * references but cannot be resolved. A bare source value is a task data-source
+ * label in heterogeneous extract tasks; its physical identity comes from SQL
+ * READ evidence and Table Pack resolution.
+ */
+export function unresolvedPhysicalEndpointReference(
+  side: "source" | "target",
+  value: unknown,
+  taskCategory: string | null | undefined,
+): string | undefined {
+  if (side === "source" || typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (
+    trimmed === "" ||
+    trimmed === "-" ||
+    directTableName(trimmed) !== undefined ||
+    controlledTaskEndpointDataSource(taskCategory, side) !== undefined
+  )
+    return undefined;
+  return trimmed;
+}
+
 function tablePlatform(
   typeName: unknown,
   ddlType: unknown,
@@ -1817,20 +1840,13 @@ export function collectOneTask(
       ) === index,
   );
   const tableReferencesUnavailable = (["source", "target"] as const)
-    .map((side) => ({
-      side,
-      value: typeof row[side] === "string" ? row[side].trim() : undefined,
-    }))
-    .filter(
-      ({ side, value }) =>
-        value !== undefined &&
-        value !== "" &&
-        value !== "-" &&
-        !directTableName(value) &&
-        controlledTaskEndpointDataSource(taskEvidence.taskCategory, side) ===
-          undefined,
+    .map((side) =>
+      unresolvedPhysicalEndpointReference(
+        side,
+        row[side],
+        taskEvidence.taskCategory,
+      ),
     )
-    .map(({ value }) => value)
     .filter((value): value is string => value !== undefined);
   const tableResults = tableRequests.map(({ side, qualifiedName }) => ({
     side,

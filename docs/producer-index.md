@@ -18,6 +18,20 @@ npm run producer-index -- --data-root <input-pack-root> [--output <producer-inde
 
 当前 `producer-index` artifact 为 schema `1.1.0`；它新增独立的 `intermediateMaterializations` 数组，旧的 schema `1.0.0` artifact 仍可读取。命令仍是显式全量重建。`inputFingerprint` 来自排序后的相对输入路径及实际内容哈希；`contentHash` 覆盖除 `generatedAt` 和自身以外的完整语义内容。数组使用固定 code-unit 顺序，绝对根路径不进入 artifact。
 
+## 按 Input Pack fingerprint 固定缓存
+
+一次运行只需要认定一个 Input Pack fingerprint，不需要维护全局“最新版”索引：
+
+```text
+npm run producer-index:pin -- --data-root <input-pack-root> \
+  --cache-root <producer-index-cache-root>
+```
+
+命令把索引和 manifest 写入 `<cache-root>/<inputFingerprint>/`。相同 fingerprint
+直接复用原缓存；Input Pack 变化后生成新的缓存目录，不覆盖或宣告旧运行失效。缓存目录
+必须位于 Input Pack 之外。该模式仍会扫描输入以确定 fingerprint；真正的按 Pack 增量重算
+不属于本阶段。
+
 ## 持续更新（快照复用 + 变化检测）
 
 对批量任务使用独立的更新命令，并让所有对账任务复用同一个索引快照：

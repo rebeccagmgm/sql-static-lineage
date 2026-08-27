@@ -261,6 +261,27 @@ export interface DataPathConfirmedProducer {
   )[];
 }
 
+export interface ReadOccurrenceProducerDecision {
+  readonly table: PhysicalTableRef;
+  readonly occurrenceId: string;
+  readonly readRelationId: string;
+  readonly statementIndex: number;
+  readonly relationPath: readonly string[];
+  readonly candidates: readonly {
+    readonly taskId: string;
+    readonly scheduleRelation: "DIRECT_PARENT" | "NOT_DIRECT_PARENT";
+    readonly partitionMatchStatus: ProducerPartitionMatchStatus;
+  }[];
+  readonly primary: readonly string[];
+  readonly additional: readonly string[];
+  readonly unknown: readonly string[];
+  readonly decision:
+    | "SCHEDULE_DATA_INTERSECTION"
+    | "DATA_FALLBACK"
+    | "NO_MATCH"
+    | "MULTIPLE_OVERLAPPING_PRODUCERS";
+}
+
 export interface OneHopCoverage {
   readonly semantics: "OBSERVED_EVIDENCE_ONLY";
   readonly directReadTables: {
@@ -357,6 +378,7 @@ export interface OneHopReconciliationResult {
   readonly dataPath: {
     readonly source: "PRODUCER_INDEX" | "LEGACY_SCHEDULE_RECONCILIATION";
     readonly confirmedProducers: readonly DataPathConfirmedProducer[];
+    readonly readOccurrenceDecisions: readonly ReadOccurrenceProducerDecision[];
     readonly nonConfirmedRelations: readonly NonConfirmedRelation[];
   };
   readonly coverage: OneHopCoverage;
@@ -372,7 +394,12 @@ export interface OneHopReconciliationResult {
   readonly finalUpstreamTaskIds: {
     readonly primary: readonly string[];
     readonly additional: readonly string[];
-    readonly decision: "SCHEDULE_DATA_INTERSECTION" | "DATA_FALLBACK" | "SCHEDULE_FALLBACK";
+    readonly unknown: readonly string[];
+    readonly decision:
+      | "SCHEDULE_DATA_INTERSECTION"
+      | "DATA_FALLBACK"
+      | "SCHEDULE_FALLBACK"
+      | "MULTIPLE_OVERLAPPING_PRODUCERS";
   };
   readonly issues: readonly string[];
   readonly issueDetails: readonly OneHopIssueDetail[];
@@ -1698,10 +1725,10 @@ function mergePartitionMatch(
   right: ProducerPartitionMatch,
 ): ProducerPartitionMatch {
   if (!left) return right;
-  const status =
-    partitionMatchRank(left.status) >= partitionMatchRank(right.status)
-      ? left.status
-      : right.status;
+  const leftRank = partitionMatchRank(left.status);
+  const rightRank = partitionMatchRank(right.status);
+  if (leftRank > rightRank) return left;
+  if (rightRank > leftRank) return right;
   const writes = new Map(
     [...left.writes, ...right.writes].map((write) => [
       JSON.stringify(write),
@@ -1710,13 +1737,188 @@ function mergePartitionMatch(
   );
   return {
     ...left,
-    status,
     reasonCodes: uniqueSorted([
       ...left.reasonCodes,
       ...right.reasonCodes,
     ]),
     writes: [...writes.values()],
   };
+}
+
+interface ReadOccurrenceMatchGroup {
+  readonly table: PhysicalTableRef;
+  readonly occurrence: DirectReadPartitionScopeObservation;
+  readonly matches: readonly ProducerPartitionMatch[];
+}
+
+function decideReadOccurrenceProducers(
+  group: ReadOccurrenceMatchGroup,
+  scheduleTaskIds: ReadonlySet<string>,
+): ReadOccurrenceProducerDecision {
+  const candidates = group.matches
+    .filter((match) => match.status !== "PROVEN_DISJOINT")
+    .map((match) => ({
+      match,
+      scheduleRelation: scheduleTaskIds.has(match.taskId)
+        ? ("DIRECT_PARENT" as const)
+        : ("NOT_DIRECT_PARENT" as const),
+    }));
+  const usable = candidates.filter(
+    ({ match }) => match.status !== "UNKNOWN",
+  );
+  const overwrites = usable.filter(({ match }) =>
+    match.writes.some(isInsertOverwrite),
+  );
+  const hasOverlap = overwrites.some((left, leftIndex) =>
+    overwrites.slice(leftIndex + 1).some((right) =>
+      left.match.writes.some(
+        (leftWrite) =>
+          isInsertOverwrite(leftWrite) &&
+          right.match.writes.some(
+            (rightWrite) =>
+              isInsertOverwrite(rightWrite) &&
+              partitionScopesMayOverlap(
+                leftWrite.partition,
+                rightWrite.partition,
+              ),
+          ),
+      ),
+    ),
+  );
+  const scheduledOverwrites = overwrites.filter(
+    ({ scheduleRelation }) => scheduleRelation === "DIRECT_PARENT",
+  );
+  const overlappingUnknown =
+    hasOverlap && scheduledOverwrites.length !== 1
+      ? new Set(overwrites.map(({ match }) => match.taskId))
+      : new Set<string>();
+  const unknown = new Set(
+    candidates
+      .filter(({ match }) => match.status === "UNKNOWN")
+      .map(({ match }) => match.taskId),
+  );
+  for (const taskId of overlappingUnknown) unknown.add(taskId);
+  const scheduledUsable = usable
+    .filter(
+      ({ match, scheduleRelation }) =>
+        scheduleRelation === "DIRECT_PARENT" && !unknown.has(match.taskId),
+    )
+    .map(({ match }) => match.taskId);
+  const primary =
+    scheduledUsable.length > 0
+      ? scheduledUsable
+      : usable
+          .filter(({ match }) => !unknown.has(match.taskId))
+          .map(({ match }) => match.taskId);
+  const additional =
+    scheduledUsable.length > 0
+      ? []
+      : usable
+          .filter(
+            ({ match }) =>
+              !unknown.has(match.taskId) && !primary.includes(match.taskId),
+          )
+          .map(({ match }) => match.taskId);
+  return {
+    table: group.table,
+    occurrenceId: group.occurrence.occurrenceId,
+    readRelationId: group.occurrence.readRelationId,
+    statementIndex: group.occurrence.statementIndex,
+    relationPath: group.occurrence.relationPath,
+    candidates: candidates
+      .map(({ match, scheduleRelation }) => ({
+        taskId: match.taskId,
+        scheduleRelation,
+        partitionMatchStatus: match.status,
+      }))
+      .sort((left, right) => compareText(left.taskId, right.taskId)),
+    primary: uniqueSorted(primary),
+    additional: uniqueSorted(additional),
+    unknown: uniqueSorted([...unknown]),
+    decision:
+      overlappingUnknown.size > 0
+        ? "MULTIPLE_OVERLAPPING_PRODUCERS"
+        : scheduledUsable.length > 0
+          ? "SCHEDULE_DATA_INTERSECTION"
+          : primary.length > 0
+            ? "DATA_FALLBACK"
+            : "NO_MATCH",
+  };
+}
+
+function isInsertOverwrite(
+  write: ProducerWriteObservation | ConfirmedWriteObservation,
+): boolean {
+  const kind =
+    "sqlWriteKind" in write ? write.sqlWriteKind : write.writeKind;
+  return kind?.toUpperCase() === "INSERT_OVERWRITE";
+}
+
+function partitionScopesMayOverlap(
+  left: readonly PartitionAssignment[],
+  right: readonly PartitionAssignment[],
+): boolean {
+  // An unpartitioned write or a runtime/partial partition scope can cover the
+  // same rows. Only a known differing value proves disjointness.
+  if (left.length === 0 || right.length === 0) return true;
+  const rightByField = new Map(right.map((item) => [item.field, item]));
+  for (const leftAssignment of left) {
+    const rightAssignment = rightByField.get(leftAssignment.field);
+    if (!rightAssignment) continue;
+    if (
+      leftAssignment.valueStatus === "OBSERVED_RENDERED_VALUE" &&
+      rightAssignment.valueStatus === "OBSERVED_RENDERED_VALUE" &&
+      leftAssignment.observedValue !== null &&
+      rightAssignment.observedValue !== null &&
+      leftAssignment.observedValue !== rightAssignment.observedValue
+    )
+      return false;
+  }
+  return true;
+}
+
+function overlappingOverwriteTaskIds(
+  producers: readonly DataPathConfirmedProducer[],
+  scheduleTaskIds: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const byTable = new Map<string, DataPathConfirmedProducer[]>();
+  for (const producer of producers) {
+    const key = tableIdentityKey(producer.table);
+    if (!key) continue;
+    const values = byTable.get(key) ?? [];
+    values.push(producer);
+    byTable.set(key, values);
+  }
+  const ambiguous = new Set<string>();
+  for (const group of byTable.values()) {
+    const overwrites = group.filter(
+      (producer) =>
+        producer.partitionMatch.status !== "PROVEN_DISJOINT" &&
+        producer.writes.some(isInsertOverwrite),
+    );
+    const hasOverlap = overwrites.some((left, leftIndex) =>
+      overwrites.slice(leftIndex + 1).some((right) =>
+        left.writes.some((leftWrite) =>
+          isInsertOverwrite(leftWrite) &&
+          right.writes.some(
+            (rightWrite) =>
+              isInsertOverwrite(rightWrite) &&
+              partitionScopesMayOverlap(leftWrite.partition, rightWrite.partition),
+          ),
+        ),
+      ),
+    );
+    if (!hasOverlap) continue;
+    const scheduled = group.filter((producer) =>
+      scheduleTaskIds.has(producer.taskId),
+    );
+    // A single scheduler parent can disambiguate static writer candidates.
+    // Zero or multiple parents cannot establish which overwrite owns the
+    // consumed table/partition, so fail closed for the whole overlap group.
+    if (scheduled.length !== 1)
+      for (const producer of overwrites) ambiguous.add(producer.taskId);
+  }
+  return ambiguous;
 }
 
 function reconcileOneHopInternal(
@@ -1764,7 +1966,8 @@ function reconcileOneHopInternal(
     !currentPack.taskPath
   )
     throw new Error(
-      `CURRENT_TASK_INPUT_PACK_${currentPack.status}:${currentPack.issues.join(";")}`,
+      `CURRENT_TASK_INPUT_PACK_${currentPack.status}:${taskId}:` +
+        currentPack.issues.join(";"),
     );
   const catalog = preparedContext.tableCatalog;
   const directReads = currentDirectReads(
@@ -1935,6 +2138,7 @@ function reconcileOneHopInternal(
   const confirmedProducers: DataPathConfirmedProducer[] = [];
   const relatedNonConfirmedRelations: NonConfirmedRelation[] = [];
   const partitionMatchesByEdge = new Map<string, ProducerPartitionMatch>();
+  const readOccurrenceMatchGroups: ReadOccurrenceMatchGroup[] = [];
   if (producerIndex) {
     const seenEdges = new Set<string>();
     const seenRelations = new Set<string>();
@@ -1942,11 +2146,17 @@ function reconcileOneHopInternal(
       const identity = producerIdentity(read.table);
       if (!identity) continue;
       for (const occurrence of read.readPartitionScopes) {
-        for (const match of matchProducersByReadScope(
+        const occurrenceMatches = matchProducersByReadScope(
           producerIndex,
           identity,
           occurrence.scope,
-        )) {
+        );
+        readOccurrenceMatchGroups.push({
+          table: read.table,
+          occurrence,
+          matches: occurrenceMatches,
+        });
+        for (const match of occurrenceMatches) {
           const key = `${match.table.platform.toLowerCase()}|${match.table.dataSource.toLowerCase()}|${normalizeTable(match.table.qualifiedName)}\u0000${match.taskId}`;
           partitionMatchesByEdge.set(
             key,
@@ -2072,7 +2282,10 @@ function reconcileOneHopInternal(
     0,
   );
   const scheduleTaskIds = new Set(scheduleParents.keys());
-  const allDataCandidateTaskIds = new Set(partitionAwareTaskStatuses.keys());
+  const readOccurrenceDecisions = readOccurrenceMatchGroups
+    .map((group) => decideReadOccurrenceProducers(group, scheduleTaskIds))
+    .sort((left, right) => compareText(left.occurrenceId, right.occurrenceId));
+  const useOccurrenceDecisions = readOccurrenceDecisions.length > 0;
   const usableDataOnlyTaskIds = new Set(
     [...partitionAwareTaskStatuses]
       .filter(([, status]) => status !== "UNKNOWN")
@@ -2111,34 +2324,99 @@ function reconcileOneHopInternal(
     taskTables.add(tableKey);
     dataTaskTableKeys.set(producer.taskId, taskTables);
   }
-  const primaryIntersection = [...allDataCandidateTaskIds].filter((taskId) =>
+  const primaryIntersection = [...usableDataOnlyTaskIds].filter((taskId) =>
     scheduleTaskIds.has(taskId),
   );
-  const additionalDataTaskIds = [...usableDataOnlyTaskIds].filter((taskId) => {
-    if (primaryIntersection.includes(taskId)) return false;
-    const taskTables = dataTaskTableKeys.get(taskId);
-    if (!taskTables || taskTables.size === 0) return true;
-    return ![...taskTables].some((tableKey) =>
-      scheduledTableKeys.has(tableKey),
-    );
-  });
+  const overlappingUnknownTaskIds = useOccurrenceDecisions
+    ? new Set(
+        readOccurrenceDecisions
+          .filter(
+            (decision) =>
+              decision.decision === "MULTIPLE_OVERLAPPING_PRODUCERS",
+          )
+          .flatMap((decision) => decision.unknown),
+      )
+    : overlappingOverwriteTaskIds(confirmedProducers, scheduleTaskIds);
+  const unknownTaskIds = new Set(
+    useOccurrenceDecisions
+      ? readOccurrenceDecisions.flatMap((decision) => decision.unknown)
+      : [...partitionAwareTaskStatuses]
+          .filter(([, status]) => status === "UNKNOWN")
+          .map(([taskId]) => taskId),
+  );
+  for (const taskId of overlappingUnknownTaskIds) unknownTaskIds.add(taskId);
+  const occurrenceScheduledPrimary = uniqueSorted(
+    readOccurrenceDecisions
+      .filter(
+        (decision) => decision.decision === "SCHEDULE_DATA_INTERSECTION",
+      )
+      .flatMap((decision) => decision.primary),
+  );
+  const occurrenceDataFallback = uniqueSorted(
+    readOccurrenceDecisions
+      .filter((decision) => decision.decision === "DATA_FALLBACK")
+      .flatMap((decision) => decision.primary),
+  );
+  const primaryTaskIds = (useOccurrenceDecisions
+    ? occurrenceScheduledPrimary.length > 0
+      ? occurrenceScheduledPrimary
+      : occurrenceDataFallback
+    : primaryIntersection
+  ).filter((taskId) => !unknownTaskIds.has(taskId));
+  const additionalDataTaskIds = useOccurrenceDecisions
+    ? occurrenceScheduledPrimary.length > 0
+      ? occurrenceDataFallback.filter(
+          (taskId) =>
+            !unknownTaskIds.has(taskId) && !primaryTaskIds.includes(taskId),
+        )
+      : []
+    : [...usableDataOnlyTaskIds].filter((taskId) => {
+        if (unknownTaskIds.has(taskId) || primaryTaskIds.includes(taskId))
+          return false;
+        const taskTables = dataTaskTableKeys.get(taskId);
+        if (!taskTables || taskTables.size === 0) return true;
+        return ![...taskTables].some((tableKey) =>
+          scheduledTableKeys.has(tableKey),
+        );
+      });
+  for (const taskId of [...primaryTaskIds, ...additionalDataTaskIds])
+    unknownTaskIds.delete(taskId);
+  const scheduleFallbackTaskIds = [...scheduleTaskIds].filter(
+    (taskId) => !unknownTaskIds.has(taskId),
+  );
+  const hasOverlappingUnknown = overlappingUnknownTaskIds.size > 0;
   const finalUpstreamTaskIds =
-    primaryIntersection.length > 0
+    primaryTaskIds.length > 0
       ? {
-          primary: uniqueSorted(primaryIntersection),
+          primary: uniqueSorted(primaryTaskIds),
           additional: uniqueSorted(additionalDataTaskIds),
-          decision: "SCHEDULE_DATA_INTERSECTION" as const,
+          unknown: uniqueSorted([...unknownTaskIds]),
+          decision: hasOverlappingUnknown
+            ? ("MULTIPLE_OVERLAPPING_PRODUCERS" as const)
+            : useOccurrenceDecisions && occurrenceScheduledPrimary.length === 0
+              ? ("DATA_FALLBACK" as const)
+              : ("SCHEDULE_DATA_INTERSECTION" as const),
         }
       : usableDataOnlyTaskIds.size > 0
         ? {
-            primary: uniqueSorted([...usableDataOnlyTaskIds]),
+            primary: uniqueSorted(
+              [...usableDataOnlyTaskIds].filter(
+                (taskId) => !unknownTaskIds.has(taskId),
+              ),
+            ),
             additional: [],
-            decision: "DATA_FALLBACK" as const,
+            unknown: uniqueSorted([...unknownTaskIds]),
+            decision: hasOverlappingUnknown
+              ? ("MULTIPLE_OVERLAPPING_PRODUCERS" as const)
+              : ("DATA_FALLBACK" as const),
           }
         : {
-            primary: uniqueSorted([...scheduleTaskIds]),
+            primary: uniqueSorted(scheduleFallbackTaskIds),
             additional: [],
-            decision: "SCHEDULE_FALLBACK" as const,
+            unknown: uniqueSorted([...unknownTaskIds]),
+            decision: hasOverlappingUnknown
+              ? ("MULTIPLE_OVERLAPPING_PRODUCERS" as const)
+              : ("SCHEDULE_FALLBACK" as const),
           };
 
   const confirmedTableKeys = new Set(
@@ -2356,6 +2634,7 @@ function reconcileOneHopInternal(
         ? "PRODUCER_INDEX"
         : "LEGACY_SCHEDULE_RECONCILIATION",
       confirmedProducers,
+      readOccurrenceDecisions,
       nonConfirmedRelations: relatedNonConfirmedRelations,
     },
     coverage,

@@ -1,22 +1,32 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 import {
-  loadPhysicalTableCatalog,
+	indexTaskInputPacks,
+	loadPhysicalTableCatalog,
   physicalTableKey,
   type PhysicalTableCatalog,
   type PhysicalTableCatalogEntry,
 } from "../../../machine-facts/input-pack-machine-facts.ts";
-import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts";
+import {
+  MACHINE_FACTS_CONTRACT_VERSION,
+  normalizeName,
+  type InputDependencyStatus,
+} from "../../../machine-facts/machine-facts-contract.ts";
 import {
   validateTaskDocument,
   type TaskDocument,
 } from "../../../input/shared/input-pack.ts";
 import {
-  loadCurrentTaskBundle,
-  type CurrentBundleLoad,
-  type JsonRecord,
+	createCurrentTaskBundleReader,
+	type CurrentBundleLoad,
+	type JsonRecord,
 } from "../../../query/current-task-bundle.ts";
+import {
+  inferTaskDefaultSchema,
+  qualifyBareTableName,
+  type TaskDefaultSchema,
+} from "../../shared/task-default-schema.ts";
 import {
   FIELD_LINEAGE_ARTIFACT_TYPE,
   FIELD_LINEAGE_SCHEMA_VERSION,
@@ -40,18 +50,41 @@ type TaskPack = {
   readonly target: PhysicalTableCatalogEntry | null;
 };
 
+type TaskPackLookup = {
+	readonly get: (taskId: string) => TaskPack | undefined;
+};
+
 type TableLineageArtifact = JsonRecord & {
   readonly rootTaskId?: string;
   readonly generatedAt?: string;
   readonly taskNodes?: readonly JsonRecord[];
   readonly producerBridges?: readonly JsonRecord[];
   readonly readEdges?: readonly JsonRecord[];
-  readonly scheduleEdges?: readonly JsonRecord[];
+	readonly scheduleEdges?: readonly JsonRecord[];
+};
+
+type LineageDecision = {
+	readonly primary: readonly string[];
+	readonly additional: readonly string[];
+	readonly unknown: readonly string[];
+};
+
+type BundleIndexes = {
+	readonly expressions: ReadonlyMap<string, JsonRecord>;
+	readonly relations: ReadonlyMap<string, JsonRecord>;
+	readonly incomingRelations: ReadonlyMap<string, readonly string[]>;
+	readonly controlsByStatement: ReadonlyMap<string, readonly JsonRecord[]>;
+};
+
+type LineageIndexes = {
+	readonly decisions: ReadonlyMap<string, LineageDecision>;
+	readonly bridges: ReadonlyMap<string, readonly JsonRecord[]>;
 };
 
 export interface ReconcileFieldLineageOptions {
-  readonly dataRoot: string;
-  readonly factsRoot: string;
+	readonly dataRoot: string;
+	readonly factsRoot: string;
+	readonly tableCatalog?: PhysicalTableCatalog;
   readonly tableLineage: TableLineageArtifact;
   readonly rootTaskId: string;
   readonly rootTable: string;
@@ -61,8 +94,12 @@ export interface ReconcileFieldLineageOptions {
   readonly maxDepth: number;
   readonly maxStates: number;
   readonly maxPaths: number;
+  readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
   readonly now?: () => string;
 }
+
+export const DEFAULT_FIELD_LINEAGE_MAX_STATES = 5000;
+export const DEFAULT_FIELD_LINEAGE_MAX_PATHS = 10000;
 
 type TraversalState = {
   readonly taskId: string;
@@ -85,8 +122,23 @@ const CONTROL_TYPES = new Set([
   "aggregate",
   "setop",
   "window",
-  "distinct",
+	"distinct",
 ]);
+
+const SKIPPED_LINEAGE_TASK_CATEGORIES = new Set(["checkdbflag"]);
+
+const FIELD_LINEAGE_BUNDLE_FILES = [
+	"statements.jsonl",
+	"dataset-io.jsonl",
+	"relation-nodes.jsonl",
+	"relation-edges.jsonl",
+	"field-expression-nodes.jsonl",
+	"column-lineage-edges.jsonl",
+	"output-field-bindings.jsonl",
+	"task-local-materializations.jsonl",
+	"unknowns.jsonl",
+	"schema-refs.jsonl",
+] as const;
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -104,22 +156,12 @@ function nonEmpty(value: unknown): string | null {
   return trimmed === "" || trimmed === "-" ? null : trimmed;
 }
 
-function discoverTaskPaths(dataRoot: string): string[] {
-  const root = join(dataRoot, "tasks");
-  if (!existsSync(root)) return [];
-  const result: string[] = [];
-  const visit = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true }).sort(
-      (left, right) => compareText(left.name, right.name),
-    )) {
-      const path = join(directory, entry.name);
-      if (entry.isSymbolicLink()) continue;
-      if (entry.isDirectory()) visit(path);
-      else if (entry.isFile() && entry.name === "task.json") result.push(path);
-    }
-  };
-  visit(root);
-  return result.sort(compareText);
+function isSkippedLineageTask(document: TaskDocument & JsonRecord): boolean {
+  const category = nonEmpty(document.taskCategory);
+  return (
+    category !== null &&
+    SKIPPED_LINEAGE_TASK_CATEGORIES.has(category.toLowerCase())
+  );
 }
 
 function taskTarget(
@@ -159,28 +201,36 @@ function rootPhysicalTarget(
 }
 
 function loadTaskPacks(
-  dataRoot: string,
-  catalog: PhysicalTableCatalog,
-): ReadonlyMap<string, TaskPack> {
-  const grouped = new Map<string, TaskPack[]>();
-  for (const path of discoverTaskPaths(dataRoot)) {
-    try {
-      const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
-      validateTaskDocument(raw);
-      const document = raw as TaskDocument & JsonRecord;
-      const values = grouped.get(document.taskId) ?? [];
-      values.push({ document, path, target: taskTarget(document, catalog) });
-      grouped.set(document.taskId, values);
-    } catch {
-      // Invalid packs remain unavailable to the field consumer. Their status is
-      // surfaced when a lineage branch tries to enter the Task.
-    }
-  }
-  return new Map(
-    [...grouped.entries()]
-      .filter(([, values]) => values.length === 1)
-      .map(([taskId, values]) => [taskId, values[0]!]),
-  );
+	dataRoot: string,
+	catalog: PhysicalTableCatalog,
+  taskPathIndex: ReadonlyMap<string, readonly string[]>,
+): TaskPackLookup {
+	const cache = new Map<string, TaskPack | null>();
+	return {
+		get: (taskId: string): TaskPack | undefined => {
+			if (cache.has(taskId)) return cache.get(taskId) ?? undefined;
+			const paths = taskPathIndex.get(taskId) ?? [];
+			if (paths.length !== 1) {
+				cache.set(taskId, null);
+				return undefined;
+			}
+			try {
+				const path = paths[0]!;
+				const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
+				validateTaskDocument(raw);
+				const document = raw as TaskDocument & JsonRecord;
+				if (document.taskId !== taskId) throw new Error("TASK_IDENTITY_MISMATCH");
+				const pack = { document, path, target: taskTarget(document, catalog) };
+				cache.set(taskId, pack);
+				return pack;
+			} catch {
+				// Invalid packs remain unavailable to the field consumer. Their status is
+				// surfaced when a lineage branch tries to enter the Task.
+				cache.set(taskId, null);
+				return undefined;
+			}
+		},
+	};
 }
 
 function excludedTaskDetail(
@@ -248,6 +298,12 @@ function factsStatus(
   policy: FactsPolicy,
 ): "CONFIRMED" | "PROVISIONAL_LEGACY" | null {
   if (load.state === "CURRENT_L1") return "CONFIRMED";
+  if (
+    load.state === "LEGACY_NOT_L1" &&
+    policy === "current-only" &&
+    load.manifest?.schema_version === MACHINE_FACTS_CONTRACT_VERSION
+  )
+    return "CONFIRMED";
   if (load.state === "LEGACY_NOT_L1" && policy === "allow-legacy-partial")
     return "PROVISIONAL_LEGACY";
   return null;
@@ -258,12 +314,33 @@ function targetBindings(
   targetQualifiedName: string,
   field: PhysicalFieldIdentity,
   writeObservationIds?: ReadonlySet<string>,
+  expectedTarget?: PhysicalTableCatalogEntry,
 ): JsonRecord[] {
+  const normalizedTarget = normalizeName(targetQualifiedName);
+  const expectedTargetName = expectedTarget
+    ? normalizeName(expectedTarget.qualifiedName)
+    : null;
+  const expectedTargetTail = expectedTargetName?.split(".").at(-1) ?? null;
+  const hasDeclaredPhysicalTarget = expectedTarget
+    ? (load.records["dataset-io.jsonl"] ?? []).some(
+        (record) =>
+          record.task_id === load.taskId &&
+          record.direction === "WRITE" &&
+          normalizeName(String(record.physical_dataset ?? "")) ===
+            expectedTargetName,
+      )
+    : false;
   return (load.records["output-field-bindings.jsonl"] ?? [])
     .filter(
       (binding) =>
-        normalizeName(String(binding.target_dataset ?? "")) ===
-          normalizeName(targetQualifiedName) &&
+        (normalizeName(String(binding.target_dataset ?? "")) ===
+          normalizedTarget ||
+          (hasDeclaredPhysicalTarget &&
+            expectedTargetTail !== null &&
+            normalizeName(String(binding.target_dataset ?? "")) ===
+              expectedTargetTail &&
+            normalizedTarget === expectedTargetName &&
+            binding.task_id === load.taskId)) &&
         normalizeName(String(binding.target_field ?? "")) === field.column &&
         (writeObservationIds === undefined ||
           writeObservationIds.has(String(binding.write_observation_id ?? ""))) &&
@@ -344,18 +421,75 @@ function isTaskLocalSchemaSource(source: unknown, taskId: string): boolean {
   return (
     value.startsWith(`input-pack-task-local-ctas:${taskId}:`) ||
     value.startsWith(`input-pack-task-local-write:${taskId}:`)
-  );
+	);
+}
+
+const bundleIndexesCache = new WeakMap<object, BundleIndexes>();
+
+function bundleIndexesFor(load: CurrentBundleLoad): BundleIndexes {
+	const cached = bundleIndexesCache.get(load);
+	if (cached) return cached;
+	const expressions = new Map<string, JsonRecord>();
+	for (const expression of load.records["field-expression-nodes.jsonl"] ?? []) {
+		const expressionId = String(expression.expression_id ?? "");
+		if (expressionId && !expressions.has(expressionId)) expressions.set(expressionId, expression);
+	}
+	const relations = new Map<string, JsonRecord>();
+	for (const relation of load.records["relation-nodes.jsonl"] ?? []) {
+		const relationId = String(relation.relation_id ?? "");
+		if (relationId && !relations.has(relationId)) relations.set(relationId, relation);
+	}
+	const incomingRelations = new Map<string, string[]>();
+	for (const edge of load.records["relation-edges.jsonl"] ?? []) {
+		const to = String(edge.to_relation_id ?? "");
+		const from = String(edge.from_relation_id ?? "");
+		if (!to || !from) continue;
+		const values = incomingRelations.get(to) ?? [];
+		values.push(from);
+		incomingRelations.set(to, values);
+	}
+	const controlsByStatement = new Map<string, JsonRecord[]>();
+	for (const relation of relations.values()) {
+		if (!CONTROL_TYPES.has(String(relation.relation_type).toLowerCase())) continue;
+		const statementId = String(relation.statement_id ?? "");
+		if (!statementId) continue;
+		const values = controlsByStatement.get(statementId) ?? [];
+		values.push(relation);
+		controlsByStatement.set(statementId, values);
+	}
+	const indexes: BundleIndexes = {
+		expressions,
+		relations,
+		incomingRelations,
+		controlsByStatement,
+	};
+	bundleIndexesCache.set(load, indexes);
+	return indexes;
 }
 
 function expressionFor(
-  load: CurrentBundleLoad,
-  binding: JsonRecord,
+	load: CurrentBundleLoad,
+	binding: JsonRecord,
 ): JsonRecord | null {
-  return (
-    (load.records["field-expression-nodes.jsonl"] ?? []).find(
-      (expression) => expression.expression_id === binding.expression_id,
-    ) ?? null
-  );
+	return bundleIndexesFor(load).expressions.get(String(binding.expression_id ?? "")) ?? null;
+}
+
+const INPUT_DEPENDENCY_STATUSES = new Set<InputDependencyStatus>([
+	"PHYSICAL",
+	"DERIVED_OUTPUT",
+	"SQL_CANDIDATE",
+	"PARTIAL",
+	"UNRESOLVED",
+	"NO_PHYSICAL_INPUT",
+]);
+
+function expressionInputDependencyStatus(
+	expression: JsonRecord,
+): InputDependencyStatus | undefined {
+	const status = String(expression.input_dependency_status ?? "");
+	return INPUT_DEPENDENCY_STATUSES.has(status as InputDependencyStatus)
+		? (status as InputDependencyStatus)
+		: undefined;
 }
 
 function sourceFields(
@@ -364,6 +498,7 @@ function sourceFields(
   load: CurrentBundleLoad,
   taskId: string,
   taskTarget: PhysicalTableCatalogEntry,
+  defaultSchema: TaskDefaultSchema | null,
 ): {
   fields: PhysicalFieldIdentity[];
   unresolved: { table: string; column: string; reason: string }[];
@@ -374,22 +509,23 @@ function sourceFields(
     ? expression.input_fields
     : []) {
     const input = asRecord(raw);
-    const tableName = normalizeName(String(input?.table ?? ""));
+    const rawTableName = normalizeName(String(input?.table ?? ""));
     const column = normalizeName(String(input?.column ?? ""));
-    if (!tableName || !column) continue;
+    if (!rawTableName || !column) continue;
+    const tableName = qualifyBareTableName(rawTableName, defaultSchema);
     const exact = catalog.byQualifiedName.get(tableName) ?? [];
-    const tailMatches = tableName.includes(".")
+    const tailMatches = rawTableName.includes(".") || defaultSchema !== null
       ? []
       : catalog.entries.filter(
           (entry) =>
-            normalizeName(entry.qualifiedName).split(".").at(-1) === tableName,
+            normalizeName(entry.qualifiedName).split(".").at(-1) === rawTableName,
         );
     const tables =
       exact.length > 0 ? exact : tailMatches.length === 1 ? tailMatches : [];
     if (tables.length !== 1) {
       const localSchemas = (load.records["schema-refs.jsonl"] ?? []).filter(
         (record) =>
-          normalizeName(String(record.qualified_name ?? "")) === tableName &&
+          normalizeName(String(record.qualified_name ?? "")) === rawTableName &&
           isTaskLocalSchemaSource(record.source, taskId) &&
           Array.isArray(record.physical_columns) &&
           record.physical_columns
@@ -440,22 +576,8 @@ function sourceFields(
   };
 }
 
-function lineageDecisions(tableLineage: TableLineageArtifact): ReadonlyMap<
-  string,
-  {
-    primary: readonly string[];
-    additional: readonly string[];
-    unknown: readonly string[];
-  }
-> {
-  const result = new Map<
-    string,
-    {
-      primary: readonly string[];
-      additional: readonly string[];
-      unknown: readonly string[];
-    }
-  >();
+function lineageDecisions(tableLineage: TableLineageArtifact): ReadonlyMap<string, LineageDecision> {
+	const result = new Map<string, LineageDecision>();
   for (const raw of Array.isArray(tableLineage.taskNodes)
     ? tableLineage.taskNodes
     : []) {
@@ -474,25 +596,32 @@ function lineageDecisions(tableLineage: TableLineageArtifact): ReadonlyMap<
       unknown: values("unknown"),
     });
   }
-  return result;
+	return result;
+}
+
+function bridgeIndex(tableLineage: TableLineageArtifact): ReadonlyMap<string, readonly JsonRecord[]> {
+	const result = new Map<string, JsonRecord[]>();
+	for (const raw of Array.isArray(tableLineage.producerBridges) ? tableLineage.producerBridges : []) {
+		const bridge = asRecord(raw);
+		if (!bridge) continue;
+		const consumerTaskId = nonEmpty(bridge?.consumerTaskId);
+		const producerTaskId = nonEmpty(bridge?.producerTaskId);
+		if (!consumerTaskId || !producerTaskId) continue;
+		const key = `${consumerTaskId}\u0000${producerTaskId}`;
+		const values = result.get(key) ?? [];
+		values.push(bridge);
+		result.set(key, values);
+	}
+	return result;
 }
 
 function bridgeMatches(
-  tableLineage: TableLineageArtifact,
-  consumerTaskId: string,
-  producerTaskId: string,
-  field: PhysicalFieldIdentity,
+	bridgesByTaskPair: ReadonlyMap<string, readonly JsonRecord[]>,
+	consumerTaskId: string,
+	producerTaskId: string,
+	field: PhysicalFieldIdentity,
 ): boolean {
-  const bridges = Array.isArray(tableLineage.producerBridges)
-    ? tableLineage.producerBridges
-    : [];
-  const relevant = bridges.filter((raw) => {
-    const bridge = asRecord(raw);
-    return (
-      bridge?.consumerTaskId === consumerTaskId &&
-      bridge?.producerTaskId === producerTaskId
-    );
-  });
+	const relevant = bridgesByTaskPair.get(`${consumerTaskId}\u0000${producerTaskId}`) ?? [];
   if (relevant.length === 0) return false;
   return relevant.some((raw) => {
     const table = asRecord(asRecord(raw)?.table);
@@ -507,15 +636,406 @@ function bridgeMatches(
   });
 }
 
-function producerMatchesField(
+type ClassifiedProducerRole =
+  | "PRIMARY"
+  | "ADDITIONAL"
+  | "UNKNOWN"
+  | "CANDIDATE";
+
+function bridgeRole(bridge: JsonRecord): ClassifiedProducerRole | null {
+  const role = String(bridge.producerRole ?? "");
+  return ["PRIMARY", "ADDITIONAL", "UNKNOWN", "CANDIDATE"].includes(
+    role,
+  )
+    ? (role as ClassifiedProducerRole)
+    : null;
+}
+
+function expressionQualifiersForColumn(
+  expressionText: string,
+  column: string,
+): readonly string[] {
+  const escapedColumn = column.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `(?:^|[^\\w$])["\\x60]?([A-Za-z_][\\w$]*)["\\x60]?\\s*\\.\\s*["\\x60]?${escapedColumn}["\\x60]?(?![\\w$])`,
+    "gi",
+  );
+  const qualifiers = new Set<string>();
+  for (const match of expressionText.matchAll(pattern))
+    if (match[1]) qualifiers.add(normalizeName(match[1]));
+  return [...qualifiers].sort(compareText);
+}
+
+function bridgeTableMatchesField(
+  bridge: JsonRecord,
+  field: PhysicalFieldIdentity,
+): boolean {
+  const table = asRecord(bridge.table);
+  return (
+    normalizeName(String(table?.qualifiedName ?? "")) ===
+      normalizeName(field.qualifiedName) &&
+    normalizeName(String(table?.platform ?? "")) ===
+      normalizeName(field.platform) &&
+    normalizeName(String(table?.dataSource ?? "")) ===
+      normalizeName(field.dataSource)
+  );
+}
+
+type RawRelationExpression = {
+  readonly relationId: string;
+  readonly outputName: string;
+  readonly inputNames: readonly string[];
+  readonly qualifiers: readonly string[];
+  readonly raw: JsonRecord;
+};
+
+function rawRelationExpressions(
+  relationId: string,
+  value: unknown,
+): RawRelationExpression[] {
+  const result: RawRelationExpression[] = [];
+  const visit = (candidate: unknown): void => {
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) visit(item);
+      return;
+    }
+    const record = asRecord(candidate);
+    if (!record) return;
+    const outputName = nonEmpty(record.output);
+    const inputColumns = Array.isArray(record.input_columns)
+      ? record.input_columns
+          .map(asRecord)
+          .filter((item): item is JsonRecord => item !== null)
+      : [];
+    if (outputName && inputColumns.length > 0) {
+      result.push({
+        relationId,
+        outputName: normalizeName(outputName),
+        inputNames: inputColumns
+          .map((input) => normalizeName(String(input.name ?? "")))
+          .filter(Boolean),
+        qualifiers: inputColumns
+          .map((input) => normalizeName(String(input.qualifier ?? "")))
+          .filter(Boolean),
+        raw: record,
+      });
+    }
+    for (const key of ["expressions", "measures"]) visit(record[key]);
+  };
+  visit(value);
+  return result;
+}
+
+function rawPhysicalInputs(
+  value: unknown,
+  field: PhysicalFieldIdentity,
+): boolean {
+  const record = asRecord(value);
+  const inputColumns = Array.isArray(record?.input_columns)
+    ? record.input_columns
+    : [];
+  return inputColumns.some((input) => {
+    const inputRecord = asRecord(input);
+    const physical = Array.isArray(inputRecord?.physical)
+      ? inputRecord.physical
+      : [];
+    return physical.some((item) => {
+      const physicalRecord = asRecord(item);
+      return (
+        normalizeName(String(physicalRecord?.table ?? "")) ===
+          normalizeName(field.qualifiedName) &&
+        normalizeName(String(physicalRecord?.column ?? "")) === field.column
+      );
+    });
+  });
+}
+
+function relationDistance(
+  indexes: BundleIndexes,
+  fromRelationId: string,
+  targetRelationId: string,
+): number {
+  const sameRelation = (left: string, right: string): boolean =>
+    left === right ||
+    left.endsWith(`:relation:${right}`) ||
+    right.endsWith(`:relation:${left}`);
+  if (sameRelation(fromRelationId, targetRelationId)) return 0;
+  const queue: Array<{ relationId: string; distance: number }> = [
+    { relationId: fromRelationId, distance: 0 },
+  ];
+  const seen = new Set<string>([fromRelationId]);
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const child of indexes.incomingRelations.get(current.relationId) ?? []) {
+      if (seen.has(child)) continue;
+      if (sameRelation(child, targetRelationId))
+        return current.distance + 1;
+      seen.add(child);
+      queue.push({ relationId: child, distance: current.distance + 1 });
+    }
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+function relationPathHasQualifier(
+  relationId: string,
+  qualifier: string,
+): boolean {
+  const normalized = normalizeName(qualifier);
+  if (!normalized) return false;
+  return relationId
+    .split(/[.:]/)
+    .some((part) => normalizeName(part) === normalized);
+}
+
+function derivedOccurrenceSelection(
+  load: CurrentBundleLoad,
+  expression: JsonRecord,
+  field: PhysicalFieldIdentity,
+  matching: readonly JsonRecord[],
+): ReadonlySet<string> {
+  const indexes = bundleIndexesFor(load);
+  const relationId = String(expression.relation_id ?? "");
+  const relation = indexes.relations.get(relationId);
+  if (!relationId || !relation) return new Set();
+
+  const expressionOutput = normalizeName(
+    String(expression.output_name ?? expression.output ?? ""),
+  );
+  const currentExpressions = rawRelationExpressions(
+    relationId,
+    relation.relation,
+  ).filter(
+    (candidate) =>
+      candidate.outputName === expressionOutput &&
+      rawPhysicalInputs(candidate.raw, field),
+  );
+  const inputNames = new Set(
+    currentExpressions.flatMap((candidate) => candidate.inputNames),
+  );
+  if (inputNames.size === 0) return new Set();
+
+  const descendants = new Set<string>();
+  const queue = [relationId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (descendants.has(current)) continue;
+    descendants.add(current);
+    queue.push(...(indexes.incomingRelations.get(current) ?? []));
+  }
+
+  const rawCandidates: RawRelationExpression[] = [];
+  for (const candidateRelationId of descendants) {
+    if (candidateRelationId === relationId) continue;
+    const candidateRelation = indexes.relations.get(candidateRelationId);
+    if (!candidateRelation) continue;
+    for (const candidate of rawRelationExpressions(
+      candidateRelationId,
+      candidateRelation.relation,
+    )) {
+      if (
+        inputNames.has(candidate.outputName) &&
+        rawPhysicalInputs(candidate.raw, field)
+      )
+        rawCandidates.push(candidate);
+    }
+  }
+  if (rawCandidates.length === 0) return new Set();
+
+  const statementId = String(expression.statement_id ?? "");
+  const statementIndex = statementId.match(/:statement:(\d+)$/)?.[1] ?? null;
+  const scored = new Map<string, number>();
+  for (const bridge of matching) {
+    const occurrence = asRecord(bridge.readOccurrence);
+    const occurrenceId = nonEmpty(occurrence?.occurrenceId);
+    const readRelationId = nonEmpty(occurrence?.readRelationId);
+    if (!occurrenceId || !readRelationId) continue;
+    if (
+      statementIndex !== null &&
+      String(occurrence?.statementIndex ?? "") !== statementIndex
+    )
+      continue;
+    let best = Number.POSITIVE_INFINITY;
+    for (const candidate of rawCandidates) {
+      const distance = relationDistance(
+        indexes,
+        candidate.relationId,
+        readRelationId,
+      );
+      if (!Number.isFinite(distance)) continue;
+      const qualifierMatch = candidate.qualifiers.some((qualifier) =>
+        relationPathHasQualifier(readRelationId, qualifier),
+      );
+      best = Math.min(best, qualifierMatch ? 0 : distance);
+    }
+    if (Number.isFinite(best)) scored.set(occurrenceId, best);
+  }
+  if (scored.size === 0) return new Set();
+  const minimum = Math.min(...scored.values());
+  return new Set(
+    [...scored.entries()]
+      .filter(([, score]) => score === minimum)
+      .map(([occurrenceId]) => occurrenceId),
+  );
+}
+
+function classifiedBridgesForSource(
   tableLineage: TableLineageArtifact,
-  taskPacks: ReadonlyMap<string, TaskPack>,
+  consumerTaskId: string,
+  field: PhysicalFieldIdentity,
+  expressionText: string,
+  load?: CurrentBundleLoad,
+  expression?: JsonRecord,
+): {
+  readonly classified: boolean;
+  readonly ambiguous: boolean;
+  readonly selected: readonly JsonRecord[];
+  readonly matching: readonly JsonRecord[];
+} {
+  const matching = (
+    Array.isArray(tableLineage.producerBridges)
+      ? tableLineage.producerBridges
+      : []
+  )
+    .map(asRecord)
+    .filter(
+      (bridge): bridge is JsonRecord =>
+        bridge !== null &&
+        bridge.consumerTaskId === consumerTaskId &&
+        bridgeTableMatchesField(bridge, field),
+    );
+  const classified = matching.length > 0 && matching.every(bridgeRole);
+  if (!classified)
+    return { classified: false, ambiguous: false, selected: [], matching };
+  if (matching.every((bridge) => bridge.readOccurrence === null))
+    return { classified: true, ambiguous: false, selected: matching, matching };
+  const byOccurrence = new Map<string, JsonRecord[]>();
+  for (const bridge of matching) {
+    const occurrence = asRecord(bridge.readOccurrence);
+    const occurrenceId = nonEmpty(occurrence?.occurrenceId);
+    if (!occurrenceId)
+      return { classified: true, ambiguous: true, selected: [], matching };
+    const values = byOccurrence.get(occurrenceId) ?? [];
+    values.push(bridge);
+    byOccurrence.set(occurrenceId, values);
+  }
+  if (byOccurrence.size === 1)
+    return { classified: true, ambiguous: false, selected: matching, matching };
+  const producerSignatures = new Set(
+    [...byOccurrence.values()].map((bridges) =>
+      bridges
+        .map(
+          (bridge) =>
+            `${String(bridge.producerTaskId ?? "")}:${String(bridgeRole(bridge) ?? "")}`,
+        )
+        .sort(compareText)
+        .join("|"),
+    ),
+  );
+  if (producerSignatures.size === 1)
+    return { classified: true, ambiguous: false, selected: matching, matching };
+  const qualifiers = expressionQualifiersForColumn(expressionText, field.column);
+  if (qualifiers.length === 0 && load && expression) {
+    const occurrenceIds = derivedOccurrenceSelection(
+      load,
+      expression,
+      field,
+      matching,
+    );
+    if (occurrenceIds.size > 0) {
+      return {
+        classified: true,
+        ambiguous: false,
+        selected: matching.filter((bridge) =>
+          occurrenceIds.has(
+            String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
+          ),
+        ),
+        matching,
+      };
+    }
+  }
+  if (qualifiers.length === 0)
+    return { classified: true, ambiguous: true, selected: [], matching };
+  const selectedOccurrenceIds = new Set<string>();
+  for (const qualifier of qualifiers) {
+    const occurrenceIds = new Set(
+      matching
+        .filter((bridge) => {
+          const occurrence = asRecord(bridge.readOccurrence);
+          const relationIds = [
+            occurrence?.readRelationId,
+            ...(Array.isArray(occurrence?.relationPath)
+              ? occurrence.relationPath
+              : []),
+          ].map((value) => normalizeName(String(value ?? "")));
+          return relationIds.some((relationId) =>
+            relationId.split(".").includes(qualifier),
+          );
+        })
+        .map((bridge) =>
+          String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
+        )
+        .filter(Boolean),
+    );
+    if (occurrenceIds.size !== 1)
+      return { classified: true, ambiguous: true, selected: [], matching };
+    selectedOccurrenceIds.add([...occurrenceIds][0]!);
+  }
+  return {
+    classified: true,
+    ambiguous: false,
+    selected: matching.filter((bridge) =>
+      selectedOccurrenceIds.has(
+        String(asRecord(bridge.readOccurrence)?.occurrenceId ?? ""),
+      ),
+    ),
+    matching,
+  };
+}
+
+function hasConfirmedTaskEdge(
+  tableLineage: TableLineageArtifact,
+  consumerTaskId: string,
+  producerTaskId: string,
+): boolean {
+  const bridge = Array.isArray(tableLineage.producerBridges)
+    ? tableLineage.producerBridges
+    : [];
+  if (
+    bridge.some((raw) => {
+      const item = asRecord(raw);
+      return (
+        item?.consumerTaskId === consumerTaskId &&
+        item?.producerTaskId === producerTaskId
+      );
+    })
+  )
+    return true;
+  const schedule = Array.isArray(tableLineage.scheduleEdges)
+    ? tableLineage.scheduleEdges
+    : [];
+  return schedule.some((raw) => {
+    const item = asRecord(raw);
+    return (
+      item?.consumerTaskId === consumerTaskId &&
+      item?.producerTaskId === producerTaskId
+    );
+  });
+}
+
+function producerMatchesField(
+	tableLineage: TableLineageArtifact,
+	lineageIndexes: LineageIndexes,
+	taskPacks: TaskPackLookup,
   consumerTaskId: string,
   producerTaskId: string,
   field: PhysicalFieldIdentity,
 ): boolean {
+  if (!hasConfirmedTaskEdge(tableLineage, consumerTaskId, producerTaskId))
+    return false;
   const target = taskPacks.get(producerTaskId)?.target;
-  if (target !== null && target !== undefined) {
+	if (target !== null && target !== undefined) {
     const targetField = physicalField(target, field.column);
     if (
       targetField !== null &&
@@ -524,7 +1044,7 @@ function producerMatchesField(
       return true;
     if (physicalTableKey(target) === physicalTableKey(field)) return false;
   }
-  if (bridgeMatches(tableLineage, consumerTaskId, producerTaskId, field))
+	if (bridgeMatches(lineageIndexes.bridges, consumerTaskId, producerTaskId, field))
     return true;
 
   // A schedule-fallback parent can be surfaced as an unresolved stop only
@@ -532,7 +1052,7 @@ function producerMatchesField(
   // eligible consumer read.  This does not claim a producer field bridge; it
   // merely lets the traversal report the unavailable/excluded parent instead
   // of silently dropping the scheduler evidence.
-  const decision = lineageDecisions(tableLineage).get(consumerTaskId);
+	const decision = lineageIndexes.decisions.get(consumerTaskId);
   if (decision?.primary.length !== 1 || decision.primary[0] !== producerTaskId)
     return false;
   const hasScheduleEdge = (
@@ -567,7 +1087,7 @@ function producerMatchesField(
 }
 
 function producerTargetsConsumerTable(
-  taskPacks: ReadonlyMap<string, TaskPack>,
+	taskPacks: TaskPackLookup,
   consumerTaskId: string,
   producerTaskId: string,
 ): boolean {
@@ -641,41 +1161,23 @@ function taskLocalPhysicalField(
 }
 
 function rowsetControlsFor(
-  load: CurrentBundleLoad,
-  node: FieldLineageNode,
-  expression: JsonRecord,
-  catalog: PhysicalTableCatalog,
-  status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+	load: CurrentBundleLoad,
+	node: FieldLineageNode,
+	expression: JsonRecord,
+	catalog: PhysicalTableCatalog,
+	status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+	indexes: BundleIndexes = bundleIndexesFor(load),
 ): RowsetControlAnnotation[] {
-  const relationById = new Map(
-    (load.records["relation-nodes.jsonl"] ?? []).map((relation) => [
-      String(relation.relation_id),
-      relation,
-    ]),
-  );
-  const incoming = new Map<string, string[]>();
-  for (const edge of load.records["relation-edges.jsonl"] ?? []) {
-    const to = String(edge.to_relation_id ?? "");
-    const from = String(edge.from_relation_id ?? "");
-    if (!to || !from) continue;
-    const values = incoming.get(to) ?? [];
-    values.push(from);
-    incoming.set(to, values);
-  }
-  const ancestry = new Set<string>();
-  const frontier = [String(expression.relation_id ?? "")].filter(Boolean);
-  while (frontier.length > 0) {
-    const current = frontier.shift()!;
-    if (ancestry.has(current)) continue;
-    ancestry.add(current);
-    frontier.push(...(incoming.get(current) ?? []));
-  }
-  const statementId = String(expression.statement_id ?? "");
-  const allControls = [...relationById.values()].filter(
-    (relation) =>
-      relation.statement_id === statementId &&
-      CONTROL_TYPES.has(String(relation.relation_type).toLowerCase()),
-  );
+	const ancestry = new Set<string>();
+	const frontier = [String(expression.relation_id ?? "")].filter(Boolean);
+	while (frontier.length > 0) {
+		const current = frontier.shift()!;
+		if (ancestry.has(current)) continue;
+		ancestry.add(current);
+		frontier.push(...(indexes.incomingRelations.get(current) ?? []));
+	}
+	const statementId = String(expression.statement_id ?? "");
+	const allControls = indexes.controlsByStatement.get(statementId) ?? [];
   const output: RowsetControlAnnotation[] = [];
   for (const relation of allControls.filter((item) =>
     ancestry.has(String(item.relation_id)),
@@ -775,8 +1277,9 @@ export function reconcileFieldLineage(
     throw new Error("TABLE_LINEAGE_ROOT_MISMATCH");
 
   const dataRoot = resolve(options.dataRoot);
-  const catalog = loadPhysicalTableCatalog(dataRoot);
-  const taskPacks = loadTaskPacks(dataRoot, catalog);
+	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
+	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(dataRoot);
+	const taskPacks = loadTaskPacks(dataRoot, catalog, taskPathIndex);
   const rootPack = taskPacks.get(options.rootTaskId);
   if (!rootPack)
     throw new Error(`ROOT_TASK_INPUT_PACK_MISSING:${options.rootTaskId}`);
@@ -802,26 +1305,27 @@ export function reconcileFieldLineage(
   const nodes = new Map<string, FieldLineageNode>();
   const edges = new Map<string, FieldLineageEdge>();
   const controls = new Map<string, RowsetControlAnnotation>();
-  const candidates = new Map<string, FieldProducerCandidate>();
-  const gaps = new Map<string, FieldLineageGap>();
-  const rootNodeIds: string[] = [];
-  const frontier: TraversalState[] = [];
-  const visited = new Set<string>();
-  const decisions = lineageDecisions(options.tableLineage);
-  const factsCache = new Map<string, CurrentBundleLoad>();
-  const limitReasons = new Set<
-    "MAX_DEPTH_REACHED" | "MAX_STATES_REACHED" | "MAX_PATHS_REACHED"
-  >();
-  let pathCount = 0;
-  let startedRoots = 0;
+	const candidates = new Map<string, FieldProducerCandidate>();
+	const gaps = new Map<string, FieldLineageGap>();
+	const rootNodeIds: string[] = [];
+	const frontier: TraversalState[] = [];
+	const visited = new Set<string>();
+	const decisions = lineageDecisions(options.tableLineage);
+	const lineageIndexes: LineageIndexes = {
+		decisions,
+		bridges: bridgeIndex(options.tableLineage),
+	};
+	const limitReasons = new Set<
+		"MAX_DEPTH_REACHED" | "MAX_STATES_REACHED" | "MAX_PATHS_REACHED"
+	>();
+	let pathCount = 0;
+	let startedRoots = 0;
 
-  const loadFacts = (taskId: string): CurrentBundleLoad => {
-    const cached = factsCache.get(taskId);
-    if (cached) return cached;
-    const loaded = loadCurrentTaskBundle(options.factsRoot, taskId);
-    factsCache.set(taskId, loaded);
-    return loaded;
-  };
+	const factsReader = createCurrentTaskBundleReader(options.factsRoot, {
+		requestedFiles: FIELD_LINEAGE_BUNDLE_FILES,
+		validateOutputHashes: "requested",
+	});
+	const loadFacts = (taskId: string): CurrentBundleLoad => factsReader.load(taskId);
   const rootFacts = loadFacts(options.rootTaskId);
   const rootObservationIds = writeObservationIdsForTarget(
     rootFacts,
@@ -853,6 +1357,26 @@ export function reconcileFieldLineage(
   const addGap = (gap: FieldLineageGap): void => {
     gaps.set(gap.gapId, gap);
   };
+  const connectIncoming = (
+    bindingNodeId: string,
+    field: PhysicalFieldIdentity,
+    incoming: NonNullable<TraversalState["incoming"]> | null,
+  ): void => {
+    if (!incoming) return;
+    const edgeId = `value-edge:${bindingNodeId}->${incoming.sourceNodeId}:cross-task`;
+    if (edges.has(edgeId)) return;
+    edges.set(edgeId, {
+      edgeId,
+      fromNodeId: bindingNodeId,
+      toNodeId: incoming.sourceNodeId,
+      consumerTaskId: incoming.consumerTaskId,
+      producerTaskId: incoming.producerTaskId,
+      kind: "VALUE_FLOW",
+      mapping: `${field.qualifiedName}.${field.column} -> ${field.qualifiedName}.${field.column}`,
+      evidenceStatus: incoming.evidenceStatus,
+      evidenceRefs: [],
+    });
+  };
 
   for (const requestedField of rootFields) {
     const field = physicalField(rootTarget, requestedField);
@@ -881,6 +1405,7 @@ export function reconcileFieldLineage(
     );
     const current = frontier.shift()!;
     const pack = taskPacks.get(current.taskId);
+    if (pack && isSkippedLineageTask(pack.document)) continue;
     if (!pack || !pack.target) {
       const excluded = excludedTaskDetail(dataRoot, current.taskId);
       const unresolvedNodeId =
@@ -958,6 +1483,7 @@ export function reconcileFieldLineage(
         current.depth === 0 && current.nodeId === null
           ? rootWriteObservationSet
           : undefined,
+        pack.target,
       );
       if (bindings.length === 0) {
         const unresolvedNodeId = nodeId(current.taskId, current.field, null);
@@ -1008,20 +1534,7 @@ export function reconcileFieldLineage(
             evidenceStatus,
           });
         if (current.depth === 0) rootNodeIds.push(bindingNodeId);
-        if (current.incoming) {
-          const crossEdgeId = `value-edge:${bindingNodeId}->${current.incoming.sourceNodeId}:cross-task`;
-          edges.set(crossEdgeId, {
-            edgeId: crossEdgeId,
-            fromNodeId: bindingNodeId,
-            toNodeId: current.incoming.sourceNodeId,
-            consumerTaskId: current.incoming.consumerTaskId,
-            producerTaskId: current.incoming.producerTaskId,
-            kind: "VALUE_FLOW",
-            mapping: `${current.field.qualifiedName}.${current.field.column} -> ${current.field.qualifiedName}.${current.field.column}`,
-            evidenceStatus: current.incoming.evidenceStatus,
-            evidenceRefs: [],
-          });
-        }
+        connectIncoming(bindingNodeId, current.field, current.incoming);
         if (current.active.has(bindingStateKey)) {
           addGap({
             gapId: `gap:${bindingNodeId}:cycle`,
@@ -1075,6 +1588,7 @@ export function reconcileFieldLineage(
       current.depth === 0 && current.nodeId === null
         ? rootWriteObservationSet
         : undefined,
+      pack.target,
     ).find((candidate) => candidate.binding_id === current.bindingId);
     if (!binding) {
       addGap({
@@ -1091,6 +1605,7 @@ export function reconcileFieldLineage(
       });
       continue;
     }
+    connectIncoming(currentNodeId, current.field, current.incoming);
     const expression = expressionFor(load, binding);
     if (!expression) {
       addGap({
@@ -1112,6 +1627,7 @@ export function reconcileFieldLineage(
       bindingId: String(binding.binding_id),
       expressionId: String(expression.expression_id),
       expressionText: String(expression.expression_text ?? ""),
+      inputDependencyStatus: expressionInputDependencyStatus(expression),
       evidenceStatus,
     };
     nodes.set(currentNodeId, resolvedNode);
@@ -1131,6 +1647,7 @@ export function reconcileFieldLineage(
       load,
       current.taskId,
       pack.target,
+      inferTaskDefaultSchema(pack.document),
     );
     for (const [kind, records] of [
       [
@@ -1271,7 +1788,73 @@ export function reconcileFieldLineage(
         continue;
       }
 
-      const decision = decisions.get(current.taskId);
+      const tableDecision = decisions.get(current.taskId);
+      const bridgeSelection = classifiedBridgesForSource(
+        options.tableLineage,
+        current.taskId,
+        source,
+        String(expression.expression_text ?? ""),
+        load,
+        expression,
+      );
+      if (bridgeSelection.classified && bridgeSelection.ambiguous) {
+        for (const bridge of bridgeSelection.matching) {
+          const producerTaskId = nonEmpty(bridge.producerTaskId);
+          if (!producerTaskId) continue;
+          const candidateId = `candidate:occurrence-unbound:${current.taskId}:${producerTaskId}:${physicalFieldKey(source)}`;
+          candidates.set(candidateId, {
+            candidateId,
+            consumerTaskId: current.taskId,
+            producerTaskId,
+            field: source,
+            evidenceStatus: "CANDIDATE",
+            reasonCode: "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
+          });
+        }
+        addGap({
+          gapId: `gap:${sourceId}:read-occurrence-binding`,
+          taskId: current.taskId,
+          nodeId: sourceId,
+          field: source,
+          reasonCode: "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
+          message:
+            "the field expression cannot be uniquely bound to one of the repeated physical-table read occurrences",
+          evidenceStatus: "UNRESOLVED",
+          evidenceRefs: [
+            load.evidence["field-expression-nodes.jsonl"] ?? load.bundleDir,
+          ],
+        });
+        continue;
+      }
+      const decision: LineageDecision | undefined = bridgeSelection.classified
+        ? {
+            primary: [
+              ...new Set(
+                bridgeSelection.selected
+                  .filter((bridge) => bridgeRole(bridge) === "PRIMARY")
+                  .map((bridge) => String(bridge.producerTaskId)),
+              ),
+            ].sort(compareText),
+            additional: [
+              ...new Set(
+                bridgeSelection.selected
+                  .filter((bridge) =>
+                    ["ADDITIONAL", "CANDIDATE"].includes(
+                      String(bridgeRole(bridge)),
+                    ),
+                  )
+                  .map((bridge) => String(bridge.producerTaskId)),
+              ),
+            ].sort(compareText),
+            unknown: [
+              ...new Set(
+                bridgeSelection.selected
+                  .filter((bridge) => bridgeRole(bridge) === "UNKNOWN")
+                  .map((bridge) => String(bridge.producerTaskId)),
+              ),
+            ].sort(compareText),
+          }
+        : tableDecision;
       if (!decision) {
         addGap({
           gapId: `gap:${sourceId}:table-lineage-decision`,
@@ -1293,6 +1876,7 @@ export function reconcileFieldLineage(
           ...decision.unknown,
         ]),
       ].filter((producerTaskId) =>
+        hasConfirmedTaskEdge(options.tableLineage, current.taskId, producerTaskId) &&
         producerTargetsConsumerTable(
           taskPacks,
           current.taskId,
@@ -1315,6 +1899,7 @@ export function reconcileFieldLineage(
           !sameTableProducerIds.includes(taskId) &&
           producerMatchesField(
             options.tableLineage,
+            lineageIndexes,
             taskPacks,
             current.taskId,
             taskId,
@@ -1336,6 +1921,7 @@ export function reconcileFieldLineage(
           !sameTableProducerIds.includes(taskId) &&
           producerMatchesField(
             options.tableLineage,
+            lineageIndexes,
             taskPacks,
             current.taskId,
             taskId,
@@ -1368,6 +1954,7 @@ export function reconcileFieldLineage(
           !sameTableProducerIds.includes(taskId) &&
           producerMatchesField(
             options.tableLineage,
+            lineageIndexes,
             taskPacks,
             current.taskId,
             taskId,
@@ -1390,6 +1977,8 @@ export function reconcileFieldLineage(
           continue;
         }
         const producerPack = taskPacks.get(producerTaskId);
+        if (producerPack && isSkippedLineageTask(producerPack.document))
+          continue;
         if (!producerPack || !producerPack.target) {
           const excluded = excludedTaskDetail(dataRoot, producerTaskId);
           addGap({

@@ -109,8 +109,37 @@ function evidenceRef(factsRoot: string, path: string, lineNumber?: number): stri
 	return `machine-facts:${relativePath}${lineNumber === undefined ? "" : `#L${lineNumber}`}`;
 }
 
-function loadIndex(indexPath: string): JsonRecord[] {
-	return jsonl(indexPath);
+type IndexSnapshot = {
+	readonly rows: JsonRecord[] | null;
+	readonly indexSha256?: string;
+	readonly error?: string;
+};
+
+type CurrentBundleReadContext = {
+	index?: IndexSnapshot;
+	readonly loads: Map<string, CurrentBundleLoad>;
+	readonly requestedFiles?: ReadonlySet<string>;
+	readonly validateOutputHashes: "all" | "requested";
+};
+
+export interface CurrentTaskBundleReaderOptions {
+	readonly requestedFiles?: readonly string[];
+	readonly validateOutputHashes?: "all" | "requested";
+}
+
+export interface CurrentTaskBundleReader {
+	readonly load: (taskId: string) => CurrentBundleLoad;
+}
+
+function readIndexSnapshot(indexPath: string): IndexSnapshot {
+	try {
+		const bytes = readFileSync(indexPath);
+		const text = bytes.toString("utf8").trim();
+		const rows = text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
+		return { rows, indexSha256: sha256(bytes) };
+	} catch (error) {
+		return { rows: null, error: `CURRENT_INDEX_INVALID:${error instanceof Error ? error.message : String(error)}` };
+	}
 }
 
 function issueResult(
@@ -144,23 +173,23 @@ function issueResult(
  * It validates the Current Index -> status -> manifest -> output hash chain and
  * never discovers tasks by scanning registry directories.
  */
-export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): CurrentBundleLoad {
+function loadCurrentTaskBundleWithContext(
+	factsRootInput: string,
+	taskId: string,
+	context?: CurrentBundleReadContext,
+): CurrentBundleLoad {
 	const factsRoot = resolve(factsRootInput);
 	const indexPath = join(factsRoot, "indexes", "task-fact-index.jsonl");
 	if (!safeTaskId(taskId)) return issueResult(factsRoot, taskId, indexPath, ["UNSAFE_TASK_ID"]);
 	if (!existsSync(indexPath)) return issueResult(factsRoot, taskId, indexPath, ["CURRENT_INDEX_MISSING"]);
 
-	let rows: JsonRecord[];
-	try {
-		rows = loadIndex(indexPath);
-	} catch (error) {
-		return issueResult(factsRoot, taskId, indexPath, [
-			`CURRENT_INDEX_INVALID:${error instanceof Error ? error.message : String(error)}`,
-		]);
-	}
+	const snapshot = context?.index ?? readIndexSnapshot(indexPath);
+	if (context && context.index === undefined) context.index = snapshot;
+	if (snapshot.rows === null) return issueResult(factsRoot, taskId, indexPath, [snapshot.error ?? "CURRENT_INDEX_INVALID"]);
+	const rows = snapshot.rows;
 	const matchingRows = rows.filter((row) => row.task_id === taskId);
 	const indexRow = matchingRows[0];
-	const indexSha256 = sha256(readFileSync(indexPath));
+	const indexSha256 = snapshot.indexSha256;
 	if (!indexRow) return issueResult(factsRoot, taskId, indexPath, ["TASK_NOT_INDEXED"], "STALE", { indexSha256 });
 	if (matchingRows.length !== 1)
 		return issueResult(factsRoot, taskId, indexPath, ["DUPLICATE_CURRENT_INDEX_ROWS"], "INVALID", {
@@ -274,6 +303,13 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 	else if (sha256(readFileSync(schemaSnapshotPath)) !== manifest.inputs?.schema_bundle_sha256)
 		integrityIssues.push("SCHEMA_SNAPSHOT_HASH_MISMATCH");
 	const outputRecords = Array.isArray(manifest.outputs) ? manifest.outputs : [];
+	const requestedFiles = context?.requestedFiles;
+	if (requestedFiles) {
+		for (const file of requestedFiles) {
+			if (!outputRecords.some((output) => output && output.path === file)) integrityIssues.push(`REQUESTED_OUTPUT_NOT_DECLARED:${file}`);
+			if (!existsSync(join(bundleDir, file))) integrityIssues.push(`REQUESTED_OUTPUT_MISSING:${file}`);
+		}
+	}
 	const outputPaths = new Set<string>();
 	for (const output of outputRecords) {
 		if (!output || typeof output !== "object" || typeof output.path !== "string" || outputPaths.has(output.path)) {
@@ -295,8 +331,10 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 			integrityIssues.push(`OUTPUT_MISSING:${String(output.path)}`);
 			continue;
 		}
-		if (sha256(readFileSync(outputPath)) !== output.content_sha256)
+		if (context?.validateOutputHashes !== "requested" || requestedFiles?.has(String(output.path))) {
+			if (sha256(readFileSync(outputPath)) !== output.content_sha256)
 			integrityIssues.push(`OUTPUT_HASH_MISMATCH:${String(output.path)}`);
+		}
 	}
 	const sourceArtifactPath = join(bundleDir, "source-artifact.json");
 	if (!existsSync(sourceArtifactPath) || !realPathContained(bundleDir, sourceArtifactPath))
@@ -318,7 +356,7 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 	const parsedJsonl = new Map<string, JsonRecord[]>();
 	for (const output of outputRecords) {
 		const outputPath = safeRelativePath(bundleDir, output.path);
-		if (!outputPath || !existsSync(outputPath) || !String(output.path).endsWith(".jsonl")) continue;
+		if (!outputPath || !existsSync(outputPath) || !String(output.path).endsWith(".jsonl") || (requestedFiles && !requestedFiles.has(String(output.path)))) continue;
 		try {
 			const rows = jsonl(outputPath);
 			parsedJsonl.set(String(output.path), rows);
@@ -379,7 +417,9 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 		});
 
 	const declaredFiles = outputRecords.map((output) => String(output.path));
-	const files = isL1
+	const files = requestedFiles
+		? [...requestedFiles]
+		: isL1
 		? [...new Set([
 				...REQUIRED_L1_FILES.filter((file) => file !== "capability-summary.json" || existsSync(join(bundleDir, file))),
 				...declaredFiles,
@@ -391,7 +431,9 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 		for (const file of [...new Set(files)].sort()) {
 			const path = join(bundleDir, file);
 			if (!existsSync(path)) continue;
-			records[file] = file.endsWith(".jsonl") ? jsonl(path) : [json(path)];
+			records[file] = file.endsWith(".jsonl")
+				? parsedJsonl.get(file) ?? []
+				: [json(path)];
 			evidence[file] = evidenceRef(factsRoot, path);
 		}
 	} catch (error) {
@@ -430,6 +472,32 @@ export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): C
 		evidence,
 		issues: [],
 	};
+}
+
+export function createCurrentTaskBundleReader(
+	factsRootInput: string,
+	options: CurrentTaskBundleReaderOptions = {},
+): CurrentTaskBundleReader {
+	const factsRoot = resolve(factsRootInput);
+	const requestedFiles = options.requestedFiles ? new Set(options.requestedFiles) : undefined;
+	const context: CurrentBundleReadContext = {
+		loads: new Map(),
+		requestedFiles,
+		validateOutputHashes: options.validateOutputHashes ?? (requestedFiles ? "requested" : "all"),
+	};
+	return {
+		load: (taskId: string): CurrentBundleLoad => {
+			const cached = context.loads.get(taskId);
+			if (cached) return cached;
+			const loaded = loadCurrentTaskBundleWithContext(factsRoot, taskId, context);
+			context.loads.set(taskId, loaded);
+			return loaded;
+		},
+	};
+}
+
+export function loadCurrentTaskBundle(factsRootInput: string, taskId: string): CurrentBundleLoad {
+	return loadCurrentTaskBundleWithContext(factsRootInput, taskId);
 }
 
 export function canonicalBundleIdentity(load: CurrentBundleLoad): string {

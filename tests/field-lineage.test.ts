@@ -1,10 +1,14 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { runInputPackMachineFacts } from "../scripts/machine-facts/input-pack-machine-facts.ts";
+import {
+  loadPhysicalTableCatalog,
+  runInputPackMachineFacts,
+  type PhysicalTableCatalog,
+} from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import {
   writeTableInput,
   writeTaskInput,
@@ -21,11 +25,11 @@ import {
   syntheticTableLineage,
 } from "./fixtures/field-lineage/cases.ts";
 
-function fixture() {
+function fixture(rootTaskName?: string) {
   const parent = mkdtempSync(join(tmpdir(), "field-lineage-"));
   const dataRoot = join(parent, "data");
   const factsRoot = join(parent, "facts");
-  createSyntheticFieldLineageInputPack(dataRoot);
+  createSyntheticFieldLineageInputPack(dataRoot, { rootTaskName });
   runInputPackMachineFacts({
     dataRoot,
     taskIds: ["100", "200", "300", "400"],
@@ -66,6 +70,12 @@ describe("field multi-hop lineage", () => {
       maxPaths: 100,
     });
     expect(artifact.overallStatus).toBe("PARTIAL");
+    expect(
+      artifact.nodes.some((node) => node.evidenceStatus === "PROVISIONAL_LEGACY"),
+    ).toBe(true);
+    expect(
+      artifact.nodes.some((node) => node.evidenceStatus === "CONFIRMED"),
+    ).toBe(false);
     expect(artifact.edges.some((edge) => edge.producerTaskId === "200")).toBe(
       true,
     );
@@ -98,6 +108,61 @@ describe("field multi-hop lineage", () => {
     expect(summary).toContain("ROWSET_CONTROL");
   });
 
+  it("uses the Task Pack default schema before resolving a bare field input", () => {
+    const f = fixture("demo.root");
+    const baseCatalog = loadPhysicalTableCatalog(f.dataRoot, { lazyDdl: true });
+    const demoMid = baseCatalog.byQualifiedName.get("demo.mid")?.[0];
+    if (!demoMid) throw new Error("TEST_FIXTURE_TABLE_MISSING:demo.mid");
+    const duplicateMid = {
+      ...demoMid,
+      qualifiedName: "other.mid",
+      stableTableId: "other.mid__warehouse",
+    };
+    const byQualifiedName = new Map(baseCatalog.byQualifiedName);
+    byQualifiedName.set("other.mid", [duplicateMid]);
+    const byNameTail = new Map(baseCatalog.byNameTail);
+    byNameTail.set("mid", [demoMid, duplicateMid]);
+    const ambiguousCatalog: PhysicalTableCatalog = {
+      ...baseCatalog,
+      entries: [...baseCatalog.entries, duplicateMid],
+      byQualifiedName,
+      byNameTail,
+    };
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableCatalog: ambiguousCatalog,
+      tableLineage: syntheticTableLineage(),
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+
+    expect(
+      artifact.gaps.filter(
+        (gap) =>
+          gap.taskId === "100" &&
+          [
+            "SOURCE_TABLE_PACK_MISSING",
+            "SOURCE_TABLE_IDENTITY_AMBIGUOUS",
+            "SOURCE_FIELD_NOT_IN_SCHEMA",
+          ].includes(gap.reasonCode),
+      ),
+    ).toEqual([]);
+    expect(
+      artifact.nodes.some(
+        (node) =>
+          node.taskId === "100" &&
+          node.field.qualifiedName === "demo.mid" &&
+          node.field.column === "mid_a",
+      ),
+    ).toBe(true);
+  });
+
   it("uses every target schema column when no root fields are specified", () => {
     const f = fixture();
     const artifact = reconcileFieldLineage({
@@ -117,16 +182,149 @@ describe("field multi-hop lineage", () => {
     expect(artifact.rootNodeIds).toHaveLength(2);
   });
 
+  it("skips checkdbflag upstream tasks without turning them into field gaps", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "901",
+      taskCategory: "checkdbflag",
+      taskName: "checker.demo.mid",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        ...syntheticTableLineage(),
+        taskNodes: [
+          {
+            taskId: "100",
+            upstreamDecision: { primary: ["901"], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "901",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.mid",
+            },
+          },
+        ],
+      },
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    expect(artifact.gaps).toEqual([]);
+    expect(artifact.nodes.some((node) => node.taskId === "901")).toBe(false);
+  });
+
   it("prepares Machine Facts lazily for field-reachable primary tasks", () => {
     const parent = mkdtempSync(join(tmpdir(), "field-lineage-lazy-facts-"));
     const dataRoot = join(parent, "data");
     const factsRoot = join(parent, "facts");
     const tableLineagePath = join(parent, "table-lineage.json");
     const outputPath = join(parent, "field-lineage.json");
+    const timingPath = join(parent, "field-lineage-timing.json");
     createSyntheticFieldLineageInputPack(dataRoot);
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.other",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.other (other_a STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "100",
+      taskCategory: "sparkIndex",
+      taskName: "demo.root.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        create: {
+          content: "CREATE TABLE demo.root (out_a STRING, out_b STRING);",
+          evidenceProvider: "synthetic:test",
+        },
+        query: {
+          content:
+            "SELECT m.mid_a AS out_a, o.other_a AS out_b FROM demo.mid m CROSS JOIN demo.other o;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "610",
+      taskCategory: "sparkIndex",
+      taskName: "demo.other.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.other",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "SELECT src_a AS other_a FROM demo.extra;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const tableLineage = syntheticTableLineage();
     writeFileSync(
       tableLineagePath,
-      `${JSON.stringify(syntheticTableLineage())}\n`,
+      `${JSON.stringify({
+        ...tableLineage,
+        taskNodes: [
+          ...tableLineage.taskNodes.map((node) =>
+            node.taskId === "100"
+              ? {
+                  ...node,
+                  upstreamDecision: {
+                    primary: ["200", "610"],
+                    additional: [],
+                    unknown: [],
+                  },
+                }
+              : node,
+          ),
+          {
+            taskId: "610",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          ...tableLineage.producerBridges,
+          {
+            consumerTaskId: "100",
+            producerTaskId: "610",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.other",
+            },
+          },
+        ],
+      })}\n`,
       "utf8",
     );
 
@@ -142,8 +340,15 @@ describe("field multi-hop lineage", () => {
       maxStates: 100,
       maxPaths: 100,
       output: outputPath,
+      timingOutput: timingPath,
       prepareFacts: true,
     });
+
+    const timing = JSON.parse(readFileSync(timingPath, "utf8"));
+    expect(timing.schema_version).toBe("field-lineage-timing-v1");
+    expect(timing.counters.machine_facts_prepare_batches).toBeGreaterThan(0);
+    expect(timing.counters.reconcile_calls).toBeGreaterThan(0);
+    expect(timing.phases_ms.machine_facts_index_ms).toBeGreaterThanOrEqual(0);
 
     const indexedTaskIds = readFileSync(
       join(factsRoot, "indexes", "task-fact-index.jsonl"),
@@ -156,6 +361,35 @@ describe("field multi-hop lineage", () => {
       .sort();
     expect(indexedTaskIds).toEqual(["100", "200", "300"]);
     expect(indexedTaskIds).not.toContain("400");
+    expect(indexedTaskIds).not.toContain("610");
+  });
+
+  it("accepts freshly prepared facts from the active Machine Facts contract", () => {
+    const parent = mkdtempSync(join(tmpdir(), "field-lineage-preflight-"));
+    const dataRoot = join(parent, "data");
+    const factsRoot = join(parent, "facts");
+    const tableLineagePath = join(parent, "table-lineage.json");
+    const outputPath = join(parent, "field-lineage.json");
+    createSyntheticFieldLineageInputPack(dataRoot);
+    writeFileSync(tableLineagePath, `${JSON.stringify(syntheticTableLineage())}\n`, "utf8");
+
+    expect(() =>
+      runFieldLineageCli({
+        dataRoot,
+        factsRoot,
+        multiHopArtifact: tableLineagePath,
+        taskId: "100",
+        targetTable: "demo.root",
+        fields: [],
+        factsPolicy: "current-only",
+        maxDepth: 8,
+        maxStates: 100,
+        maxPaths: 100,
+        output: outputPath,
+        prepareFacts: true,
+      }),
+    ).not.toThrow();
+    expect(existsSync(outputPath)).toBe(true);
   });
 
   it("keeps same-physical-table producers as candidates instead of recursing", () => {
@@ -227,7 +461,487 @@ describe("field multi-hop lineage", () => {
     expect(artifact.gaps.some((gap) => gap.reasonCode === "CYCLE")).toBe(false);
   });
 
-  it("blocks legacy facts under the default current-only policy", () => {
+  it("binds same-table producer bridges to the field expression read occurrence", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "100",
+      taskCategory: "sparkIndex",
+      taskName: "demo.root.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT c.mid_a AS out_a, k.mid_a AS out_b FROM demo.mid c JOIN demo.mid k ON c.mid_a = k.mid_a",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    for (const taskId of ["201", "202"])
+      writeTaskInput(f.dataRoot, {
+        taskId,
+        taskCategory: "sparkIndex",
+        taskName: `demo.mid.${taskId}`,
+        target: {
+          platform: "hive",
+          dataSource: "warehouse",
+          qualifiedName: "demo.mid",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: null,
+        sql: {
+          query: {
+            content:
+              "SELECT src_a AS mid_a, src_b AS mid_b FROM demo.source",
+            evidenceProvider: "synthetic:test",
+          },
+        },
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["100", "201"],
+      outputRoot: f.factsRoot,
+    });
+    const occurrence = (alias: "c" | "k") => ({
+      occurrenceId: `query#0:root.${alias}.read.mid`,
+      readRelationId: `root.${alias}.read.mid`,
+      statementIndex: 0,
+      relationPath: [`root.${alias}.read.mid`],
+    });
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        rootTaskId: "100",
+        taskNodes: [
+          {
+            taskId: "100",
+            upstreamDecision: {
+              primary: ["200", "201"],
+              additional: [],
+              unknown: [],
+            },
+          },
+          {
+            taskId: "200",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+          {
+            taskId: "201",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "200",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.mid",
+            },
+            producerRole: "PRIMARY",
+            readOccurrence: occurrence("c"),
+          },
+          {
+            consumerTaskId: "100",
+            producerTaskId: "201",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.mid",
+            },
+            producerRole: "PRIMARY",
+            readOccurrence: occurrence("k"),
+          },
+          {
+            consumerTaskId: "100",
+            producerTaskId: "202",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.mid",
+            },
+            producerRole: "CANDIDATE",
+            readOccurrence: occurrence("c"),
+          },
+        ],
+      },
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a", "out_b"],
+      factsPolicy: "current-only",
+      maxDepth: 4,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    const producerIdsForRoot = (rootColumn: string): string[] => {
+      const pending = artifact.nodes
+        .filter(
+          (node) => node.taskId === "100" && node.field.column === rootColumn,
+        )
+        .map((node) => node.nodeId);
+      const seen = new Set<string>();
+      const producerIds = new Set<string>();
+      while (pending.length > 0) {
+        const nodeId = pending.pop()!;
+        if (seen.has(nodeId)) continue;
+        seen.add(nodeId);
+        for (const edge of artifact.edges.filter(
+          (candidate) => candidate.toNodeId === nodeId,
+        )) {
+          if (edge.producerTaskId) producerIds.add(edge.producerTaskId);
+          pending.push(edge.fromNodeId);
+        }
+      }
+      return [...producerIds].sort();
+    };
+
+    expect(producerIdsForRoot("out_a")).toContain("200");
+    expect(producerIdsForRoot("out_a")).not.toContain("201");
+    expect(producerIdsForRoot("out_b")).toContain("201");
+    expect(producerIdsForRoot("out_b")).not.toContain("200");
+    expect(artifact.edges.some((edge) => edge.producerTaskId === "202")).toBe(
+      false,
+    );
+    expect(
+      artifact.candidates.some(
+        (candidate) => candidate.producerTaskId === "202",
+      ),
+    ).toBe(true);
+  });
+
+  it("binds nested derived same-table reads to their source occurrence", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "100",
+      taskCategory: "sparkIndex",
+      taskName: "demo.root.nested.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        create: {
+          content: "CREATE TABLE demo.root (out_a STRING, out_b STRING);",
+          evidenceProvider: "synthetic:test",
+        },
+        query: {
+          content:
+            "SELECT c.mid_a AS out_a, k.mid_a AS out_b FROM (SELECT m.mid_a FROM demo.mid m) c JOIN (SELECT n.mid_a FROM demo.mid n) k ON c.mid_a = k.mid_a",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    for (const taskId of ["201", "202"])
+      writeTaskInput(f.dataRoot, {
+        taskId,
+        taskCategory: "sparkIndex",
+        taskName: `demo.mid.${taskId}`,
+        target: {
+          platform: "hive",
+          dataSource: "warehouse",
+          qualifiedName: "demo.mid",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: null,
+        sql: {
+          query: {
+            content: "SELECT src_a AS mid_a, filter_key FROM demo.source",
+            evidenceProvider: "synthetic:test",
+          },
+        },
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["100", "201", "202"],
+      outputRoot: f.factsRoot,
+    });
+    const relationNodes = readFileSync(
+      join(
+        f.factsRoot,
+        "registry",
+        "tasks",
+        "100",
+        "bundle",
+        "relation-nodes.jsonl",
+      ),
+      "utf8",
+    )
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const readRelation = (scope: "c" | "k") => {
+      const relation = relationNodes.find(
+        (candidate: { relation_id?: string; relation_type?: string }) =>
+          candidate.relation_type === "read" &&
+          String(candidate.relation_id).includes(`:root.${scope}.read.`),
+      );
+      const fullRelationId = String(relation?.relation_id ?? "");
+      const relativeRelationId = fullRelationId.split(":relation:")[1];
+      return {
+        occurrenceId: `query#0:${relativeRelationId}`,
+        readRelationId: relativeRelationId,
+        statementIndex: 0,
+        relationPath: [relativeRelationId],
+      };
+    };
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        rootTaskId: "100",
+        taskNodes: [
+          {
+            taskId: "100",
+            upstreamDecision: { primary: ["201", "202"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "201",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+          {
+            taskId: "202",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "201",
+            producerRole: "PRIMARY",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.mid" },
+            readOccurrence: readRelation("c"),
+          },
+          {
+            consumerTaskId: "100",
+            producerTaskId: "202",
+            producerRole: "PRIMARY",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.mid" },
+            readOccurrence: readRelation("k"),
+          },
+        ],
+      },
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a", "out_b"],
+      factsPolicy: "current-only",
+      maxDepth: 4,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    const producerIdsForRoot = (rootColumn: string): string[] => {
+      const pending = artifact.nodes
+        .filter(
+          (node) => node.taskId === "100" && node.field.column === rootColumn,
+        )
+        .map((node) => node.nodeId);
+      const seen = new Set<string>();
+      const producerIds = new Set<string>();
+      while (pending.length > 0) {
+        const nodeId = pending.pop()!;
+        if (seen.has(nodeId)) continue;
+        seen.add(nodeId);
+        for (const edge of artifact.edges.filter(
+          (candidate) => candidate.toNodeId === nodeId,
+        )) {
+          if (edge.producerTaskId) producerIds.add(edge.producerTaskId);
+          pending.push(edge.fromNodeId);
+        }
+      }
+      return [...producerIds].sort();
+    };
+
+    expect(producerIdsForRoot("out_a")).toContain("201");
+    expect(producerIdsForRoot("out_a")).not.toContain("202");
+    expect(producerIdsForRoot("out_b")).toContain("202");
+    expect(producerIdsForRoot("out_b")).not.toContain("201");
+    expect(
+      artifact.gaps.some(
+        (gap) => gap.reasonCode === "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
+      ),
+    ).toBe(false);
+  });
+
+  it("binds aggregate same-table reads by their relation scope", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "100",
+      taskCategory: "sparkIndex",
+      taskName: "demo.root.aggregate-occurrence.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        create: {
+          content: "CREATE TABLE demo.root (out_a STRING, out_b STRING);",
+          evidenceProvider: "synthetic:test",
+        },
+        query: {
+          content:
+            "SELECT init.total AS out_a, em.mid_a AS out_b FROM (SELECT SUM(mid_a) AS total FROM demo.mid WHERE filter_key = 'init') init JOIN (SELECT * FROM demo.mid WHERE filter_key = 'em') em ON 1 = 1",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    for (const taskId of ["201", "202"])
+      writeTaskInput(f.dataRoot, {
+        taskId,
+        taskCategory: "sparkIndex",
+        taskName: `demo.mid.${taskId}`,
+        target: {
+          platform: "hive",
+          dataSource: "warehouse",
+          qualifiedName: "demo.mid",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: null,
+        sql: {
+          query: {
+            content: "SELECT src_a AS mid_a, filter_key FROM demo.source",
+            evidenceProvider: "synthetic:test",
+          },
+        },
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["100", "201", "202"],
+      outputRoot: f.factsRoot,
+    });
+    const relationNodes = readFileSync(
+      join(
+        f.factsRoot,
+        "registry",
+        "tasks",
+        "100",
+        "bundle",
+        "relation-nodes.jsonl",
+      ),
+      "utf8",
+    )
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const readRelation = (scope: "init" | "em") => {
+      const relation = relationNodes.find(
+        (candidate: { relation_id?: string; relation_type?: string }) =>
+          candidate.relation_type === "read" &&
+          String(candidate.relation_id).includes(`:root.${scope}.read.`),
+      );
+      const fullRelationId = String(relation?.relation_id ?? "");
+      const relativeRelationId = fullRelationId.split(":relation:")[1];
+      return {
+        occurrenceId: `query#0:${relativeRelationId}`,
+        readRelationId: relativeRelationId,
+        statementIndex: 0,
+        relationPath: [relativeRelationId],
+      };
+    };
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        rootTaskId: "100",
+        taskNodes: [
+          {
+            taskId: "100",
+            upstreamDecision: { primary: ["201", "202"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "201",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+          {
+            taskId: "202",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "201",
+            producerRole: "PRIMARY",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.mid" },
+            readOccurrence: readRelation("init"),
+          },
+          {
+            consumerTaskId: "100",
+            producerTaskId: "202",
+            producerRole: "PRIMARY",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.mid" },
+            readOccurrence: readRelation("em"),
+          },
+        ],
+      },
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a", "out_b"],
+      factsPolicy: "current-only",
+      maxDepth: 4,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    const producerIdsForRoot = (rootColumn: string): string[] => {
+      const pending = artifact.nodes
+        .filter(
+          (node) => node.taskId === "100" && node.field.column === rootColumn,
+        )
+        .map((node) => node.nodeId);
+      const seen = new Set<string>();
+      const producerIds = new Set<string>();
+      while (pending.length > 0) {
+        const nodeId = pending.pop()!;
+        if (seen.has(nodeId)) continue;
+        seen.add(nodeId);
+        for (const edge of artifact.edges.filter(
+          (candidate) => candidate.toNodeId === nodeId,
+        )) {
+          if (edge.producerTaskId) producerIds.add(edge.producerTaskId);
+          pending.push(edge.fromNodeId);
+        }
+      }
+      return [...producerIds].sort();
+    };
+
+    expect(producerIdsForRoot("out_a")).toContain("201");
+    expect(producerIdsForRoot("out_a")).not.toContain("202");
+    expect(producerIdsForRoot("out_b")).toContain("202");
+    expect(producerIdsForRoot("out_b")).not.toContain("201");
+    expect(
+      artifact.gaps.some(
+        (gap) =>
+          gap.reasonCode === "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts the active publisher facts under the current-only policy", () => {
     const f = fixture();
     const artifact = reconcileFieldLineage({
       dataRoot: f.dataRoot,
@@ -241,16 +955,14 @@ describe("field multi-hop lineage", () => {
       maxStates: 100,
       maxPaths: 100,
     });
-    expect(artifact.overallStatus).toBe("BLOCKED");
+    expect(artifact.overallStatus).not.toBe("BLOCKED");
     expect(
       artifact.gaps.some(
         (gap) => gap.reasonCode === "LEGACY_FACTS_NOT_ALLOWED",
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      artifact.nodes.every(
-        (node) => node.evidenceStatus !== "PROVISIONAL_LEGACY",
-      ),
+      artifact.nodes.some((node) => node.evidenceStatus === "CONFIRMED"),
     ).toBe(true);
   });
 
@@ -724,6 +1436,172 @@ describe("field multi-hop lineage", () => {
       false,
     );
     expect(validateFieldLineageArtifact(artifact)).toEqual([]);
+  });
+
+  it("connects a pre-bound Task-local materialization to an external producer path", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.local_stage",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.local_stage (stage_a STRING, stage_b STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "1200",
+      taskCategory: "sparkIndex",
+      taskName: "demo.local.materialization.consumer",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.local_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; SELECT stage_a AS out_a, stage_b AS out_b FROM demo.local_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "1300",
+      taskCategory: "hiveTask",
+      taskName: "demo.extra.producer",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.extra",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "SELECT src_a FROM demo.source;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1200", "1300"],
+      outputRoot: f.factsRoot,
+    });
+
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        ...syntheticTableLineage(),
+        rootTaskId: "1200",
+        taskNodes: [
+          {
+            taskId: "1200",
+            upstreamDecision: { primary: ["1300"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "1300",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "1200",
+            producerTaskId: "1300",
+            table: {
+              platform: "hive",
+              dataSource: "warehouse",
+              qualifiedName: "demo.extra",
+            },
+          },
+        ],
+      },
+      rootTaskId: "1200",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+
+    const reverse = new Map<string, string[]>();
+    for (const edge of artifact.edges) {
+      const incoming = reverse.get(edge.toNodeId) ?? [];
+      incoming.push(edge.fromNodeId);
+      reverse.set(edge.toNodeId, incoming);
+    }
+    const reachable = new Set<string>();
+    const pending = [...artifact.rootNodeIds];
+    while (pending.length > 0) {
+      const nodeId = pending.pop()!;
+      if (reachable.has(nodeId)) continue;
+      reachable.add(nodeId);
+      pending.push(...(reverse.get(nodeId) ?? []));
+    }
+    const reachableTasks = new Set(
+      artifact.nodes
+        .filter((node) => reachable.has(node.nodeId))
+        .map((node) => node.taskId),
+    );
+    const localBridgeEdges = artifact.edges.filter((edge) => {
+      const from = artifact.nodes.find((node) => node.nodeId === edge.fromNodeId);
+      const to = artifact.nodes.find((node) => node.nodeId === edge.toNodeId);
+      return (
+        from?.taskId === "1200" &&
+        from.bindingId !== null &&
+        from.field.qualifiedName === "demo.local_stage" &&
+        from.field.column === "stage_a" &&
+        to?.taskId === "1200" &&
+        to.field.qualifiedName === "demo.local_stage" &&
+        to.field.column === "stage_a"
+      );
+    });
+
+    expect(localBridgeEdges).toHaveLength(1);
+    expect(localBridgeEdges[0]!.fromNodeId).toMatch(/^field-node:/);
+    expect(localBridgeEdges[0]!.toNodeId).toMatch(/^field-source-node:/);
+    expect(
+      new Set(artifact.edges.map((edge) => edge.edgeId)).size,
+    ).toBe(artifact.edges.length);
+    expect(artifact.nodes.some((node) => node.taskId === "1300")).toBe(true);
+    expect(reachableTasks).toContain("1300");
+    expect(
+      artifact.edges.some(
+        (edge) => edge.producerTaskId === "1300" && reachable.has(edge.toNodeId),
+      ),
+    ).toBe(true);
+    expect(validateFieldLineageArtifact(artifact)).toEqual([]);
+
+    const disconnectedNode = {
+      ...artifact.nodes[0]!,
+      nodeId: "field-node:disconnected",
+      taskId: "9900",
+      taskName: "disconnected.producer",
+    };
+    const disconnectedEdge = {
+      ...artifact.edges[0]!,
+      edgeId: "value-edge:disconnected",
+      fromNodeId: disconnectedNode.nodeId,
+      toNodeId: disconnectedNode.nodeId,
+      consumerTaskId: "9900",
+      producerTaskId: "9900",
+    };
+    const summary = formatFieldLineageSummary({
+      ...artifact,
+      nodes: [...artifact.nodes, disconnectedNode],
+      edges: [...artifact.edges, disconnectedEdge],
+    });
+    expect(summary).not.toContain("9900");
   });
 
   it("anchors a root to an explicit SQL write when it differs from the platform target", () => {

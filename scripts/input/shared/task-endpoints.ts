@@ -8,7 +8,7 @@ export type TargetEvidenceKind =
 export const CONTROLLED_TASK_ENDPOINT_DATA_SOURCES: Readonly<
   Record<string, Readonly<{ source?: string; target?: string }>>
 > = {
-  oracle2hive: { source: "gforacle_gftzdb#gftzdb" },
+  oracle2hive: { target: "gfhive" },
   mysql2hive: { target: "gfhive" },
   hive2oracle: { source: "gfhive" },
   hive2starrocks: { source: "gfhive", target: "gfstarrocks_idms_all" },

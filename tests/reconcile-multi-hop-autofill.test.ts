@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -11,6 +11,10 @@ import {
   producerTaskIdsFromTableResponse,
   runMultiHopAutofill,
 } from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
+import {
+  loadTerminalTableConfig,
+  matchingTerminalRole,
+} from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
 
 const FIXED_NOW = "2026-08-26T08:00:00.000Z";
 
@@ -18,11 +22,16 @@ function dataRoot(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-multi-hop-autofill-"));
 }
 
-function writeTable(root: string, qualifiedName: string): void {
+function writeTable(
+  root: string,
+  qualifiedName: string,
+  platform = "hive",
+  dataSource = "gfhive",
+): void {
   const [schema, name] = qualifiedName.split(".");
   writeTableInput(root, {
-    platform: "hive",
-    dataSource: "gfhive",
+    platform,
+    dataSource,
     qualifiedName,
     schema,
     name,
@@ -82,6 +91,21 @@ function writeProducer(root: string, taskId: string, output: string): void {
 }
 
 describe("multi-hop autofill", () => {
+  it("treats the parameter mapping table as a terminal reference table", () => {
+    const config = loadTerminalTableConfig(
+      join(
+        import.meta.dirname,
+        "..",
+        "config",
+        "multi-hop-terminal-table-rules.json",
+      ),
+    );
+    expect(matchingTerminalRole(config, "pdata_n.ref_cd_cvt_map")).toBe(
+      "REFERENCE_CONFIG",
+    );
+    expect(matchingTerminalRole(config, "pdata_n.normal_ref_table")).toBeNull();
+  });
+
   it("extracts candidate task ids from table metadata without treating them as edges", () => {
     expect(
       producerTaskIdsFromTableResponse({
@@ -101,16 +125,16 @@ describe("multi-hop autofill", () => {
     writeReader(root, "A", ["lake.scheduled", "lake.discovered"]);
     writeProducer(root, "C", "lake.scheduled");
 
-    const indexPath = join(
+    const cacheRoot = join(
       dirname(root),
-      `${root.split(/[\\/]/).at(-1)}-producer-index.json`,
+      `${root.split(/[\\/]/).at(-1)}-producer-index-cache`,
     );
     const runnerCalls: string[][] = [];
     const collectedBatches: string[][] = [];
     const result = runMultiHopAutofill({
       taskId: "A",
       dataRoot: root,
-      producerIndexPath: indexPath,
+      producerIndexCacheRoot: cacheRoot,
       terminalTableConfigPath: join(
         import.meta.dirname,
         "..",
@@ -144,7 +168,8 @@ describe("multi-hop autofill", () => {
       },
     });
 
-    expect(existsSync(indexPath)).toBe(true);
+    expect(existsSync(cacheRoot)).toBe(true);
+    expect(readdirSync(cacheRoot)).toHaveLength(2);
     expect(collectedBatches).toEqual([["B"]]);
     expect(result.report).toMatchObject({
       status: "COMPLETE",
@@ -152,6 +177,7 @@ describe("multi-hop autofill", () => {
       queriedTables: ["lake.discovered"],
       discoveredTaskIds: ["B"],
       collectedTaskIds: ["B"],
+      initialIndexMode: "PINNED_FINGERPRINT_CACHE",
     });
     expect(
       result.artifact.taskNodes.find((node) => node.taskId === "A")
@@ -179,5 +205,99 @@ describe("multi-hop autofill", () => {
         (args) => args[0] === "horae" && args[2] === "B",
       ),
     ).toBe(false);
+  });
+
+  it("automatically attempts missing schedule packs and reports unavailable ones without crashing", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.missing_param_table");
+    writeReader(root, "A", ["lake.missing_param_table"]);
+
+    const cacheRoot = join(
+      dirname(root),
+      `${root.split(/[\\/]/).at(-1)}-producer-index-cache`,
+    );
+    const collectedBatches: string[][] = [];
+    const runnerCalls: string[][] = [];
+    const result = runMultiHopAutofill({
+      taskId: "A",
+      dataRoot: root,
+      producerIndexCacheRoot: cacheRoot,
+      terminalTableConfigPath: join(
+        import.meta.dirname,
+        "..",
+        "config",
+        "multi-hop-terminal-table-rules.json",
+      ),
+      maxDepth: 2,
+      maxTasks: 20,
+      maxEdges: 100,
+      discoveryMinIntervalMs: 0,
+      discoveryAttempts: 1,
+      now: () => FIXED_NOW,
+      sleep: () => undefined,
+      openCliRunner: (args) => {
+        runnerCalls.push([...args]);
+        if (args[0] === "horae" && args[2] === "A")
+          return [{ task_id: "MISSING", task_name: "missing parent" }];
+        throw new Error(`UNEXPECTED_OPENCLI_CALL:${args.join(" ")}`);
+      },
+      collectTaskPacks: (_targetRoot, taskIds) => {
+        collectedBatches.push([...taskIds]);
+      },
+    });
+
+    expect(collectedBatches).toEqual([["MISSING"]]);
+    expect(result.report).toMatchObject({
+      status: "PARTIAL",
+      discoveredTaskIds: ["MISSING"],
+      collectedTaskIds: [],
+      issues: ["DISCOVERED_TASK_PACK_UNAVAILABLE:MISSING"],
+    });
+    expect(
+      runnerCalls.some((args) => args[0] === "horae" && args[2] === "MISSING"),
+    ).toBe(false);
+  });
+
+  it("marks a missing non-Hive producer as a source boundary without changing Hive behavior", () => {
+    const root = dataRoot();
+    writeTable(root, "oracle.source_table", "oracle", "gforacle");
+    writeReader(root, "A", ["oracle.source_table"]);
+
+    const indexPath = join(
+      dirname(root),
+      `${root.split(/[\\/]/).at(-1)}-producer-index.json`,
+    );
+    const result = runMultiHopAutofill({
+      taskId: "A",
+      dataRoot: root,
+      producerIndexPath: indexPath,
+      terminalTableConfigPath: join(
+        import.meta.dirname,
+        "..",
+        "config",
+        "multi-hop-terminal-table-rules.json",
+      ),
+      maxDepth: 2,
+      maxTasks: 20,
+      maxEdges: 100,
+      discoveryMinIntervalMs: 0,
+      discoveryAttempts: 1,
+      now: () => FIXED_NOW,
+      sleep: () => undefined,
+      openCliRunner: (args) => {
+        if (args[0] === "horae" && args[2] === "A") return [];
+        if (args[0] === "szdata" && args[1] === "table") return [];
+        throw new Error(`UNEXPECTED_OPENCLI_CALL:${args.join(" ")}`);
+      },
+      collectTaskPacks: () => {
+        throw new Error("UNEXPECTED_COLLECTION");
+      },
+    });
+
+    expect(result.report).toMatchObject({
+      status: "COMPLETE",
+      nonHiveSourceBoundaries: ["oracle.source_table"],
+      issues: [],
+    });
   });
 });

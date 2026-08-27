@@ -57,6 +57,7 @@ import {
   relocateTaskPacks,
   taskCategory,
   toTaskEvidence,
+  unresolvedPhysicalEndpointReference,
 } from "../scripts/input/mainline/collect-one-task-input-pack.ts";
 import {
   assertStatusFileOutsideDataRoot,
@@ -931,8 +932,21 @@ describe("Input Pack V1", () => {
       "gfstarrocks_idms_all",
     );
     expect(controlledTaskEndpointDataSource("oracle2hive", "source")).toBe(
-      "gforacle_gftzdb#gftzdb",
+      undefined,
     );
+    expect(controlledTaskEndpointDataSource("oracle2hive", "target")).toBe(
+      "gfhive",
+    );
+    expect(
+      unresolvedPhysicalEndpointReference(
+        "source",
+        "oracle_tit_gftzdb_gfedw",
+        "oracle2hive",
+      ),
+    ).toBeUndefined();
+    expect(
+      unresolvedPhysicalEndpointReference("target", "hive_target", "demo"),
+    ).toBe("hive_target");
     const table = cases["180065"].tables[0]!;
     expect(
       enrichTaskEndpoint(

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import {
   loadTableProducerIndex,
   loadTableProducerInputManifest,
+  pinTableProducerIndex,
   updateTableProducerIndex,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
@@ -27,10 +28,16 @@ import {
 
 type JsonRecord = Record<string, unknown>;
 
+const DEFAULT_MAX_TASKS = 1000;
+const DEFAULT_MAX_EDGES = 10000;
+const DEFAULT_MAX_DISCOVERY_TABLES = 1000;
+const DEFAULT_MAX_DISCOVERED_TASKS = 5000;
+
 export interface MultiHopAutofillOptions {
   readonly taskId: string;
   readonly dataRoot: string;
-  readonly producerIndexPath: string;
+  readonly producerIndexPath?: string;
+  readonly producerIndexCacheRoot?: string;
   readonly outputPath?: string;
   readonly reportPath?: string;
   readonly terminalTableConfigPath: string;
@@ -64,9 +71,14 @@ export interface MultiHopAutofillReport {
   readonly queriedTables: readonly string[];
   readonly discoveredTaskIds: readonly string[];
   readonly collectedTaskIds: readonly string[];
+  readonly nonHiveSourceBoundaries: readonly string[];
   readonly issues: readonly string[];
   readonly producerIndexContentHash: string;
-  readonly initialIndexMode: "STRICT_UPDATE" | "TRUSTED_EXISTING_FROZEN_INPUT";
+  readonly producerIndexInputFingerprint: string;
+  readonly initialIndexMode:
+    | "PINNED_FINGERPRINT_CACHE"
+    | "STRICT_UPDATE"
+    | "TRUSTED_EXISTING_FROZEN_INPUT";
 }
 
 export interface MultiHopAutofillResult {
@@ -264,8 +276,15 @@ export function runMultiHopAutofill(
   requirePositiveInteger(discoveryAttempts, "discoveryAttempts");
 
   const dataRoot = resolve(options.dataRoot);
-  const producerIndexPath = resolve(options.producerIndexPath);
-  const manifestPath = `${producerIndexPath}.manifest.json`;
+  const producerIndexPath = options.producerIndexPath
+    ? resolve(options.producerIndexPath)
+    : null;
+  const producerIndexCacheRoot = resolve(
+    options.producerIndexCacheRoot ?? `${dataRoot}.producer-index-cache`,
+  );
+  const manifestPath = producerIndexPath
+    ? `${producerIndexPath}.manifest.json`
+    : null;
   const terminalConfig: TerminalTableConfig = loadTerminalTableConfig(
     resolve(options.terminalTableConfigPath),
   );
@@ -278,7 +297,9 @@ export function runMultiHopAutofill(
   const queriedTableNames = new Set<string>();
   const discoveredTaskIds = new Set<string>();
   const collectedTaskIds = new Set<string>();
+  const nonHiveSourceBoundaries = new Set<string>();
   const attemptedTaskIds = new Set<string>();
+  const unavailableTaskIds = new Set<string>();
   const issues: string[] = [];
   const scheduleCache = new Map<string, readonly JsonRecord[]>();
   let lastTableQueryAt = 0;
@@ -288,19 +309,26 @@ export function runMultiHopAutofill(
 
   let producerIndex: TableProducerIndex;
   if (options.trustExistingIndex === true) {
-    if (!existsSync(producerIndexPath) || !existsSync(manifestPath))
+    if (
+      producerIndexPath === null ||
+      manifestPath === null ||
+      !existsSync(producerIndexPath) ||
+      !existsSync(manifestPath)
+    )
       throw new Error("TRUSTED_EXISTING_INDEX_OR_MANIFEST_MISSING");
     producerIndex = loadTableProducerIndex(producerIndexPath);
     const manifest = loadTableProducerInputManifest(manifestPath);
     if (manifest.inputFingerprint !== producerIndex.inputFingerprint)
       throw new Error("TRUSTED_EXISTING_INDEX_MANIFEST_MISMATCH");
   } else {
-    producerIndex = updateTableProducerIndex(
-      dataRoot,
-      producerIndexPath,
-      manifestPath,
-      { now },
-    ).index;
+    producerIndex = producerIndexPath
+      ? updateTableProducerIndex(
+          dataRoot,
+          producerIndexPath,
+          manifestPath!,
+          { now },
+        ).index
+      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, { now }).index;
   }
 
   while (rounds < maxRounds) {
@@ -313,6 +341,15 @@ export function runMultiHopAutofill(
     const producerTables = confirmedProducerTableKeys(producerIndex);
     const snapshots = new Map<string, OneHopReconciliationResult>();
     const pendingTaskIds = new Set<string>();
+    const enqueueMissingTaskPack = (taskId: string): void => {
+      discoveredTaskIds.add(taskId);
+      if (
+        !taskPackExists(dataRoot, taskId) &&
+        !attemptedTaskIds.has(taskId) &&
+        !unavailableTaskIds.has(taskId)
+      )
+        pendingTaskIds.add(taskId);
+    };
     const frontier: Array<{ taskId: string; depth: number }> = [
       { taskId: options.taskId, depth: 0 },
     ];
@@ -326,6 +363,13 @@ export function runMultiHopAutofill(
       const current = frontier.shift()!;
       if (visited.has(current.taskId) || current.depth >= options.maxDepth) continue;
       if (visited.size >= options.maxTasks) throw new Error("MAX_TASKS_REACHED");
+      if (!taskPackExists(dataRoot, current.taskId)) {
+        if (current.taskId === options.taskId)
+          throw new Error(`CURRENT_TASK_INPUT_PACK_MISSING:${current.taskId}`);
+        unavailableTaskIds.add(current.taskId);
+        issues.push(`DISCOVERED_TASK_PACK_UNAVAILABLE:${current.taskId}`);
+        continue;
+      }
       visited.add(current.taskId);
       const frozenSchedule =
         scheduleCache.get(current.taskId) ?? scheduleRows(current.taskId, runner);
@@ -344,12 +388,7 @@ export function runMultiHopAutofill(
       snapshots.set(current.taskId, oneHop);
 
       for (const taskId of missingScheduleTaskIds(oneHop)) {
-        discoveredTaskIds.add(taskId);
-        if (
-          !taskPackExists(dataRoot, taskId) &&
-          !attemptedTaskIds.has(taskId)
-        )
-          pendingTaskIds.add(taskId);
+        enqueueMissingTaskPack(taskId);
       }
 
       for (const read of oneHop.currentTask.directReads) {
@@ -380,16 +419,13 @@ export function runMultiHopAutofill(
             sleep,
           );
           if (taskIds.length === 0)
-            issues.push(
-              `TABLE_PRODUCER_TASK_NOT_OBSERVED:${qualifiedName}`,
-            );
+            if (read.table.platform.toLocaleLowerCase("en-US") === "hive")
+              issues.push(
+                `TABLE_PRODUCER_TASK_NOT_OBSERVED:${qualifiedName}`,
+              );
+            else nonHiveSourceBoundaries.add(qualifiedName);
           for (const taskId of taskIds) {
-            discoveredTaskIds.add(taskId);
-            if (
-              !taskPackExists(dataRoot, taskId) &&
-              !attemptedTaskIds.has(taskId)
-            )
-              pendingTaskIds.add(taskId);
+            enqueueMissingTaskPack(taskId);
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -397,8 +433,13 @@ export function runMultiHopAutofill(
         }
       }
 
-      for (const nextTaskId of nextPrimaryTaskIds(oneHop))
+      for (const nextTaskId of nextPrimaryTaskIds(oneHop)) {
+        if (!taskPackExists(dataRoot, nextTaskId)) {
+          enqueueMissingTaskPack(nextTaskId);
+          continue;
+        }
         frontier.push({ taskId: nextTaskId, depth: current.depth + 1 });
+      }
     }
 
     finalSnapshots = snapshots;
@@ -409,18 +450,28 @@ export function runMultiHopAutofill(
     }
     if (new Set([...discoveredTaskIds, ...collectIds]).size > maxDiscoveredTasks)
       throw new Error("MAX_DISCOVERED_TASKS_REACHED");
-    collect(dataRoot, collectIds, options.force === true);
+    try {
+      collect(dataRoot, collectIds, options.force === true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      issues.push(`INPUT_PACK_COLLECTION_FAILED:${message}`);
+    }
     for (const taskId of collectIds) {
       attemptedTaskIds.add(taskId);
       if (taskPackExists(dataRoot, taskId)) collectedTaskIds.add(taskId);
-      else issues.push(`DISCOVERED_TASK_PACK_UNAVAILABLE:${taskId}`);
+      else {
+        unavailableTaskIds.add(taskId);
+        issues.push(`DISCOVERED_TASK_PACK_UNAVAILABLE:${taskId}`);
+      }
     }
-    producerIndex = updateTableProducerIndex(
-      dataRoot,
-      producerIndexPath,
-      manifestPath,
-      { now },
-    ).index;
+    producerIndex = producerIndexPath
+      ? updateTableProducerIndex(
+          dataRoot,
+          producerIndexPath,
+          manifestPath!,
+          { now },
+        ).index
+      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, { now }).index;
   }
 
   if (!stabilized) throw new Error("MAX_AUTOFILL_ROUNDS_REACHED");
@@ -447,12 +498,16 @@ export function runMultiHopAutofill(
     queriedTables: unique([...queriedTableNames]),
     discoveredTaskIds: unique([...discoveredTaskIds]),
     collectedTaskIds: unique([...collectedTaskIds]),
+    nonHiveSourceBoundaries: unique([...nonHiveSourceBoundaries]),
     issues: unique(issues),
     producerIndexContentHash: producerIndex.contentHash,
+    producerIndexInputFingerprint: producerIndex.inputFingerprint,
     initialIndexMode:
       options.trustExistingIndex === true
         ? "TRUSTED_EXISTING_FROZEN_INPUT"
-        : "STRICT_UPDATE",
+        : producerIndexPath
+          ? "STRICT_UPDATE"
+          : "PINNED_FINGERPRINT_CACHE",
   };
   writeJson(options.outputPath, artifact);
   writeJson(options.reportPath, report);
@@ -462,7 +517,8 @@ export function runMultiHopAutofill(
 interface CliOptions {
   readonly taskId: string;
   readonly dataRoot: string;
-  readonly producerIndexPath: string;
+  readonly producerIndexPath?: string;
+  readonly producerIndexCacheRoot?: string;
   readonly outputPath?: string;
   readonly reportPath?: string;
   readonly terminalTableConfigPath: string;
@@ -483,6 +539,7 @@ function parseCli(args: readonly string[]): CliOptions {
     "--task-id",
     "--data-root",
     "--producer-index",
+    "--producer-index-cache-root",
     "--output",
     "--report",
     "--terminal-table-config",
@@ -522,18 +579,19 @@ function parseCli(args: readonly string[]): CliOptions {
   return {
     taskId: required("--task-id"),
     dataRoot: required("--data-root"),
-    producerIndexPath: required("--producer-index"),
+    producerIndexPath: values.get("--producer-index"),
+    producerIndexCacheRoot: values.get("--producer-index-cache-root"),
     outputPath: values.get("--output"),
     reportPath: values.get("--report"),
     terminalTableConfigPath:
       values.get("--terminal-table-config") ??
       "config/multi-hop-terminal-table-rules.json",
     maxDepth: integer("--max-depth", 3),
-    maxTasks: integer("--max-tasks", 100),
-    maxEdges: integer("--max-edges", 500),
+    maxTasks: integer("--max-tasks", DEFAULT_MAX_TASKS),
+    maxEdges: integer("--max-edges", DEFAULT_MAX_EDGES),
     maxRounds: integer("--max-rounds", 6),
-    maxDiscoveryTables: integer("--max-discovery-tables", 200),
-    maxDiscoveredTasks: integer("--max-discovered-tasks", 500),
+    maxDiscoveryTables: integer("--max-discovery-tables", DEFAULT_MAX_DISCOVERY_TABLES),
+    maxDiscoveredTasks: integer("--max-discovered-tasks", DEFAULT_MAX_DISCOVERED_TASKS),
     force: flags.has("--force"),
     trustExistingIndex: flags.has("--trust-existing-index"),
   };
