@@ -9,6 +9,11 @@ import {
   reconcileOneHopBatch as reconcileOneHopRoots,
   type OneHopReconciliationResult,
 } from "./reconcile-one-hop.ts";
+import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+  loadTerminalTableConfig,
+  type TerminalTableConfig,
+} from "../multi-hop/terminal-table-config.ts";
 
 interface CliOptions {
   readonly taskIds: readonly string[];
@@ -16,6 +21,7 @@ interface CliOptions {
   readonly producerIndexPath: string;
   readonly outputDir: string;
   readonly verifyInputFingerprint: boolean;
+  readonly terminalTableConfigPath: string;
 }
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
@@ -25,6 +31,7 @@ export interface ReconcileOneHopBatchOptions {
   readonly dataRoot: string;
   readonly producerIndex: TableProducerIndex;
   readonly verifyInputFingerprint?: boolean;
+  readonly terminalTableConfig?: TerminalTableConfig;
 }
 
 function parseTaskIds(value: string): readonly string[] {
@@ -45,6 +52,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--data-root",
     "--producer-index",
     "--output-dir",
+    "--terminal-table-config",
     verifyFlag,
   ]);
   let verifyInputFingerprint = false;
@@ -82,6 +90,9 @@ function parseCli(argv: readonly string[]): CliOptions {
     producerIndexPath: required("--producer-index"),
     outputDir: required("--output-dir"),
     verifyInputFingerprint,
+    terminalTableConfigPath:
+      values.get("--terminal-table-config") ??
+      DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   };
 }
 
@@ -92,13 +103,20 @@ export function reconcileOneHopBatch(
     dataRoot: options.dataRoot,
     producerIndex: options.producerIndex,
     verifyInputFingerprint: options.verifyInputFingerprint,
+    terminalTableConfig: options.terminalTableConfig,
   });
 }
 
 function main(): void {
   const cli = parseCli(process.argv.slice(2));
   const producerIndex = loadTableProducerIndex(cli.producerIndexPath);
-  const results = reconcileOneHopBatch({ ...cli, producerIndex });
+  const results = reconcileOneHopBatch({
+    ...cli,
+    producerIndex,
+    terminalTableConfig: loadTerminalTableConfig(
+      resolve(cli.terminalTableConfigPath),
+    ),
+  });
   const outputDir = resolve(cli.outputDir);
   mkdirSync(outputDir, { recursive: true });
   const summary = results.map((result) => {

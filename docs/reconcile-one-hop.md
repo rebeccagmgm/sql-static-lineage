@@ -9,10 +9,10 @@
 ## 入口
 
 ```text
-npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--output <result.json>] [--summary-output <summary.json>]
+npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>]
 
 # 发现缺失父任务后自动补采 Input Pack、重建索引并重跑
-npm run reconcile-one-hop:autofill -- --task-id <taskId> --data-root <input-pack-root> --producer-index <index.json> [--output <result.json>] [--summary-output <summary.json>] [--force]
+npm run reconcile-one-hop:autofill -- --task-id <taskId> --data-root <input-pack-root> --producer-index <index.json> [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>] [--force]
 ```
 
 处理多个根任务时，使用批量入口复用一次 Table catalog；需要严格校验 input fingerprint 时显式加开关：
@@ -22,6 +22,7 @@ npm run reconcile-one-hop:batch -- \
   --task-ids <task-id-1,task-id-2,...> \
   --data-root <input-pack-root> \
   --producer-index <index.json> \
+  [--terminal-table-config <path>] \
   [--verify-input-fingerprint] \
   --output-dir <result-dir>
 ```
@@ -31,6 +32,9 @@ npm run reconcile-one-hop:batch -- \
 Horae `relation up depth=1` 使用固定的 read-through 缓存：
 `E:\02_area\股衍数据-数据cookbook\sql-static-lineage-cache\schedule-evidence\tasks\<taskId>\horae-relation-up-depth-1.json`。
 默认 runner 先读取并校验缓存的 schema、Task ID、方向、深度、行记录和内容 SHA-256；命中时不调用 OpenCLI，缺失或校验失败才实时查询，成功结果使用同目录临时文件改名原子写入。缓存是可删除的派生证据快照，没有 TTL；需要刷新时删除对应 Task 文件即可。显式注入 `scheduleRows` 或 `scheduleEvidenceByTaskId` 时仍完全绕过缓存。
+
+one-hop 默认加载 `config/multi-hop-terminal-table-rules.json`，也可通过
+`--terminal-table-config` 指定同一份共享配置。命中的 terminal/reference 表仍保留为当前 SQL 的直接读表证据，但不会进入 confirmed producer、非确认关系或 `finalUpstreamTaskIds` 递归集合；原始调度父任务仍作为调度证据保留。
 
 `--data-root` 指向 Task/Table Input Pack V1。未传 `--output` 时，结果只写到标准输出。
 
@@ -48,10 +52,11 @@ Horae `relation up depth=1` 使用固定的 read-through 缓存：
 
 1. 当前任务直接读表：读取并校验 Task Input Pack 中各 SQL 文件的 SHA-256，再使用现有 `SqlSession + buildPlanFacts` 提取物理读表。one-hop 会加载 Table Pack DDL schema，并启用 adaptor 的 expression dependency，把 WHERE 谓词保留为 `AND` / `OR` / `NOT` 结构和物理列来源；裸表名仅在 Task Pack 的限定任务名可证明默认 schema 且未与限定 target 冲突时继承该 schema；否则保留未解析状态。
 2. 调度骨架：读取或查询 `horae relation <taskId> --direction up --depth 1`；缓存命中时不访问 OpenCLI。
-3. 父任务写表：优先使用方向明确的 `DIRECT_PLATFORM_TARGET` / `SQL_EXACT_TABLE_TARGET` 和显式 SQL WRITE；父任务 Input Pack 缺失时才查询 `szdata task-source`。
-4. 表身份：使用 Table Input Pack 将 `qualifiedName` 解析为唯一的 `platform + dataSource + qualifiedName`。缺失或多义身份不能形成 `MATCHED`。
-5. READ 分区范围：先沿 PlanFacts 的 `source`、`Join.left/right`、setop 和显式 CTE scope mapping 回溯到每个物理 `ReadRelation` occurrence，再结合 Table Pack `partitionFields`（缺失时回退 DDL）解析 `readPartitionScopes`。同一物理表的多次 READ 不提前去重；每个 occurrence 保留独立 predicate tree、source span、relation path 和归属证据。只使用静态 SQL 谓词；调度分区、脚本参数和运行实例不补 READ 分区。
-6. producer 分区匹配：对同表 producer 的 WRITE observation 计算 `PROVEN_OVERLAP`、`POSSIBLE_OVERLAP`、`PROVEN_DISJOINT` 或 `UNKNOWN`。这是旁路判断，不改变旧表级 `nextDataTaskIds`。
+3. terminal/reference 表边界：读取共享配置；命中的表保留 direct-read，但不做 producer 对账或递归展开。
+4. 父任务写表：优先使用方向明确的 `DIRECT_PLATFORM_TARGET` / `SQL_EXACT_TABLE_TARGET` 和显式 SQL WRITE；父任务 Input Pack 缺失时才查询 `szdata task-source`。
+5. 表身份：使用 Table Input Pack 将 `qualifiedName` 解析为唯一的 `platform + dataSource + qualifiedName`。缺失或多义身份不能形成 `MATCHED`。
+6. READ 分区范围：先沿 PlanFacts 的 `source`、`Join.left/right`、setop 和显式 CTE scope mapping 回溯到每个物理 `ReadRelation` occurrence，再结合 Table Pack `partitionFields`（缺失时回退 DDL）解析 `readPartitionScopes`。同一物理表的多次 READ 不提前去重；每个 occurrence 保留独立 predicate tree、source span、relation path 和归属证据。只使用静态 SQL 谓词；调度分区、脚本参数和运行实例不补 READ 分区。
+7. producer 分区匹配：对同表 producer 的 WRITE observation 计算 `PROVEN_OVERLAP`、`POSSIBLE_OVERLAP`、`PROVEN_DISJOINT` 或 `UNKNOWN`。这是旁路判断，不改变旧表级 `nextDataTaskIds`。
 
 ## 状态
 

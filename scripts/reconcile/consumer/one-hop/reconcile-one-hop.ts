@@ -83,6 +83,12 @@ import {
   writeHoraeRelationCache,
   type ScheduleEvidenceCacheStatus,
 } from "./schedule-evidence-cache.ts";
+import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+  loadTerminalTableConfig,
+  matchingTerminalRole,
+  type TerminalTableConfig,
+} from "../multi-hop/terminal-table-config.ts";
 
 export {
   extractSqlWrites,
@@ -492,6 +498,8 @@ export interface ReconcileOneHopOptions {
   }>;
   /** Null disables the cache; omitted uses the fixed root for the default runner. */
   readonly scheduleEvidenceCacheRoot?: string | null;
+  /** Shared terminal-table rules retain direct reads but suppress producer expansion. */
+  readonly terminalTableConfig?: TerminalTableConfig;
   readonly trustedInputFingerprint?: string;
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
@@ -2022,6 +2030,12 @@ function reconcileOneHopInternal(
     catalog,
     preparedContext.schema,
   );
+  const terminalRoleOf = (
+    qualifiedName: string | null | undefined,
+  ): string | null =>
+    options.terminalTableConfig && qualifiedName
+      ? matchingTerminalRole(options.terminalTableConfig, qualifiedName)
+      : null;
 
   const horaeArgs = [
     "horae",
@@ -2177,6 +2191,7 @@ function reconcileOneHopInternal(
   for (const parent of parents) {
     if (parent.confirmedWrites.length === 0) {
       const unconfirmed = parent.unconfirmedTargets[0];
+      if (terminalRoleOf(unconfirmed?.qualifiedName)) continue;
       const table = resolveCatalogTable(
         catalog,
         unconfirmed?.qualifiedName ?? null,
@@ -2199,6 +2214,7 @@ function reconcileOneHopInternal(
       continue;
     }
     for (const write of parent.confirmedWrites) {
+      if (terminalRoleOf(write.table.qualifiedName)) continue;
       const identity = tableIdentityKey(write.table)!;
       const read = readsByIdentity.get(identity) ?? null;
       if (read) matchedReadIdentities.add(identity);
@@ -2227,9 +2243,11 @@ function reconcileOneHopInternal(
       read,
       write: null,
       evidence: read.evidence,
-      reason: identity
-        ? "NO_CONFIRMED_HORAE_PARENT_WRITE"
-        : "READ_TABLE_IDENTITY_UNRESOLVED",
+      reason: terminalRoleOf(read.table.qualifiedName)
+        ? "REFERENCE_CONFIG"
+        : identity
+          ? "NO_CONFIRMED_HORAE_PARENT_WRITE"
+          : "READ_TABLE_IDENTITY_UNRESOLVED",
     });
   }
 
@@ -2241,6 +2259,7 @@ function reconcileOneHopInternal(
     const seenEdges = new Set<string>();
     const seenRelations = new Set<string>();
     for (const read of directReads) {
+      if (terminalRoleOf(read.table.qualifiedName)) continue;
       const identity = producerIdentity(read.table);
       if (!identity) continue;
       for (const occurrence of read.readPartitionScopes) {
@@ -2929,11 +2948,14 @@ function main(): void {
     option(args, "--data-root") ?? process.env.SQL_LINEAGE_DATA_ROOT;
   const output = option(args, "--output");
   const summaryOutput = option(args, "--summary-output");
+  const terminalTableConfigPath =
+    option(args, "--terminal-table-config") ??
+    DEFAULT_TERMINAL_TABLE_CONFIG_PATH;
   const producerIndexPath = producerIndexPathFromArgs(args);
   const verifyInputFingerprint = args.includes("--verify-input-fingerprint");
   if (!taskId || !dataRoot)
     throw new Error(
-      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--verify-input-fingerprint] [--output <json>] [--summary-output <summary.json>]",
+      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--terminal-table-config <path>] [--verify-input-fingerprint] [--output <json>] [--summary-output <summary.json>]",
     );
   const producerIndex = producerIndexPath
     ? loadTableProducerIndex(producerIndexPath)
@@ -2942,6 +2964,9 @@ function main(): void {
     dataRoot,
     producerIndex,
     verifyInputFingerprint,
+    terminalTableConfig: loadTerminalTableConfig(
+      resolve(terminalTableConfigPath),
+    ),
   });
   const serialized = `${JSON.stringify(result, null, 2)}\n`;
   const summary = `${JSON.stringify(summarizeOneHop(result), null, 2)}\n`;

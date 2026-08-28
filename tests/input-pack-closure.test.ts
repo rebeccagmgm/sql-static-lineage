@@ -99,4 +99,46 @@ describe("input pack closure", () => {
     expect(result.collectedTaskIds).toEqual(["B"]);
     expect(result.rounds).toBe(2);
   });
+
+  it("does not discover producers behind a configured terminal reference table", () => {
+    const dataRoot = root();
+    writeTable(dataRoot, "pdata_n.ref_cd_cvt_map");
+    writeTask(dataRoot, "A", "SELECT id FROM pdata_n.ref_cd_cvt_map");
+    const terminalTableConfig = {
+      version: "test",
+      stopRoles: ["REFERENCE_CONFIG"],
+      roles: {
+        REFERENCE_CONFIG: {
+          qualifiedNameExact: ["pdata_n.ref_cd_cvt_map"],
+          qualifiedNameTerms: ["never-match"],
+        },
+      },
+    } as const;
+    let discoveryCalls = 0;
+
+    const result = runInputPackClosure({
+      taskId: "A",
+      dataRoot,
+      producerIndexCacheRoot: join(
+        dirname(dataRoot),
+        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index-cache`,
+      ),
+      maxDepth: 3,
+      maxTasks: 20,
+      maxRounds: 4,
+      terminalTableConfig,
+      discoverTableProducerTaskIds: () => {
+        discoveryCalls += 1;
+        throw new Error("terminal table must not be discovered");
+      },
+      collectTaskPacks: () => {
+        throw new Error("terminal table must not collect a producer");
+      },
+    });
+
+    expect(discoveryCalls).toBe(0);
+    expect(result.status).toBe("COMPLETE");
+    expect(result.taskIds).toEqual(["A"]);
+    expect(result.discoveredTaskIds).toEqual(["A"]);
+  });
 });

@@ -28,6 +28,7 @@ import {
   type TaskReadTableRef,
 } from "./task-read-evidence.ts";
 import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   loadTerminalTableConfig,
   matchingTerminalRole,
   type TerminalTableConfig,
@@ -1745,7 +1746,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     maxEdges: integer("--max-edges", DEFAULT_MAX_EDGES),
     terminalTableConfigPath:
       values.get("--terminal-table-config") ??
-      "config/multi-hop-terminal-table-rules.json",
+      DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   };
 }
 

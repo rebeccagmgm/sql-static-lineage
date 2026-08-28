@@ -21,6 +21,7 @@ import {
   type MultiHopReconciliationResult,
 } from "./reconcile-multi-hop.ts";
 import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   loadTerminalTableConfig,
   matchingTerminalRole,
   type TerminalTableConfig,
@@ -382,6 +383,7 @@ export function runMultiHopAutofill(
           verifyInputFingerprint: true,
           scheduleRows: frozenSchedule,
           now,
+          terminalTableConfig: terminalConfig,
         },
         context,
       );
@@ -585,7 +587,7 @@ function parseCli(args: readonly string[]): CliOptions {
     reportPath: values.get("--report"),
     terminalTableConfigPath:
       values.get("--terminal-table-config") ??
-      "config/multi-hop-terminal-table-rules.json",
+      DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
     maxDepth: integer("--max-depth", 3),
     maxTasks: integer("--max-tasks", DEFAULT_MAX_TASKS),
     maxEdges: integer("--max-edges", DEFAULT_MAX_EDGES),

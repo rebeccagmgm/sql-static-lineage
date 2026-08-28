@@ -8,6 +8,10 @@ import {
 } from "../reconcile/producer/producer-index.ts";
 import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
 import { validateTaskDocument, type TaskDocument } from "../input/shared/input-pack.ts";
+import {
+  matchingTerminalRole,
+  type TerminalTableConfig,
+} from "../reconcile/consumer/multi-hop/terminal-table-config.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_DISCOVERED_TASKS = 5000;
@@ -24,6 +28,8 @@ export interface InputPackClosureOptions {
   readonly maxDiscoveredTasks?: number;
   readonly discoveryAttempts?: number;
   readonly discoveryMinIntervalMs?: number;
+  /** Shared terminal-table rules prevent producer expansion for reference tables. */
+  readonly terminalTableConfig?: TerminalTableConfig;
   /** Override table-level producer discovery in tests or offline runs. */
   readonly discoverTableProducerTaskIds?: (qualifiedName: string) => readonly string[];
   readonly force?: boolean;
@@ -155,6 +161,11 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
       if (visited.size > options.maxTasks) throw new Error("MAX_TASKS_REACHED");
 
       for (const qualifiedName of taskReads(dataRoot, loaded)) {
+        if (
+          options.terminalTableConfig &&
+          matchingTerminalRole(options.terminalTableConfig, qualifiedName)
+        )
+          continue;
         let producerIds = producerCache.get(qualifiedName);
         if (!producerIds) {
           producerIds = indexedProducerIds(index, qualifiedName);

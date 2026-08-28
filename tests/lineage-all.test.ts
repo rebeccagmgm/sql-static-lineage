@@ -306,13 +306,17 @@ describe("lineage:all", () => {
       target: { platform: "hive", dataSource: "gfhive", qualifiedName: "demo.target" },
     })));
     const events: string[] = [];
+    let closureConfig: any;
+    let oneHopConfig: any;
+    let multiHopConfig: any;
     const result = await runLineageAll({
       dataRoot: root,
       taskIds: ["181058"],
       withFields: true,
       dependencies: {
         schedulePrefetch: async (taskIds) => new Map(taskIds.map((taskId) => [taskId, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "2026-08-27T00:00:00.000Z" }])),
-        autofill: ({ taskId, maxTasks, maxDiscoveredTasks }) => {
+        autofill: ({ taskId, maxTasks, maxDiscoveredTasks, terminalTableConfig }) => {
+          closureConfig = terminalTableConfig;
           events.push(`input-pack-autofill:${maxTasks}:${maxDiscoveredTasks}`);
           return { taskIds: [taskId], discoveredTaskIds: [taskId], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [] };
         },
@@ -324,11 +328,13 @@ describe("lineage:all", () => {
           events.push("producer-index");
           return { index: {} as any, cachePath: "", manifestPath: "" } as any;
         },
-        oneHopBatch: (taskIds) => {
+        oneHopBatch: (taskIds, options) => {
+          oneHopConfig = options.terminalTableConfig;
           events.push(`one-hop:${taskIds.join(",")}`);
           return taskIds.map((taskId) => fakeOneHop(taskId));
         },
         multiHop: (taskId, options) => {
+          multiHopConfig = options.terminalTableConfig;
           events.push(`multi-hop:${taskId}:${options.rootOneHop?.taskId ?? "missing"}:${options.maxTasks}:${options.maxEdges}`);
           return fakeMultiHop(taskId);
         },
@@ -349,6 +355,15 @@ describe("lineage:all", () => {
       },
     });
     expect(result.status).toBe("SUCCESS");
+    for (const config of [closureConfig, oneHopConfig, multiHopConfig])
+      expect(config).toMatchObject({
+        stopRoles: ["REFERENCE_CONFIG"],
+        roles: {
+          REFERENCE_CONFIG: {
+            qualifiedNameExact: expect.arrayContaining(["pdata_n.ref_cd_cvt_map"]),
+          },
+        },
+      });
     expect(events).toEqual([
       "input-pack-autofill:1000:5000",
       "producer-index",

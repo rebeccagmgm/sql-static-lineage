@@ -12,6 +12,8 @@
 
 串联阶段对 `checkdbflag` 做硬过滤：这类任务可以保留为调度侧证据，但不会进入正式 Multi-hop 的数据关系、字段 `VALUE_FLOW` 或字段缺口。已有 Input Pack 通过 `taskCategory` 识别；缺失 Pack 的 Horae 检查节点使用稳定的 `checker.` 任务名约定识别。
 
+`config/multi-hop-terminal-table-rules.json` 是所有扩展阶段共享的 terminal/reference 表配置。`lineage:all` 会把同一份已校验配置传给 Input Pack closure、one-hop、字段驱动补链和 multi-hop：命中的表仍保留为当前 SQL 的直接读表证据，但不会查询 producer、补入 producer Task 或进入 `finalUpstreamTaskIds` 递归集合；原始调度关系仍作为证据保留。它不删除静态 SQL，也不替代当前 Task 所需的 Table Pack 身份/DDL 证据。
+
 示例：
 
 ```powershell

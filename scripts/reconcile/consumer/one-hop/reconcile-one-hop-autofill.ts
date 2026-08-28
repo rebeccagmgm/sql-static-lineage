@@ -13,6 +13,10 @@ import {
   summaryPathFromOutput,
   type OneHopReconciliationResult,
 } from "./reconcile-one-hop.ts";
+import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+  loadTerminalTableConfig,
+} from "../multi-hop/terminal-table-config.ts";
 
 interface CliOptions {
   readonly taskId: string;
@@ -21,6 +25,7 @@ interface CliOptions {
   readonly output?: string;
   readonly summaryOutput?: string;
   readonly force: boolean;
+  readonly terminalTableConfigPath: string;
 }
 
 const repoRoot = resolve(import.meta.dirname, "../../../..");
@@ -52,6 +57,7 @@ function parseCli(args: readonly string[]): CliOptions {
     "--producer-index",
     "--output",
     "--summary-output",
+    "--terminal-table-config",
   ]);
   const allowedFlags = new Set(["--force"]);
   for (let index = 0; index < args.length; index += 1) {
@@ -71,6 +77,9 @@ function parseCli(args: readonly string[]): CliOptions {
     output: option(args, "--output"),
     summaryOutput: option(args, "--summary-output"),
     force: args.includes("--force"),
+    terminalTableConfigPath:
+      option(args, "--terminal-table-config") ??
+      DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   };
 }
 
@@ -166,10 +175,14 @@ export function runOneHopAutofill(options: CliOptions): OneHopReconciliationResu
         producerIndexPath,
         `${producerIndexPath}.manifest.json`,
       ).index;
+  const terminalTableConfig = loadTerminalTableConfig(
+    resolve(options.terminalTableConfigPath),
+  );
 
   const firstPass = reconcileOneHop(options.taskId, {
     dataRoot,
     producerIndex: initialIndex,
+    terminalTableConfig,
   });
   const missingIds = missingTaskInputPackIds(firstPass);
   runCollector(dataRoot, missingIds, options.force);
@@ -183,6 +196,7 @@ export function runOneHopAutofill(options: CliOptions): OneHopReconciliationResu
     dataRoot,
     producerIndex: updated.index,
     verifyInputFingerprint: true,
+    terminalTableConfig,
   });
   writeResult(finalResult, options.output, options.summaryOutput);
   return finalResult;

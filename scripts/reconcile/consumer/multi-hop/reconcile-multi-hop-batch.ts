@@ -10,7 +10,10 @@ import {
   type MultiHopBatchRoot,
   type MultiHopReconciliationResult,
 } from "./reconcile-multi-hop.ts";
-import { loadTerminalTableConfig } from "./terminal-table-config.ts";
+import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+  loadTerminalTableConfig,
+} from "./terminal-table-config.ts";
 import type { OneHopReconciliationResult } from "../one-hop/reconcile-one-hop.ts";
 
 interface CliOptions {
@@ -102,7 +105,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     maxEdges: integer("--max-edges", 500),
     terminalTableConfigPath:
       values.get("--terminal-table-config") ??
-      "config/multi-hop-terminal-table-rules.json",
+      DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   };
 }
 

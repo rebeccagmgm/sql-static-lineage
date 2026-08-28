@@ -55,6 +55,11 @@ import {
 } from "../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import { reconcileMultiHop } from "../reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
+import {
+  DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+  loadTerminalTableConfig,
+  matchingTerminalRole,
+} from "../reconcile/consumer/multi-hop/terminal-table-config.ts";
 import { queryProducerTaskIds } from "../reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
 import { loadTableProducerIndex, pinTableProducerIndex, fingerprintTableProducerInputs } from "../reconcile/producer/producer-index.ts";
 import { validateTaskDocument, type TaskDocument } from "../input/shared/input-pack.ts";
@@ -635,6 +640,9 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
   try {
     const producerCacheRoot = `${resolve(options.dataRoot)}.producer-index-cache`;
     const factsRoot = resolve(options.factsRoot ?? join(options.dataRoot, "field-facts"));
+    const terminalTableConfig = loadTerminalTableConfig(
+      resolve(options.terminalTableConfigPath ?? DEFAULT_TERMINAL_TABLE_CONFIG_PATH),
+    );
     const queriedFieldTables = new Set<string>();
     const fieldDrivenProducerTables = new Set<string>();
     const fieldDrivenProducerTaskIds = new Set<string>();
@@ -671,6 +679,7 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           maxDiscoveryTables: 1000,
           maxDiscoveredTasks: DEFAULT_MAX_DISCOVERED_TASKS,
           force: options.force,
+          terminalTableConfig,
         });
         if (autofill.status !== "COMPLETE") throw new Error(`INPUT_PACK_CLOSURE_PARTIAL:${autofill.issues.join(";")}`);
         initialClosure = autofill;
@@ -708,6 +717,7 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         verifyInputFingerprint: true,
         trustedInputFingerprint,
         scheduleEvidenceByTaskId,
+        terminalTableConfig,
       });
       const checkDbFlagIds = checkDbFlagTaskIds(resolve(options.dataRoot), oneHopResults);
       for (const result of oneHopResults) rawOneHopSnapshots.set(result.taskId, result);
@@ -726,6 +736,7 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         rootOneHop,
         oneHopSnapshots,
         trustedInputFingerprint,
+        terminalTableConfig,
       });
       if (!tableHtmlRendered) {
         writeJson(oneHopPath, rawRootOneHop);
@@ -751,6 +762,8 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         const fieldTables = fieldSourceTablesMissingProducerBridge(fieldArtifact, formalMultiHop);
         const producerTaskIds = new Set<string>();
         for (const qualifiedName of fieldTables) {
+          if (matchingTerminalRole(terminalTableConfig, qualifiedName))
+            continue;
           fieldDrivenProducerTables.add(qualifiedName);
           if (queriedFieldTables.has(qualifiedName)) continue;
           queriedFieldTables.add(qualifiedName);

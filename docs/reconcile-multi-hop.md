@@ -14,7 +14,7 @@ one-hop reconciliation；BFS 下一层只取该结果的
 遍历仍只消费经过校验的 Task/Table Input Pack V1 和 `TABLE_PRODUCER_INDEX`
 candidate/WRITE bridge；producer index 不重新决定递归集合。
 
-命令默认加载 `config/multi-hop-terminal-table-rules.json`。配置命中的表会记录为 `REFERENCE_CONFIG` terminal，并且不会查询其 confirmed producer；也可用 `--terminal-table-config <path>` 显式指定另一份 JSON 配置。该配置只控制多跳递归边界，不改变 Input Pack 或静态 SQL 血缘产物。
+命令默认加载 `config/multi-hop-terminal-table-rules.json`。这是 Input Pack closure、one-hop、字段驱动补链和 multi-hop 共用的 terminal/reference 表配置。配置命中的表会保留为当前 SQL 的直接读表证据，但不会查询其 confirmed producer、补入 producer Task 或继续递归；也可用 `--terminal-table-config <path>` 显式指定另一份 JSON 配置。该配置不删除 Input Pack 或静态 SQL 血缘产物，也不替代当前 Task 所需的 Table Pack 身份/DDL 证据。
 
 ## 运行
 

@@ -300,6 +300,89 @@ describe("reconcileOneHop", () => {
       cachePath,
     });
   });
+
+  it("retains a configured terminal table as a direct read without producer expansion", () => {
+    const dataRoot = fixtureRoot();
+    writeTable(dataRoot, "pdata_n.ref_cd_cvt_map");
+    writeTable(dataRoot, "mart.current");
+    writeTask(dataRoot, "current", {
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE mart.current SELECT id FROM pdata_n.ref_cd_cvt_map",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "mart.current",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    writeTask(dataRoot, "map-producer", {
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE pdata_n.ref_cd_cvt_map SELECT id FROM raw.seed",
+          evidenceProvider: "fixture:sql",
+        },
+      },
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "pdata_n.ref_cd_cvt_map",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      evidenceProvider: "fixture:task",
+    });
+    writeTable(dataRoot, "raw.seed");
+    const terminalTableConfig = {
+      version: "test",
+      stopRoles: ["REFERENCE_CONFIG"],
+      roles: {
+        REFERENCE_CONFIG: {
+          qualifiedNameExact: ["pdata_n.ref_cd_cvt_map"],
+          qualifiedNameTerms: ["never-match"],
+        },
+      },
+    } as const;
+    const producerIndex = buildTableProducerIndex(dataRoot, {
+      now: () => "2026-08-23T00:30:00.000Z",
+    });
+
+    const result = reconcileOneHop("current", {
+      dataRoot,
+      producerIndex,
+      scheduleRows: [],
+      terminalTableConfig,
+    });
+
+    expect(result.currentTask.directReads.map((read) => read.table.qualifiedName)).toContain(
+      "pdata_n.ref_cd_cvt_map",
+    );
+    expect(result.dataPath.confirmedProducers).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: "map-producer",
+          table: expect.objectContaining({
+            qualifiedName: "pdata_n.ref_cd_cvt_map",
+          }),
+        }),
+      ]),
+    );
+    expect(result.reconciliation).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: "SQL_ONLY",
+          reason: "REFERENCE_CONFIG",
+          table: expect.objectContaining({
+            qualifiedName: "pdata_n.ref_cd_cvt_map",
+          }),
+        }),
+      ]),
+    );
+    expect(result.nextDataTaskIds).not.toContain("map-producer");
+  });
   it("builds a concise sidecar summary without embedding evidence", () => {
     const fixture = writeProducerIndexFixture();
     const result = reconcileOneHop("current-indexed", {

@@ -11,6 +11,9 @@ export interface TerminalTableConfig {
   readonly roles: Readonly<Record<string, TerminalTableRoleConfig>>;
 }
 
+export const DEFAULT_TERMINAL_TABLE_CONFIG_PATH =
+  "config/multi-hop-terminal-table-rules.json";
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
