@@ -49,28 +49,56 @@ scripts/reconcile/consumer/target-table-upstream-causal-closure/
 
 ### 2. Use a write-observation root and producer-branch assessment
 
-根对象定义为：
+根对象拆成稳定写入身份和分析快照引用：
 
 ```ts
-type TargetWriteRef = {
+type TargetWriteIdentity = {
+  targetWriteId: string;
   taskId: string;
-  writeObservationId: string;
   targetTableKey: string;
   statementIndex: number;
   rootRelationId: string;
+};
+
+type AnalysisSnapshotRef = {
   inputFingerprint: string;
+  machineFactsHash: string;
+  producerIndexHash: string;
+  tableMultiHopHash: string;
+  fieldLineageHash?: string;
+  semanticRuleVersion: string;
+};
+
+type TargetWriteRef = {
+  identity: TargetWriteIdentity;
+  snapshot: AnalysisSnapshotRef;
 };
 ```
 
 主 assessment key 为：
 
 ```text
-TargetWriteRef + candidateBranchId
+targetWriteId + candidateBranchId
 ```
 
 `candidateBranchId` 在 V1 继续使用现有稳定候选身份，包含 consumer/read occurrence/physical producer 等稳定身份，不包含 producer role。以后 producer index 提供稳定 write observation identity 时，可增加字段而不改变当前候选语义。
 
-字段不是主 graph vertex。它只在 `FIELD_VALUE`、`EXPRESSION_CONTROL` 等需要解释字段证据时作为 subject，并引用旧 field-lineage 或 shared physical evidence；因此不会产生 137×549 的 assessment 数量。
+`TargetWriteResolver` 必须把目标任务、物理目标表、SQL statement slot、root relation 和 canonical write evidence 唯一绑定；无法唯一绑定时输出 `TARGET_WRITE_AMBIGUOUS` 或 `TARGET_WRITE_RELATION_UNMAPPED`，禁止猜根。
+
+字段不得成为顶层 traversal root 或 assessment dimension，但可以作为 Task-local typed vertex、field port 或压缩 FieldSet，在 `FIELD_VALUE`/`EXPRESSION_CONTROL` 中接续精确值语义。它通过 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 按候选生产分支返回聚合摘要：
+
+```ts
+type FieldValueImpact = {
+  candidateBranchId: string;
+  status: "CONFIRMED" | "CONDITIONAL" | "UNKNOWN" | "PROVEN_ABSENT";
+  affectedTargetFields: string[];
+  outputFieldBindingIds: string[];
+  evidenceRefs: string[];
+  gapRefs: string[];
+};
+```
+
+`affectedTargetFields` 只用于 FIELD_VALUE 的解释和钻取，不能成为关系级传播 frontier，因此不会产生 137×549 的 assessment 数量。
 
 ### 3. Normalize once into task relation summaries
 
@@ -90,10 +118,17 @@ type TaskRelationSummary = {
     relationEvidenceRefs: string[];
     gaps: string[];
   }>;
+  fieldTransfers: ReadonlyArray<{
+    inputSubject: PhysicalFieldSubject;
+    outputFieldBindingIds: string[];
+    localEffectKind: "VALUE_FLOW" | "EXPRESSION_CONTROL" | "WINDOW_CONTEXT";
+    evidenceRefs: string[];
+    gapRefs: string[];
+  }>;
 };
 ```
 
-Native Plan Facts/Machine Facts 负责确定“观察到的 operator、occurrence 和证据”；summary 负责把这些事实映射为重跑相关影响通道。Calcite 以 `digest` 为缓存键补充 predicates、unique keys、functional dependencies 和 cardinality metadata，不以字段或候选分支为缓存键。
+Native Plan Facts/Machine Facts 负责确定“观察到的 operator、occurrence 和证据”；summary 负责把这些事实映射为重跑相关影响通道。字段值证据由 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 聚合到候选生产分支，并保留受影响的具体 output field binding；它不生成目标字段 assessment，也不驱动关系级全量扩散。Calcite 以 `digest` 为缓存键补充 predicates、unique keys、functional dependencies 和 cardinality metadata，不以字段或候选分支为缓存键。
 
 首版 operator semantics 按批次实现：
 
@@ -107,13 +142,12 @@ JOIN dependency 不以 uniqueness 为前提；uniqueness 只更新 `MULTIPLICITY
 
 ### 4. Build a deduplicated global impact graph
 
-图的节点以 relation/read/write occurrence 为主，边以生产者到消费者方向保存，边上携带：
+图的节点以 relation/read/write occurrence 为主；Task-local semantic edge 与跨任务 bridge edge 分开。local edge 是共享语义事实，不携带某个候选身份；bridge edge 才以生产者到消费者方向保存候选关联，并携带：
 
 ```text
 candidateBranchId
 readOccurrenceId
 impactChannels
-pathCertainty
 evidenceRefs
 gapRefs
 ```
@@ -128,7 +162,21 @@ TaskRelationSummary
   → GlobalImpactGraph
 ```
 
-从 `TargetWriteRef` 反向传播一次。传播状态只保留节点、impact-channel bitset、`PathCertainty`、深度和少量 witness predecessor；不保存所有 root field、所有路径或所有字段组合。重复到达同一节点时使用集合并集和保守 certainty 合并，直到固定点或预算停止。
+从 `TargetWriteRef` 反向传播一次。传播状态只保留节点、impact-channel bitset、逐通道 `ChannelStatus`、深度和少量 witness predecessor；不保存所有 root field、所有路径或所有字段组合。重复到达同一节点时，在同一 channel 内按 `CONFIRMED > CONDITIONAL > UNKNOWN` 合并；不同 channel 独立合并，直到固定点或预算停止。
+
+每个候选分支最终保存逐通道结果：
+
+```ts
+type ChannelAssessment = {
+  channel: ImpactChannel;
+  status: "CONFIRMED" | "CONDITIONAL" | "PROVEN_ABSENT" | "UNKNOWN" | "NOT_APPLICABLE";
+  proofRefs: string[];
+  witnessRefs: string[];
+  gapRefs: string[];
+};
+```
+
+任一 channel 为 `CONFIRMED` 即整体 `CONFIRMED_RELATED`；无 confirmed 但有 conditional 即 `CONDITIONAL_RELATED`；仍有未关闭义务即 `UNKNOWN`；只有所有适用 channel 都 `PROVEN_ABSENT` 才能 `PROVEN_UNRELATED`。因此 `FIELD_VALUE = CONFIRMED` 不会被独立的 `MULTIPLICITY = UNKNOWN` 降级，但 multiplicity gap 仍会保留。
 
 为避免跨任务闭环造成无限传播，使用稳定 occurrence/branch 状态键和共享 depth 上限；只有在实际输入出现强连通循环时再增加 SCC 压缩，不能用循环上限掩盖未知证据。
 
@@ -146,18 +194,16 @@ canonical artifact 保存：
 
 ```text
 relationStatus
-impactChannels
+channelAssessments
 evidenceRefs
 gapRefs
 negativeProofRefs
 ```
 
-另设策略投影保存：
+本 change 只保存静态候选集，并显式写入：
 
 ```text
-rerunDecision
-decisionBasis
-runtimeEvidenceRefs
+runtimeRerunDecision = NOT_EVALUATED
 ```
 
 本 change 的默认投影为：
@@ -169,7 +215,22 @@ conservativeSafetySet = CONFIRMED_RELATED
                           + UNKNOWN
 ```
 
-它们是静态候选集，不等价于某个运行实例的必然重跑列表。后续接入分区、参数、运行状态和数据变化时，只新增 RuntimeRerunPolicy consumer，不改变静态闭包证明。
+它们是静态候选集，不等价于某个运行实例的必然重跑列表。`REQUIRED`、`SAFE_INCLUDE` 和 `NOT_REQUIRED` 由后续独立 `RuntimeRerunPolicy` consumer 根据分区、参数、运行状态和数据变化产生，不改变静态闭包证明。
+
+同时生成任务级 rollup，便于最终消费方直接得到“哪些任务需要考虑”：
+
+```ts
+type UpstreamTaskRollup = {
+  producerTaskId: string;
+  branchIds: string[];
+  relationStatus: "CONFIRMED_RELATED" | "CONDITIONAL_RELATED" | "PROVEN_UNRELATED" | "UNKNOWN";
+  impactChannels: ImpactChannel[];
+  evidenceRefs: string[];
+  gapRefs: string[];
+};
+```
+
+一个 Task 任一 branch confirmed 即进入最小确定集；没有 confirmed 但有 conditional/unknown 即进入保守安全集；所有 branch proven unrelated 才排除。`ROOT_WRITE` 只展示为目标根，不计入上游任务数量。
 
 ### 7. Reuse Calcite as a bounded shadow semantic track
 
@@ -219,14 +280,15 @@ target-field-causal-slice.json/html
 ## Migration Plan
 
 1. 冻结 `dc041f5` 及旧 field-lineage/target-field 产物和 golden；确认新 change 不修改其 contract。
-2. 建立目标表闭包 contract、artifact schema、CLI 参数和阶段指标；先用静态 fixture 验证根粒度和候选投影。
-3. 复用现有 resolver、producer bridge、relation bridge 和 Calcite differential adapter，补齐稳定 branch identity、bridge closure 统计和兼容测试。
-4. 实现 task relation summary 和 operator/channel transfer rules，先覆盖 JOIN/FILTER/AGGREGATE/COUNT(*)/EXISTS/CROSS JOIN/Top-N 的重跑相关语义。
-5. 实现去重 global impact graph、一次反向固定点传播、witness 回溯和预算 fail-fast；禁止引入字段笛卡尔积。
-6. 实现 static assessment、negative proof safe rules、Unknown gap、最小确定集和保守安全集。
-7. 实现独立 JSON/摘要/HTML renderer，并验证旧 field-lineage 产物、hash 和命令行为不变。
-8. 使用固定 fingerprint 对 209119 做 causal-only A/B：比较旧字段矩阵与新候选分支数量、桥接闭合率、Unknown 原因、峰值内存和阶段耗时；不满足门槛则停止扩大 operator 范围。
-9. 只有在真实语料证明新闭包减少重复计算且 Calcite shadow 产生可映射语义收益后，才单独提出 RuntimeRerunPolicy 或 Calcite 生产侧车 change。
+2. **M1：**实现 `TargetWriteResolver`、稳定 `TargetWriteIdentity`/`AnalysisSnapshotRef`、project/FIELD_VALUE provider，以及单 Task 闭包；先验证根可唯一构造。
+3. **M2：**接入 exact producer/read bridge 和内部 field port/value transfer，完成跨 Task `FIELD_VALUE` 传播；验证字段只精确接续对应 output binding，不扩散到全部字段。
+4. **M3：**加入 FILTER/JOIN 的 ROW_MEMBERSHIP/MULTIPLICITY 和 relation bridge，建立 task-level rollup；验证 local semantic edge 不复制 candidate branch。
+5. **M4：**加入 COUNT(*)、EXISTS、CROSS JOIN、literal-from-relation 等 RELATION_EXISTENCE/基数影响，完成逐通道 status 和聚合代数。
+6. **M5：**加入 AGGREGATE、DISTINCT、SETOP、WINDOW、Top-N 及其 support gaps；实现 global graph、一次反向固定点传播、witness 回溯和预算 fail-fast。
+7. **M6：**接入 Calcite semantic digest 级 shadow/differential enrichment，验证缓存上限、mapped/unsupported/unmappable/conflict 处理和默认无 Java 回归。
+8. **M7：**发布独立 JSON/摘要/HTML、static assessment、negative proof safe rules、最小确定集和保守安全集；验证旧 field-lineage 产物、hash 和命令行为不变。
+9. 使用固定 fingerprint 对 209119 做 causal-only A/B：比较字段矩阵与新候选分支数量、provider/bridge 闭合率、Unknown 原因、峰值内存和阶段耗时；不满足门槛则停止扩大 operator 范围。
+10. 只有在真实语料证明新闭包减少重复计算且 Calcite shadow 产生可映射语义收益后，才单独提出 RuntimeRerunPolicy 或 Calcite 生产侧车 change。
 
 ## Open Questions
 

@@ -6,21 +6,35 @@
 
 ### Requirement: Target write is the causal slicing criterion
 
-系统 SHALL 以版本化的目标写入观测作为因果闭包的根，而不是以目标表字段集合建立主遍历。目标写入观测至少包含任务、写入观测、物理目标表、语句/关系范围和输入 fingerprint；同一任务存在多个写入观测时 MUST 分别计算或由调用方显式指定根集合，禁止隐式合并。
+系统 SHALL 以版本化且已绑定 canonical evidence 的目标写入观测作为因果闭包的根，而不是以目标表字段集合建立主遍历。目标写入观测至少包含任务、写入观测、物理目标表、语句/关系范围和分析快照引用；同一任务存在多个写入观测时 MUST 分别计算或由调用方显式指定根集合，禁止隐式合并。
 
 #### Scenario: One target write is analyzed
 
 - **WHEN** 调用方提供一个目标任务、目标表和唯一匹配的写入观测
-- **THEN** 系统从该 `TargetWriteRef` 建立一次目标表级闭包，字段只作为解释和证据钻取维度，不生成目标字段×候选分支的主 assessment 矩阵
+- **THEN** 系统从该 `TargetWriteRef` 建立一次目标表级闭包，字段可作为内部 typed field port 接续精确值证据，但不生成目标字段×候选分支的主 assessment 矩阵
 
 #### Scenario: Multiple writes are present
 
 - **WHEN** 目标任务对同一物理表存在多个语句或写入观测
 - **THEN** 系统要求显式选择写入观测或输出按 `TargetWriteRef` 隔离的闭包，不能因为目标表名相同而合并证据
 
+### Requirement: Target write identity is deterministic and evidence-bound
+
+系统 SHALL 将目标写入的稳定身份与分析输入快照分开表示。`TargetWriteIdentity` MUST 能唯一绑定 task、目标物理表、语句序号、root relation 和 write evidence；`AnalysisSnapshotRef` MUST 记录参与分析的 Input Pack、Machine Facts、producer index、table multi-hop、可选 field-lineage 和语义规则版本。若写入无法唯一绑定到 SQL/Plan Facts relation 或 canonical write evidence，系统 MUST 输出可定位 gap 并停止该根的确定性闭包。
+
+#### Scenario: Target write is uniquely resolved
+
+- **WHEN** 目标任务、目标表、语句位置、root relation 和 write evidence 能唯一匹配
+- **THEN** 系统生成稳定 `targetWriteId`，并将它与独立的 `AnalysisSnapshotRef` 绑定到闭包 artifact
+
+#### Scenario: Target write cannot be uniquely resolved
+
+- **WHEN** 同一目标存在多个候选写入、语句与 root relation 无法映射或 canonical write evidence 缺失
+- **THEN** 系统输出 `TARGET_WRITE_AMBIGUOUS` 或 `TARGET_WRITE_RELATION_UNMAPPED` gap，不得猜测根或生成确定性无关结论
+
 ### Requirement: Relation summaries expose rerun-relevant impact channels
 
-系统 SHALL 对每个任务/语句/目标关系生成可去重的语义摘要，并以正交的 `impactChannels` 表达输入对输出的潜在影响。至少支持 `FIELD_VALUE`、`EXPRESSION_CONTROL`、`ROW_MEMBERSHIP`、`MULTIPLICITY`、`GROUPING`、`SET_MEMBERSHIP`、`ORDER_SELECTION`、`WINDOW_EFFECT` 和 `RELATION_EXISTENCE`；字段血缘不得成为表达关系级影响的唯一方式。
+系统 SHALL 对每个任务/语句/目标关系生成可去重的语义摘要，并以正交的 `impactChannels` 表达输入对输出的潜在影响。至少支持 `FIELD_VALUE`、`EXPRESSION_CONTROL`、`ROW_MEMBERSHIP`、`MULTIPLICITY`、`GROUPING`、`SET_MEMBERSHIP`、`ORDER_SELECTION`、`WINDOW_EFFECT` 和 `RELATION_EXISTENCE`；字段血缘不得成为表达关系级影响的唯一方式，也不得被从内部值传播中完全剥离。
 
 #### Scenario: Indirect operator influence is retained
 
@@ -37,14 +51,24 @@
 - **WHEN** 输入只参与没有截断或筛选效果的 ORDER BY 或普通窗口上下文
 - **THEN** 系统仅记录 ordering/window impact，不将其自动升级为目标表行成员变化或重跑必需
 
+#### Scenario: Field value evidence is incomplete
+
+- **WHEN** 现有 field-lineage 或 canonical VALUE_FLOW index 无法完整覆盖某个候选生产分支的字段值影响
+- **THEN** 仅将 `FIELD_VALUE` 通道标为 `UNKNOWN` 并附 gap；其他已闭合的关系通道继续独立评估，不能据此生成 `PROVEN_UNRELATED`
+
 ### Requirement: Global impact closure is computed once at relation granularity
 
-系统 SHALL 将任务语义摘要、精确 read occurrence、producer bridge 和目标写入观测组成全局影响图，并从目标写入观测执行一次有界反向闭包。相同任务/语句/算子摘要和跨任务证据 MUST 去重；系统不得按每个目标字段或每个候选分支重复执行完整语义分析。
+系统 SHALL 将任务语义摘要、精确 read occurrence、producer bridge 和目标写入观测组成全局影响图，并从目标写入观测执行一次有界反向闭包。相同任务/语句/算子摘要和跨任务证据 MUST 去重；系统不得按每个目标字段或每个候选分支重复执行完整语义分析。Task-local semantic edges MUST NOT 携带 `candidateBranchId`；只有跨任务 producer/relation bridge edge 携带候选分支身份。
 
 #### Scenario: Shared upstream is reached through multiple channels
 
 - **WHEN** 同一候选生产分支同时通过字段值、JOIN 行成员和重复度影响目标表
 - **THEN** 系统合并为一个候选分支结论并保留多个 `impactChannels`，不复制成多条字段级主路径
+
+#### Scenario: Local semantic edge is shared
+
+- **WHEN** 同一个 Task-local JOIN、FILTER 或 aggregate 语义事实服务于多个候选 producer bridge
+- **THEN** 系统只保存一份 local semantic edge，并在跨任务 bridge edge 上分别引用候选分支，不复制 local edge
 
 #### Scenario: Candidate branch is not reachable
 
@@ -72,12 +96,12 @@
 
 ### Requirement: Static relation assessment is separate from runtime rerun policy
 
-系统 SHALL 分别输出静态 `relationStatus` 和运行期 `rerunDecision`。静态状态至少包括 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED`、`PROVEN_UNRELATED` 和 `UNKNOWN`；运行期策略至少包括 `REQUIRED`、`SAFE_INCLUDE`、`NOT_REQUIRED` 和 `UNKNOWN`。静态分析不得声称已验证具体运行实例、分区重叠、参数变化或数据内容变化。
+系统 SHALL 输出静态 `relationStatus`、逐通道 `channelAssessments` 和静态候选集合；本 change 的运行期 `runtimeRerunDecision` MUST 固定为 `NOT_EVALUATED`，不得在没有运行实例证据时输出 `REQUIRED`、`SAFE_INCLUDE` 或 `NOT_REQUIRED`。静态状态至少包括 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED`、`PROVEN_UNRELATED` 和 `UNKNOWN`；静态分析不得声称已验证具体运行实例、分区重叠、参数变化或数据内容变化。
 
 #### Scenario: Confirmed static relation
 
 - **WHEN** 候选生产分支通过连续的 operator、identity、read/write bridge 和 evidence refs 证明可能影响目标写入
-- **THEN** 系统输出 `CONFIRMED_RELATED`，并将该分支加入最小确定候选集；实际是否必须重跑仍由运行期策略单独决定
+- **THEN** 系统将对应通道标为 `CONFIRMED`，聚合输出 `CONFIRMED_RELATED` 并将该分支加入最小确定候选集；`runtimeRerunDecision` 保持 `NOT_EVALUATED`
 
 #### Scenario: Conditional or unknown relation
 
@@ -88,6 +112,39 @@
 
 - **WHEN** candidate universe 完整、所有支持的 value/control/relation 检查完成、无 gap/截断/未建模算子，且存在可引用的 negative proof
 - **THEN** 系统才输出 `PROVEN_UNRELATED`，该分支不进入任何重跑候选集
+
+#### Scenario: One channel is unknown while another is confirmed
+
+- **WHEN** `FIELD_VALUE` 通道为 `UNKNOWN`，但 `ROW_MEMBERSHIP` 或 `RELATION_EXISTENCE` 通道存在连续 `CONFIRMED` 证据
+- **THEN** 系统保留逐通道状态并聚合为 `CONFIRMED_RELATED`，不得让独立 Unknown 通道污染已闭合的 confirmed witness
+
+### Requirement: Field transfers preserve precise cross-task value semantics
+
+系统 SHALL 允许字段作为 Task-local typed vertex、field port 或压缩 FieldSet 参与值传播和跨任务接续，但字段 MUST NOT 成为顶层 traversal root 或 assessment dimension。系统 SHALL 通过 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 按候选生产分支聚合字段值影响，不得重新创建逐字段 assessment 矩阵。字段传递至少记录输入物理字段 subject、输出字段 binding、局部 effect kind、evidence refs 和必要 gap；`affectedTargetFields` 只能作为 `FIELD_VALUE` 解释信息，不能成为关系级传播 frontier。
+
+#### Scenario: Value transfer affects a subset of output fields
+
+- **WHEN** 一个输入关系只通过某个输出字段 binding 影响下游，而同一 Task 还有其他不相关输出字段
+- **THEN** 系统只沿对应 field port 接续 `FIELD_VALUE`，不会把该关系无差别传播到该 Task 的全部输出字段
+
+#### Scenario: Field lineage is missing but relation evidence exists
+
+- **WHEN** `FIELD_VALUE` 无法闭合，但该候选分支有完整的 JOIN、过滤、关系存在性或重复度证据
+- **THEN** 系统保留 `FIELD_VALUE = UNKNOWN`，并可基于其他通道输出 `CONFIRMED_RELATED` 或 `CONDITIONAL_RELATED`
+
+### Requirement: Channel assessments use independent status and proof algebra
+
+系统 SHALL 为每个候选分支和每个适用影响通道保存独立 `ChannelAssessment`。通道状态至少包括 `CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN` 和 `NOT_APPLICABLE`，并分别保存 proof、witness 和 gap refs。不同候选路径在同一通道内按 `CONFIRMED > CONDITIONAL > UNKNOWN` 聚合；不同通道之间按“任一 `CONFIRMED` 即整体 `CONFIRMED_RELATED`，否则任一 `CONDITIONAL` 即整体 `CONDITIONAL_RELATED`，存在未关闭义务则 `UNKNOWN`，所有适用通道均 `PROVEN_ABSENT` 才可 `PROVEN_UNRELATED`”聚合。
+
+#### Scenario: Confirmed and unknown channels coexist
+
+- **WHEN** 同一候选分支存在 `FIELD_VALUE = CONFIRMED` 且 `MULTIPLICITY = UNKNOWN`
+- **THEN** 系统输出两个独立通道状态，整体 `relationStatus = CONFIRMED_RELATED`，并保留 multiplicity gap
+
+#### Scenario: All applicable channels are proven absent
+
+- **WHEN** 候选分支的所有适用通道均完成负向检查并标为 `PROVEN_ABSENT`，不存在 gap、截断或未建模算子
+- **THEN** 系统才可输出 `PROVEN_UNRELATED`；仅仅没有发现正向路径不能满足该条件
 
 ### Requirement: Evidence and proof obligations are mechanically auditable
 
@@ -105,7 +162,7 @@
 
 ### Requirement: Independent artifact preserves existing lineage compatibility
 
-系统 SHALL 发布独立、版本化的目标表因果闭包 artifact、摘要和 HTML；HTML 只能渲染 canonical artifact，不得重新推断相关性。旧 `FIELD_MULTI_HOP_RECONCILIATION`、旧 field-lineage artifact、CLI 和 renderer MUST 保持可独立运行和读取。
+系统 SHALL 发布独立、版本化的目标表因果闭包 artifact、摘要和 HTML；artifact MUST 包含 `TargetWriteIdentity`、`AnalysisSnapshotRef`、逐通道 assessment、task-level rollup 和 `runtimeRerunDecision = NOT_EVALUATED`。HTML 只能渲染 canonical artifact，不得重新推断相关性。旧 `FIELD_MULTI_HOP_RECONCILIATION`、旧 field-lineage artifact、CLI 和 renderer MUST 保持可独立运行和读取。
 
 #### Scenario: Legacy field lineage is run alone
 
@@ -117,9 +174,14 @@
 - **WHEN** 目标表因果闭包 artifact 已生成
 - **THEN** 新 renderer 展示目标写入、候选分支、impact channels、静态状态、证据/gap、最小确定集和保守安全集，且不重新执行因果算法
 
+#### Scenario: Task rollup is requested
+
+- **WHEN** 一个 producer task 存在多个 candidate branch 或多个影响通道
+- **THEN** artifact 提供按 producer task 聚合的状态、branch refs、impact channels 和 proof/gap refs；`ROOT_WRITE` 不计入上游任务候选数量
+
 ### Requirement: Calcite is optional semantic enrichment, not canonical authority
 
-系统 SHALL 允许在显式 shadow/differential 模式下，以任务/语句语义摘要为粒度调用固定版本 Calcite，复用同一摘要结果；Calcite 结果只能作为关系语义补充、交叉验证或 Unknown 解释，不得单独生成 canonical dependency、assessment、negative proof 或实际重跑决策。
+系统 SHALL 允许在显式 shadow/differential 模式下，以任务/语句语义摘要为粒度调用固定版本 Calcite，复用同一摘要结果；Calcite 结果只能作为关系语义补充、交叉验证或 Unknown 解释，不得单独生成 canonical dependency、assessment、negative proof 或实际重跑决策。Calcite 调用次数 MUST 以唯一 semantic digest 为上限，而不是以字段或候选分支数量为上限。
 
 #### Scenario: Calcite corroborates a mapped summary
 
