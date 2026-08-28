@@ -1,53 +1,53 @@
 ## 1. Baseline and target-write identity
 
 - [ ] 1.1 冻结旧 `FIELD_MULTI_HOP_RECONCILIATION`、field-lineage 和 target-field-causal-slice 的 golden/hash 回归样本，确认本 change 的独立 artifact type、文件名和 schema version。
-- [ ] 1.2 定义 `TargetWriteIdentity`（包含 `sqlSourceId`、statement ordinal、write ordinal）与 `AnalysisSnapshotRef`，将稳定写入身份和输入 fingerprint/hash 分开保存。
-- [ ] 1.3 实现 `TargetWriteResolver`：把 task、目标物理表、SQL source/slot、statement/write ordinal、root relation 和 canonical write evidence 唯一绑定。
-- [ ] 1.4 覆盖多候选写入、root relation 无法映射和 write evidence 缺失，分别输出 `TARGET_WRITE_AMBIGUOUS`、`TARGET_WRITE_RELATION_UNMAPPED` 或对应 gap，不猜测根。
-- [ ] 1.5 为目标表闭包 CLI 增加 causal-only、输入 fingerprint、时间/内存/图规模/深度预算和结构化 fail-fast 输出。
-- [ ] 1.6 从现有 table multi-hop artifact 投影最小 Candidate Universe：ROOT_WRITE、PHYSICAL_PRODUCER、SCHEDULE_ONLY、UNBOUND_READ、BLOCKED_READ、COVERAGE_BOUNDARY。
+- [x] 1.2 定义 `TargetWriteIdentity`（包含 `sqlSourceId`、statement ordinal、write ordinal）与 `AnalysisSnapshotRef`，将稳定写入身份和输入 fingerprint/hash 分开保存。
+- [x] 1.3 实现 `TargetWriteResolver`：把 task、目标物理表、SQL source/slot、statement/write ordinal、root relation 和 canonical write evidence 唯一绑定。
+- [x] 1.4 覆盖多候选写入、root relation 无法映射和 write evidence 缺失，分别输出 `TARGET_WRITE_AMBIGUOUS`、`TARGET_WRITE_RELATION_UNMAPPED` 或对应 gap，不猜测根。
+- [x] 1.5 为目标表闭包 CLI 增加 causal-only、输入 fingerprint、时间/内存/图规模/深度预算和结构化 fail-fast 输出。
+- [x] 1.6 从现有 table multi-hop artifact 投影最小 Candidate Universe：ROOT_WRITE、PHYSICAL_PRODUCER、SCHEDULE_ONLY、UNBOUND_READ、BLOCKED_READ、COVERAGE_BOUNDARY。
 
 ## 2. M1: Single-task value closure
 
-- [ ] 2.1 建立目标表级 artifact contract，主 assessment key 使用 `targetWriteId + candidateBranchId`，不包含 root target field。
-- [ ] 2.2 建立 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 的候选分支聚合接口，返回 channel status、output field bindings、affected target fields、evidence refs 和 gap refs，并验证现有字段证据只扫描/加载一次。
+- [x] 2.1 建立目标表级 artifact contract，主 assessment key 使用 `targetWriteId + candidateBranchId`，不包含 root target field。
+- [x] 2.2 建立 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 的候选分支聚合接口，返回 channel status、output field bindings、affected target fields、evidence refs 和 gap refs，并验证现有字段证据只扫描/加载一次。
 - [ ] 2.3 以 provider adapter 实现 project/value、CASE/IF/COALESCE 的单 Task `FIELD_VALUE` 聚合；只有 provider 无法精确接续时才启用完整 Task-local field port。
-- [ ] 2.4 实现单 Task 目标写入闭包和最小 artifact contract；确认字段数量增加不会生成字段×候选分支 assessment。
-- [ ] 2.5 覆盖 field-lineage 缺失：仅将 `FIELD_VALUE` 标为 `UNKNOWN`，不阻断其他通道，也不生成 `PROVEN_UNRELATED`。
+- [x] 2.4 实现单 Task 目标写入闭包和最小 artifact contract；确认字段数量增加不会生成字段×候选分支 assessment。
+- [x] 2.5 覆盖 field-lineage 缺失：仅将 `FIELD_VALUE` 标为 `UNKNOWN`，不阻断其他通道，也不生成 `PROVEN_UNRELATED`。
 
 ## 3. M2: Cross-task field bridge
 
 - [ ] 3.1 复用 exact producer/read bridge、relation bridge 和 occurrence-specific evidence refs，输出 resolved/ambiguous/missing bridge 统计，并识别 `PRODUCER_WRITE_AMBIGUOUS`。
 - [ ] 3.2 先实现跨 Task provider 聚合的 `FIELD_VALUE` 接续，覆盖同表多次读取、self join 和多个 write observation 隔离；仅在 Gate A 证明 provider 不足时实现完整 field-port propagation。
-- [ ] 3.3 验证 Task-local semantic edge 不携带 `candidateBranchId`，只有跨任务 bridge edge 携带候选分支身份。
+- [x] 3.3 验证 Task-local semantic edge 不携带 `candidateBranchId`，只有跨任务 bridge edge 携带候选分支身份。
 - [ ] 3.4 验证同一输入只影响部分输出字段时不会无差别传播到 Task 的全部字段。
 
 ## 4. Gate A: 209119 structural and performance gate
 
-- [ ] 4.1 验证 `TargetWriteIdentity` 唯一构造、Candidate Universe 投影成功、assessment 数量不超过唯一 candidate branch 数且不存在 137×549。
-- [ ] 4.2 验证字段证据只扫描/加载一次、跨任务 bridge closure 统计可见、阶段耗时/调用数/cache hit/miss/峰值内存可见。
-- [ ] 4.3 验收缓存复用模式约 5 分钟内、峰值内存约 1GB 内；不通过则停止后续 operator 扩展并先修粒度/缓存。
+- [x] 4.1 验证 `TargetWriteIdentity` 唯一构造、Candidate Universe 投影成功、assessment 数量不超过唯一 candidate branch 数且不存在 137×549。
+- [x] 4.2 验证字段证据只扫描/加载一次、跨任务 bridge closure 统计可见、阶段耗时/调用数/cache hit/miss/峰值内存可见。
+- [x] 4.3 验收缓存复用模式约 5 分钟内、峰值内存约 1GB 内；不通过则停止后续 operator 扩展并先修粒度/缓存。
 
 ## 5. M3: Row membership and task rollup
 
 - [ ] 5.1 实现 WHERE/HAVING/QUALIFY、INNER/OUTER/SEMI/ANTI/CROSS JOIN 的 `ROW_MEMBERSHIP`/`MULTIPLICITY` 规则；JOIN dependency 不以 uniqueness 为前提。
-- [ ] 5.2 建立去重 GlobalImpactGraph，local semantic edge 与 producer bridge edge 分层保存。
-- [ ] 5.3 实现从 TargetWriteRef 出发的一次有界反向闭包和 task-level rollup，保留 channel、certainty、evidence/gap refs；`ROOT_WRITE` 不计入上游任务数量。
-- [ ] 5.4 覆盖一个 Task 多个 branch、多通道和 task rollup 状态，验证任务级最小确定集与保守安全集。
+- [x] 5.2 建立去重 GlobalImpactGraph，local semantic edge 与 producer bridge edge 分层保存。
+- [x] 5.3 实现从 TargetWriteRef 出发的一次有界反向闭包和 task-level rollup，保留 channel、certainty、evidence/gap refs；`ROOT_WRITE` 不计入上游任务数量。
+- [x] 5.4 覆盖一个 Task 多个 branch、多通道和 task rollup 状态，验证任务级最小确定集与保守安全集。
 
 ## 6. M4: Relation-level dependencies and channel algebra
 
-- [ ] 6.1 实现 COUNT(*)、EXISTS、literal-from-relation 和 CROSS JOIN 的 `RELATION_EXISTENCE`/基数影响。
-- [ ] 6.2 定义 `ChannelAssessment`：`CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN`、`NOT_APPLICABLE`，分别保存 proof/witness/gap refs。
+- [x] 6.1 实现 COUNT(*)、EXISTS、literal-from-relation 和 CROSS JOIN 的 `RELATION_EXISTENCE`/基数影响。
+- [x] 6.2 定义 `ChannelAssessment`：`CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN`、`NOT_APPLICABLE`，分别保存 proof/witness/gap refs。
 - [ ] 6.3 实现路径内 certainty 串联、同 channel 备选路径合并和不同 channel 的 relationStatus 聚合，验证 `FIELD_VALUE=CONFIRMED` 不被独立 `MULTIPLICITY=UNKNOWN` 降级。
-- [ ] 6.4 实现 negative proof safe rules；所有适用 channel 均 `PROVEN_ABSENT` 且无未关闭义务时才允许 `PROVEN_UNRELATED`。
-- [ ] 6.5 验证未建模 operator、coverage boundary、截断和未知 identity 都只能产生 Unknown/gap。
+- [x] 6.4 实现 negative proof safe rules；所有适用 channel 均 `PROVEN_ABSENT` 且无未关闭义务时才允许 `PROVEN_UNRELATED`。
+- [x] 6.5 验证未建模 operator、coverage boundary、截断和未知 identity 都只能产生 Unknown/gap。
 - [ ] 6.6 验证 Calcite/native 语义冲突只降级对应 channel；目标写入、read occurrence 或 producer bridge identity 冲突才阻断整个候选分支。
 
 ## 7. Gate B: 209119 product-value gate
 
-- [ ] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
-- [ ] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
+- [x] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
+- [x] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
 
 ## 8. M5: Remaining operator semantics and bounded propagation (Gate B 通过后)
 
