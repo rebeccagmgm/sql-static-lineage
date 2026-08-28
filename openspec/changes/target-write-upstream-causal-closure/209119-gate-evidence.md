@@ -16,7 +16,7 @@ This run used the existing Input Pack/Machine Facts, producer-index cache, table
 
 ## Gate A
 
-The cached 209119 run completed in about 5 seconds wall time. The artifact records 1,750 ms of measured stage time, a peak RSS of 602,783,744 bytes (574.9 MiB), and no full field matrix.
+The previously cached 209119 run completed in about 5 seconds wall time. The artifact records 1,750 ms of measured stage time, a peak RSS of 602,783,744 bytes (574.9 MiB), and no full field matrix. This is evidence for the earlier baseline artifact only; it is not a post-fix acceptance run.
 
 | Metric | Result |
 | --- | ---: |
@@ -30,7 +30,7 @@ The cached 209119 run completed in about 5 seconds wall time. The artifact recor
 | Peak memory | 574.9 MiB |
 | Decision coverage | 549/549 |
 
-Gate A: **PASS**. The cost problem is addressed at the traversal granularity: the result is bounded by candidate branches rather than target fields multiplied by branches.
+Gate A: **PASS WITH SCOPE** for branch cardinality and measured cached performance. Target-write identity, producer-write bridge closure and occurrence correctness are **PARTIAL / NOT VERIFIED** for the current post-fix code because the canonical 209119 field artifact was changed outside this run and was not overwritten or regenerated here.
 
 ## M3 and M4 semantic result
 
@@ -43,8 +43,20 @@ For this 209119 run:
 - There are no `PROVEN_UNRELATED` results because the observed table candidate universe is incomplete; this is intentional.
 - The task rollup contains 78 upstream tasks. All 78 have at least one confirmed physical producer branch, so the minimum certain task set is also 78. The run does not claim task-count reduction for this SQL; the reduction is at branch level and the unresolved boundaries remain in the conservative safety set.
 
+## Implementation fixes in the current code
+
+The current uncommitted patch fixes four mechanical defects and has focused regression coverage: the CLI now calls the shared closure entry point; field-value lookup requires the read occurrence; relation summaries are scoped by statement; and negative proofs are typed, deterministic and content-validated. These tests do not prove full global path certainty; task 6.3 remains open.
+
 ## Gate B
 
-Gate B: **PASS WITH EXPLICIT BOUNDARY** for the implemented baseline-M4 value. The output distinguishes direct field value evidence from row membership, multiplicity and relation-existence evidence, and every unknown points to a gap. It is worth continuing only with measured operator/bridge improvements; M5/M6 remain intentionally unstarted, and Calcite remains the separately isolated Plan Facts-driven differential lane.
+Gate B: **NOT VERIFIED / REOPENED**. The current code does not yet provide evidence for target-rooted multi-hop certainty, same-channel alternative-path merging, or a product-level reduction in rerun tasks. M5/M6 remain paused, and Calcite remains the separately isolated Plan Facts-driven differential lane.
 
 The output is a static candidate assessment, not a runtime rerun decision: `runtimeRerunDecision=NOT_EVALUATED`.
+
+## Post-fix read-only re-evaluation
+
+On 2026-08-29 the target-table CLI was run in causal-only mode with the existing `field-facts`, producer-index, 209119 multi-hop artifact and the existing canonical field-lineage JSON as read-only inputs. Output was written only to `sql-static-lineage-artifacts/target-table-causal-closure/209119-post-fix.{json,txt,html}`. No command in this run wrote or regenerated `sql-static-lineage-data/artifacts/tasks/209119`.
+
+The post-fix artifact is schema `1.1.0` and records 542 candidate branches, 542 assessments, 142 `CONFIRMED_RELATED`, 400 `UNKNOWN`, 78 upstream tasks, 60 minimum-certain tasks and 78 conservative-safety tasks. Field evidence was scanned once. Producer-write bridge enrichment resolved 155 branches, found 84 ambiguous writes and 193 missing/boundary observations. The run took about 4.8 seconds wall time and peaked at about 580 MiB RSS. Decision coverage is 542/542 and the evidence-closure metric is 100%; this metric does not prove full path certainty.
+
+The candidate universe remains `INCOMPLETE`, there are no `PROVEN_UNRELATED` assessments, one relation summary remains partial, and 772 explicit gaps remain. Therefore this run verifies the mechanical fixes and bounded cost, but does not pass Gate B or establish a final task rerun list. Path certainty/alternative-path merging remains task 6.3, and M5/M6 remain paused.

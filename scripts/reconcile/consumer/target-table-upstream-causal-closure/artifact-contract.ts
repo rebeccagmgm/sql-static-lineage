@@ -4,7 +4,7 @@ import type { CandidateBranch, CandidateUniverse } from "../target-field-causal-
 import type { ImpactChannel } from "./task-relation-summary.ts";
 
 export const TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE = "TARGET_TABLE_UPSTREAM_CAUSAL_CLOSURE" as const;
-export const TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION = "1.0.0" as const;
+export const TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION = "1.1.0" as const;
 
 export type ChannelStatus = "CONFIRMED" | "CONDITIONAL" | "PROVEN_ABSENT" | "UNKNOWN" | "NOT_APPLICABLE";
 export type RelationStatus = "CONFIRMED_RELATED" | "CONDITIONAL_RELATED" | "PROVEN_UNRELATED" | "UNKNOWN";
@@ -17,6 +17,23 @@ export interface ChannelAssessment {
   readonly gapRefs: readonly string[];
 }
 
+export interface NegativeProof {
+  readonly proofId: string;
+  readonly kind: "COMPLETE_UNIVERSE_NO_CAUSAL_PATH";
+  readonly targetWriteId: string;
+  readonly candidateBranchId: string;
+  readonly universeStatus: "COMPLETE_OBSERVED_EVIDENCE";
+  readonly closedChannels: readonly { readonly channel: ImpactChannel; readonly status: "PROVEN_ABSENT" | "NOT_APPLICABLE"; readonly proofRefs: readonly string[] }[];
+  readonly premiseRefs: readonly string[];
+  readonly cut: {
+    readonly kind: "CANDIDATE_BRANCH_NO_REACHABLE_CAUSAL_EDGE";
+    readonly rootTaskId: string;
+    readonly consumerTaskId: string | null;
+    readonly producerTaskId: string | null;
+    readonly readOccurrenceId: string | null;
+  };
+}
+
 export interface TargetTableAssessment {
   readonly assessmentId: string;
   readonly targetWriteId: string;
@@ -25,7 +42,7 @@ export interface TargetTableAssessment {
   readonly channelAssessments: readonly ChannelAssessment[];
   readonly evidenceRefs: readonly string[];
   readonly gapRefs: readonly string[];
-  readonly negativeProofRefs: readonly string[];
+  readonly negativeProofs: readonly NegativeProof[];
 }
 
 export interface UpstreamTaskRollup {
@@ -70,7 +87,7 @@ export interface TargetTableCausalClosureArtifact {
   readonly minimumCertainTaskIds: readonly string[];
   readonly conservativeSafetyTaskIds: readonly string[];
   readonly runtimeRerunDecision: "NOT_EVALUATED";
-  readonly relationSummaries: readonly { readonly taskId: string; readonly digest: string; readonly complete: boolean; readonly gapCount: number }[];
+  readonly relationSummaries: readonly { readonly taskId: string; readonly statementIndex: number; readonly rootRelationId: string | null; readonly digest: string; readonly complete: boolean; readonly gapCount: number }[];
   readonly metrics: TargetTableCausalMetrics;
   readonly stages: readonly CausalStageMetric[];
   readonly gaps: readonly { readonly gapId: string; readonly reasonCode: string; readonly message: string; readonly evidenceRefs: readonly string[] }[];
@@ -88,6 +105,23 @@ export function channelRank(status: ChannelStatus): number {
 function sorted(values: readonly string[]): readonly string[] { return [...new Set(values.filter(Boolean))].sort((left, right) => left.localeCompare(right)); }
 function assessmentId(targetWriteId: string, branchId: string): string { return `target-table-assessment:${sha256(canonicalJson({ targetWriteId, branchId }))}`; }
 
+function sortedNegativeProofs(values: readonly NegativeProof[]): readonly NegativeProof[] {
+  return [...values].sort((left, right) => left.proofId.localeCompare(right.proofId)).map((proof) => ({
+    ...proof,
+    closedChannels: [...proof.closedChannels].sort((left, right) => left.channel.localeCompare(right.channel)).map((channel) => ({ ...channel, proofRefs: sorted(channel.proofRefs) })),
+    premiseRefs: sorted(proof.premiseRefs),
+  }));
+}
+
+export function createNegativeProof(input: Omit<NegativeProof, "proofId">): NegativeProof {
+  const normalized = {
+    ...input,
+    closedChannels: [...input.closedChannels].sort((left, right) => left.channel.localeCompare(right.channel)).map((channel) => ({ ...channel, proofRefs: sorted(channel.proofRefs) })),
+    premiseRefs: sorted(input.premiseRefs),
+  };
+  return { ...normalized, proofId: `negative-proof:${sha256(canonicalJson(normalized))}` };
+}
+
 export function canonicalAssessment(input: Omit<TargetTableAssessment, "assessmentId">): TargetTableAssessment {
   return {
     ...input,
@@ -100,7 +134,7 @@ export function canonicalAssessment(input: Omit<TargetTableAssessment, "assessme
     })),
     evidenceRefs: sorted(input.evidenceRefs),
     gapRefs: sorted(input.gapRefs),
-    negativeProofRefs: sorted(input.negativeProofRefs),
+    negativeProofs: sortedNegativeProofs(input.negativeProofs),
   };
 }
 
@@ -114,7 +148,7 @@ export function canonicalizeTargetTableArtifact(
     taskRollup: [...input.taskRollup].sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId)),
     minimumCertainTaskIds: sorted(input.minimumCertainTaskIds),
     conservativeSafetyTaskIds: sorted(input.conservativeSafetyTaskIds),
-    relationSummaries: [...input.relationSummaries].sort((left, right) => left.taskId.localeCompare(right.taskId)),
+    relationSummaries: [...input.relationSummaries].sort((left, right) => left.taskId.localeCompare(right.taskId) || left.statementIndex - right.statementIndex),
     stages: [...input.stages].sort((left, right) => left.stage.localeCompare(right.stage)),
     gaps: [...input.gaps].sort((left, right) => left.gapId.localeCompare(right.gapId)),
   };

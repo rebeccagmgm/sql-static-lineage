@@ -1,7 +1,7 @@
 import type { CandidateBranch } from "../target-field-causal-slice/candidate-universe.ts";
 import type { FieldValueEvidenceProvider } from "./field-value-provider.ts";
 import type { ImpactChannel, TaskRelationSummary } from "./task-relation-summary.ts";
-import { canonicalAssessment, channelRank, relationRank, type ChannelAssessment, type RelationStatus, type TargetTableAssessment } from "./artifact-contract.ts";
+import { canonicalAssessment, channelRank, createNegativeProof, relationRank, type ChannelAssessment, type RelationStatus, type TargetTableAssessment } from "./artifact-contract.ts";
 
 function unique(values: readonly string[]): readonly string[] { return [...new Set(values.filter(Boolean))].sort(); }
 const channels: readonly ImpactChannel[] = ["FIELD_VALUE", "EXPRESSION_CONTROL", "ROW_MEMBERSHIP", "MULTIPLICITY", "GROUPING", "SET_MEMBERSHIP", "ORDER_SELECTION", "WINDOW_EFFECT", "RELATION_EXISTENCE"];
@@ -37,6 +37,41 @@ function overall(assessments: readonly ChannelAssessment[], universeComplete: bo
   return "PROVEN_UNRELATED";
 }
 
+function hasBlockingGap(gaps: readonly string[]): boolean {
+  return gaps.some((gap) => /(?:BRIDGE|IDENTITY|PRODUCER_WRITE|NOT_REACHABLE|UNSUPPORTED)/i.test(gap));
+}
+
+function negativeProofFor(input: {
+  readonly targetWriteId: string;
+  readonly branch: CandidateBranch;
+  readonly channelAssessments: readonly ChannelAssessment[];
+}): ReturnType<typeof createNegativeProof> | null {
+  const closedChannels = input.channelAssessments.flatMap((channel) => {
+    if (channel.status !== "PROVEN_ABSENT" && channel.status !== "NOT_APPLICABLE") return [];
+    return [{ channel: channel.channel, status: channel.status, proofRefs: channel.proofRefs }];
+  });
+  const premiseRefs = unique([
+    ...input.branch.evidenceRefs.map((ref) => ref.evidenceRefId),
+    ...closedChannels.flatMap((channel) => channel.proofRefs),
+  ]);
+  if (closedChannels.length === 0 || premiseRefs.length === 0) return null;
+  return createNegativeProof({
+    kind: "COMPLETE_UNIVERSE_NO_CAUSAL_PATH",
+    targetWriteId: input.targetWriteId,
+    candidateBranchId: input.branch.candidateBranchId,
+    universeStatus: "COMPLETE_OBSERVED_EVIDENCE",
+    closedChannels,
+    premiseRefs,
+    cut: {
+      kind: "CANDIDATE_BRANCH_NO_REACHABLE_CAUSAL_EDGE",
+      rootTaskId: input.branch.rootTaskId,
+      consumerTaskId: input.branch.consumerTaskId,
+      producerTaskId: input.branch.producerTaskId,
+      readOccurrenceId: input.branch.readOccurrence?.readRelationId ?? input.branch.readOccurrence?.occurrenceId ?? null,
+    },
+  });
+}
+
 export function assessBranch(input: {
   readonly targetWriteId: string;
   readonly branch: CandidateBranch;
@@ -44,7 +79,7 @@ export function assessBranch(input: {
   readonly summary?: TaskRelationSummary;
   readonly fieldValueProvider: FieldValueEvidenceProvider;
 }): TargetTableAssessment {
-  if (input.branch.branchKind === "ROOT_WRITE") return canonicalAssessment({ targetWriteId: input.targetWriteId, candidateBranchId: input.branch.candidateBranchId, relationStatus: "CONFIRMED_RELATED", channelAssessments: [], evidenceRefs: input.branch.evidenceRefs.map((ref) => ref.evidenceRefId), gapRefs: [], negativeProofRefs: [] });
+  if (input.branch.branchKind === "ROOT_WRITE") return canonicalAssessment({ targetWriteId: input.targetWriteId, candidateBranchId: input.branch.candidateBranchId, relationStatus: "CONFIRMED_RELATED", channelAssessments: [], evidenceRefs: input.branch.evidenceRefs.map((ref) => ref.evidenceRefId), gapRefs: [], negativeProofs: [] });
   const branchGaps = [...unique(input.branch.gapRefs)];
   const values: ChannelAssessment[] = [];
   if (input.branch.branchKind === "PHYSICAL_PRODUCER") {
@@ -63,11 +98,19 @@ export function assessBranch(input: {
     else if (previous) byChannel.set(value.channel, { ...previous, proofRefs: unique([...previous.proofRefs, ...value.proofRefs]), witnessRefs: unique([...previous.witnessRefs, ...value.witnessRefs]), gapRefs: unique([...previous.gapRefs, ...value.gapRefs]) });
   }
   const finalChannels = [...byChannel.values()];
-  const relationStatus = overall(finalChannels, input.universeComplete, branchGaps);
+  let relationStatus = hasBlockingGap(branchGaps) ? "UNKNOWN" : overall(finalChannels, input.universeComplete, branchGaps);
+  let negativeProofs = [] as ReturnType<typeof createNegativeProof>[];
+  if (relationStatus === "PROVEN_UNRELATED") {
+    const proof = negativeProofFor({ targetWriteId: input.targetWriteId, branch: input.branch, channelAssessments: finalChannels });
+    if (proof) negativeProofs = [proof];
+    else {
+      relationStatus = "UNKNOWN";
+      branchGaps.push(`negative-proof-gap:${input.branch.candidateBranchId}:PREMISE_EVIDENCE_MISSING`);
+    }
+  }
   const gapRefs = unique([...branchGaps, ...finalChannels.flatMap((value) => value.gapRefs)]);
-  const evidenceRefs = unique(finalChannels.flatMap((value) => [...value.proofRefs, ...value.witnessRefs]));
-  const negativeProofRefs = relationStatus === "PROVEN_UNRELATED" ? [`negative-proof:${input.targetWriteId}:${input.branch.candidateBranchId}`] : [];
-  return canonicalAssessment({ targetWriteId: input.targetWriteId, candidateBranchId: input.branch.candidateBranchId, relationStatus, channelAssessments: finalChannels, evidenceRefs, gapRefs, negativeProofRefs });
+  const evidenceRefs = unique([...finalChannels.flatMap((value) => [...value.proofRefs, ...value.witnessRefs]), ...negativeProofs.flatMap((proof) => proof.premiseRefs)]);
+  return canonicalAssessment({ targetWriteId: input.targetWriteId, candidateBranchId: input.branch.candidateBranchId, relationStatus, channelAssessments: finalChannels, evidenceRefs, gapRefs, negativeProofs });
 }
 
 export function rollupAssessments(input: {

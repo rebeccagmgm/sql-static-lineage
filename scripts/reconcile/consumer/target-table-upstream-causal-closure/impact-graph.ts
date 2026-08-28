@@ -15,7 +15,7 @@ export function buildImpactGraph(
     taskId: summary.taskId,
     readOccurrenceId: impact.readOccurrenceId,
     channels: impact.impactChannels,
-  }))).sort((a, b) => `${a.taskId}|${a.readOccurrenceId}`.localeCompare(`${b.taskId}|${b.readOccurrenceId}`));
+  }))).filter((edge, index, values) => values.findIndex((candidate) => `${candidate.taskId}|${candidate.readOccurrenceId}` === `${edge.taskId}|${edge.readOccurrenceId}`) === index).sort((a, b) => `${a.taskId}|${a.readOccurrenceId}`.localeCompare(`${b.taskId}|${b.readOccurrenceId}`));
   const bridgeEdges = branches.filter((branch) => branch.branchKind !== "ROOT_WRITE").map((branch) => ({
     candidateBranchId: branch.candidateBranchId,
     consumerTaskId: branch.consumerTaskId ?? "",
@@ -23,7 +23,7 @@ export function buildImpactGraph(
     readOccurrenceId: branch.readOccurrence?.readRelationId ?? branch.readOccurrence?.occurrenceId ?? null,
   })).sort((a, b) => a.candidateBranchId.localeCompare(b.candidateBranchId));
   return {
-    taskIds: [...new Set([...summaries.keys(), ...branches.flatMap((branch) => [branch.consumerTaskId, branch.producerTaskId].filter((value): value is string => value !== null))])].sort(),
+    taskIds: [...new Set([[...summaries.values()].map((summary) => summary.taskId), ...branches.flatMap((branch) => [branch.consumerTaskId, branch.producerTaskId].filter((value): value is string => value !== null))].flat())].sort(),
     branchIds: bridgeEdges.map((edge) => edge.candidateBranchId),
     localEdges,
     bridgeEdges,

@@ -10,6 +10,9 @@ export interface FieldValueImpact {
   readonly evidenceRefs: readonly string[];
   readonly gapRefs: readonly string[];
 }
+interface IndexedFieldValueImpact extends FieldValueImpact {
+  readonly readOccurrenceIds: readonly string[];
+}
 export interface FieldValueEvidenceProvider {
   readonly lookup: (branch: CandidateBranch) => FieldValueImpact;
   readonly scanCount: number;
@@ -30,14 +33,52 @@ function fieldOf(node: JsonRecord): JsonRecord {
   return record(node.field);
 }
 
-function nodeKey(node: JsonRecord): string {
+function physicalTableKey(node: JsonRecord): string {
   const field = fieldOf(node);
-  return [text(node.taskId), text(field.stableTableId), text(field.qualifiedName), text(field.column)].map((value) => (value ?? "").toLowerCase()).join("|");
+  return [text(field.stableTableId), text(field.qualifiedName)].map((value) => (value ?? "").toLowerCase()).join("|");
 }
 
 function branchTableKey(branch: CandidateBranch): string {
   const table = branch.table;
   return [table?.stableTableId, table?.qualifiedName].map((value) => (value ?? "").toLowerCase()).join("|");
+}
+
+function occurrenceKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function occurrenceTokenMatches(token: string, branchKeys: ReadonlySet<string>): boolean {
+  const normalized = occurrenceKey(token);
+  return [...branchKeys].some((key) => normalized === key || normalized.includes(key));
+}
+
+function branchOccurrenceKeys(branch: CandidateBranch): readonly string[] {
+  return branch.readOccurrence
+    ? [branch.readOccurrence.occurrenceId, branch.readOccurrence.readRelationId].map(occurrenceKey)
+    : [];
+}
+
+function occurrenceEvidenceRefs(edge: JsonRecord, consumerTaskId: string): readonly string[] {
+  const explicit = [text(edge.readOccurrenceId), text(edge.read_occurrence_id)].filter((value): value is string => value !== null);
+  const prefix = `field-lineage:consumer-read:${consumerTaskId}:`;
+  const fromEvidence = (Array.isArray(edge.evidenceRefs) ? edge.evidenceRefs : [])
+    .map(text)
+    .filter((value): value is string => value !== null)
+    .filter((value) => value.startsWith(prefix))
+    .map((value) => value.slice(prefix.length));
+  return [...new Set([...explicit, ...fromEvidence].map(occurrenceKey))];
+}
+
+function producerWriteEvidenceRefs(edge: JsonRecord, producerTaskId: string): readonly string[] {
+  const prefix = `field-lineage:producer-write:${producerTaskId}:`;
+  return (Array.isArray(edge.evidenceRefs) ? edge.evidenceRefs : [])
+    .map(text)
+    .filter((value): value is string => value !== null && value.startsWith(prefix));
+}
+
+function mergeStatus(left: FieldValueImpact["status"], right: FieldValueImpact["status"]): FieldValueImpact["status"] {
+  const rank = (value: FieldValueImpact["status"]): number => value === "CONFIRMED" ? 4 : value === "CONDITIONAL" ? 3 : value === "UNKNOWN" ? 2 : 1;
+  return rank(right) > rank(left) ? right : left;
 }
 
 /**
@@ -46,7 +87,7 @@ function branchTableKey(branch: CandidateBranch): string {
  */
 export function createFieldValueEvidenceProvider(path: string | null | undefined): FieldValueEvidenceProvider {
   let scanCount = 0;
-  const byBranch = new Map<string, FieldValueImpact>();
+  const byBranch = new Map<string, IndexedFieldValueImpact[]>();
   if (!path) {
     return unknownProvider(() => ++scanCount);
   }
@@ -56,7 +97,6 @@ export function createFieldValueEvidenceProvider(path: string | null | undefined
     const nodes = Array.isArray(artifact.nodes) ? artifact.nodes.map(record) : [];
     const nodeById = new Map(nodes.map((node) => [text(node.nodeId) ?? "", node]));
     const edges = Array.isArray(artifact.edges) ? artifact.edges.map(record) : [];
-    const artifactComplete = text(artifact.overallStatus) === "COMPLETE" && Array.isArray(artifact.gaps) && artifact.gaps.length === 0;
     for (const edge of edges) {
       if (text(edge.kind) !== "VALUE_FLOW") continue;
       const from = nodeById.get(text(edge.fromNodeId) ?? "");
@@ -64,8 +104,10 @@ export function createFieldValueEvidenceProvider(path: string | null | undefined
       if (!from || !to) continue;
       const consumerTaskId = text(edge.consumerTaskId) ?? text(to.taskId);
       const producerTaskId = text(edge.producerTaskId) ?? text(from.taskId);
-      const producerTableKey = nodeKey(from);
-      const targetKey = `${consumerTaskId}|${producerTaskId}|${producerTableKey}`.toLowerCase();
+      if (!consumerTaskId || !producerTaskId) continue;
+      const producerTableKey = physicalTableKey(from);
+      const occurrenceIds = occurrenceEvidenceRefs(edge, consumerTaskId);
+      if (occurrenceIds.length === 0) continue;
       const affected = text(fieldOf(to).column);
       const evidence = [
         text(edge.edgeId),
@@ -73,15 +115,25 @@ export function createFieldValueEvidenceProvider(path: string | null | undefined
         text(edge.toNodeId),
         text(edge.mapping),
       ].filter((value): value is string => value !== null);
-      const current = byBranch.get(targetKey);
-      byBranch.set(targetKey, {
-        candidateBranchId: "",
-        status: text(edge.evidenceStatus) === "CONFIRMED" ? "CONFIRMED" : "CONDITIONAL",
-        affectedTargetFields: [...new Set([...(current?.affectedTargetFields ?? []), ...(affected ? [affected] : [])])].sort(),
-        outputFieldBindingIds: [...new Set([...(current?.outputFieldBindingIds ?? []), ...(text(to.bindingId) ? [text(to.bindingId)!] : [])])].sort(),
-        evidenceRefs: [...new Set([...(current?.evidenceRefs ?? []), ...evidence.map((value) => `field-lineage:${value}`)])].sort(),
-        gapRefs: [...(current?.gapRefs ?? [])],
-      });
+      const producerWriteRefs = producerWriteEvidenceRefs(edge, producerTaskId);
+      const baseKey = `${consumerTaskId}|${producerTaskId}|${producerTableKey}`.toLowerCase();
+      const impacts = byBranch.get(baseKey) ?? [];
+      for (const occurrenceId of occurrenceIds) {
+        const currentIndex = impacts.findIndex((item) => item.readOccurrenceIds.includes(occurrenceId));
+        const current = currentIndex >= 0 ? impacts[currentIndex] : undefined;
+        const next: IndexedFieldValueImpact = {
+          candidateBranchId: "",
+          readOccurrenceIds: [...new Set([...(current?.readOccurrenceIds ?? []), occurrenceId])].sort(),
+          status: mergeStatus(current?.status ?? "PROVEN_ABSENT", text(edge.evidenceStatus) === "CONFIRMED" ? "CONFIRMED" : "CONDITIONAL"),
+          affectedTargetFields: [...new Set([...(current?.affectedTargetFields ?? []), ...(affected ? [affected] : [])])].sort(),
+          outputFieldBindingIds: [...new Set([...(current?.outputFieldBindingIds ?? []), ...(text(to.bindingId) ? [text(to.bindingId)!] : [])])].sort(),
+          evidenceRefs: [...new Set([...(current?.evidenceRefs ?? []), ...evidence.map((value) => `field-lineage:${value}`), ...producerWriteRefs])].sort(),
+          gapRefs: [...(current?.gapRefs ?? [])],
+        };
+        if (currentIndex >= 0) impacts[currentIndex] = next;
+        else impacts.push(next);
+      }
+      byBranch.set(baseKey, impacts);
     }
     return {
       scanCount,
@@ -90,13 +142,16 @@ export function createFieldValueEvidenceProvider(path: string | null | undefined
         if (branch.branchKind !== "PHYSICAL_PRODUCER" || !branch.table || !branch.consumerTaskId || !branch.producerTaskId) return {
           candidateBranchId: branch.candidateBranchId, status: "PROVEN_ABSENT", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [],
         };
-        const keyPrefix = `${branch.consumerTaskId}|${branch.producerTaskId}|`;
-        const candidates = [...byBranch.entries()].filter(([key]) => key.startsWith(keyPrefix.toLowerCase()) && key.includes(branchTableKey(branch)));
-        const value = candidates.map(([, item]) => item).sort((a, b) => b.evidenceRefs.length - a.evidenceRefs.length)[0];
-        if (value) return { ...value, candidateBranchId: branch.candidateBranchId };
-        return artifactComplete
-          ? { candidateBranchId: branch.candidateBranchId, status: "PROVEN_ABSENT", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [] }
-          : { candidateBranchId: branch.candidateBranchId, status: "UNKNOWN", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [`field-value-gap:${branch.candidateBranchId}:ARTIFACT_PARTIAL`] };
+        const occurrenceKeys = new Set(branchOccurrenceKeys(branch));
+        const baseKey = `${branch.consumerTaskId}|${branch.producerTaskId}|${branchTableKey(branch)}`.toLowerCase();
+        const value = (byBranch.get(baseKey) ?? [])
+          .filter((item) => item.readOccurrenceIds.some((token) => occurrenceTokenMatches(token, occurrenceKeys)))
+          .sort((a, b) => b.evidenceRefs.length - a.evidenceRefs.length)[0];
+        if (value) {
+          const { readOccurrenceIds: _readOccurrenceIds, ...publicValue } = value;
+          return { ...publicValue, candidateBranchId: branch.candidateBranchId };
+        }
+        return { candidateBranchId: branch.candidateBranchId, status: "UNKNOWN", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [`field-value-gap:${branch.candidateBranchId}:OCCURRENCE_EVIDENCE_NOT_FOUND`] };
       },
     };
   } catch (error) {

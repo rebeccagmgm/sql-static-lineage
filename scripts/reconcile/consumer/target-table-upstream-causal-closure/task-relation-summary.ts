@@ -55,6 +55,29 @@ function integer(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) ? value : null;
 }
 
+export function relationSummaryKey(taskId: string, statementIndex: number): string {
+  return `${taskId}|statement:${statementIndex}`;
+}
+
+export function summaryForOccurrence(
+  summaries: ReadonlyMap<string, TaskRelationSummary>,
+  taskId: string | null,
+  statementIndex: number | null,
+): TaskRelationSummary | undefined {
+  if (!taskId || statementIndex === null) return undefined;
+  const summary = summaries.get(relationSummaryKey(taskId, statementIndex));
+  if (summary?.taskId === taskId && summary.statementIndex === statementIndex) return summary;
+  return undefined;
+}
+
+function statementIndexFromId(value: string | null): number | null {
+  if (!value) return null;
+  const statement = value.match(/(?:^|:)statement:(\d+)(?::|$)/i);
+  if (statement) return Number(statement[1]);
+  const query = value.match(/^query#(\d+)(?::|$)/i);
+  return query ? Number(query[1]) : null;
+}
+
 function sorted(values: readonly string[]): readonly string[] {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
@@ -187,9 +210,43 @@ export function summarizeTaskRelations(input: {
   readonly relationRecords: readonly JsonRecord[];
   readonly relationEdgeRecords?: readonly JsonRecord[];
   readonly statementRecords?: readonly JsonRecord[];
+  readonly statementIndex?: number;
 }): TaskRelationSummary {
-  const rows = input.relationRecords.filter((row) => text(row.task_id) === null || text(row.task_id) === input.taskId);
-  const edges = input.relationEdgeRecords ?? [];
+  const statementIndexes = new Map<string, number>();
+  for (const statement of input.statementRecords ?? []) {
+    const id = text(statement.statement_id);
+    const index = integer(statement.statement_index) ?? statementIndexFromId(id);
+    if (id && index !== null) statementIndexes.set(id, index);
+  }
+  const rowStatementIndex = (row: JsonRecord): number | null => {
+    const relation = relationOf(row);
+    const explicit = integer(row.statement_index) ?? integer(relation.statement_index);
+    if (explicit !== null) return explicit;
+    const ids = [
+      text(row.statement_id),
+      text(relation.statement_id),
+      relationId(row),
+      readOccurrenceId(row),
+    ].filter((value): value is string => value !== null);
+    for (const id of ids) {
+      const fromRecord = statementIndexes.get(id);
+      if (fromRecord !== undefined) return fromRecord;
+      const fromId = statementIndexFromId(id);
+      if (fromId !== null) return fromId;
+    }
+    return null;
+  };
+  const requestedStatementIndex = input.statementIndex ?? null;
+  const rows = input.relationRecords.filter((row) => {
+    if (text(row.task_id) !== null && text(row.task_id) !== input.taskId) return false;
+    return requestedStatementIndex === null || rowStatementIndex(row) === requestedStatementIndex;
+  });
+  const rowIds = new Set(rows.map(relationId).filter((value): value is string => value !== null));
+  const edges = (input.relationEdgeRecords ?? []).filter((edge) => {
+    const from = text(edge.from_relation_id);
+    const to = text(edge.to_relation_id);
+    return from !== null && to !== null && rowIds.has(from) && rowIds.has(to);
+  });
   const incoming = new Map<string, string[]>();
   for (const edge of edges) {
     const to = text(edge.to_relation_id);
@@ -221,7 +278,7 @@ export function summarizeTaskRelations(input: {
   const readImpacts = new Map<string, { channels: Set<ImpactChannel>; refs: Set<string>; gaps: Set<string> }>();
   const gaps = new Set<string>();
   let rootRelationId: string | null = null;
-  let statementIndex = 0;
+  let statementIndex = requestedStatementIndex ?? 0;
   for (const row of rows) {
     const id = relationId(row);
     const type = relationType(row);
@@ -230,7 +287,7 @@ export function summarizeTaskRelations(input: {
       continue;
     }
     const statementId = text(row.statement_id);
-    const match = statementId?.match(/statement:(\\d+)/i);
+    const match = statementId?.match(/statement:(\d+)/i);
     if (match) statementIndex = Number(match[1]);
     if (rootRelationId === null && /:relation:root(?:[.:]|$)/i.test(id)) rootRelationId = id;
     if (type === "read" || childRelationIds(row).length > 0 || incoming.has(id)) {
@@ -258,7 +315,7 @@ export function summarizeTaskRelations(input: {
     }
     if (hasUnsupportedShape(row)) gaps.add(`relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`);
   }
-  const statementRows = input.statementRecords ?? [];
+  const statementRows = (input.statementRecords ?? []).filter((row) => requestedStatementIndex === null || rowStatementIndex(row) === requestedStatementIndex);
   const statementGaps = statementRows.flatMap((row) => {
     const status = text(row.parse_status);
     return status && status !== "SUCCESS"

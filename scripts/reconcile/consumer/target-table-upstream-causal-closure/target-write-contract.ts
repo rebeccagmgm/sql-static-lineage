@@ -90,6 +90,37 @@ function statementOrdinal(value: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+function writeObservationRecords(load: CurrentBundleLoad, taskId: string): readonly JsonRecord[] {
+  const byObservation = new Map<string, JsonRecord>();
+  for (const record of records(load.records["dataset-io.jsonl"])) {
+    if (text(record.task_id) !== taskId || text(record.direction)?.toUpperCase() !== "WRITE") continue;
+    const observationId = text(record.write_observation_id);
+    if (observationId) byObservation.set(observationId, record);
+  }
+  return [...byObservation.values()];
+}
+
+function writeOrdinalFor(
+  load: CurrentBundleLoad,
+  taskId: string,
+  writeObservationId: string,
+): { readonly ordinal: number | null; readonly evidenceRefs: readonly string[] } {
+  const writes = writeObservationRecords(load, taskId);
+  const ordered = [...writes].sort((left, right) => {
+    const leftStatement = statementOrdinal(text(left.write_statement_id) ?? text(left.statement_id) ?? "") ?? Number.MAX_SAFE_INTEGER;
+    const rightStatement = statementOrdinal(text(right.write_statement_id) ?? text(right.statement_id) ?? "") ?? Number.MAX_SAFE_INTEGER;
+    return leftStatement - rightStatement || (text(left.write_observation_id) ?? "").localeCompare(text(right.write_observation_id) ?? "");
+  });
+  const ordinal = ordered.findIndex((record) => text(record.write_observation_id) === writeObservationId);
+  const selected = ordinal >= 0 ? ordered[ordinal] : null;
+  const evidenceRefs = [
+    `machine-facts:${taskId}:dataset-io.jsonl`,
+    ...refsOf(selected?.evidence_refs),
+    ...refsOf(selected?.evidence),
+  ];
+  return { ordinal: ordinal >= 0 ? ordinal : null, evidenceRefs: [...new Set(evidenceRefs)].sort((left, right) => left.localeCompare(right)) };
+}
+
 function relationFromExpression(value: string | null): string | null {
   if (!value) return null;
   const marker = ":expression:";
@@ -173,14 +204,19 @@ export function resolveTargetWrite(
   const writeObservationId = [...writeIds][0]!;
   const rootRelationId = [...relationIds][0]!;
   const ordinal = [...statementOrdinals][0]!;
-  const writeOrdinal = Math.min(
-    ...selected.map((binding) => Number.isSafeInteger(binding.target_ordinal)
-      ? Number(binding.target_ordinal)
-      : Number.MAX_SAFE_INTEGER),
-  );
-  const stableWriteOrdinal = Number.isSafeInteger(writeOrdinal) && writeOrdinal !== Number.MAX_SAFE_INTEGER
-    ? writeOrdinal
-    : 0;
+  const writeOrdinalResult = writeOrdinalFor(input.load, input.taskId, writeObservationId);
+  if (writeOrdinalResult.ordinal === null) {
+    return {
+      ref: null,
+      gaps: [gap(
+        input.taskId,
+        "TARGET_WRITE_EVIDENCE_MISSING",
+        `write observation ${writeObservationId} is not present in canonical dataset-io evidence`,
+        [...evidenceRefs, ...writeOrdinalResult.evidenceRefs],
+      )],
+    };
+  }
+  const stableWriteOrdinal = writeOrdinalResult.ordinal;
   const identityInput = {
     taskId: input.taskId,
     targetTableKey: targetTable,
@@ -193,7 +229,7 @@ export function resolveTargetWrite(
   const identity: TargetWriteIdentity = {
     ...identityInput,
     targetWriteId: `target-write:${sha256(canonicalJson(identityInput))}`,
-    evidenceRefs,
+    evidenceRefs: [...new Set([...evidenceRefs, ...writeOrdinalResult.evidenceRefs])].sort((left, right) => left.localeCompare(right)),
   };
   return { ref: { identity, snapshot: input.snapshot }, gaps: [] };
 }

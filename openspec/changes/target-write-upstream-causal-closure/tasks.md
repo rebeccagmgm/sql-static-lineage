@@ -17,7 +17,7 @@
 
 ## 3. M2: Cross-task field bridge
 
-- [ ] 3.1 复用 exact producer/read bridge、relation bridge 和 occurrence-specific evidence refs，输出 resolved/ambiguous/missing bridge 统计，并识别 `PRODUCER_WRITE_AMBIGUOUS`。
+- [x] 3.1 复用 exact producer/read bridge、relation bridge 和 occurrence-specific evidence refs，输出 resolved/ambiguous/missing bridge 统计，并识别 `PRODUCER_WRITE_AMBIGUOUS`。
 - [ ] 3.2 先实现跨 Task provider 聚合的 `FIELD_VALUE` 接续，覆盖同表多次读取、self join 和多个 write observation 隔离；仅在 Gate A 证明 provider 不足时实现完整 field-port propagation。
 - [x] 3.3 验证 Task-local semantic edge 不携带 `candidateBranchId`，只有跨任务 bridge edge 携带候选分支身份。
 - [ ] 3.4 验证同一输入只影响部分输出字段时不会无差别传播到 Task 的全部字段。
@@ -46,8 +46,10 @@
 
 ## 7. Gate B: 209119 product-value gate
 
-- [x] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
-- [x] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
+- [ ] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
+- [ ] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
+
+> Gate B reopened: the current implementation has focused unit-test coverage, but the latest 209119 evidence does not verify target-rooted multi-hop certainty, exact occurrence bridge closure, or product-level rerun value. M5/M6 remain paused.
 
 ## 8. M5: Remaining operator semantics and bounded propagation (Gate B 通过后)
 

@@ -230,7 +230,7 @@ relationStatus
 channelAssessments
 evidenceRefs
 gapRefs
-negativeProofRefs
+negativeProofs (typed, content-addressed and validator-checked)
 ```
 
 本 change 只保存静态候选集，并显式写入：
