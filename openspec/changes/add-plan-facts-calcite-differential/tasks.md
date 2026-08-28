@@ -45,7 +45,7 @@
 
 - [x] 7.1 Project the existing fingerprint-matched 209119 Plan Facts/evidence into staging without rerunning Input Pack collection or overwriting published artifacts.
 - [x] 7.2 Compare raw-SQL and Plan-Facts lane success, projection coverage, exact mapping rate, metadata gain, conflicts, unmappable observations, and `NOT_EVALUATED` causes for the core operator batch.
-- [x] 7.3 Verify the current 209119 canonical JSON/HTML hashes and Native assessments remain unchanged after differential execution.
+- [ ] 7.3 Verify the current 209119 canonical JSON/HTML hashes and Native assessments remain unchanged after differential execution. Reopened: the latest v18 evidence does not include a complete four-file acceptance set; the observed external directory is not attributed to the differential run.
 - [x] 7.4 Produce a documented go/no-go decision for broader operator implementation based on measurable metadata gain or meaningful Unknown reduction, 100% evidence mapping for compared observations, no default-path regression, performance, and operational cost.
 - [x] 7.5 If the decision is no-go, pause implementation and update the OpenSpec scope instead of marking later expansion tasks complete or weakening fail-closed rules.
 
