@@ -232,7 +232,11 @@ function exactPositivePath(
     edge.fromTaskId === branch.producerTaskId &&
     edge.toTaskId === branch.consumerTaskId &&
     edge.readOccurrenceId === branch.readOccurrence!.occurrenceId &&
-    tableMatchesPhysicalField(branch, edge),
+    (
+      (edge.localEdgeKind === "VALUE_FLOW" && tableMatchesPhysicalField(branch, edge)) ||
+      (edge.localEdgeKind === "RELATION_CONTEXT" &&
+        edge.fromSubject.subjectKind === "RELATION_OCCURRENCE")
+    ),
   ) || path.edges.some((edge) => {
     const relationIds = [edge.fromSubject, edge.toSubject]
       .filter((subject) => subject.subjectKind === "RELATION_OCCURRENCE")

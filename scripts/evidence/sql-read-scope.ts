@@ -178,12 +178,16 @@ function atomEvaluation(
       reasonCodes: ["PARTITION_PREDICATE_VALUE_UNSUPPORTED"],
     };
   const normalizedValues = values as ReadPartitionValue[];
+  const partitionOperator: ReadPartitionOperator | null =
+    ["EQ", "LT", "LTE", "GT", "GTE", "IN", "BETWEEN"].includes(tree.operator)
+      ? tree.operator as ReadPartitionOperator
+      : null;
   if (
-    tree.operator === "OTHER" ||
-    (tree.operator === "BETWEEN" && normalizedValues.length !== 2) ||
-    (tree.operator === "IN" && normalizedValues.length === 0) ||
-    (tree.operator !== "IN" &&
-      tree.operator !== "BETWEEN" &&
+    partitionOperator === null ||
+    (partitionOperator === "BETWEEN" && normalizedValues.length !== 2) ||
+    (partitionOperator === "IN" && normalizedValues.length === 0) ||
+    (partitionOperator !== "IN" &&
+      partitionOperator !== "BETWEEN" &&
       normalizedValues.length !== 1)
   )
     return {
@@ -197,7 +201,7 @@ function atomEvaluation(
     predicate: {
       kind: "ATOM",
       field,
-      operator: tree.operator,
+      operator: partitionOperator,
       values: normalizedValues,
     },
     reasonCodes: [],

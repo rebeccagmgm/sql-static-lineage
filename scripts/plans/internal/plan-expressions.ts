@@ -6,6 +6,7 @@ import type {
 	ExpressionRoleEffect,
 	PredicateOperand,
 	PredicateTree,
+	StructuredExpression,
 } from "../plan-contract.js";
 import { fullTextOf, spanOfCst } from "./plan-text.js";
 
@@ -280,7 +281,13 @@ function predicateOperand(
 		};
 	const inputColumns: ColumnRef[] = [];
 	collectColumns(e, clause, inputColumns);
-	return { kind: "OTHER", expression, inputColumns };
+	const structured_expression = structuredExpressionOf(e);
+	return {
+		kind: "OTHER",
+		expression,
+		inputColumns,
+		...(structured_expression ? { structured_expression } : {}),
+	};
 }
 
 export function predicateTreeOf(
@@ -306,13 +313,15 @@ export function predicateTreeOf(
 			operator:
 				({
 					"=": "EQ",
+					"<>": "NE",
+					"!=": "NE",
 					"<": "LT",
 					"<=": "LTE",
 					">": "GT",
 					">=": "GTE",
 				} as Record<
 					string,
-					"EQ" | "LT" | "LTE" | "GT" | "GTE"
+					"EQ" | "NE" | "LT" | "LTE" | "GT" | "GTE"
 				>)[op] ?? "OTHER",
 			operands: [
 				predicateOperand(e.left, sql, cellBase, clause),
@@ -330,7 +339,13 @@ export function predicateTreeOf(
 	if (e.kind === "predicate") {
 		const op = e.op.toLowerCase();
 		const operator =
-			op === "in" ? "IN" : op === "between" ? "BETWEEN" : "OTHER";
+			op === "in"
+				? "IN"
+				: op === "between"
+					? "BETWEEN"
+					: op === "like" || op === "ilike"
+						? "LIKE"
+						: "OTHER";
 		const atom: PredicateTree = {
 			kind: "ATOM",
 			operator,
@@ -474,4 +489,83 @@ export function expressionFacts(
 		predicates: [...predicates.values()],
 		comparisons,
 	};
+}
+
+/**
+ * Serialize the canonical IR expression shape without carrying parser nodes
+ * or reparsing the expression text.  Unsupported IR forms remain explicit so
+ * a downstream semantic engine can stop conservatively at that boundary.
+ */
+export function structuredExpressionOf(
+	e: Expr | null | undefined,
+): StructuredExpression | undefined {
+	if (!e) return undefined;
+	switch (e.kind) {
+		case "column": {
+			const name = e.parts.at(-1);
+			if (!name) return { kind: "UNSUPPORTED", sourceKind: e.kind };
+			return {
+				kind: "COLUMN",
+				name,
+				...(e.parts.length > 1 ? { qualifier: e.parts[0] } : {}),
+			};
+		}
+		case "literal":
+			return { kind: "LITERAL", text: e.text };
+		case "function":
+			return {
+				kind: "FUNCTION",
+				name: e.name,
+				...(e.qualifier ? { qualifier: e.qualifier } : {}),
+				args: e.args.flatMap((arg) => {
+					const result = structuredExpressionOf(arg);
+					return result ? [result] : [];
+				}),
+			};
+		case "binary": {
+			const left = structuredExpressionOf(e.left);
+			const right = structuredExpressionOf(e.right);
+			return left && right
+				? { kind: "BINARY", op: e.op, left, right }
+				: { kind: "UNSUPPORTED", sourceKind: e.kind };
+		}
+		case "unary": {
+			const operand = structuredExpressionOf(e.operand);
+			return operand
+				? { kind: "UNARY", op: e.op, operand }
+				: { kind: "UNSUPPORTED", sourceKind: e.kind };
+		}
+		case "case": {
+			const whens = e.whens.flatMap((branch) => {
+				const when = structuredExpressionOf(branch.when);
+				const then = structuredExpressionOf(branch.then);
+				return when && then ? [{ when, then }] : [];
+			});
+			if (whens.length !== e.whens.length) return { kind: "UNSUPPORTED", sourceKind: e.kind };
+			const elseExpr = structuredExpressionOf(e.elseExpr);
+			return {
+				kind: "CASE",
+				whens,
+				...(e.elseExpr && elseExpr ? { elseExpr } : {}),
+			};
+		}
+		case "cast": {
+			const expr = structuredExpressionOf(e.expr);
+			return expr
+				? { kind: "CAST", expr, typeText: e.typeText }
+				: { kind: "UNSUPPORTED", sourceKind: e.kind };
+		}
+		case "predicate": {
+			const operand = structuredExpressionOf(e.operand);
+			const args = e.args.flatMap((arg) => {
+				const result = structuredExpressionOf(arg);
+				return result ? [result] : [];
+			});
+			return operand && args.length === e.args.length
+				? { kind: "PREDICATE", op: e.op, negated: e.negated, operand, args }
+				: { kind: "UNSUPPORTED", sourceKind: e.kind };
+		}
+		default:
+			return { kind: "UNSUPPORTED", sourceKind: e.kind };
+	}
 }

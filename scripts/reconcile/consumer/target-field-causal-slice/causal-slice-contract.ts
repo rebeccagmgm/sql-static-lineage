@@ -51,6 +51,8 @@ export interface CausalSliceInputFingerprints {
   readonly producerIndex: readonly CausalSliceInputReference[];
   readonly tableMultiHopArtifact: readonly CausalSliceInputReference[];
   readonly legacyFieldLineageValueEvidence?: readonly CausalSliceInputReference[];
+  /** Present only when an explicit Calcite evidence overlay was consumed. */
+  readonly calciteCausalEvidence?: readonly CausalSliceInputReference[];
 }
 
 export interface CausalSliceRequest {
@@ -189,6 +191,7 @@ function dependencies(value: CausalSliceDependencies): CausalSliceDependencies {
     })),
     gaps: sortedUniqueBy(value.gaps, (item) => item.gapId).map((item) => ({
       ...item,
+      ...(item.subject ? { subject: subject(item.subject) } : {}),
       proofRefs: refs(item.proofRefs),
     })),
   };
@@ -381,6 +384,9 @@ export function canonicalizeCausalSliceArtifact(input: CausalSliceArtifactInput)
       ...(input.inputFingerprints.legacyFieldLineageValueEvidence === undefined
         ? {}
         : { legacyFieldLineageValueEvidence: inputReferences(input.inputFingerprints.legacyFieldLineageValueEvidence) }),
+      ...(input.inputFingerprints.calciteCausalEvidence === undefined
+        ? {}
+        : { calciteCausalEvidence: inputReferences(input.inputFingerprints.calciteCausalEvidence) }),
     },
     dependencies: dependencies(input.dependencies),
     candidateUniverse: candidateUniverse(input.candidateUniverse),
@@ -482,7 +488,10 @@ function validateProofContinuity(
   for (let index = 1; index < path.edges.length; index++) {
     const previous = path.edges[index - 1]!;
     const current = path.edges[index]!;
-    if (previous.toTaskId !== current.fromTaskId || !sameSubject(previous.toSubject, current.fromSubject)) errors.push(`POSITIVE_PROOF_PATH_NONCONTINUOUS:${proof.proofId}`);
+    // Traversal starts at the target and walks upstream, while each edge is
+    // stored in its canonical producer -> consumer direction.  Therefore the
+    // next edge's consumer is the previous edge's producer.
+    if (previous.fromTaskId !== current.toTaskId || !sameSubject(previous.fromSubject, current.toSubject)) errors.push(`POSITIVE_PROOF_PATH_NONCONTINUOUS:${proof.proofId}`);
   }
   const expectedCertainty = path.edges.some((edge) => edge.pathCertainty === "UNKNOWN") || path.pathCertainty === "UNKNOWN"
     ? "UNKNOWN"
@@ -561,6 +570,8 @@ export function validateCausalSliceArtifact(value: unknown): string[] {
   }
   const legacy = fingerprints?.legacyFieldLineageValueEvidence;
   if (legacy !== undefined) for (const ref of legacy) if (!isRecord(ref) || ref.artifactType !== LEGACY_FIELD_LINEAGE_ARTIFACT_TYPE || !sha256Fingerprint(ref.fingerprint) || !nonEmpty(ref.reference)) errors.push("legacy VALUE evidence reference is invalid or collides with causal artifact");
+  const calcite = fingerprints?.calciteCausalEvidence;
+  if (calcite !== undefined) for (const ref of calcite) if (!isRecord(ref) || !sha256Fingerprint(ref.fingerprint) || !nonEmpty(ref.reference)) errors.push("Calcite causal evidence reference is invalid");
   if (!isRecord(artifact.dependencies)) errors.push("dependencies are required");
   else {
     const definitions = artifact.dependencies.definitions;

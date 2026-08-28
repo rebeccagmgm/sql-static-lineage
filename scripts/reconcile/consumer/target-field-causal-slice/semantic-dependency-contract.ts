@@ -72,6 +72,7 @@ export const PROOF_REF_KINDS = [
   "WRITE_OBSERVATION",
   "PRODUCER_BRIDGE",
   "SUPPORT_MATRIX",
+  "CALCITE_OBSERVATION",
   "GAP",
   "NEGATIVE_PROOF",
 ] as const;
@@ -114,6 +115,8 @@ export interface SemanticDependencyDefinition extends SemanticDependencyIdentity
 export interface SemanticDependencyApplication {
   readonly applicationId: string;
   readonly dependencyId: string;
+  /** Native relation occurrence that owns this application, when known. */
+  readonly scopeRelationId?: string;
   readonly rootTargetFieldId: string;
   readonly rootDependenceKind: RootDependenceKind;
   readonly pathCertainty: PathCertainty;
@@ -125,6 +128,8 @@ export interface SemanticDependencyEdge {
   readonly fromSubject: SemanticSubject;
   readonly toSubject: SemanticSubject;
   readonly dependencyId: string;
+  /** Native relation occurrence that owns this edge, when known. */
+  readonly scopeRelationId?: string;
   readonly rootDependenceKind: RootDependenceKind;
   readonly localEdgeKind: LocalEdgeKind;
   readonly pathCertainty: PathCertainty;
@@ -165,11 +170,13 @@ export function canonicalSemanticApplicationId(
   rootTargetFieldId: string,
   dependencyId: string,
   rootDependenceKind: RootDependenceKind,
+  scopeRelationId?: string,
 ): string {
   return idFor("semantic-application", {
     rootTargetFieldId,
     dependencyId,
     rootDependenceKind,
+    ...(scopeRelationId === undefined ? {} : { scopeRelationId }),
   });
 }
 
@@ -179,6 +186,7 @@ export function canonicalSemanticEdgeId(input: {
   readonly toSubject: SemanticSubject;
   readonly rootDependenceKind: RootDependenceKind;
   readonly localEdgeKind: LocalEdgeKind;
+  readonly scopeRelationId?: string;
 }): string {
   return idFor("semantic-edge", input);
 }
@@ -187,10 +195,14 @@ export function makeSemanticDependencyDefinition(
   identity: SemanticDependencyIdentity,
   supportStatus: SupportStatus,
   proofRefs: readonly ProofRef[] = [],
+  namespace?: string,
 ): SemanticDependencyDefinition {
   return {
     ...identity,
-    dependencyId: canonicalSemanticDependencyId(identity),
+    dependencyId: canonicalSemanticDependencyId({
+      ...identity,
+      ...(namespace === undefined ? {} : { namespace }),
+    }),
     supportStatus,
     proofRefs: [...proofRefs].sort((left, right) =>
       left.proofRefId.localeCompare(right.proofRefId),
@@ -199,6 +211,7 @@ export function makeSemanticDependencyDefinition(
 }
 export function makeSemanticDependencyApplication(input: {
   readonly dependencyId: string;
+  readonly scopeRelationId?: string;
   readonly rootTargetFieldId: string;
   readonly rootDependenceKind: RootDependenceKind;
   readonly pathCertainty: PathCertainty;
@@ -210,6 +223,7 @@ export function makeSemanticDependencyApplication(input: {
       input.rootTargetFieldId,
       input.dependencyId,
       input.rootDependenceKind,
+      input.scopeRelationId,
     ),
     proofRefs: [...(input.proofRefs ?? [])].sort((left, right) =>
       left.proofRefId.localeCompare(right.proofRefId),
@@ -223,6 +237,7 @@ export function makeSemanticDependencyEdge(input: {
   readonly toSubject: SemanticSubject;
   readonly rootDependenceKind: RootDependenceKind;
   readonly localEdgeKind: LocalEdgeKind;
+  readonly scopeRelationId?: string;
   readonly pathCertainty: PathCertainty;
   readonly proofRefs?: readonly ProofRef[];
 }): SemanticDependencyEdge {
@@ -232,6 +247,7 @@ export function makeSemanticDependencyEdge(input: {
     toSubject: input.toSubject,
     rootDependenceKind: input.rootDependenceKind,
     localEdgeKind: input.localEdgeKind,
+    ...(input.scopeRelationId === undefined ? {} : { scopeRelationId: input.scopeRelationId }),
   };
   return {
     ...input,

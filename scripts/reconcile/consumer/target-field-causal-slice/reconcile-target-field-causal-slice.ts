@@ -45,7 +45,7 @@ export function parseTargetFieldCausalSliceCli(
   const outputDir = option(args, "--output-dir");
   const summaryOutput = option(args, "--summary-output");
   if (!dataRoot || !factsRoot || !producerIndex || !tableMultiHop || !taskId || !targetTable || (!output && !outputDir))
-    throw new Error("usage: reconcile-target-field-causal-slice --data-root <path> --facts-root <path> --producer-index <json> --table-multi-hop <json> --task-id <id> --target-table <qualified> --write-observation-id <id[,id...]> [--fields <a,b>] (--output <json> | --output-dir <task-artifact-dir>) [--summary-output <txt>] [--max-depth N] [--max-value-states N] [--max-value-paths N] [--max-control-states N] [--max-control-paths N]");
+    throw new Error("usage: reconcile-target-field-causal-slice --data-root <path> --facts-root <path> --producer-index <json> --table-multi-hop <json> --task-id <id> --target-table <qualified> --write-observation-id <id[,id...]> [--fields <a,b>] (--output <json> | --output-dir <task-artifact-dir>) [--summary-output <txt>] [--calcite-causal-evidence <json>] [--max-depth N] [--max-value-states N] [--max-value-paths N] [--max-control-states N] [--max-control-paths N]");
   const writeObservationIds = (option(args, "--write-observation-ids") ?? option(args, "--write-observation-id"))
     ?.split(",").map((value) => value.trim()).filter(Boolean);
   if (!writeObservationIds || writeObservationIds.length === 0)
@@ -55,6 +55,7 @@ export function parseTargetFieldCausalSliceCli(
   if (semanticOracle !== undefined && semanticOracle !== "calcite")
     throw new Error("--semantic-oracle must be calcite when provided");
   const calciteMappingReport = option(args, "--calcite-mapping-report");
+  const calciteCausalEvidence = option(args, "--calcite-causal-evidence");
   const semanticOracleOutput = option(args, "--semantic-oracle-output");
   if (semanticOracle === "calcite" && (!calciteMappingReport || !semanticOracleOutput))
     throw new Error("--semantic-oracle calcite requires --calcite-mapping-report and --semantic-oracle-output");
@@ -98,6 +99,7 @@ export function parseTargetFieldCausalSliceCli(
     summaryOutput,
     semanticOracle,
     calciteMappingReport,
+    calciteCausalEvidence,
     semanticOracleOutput,
     maxDepth: integerOption(args, "--max-depth"),
     maxValueStates: integerOption(args, "--max-value-states"),
@@ -123,6 +125,7 @@ export function runTargetFieldCausalSliceCli(
     options.tableMultiHop,
     options.legacyFieldLineage,
     options.calciteMappingReport,
+    options.calciteCausalEvidence,
   ].filter((value): value is string => Boolean(value)).map((value) => resolve(value));
   if (
     new Set(writeTargets).size !== writeTargets.length ||

@@ -218,6 +218,51 @@ describe("target-field semantic dependency normalization", () => {
     expect(result.gaps).toHaveLength(0);
   });
 
+  it("does not downgrade a resolved subject because a sibling physical candidate is unresolved", () => {
+    const source = read("read", "db.source");
+    const project = {
+      id: "project",
+      type: "project" as const,
+      source: "read",
+      span,
+      provenance: "extracted" as const,
+      output_columns: ["wanted"],
+      expressions: [
+        expression("wanted", "column", [
+          {
+            ...column("db.source", "a"),
+            physical: [
+              { table: "db.source", column: "a" },
+              { table: "db.missing", column: "a" },
+            ],
+          },
+        ]),
+      ],
+    };
+    const result = normalizeSemanticDependencies({
+      plan: plan([source, project], ["project"]),
+      roots: [{ rootTargetFieldId: "target", outputName: "wanted" }],
+      physicalFieldResolver: ({ table, column: name }) =>
+        table === "db.source"
+          ? {
+              platform: "hive",
+              dataSource: "gfhive",
+              stableTableId: "db.source",
+              qualifiedName: table,
+              column: name,
+              identityStatus: "SCHEMA_BACKED",
+            }
+          : null,
+    });
+    const resolved = result.edges.find(
+      (edge) =>
+        edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+        edge.fromSubject.physicalFieldId.endsWith("|a"),
+    );
+    expect(resolved?.pathCertainty).toBe("CONFIRMED");
+    expect(result.gaps.some((gap) => gap.subject?.subjectKind === "PHYSICAL_FIELD" && gap.subject.physicalFieldId === "physical:db.missing:a")).toBe(true);
+  });
+
   it.each([
     ["CASE", "RESULT_VALUE", ["VALUE_CONTRIBUTION"]],
     [

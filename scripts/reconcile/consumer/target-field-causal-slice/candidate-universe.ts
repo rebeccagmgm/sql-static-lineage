@@ -83,6 +83,10 @@ export interface CandidateUniverseProjectionInput {
   readonly rootTargetFields: readonly string[];
   readonly tableArtifact: unknown;
   readonly rootWriteObservationIds?: readonly string[];
+  /** Resolve table-level artifacts that predate stable physical identities. */
+  readonly resolvePhysicalTable?: (
+    table: CandidatePhysicalTable,
+  ) => CandidatePhysicalTable | null;
 }
 
 export interface CandidateAssessmentPairValidation {
@@ -256,10 +260,16 @@ function makeBranch(input: {
   readonly evidenceRefs?: readonly CandidateEvidenceRef[];
   readonly gapRefs?: readonly string[];
   readonly boundaryReason?: string | null;
+  readonly resolvePhysicalTable?: (
+    table: CandidatePhysicalTable,
+  ) => CandidatePhysicalTable | null;
 }): CandidateBranch {
   const consumerTaskId = input.consumerTaskId ?? null;
   const producerTaskId = input.producerTaskId ?? null;
-  const table = input.table ?? null;
+  const sourceTable = input.table ?? null;
+  const table = sourceTable === null
+    ? null
+    : input.resolvePhysicalTable?.(sourceTable) ?? sourceTable;
   const readOccurrence = input.readOccurrence ?? null;
   const writeObservationId = input.writeObservationId ?? null;
   const boundaryReason = input.boundaryReason ?? null;
@@ -388,6 +398,7 @@ export function projectCandidateUniverse(
         branchKind: "ROOT_WRITE",
         producerTaskId: rootTaskId,
         writeObservationId,
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }));
   } else {
     for (const write of rootWrites)
@@ -398,10 +409,11 @@ export function projectCandidateUniverse(
           rootTaskId,
           branchKind: "ROOT_WRITE",
           producerTaskId: rootTaskId,
-          table: tableOf(write.table),
-          evidenceRefs: writeEvidenceRefs(write.writes),
-          writeObservationId,
-        }));
+        table: tableOf(write.table),
+        evidenceRefs: writeEvidenceRefs(write.writes),
+        writeObservationId,
+        resolvePhysicalTable: input.resolvePhysicalTable,
+      }));
   }
 
   const producerBridges = records(artifact.producerBridges);
@@ -418,6 +430,7 @@ export function projectCandidateUniverse(
         table: tableOf(bridge.table),
         readOccurrence: occurrenceOf(bridge.readOccurrence),
         producerRole: text(bridge.producerRole),
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }),
     );
   }
@@ -434,6 +447,7 @@ export function projectCandidateUniverse(
         consumerTaskId,
         producerTaskId,
         evidenceRefs: evidenceRefsOf(edge.evidence),
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }),
     );
   }
@@ -474,6 +488,7 @@ export function projectCandidateUniverse(
         evidenceRefs: evidenceRefsOf(read.evidence),
         gapRefs: [gap],
         boundaryReason: blocked ? "READ_EVIDENCE_BLOCKED" : "PRODUCER_NOT_OBSERVED",
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }),
     );
   }
@@ -517,6 +532,7 @@ export function projectCandidateUniverse(
         table: tableOf(terminal.table),
         gapRefs: [terminalGap],
         boundaryReason: reason,
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }),
     );
   }
@@ -529,6 +545,7 @@ export function projectCandidateUniverse(
         branchKind: "COVERAGE_BOUNDARY",
         gapRefs: uniqueBoundaryGapRefs,
         boundaryReason: "CANDIDATE_UNIVERSE_BOUNDARY",
+        resolvePhysicalTable: input.resolvePhysicalTable,
       }),
     );
 

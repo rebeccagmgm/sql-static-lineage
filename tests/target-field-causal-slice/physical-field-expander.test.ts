@@ -157,6 +157,7 @@ function createFixture(options: {
   readonly missingExactWriteEvidence?: boolean;
   readonly missingProducerPack?: boolean;
   readonly candidateBranchId?: string;
+  readonly producerEndOffset?: number;
 } = {}) {
   const occurrenceNodes = (options.occurrences ?? ["c", "k"]).map(
     relationOccurrence,
@@ -186,7 +187,12 @@ function createFixture(options: {
         exactSqlWrite("write:0", "statement:200:0", 0, 20),
         exactSqlWrite("write:1", "statement:200:1", 100, 120),
       ]
-    : [exactSqlWrite("write:0", "statement:200:0", 0, 20)];
+    : [exactSqlWrite(
+        "write:0",
+        "statement:200:0",
+        0,
+        20 + (options.producerEndOffset ?? 0),
+      )];
   const producerLoad = load("200", {
     "statements.jsonl": [
       {
@@ -399,6 +405,29 @@ describe("target-field causal-slice physical field expander", () => {
       producerBindings: [],
       shouldRecurse: false,
     });
+  });
+
+  it("accepts the legacy inclusive statement-end convention without widening the write match", () => {
+    const fixture = createFixture({
+      occurrences: ["c"],
+      producerEndOffset: 1,
+    });
+    const result = fixture.adapter.expandPhysicalField(
+      fixture.context,
+      fixture.request,
+    );
+
+    expect(result.producers[0]).toMatchObject({
+      evidenceStatus: "CONFIRMED",
+      producerBindings: [
+        expect.objectContaining({
+          binding_id: "binding:write:0",
+          write_observation_id: "write:0",
+        }),
+      ],
+      shouldRecurse: true,
+    });
+    expect(result.gaps).toEqual([]);
   });
 
   it("does not use a unique table and write-kind stale fallback", () => {

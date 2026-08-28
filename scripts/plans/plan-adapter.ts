@@ -58,6 +58,7 @@ import {
 	expressionRoleNodes,
 	predicateColumnsOf,
 	predicateTreeOf,
+	structuredExpressionOf,
 } from "./internal/plan-expressions.js";
 import {
   displayTextOf,
@@ -2083,9 +2084,12 @@ export function buildPlanFacts(
               display_text: displayTextOf(sql, cellBase, p.cst),
               span: spanOf(cellBase, p.cst),
 				input_columns: inputColumns.length > 0 ? inputColumns : undefined,
-				expression_facts: opts?.include_expression_dependencies
-					? expressionFacts(p.expr)
-					: undefined,
+					expression_facts: opts?.include_expression_dependencies
+						? expressionFacts(p.expr)
+						: undefined,
+				structured_expression: opts?.include_expression_dependencies
+						? structuredExpressionOf(p.expr)
+						: undefined,
 				...(opts?.include_expression_dependencies
 					? {
 							expression_roles: expressionRoleBindings(
@@ -2314,6 +2318,9 @@ export function buildPlanFacts(
 			input_columns: inputColumns.length > 0 ? inputColumns : undefined,
 			expression_facts: opts?.include_expression_dependencies
 				? expressionFacts(expr)
+				: undefined,
+		structured_expression: opts?.include_expression_dependencies
+				? structuredExpressionOf(expr)
 				: undefined,
 			...(opts?.include_expression_dependencies
 				? { expression_roles: expressionRoles }

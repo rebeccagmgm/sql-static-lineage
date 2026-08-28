@@ -92,14 +92,33 @@ export interface ExpressionFacts {
 	comparisons: { operator: string; columns: string[]; literals: string[] }[];
 }
 
+/**
+ * Lossless, parser-owned expression shape for downstream semantic engines.
+ * This is deliberately separate from expression text and from the flattened
+ * expression facts: consumers may reconstruct typed operands without parsing
+ * SQL again or guessing their order.
+ */
+export type StructuredExpression =
+	| { kind: "COLUMN"; name: string; qualifier?: string }
+	| { kind: "LITERAL"; text: string }
+	| { kind: "FUNCTION"; name: string; qualifier?: string; args: StructuredExpression[] }
+	| { kind: "BINARY"; op: string; left: StructuredExpression; right: StructuredExpression }
+	| { kind: "UNARY"; op: string; operand: StructuredExpression }
+	| { kind: "CASE"; whens: { when: StructuredExpression; then: StructuredExpression }[]; elseExpr?: StructuredExpression }
+	| { kind: "CAST"; expr: StructuredExpression; typeText: string }
+	| { kind: "PREDICATE"; op: string; negated: boolean; operand: StructuredExpression; args: StructuredExpression[] }
+	| { kind: "UNSUPPORTED"; sourceKind: string };
+
 export type PredicateAtomOperator =
 	| "EQ"
+	| "NE"
 	| "LT"
 	| "LTE"
 	| "GT"
 	| "GTE"
 	| "IN"
 	| "BETWEEN"
+	| "LIKE"
 	| "OTHER";
 
 export type PredicateOperand =
@@ -117,7 +136,9 @@ export type PredicateOperand =
 			kind: "RUNTIME_EXPRESSION" | "OTHER";
 			expression: string;
 			inputColumns: ColumnRef[];
-	  };
+			/** Parser-owned shape when this is a typed expression, e.g. LIKE pattern concatenation. */
+			structured_expression?: StructuredExpression;
+		};
 
 export type PredicateTree =
 	| {
@@ -230,6 +251,8 @@ export interface ExprSpec {
 	input_columns?: ColumnRef[];
 	/** 可选：由 IR 提取的运算符、字面量、函数和谓词。 */
 	expression_facts?: ExpressionFacts;
+	/** Optional parser-owned operand tree; never reconstructed from expr_text. */
+	structured_expression?: StructuredExpression;
 	/** Optional structured CASE/IF/COALESCE roles; absent when the IR has no such role. */
 	expression_roles?: ExpressionRoleBinding[];
 }

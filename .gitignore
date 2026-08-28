@@ -1,5 +1,7 @@
 /node_modules/
 /dist/
+/staging/calcite-differential/
+/tools/calcite-rel-bridge/target/
 .evidence-cache/
 *.input-pack-status.json
 desktop.ini

@@ -58,6 +58,8 @@ export interface SemanticNormalizationRoot {
 export interface SemanticDependencyNormalizerInput {
   readonly plan: PlanFacts;
   readonly roots: readonly SemanticNormalizationRoot[];
+  /** Task-scopes generated semantic ids without changing Plan Facts ids. */
+  readonly idNamespace?: string;
   readonly physicalFieldResolver?:
     SemanticPhysicalFieldResolver | SemanticPhysicalFieldResolver["resolve"];
   /** Accepted for callers that assemble Plan Facts beside a Machine Facts bundle. */
@@ -75,6 +77,13 @@ export interface SemanticDependencyGap {
   readonly operatorRole: string;
   readonly relationId: string | null;
   readonly rootTargetFieldId: string;
+  /**
+   * When a multi-source column reference contains both resolved and
+   * unresolved physical candidates, scope the gap to the unresolved
+   * candidate.  An unscoped gap would incorrectly poison a separately
+   * proven physical dependency in the same expression.
+   */
+  readonly subject?: SemanticSubject;
   readonly message: string;
   readonly proofRefs: readonly ProofRef[];
   /** Negative proof must treat every normalizer gap as a hard blocker. */
@@ -238,19 +247,19 @@ function physicalSubjects(
 ): {
   readonly subjects: readonly SemanticSubject[];
   readonly proofRefs: readonly ProofRef[];
-  readonly unresolved: boolean;
+  readonly unresolvedReferences: readonly { readonly table: string; readonly column: string }[];
 } {
   const physical = column.physical;
   if (!Array.isArray(physical) || physical.length === 0)
-    return { subjects: [], proofRefs: [], unresolved: true };
+    return { subjects: [], proofRefs: [], unresolvedReferences: [] };
   const subjects: SemanticSubject[] = [];
   const proofRefs: ProofRef[] = [];
-  let unresolved = false;
+  const unresolvedReferences: { table: string; column: string }[] = [];
   for (const reference of physical) {
     const table = text(reference.table);
     const field = text(reference.column);
     if (!table || !field) {
-      unresolved = true;
+      unresolvedReferences.push({ table, column: field });
       continue;
     }
     const resolved =
@@ -258,7 +267,7 @@ function physicalSubjects(
         ? resolver({ table, column: field }, column)
         : resolver?.resolve({ table, column: field }, column);
     if (resolver && !resolved) {
-      unresolved = true;
+      unresolvedReferences.push({ table, column: field });
       continue;
     }
     if (resolved) {
@@ -287,7 +296,7 @@ function physicalSubjects(
         : subject.relationOccurrenceId,
     ),
     proofRefs,
-    unresolved: unresolved || subjects.length === 0,
+    unresolvedReferences,
   };
 }
 
@@ -514,6 +523,7 @@ export function normalizeSemanticDependencies(
     queryValue: Query,
     message: string,
     supportRefs: readonly ProofRef[] = [],
+    gapSubject?: SemanticSubject,
   ): void => {
     const supported = querySupport(queryValue);
     const relationId = relation?.id ?? null;
@@ -527,7 +537,8 @@ export function normalizeSemanticDependencies(
         : []),
       ...(supported.gap?.proofRefs ?? supported.cell.proofRefs),
     ];
-    const gapId = `semantic-gap:${root.rootTargetFieldId}:${relationId ?? "root"}:${queryValue.operatorKind}:${queryValue.operatorVariant}:${queryValue.operatorRole}:${message}`;
+    const gapNamespace = input.idNamespace === undefined ? "" : `${input.idNamespace}:`;
+    const gapId = `semantic-gap:${gapNamespace}${root.rootTargetFieldId}:${relationId ?? "root"}:${queryValue.operatorKind}:${queryValue.operatorVariant}:${queryValue.operatorRole}:${gapSubject ? JSON.stringify(gapSubject) : ""}:${message}`;
     gaps.set(gapId, {
       gapId,
       status: supported.gap?.status ?? "UNKNOWN",
@@ -537,6 +548,7 @@ export function normalizeSemanticDependencies(
       operatorRole: queryValue.operatorRole,
       relationId,
       rootTargetFieldId: root.rootTargetFieldId,
+      ...(gapSubject ? { subject: gapSubject } : {}),
       message: supported.gap?.message
         ? `${supported.gap.message} ${message}`
         : message,
@@ -577,6 +589,7 @@ export function normalizeSemanticDependencies(
       },
       support.cell.status as SupportStatus,
       refs,
+      input.idNamespace,
     );
     const previousDefinition = definitions.get(definition.dependencyId);
     definitions.set(
@@ -603,6 +616,7 @@ export function normalizeSemanticDependencies(
       addGap(args.root, args.relation, args.query, support.gap.message, refs);
     const application = makeSemanticDependencyApplication({
       dependencyId: definition.dependencyId,
+      scopeRelationId: args.relation.id,
       rootTargetFieldId: args.root.rootTargetFieldId,
       rootDependenceKind,
       pathCertainty,
@@ -631,6 +645,7 @@ export function normalizeSemanticDependencies(
       toSubject: rootSubject(args.root),
       rootDependenceKind,
       localEdgeKind: args.query.localEdgeKind,
+      scopeRelationId: args.relation.id,
       pathCertainty,
       proofRefs: refs,
     });
@@ -693,10 +708,29 @@ export function normalizeSemanticDependencies(
             ...inputProofRefs(args.relation.id, column),
             ...physical.proofRefs,
           ],
-          structuralGap: physical.unresolved
-            ? `one or more physical identities for ${column.name} are unresolved`
-            : undefined,
         });
+      for (const unresolved of physical.unresolvedReferences) {
+        addGap(
+          args.root,
+          args.relation,
+          args.query,
+          `physical identity is unavailable for ${unresolved.table}.${unresolved.column}`,
+          [
+            ...inputProofRefs(args.relation.id, column),
+            createProofRef(
+              "CANONICAL_FACT",
+              `plan:physical:${unresolved.table}:${unresolved.column}`,
+            ),
+          ],
+          {
+            subjectKind: "PHYSICAL_FIELD",
+            physicalFieldId: fallbackPhysicalFieldId(
+              unresolved.table,
+              unresolved.column,
+            ),
+          },
+        );
+      }
     }
   };
 

@@ -738,17 +738,20 @@ function validateConsumerReadOccurrence(
       (relationTable !== qualifiedTable && !bareTableIsSupported)
     )
       return false;
-    const actualOccurrenceId =
+    const actualOccurrenceId = nonEmpty(
       relation?.read_occurrence_id ??
-      asRecord(relation?.read_occurrence)?.occurrence_id ??
-      node.read_occurrence_id;
-    const actualRelationId =
+        asRecord(relation?.read_occurrence)?.occurrence_id ??
+        node.read_occurrence_id,
+    );
+    const actualRelationId = nonEmpty(
       node.relation_id ??
-      relation?.id ??
-      asRecord(relation?.read_occurrence)?.relation_id;
-    const exactIdentity =
-      sameRelationIdentity(actualOccurrenceId, occurrenceId) &&
-      sameRelationIdentity(actualRelationId, readRelationId);
+        relation?.id ??
+        asRecord(relation?.read_occurrence)?.relation_id,
+    );
+    const relationIdentityMatches = sameRelationIdentity(actualRelationId, readRelationId);
+    const occurrenceIdentityMatches =
+      actualOccurrenceId !== null &&
+      sameRelationIdentity(actualOccurrenceId, occurrenceId);
     const legacyIdentity =
       expectedBinding !== null &&
       normalizeName(String(relation?.binding ?? "")) === expectedBinding &&
@@ -756,15 +759,26 @@ function validateConsumerReadOccurrence(
         normalizeName(
           String(canonicalRelationIdentity(relationPath[0]) ?? "").split(".")[0],
         );
+    // Legacy 1.3 bundles do not carry read_occurrence_id on relation nodes.
+    // A canonical relation id is still occurrence-specific within a
+    // statement, so it is sufficient when the occurrence field itself is
+    // absent.  Never use this fallback when an occurrence id is present but
+    // disagrees: that remains a hard evidence mismatch.
+    const identityProven =
+      occurrenceIdentityMatches
+        ? relationIdentityMatches
+        : actualOccurrenceId === null
+          ? relationIdentityMatches || legacyIdentity
+          : false;
     return (
-      (exactIdentity || legacyIdentity) &&
+      identityProven &&
       statementIndexForRelation(load, node) === statementIndex
     );
   });
   if (!matchingRead)
     return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_NOT_PROVEN" };
 
-  const matchingDatasetRead = (load.records["dataset-io.jsonl"] ?? []).some(
+  const statementDatasetReads = (load.records["dataset-io.jsonl"] ?? []).filter(
     (record) => {
       if (
         record.direction !== "READ" ||
@@ -774,26 +788,27 @@ function validateConsumerReadOccurrence(
       const dataset = normalizeName(String(record.physical_dataset ?? ""));
       if (dataset !== qualifiedTable && dataset.split(".").at(-1) !== tableTail)
         return false;
-      const readOccurrences = Array.isArray(record.read_occurrences)
-        ? record.read_occurrences
-        : [];
-      return (
-        statementIndexForId(load, record.statement_id) === statementIndex &&
-        readOccurrences.some((rawOccurrence) => {
-          const readOccurrence = asRecord(rawOccurrence);
-          return (
-            readOccurrence !== null &&
-            sameRelationIdentity(
-              readOccurrence.occurrence_id,
-              matchingRead.relation?.read_occurrence_id ??
-                matchingRead.read_occurrence_id,
-            ) &&
-            sameRelationIdentity(readOccurrence.relation_id, matchingRead.relation_id)
-          );
-        })
-      );
+      return statementIndexForId(load, record.statement_id) === statementIndex;
     },
   );
+  const matchingDatasetRead = statementDatasetReads.some((record) => {
+    if (Array.isArray(record.read_occurrences))
+      return record.read_occurrences.some((rawOccurrence) => {
+        const readOccurrence = asRecord(rawOccurrence);
+        return (
+          readOccurrence !== null &&
+          sameRelationIdentity(
+            readOccurrence.occurrence_id,
+            matchingRead.relation?.read_occurrence_id ??
+              matchingRead.read_occurrence_id,
+          ) &&
+          sameRelationIdentity(readOccurrence.relation_id, matchingRead.relation_id)
+        );
+      });
+    // Without occurrence data, accept only a unique physical read in the
+    // statement.  This preserves self-join/repeated-read isolation.
+    return statementDatasetReads.length === 1;
+  });
   if (!matchingDatasetRead)
     return { valid: false, reason: "CONSUMER_READ_OCCURRENCE_NOT_PROVEN" };
 
@@ -963,6 +978,27 @@ function spanEquals(
   );
 }
 
+/**
+ * The table-producer snapshot and Machine Facts use the same SQL statement,
+ * but older producers recorded the final character as an inclusive endpoint
+ * while the current bundle records a half-open endpoint.  Treat only that
+ * one-character representation difference as equivalent; the statement id,
+ * write kind and provenance are still checked by the caller.
+ */
+function spanMatchesBoundaryConvention(
+  value: unknown,
+  expected: { readonly start: number; readonly end: number },
+): boolean {
+  if (spanEquals(value, expected)) return true;
+  const span = asRecord(value);
+  return (
+    Number.isSafeInteger(span?.start) &&
+    Number.isSafeInteger(span?.end) &&
+    Number(span?.start) === expected.start &&
+    Math.abs(Number(span?.end) - expected.end) === 1
+  );
+}
+
 function strictWriteMatchesArtifact(
   artifactWrite: JsonRecord,
   producerRecord: JsonRecord,
@@ -996,7 +1032,10 @@ function strictWriteMatchesArtifact(
     const span = asRecord(statement?.span);
     const boundary = asRecord(producerRecord.source_as_boundary)?.statement_span;
     const boundarySpan = asRecord(boundary);
-    return spanEquals(span, expectedSpan) || spanEquals(boundarySpan, expectedSpan);
+    return (
+      spanMatchesBoundaryConvention(span, expectedSpan) ||
+      spanMatchesBoundaryConvention(boundarySpan, expectedSpan)
+    );
   }
   if (observationKind === "DIRECT_TARGET")
     return (

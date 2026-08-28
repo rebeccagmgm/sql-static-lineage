@@ -170,17 +170,22 @@ function exactBridgeForBranch(
   edge: CausalTraversalPathEdge,
   branch: CandidateBranch,
 ): boolean {
-  return (
-    branch.branchKind === "PHYSICAL_PRODUCER" &&
-    branch.consumerTaskId !== null &&
-    branch.producerTaskId !== null &&
-    branch.readOccurrence !== null &&
-    edge.localEdgeKind === "VALUE_FLOW" &&
-    edge.fromTaskId === branch.producerTaskId &&
-    edge.toTaskId === branch.consumerTaskId &&
-    edge.readOccurrenceId === branch.readOccurrence.occurrenceId &&
-    tableMatchesPhysicalField(branch.table, edge.fromSubject)
-  );
+  if (
+    branch.branchKind !== "PHYSICAL_PRODUCER" ||
+    branch.consumerTaskId === null ||
+    branch.producerTaskId === null ||
+    branch.readOccurrence === null ||
+    edge.fromTaskId !== branch.producerTaskId ||
+    edge.toTaskId !== branch.consumerTaskId ||
+    edge.readOccurrenceId !== branch.readOccurrence.occurrenceId
+  ) return false;
+  if (edge.localEdgeKind === "VALUE_FLOW")
+    return tableMatchesPhysicalField(branch.table, edge.fromSubject);
+  // Relation-level operators such as COUNT(*) and CROSS JOIN deliberately do
+  // not have a producer column.  The exact read occurrence is their physical
+  // identity at the table-multi-hop boundary.
+  return edge.localEdgeKind === "RELATION_CONTEXT" &&
+    edge.fromSubject.subjectKind === "RELATION_OCCURRENCE";
 }
 
 function exactPathsForBranch(

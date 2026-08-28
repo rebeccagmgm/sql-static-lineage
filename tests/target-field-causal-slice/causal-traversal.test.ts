@@ -248,6 +248,47 @@ describe("causal traversal", () => {
     expect(result.roots[0]!.decision.controlClosed).toBe(false);
   });
 
+  it("bridges a fieldless relation dependency to an exact producer occurrence", () => {
+    const root = fieldSubject(target("amount"));
+    const relation = relationSubject("relation:0:read-b");
+    const result = traverseCausalDependencies({
+      ...input(
+        [{ rootTargetFieldId: physicalId(root), taskId: "task-root", subject: root }],
+        [["task-root", [normalization(root, relation, "RELATION_CONTEXT", "RELATION_TO_TARGET")]]],
+        undefined,
+        { maxValueStates: 0, maxControlStates: 10, maxControlPaths: 10 },
+      ),
+      expandRelationOccurrence: () => ({
+        relationBridges: [{
+          producerTaskId: "task-producer",
+          readOccurrenceId: "read-b",
+          evidenceStatus: "CONFIRMED",
+          evidenceRefs: ["table-bridge:read-b"],
+        }],
+      }),
+    });
+    const paths = result.roots[0]!.paths;
+    const path = paths.find((candidate) =>
+      candidate.edges.some((edge) =>
+        edge.localEdgeKind === "RELATION_CONTEXT" &&
+        edge.fromTaskId === "task-producer" &&
+        edge.readOccurrenceId === "read-b",
+      ),
+    );
+    expect(path).toBeDefined();
+    expect(path!.edges.at(-1)).toMatchObject({
+      fromTaskId: "task-producer",
+      toTaskId: "task-root",
+      fromSubject: relation,
+      toSubject: relation,
+      localEdgeKind: "RELATION_CONTEXT",
+      readOccurrenceId: "read-b",
+    });
+    expect(path!.edges.at(-1)!.evidenceRefs).toContain("table-bridge:read-b");
+    expect(result.roots[0]!.decision.controlClosed).toBe(true);
+    expect(result.roots[0]!.decision.valueClosed).toBe(true);
+  });
+
   it("keeps upstream VALUE_FLOW on the control path budget", () => {
     const root = fieldSubject(target("amount"));
     const control = fieldSubject(upstream("status"));

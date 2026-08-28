@@ -1,4 +1,9 @@
-# Calcite offline oracle
+# Deprecated Calcite offline oracle compatibility tool
+
+New work should use `tools/calcite-rel-bridge/` and the
+`scripts/calcite-differential/` protocol. This directory is retained only for
+the existing `test:calcite-oracle` fixtures and older callers; it is not the
+production field-lineage or causal-slice engine.
 
 This is an independently invoked, sidecar-only oracle. It is deliberately not
 part of the Node production pipeline and does not read or write canonical

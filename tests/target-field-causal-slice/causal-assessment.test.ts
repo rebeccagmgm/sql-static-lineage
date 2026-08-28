@@ -131,6 +131,30 @@ function path(
   };
 }
 
+function relationPath(certainty: PathCertainty = "CONFIRMED"): CausalTraversalPath {
+  const relation = { subjectKind: "RELATION_OCCURRENCE" as const, relationOccurrenceId: "relation:read:r1" };
+  return {
+    pathId: `path:relation:${certainty}`,
+    rootTargetFieldId: ROOT_FIELD,
+    rootDependenceKind: "RELATION_TO_TARGET",
+    pathCertainty: certainty,
+    edges: [{
+      edgeId: `edge:relation:${certainty}`,
+      fromTaskId: "200",
+      toTaskId: "100",
+      fromSubject: relation,
+      toSubject: relation,
+      rootDependenceKind: "RELATION_TO_TARGET",
+      localEdgeKind: "RELATION_CONTEXT",
+      frontierKind: "RELATION_CONTEXT",
+      pathCertainty: certainty,
+      dependencyId: null,
+      readOccurrenceId: "read:r1",
+      evidenceRefs: ["relation:bridge"],
+    }],
+  };
+}
+
 function blockingGap(): CausalTraversalGap {
   return {
     gapId: "traversal-gap:source",
@@ -230,6 +254,15 @@ describe("positive causal assessment", () => {
         result,
       ),
     ).toEqual({ valid: true, errors: [] });
+  });
+
+  it("confirms a relation-context producer bridge without requiring a producer column", () => {
+    const result = assess(universe(), traversal([relationPath()]));
+    expect(result.assessments[0]).toMatchObject({
+      status: "CONFIRMED_RELATED",
+      reasonCode: "CONTINUOUS_CONFIRMED_PATH",
+    });
+    expect(result.positiveProofs[0]?.evidenceRefs).toEqual(["relation:bridge"]);
   });
 
   it("keeps a real provisional path conditional", () => {

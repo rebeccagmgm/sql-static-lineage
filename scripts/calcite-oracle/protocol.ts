@@ -245,3 +245,47 @@ export interface DifferentialReconciliation {
   };
   readonly results: readonly DifferentialResult[];
 }
+
+/**
+ * @deprecated Import the versioned protocol from
+ * `scripts/calcite-differential/protocol.ts` for new code.  These exports are
+ * additive compatibility aliases; the legacy oracle request/response types
+ * above remain unchanged for existing callers.
+ */
+export {
+  CALCITE_DIFFERENTIAL_BUILD_FINGERPRINT,
+  CALCITE_DIFFERENTIAL_CALCITE_VERSION,
+  CALCITE_DIFFERENTIAL_PROTOCOL_VERSION,
+  CALCITE_DIFFERENTIAL_TOOL,
+  DIFFERENTIAL_HARD_LIMITS,
+  DIFFERENTIAL_METADATA_KINDS,
+  DIFFERENTIAL_OBSERVATION_STATUSES,
+  DIFFERENTIAL_REQUEST_KINDS,
+  DIFFERENTIAL_RESPONSE_STATUSES,
+  DIFFERENTIAL_RESULT_STATUSES,
+  makeDifferentialFingerprint,
+  parseDifferentialJson,
+  requestFingerprint,
+  resolveDifferentialLimits,
+  serializeDifferentialRequest,
+  serializeDifferentialResponse,
+  sha256Text,
+  stableJsonLine,
+  stableSerialize,
+  validateDifferentialRequest,
+} from "../calcite-differential/protocol.ts";
+
+export type {
+  DifferentialEvaluation,
+  DifferentialFingerprint,
+  DifferentialIssue,
+  DifferentialMappingRef,
+  DifferentialObservationStatus,
+  DifferentialProtocolError,
+  DifferentialRequest,
+  DifferentialResponse,
+  DifferentialValidationResult,
+  PlanFactsRelRequest,
+  RawSqlDifferentialRequest,
+  ResolvedDifferentialLimits,
+} from "../calcite-differential/protocol.ts";

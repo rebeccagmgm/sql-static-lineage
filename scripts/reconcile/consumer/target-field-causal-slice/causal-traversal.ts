@@ -55,6 +55,17 @@ export interface RelationTraversalRequest {
 }
 
 export interface RelationTraversalExpansion {
+  /**
+   * A relation-level dependency can reach a producer Task without naming a
+   * physical column (for example COUNT(*) or a literal projection).  The
+   * bridge is occurrence-specific and is kept separate from field expansion.
+   */
+  readonly relationBridges?: readonly {
+    readonly producerTaskId: string;
+    readonly readOccurrenceId: string;
+    readonly evidenceStatus?: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
+    readonly evidenceRefs?: readonly string[];
+  }[];
   readonly relationOccurrences?: readonly {
     readonly taskId: string;
     readonly relationOccurrenceId: string;
@@ -971,6 +982,72 @@ function processRoot(
         });
         for (const gap of relationExpansion.gaps ?? []) addGap(result, gap);
         for (const ref of relationExpansion.evidenceRefs ?? []) sharedEvidenceRefs.add(ref);
+        for (const bridge of relationExpansion.relationBridges ?? []) {
+          const bridgeCertainty = worstCertainty(
+            nextCertainty,
+            evidenceCertainty(bridge.evidenceStatus),
+          );
+          const bridgeRefs = sortedUnique([
+            ...dependency.proofRefs.map((ref) => ref.refId),
+            ...(bridge.evidenceRefs ?? []),
+          ]);
+          for (const ref of bridgeRefs) sharedEvidenceRefs.add(ref);
+          const bridgeEdge = makeLocalEdge({
+            root,
+            fromTaskId: bridge.producerTaskId,
+            toTaskId: state.taskId,
+            // A relation-level bridge has no producer-side column identity.
+            // The read occurrence and table-multi-hop evidence identify the
+            // boundary; retaining the same relation subject on both sides
+            // keeps the path continuity check explicit and lossless.
+            fromSubject: dependency.fromSubject,
+            toSubject: dependency.fromSubject,
+            rootDependenceKind: nextRootDependenceKind,
+            localEdgeKind: "RELATION_CONTEXT",
+            pathCertainty: bridgeCertainty,
+            dependencyId: null,
+            evidenceRefs: bridgeRefs,
+            readOccurrenceId: bridge.readOccurrenceId,
+          });
+          const pathsUsed = isValueRootDependence(nextRootDependenceKind)
+            ? result.valuePathsUsed
+            : result.controlPathsUsed;
+          const limits = limitFor(nextRootDependenceKind, options);
+          if (pathsUsed.value >= limits.paths) {
+            addGap(result, makeGap({
+              rootTargetFieldId: root.rootTargetFieldId,
+              taskId: state.taskId,
+              subject: dependency.fromSubject,
+              readOccurrenceId: bridge.readOccurrenceId,
+              rootDependenceKind: nextRootDependenceKind,
+              frontierKind: "RELATION_CONTEXT",
+              reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
+              message: `${limits.prefix.toLowerCase()} path budget ${limits.paths} reached before relation producer bridge`,
+              evidenceRefs: bridgeRefs,
+            }));
+            continue;
+          }
+          pathsUsed.value += 1;
+          addPath(
+            result,
+            root.rootTargetFieldId,
+            [...next.path, bridgeEdge],
+            bridgeCertainty,
+            nextRootDependenceKind,
+          );
+          if (bridgeCertainty === "UNKNOWN")
+            addGap(result, makeGap({
+              rootTargetFieldId: root.rootTargetFieldId,
+              taskId: bridge.producerTaskId,
+              subject: dependency.fromSubject,
+              readOccurrenceId: bridge.readOccurrenceId,
+              rootDependenceKind: nextRootDependenceKind,
+              frontierKind: "RELATION_CONTEXT",
+              reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
+              message: `relation producer bridge for ${bridge.readOccurrenceId} is unresolved`,
+              evidenceRefs: bridgeRefs,
+            }));
+        }
         for (const occurrence of relationExpansion.relationOccurrences ?? []) {
           const occurrenceCertainty = worstCertainty(
             nextCertainty,
@@ -993,6 +1070,23 @@ function processRoot(
             relationTerminalObserved: true,
           };
           if (!currentActive.has(activeKey(nextRelation))) frontier.push(nextRelation);
+        }
+        if (
+          (relationExpansion.relationBridges?.length ?? 0) === 0 &&
+          (relationExpansion.relationOccurrences?.length ?? 0) === 0 &&
+          (relationExpansion.gaps?.length ?? 0) === 0
+        ) {
+          addGap(result, makeGap({
+            rootTargetFieldId: root.rootTargetFieldId,
+            taskId: state.taskId,
+            subject: dependency.fromSubject,
+            readOccurrenceId: state.readOccurrenceId,
+            rootDependenceKind: nextRootDependenceKind,
+            frontierKind: nextKind,
+            reasonCode: "RELATION_EXPANSION_UNAVAILABLE",
+            message: `relation occurrence ${dependency.fromSubject.relationOccurrenceId} produced no exact upstream bridge`,
+            evidenceRefs: dependency.proofRefs.map((ref) => ref.refId),
+          }));
         }
         continue;
       }
