@@ -28,6 +28,7 @@ import {
   buildTableProducerIndex,
   type TableProducerIndex,
 } from "../scripts/reconcile/producer/producer-index.ts";
+import { scheduleEvidenceCachePath } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const frozen86840It = existsSync(
   join(
@@ -240,6 +241,64 @@ describe("reconcileOneHop", () => {
     evidence.delete("current-indexed");
     expect(() => reconcileOneHop("current-indexed", { dataRoot: fixture.dataRoot, producerIndex: fixture.producerIndex, scheduleEvidenceByTaskId: evidence, openCliRunner: () => { calls += 1; return []; } })).toThrow("SCHEDULE_EVIDENCE_MISSING");
     expect(calls).toBe(0);
+  });
+
+  it("reads through the fixed-shape Horae relation cache for direct one-hop runs", () => {
+    const fixture = writeProducerIndexFixture();
+    const cacheRoot = fixtureRoot();
+    let calls = 0;
+    const runner: OpenCliRunner = () => {
+      calls += 1;
+      return [{ task_id: "parent-a", task_name: "cached parent" }];
+    };
+
+    const first = reconcileOneHop("current-indexed", {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: runner,
+      scheduleEvidenceCacheRoot: cacheRoot,
+      now: () => "2026-08-27T00:00:00.000Z",
+    });
+    expect(calls).toBe(1);
+    expect(first.schedule.parents.map((parent) => parent.taskId)).toEqual([
+      "parent-a",
+    ]);
+    const cachePath = scheduleEvidenceCachePath("current-indexed", cacheRoot);
+    expect(existsSync(cachePath)).toBe(true);
+    expect(first.schedule.evidence[0]?.detail).toMatchObject({
+      cacheStatus: "MISS",
+      cachePath,
+    });
+
+    const second = reconcileOneHop("current-indexed", {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: runner,
+      scheduleEvidenceCacheRoot: cacheRoot,
+      now: () => "2026-08-27T00:00:01.000Z",
+    });
+    expect(calls).toBe(1);
+    expect(second.schedule.parents.map((parent) => parent.taskId)).toEqual([
+      "parent-a",
+    ]);
+    expect(second.schedule.evidence[0]?.detail).toMatchObject({
+      cacheStatus: "HIT",
+      cachePath,
+    });
+
+    writeFileSync(cachePath, JSON.stringify({ task_id: "wrong" }), "utf8");
+    const third = reconcileOneHop("current-indexed", {
+      dataRoot: fixture.dataRoot,
+      producerIndex: fixture.producerIndex,
+      openCliRunner: runner,
+      scheduleEvidenceCacheRoot: cacheRoot,
+      now: () => "2026-08-27T00:00:02.000Z",
+    });
+    expect(calls).toBe(2);
+    expect(third.schedule.evidence[0]?.detail).toMatchObject({
+      cacheStatus: "INVALID",
+      cachePath,
+    });
   });
   it("builds a concise sidecar summary without embedding evidence", () => {
     const fixture = writeProducerIndexFixture();

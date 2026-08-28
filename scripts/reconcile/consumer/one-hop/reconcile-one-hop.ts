@@ -76,6 +76,13 @@ import {
   qualifyBareTableName,
 } from "../../shared/task-default-schema.ts";
 import { normalizeRepeatedSqlForAnalysis } from "../../../input/shared/sql-analysis-normalization.ts";
+import {
+  DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  readHoraeRelationCache,
+  scheduleEvidenceCachePath,
+  writeHoraeRelationCache,
+  type ScheduleEvidenceCacheStatus,
+} from "./schedule-evidence-cache.ts";
 
 export {
   extractSqlWrites,
@@ -480,7 +487,11 @@ export interface ReconcileOneHopOptions {
     readonly provider?: string;
     readonly locator?: string;
     readonly observedAt?: string | null;
+    readonly cacheStatus?: Exclude<ScheduleEvidenceCacheStatus, "DISABLED">;
+    readonly cachePath?: string;
   }>;
+  /** Null disables the cache; omitted uses the fixed root for the default runner. */
+  readonly scheduleEvidenceCacheRoot?: string | null;
   readonly trustedInputFingerprint?: string;
   readonly openCliRunner?: OpenCliRunner;
   readonly now?: () => string;
@@ -623,6 +634,28 @@ function rowsOf(value: unknown): JsonRecord[] {
         .filter((item): item is JsonRecord => item !== null);
   }
   return [];
+}
+
+function isCacheableHoraeRelationResponse(
+  value: unknown,
+  rows: readonly JsonRecord[],
+): boolean {
+  if (Array.isArray(value)) return value.length === rows.length;
+  const record = asRecord(value);
+  if (!record) return false;
+  if (
+    record.error !== undefined ||
+    record.success === false ||
+    ["fail", "failed", "failure", "error"].includes(
+      String(record.status ?? "").toLowerCase(),
+    )
+  )
+    return false;
+  const envelope = ["records", "rows", "data", "results"].find((field) =>
+    Array.isArray(record[field]),
+  );
+  return envelope !== undefined &&
+    (record[envelope] as unknown[]).length === rows.length;
 }
 
 export function defaultOpenCliRunner(
@@ -2011,20 +2044,66 @@ function reconcileOneHopInternal(
   if (options.scheduleRowsByTaskId && keyedRows === undefined) throw new Error(`SCHEDULE_ROWS_MISSING:${taskId}`);
   const suppliedRows = keyedEvidence?.rows ?? keyedRows ?? options.scheduleRows;
   const offlineScheduleRows = suppliedRows !== undefined;
+  const cacheRoot = options.scheduleEvidenceCacheRoot === undefined
+    ? (options.openCliRunner === undefined ? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT : null)
+    : options.scheduleEvidenceCacheRoot;
+  const cacheRead = !offlineScheduleRows && cacheRoot !== null
+    ? readHoraeRelationCache(taskId, cacheRoot)
+    : null;
+  let scheduleRows: JsonRecord[];
+  let scheduleObservedAt: string | null;
+  let scheduleCacheStatus: Exclude<ScheduleEvidenceCacheStatus, "DISABLED"> | undefined;
+  let scheduleCachePath: string | undefined;
+  if (suppliedRows !== undefined) {
+    scheduleRows = [...suppliedRows];
+    scheduleObservedAt = keyedEvidence?.observedAt ?? null;
+    scheduleCacheStatus = keyedEvidence?.cacheStatus;
+    scheduleCachePath = keyedEvidence?.cachePath;
+  } else if (cacheRead?.status === "HIT") {
+    scheduleRows = [...cacheRead.rows];
+    scheduleObservedAt = cacheRead.observedAt;
+    scheduleCacheStatus = "HIT";
+    scheduleCachePath = cacheRead.path;
+  } else {
+    const response = runner(horaeArgs);
+    scheduleRows = rowsOf(response);
+    scheduleObservedAt = now();
+    if (cacheRoot !== null) {
+      scheduleCacheStatus = cacheRead?.status ?? "MISS";
+      scheduleCachePath = cacheRead?.path ?? scheduleEvidenceCachePath(taskId, cacheRoot);
+      if (isCacheableHoraeRelationResponse(response, scheduleRows)) {
+        try {
+          scheduleCachePath = writeHoraeRelationCache(
+            taskId,
+            scheduleObservedAt,
+            scheduleRows,
+            cacheRoot,
+          );
+        } catch {
+          // Scheduler evidence remains usable when the optional cache is not writable.
+        }
+      }
+    }
+  }
   const scheduleEvidence: EvidenceObservation = {
     source: "HORAE_RELATION",
     provider: keyedEvidence?.provider ?? (offlineScheduleRows ? "offline:horae.relation" : "opencli:horae.relation"),
     locator: keyedEvidence?.locator ?? (offlineScheduleRows ? "offline schedule evidence input" : `opencli ${horaeArgs.join(" ")}`),
-    observedAt: keyedEvidence?.observedAt ?? (offlineScheduleRows ? null : now()),
+    observedAt: scheduleObservedAt,
     detail: {
       direction: "up",
       depth: 1,
       ...(offlineScheduleRows
         ? { rowsProvided: suppliedRows!.length }
         : {}),
+      ...(scheduleCacheStatus === undefined
+        ? {}
+        : { cacheStatus: scheduleCacheStatus }),
+      ...(scheduleCachePath === undefined
+        ? {}
+        : { cachePath: scheduleCachePath }),
     },
   };
-  const scheduleRows = suppliedRows ?? rowsOf(runner(horaeArgs));
   const scheduleParents = new Map<
     string,
     { taskId: string; taskName: string | null; evidence: EvidenceObservation[] }

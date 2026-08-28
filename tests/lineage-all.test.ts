@@ -11,6 +11,7 @@ import {
   runLineageAll,
   prefetchHoraeRelations,
 } from "../scripts/pipeline/lineage-all.ts";
+import { scheduleEvidenceCachePath } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 function fakeMultiHop(taskId: string): any {
   return {
@@ -45,6 +46,63 @@ describe("lineage:all", () => {
     expect(calls[0]).toEqual(["horae", "relation", "a", "--direction", "up", "--depth", "1", "-f", "json"]);
     expect(evidence.get("a")?.provider).toBe("opencli:horae.relation");
     expect(evidence.get("a")?.observedAt).toBe("2026-08-27T00:00:00.000Z");
+  });
+
+  it("reads, writes, and refreshes the Horae relation cache without changing prefetch orchestration", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "schedule-evidence-cache-"));
+    let calls = 0;
+    const run = async (args: readonly string[]) => {
+      calls += 1;
+      return [{ task_id: args[2], task_name: `name-${args[2]}` }];
+    };
+
+    const first = await prefetchHoraeRelations(["cached"], {
+      cacheRoot,
+      run,
+      now: () => "2026-08-27T00:00:00.000Z",
+    });
+    const cachePath = scheduleEvidenceCachePath("cached", cacheRoot);
+    expect(calls).toBe(1);
+    expect(first.get("cached")).toMatchObject({
+      cacheStatus: "MISS",
+      cachePath,
+      rows: [{ task_id: "cached", task_name: "name-cached" }],
+    });
+
+    const second = await prefetchHoraeRelations(["cached"], {
+      cacheRoot,
+      run,
+      now: () => "2026-08-27T00:00:01.000Z",
+    });
+    expect(calls).toBe(1);
+    expect(second.get("cached")).toMatchObject({
+      cacheStatus: "HIT",
+      cachePath,
+      observedAt: "2026-08-27T00:00:00.000Z",
+      rows: [{ task_id: "cached", task_name: "name-cached" }],
+    });
+
+    const stale = JSON.parse(readFileSync(cachePath, "utf8")) as {
+      rows: unknown[];
+    };
+    stale.rows = [{ task_id: "changed" }];
+    writeFileSync(cachePath, JSON.stringify(stale), "utf8");
+    const third = await prefetchHoraeRelations(["cached"], {
+      cacheRoot,
+      run,
+      now: () => "2026-08-27T00:00:02.000Z",
+    });
+    expect(calls).toBe(2);
+    expect(third.get("cached")).toMatchObject({
+      cacheStatus: "INVALID",
+      cachePath,
+      observedAt: "2026-08-27T00:00:02.000Z",
+    });
+    expect(JSON.parse(readFileSync(cachePath, "utf8"))).toMatchObject({
+      task_id: "cached",
+      schema_version: "1.0.0",
+      content_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
   });
 
   it("stops prefetch assignment after failure and waits for active runners", async () => {

@@ -46,6 +46,13 @@ import {
   defaultOpenCliRunner,
   type ReconcileOneHopOptions,
 } from "../reconcile/consumer/one-hop/reconcile-one-hop.ts";
+import {
+  DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  readHoraeRelationCache,
+  scheduleEvidenceCachePath,
+  writeHoraeRelationCache,
+  type ScheduleEvidenceCacheStatus,
+} from "../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import { reconcileMultiHop } from "../reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import { queryProducerTaskIds } from "../reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
@@ -68,6 +75,8 @@ export interface PrefetchedScheduleEvidence {
   readonly provider: "opencli:horae.relation";
   readonly locator: string;
   readonly observedAt: string;
+  readonly cacheStatus?: Exclude<ScheduleEvidenceCacheStatus, "DISABLED">;
+  readonly cachePath?: string;
 }
 
 export interface InputPackClosureArtifact {
@@ -154,6 +163,8 @@ export interface HoraePrefetchOptions {
   readonly maxRowsPerTask?: number;
   readonly maxTotalRows?: number;
   readonly maxTotalBytes?: number;
+  /** Null disables the cache; omitted uses the fixed root for the default runner. */
+  readonly cacheRoot?: string | null;
 }
 
 function rowsOfHorae(value: unknown, taskId: string): Record<string, unknown>[] {
@@ -196,6 +207,9 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
   const concurrency = options.concurrency ?? DEFAULT_HORAE_PREFETCH_CONCURRENCY;
   if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32) throw new Error("HORAE_PREFETCH_CONCURRENCY_INVALID");
   const run = options.run ?? defaultHoraeRunner;
+  const cacheRoot = options.cacheRoot === undefined
+    ? (options.run === undefined ? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT : null)
+    : options.cacheRoot;
   const now = options.now ?? (() => new Date().toISOString());
   const maxRowsPerTask = options.maxRowsPerTask ?? 10_000;
   const maxTotalRows = options.maxTotalRows ?? 100_000;
@@ -213,16 +227,47 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
       const taskId = taskIds[index]!;
       if (!SAFE_TASK_ID.test(taskId)) { stopped = true; throw new Error(`HORAE_RELATION_PREFETCH_INVALID_TASK:${taskId}`); }
       const args = ["horae", "relation", taskId, "--direction", "up", "--depth", "1", "-f", "json"];
-      const started = now();
       try {
-        const parsed = await run(args);
-        const rows = rowsOfHorae(parsed, taskId);
+        const cached = cacheRoot === null ? null : readHoraeRelationCache(taskId, cacheRoot);
+        let rows: Record<string, unknown>[];
+        let observedAt: string;
+        let cacheStatus: Exclude<ScheduleEvidenceCacheStatus, "DISABLED"> | undefined;
+        let cachePath: string | undefined;
+        if (cached?.status === "HIT") {
+          rows = [...cached.rows];
+          observedAt = cached.observedAt;
+          cacheStatus = "HIT";
+          cachePath = cached.path;
+        } else {
+          const started = now();
+          const parsed = await run(args);
+          rows = rowsOfHorae(parsed, taskId);
+          observedAt = started;
+          if (cacheRoot !== null) {
+            cacheStatus = cached?.status ?? "MISS";
+            cachePath = cached?.path ?? scheduleEvidenceCachePath(taskId, cacheRoot);
+          }
+        }
         if (rows.length > maxRowsPerTask) throw new Error(`OUTPUT_LIMIT:${taskId}`);
         totalRows += rows.length;
         if (totalRows > maxTotalRows) throw new Error(`OUTPUT_LIMIT:${taskId}`);
         totalBytes += new TextEncoder().encode(JSON.stringify(rows)).byteLength;
         if (totalBytes > maxTotalBytes) throw new Error(`OUTPUT_LIMIT:${taskId}`);
-        result.set(taskId, { rows, provider: "opencli:horae.relation", locator: `opencli ${args.join(" ")}`, observedAt: started });
+        if (cacheRoot !== null && cacheStatus !== "HIT") {
+          try {
+            cachePath = writeHoraeRelationCache(taskId, observedAt, rows, cacheRoot);
+          } catch {
+            // Scheduler evidence remains usable when the optional cache is not writable.
+          }
+        }
+        result.set(taskId, {
+          rows,
+          provider: "opencli:horae.relation",
+          locator: `opencli ${args.join(" ")}`,
+          observedAt,
+          ...(cacheStatus === undefined ? {} : { cacheStatus }),
+          ...(cachePath === undefined ? {} : { cachePath }),
+        });
       } catch (error) {
         stopped = true;
         const reason = error instanceof Error && /(?:^|_)(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)(?::|$)/.test(error.message) ? error.message.match(/(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)/)![1]! : "RUNNER_FAILED";

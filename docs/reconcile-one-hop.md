@@ -28,6 +28,10 @@ npm run reconcile-one-hop:batch -- \
 
 批量入口默认不扫描全量 Input Pack；传入 `--verify-input-fingerprint` 后，会在开始时校验并在批次结束时复核 Input Pack 指纹。批次运行期间不要修改 `tasks/` 或 `tables/`。
 
+Horae `relation up depth=1` 使用固定的 read-through 缓存：
+`E:\02_area\股衍数据-数据cookbook\sql-static-lineage-cache\schedule-evidence\tasks\<taskId>\horae-relation-up-depth-1.json`。
+默认 runner 先读取并校验缓存的 schema、Task ID、方向、深度、行记录和内容 SHA-256；命中时不调用 OpenCLI，缺失或校验失败才实时查询，成功结果使用同目录临时文件改名原子写入。缓存是可删除的派生证据快照，没有 TTL；需要刷新时删除对应 Task 文件即可。显式注入 `scheduleRows` 或 `scheduleEvidenceByTaskId` 时仍完全绕过缓存。
+
 `--data-root` 指向 Task/Table Input Pack V1。未传 `--output` 时，结果只写到标准输出。
 
 传入 `--output` 后会同时生成同目录的 `<name>.summary.json` 简要版；也可以用 `--summary-output` 指定摘要路径。完整 JSON 保留证据、父任务详情和逐项对账；摘要只保留表名、Task ID、counts、下一步 Task ID、问题列表和按任务定位的 `issueDetails`，其中 `missingTaskInputPackTaskIds` 可直接列出缺少 Input Pack 的父任务。
@@ -43,7 +47,7 @@ npm run reconcile-one-hop:batch -- \
 ## 证据顺序
 
 1. 当前任务直接读表：读取并校验 Task Input Pack 中各 SQL 文件的 SHA-256，再使用现有 `SqlSession + buildPlanFacts` 提取物理读表。one-hop 会加载 Table Pack DDL schema，并启用 adaptor 的 expression dependency，把 WHERE 谓词保留为 `AND` / `OR` / `NOT` 结构和物理列来源；裸表名仅在 Task Pack 的限定任务名可证明默认 schema 且未与限定 target 冲突时继承该 schema；否则保留未解析状态。
-2. 调度骨架：只查询 `horae relation <taskId> --direction up --depth 1`。
+2. 调度骨架：读取或查询 `horae relation <taskId> --direction up --depth 1`；缓存命中时不访问 OpenCLI。
 3. 父任务写表：优先使用方向明确的 `DIRECT_PLATFORM_TARGET` / `SQL_EXACT_TABLE_TARGET` 和显式 SQL WRITE；父任务 Input Pack 缺失时才查询 `szdata task-source`。
 4. 表身份：使用 Table Input Pack 将 `qualifiedName` 解析为唯一的 `platform + dataSource + qualifiedName`。缺失或多义身份不能形成 `MATCHED`。
 5. READ 分区范围：先沿 PlanFacts 的 `source`、`Join.left/right`、setop 和显式 CTE scope mapping 回溯到每个物理 `ReadRelation` occurrence，再结合 Table Pack `partitionFields`（缺失时回退 DDL）解析 `readPartitionScopes`。同一物理表的多次 READ 不提前去重；每个 occurrence 保留独立 predicate tree、source span、relation path 和归属证据。只使用静态 SQL 谓词；调度分区、脚本参数和运行实例不补 READ 分区。
