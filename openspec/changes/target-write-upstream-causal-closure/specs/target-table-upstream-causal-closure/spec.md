@@ -20,7 +20,7 @@
 
 ### Requirement: Target write identity is deterministic and evidence-bound
 
-系统 SHALL 将目标写入的稳定身份与分析输入快照分开表示。`TargetWriteIdentity` MUST 能唯一绑定 task、目标物理表、语句序号、root relation 和 write evidence；`AnalysisSnapshotRef` MUST 记录参与分析的 Input Pack、Machine Facts、producer index、table multi-hop、可选 field-lineage 和语义规则版本。若写入无法唯一绑定到 SQL/Plan Facts relation 或 canonical write evidence，系统 MUST 输出可定位 gap 并停止该根的确定性闭包。
+系统 SHALL 将目标写入的稳定身份与分析输入快照分开表示。`TargetWriteIdentity` MUST 能唯一绑定 task、目标物理表、`sqlSourceId`、statement ordinal、write ordinal、root relation 和 write evidence；`AnalysisSnapshotRef` MUST 记录参与分析的 Input Pack、Machine Facts、producer index、table multi-hop、可选 field-lineage 和语义规则版本。`targetWriteId` 是 canonical SQL 结构中的确定性 occurrence identity，不承诺 SQL 任意修改后保持不变。若写入无法唯一绑定到 SQL/Plan Facts relation 或 canonical write evidence，系统 MUST 输出可定位 gap 并停止该根的确定性闭包。
 
 #### Scenario: Target write is uniquely resolved
 
@@ -94,6 +94,11 @@
 - **WHEN** 同名表或字段无法通过 platform、data source、qualified name 和 occurrence 唯一解析
 - **THEN** 系统记录 `IDENTITY_AMBIGUOUS` gap 并停止该分支的确定性桥接，不把空 identity 当作通配符
 
+#### Scenario: Producer has multiple writes
+
+- **WHEN** 同一个 producer task 对同一物理表存在多个无法区分的 write observation
+- **THEN** 系统记录 `PRODUCER_WRITE_AMBIGUOUS`，将该 bridge 降为 `CONDITIONAL_RELATED` 或 `UNKNOWN`，不得仅依据 producer task 和表名任选一个写入
+
 ### Requirement: Static relation assessment is separate from runtime rerun policy
 
 系统 SHALL 输出静态 `relationStatus`、逐通道 `channelAssessments` 和静态候选集合；本 change 的运行期 `runtimeRerunDecision` MUST 固定为 `NOT_EVALUATED`，不得在没有运行实例证据时输出 `REQUIRED`、`SAFE_INCLUDE` 或 `NOT_REQUIRED`。静态状态至少包括 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED`、`PROVEN_UNRELATED` 和 `UNKNOWN`；静态分析不得声称已验证具体运行实例、分区重叠、参数变化或数据内容变化。
@@ -146,6 +151,20 @@
 - **WHEN** 候选分支的所有适用通道均完成负向检查并标为 `PROVEN_ABSENT`，不存在 gap、截断或未建模算子
 - **THEN** 系统才可输出 `PROVEN_UNRELATED`；仅仅没有发现正向路径不能满足该条件
 
+### Requirement: Path composition is distinct from alternative-path merging
+
+系统 SHALL 区分同一因果路径内的证据串联和同一影响通道内的备选路径合并。路径串联 MUST 取最差 certainty：`CONFIRMED + CONDITIONAL = CONDITIONAL`、任一必要 `UNKNOWN` 即为 `UNKNOWN`；备选路径合并 MUST 优先保留已闭合的更强正向证明：`CONFIRMED + UNKNOWN = CONFIRMED`、`CONDITIONAL + UNKNOWN = CONDITIONAL`。`PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播的“未找到路径”产生。
+
+#### Scenario: Unknown bridge is in the same path
+
+- **WHEN** 一条路径包含已确认的 operator edge，但其后续必要 producer bridge 为 `UNKNOWN`
+- **THEN** 该路径的通道状态为 `UNKNOWN`，不能被前面的 confirmed edge 覆盖
+
+#### Scenario: Confirmed alternative exists
+
+- **WHEN** 同一通道存在一条完整 `CONFIRMED` 路径和另一条 `UNKNOWN` 路径
+- **THEN** 该通道保留 `CONFIRMED`，同时保留未知路径的 gap 作为未闭合旁证，不将整体降为 Unknown
+
 ### Requirement: Evidence and proof obligations are mechanically auditable
 
 系统 SHALL 为正向相关结论保存可回溯的 witness evidence refs，为 Unknown 保存至少一个 gap，为 `PROVEN_UNRELATED` 保存 negative proof 或已知安全 cut。证据 closure、candidate coverage、bridge closure、限制和阶段耗时 MUST 可在 artifact 中读取。
@@ -196,7 +215,7 @@
 #### Scenario: Native and Calcite conflict
 
 - **WHEN** 双方对同一精确映射的 relation/operator 命题给出实质冲突
-- **THEN** 系统记录 `SEMANTIC_ENGINE_CONFLICT`，相关静态结论降为 `UNKNOWN`，不得配置为静默忽略
+- **THEN** 系统记录 `SEMANTIC_ENGINE_CONFLICT`；若冲突只涉及一个 operator/channel，则只将该 `ChannelAssessment` 降为 `UNKNOWN`，若冲突涉及目标写入、read occurrence 或 producer bridge identity，则阻断整个候选分支；不得配置为静默忽略
 
 ### Requirement: Re-evaluation reuses immutable inputs and is resource bounded
 
@@ -206,6 +225,16 @@
 
 - **WHEN** 209119 的既有输入 fingerprint 一致且调用方执行 causal-only 模式
 - **THEN** 系统不重新采集全量任务、不重建旧 field-lineage、不重建全量 producer index，并只生成独立闭包 JSON/摘要/HTML
+
+#### Scenario: Gate A checks the graph model early
+
+- **WHEN** M2 完成并对 209119 执行结构闸门
+- **THEN** 系统验证 `TargetWriteIdentity`、Candidate Universe、branch-level assessment、一次字段证据扫描、bridge closure 和阶段性能；不满足约定规模或资源目标时停止后续 operator 扩展
+
+#### Scenario: Gate B checks product value before expansion
+
+- **WHEN** M4 完成并对 209119 执行产品闸门
+- **THEN** 系统验证 FIELD_VALUE、FILTER、JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup 的结果与 Unknown 原因；只有通过后才进入剩余算子和 Calcite 扩展
 
 #### Scenario: Resource budget is exceeded
 

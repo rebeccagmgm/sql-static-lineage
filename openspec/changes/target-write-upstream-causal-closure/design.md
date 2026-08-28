@@ -56,12 +56,14 @@ type TargetWriteIdentity = {
   targetWriteId: string;
   taskId: string;
   targetTableKey: string;
-  statementIndex: number;
+  sqlSourceId: string;
+  statementOrdinal: number;
+  writeOrdinal: number;
   rootRelationId: string;
 };
 
 type AnalysisSnapshotRef = {
-  inputFingerprint: string;
+  inputPackFingerprint: string;
   machineFactsHash: string;
   producerIndexHash: string;
   tableMultiHopHash: string;
@@ -85,6 +87,8 @@ targetWriteId + candidateBranchId
 
 `TargetWriteResolver` 必须把目标任务、物理目标表、SQL statement slot、root relation 和 canonical write evidence 唯一绑定；无法唯一绑定时输出 `TARGET_WRITE_AMBIGUOUS` 或 `TARGET_WRITE_RELATION_UNMAPPED`，禁止猜根。
 
+`targetWriteId` 是某个 canonical SQL 结构中的确定性 occurrence identity，由 `sqlSourceId`、statement ordinal、write ordinal、root relation 和目标物理身份共同派生；SQL 任意修改后不承诺保持同一 ID。`sqlSourceId` 必须包含 query/prepare/finish 等 SQL slot 和 canonical locator，避免不同 slot 的相同 statement ordinal 发生碰撞。上游 producer 存在多个无法区分的 write observation 时，bridge resolver 输出 `PRODUCER_WRITE_AMBIGUOUS`，不得按 task/table 任意选择一个写入。
+
 字段不得成为顶层 traversal root 或 assessment dimension，但可以作为 Task-local typed vertex、field port 或压缩 FieldSet，在 `FIELD_VALUE`/`EXPRESSION_CONTROL` 中接续精确值语义。它通过 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 按候选生产分支返回聚合摘要：
 
 ```ts
@@ -99,6 +103,21 @@ type FieldValueImpact = {
 ```
 
 `affectedTargetFields` 只用于 FIELD_VALUE 的解释和钻取，不能成为关系级传播 frontier，因此不会产生 137×549 的 assessment 数量。
+
+### 2.1 Project candidate universe before value evidence aggregation
+
+Candidate Universe 必须在字段值 provider 之前完成最小投影，因为 provider 的输出键就是 `candidateBranchId`。Baseline 阶段先从匹配 fingerprint 的 table multi-hop artifact 投影：
+
+```text
+ROOT_WRITE
+PHYSICAL_PRODUCER
+SCHEDULE_ONLY
+UNBOUND_READ
+BLOCKED_READ
+COVERAGE_BOUNDARY
+```
+
+这一步只枚举和稳定化候选身份，不计算全部 operator 语义。随后 `FieldValueEvidenceProvider` 以这些候选分支为聚合键读取或索引现有 VALUE_FLOW。这样 M1 可以验证“候选分支数量和证据扫描次数”而不依赖后续完整 relation graph。
 
 ### 3. Normalize once into task relation summaries
 
@@ -128,7 +147,7 @@ type TaskRelationSummary = {
 };
 ```
 
-Native Plan Facts/Machine Facts 负责确定“观察到的 operator、occurrence 和证据”；summary 负责把这些事实映射为重跑相关影响通道。字段值证据由 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 聚合到候选生产分支，并保留受影响的具体 output field binding；它不生成目标字段 assessment，也不驱动关系级全量扩散。Calcite 以 `digest` 为缓存键补充 predicates、unique keys、functional dependencies 和 cardinality metadata，不以字段或候选分支为缓存键。
+Native Plan Facts/Machine Facts 负责确定“观察到的 operator、occurrence 和证据”；summary 负责把这些事实映射为重跑相关影响通道。字段值证据由 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 聚合到候选生产分支，并保留受影响的具体 output field binding；它不生成目标字段 assessment，也不驱动关系级全量扩散。`fieldTransfers` 是可按需物化的精确字段投影，M1 首先实现基于现有 field-lineage/VALUE_FLOW 的一次扫描或索引 adapter，不默认重建完整字段图。完整的跨 Task field-port propagation 只有在 Gate A 证明 adapter 无法精确接续时才建设，不与 provider 重复实现两套字段引擎。Calcite 以 `digest` 为缓存键补充 predicates、unique keys、functional dependencies 和 cardinality metadata，不以字段或候选分支为缓存键。
 
 首版 operator semantics 按批次实现：
 
@@ -177,6 +196,20 @@ type ChannelAssessment = {
 ```
 
 任一 channel 为 `CONFIRMED` 即整体 `CONFIRMED_RELATED`；无 confirmed 但有 conditional 即 `CONDITIONAL_RELATED`；仍有未关闭义务即 `UNKNOWN`；只有所有适用 channel 都 `PROVEN_ABSENT` 才能 `PROVEN_UNRELATED`。因此 `FIELD_VALUE = CONFIRMED` 不会被独立的 `MULTIPLICITY = UNKNOWN` 降级，但 multiplicity gap 仍会保留。
+
+证据合并必须区分路径内串联和同通道备选路径并联：
+
+```ts
+composePath(CONFIRMED, CONDITIONAL) = CONDITIONAL;
+composePath(CONFIRMED, UNKNOWN) = UNKNOWN;
+composePath(CONDITIONAL, UNKNOWN) = UNKNOWN;
+
+mergeAlternative(CONFIRMED, UNKNOWN) = CONFIRMED;
+mergeAlternative(CONDITIONAL, UNKNOWN) = CONDITIONAL;
+mergeAlternative(UNKNOWN, UNKNOWN) = UNKNOWN;
+```
+
+`PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播中的“没有找到路径”产生。这个区分防止一个 confirmed operator edge 吞掉后续未知的 producer bridge，也防止一条未知备选路径污染另一条已经闭合的 confirmed witness。
 
 为避免跨任务闭环造成无限传播，使用稳定 occurrence/branch 状态键和共享 depth 上限；只有在实际输入出现强连通循环时再增加 SCC 压缩，不能用循环上限掩盖未知证据。
 
@@ -236,7 +269,7 @@ type UpstreamTaskRollup = {
 
 Calcite 继续复用 `dc041f5` 的 Plan Facts Rel 投影和 JSONL bridge。目标表闭包只为唯一 semantic digest 请求一次（或命中缓存），请求超限、Java 不可用或无法映射时记录 `NOT_EVALUATED`，不阻塞 Native summary。
 
-只有双方对同一已映射命题发生实质冲突时，才生成 `SEMANTIC_ENGINE_CONFLICT` gap 并把受影响结论降为 Unknown。Calcite 单方额外 metadata 先作为 validation observation；若要改变 Native transfer rule，必须沉淀为有 source/evidence 映射的回归 fixture。
+只有双方对同一已映射命题发生实质冲突时，才生成 `SEMANTIC_ENGINE_CONFLICT`。如果冲突只涉及某个 operator/channel，则只把对应 `ChannelAssessment` 降为 `UNKNOWN`，其他已闭合通道保持原状态；只有目标写入 identity、read occurrence mapping 或 producer bridge identity 等共享基础证据冲突，才阻断整个候选分支。Calcite 单方额外 metadata 先作为 validation observation；若要改变 Native transfer rule，必须沉淀为有 source/evidence 映射的回归 fixture。
 
 ### 8. Make performance a measured contract
 
@@ -271,6 +304,9 @@ target-field-causal-slice.json/html
 - [Relation-level graph 仍可能很大] → 以 task/statement digest 去重，按 relation occurrence 建图，只保留 channel bitset 和少量 witness，并使用硬预算 fail-fast。
 - [一次全局传播可能掩盖某个局部分支的证据差异] → 边和 assessment 仍保留 candidateBranchId、read occurrence、certainty、gap 和 evidence refs，合并只发生在共享语义节点。
 - [没有稳定 producer write observation ID] → V1 使用现有稳定 candidateBranchId，并把 `TargetWriteRef` 纳入 assessment key；待 producer index 契约成熟后再无损升级。
+- [上游 Task 对同一表存在多个 write observation] → 只有唯一 write 可确认 bridge；多写无法区分时输出 `PRODUCER_WRITE_AMBIGUOUS` 并降为 Conditional/Unknown，不任意选写入。
+- [完整 field-port propagation 重复实现已有字段血缘] → M1 只建设 branch-level `FieldValueEvidenceProvider` adapter；只有 Gate A 证明无法精确接续时才建设 field-port propagation。
+- [过晚才发现目标表级模型仍然昂贵或过宽] → M2 后执行 Gate A、M4 后执行 Gate B，未通过时停止后续 operator/Calcite 扩展。
 - [Calcite 方言或 Plan Facts 投影不完整] → Calcite 只做 shadow enrichment；unsupported/unmappable 进入 `NOT_EVALUATED` 或 Unknown，不影响 Native canonical facts。
 - [唯一性/函数依赖缺失导致大量 Conditional] → 将 dependency existence 与 multiplicity refinement 分开；不因缺少唯一键而删除明确 JOIN 结构依赖。
 - [table artifact coverage 不完整] → 显式 candidate boundary 和 coverage status；禁止在边界内生成 `PROVEN_UNRELATED`。
@@ -280,17 +316,18 @@ target-field-causal-slice.json/html
 ## Migration Plan
 
 1. 冻结 `dc041f5` 及旧 field-lineage/target-field 产物和 golden；确认新 change 不修改其 contract。
-2. **M1：**实现 `TargetWriteResolver`、稳定 `TargetWriteIdentity`/`AnalysisSnapshotRef`、project/FIELD_VALUE provider，以及单 Task 闭包；先验证根可唯一构造。
-3. **M2：**接入 exact producer/read bridge 和内部 field port/value transfer，完成跨 Task `FIELD_VALUE` 传播；验证字段只精确接续对应 output binding，不扩散到全部字段。
-4. **M3：**加入 FILTER/JOIN 的 ROW_MEMBERSHIP/MULTIPLICITY 和 relation bridge，建立 task-level rollup；验证 local semantic edge 不复制 candidate branch。
-5. **M4：**加入 COUNT(*)、EXISTS、CROSS JOIN、literal-from-relation 等 RELATION_EXISTENCE/基数影响，完成逐通道 status 和聚合代数。
-6. **M5：**加入 AGGREGATE、DISTINCT、SETOP、WINDOW、Top-N 及其 support gaps；实现 global graph、一次反向固定点传播、witness 回溯和预算 fail-fast。
-7. **M6：**接入 Calcite semantic digest 级 shadow/differential enrichment，验证缓存上限、mapped/unsupported/unmappable/conflict 处理和默认无 Java 回归。
-8. **M7：**发布独立 JSON/摘要/HTML、static assessment、negative proof safe rules、最小确定集和保守安全集；验证旧 field-lineage 产物、hash 和命令行为不变。
-9. 使用固定 fingerprint 对 209119 做 causal-only A/B：比较字段矩阵与新候选分支数量、provider/bridge 闭合率、Unknown 原因、峰值内存和阶段耗时；不满足门槛则停止扩大 operator 范围。
-10. 只有在真实语料证明新闭包减少重复计算且 Calcite shadow 产生可映射语义收益后，才单独提出 RuntimeRerunPolicy 或 Calcite 生产侧车 change。
+2. **Baseline：**实现 `TargetWriteResolver`、`TargetWriteIdentity`/`AnalysisSnapshotRef` 和最小 Candidate Universe 投影，先验证根与候选身份可唯一构造。
+3. **M1：**基于现有 field-lineage/VALUE_FLOW index 实现一次扫描的 `FieldValueEvidenceProvider` 和单 Task `FIELD_VALUE` 闭包；完整 field-port engine 暂不默认建设。
+4. **M2：**接入 exact producer/read bridge，完成跨 Task `FIELD_VALUE` 聚合；验证字段只精确接续对应 output binding，不扩散到全部字段。
+5. **Gate A：**立即用 209119 验证 assessment 数量不超过唯一 candidate branch 数、不存在 137×549、字段证据只扫描/加载一次、bridge closure 可见、阶段指标可见，并满足缓存复用模式约 5 分钟/1GB 目标；不通过则停止后续扩展。
+6. **M3：**加入 FILTER/JOIN 的 ROW_MEMBERSHIP/MULTIPLICITY、relation bridge、去重 GlobalImpactGraph 和 task-level rollup；验证 local semantic edge 不复制 candidate branch。
+7. **M4：**加入 COUNT(*)、EXISTS、CROSS JOIN、literal-from-relation 等 RELATION_EXISTENCE/基数影响，完成逐通道 status、路径串联/备选合并代数和 `PRODUCER_WRITE_AMBIGUOUS`。
+8. **Gate B：**再次运行 209119，核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY、task rollup、Unknown 原因和候选范围；只有产品价值成立才进入后续阶段。
+9. **条件阶段 M5/M6：**在 Gate B 通过后，再加入 AGGREGATE、DISTINCT、SETOP、WINDOW、Top-N、negative proof safe rules 和 Calcite semantic digest 级 shadow/differential enrichment。
+10. **M7：**发布独立 JSON/摘要/HTML、完整 validator 和性能报告，验证旧 field-lineage 产物、hash 和命令行为不变；运行期 RuntimeRerunPolicy 或 Calcite 生产侧车另开 change。
 
 ## Open Questions
 
 - 209119 的目标表是否存在多个实际 write observation，需要在首个 fixture 中确认；这不影响 contract 对多写入隔离的要求。
+- 209119 的现有 field-lineage/VALUE_FLOW index 是否足以支撑跨 Task 字段值聚合，需要在 Gate A 通过真实 provider 统计后决定是否建设完整 field-port propagation。
 - producer-index 何时提供稳定的 `ProducerWriteObservation` ID，可在 V1 使用 branch identity 后单独迁移。
