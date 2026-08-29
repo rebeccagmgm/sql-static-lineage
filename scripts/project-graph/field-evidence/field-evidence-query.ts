@@ -9,6 +9,7 @@ import {
   type FieldEvidenceQueryStatus,
 } from "./field-evidence-contract.ts";
 import { loadFieldEvidenceDirectory } from "./field-evidence-publication.ts";
+import type { LoadedFieldEvidenceDirectory } from "./field-evidence-publication.ts";
 
 export interface GetFieldEvidenceOptions {
   readonly nodeTypes?: readonly FieldEvidenceNodeType[];
@@ -26,8 +27,23 @@ export interface TraceFieldValuePathOptions {
   readonly maxPaths?: number;
 }
 
+export type FieldEvidenceQuerySource = Pick<
+  LoadedFieldEvidenceDirectory,
+  "projection"
+>;
+
 export function getFieldEvidence(
   directory: string,
+  options: GetFieldEvidenceOptions = {},
+): ReturnType<typeof getFieldEvidenceFromProjection> {
+  return getFieldEvidenceFromProjection(
+    loadFieldEvidenceDirectory(directory),
+    options,
+  );
+}
+
+export function getFieldEvidenceFromProjection(
+  loaded: FieldEvidenceQuerySource,
   options: GetFieldEvidenceOptions = {},
 ): FieldEvidenceQueryEnvelope<{
   readonly selection: ReturnType<
@@ -48,7 +64,6 @@ export function getFieldEvidence(
     readonly returned: number;
   };
 }> {
-  const loaded = loadFieldEvidenceDirectory(directory);
   const offset = nonNegative(options.offset ?? 0, "OFFSET");
   const limit = positive(options.limit ?? 500, "LIMIT");
   const nodeTypes = new Set(options.nodeTypes ?? []);
@@ -116,6 +131,16 @@ export function getFieldEvidence(
 export function traceFieldValuePath(
   directory: string,
   options: TraceFieldValuePathOptions,
+): ReturnType<typeof traceFieldValuePathFromProjection> {
+  return traceFieldValuePathFromProjection(
+    loadFieldEvidenceDirectory(directory),
+    options,
+  );
+}
+
+export function traceFieldValuePathFromProjection(
+  loaded: FieldEvidenceQuerySource,
+  options: TraceFieldValuePathOptions,
 ): FieldEvidenceQueryEnvelope<{
   readonly startStateId: string | null;
   readonly nodes: readonly FieldEvidenceNodeRecord[];
@@ -125,7 +150,6 @@ export function traceFieldValuePath(
   readonly exploredPaths: number;
   readonly truncated: boolean;
 }> {
-  const loaded = loadFieldEvidenceDirectory(directory);
   const maxHops = positive(options.maxHops ?? 25, "MAX_HOPS");
   const maxNodes = positive(options.maxNodes ?? 5_000, "MAX_NODES");
   const maxEdges = positive(options.maxEdges ?? 10_000, "MAX_EDGES");
@@ -279,6 +303,18 @@ export function explainFieldEvidenceRecord(
   directory: string,
   recordIdInput: string,
   options: { readonly maxAttachments?: number } = {},
+): ReturnType<typeof explainFieldEvidenceRecordFromProjection> {
+  return explainFieldEvidenceRecordFromProjection(
+    loadFieldEvidenceDirectory(directory),
+    recordIdInput,
+    options,
+  );
+}
+
+export function explainFieldEvidenceRecordFromProjection(
+  loaded: FieldEvidenceQuerySource,
+  recordIdInput: string,
+  options: { readonly maxAttachments?: number } = {},
 ): FieldEvidenceQueryEnvelope<{
   readonly record: FieldEvidenceNodeRecord | FieldEvidenceEdgeRecord | null;
   readonly endpoints: readonly FieldEvidenceNodeRecord[];
@@ -290,7 +326,6 @@ export function explainFieldEvidenceRecord(
   )[];
   readonly sourceArtifacts: readonly unknown[];
 }> {
-  const loaded = loadFieldEvidenceDirectory(directory);
   const maxAttachments = positive(
     options.maxAttachments ?? 500,
     "MAX_ATTACHMENTS",

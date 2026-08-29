@@ -1,6 +1,6 @@
 ## 1. Baseline and target-write identity
 
-- [ ] 1.1 冻结旧 `FIELD_MULTI_HOP_RECONCILIATION`、field-lineage 和 target-field-causal-slice 的 golden/hash 回归样本，确认本 change 的独立 artifact type、文件名和 schema version。
+- [x] 1.1 冻结旧 `FIELD_MULTI_HOP_RECONCILIATION`、field-lineage 和 target-field-causal-slice 的 golden/hash 回归样本，确认本 change 的独立 artifact type、文件名和 schema version。
 - [x] 1.2 定义 `TargetWriteIdentity`（包含 `sqlSourceId`、statement ordinal、write ordinal）与 `AnalysisSnapshotRef`，将稳定写入身份和输入 fingerprint/hash 分开保存。
 - [x] 1.3 实现 `TargetWriteResolver`：把 task、目标物理表、SQL source/slot、statement/write ordinal、root relation 和 canonical write evidence 唯一绑定。
 - [x] 1.4 覆盖多候选写入、root relation 无法映射和 write evidence 缺失，分别输出 `TARGET_WRITE_AMBIGUOUS`、`TARGET_WRITE_RELATION_UNMAPPED` 或对应 gap，不猜测根。
@@ -40,16 +40,16 @@
 - [x] 6.1 实现 COUNT(*)、EXISTS、literal-from-relation 和 CROSS JOIN 的 `RELATION_EXISTENCE`/基数影响。
 - [x] 6.2 定义 `ChannelAssessment`：`CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN`、`NOT_APPLICABLE`，分别保存 proof/witness/gap refs。
 - [x] 6.3 实现路径内 certainty 串联、同 channel 备选路径合并和不同 channel 的 relationStatus 聚合，验证 `FIELD_VALUE=CONFIRMED` 不被独立 `MULTIPLICITY=UNKNOWN` 降级；覆盖 target-rooted multi-hop、同 channel 备选路径和上游 Unknown 继承。
-- [ ] 6.4 预留 negative proof safe rules（本轮重新关闭）：不生成 `PROVEN_ABSENT`/`PROVEN_UNRELATED`，validator 对 negative proof fail-closed；未来显式 gate 再实现并验收。
+- [x] 6.4 预留 negative proof safe rules（本轮重新关闭）：不生成 `PROVEN_ABSENT`/`PROVEN_UNRELATED`，validator 对 negative proof fail-closed；未来显式 gate 再实现并验收。
 - [x] 6.5 验证未建模 operator、coverage boundary、截断和未知 identity 都只能产生 Unknown/gap。
 - [ ] 6.6 验证 Calcite/native 语义冲突只降级对应 channel；目标写入、read occurrence 或 producer bridge identity 冲突才阻断整个候选分支。
 
 ## 7. Gate B: 209119 product-value gate
 
-- [ ] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
-- [ ] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
+- [x] 7.1 核对 FIELD_VALUE、FILTER、INNER/LEFT JOIN、COUNT(*)、EXISTS、CROSS JOIN、MULTIPLICITY 和 task rollup。
+- [x] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
 
-> Gate B reopened: the current implementation has focused unit-test coverage, but the latest 209119 evidence does not verify target-rooted multi-hop certainty, exact occurrence bridge closure, or product-level rerun value. M5/M6 remain paused.
+> Gate B evaluation is complete. The Phase 4 projection-readiness prerequisite passes with scope, but the evidence still does not establish a runtime rerun list or justify M5/M6 expansion. M5/M6 remain paused.
 
 ## 8. M5: Remaining operator semantics and bounded propagation (Gate B 通过后)
 
@@ -76,7 +76,7 @@
 
 ## 11. Documentation and handoff
 
-- [ ] 11.1 更新使用说明，明确静态 relationStatus、逐通道 ChannelAssessment、最小确定集、保守安全集和 runtimeRerunDecision 的边界。
+- [x] 11.1 更新使用说明，明确静态 relationStatus、逐通道 ChannelAssessment、最小确定集、保守安全集和 runtimeRerunDecision 的边界。
 - [ ] 11.2 记录 operator support matrix、Calcite differential 状态、Known Unknown、bridge closure 和性能基准结果。
 - [ ] 11.3 完成 targeted tests、typecheck、build/format/inspect 以及默认无 Java 的回归验证。
 - [ ] 11.4 形成 review checklist：目标写入身份可构造、字段只作内部 field port、无字段笛卡尔积、无静默裁枝、无 Calcite 强依赖、所有 Unknown 可追溯。

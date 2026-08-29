@@ -130,3 +130,29 @@ The new exact-field cross-channel fixture passes, but this 209119 run closed no
 additional branch through that channel. Gate B therefore remains **NOT
 VERIFIED / REOPENED**. M5/M6, Calcite expansion and `PROVEN_UNRELATED` remain
 paused/disabled. `runtimeRerunDecision` remains `NOT_EVALUATED`.
+
+## Phase 4 projection-readiness gate
+
+The original Gate B remains a product-value gate for a runtime rerun decision;
+it is not passed by a graph projection. A narrower prerequisite has now been
+completed: the current 209119 result is fit to publish as an evidence-bounded
+target causal overlay.
+
+The overlay loader revalidated the exact joint project snapshot, matching
+209119 all-field snapshot, target write identity, multi-hop source SHA-256,
+field-lineage source SHA-256, causal file SHA-256, declared causal content hash,
+542/542 assessment cardinality and all 1,240 referenced gaps. It did not replay
+the unavailable historical producer-index bytes with a newer index.
+
+Projection-readiness: **PASS WITH SCOPE**.
+
+- 46 `CONFIRMED_RELATED` and 496 `UNKNOWN` branches remain distinct and
+  queryable.
+- The 41-task minimum-certain set and 78-task conservative-safety set are both
+  preserved; neither is presented as a runtime rerun list.
+- All unknown branches retain explicit gap context.
+- `PROVEN_UNRELATED`, negative proof and cross-write leakage remain absent.
+- `runtimeRerunDecision` remains `NOT_EVALUATED`.
+
+This closes the input/publication prerequisite for Phase 4. It does not reopen
+M5/M6 or change the original Gate B runtime conclusion.

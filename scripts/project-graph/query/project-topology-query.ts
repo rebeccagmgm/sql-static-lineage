@@ -30,8 +30,23 @@ export interface TraceProjectUpstreamOptions {
   readonly maxPaths?: number;
 }
 
+export type ProjectTopologyQuerySource = Pick<
+  LoadedProjectTopologyDirectory,
+  "projection"
+>;
+
 export function getProjectTopology(
   directory: string,
+  options: GetProjectTopologyOptions = {},
+): ReturnType<typeof getProjectTopologyFromProjection> {
+  return getProjectTopologyFromProjection(
+    loadProjectTopologyDirectory(directory),
+    options,
+  );
+}
+
+export function getProjectTopologyFromProjection(
+  loaded: ProjectTopologyQuerySource,
   options: GetProjectTopologyOptions = {},
 ): ProjectTopologyQueryEnvelope<{
   readonly nodes: readonly ProjectTopologyNodeRecord[];
@@ -41,7 +56,6 @@ export function getProjectTopology(
   readonly coverageStatus: "COMPLETE" | "PARTIAL";
   readonly boundaries: readonly ProjectTopologyNodeRecord[];
 }> {
-  const loaded = loadProjectTopologyDirectory(directory);
   const offset = nonNegative(options.offset ?? 0, "OFFSET");
   const limit = bounded(options.limit ?? 500, 1, 5_000, "LIMIT");
   const nodeTypes = new Set(options.nodeTypes ?? []);
@@ -78,6 +92,16 @@ export function getProjectTopology(
 export function traceProjectUpstream(
   directory: string,
   options: TraceProjectUpstreamOptions,
+): ReturnType<typeof traceProjectUpstreamFromProjection> {
+  return traceProjectUpstreamFromProjection(
+    loadProjectTopologyDirectory(directory),
+    options,
+  );
+}
+
+export function traceProjectUpstreamFromProjection(
+  loaded: ProjectTopologyQuerySource,
+  options: TraceProjectUpstreamOptions,
 ): ProjectTopologyQueryEnvelope<{
   readonly startNodeId: string;
   readonly nodes: readonly ProjectTopologyNodeRecord[];
@@ -87,7 +111,6 @@ export function traceProjectUpstream(
   readonly truncated: boolean;
   readonly relationLayers: readonly ProjectTopologyRelationLayer[];
 }> {
-  const loaded = loadProjectTopologyDirectory(directory);
   const nodeById = new Map(
     loaded.projection.nodes.map((node) => [node.nodeId, node]),
   );
@@ -200,13 +223,22 @@ export function traceProjectUpstream(
 export function explainTopologyEdge(
   directory: string,
   edgeId: string,
+): ReturnType<typeof explainTopologyEdgeFromProjection> {
+  return explainTopologyEdgeFromProjection(
+    loadProjectTopologyDirectory(directory),
+    edgeId,
+  );
+}
+
+export function explainTopologyEdgeFromProjection(
+  loaded: ProjectTopologyQuerySource,
+  edgeId: string,
 ): ProjectTopologyQueryEnvelope<{
   readonly edge: ProjectTopologyEdgeRecord | null;
   readonly endpoints: readonly ProjectTopologyNodeRecord[];
   readonly sourceArtifacts: readonly unknown[];
   readonly attachedBoundaries: readonly ProjectTopologyNodeRecord[];
 }> {
-  const loaded = loadProjectTopologyDirectory(directory);
   const edge =
     loaded.projection.edges.find((candidate) => candidate.edgeId === edgeId) ??
     null;
@@ -308,7 +340,7 @@ function addToIndex(
 }
 
 function envelope<T>(
-  loaded: LoadedProjectTopologyDirectory,
+  loaded: ProjectTopologyQuerySource,
   query: ProjectTopologyQueryEnvelope<T>["query"],
   truncated: boolean,
   result: T,

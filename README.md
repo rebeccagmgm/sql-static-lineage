@@ -19,6 +19,8 @@
 - [Table producer 反向索引](docs/producer-index.md)
 - [表级多跳数据路径](docs/reconcile-multi-hop.md)
 - [Input Pack 驱动的跨 Task 字段血缘](docs/field-lineage.md)
+- [可重建 Neo4j 查询索引](docs/query-index-phase3.md)
+- [目标写入因果覆盖层](docs/target-causal-overlay-phase4.md)
 
 ## 最小运行入口
 
@@ -35,12 +37,17 @@ npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --p
 npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --max-depth 3 --max-tasks 1000 --max-edges 10000 --output <result.json> --report <autofill-report.json>
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
+npm run project-topology-view -- --project-topology <project-snapshot-dir> --data-root <input-pack-root> --output-root <view-root> [--field-evidence <field-evidence-snapshot-dir>]...
+npm run target-causal-overlay -- publish --topology <project-snapshot-dir> --field <field-evidence-snapshot-dir> --causal <target-table-causal-closure.json> --output-root <projection-root>
+npm run query-index:build -- --topology <project-snapshot-dir> --field <field-evidence-snapshot-dir> [--causal-overlay <target-causal-overlay-dir>] --audit-root <audit-root> <neo4j-connection>
 npm run input-pack:machine-facts -- --data-root <input-pack-root> --task-id 155015,114026,105387 --output <facts-root>
 npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <facts-root> --multi-hop-artifact <table-multi-hop.json> --task-id 155015 --target-table dm_rsk_n.v_risk_audit_log [--write-observation-id <write-observation-id>] [--fields entity_id,entity_field_name] --facts-policy allow-legacy-partial --output <field-lineage.json> --summary-output <field-lineage.txt>
 ```
 
 该命令先输出压缩后的 `viz-model-181058.json`，再渲染离线 HTML；同一物理表的多个
 Task 会合并到表节点中，并在详情里保留各 Task 的分区证据。
+
+`project-topology-view` 只读取已发布的项目拓扑快照和匹配的 Task Pack，生成可搜索的离线联合地图。Task 名称仅在 Task Pack 内容哈希校验通过后展示；它不改写底层拓扑事实。显式传入一个或多个匹配的 `--field-evidence` 快照后，首页会列出这些快照中的全部目标字段，并仅在选中字段时加载该任务的数据包、执行有界 `VALUE_FLOW` 反向查询；原联合拓扑保留在同目录的 `topology.html`。
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
 
@@ -54,6 +61,7 @@ scripts/input/               external Task/Table input collection, contracts and
 scripts/query/               validated Current Bundle loader and Reader
 scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
 scripts/reconcile/consumer/field-lineage/  bounded cross-Task VALUE_FLOW and ROWSET_CONTROL projection
+scripts/project-graph/       immutable graph projections, file queries and optional rebuildable query index
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
 tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent
@@ -61,4 +69,4 @@ tests/fixtures/reconcile-one-hop/  表级单跳 86840 冻结证据夹具
 docs/                        scope, migration, acceptance and review records
 ```
 
-不要在这里加入 Panorama、下游任务发现、业务语义、LLM/Wiki、复杂 Hop/Projection、数据库服务或历史生成数据。任何新增能力必须先证明它服务于 L1 的字段闭合或受证据约束的消费入口。
+不要把 Panorama、下游任务发现、业务语义、LLM/Wiki 或历史生成数据写入 L1 canonical facts。项目图、字段图、目标因果覆盖层和 Neo4j 只能是由已发布证据重建的只读投影/索引，不能反向成为事实源；任何新增能力仍须证明它服务于字段闭合或受证据约束的消费入口。
