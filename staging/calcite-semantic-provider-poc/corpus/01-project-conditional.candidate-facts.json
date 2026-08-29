@@ -28,17 +28,36 @@
     "dependencies":  [
                          {
                              "dependencyId":  "dep:00000",
-                             "dependencyKind":  "EXPRESSION_SELECTOR",
+                             "dependencyKind":  "RELATION_EXISTENCE",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00000"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0001"
+                                          ],
+                             "impactKind":  "RELATION_EXISTENCE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00000"
+                                           ],
+                             "operatorId":  "op:0000",
+                             "toRefs":  [
+                                            "rel:0000"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00001",
+                             "dependencyKind":  "EXPRESSION_SELECTOR",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00001"
                                                      ],
                              "fromRefs":  [
                                               "rel:0001:field:0004"
                                           ],
                              "impactKind":  "EXPRESSION_CONTROL",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00000"
+                                               "issue:unmapped:dep:00001"
                                            ],
                              "operatorId":  "op:0000",
                              "toRefs":  [
@@ -46,18 +65,18 @@
                                         ]
                          },
                          {
-                             "dependencyId":  "dep:00001",
+                             "dependencyId":  "dep:00002",
                              "dependencyKind":  "VALUE_INPUT",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
-                                                         "mapping:dep:00001"
+                                                         "mapping:dep:00002"
                                                      ],
                              "fromRefs":  [
                                               "rel:0001:field:0003"
                                           ],
                              "impactKind":  "FIELD_VALUE",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00001"
+                                               "issue:unmapped:dep:00002"
                                            ],
                              "operatorId":  "op:0000",
                              "toRefs":  [
@@ -71,7 +90,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00000",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00000"
                              },
                              {
@@ -79,8 +98,16 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00001",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00001"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00002",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00002"
                              }
                          ],
     "fields":  [
@@ -173,6 +200,15 @@
                        "subjectRefs":  [
                                            "dep:00001"
                                        ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00002",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00002"
+                                       ]
                    }
                ],
     "metadata":  [
@@ -186,7 +222,8 @@
                          "subjectRef":  "rel:0000",
                          "value":  [
                                        "dep:00000",
-                                       "dep:00001"
+                                       "dep:00001",
+                                       "dep:00002"
                                    ]
                      },
                      {
@@ -346,7 +383,20 @@
                                              ],
                           "providerOrdinal":  1,
                           "qualifiedTableName":  "APP.orders",
-                          "relationId":  "rel:0001"
+                          "relationId":  "rel:0001",
+                          "sourceOccurrences":  [
+                                                    {
+                                                        "coordinateSystem":  "DIALECT_TRANSFORMED_SQL",
+                                                        "occurrenceId":  "sql-table-reference:0000",
+                                                        "sourceKind":  "TABLE_REFERENCE",
+                                                        "sourceSpan":  {
+                                                                           "endColumn":  100,
+                                                                           "endLine":  1,
+                                                                           "startColumn":  91,
+                                                                           "startLine":  1
+                                                                       }
+                                                    }
+                                                ]
                       }
                   ],
     "schemaVersion":  "0.1.0-poc",

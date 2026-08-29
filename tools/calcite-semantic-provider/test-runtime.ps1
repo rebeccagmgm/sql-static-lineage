@@ -48,7 +48,7 @@ if ($first.Raw -cne $second.Raw) { throw "response is not deterministic" }
 if ($first.Value.facts.schemaVersion -ne "0.1.0-poc") { throw "candidate facts missing" }
 $dependencyKinds = @($first.Value.facts.dependencies | Select-Object -ExpandProperty dependencyKind -Unique)
 if ($dependencyKinds -notcontains "EXPRESSION_SELECTOR") { throw "CASE selector dependency missing" }
-if (@($first.Value.facts.evidenceMappings | Where-Object { $_.mappingStatus -ne "UNMAPPABLE" }).Count -ne 0) {
+if (@($first.Value.facts.evidenceMappings | Where-Object { $_.mappingStatus -ne "NOT_ASSEMBLED" }).Count -ne 0) {
   throw "provider must not guess Native evidence mapping"
 }
 $rowCountMetadata = @($first.Value.facts.metadata | Where-Object { $_.kind -eq "ROW_COUNT" })

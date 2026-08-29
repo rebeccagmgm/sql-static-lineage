@@ -51,7 +51,7 @@ export async function runProviderPoc(
 export function writeProviderPocReport(report: ProviderPocReport, outputPath: string): string {
   const destination = resolvePocOutputPath(outputPath);
   mkdirSync(dirname(destination), { recursive: true });
-  writeFileSync(destination, `${canonicalJson(report)}\n`, "utf8");
+  writeFileSync(destination, canonicalJson(report), "utf8");
   return destination;
 }
 

@@ -28,17 +28,36 @@
     "dependencies":  [
                          {
                              "dependencyId":  "dep:00000",
-                             "dependencyKind":  "VALUE_INPUT",
+                             "dependencyKind":  "RELATION_EXISTENCE",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00000"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0001"
+                                          ],
+                             "impactKind":  "RELATION_EXISTENCE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00000"
+                                           ],
+                             "operatorId":  "op:0000",
+                             "toRefs":  [
+                                            "rel:0000"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00001",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00001"
                                                      ],
                              "fromRefs":  [
                                               "rel:0001:field:0000"
                                           ],
                              "impactKind":  "FIELD_VALUE",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00000"
+                                               "issue:unmapped:dep:00001"
                                            ],
                              "operatorId":  "op:0000",
                              "toRefs":  [
@@ -46,33 +65,14 @@
                                         ]
                          },
                          {
-                             "dependencyId":  "dep:00001",
-                             "dependencyKind":  "WINDOW_VALUE",
-                             "evaluationStatus":  "EVALUATED",
-                             "evidenceMappingRefs":  [
-                                                         "mapping:dep:00001"
-                                                     ],
-                             "fromRefs":  [
-                                              "rel:0001:field:0003"
-                                          ],
-                             "impactKind":  "WINDOW_EFFECT",
-                             "issueRefs":  [
-                                               "issue:unmapped:dep:00001"
-                                           ],
-                             "operatorId":  "op:0000",
-                             "toRefs":  [
-                                            "rel:0000:field:0001"
-                                        ]
-                         },
-                         {
                              "dependencyId":  "dep:00002",
-                             "dependencyKind":  "WINDOW_PARTITION",
+                             "dependencyKind":  "WINDOW_VALUE",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00002"
                                                      ],
                              "fromRefs":  [
-                                              "rel:0001:field:0001"
+                                              "rel:0001:field:0003"
                                           ],
                              "impactKind":  "WINDOW_EFFECT",
                              "issueRefs":  [
@@ -85,13 +85,13 @@
                          },
                          {
                              "dependencyId":  "dep:00003",
-                             "dependencyKind":  "WINDOW_ORDER",
+                             "dependencyKind":  "WINDOW_PARTITION",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00003"
                                                      ],
                              "fromRefs":  [
-                                              "rel:0001:field:0005"
+                                              "rel:0001:field:0001"
                                           ],
                              "impactKind":  "WINDOW_EFFECT",
                              "issueRefs":  [
@@ -104,13 +104,13 @@
                          },
                          {
                              "dependencyId":  "dep:00004",
-                             "dependencyKind":  "WINDOW_FRAME",
+                             "dependencyKind":  "WINDOW_ORDER",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00004"
                                                      ],
                              "fromRefs":  [
-                                              "rel:0001"
+                                              "rel:0001:field:0005"
                                           ],
                              "impactKind":  "WINDOW_EFFECT",
                              "issueRefs":  [
@@ -123,74 +123,17 @@
                          },
                          {
                              "dependencyId":  "dep:00005",
-                             "dependencyKind":  "WINDOW_VALUE",
-                             "evaluationStatus":  "EVALUATED",
-                             "evidenceMappingRefs":  [
-                                                         "mapping:dep:00005"
-                                                     ],
-                             "fromRefs":  [
-                                              "rel:0001:field:0003"
-                                          ],
-                             "impactKind":  "WINDOW_EFFECT",
-                             "issueRefs":  [
-                                               "issue:unmapped:dep:00005"
-                                           ],
-                             "operatorId":  "op:0000",
-                             "toRefs":  [
-                                            "rel:0000:field:0001"
-                                        ]
-                         },
-                         {
-                             "dependencyId":  "dep:00006",
-                             "dependencyKind":  "WINDOW_PARTITION",
-                             "evaluationStatus":  "EVALUATED",
-                             "evidenceMappingRefs":  [
-                                                         "mapping:dep:00006"
-                                                     ],
-                             "fromRefs":  [
-                                              "rel:0001:field:0001"
-                                          ],
-                             "impactKind":  "WINDOW_EFFECT",
-                             "issueRefs":  [
-                                               "issue:unmapped:dep:00006"
-                                           ],
-                             "operatorId":  "op:0000",
-                             "toRefs":  [
-                                            "rel:0000:field:0001"
-                                        ]
-                         },
-                         {
-                             "dependencyId":  "dep:00007",
-                             "dependencyKind":  "WINDOW_ORDER",
-                             "evaluationStatus":  "EVALUATED",
-                             "evidenceMappingRefs":  [
-                                                         "mapping:dep:00007"
-                                                     ],
-                             "fromRefs":  [
-                                              "rel:0001:field:0005"
-                                          ],
-                             "impactKind":  "WINDOW_EFFECT",
-                             "issueRefs":  [
-                                               "issue:unmapped:dep:00007"
-                                           ],
-                             "operatorId":  "op:0000",
-                             "toRefs":  [
-                                            "rel:0000:field:0001"
-                                        ]
-                         },
-                         {
-                             "dependencyId":  "dep:00008",
                              "dependencyKind":  "WINDOW_FRAME",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
-                                                         "mapping:dep:00008"
+                                                         "mapping:dep:00005"
                                                      ],
                              "fromRefs":  [
                                               "rel:0001"
                                           ],
                              "impactKind":  "WINDOW_EFFECT",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00008"
+                                               "issue:unmapped:dep:00005"
                                            ],
                              "operatorId":  "op:0000",
                              "toRefs":  [
@@ -204,7 +147,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00000",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00000"
                              },
                              {
@@ -212,7 +155,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00001",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00001"
                              },
                              {
@@ -220,7 +163,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00002",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00002"
                              },
                              {
@@ -228,7 +171,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00003",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00003"
                              },
                              {
@@ -236,7 +179,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00004",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00004"
                              },
                              {
@@ -244,32 +187,8 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00005",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00005"
-                             },
-                             {
-                                 "evidenceRefs":  [
-
-                                                  ],
-                                 "mappingId":  "mapping:dep:00006",
-                                 "mappingStatus":  "UNMAPPABLE",
-                                 "providerRefId":  "dep:00006"
-                             },
-                             {
-                                 "evidenceRefs":  [
-
-                                                  ],
-                                 "mappingId":  "mapping:dep:00007",
-                                 "mappingStatus":  "UNMAPPABLE",
-                                 "providerRefId":  "dep:00007"
-                             },
-                             {
-                                 "evidenceRefs":  [
-
-                                                  ],
-                                 "mappingId":  "mapping:dep:00008",
-                                 "mappingStatus":  "UNMAPPABLE",
-                                 "providerRefId":  "dep:00008"
                              }
                          ],
     "fields":  [
@@ -407,33 +326,6 @@
                        "subjectRefs":  [
                                            "dep:00005"
                                        ]
-                   },
-                   {
-                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
-                       "issueId":  "issue:unmapped:dep:00006",
-                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
-                       "severity":  "INFO",
-                       "subjectRefs":  [
-                                           "dep:00006"
-                                       ]
-                   },
-                   {
-                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
-                       "issueId":  "issue:unmapped:dep:00007",
-                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
-                       "severity":  "INFO",
-                       "subjectRefs":  [
-                                           "dep:00007"
-                                       ]
-                   },
-                   {
-                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
-                       "issueId":  "issue:unmapped:dep:00008",
-                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
-                       "severity":  "INFO",
-                       "subjectRefs":  [
-                                           "dep:00008"
-                                       ]
                    }
                ],
     "metadata":  [
@@ -451,10 +343,7 @@
                                        "dep:00002",
                                        "dep:00003",
                                        "dep:00004",
-                                       "dep:00005",
-                                       "dep:00006",
-                                       "dep:00007",
-                                       "dep:00008"
+                                       "dep:00005"
                                    ]
                      },
                      {
@@ -624,7 +513,20 @@
                                              ],
                           "providerOrdinal":  1,
                           "qualifiedTableName":  "APP.orders",
-                          "relationId":  "rel:0001"
+                          "relationId":  "rel:0001",
+                          "sourceOccurrences":  [
+                                                    {
+                                                        "coordinateSystem":  "DIALECT_TRANSFORMED_SQL",
+                                                        "occurrenceId":  "sql-table-reference:0000",
+                                                        "sourceKind":  "TABLE_REFERENCE",
+                                                        "sourceSpan":  {
+                                                                           "endColumn":  155,
+                                                                           "endLine":  1,
+                                                                           "startColumn":  146,
+                                                                           "startLine":  1
+                                                                       }
+                                                    }
+                                                ]
                       }
                   ],
     "schemaVersion":  "0.1.0-poc",

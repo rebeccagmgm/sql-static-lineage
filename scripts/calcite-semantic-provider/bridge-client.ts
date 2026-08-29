@@ -44,7 +44,7 @@ export async function runProviderBatch(
     child.on("close", (code) => code === 0 ? resolve() : reject(new Error(`Calcite Provider exited ${code}: ${stderr.trim()}`)));
   });
   const timeout = setTimeout(() => child.kill(), options.timeoutMs ?? 30_000);
-  for (const request of requests) child.stdin.write(`${canonicalJson(request)}\n`);
+  for (const request of requests) child.stdin.write(canonicalJson(request));
   child.stdin.end();
   try { await completion; } finally { clearTimeout(timeout); lines.close(); }
   if (parseFailure) throw parseFailure;

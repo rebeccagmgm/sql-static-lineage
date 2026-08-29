@@ -28,17 +28,36 @@
     "dependencies":  [
                          {
                              "dependencyId":  "dep:00000",
-                             "dependencyKind":  "VALUE_INPUT",
+                             "dependencyKind":  "RELATION_EXISTENCE",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
                                                          "mapping:dep:00000"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0001"
+                                          ],
+                             "impactKind":  "RELATION_EXISTENCE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00000"
+                                           ],
+                             "operatorId":  "op:0000",
+                             "toRefs":  [
+                                            "rel:0000"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00001",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00001"
                                                      ],
                              "fromRefs":  [
                                               "rel:0001:field:0003"
                                           ],
                              "impactKind":  "FIELD_VALUE",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00000"
+                                               "issue:unmapped:dep:00001"
                                            ],
                              "operatorId":  "op:0000",
                              "toRefs":  [
@@ -46,19 +65,247 @@
                                         ]
                          },
                          {
-                             "dependencyId":  "dep:00001",
-                             "dependencyKind":  "JOIN_MATCH",
+                             "dependencyId":  "dep:00002",
+                             "dependencyKind":  "VALUE_INPUT",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
-                                                         "mapping:dep:00001"
+                                                         "mapping:dep:00002"
                                                      ],
                              "fromRefs":  [
-                                              "rel:0002:field:0002",
+                                              "rel:0002:field:0000"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00002"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0000"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00003",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00003"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0001"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00003"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0001"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00004",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00004"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0002"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00004"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0002"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00005",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00005"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0003"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00005"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0003"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00006",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00006"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0004"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00006"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0004"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00007",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00007"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0005"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00007"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0005"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00008",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00008"
+                                                     ],
+                             "fromRefs":  [
                                               "rel:0003:field:0000"
                                           ],
-                             "impactKind":  "ROW_MEMBERSHIP",
+                             "impactKind":  "FIELD_VALUE",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00001"
+                                               "issue:unmapped:dep:00008"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0006"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00009",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00009"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0003:field:0001"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00009"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0007"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00010",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00010"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0003:field:0002"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00010"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0008"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00011",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00011"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0003:field:0003"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00011"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0009"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00012",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00012"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0003:field:0004"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00012"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0010"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00013",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00013"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0003:field:0005"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00013"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001:field:0011"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00014",
+                             "dependencyKind":  "RELATION_EXISTENCE",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00014"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002",
+                                              "rel:0003"
+                                          ],
+                             "impactKind":  "RELATION_EXISTENCE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00014"
                                            ],
                              "operatorId":  "op:0001",
                              "toRefs":  [
@@ -66,11 +313,31 @@
                                         ]
                          },
                          {
-                             "dependencyId":  "dep:00002",
+                             "dependencyId":  "dep:00015",
+                             "dependencyKind":  "JOIN_MATCH",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00015"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0002",
+                                              "rel:0003:field:0000"
+                                          ],
+                             "impactKind":  "ROW_MEMBERSHIP",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00015"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00016",
                              "dependencyKind":  "JOIN_CARDINALITY",
                              "evaluationStatus":  "EVALUATED",
                              "evidenceMappingRefs":  [
-                                                         "mapping:dep:00002"
+                                                         "mapping:dep:00016"
                                                      ],
                              "fromRefs":  [
                                               "rel:0002:field:0002",
@@ -78,7 +345,7 @@
                                           ],
                              "impactKind":  "MULTIPLICITY",
                              "issueRefs":  [
-                                               "issue:unmapped:dep:00002"
+                                               "issue:unmapped:dep:00016"
                                            ],
                              "operatorId":  "op:0001",
                              "toRefs":  [
@@ -92,7 +359,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00000",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00000"
                              },
                              {
@@ -100,7 +367,7 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00001",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00001"
                              },
                              {
@@ -108,8 +375,120 @@
 
                                                   ],
                                  "mappingId":  "mapping:dep:00002",
-                                 "mappingStatus":  "UNMAPPABLE",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
                                  "providerRefId":  "dep:00002"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00003",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00003"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00004",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00004"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00005",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00005"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00006",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00006"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00007",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00007"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00008",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00008"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00009",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00009"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00010",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00010"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00011",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00011"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00012",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00012"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00013",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00013"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00014",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00014"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00015",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00015"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00016",
+                                 "mappingStatus":  "NOT_ASSEMBLED",
+                                 "providerRefId":  "dep:00016"
                              }
                          ],
     "fields":  [
@@ -373,6 +752,132 @@
                        "subjectRefs":  [
                                            "dep:00002"
                                        ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00003",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00003"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00004",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00004"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00005",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00005"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00006",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00006"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00007",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00007"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00008",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00008"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00009",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00009"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00010",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00010"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00011",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00011"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00012",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00012"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00013",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00013"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00014",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00014"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00015",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00015"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00016",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00016"
+                                       ]
                    }
                ],
     "metadata":  [
@@ -385,7 +890,8 @@
                          "metadataId":  "metadata:rel:0000:expression_lineage",
                          "subjectRef":  "rel:0000",
                          "value":  [
-                                       "dep:00000"
+                                       "dep:00000",
+                                       "dep:00001"
                                    ]
                      },
                      {
@@ -647,6 +1153,10 @@
                                                    "rel:0002",
                                                    "rel:0003"
                                                ],
+                          "inputRoles":  [
+                                             "MATCHED",
+                                             "MATCHED"
+                                         ],
                           "joinType":  "INNER",
                           "kind":  "JOIN",
                           "operatorId":  "op:0001",
@@ -725,7 +1235,20 @@
                                              ],
                           "providerOrdinal":  2,
                           "qualifiedTableName":  "APP.orders",
-                          "relationId":  "rel:0002"
+                          "relationId":  "rel:0002",
+                          "sourceOccurrences":  [
+                                                    {
+                                                        "coordinateSystem":  "DIALECT_TRANSFORMED_SQL",
+                                                        "occurrenceId":  "sql-table-reference:0000",
+                                                        "sourceKind":  "TABLE_REFERENCE",
+                                                        "sourceSpan":  {
+                                                                           "endColumn":  35,
+                                                                           "endLine":  1,
+                                                                           "startColumn":  26,
+                                                                           "startLine":  1
+                                                                       }
+                                                    }
+                                                ]
                       },
                       {
                           "inputRelationIds":  [
@@ -742,7 +1265,20 @@
                                              ],
                           "providerOrdinal":  3,
                           "qualifiedTableName":  "APP.orders",
-                          "relationId":  "rel:0003"
+                          "relationId":  "rel:0003",
+                          "sourceOccurrences":  [
+                                                    {
+                                                        "coordinateSystem":  "DIALECT_TRANSFORMED_SQL",
+                                                        "occurrenceId":  "sql-table-reference:0001",
+                                                        "sourceKind":  "TABLE_REFERENCE",
+                                                        "sourceSpan":  {
+                                                                           "endColumn":  57,
+                                                                           "endLine":  1,
+                                                                           "startColumn":  48,
+                                                                           "startLine":  1
+                                                                       }
+                                                    }
+                                                ]
                       }
                   ],
     "schemaVersion":  "0.1.0-poc",

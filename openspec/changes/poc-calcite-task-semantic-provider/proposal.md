@@ -10,6 +10,9 @@
 - 新增只校验和消费 Facts 的 TypeScript consumer；禁止在 TypeScript 中重新推导 JOIN、FILTER、PROJECT、AGGREGATE、SETOP、WINDOW 等语义。
 - 新增 8～10 条代表性 SQL 语料和至少一条现有项目真实复杂 SQL，保留 `PROJECT_EXPRESSION_STRUCTURE_UNSUPPORTED` 等既有失败作为对照实验。
 - 新增可机器识别的支持矩阵、unsupported/unknown 状态、确定性输出和资源指标，并通过明确 Gate 给出 `DIRECT_PROVIDER`、`THIN_ADAPTER_REQUIRED`、`VALIDATION_ONLY` 或 `NO_GO` 结论。
+- 将语料验收从 dependency kind 覆盖升级为完整 semantic edge golden：必须核对端点、方向、impact kind、算子输入侧角色、重复边和意外边。
+- 将 evidence mapping 的“未运行/缺输入”与“已运行但不可映射”分开；只有映射器实际执行后才能报告 `UNMAPPABLE`。
+- 在 Calcite 同一前端内保留 `SqlNode -> RelNode/RexNode` source map，只要求叶子物理读/字段与 Native evidence 精确闭合，不要求 Calcite 与 Native 派生关系图同构。
 - POC 允许在当前实验分支合并或删除重复的 `calcite-oracle`、Plan Facts differential compatibility 路径，但必须先迁移仍有价值的 JSONL、资源限制、metadata 和测试能力。
 - POC 不修改现有 field-lineage、table multi-hop、Machine Facts、producer bridge、target-rooted causal closure 或生产 canonical artifacts；正式生产接入必须另开 Change。
 

@@ -13,7 +13,7 @@ function main(): void {
   const input = inputIndex >= 0 ? process.argv[inputIndex + 1] : undefined;
   if (!input) throw new Error("usage: --input <provider-response.json>");
   const response = validateProviderResponseFile(resolve(input));
-  process.stdout.write(`${canonicalJson({
+  process.stdout.write(canonicalJson({
     requestId: response.requestId,
     status: response.status,
     statementStatus: response.facts?.statementStatus,
@@ -21,7 +21,7 @@ function main(): void {
     dependencyCount: response.facts?.dependencies.length ?? 0,
     issueCodes: [...new Set(response.facts?.issues.map((issue) => issue.code) ?? [])].sort(),
     error: response.error,
-  })}\n`);
+  }));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

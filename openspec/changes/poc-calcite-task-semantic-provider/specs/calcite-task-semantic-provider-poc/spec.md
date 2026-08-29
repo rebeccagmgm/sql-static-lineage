@@ -36,6 +36,8 @@ POC SHALL 以固定 SQL snapshot、明确的 SQL source/statement identity、Sch
 
 Native 侧 SHALL 仅提供 SQL 原文、Token、expression/source span、Horae SQL slot、statement identity、物理表字段身份和既有 evidence refs。alias、scope、relation occurrence、field occurrence 和 Calcite slot 到 Native evidence 的组装 MUST 在 Provider/Assembler 边界完成，并且不得依赖 substring、tail table-name 或裸字段名猜测。
 
+Evidence mapping 状态 MUST 区分 `NOT_ATTEMPTED`、`NOT_ASSEMBLED`、`AMBIGUOUS`、`UNMAPPABLE` 和 `EXACT`。缺少 Native evidence 输入或未调用 Assembler 时不得报告 `UNMAPPABLE`。
+
 #### Scenario: Self join uses the same physical table twice
 
 - **WHEN** 同一物理表在一条 SQL 中以两个 alias 被读取
@@ -45,6 +47,16 @@ Native 侧 SHALL 仅提供 SQL 原文、Token、expression/source span、Horae S
 
 - **WHEN** Calcite relation/slot 无法唯一映射到 Native statement、occurrence 或 source evidence
 - **THEN** 该对象被标为 unmappable/unknown，并且不得进入确定 dependency 或 metadata 结论
+
+#### Scenario: Evidence assembler was not run
+
+- **WHEN** Provider 已生成本地 dependency，但真实流程未提供 Native statement evidence 或未调用 Assembler
+- **THEN** mapping 状态为 `NOT_ASSEMBLED` 或 `NOT_ATTEMPTED`，报告不得将其解释为结构性不可映射
+
+#### Scenario: Same-front-end source map
+
+- **WHEN** Calcite 从 SqlNode 转换为 RelNode/RexNode 并生成本地 dependency
+- **THEN** Provider 保留可审计的 SqlNode occurrence/source position 到关系算子和输入 slot 的映射；Assembler 只将叶子 TableScan/字段 occurrence 对接 Native physical read evidence，不要求两套派生关系图同构
 
 ### Requirement: Candidate TaskSemanticFacts are normalized and consumable
 
@@ -101,6 +113,8 @@ POC SHALL 只写独立 staging 目录中的候选 Facts、样本输出、支持�
 
 POC SHALL 覆盖 8～10 类代表性 SQL 和至少一条现有项目真实复杂 SQL，包括 projection、CASE/IF/COALESCE、filter、不同 join/self join、aggregate/COUNT(*)、distinct/setop、EXISTS/literal/CROSS JOIN、window 和 Top-N。最终报告 MUST 给出 `DIRECT_PROVIDER`、`THIN_ADAPTER_REQUIRED`、`VALIDATION_ONLY` 或 `NO_GO` 之一，并逐项引用语料、映射、unsupported 和性能证据。
 
+每个代表性 fixture MUST 以完整 golden semantic edge 验收，而不是只检查 dependency kind 是否出现。Golden 至少包含 dependency kind、impact kind、operator/join/setop 角色、规范化 from/to 端点；校验必须拒绝缺失边、意外边和重复边。
+
 #### Scenario: Thin adapter is sufficient
 
 - **WHEN** 真实复杂 SQL 仅需有界、可审计且不改变关系语义的方言适配，就能获得精确映射的 Calcite 事实
@@ -110,6 +124,11 @@ POC SHALL 覆盖 8～10 类代表性 SQL 和至少一条现有项目真实复杂
 
 - **WHEN** 真实 SQL 必须依赖大规模 AST 重写、字段名猜测或另一套 Native operator 规则才能得到结果
 - **THEN** POC 结论必须为 `VALIDATION_ONLY` 或 `NO_GO`，不得进入生产接入
+
+#### Scenario: Dependency kind exists but endpoints are wrong
+
+- **WHEN** Provider 输出了预期 dependency kind，但端点、方向、impact kind、输入侧角色或重复度与 golden 不一致
+- **THEN** 该样本不得标为 semantic success，支持矩阵必须显示 `PARTIAL` 或 `FAILED`
 
 ### Requirement: Execution is bounded and cached by semantic input
 

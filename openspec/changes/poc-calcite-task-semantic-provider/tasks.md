@@ -22,21 +22,23 @@
 ## 4. RelNode semantic extraction
 
 - [x] 4.1 Extract stable provider-local relation/operator/input/output slot observations from validated RelNode/RexNode without emitting a raw RelNode dump as final Facts.
-- [x] 4.2 Implement project/value, CASE/IF/COALESCE, filter/having/qualify and inner/outer/semi/anti/cross join local dependencies and impact kinds in the Java Provider adapter.
-- [x] 4.3 Implement aggregate/GROUP BY/COUNT(*), DISTINCT, UNION/INTERSECT/EXCEPT and relation-existence dependencies, preserving fieldless dependencies.
-- [x] 4.4 Implement window value/partition/order/frame and ORDER BY + LIMIT/TOP/FETCH dependencies while keeping ordering-only effects distinct from row selection.
+- [ ] 4.2 Implement and golden-verify project/value, CASE/IF/COALESCE, filter/having/qualify and side-aware inner/outer/semi/anti/cross join local dependencies and impact kinds in the Java Provider adapter.
+- [x] 4.3 Implement and golden-verify aggregate/GROUP BY/COUNT(*), true DISTINCT, UNION/INTERSECT/EXCEPT role-specific and relation-existence/multiplicity dependencies, preserving fieldless dependencies.
+- [x] 4.4 Implement and golden-verify window value/partition/order/frame and ORDER BY + LIMIT/TOP/FETCH dependencies, deduplicating equivalent Project/RexOver and Window RelNode facts while keeping ordering-only effects distinct from row selection.
 - [x] 4.5 Emit predicates, expression lineage, unique keys, functional dependencies, row count/selectivity/cardinality where Calcite evaluates them, using exact/derived/estimated/unknown knowledge status.
-- [x] 4.6 Add Java tests for each supported operator, missing schema/type, unsupported function, metadata unknown, self join occurrence isolation and resource limits.
+- [ ] 4.6 Add Java/golden tests for each supported operator, exact edge endpoints/direction/impact/side roles, duplicate and unexpected-edge rejection, missing schema/type, unsupported function, metadata unknown, self join occurrence isolation and resource limits.
 
 ## 5. Dialect adaptation and evidence assembly
 
-- [ ] 5.1 Implement a Native evidence adapter that loads only fixed SQL slot/statement identity, raw text/token/span, physical table/field identity and existing evidence refs; it must not emit relation semantics.
+- [x] 5.1 Implement a Native evidence adapter that loads only fixed SQL slot/statement identity, raw text/token/span, physical table/field identity and existing evidence refs; it must not emit relation semantics.
 - [ ] 5.2 Implement the SemanticFactAssembler mapping Calcite relation/slot observations to Native statement, relation occurrence, field occurrence, physical identity, source span and evidence refs with `EXACT` or explicit unmappable status.
 - [ ] 5.3 Cover self join, repeated table occurrence, nested scope and output-slot mapping; reject substring, tail table-name and bare-field-name fallback.
 - [x] 5.4 Implement a versioned dialect transform manifest for statement extraction, identifier quoting, conformance and typed parameters; reject transforms that alter join/filter/aggregate/scope/field semantics.
 - [x] 5.5 Add mapping and dialect tests for exact, partial, ambiguous and unsupported cases, including deterministic before/after span references.
 
-Mapping outcome: 5.1-5.3 remain open. The real statement produced 348 evaluated dependencies but 0 exact Native occurrence/span mappings. CTE expansion makes the Calcite and Native relation graphs non-isomorphic, and this Change does not add a guessing dual-graph matcher.
+Semantic outcome: full-edge golden verification now passes for 10/10 representative samples. Task 4.2 remains open because the corpus does not yet prove every advertised QUALIFY and SEMI/ANTI instance; task 4.6 remains open rather than treating representative coverage as every supported operator.
+
+Mapping outcome: 5.1 is complete. The same-front-end source occurrence experiment anchored all 35 Calcite physical `TableScan` leaves and mapped all 35 to unique Native read occurrences: 20 by identical full span and 15 by exact table-identifier prefix inside a Native span that additionally contains the alias. All 3,841 dependency endpoints recursively reach exact Native leaf evidence with zero ambiguous/unmappable mappings. Tasks 5.2-5.3 remain open because operator source spans and complete operator-level evidence closure are still `NOT_ASSEMBLED`; leaf/endpoint closure must not be presented as full SemanticFactAssembler completion.
 
 ## 6. Thin TypeScript consumer and runner
 
@@ -51,6 +53,7 @@ Mapping outcome: 5.1-5.3 remain open. The real statement produced 348 evaluated 
 - [x] 7.2 Select and freeze one existing complex Horae/Hive statement with CTE/JOIN/filter/expression projection and complete available schema, recording its SQL source identity and input hashes without collecting new external data.
 - [x] 7.3 Preserve a real `PROJECT_EXPRESSION_STRUCTURE_UNSUPPORTED` case and prove Calcite either emits exact expression dependencies or retains explicit unsupported/unknown without SQL simplification, hand-authored dependency or TypeScript fallback.
 - [x] 7.4 Generate and validate one candidate Facts JSON for every sample and the real statement, including mapping status, capabilities, unsupported reasons and metadata quality.
+- [x] 7.5 Replace kind-only corpus acceptance with full golden semantic-edge validation and record per-sample missing, unexpected, duplicate and mismatched edges.
 
 ## 8. Code convergence in the experimental branch
 
@@ -64,8 +67,8 @@ Mapping outcome: 5.1-5.3 remain open. The real statement produced 348 evaluated 
 - [ ] 9.1 Run TypeScript targeted tests, default tests affected by package wiring, typecheck, build and format checks using project npm scripts; run the independent Maven/runtime suite.
 - [ ] 9.2 Verify deterministic output, 100% exact mapping for every evaluated dependency, explicit unsupported/unmappable boundaries, absence of Native semantic fallback and unchanged canonical artifact hashes.
 - [x] 9.3 Measure cold corpus time, warm real-statement time, peak heap, request/output size and digest cache behavior against the proposed 30-second corpus, 5-second warm statement and 1-GiB heap budgets.
-- [x] 9.4 Publish the machine-readable support matrix and final POC report with exactly one decision: `DIRECT_PROVIDER`, `THIN_ADAPTER_REQUIRED`, `VALIDATION_ONLY` or `NO_GO`, including evidence for the real SQL and existing failure case.
-- [x] 9.5 Perform a focused review for duplicated operator semantics, identity guessing, hidden Unknown, metadata overclaiming, staging escape, resource-limit bypass and accidental inclusion of unrelated dirty files; resolve findings and rerun affected checks.
+- [x] 9.4 Publish the revised machine-readable support matrix and final POC report with Gate A/B/C/D, exactly one decision (`DIRECT_PROVIDER`, `THIN_ADAPTER_REQUIRED`, `VALIDATION_ONLY` or `NO_GO`), and separate leaf occurrence, dependency endpoint, operator-span and full-closure metrics for the real SQL.
+- [x] 9.5 Resolve the focused-review findings for outer joins, correlated subqueries, Window duplication, CROSS JOIN multiplicity, SETOP roles, identity guessing and hidden Unknown; rerun affected checks without touching unrelated dirty files.
 - [x] 9.6 Stop after the POC decision. Do not integrate with multi-hop/target-table closure, modify runtime rerun policy, publish canonical artifacts or start a production Provider migration in this Change.
 
-Verification outcome: 9.1 remains open because the repository-wide formatting baseline has 12 pre-existing documentation warnings and the default suite has 6 pre-existing `task-inspection` fixture failures (365 tests pass, 3 skip, 1 todo). 9.2 remains open because exact mapping is 0/348; deterministic output, explicit unmappable boundaries, no Native fallback and unchanged canonical hashes did pass.
+Verification outcome: 9.1 remains open because the repository-wide formatting baseline has 12 pre-existing documentation warnings and the default suite has 6 pre-existing `task-inspection` fixture failures (365 tests pass, 3 skip, 1 todo). 9.2 remains open because operator source spans/full evidence closure are not assembled; deterministic output, 35/35 exact leaf occurrence mapping, 3,841/3,841 exact dependency endpoint mapping, explicit fail-closed boundaries, no Native fallback and unchanged canonical hashes pass independently.

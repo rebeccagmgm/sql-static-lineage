@@ -60,7 +60,27 @@
         "inputRelationIds": { "$ref": "#/$defs/stringArray" },
         "outputFieldIds": { "$ref": "#/$defs/stringArray" },
         "qualifiedTableName": { "type": "string", "minLength": 1 },
-        "providerOrdinal": { "type": "integer", "minimum": 0 }
+        "providerOrdinal": { "type": "integer", "minimum": 0 },
+        "sourceOccurrences": { "type": "array", "items": { "$ref": "#/$defs/sourceOccurrence" } }
+      }
+    },
+    "sourceOccurrence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["occurrenceId", "sourceKind", "coordinateSystem", "sourceSpan"],
+      "properties": {
+        "occurrenceId": { "$ref": "#/$defs/stableId" },
+        "sourceKind": { "const": "TABLE_REFERENCE" },
+        "coordinateSystem": { "const": "DIALECT_TRANSFORMED_SQL" },
+        "sourceSpan": {
+          "type": "object", "additionalProperties": false,
+          "required": ["startLine", "startColumn", "endLine", "endColumn"],
+          "properties": {
+            "startLine": { "type": "integer", "minimum": 1 },
+            "startColumn": { "type": "integer", "minimum": 1 },
+            "endLine": { "type": "integer", "minimum": 1 },
+            "endColumn": { "type": "integer", "minimum": 1 }
+          }
+        }
       }
     },
     "field": {
@@ -85,6 +105,7 @@
         "kind": { "$ref": "#/$defs/operatorKind" },
         "relationId": { "$ref": "#/$defs/stableId" },
         "inputRelationIds": { "$ref": "#/$defs/stringArray" },
+        "inputRoles": { "type": "array", "items": { "enum": ["MATCHED", "PRESERVED", "OPTIONAL", "FILTERING", "EXCLUDING", "CARTESIAN", "CONTRIBUTING", "REQUIRED"] } },
         "joinType": { "enum": ["INNER", "LEFT", "RIGHT", "FULL", "SEMI", "ANTI", "CROSS"] }
       }
     },
@@ -124,7 +145,7 @@
         "mappingId": { "$ref": "#/$defs/stableId" },
         "providerRefId": { "$ref": "#/$defs/stableId" },
         "nativeRefId": { "$ref": "#/$defs/stableId" },
-        "mappingStatus": { "enum": ["EXACT", "UNMAPPABLE"] },
+        "mappingStatus": { "enum": ["NOT_ATTEMPTED", "NOT_ASSEMBLED", "EXACT", "AMBIGUOUS", "UNMAPPABLE"] },
         "evidenceRefs": { "$ref": "#/$defs/stringArray" },
         "sourceSpan": {
           "type": "object", "additionalProperties": false,
@@ -146,7 +167,7 @@
     },
     "evaluationStatus": { "enum": ["EVALUATED", "NOT_EVALUATED", "UNSUPPORTED", "ERROR"] },
     "operatorKind": { "enum": ["TABLE_SCAN", "VALUES", "PROJECT", "FILTER", "JOIN", "AGGREGATE", "DISTINCT", "UNION", "INTERSECT", "EXCEPT", "WINDOW", "SORT", "TOP_N", "CORRELATE", "UNKNOWN"] },
-    "dependencyKind": { "enum": ["VALUE_INPUT", "EXPRESSION_SELECTOR", "FILTER_PREDICATE", "JOIN_MATCH", "JOIN_CARDINALITY", "GROUP_KEY", "AGGREGATE_INPUT", "SET_MEMBERSHIP", "WINDOW_VALUE", "WINDOW_PARTITION", "WINDOW_ORDER", "WINDOW_FRAME", "ORDER_SELECTION", "RELATION_EXISTENCE"] },
-    "impactKind": { "enum": ["FIELD_VALUE", "EXPRESSION_CONTROL", "ROW_MEMBERSHIP", "MULTIPLICITY", "GROUPING", "SET_MEMBERSHIP", "WINDOW_EFFECT", "ORDER_SELECTION", "RELATION_EXISTENCE"] }
+    "dependencyKind": { "enum": ["VALUE_INPUT", "EXPRESSION_SELECTOR", "FILTER_PREDICATE", "JOIN_MATCH", "JOIN_NULL_EXTENSION", "JOIN_CARDINALITY", "GROUP_KEY", "AGGREGATE_INPUT", "SET_MEMBERSHIP", "WINDOW_VALUE", "WINDOW_PARTITION", "WINDOW_ORDER", "WINDOW_FRAME", "ORDER_SELECTION", "RELATION_EXISTENCE"] },
+    "impactKind": { "enum": ["FIELD_VALUE", "EXPRESSION_CONTROL", "ROW_MEMBERSHIP", "NULL_EXTENSION", "MULTIPLICITY", "GROUPING", "SET_MEMBERSHIP", "WINDOW_EFFECT", "ORDER_SELECTION", "RELATION_EXISTENCE"] }
   }
 }

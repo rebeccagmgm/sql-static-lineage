@@ -25,8 +25,20 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlJoin;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlTableRef;
+import org.apache.calcite.sql.SqlHint;
+import org.apache.calcite.sql.SqlWith;
+import org.apache.calcite.sql.SqlWithItem;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlBasicFunction;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
@@ -40,10 +52,16 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.rel.hint.HintPredicates;
+import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.rex.RexFieldCollation;
 import org.apache.calcite.rex.RexOver;
@@ -277,6 +295,10 @@ public final class CalciteSemanticProvider {
                     HIVE_FROM_UNIXTIME))
             : SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
                 SqlLibrary.STANDARD))
+        .sqlToRelConverterConfig(SqlToRelConverter.config().withHintStrategyTable(
+            HintStrategyTable.builder()
+                .hintStrategy("SOURCE_OCCURRENCE", HintPredicates.TABLE_SCAN)
+                .build()))
         .build();
     Planner planner = Frameworks.getPlanner(config);
     try {
@@ -284,6 +306,8 @@ public final class CalciteSemanticProvider {
       if (!parsed.isA(SqlKind.QUERY)) {
         throw new UnsupportedError("UNSUPPORTED_SQL", "parsed statement is not a query");
       }
+      parsed = new SourceOccurrenceAnnotator().annotateQuery(
+          parsed, Collections.<String>emptySet());
       SqlNode validated = planner.validate(parsed);
       RelRoot relRoot = planner.rel(validated);
       return success(request, requestId, relRoot.rel, definitions, requested,
@@ -423,6 +447,7 @@ public final class CalciteSemanticProvider {
     List<Object> semanticMetadata = new ArrayList<Object>();
     List<Object> mappings = new ArrayList<Object>();
     List<Object> issues = new ArrayList<Object>();
+    Set<String> dependencyKeys = new HashSet<String>();
     int[] dependencyOrdinal = new int[] { 0 };
 
     for (int index = 0; index < nodes.size(); index++) {
@@ -441,7 +466,6 @@ public final class CalciteSemanticProvider {
       }
       List<String> inputRelationIds = new ArrayList<String>();
       for (RelNode input : node.getInputs()) inputRelationIds.add(relationIds.get(input));
-      Collections.sort(inputRelationIds);
       List<String> outputFieldIds = new ArrayList<String>();
       for (int slot = 0; slot < node.getRowType().getFieldCount(); slot++) {
         String fieldId = fieldId(relationId, slot);
@@ -465,11 +489,15 @@ public final class CalciteSemanticProvider {
       if (node instanceof TableScan) {
         relation.put("qualifiedTableName",
             joinQualified(((TableScan) node).getTable().getQualifiedName()));
+        List<Object> sourceOccurrences = tableSourceOccurrences((TableScan) node);
+        if (!sourceOccurrences.isEmpty()) relation.put("sourceOccurrences", sourceOccurrences);
       }
       relation.put("relationId", relationId);
       relations.add(relation);
       Map<String, Object> operator = new TreeMap<String, Object>();
       operator.put("inputRelationIds", inputRelationIds);
+      List<String> inputRoles = operatorInputRoles(node);
+      if (inputRoles != null) operator.put("inputRoles", inputRoles);
       if (node instanceof Join) operator.put("joinType", joinTypeName((Join) node));
       operator.put("kind", kind);
       operator.put("operatorId", operatorId);
@@ -477,7 +505,7 @@ public final class CalciteSemanticProvider {
       operators.add(operator);
       int dependencyStart = dependencies.size();
       extractDependencies(node, relationId, operatorId, relationIds,
-          dependencies, mappings, issues, dependencyOrdinal);
+          dependencies, mappings, issues, dependencyKeys, dependencyOrdinal);
       if (requested.contains("expressionLineage") &&
           (node instanceof Project || node instanceof Aggregate || node instanceof Window)) {
         List<String> expressionDependencyIds = new ArrayList<String>();
@@ -596,51 +624,90 @@ public final class CalciteSemanticProvider {
 
   private static void extractDependencies(RelNode node, String relationId, String operatorId,
       Map<RelNode, String> relationIds, List<Object> dependencies, List<Object> mappings,
-      List<Object> issues, int[] ordinal) {
+      List<Object> issues, Set<String> dependencyKeys, int[] ordinal) {
     if (node instanceof Project) {
       Project project = (Project) node;
+      addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE",
+          singletonString(relationIds.get(project.getInput())), singletonString(relationId),
+          operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
       for (int output = 0; output < project.getProjects().size(); output++) {
         RexNode expression = project.getProjects().get(output);
         List<RexOver> overs = rexOvers(expression);
         if (!overs.isEmpty()) {
           addRexOverDependencies(overs, project.getInput(), fieldId(relationId, output),
-              operatorId, relationIds, dependencies, mappings, issues, ordinal);
+              operatorId, relationIds, dependencies, mappings, issues, dependencyKeys, ordinal);
         } else if (isConditional(expression)) {
           addConditionalDependencies(expression, project.getInput(), fieldId(relationId, output),
-              operatorId, relationIds, dependencies, mappings, issues, ordinal);
+              operatorId, relationIds, dependencies, mappings, issues, dependencyKeys, ordinal);
         } else {
-          addDependency("VALUE_INPUT", "FIELD_VALUE",
-              inputFieldRefs(project.getInput(), inputRefs(expression), relationIds),
+          List<String> refs = inputFieldRefs(project.getInput(), inputRefs(expression), relationIds);
+          addDependency(refs.isEmpty() ? "RELATION_EXISTENCE" : "VALUE_INPUT",
+              refs.isEmpty() ? "RELATION_EXISTENCE" : "FIELD_VALUE",
+              refs.isEmpty() ? singletonString(relationIds.get(project.getInput())) : refs,
               singletonString(fieldId(relationId, output)), operatorId,
-              dependencies, mappings, issues, ordinal);
+              dependencies, mappings, issues, dependencyKeys, ordinal);
         }
       }
       return;
     }
     if (node instanceof Filter) {
       Filter filter = (Filter) node;
+      addFieldPassThrough(filter.getInput(), relationId, 0, filter.getRowType().getFieldCount(),
+          operatorId, relationIds,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
+      addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE",
+          singletonString(relationIds.get(filter.getInput())), singletonString(relationId),
+          operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
       addDependency("FILTER_PREDICATE", "ROW_MEMBERSHIP",
           inputFieldRefs(filter.getInput(), inputRefs(filter.getCondition()), relationIds),
-          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+          singletonString(relationId), operatorId, dependencies, mappings, issues,
+          dependencyKeys, ordinal);
       for (RexSubQuery subQuery : rexSubQueries(filter.getCondition())) {
         addDependency("RELATION_EXISTENCE", "ROW_MEMBERSHIP",
             singletonString(relationIds.get(subQuery.rel)), singletonString(relationId), operatorId,
-            dependencies, mappings, issues, ordinal);
+            dependencies, mappings, issues, dependencyKeys, ordinal);
+        addDependency("FILTER_PREDICATE", "ROW_MEMBERSHIP",
+            subQueryPredicateRefs(subQuery, filter.getInput(), relationIds),
+            singletonString(relationId), operatorId, dependencies, mappings, issues,
+            dependencyKeys, ordinal);
       }
       return;
     }
     if (node instanceof Join) {
       Join join = (Join) node;
+      addFieldPassThrough(join.getLeft(), relationId, 0, join.getRowType().getFieldCount(),
+          operatorId, relationIds,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
+      addFieldPassThrough(join.getRight(), relationId,
+          join.getLeft().getRowType().getFieldCount(), join.getRowType().getFieldCount(),
+          operatorId, relationIds,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
       List<String> refs = joinInputFieldRefs(join, inputRefs(join.getCondition()), relationIds);
-      if (refs.isEmpty()) {
-        for (RelNode input : join.getInputs()) addDependency("RELATION_EXISTENCE",
-            "RELATION_EXISTENCE", singletonString(relationIds.get(input)),
-            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+      List<String> inputRelations = new ArrayList<String>();
+      for (RelNode input : join.getInputs()) inputRelations.add(relationIds.get(input));
+      String joinType = joinTypeName(join);
+      List<String> existenceInputs = new ArrayList<String>();
+      if ("LEFT".equals(joinType) || "SEMI".equals(joinType) || "ANTI".equals(joinType)) {
+        existenceInputs.add(relationIds.get(join.getLeft()));
+      } else if ("RIGHT".equals(joinType)) {
+        existenceInputs.add(relationIds.get(join.getRight()));
       } else {
-        addDependency("JOIN_MATCH", "ROW_MEMBERSHIP", refs, singletonString(relationId),
-            operatorId, dependencies, mappings, issues, ordinal);
+        existenceInputs.addAll(inputRelations);
+      }
+      addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE", existenceInputs,
+          singletonString(relationId), operatorId, dependencies, mappings, issues,
+          dependencyKeys, ordinal);
+      if (refs.isEmpty()) {
+        addDependency("JOIN_CARDINALITY", "MULTIPLICITY", inputRelations,
+            singletonString(relationId), operatorId, dependencies, mappings, issues,
+            dependencyKeys, ordinal);
+      } else {
+        addDependency(isOuterJoin(joinType) ? "JOIN_NULL_EXTENSION" : "JOIN_MATCH",
+            isOuterJoin(joinType) ? "NULL_EXTENSION" : "ROW_MEMBERSHIP", refs,
+            singletonString(relationId), operatorId, dependencies, mappings, issues,
+            dependencyKeys, ordinal);
         addDependency("JOIN_CARDINALITY", "MULTIPLICITY", refs, singletonString(relationId),
-            operatorId, dependencies, mappings, issues, ordinal);
+            operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
       }
       return;
     }
@@ -649,19 +716,28 @@ public final class CalciteSemanticProvider {
       RelNode input = aggregate.getInput();
       List<Integer> groupRefs = new ArrayList<Integer>();
       for (Integer bit : aggregate.getGroupSet()) groupRefs.add(bit);
-      addDependency("GROUP_KEY", "GROUPING", inputFieldRefs(input, groupRefs, relationIds),
-          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+      List<String> groupFieldRefs = inputFieldRefs(input, groupRefs, relationIds);
+      addDependency(operatorKind(aggregate).equals("DISTINCT") ? "SET_MEMBERSHIP" : "GROUP_KEY",
+          operatorKind(aggregate).equals("DISTINCT") ? "SET_MEMBERSHIP" : "GROUPING",
+          groupFieldRefs, singletonString(relationId), operatorId,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
+      for (int groupOutput = 0; groupOutput < groupRefs.size(); groupOutput++) {
+        addDependency("VALUE_INPUT", "FIELD_VALUE",
+            singletonString(fieldId(relationIds.get(input), groupRefs.get(groupOutput))),
+            singletonString(fieldId(relationId, groupOutput)), operatorId,
+            dependencies, mappings, issues, dependencyKeys, ordinal);
+      }
       int output = aggregate.getGroupCount();
       for (AggregateCall call : aggregate.getAggCallList()) {
         if (call.getArgList().isEmpty()) {
           addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE",
               singletonString(relationIds.get(input)), singletonString(fieldId(relationId, output)),
-              operatorId, dependencies, mappings, issues, ordinal);
+              operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
         } else {
           addDependency("AGGREGATE_INPUT", "FIELD_VALUE",
               inputFieldRefs(input, new ArrayList<Integer>(call.getArgList()), relationIds),
               singletonString(fieldId(relationId, output)), operatorId,
-              dependencies, mappings, issues, ordinal);
+              dependencies, mappings, issues, dependencyKeys, ordinal);
         }
         output++;
       }
@@ -671,61 +747,80 @@ public final class CalciteSemanticProvider {
       for (RelNode input : node.getInputs()) {
         String inputRelationId = relationIds.get(input);
         addDependency("SET_MEMBERSHIP", "SET_MEMBERSHIP", singletonString(inputRelationId),
-            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+            singletonString(relationId), operatorId, dependencies, mappings, issues,
+            dependencyKeys, ordinal);
         int count = Math.min(input.getRowType().getFieldCount(), node.getRowType().getFieldCount());
         for (int slot = 0; slot < count; slot++) addDependency("VALUE_INPUT", "FIELD_VALUE",
             singletonString(fieldId(inputRelationId, slot)), singletonString(fieldId(relationId, slot)),
-            operatorId, dependencies, mappings, issues, ordinal);
+            operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
       }
       return;
     }
     if (node instanceof Window) {
       Window window = (Window) node;
       RelNode input = window.getInput();
+      addFieldPassThrough(input, relationId, 0, window.getRowType().getFieldCount(),
+          operatorId, relationIds,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
       int outputSlot = input.getRowType().getFieldCount();
       for (Window.Group group : window.groups) {
         List<Integer> partition = new ArrayList<Integer>();
         for (Integer bit : group.keys) partition.add(bit);
         addDependency("WINDOW_PARTITION", "WINDOW_EFFECT",
             inputFieldRefs(input, partition, relationIds), singletonString(relationId), operatorId,
-            dependencies, mappings, issues, ordinal);
+            dependencies, mappings, issues, dependencyKeys, ordinal);
         List<Integer> order = new ArrayList<Integer>();
         for (RelFieldCollation field : group.orderKeys.getFieldCollations()) order.add(field.getFieldIndex());
         addDependency("WINDOW_ORDER", "WINDOW_EFFECT", inputFieldRefs(input, order, relationIds),
-            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+            singletonString(relationId), operatorId, dependencies, mappings, issues,
+            dependencyKeys, ordinal);
         addDependency("WINDOW_FRAME", "WINDOW_EFFECT",
             singletonString(relationIds.get(input)), singletonString(relationId), operatorId,
-            dependencies, mappings, issues, ordinal);
+            dependencies, mappings, issues, dependencyKeys, ordinal);
         for (Window.RexWinAggCall call : group.aggCalls) {
           addDependency("WINDOW_VALUE", "WINDOW_EFFECT",
               inputFieldRefs(input, inputRefs(call), relationIds),
               singletonString(fieldId(relationId, outputSlot++)), operatorId,
-              dependencies, mappings, issues, ordinal);
+              dependencies, mappings, issues, dependencyKeys, ordinal);
         }
       }
       return;
     }
     if (node instanceof Sort) {
       Sort sort = (Sort) node;
+      addFieldPassThrough(sort.getInput(), relationId, 0, sort.getRowType().getFieldCount(),
+          operatorId, relationIds,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
+      addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE",
+          singletonString(relationIds.get(sort.getInput())), singletonString(relationId),
+          operatorId, dependencies, mappings, issues, dependencyKeys, ordinal);
       List<Integer> refs = new ArrayList<Integer>();
       for (RelFieldCollation field : sort.getCollation().getFieldCollations()) refs.add(field.getFieldIndex());
       boolean selectsRows = sort.fetch != null || sort.offset != null;
       addDependency(selectsRows ? "ORDER_SELECTION" : "WINDOW_ORDER",
           selectsRows ? "ORDER_SELECTION" : "WINDOW_EFFECT",
           inputFieldRefs(sort.getInput(), refs, relationIds), singletonString(relationId), operatorId,
-          dependencies, mappings, issues, ordinal);
+          dependencies, mappings, issues, dependencyKeys, ordinal);
       return;
     }
     if (node instanceof Correlate) {
+      int outputOffset = 0;
+      for (RelNode input : node.getInputs()) {
+        addFieldPassThrough(input, relationId, outputOffset, node.getRowType().getFieldCount(),
+            operatorId, relationIds,
+            dependencies, mappings, issues, dependencyKeys, ordinal);
+        outputOffset += input.getRowType().getFieldCount();
+      }
       for (RelNode input : node.getInputs()) addDependency("RELATION_EXISTENCE",
           "RELATION_EXISTENCE", singletonString(relationIds.get(input)),
-          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+          singletonString(relationId), operatorId, dependencies, mappings, issues,
+          dependencyKeys, ordinal);
     }
   }
 
   private static void addConditionalDependencies(RexNode expression, RelNode input, String target,
       String operatorId, Map<RelNode, String> relationIds, List<Object> dependencies,
-      List<Object> mappings, List<Object> issues, int[] ordinal) {
+      List<Object> mappings, List<Object> issues, Set<String> dependencyKeys, int[] ordinal) {
     RexCall call = (RexCall) expression;
     List<Integer> selectors = new ArrayList<Integer>();
     List<Integer> values = new ArrayList<Integer>();
@@ -743,31 +838,34 @@ public final class CalciteSemanticProvider {
     }
     addDependency("EXPRESSION_SELECTOR", "EXPRESSION_CONTROL",
         inputFieldRefs(input, selectors, relationIds), singletonString(target), operatorId,
-        dependencies, mappings, issues, ordinal);
+        dependencies, mappings, issues, dependencyKeys, ordinal);
     addDependency("VALUE_INPUT", "FIELD_VALUE", inputFieldRefs(input, values, relationIds),
-        singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+        singletonString(target), operatorId, dependencies, mappings, issues,
+        dependencyKeys, ordinal);
   }
 
   private static void addRexOverDependencies(List<RexOver> overs, RelNode input, String target,
       String operatorId, Map<RelNode, String> relationIds, List<Object> dependencies,
-      List<Object> mappings, List<Object> issues, int[] ordinal) {
+      List<Object> mappings, List<Object> issues, Set<String> dependencyKeys, int[] ordinal) {
     for (RexOver over : overs) {
       List<Integer> values = new ArrayList<Integer>();
       for (RexNode operand : over.getOperands()) values.addAll(inputRefs(operand));
       addDependency("WINDOW_VALUE", "WINDOW_EFFECT", inputFieldRefs(input, values, relationIds),
-          singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+          singletonString(target), operatorId, dependencies, mappings, issues,
+          dependencyKeys, ordinal);
       List<Integer> partition = new ArrayList<Integer>();
       for (RexNode key : over.getWindow().partitionKeys) partition.addAll(inputRefs(key));
       addDependency("WINDOW_PARTITION", "WINDOW_EFFECT",
           inputFieldRefs(input, partition, relationIds), singletonString(target), operatorId,
-          dependencies, mappings, issues, ordinal);
+          dependencies, mappings, issues, dependencyKeys, ordinal);
       List<Integer> order = new ArrayList<Integer>();
       for (RexFieldCollation key : over.getWindow().orderKeys) order.addAll(inputRefs(key.left));
       addDependency("WINDOW_ORDER", "WINDOW_EFFECT", inputFieldRefs(input, order, relationIds),
-          singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+          singletonString(target), operatorId, dependencies, mappings, issues,
+          dependencyKeys, ordinal);
       addDependency("WINDOW_FRAME", "WINDOW_EFFECT",
           singletonString(relationIds.get(input)), singletonString(target), operatorId,
-          dependencies, mappings, issues, ordinal);
+          dependencies, mappings, issues, dependencyKeys, ordinal);
     }
   }
 
@@ -801,6 +899,43 @@ public final class CalciteSemanticProvider {
     return output;
   }
 
+  private static List<String> subQueryPredicateRefs(RexSubQuery subQuery, RelNode outerInput,
+      Map<RelNode, String> relationIds) {
+    List<String> output = new ArrayList<String>();
+    List<RelNode> subNodes = new ArrayList<RelNode>();
+    collectRelNodes(subQuery.rel, subNodes, new HashSet<RelNode>());
+    for (RelNode subNode : subNodes) {
+      for (RexNode expression : nodeExpressions(subNode)) {
+        if (subNode instanceof Filter) {
+          output.addAll(inputFieldRefs(((Filter) subNode).getInput(), inputRefs(expression), relationIds));
+        } else if (subNode instanceof Join) {
+          output.addAll(joinInputFieldRefs((Join) subNode, inputRefs(expression), relationIds));
+        }
+        for (Integer correlated : correlatedInputRefs(expression)) {
+          if (correlated >= 0 && correlated < outerInput.getRowType().getFieldCount()) {
+            output.add(fieldId(relationIds.get(outerInput), correlated));
+          }
+        }
+      }
+    }
+    return sortedUnique(output);
+  }
+
+  private static List<Integer> correlatedInputRefs(RexNode expression) {
+    final Set<Integer> refs = new LinkedHashSet<Integer>();
+    expression.accept(new RexVisitorImpl<Void>(true) {
+      @Override public Void visitFieldAccess(RexFieldAccess fieldAccess) {
+        if (fieldAccess.getReferenceExpr() instanceof RexCorrelVariable) {
+          refs.add(fieldAccess.getField().getIndex());
+        }
+        return super.visitFieldAccess(fieldAccess);
+      }
+    });
+    List<Integer> output = new ArrayList<Integer>(refs);
+    Collections.sort(output);
+    return output;
+  }
+
   private static List<RexOver> rexOvers(RexNode expression) {
     final List<RexOver> output = new ArrayList<RexOver>();
     expression.accept(new RexVisitorImpl<Void>(true) {
@@ -812,12 +947,31 @@ public final class CalciteSemanticProvider {
     return output;
   }
 
+  private static void addFieldPassThrough(RelNode input, String targetRelationId,
+      int outputOffset, int targetFieldCount, String operatorId,
+      Map<RelNode, String> relationIds, List<Object> dependencies, List<Object> mappings,
+      List<Object> issues, Set<String> dependencyKeys, int[] ordinal) {
+    String inputRelationId = relationIds.get(input);
+    for (int slot = 0; slot < input.getRowType().getFieldCount(); slot++) {
+      int outputSlot = outputOffset + slot;
+      if (outputSlot >= targetFieldCount) break;
+      addDependency("VALUE_INPUT", "FIELD_VALUE",
+          singletonString(fieldId(inputRelationId, slot)),
+          singletonString(fieldId(targetRelationId, outputSlot)), operatorId,
+          dependencies, mappings, issues, dependencyKeys, ordinal);
+    }
+  }
+
   private static void addDependency(String dependencyKind, String impactKind,
       List<String> rawFromRefs, List<String> rawToRefs, String operatorId,
-      List<Object> dependencies, List<Object> mappings, List<Object> issues, int[] ordinal) {
+      List<Object> dependencies, List<Object> mappings, List<Object> issues,
+      Set<String> dependencyKeys, int[] ordinal) {
     List<String> fromRefs = sortedUnique(rawFromRefs);
     List<String> toRefs = sortedUnique(rawToRefs);
     if (fromRefs.isEmpty() || toRefs.isEmpty()) return;
+    String semanticKey = dependencyKind + "|" + impactKind + "|" + operatorId
+        + "|" + fromRefs.toString() + "|" + toRefs.toString();
+    if (!dependencyKeys.add(semanticKey)) return;
     String dependencyId = String.format(Locale.ROOT, "dep:%05d", ordinal[0]++);
     String mappingId = "mapping:" + dependencyId;
     String issueId = "issue:unmapped:" + dependencyId;
@@ -835,7 +989,7 @@ public final class CalciteSemanticProvider {
     Map<String, Object> mapping = new TreeMap<String, Object>();
     mapping.put("evidenceRefs", Collections.emptyList());
     mapping.put("mappingId", mappingId);
-    mapping.put("mappingStatus", "UNMAPPABLE");
+    mapping.put("mappingStatus", "NOT_ASSEMBLED");
     mapping.put("providerRefId", dependencyId);
     mappings.add(mapping);
     Map<String, Object> issue = new TreeMap<String, Object>();
@@ -968,6 +1122,48 @@ public final class CalciteSemanticProvider {
         || "IF".equalsIgnoreCase(call.getOperator().getName());
   }
 
+  private static boolean isOuterJoin(String joinType) {
+    return "LEFT".equals(joinType) || "RIGHT".equals(joinType) || "FULL".equals(joinType);
+  }
+
+  private static List<String> operatorInputRoles(RelNode node) {
+    List<String> roles = new ArrayList<String>();
+    if (node instanceof Join) {
+      String joinType = joinTypeName((Join) node);
+      if ("LEFT".equals(joinType)) {
+        roles.add("PRESERVED"); roles.add("OPTIONAL");
+      } else if ("RIGHT".equals(joinType)) {
+        roles.add("OPTIONAL"); roles.add("PRESERVED");
+      } else if ("FULL".equals(joinType)) {
+        roles.add("PRESERVED"); roles.add("PRESERVED");
+      } else if ("SEMI".equals(joinType)) {
+        roles.add("PRESERVED"); roles.add("FILTERING");
+      } else if ("ANTI".equals(joinType)) {
+        roles.add("PRESERVED"); roles.add("EXCLUDING");
+      } else if ("CROSS".equals(joinType)) {
+        roles.add("CARTESIAN"); roles.add("CARTESIAN");
+      } else {
+        roles.add("MATCHED"); roles.add("MATCHED");
+      }
+      return roles;
+    }
+    if (node instanceof Union) {
+      for (RelNode ignored : node.getInputs()) roles.add("CONTRIBUTING");
+      return roles;
+    }
+    if (node instanceof Intersect) {
+      for (RelNode ignored : node.getInputs()) roles.add("REQUIRED");
+      return roles;
+    }
+    if (node instanceof Minus) {
+      for (int index = 0; index < node.getInputs().size(); index++) {
+        roles.add(index == 0 ? "CONTRIBUTING" : "EXCLUDING");
+      }
+      return roles;
+    }
+    return null;
+  }
+
   private static String operatorKind(RelNode node) {
     if (node instanceof TableScan) return "TABLE_SCAN";
     if (node instanceof Project) return "PROJECT";
@@ -1014,6 +1210,144 @@ public final class CalciteSemanticProvider {
     StringBuilder output = new StringBuilder();
     for (String name : names) { if (output.length() > 0) output.append('.'); output.append(name); }
     return output.toString();
+  }
+
+  private static List<Object> tableSourceOccurrences(TableScan scan) {
+    List<Object> output = new ArrayList<Object>();
+    for (RelHint hint : scan.getHints()) {
+      if (!"SOURCE_OCCURRENCE".equalsIgnoreCase(hint.hintName)
+          || hint.listOptions.size() != 1) continue;
+      SqlParserPos pos = hint.pos;
+      if (pos == null || pos.getLineNum() <= 0 || pos.getColumnNum() <= 0) continue;
+      Map<String, Object> span = new TreeMap<String, Object>();
+      span.put("endColumn", pos.getEndColumnNum());
+      span.put("endLine", pos.getEndLineNum());
+      span.put("startColumn", pos.getColumnNum());
+      span.put("startLine", pos.getLineNum());
+      Map<String, Object> occurrence = new TreeMap<String, Object>();
+      occurrence.put("coordinateSystem", "DIALECT_TRANSFORMED_SQL");
+      occurrence.put("occurrenceId", hint.listOptions.get(0));
+      occurrence.put("sourceKind", "TABLE_REFERENCE");
+      occurrence.put("sourceSpan", span);
+      output.add(occurrence);
+    }
+    sortBy(output, "occurrenceId");
+    return output;
+  }
+
+  /**
+   * Adds an internal table hint to parsed table references before validation.
+   * Calcite carries that hint to the exact TableScan created from the same
+   * SqlNode occurrence, including repeated/self-join reads. CTE names are not
+   * tagged as physical leaves; their defining queries are annotated instead.
+   */
+  private static final class SourceOccurrenceAnnotator {
+    private int ordinal;
+
+    SqlNode annotateQuery(SqlNode node, Set<String> visibleCtes) {
+      if (node instanceof SqlWith) {
+        SqlWith with = (SqlWith) node;
+        Set<String> scoped = new HashSet<String>(visibleCtes);
+        for (SqlNode rawItem : with.withList) {
+          SqlWithItem item = (SqlWithItem) rawItem;
+          item.query = annotateQuery(item.query, scoped);
+          scoped.add(item.name.getSimple().toLowerCase(Locale.ROOT));
+        }
+        with.body = annotateQuery(with.body, scoped);
+        return with;
+      }
+      if (node instanceof SqlSelect) {
+        SqlSelect select = (SqlSelect) node;
+        select.setFrom(annotateFrom(select.getFrom(), visibleCtes));
+        annotateNested(select.getSelectList(), visibleCtes);
+        annotateNested(select.getWhere(), visibleCtes);
+        annotateNested(select.getGroup(), visibleCtes);
+        annotateNested(select.getHaving(), visibleCtes);
+        annotateNested(select.getWindowList(), visibleCtes);
+        annotateNested(select.getQualify(), visibleCtes);
+        annotateNested(select.getOrderList(), visibleCtes);
+        return select;
+      }
+      if (node instanceof SqlOrderBy) {
+        SqlOrderBy orderBy = (SqlOrderBy) node;
+        annotateQuery(orderBy.query, visibleCtes);
+        annotateNested(orderBy.orderList, visibleCtes);
+        return orderBy;
+      }
+      if (node instanceof SqlCall) {
+        SqlCall call = (SqlCall) node;
+        for (int index = 0; index < call.operandCount(); index++) {
+          SqlNode operand = call.operand(index);
+          if (operand != null && operand.isA(SqlKind.QUERY)) {
+            call.setOperand(index, annotateQuery(operand, visibleCtes));
+          } else {
+            annotateNested(operand, visibleCtes);
+          }
+        }
+      }
+      return node;
+    }
+
+    private SqlNode annotateFrom(SqlNode node, Set<String> visibleCtes) {
+      if (node == null) return null;
+      if (node instanceof SqlIdentifier) {
+        SqlIdentifier identifier = (SqlIdentifier) node;
+        if (identifier.isSimple()
+            && visibleCtes.contains(identifier.getSimple().toLowerCase(Locale.ROOT))) {
+          return identifier;
+        }
+        SqlParserPos pos = identifier.getParserPosition();
+        String occurrenceId = String.format(Locale.ROOT,
+            "sql-table-reference:%04d", ordinal++);
+        SqlHint hint = new SqlHint(pos,
+            new SqlIdentifier("SOURCE_OCCURRENCE", pos),
+            new SqlNodeList(Collections.<SqlNode>singletonList(
+                SqlLiteral.createCharString(occurrenceId, pos)), pos),
+            SqlHint.HintOptionFormat.LITERAL_LIST);
+        return new SqlTableRef(pos, identifier,
+            new SqlNodeList(Collections.<SqlNode>singletonList(hint), pos));
+      }
+      if (node instanceof SqlJoin) {
+        SqlJoin join = (SqlJoin) node;
+        join.setLeft(annotateFrom(join.getLeft(), visibleCtes));
+        join.setRight(annotateFrom(join.getRight(), visibleCtes));
+        annotateNested(join.getCondition(), visibleCtes);
+        return join;
+      }
+      if (node.isA(SqlKind.QUERY)) return annotateQuery(node, visibleCtes);
+      if (node instanceof SqlCall) {
+        SqlCall call = (SqlCall) node;
+        if (call.getKind() == SqlKind.AS && call.operandCount() > 0) {
+          call.setOperand(0, annotateFrom(call.operand(0), visibleCtes));
+        } else {
+          annotateNested(call, visibleCtes);
+        }
+      }
+      return node;
+    }
+
+    private void annotateNested(SqlNode node, Set<String> visibleCtes) {
+      if (node == null) return;
+      if (node.isA(SqlKind.QUERY)) {
+        annotateQuery(node, visibleCtes);
+        return;
+      }
+      if (node instanceof SqlNodeList) {
+        for (SqlNode item : (SqlNodeList) node) annotateNested(item, visibleCtes);
+        return;
+      }
+      if (node instanceof SqlCall) {
+        SqlCall call = (SqlCall) node;
+        for (int index = 0; index < call.operandCount(); index++) {
+          SqlNode operand = call.operand(index);
+          if (operand != null && operand.isA(SqlKind.QUERY)) {
+            call.setOperand(index, annotateQuery(operand, visibleCtes));
+          } else {
+            annotateNested(operand, visibleCtes);
+          }
+        }
+      }
+    }
   }
 
   private static String stableId(String value) {
@@ -1110,6 +1444,7 @@ public final class CalciteSemanticProvider {
         // Missing predicate metadata is an observation gap, not a negative result.
       }
     }
+    sortRendered(output);
     return output;
   }
 
@@ -1148,6 +1483,7 @@ public final class CalciteSemanticProvider {
         enforceOutputLimit(output, maxOutputItems);
       }
     }
+    sortRendered(output);
     return output;
   }
 
@@ -1181,6 +1517,7 @@ public final class CalciteSemanticProvider {
         }
       }
     }
+    sortRendered(output);
     return output;
   }
 

@@ -23,8 +23,8 @@ export function prepareRealProbe(input: {
   const requestPath = resolvePocOutputPath(`${prefix}/request.json`);
   const manifestPath = resolvePocOutputPath(`${prefix}/input-manifest.json`);
   mkdirSync(dirname(requestPath), { recursive: true });
-  writeFileSync(requestPath, `${canonicalJson(prepared.request)}\n`, "utf8");
-  writeFileSync(manifestPath, `${canonicalJson({
+  writeFileSync(requestPath, canonicalJson(prepared.request), "utf8");
+  writeFileSync(manifestPath, canonicalJson({
     manifestVersion: 1,
     safety: {
       reportKind: "CALCITE_SEMANTIC_PROVIDER_REAL_INPUT",
@@ -33,7 +33,7 @@ export function prepareRealProbe(input: {
     },
     evidence: prepared.evidence,
     dialectTransform: prepared.dialectTransform,
-  })}\n`, "utf8");
+  }), "utf8");
   return { requestPath, manifestPath };
 }
 
@@ -63,7 +63,7 @@ function main(): void {
     sqlSourceId: args.get("--sql-source-id") ?? "real:209119:sql-slot:0",
     outputPrefix: args.get("--output-prefix"),
   });
-  process.stdout.write(`${canonicalJson(result)}\n`);
+  process.stdout.write(canonicalJson(result));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

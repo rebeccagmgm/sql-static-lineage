@@ -10,7 +10,7 @@ interface SchemaSnapshot {
 export interface RealProviderInput {
   readonly request: CalciteSemanticProviderRequest;
   readonly dialectTransform: DialectTransformResult;
-  readonly evidence: { readonly sqlPath: string; readonly schemaSnapshotPath: string; readonly ddlPaths: readonly string[] };
+  readonly evidence: { readonly sqlPath: string; readonly schemaSnapshotPath: string; readonly relationNodesPath: string; readonly ddlPaths: readonly string[] };
 }
 
 export function buildRealProviderInput(input: {
@@ -61,6 +61,11 @@ export function buildRealProviderInput(input: {
       limits: { maxInputBytes: 262144, maxSqlBytes: 65536, maxTables: 128, maxColumnsPerTable: 256, maxRelNodes: 4096, maxOutputItems: 4096, maxOutputBytes: 4194304 },
     },
     dialectTransform: transform,
-    evidence: { sqlPath: input.sqlPath, schemaSnapshotPath: input.schemaSnapshotPath, ddlPaths },
+    evidence: {
+      sqlPath: input.sqlPath,
+      schemaSnapshotPath: input.schemaSnapshotPath,
+      relationNodesPath: join(input.dataRoot, "field-facts", "registry", "tasks", input.taskId, "bundle", "relation-nodes.jsonl"),
+      ddlPaths,
+    },
   };
 }

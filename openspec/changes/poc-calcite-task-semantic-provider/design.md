@@ -184,6 +184,10 @@ TypeScript consumer 只做：
 
 `PROJECT_EXPRESSION_STRUCTURE_UNSUPPORTED` 必须保留为对照：POC 要么通过 Calcite direct SQL 路径产生精确 dependency，要么明确 unsupported。不得改写 fixture 语义、手工指定 dependency 或在 TypeScript 补规则。
 
+Corpus 的 `SUCCESS` 不能只由 dependency kind 集合决定。每个 fixture 使用完整 semantic edge golden，比对规范化 from/to occurrence、dependency kind、impact kind、operator/join/setop 角色，并拒绝重复边和意外边。当前 kind-only 结果统一称为 `PARSE_AND_KIND_COVERAGE_SUCCESS`，不作为边语义正确性的证明。
+
+本地语义优先收口以下已观测缺口：LEFT/RIGHT/FULL JOIN preserved/optional side、correlated EXISTS 外层引用、Window 双路径重复、CROSS JOIN multiplicity，以及 DISTINCT/INTERSECT/EXCEPT 的不同成员角色。
+
 Gate 的结果只允许：
 
 ```text
@@ -194,6 +198,10 @@ NO_GO
 ```
 
 判定 `DIRECT_PROVIDER/THIN_ADAPTER_REQUIRED` 的必要条件：支持范围内 Calcite 是唯一关系语义来源；所有 evaluated dependency 映射精确；真实 SQL 不依赖重型语义改写；unsupported 可定位；输出确定；资源可接受。confirmed 数量或 Native Unknown 数量不是单独的通过标准，因为当前 209119 的大量 Unknown 来自跨 Task candidate/bridge 边界，Calcite不负责解决这些缺口。
+
+POC Gate 分层报告：Gate A 为 Calcite direct extraction；Gate B 为 canonical local semantic correctness；Gate C 为 Native/source evidence assembly；Gate D 为 production causal integration。Gate C 未运行时只能报告 `NOT_ATTEMPTED/NOT_ASSEMBLED`，不能以 `0/N UNMAPPABLE` 声称结构性失败；Gate D 始终不在本 Change 中启动。
+
+Source map 在 Calcite 同一前端内建立：保留 SqlNode parser position/occurrence，并传播到 RelNode/RexNode 生成的 operator/slot。与 Native 的闭合边界只覆盖 statement identity、叶子物理 table/field occurrence、source span 和 evidence refs；不实施 Calcite 派生图与 Native CTE/scope 图的一一 reconciliation。
 
 ### 10. Measure cost before production integration
 

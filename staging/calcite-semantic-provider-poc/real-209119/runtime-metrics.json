@@ -5,8 +5,8 @@
                    "canonicalArtifactsWritten":  false,
                    "nativeSemanticFallback":  false
                },
-    "elapsedMs":  2380.4999000000003,
-    "peakWorkingSetBytes":  420474880,
-    "requestBytes":  68856,
-    "responseBytes":  1433100
+    "elapsedMs":  2756.4713,
+    "peakWorkingSetBytes":  550862848,
+    "requestBytes":  68855,
+    "responseBytes":  3559992
 }

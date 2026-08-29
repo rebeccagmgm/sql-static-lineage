@@ -14,6 +14,8 @@ $stagingRoot = Join-Path $repoRoot "staging/calcite-semantic-provider-poc/real-2
 $requestPath = Join-Path $stagingRoot "request.json"
 $responsePath = Join-Path $stagingRoot "response.json"
 $metricsPath = Join-Path $stagingRoot "runtime-metrics.json"
+$assembledResponsePath = Join-Path $stagingRoot "assembled-response.json"
+$assemblyMetricsPath = Join-Path $stagingRoot "evidence-assembly-metrics.json"
 
 if (-not $DataRoot) {
   $roots = @(Get-ChildItem -LiteralPath "E:\02_area" -Directory | ForEach-Object {
@@ -92,6 +94,15 @@ if ($lines.Count -ne 1) { throw "expected one real provider response" }
 
 & node --import tsx scripts/calcite-semantic-provider/validate-provider-response.ts --input $responsePath
 if ($LASTEXITCODE -ne 0) { throw "real provider response failed canonical contract validation" }
+
+& node --import tsx scripts/calcite-semantic-provider/assemble-real-evidence.ts `
+  --response $responsePath `
+  --manifest (Join-Path $stagingRoot "input-manifest.json") `
+  --output $assembledResponsePath `
+  --metrics-output $assemblyMetricsPath
+if ($LASTEXITCODE -ne 0) { throw "real Native evidence assembly failed" }
+& node --import tsx scripts/calcite-semantic-provider/validate-provider-response.ts --input $assembledResponsePath | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "assembled real response failed canonical contract validation" }
 
 $metrics = [ordered]@{
   reportVersion = 1

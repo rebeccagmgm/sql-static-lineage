@@ -108,4 +108,12 @@ $report = [ordered]@{
 [IO.File]::WriteAllText((Join-Path $stagingRoot "support-matrix.json"), ($report | ConvertTo-Json -Depth 100), (New-Object Text.UTF8Encoding($false)))
 if ($report.errorCount -gt 0) { throw "corpus contains provider errors" }
 
+$goldenPath = Join-Path $repoRoot "tests/fixtures/calcite-semantic-provider/semantic-golden.json"
+& node --import tsx scripts/calcite-semantic-provider/validate-corpus-golden.ts `
+  --facts-dir $stagingRoot `
+  --golden $goldenPath `
+  --support-matrix (Join-Path $stagingRoot "support-matrix.json")
+if ($LASTEXITCODE -ne 0) { throw "corpus semantic-edge golden mismatch" }
+$report = Get-Content (Join-Path $stagingRoot "support-matrix.json") -Raw | ConvertFrom-Json
+
 $report | ConvertTo-Json -Depth 20

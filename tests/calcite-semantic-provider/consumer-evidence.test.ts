@@ -16,7 +16,7 @@ function validFacts() {
   raw.evidenceMappings = [{
     mappingId: "mapping:dep:0",
     providerRefId: "dep:0",
-    mappingStatus: "UNMAPPABLE",
+    mappingStatus: "NOT_ASSEMBLED",
     evidenceRefs: [],
   }];
   raw.dependencies[0].evidenceMappingRefs = ["mapping:dep:0"];
@@ -88,8 +88,52 @@ describe("thin semantic facts consumer", () => {
     };
     const assembled = assembleNativeEvidence(facts, ambiguous);
     expect(assembled.statementStatus).toBe("PARTIAL");
-    expect(assembled.evidenceMappings[0]?.mappingStatus).toBe("UNMAPPABLE");
-    expect(assembled.issues.some((item) => item.code === "NATIVE_EVIDENCE_NOT_ASSEMBLED")).toBe(true);
+    expect(assembled.evidenceMappings[0]?.mappingStatus).toBe("AMBIGUOUS");
+    expect(assembled.issues.some((item) => item.code === "NATIVE_OCCURRENCE_AMBIGUOUS")).toBe(true);
+  });
+
+  it("does not fabricate one bounding source span from disjoint Native evidence", () => {
+    const facts = validFacts();
+    const secondRelation = {
+      ...facts.relations[0]!,
+      relationId: "rel:1",
+      providerOrdinal: 1,
+      outputFieldIds: ["field:1"],
+    };
+    const assembled = assembleNativeEvidence({
+      ...facts,
+      relations: [...facts.relations, secondRelation],
+      fields: [...facts.fields, {
+        ...facts.fields[0]!,
+        fieldId: "field:1",
+        relationId: "rel:1",
+      }],
+      dependencies: facts.dependencies.map((dependency) => ({
+        ...dependency,
+        fromRefs: ["field:0", "field:1"],
+      })),
+    }, {
+      ...nativeEvidence(facts),
+      relations: [...nativeEvidence(facts).relations, {
+        ...nativeEvidence(facts).relations[0]!,
+        providerRelationOrdinal: 1,
+        nativeRelationOccurrenceId: "native:relation:read-1",
+        sourceSpan: { start: 50, end: 70 },
+        evidenceRefs: ["evidence:relation:read-1"],
+        fields: [{
+          ...nativeEvidence(facts).relations[0]!.fields[0]!,
+          nativeFieldOccurrenceId: "native:field:read-1:amount",
+          sourceSpan: { start: 50, end: 70 },
+          evidenceRefs: ["evidence:field:read-1:amount"],
+        }],
+      }],
+    });
+    expect(assembled.evidenceMappings[0]?.mappingStatus).toBe("EXACT");
+    expect(assembled.evidenceMappings[0]).not.toHaveProperty("sourceSpan");
+    expect(assembled.evidenceMappings[0]?.evidenceRefs).toEqual([
+      "evidence:field:read-0:amount",
+      "evidence:field:read-1:amount",
+    ]);
   });
 
   it("does not use a tail table-name fallback across physical schemas", () => {
@@ -111,6 +155,12 @@ describe("thin semantic facts consumer", () => {
     });
     expect(assembled.evidenceMappings[0]?.mappingStatus).toBe("UNMAPPABLE");
     expect(assembled.statementStatus).toBe("PARTIAL");
+  });
+
+  it("distinguishes Provider-local facts that have not entered the evidence assembler", () => {
+    const facts = validFacts();
+    expect(facts.evidenceMappings[0]?.mappingStatus).toBe("NOT_ASSEMBLED");
+    expect(facts.issues.some((item) => item.code === "NATIVE_EVIDENCE_NOT_ASSEMBLED")).toBe(true);
   });
 
   it("fails closed on SQL slot identity mismatch", () => {
