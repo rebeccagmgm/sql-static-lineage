@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gf.local/sql-static-lineage/calcite-semantic-provider/candidate-task-semantic-facts-0.1.0.json",
+  "title": "CandidateTaskSemanticFacts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "provider", "input", "statementStatus", "capabilities", "relations", "fields", "operators", "dependencies", "metadata", "evidenceMappings", "issues"],
+  "properties": {
+    "schemaVersion": { "const": "0.1.0-poc" },
+    "provider": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "calciteVersion", "adapterVersion", "buildFingerprint"],
+      "properties": {
+        "name": { "const": "calcite-semantic-provider" },
+        "calciteVersion": { "const": "1.42.0" },
+        "adapterVersion": { "type": "string", "minLength": 1 },
+        "buildFingerprint": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "input": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sqlSourceId", "statementOrdinal", "sqlSha256", "schemaSha256", "dialectDigest"],
+      "properties": {
+        "sqlSourceId": { "$ref": "#/$defs/stableId" },
+        "statementOrdinal": { "type": "integer", "minimum": 0 },
+        "sqlSha256": { "$ref": "#/$defs/sha256" },
+        "schemaSha256": { "$ref": "#/$defs/sha256" },
+        "dialectDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "statementStatus": { "enum": ["SUCCESS", "PARTIAL", "UNSUPPORTED", "ERROR"] },
+    "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
+    "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } },
+    "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+    "operators": { "type": "array", "items": { "$ref": "#/$defs/operator" } },
+    "dependencies": { "type": "array", "items": { "$ref": "#/$defs/dependency" } },
+    "metadata": { "type": "array", "items": { "$ref": "#/$defs/metadata" } },
+    "evidenceMappings": { "type": "array", "items": { "$ref": "#/$defs/mapping" } },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "$defs": {
+    "stableId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]*$", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stringArray": { "type": "array", "items": { "$ref": "#/$defs/stableId" }, "uniqueItems": true },
+    "capability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capability", "evaluationStatus"],
+      "properties": {
+        "capability": { "$ref": "#/$defs/stableId" },
+        "evaluationStatus": { "$ref": "#/$defs/evaluationStatus" },
+        "issueRefs": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "relation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relationId", "kind", "inputRelationIds", "outputFieldIds"],
+      "properties": {
+        "relationId": { "$ref": "#/$defs/stableId" },
+        "kind": { "$ref": "#/$defs/operatorKind" },
+        "inputRelationIds": { "$ref": "#/$defs/stringArray" },
+        "outputFieldIds": { "$ref": "#/$defs/stringArray" },
+        "qualifiedTableName": { "type": "string", "minLength": 1 },
+        "providerOrdinal": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "field": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fieldId", "relationId", "role", "slot", "name", "typeName", "nullable"],
+      "properties": {
+        "fieldId": { "$ref": "#/$defs/stableId" },
+        "relationId": { "$ref": "#/$defs/stableId" },
+        "role": { "enum": ["INPUT", "OUTPUT"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" },
+        "typeName": { "type": "string", "minLength": 1 },
+        "nullable": { "type": "boolean" },
+        "physicalFieldId": { "$ref": "#/$defs/stableId" }
+      }
+    },
+    "operator": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operatorId", "kind", "relationId", "inputRelationIds"],
+      "properties": {
+        "operatorId": { "$ref": "#/$defs/stableId" },
+        "kind": { "$ref": "#/$defs/operatorKind" },
+        "relationId": { "$ref": "#/$defs/stableId" },
+        "inputRelationIds": { "$ref": "#/$defs/stringArray" },
+        "joinType": { "enum": ["INNER", "LEFT", "RIGHT", "FULL", "SEMI", "ANTI", "CROSS"] }
+      }
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dependencyId", "dependencyKind", "impactKind", "operatorId", "fromRefs", "toRefs", "evaluationStatus", "evidenceMappingRefs", "issueRefs"],
+      "properties": {
+        "dependencyId": { "$ref": "#/$defs/stableId" },
+        "dependencyKind": { "$ref": "#/$defs/dependencyKind" },
+        "impactKind": { "$ref": "#/$defs/impactKind" },
+        "operatorId": { "$ref": "#/$defs/stableId" },
+        "fromRefs": { "$ref": "#/$defs/stringArray" },
+        "toRefs": { "$ref": "#/$defs/stringArray" },
+        "evaluationStatus": { "$ref": "#/$defs/evaluationStatus" },
+        "evidenceMappingRefs": { "$ref": "#/$defs/stringArray" },
+        "issueRefs": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metadataId", "kind", "subjectRef", "evaluationStatus", "knowledgeStatus", "basis", "absenceProven"],
+      "properties": {
+        "metadataId": { "$ref": "#/$defs/stableId" },
+        "kind": { "enum": ["PREDICATE", "EXPRESSION_LINEAGE", "UNIQUE_KEYS", "FUNCTIONAL_DEPENDENCIES", "ROW_COUNT", "SELECTIVITY", "CARDINALITY", "MULTIPLICITY"] },
+        "subjectRef": { "$ref": "#/$defs/stableId" },
+        "evaluationStatus": { "$ref": "#/$defs/evaluationStatus" },
+        "knowledgeStatus": { "enum": ["EXACT", "DERIVED", "ESTIMATED", "UNKNOWN"] },
+        "basis": { "type": "string", "minLength": 1 },
+        "absenceProven": { "type": "boolean" },
+        "value": {}
+      }
+    },
+    "mapping": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mappingId", "providerRefId", "mappingStatus", "evidenceRefs"],
+      "properties": {
+        "mappingId": { "$ref": "#/$defs/stableId" },
+        "providerRefId": { "$ref": "#/$defs/stableId" },
+        "nativeRefId": { "$ref": "#/$defs/stableId" },
+        "mappingStatus": { "enum": ["EXACT", "UNMAPPABLE"] },
+        "evidenceRefs": { "$ref": "#/$defs/stringArray" },
+        "sourceSpan": {
+          "type": "object", "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": { "start": { "type": "integer", "minimum": 0 }, "end": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    },
+    "issue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["issueId", "code", "message", "severity"],
+      "properties": {
+        "issueId": { "$ref": "#/$defs/stableId" },
+        "code": { "$ref": "#/$defs/stableId" },
+        "message": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["INFO", "WARNING", "ERROR"] },
+        "subjectRefs": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "evaluationStatus": { "enum": ["EVALUATED", "NOT_EVALUATED", "UNSUPPORTED", "ERROR"] },
+    "operatorKind": { "enum": ["TABLE_SCAN", "VALUES", "PROJECT", "FILTER", "JOIN", "AGGREGATE", "DISTINCT", "UNION", "INTERSECT", "EXCEPT", "WINDOW", "SORT", "TOP_N", "CORRELATE", "UNKNOWN"] },
+    "dependencyKind": { "enum": ["VALUE_INPUT", "EXPRESSION_SELECTOR", "FILTER_PREDICATE", "JOIN_MATCH", "JOIN_CARDINALITY", "GROUP_KEY", "AGGREGATE_INPUT", "SET_MEMBERSHIP", "WINDOW_VALUE", "WINDOW_PARTITION", "WINDOW_ORDER", "WINDOW_FRAME", "ORDER_SELECTION", "RELATION_EXISTENCE"] },
+    "impactKind": { "enum": ["FIELD_VALUE", "EXPRESSION_CONTROL", "ROW_MEMBERSHIP", "MULTIPLICITY", "GROUPING", "SET_MEMBERSHIP", "WINDOW_EFFECT", "ORDER_SELECTION", "RELATION_EXISTENCE"] }
+  }
+}

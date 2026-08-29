@@ -1,4 +1,4 @@
-package com.gf.sqlstaticlineage.calciteoracle;
+package com.gf.sqlstaticlineage.calcitesemanticprovider;
 
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.rel.RelNode;
@@ -6,6 +6,16 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Correlate;
+import org.apache.calcite.rel.core.Intersect;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.Minus;
+import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.core.Window;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Arrow;
 import org.apache.calcite.util.ArrowSet;
@@ -15,7 +25,15 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlBasicFunction;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.fun.SqlLibrary;
+import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
+import org.apache.calcite.sql.fun.SqlLibraryOperators;
+import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.type.OperandTypes;
+import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -24,6 +42,12 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.rex.RexFieldCollation;
+import org.apache.calcite.rex.RexOver;
+import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptPredicateList;
@@ -35,6 +59,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,26 +72,47 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-/** Main class for the bounded JSONL Calcite oracle. */
-public final class CalciteOracle {
+/** Main class for the bounded JSONL Calcite semantic provider. */
+public final class CalciteSemanticProvider {
+  static {
+    // Calcite defaults character literals to ISO-8859-1. Horae/Hive SQL uses
+    // UTF-8 literals, so set the process-local Calcite defaults before any
+    // operator or type-system singleton is initialized.
+    System.setProperty("calcite.default.charset", "UTF-8");
+    System.setProperty("calcite.default.nationalcharset", "UTF-8");
+    System.setProperty("calcite.default.collation.name", "UTF-8$en_US");
+  }
   private static final int PROTOCOL_VERSION = 1;
   private static final String CALCITE_VERSION = "1.42.0";
   private static final int HARD_MAX_INPUT_BYTES = 262144;
   private static final int HARD_MAX_SQL_BYTES = 65536;
   private static final int HARD_MAX_TABLES = 128;
   private static final int HARD_MAX_COLUMNS = 256;
+  private static final int HARD_MAX_REL_NODES = 4096;
   private static final int DEFAULT_MAX_OUTPUT_ITEMS = 4096;
-  private static final int HARD_MAX_OUTPUT_BYTES = 1048576;
+  private static final int HARD_MAX_OUTPUT_BYTES = 4194304;
+  private static final SqlBasicFunction HIVE_UNIX_TIMESTAMP = SqlBasicFunction.create(
+      "UNIX_TIMESTAMP", ReturnTypes.BIGINT, OperandTypes.NILADIC)
+      .withDeterministic(false)
+      .withDynamic(true);
+  private static final SqlBasicFunction HIVE_FROM_UNIXTIME = SqlBasicFunction.create(
+      "FROM_UNIXTIME", ReturnTypes.VARCHAR_NULLABLE,
+      OperandTypes.sequence("FROM_UNIXTIME(<NUMERIC>, <CHARACTER>)",
+          OperandTypes.NUMERIC, OperandTypes.STRING));
   private static final int MIN_OUTPUT_BYTES = 512;
+  private static final int HARD_MAX_PROCESSING_MS = 5000;
   private static final String BUILD_FINGERPRINT =
-      "calcite-offline-oracle/0.1.0;calcite/1.42.0;protocol/1";
+      "calcite-semantic-provider/0.1.0-poc;calcite/1.42.0;protocol/1";
   private static final String[] METADATA_KINDS = {
       "expressionLineage", "predicates", "uniqueKeys",
       "functionalDependencies", "tableOccurrences", "rowCountCardinality"
   };
 
-  private CalciteOracle() {
+  private CalciteSemanticProvider() {
   }
 
   public static void main(String[] args) throws Exception {
@@ -73,16 +120,16 @@ public final class CalciteOracle {
     BoundedLine line;
     while ((line = reader.nextLine()) != null) {
       ProcessResult result = line.tooLarge
-          ? new ProcessResult(response("FAILED", null, "INPUT_TOO_LARGE",
+          ? new ProcessResult(response("ERROR", null, "INPUT_TOO_LARGE",
               "JSONL physical line exceeds the 262144 byte hard limit"), HARD_MAX_OUTPUT_BYTES)
           : line.errorCode != null
-              ? new ProcessResult(response("FAILED", null, line.errorCode, line.errorMessage),
+              ? new ProcessResult(response("ERROR", null, line.errorCode, line.errorMessage),
                   HARD_MAX_OUTPUT_BYTES)
-              : process(line.text);
+              : processWithinDeadline(line.text);
       try {
         System.out.println(Json.write(result.output, result.maxOutputBytes));
       } catch (OutputLimitException error) {
-        System.out.println(Json.write(response("FAILED", null, "OUTPUT_LIMIT",
+        System.out.println(Json.write(response("ERROR", null, "OUTPUT_LIMIT",
             "response exceeds the configured byte limit"), result.maxOutputBytes));
       }
     }
@@ -93,11 +140,11 @@ public final class CalciteOracle {
     int maxOutputBytes = HARD_MAX_OUTPUT_BYTES;
     try {
       if (line.trim().isEmpty()) {
-        return new ProcessResult(response("FAILED", null, "INPUT_EMPTY", "JSONL line is empty"),
+        return new ProcessResult(response("ERROR", null, "INPUT_EMPTY", "JSONL line is empty"),
             maxOutputBytes);
       }
       if (line.getBytes(StandardCharsets.UTF_8).length > HARD_MAX_INPUT_BYTES) {
-        return new ProcessResult(response("FAILED", null, "INPUT_TOO_LARGE",
+        return new ProcessResult(response("ERROR", null, "INPUT_TOO_LARGE",
             "JSONL line exceeds the 262144 byte hard limit"), maxOutputBytes);
       }
       Object parsed = Json.parse(line);
@@ -108,7 +155,7 @@ public final class CalciteOracle {
           HARD_MAX_OUTPUT_BYTES, MIN_OUTPUT_BYTES);
       int protocolVersion = integer(request.get("protocolVersion"), "protocolVersion");
       if (protocolVersion != PROTOCOL_VERSION) {
-        return new ProcessResult(response("FAILED", requestId, "PROTOCOL_VERSION_UNSUPPORTED",
+        return new ProcessResult(response("ERROR", requestId, "PROTOCOL_VERSION_UNSUPPORTED",
             "expected protocolVersion 1"), maxOutputBytes);
       }
       int maxInputBytes = boundedLimit(rawLimits,
@@ -118,18 +165,18 @@ public final class CalciteOracle {
       }
       return new ProcessResult(execute(request, requestId, maxOutputBytes), maxOutputBytes);
     } catch (InputError error) {
-      return new ProcessResult(response("FAILED", requestId, error.code, error.getMessage()),
+      return new ProcessResult(response("ERROR", requestId, error.code, error.getMessage()),
           maxOutputBytes);
     } catch (UnsupportedError error) {
       return new ProcessResult(response("UNSUPPORTED", requestId, error.code, error.getMessage()),
           maxOutputBytes);
     } catch (PlannerError error) {
-      return new ProcessResult(response("FAILED", requestId, error.code, error.getMessage()),
+      return new ProcessResult(response("ERROR", requestId, error.code, error.getMessage()),
           maxOutputBytes);
     } catch (Exception error) {
       String message = error.getMessage() == null ? error.getClass().getSimpleName()
           : error.getMessage().replace('\n', ' ').replace('\r', ' ');
-      return new ProcessResult(response("FAILED", requestId, "CALCITE_FAILURE", message),
+      return new ProcessResult(response("ERROR", requestId, "CALCITE_FAILURE", message),
           maxOutputBytes);
     }
   }
@@ -137,6 +184,26 @@ public final class CalciteOracle {
   private static Map<String, Object> execute(Map<String, Object> request, String requestId,
       int maxOutputBytes) {
     String sql = requiredString(request.get("sql"), "sql");
+    String dialect = requiredString(request.get("dialect"), "dialect").toUpperCase(Locale.ROOT);
+    if (!("ANSI".equals(dialect) || "HIVE_COMPAT".equals(dialect))) {
+      throw new UnsupportedError("DIALECT_UNSUPPORTED", "dialect must be ANSI or HIVE_COMPAT");
+    }
+    List<Object> dynamicParameters = optionalArray(request.get("dynamicParameters"));
+    for (int index = 0; index < dynamicParameters.size(); index++) {
+      Map<String, Object> parameter = object(dynamicParameters.get(index), "dynamicParameters[]");
+      if (integer(parameter.get("ordinal"), "dynamicParameters.ordinal") != index) {
+        throw new InputError("PARAMETER_ORDINAL_INVALID", "dynamic parameter ordinals must be contiguous");
+      }
+      String parameterType = requiredString(parameter.get("type"), "dynamicParameters.type");
+      if ("ANY".equalsIgnoreCase(parameterType)) {
+        throw new InputError("PARAMETER_TYPE_ANY_FORBIDDEN", "dynamic parameter type cannot be ANY");
+      }
+      requiredBoolean(parameter.get("nullable"), "dynamicParameters.nullable");
+    }
+    if (!dynamicParameters.isEmpty()) {
+      throw new UnsupportedError("TYPED_DYNAMIC_PARAMETERS_UNSUPPORTED",
+          "typed dynamic parameter injection is not implemented in this POC build");
+    }
     byte[] sqlBytes = sql.getBytes(StandardCharsets.UTF_8);
     Map<String, Object> rawLimits = optionalObject(request.get("limits"));
     int maxSqlBytes = boundedLimit(rawLimits, "maxSqlBytes", HARD_MAX_SQL_BYTES);
@@ -157,9 +224,6 @@ public final class CalciteOracle {
 
     Set<String> requested = requestedMetadata(request.get("requestedMetadata"));
     String upperSql = sql.trim().toUpperCase(Locale.ROOT);
-    if (!(upperSql.startsWith("SELECT") || upperSql.startsWith("WITH"))) {
-      throw new UnsupportedError("UNSUPPORTED_SQL", "only SELECT and WITH queries are supported");
-    }
     if (upperSql.contains("MATCH_RECOGNIZE") || upperSql.contains("MODEL")) {
       throw new UnsupportedError("UNSUPPORTED_SQL", "SQL operator is outside the fixture subset");
     }
@@ -185,45 +249,73 @@ public final class CalciteOracle {
         defaultSchema = added;
       }
     }
+    SqlParser.Config parserConfig = SqlParser.config()
+        .withLex(Lex.JAVA)
+        .withCaseSensitive(false);
+    if ("HIVE_COMPAT".equals(dialect)) {
+      parserConfig = parserConfig.withConformance(SqlConformanceEnum.BABEL);
+    }
     FrameworkConfig config = Frameworks.newConfigBuilder()
         .defaultSchema(defaultSchema)
-        // Calcite has no Hive Lex profile. The fixture subset uses ANSI syntax;
-        // the dialect hint remains part of the request contract for future rules.
-        .parserConfig(SqlParser.config().withLex(Lex.JAVA).withCaseSensitive(false))
+        // Calcite has no Hive Lex profile. BABEL admits the bounded Hive syntax
+        // accepted by this POC while validation still uses exact typed schemas.
+        .parserConfig(parserConfig)
+        .operatorTable("HIVE_COMPAT".equals(dialect)
+            ? SqlOperatorTables.chain(
+                SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
+                    SqlLibrary.STANDARD, SqlLibrary.HIVE),
+                // Hive's two-argument SUBSTR has the same operand/return
+                // semantics as Calcite's MySQL library declaration. Register
+                // only that operator instead of enabling the whole MySQL dialect.
+                SqlOperatorTables.of(
+                    SqlLibraryOperators.SUBSTR_MYSQL,
+                    SqlLibraryOperators.NVL,
+                    SqlLibraryOperators.IF,
+                    SqlLibraryOperators.REGEXP_REPLACE_3,
+                    SqlLibraryOperators.CONCAT_FUNCTION,
+                    HIVE_UNIX_TIMESTAMP,
+                    HIVE_FROM_UNIXTIME))
+            : SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
+                SqlLibrary.STANDARD))
         .build();
     Planner planner = Frameworks.getPlanner(config);
     try {
       SqlNode parsed = planner.parse(sql);
-      if (parsed.getKind() != SqlKind.SELECT && parsed.getKind() != SqlKind.WITH) {
+      if (!parsed.isA(SqlKind.QUERY)) {
         throw new UnsupportedError("UNSUPPORTED_SQL", "parsed statement is not a query");
       }
       SqlNode validated = planner.validate(parsed);
       RelRoot relRoot = planner.rel(validated);
-      return success(requestId, relRoot.rel, definitions, requested,
+      return success(request, requestId, relRoot.rel, definitions, requested,
+          boundedLimit(rawLimits, "maxRelNodes", HARD_MAX_REL_NODES),
           boundedLimit(rawLimits, "maxOutputItems", DEFAULT_MAX_OUTPUT_ITEMS), maxOutputBytes);
     } catch (OracleError error) {
       throw error;
     } catch (Exception error) {
-      String message = error.getMessage() == null ? "Calcite could not validate the query"
-          : error.getMessage().replace('\n', ' ').replace('\r', ' ');
+      String message = boundedCauseMessage(error);
+      if (message.contains("No match found for function signature")) {
+        throw new UnsupportedError("FUNCTION_UNSUPPORTED", message);
+      }
+      if (message.contains("not found") &&
+          (message.contains("Column") || message.contains("Object") || message.contains("Table"))) {
+        throw new UnsupportedError("SCHEMA_BINDING_UNSUPPORTED", message);
+      }
       throw new PlannerError("PLANNER_FAILURE", message);
     } finally {
       planner.close();
     }
   }
 
-  private static Map<String, Object> success(String requestId, RelNode root,
-      List<TableDefinition> definitions, Set<String> requested, int maxOutputItems,
+  private static Map<String, Object> success(Map<String, Object> request, String requestId, RelNode root,
+      List<TableDefinition> definitions, Set<String> requested, int maxRelNodes, int maxOutputItems,
       int maxOutputBytes) {
     RelMetadataQuery metadata = root.getCluster().getMetadataQuery();
     final List<RelNode> nodes = new ArrayList<RelNode>();
-    RelVisitor visitor = new RelVisitor() {
-      @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-        nodes.add(node);
-        super.visit(node, ordinal, parent);
-      }
-    };
-    visitor.go(root);
+    collectRelNodes(root, nodes, new HashSet<RelNode>());
+    if (nodes.size() > maxRelNodes) {
+      throw new UnsupportedError("RELNODE_LIMIT",
+          "relational plan exceeds the configured node limit");
+    }
     Map<RelNode, String> nodeIds = new HashMap<RelNode, String>();
     for (int i = 0; i < nodes.size(); i++) {
       nodeIds.put(nodes.get(i), String.format(Locale.ROOT, "rel-%03d", i + 1));
@@ -252,12 +344,710 @@ public final class CalciteOracle {
     }
     Map<String, Object> output = response("SUCCESS", requestId, null, null);
     output.put("observations", observations);
+    output.put("facts", candidateFacts(request, requestId, nodes, nodeIds, metadata, requested));
     try {
       Json.write(output, maxOutputBytes);
     } catch (OutputLimitException error) {
       throw new UnsupportedError("OUTPUT_LIMIT", "response exceeds the configured byte limit");
     }
     return output;
+  }
+
+  private static String boundedCauseMessage(Throwable error) {
+    StringBuilder output = new StringBuilder();
+    Throwable current = error;
+    int depth = 0;
+    while (current != null && depth < 6 && output.length() < 1800) {
+      if (depth > 0) output.append(" <- ");
+      output.append(current.getClass().getSimpleName());
+      if (current.getMessage() != null && !current.getMessage().isEmpty()) {
+        output.append(": ").append(current.getMessage().replace('\n', ' ').replace('\r', ' '));
+      }
+      current = current.getCause();
+      depth++;
+    }
+    if (output.length() == 0) return "Calcite could not validate the query";
+    return output.length() <= 2000 ? output.toString() : output.substring(0, 2000);
+  }
+
+  private static ProcessResult processWithinDeadline(final String text) {
+    final String requestId = bestEffortRequestId(text);
+    FutureTask<ProcessResult> work = new FutureTask<ProcessResult>(
+        new java.util.concurrent.Callable<ProcessResult>() {
+          @Override public ProcessResult call() { return process(text); }
+        });
+    Thread worker = new Thread(work, "calcite-semantic-provider-request");
+    worker.setDaemon(true);
+    worker.start();
+    try {
+      return work.get(HARD_MAX_PROCESSING_MS, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException error) {
+      work.cancel(true);
+      return new ProcessResult(response("ERROR", requestId, "DEADLINE_EXCEEDED",
+          "Calcite Provider request exceeded the 5000 ms hard deadline"),
+          HARD_MAX_OUTPUT_BYTES);
+    } catch (InterruptedException error) {
+      Thread.currentThread().interrupt();
+      return new ProcessResult(response("ERROR", requestId, "PROVIDER_INTERRUPTED",
+          "Calcite Provider request was interrupted"), HARD_MAX_OUTPUT_BYTES);
+    } catch (java.util.concurrent.ExecutionException error) {
+      Throwable cause = error.getCause();
+      return new ProcessResult(response("ERROR", requestId, "CALCITE_FAILURE",
+          cause == null ? error.getMessage() : String.valueOf(cause.getMessage())),
+          HARD_MAX_OUTPUT_BYTES);
+    }
+  }
+
+  private static String bestEffortRequestId(String text) {
+    try {
+      Object parsed = Json.parse(text);
+      if (!(parsed instanceof Map)) return null;
+      Object value = ((Map<?, ?>) parsed).get("requestId");
+      return value instanceof String ? (String) value : null;
+    } catch (RuntimeException ignored) {
+      return null;
+    }
+  }
+
+  private static Map<String, Object> candidateFacts(Map<String, Object> request, String requestId,
+      List<RelNode> nodes, Map<RelNode, String> legacyIds, RelMetadataQuery metadata,
+      Set<String> requested) {
+    Map<RelNode, String> relationIds = new HashMap<RelNode, String>();
+    for (int index = 0; index < nodes.size(); index++) {
+      relationIds.put(nodes.get(index), String.format(Locale.ROOT, "rel:%04d", index));
+    }
+    List<Object> relations = new ArrayList<Object>();
+    List<Object> fields = new ArrayList<Object>();
+    List<Object> operators = new ArrayList<Object>();
+    List<Object> dependencies = new ArrayList<Object>();
+    List<Object> semanticMetadata = new ArrayList<Object>();
+    List<Object> mappings = new ArrayList<Object>();
+    List<Object> issues = new ArrayList<Object>();
+    int[] dependencyOrdinal = new int[] { 0 };
+
+    for (int index = 0; index < nodes.size(); index++) {
+      RelNode node = nodes.get(index);
+      String relationId = relationIds.get(node);
+      String operatorId = String.format(Locale.ROOT, "op:%04d", index);
+      String kind = operatorKind(node);
+      if ("UNKNOWN".equals(kind)) {
+        Map<String, Object> issue = new TreeMap<String, Object>();
+        issue.put("code", "RELNODE_KIND_UNSUPPORTED");
+        issue.put("issueId", "issue:operator:" + operatorId);
+        issue.put("message", "RelNode kind is not modeled: " + node.getRelTypeName());
+        issue.put("severity", "WARNING");
+        issue.put("subjectRefs", singletonString(operatorId));
+        issues.add(issue);
+      }
+      List<String> inputRelationIds = new ArrayList<String>();
+      for (RelNode input : node.getInputs()) inputRelationIds.add(relationIds.get(input));
+      Collections.sort(inputRelationIds);
+      List<String> outputFieldIds = new ArrayList<String>();
+      for (int slot = 0; slot < node.getRowType().getFieldCount(); slot++) {
+        String fieldId = fieldId(relationId, slot);
+        outputFieldIds.add(fieldId);
+        Map<String, Object> field = new TreeMap<String, Object>();
+        field.put("fieldId", fieldId);
+        field.put("name", node.getRowType().getFieldList().get(slot).getName());
+        field.put("nullable", node.getRowType().getFieldList().get(slot).getType().isNullable());
+        field.put("relationId", relationId);
+        field.put("role", "OUTPUT");
+        field.put("slot", slot);
+        field.put("typeName", node.getRowType().getFieldList().get(slot).getType()
+            .getSqlTypeName().getName());
+        fields.add(field);
+      }
+      Map<String, Object> relation = new TreeMap<String, Object>();
+      relation.put("inputRelationIds", inputRelationIds);
+      relation.put("kind", kind);
+      relation.put("outputFieldIds", outputFieldIds);
+      relation.put("providerOrdinal", index);
+      if (node instanceof TableScan) {
+        relation.put("qualifiedTableName",
+            joinQualified(((TableScan) node).getTable().getQualifiedName()));
+      }
+      relation.put("relationId", relationId);
+      relations.add(relation);
+      Map<String, Object> operator = new TreeMap<String, Object>();
+      operator.put("inputRelationIds", inputRelationIds);
+      if (node instanceof Join) operator.put("joinType", joinTypeName((Join) node));
+      operator.put("kind", kind);
+      operator.put("operatorId", operatorId);
+      operator.put("relationId", relationId);
+      operators.add(operator);
+      int dependencyStart = dependencies.size();
+      extractDependencies(node, relationId, operatorId, relationIds,
+          dependencies, mappings, issues, dependencyOrdinal);
+      if (requested.contains("expressionLineage") &&
+          (node instanceof Project || node instanceof Aggregate || node instanceof Window)) {
+        List<String> expressionDependencyIds = new ArrayList<String>();
+        for (int dependencyIndex = dependencyStart;
+            dependencyIndex < dependencies.size(); dependencyIndex++) {
+          @SuppressWarnings("unchecked")
+          Map<String, Object> dependency = (Map<String, Object>) dependencies.get(dependencyIndex);
+          expressionDependencyIds.add(String.valueOf(dependency.get("dependencyId")));
+        }
+        addMetadata(semanticMetadata, relationId, "EXPRESSION_LINEAGE",
+            expressionDependencyIds);
+      }
+      appendMetadata(node, relationId, metadata, semanticMetadata, requested);
+    }
+    List<Object> capabilityFacts = capabilities(dependencies, semanticMetadata, issues, requested);
+    sortBy(relations, "relationId");
+    sortBy(fields, "fieldId");
+    sortBy(operators, "operatorId");
+    sortBy(dependencies, "dependencyId");
+    sortBy(semanticMetadata, "metadataId");
+    sortBy(mappings, "mappingId");
+    sortBy(issues, "issueId");
+    Map<String, Object> facts = new TreeMap<String, Object>();
+    facts.put("capabilities", capabilityFacts);
+    facts.put("dependencies", dependencies);
+    facts.put("evidenceMappings", mappings);
+    facts.put("fields", fields);
+    facts.put("input", inputIdentity(request, requestId));
+    facts.put("issues", issues);
+    facts.put("metadata", semanticMetadata);
+    facts.put("operators", operators);
+    Map<String, Object> provider = new TreeMap<String, Object>();
+    provider.put("adapterVersion", "0.1.0-poc");
+    provider.put("buildFingerprint", sha256(BUILD_FINGERPRINT));
+    provider.put("calciteVersion", CALCITE_VERSION);
+    provider.put("name", "calcite-semantic-provider");
+    facts.put("provider", provider);
+    facts.put("relations", relations);
+    facts.put("schemaVersion", "0.1.0-poc");
+    facts.put("statementStatus", issues.isEmpty() ? "SUCCESS" : "PARTIAL");
+    return facts;
+  }
+
+  private static List<Object> capabilities(List<Object> dependencies,
+      List<Object> metadata, List<Object> issues, Set<String> requested) {
+    String[] names = { "EXPRESSION_LINEAGE", "FUNCTIONAL_DEPENDENCIES", "PREDICATES",
+        "RELATIONAL_SEMANTICS", "ROW_COUNT", "UNIQUE_KEYS" };
+    List<Object> output = new ArrayList<Object>();
+    for (String name : names) {
+      boolean evaluated;
+      if ("RELATIONAL_SEMANTICS".equals(name)) {
+        evaluated = true;
+      } else if ("EXPRESSION_LINEAGE".equals(name)) {
+        evaluated = requested.contains("expressionLineage") && hasEvaluatedDependency(dependencies);
+      } else {
+        String metadataKind = "PREDICATES".equals(name) ? "PREDICATE" : name;
+        String requestName = "PREDICATES".equals(name) ? "predicates"
+            : "FUNCTIONAL_DEPENDENCIES".equals(name) ? "functionalDependencies"
+            : "ROW_COUNT".equals(name) ? "rowCountCardinality"
+            : "UNIQUE_KEYS".equals(name) ? "uniqueKeys" : "";
+        evaluated = requested.contains(requestName) && allMetadataEvaluated(metadata, metadataKind);
+      }
+      Map<String, Object> item = new TreeMap<String, Object>();
+      item.put("capability", name);
+      item.put("evaluationStatus", evaluated ? "EVALUATED" : "NOT_EVALUATED");
+      if (!evaluated) {
+        String issueId = "issue:capability:" + name.toLowerCase(Locale.ROOT);
+        item.put("issueRefs", singletonString(issueId));
+        Map<String, Object> issue = new TreeMap<String, Object>();
+        issue.put("code", "CAPABILITY_PARTIAL");
+        issue.put("issueId", issueId);
+        issue.put("message", name + " was not evaluated for every applicable relation.");
+        issue.put("severity", "INFO");
+        issues.add(issue);
+      }
+      output.add(item);
+    }
+    return output;
+  }
+
+  private static boolean hasEvaluatedDependency(List<Object> dependencies) {
+    for (Object raw : dependencies) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> dependency = (Map<String, Object>) raw;
+      if ("EVALUATED".equals(dependency.get("evaluationStatus"))) return true;
+    }
+    return false;
+  }
+
+  private static boolean allMetadataEvaluated(List<Object> metadata, String kind) {
+    boolean found = false;
+    for (Object raw : metadata) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> item = (Map<String, Object>) raw;
+      if (!kind.equals(item.get("kind"))) continue;
+      found = true;
+      if (!"EVALUATED".equals(item.get("evaluationStatus"))) return false;
+    }
+    return found;
+  }
+
+  private static Map<String, Object> inputIdentity(Map<String, Object> request, String requestId) {
+    String sql = requiredString(request.get("sql"), "sql");
+    Map<String, Object> identity = new TreeMap<String, Object>();
+    String dialect = optionalString(request.get("dialect"));
+    identity.put("dialectDigest", sha256(dialect == null ? "ANSI" : dialect));
+    identity.put("schemaSha256", sha256(Json.write(request.get("schema"), HARD_MAX_OUTPUT_BYTES)));
+    identity.put("sqlSha256", sha256(sql));
+    String sourceId = optionalString(request.get("sqlSourceId"));
+    identity.put("sqlSourceId", stableId(sourceId == null
+        ? (requestId == null ? "sql:anonymous" : "sql:" + requestId) : sourceId));
+    Object ordinal = request.get("statementOrdinal");
+    identity.put("statementOrdinal", ordinal == null ? 0 : integer(ordinal, "statementOrdinal"));
+    return identity;
+  }
+
+  private static void extractDependencies(RelNode node, String relationId, String operatorId,
+      Map<RelNode, String> relationIds, List<Object> dependencies, List<Object> mappings,
+      List<Object> issues, int[] ordinal) {
+    if (node instanceof Project) {
+      Project project = (Project) node;
+      for (int output = 0; output < project.getProjects().size(); output++) {
+        RexNode expression = project.getProjects().get(output);
+        List<RexOver> overs = rexOvers(expression);
+        if (!overs.isEmpty()) {
+          addRexOverDependencies(overs, project.getInput(), fieldId(relationId, output),
+              operatorId, relationIds, dependencies, mappings, issues, ordinal);
+        } else if (isConditional(expression)) {
+          addConditionalDependencies(expression, project.getInput(), fieldId(relationId, output),
+              operatorId, relationIds, dependencies, mappings, issues, ordinal);
+        } else {
+          addDependency("VALUE_INPUT", "FIELD_VALUE",
+              inputFieldRefs(project.getInput(), inputRefs(expression), relationIds),
+              singletonString(fieldId(relationId, output)), operatorId,
+              dependencies, mappings, issues, ordinal);
+        }
+      }
+      return;
+    }
+    if (node instanceof Filter) {
+      Filter filter = (Filter) node;
+      addDependency("FILTER_PREDICATE", "ROW_MEMBERSHIP",
+          inputFieldRefs(filter.getInput(), inputRefs(filter.getCondition()), relationIds),
+          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+      for (RexSubQuery subQuery : rexSubQueries(filter.getCondition())) {
+        addDependency("RELATION_EXISTENCE", "ROW_MEMBERSHIP",
+            singletonString(relationIds.get(subQuery.rel)), singletonString(relationId), operatorId,
+            dependencies, mappings, issues, ordinal);
+      }
+      return;
+    }
+    if (node instanceof Join) {
+      Join join = (Join) node;
+      List<String> refs = joinInputFieldRefs(join, inputRefs(join.getCondition()), relationIds);
+      if (refs.isEmpty()) {
+        for (RelNode input : join.getInputs()) addDependency("RELATION_EXISTENCE",
+            "RELATION_EXISTENCE", singletonString(relationIds.get(input)),
+            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+      } else {
+        addDependency("JOIN_MATCH", "ROW_MEMBERSHIP", refs, singletonString(relationId),
+            operatorId, dependencies, mappings, issues, ordinal);
+        addDependency("JOIN_CARDINALITY", "MULTIPLICITY", refs, singletonString(relationId),
+            operatorId, dependencies, mappings, issues, ordinal);
+      }
+      return;
+    }
+    if (node instanceof Aggregate) {
+      Aggregate aggregate = (Aggregate) node;
+      RelNode input = aggregate.getInput();
+      List<Integer> groupRefs = new ArrayList<Integer>();
+      for (Integer bit : aggregate.getGroupSet()) groupRefs.add(bit);
+      addDependency("GROUP_KEY", "GROUPING", inputFieldRefs(input, groupRefs, relationIds),
+          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+      int output = aggregate.getGroupCount();
+      for (AggregateCall call : aggregate.getAggCallList()) {
+        if (call.getArgList().isEmpty()) {
+          addDependency("RELATION_EXISTENCE", "RELATION_EXISTENCE",
+              singletonString(relationIds.get(input)), singletonString(fieldId(relationId, output)),
+              operatorId, dependencies, mappings, issues, ordinal);
+        } else {
+          addDependency("AGGREGATE_INPUT", "FIELD_VALUE",
+              inputFieldRefs(input, new ArrayList<Integer>(call.getArgList()), relationIds),
+              singletonString(fieldId(relationId, output)), operatorId,
+              dependencies, mappings, issues, ordinal);
+        }
+        output++;
+      }
+      return;
+    }
+    if (node instanceof Union || node instanceof Intersect || node instanceof Minus) {
+      for (RelNode input : node.getInputs()) {
+        String inputRelationId = relationIds.get(input);
+        addDependency("SET_MEMBERSHIP", "SET_MEMBERSHIP", singletonString(inputRelationId),
+            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+        int count = Math.min(input.getRowType().getFieldCount(), node.getRowType().getFieldCount());
+        for (int slot = 0; slot < count; slot++) addDependency("VALUE_INPUT", "FIELD_VALUE",
+            singletonString(fieldId(inputRelationId, slot)), singletonString(fieldId(relationId, slot)),
+            operatorId, dependencies, mappings, issues, ordinal);
+      }
+      return;
+    }
+    if (node instanceof Window) {
+      Window window = (Window) node;
+      RelNode input = window.getInput();
+      int outputSlot = input.getRowType().getFieldCount();
+      for (Window.Group group : window.groups) {
+        List<Integer> partition = new ArrayList<Integer>();
+        for (Integer bit : group.keys) partition.add(bit);
+        addDependency("WINDOW_PARTITION", "WINDOW_EFFECT",
+            inputFieldRefs(input, partition, relationIds), singletonString(relationId), operatorId,
+            dependencies, mappings, issues, ordinal);
+        List<Integer> order = new ArrayList<Integer>();
+        for (RelFieldCollation field : group.orderKeys.getFieldCollations()) order.add(field.getFieldIndex());
+        addDependency("WINDOW_ORDER", "WINDOW_EFFECT", inputFieldRefs(input, order, relationIds),
+            singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+        addDependency("WINDOW_FRAME", "WINDOW_EFFECT",
+            singletonString(relationIds.get(input)), singletonString(relationId), operatorId,
+            dependencies, mappings, issues, ordinal);
+        for (Window.RexWinAggCall call : group.aggCalls) {
+          addDependency("WINDOW_VALUE", "WINDOW_EFFECT",
+              inputFieldRefs(input, inputRefs(call), relationIds),
+              singletonString(fieldId(relationId, outputSlot++)), operatorId,
+              dependencies, mappings, issues, ordinal);
+        }
+      }
+      return;
+    }
+    if (node instanceof Sort) {
+      Sort sort = (Sort) node;
+      List<Integer> refs = new ArrayList<Integer>();
+      for (RelFieldCollation field : sort.getCollation().getFieldCollations()) refs.add(field.getFieldIndex());
+      boolean selectsRows = sort.fetch != null || sort.offset != null;
+      addDependency(selectsRows ? "ORDER_SELECTION" : "WINDOW_ORDER",
+          selectsRows ? "ORDER_SELECTION" : "WINDOW_EFFECT",
+          inputFieldRefs(sort.getInput(), refs, relationIds), singletonString(relationId), operatorId,
+          dependencies, mappings, issues, ordinal);
+      return;
+    }
+    if (node instanceof Correlate) {
+      for (RelNode input : node.getInputs()) addDependency("RELATION_EXISTENCE",
+          "RELATION_EXISTENCE", singletonString(relationIds.get(input)),
+          singletonString(relationId), operatorId, dependencies, mappings, issues, ordinal);
+    }
+  }
+
+  private static void addConditionalDependencies(RexNode expression, RelNode input, String target,
+      String operatorId, Map<RelNode, String> relationIds, List<Object> dependencies,
+      List<Object> mappings, List<Object> issues, int[] ordinal) {
+    RexCall call = (RexCall) expression;
+    List<Integer> selectors = new ArrayList<Integer>();
+    List<Integer> values = new ArrayList<Integer>();
+    if (call.getKind() == SqlKind.CASE) {
+      for (int index = 0; index < call.getOperands().size(); index++) {
+        List<Integer> refs = inputRefs(call.getOperands().get(index));
+        if (index < call.getOperands().size() - 1 && index % 2 == 0) selectors.addAll(refs);
+        else values.addAll(refs);
+      }
+    } else {
+      for (RexNode operand : call.getOperands()) {
+        selectors.addAll(inputRefs(operand));
+        values.addAll(inputRefs(operand));
+      }
+    }
+    addDependency("EXPRESSION_SELECTOR", "EXPRESSION_CONTROL",
+        inputFieldRefs(input, selectors, relationIds), singletonString(target), operatorId,
+        dependencies, mappings, issues, ordinal);
+    addDependency("VALUE_INPUT", "FIELD_VALUE", inputFieldRefs(input, values, relationIds),
+        singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+  }
+
+  private static void addRexOverDependencies(List<RexOver> overs, RelNode input, String target,
+      String operatorId, Map<RelNode, String> relationIds, List<Object> dependencies,
+      List<Object> mappings, List<Object> issues, int[] ordinal) {
+    for (RexOver over : overs) {
+      List<Integer> values = new ArrayList<Integer>();
+      for (RexNode operand : over.getOperands()) values.addAll(inputRefs(operand));
+      addDependency("WINDOW_VALUE", "WINDOW_EFFECT", inputFieldRefs(input, values, relationIds),
+          singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+      List<Integer> partition = new ArrayList<Integer>();
+      for (RexNode key : over.getWindow().partitionKeys) partition.addAll(inputRefs(key));
+      addDependency("WINDOW_PARTITION", "WINDOW_EFFECT",
+          inputFieldRefs(input, partition, relationIds), singletonString(target), operatorId,
+          dependencies, mappings, issues, ordinal);
+      List<Integer> order = new ArrayList<Integer>();
+      for (RexFieldCollation key : over.getWindow().orderKeys) order.addAll(inputRefs(key.left));
+      addDependency("WINDOW_ORDER", "WINDOW_EFFECT", inputFieldRefs(input, order, relationIds),
+          singletonString(target), operatorId, dependencies, mappings, issues, ordinal);
+      addDependency("WINDOW_FRAME", "WINDOW_EFFECT",
+          singletonString(relationIds.get(input)), singletonString(target), operatorId,
+          dependencies, mappings, issues, ordinal);
+    }
+  }
+
+  private static void collectRelNodes(RelNode node, List<RelNode> output, Set<RelNode> seen) {
+    if (!seen.add(node)) return;
+    output.add(node);
+    for (RelNode input : node.getInputs()) collectRelNodes(input, output, seen);
+    for (RexNode expression : nodeExpressions(node)) {
+      for (RexSubQuery subQuery : rexSubQueries(expression)) {
+        collectRelNodes(subQuery.rel, output, seen);
+      }
+    }
+  }
+
+  private static List<RexNode> nodeExpressions(RelNode node) {
+    List<RexNode> output = new ArrayList<RexNode>();
+    if (node instanceof Project) output.addAll(((Project) node).getProjects());
+    if (node instanceof Filter) output.add(((Filter) node).getCondition());
+    if (node instanceof Join) output.add(((Join) node).getCondition());
+    return output;
+  }
+
+  private static List<RexSubQuery> rexSubQueries(RexNode expression) {
+    final List<RexSubQuery> output = new ArrayList<RexSubQuery>();
+    expression.accept(new RexVisitorImpl<Void>(true) {
+      @Override public Void visitSubQuery(RexSubQuery subQuery) {
+        output.add(subQuery);
+        return super.visitSubQuery(subQuery);
+      }
+    });
+    return output;
+  }
+
+  private static List<RexOver> rexOvers(RexNode expression) {
+    final List<RexOver> output = new ArrayList<RexOver>();
+    expression.accept(new RexVisitorImpl<Void>(true) {
+      @Override public Void visitOver(RexOver over) {
+        output.add(over);
+        return super.visitOver(over);
+      }
+    });
+    return output;
+  }
+
+  private static void addDependency(String dependencyKind, String impactKind,
+      List<String> rawFromRefs, List<String> rawToRefs, String operatorId,
+      List<Object> dependencies, List<Object> mappings, List<Object> issues, int[] ordinal) {
+    List<String> fromRefs = sortedUnique(rawFromRefs);
+    List<String> toRefs = sortedUnique(rawToRefs);
+    if (fromRefs.isEmpty() || toRefs.isEmpty()) return;
+    String dependencyId = String.format(Locale.ROOT, "dep:%05d", ordinal[0]++);
+    String mappingId = "mapping:" + dependencyId;
+    String issueId = "issue:unmapped:" + dependencyId;
+    Map<String, Object> dependency = new TreeMap<String, Object>();
+    dependency.put("dependencyId", dependencyId);
+    dependency.put("dependencyKind", dependencyKind);
+    dependency.put("evaluationStatus", "EVALUATED");
+    dependency.put("evidenceMappingRefs", singletonString(mappingId));
+    dependency.put("fromRefs", fromRefs);
+    dependency.put("impactKind", impactKind);
+    dependency.put("issueRefs", singletonString(issueId));
+    dependency.put("operatorId", operatorId);
+    dependency.put("toRefs", toRefs);
+    dependencies.add(dependency);
+    Map<String, Object> mapping = new TreeMap<String, Object>();
+    mapping.put("evidenceRefs", Collections.emptyList());
+    mapping.put("mappingId", mappingId);
+    mapping.put("mappingStatus", "UNMAPPABLE");
+    mapping.put("providerRefId", dependencyId);
+    mappings.add(mapping);
+    Map<String, Object> issue = new TreeMap<String, Object>();
+    issue.put("code", "NATIVE_EVIDENCE_NOT_ASSEMBLED");
+    issue.put("issueId", issueId);
+    issue.put("message", "Provider-local semantic fact requires Native evidence assembly.");
+    issue.put("severity", "INFO");
+    issue.put("subjectRefs", singletonString(dependencyId));
+    issues.add(issue);
+  }
+
+  private static void appendMetadata(RelNode node, String relationId, RelMetadataQuery metadata,
+      List<Object> output, Set<String> requested) {
+    if (requested.contains("rowCountCardinality")) {
+      addMetadata(output, relationId, "ROW_COUNT", safeRowCount(metadata, node));
+    }
+    Set<ImmutableBitSet> keys = null;
+    if (requested.contains("uniqueKeys")) {
+      try { keys = metadata.getUniqueKeys(node); } catch (RuntimeException ignored) { }
+      addMetadata(output, relationId, "UNIQUE_KEYS", keys == null ? null : bitSets(keys));
+    }
+    ArrowSet fds = null;
+    if (requested.contains("functionalDependencies")) {
+      try { fds = metadata.getFDs(node); } catch (RuntimeException ignored) { }
+      addMetadata(output, relationId, "FUNCTIONAL_DEPENDENCIES",
+          fds == null ? null : arrows(fds));
+    }
+    RelOptPredicateList predicates = null;
+    if (requested.contains("predicates")) {
+      try { predicates = metadata.getPulledUpPredicates(node); } catch (RuntimeException ignored) { }
+      addMetadata(output, relationId, "PREDICATE", predicates == null ? null
+          : renderRex(predicates.pulledUpPredicates));
+    }
+  }
+
+  private static void addMetadata(List<Object> output, String relationId, String kind,
+      Object value) {
+    Map<String, Object> item = new TreeMap<String, Object>();
+    // Calcite metadata rules can return an empty collection without proving a
+    // closed-world negative fact for the source system. Keep absence conservative.
+    item.put("absenceProven", false);
+    item.put("basis", "CALCITE_METADATA");
+    item.put("evaluationStatus", value == null ? "NOT_EVALUATED" : "EVALUATED");
+    item.put("knowledgeStatus", value == null ? "UNKNOWN"
+        : ("ROW_COUNT".equals(kind) ? "ESTIMATED" : "DERIVED"));
+    item.put("kind", kind);
+    item.put("metadataId", "metadata:" + relationId + ":" + kind.toLowerCase(Locale.ROOT));
+    item.put("subjectRef", relationId);
+    if (value != null) item.put("value", value);
+    output.add(item);
+  }
+
+  private static Double safeRowCount(RelMetadataQuery metadata, RelNode node) {
+    try { return metadata.getRowCount(node); } catch (RuntimeException ignored) { return null; }
+  }
+
+  private static List<Object> bitSets(Set<ImmutableBitSet> values) {
+    List<Object> output = new ArrayList<Object>();
+    for (ImmutableBitSet value : values) output.add(bitNumbersList(value));
+    sortRendered(output);
+    return output;
+  }
+
+  private static List<Object> arrows(ArrowSet values) {
+    List<Object> output = new ArrayList<Object>();
+    for (Arrow arrow : values.getArrows()) {
+      Map<String, Object> value = new TreeMap<String, Object>();
+      value.put("dependentOrdinals", bitNumbersList(arrow.getDependents()));
+      value.put("determinantOrdinals", bitNumbersList(arrow.getDeterminants()));
+      output.add(value);
+    }
+    sortRendered(output);
+    return output;
+  }
+
+  private static List<Integer> bitNumbersList(ImmutableBitSet bits) {
+    List<Integer> output = new ArrayList<Integer>();
+    for (Integer bit : bits) output.add(bit);
+    return output;
+  }
+
+  private static List<String> renderRex(Iterable<? extends RexNode> values) {
+    List<String> output = new ArrayList<String>();
+    for (RexNode value : values) output.add(value.toString());
+    Collections.sort(output);
+    return output;
+  }
+
+  private static List<Integer> inputRefs(RexNode expression) {
+    final LinkedHashSet<Integer> refs = new LinkedHashSet<Integer>();
+    expression.accept(new RexVisitorImpl<Void>(true) {
+      @Override public Void visitInputRef(RexInputRef inputRef) {
+        refs.add(inputRef.getIndex());
+        return null;
+      }
+    });
+    List<Integer> output = new ArrayList<Integer>(refs);
+    Collections.sort(output);
+    return output;
+  }
+
+  private static List<String> inputFieldRefs(RelNode input, List<Integer> refs,
+      Map<RelNode, String> relationIds) {
+    String relationId = relationIds.get(input);
+    List<String> output = new ArrayList<String>();
+    for (Integer ref : refs) {
+      if (ref >= 0 && ref < input.getRowType().getFieldCount()) output.add(fieldId(relationId, ref));
+    }
+    return sortedUnique(output);
+  }
+
+  private static List<String> joinInputFieldRefs(Join join, List<Integer> refs,
+      Map<RelNode, String> relationIds) {
+    List<String> output = new ArrayList<String>();
+    int leftCount = join.getLeft().getRowType().getFieldCount();
+    for (Integer ref : refs) {
+      if (ref < leftCount) output.add(fieldId(relationIds.get(join.getLeft()), ref));
+      else if (ref - leftCount < join.getRight().getRowType().getFieldCount()) {
+        output.add(fieldId(relationIds.get(join.getRight()), ref - leftCount));
+      }
+    }
+    return sortedUnique(output);
+  }
+
+  private static boolean isConditional(RexNode expression) {
+    if (!(expression instanceof RexCall)) return false;
+    RexCall call = (RexCall) expression;
+    return call.getKind() == SqlKind.CASE
+        || "COALESCE".equalsIgnoreCase(call.getOperator().getName())
+        || "IF".equalsIgnoreCase(call.getOperator().getName());
+  }
+
+  private static String operatorKind(RelNode node) {
+    if (node instanceof TableScan) return "TABLE_SCAN";
+    if (node instanceof Project) return "PROJECT";
+    if (node instanceof Filter) return "FILTER";
+    if (node instanceof Join) return "JOIN";
+    if (node instanceof Aggregate) {
+      Aggregate aggregate = (Aggregate) node;
+      return aggregate.getAggCallList().isEmpty()
+          && aggregate.getGroupCount() == aggregate.getInput().getRowType().getFieldCount()
+          ? "DISTINCT" : "AGGREGATE";
+    }
+    if (node instanceof Union) return "UNION";
+    if (node instanceof Intersect) return "INTERSECT";
+    if (node instanceof Minus) return "EXCEPT";
+    if (node instanceof Window) return "WINDOW";
+    if (node instanceof Sort) {
+      Sort sort = (Sort) node;
+      return sort.fetch == null && sort.offset == null ? "SORT" : "TOP_N";
+    }
+    if (node instanceof Correlate) return "CORRELATE";
+    if (node.getRelTypeName().toUpperCase(Locale.ROOT).contains("VALUES")) return "VALUES";
+    return "UNKNOWN";
+  }
+
+  private static String joinTypeName(Join join) {
+    String value = join.getJoinType().name();
+    return "INNER".equals(value) && inputRefs(join.getCondition()).isEmpty() ? "CROSS" : value;
+  }
+
+  private static String fieldId(String relationId, int slot) {
+    return relationId + ":field:" + String.format(Locale.ROOT, "%04d", slot);
+  }
+
+  private static List<String> singletonString(String value) {
+    List<String> output = new ArrayList<String>(); output.add(value); return output;
+  }
+
+  private static List<String> sortedUnique(List<String> values) {
+    List<String> output = new ArrayList<String>(new LinkedHashSet<String>(values));
+    Collections.sort(output); return output;
+  }
+
+  private static String joinQualified(List<String> names) {
+    StringBuilder output = new StringBuilder();
+    for (String name : names) { if (output.length() > 0) output.append('.'); output.append(name); }
+    return output.toString();
+  }
+
+  private static String stableId(String value) {
+    return value.replaceAll("[^A-Za-z0-9._:/#-]", "_");
+  }
+
+  private static String sha256(String value) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] bytes = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+      StringBuilder output = new StringBuilder();
+      for (byte item : bytes) output.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+      return output.toString();
+    } catch (NoSuchAlgorithmException error) {
+      throw new IllegalStateException(error);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void sortBy(List<Object> values, final String key) {
+    Collections.sort(values, new java.util.Comparator<Object>() {
+      @Override public int compare(Object left, Object right) {
+        return String.valueOf(((Map<String, Object>) left).get(key))
+            .compareTo(String.valueOf(((Map<String, Object>) right).get(key)));
+      }
+    });
+  }
+
+  private static void sortRendered(List<Object> values) {
+    Collections.sort(values, new java.util.Comparator<Object>() {
+      @Override public int compare(Object left, Object right) {
+        return left.toString().compareTo(right.toString());
+      }
+    });
   }
 
   private static List<Object> expressionLineage(List<RelNode> nodes, Map<RelNode, String> nodeIds,
@@ -484,10 +1274,7 @@ public final class CalciteOracle {
       throw new UnsupportedError("CATALOG_UNSUPPORTED",
           "table.catalog is not supported; omit catalog and use schema.name");
     }
-    String schema = optionalString(raw.get("schema"));
-    if (schema == null || schema.trim().isEmpty()) {
-      schema = "APP";
-    }
+    String schema = requiredString(raw.get("schema"), "table.schema");
     List<Object> rawColumns = array(raw.get("columns"), "table.columns");
     if (rawColumns.size() > maxColumns) {
       throw new InputError("COLUMN_LIMIT", "table.columns exceeds the configured limit");
@@ -496,7 +1283,8 @@ public final class CalciteOracle {
     for (Object rawColumn : rawColumns) {
       Map<String, Object> column = object(rawColumn, "table.columns[]");
       columns.add(new ColumnDefinition(requiredString(column.get("name"), "column.name"),
-          optionalString(column.get("type")), optionalBoolean(column.get("nullable"), true)));
+          requiredString(column.get("type"), "column.type"),
+          requiredBoolean(column.get("nullable"), "column.nullable")));
     }
     List<List<String>> uniqueKeys = stringLists(raw.get("uniqueKeys"), "uniqueKeys");
     List<FunctionalDependency> functionalDependencies = new ArrayList<FunctionalDependency>();
@@ -584,7 +1372,7 @@ public final class CalciteOracle {
     fingerprint.put("buildFingerprint", BUILD_FINGERPRINT);
     fingerprint.put("calciteVersion", CALCITE_VERSION);
     fingerprint.put("protocolVersion", PROTOCOL_VERSION);
-    fingerprint.put("tool", "calcite-offline-oracle");
+    fingerprint.put("tool", "calcite-semantic-provider");
     return fingerprint;
   }
 
@@ -628,6 +1416,13 @@ public final class CalciteOracle {
     return value == null ? fallback : (value instanceof Boolean
         ? ((Boolean) value).booleanValue()
         : throwBoolean("boolean expected"));
+  }
+
+  private static boolean requiredBoolean(Object value, String path) {
+    if (!(value instanceof Boolean)) {
+      throw new InputError("INPUT_BOOLEAN_EXPECTED", path + " must be a boolean");
+    }
+    return ((Boolean) value).booleanValue();
   }
 
   private static boolean throwBoolean(String message) {

@@ -1,0 +1,21 @@
+{
+  "schema": {
+    "tables": [
+      {"schema":"APP","name":"customers","columns":[{"name":"customer_id","type":"BIGINT","nullable":false},{"name":"customer_name","type":"VARCHAR","nullable":true},{"name":"active","type":"BOOLEAN","nullable":true}],"uniqueKeys":[["customer_id"]],"rowCount":100},
+      {"schema":"APP","name":"limits","columns":[{"name":"customer_id","type":"BIGINT","nullable":false},{"name":"limit_amount","type":"DECIMAL","nullable":true}],"uniqueKeys":[["customer_id"]],"rowCount":100},
+      {"schema":"APP","name":"orders","columns":[{"name":"order_id","type":"BIGINT","nullable":false},{"name":"customer_id","type":"BIGINT","nullable":false},{"name":"parent_order_id","type":"BIGINT","nullable":true},{"name":"amount","type":"DECIMAL","nullable":true},{"name":"status","type":"VARCHAR","nullable":true},{"name":"event_time","type":"TIMESTAMP","nullable":true}],"uniqueKeys":[["order_id"]],"rowCount":1000}
+    ]
+  },
+  "samples": [
+    {"id":"01-project-conditional","sql":"SELECT CASE WHEN status = 'A' THEN COALESCE(amount, 0) ELSE 0 END AS adjusted_amount FROM APP.orders","expectedDependencyKinds":["EXPRESSION_SELECTOR","VALUE_INPUT"]},
+    {"id":"02-filter-group-having","sql":"SELECT customer_id, SUM(amount) AS total FROM APP.orders WHERE status = 'A' GROUP BY customer_id HAVING SUM(amount) > 0","expectedDependencyKinds":["FILTER_PREDICATE","GROUP_KEY","AGGREGATE_INPUT"]},
+    {"id":"03-inner-self-join","sql":"SELECT child.amount FROM APP.orders child JOIN APP.orders parent ON child.parent_order_id = parent.order_id","expectedDependencyKinds":["JOIN_MATCH","JOIN_CARDINALITY","VALUE_INPUT"]},
+    {"id":"04-left-join","sql":"SELECT o.amount, c.customer_name FROM APP.orders o LEFT JOIN APP.customers c ON o.customer_id = c.customer_id","expectedDependencyKinds":["JOIN_MATCH","JOIN_CARDINALITY","VALUE_INPUT"]},
+    {"id":"05-count-distinct","sql":"SELECT status, COUNT(*) AS row_count FROM (SELECT DISTINCT status, order_id FROM APP.orders) d GROUP BY status","expectedDependencyKinds":["GROUP_KEY","RELATION_EXISTENCE"]},
+    {"id":"06-set-operations","sql":"(SELECT customer_id FROM APP.orders UNION SELECT customer_id FROM APP.customers) INTERSECT SELECT customer_id FROM APP.limits","expectedDependencyKinds":["SET_MEMBERSHIP","VALUE_INPUT"]},
+    {"id":"07-exists-anti","sql":"SELECT o.order_id FROM APP.orders o WHERE EXISTS (SELECT 1 FROM APP.customers c WHERE c.customer_id = o.customer_id) AND NOT EXISTS (SELECT 1 FROM APP.limits l WHERE l.customer_id = o.customer_id)","expectedDependencyKinds":["FILTER_PREDICATE","RELATION_EXISTENCE"]},
+    {"id":"08-literal-cross-join","sql":"SELECT 1 AS flag FROM APP.orders o CROSS JOIN APP.customers c","expectedDependencyKinds":["RELATION_EXISTENCE"]},
+    {"id":"09-window","sql":"SELECT order_id, SUM(amount) OVER (PARTITION BY customer_id ORDER BY event_time ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS running_amount FROM APP.orders","expectedDependencyKinds":["WINDOW_VALUE","WINDOW_PARTITION","WINDOW_ORDER","WINDOW_FRAME"]},
+    {"id":"10-top-n","sql":"SELECT order_id, amount FROM APP.orders ORDER BY amount DESC FETCH NEXT 10 ROWS ONLY","expectedDependencyKinds":["ORDER_SELECTION","VALUE_INPUT"]}
+  ]
+}

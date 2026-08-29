@@ -1,6 +1,7 @@
 /node_modules/
 /dist/
 /staging/calcite-differential/
+/staging/calcite-semantic-provider-poc/
 /tools/calcite-rel-bridge/target/
 .evidence-cache/
 *.input-pack-status.json
