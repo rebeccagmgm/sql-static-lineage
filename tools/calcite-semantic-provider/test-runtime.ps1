@@ -46,6 +46,21 @@ $second = Invoke-Provider $basic
 if ($first.Value.status -ne "SUCCESS") { throw "basic request failed" }
 if ($first.Raw -cne $second.Raw) { throw "response is not deterministic" }
 if ($first.Value.facts.schemaVersion -ne "0.1.0-poc") { throw "candidate facts missing" }
+if (@($first.Value.PSObject.Properties.Name) -contains "observations") {
+  throw "legacy observations must not duplicate canonical facts"
+}
+$pendingMappingIssues = @($first.Value.facts.issues | Where-Object {
+  $_.code -eq "NATIVE_EVIDENCE_NOT_ASSEMBLED"
+})
+if ($pendingMappingIssues.Count -ne 1) {
+  throw "Native evidence pending state must use one shared issue"
+}
+$pendingIssueId = $pendingMappingIssues[0].issueId
+if (@($first.Value.facts.dependencies | Where-Object {
+  @($_.issueRefs) -notcontains $pendingIssueId
+}).Count -ne 0) {
+  throw "every provider-local dependency must reference the shared pending issue"
+}
 $dependencyKinds = @($first.Value.facts.dependencies | Select-Object -ExpandProperty dependencyKind -Unique)
 if ($dependencyKinds -notcontains "EXPRESSION_SELECTOR") { throw "CASE selector dependency missing" }
 if (@($first.Value.facts.evidenceMappings | Where-Object { $_.mappingStatus -ne "NOT_ASSEMBLED" }).Count -ne 0) {
@@ -77,6 +92,14 @@ $unsupportedFunctionResult = Invoke-Provider ($unsupportedFunction | ConvertTo-J
 if ($unsupportedFunctionResult.Value.status -ne "UNSUPPORTED" -or
     $unsupportedFunctionResult.Value.error.code -ne "FUNCTION_UNSUPPORTED") {
   throw "unsupported function must fail closed"
+}
+
+$hiveDateDiff = $basic | ConvertFrom-Json
+$hiveDateDiff.dialect = "HIVE_COMPAT"
+$hiveDateDiff.sql = "SELECT DATEDIFF('2026-08-29', '2026-08-01') AS days FROM APP.orders o"
+$hiveDateDiffResult = Invoke-Provider ($hiveDateDiff | ConvertTo-Json -Compress -Depth 20)
+if ($hiveDateDiffResult.Value.status -ne "SUCCESS") {
+  throw "bounded Hive DATEDIFF signature must validate"
 }
 
 $missingType = $basic | ConvertFrom-Json

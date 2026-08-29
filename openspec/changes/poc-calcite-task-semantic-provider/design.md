@@ -209,6 +209,60 @@ POC 的建议验收预算为：单 JVM 完成全部样例冷启动不超过 30 �
 
 POC 不运行完整 multi-hop。若 Gate 通过，后续生产 Change 才验证按 unique task/statement digest 预计算和缓存 Facts：209119 不得按 542 个 candidate branch 调用 Calcite，hot-cache causal closure 不应启动 Java。
 
+### 11. Reuse the existing Input Pack preparation boundary
+
+真实 SQL POC 不再手工接收 frozen SQL path、schema snapshot path 并重新发现 DDL。它必须通过现有 `prepareInputPackTask` 读取并验证 Input Pack，复用已有 SQL slot 选择、任务方言、SQL hash、schema bundle、物理表身份、DDL hash 和稳定输入校验，再把原 SQL 与 typed schema 直接交给 Calcite。
+
+这个复用边界不等于 `Plan Facts -> Calcite`：POC 不把 Plan Facts、Machine Facts operator 或 Native relation semantics 投影成 Calcite RelNode。Calcite 仍直接 parse/validate SQL；Native 只提供输入与证据身份。Calcite 专属方言桥只保留有 manifest、可逆 source map 且不改变关系语义的最小转换。
+
+为避免伪造 source evidence，首版只接受能够与一个原始 Input Pack SQL source 精确同一的分析 SQL。多 slot 拼接、重复 SQL 归一化或其他 derived analysis SQL 在没有完整 source map 前必须 fail closed，不得继续使用某个原文件路径充当其 source evidence。
+
+### 12. First prove Calcite-internal indirect semantics
+
+最后的价值门禁不再追求补齐 operator source span，也不扩大 Calcite operator support。它在真实 209119 Facts 上形成两个可比较投影：
+
+```text
+Calcite FIELD_VALUE-only graph
+              versus
+Calcite all declared impact channels graph
+```
+
+若一个精确 Native read occurrence 在第一张图中无法到达 root、但在第二张图中通过完整的 Calcite dependency path 到达，则它是 `INDIRECT_ONLY`。这直接证明 Calcite 能保留纯字段值传播无法解释的上游读取。TypeScript 只执行通用图传播、预算和 witness 组装；不读取 SQL、不按 operator kind 分支，也不推导 impact kind。
+
+Calcite `RelNode`/`RexNode` 当前不能可靠提供所有原 SQL operator span。POC 不再通过 AST 与 RelNode ordinal 配对伪造该映射，而是新增严格分离的 plan-coordinate witness：它绑定 SQL/schema/dialect/provider fingerprint、root/source relation、完整 normalized dependencies/operators、精确 Native leaf occurrence/evidence refs，并计算稳定 SHA-256。该 witness 可以证明“Calcite validated plan 内存在这条语义路径”，但不满足 production source-span closure；总体 Provider 决策继续为 `VALIDATION_ONLY`。
+
+Root 使用 Provider 的显式 POC 契约：relation traversal root 必须是唯一 `providerOrdinal=0` 的 relation。缺失或多重 root、非精确 leaf mapping、dependency 未评价、mapping 非 EXACT、operator 缺失或预算截断均形成 gap。没有路径仅表示 `NOT_REACHED/UNKNOWN`，通用 `PROVEN_UNRELATED` 继续关闭。
+
+该门禁只证明 Calcite 自己的全影响图比 Calcite 自己的 `FIELD_VALUE` 投影多保留间接影响；它不是相对现有 Native 实现的净价值结论。报告独立于生产因果闭包，不改写 canonical artifact 或重跑结论。
+
+### 13. Prove net value against the current Native artifacts
+
+第 12 节的 `FIELD_VALUE-only versus all Calcite impacts` 只能证明 Calcite 内部存在间接语义，不能证明这些读取是当前 `src / plan-adaptor / field-lineage` 没有保留的净新增。因此终局价值判断增加 occurrence-aligned 三方差分：
+
+```text
+同一 SQL source + 同一 target write root + 同一 physical read occurrence
+
+A. 现有 field-lineage VALUE_FLOW
+B. 现有 rowsetControls / Machine Facts relation evidence
+C. Calcite impact facts
+```
+
+三方差分只读取现存 canonical artifact、Machine Facts 和 POC staging；不得重跑或改写 canonical pipeline。根由 `write_observation_id -> output-field-bindings.statement_id` 精确确定。物理读取 identity 使用 `read_occurrence_id`，旧 bundle 缺少该字段时只允许使用同一条 read relation 的完整 `relation_id + source_span + qualified table` 作为 legacy exact occurrence；CTE 名、tail table name、substring 和裸字段名均不得进入对齐。
+
+Native VALUE_FLOW 只有在物理表在当前 statement/root scope 内对应唯一 read occurrence 时才能提升为 occurrence-level positive evidence；同表多 occurrence 且现有 artifact 未保留 alias/occurrence 时必须为 `UNKNOWN`。Native 间接影响从 root node 已发布的 `rowsetControls` 出发，并通过其精确 `relationId`、Machine Facts relation input graph、完整物理 identity 与 qualifier/binding 映射到 read occurrence。两边 impact channel 命名不同不构成冲突：Native `join` 与 Calcite `MULTIPLICITY` 可以同时归为该 occurrence 已被两边保留，但原始 control/channel 与 evidence refs 必须分别保存。
+
+每个 occurrence 输出 A/B/C 三份独立状态和 overlap class。`C_ONLY` 只有在 Calcite witness、Native occurrence、root/fingerprint 全部精确时才成立；若 Native artifact 为 `PARTIAL`、存在 unresolved control、同表 occurrence 歧义或缺少必要 mapping，只能输出 `CALCITE_ONLY_CANDIDATE`，不得宣称净增价值。若 Native 已用完整物理表身份保留该读取、但无法区分同表 occurrence，则只记为 `OCCURRENCE_PRECISION_ONLY`：它证明 Calcite提高了 occurrence/channel/witness 精度，不代表新增重跑表或任务。只有 `COMPLETE` Native coverage 下至少一个精确的 Calcite indirect occurrence 同时未被 A/B 以精确或粗粒度证据保留，才允许 `CALCITE_NET_INCREMENTAL_VALUE_PROVEN`。
+
+首批真实矩阵固定为 `93338 / 155015 / 176827 / 181058 / 209119`。每个唯一 SQL/schema digest 至多执行 Calcite 一次。输入准备失败的案例仍必须出现在最终矩阵中并显示结构化 `NOT_EVALUATED`。多 SQL source 只有在 `write_observation_id -> output binding -> statement_id -> SQL slot` 唯一闭合，且该 statement 原文在对应原始 slot 中唯一命中时才允许选取目标 statement；否则不得偷偷选择 query/finish 中任意一个 source。Machine Facts 合并视图只允许审计明确的末尾补充分号规范化，不接受其它文本近似。没有路径或没有观察到现有 evidence 继续不表示 `PROVEN_UNRELATED`。
+
+### 14. Final bounded result
+
+最后一次五案例门禁只修复两个有现成证据支持的结构问题：目标 statement 精确选择，以及 Provider 同时输出 legacy `observations` 与 canonical Facts、逐 dependency 重复同一 pending-mapping issue 造成的体积膨胀。后者不提高 4 MiB 限额，不删除任何 dependency/evidence mapping，只删除重复表示并共享同一 `NATIVE_EVIDENCE_NOT_ASSEMBLED` issue。
+
+修复后 93338 从 `OUTPUT_LIMIT` 进入 evaluated，155015 和 209119 继续 evaluated；176827 因缺少正式 `pretradedate` UDF 类型契约保持 `FUNCTION_UNSUPPORTED`；181058 已精确选择 query statement 0，但 Calcite parser 不支持 Hive `LATERAL VIEW POSEXPLODE`，保持 `PLANNER_FAILURE`。A/B/C 门禁在 68 个物理读取 occurrence 上得到一个 93338 `CALCITE_ONLY_CANDIDATE` 和六个 209119 `OCCURRENCE_PRECISION_ONLY`，没有 `CALCITE_NET_INCREMENTAL_VALUE_PROVEN`。
+
+因此终局仍为 `VALIDATION_ONLY`。这批证据证明 Calcite 可在部分真实 SQL 上提供 Native 当前未精确表达的 occurrence/channel/plan witness，并出现一个值得后续独立核验的间接影响候选；它没有证明现在应替换生产 Native 语义路径。继续适配业务 UDF 或重写 `LATERAL VIEW` 已超出本次“证明价值后再扩大工程”的边界。
+
 ## Risks / Trade-offs
 
 - [Calcite parser仍无法覆盖真实 Horae/Hive SQL] → 使用机器可审计的薄方言适配；需要重型语义重写时判 `VALIDATION_ONLY/NO_GO`。

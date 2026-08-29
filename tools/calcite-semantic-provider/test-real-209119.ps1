@@ -1,7 +1,5 @@
 param(
-  [string] $DataRoot,
-  [string] $SqlPath,
-  [string] $SchemaSnapshotPath
+  [string] $DataRoot
 )
 $ErrorActionPreference = "Stop"
 
@@ -16,34 +14,23 @@ $responsePath = Join-Path $stagingRoot "response.json"
 $metricsPath = Join-Path $stagingRoot "runtime-metrics.json"
 $assembledResponsePath = Join-Path $stagingRoot "assembled-response.json"
 $assemblyMetricsPath = Join-Path $stagingRoot "evidence-assembly-metrics.json"
+$impactValueReportPath = Join-Path $stagingRoot "impact-value-report.json"
 
 if (-not $DataRoot) {
   $roots = @(Get-ChildItem -LiteralPath "E:\02_area" -Directory | ForEach-Object {
     Join-Path $_.FullName "sql-static-lineage-data"
   } | Where-Object {
-    Test-Path -LiteralPath (Join-Path $_ "field-facts\input-pack-sources\209119")
+    (Test-Path -LiteralPath (Join-Path $_ "tasks")) -and
+    (Test-Path -LiteralPath (Join-Path $_ "tables"))
   })
   if ($roots.Count -ne 1) { throw "cannot uniquely locate the frozen sql-static-lineage-data root" }
   $DataRoot = $roots[0]
 }
-if (-not $SqlPath) {
-  $sqlFiles = @(Get-ChildItem -LiteralPath (Join-Path $DataRoot "field-facts\input-pack-sources\209119") -Filter *.sql -File)
-  if ($sqlFiles.Count -ne 1) { throw "expected exactly one frozen SQL source for 209119" }
-  $SqlPath = $sqlFiles[0].FullName
-}
-if (-not $SchemaSnapshotPath) {
-  $SchemaSnapshotPath = Join-Path $DataRoot "field-facts\snapshots\schema\571afcc79864cdc8c34bcb2797415be9b6b2356515e1a719f43ed6f612332766.json"
-}
-if (-not (Test-Path -LiteralPath $SqlPath)) { throw "frozen real SQL is missing" }
-if (-not (Test-Path -LiteralPath $SchemaSnapshotPath)) { throw "frozen schema snapshot is missing" }
 New-Item -ItemType Directory -Force -Path $classes | Out-Null
 
 & node --import tsx scripts/calcite-semantic-provider/prepare-real-probe.ts `
   --data-root $DataRoot `
-  --sql $SqlPath `
-  --schema-snapshot $SchemaSnapshotPath `
   --task-id 209119 `
-  --sql-source-id real:209119:sql-slot:0 `
   --output-prefix real-209119 | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "real request preparation failed" }
 
@@ -104,6 +91,24 @@ if ($LASTEXITCODE -ne 0) { throw "real Native evidence assembly failed" }
 & node --import tsx scripts/calcite-semantic-provider/validate-provider-response.ts --input $assembledResponsePath | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "assembled real response failed canonical contract validation" }
 
+& node --import tsx scripts/calcite-semantic-provider/impact-value-report.ts `
+  --input $assembledResponsePath `
+  --manifest (Join-Path $stagingRoot "input-manifest.json") `
+  --output $impactValueReportPath | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "real Calcite indirect-impact value gate failed" }
+$impactValueReport = Get-Content -Raw -LiteralPath $impactValueReportPath | ConvertFrom-Json
+if ($impactValueReport.valueGate.decision -ne "CALCITE_INDIRECT_IMPACT_VALUE_PROVEN") {
+  throw "real Calcite indirect-impact value was not demonstrated"
+}
+if ($impactValueReport.productionProviderDecision -ne "VALIDATION_ONLY") {
+  throw "impact value report must not promote the production Provider decision"
+}
+if ($impactValueReport.safety.canonicalArtifactsWritten -ne $false -or
+    $impactValueReport.safety.productionIntegrationPerformed -ne $false -or
+    $impactValueReport.safety.provenUnrelatedEnabled -ne $false) {
+  throw "impact value report violated POC isolation"
+}
+
 $metrics = [ordered]@{
   reportVersion = 1
   safety = [ordered]@{
@@ -115,6 +120,10 @@ $metrics = [ordered]@{
   peakWorkingSetBytes = $peakBytes
   requestBytes = (Get-Item -LiteralPath $requestPath).Length
   responseBytes = (Get-Item -LiteralPath $responsePath).Length
+  calciteIndirectImpactValueDecision = $impactValueReport.valueGate.decision
+  directFieldValueReadCount = $impactValueReport.summary.directFieldValueReadCount
+  indirectOnlyReadCount = $impactValueReport.summary.indirectOnlyReadCount
+  notReachedReadCount = $impactValueReport.summary.notReachedReadCount
 }
 [IO.File]::WriteAllText($metricsPath, ($metrics | ConvertTo-Json -Depth 10), (New-Object Text.UTF8Encoding($false)))
 $metrics | ConvertTo-Json -Depth 10

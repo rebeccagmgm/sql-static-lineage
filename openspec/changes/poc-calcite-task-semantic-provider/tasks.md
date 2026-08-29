@@ -71,4 +71,38 @@ Mapping outcome: 5.1 is complete. The same-front-end source occurrence experimen
 - [x] 9.5 Resolve the focused-review findings for outer joins, correlated subqueries, Window duplication, CROSS JOIN multiplicity, SETOP roles, identity guessing and hidden Unknown; rerun affected checks without touching unrelated dirty files.
 - [x] 9.6 Stop after the POC decision. Do not integrate with multi-hop/target-table closure, modify runtime rerun policy, publish canonical artifacts or start a production Provider migration in this Change.
 
+## 10. Native input reuse stop/go audit
+
+- [x] 10.1 Compare the real-input POC preparation with the existing Input Pack/adaptor chain and prove whether SQL, schema table set, dialect and source identity can be reused losslessly.
+- [x] 10.2 Route the real SQL POC through `prepareInputPackTask`; remove manual SQL/schema-snapshot discovery while keeping Calcite direct-SQL parsing and the reversible dialect transform.
+- [x] 10.3 Fail closed when the analysis SQL is derived from multiple sources or differs from its sole original source without a complete source map.
+- [x] 10.4 Re-run focused TypeScript tests and the 209119 real Provider path; compare SQL hash, schema table set, semantic golden, evidence mapping, runtime and canonical-artifact isolation.
+- [x] 10.5 Publish one terminal reuse decision: `VALIDATION_ONLY`; input reuse passes, but operator source spans/full evidence closure remain outside the proven boundary.
+
 Verification outcome: 9.1 remains open because the repository-wide formatting baseline has 12 pre-existing documentation warnings and the default suite has 6 pre-existing `task-inspection` fixture failures (365 tests pass, 3 skip, 1 todo). 9.2 remains open because operator source spans/full evidence closure are not assembled; deterministic output, 35/35 exact leaf occurrence mapping, 3,841/3,841 exact dependency endpoint mapping, explicit fail-closed boundaries, no Native fallback and unchanged canonical hashes pass independently.
+
+## 11. Calcite indirect-impact value gate
+
+- [x] 11.1 Specify the FIELD_VALUE-only baseline versus all-impact projection and keep plan-coordinate witness separate from unavailable operator source-span closure.
+- [x] 11.2 Implement one bounded TypeScript graph consumer that propagates only Provider-declared dependencies/impact kinds and emits exact witnesses, retained gaps and `NOT_REACHED/UNKNOWN` without operator semantic inference.
+- [x] 11.3 Add targeted tests for direct value paths, indirect-only paths, confirmed plus unknown alternatives, unmappable dependencies, traversal budgets, not-reached reads and deterministic witness digests.
+- [x] 11.4 Generate a POC-local 209119 impact-value report and verify every claimed indirect-only read has an exact Native occurrence plus complete evaluated dependency/operator/mapping witness.
+- [x] 11.5 Publish the Calcite-internal value delta and explicitly keep it separate from value over the current Native implementation. Keep the overall Provider decision `VALIDATION_ONLY` and stop without production integration.
+
+Calcite-internal outcome: 209119 has 35 exact physical read occurrences. The Calcite `FIELD_VALUE` projection reaches 10; its all-impact graph reaches 16 and adds 6 exact `INDIRECT_ONLY` occurrences. This proves Calcite models indirect channels, but it does not prove an advantage over current Native artifacts; section 12 supersedes that business-value interpretation.
+
+## 12. Occurrence-aligned A/B/C net-value gate
+
+- [x] 12.1 Freeze the five-case matrix `93338 / 155015 / 176827 / 181058 / 209119`; inventory field-lineage, rowsetControls, Machine Facts, target-write identity, SQL fingerprint and physical read occurrence availability without rebuilding canonical artifacts.
+- [x] 12.2 Record input compatibility: all five cases reuse existing Input Pack/Machine Facts/artifacts without canonical rebuild. 155015, 93338 and 209119 evaluate; 176827 stops at the uncontracted `pretradedate` UDF; 181058 now resolves exactly to `query / statement 0` and then stops at unsupported Hive `LATERAL VIEW POSEXPLODE`.
+- [x] 12.3 Implement a read-only three-way differential that aligns existing VALUE_FLOW, Native indirect relation evidence and Calcite impacts by exact root and physical read occurrence; retain independent evidence/gaps and prohibit tail-name/substring fallback.
+- [x] 12.4 Add tests for exact unique-read mapping, same-table occurrence ambiguity, qualifier/binding control mapping, different Native/Calcite channel labels, incomplete Native coverage, coarse Native table retention and missing Calcite evaluation.
+- [x] 12.5 Run each compatible SQL/schema digest through Calcite once, generate POC-local per-case and aggregate reports, and classify overlap, `CALCITE_ONLY`, `CALCITE_ONLY_CANDIDATE`, `OCCURRENCE_PRECISION_ONLY`, `NATIVE_ONLY` and unknown boundaries.
+- [x] 12.6 Publish the terminal net-value decision: `CALCITE_INCREMENTAL_VALUE_CANDIDATE_ONLY`. Across 68 physical read occurrences, Calcite has zero proven net-new occurrences, one candidate in 93338 whose Native coverage is partial, and six occurrence-precision improvements in 209119. Overall Provider remains `VALIDATION_ONLY`; no production integration follows.
+
+## 13. Final bounded five-case attempt
+
+- [x] 13.1 Replace the blanket single-SQL-source rejection with exact root selection through `write_observation_id -> output binding -> statement_id -> SQL slot`, requiring the Machine Facts statement to occur uniquely in the selected original source; add multi-slot and mismatch fail-closed tests.
+- [x] 13.2 Remove the redundant legacy `observations` response beside canonical Facts and collapse repeated `NATIVE_EVIDENCE_NOT_ASSEMBLED` records into one shared issue without weakening per-dependency evidence mappings or the 4 MiB output limit.
+- [x] 13.3 Re-run the fixed five-case A/B/C gate once. Record 93338 as evaluated with one `CALCITE_ONLY_CANDIDATE`, 155015 as complete overlap, 209119 as six occurrence-precision improvements, 176827 as `FUNCTION_UNSUPPORTED`, and 181058 as `PLANNER_FAILURE` at Hive `LATERAL VIEW POSEXPLODE`.
+- [x] 13.4 Stop without inventing UDF contracts, adding a `LATERAL VIEW` semantic rewrite, changing canonical artifacts, enabling `PROVEN_UNRELATED`, or starting production integration.

@@ -3,13 +3,20 @@ import { adaptHiveCompatSql } from "../../scripts/calcite-semantic-provider/dial
 
 describe("bounded Hive compatibility adapter", () => {
   it("quotes only registered reserved identifiers in alias/member positions", () => {
-    const sql = "SELECT x AS CONDITION, t.CONDITION, 'AS CONDITION', t.OPERATOR FROM demo t -- CONDITION\n";
+    const sql =
+      "SELECT x AS CONDITION, t.CONDITION, 'AS CONDITION', t.OPERATOR FROM demo t -- CONDITION\n";
     const result = adaptHiveCompatSql(sql);
-    expect(result.sql).toBe("SELECT x AS `CONDITION`, t.`CONDITION`, 'AS CONDITION', t.`OPERATOR` FROM demo t -- CONDITION\n");
+    expect(result.sql).toBe(
+      "SELECT x AS `CONDITION`, t.`CONDITION`, 'AS CONDITION', t.`OPERATOR` FROM demo t -- CONDITION\n",
+    );
     expect(result.transforms).toHaveLength(3);
     for (const transform of result.transforms) {
-      expect(result.sql.slice(transform.afterSpan.start, transform.afterSpan.end)).toBe(`\`${transform.identifier}\``);
-      expect(sql.slice(transform.beforeSpan.start, transform.beforeSpan.end)).toBe(transform.identifier);
+      expect(
+        result.sql.slice(transform.afterSpan.start, transform.afterSpan.end),
+      ).toBe(`\`${transform.identifier}\``);
+      expect(
+        sql.slice(transform.beforeSpan.start, transform.beforeSpan.end),
+      ).toBe(transform.identifier);
     }
   });
 
@@ -18,5 +25,16 @@ describe("bounded Hive compatibility adapter", () => {
     const first = adaptHiveCompatSql(sql);
     expect(first.status).toBe("UNCHANGED");
     expect(adaptHiveCompatSql(sql)).toEqual(first);
+  });
+
+  it("quotes the reserved default schema without rewriting the function name", () => {
+    const sql =
+      "SELECT default.pretradedate(busi_date, 2) FROM PDATA_N.positions";
+    const result = adaptHiveCompatSql(sql);
+    expect(result.sql).toBe(
+      "SELECT `default`.pretradedate(busi_date, 2) FROM PDATA_N.positions",
+    );
+    expect(result.transforms).toHaveLength(1);
+    expect(result.transforms[0]?.identifier).toBe("default");
   });
 });

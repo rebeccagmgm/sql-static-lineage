@@ -37,7 +37,7 @@ export interface CalciteSemanticProviderResponse {
 export function providerRequestDigest(request: CalciteSemanticProviderRequest): string {
   return sha256(canonicalJson({
     protocolVersion: request.protocolVersion,
-    providerVersion: "calcite-semantic-provider/0.1.0-poc;calcite/1.42.0",
+    providerVersion: "calcite-semantic-provider/0.1.1-poc;calcite/1.42.0",
     sql: request.sql,
     schema: request.schema,
     dialect: request.dialect,

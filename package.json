@@ -43,6 +43,7 @@
     "test:calcite-semantic-provider:java": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/calcite-semantic-provider/test-runtime.ps1",
     "test:calcite-semantic-provider:corpus": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/calcite-semantic-provider/test-corpus.ps1",
     "test:calcite-semantic-provider:real": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/calcite-semantic-provider/test-real-209119.ps1",
+    "test:calcite-semantic-provider:real-cases": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/calcite-semantic-provider/test-real-cases.ps1",
     "calcite-semantic-provider:report": "tsx scripts/calcite-semantic-provider/poc-report.ts",
     "calcite-semantic-provider:poc": "tsx scripts/calcite-semantic-provider/runner.ts",
     "calcite-causal-evidence": "tsx scripts/calcite-differential/build-causal-evidence-report.ts",

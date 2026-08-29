@@ -143,3 +143,80 @@ POC SHALL 在单一有界 JVM 中批量执行，并按 SQL hash、Schema fingerp
 
 - **WHEN** parse、validate、metadata 或输出超过配置的 deadline、heap、节点或字节限制
 - **THEN** 当前输入以结构化 `ERROR`/`UNKNOWN` 结束，其他输入继续或安全停止，且不产生部分确定性事实
+
+### Requirement: Calcite indirect-impact value gate
+
+POC SHALL 在真实复杂 SQL 的同一份 `CandidateTaskSemanticFacts` 上比较两种只读图投影：仅沿 `FIELD_VALUE` 的值血缘基线，以及沿 Calcite 已显式输出的全部 `impactKind` 的影响投影。TypeScript MUST NOT 根据 operator kind、SQL 文本或字段名补算影响类型；它只能传播 Provider 已发布的 dependency 与 impact。
+
+每条可确认的 impact witness MUST 从一个精确映射的 Native physical read occurrence 出发，经 `EVALUATED` dependency、存在的 Calcite operator 和 `EXACT` evidence mapping 到达唯一的 Calcite root relation。该 witness 使用 `CALCITE_VALIDATED_PLAN` 坐标和稳定 digest；它 MUST 明确保留 `operatorSourceSpanStatus=NOT_ASSEMBLED`，不得冒充原 SQL operator span 或 production evidence closure。
+
+#### Scenario: Calcite retains an indirect-only read
+
+- **WHEN** 某个 physical read occurrence 没有纯 `FIELD_VALUE` 路径到 root，但存在一条完整、精确的 `ROW_MEMBERSHIP`、`MULTIPLICITY`、`EXPRESSION_CONTROL`、`NULL_EXTENSION` 或 `RELATION_EXISTENCE` 路径
+- **THEN** 报告将该 occurrence 标为 `INDIRECT_ONLY`，给出 dependency/operator/evidence witness，并计入 Calcite 相对值血缘基线的净新增读取
+
+#### Scenario: Direct path and uncertain alternative coexist
+
+- **WHEN** 同一读取存在一条精确 `FIELD_VALUE` 路径，同时另一路径包含未评价或不可精确映射的 dependency
+- **THEN** 精确路径仍被保留，未知路径的 gap 同时保留；未知备选路径不得推翻已有精确 witness
+
+#### Scenario: No path is observed
+
+- **WHEN** 当前 Facts 中没有从某个 physical read occurrence 到 root 的完整路径，或遍历预算被截断
+- **THEN** 结果只能是 `NOT_REACHED/UNKNOWN`，不得生成 `PROVEN_UNRELATED` 或任何 negative proof
+
+#### Scenario: Value is not demonstrated
+
+- **WHEN** 真实 SQL 中不存在至少一个具有精确 Native occurrence 与完整 Calcite plan witness 的 `INDIRECT_ONLY` 读取
+- **THEN** 本价值门禁输出 `NO_GO` 并停止扩大工程；不得用语料覆盖率或 dependency 数量替代该业务价值证据
+
+### Requirement: Occurrence-aligned three-way net-value gate
+
+POC SHALL 在相同 SQL source identity、相同 target write root 和相同 physical read occurrence 上，对齐比较现有 field-lineage `VALUE_FLOW`、现有 Native `rowsetControls`/Machine Facts relation evidence 与 Calcite impact facts。差分 MUST 保留三方各自的状态、证据引用、impact/control 类型和 mapping gap，不得把 Calcite 内部的 FIELD_VALUE baseline 当作现有 Native 字段血缘。
+
+Root identity MUST 由目标 `write_observation_id` 对应的 output binding 和 statement identity 唯一确定。Occurrence identity MUST 使用显式 `read_occurrence_id`；旧 bundle 仅在 read relation id、完整 source span 和 qualified physical table 同时唯一时允许 legacy exact 映射。任何 CTE 名、substring、tail table-name 或裸字段名 fallback SHALL 被拒绝。
+
+#### Scenario: Native and Calcite use different impact labels for the same occurrence
+
+- **WHEN** Native rowset control 通过精确 relation evidence 保留一个 JOIN read，而 Calcite 通过 `MULTIPLICITY` 或 `NULL_EXTENSION` witness 保留同一 occurrence
+- **THEN** 该 occurrence 归为 Native/Calcite overlap，并分别保存原始 control 与 Calcite channel；不得因为标签不同误报 `CALCITE_ONLY`
+
+#### Scenario: Calcite finds a genuinely additional occurrence
+
+- **WHEN** Calcite 以完整、精确的 indirect witness 到达一个 physical read occurrence，现有 VALUE_FLOW 和 Native indirect evidence 均未保留它，而且对应 Native artifact/occurrence mapping 覆盖完整
+- **THEN** 该 occurrence 标为 `CALCITE_ONLY`，并可计入 `CALCITE_NET_INCREMENTAL_VALUE_PROVEN`
+
+#### Scenario: Native coverage is incomplete
+
+- **WHEN** Calcite 命中一个 Native 未观察到的 occurrence，但 field-lineage 为 `PARTIAL`、存在 unresolved control、同表多 occurrence 歧义或 fingerprint/root 无法闭合
+- **THEN** 结果只能是 `CALCITE_ONLY_CANDIDATE` 或 `UNKNOWN`，不得宣称 Calcite 净增价值
+
+#### Scenario: Native retained the physical table but not the exact occurrence
+
+- **WHEN** Calcite 以精确 witness 命中一个 occurrence，而 Native 已通过完整物理表身份保留同表读取、但因 CTE/derived/self-join 边界无法唯一选择 occurrence
+- **THEN** 该差异只能标为 `OCCURRENCE_PRECISION_ONLY`，不得计为新增重跑表、任务或 `CALCITE_NET_INCREMENTAL_VALUE_PROVEN`
+
+#### Scenario: A selected real case has multiple SQL sources
+
+- **WHEN** 一个案例无法将目标 root 精确映射到唯一原始 SQL source，且没有完整多 source source-map
+- **THEN** 该案例保留在矩阵中并显示 `NOT_EVALUATED` 与明确原因，不得静默选择 query/finish 中任意一个 source
+
+#### Scenario: Target root closes one statement inside a multi-source task
+
+- **WHEN** `write_observation_id`、output binding、statement id、SQL slot 全部唯一闭合，且 Machine Facts statement 在该原始 slot 中唯一精确命中
+- **THEN** Provider MAY 只分析该 target statement，并 MUST 保留 statement id、ordinal、原始 SQL hash 与 slot locator；其它 SQL slot 不得进入该请求
+
+#### Scenario: Machine Facts analysis added a statement terminator
+
+- **WHEN** 合并 SQL slot 的 Machine Facts 视图仅在目标 statement 末尾增加了分号和空白
+- **THEN** 输入适配 MAY 去除该末尾补充并要求结果在原始 slot 中唯一精确命中；任何其它近似、substring 猜测或多重命中 MUST fail closed
+
+#### Scenario: Canonical Facts approach the output budget
+
+- **WHEN** Provider 已在 canonical Facts 中表达 dependency、metadata 和 evidence mapping
+- **THEN** 响应不得再输出语义等价的 legacy `observations` 副本；相同的 provider-local pending-mapping 状态 MAY 使用一个共享 issue，但每条 dependency 的独立 mapping MUST 保留，且不得通过提高 hard limit 隐藏体积问题
+
+#### Scenario: No system observes a path
+
+- **WHEN** A/B/C 均未观察到当前 occurrence 到 root 的路径
+- **THEN** 报告仅陈述 `NOT_OBSERVED/NOT_EVALUATED/UNKNOWN`，不得生成 `PROVEN_UNRELATED`

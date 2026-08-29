@@ -1,0 +1,1 @@
+{"providerStatus":"SUCCESS","reportVersion":1,"safety":{"canonicalArtifactsWritten":false,"nativeSemanticFallback":false},"status":"EVALUATED","summary":{"directFieldValueReadCount":10,"exactNativeReadCount":35,"gapCount":0,"indirectOnlyReadCount":6,"reachedReadCount":16,"tableScanCount":35},"taskId":"209119"}

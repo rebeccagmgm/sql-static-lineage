@@ -12,10 +12,7 @@ export interface PreparedRealProbe {
 
 export function prepareRealProbe(input: {
   readonly dataRoot: string;
-  readonly sqlPath: string;
-  readonly schemaSnapshotPath: string;
   readonly taskId: string;
-  readonly sqlSourceId: string;
   readonly outputPrefix?: string;
 }): PreparedRealProbe {
   const prepared = buildRealProviderInput(input);
@@ -24,16 +21,20 @@ export function prepareRealProbe(input: {
   const manifestPath = resolvePocOutputPath(`${prefix}/input-manifest.json`);
   mkdirSync(dirname(requestPath), { recursive: true });
   writeFileSync(requestPath, canonicalJson(prepared.request), "utf8");
-  writeFileSync(manifestPath, canonicalJson({
-    manifestVersion: 1,
-    safety: {
-      reportKind: "CALCITE_SEMANTIC_PROVIDER_REAL_INPUT",
-      canonicalArtifactsWritten: false,
-      nativeSemanticFallback: false,
-    },
-    evidence: prepared.evidence,
-    dialectTransform: prepared.dialectTransform,
-  }), "utf8");
+  writeFileSync(
+    manifestPath,
+    canonicalJson({
+      manifestVersion: 1,
+      safety: {
+        reportKind: "CALCITE_SEMANTIC_PROVIDER_REAL_INPUT",
+        canonicalArtifactsWritten: false,
+        nativeSemanticFallback: false,
+      },
+      evidence: prepared.evidence,
+      dialectTransform: prepared.dialectTransform,
+    }),
+    "utf8",
+  );
   return { requestPath, manifestPath };
 }
 
@@ -42,7 +43,8 @@ function argumentsMap(argv: readonly string[]): ReadonlyMap<string, string> {
   for (let index = 2; index < argv.length; index += 2) {
     const key = argv[index];
     const value = argv[index + 1];
-    if (!key?.startsWith("--") || value === undefined) throw new Error(`invalid argument at position ${index}`);
+    if (!key?.startsWith("--") || value === undefined)
+      throw new Error(`invalid argument at position ${index}`);
     values.set(key, value);
   }
   return values;
@@ -57,19 +59,22 @@ function main(): void {
   };
   const result = prepareRealProbe({
     dataRoot: required("--data-root"),
-    sqlPath: required("--sql"),
-    schemaSnapshotPath: required("--schema-snapshot"),
     taskId: args.get("--task-id") ?? "209119",
-    sqlSourceId: args.get("--sql-source-id") ?? "real:209119:sql-slot:0",
     outputPrefix: args.get("--output-prefix"),
   });
   process.stdout.write(canonicalJson(result));
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  try { main(); }
-  catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
+  try {
+    main();
+  } catch (error) {
+    process.stderr.write(
+      `${error instanceof Error ? error.message : String(error)}\n`,
+    );
     process.exitCode = 1;
   }
 }

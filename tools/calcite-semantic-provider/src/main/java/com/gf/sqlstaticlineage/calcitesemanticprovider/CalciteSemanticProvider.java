@@ -121,10 +121,14 @@ public final class CalciteSemanticProvider {
       "FROM_UNIXTIME", ReturnTypes.VARCHAR_NULLABLE,
       OperandTypes.sequence("FROM_UNIXTIME(<NUMERIC>, <CHARACTER>)",
           OperandTypes.NUMERIC, OperandTypes.STRING));
+  private static final SqlBasicFunction HIVE_DATEDIFF = SqlBasicFunction.create(
+      "DATEDIFF", ReturnTypes.INTEGER,
+      OperandTypes.sequence("DATEDIFF(<CHARACTER>, <CHARACTER>)",
+          OperandTypes.STRING, OperandTypes.STRING));
   private static final int MIN_OUTPUT_BYTES = 512;
   private static final int HARD_MAX_PROCESSING_MS = 5000;
   private static final String BUILD_FINGERPRINT =
-      "calcite-semantic-provider/0.1.0-poc;calcite/1.42.0;protocol/1";
+      "calcite-semantic-provider/0.1.1-poc;calcite/1.42.0;protocol/1";
   private static final String[] METADATA_KINDS = {
       "expressionLineage", "predicates", "uniqueKeys",
       "functionalDependencies", "tableOccurrences", "rowCountCardinality"
@@ -292,7 +296,8 @@ public final class CalciteSemanticProvider {
                     SqlLibraryOperators.REGEXP_REPLACE_3,
                     SqlLibraryOperators.CONCAT_FUNCTION,
                     HIVE_UNIX_TIMESTAMP,
-                    HIVE_FROM_UNIXTIME))
+                    HIVE_FROM_UNIXTIME,
+                    HIVE_DATEDIFF))
             : SqlLibraryOperatorTableFactory.INSTANCE.getOperatorTable(
                 SqlLibrary.STANDARD))
         .sqlToRelConverterConfig(SqlToRelConverter.config().withHintStrategyTable(
@@ -340,35 +345,8 @@ public final class CalciteSemanticProvider {
       throw new UnsupportedError("RELNODE_LIMIT",
           "relational plan exceeds the configured node limit");
     }
-    Map<RelNode, String> nodeIds = new HashMap<RelNode, String>();
-    for (int i = 0; i < nodes.size(); i++) {
-      nodeIds.put(nodes.get(i), String.format(Locale.ROOT, "rel-%03d", i + 1));
-    }
-    Map<String, Object> observations = new LinkedHashMap<String, Object>();
-    if (requested.contains("expressionLineage")) {
-      observations.put("expressionLineage",
-          expressionLineage(nodes, nodeIds, metadata, maxOutputItems));
-    }
-    if (requested.contains("predicates")) {
-      observations.put("predicates", predicates(nodes, nodeIds, metadata, maxOutputItems));
-    }
-    if (requested.contains("uniqueKeys")) {
-      observations.put("uniqueKeys", uniqueKeys(nodes, nodeIds, metadata, maxOutputItems));
-    }
-    if (requested.contains("functionalDependencies")) {
-      observations.put("functionalDependencies", functionalDependencies(
-          nodes, nodeIds, metadata, maxOutputItems));
-    }
-    if (requested.contains("tableOccurrences")) {
-      observations.put("tableOccurrences", tableOccurrences(nodes, nodeIds, maxOutputItems));
-    }
-    if (requested.contains("rowCountCardinality")) {
-      observations.put("rowCountCardinality", rowCounts(nodes, nodeIds, metadata,
-          maxOutputItems));
-    }
     Map<String, Object> output = response("SUCCESS", requestId, null, null);
-    output.put("observations", observations);
-    output.put("facts", candidateFacts(request, requestId, nodes, nodeIds, metadata, requested));
+    output.put("facts", candidateFacts(request, requestId, nodes, metadata, requested));
     try {
       Json.write(output, maxOutputBytes);
     } catch (OutputLimitException error) {
@@ -434,7 +412,7 @@ public final class CalciteSemanticProvider {
   }
 
   private static Map<String, Object> candidateFacts(Map<String, Object> request, String requestId,
-      List<RelNode> nodes, Map<RelNode, String> legacyIds, RelMetadataQuery metadata,
+      List<RelNode> nodes, RelMetadataQuery metadata,
       Set<String> requested) {
     Map<RelNode, String> relationIds = new HashMap<RelNode, String>();
     for (int index = 0; index < nodes.size(); index++) {
@@ -520,6 +498,7 @@ public final class CalciteSemanticProvider {
       }
       appendMetadata(node, relationId, metadata, semanticMetadata, requested);
     }
+    if (!dependencies.isEmpty()) addNativeEvidencePendingIssue(issues);
     List<Object> capabilityFacts = capabilities(dependencies, semanticMetadata, issues, requested);
     sortBy(relations, "relationId");
     sortBy(fields, "fieldId");
@@ -538,7 +517,7 @@ public final class CalciteSemanticProvider {
     facts.put("metadata", semanticMetadata);
     facts.put("operators", operators);
     Map<String, Object> provider = new TreeMap<String, Object>();
-    provider.put("adapterVersion", "0.1.0-poc");
+    provider.put("adapterVersion", "0.1.1-poc");
     provider.put("buildFingerprint", sha256(BUILD_FINGERPRINT));
     provider.put("calciteVersion", CALCITE_VERSION);
     provider.put("name", "calcite-semantic-provider");
@@ -974,7 +953,7 @@ public final class CalciteSemanticProvider {
     if (!dependencyKeys.add(semanticKey)) return;
     String dependencyId = String.format(Locale.ROOT, "dep:%05d", ordinal[0]++);
     String mappingId = "mapping:" + dependencyId;
-    String issueId = "issue:unmapped:" + dependencyId;
+    String issueId = "issue:native-evidence:not-assembled";
     Map<String, Object> dependency = new TreeMap<String, Object>();
     dependency.put("dependencyId", dependencyId);
     dependency.put("dependencyKind", dependencyKind);
@@ -992,12 +971,14 @@ public final class CalciteSemanticProvider {
     mapping.put("mappingStatus", "NOT_ASSEMBLED");
     mapping.put("providerRefId", dependencyId);
     mappings.add(mapping);
+  }
+
+  private static void addNativeEvidencePendingIssue(List<Object> issues) {
     Map<String, Object> issue = new TreeMap<String, Object>();
     issue.put("code", "NATIVE_EVIDENCE_NOT_ASSEMBLED");
-    issue.put("issueId", issueId);
+    issue.put("issueId", "issue:native-evidence:not-assembled");
     issue.put("message", "Provider-local semantic fact requires Native evidence assembly.");
     issue.put("severity", "INFO");
-    issue.put("subjectRefs", singletonString(dependencyId));
     issues.add(issue);
   }
 

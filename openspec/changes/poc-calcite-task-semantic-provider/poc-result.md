@@ -1,49 +1,83 @@
 # POC Result
 
-## Decision
+## Terminal decisions
 
-`VALIDATION_ONLY`
+- Provider decision: `VALIDATION_ONLY`
+- Net value over current Native artifacts: `CALCITE_INCREMENTAL_VALUE_CANDIDATE_ONLY`
+- Production integration: `NOT_STARTED`
+- `PROVEN_UNRELATED`: disabled
 
-这不是“Calcite 没有价值”的结论。POC 已证明 Calcite 1.42.0 能直接处理当前真实复杂 SQL，并能作为单条 SQL 内关系算子语义的候选主来源。当前又证明了 Calcite 物理读 occurrence 和 dependency endpoint 可以精确闭合到 Native 叶子证据；但算子自身 source span 与完整证据闭合尚未组装，因此当前结果仍不能进入 Confirmed 因果或重跑判断。
+Calcite is not useless, but this POC still does not justify making it the production semantic provider. The final occurrence-aligned five-case comparison found one exact Calcite-only indirect-impact candidate in 93338 and six occurrence-level precision improvements in 209119. The 93338 Native artifact is `PARTIAL`, so the candidate is not promoted to proven net-new rerun scope.
 
-## Gate 结果
+## What was compared
 
-- Gate A `DIRECT_EXTRACTION`：`PASS`。真实 209119 SQL 直接经过 Calcite parse、validate、RelNode 和 metadata，形成 129 个 relation 与 3,841 条 evaluated local dependencies。
-- Gate B `SEMANTIC_EDGE_CORRECTNESS`：`PASS`。10/10 代表性样本通过完整 semantic-edge golden；校验包含端点、方向、impact、JOIN/SETOP input role，并拒绝缺失、意外和重复边。
-- Gate C `NATIVE_EVIDENCE_ASSEMBLY`：`PARTIAL`。35/35 个 Calcite 物理读 occurrence 精确映射到 Native read，3,841/3,841 条 dependency endpoint 递归闭合到这些叶子证据，且没有 ambiguous/unmappable；但 129 个 operator 的 source span 与完整 operator-level evidence closure 仍为 0/`NOT_ASSEMBLED`。
-- Gate D `PRODUCTION_CAUSAL_INTEGRATION`：`NOT_STARTED`。本 Change 禁止接入 multi-hop、因果闭包和生产 artifact。
+The terminal gate aligns the same SQL source identity, target write root and physical read occurrence across:
 
-## 本轮修正的局部语义
+```text
+A. existing field-lineage VALUE_FLOW
+B. existing rowsetControls / Machine Facts relation evidence
+C. Calcite impact facts
+```
 
-- LEFT JOIN 区分 preserved/optional，并用 `JOIN_NULL_EXTENSION` 表达 null extension，不再粗略当作普通 row membership。
-- correlated EXISTS 保留外层与子查询字段共同参与的 predicate refs。
-- Window value/partition/order/frame 去重并分别表达。
-- CROSS JOIN 增加 relation-existence 与 multiplicity。
-- DISTINCT、UNION、INTERSECT、EXCEPT 使用不同 set membership 角色。
-- Filter、Join、Aggregate、Window、Sort 等算子补齐局部 value passthrough；literal projection 保留 relation-existence 依赖。
+Calcite's own `FIELD_VALUE: 10 -> all impacts: 16` result for 209119 remains useful evidence that Calcite models indirect semantics, but it is not by itself evidence of value over Native. Only the A/B/C comparison is used for the terminal net-value decision.
 
-## 性能与隔离
+## Five-case result
 
-真实 SQL 验证约 2.8 秒，峰值 working set 约 525 MiB，响应约 3.56 MiB；代表性语料约 2.1 秒。该模型按唯一 SQL/schema digest 计算并缓存，不按目标字段或 candidate branch 重复调用。
+| Task   | Physical reads | Calcite                                | A: exact value | B: exact Native indirect | C: Calcite reached | Net result                                                               |
+| ------ | -------------: | -------------------------------------- | -------------: | -----------------------: | -----------------: | ------------------------------------------------------------------------ |
+| 93338  |              4 | `EVALUATED`                            |              3 |                        2 |                  4 | 1 `CALCITE_ONLY_CANDIDATE`; Native coverage is partial                   |
+| 155015 |              2 | `EVALUATED`                            |              2 |                        2 |                  2 | complete overlap                                                         |
+| 176827 |             18 | `NOT_EVALUATED / FUNCTION_UNSUPPORTED` |              7 |                       18 |                  0 | `pretradedate` has no supplied type contract                             |
+| 181058 |              9 | `NOT_EVALUATED / PLANNER_FAILURE`      |              7 |                        9 |                  0 | exact query root selected; Hive `LATERAL VIEW POSEXPLODE` is unsupported |
+| 209119 |             35 | `EVALUATED`                            |              5 |                       10 |                 16 | 6 occurrence-precision improvements; 0 new table/task scope              |
 
-Provider 和 TypeScript consumer 只写 POC staging；`canonicalArtifactsWritten=false`、`nativeSemanticFallback=false`、`productionIntegrationPerformed=false`。
+Aggregate: 68 physical read occurrences, three evaluated cases, two explicitly not evaluated, zero proven net-new Calcite occurrences, one candidate and six occurrence-precision-only improvements. Report digest: `bfda6bb93e5ac3df903f577a4f2caa9ea67aa421b844416b6b501633ac18eaae`.
 
-## 尚未证明的内容
+## The 93338 candidate
 
-本轮通过同一 Calcite 前端中的 table hint/source occurrence 保留，实现了物理 `TableScan` 叶子的 source map，并将其与 Native physical read/span evidence 精确闭合。20 个 read 使用完整 span 相等，15 个因 Native span 额外包含 alias，使用“全限定表标识符精确前缀 + 同起点 + 唯一 Native occurrence”闭合；未使用 substring、tail table-name 或字段名猜测。
+Calcite reaches the exact Native occurrence for `pdata_n.t98_otc_deri_comp_sale_info` through an evaluated plan path containing field propagation plus join, set-membership and relation-existence dependencies. It reports `ROW_MEMBERSHIP`, `MULTIPLICITY`, `NULL_EXTENSION`, `SET_MEMBERSHIP` and `RELATION_EXISTENCE`; the plan witness has no traversal gap and its leaf maps to the exact Native read occurrence.
 
-尚未完成的是派生 operator/RexNode 到原 SQL operator span 的精确映射，以及可让每条 semantic dependency 具备 operator 位置和叶子 evidence 的完整证据对象。3,619 条 dependency 的叶子证据恰好共享一个 Native span；其余 222 条涉及多个不连续叶子，系统只保留逐叶子 evidence refs，拒绝拼造一个包围大 span。因此 `exactMappingCount=3,841` 只表示 dependency endpoints 可达精确 Native 叶子，不能解读为 full evidence closure。
+This is meaningful evidence that Calcite can expose an indirect-impact path not present as exact A/B evidence. It is still only a candidate because the current 93338 field-lineage/Native indirect coverage is partial and has `CONTROL_SCOPE_UNRESOLVED`. Claiming a proven net-new rerun branch would therefore overstate the evidence.
 
-在 Gate C 达到 operator-level full evidence closure 之前，最终结论保持 `VALIDATION_ONLY`。由于真实 SQL 需要 9 个有界 reserved-identifier quoting transforms，即使未来 Gate C 通过，预期结论也更可能是 `THIN_ADAPTER_REQUIRED`，而非 `DIRECT_PROVIDER`。
+## Final bounded fixes
+
+Two evidence-backed structural issues were fixed without expanding operator support:
+
+- Multi-source tasks now select a statement only through the exact chain `write_observation_id -> output binding -> statement_id -> SQL slot`, and only when the statement uniquely matches the original slot. This moved 181058 past the former blanket multi-source rejection and exposed its real `LATERAL VIEW` boundary.
+- Provider output no longer duplicates canonical Facts under legacy `observations`, and identical `NATIVE_EVIDENCE_NOT_ASSEMBLED` records share one issue while retaining every dependency mapping. This moved 93338 below the unchanged 4 MiB limit: 5,266 dependencies were emitted in about 3.39 MiB.
+
+The POC did not invent a `pretradedate` contract, rewrite Hive `LATERAL VIEW`, raise the output hard limit, modify canonical artifacts or enable `PROVEN_UNRELATED`.
+
+## What Calcite proved
+
+- It emits structured direct and indirect channels from validated RelNode/RexNode semantics for the supported subset.
+- It can provide exact Native leaf-occurrence and dependency-endpoint mappings for evaluated real statements.
+- It improves occurrence/channel/witness precision for six 209119 reads.
+- It finds one additional indirect-impact candidate in 93338 that deserves a separate business-value review.
+- It runs once per unique SQL/schema digest rather than per target field or candidate branch.
+
+## What remains unproved
+
+- No net-new rerun table or task is proven over complete Native coverage.
+- Two of five real cases remain not evaluated at explicit UDF/dialect boundaries.
+- Derived operator/RexNode source-span closure remains incomplete.
+- Calcite cannot write canonical artifacts, change Native conclusions or generate `PROVEN_UNRELATED` in this POC.
+
+## Gate summary
+
+- Direct extraction and representative semantic-edge corpus: passed within the declared subset.
+- Exact Native leaf/dependency endpoint mapping: passed for evaluated evidence.
+- Full operator source-span evidence closure: partial.
+- A/B/C business-value gate: one candidate, no proven net-new scope.
+- Production causal integration: not started.
 
 ## Evidence
 
-- `staging/calcite-semantic-provider-poc/corpus/support-matrix.json`
-- `staging/calcite-semantic-provider-poc/real-209119/input-manifest.json`
-- `staging/calcite-semantic-provider-poc/real-209119/response.json`
-- `staging/calcite-semantic-provider-poc/real-209119/assembled-response.json`
-- `staging/calcite-semantic-provider-poc/real-209119/evidence-assembly-metrics.json`
-- `staging/calcite-semantic-provider-poc/real-209119/runtime-metrics.json`
-- `staging/calcite-semantic-provider-poc/poc-report.json`
+- `staging/calcite-semantic-provider-poc/three-way-impact-differential/report.json`
+- `staging/calcite-semantic-provider-poc/real-93338/`
+- `staging/calcite-semantic-provider-poc/real-155015/`
+- `staging/calcite-semantic-provider-poc/real-176827/`
+- `staging/calcite-semantic-provider-poc/real-181058/`
+- `staging/calcite-semantic-provider-poc/real-209119/`
 
-上述文件是 POC evidence，不是 canonical 业务或血缘产物。
+All listed files are POC-local evidence, not canonical lineage or business artifacts.

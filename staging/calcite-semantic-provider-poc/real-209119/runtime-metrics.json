@@ -5,8 +5,12 @@
                    "canonicalArtifactsWritten":  false,
                    "nativeSemanticFallback":  false
                },
-    "elapsedMs":  2756.4713,
-    "peakWorkingSetBytes":  550862848,
-    "requestBytes":  68855,
-    "responseBytes":  3559992
+    "elapsedMs":  3775.1472000000003,
+    "peakWorkingSetBytes":  544321536,
+    "requestBytes":  68890,
+    "responseBytes":  3560027,
+    "calciteIndirectImpactValueDecision":  "CALCITE_INDIRECT_IMPACT_VALUE_PROVEN",
+    "directFieldValueReadCount":  10,
+    "indirectOnlyReadCount":  6,
+    "notReachedReadCount":  19
 }
