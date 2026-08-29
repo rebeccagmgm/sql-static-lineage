@@ -883,7 +883,8 @@ function sortTerminals(
   );
 }
 
-function reconcileMultiHopInternal(
+/** Shared root-scoped traversal kernel used by both legacy and project runs. */
+function reconcileMultiHopRootTraversalKernel(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
   preparedContext: MultiHopPreparedContext,
@@ -1632,7 +1633,7 @@ export function reconcileMultiHop(
   const inputFingerprint = options.trustedInputFingerprint ?? fingerprintTableProducerInputs(options.dataRoot);
   if (inputFingerprint !== options.producerIndex.inputFingerprint)
     throw new Error("PRODUCER_INDEX_STALE");
-  return reconcileMultiHopInternal(
+  return reconcileMultiHopRootTraversalKernel(
     rootTaskId,
     options,
     prepareMultiHopContext(options.dataRoot, inputFingerprint),
@@ -1657,7 +1658,7 @@ export function reconcileMultiHopBatch(
     inputFingerprint,
   );
   const results = roots.map((root) =>
-    reconcileMultiHopInternal(
+    reconcileMultiHopRootTraversalKernel(
       root.taskId,
       {
         ...options,

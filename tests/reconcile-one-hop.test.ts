@@ -264,6 +264,12 @@ describe("reconcileOneHop", () => {
       "parent-a",
     ]);
     const cachePath = scheduleEvidenceCachePath("current-indexed", cacheRoot);
+    expect(
+      scheduleEvidenceCachePath(
+        "current-indexed",
+        join(cacheRoot, "schedule-evidence"),
+      ),
+    ).toBe(cachePath);
     expect(existsSync(cachePath)).toBe(true);
     expect(first.schedule.evidence[0]?.detail).toMatchObject({
       cacheStatus: "MISS",

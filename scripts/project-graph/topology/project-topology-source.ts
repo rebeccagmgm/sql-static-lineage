@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import {
+  MACHINE_FACTS_CONTRACT_VERSION,
   canonicalJson,
   safeSegment,
   sha256,
@@ -13,10 +14,14 @@ import {
 import {
   PROJECT_TOPOLOGY_SCHEMA_VERSION,
   compareText,
+  projectEvidenceSourceContentHash,
+  projectEvidenceSourceId,
   sortedUnique,
+  type ProjectEvidenceSourceDescriptorV1,
   type ProjectTopologyArtifactRef,
   type ProjectTopologyRootSource,
 } from "../contracts/project-topology-contract.ts";
+import { stableProjectEvidenceHash } from "../project-evidence/project-evidence-contract.ts";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
 
@@ -32,6 +37,17 @@ export interface LoadedProjectTopologyRoot {
   readonly source: ProjectTopologyRootSource;
   readonly oneHop: OneHopReconciliationResult;
   readonly multiHop: MultiHopReconciliationResult;
+}
+
+export interface DirectProjectTopologyRootInput {
+  readonly rootTaskId: string;
+  readonly oneHop: OneHopReconciliationResult;
+  readonly traversal: MultiHopReconciliationResult;
+}
+
+export interface DirectProjectTopologySourcesInput {
+  readonly descriptor: ProjectEvidenceSourceDescriptorV1;
+  readonly roots: readonly DirectProjectTopologyRootInput[];
 }
 
 export interface LoadProjectTopologySourcesOptions {
@@ -117,6 +133,7 @@ export function loadProjectTopologySources(
     });
     const source: ProjectTopologyRootSource = {
       rootTaskId: input.rootTaskId,
+      sourceMode: "LEGACY_ARTIFACT_PAIRS",
       oneHop: oneHopRef,
       multiHop: multiHopRef,
       producerIndex: { ...multiHop.parsed.producerIndex },
@@ -134,6 +151,166 @@ export function loadProjectTopologySources(
   return loaded.sort((left, right) =>
     compareText(left.source.rootTaskId, right.source.rootTaskId),
   );
+}
+
+export function loadDirectProjectTopologySources(
+  input: DirectProjectTopologySourcesInput,
+): LoadedProjectTopologyRoot[] {
+  validateDirectDescriptor(input.descriptor);
+  const descriptorRoots = input.descriptor.rootTaskIds;
+  if (
+    input.roots.length === 0 ||
+    input.roots.length > input.descriptor.limits.maxRoots
+  )
+    throw new Error("PROJECT_TOPOLOGY_ROOT_COUNT_INVALID");
+  const rootIds = sortedUnique(
+    input.roots.map((root) => safeSegment(root.rootTaskId, "rootTaskId")),
+  );
+  if (
+    rootIds.length !== input.roots.length ||
+    JSON.stringify(rootIds) !== JSON.stringify(descriptorRoots)
+  )
+    throw new Error("PROJECT_TOPOLOGY_DIRECT_ROOTS_INVALID");
+
+  const loaded = input.roots.map((root) => {
+    validateOneHopSource(root.oneHop, root.rootTaskId);
+    validateMultiHopReconciliation(root.traversal);
+    validateDirectRootOverlay(root);
+    const producer = root.traversal.producerIndex;
+    if (
+      root.oneHop.producerIndex.contentHash !== producer.contentHash ||
+      root.oneHop.producerIndex.inputFingerprint !== producer.inputFingerprint ||
+      producer.contentHash !== input.descriptor.producerIndexContentHash ||
+      producer.inputFingerprint !== input.descriptor.inputFingerprint
+    )
+      throw new Error(
+        `PROJECT_TOPOLOGY_DIRECT_SOURCE_IDENTITY_MISMATCH:${root.rootTaskId}`,
+      );
+    if (
+      root.traversal.terminalTableConfig.version !==
+        input.descriptor.terminalConfig.version ||
+      JSON.stringify(
+        sortedUnique([...root.traversal.terminalTableConfig.stopRoles]),
+      ) !== JSON.stringify(input.descriptor.terminalConfig.stopRoles)
+    )
+      throw new Error(
+        `PROJECT_TOPOLOGY_DIRECT_TERMINAL_CONFIG_MISMATCH:${root.rootTaskId}`,
+      );
+
+    const oneHopHash = stableProjectEvidenceHash(root.oneHop);
+    const traversalHash = stableProjectEvidenceHash(root.traversal);
+    const oneHopRef = artifactRef({
+      rootTaskId: root.rootTaskId,
+      contract: "OneHopReconciliationResult",
+      artifactType: null,
+      schemaVersion: root.oneHop.schemaVersion,
+      contentSha256: oneHopHash,
+      declaredContentHash: null,
+      logicalLocator: `${input.descriptor.sourceId}/one-hop/${root.rootTaskId}`,
+    });
+    const traversalRef = artifactRef({
+      rootTaskId: root.rootTaskId,
+      contract: "ProjectRootTraversalView",
+      artifactType: "PROJECT_ROOT_TRAVERSAL_VIEW",
+      schemaVersion: input.descriptor.algorithmVersion,
+      contentSha256: traversalHash,
+      declaredContentHash: traversalHash,
+      logicalLocator: `${input.descriptor.sourceId}/root/${root.rootTaskId}`,
+    });
+    return {
+      source: {
+        rootTaskId: root.rootTaskId,
+        sourceMode: "DIRECT_PROJECT_EVIDENCE" as const,
+        projectEvidence: input.descriptor,
+        oneHop: oneHopRef,
+        multiHop: traversalRef,
+        producerIndex: { ...producer },
+        coverage: { ...root.traversal.coverage },
+        limits: { ...root.traversal.limits },
+        sourceIssues: [...root.traversal.issues],
+        sourceBoundaries: { ...root.traversal.boundaries },
+      },
+      oneHop: root.oneHop,
+      multiHop: root.traversal,
+    };
+  });
+  validateDirectTaskLocalFacts(loaded);
+  return loaded.sort((left, right) =>
+    compareText(left.source.rootTaskId, right.source.rootTaskId),
+  );
+}
+
+function validateDirectDescriptor(
+  descriptor: ProjectEvidenceSourceDescriptorV1,
+): void {
+  const { sourceId: _sourceId, contentHash: _contentHash, ...body } = descriptor;
+  const hash = projectEvidenceSourceContentHash(body);
+  if (
+    descriptor.sourceMode !== "DIRECT_PROJECT_EVIDENCE" ||
+    descriptor.machineFacts.contractVersion !== MACHINE_FACTS_CONTRACT_VERSION ||
+    hash !== descriptor.contentHash ||
+    projectEvidenceSourceId(hash) !== descriptor.sourceId
+  )
+    throw new Error("PROJECT_TOPOLOGY_DIRECT_SOURCE_INVALID");
+}
+
+function validateDirectRootOverlay(root: DirectProjectTopologyRootInput): void {
+  if (root.traversal.rootTaskId !== root.rootTaskId)
+    throw new Error(`PROJECT_TOPOLOGY_DIRECT_ROOT_MISMATCH:${root.rootTaskId}`);
+  const taskIds = root.traversal.taskNodes.map((task) => task.taskId);
+  if (new Set(taskIds).size !== taskIds.length)
+    throw new Error(`PROJECT_TOPOLOGY_DIRECT_TASK_DUPLICATE:${root.rootTaskId}`);
+  const entry = root.traversal.taskNodes.find(
+    (task) => task.taskId === root.rootTaskId,
+  );
+  if (!entry || entry.minDepth !== 0)
+    throw new Error(`PROJECT_TOPOLOGY_DIRECT_ENTRY_INVALID:${root.rootTaskId}`);
+}
+
+function validateDirectTaskLocalFacts(
+  roots: readonly LoadedProjectTopologyRoot[],
+): void {
+  const taskHashes = new Map<string, string>();
+  const localFacts = new Map<string, string>();
+  const put = (key: string, value: unknown): void => {
+    const hash = stableProjectEvidenceHash(value);
+    const existing = localFacts.get(key);
+    if (existing !== undefined && existing !== hash)
+      throw new Error(`PROJECT_TOPOLOGY_DIRECT_LOCAL_FACT_CONFLICT:${key}`);
+    localFacts.set(key, hash);
+  };
+  for (const root of roots) {
+    for (const task of root.multiHop.taskNodes) {
+      if (!task.taskContentHash) continue;
+      const existing = taskHashes.get(task.taskId);
+      if (existing && existing !== task.taskContentHash)
+        throw new Error(
+          `PROJECT_TOPOLOGY_DIRECT_TASK_HASH_CONFLICT:${task.taskId}`,
+        );
+      taskHashes.set(task.taskId, task.taskContentHash);
+    }
+    for (const edge of root.multiHop.readEdges)
+      put(
+        `READ:${edge.consumerTaskId}:${canonicalJson(edge.table)}`,
+        edge,
+      );
+    for (const edge of root.multiHop.writeEdges)
+      put(
+        `WRITE:${edge.producerTaskId}:${canonicalJson(edge.table)}`,
+        edge,
+      );
+    for (const bridge of root.multiHop.producerBridges) {
+      const { producerDepth: _producerDepth, ...local } = bridge;
+      put(
+        `BRIDGE:${bridge.consumerTaskId}:${bridge.producerTaskId}:${canonicalJson(bridge.table)}:${bridge.readOccurrence?.occurrenceId ?? ""}`,
+        local,
+      );
+    }
+    for (const edge of root.multiHop.scheduleEdges) {
+      const { producerDepth: _producerDepth, ...local } = edge;
+      put(`SCHEDULE:${edge.consumerTaskId}:${edge.producerTaskId}`, local);
+    }
+  }
 }
 
 function readArtifactFile<T = unknown>(
@@ -163,7 +340,7 @@ function readArtifactFile<T = unknown>(
   return { bytes, contentSha256: sha256(bytes), parsed };
 }
 
-function validateOneHopSource(
+export function validateOneHopSource(
   value: unknown,
   rootTaskId: string,
 ): asserts value is OneHopReconciliationResult {

@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import {
   canonicalJson,
@@ -107,9 +107,12 @@ function cacheDocument(
 function cachePathForRoot(cacheRoot: string, taskId: string): string {
   safeTaskId(taskId);
   const root = resolve(cacheRoot);
+  const scheduleEvidenceRoot =
+    basename(root).toLowerCase() === "schedule-evidence"
+      ? root
+      : join(root, "schedule-evidence");
   return join(
-    root,
-    "schedule-evidence",
+    scheduleEvidenceRoot,
     "tasks",
     taskId,
     SCHEDULE_EVIDENCE_CACHE_FILE_NAME,

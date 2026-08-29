@@ -499,7 +499,7 @@ function taskCategoryIndex(dataRoot: string): ReadonlyMap<string, string> {
   return result;
 }
 
-function checkDbFlagTaskIds(
+export function checkDbFlagTaskIds(
   dataRoot: string,
   snapshots: readonly OneHopReconciliationResult[],
 ): ReadonlySet<string> {
@@ -518,7 +518,7 @@ function checkDbFlagTaskIds(
   return result;
 }
 
-function withoutCheckDbFlagParents(
+export function withoutCheckDbFlagParents(
   snapshot: OneHopReconciliationResult,
   checkDbFlagIds: ReadonlySet<string>,
 ): OneHopReconciliationResult {

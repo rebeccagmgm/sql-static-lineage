@@ -52,6 +52,40 @@ export interface InputPackClosureResult {
   };
 }
 
+export interface ProjectInputPackClosureOptions
+  extends Omit<InputPackClosureOptions, "taskId" | "maxTasks"> {
+  readonly rootTaskIds: readonly string[];
+  readonly maxTasksPerRoot: number;
+  readonly maxUnionTasks: number;
+}
+
+export interface ProjectInputPackClosureRoot {
+  readonly rootTaskId: string;
+  readonly taskIds: readonly string[];
+  readonly discoveredTaskIds: readonly string[];
+}
+
+export interface ProjectInputPackClosureResult {
+  readonly roots: readonly ProjectInputPackClosureRoot[];
+  readonly taskIds: readonly string[];
+  readonly discoveredTaskIds: readonly string[];
+  readonly collectedTaskIds: readonly string[];
+  readonly rounds: number;
+  readonly status: "COMPLETE" | "PARTIAL";
+  readonly issues: readonly string[];
+  readonly counters: {
+    readonly rootTaskOccurrences: number;
+    readonly uniqueTasks: number;
+    readonly taskReadsEvaluated: number;
+    readonly producerIndexPins: number;
+    readonly discoveryQueries: number;
+    readonly collectionBatches: number;
+  };
+  readonly producerSnapshot: NonNullable<
+    InputPackClosureResult["producerSnapshot"]
+  >;
+}
+
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -226,4 +260,232 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
       reused: finalPin.reused,
     },
   };
+}
+
+/**
+ * Builds all root closures against one sequence of Producer Index snapshots.
+ * Task SQL reads and table discovery are cached across roots; root membership
+ * and depth remain independent.
+ */
+export function runProjectInputPackClosure(
+  options: ProjectInputPackClosureOptions,
+): ProjectInputPackClosureResult {
+  requireProjectLimits(options);
+  const rootTaskIds = unique(
+    options.rootTaskIds.map((taskId) => {
+      if (!SAFE_TASK_ID.test(taskId)) throw new Error("INVALID_TASK_ID");
+      return taskId;
+    }),
+  );
+  if (rootTaskIds.length === 0 || rootTaskIds.length !== options.rootTaskIds.length)
+    throw new Error("PROJECT_ROOT_TASK_IDS_INVALID");
+  const dataRoot = resolve(options.dataRoot);
+  const initialIndex = indexTaskPackPaths(dataRoot);
+  for (const rootTaskId of rootTaskIds)
+    if (!loadTask(dataRoot, rootTaskId, initialIndex))
+      throw new Error(`CURRENT_TASK_INPUT_PACK_MISSING:${rootTaskId}`);
+
+  const collect = options.collectTaskPacks ?? runCollector;
+  const maxDiscoveryTables = options.maxDiscoveryTables ?? DEFAULT_MAX_DISCOVERY_TABLES;
+  const discover = options.discoverTableProducerTaskIds;
+  const discoveredDepthByRoot = new Map(
+    rootTaskIds.map((rootTaskId) => [
+      rootTaskId,
+      new Map<string, number>([[rootTaskId, 0]]),
+    ]),
+  );
+  const visitedByRoot = new Map(
+    rootTaskIds.map((rootTaskId) => [rootTaskId, new Set<string>()]),
+  );
+  const collected = new Set<string>();
+  const issues: string[] = [];
+  const producerCache = new Map<string, string[]>();
+  const queriedTables = new Set<string>();
+  const taskReadCache = new Map<string, string[]>();
+  let rounds = 0;
+  let stabilized = false;
+  let finalPin: ReturnType<typeof pinTableProducerIndex> | undefined;
+  let producerIndexPins = 0;
+  let collectionBatches = 0;
+
+  while (rounds < options.maxRounds) {
+    rounds += 1;
+    const taskPathIndex = indexTaskPackPaths(dataRoot);
+    const pin = pinTableProducerIndex(
+      dataRoot,
+      resolve(options.producerIndexCacheRoot),
+    );
+    producerIndexPins += 1;
+    finalPin = pin;
+    const pending = new Set<string>();
+
+    for (const rootTaskId of rootTaskIds) {
+      const discoveredDepth = discoveredDepthByRoot.get(rootTaskId)!;
+      const visited = visitedByRoot.get(rootTaskId)!;
+      const queue = [...discoveredDepth.entries()]
+        .filter(([taskId]) => !visited.has(taskId))
+        .map(([taskId, depth]) => ({ taskId, depth }));
+      while (queue.length > 0) {
+        queue.sort(
+          (left, right) =>
+            left.depth - right.depth ||
+            left.taskId.localeCompare(right.taskId, "zh-Hans", {
+              numeric: true,
+            }),
+        );
+        const current = queue.shift()!;
+        if (visited.has(current.taskId) || current.depth >= options.maxDepth)
+          continue;
+        const loaded = loadTask(dataRoot, current.taskId, taskPathIndex);
+        if (!loaded) {
+          pending.add(current.taskId);
+          continue;
+        }
+        visited.add(current.taskId);
+        if (visited.size > options.maxTasksPerRoot)
+          throw new Error(`MAX_TASKS_REACHED:${rootTaskId}`);
+        let reads = taskReadCache.get(current.taskId);
+        if (!reads) {
+          reads = taskReads(dataRoot, loaded);
+          taskReadCache.set(current.taskId, reads);
+        }
+        for (const qualifiedName of reads) {
+          if (
+            options.terminalTableConfig &&
+            matchingTerminalRole(options.terminalTableConfig, qualifiedName)
+          )
+            continue;
+          let producerIds = producerCache.get(qualifiedName);
+          if (!producerIds) {
+            producerIds = indexedProducerIds(pin.index, qualifiedName);
+            if (
+              discover &&
+              producerIds.length === 0 &&
+              !queriedTables.has(qualifiedName)
+            ) {
+              if (queriedTables.size >= maxDiscoveryTables)
+                throw new Error("MAX_DISCOVERY_TABLES_REACHED");
+              queriedTables.add(qualifiedName);
+              try {
+                producerIds = [...discover(qualifiedName)];
+              } catch (error) {
+                issues.push(
+                  `TABLE_PRODUCER_DISCOVERY_FAILED:${qualifiedName}:${error instanceof Error ? error.message : String(error)}`,
+                );
+                producerIds = [];
+              }
+            }
+            producerIds = unique(producerIds);
+            producerCache.set(qualifiedName, producerIds);
+          }
+          for (const producerId of producerIds) {
+            const producerDepth = current.depth + 1;
+            if (
+              !discoveredDepth.has(producerId) ||
+              producerDepth < discoveredDepth.get(producerId)!
+            )
+              discoveredDepth.set(producerId, producerDepth);
+            if (!loadTask(dataRoot, producerId, taskPathIndex))
+              pending.add(producerId);
+            else if (producerDepth < options.maxDepth)
+              queue.push({ taskId: producerId, depth: producerDepth });
+          }
+        }
+      }
+    }
+
+    const discoveredUnion = new Set(
+      [...discoveredDepthByRoot.values()].flatMap((depths) => [
+        ...depths.keys(),
+      ]),
+    );
+    if (discoveredUnion.size > options.maxUnionTasks)
+      throw new Error("MAX_UNION_TASKS_REACHED");
+    const collectIds = unique([...pending]);
+    if (collectIds.length === 0) {
+      stabilized = true;
+      break;
+    }
+    try {
+      collectionBatches += 1;
+      collect(dataRoot, collectIds, options.force === true);
+    } catch (error) {
+      issues.push(
+        `INPUT_PACK_COLLECTION_FAILED:${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    const refreshedIndex = indexTaskPackPaths(dataRoot);
+    for (const taskId of collectIds)
+      if (loadTask(dataRoot, taskId, refreshedIndex)) collected.add(taskId);
+  }
+
+  if (!stabilized && rounds >= options.maxRounds)
+    issues.push("MAX_AUTOFILL_ROUNDS_REACHED");
+  if (!finalPin || !stabilized) {
+    finalPin = pinTableProducerIndex(
+      dataRoot,
+      resolve(options.producerIndexCacheRoot),
+    );
+    producerIndexPins += 1;
+  }
+  const finalTaskPathIndex = indexTaskPackPaths(dataRoot);
+  const roots = rootTaskIds.map((rootTaskId) => {
+    const depths = discoveredDepthByRoot.get(rootTaskId)!;
+    const visited = visitedByRoot.get(rootTaskId)!;
+    return {
+      rootTaskId,
+      taskIds: unique(
+        [...visited, rootTaskId].filter(
+          (taskId) => loadTask(dataRoot, taskId, finalTaskPathIndex) !== null,
+        ),
+      ),
+      discoveredTaskIds: unique([...depths.keys()]),
+    };
+  });
+  const taskIds = unique(roots.flatMap((root) => root.taskIds));
+  if (taskIds.length > options.maxUnionTasks)
+    throw new Error("MAX_UNION_TASKS_REACHED");
+  return {
+    roots,
+    taskIds,
+    discoveredTaskIds: unique(
+      roots.flatMap((root) => root.discoveredTaskIds),
+    ),
+    collectedTaskIds: unique([...collected]),
+    rounds,
+    status: issues.length === 0 ? "COMPLETE" : "PARTIAL",
+    issues: unique(issues),
+    counters: {
+      rootTaskOccurrences: roots.reduce(
+        (sum, root) => sum + root.taskIds.length,
+        0,
+      ),
+      uniqueTasks: taskIds.length,
+      taskReadsEvaluated: taskReadCache.size,
+      producerIndexPins,
+      discoveryQueries: queriedTables.size,
+      collectionBatches,
+    },
+    producerSnapshot: {
+      inputFingerprint: finalPin.inputFingerprint,
+      indexPath: finalPin.indexPath,
+      manifestPath: finalPin.manifestPath,
+      reused: finalPin.reused,
+    },
+  };
+}
+
+function requireProjectLimits(options: ProjectInputPackClosureOptions): void {
+  for (const [name, value] of [
+    ["maxDepth", options.maxDepth],
+    ["maxTasksPerRoot", options.maxTasksPerRoot],
+    ["maxUnionTasks", options.maxUnionTasks],
+    ["maxRounds", options.maxRounds],
+  ] as const)
+    if (!Number.isSafeInteger(value) || value < 1)
+      throw new Error(`${name.toUpperCase()}_INVALID`);
+  const maxDiscoveryTables =
+    options.maxDiscoveryTables ?? DEFAULT_MAX_DISCOVERY_TABLES;
+  if (!Number.isSafeInteger(maxDiscoveryTables) || maxDiscoveryTables < 1)
+    throw new Error("MAX_DISCOVERY_TABLES_INVALID");
 }
