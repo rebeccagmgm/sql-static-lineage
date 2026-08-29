@@ -52,11 +52,11 @@ export function validateCausalClosure(input: { readonly targetWriteId: string; r
     if (seen.has(key)) errors.push(`DUPLICATE_ASSESSMENT:${key}`);
     seen.add(key);
     if (!expected.has(key)) errors.push(`UNEXPECTED_ASSESSMENT:${key}`);
-    if (assessment.relationStatus === "PROVEN_UNRELATED") {
-      if (input.universe.status !== "COMPLETE_OBSERVED_EVIDENCE" || assessment.negativeProofs.length === 0 || assessment.gapRefs.length > 0 || !assessment.negativeProofs.every((proof) => validNegativeProof(proof, assessment, input.universe))) errors.push(`UNSAFE_PROVEN_UNRELATED:${assessment.candidateBranchId}`);
-    } else if (assessment.negativeProofs.length > 0) {
-      errors.push(`UNEXPECTED_NEGATIVE_PROOF:${assessment.candidateBranchId}`);
-    }
+    // Negative closure is deliberately disabled for this propagation phase.
+    // A complete observed universe without an explicit, future-approved cut
+    // is still UNKNOWN; do not let legacy artifacts turn absence into proof.
+    if (assessment.relationStatus === "PROVEN_UNRELATED") errors.push(`PROVEN_UNRELATED_DISABLED:${assessment.candidateBranchId}`);
+    if (assessment.negativeProofs.length > 0) errors.push(`NEGATIVE_PROOF_DISABLED:${assessment.candidateBranchId}`);
     if (assessment.relationStatus === "UNKNOWN" && assessment.gapRefs.length === 0) errors.push(`UNKNOWN_WITHOUT_GAP:${assessment.candidateBranchId}`);
   }
   for (const key of expected) if (!seen.has(key)) errors.push(`MISSING_ASSESSMENT:${key}`);

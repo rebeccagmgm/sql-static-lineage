@@ -7,7 +7,8 @@ export interface TargetWriteIdentity {
   readonly targetTableKey: string;
   readonly sqlSourceId: string;
   readonly statementOrdinal: number;
-  readonly writeOrdinal: number;
+  /** Zero-based ordinal among this task's canonical WRITE observations. */
+  readonly taskWriteOrdinal: number;
   readonly rootRelationId: string;
   readonly writeObservationId: string;
   readonly evidenceRefs: readonly string[];
@@ -100,7 +101,7 @@ function writeObservationRecords(load: CurrentBundleLoad, taskId: string): reado
   return [...byObservation.values()];
 }
 
-function writeOrdinalFor(
+function taskWriteOrdinalFor(
   load: CurrentBundleLoad,
   taskId: string,
   writeObservationId: string,
@@ -119,6 +120,12 @@ function writeOrdinalFor(
     ...refsOf(selected?.evidence),
   ];
   return { ordinal: ordinal >= 0 ? ordinal : null, evidenceRefs: [...new Set(evidenceRefs)].sort((left, right) => left.localeCompare(right)) };
+}
+
+function sqlSourceIdFromStatementId(value: string): string {
+  const normalized = value.trim();
+  const match = normalized.match(/^(.*?):statement:\d+(?::|$)/i);
+  return match?.[1] ?? normalized;
 }
 
 function relationFromExpression(value: string | null): string | null {
@@ -200,11 +207,11 @@ export function resolveTargetWrite(
       )],
     };
   }
-  const sqlSourceId = [...statementIds][0]!;
+  const sqlSourceId = sqlSourceIdFromStatementId([...statementIds][0]!);
   const writeObservationId = [...writeIds][0]!;
   const rootRelationId = [...relationIds][0]!;
   const ordinal = [...statementOrdinals][0]!;
-  const writeOrdinalResult = writeOrdinalFor(input.load, input.taskId, writeObservationId);
+  const writeOrdinalResult = taskWriteOrdinalFor(input.load, input.taskId, writeObservationId);
   if (writeOrdinalResult.ordinal === null) {
     return {
       ref: null,
@@ -222,7 +229,7 @@ export function resolveTargetWrite(
     targetTableKey: targetTable,
     sqlSourceId,
     statementOrdinal: ordinal,
-    writeOrdinal: stableWriteOrdinal,
+    taskWriteOrdinal: stableWriteOrdinal,
     rootRelationId,
     writeObservationId,
   };

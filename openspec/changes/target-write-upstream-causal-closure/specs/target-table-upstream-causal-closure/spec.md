@@ -101,7 +101,7 @@
 
 ### Requirement: Static relation assessment is separate from runtime rerun policy
 
-系统 SHALL 输出静态 `relationStatus`、逐通道 `channelAssessments` 和静态候选集合；本 change 的运行期 `runtimeRerunDecision` MUST 固定为 `NOT_EVALUATED`，不得在没有运行实例证据时输出 `REQUIRED`、`SAFE_INCLUDE` 或 `NOT_REQUIRED`。静态状态至少包括 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED`、`PROVEN_UNRELATED` 和 `UNKNOWN`；静态分析不得声称已验证具体运行实例、分区重叠、参数变化或数据内容变化。
+系统 SHALL 输出静态 `relationStatus`、逐通道 `channelAssessments` 和静态候选集合；本 change 的运行期 `runtimeRerunDecision` MUST 固定为 `NOT_EVALUATED`，不得在没有运行实例证据时输出 `REQUIRED`、`SAFE_INCLUDE` 或 `NOT_REQUIRED`。静态状态保留 `CONFIRMED_RELATED`、`CONDITIONAL_RELATED`、`PROVEN_UNRELATED` 和 `UNKNOWN` 的兼容枚举；本轮实现 MUST 暂时禁用 `PROVEN_UNRELATED` 和 negative proof 生成，无法证明无关时输出 `UNKNOWN`。静态分析不得声称已验证具体运行实例、分区重叠、参数变化或数据内容变化。
 
 #### Scenario: Confirmed static relation
 
@@ -113,10 +113,10 @@
 - **WHEN** JOIN 唯一性、动态参数、分区范围、operator 语义或 bridge evidence 仍不完整
 - **THEN** 系统输出 `CONDITIONAL_RELATED` 或 `UNKNOWN`，将其加入保守安全候选集，并引用具体 gap 或条件
 
-#### Scenario: Static unrelated relation
+#### Scenario: Static unrelated relation remains disabled in this phase
 
-- **WHEN** candidate universe 完整、所有支持的 value/control/relation 检查完成、无 gap/截断/未建模算子，且存在可引用的 negative proof
-- **THEN** 系统才输出 `PROVEN_UNRELATED`，该分支不进入任何重跑候选集
+- **WHEN** candidate universe 完整但没有本轮显式启用的 negative-proof gate
+- **THEN** 系统仍输出 `UNKNOWN` 并暴露缺少 negative cut 的原因，不得输出 `PROVEN_UNRELATED`
 
 #### Scenario: One channel is unknown while another is confirmed
 
@@ -139,21 +139,21 @@
 
 ### Requirement: Channel assessments use independent status and proof algebra
 
-系统 SHALL 为每个候选分支和每个适用影响通道保存独立 `ChannelAssessment`。通道状态至少包括 `CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN` 和 `NOT_APPLICABLE`，并分别保存 proof、witness 和 gap refs。不同候选路径在同一通道内按 `CONFIRMED > CONDITIONAL > UNKNOWN` 聚合；不同通道之间按“任一 `CONFIRMED` 即整体 `CONFIRMED_RELATED`，否则任一 `CONDITIONAL` 即整体 `CONDITIONAL_RELATED`，存在未关闭义务则 `UNKNOWN`，所有适用通道均 `PROVEN_ABSENT` 才可 `PROVEN_UNRELATED`”聚合。
+系统 SHALL 为每个候选分支和每个适用影响通道保存独立 `ChannelAssessment`。通道状态至少包括 `CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN` 和 `NOT_APPLICABLE`，并分别保存 proof、witness 和 gap refs。不同候选路径在同一通道内按 `CONFIRMED > CONDITIONAL > UNKNOWN` 聚合；不同通道之间按“任一 `CONFIRMED` 即整体 `CONFIRMED_RELATED`，否则任一 `CONDITIONAL` 即整体 `CONDITIONAL_RELATED`，存在未关闭义务则 `UNKNOWN`”聚合。本轮不启用由 `PROVEN_ABSENT` 推导 `PROVEN_UNRELATED` 的负向 gate。
 
 #### Scenario: Confirmed and unknown channels coexist
 
 - **WHEN** 同一候选分支存在 `FIELD_VALUE = CONFIRMED` 且 `MULTIPLICITY = UNKNOWN`
 - **THEN** 系统输出两个独立通道状态，整体 `relationStatus = CONFIRMED_RELATED`，并保留 multiplicity gap
 
-#### Scenario: All applicable channels are proven absent
+#### Scenario: Missing negative cut is not a proven absence
 
-- **WHEN** 候选分支的所有适用通道均完成负向检查并标为 `PROVEN_ABSENT`，不存在 gap、截断或未建模算子
-- **THEN** 系统才可输出 `PROVEN_UNRELATED`；仅仅没有发现正向路径不能满足该条件
+- **WHEN** 候选分支没有本轮显式启用的 negative cut
+- **THEN** 系统输出 `UNKNOWN`；仅仅没有发现正向路径不能产生 `PROVEN_ABSENT` 或 `PROVEN_UNRELATED`
 
 ### Requirement: Path composition is distinct from alternative-path merging
 
-系统 SHALL 区分同一因果路径内的证据串联和同一影响通道内的备选路径合并。路径串联 MUST 取最差 certainty：`CONFIRMED + CONDITIONAL = CONDITIONAL`、任一必要 `UNKNOWN` 即为 `UNKNOWN`；备选路径合并 MUST 优先保留已闭合的更强正向证明：`CONFIRMED + UNKNOWN = CONFIRMED`、`CONDITIONAL + UNKNOWN = CONDITIONAL`。`PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播的“未找到路径”产生。
+系统 SHALL 区分同一因果路径内的证据串联和同一影响通道内的备选路径合并。路径串联 MUST 取最差 certainty：`CONFIRMED + CONDITIONAL = CONDITIONAL`、任一必要 `UNKNOWN` 即为 `UNKNOWN`；备选路径合并 MUST 优先保留已闭合的更强正向证明：`CONFIRMED + UNKNOWN = CONFIRMED`、`CONDITIONAL + UNKNOWN = CONDITIONAL`。本轮不生成 `PROVEN_ABSENT`/`PROVEN_UNRELATED`；未来启用时 `PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播的“未找到路径”产生。
 
 #### Scenario: Unknown bridge is in the same path
 
@@ -167,7 +167,7 @@
 
 ### Requirement: Evidence and proof obligations are mechanically auditable
 
-系统 SHALL 为正向相关结论保存可回溯的 witness evidence refs，为 Unknown 保存至少一个 gap，为 `PROVEN_UNRELATED` 保存 negative proof 或已知安全 cut。证据 closure、candidate coverage、bridge closure、限制和阶段耗时 MUST 可在 artifact 中读取。
+系统 SHALL 为正向相关结论保存可回溯的 witness evidence refs，为 Unknown 保存至少一个 gap。兼容的 `PROVEN_UNRELATED` 若在未来 gate 中启用，才要求保存 negative proof 或已知安全 cut；本轮 validator MUST 拒绝该状态。证据 closure、candidate coverage、bridge closure、限制和阶段耗时 MUST 可在 artifact 中读取。
 
 #### Scenario: Positive witness is continuous
 

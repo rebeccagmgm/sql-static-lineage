@@ -15,6 +15,9 @@ export interface ChannelAssessment {
   readonly proofRefs: readonly string[];
   readonly witnessRefs: readonly string[];
   readonly gapRefs: readonly string[];
+  /** Present for FIELD_VALUE transfer explanations; never an assessment key. */
+  readonly outputFieldBindingIds?: readonly string[];
+  readonly affectedTargetFields?: readonly string[];
 }
 
 export interface NegativeProof {
@@ -87,7 +90,7 @@ export interface TargetTableCausalClosureArtifact {
   readonly minimumCertainTaskIds: readonly string[];
   readonly conservativeSafetyTaskIds: readonly string[];
   readonly runtimeRerunDecision: "NOT_EVALUATED";
-  readonly relationSummaries: readonly { readonly taskId: string; readonly statementIndex: number; readonly rootRelationId: string | null; readonly digest: string; readonly complete: boolean; readonly gapCount: number }[];
+  readonly relationSummaries: readonly { readonly taskId: string; readonly sqlSourceId: string; readonly statementIndex: number; readonly rootRelationId: string | null; readonly digest: string; readonly complete: boolean; readonly gapCount: number }[];
   readonly metrics: TargetTableCausalMetrics;
   readonly stages: readonly CausalStageMetric[];
   readonly gaps: readonly { readonly gapId: string; readonly reasonCode: string; readonly message: string; readonly evidenceRefs: readonly string[] }[];
@@ -131,6 +134,8 @@ export function canonicalAssessment(input: Omit<TargetTableAssessment, "assessme
       proofRefs: sorted(channel.proofRefs),
       witnessRefs: sorted(channel.witnessRefs),
       gapRefs: sorted(channel.gapRefs),
+      ...(channel.outputFieldBindingIds ? { outputFieldBindingIds: sorted(channel.outputFieldBindingIds) } : {}),
+      ...(channel.affectedTargetFields ? { affectedTargetFields: sorted(channel.affectedTargetFields) } : {}),
     })),
     evidenceRefs: sorted(input.evidenceRefs),
     gapRefs: sorted(input.gapRefs),
@@ -148,7 +153,7 @@ export function canonicalizeTargetTableArtifact(
     taskRollup: [...input.taskRollup].sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId)),
     minimumCertainTaskIds: sorted(input.minimumCertainTaskIds),
     conservativeSafetyTaskIds: sorted(input.conservativeSafetyTaskIds),
-    relationSummaries: [...input.relationSummaries].sort((left, right) => left.taskId.localeCompare(right.taskId) || left.statementIndex - right.statementIndex),
+    relationSummaries: [...input.relationSummaries].sort((left, right) => left.taskId.localeCompare(right.taskId) || left.sqlSourceId.localeCompare(right.sqlSourceId) || left.statementIndex - right.statementIndex),
     stages: [...input.stages].sort((left, right) => left.stage.localeCompare(right.stage)),
     gaps: [...input.gaps].sort((left, right) => left.gapId.localeCompare(right.gapId)),
   };

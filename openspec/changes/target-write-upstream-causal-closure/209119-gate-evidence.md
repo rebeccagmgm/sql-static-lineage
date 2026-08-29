@@ -1,6 +1,6 @@
-# 209119 Baseline-M4 Gate Evidence
+# 209119 Target-rooted Propagation Gate Evidence
 
-Date: 2026-08-28
+Date: 2026-08-29
 
 ## Execution boundary
 
@@ -32,11 +32,11 @@ The previously cached 209119 run completed in about 5 seconds wall time. The art
 
 Gate A: **PASS WITH SCOPE** for branch cardinality and measured cached performance. Target-write identity, producer-write bridge closure and occurrence correctness are **PARTIAL / NOT VERIFIED** for the current post-fix code because the canonical 209119 field artifact was changed outside this run and was not overwritten or regenerated here.
 
-## M3 and M4 semantic result
+## Historical pre-propagation result
 
 The native summary consumes structured Machine Facts relation rows and relation edges. It covers the current first semantic batch: project expression control, filter, join (including outer/cross shape), grouping/aggregate markers, set operation, Top-N markers, COUNT(*), EXISTS and literal-from-relation relation dependence. An ordinary read alone is not treated as a confirmed relation-existence dependency.
 
-For this 209119 run:
+For the earlier pre-propagation 209119 run:
 
 - 239 branches are `CONFIRMED_RELATED` (238 physical producer branches plus the root write).
 - 310 branches are `UNKNOWN`, with explicit gaps from schedule-only, unbound reads, blocked reads or coverage boundaries.
@@ -45,7 +45,7 @@ For this 209119 run:
 
 ## Implementation fixes in the current code
 
-The current uncommitted patch fixes four mechanical defects and has focused regression coverage: the CLI now calls the shared closure entry point; field-value lookup requires the read occurrence; relation summaries are scoped by statement; and negative proofs are typed, deterministic and content-validated. These tests do not prove full global path certainty; task 6.3 remains open.
+The pre-propagation implementation fixed the CLI entry point, occurrence-scoped field lookup, statement-scoped summaries and negative-proof validation. It did not yet prove target-rooted multi-hop certainty.
 
 ## Gate B
 
@@ -53,10 +53,31 @@ Gate B: **NOT VERIFIED / REOPENED**. The current code does not yet provide evide
 
 The output is a static candidate assessment, not a runtime rerun decision: `runtimeRerunDecision=NOT_EVALUATED`.
 
-## Post-fix read-only re-evaluation
+## Latest target-rooted read-only re-evaluation
 
-On 2026-08-29 the target-table CLI was run in causal-only mode with the existing `field-facts`, producer-index, 209119 multi-hop artifact and the existing canonical field-lineage JSON as read-only inputs. Output was written only to `sql-static-lineage-artifacts/target-table-causal-closure/209119-post-fix.{json,txt,html}`. No command in this run wrote or regenerated `sql-static-lineage-data/artifacts/tasks/209119`.
+On 2026-08-29 the target-table CLI was run in causal-only mode with the existing `field-facts`, producer-index, 209119 multi-hop artifact and the existing canonical field-lineage JSON as read-only inputs. Output was written only to `sql-static-lineage-artifacts/target-table-causal-closure/209119-path-propagation.{json,txt,html}`. No command in this run wrote or regenerated `sql-static-lineage-data/artifacts/tasks/209119`.
 
-The post-fix artifact is schema `1.1.0` and records 542 candidate branches, 542 assessments, 142 `CONFIRMED_RELATED`, 400 `UNKNOWN`, 78 upstream tasks, 60 minimum-certain tasks and 78 conservative-safety tasks. Field evidence was scanned once. Producer-write bridge enrichment resolved 155 branches, found 84 ambiguous writes and 193 missing/boundary observations. The run took about 4.8 seconds wall time and peaked at about 580 MiB RSS. Decision coverage is 542/542 and the evidence-closure metric is 100%; this metric does not prove full path certainty.
+The latest artifact is schema `1.1.0` and records:
 
-The candidate universe remains `INCOMPLETE`, there are no `PROVEN_UNRELATED` assessments, one relation summary remains partial, and 772 explicit gaps remain. Therefore this run verifies the mechanical fixes and bounded cost, but does not pass Gate B or establish a final task rerun list. Path certainty/alternative-path merging remains task 6.3, and M5/M6 remain paused.
+| Metric | Result |
+| --- | ---: |
+| Candidate branches / assessments | 542 / 542 |
+| `CONFIRMED_RELATED` / `UNKNOWN` | 52 / 490 |
+| Upstream tasks | 78 |
+| Minimum certain tasks | 43 |
+| Conservative safety tasks | 78 |
+| Field evidence scans | 1 |
+| Producer-write bridge enrichment | 155 resolved, 84 ambiguous, 193 missing |
+| Decision coverage | 542/542 |
+| Evidence closure | 100% for non-empty confirmed assessments |
+| Explicit gaps | 1,377 |
+| Runtime rerun decision | `NOT_EVALUATED` |
+| Wall time / peak RSS | about 7 seconds end-to-end / 593,776,640 bytes (about 566 MiB) |
+
+The propagation state is target-write rooted and carries write observation, channel, certainty, evidence/gap refs and a predecessor witness. It composes certainty along a path and merges same-channel alternatives by strongest evidence while retaining weaker-path gaps. The field-value adapter now handles the legacy opaque `occurrenceId:readRelationId` locator by exact whole-token comparison; it does not use substring matching.
+
+The candidate universe remains `INCOMPLETE`, there are no `PROVEN_UNRELATED` assessments, and all unresolved evidence remains `UNKNOWN` with explicit gaps. `CONFIRMED_RELATED` is a static structural conclusion only; it does not establish runtime data change, partition overlap or a mandatory rerun. Therefore this run verifies the target-rooted propagation mechanics and bounded cost, but does not pass Gate B or establish a final runtime rerun list. M5/M6 remain paused.
+
+## Canonical artifact isolation
+
+The canonical directory `sql-static-lineage-data/artifacts/tasks/209119` was checked after the run. It still contains only the four pre-existing JSON files; `field-lineage.json` remains 23,290,979 bytes with SHA-256 `71487CE3869A9A5F2CD125263CB8AEC1B6408E6CAD1390F507551C25C6ADC768`, last written 2026-08-28 23:51:02. The target-table outputs remain in the separate `sql-static-lineage-artifacts/target-table-causal-closure/` directory.

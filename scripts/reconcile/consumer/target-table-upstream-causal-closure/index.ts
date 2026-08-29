@@ -1,4 +1,5 @@
 export * from "./artifact-contract.ts";
+export * from "./causal-closure.ts";
 export * from "./candidate-universe.ts";
 export * from "./field-value-provider.ts";
 export * from "./impact-graph.ts";

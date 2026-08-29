@@ -58,7 +58,8 @@ type TargetWriteIdentity = {
   targetTableKey: string;
   sqlSourceId: string;
   statementOrdinal: number;
-  writeOrdinal: number;
+  /** Zero-based ordinal among this task's canonical WRITE observations. */
+  taskWriteOrdinal: number;
   rootRelationId: string;
 };
 
@@ -87,6 +88,8 @@ targetWriteId + candidateBranchId
 
 `TargetWriteResolver` 必须把目标任务、物理目标表、SQL statement slot、root relation 和 canonical write evidence 唯一绑定；无法唯一绑定时输出 `TARGET_WRITE_AMBIGUOUS` 或 `TARGET_WRITE_RELATION_UNMAPPED`，禁止猜根。
 
+物理表和 read occurrence 也必须 fail-closed：occurrence 只允许规范化后的完整 identity 相等匹配，禁止 substring/前缀命中；表名只能在完整 qualified identity 相等时解析为确认身份，唯一的 tail-name 命中也不能生成 `CONFIRMED` 或 `SCHEMA_BACKED` 证据。
+
 `targetWriteId` 是某个 canonical SQL 结构中的确定性 occurrence identity，由 `sqlSourceId`、statement ordinal、write ordinal、root relation 和目标物理身份共同派生；SQL 任意修改后不承诺保持同一 ID。`sqlSourceId` 必须包含 query/prepare/finish 等 SQL slot 和 canonical locator，避免不同 slot 的相同 statement ordinal 发生碰撞。上游 producer 存在多个无法区分的 write observation 时，bridge resolver 输出 `PRODUCER_WRITE_AMBIGUOUS`，不得按 task/table 任意选择一个写入。
 
 字段不得成为顶层 traversal root 或 assessment dimension，但可以作为 Task-local typed vertex、field port 或压缩 FieldSet，在 `FIELD_VALUE`/`EXPRESSION_CONTROL` 中接续精确值语义。它通过 `FieldValueEvidenceProvider` 或 canonical VALUE_FLOW index 按候选生产分支返回聚合摘要：
@@ -94,7 +97,7 @@ targetWriteId + candidateBranchId
 ```ts
 type FieldValueImpact = {
   candidateBranchId: string;
-  status: "CONFIRMED" | "CONDITIONAL" | "UNKNOWN" | "PROVEN_ABSENT";
+  status: "CONFIRMED" | "CONDITIONAL" | "UNKNOWN" | "PROVEN_ABSENT" | "NOT_APPLICABLE";
   affectedTargetFields: string[];
   outputFieldBindingIds: string[];
   evidenceRefs: string[];
@@ -126,6 +129,7 @@ COVERAGE_BOUNDARY
 ```ts
 type TaskRelationSummary = {
   taskId: string;
+  sqlSourceId: string;
   statementIndex: number;
   rootRelationId: string;
   digest: string;
@@ -195,7 +199,7 @@ type ChannelAssessment = {
 };
 ```
 
-任一 channel 为 `CONFIRMED` 即整体 `CONFIRMED_RELATED`；无 confirmed 但有 conditional 即 `CONDITIONAL_RELATED`；仍有未关闭义务即 `UNKNOWN`；只有所有适用 channel 都 `PROVEN_ABSENT` 才能 `PROVEN_UNRELATED`。因此 `FIELD_VALUE = CONFIRMED` 不会被独立的 `MULTIPLICITY = UNKNOWN` 降级，但 multiplicity gap 仍会保留。
+任一 channel 为 `CONFIRMED` 即整体 `CONFIRMED_RELATED`；无 confirmed 但有 conditional 即 `CONDITIONAL_RELATED`；仍有未关闭义务即 `UNKNOWN`。本轮重新关闭通用负向结论：`PROVEN_ABSENT`/`PROVEN_UNRELATED` 不由正向传播或“没有找到路径”产生，当前 validator 拒绝负向 proof；因此完整 universe 但没有显式、未来批准的 negative cut 时仍输出 `UNKNOWN`。`FIELD_VALUE = CONFIRMED` 不会被独立的 `MULTIPLICITY = UNKNOWN` 降级，但 multiplicity gap 仍会保留。
 
 证据合并必须区分路径内串联和同通道备选路径并联：
 
@@ -209,7 +213,7 @@ mergeAlternative(CONDITIONAL, UNKNOWN) = CONDITIONAL;
 mergeAlternative(UNKNOWN, UNKNOWN) = UNKNOWN;
 ```
 
-`PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播中的“没有找到路径”产生。这个区分防止一个 confirmed operator edge 吞掉后续未知的 producer bridge，也防止一条未知备选路径污染另一条已经闭合的 confirmed witness。
+`PROVEN_ABSENT` 只能由完整 negative proof 产生，不能由正向传播中的“没有找到路径”产生。这个区分防止一个 confirmed operator edge 吞掉后续未知的 producer bridge，也防止一条未知备选路径污染另一条已经闭合的 confirmed witness。当前 change 暂不启用 negative proof 输出，相关 schema 字段仅为兼容/后续显式 gate 保留。
 
 为避免跨任务闭环造成无限传播，使用稳定 occurrence/branch 状态键和共享 depth 上限；只有在实际输入出现强连通循环时再增加 SCC 压缩，不能用循环上限掩盖未知证据。
 
@@ -217,7 +221,7 @@ mergeAlternative(UNKNOWN, UNKNOWN) = UNKNOWN;
 
 正向传播只回答“已发现哪些可能影响”；它可以形成 `CONFIRMED_RELATED` 或 `CONDITIONAL_RELATED` 的候选证据。最终 assessment 还要读取 candidate universe coverage 和 gap。
 
-首版 `PROVEN_UNRELATED` 只允许安全规则：候选分支已在完整静态边界中枚举、所有支持的 operator/channel 都已检查、没有 gap/截断/未建模 operator，并且有明确的 no-path cut。没有满足这些条件时即使没有找到路径也只能是 `UNKNOWN`。
+当前阶段不生成 `PROVEN_UNRELATED`，也不把 local `PROVEN_ABSENT` 自动升级为 `PROVEN_UNRELATED`；validator 对该关系状态和 negative proof 均 fail-closed。后续若重新开放，候选分支必须已在完整静态边界中枚举、所有支持的 operator/channel 都已检查、没有 gap/截断/未建模 operator，并且有明确的 no-path cut。没有满足这些条件时即使没有找到路径也只能是 `UNKNOWN`。
 
 `UNKNOWN` 不向未枚举的上游虚构分支传播；对 candidate universe 中已知属于已证明 cut subtree 的分支，可以引用同一个 negative proof，记录继承来源。
 

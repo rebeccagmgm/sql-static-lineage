@@ -23,6 +23,8 @@ export type CandidateUniverseStatus =
 export interface CandidateReadOccurrence {
   readonly occurrenceId: string;
   readonly readRelationId: string;
+  /** Canonical SQL source/slot identity, independent of statement ordinal. */
+  readonly sqlSourceId?: string | null;
   readonly statementIndex: number;
   readonly relationPath: readonly string[];
 }
@@ -167,6 +169,8 @@ function occurrenceOf(value: unknown): CandidateReadOccurrence | null {
   if (!source) return null;
   const occurrenceId = text(source.occurrenceId);
   const readRelationId = text(source.readRelationId);
+  const sqlSourceId = text(source.sqlSourceId) ?? text(source.sql_source_id) ??
+    text(source.statementId) ?? text(source.statement_id);
   const statementIndex = integer(source.statementIndex);
   const relationPath = Array.isArray(source.relationPath)
     ? source.relationPath.filter((item): item is string => typeof item === "string")
@@ -178,7 +182,24 @@ function occurrenceOf(value: unknown): CandidateReadOccurrence | null {
     relationPath.length === 0
   )
     return null;
-  return { occurrenceId, readRelationId, statementIndex, relationPath };
+  return {
+    occurrenceId,
+    readRelationId,
+    ...(sqlSourceId ? { sqlSourceId: canonicalSqlSourceId(sqlSourceId) } : {}),
+    statementIndex,
+    relationPath,
+  };
+}
+
+/** Keep SQL slot identity separate from the statement ordinal. */
+function canonicalSqlSourceId(value: string): string {
+  const normalized = value.trim();
+  const statement = normalized.match(/^(.*?):statement:\d+(?::|$)/i);
+  if (statement?.[1]) return statement[1];
+  const relation = normalized.match(/^(.*?):relation:/i);
+  if (relation?.[1]) return relation[1];
+  const query = normalized.match(/^(query#\d+)(?::|$)/i);
+  return query?.[1] ?? normalized;
 }
 
 function occurrenceIdentity(occurrence: CandidateReadOccurrence | null): JsonValue {
@@ -186,6 +207,7 @@ function occurrenceIdentity(occurrence: CandidateReadOccurrence | null): JsonVal
   return {
     occurrenceId: occurrence.occurrenceId,
     readRelationId: occurrence.readRelationId,
+    sqlSourceId: occurrence.sqlSourceId ?? null,
     statementIndex: occurrence.statementIndex,
     relationPath: [...occurrence.relationPath],
   };

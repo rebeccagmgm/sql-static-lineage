@@ -39,8 +39,8 @@
 
 - [x] 6.1 实现 COUNT(*)、EXISTS、literal-from-relation 和 CROSS JOIN 的 `RELATION_EXISTENCE`/基数影响。
 - [x] 6.2 定义 `ChannelAssessment`：`CONFIRMED`、`CONDITIONAL`、`PROVEN_ABSENT`、`UNKNOWN`、`NOT_APPLICABLE`，分别保存 proof/witness/gap refs。
-- [ ] 6.3 实现路径内 certainty 串联、同 channel 备选路径合并和不同 channel 的 relationStatus 聚合，验证 `FIELD_VALUE=CONFIRMED` 不被独立 `MULTIPLICITY=UNKNOWN` 降级。
-- [x] 6.4 实现 negative proof safe rules；所有适用 channel 均 `PROVEN_ABSENT` 且无未关闭义务时才允许 `PROVEN_UNRELATED`。
+- [x] 6.3 实现路径内 certainty 串联、同 channel 备选路径合并和不同 channel 的 relationStatus 聚合，验证 `FIELD_VALUE=CONFIRMED` 不被独立 `MULTIPLICITY=UNKNOWN` 降级；覆盖 target-rooted multi-hop、同 channel 备选路径和上游 Unknown 继承。
+- [ ] 6.4 预留 negative proof safe rules（本轮重新关闭）：不生成 `PROVEN_ABSENT`/`PROVEN_UNRELATED`，validator 对 negative proof fail-closed；未来显式 gate 再实现并验收。
 - [x] 6.5 验证未建模 operator、coverage boundary、截断和未知 identity 都只能产生 Unknown/gap。
 - [ ] 6.6 验证 Calcite/native 语义冲突只降级对应 channel；目标写入、read occurrence 或 producer bridge identity 冲突才阻断整个候选分支。
 

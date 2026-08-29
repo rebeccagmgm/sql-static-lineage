@@ -60,10 +60,9 @@ function resolveCatalogTable(catalog: ReturnType<typeof loadPhysicalTableCatalog
   const qualifiedName = text(target.qualifiedName)?.toLowerCase();
   const constrained = catalog.entries.filter((entry) => normalized(entry.qualifiedName) === key && (!platform || entry.platform.toLowerCase() === platform) && (!dataSource || entry.dataSource.toLowerCase() === dataSource) && (!qualifiedName || normalized(entry.qualifiedName) === qualifiedName));
   if (constrained.length === 1) return constrained[0]!;
-  const tail = key.split(".").at(-1) ?? key;
-  const tailMatches = catalog.byNameTail.get(tail) ?? [];
-  if (tailMatches.length === 1) return tailMatches[0]!;
-  throw new Error(`TARGET_TABLE_PHYSICAL_IDENTITY_AMBIGUOUS:${requested}`);
+  // A unique tail-name match is not a physical identity proof.  Do not turn
+  // an unqualified table name into a SCHEMA_BACKED/confirmed target.
+  throw new Error(`TARGET_TABLE_PHYSICAL_IDENTITY_UNRESOLVED:${requested}`);
 }
 function parseArgs(argv: readonly string[]): CliOptions {
   const values = new Map<string, string>();
@@ -193,13 +192,17 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   const summaryStart = performance.now();
   const scopes = universe.branches
     .filter((branch): branch is CandidateBranch & { readonly consumerTaskId: string; readonly readOccurrence: NonNullable<CandidateBranch["readOccurrence"]> } => branch.consumerTaskId !== null && branch.readOccurrence !== null)
-    .map((branch) => ({ taskId: branch.consumerTaskId, statementIndex: branch.readOccurrence.statementIndex }));
+    .map((branch) => ({
+      taskId: branch.consumerTaskId,
+      sqlSourceId: branch.readOccurrence.sqlSourceId ?? branch.readOccurrence.occurrenceId,
+      statementIndex: branch.readOccurrence.statementIndex,
+    }));
   let summaryCacheHits = 0;
   for (const scope of scopes) {
-    const key = relationSummaryKey(scope.taskId, scope.statementIndex);
+    const key = relationSummaryKey(scope.taskId, scope.sqlSourceId, scope.statementIndex);
     if (summaries.has(key)) { summaryCacheHits += 1; continue; }
     const load = loadForTask(scope.taskId);
-    summaries.set(key, summarizeTaskRelations({ taskId: scope.taskId, statementIndex: scope.statementIndex, relationRecords: load.records["relation-nodes.jsonl"] ?? [], relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [], statementRecords: load.records["statements.jsonl"] ?? [] }));
+    summaries.set(key, summarizeTaskRelations({ taskId: scope.taskId, sqlSourceId: scope.sqlSourceId, statementIndex: scope.statementIndex, relationRecords: load.records["relation-nodes.jsonl"] ?? [], relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [], statementRecords: load.records["statements.jsonl"] ?? [] }));
   }
   stage("semantic-summary", summaryStart, scopes.length, summaryCacheHits, scopes.length - summaryCacheHits, summaries.size, [...summaries.values()].reduce((sum, value) => sum + value.edgeCount, 0));
   assertBudget("semantic-summary", universe.branches.length);
@@ -240,7 +243,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   const raw: Omit<TargetTableCausalClosureArtifact, "contentHash"> = {
     schemaVersion: TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION, artifactType: TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE, generatedAt: new Date().toISOString(), targetWrite: targetResolution.ref,
     candidateUniverse: universe, assessments, taskRollup: closure.taskRollup, minimumCertainTaskIds: closure.minimumCertainTaskIds, conservativeSafetyTaskIds: closure.conservativeSafetyTaskIds,
-    runtimeRerunDecision: "NOT_EVALUATED", relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
+    runtimeRerunDecision: "NOT_EVALUATED", relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, sqlSourceId: summary.sqlSourceId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
     metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, peakMemoryBytes },
     stages, gaps,
   };

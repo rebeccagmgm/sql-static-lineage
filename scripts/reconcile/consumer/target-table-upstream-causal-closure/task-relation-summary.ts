@@ -24,6 +24,8 @@ export interface ReadImpact {
 
 export interface TaskRelationSummary {
   readonly taskId: string;
+  /** Canonical SQL source/slot identity; never omit it from a summary key. */
+  readonly sqlSourceId: string;
   readonly statementIndex: number;
   readonly rootRelationId: string | null;
   readonly digest: string;
@@ -55,18 +57,34 @@ function integer(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) ? value : null;
 }
 
-export function relationSummaryKey(taskId: string, statementIndex: number): string {
-  return `${taskId}|statement:${statementIndex}`;
+export function canonicalSqlSourceId(value: string): string {
+  const normalized = value.trim();
+  const statement = normalized.match(/^(.*?):statement:\d+(?::|$)/i);
+  if (statement?.[1]) return statement[1];
+  const relation = normalized.match(/^(.*?):relation:/i);
+  if (relation?.[1]) return relation[1];
+  const query = normalized.match(/^(query#\d+)(?::|$)/i);
+  return query?.[1] ?? normalized;
+}
+
+export function relationSummaryKey(
+  taskId: string,
+  sqlSourceId: string,
+  statementIndex: number,
+): string {
+  return `${taskId}|source:${canonicalSqlSourceId(sqlSourceId)}|statement:${statementIndex}`;
 }
 
 export function summaryForOccurrence(
   summaries: ReadonlyMap<string, TaskRelationSummary>,
   taskId: string | null,
+  sqlSourceId: string | null,
   statementIndex: number | null,
 ): TaskRelationSummary | undefined {
-  if (!taskId || statementIndex === null) return undefined;
-  const summary = summaries.get(relationSummaryKey(taskId, statementIndex));
-  if (summary?.taskId === taskId && summary.statementIndex === statementIndex) return summary;
+  if (!taskId || !sqlSourceId || statementIndex === null) return undefined;
+  const source = canonicalSqlSourceId(sqlSourceId);
+  const summary = summaries.get(relationSummaryKey(taskId, source, statementIndex));
+  if (summary?.taskId === taskId && summary.sqlSourceId === source && summary.statementIndex === statementIndex) return summary;
   return undefined;
 }
 
@@ -76,6 +94,11 @@ function statementIndexFromId(value: string | null): number | null {
   if (statement) return Number(statement[1]);
   const query = value.match(/^query#(\d+)(?::|$)/i);
   return query ? Number(query[1]) : null;
+}
+
+function sourceIdFromId(value: string | null): string | null {
+  if (!value) return null;
+  return canonicalSqlSourceId(value);
 }
 
 function sorted(values: readonly string[]): readonly string[] {
@@ -128,7 +151,7 @@ function normalizedTable(value: string): string {
 function tableMatches(left: string, right: string): boolean {
   const a = normalizedTable(left);
   const b = normalizedTable(right);
-  return a === b || a.split(".").at(-1) === b.split(".").at(-1);
+  return a === b;
 }
 
 function physicalColumnTables(row: JsonRecord): readonly string[] {
@@ -207,16 +230,24 @@ function hasUnsupportedShape(row: JsonRecord): boolean {
 /** Normalize relation facts once per task; it never parses raw SQL. */
 export function summarizeTaskRelations(input: {
   readonly taskId: string;
+  readonly sqlSourceId?: string;
   readonly relationRecords: readonly JsonRecord[];
   readonly relationEdgeRecords?: readonly JsonRecord[];
   readonly statementRecords?: readonly JsonRecord[];
   readonly statementIndex?: number;
 }): TaskRelationSummary {
   const statementIndexes = new Map<string, number>();
+  const statementSources = new Map<string, string>();
   for (const statement of input.statementRecords ?? []) {
     const id = text(statement.statement_id);
     const index = integer(statement.statement_index) ?? statementIndexFromId(id);
-    if (id && index !== null) statementIndexes.set(id, index);
+    const source = canonicalSqlSourceId(
+      text(statement.sql_source_id) ?? text(statement.sqlSourceId) ?? text(statement.source_id) ?? id ?? "unknown",
+    );
+    if (id && index !== null) {
+      statementIndexes.set(id, index);
+      statementSources.set(id, source);
+    }
   }
   const rowStatementIndex = (row: JsonRecord): number | null => {
     const relation = relationOf(row);
@@ -236,10 +267,31 @@ export function summarizeTaskRelations(input: {
     }
     return null;
   };
+  const rowSourceId = (row: JsonRecord): string => {
+    const relation = relationOf(row);
+    const candidates = [
+      text(row.sql_source_id),
+      text(row.sqlSourceId),
+      text(relation.sql_source_id),
+      text(relation.sqlSourceId),
+      text(row.statement_id),
+      text(relation.statement_id),
+      relationId(row),
+      readOccurrenceId(row),
+    ].filter((value): value is string => value !== null);
+    for (const value of candidates) {
+      const mapped = statementSources.get(value);
+      if (mapped) return mapped;
+      return sourceIdFromId(value) ?? "unknown";
+    }
+    return "unknown";
+  };
+  const requestedSourceId = input.sqlSourceId ? canonicalSqlSourceId(input.sqlSourceId) : null;
   const requestedStatementIndex = input.statementIndex ?? null;
   const rows = input.relationRecords.filter((row) => {
     if (text(row.task_id) !== null && text(row.task_id) !== input.taskId) return false;
-    return requestedStatementIndex === null || rowStatementIndex(row) === requestedStatementIndex;
+    if (requestedStatementIndex !== null && rowStatementIndex(row) !== requestedStatementIndex) return false;
+    return requestedSourceId === null || rowSourceId(row) === requestedSourceId;
   });
   const rowIds = new Set(rows.map(relationId).filter((value): value is string => value !== null));
   const edges = (input.relationEdgeRecords ?? []).filter((edge) => {
@@ -279,6 +331,8 @@ export function summarizeTaskRelations(input: {
   const gaps = new Set<string>();
   let rootRelationId: string | null = null;
   let statementIndex = requestedStatementIndex ?? 0;
+  const sqlSourceId = requestedSourceId ?? rowSourceId(rows[0] ?? {});
+  if (sqlSourceId === "unknown") gaps.add(`relation-summary-gap:${input.taskId}:SQL_SOURCE_ID_UNRESOLVED`);
   for (const row of rows) {
     const id = relationId(row);
     const type = relationType(row);
@@ -315,7 +369,10 @@ export function summarizeTaskRelations(input: {
     }
     if (hasUnsupportedShape(row)) gaps.add(`relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`);
   }
-  const statementRows = (input.statementRecords ?? []).filter((row) => requestedStatementIndex === null || rowStatementIndex(row) === requestedStatementIndex);
+  const statementRows = (input.statementRecords ?? []).filter((row) => {
+    if (requestedStatementIndex !== null && rowStatementIndex(row) !== requestedStatementIndex) return false;
+    return requestedSourceId === null || canonicalSqlSourceId(text(row.sql_source_id) ?? text(row.sqlSourceId) ?? text(row.source_id) ?? text(row.statement_id) ?? "unknown") === requestedSourceId;
+  });
   const statementGaps = statementRows.flatMap((row) => {
     const status = text(row.parse_status);
     return status && status !== "SUCCESS"
@@ -329,9 +386,10 @@ export function summarizeTaskRelations(input: {
     evidenceRefs: sorted([...value.refs]),
     gaps: sorted([...value.gaps]),
   })).sort((a, b) => a.readOccurrenceId.localeCompare(b.readOccurrenceId));
-  const digestInput = { taskId: input.taskId, statementIndex, rootRelationId, normalized, relationCount: rows.length, edgeCount: edges.length };
+  const digestInput = { taskId: input.taskId, sqlSourceId, statementIndex, rootRelationId, normalized, relationCount: rows.length, edgeCount: edges.length };
   return {
     taskId: input.taskId,
+    sqlSourceId,
     statementIndex,
     rootRelationId,
     digest: sha256(canonicalJson(digestInput)),

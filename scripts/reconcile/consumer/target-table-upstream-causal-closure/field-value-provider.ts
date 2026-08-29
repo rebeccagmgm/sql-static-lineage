@@ -4,7 +4,7 @@ import type { CandidateBranch } from "../target-field-causal-slice/candidate-uni
 
 export interface FieldValueImpact {
   readonly candidateBranchId: string;
-  readonly status: "CONFIRMED" | "CONDITIONAL" | "UNKNOWN" | "PROVEN_ABSENT";
+  readonly status: "CONFIRMED" | "CONDITIONAL" | "UNKNOWN" | "PROVEN_ABSENT" | "NOT_APPLICABLE";
   readonly affectedTargetFields: readonly string[];
   readonly outputFieldBindingIds: readonly string[];
   readonly evidenceRefs: readonly string[];
@@ -49,13 +49,17 @@ function occurrenceKey(value: string): string {
 
 function occurrenceTokenMatches(token: string, branchKeys: ReadonlySet<string>): boolean {
   const normalized = occurrenceKey(token);
-  return [...branchKeys].some((key) => normalized === key || normalized.includes(key));
+  return branchKeys.has(normalized);
 }
 
 function branchOccurrenceKeys(branch: CandidateBranch): readonly string[] {
-  return branch.readOccurrence
-    ? [branch.readOccurrence.occurrenceId, branch.readOccurrence.readRelationId].map(occurrenceKey)
-    : [];
+  if (!branch.readOccurrence) return [];
+  const occurrence = branch.readOccurrence;
+  return [
+    occurrence.occurrenceId,
+    occurrence.readRelationId,
+    `${occurrence.occurrenceId}:${occurrence.readRelationId}`,
+  ].map(occurrenceKey);
 }
 
 function occurrenceEvidenceRefs(edge: JsonRecord, consumerTaskId: string): readonly string[] {
@@ -65,6 +69,10 @@ function occurrenceEvidenceRefs(edge: JsonRecord, consumerTaskId: string): reado
     .map(text)
     .filter((value): value is string => value !== null)
     .filter((value) => value.startsWith(prefix))
+    // A field-lineage read evidence locator is either one canonical
+    // occurrence token or the canonical occurrence id followed by the
+    // canonical read-relation id. Both ids may contain `:`, so the suffix
+    // must remain an opaque token and be compared by exact equality.
     .map((value) => value.slice(prefix.length));
   return [...new Set([...explicit, ...fromEvidence].map(occurrenceKey))];
 }
@@ -140,7 +148,7 @@ export function createFieldValueEvidenceProvider(path: string | null | undefined
       edgeCount: edges.length,
       lookup: (branch) => {
         if (branch.branchKind !== "PHYSICAL_PRODUCER" || !branch.table || !branch.consumerTaskId || !branch.producerTaskId) return {
-          candidateBranchId: branch.candidateBranchId, status: "PROVEN_ABSENT", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [],
+          candidateBranchId: branch.candidateBranchId, status: "NOT_APPLICABLE", affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [],
         };
         const occurrenceKeys = new Set(branchOccurrenceKeys(branch));
         const baseKey = `${branch.consumerTaskId}|${branch.producerTaskId}|${branchTableKey(branch)}`.toLowerCase();
