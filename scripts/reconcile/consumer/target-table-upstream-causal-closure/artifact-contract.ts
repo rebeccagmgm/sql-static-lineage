@@ -1,7 +1,7 @@
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
 import type { AnalysisSnapshotRef, TargetWriteRef } from "./target-write-contract.ts";
 import type { CandidateBranch, CandidateUniverse } from "../target-field-causal-slice/candidate-universe.ts";
-import type { ImpactChannel } from "./task-relation-summary.ts";
+import type { ImpactChannel, LocalTransferKind } from "./task-relation-summary.ts";
 
 export const TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE = "TARGET_TABLE_UPSTREAM_CAUSAL_CLOSURE" as const;
 export const TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION = "1.1.0" as const;
@@ -15,6 +15,10 @@ export interface ChannelAssessment {
   readonly proofRefs: readonly string[];
   readonly witnessRefs: readonly string[];
   readonly gapRefs: readonly string[];
+  /** Local operator/field transfer that established this target effect. */
+  readonly localTransferKinds?: readonly LocalTransferKind[];
+  /** Exact fields demanded by a downstream control or multiplicity operator. */
+  readonly demandedFieldNames?: readonly string[];
   /** Present for FIELD_VALUE transfer explanations; never an assessment key. */
   readonly outputFieldBindingIds?: readonly string[];
   readonly affectedTargetFields?: readonly string[];
@@ -66,6 +70,12 @@ export interface TargetTableCausalMetrics {
   readonly decisionCoverage: { readonly numerator: number; readonly denominator: number; readonly rate: number };
   readonly bridgeStats: { readonly resolved: number; readonly ambiguous: number; readonly missing: number };
   readonly peakMemoryBytes: number;
+  /** Gate-B diagnostics; optional so older 1.1.0 artifacts remain readable. */
+  readonly confirmedAssessmentCount?: number;
+  readonly writeScopedConfirmedCount?: number;
+  readonly crossChannelConfirmedBranchCount?: number;
+  readonly crossWriteScopeLeakCount?: number;
+  readonly unknownReasonCounts?: Readonly<Record<string, number>>;
 }
 
 export interface CausalStageMetric {
@@ -134,6 +144,8 @@ export function canonicalAssessment(input: Omit<TargetTableAssessment, "assessme
       proofRefs: sorted(channel.proofRefs),
       witnessRefs: sorted(channel.witnessRefs),
       gapRefs: sorted(channel.gapRefs),
+      ...(channel.localTransferKinds ? { localTransferKinds: [...new Set(channel.localTransferKinds)].sort() } : {}),
+      ...(channel.demandedFieldNames ? { demandedFieldNames: sorted(channel.demandedFieldNames) } : {}),
       ...(channel.outputFieldBindingIds ? { outputFieldBindingIds: sorted(channel.outputFieldBindingIds) } : {}),
       ...(channel.affectedTargetFields ? { affectedTargetFields: sorted(channel.affectedTargetFields) } : {}),
     })),

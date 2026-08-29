@@ -15,9 +15,20 @@ export const IMPACT_CHANNELS = [
 ] as const;
 export type ImpactChannel = (typeof IMPACT_CHANNELS)[number];
 
+export const LOCAL_TRANSFER_KINDS = [
+  "RELATION_OPERATOR",
+  "VALUE_FLOW",
+  "CONTROL_FIELD_DEMAND",
+  "MULTIPLICITY_FIELD_DEMAND",
+] as const;
+export type LocalTransferKind = (typeof LOCAL_TRANSFER_KINDS)[number];
+
 export interface ReadImpact {
   readonly readOccurrenceId: string;
   readonly impactChannels: readonly ImpactChannel[];
+  readonly localTransferKinds?: readonly LocalTransferKind[];
+  /** Fields demanded by a downstream control/multiplicity operator. */
+  readonly demandedFieldNames?: readonly string[];
   readonly evidenceRefs: readonly string[];
   readonly gaps: readonly string[];
 }
@@ -71,8 +82,10 @@ export function relationSummaryKey(
   taskId: string,
   sqlSourceId: string,
   statementIndex: number,
+  rootRelationId?: string | null,
 ): string {
-  return `${taskId}|source:${canonicalSqlSourceId(sqlSourceId)}|statement:${statementIndex}`;
+  const root = rootRelationId ? `|root:${rootRelationId}` : "";
+  return `${taskId}|source:${canonicalSqlSourceId(sqlSourceId)}|statement:${statementIndex}${root}`;
 }
 
 export function summaryForOccurrence(
@@ -80,9 +93,13 @@ export function summaryForOccurrence(
   taskId: string | null,
   sqlSourceId: string | null,
   statementIndex: number | null,
+  rootRelationId?: string | null,
 ): TaskRelationSummary | undefined {
   if (!taskId || !sqlSourceId || statementIndex === null) return undefined;
   const source = canonicalSqlSourceId(sqlSourceId);
+  const scoped = rootRelationId ? summaries.get(relationSummaryKey(taskId, source, statementIndex, rootRelationId)) : undefined;
+  if (scoped?.taskId === taskId && scoped.sqlSourceId === source && scoped.statementIndex === statementIndex) return scoped;
+  if (rootRelationId) return undefined;
   const summary = summaries.get(relationSummaryKey(taskId, source, statementIndex));
   if (summary?.taskId === taskId && summary.sqlSourceId === source && summary.statementIndex === statementIndex) return summary;
   return undefined;
@@ -160,6 +177,20 @@ function physicalColumnTables(row: JsonRecord): readonly string[] {
   return sorted(columns.flatMap((column) => records(column.physical).map((item) => text(item.table)).filter((value): value is string => value !== null)));
 }
 
+function physicalColumnNames(row: JsonRecord): readonly string[] {
+  const relation = relationOf(row);
+  const columns = [
+    ...records(relation.predicate_columns),
+    ...records(relation.condition_columns),
+    ...records(relation.input_columns),
+    ...records(relation.output_columns),
+  ];
+  return sorted(columns.flatMap((column) => [
+    text(column.column),
+    text(column.name),
+  ].filter((value): value is string => value !== null)));
+}
+
 function exprText(row: JsonRecord): string {
   const relation = relationOf(row);
   return [
@@ -221,6 +252,16 @@ function impactChannels(row: JsonRecord): readonly ImpactChannel[] {
   }
 }
 
+function localTransferKinds(row: JsonRecord): readonly LocalTransferKind[] {
+  const channels = impactChannels(row);
+  if (channels.length === 0) return [];
+  return [
+    "RELATION_OPERATOR",
+    ...(physicalColumnNames(row).length > 0 && channels.includes("ROW_MEMBERSHIP") ? ["CONTROL_FIELD_DEMAND" as const] : []),
+    ...(physicalColumnNames(row).length > 0 && channels.includes("MULTIPLICITY") ? ["MULTIPLICITY_FIELD_DEMAND" as const] : []),
+  ];
+}
+
 function hasUnsupportedShape(row: JsonRecord): boolean {
   const type = relationType(row);
   const relation = relationOf(row);
@@ -235,6 +276,7 @@ export function summarizeTaskRelations(input: {
   readonly relationEdgeRecords?: readonly JsonRecord[];
   readonly statementRecords?: readonly JsonRecord[];
   readonly statementIndex?: number;
+  readonly rootRelationId?: string;
 }): TaskRelationSummary {
   const statementIndexes = new Map<string, number>();
   const statementSources = new Map<string, string>();
@@ -288,13 +330,47 @@ export function summarizeTaskRelations(input: {
   };
   const requestedSourceId = input.sqlSourceId ? canonicalSqlSourceId(input.sqlSourceId) : null;
   const requestedStatementIndex = input.statementIndex ?? null;
-  const rows = input.relationRecords.filter((row) => {
+  const allRows = input.relationRecords.filter((row) => {
     if (text(row.task_id) !== null && text(row.task_id) !== input.taskId) return false;
     if (requestedStatementIndex !== null && rowStatementIndex(row) !== requestedStatementIndex) return false;
     return requestedSourceId === null || rowSourceId(row) === requestedSourceId;
   });
+  const allRowIds = new Set(allRows.map(relationId).filter((value): value is string => value !== null));
+  const allEdges = (input.relationEdgeRecords ?? []).filter((edge) => {
+    const from = text(edge.from_relation_id);
+    const to = text(edge.to_relation_id);
+    return from !== null && to !== null && allRowIds.has(from) && allRowIds.has(to);
+  });
+  const childrenByParent = new Map<string, string[]>();
+  for (const edge of allEdges) {
+    const to = text(edge.to_relation_id);
+    const from = text(edge.from_relation_id);
+    if (!to || !from) continue;
+    const children = childrenByParent.get(to) ?? [];
+    children.push(from);
+    childrenByParent.set(to, children);
+  }
+  const requestedRoot = input.rootRelationId ?? null;
+  const selectedRows = requestedRoot === null || allRowIds.has(requestedRoot)
+    ? (() => {
+        if (requestedRoot === null) return allRows;
+        const subtree = new Set<string>();
+        const pending = [requestedRoot];
+        while (pending.length > 0) {
+          const id = pending.pop()!;
+          if (subtree.has(id)) continue;
+          subtree.add(id);
+          pending.push(...(childrenByParent.get(id) ?? []));
+        }
+        return allRows.filter((row) => {
+          const id = relationId(row);
+          return id !== null && subtree.has(id);
+        });
+      })()
+    : [];
+  const rows = selectedRows;
   const rowIds = new Set(rows.map(relationId).filter((value): value is string => value !== null));
-  const edges = (input.relationEdgeRecords ?? []).filter((edge) => {
+  const edges = allEdges.filter((edge) => {
     const from = text(edge.from_relation_id);
     const to = text(edge.to_relation_id);
     return from !== null && to !== null && rowIds.has(from) && rowIds.has(to);
@@ -327,9 +403,24 @@ export function summarizeTaskRelations(input: {
     const table = text(relationOf(row).table);
     if (id && table) readTables.set(id, table);
   }
-  const readImpacts = new Map<string, { channels: Set<ImpactChannel>; refs: Set<string>; gaps: Set<string> }>();
+  const readImpacts = new Map<string, { channels: Set<ImpactChannel>; transferKinds: Set<LocalTransferKind>; demandedFields: Set<string>; refs: Set<string>; gaps: Set<string> }>();
   const gaps = new Set<string>();
-  let rootRelationId: string | null = null;
+  const relationIds = rows.map(relationId).filter((value): value is string => value !== null);
+  const relationIdsInEdges = new Set(edges.flatMap((edge) => [
+    text(edge.from_relation_id),
+  ].filter((value): value is string => value !== null)));
+  const explicitRoots = relationIds
+    .filter((value) => /:relation:root(?:\.project|$)/i.test(value))
+    .sort((left, right) => left.localeCompare(right));
+  const graphRoots = relationIds
+    .filter((value) => !relationIdsInEdges.has(value))
+    .filter((value) => {
+      const row = rowsById.get(value);
+      return row && relationType(row) !== "read";
+    })
+    .sort((left, right) => left.localeCompare(right));
+  const rootRelationId = requestedRoot ?? explicitRoots[0] ?? (graphRoots.length === 1 ? graphRoots[0]! : null);
+  if (requestedRoot !== null && !allRowIds.has(requestedRoot)) gaps.add(`relation-summary-gap:${input.taskId}:ROOT_RELATION_NOT_FOUND`);
   let statementIndex = requestedStatementIndex ?? 0;
   const sqlSourceId = requestedSourceId ?? rowSourceId(rows[0] ?? {});
   if (sqlSourceId === "unknown") gaps.add(`relation-summary-gap:${input.taskId}:SQL_SOURCE_ID_UNRESOLVED`);
@@ -343,7 +434,6 @@ export function summarizeTaskRelations(input: {
     const statementId = text(row.statement_id);
     const match = statementId?.match(/statement:(\d+)/i);
     if (match) statementIndex = Number(match[1]);
-    if (rootRelationId === null && /:relation:root(?:[.:]|$)/i.test(id)) rootRelationId = id;
     if (type === "read" || childRelationIds(row).length > 0 || incoming.has(id)) {
       const descendants = type === "read" ? [readOccurrenceId(row) ?? id] : descendantReads(id);
       const columnTables = physicalColumnTables(row);
@@ -355,8 +445,10 @@ export function summarizeTaskRelations(input: {
           })
         : descendants;
       for (const readId of readIds) {
-        const current = readImpacts.get(readId) ?? { channels: new Set<ImpactChannel>(), refs: new Set<string>(), gaps: new Set<string>() };
+        const current = readImpacts.get(readId) ?? { channels: new Set<ImpactChannel>(), transferKinds: new Set<LocalTransferKind>(), demandedFields: new Set<string>(), refs: new Set<string>(), gaps: new Set<string>() };
         for (const channel of impactChannels(row)) current.channels.add(channel);
+        for (const transferKind of localTransferKinds(row)) current.transferKinds.add(transferKind);
+        for (const fieldName of physicalColumnNames(row)) current.demandedFields.add(fieldName);
         current.refs.add(`machine-facts:${input.taskId}:relation:${id}`);
         if (hasUnsupportedShape(row)) {
           const gap = `relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`;
@@ -383,6 +475,8 @@ export function summarizeTaskRelations(input: {
   const normalized = [...readImpacts.entries()].map(([readOccurrenceId, value]) => ({
     readOccurrenceId,
     impactChannels: [...value.channels].sort(),
+    localTransferKinds: [...value.transferKinds].sort(),
+    demandedFieldNames: [...value.demandedFields].sort(),
     evidenceRefs: sorted([...value.refs]),
     gaps: sorted([...value.gaps]),
   })).sort((a, b) => a.readOccurrenceId.localeCompare(b.readOccurrenceId));

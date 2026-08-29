@@ -26,7 +26,16 @@ export interface CandidateReadOccurrence {
   /** Canonical SQL source/slot identity, independent of statement ordinal. */
   readonly sqlSourceId?: string | null;
   readonly statementIndex: number;
+  /** Optional exact write-root relation proven to contain this read. */
+  readonly rootRelationId?: string | null;
   readonly relationPath: readonly string[];
+}
+
+/** Canonical write scope used to prove which SQL write owns a read branch. */
+export interface CandidateWriteScope {
+  readonly sqlSourceId: string;
+  readonly statementOrdinal: number;
+  readonly rootRelationId: string;
 }
 
 export interface CandidatePhysicalTable {
@@ -55,6 +64,8 @@ export interface CandidateBranch {
   readonly writeObservationId?: string | null;
   /** Evidence judgment is metadata and deliberately excluded from branch ID. */
   readonly producerRole: string | null;
+  /** Exact producer write scope; absent means the bridge cannot be propagated. */
+  readonly writeScope?: CandidateWriteScope | null;
   readonly evidenceRefs: readonly CandidateEvidenceRef[];
   readonly gapRefs: readonly string[];
   readonly boundaryReason: string | null;
@@ -172,6 +183,7 @@ function occurrenceOf(value: unknown): CandidateReadOccurrence | null {
   const sqlSourceId = text(source.sqlSourceId) ?? text(source.sql_source_id) ??
     text(source.statementId) ?? text(source.statement_id);
   const statementIndex = integer(source.statementIndex);
+  const rootRelationId = text(source.rootRelationId) ?? text(source.root_relation_id);
   const relationPath = Array.isArray(source.relationPath)
     ? source.relationPath.filter((item): item is string => typeof item === "string")
     : [];
@@ -187,6 +199,7 @@ function occurrenceOf(value: unknown): CandidateReadOccurrence | null {
     readRelationId,
     ...(sqlSourceId ? { sqlSourceId: canonicalSqlSourceId(sqlSourceId) } : {}),
     statementIndex,
+    ...(rootRelationId ? { rootRelationId } : {}),
     relationPath,
   };
 }
@@ -209,6 +222,7 @@ function occurrenceIdentity(occurrence: CandidateReadOccurrence | null): JsonVal
     readRelationId: occurrence.readRelationId,
     sqlSourceId: occurrence.sqlSourceId ?? null,
     statementIndex: occurrence.statementIndex,
+    ...(occurrence.rootRelationId ? { rootRelationId: occurrence.rootRelationId } : {}),
     relationPath: [...occurrence.relationPath],
   };
 }

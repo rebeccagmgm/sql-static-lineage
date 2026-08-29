@@ -81,3 +81,52 @@ The candidate universe remains `INCOMPLETE`, there are no `PROVEN_UNRELATED` ass
 ## Canonical artifact isolation
 
 The canonical directory `sql-static-lineage-data/artifacts/tasks/209119` was checked after the run. It still contains only the four pre-existing JSON files; `field-lineage.json` remains 23,290,979 bytes with SHA-256 `71487CE3869A9A5F2CD125263CB8AEC1B6408E6CAD1390F507551C25C6ADC768`, last written 2026-08-28 23:51:02. The target-table outputs remain in the separate `sql-static-lineage-artifacts/target-table-causal-closure/` directory.
+
+## Current write-scoped propagation rerun
+
+On 2026-08-29, using code baseline `cfe8d4e` plus the current write-scope and
+channel-propagation changes, the same existing Input Pack/Machine Facts,
+producer-index, table multi-hop artifact and canonical field-lineage JSON were
+read. The CLI was given the already verified target write observation
+`write-observation:209119:platform-target:0`. It wrote only the three isolated
+target-table outputs under `sql-static-lineage-artifacts/target-table-causal-closure/`.
+No Calcite process ran, and no file under `sql-static-lineage-data/artifacts/tasks/209119`
+was written or regenerated.
+
+| Metric | Result |
+| --- | ---: |
+| Candidate branches / assessments | 542 / 542 |
+| `CONFIRMED_RELATED` / `CONDITIONAL_RELATED` / `UNKNOWN` | 46 / 0 / 496 |
+| Confirmed assessments with write-scoped witness | 46 / 46 |
+| Cross-channel confirmed branches (`VALUE_FLOW` → control/multiplicity) | 0 |
+| Post-run cross-write scope leak invariant | 0 |
+| Minimum certain tasks / conservative safety tasks | 41 / 78 |
+| Field evidence scans | 1 |
+| Explicit gaps | 1,240 |
+| Peak RSS | 628,060,160 bytes (about 599 MiB) |
+| End-to-end wall time | about 6 seconds |
+
+The previous documented propagation run reported 52 confirmed and 490 unknown.
+The current run intentionally removes six formerly positive assessments because
+their read occurrence could not be proven to belong to the current consumer
+write root. They remain `UNKNOWN` with explicit gaps; this is a fail-closed
+scope correction, not a semantic expansion or a silent prune. No cross-write
+branch was observed.
+
+Unknown reason counts below are gap occurrences (one assessment can contribute
+more than one reason), not a partition of the 496 branches:
+
+```text
+CANDIDATE_BOUNDARY=630
+NOT_REACHED_FROM_ROOT=419
+OCCURRENCE_EVIDENCE_NOT_FOUND=225
+PRODUCER_WRITE_AMBIGUOUS=84
+RELATION_SUMMARY=55
+PRODUCER_WRITE_SCOPE_UNRESOLVED=10
+OTHER=73
+```
+
+The new exact-field cross-channel fixture passes, but this 209119 run closed no
+additional branch through that channel. Gate B therefore remains **NOT
+VERIFIED / REOPENED**. M5/M6, Calcite expansion and `PROVEN_UNRELATED` remain
+paused/disabled. `runtimeRerunDecision` remains `NOT_EVALUATED`.

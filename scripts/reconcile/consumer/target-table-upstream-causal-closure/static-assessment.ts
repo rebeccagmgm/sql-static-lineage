@@ -1,6 +1,6 @@
 import type { CandidateBranch } from "../target-field-causal-slice/candidate-universe.ts";
 import type { FieldValueEvidenceProvider } from "./field-value-provider.ts";
-import type { ImpactChannel, TaskRelationSummary } from "./task-relation-summary.ts";
+import type { ImpactChannel, LocalTransferKind, TaskRelationSummary } from "./task-relation-summary.ts";
 import {
   canonicalAssessment,
   type ChannelAssessment,
@@ -63,12 +63,16 @@ function semantic(
   }
   const refs = unique(relevant.flatMap((impact) => impact.evidenceRefs));
   const gaps = unique(relevant.flatMap((impact) => impact.gaps));
+  const demandedFieldNames = unique(relevant.flatMap((impact) => impact.demandedFieldNames ?? []));
+  const localTransferKinds = unique(relevant.flatMap((impact) => impact.localTransferKinds ?? [])) as LocalTransferKind[];
   return {
     channel,
     status: gaps.length > 0 || !summary.complete ? "UNKNOWN" : "CONFIRMED",
     proofRefs: refs,
     witnessRefs: refs,
     gapRefs: gaps,
+    ...(localTransferKinds.length > 0 ? { localTransferKinds } : {}),
+    ...(demandedFieldNames.length > 0 ? { demandedFieldNames } : {}),
   };
 }
 
@@ -99,6 +103,8 @@ export function localChannelAssessments(input: {
     gapRefs: [...branchGaps, ...fieldValue.gapRefs],
     outputFieldBindingIds: fieldValue.outputFieldBindingIds,
     affectedTargetFields: fieldValue.affectedTargetFields,
+    localTransferKinds: ["VALUE_FLOW"],
+    demandedFieldNames: fieldValue.affectedTargetFields,
   }];
   for (const channel of CAUSAL_IMPACT_CHANNELS) {
     if (channel === "FIELD_VALUE") continue;

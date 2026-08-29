@@ -10,6 +10,10 @@ export function formatTargetTableCausalSummary(artifact: TargetTableCausalClosur
     `conservativeSafetySet: ${artifact.conservativeSafetyTaskIds.join(",") || "(empty)"}`,
     `decisionCoverage: ${m.decisionCoverage.numerator}/${m.decisionCoverage.denominator} (${rate})`,
     `evidenceClosure: ${m.evidenceClosureRate === "NOT_APPLICABLE" ? "NOT_APPLICABLE" : `${(m.evidenceClosureRate * 100).toFixed(1)}%`}`,
+    `writeScopedConfirmed: ${m.writeScopedConfirmedCount ?? "NOT_EVALUATED"}/${m.confirmedAssessmentCount ?? "NOT_EVALUATED"}`,
+    `crossChannelConfirmedBranches: ${m.crossChannelConfirmedBranchCount ?? "NOT_EVALUATED"}`,
+    `crossWriteScopeLeaks: ${m.crossWriteScopeLeakCount ?? "NOT_EVALUATED"}`,
+    `unknownReasons: ${Object.entries(m.unknownReasonCounts ?? {}).sort(([left], [right]) => left.localeCompare(right)).map(([reason, count]) => `${reason}=${count}`).join(",") || "(none)"}`,
     `runtimeRerunDecision: ${artifact.runtimeRerunDecision}`,
     `gaps: ${artifact.gaps.length}`,
   ].join("\n");

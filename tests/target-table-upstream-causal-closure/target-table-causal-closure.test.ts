@@ -19,11 +19,11 @@ const table: NonNullable<CandidateBranch["table"]> = { platform: "hive", dataSou
 const occurrence = { occurrenceId: "task:c:statement:0:relation:read", readRelationId: "task:c:statement:0:relation:read", sqlSourceId: "task:c", statementIndex: 0, relationPath: ["root", "read"] } as const;
 
 function branch(overrides: Partial<CandidateBranch> = {}): CandidateBranch {
-  return { candidateBranchId: "branch:p", branchKind: "PHYSICAL_PRODUCER", rootTaskId: "root", consumerTaskId: "c", producerTaskId: "p", table, readOccurrence: occurrence, writeObservationId: null, producerRole: "PRIMARY", evidenceRefs: [], gapRefs: [], boundaryReason: null, ...overrides };
+  return { candidateBranchId: "branch:p", branchKind: "PHYSICAL_PRODUCER", rootTaskId: "root", consumerTaskId: "c", producerTaskId: "p", table, readOccurrence: occurrence, writeObservationId: null, writeScope: { sqlSourceId: "p-source", statementOrdinal: 0, rootRelationId: "p-root" }, producerRole: "PRIMARY", evidenceRefs: [], gapRefs: [], boundaryReason: null, ...overrides };
 }
 
-function readOccurrence(id: string, sqlSourceId: string, statementIndex = 0): NonNullable<CandidateBranch["readOccurrence"]> {
-  return { occurrenceId: id, readRelationId: id, sqlSourceId, statementIndex, relationPath: ["root", id] };
+function readOccurrence(id: string, sqlSourceId: string, statementIndex = 0, rootRelationId = "root"): NonNullable<CandidateBranch["readOccurrence"]> {
+  return { occurrenceId: id, readRelationId: id, sqlSourceId, statementIndex, relationPath: [rootRelationId, id] };
 }
 
 function summary(taskId: string, sqlSourceId: string, readImpacts: TaskRelationSummary["readImpacts"], complete = true): TaskRelationSummary {
@@ -153,12 +153,12 @@ describe("target table causal closure baseline", () => {
   });
 
   it("uses the target-rooted closure and leaves disconnected branches unknown", () => {
-    const reachable = branch({ consumerTaskId: "root", producerTaskId: "p", writeObservationId: "write:p:0", candidateBranchId: "branch:reachable" });
+    const reachable = branch({ consumerTaskId: "root", producerTaskId: "p", writeObservationId: "write:p:0", candidateBranchId: "branch:reachable", readOccurrence: { ...occurrence, sqlSourceId: "task:c", relationPath: ["root-relation", "read"] } });
     const disconnected = branch({ consumerTaskId: "other", producerTaskId: "q", candidateBranchId: "branch:disconnected" });
     const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", readOccurrence: null, table: null });
-    const summary = { taskId: "root", sqlSourceId: "task:c", statementIndex: 0, rootRelationId: null, digest: "d", complete: true, readImpacts: [{ readOccurrenceId: occurrence.readRelationId, impactChannels: ["ROW_MEMBERSHIP"] as const, evidenceRefs: ["relation-evidence"], gaps: [] }], relationCount: 1, readCount: 1, edgeCount: 0, gaps: [] };
+    const summary = { taskId: "root", sqlSourceId: "task:c", statementIndex: 0, rootRelationId: "root-relation", digest: "d", complete: true, readImpacts: [{ readOccurrenceId: occurrence.readRelationId, impactChannels: ["ROW_MEMBERSHIP"] as const, evidenceRefs: ["relation-evidence"], gaps: [] }], relationCount: 1, readCount: 1, edgeCount: 0, gaps: [] };
     const provider = { scanCount: 1, edgeCount: 0, lookup: (value: CandidateBranch) => ({ candidateBranchId: value.candidateBranchId, status: "PROVEN_ABSENT" as const, affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [] }) };
-    const result = buildCausalClosure({ targetWriteId: "write", rootTaskId: "root", universe: { rootTaskId: "root", status: "COMPLETE_OBSERVED_EVIDENCE", branches: [root, reachable, disconnected], boundaryGapRefs: [], coverage: { sourceArtifactType: "test", sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE", sourceCoverageSemantics: null, sourceLimitsTruncated: false } }, summaries: new Map([[relationSummaryKey("root", "task:c", 0), summary]]), fieldValueProvider: provider });
+    const result = buildCausalClosure({ targetWriteId: "write", rootTaskId: "root", rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "task:c", statementOrdinal: 0, rootRelationId: "root-relation" }, universe: { rootTaskId: "root", status: "COMPLETE_OBSERVED_EVIDENCE", branches: [root, reachable, disconnected], boundaryGapRefs: [], coverage: { sourceArtifactType: "test", sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE", sourceCoverageSemantics: null, sourceLimitsTruncated: false } }, summaries: new Map([[relationSummaryKey("root", "task:c", 0), summary]]), fieldValueProvider: provider });
     expect(result.graph.reachableBranchIds).toEqual(["branch:reachable", "branch:root"]);
     expect(result.assessments.find((item) => item.candidateBranchId === "branch:reachable")?.relationStatus).toBe("CONFIRMED_RELATED");
     expect(result.assessments.find((item) => item.candidateBranchId === "branch:disconnected")?.relationStatus).toBe("UNKNOWN");
@@ -175,17 +175,18 @@ describe("target table causal closure baseline", () => {
 
   it("propagates unknown certainty through a multi-hop upstream branch", () => {
     const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", table: null, readOccurrence: null, writeObservationId: "write:root:0" });
-    const b = branch({ candidateBranchId: "branch:b", consumerTaskId: "root", producerTaskId: "b", table: { ...table, qualifiedName: "db.b", stableTableId: "db.b__gfhive" }, readOccurrence: readOccurrence("root-read-b", "root-source"), writeObservationId: "write:b:0" });
-    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "b", producerTaskId: "a", table: { ...table, qualifiedName: "db.a", stableTableId: "db.a__gfhive" }, readOccurrence: readOccurrence("b-read-a", "b-source"), writeObservationId: "write:a:0" });
+    const b = branch({ candidateBranchId: "branch:b", consumerTaskId: "root", producerTaskId: "b", table: { ...table, qualifiedName: "db.b", stableTableId: "db.b__gfhive" }, readOccurrence: readOccurrence("root-read-b", "root-source", 0, "root-relation"), writeObservationId: "write:b:0", writeScope: { sqlSourceId: "b-source", statementOrdinal: 0, rootRelationId: "b-root" } });
+    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "b", producerTaskId: "a", table: { ...table, qualifiedName: "db.a", stableTableId: "db.a__gfhive" }, readOccurrence: readOccurrence("b-read-a", "b-source", 0, "b-root"), writeObservationId: "write:a:0", writeScope: { sqlSourceId: "a-source", statementOrdinal: 0, rootRelationId: "a-root" } });
     const result = buildCausalClosure({
       targetWriteId: "write",
       rootTaskId: "root",
       universe: completeUniverse([root, b, a]),
       summaries: new Map([
-        [relationSummaryKey("root", "root-source", 0), summary("root", "root-source", [{ readOccurrenceId: "root-read-b", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["b-target"], gaps: ["b-target-unknown"] }])],
-        [relationSummaryKey("b", "b-source", 0), summary("b", "b-source", [{ readOccurrenceId: "b-read-a", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["a-b"], gaps: [] }])],
+        [relationSummaryKey("root", "root-source", 0), { ...summary("root", "root-source", [{ readOccurrenceId: "root-read-b", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["b-target"], gaps: ["b-target-unknown"] }]), rootRelationId: "root-relation" }],
+        [relationSummaryKey("b", "b-source", 0), { ...summary("b", "b-source", [{ readOccurrenceId: "b-read-a", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["a-b"], gaps: [] }]), rootRelationId: "b-root" }],
       ]),
       fieldValueProvider: noFieldEvidenceProvider(),
+      rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "root-source", statementOrdinal: 0, rootRelationId: "root-relation" },
     });
     expect(result.assessments.find((item) => item.candidateBranchId === "branch:b")?.relationStatus).toBe("UNKNOWN");
     expect(result.assessments.find((item) => item.candidateBranchId === "branch:a")?.relationStatus).toBe("UNKNOWN");
@@ -193,21 +194,22 @@ describe("target table causal closure baseline", () => {
 
   it("merges alternative paths by strongest certainty while retaining unknown gaps", () => {
     const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", table: null, readOccurrence: null, writeObservationId: "write:root:0" });
-    const p1 = branch({ candidateBranchId: "branch:p1", consumerTaskId: "root", producerTaskId: "p", readOccurrence: readOccurrence("root-read-1", "root-source"), writeObservationId: "write:p:0" });
-    const p2 = branch({ candidateBranchId: "branch:p2", consumerTaskId: "root", producerTaskId: "p", readOccurrence: readOccurrence("root-read-2", "root-source"), writeObservationId: "write:p:0" });
-    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "p", producerTaskId: "a", readOccurrence: readOccurrence("p-read-a", "p-source"), writeObservationId: "write:a:0" });
+    const p1 = branch({ candidateBranchId: "branch:p1", consumerTaskId: "root", producerTaskId: "p", readOccurrence: readOccurrence("root-read-1", "root-source", 0, "root-relation"), writeObservationId: "write:p:0" });
+    const p2 = branch({ candidateBranchId: "branch:p2", consumerTaskId: "root", producerTaskId: "p", readOccurrence: readOccurrence("root-read-2", "root-source", 0, "root-relation"), writeObservationId: "write:p:0" });
+    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "p", producerTaskId: "a", readOccurrence: readOccurrence("p-read-a", "p-source", 0, "p-root"), writeObservationId: "write:a:0", writeScope: { sqlSourceId: "a-source", statementOrdinal: 0, rootRelationId: "a-root" } });
     const result = buildCausalClosure({
       targetWriteId: "write",
       rootTaskId: "root",
       universe: completeUniverse([root, p1, p2, a]),
       summaries: new Map([
-        [relationSummaryKey("root", "root-source", 0), summary("root", "root-source", [
+          [relationSummaryKey("root", "root-source", 0), { ...summary("root", "root-source", [
           { readOccurrenceId: "root-read-1", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["path-1"], gaps: [] },
           { readOccurrenceId: "root-read-2", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["path-2"], gaps: ["path-2-unknown"] },
-        ])],
-        [relationSummaryKey("p", "p-source", 0), summary("p", "p-source", [{ readOccurrenceId: "p-read-a", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["p-a"], gaps: [] }])],
+        ]), rootRelationId: "root-relation" }],
+        [relationSummaryKey("p", "p-source", 0), { ...summary("p", "p-source", [{ readOccurrenceId: "p-read-a", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["p-a"], gaps: [] }]), rootRelationId: "p-root" }],
       ]),
       fieldValueProvider: noFieldEvidenceProvider(),
+      rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "root-source", statementOrdinal: 0, rootRelationId: "root-relation" },
     });
     const assessment = result.assessments.find((item) => item.candidateBranchId === "branch:a");
     expect(assessment?.relationStatus).toBe("CONFIRMED_RELATED");
@@ -219,6 +221,69 @@ describe("target table causal closure baseline", () => {
     expect(composePath("CONFIRMED", "UNKNOWN")).toBe("UNKNOWN");
     expect(composePath("CONFIRMED", "CONDITIONAL")).toBe("CONDITIONAL");
     expect(mergeAlternative("CONFIRMED", "UNKNOWN")).toBe("CONFIRMED");
+  });
+
+  it("does not cross from one consumer write root into another write's reads", () => {
+    const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", table: null, readOccurrence: null, writeObservationId: "write:root:0" });
+    const b1 = branch({ candidateBranchId: "branch:b1", consumerTaskId: "root", producerTaskId: "b", table: { ...table, qualifiedName: "db.b1", stableTableId: "db.b1__gfhive" }, readOccurrence: { ...readOccurrence("root-read-b1", "root-source", 0, "root-relation"), rootRelationId: "root-relation" }, writeObservationId: "write:b1", writeScope: { sqlSourceId: "b-source", statementOrdinal: 0, rootRelationId: "b-root-1" } });
+    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "b", producerTaskId: "a", table: { ...table, qualifiedName: "db.a", stableTableId: "db.a__gfhive" }, readOccurrence: { ...readOccurrence("b-read-a", "b-source", 0, "b-root-1"), rootRelationId: "b-root-1" }, writeObservationId: "write:a", writeScope: { sqlSourceId: "a-source", statementOrdinal: 0, rootRelationId: "a-root" } });
+    const c = branch({ candidateBranchId: "branch:c", consumerTaskId: "b", producerTaskId: "c", table: { ...table, qualifiedName: "db.c", stableTableId: "db.c__gfhive" }, readOccurrence: { ...readOccurrence("b-read-c", "b-source", 0, "b-root-2"), rootRelationId: "b-root-2" }, writeObservationId: "write:c", writeScope: { sqlSourceId: "c-source", statementOrdinal: 0, rootRelationId: "c-root" } });
+    const result = buildCausalClosure({
+      targetWriteId: "write:target",
+      rootTaskId: "root",
+      universe: completeUniverse([root, b1, a, c]),
+      summaries: new Map([
+        [relationSummaryKey("root", "root-source", 0, "root-relation"), { ...summary("root", "root-source", [{ readOccurrenceId: "root-read-b1", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["root-b1"], gaps: [] }]), rootRelationId: "root-relation" }],
+        [relationSummaryKey("b", "b-source", 0, "b-root-1"), { ...summary("b", "b-source", [{ readOccurrenceId: "b-read-a", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["b-a"], gaps: [] }]), rootRelationId: "b-root-1" }],
+        [relationSummaryKey("b", "b-source", 0, "b-root-2"), { ...summary("b", "b-source", [{ readOccurrenceId: "b-read-c", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["b-c"], gaps: [] }]), rootRelationId: "b-root-2" }],
+      ]),
+      fieldValueProvider: noFieldEvidenceProvider(),
+      rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "root-source", statementOrdinal: 0, rootRelationId: "root-relation" },
+    });
+    expect(result.graph.reachableBranchIds).toContain("branch:b1");
+    expect(result.graph.reachableBranchIds).toContain("branch:a");
+    expect(result.graph.reachableBranchIds).not.toContain("branch:c");
+    expect(result.assessments.find((item) => item.candidateBranchId === "branch:c")?.relationStatus).toBe("UNKNOWN");
+  });
+
+  it("transfers a demanded control field through an exact value port", () => {
+    const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", table: null, readOccurrence: null, writeObservationId: "write:root:0" });
+    const b = branch({ candidateBranchId: "branch:b", consumerTaskId: "root", producerTaskId: "b", readOccurrence: { ...readOccurrence("root-read-b", "root-source", 0, "root-relation"), rootRelationId: "root-relation" }, writeObservationId: "write:b", writeScope: { sqlSourceId: "b-source", statementOrdinal: 0, rootRelationId: "b-root" } });
+    const a = branch({ candidateBranchId: "branch:a", consumerTaskId: "b", producerTaskId: "a", readOccurrence: { ...readOccurrence("b-read-a", "b-source", 0, "b-root"), rootRelationId: "b-root" }, writeObservationId: "write:a", writeScope: { sqlSourceId: "a-source", statementOrdinal: 0, rootRelationId: "a-root" } });
+    const provider = { scanCount: 1, edgeCount: 1, lookup: (value: CandidateBranch) => value.candidateBranchId === "branch:a"
+      ? { candidateBranchId: value.candidateBranchId, status: "CONFIRMED" as const, affectedTargetFields: ["x"], outputFieldBindingIds: ["binding:a:x"], evidenceRefs: ["a-x"], gapRefs: [] }
+      : { candidateBranchId: value.candidateBranchId, status: "PROVEN_ABSENT" as const, affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [] } };
+    const result = buildCausalClosure({
+      targetWriteId: "write:target",
+      rootTaskId: "root",
+      universe: completeUniverse([root, b, a]),
+      summaries: new Map([
+        [relationSummaryKey("root", "root-source", 0, "root-relation"), { ...summary("root", "root-source", [{ readOccurrenceId: "root-read-b", impactChannels: ["ROW_MEMBERSHIP"], demandedFieldNames: ["x"], evidenceRefs: ["root-filter-x"], gaps: [] }]), rootRelationId: "root-relation" }],
+        [relationSummaryKey("b", "b-source", 0, "b-root"), { ...summary("b", "b-source", [{ readOccurrenceId: "b-read-a", impactChannels: [], evidenceRefs: [], gaps: [] }]), rootRelationId: "b-root" }],
+      ]),
+      fieldValueProvider: provider,
+      rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "root-source", statementOrdinal: 0, rootRelationId: "root-relation" },
+    });
+    const assessment = result.assessments.find((item) => item.candidateBranchId === "branch:a");
+    expect(assessment?.relationStatus).toBe("CONFIRMED_RELATED");
+    expect(assessment?.channelAssessments.find((item) => item.channel === "ROW_MEMBERSHIP")?.status).toBe("CONFIRMED");
+    expect(assessment?.channelAssessments.find((item) => item.channel === "ROW_MEMBERSHIP")?.localTransferKinds).toContain("VALUE_FLOW");
+  });
+
+  it("turns an in-loop propagation budget hit into an unknown gap", () => {
+    const root = branch({ branchKind: "ROOT_WRITE", candidateBranchId: "branch:root", consumerTaskId: null, producerTaskId: "root", table: null, readOccurrence: null, writeObservationId: "write:root:0" });
+    const candidate = branch({ candidateBranchId: "branch:p", consumerTaskId: "root", producerTaskId: "p", readOccurrence: { ...readOccurrence("root-read-p", "root-source", 0, "root-relation"), rootRelationId: "root-relation" }, writeObservationId: "write:p", writeScope: { sqlSourceId: "p-source", statementOrdinal: 0, rootRelationId: "p-root" } });
+    const result = buildCausalClosure({
+      targetWriteId: "write:target",
+      rootTaskId: "root",
+      universe: completeUniverse([root, candidate]),
+      summaries: new Map([[relationSummaryKey("root", "root-source", 0, "root-relation"), { ...summary("root", "root-source", [{ readOccurrenceId: "root-read-p", impactChannels: ["ROW_MEMBERSHIP"], evidenceRefs: ["root-p"], gaps: [] }]), rootRelationId: "root-relation" }]]),
+      fieldValueProvider: noFieldEvidenceProvider(),
+      rootWriteScope: { taskId: "root", writeObservationId: "write:root:0", sqlSourceId: "root-source", statementOrdinal: 0, rootRelationId: "root-relation" },
+      budget: { maxStateUpdates: 0 },
+    });
+    expect(result.assessments.find((item) => item.candidateBranchId === "branch:p")?.relationStatus).toBe("UNKNOWN");
+    expect(result.gaps.some((gap) => gap.reasonCode === "CAUSAL_CLOSURE_BOUNDARY" && gap.gapId.includes("MAX_STATE_UPDATES"))).toBe(true);
   });
 
   it("rolls multiple branches up without counting the root write", () => {

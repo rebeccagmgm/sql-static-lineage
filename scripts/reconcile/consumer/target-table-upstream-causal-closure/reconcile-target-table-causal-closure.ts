@@ -7,7 +7,7 @@ import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-cont
 import { canonicalBundleIdentity, createCurrentTaskBundleReader, type CurrentBundleLoad } from "../../../query/current-task-bundle.ts";
 import { validateTableProducerIndex } from "../../producer/producer-index.ts";
 import { validateMultiHopReconciliation } from "../multi-hop/reconcile-multi-hop.ts";
-import { projectTargetTableCandidateUniverse, type CandidateBranch, type CandidateUniverse } from "./candidate-universe.ts";
+import { projectTargetTableCandidateUniverse, type CandidateBranch, type CandidateUniverse, type CandidateWriteScope } from "./candidate-universe.ts";
 import { canonicalizeTargetTableArtifact, TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE, TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION, type CausalStageMetric, type TargetTableCausalClosureArtifact } from "./artifact-contract.ts";
 import { buildCausalClosure } from "./causal-closure.ts";
 import { buildImpactGraph } from "./impact-graph.ts";
@@ -33,6 +33,9 @@ interface CliOptions {
   readonly maxMemoryBytes: number;
   readonly maxBranches: number;
   readonly maxDepth: number;
+  readonly maxStateUpdates: number;
+  readonly maxNodeStates: number;
+  readonly maxWitnessDepth: number;
 }
 
 function readJson(path: string): unknown { return JSON.parse(readFileSync(path, "utf8")); }
@@ -88,7 +91,105 @@ function parseArgs(argv: readonly string[]): CliOptions {
     writeObservationIds: (values.get("write-observation-id") ?? "").split(",").map((value) => value.trim()).filter(Boolean),
     output: required("output"), summaryOutput: values.get("summary-output") ?? null, htmlOutput: values.get("html-output") ?? null,
     maxTimeMs: budget("max-time-ms", 300_000), maxMemoryBytes: budget("max-memory-bytes", 1_073_741_824), maxBranches: budget("max-branches", 10_000), maxDepth: budget("max-depth", 25),
+    maxStateUpdates: budget("max-state-updates", 100_000), maxNodeStates: budget("max-node-states", 50_000), maxWitnessDepth: budget("max-witness-depth", 25),
   };
+}
+
+function statementOrdinal(value: string | null): number | null {
+  if (!value) return null;
+  const match = value.match(/(?:^|:)statement:(\d+)(?::|$)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function canonicalSqlSourceId(value: string): string {
+  const match = value.trim().match(/^(.*?):statement:\d+(?::|$)/i);
+  return match?.[1] ?? value.trim();
+}
+
+function relationFromExpression(value: string | null): string | null {
+  if (!value) return null;
+  const marker = ":expression:";
+  const index = value.indexOf(marker);
+  return index > 0 ? value.slice(0, index) : null;
+}
+
+function producerWriteScope(
+  load: CurrentBundleLoad,
+  taskId: string,
+  targetTable: string,
+  writeObservationId: string,
+): CandidateWriteScope | null {
+  const bindings = records(load.records["output-field-bindings.jsonl"])
+    .filter((binding) => String(binding.task_id ?? "") === taskId && String(binding.write_observation_id ?? "") === writeObservationId && normalized(String(binding.target_dataset ?? "")) === normalized(targetTable));
+  const statementIds = new Set(bindings.map((binding) => text(binding.write_statement_id) ?? text(binding.statement_id) ?? text(binding.query_producer_statement_id)).filter((value): value is string => value !== null));
+  const rootRelationIds = new Set(bindings.map((binding) => relationFromExpression(text(binding.expression_id))).filter((value): value is string => value !== null));
+  const ordinals = new Set([...statementIds].map(statementOrdinal).filter((value): value is number => value !== null));
+  if (statementIds.size !== 1 || rootRelationIds.size !== 1 || ordinals.size !== 1) return null;
+  return {
+    sqlSourceId: canonicalSqlSourceId([...statementIds][0]!),
+    statementOrdinal: [...ordinals][0]!,
+    rootRelationId: [...rootRelationIds][0]!,
+  };
+}
+
+function inferReadScope(load: CurrentBundleLoad, branch: CandidateBranch): { readonly sqlSourceId: string | null; readonly rootRelationId: string | null } {
+  const occurrence = branch.readOccurrence;
+  if (!occurrence) return { sqlSourceId: null, rootRelationId: null };
+  const explicit = occurrence.sqlSourceId ? canonicalSqlSourceId(occurrence.sqlSourceId) : null;
+  if (explicit && !/^query#\d+$/i.test(explicit) && !/^create#\d+$/i.test(explicit)) return { sqlSourceId: explicit, rootRelationId: occurrence.rootRelationId ?? null };
+  const paths = new Set(occurrence.relationPath.map((value) => value.trim().toLowerCase()));
+  const relationRows = records(load.records["relation-nodes.jsonl"]);
+  const relationIds = relationRows
+    .filter((row) => {
+      const id = text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id);
+      const index = statementOrdinal(text(row.statement_id));
+      return id !== null && index === occurrence.statementIndex && [...paths].some((path) => id.toLowerCase().endsWith(`:relation:${path}`));
+    })
+    .map((row) => text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id))
+    .filter((value): value is string => value !== null);
+  const sources = new Set(
+    relationRows
+      .filter((row) => {
+        const id = text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id);
+        const index = statementOrdinal(text(row.statement_id));
+        return id !== null && index === occurrence.statementIndex && relationIds.includes(id) && text(row.statement_id) !== null;
+      })
+      .map((row) => canonicalSqlSourceId(text(row.statement_id)!)),
+  );
+  const parentByChild = new Map<string, string>();
+  for (const edge of records(load.records["relation-edges.jsonl"])) {
+    const child = text(edge.from_relation_id);
+    const parent = text(edge.to_relation_id);
+    if (child && parent) parentByChild.set(child, parent);
+  }
+  const roots = new Set<string>();
+  for (const relationId of relationIds) {
+    let current = relationId;
+    const seen = new Set<string>();
+    while (parentByChild.has(current) && !seen.has(current)) {
+      seen.add(current);
+      current = parentByChild.get(current)!;
+    }
+    roots.add(current);
+  }
+  return {
+    sqlSourceId: sources.size === 1 ? [...sources][0]! : explicit,
+    rootRelationId: roots.size === 1 ? [...roots][0]! : occurrence.rootRelationId ?? null,
+  };
+}
+
+function normalizeReadScopes(
+  universe: CandidateUniverse,
+  loadForTask: (taskId: string) => CurrentBundleLoad,
+): CandidateUniverse {
+  const branches = universe.branches.map((branch) => {
+    if (!branch.consumerTaskId || !branch.readOccurrence) return branch;
+    const scope = inferReadScope(loadForTask(branch.consumerTaskId), branch);
+    return scope.sqlSourceId && (scope.sqlSourceId !== branch.readOccurrence.sqlSourceId || scope.rootRelationId !== branch.readOccurrence.rootRelationId)
+      ? { ...branch, readOccurrence: { ...branch.readOccurrence, sqlSourceId: scope.sqlSourceId, ...(scope.rootRelationId ? { rootRelationId: scope.rootRelationId } : {}) } }
+      : branch;
+  });
+  return { ...universe, branches };
 }
 
 function enrichProducerWriteBridges(
@@ -108,15 +209,22 @@ function enrichProducerWriteBridges(
       .filter(([writeObservationId]) => writeObservationId.length > 0)).values()];
     if (writes.length === 1) {
       const writeObservationId = String(writes[0]!.write_observation_id);
+      const writeScope = producerWriteScope(load, branch.producerTaskId, branch.table.qualifiedName, writeObservationId);
       resolved += 1;
       return {
         ...branch,
         writeObservationId,
+        ...(writeScope ? { writeScope } : {}),
         evidenceRefs: [...branch.evidenceRefs, {
           evidenceRefId: `producer-write-evidence:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
           source: "MACHINE_FACTS_DATASET_IO",
           locator: `machine-facts:${branch.producerTaskId}:dataset-io.jsonl#write-observation:${writeObservationId}`,
-        }],
+        }, ...(writeScope ? [] : [{
+          evidenceRefId: `producer-write-scope-gap:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
+          source: "MACHINE_FACTS_OUTPUT_BINDINGS",
+          locator: `machine-facts:${branch.producerTaskId}:output-field-bindings.jsonl#write-observation:${writeObservationId}`,
+        }])],
+        gapRefs: writeScope ? branch.gapRefs : [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_SCOPE_UNRESOLVED`])],
       };
     }
     if (writes.length > 1) {
@@ -185,24 +293,33 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     return loaded;
   };
   const enriched = enrichProducerWriteBridges(universe, loadForTask);
-  universe = enriched.universe;
+  universe = normalizeReadScopes(enriched.universe, loadForTask);
   stage("candidate-projection", projectionStart, 1, 0, 1, universe.branches.length, universe.branches.length);
   assertBudget("candidate-projection", universe.branches.length, Math.max(0, ...universe.branches.map((branch) => branch.readOccurrence?.relationPath.length ?? 0)));
   const summaries = new Map<string, ReturnType<typeof summarizeTaskRelations>>();
   const summaryStart = performance.now();
-  const scopes = universe.branches
+  const scopes = [
+    {
+      taskId: targetResolution.ref.identity.taskId,
+      sqlSourceId: targetResolution.ref.identity.sqlSourceId,
+      statementIndex: targetResolution.ref.identity.statementOrdinal,
+      rootRelationId: targetResolution.ref.identity.rootRelationId,
+    },
+    ...universe.branches
     .filter((branch): branch is CandidateBranch & { readonly consumerTaskId: string; readonly readOccurrence: NonNullable<CandidateBranch["readOccurrence"]> } => branch.consumerTaskId !== null && branch.readOccurrence !== null)
     .map((branch) => ({
       taskId: branch.consumerTaskId,
       sqlSourceId: branch.readOccurrence.sqlSourceId ?? branch.readOccurrence.occurrenceId,
       statementIndex: branch.readOccurrence.statementIndex,
-    }));
+      rootRelationId: branch.readOccurrence.rootRelationId ?? null,
+    })),
+  ];
   let summaryCacheHits = 0;
   for (const scope of scopes) {
-    const key = relationSummaryKey(scope.taskId, scope.sqlSourceId, scope.statementIndex);
+    const key = relationSummaryKey(scope.taskId, scope.sqlSourceId, scope.statementIndex, scope.rootRelationId);
     if (summaries.has(key)) { summaryCacheHits += 1; continue; }
     const load = loadForTask(scope.taskId);
-    summaries.set(key, summarizeTaskRelations({ taskId: scope.taskId, sqlSourceId: scope.sqlSourceId, statementIndex: scope.statementIndex, relationRecords: load.records["relation-nodes.jsonl"] ?? [], relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [], statementRecords: load.records["statements.jsonl"] ?? [] }));
+    summaries.set(key, summarizeTaskRelations({ taskId: scope.taskId, sqlSourceId: scope.sqlSourceId, statementIndex: scope.statementIndex, rootRelationId: scope.rootRelationId ?? undefined, relationRecords: load.records["relation-nodes.jsonl"] ?? [], relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [], statementRecords: load.records["statements.jsonl"] ?? [] }));
   }
   stage("semantic-summary", summaryStart, scopes.length, summaryCacheHits, scopes.length - summaryCacheHits, summaries.size, [...summaries.values()].reduce((sum, value) => sum + value.edgeCount, 0));
   assertBudget("semantic-summary", universe.branches.length);
@@ -215,7 +332,27 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   stage("impact-graph", graphStart, 1, 0, 1, graph.taskIds.length, graph.localEdges.length + graph.bridgeEdges.length);
   assertBudget("impact-graph", universe.branches.length);
   const propagationStart = performance.now();
-  const closure = buildCausalClosure({ targetWriteId: targetResolution.ref!.identity.targetWriteId, rootTaskId: options.taskId, universe, summaries, fieldValueProvider: fieldProvider, baseGraph: graph });
+  const closure = buildCausalClosure({
+    targetWriteId: targetResolution.ref!.identity.targetWriteId,
+    rootTaskId: options.taskId,
+    universe,
+    summaries,
+    fieldValueProvider: fieldProvider,
+    rootWriteScope: {
+      taskId: targetResolution.ref.identity.taskId,
+      writeObservationId: targetResolution.ref.identity.writeObservationId,
+      sqlSourceId: targetResolution.ref.identity.sqlSourceId,
+      statementOrdinal: targetResolution.ref.identity.statementOrdinal,
+      rootRelationId: targetResolution.ref.identity.rootRelationId,
+    },
+    budget: {
+      deadlineAt: runStart + options.maxTimeMs,
+      maxStateUpdates: options.maxStateUpdates,
+      maxNodeStates: options.maxNodeStates,
+      maxWitnessDepth: options.maxWitnessDepth,
+    },
+    baseGraph: graph,
+  });
   const assessments = closure.assessments;
   stage("propagation", propagationStart, 1, 0, 1, closure.graph.reachableTaskIds.length, closure.graph.branchEdges.length);
   assertBudget("propagation", universe.branches.length);
@@ -226,6 +363,22 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   assertBudget("validation", universe.branches.length);
   const confirmed = assessments.filter((assessment) => assessment.relationStatus === "CONFIRMED_RELATED");
   const closureRate = confirmed.length === 0 ? "NOT_APPLICABLE" : confirmed.every((assessment) => assessment.candidateBranchId.startsWith("target-table-root-write:") || assessment.channelAssessments.some((channel) => channel.status === "CONFIRMED" && channel.witnessRefs.length > 0)) ? 1 : 0;
+  const branchesById = new Map(universe.branches.map((branch) => [branch.candidateBranchId, branch]));
+  const writeScopedConfirmedCount = confirmed.filter((assessment) => {
+    const branch = branchesById.get(assessment.candidateBranchId);
+    if (!branch) return false;
+    if (branch.branchKind === "ROOT_WRITE") return true;
+    return Boolean(branch.writeObservationId && branch.writeScope && assessment.channelAssessments.some((channel) => channel.status === "CONFIRMED" && channel.witnessRefs.length > 0));
+  }).length;
+  const crossChannelConfirmedBranchCount = assessments.filter((assessment) => assessment.channelAssessments.some((channel) =>
+    (channel.channel === "ROW_MEMBERSHIP" || channel.channel === "MULTIPLICITY") &&
+    channel.status === "CONFIRMED" &&
+    channel.localTransferKinds?.includes("VALUE_FLOW")
+  )).length;
+  const unknownReasonCounts = assessments
+    .filter((assessment) => assessment.relationStatus === "UNKNOWN")
+    .flatMap((assessment) => assessment.gapRefs.map((gapId) => unknownReasonCode(gapId)))
+    .reduce<Record<string, number>>((counts, reason) => ({ ...counts, [reason]: (counts[reason] ?? 0) + 1 }), {});
   const gapCandidates = [
     ...targetResolution.gaps.map((gap) => ({ gapId: gap.gapId, reasonCode: gap.reasonCode, message: gap.message, evidenceRefs: gap.evidenceRefs })),
     ...universe.boundaryGapRefs.map((gapId) => ({ gapId, reasonCode: "CANDIDATE_UNIVERSE_BOUNDARY", message: `candidate universe boundary: ${gapId}`, evidenceRefs: [] as string[] })),
@@ -244,10 +397,23 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     schemaVersion: TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION, artifactType: TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE, generatedAt: new Date().toISOString(), targetWrite: targetResolution.ref,
     candidateUniverse: universe, assessments, taskRollup: closure.taskRollup, minimumCertainTaskIds: closure.minimumCertainTaskIds, conservativeSafetyTaskIds: closure.conservativeSafetyTaskIds,
     runtimeRerunDecision: "NOT_EVALUATED", relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, sqlSourceId: summary.sqlSourceId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
-    metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, peakMemoryBytes },
+    metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, peakMemoryBytes, confirmedAssessmentCount: confirmed.length, writeScopedConfirmedCount, crossChannelConfirmedBranchCount, crossWriteScopeLeakCount: closure.writeScopeLeakCount, unknownReasonCounts },
     stages, gaps,
   };
   return canonicalizeTargetTableArtifact(raw);
+}
+
+function unknownReasonCode(gapId: string): string {
+  if (/PROPAGATION_BUDGET/i.test(gapId)) return gapId.split(":").at(-1) ?? "PROPAGATION_BUDGET";
+  if (/NOT_REACHED_FROM_ROOT/i.test(gapId)) return "NOT_REACHED_FROM_ROOT";
+  if (/PRODUCER_WRITE_AMBIGUOUS/i.test(gapId)) return "PRODUCER_WRITE_AMBIGUOUS";
+  if (/PRODUCER_WRITE_SCOPE_UNRESOLVED/i.test(gapId)) return "PRODUCER_WRITE_SCOPE_UNRESOLVED";
+  if (/PRODUCER_WRITE_OBSERVATION_MISSING/i.test(gapId)) return "PRODUCER_WRITE_OBSERVATION_MISSING";
+  if (/OCCURRENCE_EVIDENCE_NOT_FOUND/i.test(gapId)) return "OCCURRENCE_EVIDENCE_NOT_FOUND";
+  if (/UNSUPPORTED_OPERATOR/i.test(gapId)) return "UNSUPPORTED_OPERATOR";
+  if (/BOUNDARY|UNBOUND|BLOCKED|COVERAGE/i.test(gapId)) return "CANDIDATE_BOUNDARY";
+  if (/SUMMARY|RELATION_|ROOT_RELATION|SQL_SOURCE/i.test(gapId)) return "RELATION_SUMMARY";
+  return "OTHER";
 }
 
 export function main(argv = process.argv.slice(2)): void {
