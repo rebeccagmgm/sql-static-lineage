@@ -1,0 +1,12 @@
+{
+    "reportVersion":  1,
+    "safety":  {
+                   "reportKind":  "CALCITE_SEMANTIC_PROVIDER_REAL_POC",
+                   "canonicalArtifactsWritten":  false,
+                   "nativeSemanticFallback":  false
+               },
+    "elapsedMs":  2380.4999000000003,
+    "peakWorkingSetBytes":  420474880,
+    "requestBytes":  68856,
+    "responseBytes":  1433100
+}

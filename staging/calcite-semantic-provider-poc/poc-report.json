@@ -1,0 +1,230 @@
+{
+  "conclusion": "Calcite successfully extracts bounded relational semantics from the real SQL, but evaluated dependencies are not exactly mapped to Native occurrence/span evidence; it is validation-only until a same-front-end source map closes that proof obligation.",
+  "corpus": {
+    "elapsedMs": 1931.4707,
+    "errorCount": 0,
+    "peakWorkingSetBytes": 342257664,
+    "reportVersion": 1,
+    "requestCount": 10,
+    "responseCount": 10,
+    "safety": {
+      "canonicalArtifactsWritten": false,
+      "nativeSemanticFallback": false,
+      "reportKind": "CALCITE_SEMANTIC_PROVIDER_POC"
+    },
+    "samples": [
+      {
+        "actualDependencyKinds": ["EXPRESSION_SELECTOR", "VALUE_INPUT"],
+        "dependencyCount": 2,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["EXPRESSION_SELECTOR", "VALUE_INPUT"],
+        "id": "01-project-conditional",
+        "missingDependencyKinds": [],
+        "relationCount": 2,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "AGGREGATE_INPUT",
+          "FILTER_PREDICATE",
+          "GROUP_KEY",
+          "VALUE_INPUT"
+        ],
+        "dependencyCount": 6,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": [
+          "FILTER_PREDICATE",
+          "GROUP_KEY",
+          "AGGREGATE_INPUT"
+        ],
+        "id": "02-filter-group-having",
+        "missingDependencyKinds": [],
+        "relationCount": 5,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "JOIN_CARDINALITY",
+          "JOIN_MATCH",
+          "VALUE_INPUT"
+        ],
+        "dependencyCount": 3,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": [
+          "JOIN_MATCH",
+          "JOIN_CARDINALITY",
+          "VALUE_INPUT"
+        ],
+        "id": "03-inner-self-join",
+        "missingDependencyKinds": [],
+        "relationCount": 4,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "JOIN_CARDINALITY",
+          "JOIN_MATCH",
+          "VALUE_INPUT"
+        ],
+        "dependencyCount": 4,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": [
+          "JOIN_MATCH",
+          "JOIN_CARDINALITY",
+          "VALUE_INPUT"
+        ],
+        "id": "04-left-join",
+        "missingDependencyKinds": [],
+        "relationCount": 4,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "GROUP_KEY",
+          "RELATION_EXISTENCE",
+          "VALUE_INPUT"
+        ],
+        "dependencyCount": 3,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["GROUP_KEY", "RELATION_EXISTENCE"],
+        "id": "05-count-distinct",
+        "missingDependencyKinds": [],
+        "relationCount": 3,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": ["SET_MEMBERSHIP", "VALUE_INPUT"],
+        "dependencyCount": 11,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["SET_MEMBERSHIP", "VALUE_INPUT"],
+        "id": "06-set-operations",
+        "missingDependencyKinds": [],
+        "relationCount": 8,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "FILTER_PREDICATE",
+          "RELATION_EXISTENCE",
+          "VALUE_INPUT"
+        ],
+        "dependencyCount": 5,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["FILTER_PREDICATE", "RELATION_EXISTENCE"],
+        "id": "07-exists-anti",
+        "missingDependencyKinds": [],
+        "relationCount": 7,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": ["RELATION_EXISTENCE"],
+        "dependencyCount": 2,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["RELATION_EXISTENCE"],
+        "id": "08-literal-cross-join",
+        "missingDependencyKinds": [],
+        "relationCount": 4,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": [
+          "VALUE_INPUT",
+          "WINDOW_FRAME",
+          "WINDOW_ORDER",
+          "WINDOW_PARTITION",
+          "WINDOW_VALUE"
+        ],
+        "dependencyCount": 9,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": [
+          "WINDOW_VALUE",
+          "WINDOW_PARTITION",
+          "WINDOW_ORDER",
+          "WINDOW_FRAME"
+        ],
+        "id": "09-window",
+        "missingDependencyKinds": [],
+        "relationCount": 2,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      },
+      {
+        "actualDependencyKinds": ["ORDER_SELECTION", "VALUE_INPUT"],
+        "dependencyCount": 3,
+        "errorCode": null,
+        "errorMessage": null,
+        "expectedDependencyKinds": ["ORDER_SELECTION", "VALUE_INPUT"],
+        "id": "10-top-n",
+        "missingDependencyKinds": [],
+        "relationCount": 3,
+        "responseStatus": "SUCCESS",
+        "statementStatus": "PARTIAL"
+      }
+    ],
+    "samplesWithMissingExpectedKinds": 0,
+    "unsupportedCount": 0
+  },
+  "decision": "VALIDATION_ONLY",
+  "evidence": [
+    {
+      "path": "C:\\Users\\13246\\.codex\\worktrees\\2980\\sql-static-lineage\\staging\\calcite-semantic-provider-poc\\corpus\\support-matrix.json",
+      "sha256": "71e783356fca3922b97c1a1ef46d4aa08fe2f5a107408fbb9b72e0d0290962fd"
+    },
+    {
+      "path": "C:\\Users\\13246\\.codex\\worktrees\\2980\\sql-static-lineage\\staging\\calcite-semantic-provider-poc\\real-209119\\input-manifest.json",
+      "sha256": "f3a0b19bc00779f16d52f15dcd01718e33e8bf886ec4bc01939b20a4b77c5f9a"
+    },
+    {
+      "path": "C:\\Users\\13246\\.codex\\worktrees\\2980\\sql-static-lineage\\staging\\calcite-semantic-provider-poc\\real-209119\\response.json",
+      "sha256": "aff5858b1baeee4f09fbc0bf744cd6e52e946f2b5d9dc7930d73a698b5eaa3f1"
+    },
+    {
+      "path": "C:\\Users\\13246\\.codex\\worktrees\\2980\\sql-static-lineage\\staging\\calcite-semantic-provider-poc\\real-209119\\runtime-metrics.json",
+      "sha256": "ce490544179e126dcd60be71fb92a13a1f145648a9f83c5948f601ce04fb4e60"
+    }
+  ],
+  "gates": {
+    "boundedRuntime": true,
+    "directRawSqlSemanticExtraction": true,
+    "exactNativeEvidenceMapping": false,
+    "representativeCorpus": true
+  },
+  "realStatement": {
+    "boundedDialectTransformCount": 9,
+    "dependencyCount": 348,
+    "elapsedMs": 2380.4999000000003,
+    "evaluatedDependencyCount": 348,
+    "exactMappingCount": 0,
+    "issueCodes": ["NATIVE_EVIDENCE_NOT_ASSEMBLED"],
+    "peakWorkingSetBytes": 420474880,
+    "relationCount": 129,
+    "requestBytes": 68856,
+    "responseBytes": 1433100,
+    "statementStatus": "PARTIAL",
+    "status": "SUCCESS",
+    "unmappableCount": 348
+  },
+  "reportVersion": 1,
+  "safety": {
+    "canonicalArtifactsWritten": false,
+    "nativeSemanticFallback": false,
+    "productionIntegrationPerformed": false
+  }
+}

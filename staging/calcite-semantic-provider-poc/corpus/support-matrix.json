@@ -1,0 +1,229 @@
+{
+    "reportVersion":  1,
+    "safety":  {
+                   "reportKind":  "CALCITE_SEMANTIC_PROVIDER_POC",
+                   "canonicalArtifactsWritten":  false,
+                   "nativeSemanticFallback":  false
+               },
+    "requestCount":  10,
+    "responseCount":  10,
+    "elapsedMs":  1931.4707,
+    "peakWorkingSetBytes":  342257664,
+    "unsupportedCount":  0,
+    "errorCount":  0,
+    "samplesWithMissingExpectedKinds":  0,
+    "samples":  [
+                    {
+                        "id":  "01-project-conditional",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  2,
+                        "dependencyCount":  2,
+                        "actualDependencyKinds":  [
+                                                      "EXPRESSION_SELECTOR",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "EXPRESSION_SELECTOR",
+                                                        "VALUE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "02-filter-group-having",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  5,
+                        "dependencyCount":  6,
+                        "actualDependencyKinds":  [
+                                                      "AGGREGATE_INPUT",
+                                                      "FILTER_PREDICATE",
+                                                      "GROUP_KEY",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "FILTER_PREDICATE",
+                                                        "GROUP_KEY",
+                                                        "AGGREGATE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "03-inner-self-join",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  4,
+                        "dependencyCount":  3,
+                        "actualDependencyKinds":  [
+                                                      "JOIN_CARDINALITY",
+                                                      "JOIN_MATCH",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "JOIN_MATCH",
+                                                        "JOIN_CARDINALITY",
+                                                        "VALUE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "04-left-join",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  4,
+                        "dependencyCount":  4,
+                        "actualDependencyKinds":  [
+                                                      "JOIN_CARDINALITY",
+                                                      "JOIN_MATCH",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "JOIN_MATCH",
+                                                        "JOIN_CARDINALITY",
+                                                        "VALUE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "05-count-distinct",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  3,
+                        "dependencyCount":  3,
+                        "actualDependencyKinds":  [
+                                                      "GROUP_KEY",
+                                                      "RELATION_EXISTENCE",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "GROUP_KEY",
+                                                        "RELATION_EXISTENCE"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "06-set-operations",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  8,
+                        "dependencyCount":  11,
+                        "actualDependencyKinds":  [
+                                                      "SET_MEMBERSHIP",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "SET_MEMBERSHIP",
+                                                        "VALUE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "07-exists-anti",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  7,
+                        "dependencyCount":  5,
+                        "actualDependencyKinds":  [
+                                                      "FILTER_PREDICATE",
+                                                      "RELATION_EXISTENCE",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "FILTER_PREDICATE",
+                                                        "RELATION_EXISTENCE"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "08-literal-cross-join",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  4,
+                        "dependencyCount":  2,
+                        "actualDependencyKinds":  [
+                                                      "RELATION_EXISTENCE"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "RELATION_EXISTENCE"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "09-window",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  2,
+                        "dependencyCount":  9,
+                        "actualDependencyKinds":  [
+                                                      "VALUE_INPUT",
+                                                      "WINDOW_FRAME",
+                                                      "WINDOW_ORDER",
+                                                      "WINDOW_PARTITION",
+                                                      "WINDOW_VALUE"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "WINDOW_VALUE",
+                                                        "WINDOW_PARTITION",
+                                                        "WINDOW_ORDER",
+                                                        "WINDOW_FRAME"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    },
+                    {
+                        "id":  "10-top-n",
+                        "responseStatus":  "SUCCESS",
+                        "errorCode":  null,
+                        "errorMessage":  null,
+                        "statementStatus":  "PARTIAL",
+                        "relationCount":  3,
+                        "dependencyCount":  3,
+                        "actualDependencyKinds":  [
+                                                      "ORDER_SELECTION",
+                                                      "VALUE_INPUT"
+                                                  ],
+                        "expectedDependencyKinds":  [
+                                                        "ORDER_SELECTION",
+                                                        "VALUE_INPUT"
+                                                    ],
+                        "missingDependencyKinds":  [
+
+                                                   ]
+                    }
+                ]
+}

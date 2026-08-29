@@ -1,0 +1,1083 @@
+{
+  "dialect": "HIVE_COMPAT",
+  "limits": {
+    "maxColumnsPerTable": 256,
+    "maxInputBytes": 262144,
+    "maxOutputBytes": 4194304,
+    "maxOutputItems": 4096,
+    "maxRelNodes": 4096,
+    "maxSqlBytes": 65536,
+    "maxTables": 128
+  },
+  "protocolVersion": 1,
+  "requestedMetadata": [
+    "expressionLineage",
+    "predicates",
+    "uniqueKeys",
+    "functionalDependencies",
+    "tableOccurrences",
+    "rowCountCardinality"
+  ],
+  "requestId": "real:209119:statement:0",
+  "schema": {
+    "tables": [
+      {
+        "columns": [
+          { "name": "key_otc_trade_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "trade_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_sub_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "counterparty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "counterparty", "nullable": true, "type": "VARCHAR" },
+          { "name": "ctpty_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "manager_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "ins_record_code", "nullable": true, "type": "VARCHAR" },
+          { "name": "barrierspct", "nullable": true, "type": "VARCHAR" },
+          { "name": "book", "nullable": true, "type": "VARCHAR" },
+          { "name": "contr_status", "nullable": true, "type": "VARCHAR" },
+          { "name": "tradestatus", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_seller", "nullable": true, "type": "VARCHAR" },
+          { "name": "buy_sell", "nullable": true, "type": "VARCHAR" },
+          { "name": "callabletrigger", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "callabletriggerdown",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "callabletriggerup", "nullable": true, "type": "VARCHAR" },
+          { "name": "callcap", "nullable": true, "type": "VARCHAR" },
+          { "name": "callsize", "nullable": true, "type": "VARCHAR" },
+          { "name": "callstrike", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_fined", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "couponbarrierdownout",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "couponbarrierupout", "nullable": true, "type": "VARCHAR" },
+          { "name": "couponpaidatko", "nullable": true, "type": "VARCHAR" },
+          { "name": "couponrates", "nullable": true, "type": "VARCHAR" },
+          { "name": "digital_amount", "nullable": true, "type": "VARCHAR" },
+          { "name": "dr_style", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_obstruct", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_obstruct_price", "nullable": true, "type": "VARCHAR" },
+          { "name": "kibarrier", "nullable": true, "type": "VARCHAR" },
+          { "name": "kibarrierdown", "nullable": true, "type": "VARCHAR" },
+          { "name": "kibarrierup", "nullable": true, "type": "VARCHAR" },
+          { "name": "maturity_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "noncallsize", "nullable": true, "type": "VARCHAR" },
+          { "name": "nonkisize", "nullable": true, "type": "VARCHAR" },
+          { "name": "p_callabledates", "nullable": true, "type": "VARCHAR" },
+          { "name": "plane_term", "nullable": true, "type": "VARCHAR" },
+          { "name": "prcall", "nullable": true, "type": "VARCHAR" },
+          { "name": "premium_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "profit_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "prput", "nullable": true, "type": "VARCHAR" },
+          { "name": "putcap", "nullable": true, "type": "VARCHAR" },
+          { "name": "putstrike", "nullable": true, "type": "VARCHAR" },
+          { "name": "strike_price", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "actual_terminate_date",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "couponbarrier", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "underlying_currency",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "begin_price", "nullable": true, "type": "VARCHAR" },
+          { "name": "br_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "ki_size", "nullable": true, "type": "VARCHAR" },
+          { "name": "obs_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "lizard_level", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "netting_coupon_rate",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "delivery_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "event_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "knocked_out_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "knocked_in_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "knockout_extra_par", "nullable": true, "type": "VARCHAR" },
+          { "name": "ki_discount_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "maturity_profit", "nullable": true, "type": "VARCHAR" },
+          { "name": "fix_exchange_rate", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "cross_currency_type",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "payoff_currency", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "optioncontractlabel",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "up_rebate_percent", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "down_rebate_percent",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "direction", "nullable": true, "type": "VARCHAR" },
+          { "name": "cumulator_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "strike_pct", "nullable": true, "type": "VARCHAR" },
+          { "name": "barrier_pct", "nullable": true, "type": "VARCHAR" },
+          { "name": "cum_coef", "nullable": true, "type": "VARCHAR" },
+          { "name": "shares_per_day", "nullable": true, "type": "VARCHAR" },
+          { "name": "initial_spot", "nullable": true, "type": "VARCHAR" },
+          { "name": "hasko", "nullable": true, "type": "VARCHAR" },
+          { "name": "is_ko_termination", "nullable": true, "type": "VARCHAR" },
+          { "name": "is_ko_paid_eariler", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "settlement_defer_days",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "payment_defer_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "participate_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "fixed_amount", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "guarantee_period_start_date",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "guarantee_period_end_date",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "ko_settle_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "obs_days", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "settlement_schedule",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "payment_schedule", "nullable": true, "type": "VARCHAR" },
+          { "name": "abs_fined", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "contract_rate2", "nullable": true, "type": "VARCHAR" },
+          { "name": "amount", "nullable": true, "type": "VARCHAR" },
+          { "name": "option_rebate", "nullable": true, "type": "VARCHAR" },
+          { "name": "premium_cost", "nullable": true, "type": "VARCHAR" },
+          { "name": "premium_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "rise_fall", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_obstruct", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_obstruct_price", "nullable": true, "type": "VARCHAR" },
+          { "name": "wind_code", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "monitoring_duration",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "begin_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "couponrate", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "entered_user", "nullable": true, "type": "VARCHAR" },
+          { "name": "final_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "internal_reference", "nullable": true, "type": "VARCHAR" },
+          { "name": "p_coupondates", "nullable": true, "type": "VARCHAR" },
+          { "name": "qx", "nullable": true, "type": "VARCHAR" },
+          { "name": "start_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "sub_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "basket_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "amortization_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "fee_rebate_amount", "nullable": true, "type": "VARCHAR" },
+          { "name": "fixed_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "hedge", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "notional_exchange_amortization",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "notional_exchange_final",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "notional_exchange_initial",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "payment_daycount", "nullable": true, "type": "VARCHAR" },
+          { "name": "accrualdates", "nullable": true, "type": "VARCHAR" },
+          { "name": "trading_portfolio", "nullable": true, "type": "VARCHAR" },
+          { "name": "p_kidates", "nullable": true, "type": "VARCHAR" },
+          { "name": "nranges", "nullable": true, "type": "VARCHAR" },
+          { "name": "payment_freq", "nullable": true, "type": "VARCHAR" },
+          { "name": "struct", "nullable": true, "type": "VARCHAR" },
+          { "name": "bundle_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "department", "nullable": true, "type": "VARCHAR" },
+          { "name": "desk", "nullable": true, "type": "VARCHAR" },
+          { "name": "schedule_end_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "autocall_premium_rate",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "termination_knock_in",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "actual_settlement_qty",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "underlying_summary_mapping",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "business_type", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "front_fee_payment_date",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "time_to_maturity", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "otc_opt_sub_trd_info",
+        "schema": "dm_rsk_n"
+      },
+      {
+        "columns": [
+          { "name": "src_sys_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tab_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_fld_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_cd_val", "nullable": true, "type": "VARCHAR" },
+          { "name": "tgt_tab_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "tgt_tab_fld", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_cd_en_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_cd_val", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_cd_desc", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_cd_desc", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_operr", "nullable": true, "type": "VARCHAR" },
+          { "name": "seq_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "dw_cd_id", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "ref_cd_cvt_map",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "pty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "pty_cate_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "full_name_ch", "nullable": true, "type": "VARCHAR" },
+          { "name": "shor_name_ch", "nullable": true, "type": "VARCHAR" },
+          { "name": "full_name_en", "nullable": true, "type": "VARCHAR" },
+          { "name": "shor_name_en", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t01_pty_name",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "pty_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "pty_stati_info_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_cont_desc", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_qty_info", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_num_info", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_subdv_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t01_pty_stati_info_h",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_clas_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_cate_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_clas_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_agt_clas_h",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_holder", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_cate_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_shor_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_full_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_agt_name_h",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_rela_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_cate_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_agt_rela_h",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_modifr", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "agt_stati_info_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_cate_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_cont_desc", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_qty_info", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_num_info", "nullable": true, "type": "VARCHAR" },
+          { "name": "stati_subdv_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_agt_stati_info_h",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "book_agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "book_agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_rela_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_book_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "rela_book_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "prft_dir_tran_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "real_src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_book_map_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_otc_deri_agt_rela_adtnl_info",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "book_agt_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "book_agt_modifr", "nullable": true, "type": "VARCHAR" },
+          { "name": "eff_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "exp_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "cntr", "nullable": true, "type": "VARCHAR" },
+          { "name": "bel_dept", "nullable": true, "type": "VARCHAR" },
+          { "name": "bel_co", "nullable": true, "type": "VARCHAR" },
+          { "name": "ost_otc_ind", "nullable": true, "type": "VARCHAR" },
+          { "name": "rep_fin_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "rep_risk_flag", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "enable_trd_cfm_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "enable_sett_ntfc_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "enable_scdtm_revw_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "enable_rgst_flag", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "enable_ast_module_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "enable_risk_qta_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "remark", "nullable": true, "type": "VARCHAR" },
+          { "name": "map_undrl_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_otc_deri_book_adtnl_info",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "src_book_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "src_book_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "tgt_book_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "tgt_book_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "sel_fld_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "oper", "nullable": true, "type": "VARCHAR" },
+          { "name": "sel_cond", "nullable": true, "type": "VARCHAR" },
+          { "name": "remark", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "real_src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_book_map_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_otc_deri_book_agt_map_regu",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "opt_comp_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "opt_comp_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "ext_comp_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_pty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "ast_acct_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "ast_acct_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "comb_agt_grp_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "our_id_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "clr_org_id_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "coup_paid_pty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "trd_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_fee_paid_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "pay_delay_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "pay_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "term_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "max_prin_los_prop", "nullable": true, "type": "VARCHAR" },
+          { "name": "annu_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "nom_prin", "nullable": true, "type": "VARCHAR" },
+          { "name": "absl_nom_prin", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "absl_nom_prin_crrc_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "sett_crrc_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_fee_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_fee", "nullable": true, "type": "VARCHAR" },
+          { "name": "low_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "divd_adj_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "coup_pay_way_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "coup_calc_way_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "erly_trmt_defr_days",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "coup_pay_defr_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "cust_lkman_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "acct_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "cmphs_seq_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "bnk_acct", "nullable": true, "type": "VARCHAR" },
+          { "name": "bnk_bod_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "larg_amt_paid_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "sler_cutp_pty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "knock_out_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "knock_in_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "erly_trmt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "trmt_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "comp_stat_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "sub_comp_confm_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "inta_date_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "res_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "hedg_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "agt_trmt_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "opps_way_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "algo_ord_prop", "nullable": true, "type": "VARCHAR" },
+          { "name": "algo_ord_strt_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "algo_ord_end_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "init_nom_prin", "nullable": true, "type": "VARCHAR" },
+          { "name": "res_pd_end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "reed_fee_ratio", "nullable": true, "type": "VARCHAR" },
+          { "name": "reed_fee", "nullable": true, "type": "VARCHAR" },
+          { "name": "fred_fee_ratio", "nullable": true, "type": "VARCHAR" },
+          { "name": "fred_fee", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "dyna_nom_prin", "nullable": true, "type": "VARCHAR" },
+          { "name": "fix_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_fix_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "trmt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_pay_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_team", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "ext_src_prd_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "min_grat", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric1", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric2", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric3", "nullable": true, "type": "VARCHAR" },
+          { "name": "encb_pric1", "nullable": true, "type": "VARCHAR" },
+          { "name": "encb_pric2", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_rate1", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_rate2", "nullable": true, "type": "VARCHAR" },
+          { "name": "yield1", "nullable": true, "type": "VARCHAR" },
+          { "name": "yield2", "nullable": true, "type": "VARCHAR" },
+          { "name": "yield3", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric_rate1", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric_rate2", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric_rate3", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_dir_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "revw_stat_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "qta_appr_stat_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "max_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "trmt_defr_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_sett_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "income_vchr_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "create_user", "nullable": true, "type": "VARCHAR" },
+          { "name": "create_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_user", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "real_src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "intro_inr_org_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "spon_inr_org_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "cust_mngr_user_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "oper_user_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_income_vchr", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_csm_prd", "nullable": true, "type": "VARCHAR" },
+          { "name": "ivst_var_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "ivst_term_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "risk_grade_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "divd_adj_mode_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "init_absl_nom_prin", "nullable": true, "type": "VARCHAR" },
+          { "name": "redp_lift_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "fred_fee_paid_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "valu_trmt_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "end_obsv_pric_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "reed_fee_rate_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "bind_comp_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "covd_comp_no", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "larg_nom_prin_appr_stat_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "src_data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "buy_sell_dir_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_stat_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "ki_encb_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "trdr", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_otc_opt_comp_info",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "opt_comp_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "opt_comp_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "src_agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "src_agt_sub_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "opt_dir_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_prcg_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_prcg_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "prd_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_prd_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "undrl_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "ko_yield_pay_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "obsv_arng_type_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "bgng_pric_precision",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "end_pric_precision", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "flot_yield_precision",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "exec_pric_precision",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "barr_pric_precision",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "comp_transcn_stat", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "absl_retu_intr_rati",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "annu_retu_intr_rati",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "retu_intr_cal_base_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "call_prtc_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "disc_opps_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "unki_unko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "cros_crrc_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "coup_rate_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "divd_coup_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_lbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "absl_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "absl_down_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "absl_up_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "bask_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "quanto_coef", "nullable": true, "type": "VARCHAR" },
+          { "name": "create_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "creator", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_user", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "undrl_crrc_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_rate1", "nullable": true, "type": "VARCHAR" },
+          { "name": "calc_bgng_rate2", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "user_inpt_bgng_rate2",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "end_rate_user_inpt", "nullable": true, "type": "VARCHAR" },
+          { "name": "inta_bm_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "curr_mtch_qty", "nullable": true, "type": "VARCHAR" },
+          { "name": "fix_amt", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_appr_vld_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_pd_strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_pd_trmt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_rset_pric_pct", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_rset_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "rset_end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_rate_1_fxr_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_rate_2_fxr_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "end_rate_fxr_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t03_otc_opt_comp_stru_elmn_info",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "opt_comp_agt_id", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "opt_comp_agt_modifr",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "sub_trd_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "inr_comp_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_agt_type_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "src_agt_sub_type_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "cutp_pty_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_pty_shor_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_pty_full_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_legal_enty", "nullable": true, "type": "VARCHAR" },
+          { "name": "cutp_prd_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "encb_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "book_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_comp_stat_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "sub_trd_trd_stat_cd",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "opt_sler_cutp_shor_name",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "buy_sell_dir_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_redp_encb_pct", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_redp_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_redp_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "call_max_los", "nullable": true, "type": "VARCHAR" },
+          { "name": "redp_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "call_exer_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_init_nom_prin", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "down_coup_rate_encb",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "up_coup_rate_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_imdt_pay_flag", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "obsv_day_coup_rate_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "two_val_opt_qty", "nullable": true, "type": "VARCHAR" },
+          { "name": "eur_ame_exec_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_encb_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_encb_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_ki_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_risk_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_risk_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "exp_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "un_redp_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "un_ki_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "redp_obsv_date_str", "nullable": true, "type": "VARCHAR" },
+          { "name": "pay_plan_term_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "call_prtc_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_fee_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "fee_arr_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "put_prtc_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "put_max_los", "nullable": true, "type": "VARCHAR" },
+          { "name": "put_exer_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "exer_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "actl_trmt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_pd", "nullable": true, "type": "VARCHAR" },
+          { "name": "sett_mode_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_prcg_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_way_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_pd_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "encb_qty", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_exec_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "call_put_type_cd", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "opt_sub_trd_nom_prin",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "opt_fee", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "opt_scop_area_val_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "coup_encb_obsv_day_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "undrl_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_prd_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_prd_sub_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "undrl_crrc_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "undrl_bgng_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "prd_abbr", "nullable": true, "type": "VARCHAR" },
+          { "name": "prd_desc", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "src_prd_sub_type_shor_name",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "opt_fee_paid_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "yield_pay_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "sub_trd_vld_term_days",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "up_encb_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_encb_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "ki_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "qty", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "risk_obsv_date_str", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "scop_accum_obsv_date_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "lizard_ko_lvl", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "lizard_real_bal_coup_rate_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "lizard_pay_date_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "lizard_ki_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "sub_trd_ko_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "sub_trd_encb_trgr_line_date",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "ko_call_prtc_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "disc_opps_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "coll_pymt_amt", "nullable": true, "type": "VARCHAR" },
+          { "name": "obsv_vld_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "quanto_coef", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_bgng_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "quanto_bgng_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "cross_crrc_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "sett_crrc_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_lbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "up_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_ko_yield", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_dir_type_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "accum_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "opt_exec_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_encb", "nullable": true, "type": "VARCHAR" },
+          { "name": "down_accum_coef", "nullable": true, "type": "VARCHAR" },
+          { "name": "tdy_trd_qty", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_trmt_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_cont_flag", "nullable": true, "type": "VARCHAR" },
+          { "name": "trmt_defr_days", "nullable": true, "type": "VARCHAR" },
+          { "name": "pay_delay_days", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "up_accum_stk_prtc_rate",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "fix_amt", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_pd_strt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "prtc_pd_end_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "ko_sett_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "obsv_scop_trd_days_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "obsv_scop_sett_date_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "obsv_scop_pay_date_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "creator", "nullable": true, "type": "VARCHAR" },
+          { "name": "upd_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "task_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_etl_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_upt_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "data_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "rela_inr_comp_no", "nullable": true, "type": "VARCHAR" },
+          { "name": "bask_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "bel_dept", "nullable": true, "type": "VARCHAR" },
+          { "name": "cntr", "nullable": true, "type": "VARCHAR" },
+          { "name": "contr_mulplr", "nullable": true, "type": "VARCHAR" },
+          { "name": "erly_trmt_date", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "obsv_scop_schd_end_date_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          {
+            "name": "auto_call_opt_fee_rate",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "trmt_ki", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "obsv_scop_drop_qty_str",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "end_rate_user_inpt", "nullable": true, "type": "VARCHAR" },
+          { "name": "bgng_rate", "nullable": true, "type": "VARCHAR" },
+          { "name": "ori_crrd_bgng_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "cny_bgng_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "ori_crrd_end_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "cny_end_pric", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t98_otc_opt_comp_sub_trd_base_info",
+        "schema": "pdata_n"
+      },
+      {
+        "columns": [
+          { "name": "busi_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "rec_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "secu_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_sys_prdno", "nullable": true, "type": "VARCHAR" },
+          { "name": "crrc_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "crrc_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "cty_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "cty_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "corp_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "scr_stat", "nullable": true, "type": "VARCHAR" },
+          { "name": "min_pric_chg_unit", "nullable": true, "type": "VARCHAR" },
+          { "name": "peru", "nullable": true, "type": "VARCHAR" },
+          { "name": "scr_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "scr_type_src", "nullable": true, "type": "VARCHAR" },
+          { "name": "ch_abbr", "nullable": true, "type": "VARCHAR" },
+          { "name": "scr_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "wind_cd_src", "nullable": true, "type": "VARCHAR" },
+          { "name": "ch_abbr_pinyin", "nullable": true, "type": "VARCHAR" },
+          { "name": "ch_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "en_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "ch_abbr_l", "nullable": true, "type": "VARCHAR" },
+          { "name": "en_abbr", "nullable": true, "type": "VARCHAR" },
+          { "name": "mkt_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "mkt_ch_name", "nullable": true, "type": "VARCHAR" },
+          {
+            "name": "underlying_visible_flag",
+            "nullable": true,
+            "type": "VARCHAR"
+          },
+          { "name": "due_date", "nullable": true, "type": "VARCHAR" },
+          { "name": "create_time_src", "nullable": true, "type": "VARCHAR" },
+          { "name": "issuer_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "date_src", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "upper_src_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "in_code", "nullable": true, "type": "VARCHAR" },
+          { "name": "undrl_clas", "nullable": true, "type": "VARCHAR" },
+          { "name": "remark", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_tbl", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_rec_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "rec_upd_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "rec_down_time", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_mkt_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "scr_incd_gdr", "nullable": true, "type": "VARCHAR" },
+          { "name": "tran_prop_gdr", "nullable": true, "type": "VARCHAR" },
+          { "name": "sub_type", "nullable": true, "type": "VARCHAR" },
+          { "name": "indt_name", "nullable": true, "type": "VARCHAR" },
+          { "name": "indt_cd", "nullable": true, "type": "VARCHAR" },
+          { "name": "src_id", "nullable": true, "type": "VARCHAR" },
+          { "name": "grp_id", "nullable": true, "type": "VARCHAR" }
+        ],
+        "name": "t02_tit_scr_base_info",
+        "schema": "pdata_news_n"
+      }
+    ]
+  },
+  "sql": "WITH CONTRACT_MAPPING AS (\n  SELECT \n      TOT.KEY_OTC_TRADE_ID \n      ,TOT.INTERNAL_TRADE_ID \n      ,ROOD.CONTRACT_CODE\n      , BM.KEY_BOOK_ID_FROM\n      ,BM.KEY_BOOK_ID_TO\n  FROM (\n    select a.agt_id as key_otc_trade_id,a.stati_cont_desc as internal_trade_id,b.rela_agt_id as key_book_id\n    from pdata_n.t03_agt_stati_info_h a\n    left join PDATA_N.T03_AGT_RELA_H b\n      on a.agt_id = b.agt_id and b.strt_date <= '${yyyy-MM-dd}' and b.end_date > '${yyyy-MM-dd}' and b.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n    where a.strt_date <= '${yyyy-MM-dd}' and a.end_date > '${yyyy-MM-dd}' and a.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n  ) TOT\n  INNER JOIN (\n    SELECT opt_comp_agt_id as KEY_OTC_TRADE_ID,Ext_Comp_No as CONTRACT_CODE,substr(Cutp_Pty_Id,8) as KEY_CTPTY_ID      \n    from PDATA_N.T03_OTC_OPT_COMP_INFO \n    where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL' and busi_date = '${yyyy-MM-dd}'\n  ) ROOD \n    ON TOT.KEY_OTC_TRADE_ID = ROOD.KEY_OTC_TRADE_ID\n  INNER JOIN (\n    select Src_Book_Map_Id as KEY_BOOK_MAPPING_ID,Sel_Cond as `CONDITION`,Oper as `OPERATOR`,Sel_Fld_Name as COLUMN_NAME \n    from PDATA_N.T03_OTC_DERI_BOOK_AGT_MAP_REGU \n    where SRC_TBL='ODATA_N_TIT.D_BK_BOOK_MAPPING_RULE' \n  ) MR\n    ON ((ROOD.CONTRACT_CODE = MR.`CONDITION`\n    AND MR.`OPERATOR` = 'EQUAL'\n    AND MR.COLUMN_NAME IN ('contractNo','合约编号'))\n    OR (ROOD.CONTRACT_CODE LIKE '%'|| MR.`CONDITION` || '%'  AND MR.`OPERATOR` = 'IN'  AND MR.COLUMN_NAME IN ('contractNo','合约编号')))\n  INNER JOIN (\n    select Src_Book_Map_Id as ID,Book_Agt_Id as KEY_BOOK_ID_FROM,Rela_Book_Agt_Id as KEY_BOOK_ID_TO \n    from PDATA_N.T03_OTC_DERI_AGT_RELA_ADTNL_INFO \n    where src_tbl = 'ODATA_N_TIT.D_BK_BOOK_MAPPING' \n      and strt_date <= '${yyyy-MM-dd}' and end_date > '${yyyy-MM-dd}'\n  ) BM\n    ON MR.KEY_BOOK_MAPPING_ID = BM.ID\n    AND TOT.KEY_BOOK_ID = BM.KEY_BOOK_ID_FROM\n  INNER JOIN (  \n    select book_agt_id as key_book_id \n    from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO\n    where busi_date = '${yyyy-MM-dd}'\n  ) rb \n    ON BM.KEY_BOOK_ID_TO = RB.KEY_BOOK_ID\n  UNION \n\n  select  \n    TOT.KEY_OTC_TRADE_ID\n   ,TOT.INTERNAL_TRADE_ID\n   ,ROOD.CONTRACT_CODE\n   ,BM.KEY_BOOK_ID_FROM\n   ,BM.KEY_BOOK_ID_TO\n  from (\n    select a.agt_id as key_otc_trade_id,a.stati_cont_desc as internal_trade_id,b.rela_agt_id as key_book_id\n    from pdata_n.t03_agt_stati_info_h a\n    left join PDATA_N.T03_AGT_RELA_H b\n      on a.agt_id = b.agt_id and b.strt_date <= '${yyyy-MM-dd}' and b.end_date > '${yyyy-MM-dd}' and b.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n    where a.strt_date <= '${yyyy-MM-dd}' and a.end_date > '${yyyy-MM-dd}' and a.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n  ) TOT\n  INNER JOIN (\n    SELECT opt_comp_agt_id as KEY_OTC_TRADE_ID,Ext_Comp_No as CONTRACT_CODE,substr(Cutp_Pty_Id,8) as KEY_CTPTY_ID      \n    from PDATA_N.T03_OTC_OPT_COMP_INFO \n    where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL' and busi_date = '${yyyy-MM-dd}'\n  ) ROOD \n    ON TOT.KEY_OTC_TRADE_ID = ROOD.KEY_OTC_TRADE_ID\n  INNER JOIN (\n    select substr(a.Pty_Id,8) as ID,a.Shor_Name_Ch as SHORT_NAME,b.stati_subdv_cd as GROUP_FLAG\n    from PDATA_N.T01_PTY_NAME a \n    left join PDATA_N.T01_PTY_STATI_INFO_H b \n      on a.Pty_Id = b.Pty_Id and b.src_tbl = 'ODATA_N_TIT.D_REF_COUNTER_PARTY'\n      and b.pty_stati_info_type_cd = '75'\n      and b.strt_date <= '${yyyy-MM-dd}'\n      and b.end_date > '${yyyy-MM-dd}'\n    where a.SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' and a.busi_date = '${yyyy-MM-dd}'\n  ) rcp \n    ON ROOD.KEY_CTPTY_ID = RCP.ID \n    AND RCP.GROUP_FLAG = '0'\n  INNER JOIN (\n    select Src_Book_Map_Id as KEY_BOOK_MAPPING_ID,Sel_Cond as `CONDITION`,Oper as `OPERATOR`,Sel_Fld_Name as COLUMN_NAME \n    from PDATA_N.T03_OTC_DERI_BOOK_AGT_MAP_REGU \n    where SRC_TBL='ODATA_N_TIT.D_BK_BOOK_MAPPING_RULE' \n  ) MR\n    ON RCP.SHORT_NAME = MR.`CONDITION`\n    AND MR.COLUMN_NAME = '交易对手'\n  INNER JOIN (\n    select Src_Book_Map_Id as ID,Book_Agt_Id as KEY_BOOK_ID_FROM,Rela_Book_Agt_Id as KEY_BOOK_ID_TO \n    from PDATA_N.T03_OTC_DERI_AGT_RELA_ADTNL_INFO \n    where src_tbl = 'ODATA_N_TIT.D_BK_BOOK_MAPPING' \n      and strt_date <= '${yyyy-MM-dd}' and end_date > '${yyyy-MM-dd}'\n  ) BM\n    ON MR.KEY_BOOK_MAPPING_ID = BM.ID\n    AND TOT.KEY_BOOK_ID = BM.KEY_BOOK_ID_FROM\n  INNER JOIN (  \n    select book_agt_id as key_book_id \n    from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO\n    where src_tbl = 'ODATA_N_TIT.D_REF_BOOK' and busi_date = '${yyyy-MM-dd}'\n  ) rb \n    ON BM.KEY_BOOK_ID_TO = RB.KEY_BOOK_ID\n  UNION\n\n  SELECT \n      TOT.KEY_OTC_TRADE_ID \n      ,TOT.INTERNAL_TRADE_ID \n      ,ROOD.CONTRACT_CODE\n      ,BM.KEY_BOOK_ID_FROM\n      ,BM.KEY_BOOK_ID_TO\n  FROM (\n    select a.agt_id as key_otc_trade_id,a.stati_cont_desc as internal_trade_id,b.rela_agt_id as key_book_id\n    from pdata_n.t03_agt_stati_info_h a\n    left join PDATA_N.T03_AGT_RELA_H b\n      on a.agt_id = b.agt_id and b.strt_date <= '${yyyy-MM-dd}' and b.end_date > '${yyyy-MM-dd}' and b.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n    where a.strt_date <= '${yyyy-MM-dd}' and a.end_date > '${yyyy-MM-dd}' and a.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n  ) TOT\n  INNER JOIN (\n    SELECT opt_comp_agt_id as KEY_OTC_TRADE_ID,Ext_Comp_No as CONTRACT_CODE,substr(Cutp_Pty_Id,8) as KEY_CTPTY_ID      \n    from PDATA_N.T03_OTC_OPT_COMP_INFO \n    where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL' and busi_date = '${yyyy-MM-dd}'\n  ) ROOD \n    ON TOT.KEY_OTC_TRADE_ID = ROOD.KEY_OTC_TRADE_ID\n  INNER JOIN (\n    select Src_Book_Map_Id as ID,Book_Agt_Id as KEY_BOOK_ID_FROM,Rela_Book_Agt_Id as KEY_BOOK_ID_TO \n    from PDATA_N.T03_OTC_DERI_AGT_RELA_ADTNL_INFO \n    where src_tbl = 'ODATA_N_TIT.D_BK_BOOK_MAPPING' \n      and strt_date <= '${yyyy-MM-dd}' and end_date > '${yyyy-MM-dd}'\n  ) BM\n    ON TOT.KEY_BOOK_ID = BM.KEY_BOOK_ID_FROM\n  INNER JOIN (  \n    select book_agt_id as key_book_id \n    from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO\n    where src_tbl = 'ODATA_N_TIT.D_REF_BOOK' and busi_date = '${yyyy-MM-dd}'\n  ) rb \n    ON BM.KEY_BOOK_ID_TO = RB.KEY_BOOK_ID\n  WHERE BM.ID NOT IN (SELECT DISTINCT Src_Book_Map_Id FROM PDATA_N.T03_OTC_DERI_BOOK_AGT_MAP_REGU where SRC_TBL='ODATA_N_TIT.D_BK_BOOK_MAPPING_RULE' )\n),\nMAPPING AS (\n  SELECT \n      TOT.KEY_OTC_TRADE_ID\n      ,TOT.INTERNAL_TRADE_ID\n      ,ROOD.CONTRACT_CODE\n      ,TOT.KEY_BOOK_ID AS KEY_BOOK_ID_FROM\n      ,TOT.KEY_BOOK_ID AS KEY_BOOK_ID_TO \n  FROM (\n    select a.agt_id as key_otc_trade_id,a.stati_cont_desc as internal_trade_id,b.rela_agt_id as key_book_id\n    from pdata_n.t03_agt_stati_info_h a\n    left join PDATA_N.T03_AGT_RELA_H b\n      on a.agt_id = b.agt_id and b.strt_date <= '${yyyy-MM-dd}' and b.end_date > '${yyyy-MM-dd}' and b.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n    where a.strt_date <= '${yyyy-MM-dd}' and a.end_date > '${yyyy-MM-dd}' and a.src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n  ) TOT\n  INNER JOIN (\n    SELECT opt_comp_agt_id as KEY_OTC_TRADE_ID,Ext_Comp_No as CONTRACT_CODE,substr(Cutp_Pty_Id,8) as KEY_CTPTY_ID      \n    from PDATA_N.T03_OTC_OPT_COMP_INFO \n    where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL' and busi_date = '${yyyy-MM-dd}'\n  ) ROOD \n    ON TOT.KEY_OTC_TRADE_ID = ROOD.KEY_OTC_TRADE_ID \n  UNION ALL\n\n  SELECT \n      TOT.KEY_OTC_TRADE_ID\n      ,TOT.INTERNAL_TRADE_ID\n      ,ROOD.CONTRACT_CODE\n      ,CM.KEY_BOOK_ID_FROM\n      ,CM.KEY_BOOK_ID_TO\n  FROM (\n    select agt_id as key_otc_trade_id,stati_cont_desc as internal_trade_id\n    from pdata_n.t03_agt_stati_info_h \n    where strt_date <= '${yyyy-MM-dd}' and end_date > '${yyyy-MM-dd}' and src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n  ) TOT\n  JOIN (\n    SELECT opt_comp_agt_id as KEY_OTC_TRADE_ID,Ext_Comp_No as CONTRACT_CODE\n    from PDATA_N.T03_OTC_OPT_COMP_INFO \n    where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL' and busi_date = '${yyyy-MM-dd}'\n  ) ROOD \n    ON TOT.KEY_OTC_TRADE_ID = ROOD.KEY_OTC_TRADE_ID \n  JOIN CONTRACT_MAPPING CM \n    ON TOT.KEY_OTC_TRADE_ID = CM.KEY_OTC_TRADE_ID\n)\n\nSELECT key_otc_trade_id,\n\ttrade_id,\n\tcontract_type,\n\tcontract_sub_type,\n\tcounterparty_id,\n\tcounterparty,\n\tctpty_type,\n\tmanager_name,\n\tins_record_code,\n\tbarrierspct,\n\tbook,\n\tcontr_status,\n\ttradestatus,\n\tcontract_seller,\n\tbuy_sell,\n\tcallabletrigger,\n\tcallabletriggerdown,\n\tcallabletriggerup,\n\tcallcap,\n\tcallsize,\n\tcallstrike,\n\tcontract_fined,\n\tcouponbarrierdownout,\n\tcouponbarrierupout,\n\tcouponpaidatko,\n\tcouponrates,\n\tdigital_amount,\n\tdr_style,\n\tdw_obstruct,\n\tdw_obstruct_price,\n\tkibarrier,\n\tkibarrierdown,\n\tkibarrierup,\n\tmaturity_date,\n\tnoncallsize,\n\tnonkisize,\n\tp_callabledates,\n\tplane_term,\n\tprcall,\n\tpremium_rate,\n\tprofit_date,\n\tprput,\n\tputcap,\n\tputstrike,\n\tstrike_price,\n\tactual_terminate_date,\n\tcouponbarrier,\n\tunderlying_currency,\n\tbegin_price,\n\tbr_type,\n\tki_size,\n\tobs_date,\n\tlizard_level,\n\tnetting_coupon_rate,\n\tdelivery_date,\n\tevent_date,\n\tknocked_out_date,\n\tknocked_in_date,\n\tknockout_extra_par,\n\tki_discount_rate,\n\tmaturity_profit,\n\tfix_exchange_rate,\n\tcross_currency_type,\n\tpayoff_currency,\n\toptioncontractlabel,\n\tup_rebate_percent,\n\tdown_rebate_percent,\n\tdirection,\n\tcumulator_type,\n\tstrike_pct,\n\tbarrier_pct,\n\tcum_coef,\n\tshares_per_day,\n\tinitial_spot,\n\thasko,\n\tis_ko_termination,\n\tis_ko_paid_eariler,\n\tsettlement_defer_days,\n\tpayment_defer_days,\n\tparticipate_rate,\n\tfixed_amount,\n\tguarantee_period_start_date,\n\tguarantee_period_end_date,\n\tko_settle_date,\n\tobs_days,\n\tsettlement_schedule,\n\tpayment_schedule,\n\tabs_fined,\n\tcontract_rate,\n\tcontract_rate2,\n\tamount,\n\toption_rebate,\n\tpremium_cost,\n\tpremium_date,\n\trise_fall,\n\tup_obstruct,\n\tup_obstruct_price,\n\twind_code,\n\tmonitoring_duration,\n\tbegin_date,\n\tcouponrate,\n\tend_date,\n\tentered_user,\n\tfinal_date,\n\tinternal_reference,\n\tp_coupondates,\n\tqx,\n\tstart_date,\n\tsub_type,\n\tbasket_type,\n\tamortization_type,\n\tfee_rebate_amount,\n\tfixed_rate,\n\thedge,\n\tnotional_exchange_amortization,\n\tnotional_exchange_final,\n\tnotional_exchange_initial,\n\tpayment_daycount,\n\taccrualdates,\n\ttrading_portfolio,\n\tp_kidates,\n\tnranges,\n\tpayment_freq,\n\tstruct,\n\tbundle_id,\n\tdepartment,\n\tdesk,\n\tschedule_end_date,\n\tautocall_premium_rate,\n\ttermination_knock_in,\n\tactual_settlement_qty,\n\tunderlying_summary_mapping,\n\tbusiness_type,\n\tfront_fee_payment_date,\n\ttime_to_maturity,\n\tdata_time,\n\tbusi_date FROM (\n\t \n\n\nselect\n    a.opt_comp_agt_id                                                          as key_otc_trade_id\n   ,a.sub_trd_id                                                               as trade_id\n   ,a.src_agt_type_cd                                                          as contract_type                     --期权合约类型\n   ,a.src_agt_sub_type_cd                                                      as contract_sub_type                 --期权合约子类型\n   ,regexp_replace(a.cutp_pty_id,'TIT060-','TITANS_')                          as counterparty_id                   --交易对手ID\n   ,a.cutp_pty_shor_name                                                       as counterparty                      --交易对手\n   ,case a.cutp_type_cd when '1' then 'COMPANY'\n                      when '2' then 'PRODUCT'\n                      when '0' then 'INDIVIDUAL'\n                      else  a.cutp_type_cd end                                 as ctpty_type                        --期权合约类型\n   ,a.cutp_legal_enty                                                          as manager_name\n   ,a.cutp_prd_id                                                              as ins_record_code\n   ,a.encb_pric                                                                as barrierspct\n   ,rb.agt_full_name                                                           as book\n   ,nvl(b.src_cd_val,a.opt_comp_stat_cd)                                       as contr_status                      --期权合约状态\n   ,nvl(c.src_cd_val,a.sub_trd_trd_stat_cd)                                    as tradestatus\n   ,a.opt_sler_cutp_shor_name                                                  as contract_seller                   --期权卖方\n   ,case when mapping.key_book_id_from != mapping.key_book_id_to \n           then (case a.buy_sell_dir_cd when '2' then 'Buy' \n                                        when '1' then 'Sell' end)   \n    else (case a.buy_sell_dir_cd when '1' then 'Buy' \n                                 when '2' then 'Sell'end) end                  as buy_sell\n   ,a.up_redp_encb_pct                                                         as callabletrigger\n   ,a.down_redp_encb                                                           as callabletriggerdown\n   ,a.up_redp_encb                                                             as callabletriggerup\n   ,a.call_max_los                                                             as callcap\n   ,a.redp_yield                                                               as callsize\n   ,a.call_exer_pric                                                           as callstrike\n   ,a.opt_init_nom_prin                                                        as contract_fined\n   ,a.down_coup_rate_encb                                                      as couponbarrierdownout\n   ,a.up_coup_rate_encb                                                        as couponbarrierupout\n   ,if(a.ko_imdt_pay_flag = '1','true',null)                                   as couponpaidatko\n   ,a.obsv_day_coup_rate_str                                                   as couponrates\n   ,a.two_val_opt_qty                                                          as digital_amount\n   ,a.eur_ame_exec_type                                                        as dr_style\n   ,a.down_encb_type                                                           as dw_obstruct\n   ,a.down_encb_pric                                                           as dw_obstruct_price\n   ,a.down_ki_encb                                                             as kibarrier\n   ,a.down_risk_encb                                                           as kibarrierdown\n   ,a.up_risk_encb                                                             as kibarrierup\n   ,a.exp_date                                                                 as maturity_date\n   ,a.un_redp_yield                                                            as noncallsize\n   ,a.un_ki_yield                                                              as nonkisize\n   ,a.redp_obsv_date_str                                                       as p_callabledates\n   ,a.pay_plan_term_days                                                       as plane_term\n   ,a.call_prtc_rate                                                           as prcall\n   ,a.opt_fee_rate                                                             as premium_rate\n   ,a.fee_arr_date                                                             as profit_date                       --\n   ,a.put_prtc_rate                                                            as prput\n   ,a.put_max_los                                                              as putcap\n   ,a.put_exer_pric                                                            as putstrike\n   ,a.exer_pric                                                                as strike_price\n   ,a.actl_trmt_date                                                           as actual_terminate_date             \n   ,a.opt_scop_area_val_str                                                    as couponbarrier                     --票息障碍\n   ,a.undrl_crrc_cd                                                            as underlying_currency\n   ,a.undrl_bgng_pric                                                          as begin_price\n   ,a.src_prd_sub_type_shor_name                                               as br_type\n   ,a.ki_yield                                                                 as ki_size                           --敲入收益率\n   ,a.scop_accum_obsv_date_str                                                 as obs_date\n   ,a.lizard_ko_lvl                                                            as lizard_level\n   ,a.lizard_real_bal_coup_rate_str                                            as netting_coupon_rate\n   ,a.lizard_pay_date_str                                                      as delivery_date\n   ,a.lizard_ki_date                                                           as event_date\n   ,a.sub_trd_ko_date                                                          as knocked_out_date                  \n   ,a.sub_trd_encb_trgr_line_date                                              as knocked_in_date                   \n   ,a.ko_call_prtc_rate                                                        as knockout_extra_par\n   ,a.disc_opps_rate                                                           as ki_discount_rate\n   ,a.coll_pymt_amt                                                            as maturity_profit\n   ,a.quanto_bgng_rate                                                         as fix_exchange_rate\n   ,a.cross_crrc_type_cd                                                       as cross_currency_type\n   ,a.sett_crrc_cd                                                             as payoff_currency\n   ,a.opt_lbl                                                                  as optioncontractlabel\n   ,a.up_ko_yield                                                              as up_rebate_percent\n   ,a.down_ko_yield                                                            as down_rebate_percent\n   ,a.opt_dir_type_cd                                                          as direction                         --期权合约方向\n   ,a.accum_type                                                               as cumulator_type                    --产品类型,累购或累沽\n   ,a.opt_exec_pric                                                            as strike_pct                        --执行价格(%)\n   ,a.ko_encb                                                                  as barrier_pct                       --敲出障碍(%)\n   ,a.down_accum_coef                                                          as cum_coef                          --下累计系数\n   ,a.tdy_trd_qty                                                              as shares_per_day                    --每日基础累计股数\n   ,a.bgng_pric                                                                as initial_spot                      --Mt其明初价格\n   ,case when a.ko_flag = '1' then 'true'\n         when a.ko_flag = '0' then 'false'\n         else a.ko_flag end                                                    as hasko                             --是否已敲出\n   ,case when a.ko_trmt_flag = '1' then 'true'\n         when a.ko_trmt_flag = '0' then 'false'\n         else a.ko_trmt_flag end                                               as is_ko_termination                 --是否为敲出终止型\n   ,case when a.ko_cont_flag = '1' then 'true'\n         when a.ko_cont_flag = '0' then 'false'\n         else a.ko_cont_flag end                                               as is_ko_paid_eariler                --是否为敲出即付型\n   ,a.trmt_defr_days                                                           as settlement_defer_days             --敲出结算日在敲出日基础上递延天数\n   ,a.pay_delay_days                                                           as payment_defer_days                --敲出结算日在敲出日基础上递延天数\n   ,a.up_accum_stk_prtc_rate                                                   as participate_rate                  --适用于上累计的股数\n   ,a.fix_amt                                                                  as fixed_amount                      --每日若为上方累计支付固定金额值\n   ,a.prtc_pd_strt_date                                                        as guarantee_period_start_date       --保护期开始日   \n   ,a.prtc_pd_end_date                                                         as guarantee_period_end_date         --保护期结束日   \n   ,a.ko_sett_date                                                             as ko_settle_date                    --敲出后结算日    \n   ,a.obsv_scop_trd_days_str                                                   as obs_days                          --每个结算期观察日天数\n   ,a.obsv_scop_sett_date_str                                                  as settlement_schedule               --合约所有的定期结算日日期\n   ,a.obsv_scop_pay_date_str                                                   as payment_schedule                  --合约所有的定期兑付日日期\n   ,a.opt_sub_trd_nom_prin                                                     as abs_fined\n   ,a.prtc_rate                                                                as contract_rate\n   ,a.prtc_rate                                                                as contract_rate2\n   ,a.qty                                                                      as amount\n   ,a.ko_yield                                                                 as option_rebate\n   ,a.opt_fee                                                                  as premium_cost\n   ,a.opt_fee_paid_date                                                        as premium_date\n   ,a.call_put_type_cd                                                         as rise_fall\n   ,a.up_encb_type                                                             as up_obstruct\n   ,a.up_encb_pric                                                             as up_obstruct_price\n   ,a.undrl_cd                                                                 as wind_code\n   ,concat(substr(a.obsv_pd_type_cd,1,1),lower(substr(a.obsv_pd_type_cd,2)))   as monitoring_duration\n   ,a.obsv_strt_date                                                           as begin_date\n   ,a.obsv_day_coup_rate_str                                                   as couponrate\n   ,a.obsv_end_date                                                            as end_date\n   ,a.creator                                                                  as entered_user\n   ,a.exp_date                                                                 as final_date\n   ,a.inr_comp_no                                                              as internal_reference\n   ,a.coup_encb_obsv_day_str                                                   as p_coupondates\n   ,a.prd_abbr                                                                 as qx\n   ,a.obsv_strt_date                                                           as start_date                        \n   ,a.src_prd_sub_type                                                         as sub_type\n   ,rods.basket_type                                                           as basket_type                       --篮子类型\n   ,''                                                                         as amortization_type\n   ,''                                                                         as fee_rebate_amount\n   ,''                                                                         as fixed_rate\n   ,''                                                                         as hedge\n   ,''                                                                         as notional_exchange_amortization\n   ,''                                                                         as notional_exchange_final\n   ,''                                                                         as notional_exchange_initial\n   ,''                                                                         as payment_daycount\n   ,''                                                                         as accrualdates\n   ,''                                                                         as trading_portfolio\n   ,a.risk_obsv_date_str                                                       as p_kidates\n   ,null                                                                       as nranges                           \n   ,null                                                                       as payment_freq                      \n   ,null                                                                       as struct    \n   ,null                                                                       as bundle_id                        \n   ,rb.bel_dept                                                                as department\n   ,rb.cntr                                                                    as desk\n   ,a.obsv_scop_schd_end_date_str                                              as schedule_end_date\n   ,a.auto_call_opt_fee_rate                                                   as autocall_premium_rate\n   ,a.trmt_ki                                                                  as termination_knock_in\n   ,a.obsv_scop_drop_qty_str                                                   as actual_settlement_qty\n   ,if(nvl(rb_ori.mapping_wind_code,'')='',ri.summary_mapping,rb_ori.mapping_wind_code)    as underlying_summary_mapping  --汇总分类\n   ,tot.business_type                                                                      as business_type               --业务类型\n   ,rood.front_fee_payment_date                                                            as front_fee_payment_date      --前端费支付日\n   ,rood.time_to_maturity                                                                  as time_to_maturity            --期限\n   ,from_unixtime(unix_timestamp(),'yyyy-MM-dd HH:mm:ss')                                  as data_time\n   ,'${yyyy-MM-dd,-1e}'                                                                    as busi_date\nfrom PDATA_N.T98_OTC_OPT_COMP_SUB_TRD_BASE_INFO a\n  left join PDATA_N.REF_CD_CVT_MAP b                           --CONTR_STATUS 转码\n    on a.opt_comp_stat_cd = b.dw_cd_val\n    and b.tgt_tab_name = 'T03_AGT_STAT_H'\n    and b.tgt_tab_fld  = 'Agt_Stat_Cd'\n    and b.src_tab_name = 'REF_TRS'\n    and b.src_fld_name = 'CONTR_STATUS'\n    and b.src_sys_name = 'TIT'\n  left join PDATA_N.REF_CD_CVT_MAP c                           --TRADESTATUS 转码\n    on a.sub_trd_trd_stat_cd = c.dw_cd_val\n    and c.tgt_tab_name = 'T98_OTC_OPT_COMP_SUB_TRD_BASE_INFO'\n    and c.tgt_tab_fld  = 'Sub_Trd_Trd_Stat_Cd'\n    and c.src_tab_name = 'V_RISK_OPTION_INFO'\n    and c.src_fld_name = 'TRADESTATUS'\n    and c.src_sys_name = 'TIT'\n  left join (\n    select agt_clas_cd as business_type,agt_id as key_otc_trade_id\n    from PDATA_N.T03_AGT_CLAS_H  \n    where src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'\n      and strt_date <= '${yyyy-MM-dd}' and end_date > '${yyyy-MM-dd}'\n  ) tot\n    ON a.opt_comp_agt_id = tot.key_otc_trade_id\n  left join MAPPING ON a.opt_comp_agt_id = MAPPING.KEY_OTC_TRADE_ID\n  left join (\n    select book_agt_id as key_book_id,map_undrl_cd as mapping_wind_code\n    from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO\n    where src_tbl = 'ODATA_N_TIT.D_REF_BOOK' and busi_date = '${yyyy-MM-dd}'\n  ) rb_ori \n    on mapping.key_book_id_from = rb_ori.key_book_id\n  left join (\n      select opt_comp_agt_id as key_otc_trade_id,src_prd_id as underlying_ins_id,bask_type as basket_type\n      from PDATA_N.T03_OTC_OPT_COMP_STRU_ELMN_INFO \n      where src_tbl = 'ODATA_N_TIT.D_REF_OPTION_DEAL_STRUCTURE'\n        and busi_date = '${yyyy-MM-dd}'\n  ) rods  \n    on a.opt_comp_agt_id = rods.key_otc_trade_id\n  left join (\n      select opt_comp_agt_id as key_otc_trade_id,fred_fee_paid_date as front_fee_payment_date,term_days as time_to_maturity\n      from PDATA_N.T03_OTC_OPT_COMP_INFO\n      where src_tbl = 'ODATA_N_TIT.D_REF_OTC_OPTION_DEAL'\n        and busi_date = '${yyyy-MM-dd}'\n  ) rood\n    ON tot.key_otc_trade_id = ROOD.key_otc_trade_id\n  left join (\n        select in_code as key_instrument_id,undrl_clas as summary_mapping \n        from pdata_news_n.t02_tit_scr_base_info \n        where src_id = 'TIT' and grp_id = '01' \n  ) RI  \n    ON rods.underlying_ins_id = ri.key_instrument_id\n  left join (\n      select a.book_agt_id,a.bel_dept,a.cntr,b.agt_full_name\n      from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO a\n      left join PDATA_N.T03_AGT_NAME_H b \n        on a.book_agt_id = b.agt_id and b.src_tbl = 'ODATA_N_TIT.D_REF_BOOK' and b.strt_date <= '${yyyy-MM-dd}' and b.end_date > '${yyyy-MM-dd}'\n      where a.src_tbl = 'ODATA_N_TIT.D_REF_BOOK' and busi_date = '${yyyy-MM-dd}'\n  ) rb \n    on MAPPING.KEY_BOOK_ID_TO = RB.book_agt_id\nwhere a.src_tbl = 'ODATA_N_TIT.D_V_RISK_OPTION_INFO'\n  and a.busi_date = '${yyyy-MM-dd}' \n\t) castTable\n",
+  "sqlSourceId": "real:209119:sql-slot:0",
+  "statementOrdinal": 0
+}

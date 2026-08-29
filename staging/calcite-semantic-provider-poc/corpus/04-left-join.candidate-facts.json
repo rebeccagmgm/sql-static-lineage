@@ -1,0 +1,731 @@
+{
+    "capabilities":  [
+                         {
+                             "capability":  "EXPRESSION_LINEAGE",
+                             "evaluationStatus":  "EVALUATED"
+                         },
+                         {
+                             "capability":  "FUNCTIONAL_DEPENDENCIES",
+                             "evaluationStatus":  "EVALUATED"
+                         },
+                         {
+                             "capability":  "PREDICATES",
+                             "evaluationStatus":  "EVALUATED"
+                         },
+                         {
+                             "capability":  "RELATIONAL_SEMANTICS",
+                             "evaluationStatus":  "EVALUATED"
+                         },
+                         {
+                             "capability":  "ROW_COUNT",
+                             "evaluationStatus":  "EVALUATED"
+                         },
+                         {
+                             "capability":  "UNIQUE_KEYS",
+                             "evaluationStatus":  "EVALUATED"
+                         }
+                     ],
+    "dependencies":  [
+                         {
+                             "dependencyId":  "dep:00000",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00000"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0001:field:0003"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00000"
+                                           ],
+                             "operatorId":  "op:0000",
+                             "toRefs":  [
+                                            "rel:0000:field:0000"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00001",
+                             "dependencyKind":  "VALUE_INPUT",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00001"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0001:field:0007"
+                                          ],
+                             "impactKind":  "FIELD_VALUE",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00001"
+                                           ],
+                             "operatorId":  "op:0000",
+                             "toRefs":  [
+                                            "rel:0000:field:0001"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00002",
+                             "dependencyKind":  "JOIN_MATCH",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00002"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0001",
+                                              "rel:0003:field:0000"
+                                          ],
+                             "impactKind":  "ROW_MEMBERSHIP",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00002"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001"
+                                        ]
+                         },
+                         {
+                             "dependencyId":  "dep:00003",
+                             "dependencyKind":  "JOIN_CARDINALITY",
+                             "evaluationStatus":  "EVALUATED",
+                             "evidenceMappingRefs":  [
+                                                         "mapping:dep:00003"
+                                                     ],
+                             "fromRefs":  [
+                                              "rel:0002:field:0001",
+                                              "rel:0003:field:0000"
+                                          ],
+                             "impactKind":  "MULTIPLICITY",
+                             "issueRefs":  [
+                                               "issue:unmapped:dep:00003"
+                                           ],
+                             "operatorId":  "op:0001",
+                             "toRefs":  [
+                                            "rel:0001"
+                                        ]
+                         }
+                     ],
+    "evidenceMappings":  [
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00000",
+                                 "mappingStatus":  "UNMAPPABLE",
+                                 "providerRefId":  "dep:00000"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00001",
+                                 "mappingStatus":  "UNMAPPABLE",
+                                 "providerRefId":  "dep:00001"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00002",
+                                 "mappingStatus":  "UNMAPPABLE",
+                                 "providerRefId":  "dep:00002"
+                             },
+                             {
+                                 "evidenceRefs":  [
+
+                                                  ],
+                                 "mappingId":  "mapping:dep:00003",
+                                 "mappingStatus":  "UNMAPPABLE",
+                                 "providerRefId":  "dep:00003"
+                             }
+                         ],
+    "fields":  [
+                   {
+                       "fieldId":  "rel:0000:field:0000",
+                       "name":  "amount",
+                       "nullable":  true,
+                       "relationId":  "rel:0000",
+                       "role":  "OUTPUT",
+                       "slot":  0,
+                       "typeName":  "DECIMAL"
+                   },
+                   {
+                       "fieldId":  "rel:0000:field:0001",
+                       "name":  "customer_name",
+                       "nullable":  true,
+                       "relationId":  "rel:0000",
+                       "role":  "OUTPUT",
+                       "slot":  1,
+                       "typeName":  "VARCHAR"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0000",
+                       "name":  "order_id",
+                       "nullable":  false,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  0,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0001",
+                       "name":  "customer_id",
+                       "nullable":  false,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  1,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0002",
+                       "name":  "parent_order_id",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  2,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0003",
+                       "name":  "amount",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  3,
+                       "typeName":  "DECIMAL"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0004",
+                       "name":  "status",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  4,
+                       "typeName":  "VARCHAR"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0005",
+                       "name":  "event_time",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  5,
+                       "typeName":  "TIMESTAMP"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0006",
+                       "name":  "customer_id0",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  6,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0007",
+                       "name":  "customer_name",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  7,
+                       "typeName":  "VARCHAR"
+                   },
+                   {
+                       "fieldId":  "rel:0001:field:0008",
+                       "name":  "active",
+                       "nullable":  true,
+                       "relationId":  "rel:0001",
+                       "role":  "OUTPUT",
+                       "slot":  8,
+                       "typeName":  "BOOLEAN"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0000",
+                       "name":  "order_id",
+                       "nullable":  false,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  0,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0001",
+                       "name":  "customer_id",
+                       "nullable":  false,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  1,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0002",
+                       "name":  "parent_order_id",
+                       "nullable":  true,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  2,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0003",
+                       "name":  "amount",
+                       "nullable":  true,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  3,
+                       "typeName":  "DECIMAL"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0004",
+                       "name":  "status",
+                       "nullable":  true,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  4,
+                       "typeName":  "VARCHAR"
+                   },
+                   {
+                       "fieldId":  "rel:0002:field:0005",
+                       "name":  "event_time",
+                       "nullable":  true,
+                       "relationId":  "rel:0002",
+                       "role":  "OUTPUT",
+                       "slot":  5,
+                       "typeName":  "TIMESTAMP"
+                   },
+                   {
+                       "fieldId":  "rel:0003:field:0000",
+                       "name":  "customer_id",
+                       "nullable":  false,
+                       "relationId":  "rel:0003",
+                       "role":  "OUTPUT",
+                       "slot":  0,
+                       "typeName":  "BIGINT"
+                   },
+                   {
+                       "fieldId":  "rel:0003:field:0001",
+                       "name":  "customer_name",
+                       "nullable":  true,
+                       "relationId":  "rel:0003",
+                       "role":  "OUTPUT",
+                       "slot":  1,
+                       "typeName":  "VARCHAR"
+                   },
+                   {
+                       "fieldId":  "rel:0003:field:0002",
+                       "name":  "active",
+                       "nullable":  true,
+                       "relationId":  "rel:0003",
+                       "role":  "OUTPUT",
+                       "slot":  2,
+                       "typeName":  "BOOLEAN"
+                   }
+               ],
+    "input":  {
+                  "dialectDigest":  "0c08e8653bf047b8993afdc358fd3856a70ef5fb9d7113d469a13ae69f223f8d",
+                  "schemaSha256":  "f6f097d1dde51864a05eea5fc1f8f455ee0f20204b4a07993ab9466064247aef",
+                  "sqlSha256":  "8753ea522a00e002bc90f1872fae45956efa1e2ec6dbd74f6452b969966f1128",
+                  "sqlSourceId":  "fixture:04-left-join",
+                  "statementOrdinal":  0
+              },
+    "issues":  [
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00000",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00000"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00001",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00001"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00002",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00002"
+                                       ]
+                   },
+                   {
+                       "code":  "NATIVE_EVIDENCE_NOT_ASSEMBLED",
+                       "issueId":  "issue:unmapped:dep:00003",
+                       "message":  "Provider-local semantic fact requires Native evidence assembly.",
+                       "severity":  "INFO",
+                       "subjectRefs":  [
+                                           "dep:00003"
+                                       ]
+                   }
+               ],
+    "metadata":  [
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "EXPRESSION_LINEAGE",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0000:expression_lineage",
+                         "subjectRef":  "rel:0000",
+                         "value":  [
+                                       "dep:00000",
+                                       "dep:00001"
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "FUNCTIONAL_DEPENDENCIES",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0000:functional_dependencies",
+                         "subjectRef":  "rel:0000",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "PREDICATE",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0000:predicate",
+                         "subjectRef":  "rel:0000",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "ROW_COUNT",
+                         "knowledgeStatus":  "ESTIMATED",
+                         "metadataId":  "metadata:rel:0000:row_count",
+                         "subjectRef":  "rel:0000",
+                         "value":  15850.0
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "UNIQUE_KEYS",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0000:unique_keys",
+                         "subjectRef":  "rel:0000",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "FUNCTIONAL_DEPENDENCIES",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0001:functional_dependencies",
+                         "subjectRef":  "rel:0001",
+                         "value":  [
+                                       {
+                                           "dependentOrdinals":  [
+                                                                     1,
+                                                                     2,
+                                                                     3,
+                                                                     4,
+                                                                     5
+                                                                 ],
+                                           "determinantOrdinals":  [
+                                                                       0
+                                                                   ]
+                                       },
+                                       {
+                                           "dependentOrdinals":  [
+                                                                     1,
+                                                                     7,
+                                                                     8
+                                                                 ],
+                                           "determinantOrdinals":  [
+                                                                       6
+                                                                   ]
+                                       },
+                                       {
+                                           "dependentOrdinals":  [
+                                                                     6
+                                                                 ],
+                                           "determinantOrdinals":  [
+                                                                       1
+                                                                   ]
+                                       }
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "PREDICATE",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0001:predicate",
+                         "subjectRef":  "rel:0001",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "ROW_COUNT",
+                         "knowledgeStatus":  "ESTIMATED",
+                         "metadataId":  "metadata:rel:0001:row_count",
+                         "subjectRef":  "rel:0001",
+                         "value":  15850.0
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "UNIQUE_KEYS",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0001:unique_keys",
+                         "subjectRef":  "rel:0001",
+                         "value":  [
+                                       [
+                                           0
+                                       ]
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "FUNCTIONAL_DEPENDENCIES",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0002:functional_dependencies",
+                         "subjectRef":  "rel:0002",
+                         "value":  [
+                                       {
+                                           "dependentOrdinals":  [
+                                                                     1,
+                                                                     2,
+                                                                     3,
+                                                                     4,
+                                                                     5
+                                                                 ],
+                                           "determinantOrdinals":  [
+                                                                       0
+                                                                   ]
+                                       }
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "PREDICATE",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0002:predicate",
+                         "subjectRef":  "rel:0002",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "ROW_COUNT",
+                         "knowledgeStatus":  "ESTIMATED",
+                         "metadataId":  "metadata:rel:0002:row_count",
+                         "subjectRef":  "rel:0002",
+                         "value":  1000.0
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "UNIQUE_KEYS",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0002:unique_keys",
+                         "subjectRef":  "rel:0002",
+                         "value":  [
+                                       [
+                                           0
+                                       ]
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "FUNCTIONAL_DEPENDENCIES",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0003:functional_dependencies",
+                         "subjectRef":  "rel:0003",
+                         "value":  [
+                                       {
+                                           "dependentOrdinals":  [
+                                                                     1,
+                                                                     2
+                                                                 ],
+                                           "determinantOrdinals":  [
+                                                                       0
+                                                                   ]
+                                       }
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "PREDICATE",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0003:predicate",
+                         "subjectRef":  "rel:0003",
+                         "value":  [
+
+                                   ]
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "ROW_COUNT",
+                         "knowledgeStatus":  "ESTIMATED",
+                         "metadataId":  "metadata:rel:0003:row_count",
+                         "subjectRef":  "rel:0003",
+                         "value":  100.0
+                     },
+                     {
+                         "absenceProven":  false,
+                         "basis":  "CALCITE_METADATA",
+                         "evaluationStatus":  "EVALUATED",
+                         "kind":  "UNIQUE_KEYS",
+                         "knowledgeStatus":  "DERIVED",
+                         "metadataId":  "metadata:rel:0003:unique_keys",
+                         "subjectRef":  "rel:0003",
+                         "value":  [
+                                       [
+                                           0
+                                       ]
+                                   ]
+                     }
+                 ],
+    "operators":  [
+                      {
+                          "inputRelationIds":  [
+                                                   "rel:0001"
+                                               ],
+                          "kind":  "PROJECT",
+                          "operatorId":  "op:0000",
+                          "relationId":  "rel:0000"
+                      },
+                      {
+                          "inputRelationIds":  [
+                                                   "rel:0002",
+                                                   "rel:0003"
+                                               ],
+                          "joinType":  "LEFT",
+                          "kind":  "JOIN",
+                          "operatorId":  "op:0001",
+                          "relationId":  "rel:0001"
+                      },
+                      {
+                          "inputRelationIds":  [
+
+                                               ],
+                          "kind":  "TABLE_SCAN",
+                          "operatorId":  "op:0002",
+                          "relationId":  "rel:0002"
+                      },
+                      {
+                          "inputRelationIds":  [
+
+                                               ],
+                          "kind":  "TABLE_SCAN",
+                          "operatorId":  "op:0003",
+                          "relationId":  "rel:0003"
+                      }
+                  ],
+    "provider":  {
+                     "adapterVersion":  "0.1.0-poc",
+                     "buildFingerprint":  "9300dec35e67c58d91d825b30a628dfe74ead1bc37e6464197cc896fffe12e16",
+                     "calciteVersion":  "1.42.0",
+                     "name":  "calcite-semantic-provider"
+                 },
+    "relations":  [
+                      {
+                          "inputRelationIds":  [
+                                                   "rel:0001"
+                                               ],
+                          "kind":  "PROJECT",
+                          "outputFieldIds":  [
+                                                 "rel:0000:field:0000",
+                                                 "rel:0000:field:0001"
+                                             ],
+                          "providerOrdinal":  0,
+                          "relationId":  "rel:0000"
+                      },
+                      {
+                          "inputRelationIds":  [
+                                                   "rel:0002",
+                                                   "rel:0003"
+                                               ],
+                          "kind":  "JOIN",
+                          "outputFieldIds":  [
+                                                 "rel:0001:field:0000",
+                                                 "rel:0001:field:0001",
+                                                 "rel:0001:field:0002",
+                                                 "rel:0001:field:0003",
+                                                 "rel:0001:field:0004",
+                                                 "rel:0001:field:0005",
+                                                 "rel:0001:field:0006",
+                                                 "rel:0001:field:0007",
+                                                 "rel:0001:field:0008"
+                                             ],
+                          "providerOrdinal":  1,
+                          "relationId":  "rel:0001"
+                      },
+                      {
+                          "inputRelationIds":  [
+
+                                               ],
+                          "kind":  "TABLE_SCAN",
+                          "outputFieldIds":  [
+                                                 "rel:0002:field:0000",
+                                                 "rel:0002:field:0001",
+                                                 "rel:0002:field:0002",
+                                                 "rel:0002:field:0003",
+                                                 "rel:0002:field:0004",
+                                                 "rel:0002:field:0005"
+                                             ],
+                          "providerOrdinal":  2,
+                          "qualifiedTableName":  "APP.orders",
+                          "relationId":  "rel:0002"
+                      },
+                      {
+                          "inputRelationIds":  [
+
+                                               ],
+                          "kind":  "TABLE_SCAN",
+                          "outputFieldIds":  [
+                                                 "rel:0003:field:0000",
+                                                 "rel:0003:field:0001",
+                                                 "rel:0003:field:0002"
+                                             ],
+                          "providerOrdinal":  3,
+                          "qualifiedTableName":  "APP.customers",
+                          "relationId":  "rel:0003"
+                      }
+                  ],
+    "schemaVersion":  "0.1.0-poc",
+    "statementStatus":  "PARTIAL"
+}
