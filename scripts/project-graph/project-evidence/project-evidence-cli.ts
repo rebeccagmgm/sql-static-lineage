@@ -108,12 +108,28 @@ export async function runProjectEvidenceCli(
   const result = await runDirectProjectTopology(parseProjectEvidenceCli(args));
   process.stdout.write(
     `${JSON.stringify({
-      status: result.published.status,
+      status: "COMPLETE",
+      publicationStatus: result.published.status,
       sourceMode: "DIRECT_PROJECT_EVIDENCE",
-      snapshotId: result.projection.snapshot.snapshotId,
+      sourceId: result.source.sourceId,
+      contentHash: result.source.contentHash,
       directory: result.published.directory,
-      coverageStatus: result.projection.snapshot.coverageStatus,
-      counts: result.published.manifest.counts,
+      coverageStatus: result.roots.some(
+        (root) => root.coverage.status === "PARTIAL_EVIDENCE",
+      )
+        ? "PARTIAL"
+        : "COMPLETE",
+      counts: {
+        roots: result.roots.length,
+        taskNodes: result.roots.reduce(
+          (sum, root) => sum + root.taskNodes.length,
+          0,
+        ),
+        readEdges: result.roots.reduce(
+          (sum, root) => sum + root.readEdges.length,
+          0,
+        ),
+      },
       counters: result.counters,
       timingsMs: result.timingsMs,
     })}\n`,

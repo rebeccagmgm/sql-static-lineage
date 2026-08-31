@@ -25,8 +25,10 @@ import type {
   ProducerTableIdentity,
   TableProducerIndex,
 } from "../../reconcile/producer/producer-index.ts";
-import { validateOneHopSource } from "../topology/project-topology-source.ts";
-import { stableProjectEvidenceHash } from "./project-evidence-contract.ts";
+import {
+  stableProjectEvidenceHash,
+  validateOneHopArtifact,
+} from "./project-evidence-contract.ts";
 
 export const DEFAULT_RAW_ONE_HOP_CACHE_ROOT =
   "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-cache\\one-hop";
@@ -184,7 +186,7 @@ export function writeRawOneHopCache(
   result: OneHopReconciliationResult,
 ): RawOneHopCacheWrite {
   validateRawOneHopCacheLookupIdentity(lookupIdentity);
-  validateOneHopSource(result, lookupIdentity.taskId);
+  validateOneHopArtifact(result, lookupIdentity.taskId);
   assertOneHopMatchesTaskInput(result, lookupIdentity);
   assertOneHopUsesCurrentProducerIndex(result, producerIndex);
 
@@ -444,7 +446,7 @@ function validateRawOneHopCacheDocument(
   if (document.contentHash !== sha256(canonicalJson(body)))
     throw new Error("RAW_ONE_HOP_CACHE_CONTENT_HASH_MISMATCH");
   const identity = document.identity as RawOneHopCacheIdentity;
-  validateOneHopSource(document.result, identity.taskId);
+  validateOneHopArtifact(document.result, identity.taskId);
   assertOneHopMatchesTaskInput(
     document.result as OneHopReconciliationResult,
     identity,
