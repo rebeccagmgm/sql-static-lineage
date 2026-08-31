@@ -38,8 +38,6 @@
     "test:project-evidence": "vitest run tests/input-pack-closure.test.ts tests/project-task-evidence-cache.test.ts tests/project-evidence-root-traversal.test.ts",
     "test:lineage-all": "vitest run tests/lineage-all.test.ts",
     "test:field-lineage": "vitest run tests/input-pack-machine-facts.test.ts tests/field-lineage.test.ts tests/field-lineage-baseline.test.ts tests/physical-field-resolver.test.ts tests/physical-field-expander.test.ts tests/semantic-dependency-contract.test.ts tests/operator-support-matrix.test.ts tests/semantic-dependency-normalizer.test.ts",
-    "test:calcite-differential": "vitest run tests/calcite-differential --no-file-parallelism",
-    "calcite-differential:project": "tsx scripts/calcite-differential/project-machine-facts-gate.ts",
     "test:causal-slice": "vitest run tests/target-field-causal-slice --no-file-parallelism",
     "test:target-table-causal-closure": "vitest run tests/target-table-upstream-causal-closure --no-file-parallelism",
     "reconcile-one-hop": "tsx scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts",
