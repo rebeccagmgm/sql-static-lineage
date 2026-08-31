@@ -23,6 +23,9 @@ export const SCHEDULE_EVIDENCE_CACHE_DIRECTION = "up" as const;
 export const SCHEDULE_EVIDENCE_CACHE_DEPTH = 1 as const;
 export const SCHEDULE_EVIDENCE_CACHE_FILE_NAME =
   "horae-relation-up-depth-1.json" as const;
+export const HORAE_TASK_TYPE_CACHE_FILE_NAME = "horae-task-type.json" as const;
+export const HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE =
+  "HORAE_TASK_TYPE_EVIDENCE" as const;
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -30,10 +33,7 @@ const SHA256 = /^[a-f0-9]{64}$/i;
 type JsonRecord = Record<string, unknown>;
 
 export type ScheduleEvidenceCacheStatus =
-  | "HIT"
-  | "MISS"
-  | "INVALID"
-  | "DISABLED";
+  "HIT" | "MISS" | "INVALID" | "DISABLED";
 
 export interface HoraeRelationCacheDocument {
   readonly schema_version: typeof SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION;
@@ -45,6 +45,36 @@ export interface HoraeRelationCacheDocument {
   readonly rows: readonly JsonRecord[];
   readonly content_sha256: string;
 }
+
+/**
+ * The filename is kept for compatibility with the agreed cache layout, but
+ * the payload stores the complete normalized `horae detail` JSON row. This
+ * lets later type-specific collectors reuse target, SQL, partition, and
+ * scheduling fields without issuing another detail request.
+ */
+export interface HoraeTaskTypeCacheDocument {
+  readonly schema_version: typeof SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION;
+  readonly artifact_type: typeof HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE;
+  readonly task_id: string;
+  readonly observed_at: string;
+  readonly detail: JsonRecord;
+  readonly content_sha256: string;
+}
+
+export type HoraeTaskTypeCacheRead =
+  | { readonly status: "MISS"; readonly path: string }
+  | {
+      readonly status: "INVALID";
+      readonly path: string;
+      readonly reason: string;
+    }
+  | {
+      readonly status: "HIT";
+      readonly path: string;
+      readonly taskId: string;
+      readonly detail: JsonRecord;
+      readonly observedAt: string;
+    };
 export type HoraeRelationCacheRead =
   | { readonly status: "MISS"; readonly path: string }
   | {
@@ -106,16 +136,28 @@ function cacheDocument(
 
 function cachePathForRoot(cacheRoot: string, taskId: string): string {
   safeTaskId(taskId);
-  const root = resolve(cacheRoot);
-  const scheduleEvidenceRoot =
-    basename(root).toLowerCase() === "schedule-evidence"
-      ? root
-      : join(root, "schedule-evidence");
   return join(
-    scheduleEvidenceRoot,
+    resolveScheduleEvidenceCacheRoot(cacheRoot),
     "tasks",
     taskId,
     SCHEDULE_EVIDENCE_CACHE_FILE_NAME,
+  );
+}
+
+export function resolveScheduleEvidenceCacheRoot(cacheRoot: string): string {
+  const root = resolve(cacheRoot);
+  return basename(root).toLowerCase() === "schedule-evidence"
+    ? root
+    : join(root, "schedule-evidence");
+}
+
+function taskTypeCachePathForRoot(cacheRoot: string, taskId: string): string {
+  safeTaskId(taskId);
+  return join(
+    resolveScheduleEvidenceCacheRoot(cacheRoot),
+    "tasks",
+    taskId,
+    HORAE_TASK_TYPE_CACHE_FILE_NAME,
   );
 }
 
@@ -124,6 +166,13 @@ export function scheduleEvidenceCachePath(
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
 ): string {
   return cachePathForRoot(cacheRoot, taskId);
+}
+
+export function horaeTaskTypeCachePath(
+  taskId: string,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): string {
+  return taskTypeCachePathForRoot(cacheRoot, taskId);
 }
 
 function validateRows(value: unknown, taskId: string): JsonRecord[] | null {
@@ -137,6 +186,101 @@ function validateRows(value: unknown, taskId: string): JsonRecord[] | null {
     rows.push(row);
   }
   return rows;
+}
+
+function taskTypeCachePayload(
+  taskId: string,
+  observedAt: string,
+  detail: JsonRecord,
+): Omit<HoraeTaskTypeCacheDocument, "content_sha256"> {
+  return {
+    schema_version: SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION,
+    artifact_type: HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE,
+    task_id: taskId,
+    observed_at: observedAt,
+    detail,
+  };
+}
+
+function taskTypeCacheDocument(
+  taskId: string,
+  observedAt: string,
+  detail: JsonRecord,
+): HoraeTaskTypeCacheDocument {
+  const payload = taskTypeCachePayload(taskId, observedAt, detail);
+  return {
+    ...payload,
+    content_sha256: sha256(canonicalJson(payload)),
+  };
+}
+
+function validateDetail(value: unknown): JsonRecord | null {
+  return asRecord(value);
+}
+
+export function readHoraeTaskTypeCache(
+  taskId: string,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): HoraeTaskTypeCacheRead {
+  const path = taskTypeCachePathForRoot(cacheRoot, taskId);
+  if (!existsSync(path)) return { status: "MISS", path };
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const record = asRecord(parsed);
+    if (!record)
+      return { status: "INVALID", path, reason: "ENVELOPE_NOT_OBJECT" };
+    if (record.schema_version !== SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION)
+      return { status: "INVALID", path, reason: "SCHEMA_VERSION_MISMATCH" };
+    if (record.artifact_type !== HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE)
+      return { status: "INVALID", path, reason: "ARTIFACT_TYPE_MISMATCH" };
+    if (record.task_id !== taskId)
+      return { status: "INVALID", path, reason: "TASK_ID_MISMATCH" };
+    const observedAt = nonEmptyString(record.observed_at);
+    if (!observedAt)
+      return { status: "INVALID", path, reason: "OBSERVED_AT_MISSING" };
+    const detail = validateDetail(record.detail);
+    if (!detail) return { status: "INVALID", path, reason: "DETAIL_INVALID" };
+    if (
+      typeof record.content_sha256 !== "string" ||
+      !SHA256.test(record.content_sha256)
+    )
+      return { status: "INVALID", path, reason: "CONTENT_HASH_INVALID" };
+    const payload = taskTypeCachePayload(taskId, observedAt, detail);
+    if (sha256(canonicalJson(payload)) !== record.content_sha256)
+      return { status: "INVALID", path, reason: "CONTENT_HASH_MISMATCH" };
+    return { status: "HIT", path, taskId, detail, observedAt };
+  } catch (error) {
+    return {
+      status: "INVALID",
+      path,
+      reason: error instanceof SyntaxError ? "JSON_INVALID" : "READ_FAILED",
+    };
+  }
+}
+
+export function writeHoraeTaskTypeCache(
+  taskId: string,
+  observedAt: string,
+  detail: JsonRecord,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): string {
+  safeTaskId(taskId);
+  if (!nonEmptyString(observedAt)) throw new Error("OBSERVED_AT_MISSING");
+  if (!validateDetail(detail)) throw new Error("DETAIL_INVALID");
+  const path = taskTypeCachePathForRoot(cacheRoot, taskId);
+  const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  mkdirSync(dirname(path), { recursive: true });
+  try {
+    writeFileSync(
+      temporaryPath,
+      canonicalJson(taskTypeCacheDocument(taskId, observedAt, detail)),
+      { encoding: "utf8", flag: "wx" },
+    );
+    renameSync(temporaryPath, path);
+    return path;
+  } finally {
+    if (existsSync(temporaryPath)) rmSync(temporaryPath, { force: true });
+  }
 }
 
 function invalid(path: string, reason: string): HoraeRelationCacheRead {
@@ -166,7 +310,10 @@ export function readHoraeRelationCache(
     if (!observedAt) return invalid(path, "OBSERVED_AT_MISSING");
     const rows = validateRows(record.rows, taskId);
     if (!rows) return invalid(path, "ROWS_INVALID");
-    if (typeof record.content_sha256 !== "string" || !SHA256.test(record.content_sha256))
+    if (
+      typeof record.content_sha256 !== "string" ||
+      !SHA256.test(record.content_sha256)
+    )
       return invalid(path, "CONTENT_HASH_INVALID");
     const payload = cachePayload(taskId, observedAt, rows);
     if (sha256(canonicalJson(payload)) !== record.content_sha256)

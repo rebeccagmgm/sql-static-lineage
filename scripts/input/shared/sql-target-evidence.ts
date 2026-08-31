@@ -14,6 +14,15 @@ export interface SqlTargetEvidence {
   readonly targetEnd?: number;
 }
 
+export type SqlWriteStatementKind =
+  | SqlTargetEvidence["statementKind"]
+  | "ALTER_TABLE";
+
+export interface SqlWriteTargetEvidence
+  extends Omit<SqlTargetEvidence, "statementKind"> {
+  readonly statementKind: SqlWriteStatementKind;
+}
+
 const TARGET_PATTERNS: readonly {
   readonly statementKind: SqlTargetEvidence["statementKind"];
   readonly pattern: RegExp;
@@ -21,12 +30,12 @@ const TARGET_PATTERNS: readonly {
   {
     statementKind: "INSERT_TABLE",
     pattern:
-      /\binsert\s+(?:overwrite|into)\s+table\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
+      /\binsert\s+(?:overwrite|into)\s+(?:table\s+)?((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
   },
   {
     statementKind: "CREATE_TABLE",
     pattern:
-      /\bcreate\s+(?:external\s+)?table\s+(?:if\s+not\s+exists\s+)?((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
+      /\bcreate\s+(?:(?:or\s+replace)\s+)?(?:(?:external|temporary)\s+)?table\s+(?:if\s+not\s+exists\s+)?((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
   },
   {
     statementKind: "TRUNCATE_TABLE",
@@ -37,6 +46,18 @@ const TARGET_PATTERNS: readonly {
     statementKind: "DELETE_TABLE",
     pattern:
       /\bdelete\s+from\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
+  },
+];
+
+const WRITE_TARGET_PATTERNS: readonly {
+  readonly statementKind: SqlWriteStatementKind;
+  readonly pattern: RegExp;
+}[] = [
+  ...TARGET_PATTERNS,
+  {
+    statementKind: "ALTER_TABLE",
+    pattern:
+      /\balter\s+table\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/gi,
   },
 ];
 
@@ -135,12 +156,16 @@ function qualifyUnqualifiedTarget(
   return `${taskTable.slice(0, separator)}.${target}`;
 }
 
-function collectSqlTargetEvidence(
+function collectSqlTargetEvidenceWithPatterns(
   sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
   taskName: string | undefined,
   options: Readonly<{ allowSchemaOnlyQualification?: boolean }>,
-): SqlTargetEvidence[] {
-  const found: SqlTargetEvidence[] = [];
+  patterns: readonly {
+    readonly statementKind: SqlWriteStatementKind;
+    readonly pattern: RegExp;
+  }[] = TARGET_PATTERNS,
+): SqlWriteTargetEvidence[] {
+  const found: SqlWriteTargetEvidence[] = [];
   for (const slot of [
     "create",
     "query",
@@ -151,7 +176,7 @@ function collectSqlTargetEvidence(
     const content = sql[slot];
     if (typeof content !== "string" || content.trim() === "") continue;
     const withoutComments = maskCommentsAndStringLiterals(content);
-    for (const { statementKind, pattern } of TARGET_PATTERNS) {
+    for (const { statementKind, pattern } of patterns) {
       pattern.lastIndex = 0;
       for (const match of withoutComments.matchAll(pattern)) {
         const rawTarget = match[1]!;
@@ -176,6 +201,19 @@ function collectSqlTargetEvidence(
     }
   }
   return found;
+}
+
+function collectSqlTargetEvidence(
+  sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
+  taskName: string | undefined,
+  options: Readonly<{ allowSchemaOnlyQualification?: boolean }>,
+): SqlTargetEvidence[] {
+  return collectSqlTargetEvidenceWithPatterns(
+    sql,
+    taskName,
+    options,
+    TARGET_PATTERNS,
+  ) as SqlTargetEvidence[];
 }
 
 const SQL_SLOT_ORDER: readonly SqlTargetSlot[] = [
@@ -318,4 +356,30 @@ export function findSqlFinalTargetEvidence(
     : [];
   if (taskMatch.length === 1) return taskMatch[0];
   return terminalInserts.length === 1 ? terminalInserts[0] : undefined;
+}
+
+/**
+ * Extracts only SQL-declared write/DDL targets. Unqualified identifiers are
+ * intentionally ignored unless the caller explicitly supplies the same
+ * qualification policy used by the generic collector. SparkIndex calls this
+ * without a task-name fallback so task names can never manufacture a table.
+ */
+export function extractSqlWriteTableNames(
+  sql: Readonly<Partial<Record<SqlTargetSlot, string>>>,
+  taskName?: string,
+  options: Readonly<{ allowSchemaOnlyQualification?: boolean }> = {},
+): readonly string[] {
+  const names = new Map<string, string>();
+  for (const evidence of collectSqlTargetEvidenceWithPatterns(
+    sql,
+    taskName,
+    options,
+    WRITE_TARGET_PATTERNS,
+  )) {
+    const key = evidence.qualifiedName.toLowerCase();
+    if (!names.has(key)) names.set(key, evidence.qualifiedName);
+  }
+  return [...names.values()].sort((left, right) =>
+    left.localeCompare(right),
+  );
 }
