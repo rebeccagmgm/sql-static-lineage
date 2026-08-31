@@ -1,5 +1,9 @@
 # Calcite Sidecar migration
 
+> This document records the earlier migration rounds. The current second-round
+> boundary and file disposition are recorded in
+> `docs/calcite-sidecar-second-round.md`.
+
 状态：已完成独立 Sidecar 验收，主仓库旧实现已在单独迁移提交中删除。
 
 ## 边界与版本
