@@ -50,8 +50,9 @@ Sidecar 独立提交（分支 `master`，精确目录内）：
 - `c620434 test: relocate legacy Calcite failure fixture`：迁移历史 `NOT_EVALUATED` fixture。
 
 当前主仓没有 `scripts/calcite-differential`、`scripts/calcite-oracle` 实现目录，
-也没有主仓 Calcite producer。剩余 Calcite 相关生产代码只有旧参数的拒绝 guard；
-它不读取 Sidecar、不写 artifact、不参与 Native 默认路径。
+也没有主仓 Calcite producer。剩余的 Calcite 字样仅是 canonical contract 中已有的
+stale-layer/proof-ref vocabulary，以及旧参数的拒绝 guard；它们不读取 Sidecar、
+不写 artifact、不参与 Native 默认路径。没有残留 Calcite 实现或运行入口。
 
 ## 验证结果
 
