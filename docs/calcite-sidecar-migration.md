@@ -83,8 +83,10 @@ tools/calcite-rel-bridge/test-runtime.ps1
 tools/calcite-rel-bridge/src/main/java/com/gf/sqlstaticlineage/calciterelbridge/CalciteRelBridge.java
 tools/calcite-rel-bridge/src/main/java/com/gf/sqlstaticlineage/calciterelbridge/PlanFactsRelExecutor.java
 tools/calcite-oracle/.gitignore
+tools/calcite-oracle/README.md
 tools/calcite-oracle/pom.xml
 tools/calcite-oracle/src/main/java/com/gf/sqlstaticlineage/calciteoracle/CalciteOracle.java
+tools/calcite-oracle/test-runtime.ps1
 scripts/reconcile/consumer/target-field-causal-slice/calcite-semantic-mapping.ts
 scripts/reconcile/consumer/target-field-causal-slice/calcite-shadow-report.ts
 tests/target-field-causal-slice/calcite-semantic-mapping.test.ts
@@ -92,9 +94,9 @@ tests/target-field-causal-slice/calcite-shadow-report.test.ts
 tests/fixtures/target-field-causal-slice/calcite-differential/batches.ts
 ```
 
-`tools/calcite-oracle/README.md` 和 `tools/calcite-oracle/test-runtime.ps1` 没有删除：它们是短的 deprecated compatibility wrapper，明确指向 Sidecar。原 `scripts/calcite-oracle/protocol.ts`/`reconciler.ts` 已随纯协议迁移删除，兼容实现由 Sidecar 本地 `protocol.ts`/`reconciler.ts` 和 legacy runner 提供。没有删除 Native causal closure、Native pipeline、write identity、Candidate Universe 或跨 Task propagation。
+旧 `tools/calcite-oracle` wrapper、Java/Maven 工程和 `scripts/calcite-oracle` 兼容别名均已删除；legacy 兼容实现由 Sidecar 本地 `protocol.ts`/`reconciler.ts` 和 `npm run test:legacy` 提供。没有删除 Native causal closure、Native pipeline、write identity、Candidate Universe 或跨 Task propagation。
 
-第一阶段明确替代文件清单共 4557 行；其迁移提交实际为 `+389/-6357`，其中包含 `calcite-causal-evidence.ts` 的适配层收缩。第二阶段 semantic-shadow 删除清单共 2046 行，另从通用重协调测试移除了 31 行 Calcite mapping 专项测试，提交实际为 `+32/-2144`。本阶段把主仓库的 protocol/contract/reconciler 及其纯协议测试再删除 3514 行，并在 Sidecar 增加独立协议/contract/reconciliation 测试。以基线 `0319c75` 统计，主仓库源代码/测试/工具共 40 个文件、`+697/-12023`，净减少 11326 行；含迁移文档和 package 命令则为 42 个文件、`+860/-12025`，净减少 11165 行。`scripts/calcite-differential` 从 7143 行降为 3738 行，净减少 3405 行；其中 414 行是最小 Native wire boundary，`calcite-causal-evidence.ts` 从 1453 行降为 798 行，净减少 655 行。纯协议/contract/reconciliation 的 3514 行已删除，Sidecar 以本地 `protocol.ts`（1249）、`plan-facts-rel-contract.ts`（587）、`reconciler.ts`（478）和 `differential-test.mjs`（219）承接。
+第一阶段明确替代文件清单共 4557 行；其迁移提交实际为 `+389/-6357`，其中包含 `calcite-causal-evidence.ts` 的适配层收缩。第二阶段 semantic-shadow 删除清单共 2046 行，另从通用重协调测试移除了 31 行 Calcite mapping 专项测试，提交实际为 `+32/-2144`。本阶段把主仓库的 protocol/contract/reconciler 及其纯协议测试再删除 3514 行，并在 Sidecar 增加独立协议/contract/reconciliation 测试；随后删除 42 行旧兼容 wrapper。以基线 `0319c75` 统计，主仓库源代码/测试/工具共 40 个文件、`+669/-12037`，净减少 11368 行；含迁移文档和 package 命令则为 42 个文件、`+832/-12040`，净减少 11208 行。`scripts/calcite-differential` 从 7143 行降为 3738 行，净减少 3405 行；其中 414 行是最小 Native wire boundary，`calcite-causal-evidence.ts` 从 1453 行降为 798 行，净减少 655 行。纯协议/contract/reconciliation 的 3514 行已删除，Sidecar 以本地 `protocol.ts`（1249）、`plan-facts-rel-contract.ts`（587）、`reconciler.ts`（478）和 `differential-test.mjs`（219）承接。
 
 ## 依赖扫描
 
@@ -156,6 +158,7 @@ Native 默认路径不调用 `calcite-differential:project`、`test:calcite-orac
 - 主仓库 semantic-shadow 删除/适配提交：`a39dcb7`，只删除 Sidecar 已接管的 semantic mapping/shadow 实现、专项 fixture/test，并移除旧 CLI writer；未改动 package 文件。
 - 主仓库 package 清理提交：`8014497`，只移除已经迁移的 `tests/calcite-oracle-reconciler.test.ts` 测试入口；`package-lock.json` 未改动。
 - 主仓库协议迁移/冗余删除提交：`b2e09ad`，包含本阶段 15 个文件、`+429/-3527`；不合并 main、不推送远端。
+- 主仓库旧 wrapper 删除提交：`00712af`；package 命令删除提交：`4182402`，均不改 `package-lock.json`。
 - Calcite 是差分证据，不是运行成功、数据到达或业务正确性的证明；Sidecar failure/unsupported/NOT_EVALUATED 不能反推负面业务结论。
 - 本次没有实现新的 join、aggregate、setop 或 window 算子语义；Sidecar 只承接已有 bridge 能力和兼容路径。
 - Maven 未安装是当前环境限制，不是 Sidecar 依赖主仓库的理由；独立 javac/runtime 检查已覆盖真实执行。
