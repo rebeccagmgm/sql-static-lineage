@@ -902,6 +902,70 @@ type ProducerWriteProof = {
   readonly reason: string | null;
 };
 
+function hasConcretePartitionScope(artifactWrite: JsonRecord): boolean {
+  if (String(artifactWrite.partitionStatus ?? "") !== "COMPLETE") return false;
+  const assignments = (Array.isArray(artifactWrite.partition)
+    ? artifactWrite.partition
+    : []
+  )
+    .map(asRecord)
+    .filter((assignment): assignment is JsonRecord => assignment !== null);
+  return (
+    assignments.length > 0 &&
+    assignments.every(
+      (assignment) =>
+        nonEmpty(assignment.field) !== null &&
+        String(assignment.valueStatus ?? "") === "OBSERVED_RENDERED_VALUE" &&
+        nonEmpty(assignment.observedValue) !== null,
+    )
+  );
+}
+
+function resolvedFieldWriteObservationIds(
+  producerTaskId: string,
+  field: PhysicalFieldIdentity,
+  producerLoad: CurrentBundleLoad,
+): ReadonlySet<string> {
+  return new Set(
+    outputBindingsFor(
+      producerLoad,
+      field.qualifiedName,
+      field,
+      undefined,
+      undefined,
+      "STRICT_CAUSAL",
+    )
+      .map((binding) => nonEmpty(binding.write_observation_id))
+      .filter((id): id is string => id !== null)
+      .filter((id) => id.startsWith(`write-observation:${producerTaskId}:`)),
+  );
+}
+
+/**
+ * A table-level write edge may intentionally omit write occurrence identity.
+ * When it still carries a concrete partition and every matching Machine Facts
+ * write resolves the same target field, keep all occurrences as supporting
+ * evidence instead of manufacturing a single winner.  This does not apply to
+ * incomplete/unknown partitions, so the existing fail-closed behavior remains
+ * for genuinely unconstrained multi-write matches.
+ */
+function aggregateableWriteMatches(
+  artifactWrite: JsonRecord,
+  matchIds: readonly string[],
+  producerTaskId: string,
+  field: PhysicalFieldIdentity,
+  producerLoad: CurrentBundleLoad,
+): readonly string[] {
+  const ids = [...new Set(matchIds)].sort(compareText);
+  if (ids.length < 2 || !hasConcretePartitionScope(artifactWrite)) return [];
+  const resolvedIds = resolvedFieldWriteObservationIds(
+    producerTaskId,
+    field,
+    producerLoad,
+  );
+  return ids.every((id) => resolvedIds.has(id)) ? ids : [];
+}
+
 function writeObservationIds(value: unknown): readonly string[] {
   const record = asRecord(value);
   return [
@@ -1160,6 +1224,7 @@ function legacyProducerWriteProof(
 
   const matchedIds = new Set<string>();
   let ambiguous = false;
+  let hasAggregatedMatches = false;
   for (const artifactWrite of artifactWrites) {
     const embeddedIds = writeObservationIds(artifactWrite).filter((id) =>
       recordById.has(id),
@@ -1181,13 +1246,29 @@ function legacyProducerWriteProof(
             )
             .map((record) => String(record.write_observation_id));
         })();
+    const aggregatedIds = aggregateableWriteMatches(
+      artifactWrite,
+      matches,
+      producerTaskId,
+      field,
+      producerLoad,
+    );
+    if (aggregatedIds.length > 0) {
+      hasAggregatedMatches = true;
+      aggregatedIds.forEach((id) => matchedIds.add(id));
+      continue;
+    }
     if (matches.length !== 1) {
       ambiguous = true;
       continue;
     }
     matchedIds.add(matches[0]!);
   }
-  if (ambiguous || matchedIds.size !== 1)
+  if (
+    ambiguous ||
+    matchedIds.size === 0 ||
+    (matchedIds.size !== 1 && !hasAggregatedMatches)
+  )
     return {
       ids: new Set(),
       status: "AMBIGUOUS",
@@ -1279,6 +1360,7 @@ function strictProducerWriteProof(
 
   const matchedIds = new Set<string>();
   let hasAmbiguousMatch = false;
+  let hasAggregatedMatches = false;
   const usedIds = new Set<string>();
   for (const artifactWrite of artifactWrites) {
     const embeddedIds = writeObservationIds(artifactWrite).filter(
@@ -1296,6 +1378,31 @@ function strictProducerWriteProof(
     const scopedMatches = explicitIds.size > 0
       ? matches.filter((id) => explicitIds.has(id))
       : matches;
+    const aggregateCandidates = (
+      scopedMatches.length > 0
+        ? scopedMatches
+        : records
+            .filter((record) =>
+              legacyWriteMatchesArtifact(artifactWrite, record, producerLoad, false),
+            )
+            .map((record) => String(record.write_observation_id))
+            .filter((id) => explicitIds.size === 0 || explicitIds.has(id))
+    );
+    const aggregatedIds = aggregateableWriteMatches(
+      artifactWrite,
+      aggregateCandidates,
+      producerTaskId,
+      field,
+      producerLoad,
+    );
+    if (aggregatedIds.length > 0) {
+      hasAggregatedMatches = true;
+      aggregatedIds.forEach((id) => {
+        usedIds.add(id);
+        matchedIds.add(id);
+      });
+      continue;
+    }
     if (scopedMatches.length !== 1 || usedIds.has(scopedMatches[0]!)) {
       hasAmbiguousMatch = true;
       continue;
@@ -1305,7 +1412,8 @@ function strictProducerWriteProof(
   }
   if (
     hasAmbiguousMatch ||
-    matchedIds.size !== 1 ||
+    matchedIds.size === 0 ||
+    (matchedIds.size !== 1 && !hasAggregatedMatches) ||
     (explicitIds.size > 0 && [...explicitIds].some((id) => !matchedIds.has(id)))
   )
     return {
