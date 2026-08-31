@@ -39,10 +39,16 @@ export async function runProjectEvidenceAcceptanceCli(
   process.stdout.write(
     `${JSON.stringify({
       status: passed ? "PASS" : "FAIL",
-      snapshotId: result.projection.snapshot.snapshotId,
+      publicationStatus: result.published.status,
+      sourceId: result.source.sourceId,
+      contentHash: result.source.contentHash,
       directory: result.published.directory,
-      source: result.projection.snapshot.sources[0]?.projectEvidence ?? null,
-      coverageStatus: result.projection.snapshot.coverageStatus,
+      source: result.source,
+      coverageStatus: result.roots.some(
+        (root) => root.coverage.status === "PARTIAL_EVIDENCE",
+      )
+        ? "PARTIAL"
+        : "COMPLETE",
       counters: result.counters,
       timingsMs: result.timingsMs,
       publishedFiles: result.published.manifest.files,
@@ -61,8 +67,8 @@ function extractFormalArtifactRoot(args: readonly string[]): {
   if (!value || value.startsWith("--"))
     throw new Error("OPTION_REQUIRED:--formal-artifact-root");
   return {
-    remaining: args.filter((_, itemIndex) =>
-      itemIndex !== index && itemIndex !== index + 1,
+    remaining: args.filter(
+      (_, itemIndex) => itemIndex !== index && itemIndex !== index + 1,
     ),
     formalArtifactRoot: resolve(value),
   };

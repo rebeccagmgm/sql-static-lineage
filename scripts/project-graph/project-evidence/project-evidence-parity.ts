@@ -134,7 +134,10 @@ function hasStrongerProducerRole(
     PRIMARY: 3,
   };
   const expectedRoles = new Map(
-    expected.producerBridges.map((bridge) => [bridgeKey(bridge), bridge.producerRole]),
+    expected.producerBridges.map((bridge) => [
+      bridgeKey(bridge),
+      bridge.producerRole,
+    ]),
   );
   return actual.producerBridges.some((bridge) => {
     const expectedRole = expectedRoles.get(bridgeKey(bridge));

@@ -33,19 +33,14 @@ import {
   loadTableProducerIndex,
 } from "../../reconcile/producer/producer-index.ts";
 import {
-  sortedUnique,
-  type ProjectTopologyProjectionV1,
-} from "../contracts/project-topology-contract.ts";
-import { buildProjectTopology } from "../topology/project-topology-projector.ts";
-import {
-  publishProjectTopology,
-  type PublishProjectTopologyResult,
-} from "../topology/project-topology-publication.ts";
-import { loadDirectProjectTopologySources } from "../topology/project-topology-source.ts";
+  publishProjectEvidenceArtifact,
+  type PublishProjectEvidenceArtifactResult,
+} from "./project-evidence-publication.ts";
 import {
   buildProjectEvidenceSourceDescriptor,
   scheduleEvidenceIdentityHash,
   type ProjectEvidenceLimits,
+  type ProjectEvidenceSourceDescriptorV1,
 } from "./project-evidence-contract.ts";
 import {
   buildRawOneHopCacheLookupIdentity,
@@ -111,8 +106,8 @@ export interface DirectProjectTopologyCounters {
 }
 
 export interface DirectProjectTopologyRunResult {
-  readonly projection: ProjectTopologyProjectionV1;
-  readonly published: PublishProjectTopologyResult;
+  readonly source: ProjectEvidenceSourceDescriptorV1;
+  readonly published: PublishProjectEvidenceArtifactResult;
   readonly roots: readonly MultiHopReconciliationResult[];
   readonly closure: ProjectInputPackClosureResult;
   readonly counters: DirectProjectTopologyCounters;
@@ -185,7 +180,7 @@ export async function runDirectProjectTopology(
   )
     throw new Error("PROJECT_PRODUCER_SNAPSHOT_MISMATCH");
 
-  const preparedTaskIds = sortedUnique(closure.taskIds);
+  const preparedTaskIds = sortedUniqueTaskIds(closure.taskIds);
   const facts = await timed("machineFacts", () =>
     deps.machineFacts({
       dataRoot,
@@ -351,30 +346,20 @@ export async function runDirectProjectTopology(
     scheduleEvidenceContentHash: scheduleEvidenceIdentityHash(scheduleEvidence),
     limits: options.limits,
   });
-  const loadedRoots = loadDirectProjectTopologySources({
-    descriptor,
-    roots: traversals.map((traversal) => {
-      const oneHop = rawOneHopByTaskId.get(traversal.rootTaskId);
-      if (!oneHop)
-        throw new Error(
-          `ROOT_ONE_HOP_SNAPSHOT_MISSING:${traversal.rootTaskId}`,
-        );
-      return { rootTaskId: traversal.rootTaskId, oneHop, traversal };
-    }),
-  });
-  const projection = await timed("projection", () =>
-    buildProjectTopology({
-      projectKey: options.projectKey,
-      roots: loadedRoots,
-      maxNodes: Math.max(1, options.limits.maxUnionTasks * 10),
-      maxEdges: Math.max(
-        1,
-        options.limits.maxEdgesPerRoot * options.rootTaskIds.length * 4,
-      ),
-    }),
-  );
   const published = await timed("publication", () =>
-    publishProjectTopology(projection, { outputRoot }),
+    publishProjectEvidenceArtifact({
+      outputRoot,
+      projectKey: options.projectKey,
+      source: descriptor,
+      roots: traversals.map((traversal) => {
+        const oneHop = rawOneHopByTaskId.get(traversal.rootTaskId);
+        if (!oneHop)
+          throw new Error(
+            `ROOT_ONE_HOP_SNAPSHOT_MISSING:${traversal.rootTaskId}`,
+          );
+        return { rootTaskId: traversal.rootTaskId, oneHop, traversal };
+      }),
+    }),
   );
   const rootTaskOccurrences = traversals.reduce(
     (sum, traversal) => sum + traversal.taskNodes.length,
@@ -386,7 +371,7 @@ export async function runDirectProjectTopology(
     ),
   ).size;
   return {
-    projection,
+    source: descriptor,
     published,
     roots: traversals,
     closure,
@@ -428,6 +413,12 @@ function validateRunSelection(options: DirectProjectTopologyOptions): void {
       throw new Error(`PROJECT_EVIDENCE_${label.toUpperCase()}_INVALID`);
   if (options.rootTaskIds.length > options.limits.maxRoots)
     throw new Error("PROJECT_EVIDENCE_MAX_ROOTS_REACHED");
+}
+
+function sortedUniqueTaskIds(values: readonly string[]): string[] {
+  return [...new Set(values)].sort((left, right) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  );
 }
 
 function dependencies(
