@@ -26,6 +26,11 @@ import {
   matchingTerminalRole,
   type TerminalTableConfig,
 } from "./terminal-table-config.ts";
+import {
+  DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  readHoraeRelationCache,
+  writeHoraeRelationCache,
+} from "../one-hop/schedule-evidence-cache.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -39,6 +44,8 @@ export interface MultiHopAutofillOptions {
   readonly dataRoot: string;
   readonly producerIndexPath?: string;
   readonly producerIndexCacheRoot?: string;
+  /** Read-through cache for every Horae relation fetched during closure. */
+  readonly scheduleEvidenceCacheRoot?: string;
   readonly outputPath?: string;
   readonly reportPath?: string;
   readonly terminalTableConfigPath: string;
@@ -51,6 +58,8 @@ export interface MultiHopAutofillOptions {
   readonly discoveryMinIntervalMs?: number;
   readonly discoveryAttempts?: number;
   readonly force?: boolean;
+  /** Test-only mode for append-only concurrent Input Pack roots. */
+  readonly allowInputChanges?: boolean;
   readonly trustExistingIndex?: boolean;
   readonly now?: () => string;
   readonly openCliRunner?: OpenCliRunner;
@@ -97,13 +106,17 @@ function asRecord(value: unknown): JsonRecord | null {
 
 function rowsOf(value: unknown): JsonRecord[] {
   if (Array.isArray(value))
-    return value.map(asRecord).filter((item): item is JsonRecord => item !== null);
+    return value
+      .map(asRecord)
+      .filter((item): item is JsonRecord => item !== null);
   const root = asRecord(value);
   if (!root) return [];
   for (const key of ["results", "rows", "data", "items"]) {
     const rows = root[key];
     if (Array.isArray(rows))
-      return rows.map(asRecord).filter((item): item is JsonRecord => item !== null);
+      return rows
+        .map(asRecord)
+        .filter((item): item is JsonRecord => item !== null);
   }
   return [root];
 }
@@ -133,7 +146,9 @@ function tableKey(table: {
     .join("|");
 }
 
-function tableParts(qualifiedName: string): { db: string; table: string } | null {
+function tableParts(
+  qualifiedName: string,
+): { db: string; table: string } | null {
   const separator = qualifiedName.indexOf(".");
   if (separator <= 0 || separator === qualifiedName.length - 1) return null;
   return {
@@ -153,7 +168,9 @@ function taskPackExists(dataRoot: string, taskId: string): boolean {
 }
 
 function confirmedProducerTableKeys(index: TableProducerIndex): Set<string> {
-  return new Set(index.confirmedProducerEdges.map((edge) => tableKey(edge.table)));
+  return new Set(
+    index.confirmedProducerEdges.map((edge) => tableKey(edge.table)),
+  );
 }
 
 export function producerTaskIdsFromTableResponse(value: unknown): string[] {
@@ -185,7 +202,17 @@ function writeJson(pathInput: string | undefined, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-function requirePositiveInteger(value: number, field: string, allowZero = false): void {
+function progress(event: string, details: Record<string, unknown> = {}): void {
+  process.stderr.write(
+    `[multi-hop-autofill] ${JSON.stringify({ event, ...details })}\n`,
+  );
+}
+
+function requirePositiveInteger(
+  value: number,
+  field: string,
+  allowZero = false,
+): void {
   if (!Number.isSafeInteger(value) || value < (allowZero ? 0 : 1))
     throw new Error(`${field.toUpperCase()}_INVALID`);
 }
@@ -193,22 +220,51 @@ function requirePositiveInteger(value: number, field: string, allowZero = false)
 function scheduleRows(
   taskId: string,
   runner: OpenCliRunner,
+  cacheRoot: string | null,
+  now: () => string,
 ): readonly JsonRecord[] {
-  return rowsOf(
-    runner([
-      "horae",
-      "relation",
+  const cached =
+    cacheRoot === null ? null : readHoraeRelationCache(taskId, cacheRoot);
+  if (cached?.status === "HIT") {
+    progress("schedule_cache_hit", {
       taskId,
-      "--direction",
-      "up",
-      "--depth",
-      "1",
-      "--window",
-      "background",
-      "-f",
-      "json",
-    ]),
-  );
+      rows: cached.rows.length,
+      path: cached.path,
+    });
+    return cached.rows;
+  }
+  progress("schedule_cache_miss", {
+    taskId,
+    status: cached?.status ?? "DISABLED",
+    path: cached?.path ?? null,
+  });
+  const response = runner([
+    "horae",
+    "relation",
+    taskId,
+    "--direction",
+    "up",
+    "--depth",
+    "1",
+    "--window",
+    "background",
+    "-f",
+    "json",
+  ]);
+  const rows = horaeRelationRows(response);
+  if (!isCacheableHoraeRelationResponse(response, rows))
+    throw new Error(`HORAE_RELATION_INVALID:${taskId}`);
+  if (cacheRoot !== null) {
+    try {
+      const path = writeHoraeRelationCache(taskId, now(), rows, cacheRoot);
+      progress("schedule_cache_write", { taskId, rows: rows.length, path });
+    } catch {
+      // The live evidence remains usable when the optional cache is not writable.
+      progress("schedule_cache_write_failed", { taskId });
+    }
+  }
+  progress("schedule_fetched", { taskId, rows: rows.length });
+  return rows;
 }
 
 export function queryProducerTaskIds(
@@ -255,7 +311,9 @@ function missingScheduleTaskIds(result: OneHopReconciliationResult): string[] {
 
 function nextPrimaryTaskIds(result: OneHopReconciliationResult): string[] {
   const unknown = new Set(result.partitionAwareNextDataTaskIds.unknown);
-  return result.finalUpstreamTaskIds.primary.filter((taskId) => !unknown.has(taskId));
+  return result.finalUpstreamTaskIds.primary.filter(
+    (taskId) => !unknown.has(taskId),
+  );
 }
 
 export function runMultiHopAutofill(
@@ -273,10 +331,20 @@ export function runMultiHopAutofill(
   requirePositiveInteger(maxRounds, "maxRounds");
   requirePositiveInteger(maxDiscoveryTables, "maxDiscoveryTables");
   requirePositiveInteger(maxDiscoveredTasks, "maxDiscoveredTasks");
-  requirePositiveInteger(discoveryMinIntervalMs, "discoveryMinIntervalMs", true);
+  requirePositiveInteger(
+    discoveryMinIntervalMs,
+    "discoveryMinIntervalMs",
+    true,
+  );
   requirePositiveInteger(discoveryAttempts, "discoveryAttempts");
 
   const dataRoot = resolve(options.dataRoot);
+  const scheduleEvidenceCacheRoot =
+    options.scheduleEvidenceCacheRoot === undefined
+      ? options.openCliRunner === undefined
+        ? resolve(DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT)
+        : null
+      : resolve(options.scheduleEvidenceCacheRoot);
   const producerIndexPath = options.producerIndexPath
     ? resolve(options.producerIndexPath)
     : null;
@@ -308,6 +376,15 @@ export function runMultiHopAutofill(
   let stabilized = false;
   let finalSnapshots = new Map<string, OneHopReconciliationResult>();
 
+  progress("start", {
+    taskId: options.taskId,
+    maxDepth: options.maxDepth,
+    maxTasks: options.maxTasks,
+    maxRounds,
+    scheduleEvidenceCacheRoot,
+    allowInputChanges: options.allowInputChanges === true,
+  });
+
   let producerIndex: TableProducerIndex;
   if (options.trustExistingIndex === true) {
     if (
@@ -323,13 +400,14 @@ export function runMultiHopAutofill(
       throw new Error("TRUSTED_EXISTING_INDEX_MANIFEST_MISMATCH");
   } else {
     producerIndex = producerIndexPath
-      ? updateTableProducerIndex(
-          dataRoot,
-          producerIndexPath,
-          manifestPath!,
-          { now },
-        ).index
-      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, { now }).index;
+      ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
+          now,
+          allowInputChanges: options.allowInputChanges,
+        }).index
+      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, {
+          now,
+          allowInputChanges: options.allowInputChanges,
+        }).index;
   }
 
   while (rounds < maxRounds) {
@@ -355,6 +433,13 @@ export function runMultiHopAutofill(
       { taskId: options.taskId, depth: 0 },
     ];
     const visited = new Set<string>();
+    progress("round_start", {
+      round: rounds,
+      maxRounds,
+      frontier: frontier.length,
+      visited: visited.size,
+      pending: pendingTaskIds.size,
+    });
 
     while (frontier.length > 0) {
       frontier.sort(
@@ -362,8 +447,10 @@ export function runMultiHopAutofill(
           left.depth - right.depth || compareText(left.taskId, right.taskId),
       );
       const current = frontier.shift()!;
-      if (visited.has(current.taskId) || current.depth >= options.maxDepth) continue;
-      if (visited.size >= options.maxTasks) throw new Error("MAX_TASKS_REACHED");
+      if (visited.has(current.taskId) || current.depth >= options.maxDepth)
+        continue;
+      if (visited.size >= options.maxTasks)
+        throw new Error("MAX_TASKS_REACHED");
       if (!taskPackExists(dataRoot, current.taskId)) {
         if (current.taskId === options.taskId)
           throw new Error(`CURRENT_TASK_INPUT_PACK_MISSING:${current.taskId}`);
@@ -373,7 +460,8 @@ export function runMultiHopAutofill(
       }
       visited.add(current.taskId);
       const frozenSchedule =
-        scheduleCache.get(current.taskId) ?? scheduleRows(current.taskId, runner);
+        scheduleCache.get(current.taskId) ??
+        scheduleRows(current.taskId, runner, scheduleEvidenceCacheRoot, now);
       scheduleCache.set(current.taskId, frozenSchedule);
       const oneHop = reconcileOneHopWithPreparedContext(
         current.taskId,
@@ -388,6 +476,15 @@ export function runMultiHopAutofill(
         context,
       );
       snapshots.set(current.taskId, oneHop);
+
+      progress("task_reconciled", {
+        round: rounds,
+        taskId: current.taskId,
+        depth: current.depth,
+        scheduleParents: frozenSchedule.length,
+        primaryUpstream: oneHop.finalUpstreamTaskIds.primary.length,
+        missingSchedulePacks: missingScheduleTaskIds(oneHop).length,
+      });
 
       for (const taskId of missingScheduleTaskIds(oneHop)) {
         enqueueMissingTaskPack(taskId);
@@ -422,16 +519,17 @@ export function runMultiHopAutofill(
           );
           if (taskIds.length === 0)
             if (read.table.platform.toLocaleLowerCase("en-US") === "hive")
-              issues.push(
-                `TABLE_PRODUCER_TASK_NOT_OBSERVED:${qualifiedName}`,
-              );
+              issues.push(`TABLE_PRODUCER_TASK_NOT_OBSERVED:${qualifiedName}`);
             else nonHiveSourceBoundaries.add(qualifiedName);
           for (const taskId of taskIds) {
             enqueueMissingTaskPack(taskId);
           }
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          issues.push(`TABLE_PRODUCER_DISCOVERY_FAILED:${qualifiedName}:${message}`);
+          const message =
+            error instanceof Error ? error.message : String(error);
+          issues.push(
+            `TABLE_PRODUCER_DISCOVERY_FAILED:${qualifiedName}:${message}`,
+          );
         }
       }
 
@@ -448,16 +546,34 @@ export function runMultiHopAutofill(
     const collectIds = unique([...pendingTaskIds]);
     if (collectIds.length === 0) {
       stabilized = true;
+      progress("round_stable", {
+        round: rounds,
+        visited: visited.size,
+        discovered: discoveredTaskIds.size,
+      });
       break;
     }
-    if (new Set([...discoveredTaskIds, ...collectIds]).size > maxDiscoveredTasks)
+    if (
+      new Set([...discoveredTaskIds, ...collectIds]).size > maxDiscoveredTasks
+    )
       throw new Error("MAX_DISCOVERED_TASKS_REACHED");
     try {
+      progress("input_pack_collect_start", {
+        round: rounds,
+        batchSize: collectIds.length,
+        taskIds: collectIds,
+      });
       collect(dataRoot, collectIds, options.force === true);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       issues.push(`INPUT_PACK_COLLECTION_FAILED:${message}`);
     }
+    progress("input_pack_collect_done", {
+      round: rounds,
+      batchSize: collectIds.length,
+      collected: collectIds.filter((taskId) => taskPackExists(dataRoot, taskId))
+        .length,
+    });
     for (const taskId of collectIds) {
       attemptedTaskIds.add(taskId);
       if (taskPackExists(dataRoot, taskId)) collectedTaskIds.add(taskId);
@@ -467,13 +583,14 @@ export function runMultiHopAutofill(
       }
     }
     producerIndex = producerIndexPath
-      ? updateTableProducerIndex(
-          dataRoot,
-          producerIndexPath,
-          manifestPath!,
-          { now },
-        ).index
-      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, { now }).index;
+      ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
+          now,
+          allowInputChanges: options.allowInputChanges,
+        }).index
+      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, {
+          now,
+          allowInputChanges: options.allowInputChanges,
+        }).index;
   }
 
   if (!stabilized) throw new Error("MAX_AUTOFILL_ROUNDS_REACHED");
@@ -513,7 +630,51 @@ export function runMultiHopAutofill(
   };
   writeJson(options.outputPath, artifact);
   writeJson(options.reportPath, report);
+  progress("complete", {
+    taskId: options.taskId,
+    status: report.status,
+    rounds: report.rounds,
+    discovered: report.discoveredTaskIds.length,
+    collected: report.collectedTaskIds.length,
+    output: options.outputPath ? resolve(options.outputPath) : null,
+    report: options.reportPath ? resolve(options.reportPath) : null,
+  });
   return { artifact, report };
+}
+
+function horaeRelationRows(value: unknown): JsonRecord[] {
+  if (Array.isArray(value)) return rowsOf(value);
+  const record = asRecord(value);
+  if (!record) return [];
+  for (const field of ["records", "rows", "data", "results"]) {
+    const rows = record[field];
+    if (Array.isArray(rows)) return rowsOf(rows);
+  }
+  return [];
+}
+
+function isCacheableHoraeRelationResponse(
+  value: unknown,
+  rows: readonly JsonRecord[],
+): boolean {
+  if (Array.isArray(value)) return value.length === rows.length;
+  const record = asRecord(value);
+  if (!record) return false;
+  if (
+    record.error !== undefined ||
+    record.success === false ||
+    ["fail", "failed", "failure", "error"].includes(
+      String(record.status ?? "").toLowerCase(),
+    )
+  )
+    return false;
+  const envelope = ["records", "rows", "data", "results"].find((field) =>
+    Array.isArray(record[field]),
+  );
+  return (
+    envelope !== undefined &&
+    (record[envelope] as unknown[]).length === rows.length
+  );
 }
 
 interface CliOptions {
@@ -521,6 +682,7 @@ interface CliOptions {
   readonly dataRoot: string;
   readonly producerIndexPath?: string;
   readonly producerIndexCacheRoot?: string;
+  readonly scheduleEvidenceCacheRoot?: string;
   readonly outputPath?: string;
   readonly reportPath?: string;
   readonly terminalTableConfigPath: string;
@@ -531,6 +693,7 @@ interface CliOptions {
   readonly maxDiscoveryTables: number;
   readonly maxDiscoveredTasks: number;
   readonly force: boolean;
+  readonly allowInputChanges: boolean;
   readonly trustExistingIndex: boolean;
 }
 
@@ -542,6 +705,7 @@ function parseCli(args: readonly string[]): CliOptions {
     "--data-root",
     "--producer-index",
     "--producer-index-cache-root",
+    "--schedule-evidence-cache-root",
     "--output",
     "--report",
     "--terminal-table-config",
@@ -554,11 +718,16 @@ function parseCli(args: readonly string[]): CliOptions {
   ]);
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]!;
-    if (argument === "--force" || argument === "--trust-existing-index") {
+    if (
+      argument === "--force" ||
+      argument === "--allow-input-changes" ||
+      argument === "--trust-existing-index"
+    ) {
       flags.add(argument);
       continue;
     }
-    if (!valueNames.has(argument)) throw new Error(`UNKNOWN_ARGUMENT:${argument}`);
+    if (!valueNames.has(argument))
+      throw new Error(`UNKNOWN_ARGUMENT:${argument}`);
     const value = args[index + 1];
     if (!value || value.startsWith("--"))
       throw new Error(`VALUE_REQUIRED:${argument}`);
@@ -583,6 +752,7 @@ function parseCli(args: readonly string[]): CliOptions {
     dataRoot: required("--data-root"),
     producerIndexPath: values.get("--producer-index"),
     producerIndexCacheRoot: values.get("--producer-index-cache-root"),
+    scheduleEvidenceCacheRoot: values.get("--schedule-evidence-cache-root"),
     outputPath: values.get("--output"),
     reportPath: values.get("--report"),
     terminalTableConfigPath:
@@ -592,9 +762,16 @@ function parseCli(args: readonly string[]): CliOptions {
     maxTasks: integer("--max-tasks", DEFAULT_MAX_TASKS),
     maxEdges: integer("--max-edges", DEFAULT_MAX_EDGES),
     maxRounds: integer("--max-rounds", 6),
-    maxDiscoveryTables: integer("--max-discovery-tables", DEFAULT_MAX_DISCOVERY_TABLES),
-    maxDiscoveredTasks: integer("--max-discovered-tasks", DEFAULT_MAX_DISCOVERED_TASKS),
+    maxDiscoveryTables: integer(
+      "--max-discovery-tables",
+      DEFAULT_MAX_DISCOVERY_TABLES,
+    ),
+    maxDiscoveredTasks: integer(
+      "--max-discovered-tasks",
+      DEFAULT_MAX_DISCOVERED_TASKS,
+    ),
     force: flags.has("--force"),
+    allowInputChanges: flags.has("--allow-input-changes"),
     trustExistingIndex: flags.has("--trust-existing-index"),
   };
 }
