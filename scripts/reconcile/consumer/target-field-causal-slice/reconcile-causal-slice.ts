@@ -45,10 +45,6 @@ import {
   type SemanticDependencyGap,
   type SemanticDependencyNormalization,
 } from "./semantic-dependency-normalizer.ts";
-import {
-  integrateCalciteOperatorEvidence,
-  type CalciteOperatorCausalEvidence,
-} from "./calcite-causal-evidence.ts";
 import type {
   SemanticDependencyApplication,
   SemanticDependencyDefinition,
@@ -109,8 +105,6 @@ export interface TargetFieldCausalSliceOptions {
   readonly semanticOracle?: "calcite";
   readonly calciteMappingReport?: string;
   readonly semanticOracleOutput?: string;
-  /** Optional independent Calcite causal-evidence bundle; default is absent. */
-  readonly calciteCausalEvidence?: string;
   readonly maxDepth?: number;
   readonly maxValueStates?: number;
   readonly maxValuePaths?: number;
@@ -321,22 +315,6 @@ function relationBridgeEvidenceRefs(
   return [...refs].sort((left, right) => left.localeCompare(right));
 }
 
-/**
- * Plan Facts produced directly by the SQL adapter uses the statement-local
- * relation id. The fingerprint-matched Machine Facts/Calcite lane uses the
- * same id behind an explicit task/statement prefix. Keep this as a strict
- * representation adapter; never fall back to table or column names.
- */
-function calciteRelationIdAliases(
-  taskId: string,
-  relationId: string,
-): readonly string[] {
-  const prefix = `task:${taskId}:statement:0:relation:`;
-  return relationId.startsWith(prefix)
-    ? [relationId, relationId.slice(prefix.length)]
-    : [relationId, prefix + relationId];
-}
-
 function readJson(path: string, layer: CausalSliceStaleLayer): JsonRecord {
   try {
     const value: unknown = JSON.parse(readFileSync(resolve(path), "utf8"));
@@ -349,40 +327,6 @@ function readJson(path: string, layer: CausalSliceStaleLayer): JsonRecord {
       `${resolve(path)}:${error instanceof Error ? error.message : String(error)}`,
     );
   }
-}
-
-function calciteEvidenceByTaskAndStatement(
-  path: string | undefined,
-): ReadonlyMap<string, readonly CalciteOperatorCausalEvidence[]> {
-  if (!path) return new Map();
-  const value = readJson(path, "CALCITE_DIFFERENTIAL");
-  if (text(value.reportKind) !== "INDEPENDENT_CALCITE_CAUSAL_EVIDENCE")
-    throw new TargetFieldCausalSliceStaleError(
-      "CALCITE_DIFFERENTIAL",
-      "report kind must be INDEPENDENT_CALCITE_CAUSAL_EVIDENCE",
-    );
-  if (!Array.isArray(value.observations))
-    throw new TargetFieldCausalSliceStaleError(
-      "CALCITE_DIFFERENTIAL",
-      "observations are missing",
-    );
-  const byKey = new Map<string, CalciteOperatorCausalEvidence[]>();
-  for (const candidate of value.observations) {
-    const item = record(candidate);
-    const taskId = text(item.taskId);
-    const statementId = text(item.statementId);
-    const evidenceId = text(item.evidenceId);
-    if (!taskId || !statementId || !evidenceId)
-      throw new TargetFieldCausalSliceStaleError(
-        "CALCITE_DIFFERENTIAL",
-        "every observation requires taskId, statementId and evidenceId",
-      );
-    const key = `${taskId}\u0000${statementId}`;
-    const values = byKey.get(key) ?? [];
-    values.push(candidate as unknown as CalciteOperatorCausalEvidence);
-    byKey.set(key, values);
-  }
-  return byKey;
 }
 
 function requireFingerprint(value: unknown, name: string, layer: CausalSliceStaleLayer): string {
@@ -786,11 +730,8 @@ export function reconcileTargetFieldCausalSlice(
     for (const column of entry.columns) {
       const identity = physicalFieldForTable(entry, column);
       if (identity) allIdentities.set(physicalFieldKey(identity), identity);
-    }
+  }
   const semanticDependencies = new Map<string, readonly SemanticDependencyNormalization[]>();
-  const calciteEvidence = calciteEvidenceByTaskAndStatement(
-    options.calciteCausalEvidence,
-  );
   const semanticDefinitions = new Map<string, SemanticDependencyDefinition>();
   const semanticApplications = new Map<string, SemanticDependencyApplication>();
   const semanticEdges = new Map<string, SemanticDependencyEdge>();
@@ -848,44 +789,10 @@ export function reconcileTargetFieldCausalSlice(
     built: ReturnType<typeof buildPlanInputs>,
   ): void => {
     initializedSemanticTasks.add(taskId);
-    const taskEvidenceEntries = [...calciteEvidence.entries()]
-      .filter(([key]) => key.startsWith(`${taskId}\u0000`));
-    const exactCalciteEvidence = taskEvidenceEntries.length === 1 && built.normalizations.length === 1
-      ? taskEvidenceEntries[0]![1]
-      : [];
     for (const [id, identity] of built.identities)
       setCanonical(allIdentities, id, identity, "PHYSICAL_FIELD");
     for (const nativeNormalization of built.normalizations) {
-      const normalization = exactCalciteEvidence.length === 0
-        ? nativeNormalization
-        : integrateCalciteOperatorEvidence(
-            nativeNormalization,
-            { observations: exactCalciteEvidence },
-            {
-              relevantNativeRelationIds: new Set([
-                ...built.relationIds,
-                ...[...built.relationIds].flatMap((relationId) =>
-                  calciteRelationIdAliases(taskId, relationId),
-                ),
-              ]),
-              // The Calcite gate emits one independently validated request per
-              // Plan Facts relation.  A statement-level output root may be
-              // blocked by an unrelated opaque subquery even though a JOIN or
-              // FILTER on the target slice is fully projectable.  Scope by the
-              // exact parser-owned relation universe, not only by the final
-              // output root; causal traversal still decides relevance later.
-              relevantRequestRootNodeIds: new Set([
-                ...built.relationIds,
-                ...[...built.relationIds].flatMap((relationId) =>
-                  calciteRelationIdAliases(taskId, relationId),
-                ),
-              ]),
-              canonicalPhysicalFieldIds: new Set(allIdentities.keys()),
-              rootTargetFieldIds: nativeNormalization.applications.map(
-                (item) => item.rootTargetFieldId,
-              ),
-            },
-          ).normalization;
+      const normalization = nativeNormalization;
       for (const definition of normalization.definitions)
         setCanonical(
           semanticDefinitions,
@@ -1146,13 +1053,6 @@ export function reconcileTargetFieldCausalSlice(
             fingerprint: legacyHash,
             reference: resolve(options.legacyFieldLineage!),
             artifactType: "FIELD_MULTI_HOP_RECONCILIATION",
-          }] }),
-      ...(options.calciteCausalEvidence === undefined
-        ? {}
-        : { calciteCausalEvidence: [{
-            fingerprint: sha256(readFileSync(resolve(options.calciteCausalEvidence))),
-            reference: resolve(options.calciteCausalEvidence),
-            artifactType: "INDEPENDENT_CALCITE_CAUSAL_EVIDENCE",
           }] }),
     },
     dependencies: {

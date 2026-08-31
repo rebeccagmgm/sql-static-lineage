@@ -123,6 +123,14 @@ describe("target-field causal slice CLI boundaries", () => {
     ])).toThrow("must not overwrite an input evidence file");
   });
 
+  it("rejects attaching independent Calcite causal evidence to the canonical slice", () => {
+    expect(() => parseTargetFieldCausalSliceCli([
+      ...required,
+      "--write-observation-id", "write:task-1:0",
+      "--calcite-causal-evidence", "sidecar-report.json",
+    ])).toThrow("independent-only");
+  });
+
   it("rejects overwriting producer evidence or writing inside facts", () => {
     expect(() => parseTargetFieldCausalSliceCli([
       ...required.slice(0, -2),
