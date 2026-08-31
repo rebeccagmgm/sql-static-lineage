@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { writeTableInput, writeTaskInput } from "../scripts/input/shared/input-pack.ts";
 import { inputPackTaskBatches } from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
-import { runInputPackClosure } from "../scripts/pipeline/input-pack-closure.ts";
+import {
+  runInputPackClosure,
+  runProjectInputPackClosure,
+} from "../scripts/pipeline/input-pack-closure.ts";
 
 const FIXED_NOW = "2026-08-27T00:00:00.000Z";
 
@@ -140,5 +143,87 @@ describe("input pack closure", () => {
     expect(result.status).toBe("COMPLETE");
     expect(result.taskIds).toEqual(["A"]);
     expect(result.discoveredTaskIds).toEqual(["A"]);
+  });
+});
+
+function sharedInputPack(): string {
+  const dataRoot = root();
+  for (const table of [
+    "dm.root_a",
+    "dm.root_b",
+    "dm.shared",
+    "pdata_n.ref_source_table",
+  ])
+    writeTable(dataRoot, table);
+  writeTask(
+    dataRoot,
+    "root-a",
+    "INSERT OVERWRITE TABLE dm.root_a SELECT id FROM dm.shared",
+    "dm.root_a",
+  );
+  writeTask(
+    dataRoot,
+    "root-b",
+    "INSERT OVERWRITE TABLE dm.root_b SELECT id FROM dm.shared",
+    "dm.root_b",
+  );
+  writeTask(
+    dataRoot,
+    "shared-producer",
+    "INSERT OVERWRITE TABLE dm.shared SELECT id FROM pdata_n.ref_source_table",
+    "dm.shared",
+  );
+  return dataRoot;
+}
+
+function terminalConfig() {
+  return {
+    version: "fixture-v1",
+    stopRoles: ["REFERENCE_CONFIG"],
+    roles: {
+      REFERENCE_CONFIG: {
+        qualifiedNameExact: ["pdata_n.ref_source_table"],
+        qualifiedNameTerms: ["ref_source_table"],
+      },
+    },
+  } as const;
+}
+
+describe("shared project Input Pack closure", () => {
+  it("evaluates a shared Task's SQL reads once while retaining both root memberships", () => {
+    const dataRoot = sharedInputPack();
+    const result = runProjectInputPackClosure({
+      rootTaskIds: ["root-a", "root-b"],
+      dataRoot,
+      producerIndexCacheRoot: join(
+        dirname(dataRoot),
+        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index-cache`,
+      ),
+      maxDepth: 5,
+      maxTasksPerRoot: 20,
+      maxUnionTasks: 30,
+      maxRounds: 8,
+      terminalTableConfig: terminalConfig(),
+    });
+
+    expect(result.status).toBe("COMPLETE");
+    expect(result.taskIds).toEqual(["root-a", "root-b", "shared-producer"]);
+    expect(result.roots).toEqual([
+      expect.objectContaining({
+        rootTaskId: "root-a",
+        taskIds: ["root-a", "shared-producer"],
+      }),
+      expect.objectContaining({
+        rootTaskId: "root-b",
+        taskIds: ["root-b", "shared-producer"],
+      }),
+    ]);
+    expect(result.counters).toMatchObject({
+      rootTaskOccurrences: 4,
+      uniqueTasks: 3,
+      taskReadsEvaluated: 3,
+      discoveryQueries: 0,
+      collectionBatches: 0,
+    });
   });
 });
