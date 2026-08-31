@@ -33,10 +33,10 @@ universe、跨 Task propagation、Native 主链和 canonical causal artifacts �
 
 ## 代码量与提交
 
-以 `2403429` 为比较点，主仓本轮 Git diff 为 `+2/-6758`，净减少 6756 行。
-其中 64 行 Native 默认路径保护测试只是目录/描述调整，并非删除；已删除的
-Calcite 专属生产实现、专项测试、旧命令、overlay 字段和主仓历史 fixture 共减少
-其余冗余内容。`package-lock.json` 未变化。
+以 `2403429` 为比较点，排除本轮两份迁移记录文档后，主仓功能/删除 Git diff
+为 `+2/-6760`，净减少 6758 行；文档另增加 118 行。64 行 Native 默认路径保护
+测试只是目录/描述调整，并非删除；其余删除的是 Calcite 专属生产实现、专项测试、
+旧命令、overlay 字段和主仓历史 fixture。`package-lock.json` 未变化。
 
 主仓提交（均在当前分支，未推送）：
 
