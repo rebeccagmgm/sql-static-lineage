@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
 import {
   existsSync,
   lstatSync,
@@ -47,6 +48,11 @@ import {
   isDatePartitionField,
 } from "../../evidence/partition-value-normalizer.ts";
 import { findSqlTargetEvidence } from "../../input/shared/sql-target-evidence.ts";
+import type {
+  LineageAllStageEvent,
+  LineageAllStageId,
+  LineageAllStageReuseStatus,
+} from "../../pipeline/lineage-all.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -290,6 +296,23 @@ export interface TableProducerInputManifest {
   readonly contentHash: string;
 }
 
+export type InputPackManifestCapture = (
+  dataRootInput: string,
+) => TableProducerInputManifest;
+
+/** In-process memo used only by the main lineage pipeline. */
+export interface InputPackManifestMemo {
+  capture(): TableProducerInputManifest;
+  get(): TableProducerInputManifest | undefined;
+  invalidate(): void;
+}
+
+export interface CreateInputPackManifestMemoOptions {
+  readonly capture?: InputPackManifestCapture;
+  readonly generation?: number;
+  readonly now?: () => string;
+}
+
 export interface TableProducerInputChanges {
   readonly status: "INITIAL" | "UNCHANGED" | "CHANGED";
   readonly changedPacks: readonly string[];
@@ -308,6 +331,15 @@ export interface UpdateTableProducerIndexResult {
 
 export interface PinTableProducerIndexOptions {
   readonly now?: () => string;
+  readonly taskId?: string;
+  readonly stageObserver?: (event: LineageAllStageEvent) => void;
+  /**
+   * Explicitly supplied manifest captured and content-hash-validated by the
+   * caller. This opt-in path never discovers a manifest from the cache.
+   */
+  readonly inputManifest?: TableProducerInputManifest;
+  /** Main-chain seam; direct callers keep the original fingerprint behavior. */
+  readonly inputPackManifestMemo?: InputPackManifestMemo;
 }
 
 export interface PinTableProducerIndexResult {
@@ -1393,6 +1425,38 @@ export function buildTableProducerInputManifest(
   if (!Number.isInteger(withoutHash.generation) || withoutHash.generation < 1)
     throw new Error("MANIFEST_GENERATION_INVALID");
   return { ...withoutHash, contentHash: manifestHash(withoutHash) };
+}
+
+export function createInputPackManifestMemo(
+  dataRootInput: string,
+  options: CreateInputPackManifestMemoOptions = {},
+): InputPackManifestMemo {
+  const dataRoot = resolve(dataRootInput);
+  const capture =
+    options.capture ??
+    ((root: string) =>
+      buildTableProducerInputManifest(root, {
+        ...(options.generation === undefined
+          ? {}
+          : { generation: options.generation }),
+        ...(options.now === undefined ? {} : { now: options.now }),
+      }));
+  let manifest: TableProducerInputManifest | undefined;
+  return {
+    capture(): TableProducerInputManifest {
+      if (manifest !== undefined) return manifest;
+      const captured = capture(dataRoot);
+      validateTableProducerInputManifest(captured);
+      manifest = captured;
+      return manifest;
+    },
+    get(): TableProducerInputManifest | undefined {
+      return manifest;
+    },
+    invalidate(): void {
+      manifest = undefined;
+    },
+  };
 }
 
 export function buildTableProducerIndex(
@@ -2592,6 +2656,78 @@ export function updateTableProducerIndex(
   return { index, manifest, changes, reused };
 }
 
+type ClosureProducerIndexStageId = Extract<
+  LineageAllStageId,
+  `input-pack-closure.${string}`
+>;
+
+function stageErrorDetails(error: unknown): Readonly<Record<string, unknown>> {
+  return { error: error instanceof Error ? error.message : String(error) };
+}
+
+function emitProducerIndexStage(
+  options: PinTableProducerIndexOptions,
+  event: LineageAllStageEvent,
+): void {
+  try {
+    options.stageObserver?.(event);
+  } catch {
+    // Observation is best effort and must not change Producer Index semantics.
+  }
+}
+
+function measureProducerIndexStage<T>(
+  options: PinTableProducerIndexOptions,
+  stage: ClosureProducerIndexStageId,
+  action: () => T,
+  reuseStatus: LineageAllStageReuseStatus | ((value: T) => LineageAllStageReuseStatus),
+  details?: Readonly<Record<string, unknown>> | ((value: T) => Readonly<Record<string, unknown>>),
+): T {
+  if (!options.stageObserver) return action();
+  const started = performance.now();
+  emitProducerIndexStage(options, {
+    taskId: options.taskId ?? "UNKNOWN",
+    stage,
+    phase: "start",
+    elapsedMs: 0,
+    status: "STARTED",
+    reuseStatus: "NOT_APPLICABLE",
+  });
+  try {
+    const value = action();
+    const elapsedMs = performance.now() - started;
+    let resolvedReuseStatus: LineageAllStageReuseStatus = "NOT_APPLICABLE";
+    let resolvedDetails: Readonly<Record<string, unknown>> | undefined;
+    try {
+      resolvedReuseStatus = typeof reuseStatus === "function" ? reuseStatus(value) : reuseStatus;
+      resolvedDetails = typeof details === "function" ? details(value) : details;
+    } catch (observationError) {
+      resolvedDetails = stageErrorDetails(observationError);
+    }
+    emitProducerIndexStage(options, {
+      taskId: options.taskId ?? "UNKNOWN",
+      stage,
+      phase: "end",
+      elapsedMs,
+      status: "SUCCESS",
+      reuseStatus: resolvedReuseStatus,
+      details: resolvedDetails,
+    });
+    return value;
+  } catch (error) {
+    emitProducerIndexStage(options, {
+      taskId: options.taskId ?? "UNKNOWN",
+      stage,
+      phase: "end",
+      elapsedMs: performance.now() - started,
+      status: "FAILED",
+      reuseStatus: "NOT_APPLICABLE",
+      details: stageErrorDetails(error),
+    });
+    throw error;
+  }
+}
+
 /**
  * Resolves an immutable Producer Index cache entry for the current Input Pack.
  * Cache entries are keyed by the exact input fingerprint, so a later Input
@@ -2606,46 +2742,97 @@ export function pinTableProducerIndex(
   const dataRoot = resolve(dataRootInput);
   const cacheRoot = resolve(cacheRootInput);
   assertOutputOutsideDataRoot(dataRoot, cacheRoot);
-  const manifest = buildTableProducerInputManifest(dataRoot, {
-    generation: 1,
-    now: options.now,
-  });
-  const snapshotRoot = join(cacheRoot, manifest.inputFingerprint);
-  const indexPath = join(snapshotRoot, "producer-index.json");
-  const manifestPath = join(snapshotRoot, "producer-index.manifest.json");
-  if (existsSync(indexPath) && existsSync(manifestPath)) {
-    try {
-      const index = loadTableProducerIndex(indexPath);
-      const cachedManifest = loadTableProducerInputManifest(manifestPath);
-      if (
-        index.inputFingerprint === manifest.inputFingerprint &&
-        cachedManifest.inputFingerprint === manifest.inputFingerprint
-      )
+  return measureProducerIndexStage(
+    options,
+    "input-pack-closure.producer-index-pin",
+    () => {
+      const manifest =
+        options.inputManifest ??
+        options.inputPackManifestMemo?.get() ??
+        options.inputPackManifestMemo?.capture() ??
+        measureProducerIndexStage(
+          options,
+          "input-pack-closure.input-fingerprint",
+          () => buildTableProducerInputManifest(dataRoot, {
+            generation: 1,
+            now: options.now,
+          }),
+          "NOT_APPLICABLE",
+          (result) => ({
+            inputFingerprint: result.inputFingerprint,
+            packCount: result.packs.length,
+          }),
+        );
+      validateTableProducerInputManifest(manifest);
+      const snapshotRoot = join(cacheRoot, manifest.inputFingerprint);
+      const indexPath = join(snapshotRoot, "producer-index.json");
+      const manifestPath = join(snapshotRoot, "producer-index.manifest.json");
+      const cached = measureProducerIndexStage(
+        options,
+        "input-pack-closure.producer-index-load",
+        () => {
+          if (!existsSync(indexPath) || !existsSync(manifestPath)) return null;
+          try {
+            const index = loadTableProducerIndex(indexPath);
+            const cachedManifest = loadTableProducerInputManifest(manifestPath);
+            if (
+              index.inputFingerprint === manifest.inputFingerprint &&
+              cachedManifest.inputFingerprint === manifest.inputFingerprint &&
+              cachedManifest.contentHash === manifest.contentHash
+            ) return { index, manifest: cachedManifest };
+          } catch {
+            // Rebuild the current fingerprint entry below when either cache file is invalid.
+          }
+          return null;
+        },
+        (result) => result === null ? "NOT_REUSED" : "REUSED",
+        (result) => ({ cacheHit: result !== null }),
+      );
+      if (cached !== null)
         return {
-          index,
-          manifest: cachedManifest,
+          index: cached.index,
+          manifest: cached.manifest,
           inputFingerprint: manifest.inputFingerprint,
           indexPath,
           manifestPath,
           reused: true,
         };
-    } catch {
-      // Rebuild the current fingerprint entry below when either cache file is invalid.
-    }
-  }
-  const index = buildTableProducerIndex(dataRoot, { now: options.now });
-  if (index.inputFingerprint !== manifest.inputFingerprint)
-    throw new Error("INPUT_CHANGED_DURING_PINNED_INDEX_BUILD");
-  writeTableProducerIndex(indexPath, index);
-  writeTableProducerInputManifest(manifestPath, manifest);
-  return {
-    index,
-    manifest,
-    inputFingerprint: manifest.inputFingerprint,
-    indexPath,
-    manifestPath,
-    reused: false,
-  };
+      if (options.inputManifest !== undefined)
+        throw new Error("EXPLICIT_INPUT_MANIFEST_CACHE_MISS");
+      const index = measureProducerIndexStage(
+        options,
+        "input-pack-closure.producer-index-build",
+        () => {
+          const built = buildTableProducerIndex(dataRoot, { now: options.now });
+          if (built.inputFingerprint !== manifest.inputFingerprint)
+            throw new Error("INPUT_CHANGED_DURING_PINNED_INDEX_BUILD");
+          writeTableProducerIndex(indexPath, built);
+          writeTableProducerInputManifest(manifestPath, manifest);
+          return built;
+        },
+        "NOT_REUSED",
+        (result) => ({
+          confirmedProducerEdges: result.counts.confirmedProducerEdges,
+          taskPacksIndexed: result.counts.taskPacksIndexed,
+          tablePacksIndexed: result.counts.tablePacksIndexed,
+        }),
+      );
+      return {
+        index,
+        manifest,
+        inputFingerprint: manifest.inputFingerprint,
+        indexPath,
+        manifestPath,
+        reused: false,
+      };
+    },
+    (result) => result.reused ? "REUSED" : "NOT_REUSED",
+    (result) => ({
+      inputFingerprint: result.inputFingerprint,
+      operation: result.reused ? "load" : "build",
+      indexPath: result.indexPath,
+    }),
+  );
 }
 
 export function assertOutputOutsideDataRoot(

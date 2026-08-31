@@ -182,8 +182,8 @@ describe("lineage:all", () => {
       taskIds: ["181058"],
       dependencies: {
         autofill: ({ taskId }) => ({
-          taskIds: [taskId],
-          discoveredTaskIds: [taskId],
+          taskIds: [taskId, "78585"],
+          discoveredTaskIds: [taskId, "78585"],
           collectedTaskIds: [],
           rounds: 1,
           status: "COMPLETE",

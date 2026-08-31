@@ -30,6 +30,7 @@ import {
   reconcileMultiHopBatch,
   reconcileMultiHop,
   validateMultiHopReconciliation,
+  type MultiHopBatchItem,
 } from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/consumer/multi-hop/task-read-evidence.ts";
 import type { TerminalTableConfig } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
@@ -718,6 +719,44 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
     });
 
     expect(semanticSnapshot(prepared!)).toEqual(semanticSnapshot(standalone));
+  });
+
+  it("isolates a root-local snapshot failure while retaining both batch items", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.input");
+    writeReader(root, "root-a", ["lake.input"]);
+    writeReader(root, "root-b", ["lake.input"]);
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+    const rootOneHopA = rootOneHop(root, index, "root-a");
+
+    const batch = reconcileMultiHopBatch(
+      [
+        { taskId: "root-a", rootOneHop: rootOneHopA },
+        // Deliberately attach root-a's snapshot to root-b.  This is a
+        // root-local validation failure, not a shared preparation failure.
+        { taskId: "root-b", rootOneHop: rootOneHopA },
+      ],
+      {
+        dataRoot: root,
+        producerIndex: index,
+        maxDepth: 3,
+        maxTasks: 100,
+        maxEdges: 500,
+        now: () => FIXED_NOW,
+      },
+    ) as readonly MultiHopBatchItem[];
+
+    expect(batch).toHaveLength(2);
+    expect(batch[0]).toMatchObject({
+      rootTaskId: "root-a",
+      artifactType: "TABLE_MULTI_HOP_RECONCILIATION",
+    });
+    expect(batch[1]).toMatchObject({
+      rootTaskId: "root-b",
+      status: "FAILED",
+      evidenceStatus: "UNRESOLVED",
+      error: "ROOT_ONE_HOP_INVALID",
+    });
   });
 
   it("does not recurse through a mutation-only table write", () => {

@@ -10,8 +10,10 @@ import {
   type PhysicalTableCatalog,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import {
+  canonicalHash,
   writeTableInput,
   writeTaskInput,
+  type JsonValue,
 } from "../scripts/input/shared/input-pack.ts";
 import {
   canonicalizeFieldLineageArtifact,
@@ -20,17 +22,21 @@ import {
 import { reconcileFieldLineage } from "../scripts/reconcile/consumer/field-lineage/field-lineage.ts";
 import { formatFieldLineageSummary } from "../scripts/reconcile/consumer/field-lineage/format-field-lineage.ts";
 import { runFieldLineageCli } from "../scripts/reconcile/consumer/field-lineage/reconcile-field-lineage.ts";
+import { createExpansionCacheCounters } from "../scripts/reconcile/consumer/field-lineage/expansion-cache-service.ts";
 import {
   createSyntheticFieldLineageInputPack,
   syntheticTableLineage,
   syntheticTableLineageWithFacts,
 } from "./fixtures/field-lineage/cases.ts";
 
-function fixture(rootTaskName?: string) {
+function fixture(rootTaskName?: string, producerTaskCategory?: string) {
   const parent = mkdtempSync(join(tmpdir(), "field-lineage-"));
   const dataRoot = join(parent, "data");
   const factsRoot = join(parent, "facts");
-  createSyntheticFieldLineageInputPack(dataRoot, { rootTaskName });
+  createSyntheticFieldLineageInputPack(dataRoot, {
+    rootTaskName,
+    producerTaskCategory,
+  });
   runInputPackMachineFacts({
     dataRoot,
     taskIds: ["100", "200", "300", "400"],
@@ -110,6 +116,127 @@ describe("field multi-hop lineage", () => {
     const summary = formatFieldLineageSummary(artifact);
     expect(summary).toContain("字段 VALUE_FLOW Task 树");
     expect(summary).toContain("ROWSET_CONTROL");
+  });
+
+  it("applies maxDepth in traversal while preserving the depth gap", () => {
+    const f = fixture();
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: syntheticTableLineageWithFacts(
+        f.factsRoot,
+        syntheticTableLineage(),
+      ),
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 0,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+
+    expect(artifact.gaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reasonCode: "MAX_DEPTH_REACHED" }),
+      ]),
+    );
+    expect(artifact.edges.some((edge) => edge.producerTaskId !== null)).toBe(false);
+  });
+
+  it("preserves the max-depth gap for a skipped primary producer with cache enabled", () => {
+    const f = fixture(undefined, "checkdbflag");
+    const tableLineageWithoutHash = {
+      ...syntheticTableLineageWithFacts(f.factsRoot, syntheticTableLineage()),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const tableLineage = {
+      ...tableLineageWithoutHash,
+      contentHash: canonicalHash(
+        tableLineageWithoutHash as unknown as JsonValue,
+        ["generatedAt", "contentHash"],
+      ),
+    };
+    const baseOptions = {
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage,
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial" as const,
+      maxDepth: 0,
+      maxStates: 100,
+      maxPaths: 100,
+    };
+    const uncached = reconcileFieldLineage(baseOptions);
+    const counters = createExpansionCacheCounters();
+    const cached = reconcileFieldLineage({
+      ...baseOptions,
+      expansionCacheRoot: join(f.dataRoot, "..", "expansion-cache"),
+      expansionCacheCounters: counters,
+    });
+    const warm = reconcileFieldLineage({
+      ...baseOptions,
+      expansionCacheRoot: join(f.dataRoot, "..", "expansion-cache"),
+      expansionCacheCounters: counters,
+    });
+
+    expect(uncached.gaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reasonCode: "MAX_DEPTH_REACHED" }),
+      ]),
+    );
+    expect(cached.contentHash).toBe(uncached.contentHash);
+    expect(warm.contentHash).toBe(uncached.contentHash);
+    expect(cached.edges.some((edge) => edge.producerTaskId !== null)).toBe(false);
+    expect(warm.edges.some((edge) => edge.producerTaskId !== null)).toBe(false);
+    expect(counters.hits).toBeGreaterThan(0);
+    expect(counters.writes).toBeGreaterThan(0);
+  });
+
+  it("keeps cached and uncached artifacts identical and reports warm hits", () => {
+    const f = fixture();
+    const tableLineageWithoutHash = {
+      ...syntheticTableLineageWithFacts(f.factsRoot, syntheticTableLineage()),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const tableLineage = {
+      ...tableLineageWithoutHash,
+      contentHash: canonicalHash(
+        tableLineageWithoutHash as unknown as JsonValue,
+        ["generatedAt", "contentHash"],
+      ),
+    };
+    const baseOptions = {
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage,
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial" as const,
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    };
+    const uncached = reconcileFieldLineage(baseOptions);
+    const counters = createExpansionCacheCounters();
+    const cached = reconcileFieldLineage({
+      ...baseOptions,
+      expansionCacheRoot: join(f.dataRoot, "..", "expansion-cache"),
+      expansionCacheCounters: counters,
+    });
+    const warm = reconcileFieldLineage({
+      ...baseOptions,
+      expansionCacheRoot: join(f.dataRoot, "..", "expansion-cache"),
+      expansionCacheCounters: counters,
+    });
+
+    expect(cached.contentHash).toBe(uncached.contentHash);
+    expect(warm.contentHash).toBe(uncached.contentHash);
+    expect(counters.hits).toBeGreaterThan(0);
+    expect(counters.writes).toBeGreaterThan(0);
   });
 
   it("uses the Task Pack default schema before resolving a bare field input", () => {
@@ -372,6 +499,7 @@ describe("field multi-hop lineage", () => {
       maxPaths: 100,
       output: outputPath,
       timingOutput: timingPath,
+      expansionCacheRoot: join(parent, "expansion-cache"),
       prepareFacts: true,
     });
 
@@ -379,6 +507,14 @@ describe("field multi-hop lineage", () => {
     expect(timing.schema_version).toBe("field-lineage-timing-v1");
     expect(timing.counters.machine_facts_prepare_batches).toBeGreaterThan(0);
     expect(timing.counters.reconcile_calls).toBeGreaterThan(0);
+    for (const counter of [
+      "expansion_cache_hits",
+      "expansion_cache_misses",
+      "expansion_cache_writes",
+      "expansion_cache_stale",
+      "expansion_cache_corrupt",
+    ])
+      expect(timing.counters[counter]).toEqual(expect.any(Number));
     expect(timing.phases_ms.machine_facts_index_ms).toBeGreaterThanOrEqual(0);
 
     const indexedTaskIds = readFileSync(

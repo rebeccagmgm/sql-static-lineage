@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { performance } from "node:perf_hooks";
 
 import {
 	indexTaskInputPacks,
@@ -20,8 +21,10 @@ import {
 import {
 	createCurrentTaskBundleReader,
 	type CurrentBundleLoad,
+	type CurrentTaskBundleReader,
 	type JsonRecord,
 } from "../../../query/current-task-bundle.ts";
+import type { FieldLineageBuildTableDependency } from "./field-lineage-build-contract.ts";
 import {
   inferTaskDefaultSchema,
   type TaskDefaultSchema,
@@ -48,18 +51,68 @@ import {
 } from "./physical-field-resolver.ts";
 import {
   createPhysicalFieldExpander,
-  type PhysicalFieldExpander,
+  type PhysicalFieldExpanderLike,
 } from "./physical-field-expander.ts";
+import {
+  createCachedPhysicalFieldExpander,
+  type ExpansionCacheCounters,
+} from "./expansion-cache-service.ts";
 
-type TaskPack = {
-  readonly document: TaskDocument & JsonRecord;
-  readonly path: string;
-  readonly target: PhysicalTableCatalogEntry | null;
+export type TaskPack = {
+	readonly document: TaskDocument & JsonRecord;
+	readonly path: string;
+	readonly target: PhysicalTableCatalogEntry | null;
 };
 
-type TaskPackLookup = {
+export type TaskPackLookup = {
 	readonly get: (taskId: string) => TaskPack | undefined;
 };
+
+export interface FieldLineageContextTimings {
+	readonly taskPathIndexMs: number;
+	readonly tableCatalogMs: number;
+	readonly factsReaderMs: number;
+}
+
+export interface FieldLineageDependencyTimings {
+	taskPackLoadMs: number;
+	factsLoadMs: number;
+}
+
+export type FieldLineageTableDependency = FieldLineageBuildTableDependency;
+
+export interface FieldLineageSharedContext {
+	readonly dataRoot: string;
+	readonly factsRoot: string;
+	readonly tableCatalog: PhysicalTableCatalog;
+	readonly taskPathIndex: ReadonlyMap<string, readonly string[]>;
+	readonly taskPacks: TaskPackLookup;
+	readonly factsReader: CurrentTaskBundleReader;
+	readonly timings: FieldLineageContextTimings;
+}
+
+export interface FieldLineageDependencyCapture {
+	readonly taskPacks: TaskPackLookup;
+	readonly loadFacts: (taskId: string) => CurrentBundleLoad;
+	readonly consultedTaskIds: ReadonlySet<string>;
+	readonly tableDependencies: ReadonlyMap<string, FieldLineageTableDependency>;
+	readonly noteTableDependency: (value: FieldLineageTableDependency) => void;
+	readonly noteCatalogTable: (value: PhysicalTableCatalogEntry) => void;
+	readonly timings: FieldLineageDependencyTimings;
+}
+
+export function fieldLineageTableDependency(
+	entry: PhysicalTableCatalogEntry,
+): FieldLineageTableDependency {
+	// Accessing columns forces lazy DDL verification before the dependency is
+	// recorded. A cached hit therefore depends on both the Table Pack and DDL.
+	void entry.columns;
+	return {
+		physicalTableKey: physicalTableKey(entry),
+		tableContentHash: entry.tableContentHash,
+		ddlSha256: entry.ddlSha256,
+	};
+}
 
 type TableLineageArtifact = JsonRecord & {
   readonly rootTaskId?: string;
@@ -95,8 +148,13 @@ export interface ReconcileFieldLineageOptions {
   readonly factsPolicy: FactsPolicy;
   readonly maxDepth: number;
   readonly maxStates: number;
-  readonly maxPaths: number;
-  readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
+	readonly maxPaths: number;
+	readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
+	readonly sharedContext?: FieldLineageSharedContext;
+	readonly dependencyCapture?: FieldLineageDependencyCapture;
+	readonly dependencyTimings?: FieldLineageDependencyTimings;
+	readonly expansionCacheRoot?: string;
+  readonly expansionCacheCounters?: ExpansionCacheCounters;
   readonly now?: () => string;
 }
 
@@ -239,6 +297,100 @@ function loadTaskPacks(
 	};
 }
 
+export interface FieldLineageSharedContextOptions {
+	readonly tableCatalog?: PhysicalTableCatalog;
+	readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
+}
+
+/**
+ * Build the immutable, read-only context shared by a batch of field requests.
+ *
+ * The context owns the expensive directory index, physical catalog, Task Pack
+ * lookup and Current Bundle reader. Individual reconciliations still create
+ * their own graph state, but they no longer rebuild these upstream views.
+ */
+export function createFieldLineageSharedContext(
+	dataRootInput: string,
+	factsRootInput: string,
+	options: FieldLineageSharedContextOptions = {},
+): FieldLineageSharedContext {
+	const dataRoot = resolve(dataRootInput);
+	const factsRoot = resolve(factsRootInput);
+	const taskPathIndexStarted = performance.now();
+	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(dataRoot);
+	const taskPathIndexMs = performance.now() - taskPathIndexStarted;
+	const tableCatalogStarted = performance.now();
+	const tableCatalog =
+		options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
+	const tableCatalogMs = performance.now() - tableCatalogStarted;
+	const factsReaderStarted = performance.now();
+	const factsReader = createCurrentTaskBundleReader(factsRoot, {
+		requestedFiles: FIELD_LINEAGE_BUNDLE_FILES,
+		validateOutputHashes: "requested",
+	});
+	const factsReaderMs = performance.now() - factsReaderStarted;
+	return {
+		dataRoot,
+		factsRoot,
+		tableCatalog,
+		taskPathIndex,
+		taskPacks: loadTaskPacks(dataRoot, tableCatalog, taskPathIndex),
+		factsReader,
+		timings: { taskPathIndexMs, tableCatalogMs, factsReaderMs },
+	};
+}
+
+/**
+ * Wrap a shared context so a reconciliation records every Task Pack and Facts
+ * lookup it consults. The consulted set is the exact dependency frontier used
+ * to validate an artifact revision before it is reused.
+ */
+export function beginFieldLineageDependencyCapture(
+	context: FieldLineageSharedContext,
+	timings: FieldLineageDependencyTimings = {
+		taskPackLoadMs: 0,
+		factsLoadMs: 0,
+	},
+): FieldLineageDependencyCapture {
+	const consultedTaskIds = new Set<string>();
+	const tableDependencies = new Map<string, FieldLineageTableDependency>();
+	const noteTableDependency = (value: FieldLineageTableDependency): void => {
+		tableDependencies.set(value.physicalTableKey, value);
+	};
+	const noteCatalogTable = (value: PhysicalTableCatalogEntry): void => {
+		noteTableDependency(fieldLineageTableDependency(value));
+	};
+	return {
+		taskPacks: {
+			get: (taskId: string): TaskPack | undefined => {
+				consultedTaskIds.add(taskId);
+				const started = performance.now();
+				try {
+					const pack = context.taskPacks.get(taskId);
+					if (pack?.target) noteCatalogTable(pack.target);
+					return pack;
+				} finally {
+					timings.taskPackLoadMs += performance.now() - started;
+				}
+			},
+		},
+		loadFacts: (taskId: string): CurrentBundleLoad => {
+			consultedTaskIds.add(taskId);
+			const started = performance.now();
+			try {
+				return context.factsReader.load(taskId);
+			} finally {
+				timings.factsLoadMs += performance.now() - started;
+			}
+		},
+		consultedTaskIds,
+		tableDependencies,
+		noteTableDependency,
+		noteCatalogTable,
+		timings,
+	};
+}
+
 function excludedTaskDetail(
   dataRoot: string,
   taskId: string,
@@ -378,8 +530,94 @@ function assertRootWriteObservation(
       normalizeName(String(record.physical_dataset ?? "")) ===
         normalizeName(target.qualifiedName),
   );
-  if (!matched)
-    throw new Error(`ROOT_WRITE_OBSERVATION_NOT_FOUND:${writeObservationId}`);
+	if (!matched)
+		throw new Error(`ROOT_WRITE_OBSERVATION_NOT_FOUND:${writeObservationId}`);
+}
+
+export interface FieldLineageRootSelection {
+	readonly rootPack: TaskPack;
+	readonly rootTarget: PhysicalTableCatalogEntry;
+	readonly rootFacts: CurrentBundleLoad;
+	readonly rootFieldSelection: "EXPLICIT" | "ALL_TARGET_COLUMNS";
+	readonly rootFields: readonly string[];
+	readonly rootWriteObservationIds: readonly string[];
+}
+
+export function resolveFieldLineageRoot(
+	context: FieldLineageSharedContext,
+	dependencyCapture: FieldLineageDependencyCapture,
+	options: Pick<
+		ReconcileFieldLineageOptions,
+		"rootTaskId" | "rootTable" | "rootFields" | "rootWriteObservationIds"
+	>,
+): FieldLineageRootSelection {
+	const rootPack = dependencyCapture.taskPacks.get(options.rootTaskId);
+	if (!rootPack)
+		throw new Error(`ROOT_TASK_INPUT_PACK_MISSING:${options.rootTaskId}`);
+	if (!rootPack.target)
+		throw new Error(`ROOT_TARGET_IDENTITY_UNRESOLVED:${options.rootTaskId}`);
+	const rootTarget = rootPhysicalTarget(
+		context.tableCatalog,
+		rootPack,
+		options.rootTable,
+	);
+	dependencyCapture.noteCatalogTable(rootTarget);
+	if (rootPack.target) dependencyCapture.noteCatalogTable(rootPack.target);
+	const rootFieldSelection =
+		options.rootFields.length > 0 ? "EXPLICIT" : "ALL_TARGET_COLUMNS";
+	const rootFields = [
+		...new Set(
+			(options.rootFields.length > 0
+				? options.rootFields
+				: rootTarget.columns
+			)
+				.map(normalizeName)
+				.filter(Boolean),
+		),
+	].sort(compareText);
+	if (rootFields.length === 0)
+		throw new Error("ROOT_TARGET_SCHEMA_EMPTY");
+	const rootFacts = dependencyCapture.loadFacts(options.rootTaskId);
+	const rootObservationIds = writeObservationIdsForTarget(
+		rootFacts,
+		options.rootTaskId,
+		rootTarget,
+	);
+	const rootTargetMatchesPlatformTarget =
+		normalizeName(rootPack.target.qualifiedName) ===
+		normalizeName(rootTarget.qualifiedName);
+	const selectedRootObservationIds = options.rootWriteObservationIds
+		? [
+				...new Set(
+					options.rootWriteObservationIds
+						.map((id) => id.trim())
+						.filter(Boolean),
+				),
+			].sort(compareText)
+		: rootTargetMatchesPlatformTarget
+			? rootObservationIds
+			: [];
+	if (selectedRootObservationIds.length === 0)
+		throw new Error(
+			rootObservationIds.length === 0
+				? `ROOT_WRITE_OBSERVATION_NOT_FOUND_FOR_TARGET:${normalizeName(rootTarget.qualifiedName)}`
+				: `ROOT_WRITE_OBSERVATION_REQUIRED:${normalizeName(rootTarget.qualifiedName)}`,
+		);
+	for (const writeObservationId of selectedRootObservationIds)
+		assertRootWriteObservation(
+			rootFacts,
+			options.rootTaskId,
+			rootTarget,
+			writeObservationId,
+		);
+	return {
+		rootPack,
+		rootTarget,
+		rootFacts,
+		rootFieldSelection,
+		rootFields,
+		rootWriteObservationIds: selectedRootObservationIds,
+	};
 }
 
 function taskLocalMaterializationBindingIds(
@@ -480,6 +718,7 @@ function sourceFields(
   taskId: string,
   taskTarget: PhysicalTableCatalogEntry,
   defaultSchema: TaskDefaultSchema | null,
+	noteTableDependency: (entry: PhysicalTableCatalogEntry) => void,
 ): {
   fields: PhysicalFieldIdentity[];
   unresolved: { table: string; column: string; reason: string }[];
@@ -496,6 +735,7 @@ function sourceFields(
     const resolution = resolvePhysicalInputField(
       {
         catalog,
+		noteTableDependency,
         taskId,
         defaultSchema,
         fallbackTable: taskTarget,
@@ -581,6 +821,7 @@ function rowsetControlsFor(
 	catalog: PhysicalTableCatalog,
 	defaultSchema: TaskDefaultSchema | null,
 	status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+	noteTableDependency: (entry: PhysicalTableCatalogEntry) => void,
 	indexes: BundleIndexes = bundleIndexesFor(load),
 ): RowsetControlAnnotation[] {
 	const ancestry = new Set<string>();
@@ -603,6 +844,7 @@ function rowsetControlsFor(
       const resolution = resolvePhysicalInputField(
         {
           catalog,
+			noteTableDependency,
           taskId: node.taskId,
           defaultSchema,
           fallbackTable: node.field,
@@ -695,31 +937,34 @@ export function reconcileFieldLineage(
   )
     throw new Error("TABLE_LINEAGE_ROOT_MISMATCH");
 
-  const dataRoot = resolve(options.dataRoot);
-	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
-	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(dataRoot);
-	const taskPacks = loadTaskPacks(dataRoot, catalog, taskPathIndex);
-  const rootPack = taskPacks.get(options.rootTaskId);
-  if (!rootPack)
-    throw new Error(`ROOT_TASK_INPUT_PACK_MISSING:${options.rootTaskId}`);
-  if (!rootPack.target)
-    throw new Error(`ROOT_TARGET_IDENTITY_UNRESOLVED:${options.rootTaskId}`);
-  const rootTarget = rootPhysicalTarget(catalog, rootPack, options.rootTable);
-
-  const rootFieldSelection =
-    options.rootFields.length > 0 ? "EXPLICIT" : "ALL_TARGET_COLUMNS";
-  const rootFields = [
-    ...new Set(
-      (options.rootFields.length > 0
-        ? options.rootFields
-        : rootTarget.columns
-      )
-        .map(normalizeName)
-        .filter(Boolean),
-    ),
-  ].sort(compareText);
-  if (rootFields.length === 0)
-    throw new Error("ROOT_TARGET_SCHEMA_EMPTY");
+  const sharedContext =
+		options.sharedContext ??
+		createFieldLineageSharedContext(options.dataRoot, options.factsRoot, {
+			tableCatalog: options.tableCatalog,
+			taskPathIndex: options.taskPathIndex,
+		});
+	const dependencyCapture =
+		options.dependencyCapture ??
+		beginFieldLineageDependencyCapture(
+			sharedContext,
+			options.dependencyTimings,
+		);
+	const dataRoot = sharedContext.dataRoot;
+	const catalog = sharedContext.tableCatalog;
+	const taskPacks = dependencyCapture.taskPacks;
+	const rootSelection = resolveFieldLineageRoot(
+		sharedContext,
+		dependencyCapture,
+		options,
+	);
+	const {
+		rootPack,
+		rootTarget,
+		rootFacts,
+		rootFieldSelection,
+		rootFields,
+		rootWriteObservationIds: selectedRootObservationIds,
+	} = rootSelection;
 
   const nodes = new Map<string, FieldLineageNode>();
   const edges = new Map<string, FieldLineageEdge>();
@@ -734,13 +979,8 @@ export function reconcileFieldLineage(
 	>();
 	let pathCount = 0;
 	let startedRoots = 0;
-
-	const factsReader = createCurrentTaskBundleReader(options.factsRoot, {
-		requestedFiles: FIELD_LINEAGE_BUNDLE_FILES,
-		validateOutputHashes: "requested",
-	});
-	const loadFacts = (taskId: string): CurrentBundleLoad => factsReader.load(taskId);
-  const physicalFieldExpander: PhysicalFieldExpander = createPhysicalFieldExpander({
+	const loadFacts = dependencyCapture.loadFacts;
+  const uncachedPhysicalFieldExpander = createPhysicalFieldExpander({
     dataRoot,
     catalog,
     tableLineage: options.tableLineage,
@@ -748,33 +988,19 @@ export function reconcileFieldLineage(
     loadFacts,
     factsPolicy: options.factsPolicy,
   });
-  const rootFacts = loadFacts(options.rootTaskId);
-  const rootObservationIds = writeObservationIdsForTarget(
-    rootFacts,
-    options.rootTaskId,
-    rootTarget,
-  );
-  const rootTargetMatchesPlatformTarget =
-    normalizeName(rootPack.target.qualifiedName) ===
-    normalizeName(rootTarget.qualifiedName);
-  const selectedRootObservationIds = options.rootWriteObservationIds
-    ? [...new Set(options.rootWriteObservationIds.map((id) => id.trim()).filter(Boolean))].sort(compareText)
-    : rootTargetMatchesPlatformTarget
-      ? rootObservationIds
-      : [];
-  if (selectedRootObservationIds.length === 0)
-    throw new Error(
-      rootObservationIds.length === 0
-        ? `ROOT_WRITE_OBSERVATION_NOT_FOUND_FOR_TARGET:${normalizeName(rootTarget.qualifiedName)}`
-        : `ROOT_WRITE_OBSERVATION_REQUIRED:${normalizeName(rootTarget.qualifiedName)}`,
-    );
-  for (const writeObservationId of selectedRootObservationIds)
-    assertRootWriteObservation(
-      rootFacts,
-      options.rootTaskId,
-      rootTarget,
-      writeObservationId,
-    );
+  const physicalFieldExpander: PhysicalFieldExpanderLike =
+    options.expansionCacheRoot
+      ? createCachedPhysicalFieldExpander(uncachedPhysicalFieldExpander, {
+          cacheRoot: options.expansionCacheRoot,
+          dataRoot,
+          factsRoot: options.factsRoot,
+          tableLineage: options.tableLineage,
+          taskPacks,
+          loadFacts,
+          factsPolicy: options.factsPolicy,
+          counters: options.expansionCacheCounters,
+        })
+      : uncachedPhysicalFieldExpander;
   const rootWriteObservationSet = new Set(selectedRootObservationIds);
   const addGap = (gap: FieldLineageGap): void => {
     gaps.set(gap.gapId, gap);
@@ -1062,6 +1288,7 @@ export function reconcileFieldLineage(
       catalog,
       taskDefaultSchema,
       evidenceStatus,
+	  dependencyCapture.noteCatalogTable,
     ))
       controls.set(control.controlId, control);
 
@@ -1072,6 +1299,7 @@ export function reconcileFieldLineage(
       current.taskId,
       pack.target,
       taskDefaultSchema,
+	  dependencyCapture.noteCatalogTable,
     );
     for (const [kind, records] of [
       [
@@ -1224,10 +1452,14 @@ export function reconcileFieldLineage(
         source,
         expressionText: String(expression.expression_text ?? ""),
         expression,
-        depth: current.depth,
-        maxDepth: options.maxDepth,
       });
-      for (const expansionGap of expansion.gaps) addGap(expansionGap);
+      const depthReached = current.depth >= options.maxDepth;
+      const primaryProducerIds = new Set(
+        expansion.reachablePrimaryProducerTaskIds,
+      );
+      for (const expansionGap of expansion.gaps)
+        if (!depthReached || !primaryProducerIds.has(expansionGap.taskId))
+          addGap(expansionGap);
       for (const candidate of expansion.candidates)
         candidates.set(candidate.candidateId, {
           ...candidate,
@@ -1238,6 +1470,21 @@ export function reconcileFieldLineage(
         ...current.active,
         currentStateKey,
       ]);
+      if (depthReached) {
+        for (const producerTaskId of primaryProducerIds) {
+          addGap({
+            gapId: `gap:${sourceId}:max_depth_reached:${current.taskId}`,
+            taskId: current.taskId,
+            nodeId: sourceId,
+            field: source,
+            reasonCode: "MAX_DEPTH_REACHED",
+            message: `maximum depth ${options.maxDepth} reached before Task ${producerTaskId}`,
+            evidenceStatus: "UNRESOLVED",
+            evidenceRefs: [],
+          });
+        }
+        continue;
+      }
       for (const producer of expansion.producers) {
         if (!producer.producerField || !producer.shouldRecurse) continue;
         const nextBindings = producer.producerBindings.length > 0

@@ -61,8 +61,6 @@ export interface PhysicalFieldExpansionRequest {
   readonly source: PhysicalFieldIdentity;
   readonly expressionText: string;
   readonly expression?: JsonRecord;
-  readonly depth: number;
-  readonly maxDepth: number;
 }
 
 export interface PhysicalFieldProducerExpansion {
@@ -81,6 +79,10 @@ export interface PhysicalFieldProducerExpansion {
 export interface PhysicalFieldExpansion {
   readonly classified: boolean;
   readonly ambiguous: boolean;
+  /** Producer Task Packs actually consulted while making this expansion decision. */
+  readonly consultedProducerTaskIds: readonly string[];
+  /** Primary producers that passed relation matching before Pack/skip processing. */
+  readonly reachablePrimaryProducerTaskIds: readonly string[];
   readonly producers: readonly PhysicalFieldProducerExpansion[];
   readonly candidates: readonly {
     readonly candidateId: string;
@@ -535,8 +537,10 @@ function producerTargetsConsumerTable(
   taskPacks: PhysicalFieldExpanderTaskPackLookup,
   consumerTaskId: string,
   producerTaskId: string,
+  onProducerTaskConsulted?: (taskId: string) => void,
 ): boolean {
   const consumerTarget = taskPacks.get(consumerTaskId)?.target;
+  onProducerTaskConsulted?.(producerTaskId);
   const producerTarget = taskPacks.get(producerTaskId)?.target;
   return (
     consumerTarget !== null &&
@@ -606,9 +610,11 @@ function producerMatchesField(
   consumerTaskId: string,
   producerTaskId: string,
   field: PhysicalFieldIdentity,
+  onProducerTaskConsulted?: (taskId: string) => void,
 ): boolean {
   if (!producerRelationMatchesField(context, consumerTaskId, producerTaskId, field))
     return false;
+  onProducerTaskConsulted?.(producerTaskId);
   const target = context.taskPacks.get(producerTaskId)?.target;
   if (!target) return true;
   if (physicalTableKey(target) !== physicalTableKey(field)) return false;
@@ -921,10 +927,21 @@ function gap(
   };
 }
 
-export class PhysicalFieldExpander {
+export interface PhysicalFieldExpanderLike {
+  readonly expand: (
+    request: PhysicalFieldExpansionRequest,
+  ) => PhysicalFieldExpansion;
+}
+
+export class PhysicalFieldExpander implements PhysicalFieldExpanderLike {
   public constructor(private readonly context: PhysicalFieldExpanderContext) {}
 
   public expand(request: PhysicalFieldExpansionRequest): PhysicalFieldExpansion {
+    const consultedProducerTaskIds = new Set<string>();
+    const reachablePrimaryProducerTaskIds = new Set<string>();
+    const noteProducerTaskConsulted = (taskId: string): void => {
+      consultedProducerTaskIds.add(taskId);
+    };
     const selected = selectBridges(
       this.context.tableLineage,
       request.consumerTaskId,
@@ -964,6 +981,8 @@ export class PhysicalFieldExpander {
       return {
         classified: selected.classified,
         ambiguous: true,
+        consultedProducerTaskIds: [...consultedProducerTaskIds].sort(compareText),
+        reachablePrimaryProducerTaskIds: [...reachablePrimaryProducerTaskIds].sort(compareText),
         producers: [],
         candidates: [...candidates.values()].sort((left, right) =>
           compareText(left.candidateId, right.candidateId),
@@ -997,14 +1016,22 @@ export class PhysicalFieldExpander {
           "table-level artifact has no one-hop producer decision for this Task",
         ),
       );
-      return { classified: selected.classified, ambiguous: selected.ambiguous, producers: [], candidates: [], gaps };
+      return {
+        classified: selected.classified,
+        ambiguous: selected.ambiguous,
+        consultedProducerTaskIds: [...consultedProducerTaskIds].sort(compareText),
+        reachablePrimaryProducerTaskIds: [...reachablePrimaryProducerTaskIds].sort(compareText),
+        producers: [],
+        candidates: [],
+        gaps,
+      };
     }
 
     const allDecisionIds = [...new Set([...decision.primary, ...decision.additional, ...decision.unknown])].filter(Boolean);
     const sameTableProducerIds = allDecisionIds.filter(
       (producerTaskId) =>
-        producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source) &&
-        producerTargetsConsumerTable(this.context.taskPacks, request.consumerTaskId, producerTaskId),
+        producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source, noteProducerTaskConsulted) &&
+        producerTargetsConsumerTable(this.context.taskPacks, request.consumerTaskId, producerTaskId, noteProducerTaskConsulted),
     );
     const candidates = new Map<string, PhysicalFieldExpansion["candidates"][number]>();
     const addCandidate = (producerTaskId: string, reasonCode: string): void => {
@@ -1020,10 +1047,10 @@ export class PhysicalFieldExpander {
     for (const producerTaskId of sameTableProducerIds)
       addCandidate(producerTaskId, "SAME_PHYSICAL_TABLE_PRODUCER_NOT_RECURSED");
     for (const producerTaskId of decision.additional.filter((taskId) => !sameTableProducerIds.includes(taskId)))
-      if (producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source))
+      if (producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source, noteProducerTaskConsulted))
         addCandidate(producerTaskId, "ONE_HOP_ADDITIONAL_NOT_RECURSED");
     for (const producerTaskId of decision.unknown.filter((taskId) => !sameTableProducerIds.includes(taskId))) {
-      if (!producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source)) continue;
+      if (!producerMatchesField(this.context, request.consumerTaskId, producerTaskId, request.source, noteProducerTaskConsulted)) continue;
       addCandidate(producerTaskId, "ONE_HOP_UNKNOWN_NOT_RECURSED");
       const unknownGap = gap(
         request,
@@ -1046,22 +1073,15 @@ export class PhysicalFieldExpander {
         request.source,
       );
       if (!relationMatches) continue;
+      reachablePrimaryProducerTaskIds.add(producerTaskId);
       const fieldMatches = producerMatchesField(
         this.context,
         request.consumerTaskId,
         producerTaskId,
         request.source,
+        noteProducerTaskConsulted,
       );
-      if (request.depth >= request.maxDepth) {
-        gaps.push(
-          gap(
-            request,
-            "MAX_DEPTH_REACHED",
-            `maximum depth ${request.maxDepth} reached before Task ${producerTaskId}`,
-          ),
-        );
-        continue;
-      }
+      noteProducerTaskConsulted(producerTaskId);
       const producerPack = this.context.taskPacks.get(producerTaskId) ?? null;
       if (producerPack && isSkippedLineageTask(producerPack.document)) continue;
       const bridge = selected.selected.filter(
@@ -1223,6 +1243,8 @@ export class PhysicalFieldExpander {
     return {
       classified: selected.classified,
       ambiguous: selected.ambiguous,
+      consultedProducerTaskIds: [...consultedProducerTaskIds].sort(compareText),
+      reachablePrimaryProducerTaskIds: [...reachablePrimaryProducerTaskIds].sort(compareText),
       producers,
       candidates: [...candidates.values()].sort((left, right) => compareText(left.candidateId, right.candidateId)),
       gaps,

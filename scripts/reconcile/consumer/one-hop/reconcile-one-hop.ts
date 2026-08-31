@@ -477,6 +477,20 @@ export interface ReconcileOneHopOptions {
   readonly taskSourceTimeoutSeconds?: number;
 }
 
+/**
+ * A root-local batch failure.  The legacy batch API remains an array so the
+ * standalone batch CLI stays source-compatible; lineage-all recognizes this
+ * explicit failed item instead of treating it as a reconciliation artifact.
+ */
+export interface OneHopBatchFailure {
+  readonly taskId: string;
+  readonly status: "FAILED";
+  readonly evidenceStatus: "UNRESOLVED";
+  readonly error: string;
+}
+
+export type OneHopBatchItem = OneHopReconciliationResult | OneHopBatchFailure;
+
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const OPENCLI_PROCESS_TIMEOUT_MS = 90_000;
 
@@ -2790,16 +2804,52 @@ export function reconcileOneHopBatch(
       options.producerIndex !== undefined &&
       options.verifyInputFingerprint === true,
   });
-  const results = taskIds.map((taskId) =>
-    reconcileOneHopInternal(taskId, options, preparedContext),
-  );
+
+  // These checks describe the shared batch context.  Keep them outside the
+  // root loop so a broken index, stale snapshot, or invalid shared option is
+  // still a global failure rather than a misleading set of local failures.
+  if (options.producerIndex !== undefined) {
+    try {
+      validateTableProducerIndex(options.producerIndex);
+    } catch (error) {
+      throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
+    }
+    preparedContext.validatedProducerIndexes.add(options.producerIndex);
+    if (
+      options.verifyInputFingerprint === true &&
+      (preparedContext.inputFingerprint === null ||
+        preparedContext.inputFingerprint !== options.producerIndex.inputFingerprint)
+    )
+      throw new Error(
+        "PRODUCER_INDEX_INPUT_FINGERPRINT_MISMATCH: producer index does not match dataRoot",
+      );
+  }
+  const timeoutSeconds = options.taskSourceTimeoutSeconds ?? 20;
+  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0)
+    throw new Error("INVALID_TASK_SOURCE_TIMEOUT");
+
+  const results: OneHopBatchItem[] = taskIds.map((taskId) => {
+    try {
+      return reconcileOneHopInternal(taskId, options, preparedContext);
+    } catch (error) {
+      return {
+        taskId,
+        status: "FAILED",
+        evidenceStatus: "UNRESOLVED",
+        error: safeMessage(error),
+      };
+    }
+  });
   if (
     preparedContext.inputFingerprint !== null &&
     fingerprintTableProducerInputs(options.dataRoot) !==
       preparedContext.inputFingerprint
   )
     throw new Error("INPUT_CHANGED_DURING_ONE_HOP_BATCH");
-  return results;
+  // Keep the pre-existing array return contract for the standalone batch
+  // wrapper.  Consumers that need the discriminated item type can use
+  // OneHopBatchItem; lineage-all validates the runtime failure markers.
+  return results as readonly OneHopReconciliationResult[];
 }
 
 function option(args: readonly string[], name: string): string | undefined {

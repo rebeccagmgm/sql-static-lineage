@@ -33,6 +33,7 @@ export type PhysicalFieldResolution =
 
 export interface PhysicalFieldResolutionContext {
 	readonly catalog: PhysicalTableCatalog;
+	readonly noteTableDependency?: (entry: PhysicalTableCatalogEntry) => void;
 	readonly taskId: string;
 	readonly defaultSchema: TaskDefaultSchema | null;
 	readonly fallbackTable: Pick<
@@ -115,18 +116,21 @@ export function resolvePhysicalInputField(
 	const column = normalizeName(reference.column);
 	const qualifiedTable = qualifyBareTableName(rawTable, context.defaultSchema);
 	const exact = context.catalog.byQualifiedName.get(qualifiedTable) ?? [];
+	for (const entry of exact) context.noteTableDependency?.(entry);
 	const tailMatches =
 		rawTable.includes(".") || context.defaultSchema !== null
 			? []
 			: context.catalog.entries.filter(
 					(entry) =>
 						normalizeName(entry.qualifiedName).split(".").at(-1) ===
-						rawTable,
-				);
+							rawTable,
+					);
+	for (const entry of tailMatches) context.noteTableDependency?.(entry);
 	const tables =
 		exact.length > 0 ? exact : tailMatches.length === 1 ? tailMatches : [];
 
 	if (tables.length === 1) {
+		context.noteTableDependency?.(tables[0]!);
 		const field = physicalFieldForTable(tables[0]!, column);
 		return field
 			? { status: "RESOLVED", field }

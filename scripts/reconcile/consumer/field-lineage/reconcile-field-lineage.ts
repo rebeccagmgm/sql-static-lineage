@@ -20,6 +20,10 @@ import {
 } from "./field-lineage.ts";
 import { formatFieldLineageSummary } from "./format-field-lineage.ts";
 import type { FactsPolicy } from "./field-lineage-contract.ts";
+import {
+	createExpansionCacheCounters,
+	type ExpansionCacheCounters,
+} from "./expansion-cache-service.ts";
 
 interface CliOptions {
 	readonly dataRoot: string;
@@ -36,6 +40,7 @@ interface CliOptions {
 	readonly output: string;
 	readonly summaryOutput?: string;
 	readonly timingOutput?: string;
+	readonly expansionCacheRoot?: string;
 	readonly prepareFacts: boolean;
 }
 
@@ -62,9 +67,10 @@ function parseCli(args: readonly string[]): CliOptions {
 	const writeObservationIds = writeObservationIdsValue?.split(",").map((value) => value.trim()).filter(Boolean);
 	const fields = (option(args, "--fields") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
 	const output = option(args, "--output");
+	const expansionCacheRoot = option(args, "--expansion-cache-root");
 	const factsPolicy = (option(args, "--facts-policy") ?? "current-only") as FactsPolicy;
 	if (!dataRoot || !factsRoot || !multiHopArtifact || !taskId || !targetTable || !output)
-		throw new Error("usage: reconcile-field-lineage --data-root <path> --facts-root <facts-root> --multi-hop-artifact <json> --task-id <id> --target-table <qualified> [--write-observation-id <id[,id...]>] [--fields <a,b>] --output <json> [--summary-output <txt>] [--timing-output <json>] [--facts-policy current-only|allow-legacy-partial]");
+		throw new Error("usage: reconcile-field-lineage --data-root <path> --facts-root <facts-root> --multi-hop-artifact <json> --task-id <id> --target-table <qualified> [--write-observation-id <id[,id...]>] [--fields <a,b>] --output <json> [--summary-output <txt>] [--timing-output <json>] [--expansion-cache-root <directory>] [--facts-policy current-only|allow-legacy-partial]");
 	if (factsPolicy !== "current-only" && factsPolicy !== "allow-legacy-partial") throw new Error("--facts-policy is invalid");
 	return {
 		dataRoot,
@@ -81,6 +87,7 @@ function parseCli(args: readonly string[]): CliOptions {
 		output,
 		summaryOutput: option(args, "--summary-output"),
 		timingOutput: option(args, "--timing-output"),
+		expansionCacheRoot,
 		prepareFacts: !args.includes("--no-prepare-facts"),
 	};
 }
@@ -125,6 +132,7 @@ export function runFieldLineageCli(options: CliOptions): ReturnType<typeof recon
 	};
 	let machineFactsPrepareBatches = 0;
 	let reconcileCalls = 0;
+	const expansionCacheCounters: ExpansionCacheCounters = createExpansionCacheCounters();
 	const tableLineageStarted = performance.now();
 	const tableLineage = JSON.parse(readFileSync(resolve(options.multiHopArtifact), "utf8")) as Record<string, unknown>;
 	timings.table_lineage_read_ms = performance.now() - tableLineageStarted;
@@ -150,6 +158,8 @@ export function runFieldLineageCli(options: CliOptions): ReturnType<typeof recon
 		maxStates: options.maxStates,
 		maxPaths: options.maxPaths,
 		taskPathIndex,
+		expansionCacheRoot: options.expansionCacheRoot,
+		expansionCacheCounters,
 	});
 	const reconcileWithTiming = (): ReturnType<typeof reconcileFieldLineage> => {
 		const started = performance.now();
@@ -231,6 +241,11 @@ export function runFieldLineageCli(options: CliOptions): ReturnType<typeof recon
 				table_catalog_entries: tableCatalog?.byQualifiedName.size ?? 0,
 				machine_facts_prepare_batches: machineFactsPrepareBatches,
 				reconcile_calls: reconcileCalls,
+				expansion_cache_hits: expansionCacheCounters.hits,
+				expansion_cache_misses: expansionCacheCounters.misses,
+				expansion_cache_writes: expansionCacheCounters.writes,
+				expansion_cache_stale: expansionCacheCounters.stale,
+				expansion_cache_corrupt: expansionCacheCounters.corrupt,
 			},
 		})}\n`, "utf8");
 	}

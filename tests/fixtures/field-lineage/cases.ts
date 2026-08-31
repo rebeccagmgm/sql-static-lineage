@@ -8,7 +8,10 @@ import {
 
 export function createSyntheticFieldLineageInputPack(
   dataRoot: string,
-  options: { readonly rootTaskName?: string } = {},
+  options: {
+    readonly rootTaskName?: string;
+    readonly producerTaskCategory?: string;
+  } = {},
 ): void {
   for (const table of [
     { qualifiedName: "demo.root", columns: "out_a STRING, out_b STRING" },
@@ -62,7 +65,7 @@ export function createSyntheticFieldLineageInputPack(
   });
   writeTaskInput(dataRoot, {
     taskId: "200",
-    taskCategory: "hiveTask",
+    taskCategory: options.producerTaskCategory ?? "hiveTask",
     taskName: "demo.mid.task",
     target: {
       platform: "hive",

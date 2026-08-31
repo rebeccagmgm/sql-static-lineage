@@ -214,6 +214,18 @@ export interface ReconcileMultiHopOptions {
   readonly terminalTableConfig?: TerminalTableConfig;
 }
 
+/** A root-local batch failure kept distinct from a successful graph artifact. */
+export interface MultiHopBatchFailure {
+  readonly rootTaskId: string;
+  readonly status: "FAILED";
+  readonly evidenceStatus: "UNRESOLVED";
+  readonly error: string;
+}
+
+export type MultiHopBatchItem =
+  | MultiHopReconciliationResult
+  | MultiHopBatchFailure;
+
 interface MultiHopPreparedContext {
   readonly dataRoot: string;
   readonly repository: TaskReadEvidenceRepository;
@@ -719,6 +731,11 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function batchErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.replace(/[\r\n]+/g, " ").slice(0, 500);
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -845,6 +862,15 @@ function prepareMultiHopContext(
       schemaLoading: "TASK_SCOPED",
     }),
   };
+}
+
+function inputFingerprintForOptions(
+  options: ReconcileMultiHopOptions,
+): string {
+  const fingerprint = fingerprintTableProducerInputs(options.dataRoot);
+  if (fingerprint !== options.producerIndex.inputFingerprint)
+    throw new Error("PRODUCER_INDEX_STALE");
+  return fingerprint;
 }
 
 function hasTaskPath(
@@ -1624,9 +1650,7 @@ export function reconcileMultiHop(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
 ): MultiHopReconciliationResult {
-  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
-  if (inputFingerprint !== options.producerIndex.inputFingerprint)
-    throw new Error("PRODUCER_INDEX_STALE");
+  const inputFingerprint = inputFingerprintForOptions(options);
   return reconcileMultiHopInternal(
     rootTaskId,
     options,
@@ -1643,29 +1667,45 @@ export function reconcileMultiHopBatch(
   roots: readonly MultiHopBatchRoot[],
   options: Omit<ReconcileMultiHopOptions, "rootOneHop">,
 ): readonly MultiHopReconciliationResult[] {
-  const inputFingerprint = fingerprintTableProducerInputs(options.dataRoot);
-  if (inputFingerprint !== options.producerIndex.inputFingerprint)
-    throw new Error("PRODUCER_INDEX_STALE");
+  const inputFingerprint = inputFingerprintForOptions(options);
   const preparedContext = prepareMultiHopContext(
     options.dataRoot,
     inputFingerprint,
   );
-  const results = roots.map((root) =>
-    reconcileMultiHopInternal(
-      root.taskId,
-      {
-        ...options,
-        ...(root.rootOneHop ? { rootOneHop: root.rootOneHop } : {}),
-      },
-      preparedContext,
-    ),
-  );
+  // Limits and the producer index are shared batch prerequisites.  Validate
+  // them once, outside the root loop, so a bad shared context remains global.
+  requireLimit(options.maxDepth, "max_depth", 0);
+  requireLimit(options.maxTasks, "max_tasks", 1);
+  requireLimit(options.maxEdges, "max_edges", 1);
+  validateTableProducerIndex(options.producerIndex);
+
+  const results: MultiHopBatchItem[] = roots.map((root) => {
+    try {
+      return reconcileMultiHopInternal(
+        root.taskId,
+        {
+          ...options,
+          ...(root.rootOneHop ? { rootOneHop: root.rootOneHop } : {}),
+        },
+        preparedContext,
+      );
+    } catch (error) {
+      return {
+        rootTaskId: root.taskId,
+        status: "FAILED",
+        evidenceStatus: "UNRESOLVED",
+        error: batchErrorMessage(error),
+      };
+    }
+  });
   if (
     fingerprintTableProducerInputs(options.dataRoot) !==
     preparedContext.inputFingerprint
   )
     throw new Error("INPUT_CHANGED_DURING_MULTI_HOP_BATCH");
-  return results;
+  // Preserve the legacy array-shaped API used by the standalone batch
+  // wrapper; lineage-all consumes the explicit FAILED item markers.
+  return results as readonly MultiHopReconciliationResult[];
 }
 
 interface CliOptions {

@@ -23,6 +23,7 @@ import {
   summarizeOneHop,
   summaryPathFromOutput,
   type OpenCliRunner,
+  type OneHopBatchItem,
 } from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
   buildTableProducerIndex,
@@ -280,6 +281,37 @@ describe("reconcileOneHop", () => {
       return stable;
     };
     expect(omitVolatile(prepared!)).toEqual(omitVolatile(standalone));
+  });
+
+  it("isolates a root-local failure without invoking a shared OpenCLI stage", () => {
+    const fixture = writeProducerIndexFixture();
+    let openCliCalls = 0;
+    const batch = reconcileOneHopBatch(
+      ["current-indexed", "missing-root"],
+      {
+        dataRoot: fixture.dataRoot,
+        producerIndex: fixture.producerIndex,
+        scheduleRows: [],
+        openCliRunner: () => {
+          openCliCalls += 1;
+          throw new Error("REAL_OPENCLI_MUST_NOT_RUN");
+        },
+        now: () => "2026-08-23T00:30:00.000Z",
+      },
+    ) as readonly OneHopBatchItem[];
+
+    expect(batch).toHaveLength(2);
+    expect(batch[0]).toMatchObject({
+      taskId: "current-indexed",
+      schemaVersion: "1.1.0",
+    });
+    expect(batch[1]).toMatchObject({
+      taskId: "missing-root",
+      status: "FAILED",
+      evidenceStatus: "UNRESOLVED",
+      error: expect.stringContaining("CURRENT_TASK_INPUT_PACK_MISSING"),
+    });
+    expect(openCliCalls).toBe(0);
   });
 
   it("qualifies a bare read with the proven Task Pack schema", () => {

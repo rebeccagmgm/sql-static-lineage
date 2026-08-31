@@ -1,9 +1,21 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
+import {
+  canonicalHash,
+  type JsonValue,
+} from "../scripts/input/shared/input-pack.ts";
 import {
   createPhysicalFieldExpander,
   type PhysicalFieldExpanderTaskPack,
 } from "../scripts/reconcile/consumer/field-lineage/physical-field-expander.ts";
+import {
+  createCachedPhysicalFieldExpander,
+  createExpansionCacheCounters,
+} from "../scripts/reconcile/consumer/field-lineage/expansion-cache-service.ts";
 import type { CurrentBundleLoad } from "../scripts/query/current-task-bundle.ts";
 import type {
   PhysicalTableCatalog,
@@ -89,6 +101,7 @@ function context(options: {
   readonly artifactWriteEvidence?: boolean;
   readonly mismatchedProducerTarget?: boolean;
   readonly legacyScheduleFallback?: boolean;
+  readonly skippedProducer?: boolean;
 } = {}) {
   const sourceTable = table("demo.source", ["src_a"]);
   const consumerTable = table("demo.root", ["out_a"]);
@@ -101,6 +114,16 @@ function context(options: {
     ...pack("200", sourceTable),
     target: null,
   };
+  const skippedProducer = options.skippedProducer
+    ? {
+        ...pack("201", sourceTable),
+        document: {
+          ...pack("201", sourceTable).document,
+          taskCategory: "checkdbflag",
+          contentHash: "e".repeat(64),
+        },
+      }
+    : undefined;
   const consumer = pack("100", consumerTable);
   const producerRecords: Record<string, Record<string, any>[]> = options.producerBinding
     ? {
@@ -137,64 +160,93 @@ function context(options: {
     column: "src_a",
     identityStatus: "SCHEMA_BACKED",
   };
+  const tableLineageWithoutHash = {
+    taskNodes: [
+      {
+        taskId: "100",
+        upstreamDecision: {
+          primary: ["200", ...(skippedProducer ? ["201"] : [])],
+          additional: [],
+          unknown: [],
+        },
+      },
+    ],
+    producerBridges: options.legacyScheduleFallback ? [] : [
+      {
+        consumerTaskId: "100",
+        producerTaskId: "200",
+        table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
+        producerRole: "PRIMARY",
+        readOccurrence: options.occurrence ?? null,
+      },
+      ...(skippedProducer
+        ? [{
+            consumerTaskId: "100",
+            producerTaskId: "201",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
+            producerRole: "PRIMARY",
+            readOccurrence: options.occurrence ?? null,
+          }]
+        : []),
+    ],
+    ...(options.legacyScheduleFallback
+      ? {
+          scheduleEdges: [{ consumerTaskId: "100", producerTaskId: "200" }],
+          readEdges: [{
+            consumerTaskId: "100",
+            recursionStatus: "ELIGIBLE",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
+          }],
+        }
+      : {}),
+    ...(options.producerBinding && options.artifactWriteEvidence !== false
+      ? {
+          writeEdges: [{
+            producerTaskId: "200",
+            table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
+            writes: [options.multipleWrites
+              ? {
+                  observationKind: "SQL_EXPLICIT_WRITE",
+                  declaredWriteMode: null,
+                  sqlWriteKind: "INSERT_OVERWRITE",
+                  partition: [],
+                  evidence: [],
+                }
+              : {
+                  observationKind: "DIRECT_TARGET",
+                  targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+                  declaredWriteMode: null,
+                  sqlWriteKind: null,
+                  partition: [],
+                  evidence: [],
+                }],
+          }],
+        }
+      : {}),
+  };
+  const tableLineage = {
+    ...tableLineageWithoutHash,
+    contentHash: canonicalHash(
+      tableLineageWithoutHash as unknown as JsonValue,
+      ["generatedAt", "contentHash"],
+    ),
+  };
+  const taskPacks = new Map<string, PhysicalFieldExpanderTaskPack | undefined>([
+    ["100", consumer],
+    ["200", producer],
+    ["201", skippedProducer],
+  ]);
+  const loadFacts = (taskId: string): CurrentBundleLoad =>
+    taskId === "100" ? consumerLoad : producerLoad;
   const expander = createPhysicalFieldExpander({
     dataRoot: "data",
     catalog: catalog([consumerTable, sourceTable]),
-    tableLineage: {
-      taskNodes: [
-        { taskId: "100", upstreamDecision: { primary: ["200"], additional: [], unknown: [] } },
-      ],
-      producerBridges: options.legacyScheduleFallback ? [] : [
-        {
-          consumerTaskId: "100",
-          producerTaskId: "200",
-          table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
-          producerRole: "PRIMARY",
-          readOccurrence: options.occurrence ?? null,
-        },
-      ],
-      ...(options.legacyScheduleFallback
-        ? {
-            scheduleEdges: [{ consumerTaskId: "100", producerTaskId: "200" }],
-            readEdges: [{
-              consumerTaskId: "100",
-              recursionStatus: "ELIGIBLE",
-              table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
-            }],
-          }
-        : {}),
-      ...(options.producerBinding && options.artifactWriteEvidence !== false
-        ? {
-            writeEdges: [{
-              producerTaskId: "200",
-              table: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.source" },
-              writes: [options.multipleWrites
-                ? {
-                    observationKind: "SQL_EXPLICIT_WRITE",
-                    declaredWriteMode: null,
-                    sqlWriteKind: "INSERT_OVERWRITE",
-                    partition: [],
-                    evidence: [],
-                  }
-                : {
-                    observationKind: "DIRECT_TARGET",
-                    targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
-                    declaredWriteMode: null,
-                    sqlWriteKind: null,
-                    partition: [],
-                    evidence: [],
-                  }],
-            }],
-          }
-        : {}),
-    },
-    taskPacks: {
-      get: (taskId) => ({ "100": consumer, "200": producer }[taskId]),
-    },
-    loadFacts: (taskId) => (taskId === "100" ? consumerLoad : producerLoad),
+    tableLineage,
+    taskPacks: { get: (taskId) => taskPacks.get(taskId) },
+    loadFacts,
     factsPolicy: "current-only",
   });
-  return { expander, consumer, consumerLoad, source };
+  return { expander, consumer, consumerLoad, source, tableLineage, taskPacks, loadFacts };
 }
 
 const occurrence = {
@@ -217,8 +269,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers).toHaveLength(1);
     expect(result.producers[0]).toMatchObject({
@@ -235,6 +285,60 @@ describe("physical field expander", () => {
     expect(result.gaps).toEqual([]);
   });
 
+  it("records a skipped producer consultation so its Pack change invalidates the cache", () => {
+    const f = context({
+      occurrence,
+      producerBinding: true,
+      skippedProducer: true,
+    });
+    const request = {
+      consumerTaskId: "100",
+      consumerPack: f.consumer,
+      consumerLoad: f.consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source: f.source,
+      expressionText: "s.src_a",
+    };
+    const firstExpansion = f.expander.expand(request);
+    expect(firstExpansion.consultedProducerTaskIds).toEqual(["200", "201"]);
+    expect(firstExpansion.reachablePrimaryProducerTaskIds).toEqual(["200", "201"]);
+    expect(firstExpansion.producers.map((producer) => producer.producerTaskId)).toEqual(["200"]);
+
+    let delegateCalls = 0;
+    const counters = createExpansionCacheCounters();
+    const cache = createCachedPhysicalFieldExpander(
+      {
+        expand: (currentRequest) => {
+          delegateCalls += 1;
+          return f.expander.expand(currentRequest);
+        },
+      },
+      {
+        cacheRoot: mkdtempSync(join(tmpdir(), "field-expansion-skipped-cache-")),
+        dataRoot: "data",
+        factsRoot: "facts",
+        tableLineage: f.tableLineage,
+        taskPacks: { get: (taskId) => f.taskPacks.get(taskId) },
+        loadFacts: f.loadFacts,
+        factsPolicy: "current-only",
+        counters,
+      },
+    );
+    cache.expand(request);
+    f.taskPacks.set("201", {
+      ...f.taskPacks.get("201")!,
+      document: {
+        ...f.taskPacks.get("201")!.document,
+        contentHash: "f".repeat(64),
+      },
+    });
+    cache.expand(request);
+
+    expect(delegateCalls).toBe(2);
+    expect(counters.stale).toBe(1);
+    expect(counters.hits).toBe(0);
+  });
+
   it("keeps the producer unresolved and records a gap when the bridge is not continuous", () => {
     const { expander, consumer, consumerLoad, source } = context();
     const result = expander.expand({
@@ -244,8 +348,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers[0]!.evidenceStatus).toBe("UNRESOLVED");
     expect(result.producers[0]!.shouldRecurse).toBe(false);
@@ -271,8 +373,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers[0]).toMatchObject({
       evidenceStatus: "CONFIRMED",
@@ -305,8 +405,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers[0]).toMatchObject({
       evidenceStatus: "UNRESOLVED",
@@ -335,8 +433,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers[0]!.shouldRecurse).toBe(false);
     expect(result.producers[0]!.producerBindings).toEqual([]);
@@ -361,8 +457,6 @@ describe("physical field expander", () => {
       sourceNodeId: "field-source-node:100:source:src_a",
       source,
       expressionText: "s.src_a",
-      depth: 0,
-      maxDepth: 4,
     });
     expect(result.producers[0]!.shouldRecurse).toBe(false);
     expect(result.gaps).toEqual(
