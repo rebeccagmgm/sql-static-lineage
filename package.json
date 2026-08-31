@@ -71,6 +71,7 @@
     "input-pack:fill-horae-detail-cache": "tsx scripts/input/mainline/fill-horae-task-detail-cache.ts",
     "input-pack:fill-szdata-detail-cache": "tsx scripts/input/mainline/fill-szdata-schedule-detail-cache.ts",
     "input-pack:fill-sparkindex-schedule-detail-cache": "tsx scripts/input/mainline/fill-sparkindex-schedule-detail-cache.ts",
+    "input-pack:fill-missing": "tsx scripts/input/mainline/fill-missing-task-input-packs.ts",
     "input-pack:rebuild-partitions": "tsx scripts/input/partition/rebuild-task-partition-evidence.ts",
     "input-pack:repair-stored": "tsx scripts/input/repair/repair-stored-input-packs.ts",
     "repair:missing-table-packs": "tsx scripts/input/repair/repair-missing-table-packs.ts",

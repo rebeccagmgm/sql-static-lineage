@@ -92,6 +92,18 @@ function assertArchiveRootOutsideDataRoot(
 assertArchiveRootOutsideDataRoot("--manual-data-root", manualDataRoot);
 assertArchiveRootOutsideDataRoot("--not-found-data-root", notFoundDataRoot);
 const force = process.argv.includes("--force");
+const skipSchedulingDetail = process.argv.includes("--skip-scheduling-detail");
+const skipSchedulingClassification = process.argv.includes(
+  "--skip-scheduling-classification",
+);
+if (skipSchedulingClassification)
+  console.error(
+    JSON.stringify({
+      collectionStatus: "SCHEDULING_CLASSIFICATION_SKIPPED",
+      warning:
+        "Manual/frozen tasks are not preclassified; use only for an explicit local missing-pack backfill",
+    }),
+  );
 const statusFile = resolve(
   option("--status-file") ?? defaultTaskStatusFile(dataRoot),
 );
@@ -140,7 +152,7 @@ if (batchSizeWarning || statusSizeWarning)
   );
 const status = loadTaskStatus(statusFile, dataRoot);
 const knownExcludedTaskIds = new Set(
-  force
+  force || skipSchedulingClassification
     ? []
     : taskIds.filter(
         (taskId) =>
@@ -148,9 +160,12 @@ const knownExcludedTaskIds = new Set(
           status.tasks[taskId]?.exclusionReason !== undefined,
       ),
 );
-const excludedTaskInfo = findExcludedTaskIds(
-  taskIds.filter((taskId) => !knownExcludedTaskIds.has(taskId)),
-);
+const excludedTaskInfo = skipSchedulingClassification
+  ? new Map()
+  : findExcludedTaskIds(
+      taskIds.filter((taskId) => !knownExcludedTaskIds.has(taskId)),
+      { skipDetail: skipSchedulingDetail },
+    );
 for (const taskId of knownExcludedTaskIds)
   excludedTaskInfo.set(taskId, {
     exclusionReason: status.tasks[taskId]!.exclusionReason!,

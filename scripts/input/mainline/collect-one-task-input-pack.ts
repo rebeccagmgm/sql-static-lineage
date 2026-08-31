@@ -500,6 +500,7 @@ export function isExcludedHoraeSearchRecord(
 
 export function findExcludedTaskIds(
   taskIds: readonly string[],
+  options: { readonly skipDetail?: boolean } = {},
 ): Map<string, TaskSchedulingClassification> {
   const requested = new Set(taskIds);
   const excluded = new Map<string, TaskSchedulingClassification>();
@@ -545,6 +546,7 @@ export function findExcludedTaskIds(
       }
     }
   }
+  if (options.skipDetail === true) return excluded;
   for (const taskId of taskIds) {
     if (excluded.has(taskId)) continue;
     let detail: Record<string, unknown>;
