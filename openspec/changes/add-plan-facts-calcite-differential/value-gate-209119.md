@@ -97,9 +97,9 @@ change.
   default production path does not invoke the Java bridge. The default test
   list includes an existing TypeScript Calcite protocol test, which is not a
   bridge startup and does not publish artifacts.
-- `scripts/calcite-differential/run-differential.ts` rejects canonical output
-  filenames and requires staging or an explicitly supplied independent output
-  directory.
+- `E:\02_area\股衍数据-数据cookbook\scripts\Calcite\sidecar-runner.mjs` reads
+  canonical artifacts and writes an independent report; the sidecar's own
+  candidate batch keeps all canonical/causal writes false.
 - v18 itself reports both canonical and causal writes as false.
 
 This preserves the intended default-off boundary, but formal 6.4 and 11.x

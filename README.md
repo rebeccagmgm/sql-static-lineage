@@ -59,7 +59,7 @@ scripts/input/               external Task/Table input collection, contracts and
 scripts/query/               validated Current Bundle loader and Reader
 scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
 scripts/reconcile/consumer/field-lineage/  bounded cross-Task VALUE_FLOW and ROWSET_CONTROL projection
-scripts/project-graph/project-evidence/  producer-side raw evidence Artifact boundary
+Artifact boundary          published canonical one-hop/multi-hop/field-lineage/target-causal artifacts; graph projections live in standalone data-graph
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
 tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent

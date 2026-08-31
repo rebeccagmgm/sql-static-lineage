@@ -51,8 +51,6 @@ export interface CausalSliceInputFingerprints {
   readonly producerIndex: readonly CausalSliceInputReference[];
   readonly tableMultiHopArtifact: readonly CausalSliceInputReference[];
   readonly legacyFieldLineageValueEvidence?: readonly CausalSliceInputReference[];
-  /** Present only when an explicit Calcite evidence overlay was consumed. */
-  readonly calciteCausalEvidence?: readonly CausalSliceInputReference[];
 }
 
 export interface CausalSliceRequest {
@@ -384,9 +382,6 @@ export function canonicalizeCausalSliceArtifact(input: CausalSliceArtifactInput)
       ...(input.inputFingerprints.legacyFieldLineageValueEvidence === undefined
         ? {}
         : { legacyFieldLineageValueEvidence: inputReferences(input.inputFingerprints.legacyFieldLineageValueEvidence) }),
-      ...(input.inputFingerprints.calciteCausalEvidence === undefined
-        ? {}
-        : { calciteCausalEvidence: inputReferences(input.inputFingerprints.calciteCausalEvidence) }),
     },
     dependencies: dependencies(input.dependencies),
     candidateUniverse: candidateUniverse(input.candidateUniverse),
@@ -570,8 +565,6 @@ export function validateCausalSliceArtifact(value: unknown): string[] {
   }
   const legacy = fingerprints?.legacyFieldLineageValueEvidence;
   if (legacy !== undefined) for (const ref of legacy) if (!isRecord(ref) || ref.artifactType !== LEGACY_FIELD_LINEAGE_ARTIFACT_TYPE || !sha256Fingerprint(ref.fingerprint) || !nonEmpty(ref.reference)) errors.push("legacy VALUE evidence reference is invalid or collides with causal artifact");
-  const calcite = fingerprints?.calciteCausalEvidence;
-  if (calcite !== undefined) for (const ref of calcite) if (!isRecord(ref) || !sha256Fingerprint(ref.fingerprint) || !nonEmpty(ref.reference)) errors.push("Calcite causal evidence reference is invalid");
   if (!isRecord(artifact.dependencies)) errors.push("dependencies are required");
   else {
     const definitions = artifact.dependencies.definitions;

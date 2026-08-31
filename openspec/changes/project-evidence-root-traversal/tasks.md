@@ -1,3 +1,11 @@
+> Extraction boundary update (2026-08-31): the source-side direct
+> orchestration/cache was not carried into the standalone product because no
+> safe producer-boundary caller exists in this extraction. The external
+> implementation currently exposes only `LEGACY_ARTIFACT_PAIRS` through
+> `E:\02_area\股衍数据-数据cookbook\scripts\data-graph\src\project-graph\topology\project-topology-cli.ts`.
+> The direct/cache tasks below remain historical deferred work and are not
+> claimed as shipped by the source repository.
+
 ## 1. Freeze Scope And Baselines
 
 - [x] 1.1 Record the current `lineage:all --task-ids` sequential orchestration and the exact duplicated stages without changing it.
@@ -57,7 +65,7 @@
 
 ## 8. Regression And Scope Review
 
-- [ ] 8.1 Run focused project-evidence, multi-hop, Phase 1 and Phase 2 suites through repository npm scripts.
+- [ ] 8.1 Run focused producer regressions through the source repository npm scripts and legacy-pair topology/real-artifact checks through the standalone data-graph project.
 - [ ] 8.2 Run typecheck, build, focused formatting and `git diff --check`; separate pre-existing failures without weakening gates.
 - [ ] 8.3 Audit imports to prove no Neo4j, historical KG, causal/business overlay, UI or new platform dependency entered the change.
 - [ ] 8.4 Confirm field-lineage still consumes its existing inputs and no default task artifact has been removed or relocated.

@@ -23,7 +23,7 @@
 
 ## Impact
 
-- 新增或迁移 `scripts/calcite-differential/`、`tools/calcite-rel-bridge/` 及独立测试/fixture。
+- 实现与独立测试位于 `E:\02_area\股衍数据-数据cookbook\scripts\Calcite\`；其 `protocol.ts`、`sidecar-runner.mjs`、`native-input/`、`candidate-evidence/` 和 `*test.mjs` 是当前外部入口。
 - 复用 `scripts/plans/plan-contract.ts` 和 `scripts/plans/plan-adapter.ts` 的输出契约，不在本变更中修改其 canonical 语义。
 - Java/Calcite 1.42.0 仍为可选开发依赖；默认 npm 工作流不要求 Maven、JDK 或 Calcite jar。
 - 现有 `scripts/calcite-oracle/` 与 `tools/calcite-oracle/` 需要兼容迁移，避免一次性破坏已有命令、fixture 或文档引用。

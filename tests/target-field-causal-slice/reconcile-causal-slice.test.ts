@@ -113,14 +113,22 @@ describe("target-field causal slice CLI boundaries", () => {
     ])).toThrow("causal-slice output paths must not collide");
   });
 
-  it("rejects overwriting the Calcite mapping input", () => {
+  it("rejects the removed Calcite semantic-oracle flags", () => {
     expect(() => parseTargetFieldCausalSliceCli([
       ...required,
       "--write-observation-id", "write:task-1:0",
       "--semantic-oracle", "calcite",
       "--calcite-mapping-report", "mapping.json",
       "--semantic-oracle-output", "mapping.json",
-    ])).toThrow("must not overwrite an input evidence file");
+    ])).toThrow("moved to the Calcite Sidecar");
+  });
+
+  it("rejects attaching independent Calcite causal evidence to the canonical slice", () => {
+    expect(() => parseTargetFieldCausalSliceCli([
+      ...required,
+      "--write-observation-id", "write:task-1:0",
+      "--calcite-causal-evidence", "sidecar-report.json",
+    ])).toThrow("independent-only");
   });
 
   it("rejects overwriting producer evidence or writing inside facts", () => {

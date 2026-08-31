@@ -91,4 +91,3 @@ Calcite差分 SHALL 默认关闭，并且默认解析、Plan Facts、Machine Fac
 #### Scenario: Differential feature is disabled
 - **WHEN** 对冻结 fixture运行变更前后的默认 Native命令
 - **THEN** canonical事实、assessment、gap和发布文件保持契约等价，任何差异都必须作为回归失败处理
-

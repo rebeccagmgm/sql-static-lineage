@@ -16,7 +16,7 @@ function fileSha256(name: string): string {
     .digest("hex");
 }
 
-describe("Calcite-disabled default path regression", () => {
+describe("Native default causal-slice path", () => {
   it("keeps representative field-lineage goldens byte-for-byte frozen", () => {
     expect({
       valueFlow: fileSha256("value-flow.json"),
@@ -55,12 +55,10 @@ describe("Calcite-disabled default path regression", () => {
       "write:task-1:0",
     ]);
 
-    expect(options.semanticOracle).toBeUndefined();
-    expect(options.calciteMappingReport).toBeUndefined();
-    expect(options.semanticOracleOutput).toBeUndefined();
+    expect(options.output).toBe("slice.json");
   });
 
-  it("keeps the new differential module out of default canonical entrypoints", () => {
+  it("keeps the Calcite sidecar out of default canonical entrypoints", () => {
     for (const entrypoint of [
       "scripts/reconcile/consumer/field-lineage/reconcile-field-lineage.ts",
       "scripts/reconcile/consumer/target-field-causal-slice/reconcile-target-field-causal-slice.ts",

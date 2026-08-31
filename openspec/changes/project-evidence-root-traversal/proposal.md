@@ -29,8 +29,18 @@ The accepted real project set `176827`, `181058` and `209119` demonstrates that 
 
 ## Impact
 
-- Adds an isolated project-evidence orchestration/core under `scripts/project-graph/` and focused tests/fixtures.
+- The standalone consumer implementation lives under `E:\02_area\股衍数据-数据cookbook\scripts\data-graph\`; its shipped topology entry consumes validated legacy one-hop/multi-hop artifact pairs.
 - Extracts a pure root traversal seam from current multi-hop logic; the existing public single-root result remains a compatibility adapter and must pass unchanged regression fixtures.
 - Adds a narrow opt-in CLI/package entry for direct multi-root project builds. It does not replace `lineage:all` in this change.
 - Writes only immutable project-graph snapshots under the configured project-graph output root and does not add files to `artifacts/tasks/<task-id>/`.
 - Adds no Neo4j, UI, business-semantic, causal or new remote-platform dependency.
+
+## Current extraction boundary
+
+The source-side shared project-evidence orchestration and cache are not part of
+the shipped standalone consumer because this extraction has no safe producer-
+boundary caller for them. The external consumer currently exposes only
+`LEGACY_ARTIFACT_PAIRS` through
+`E:\02_area\股衍数据-数据cookbook\scripts\data-graph\src\project-graph\topology\project-topology-cli.ts`.
+The direct orchestration path described by the historical requirements remains
+deferred and is not a shipped source-repository entry.
