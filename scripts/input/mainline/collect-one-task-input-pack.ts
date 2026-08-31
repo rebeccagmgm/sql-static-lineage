@@ -8,8 +8,6 @@ import {
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import {
-  writeTableInput,
-  writeTaskInput,
   isFrozenScheduleStatus,
   isManualScheduleCycle,
   type JsonValue,
@@ -17,6 +15,7 @@ import {
   type TableEvidence,
   type TaskEvidence,
 } from "../shared/input-pack.ts";
+import { materializeTaskAndTablePacks } from "../shared/task-table-materialization.ts";
 import {
   buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
@@ -2132,10 +2131,10 @@ export function collectOneTask(
     }),
     evidenceProvider: taskEvidenceProvider,
   };
-  const result = writeTaskInput(dataRoot, enrichedTaskEvidence);
-  let tableWrites: ReturnType<typeof writeTableInput>[];
-  try {
-    tableWrites = tableResults
+  const materialized = materializeTaskAndTablePacks(
+    dataRoot,
+    enrichedTaskEvidence,
+    tableResults
       .filter(
         (
           item,
@@ -2145,20 +2144,10 @@ export function collectOneTask(
           evidence: TableEvidence;
         } => item.evidence !== undefined,
       )
-      .map((item) => writeTableInput(dataRoot, item.evidence));
-  } catch (error) {
-    const failure = new Error("Table write failed after Task commit", {
-      cause: error,
-    }) as Error & {
-      writePhase: string;
-      taskDirectory: string;
-      taskChanged: boolean;
-    };
-    failure.writePhase = "TABLE_AFTER_TASK_COMMITTED";
-    failure.taskDirectory = result.directory;
-    failure.taskChanged = result.changed;
-    throw failure;
-  }
+      .map((item) => item.evidence),
+  );
+  const result = materialized.task;
+  const tableWrites = materialized.tables;
   const summary = {
     taskId,
     taskCategory: taskEvidence.taskCategory ?? "unknown",
