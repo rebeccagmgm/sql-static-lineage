@@ -50,8 +50,8 @@ Sidecar 独立提交（分支 `master`，精确目录内）：
 - `c620434 test: relocate legacy Calcite failure fixture`：迁移历史 `NOT_EVALUATED` fixture。
 - `873c7e2 docs: document canonical artifact roundtrip`：记录新的 artifact/process contract 和测试入口。
 
-主仓文档提交为 `45334fc`、`7c9e016`、`491d66b`；当前主仓头为
-`491d66b`，Sidecar 头为 `873c7e2`。
+主仓文档提交为 `45334fc`、`7c9e016`、`491d66b` 及本记录修订提交；当前
+分支指针以下方 `git status`/`git log` 命令为准。
 
 当前主仓没有 `scripts/calcite-differential`、`scripts/calcite-oracle` 实现目录，
 也没有主仓 Calcite producer。剩余的 Calcite 字样仅是 canonical contract 中已有的
