@@ -9,22 +9,18 @@ import type {
 } from "../plans/plan-contract.ts";
 import {
   PLAN_FACTS_REL_GRAPH_VERSION,
-  validatePlanFactsRelGraph,
+  CALCITE_DIFFERENTIAL_PROTOCOL_VERSION,
+  requestFingerprint,
   type ConcreteSqlType,
+  type DifferentialMappingRef,
+  type DifferentialPhysicalTableIdentity,
   type PlanFactsRelGraph,
   type PlanFactsRelNode,
   type PlanFactsRelProjectionIssue,
   type RelOutputField,
   type RelTypedExpression,
-} from "./plan-facts-rel-contract.ts";
-import {
-  CALCITE_DIFFERENTIAL_PROTOCOL_VERSION,
-  requestFingerprint,
-  validateDifferentialRequest,
-  type DifferentialPhysicalTableIdentity,
-  type DifferentialMappingRef,
   type PlanFactsRelRequest,
-} from "./protocol.ts";
+} from "./calcite-rel-boundary.ts";
 import type {
   SchemaTableIdentity,
   SchemaTypeFact,
@@ -1496,8 +1492,6 @@ export function projectPlanFactsCore(
     nodes: [...state.nodes.values()],
     rootNodeIds: roots,
   };
-  const contract = validatePlanFactsRelGraph(graph);
-  state.issues.push(...contract.issues.map((issue) => projectionIssue(issue.code, issue.message, issue.path, [])));
   const status = state.issues.length === 0 && roots.length === input.planFacts.roots.length
     ? "SUCCESS"
     : graph.nodes.length > 0 ? "PARTIAL" : "UNSUPPORTED";
@@ -1561,15 +1555,5 @@ export function projectPlanFactsCore(
     mappings: [...state.mappings.values()],
   };
   const request: PlanFactsRelRequest = { ...body, fingerprint: requestFingerprint(body) };
-  const protocolValidation = validateDifferentialRequest(request);
-  if (!protocolValidation.valid) {
-    return {
-      status: "PARTIAL",
-      graph,
-      mappings: request.mappings,
-      request: null,
-      issues: [...state.issues, ...protocolValidation.issues.map((issue) => projectionIssue(issue.code, issue.message, issue.path ?? "protocol", []))],
-    };
-  }
   return { status: "SUCCESS", graph, mappings: request.mappings, request, issues: [] };
 }

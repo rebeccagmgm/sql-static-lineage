@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadMachineFactsGateInput } from "./machine-facts-gate-input.ts";
 import { projectPlanFactsCore } from "./plan-facts-rel-projector.ts";
-import { serializeDifferentialRequest } from "./protocol.ts";
+import { serializePlanFactsRelRequest } from "./calcite-rel-boundary.ts";
 
 function requiredArg(args: readonly string[], flag: string): string {
   const index = args.indexOf(flag);
@@ -40,7 +40,7 @@ export function projectMachineFactsGateRequests(options: {
     projectionCounts[result.status] += 1;
     for (const issue of result.issues)
       issueCounts.set(issue.code, (issueCounts.get(issue.code) ?? 0) + 1);
-    if (result.request) requests.push(serializeDifferentialRequest(result.request));
+    if (result.request) requests.push(serializePlanFactsRelRequest(result.request));
   }
 
   return {

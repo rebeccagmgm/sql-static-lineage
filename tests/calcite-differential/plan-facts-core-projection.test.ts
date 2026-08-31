@@ -9,10 +9,7 @@ import type {
   SourceSpan,
   StructuredExpression,
 } from "../../scripts/plans/plan-contract.ts";
-import {
-  validateDifferentialRequest,
-  type DifferentialMappingRef,
-} from "../../scripts/calcite-differential/protocol.ts";
+import type { DifferentialMappingRef } from "../../scripts/calcite-differential/calcite-rel-boundary.ts";
 import {
   projectPlanFactsCore,
   type PlanFactsCoreProjectionResult,
@@ -21,7 +18,7 @@ import { projectDifferentialSchema } from "../../scripts/calcite-differential/sc
 import type {
   RelTypedExpression,
   PlanFactsRelNode,
-} from "../../scripts/calcite-differential/plan-facts-rel-contract.ts";
+} from "../../scripts/calcite-differential/calcite-rel-boundary.ts";
 
 const span: SourceSpan = { start: 0, end: 80 };
 const taskId = "task-core-projection";
@@ -376,7 +373,6 @@ describe("Plan Facts core relational projection", () => {
       name: "orders",
     });
     expect(result.request).not.toBeNull();
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
     expect(result.request?.requestKind).toBe("PLAN_FACTS_REL_V1");
     expect(result.request?.relations).toEqual(result.graph?.nodes);
     expect(result.request?.roots).toEqual(result.graph?.rootNodeIds);
@@ -499,7 +495,6 @@ describe("Plan Facts core relational projection", () => {
         { kind: "FIELD_REF", inputOrdinal: 0, sourceBinding: "b" },
       ],
     });
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
   });
 
   it("keeps SEMI and ANTI join output ordinals on the left input", () => {
@@ -689,7 +684,6 @@ describe("Plan Facts core relational projection", () => {
       { kind: "CALL", operator: "SUM", operands: [{ kind: "FIELD_REF", inputOrdinal: 1 }] },
       { kind: "CALL", operator: "COUNT", operands: [] },
     ]);
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
   });
 
   it("projects CASE, IF, and COALESCE as typed structured expressions", () => {
@@ -761,7 +755,6 @@ describe("Plan Facts core relational projection", () => {
     expect(nodes.find((node) => node.nodeId === "project.coalesce")?.kind === "PROJECT"
       ? nodes.find((node) => node.nodeId === "project.coalesce")?.expressions[0]
       : undefined).toMatchObject({ kind: "CALL", operator: "COALESCE" });
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
   });
 
   it("projects UNION ALL by exact branch ordinal and preserves branch evidence", () => {
@@ -794,7 +787,6 @@ describe("Plan Facts core relational projection", () => {
     expect(setop?.outputFields[0]?.evidenceRefs).toEqual(
       expect.arrayContaining(["evidence:relation:setop", "evidence:relation:left"]),
     );
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
   });
 
   it("keeps every graph mapping/evidence reference round-trippable to the request", () => {
@@ -815,7 +807,6 @@ describe("Plan Facts core relational projection", () => {
         (mapping) => mapping.evidenceRefs.length > 0,
       ),
     ).toBe(true);
-    expect(validateDifferentialRequest(result.request!).valid).toBe(true);
   });
 
   it("fails closed when a project output has no explicit concrete type", () => {

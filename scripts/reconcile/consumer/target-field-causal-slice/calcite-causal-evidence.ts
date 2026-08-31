@@ -2,12 +2,10 @@ import type {
   DifferentialObservation,
   DifferentialResponse,
   PlanFactsRelRequest,
-} from "../../../calcite-differential/protocol.ts";
-import type {
   PlanFactsRelNode,
   RelOutputField,
   RelTypedExpression,
-} from "../../../calcite-differential/plan-facts-rel-contract.ts";
+} from "../../../calcite-differential/calcite-rel-boundary.ts";
 import {
   createProofRef,
   type EffectKind,

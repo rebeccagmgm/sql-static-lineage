@@ -1,10 +1,10 @@
 import type {
+  ConcreteSqlType,
+  DifferentialPhysicalTableIdentity,
   DifferentialSchema,
   DifferentialSchemaColumn,
   DifferentialSchemaTable,
-  DifferentialPhysicalTableIdentity,
-} from "./protocol.ts";
-import type { ConcreteSqlType } from "./plan-facts-rel-contract.ts";
+} from "./calcite-rel-boundary.ts";
 import {
   parseDdlSchema,
   type DdlColumn,

@@ -5,13 +5,11 @@ import {
   makeDifferentialFingerprint,
   requestFingerprint,
   type DifferentialResponse,
-  type PlanFactsRelRequest,
-} from "../../scripts/calcite-differential/protocol.ts";
-import {
   PLAN_FACTS_REL_GRAPH_VERSION,
+  type PlanFactsRelRequest,
   type PlanFactsRelNode,
   type RelTypedExpression,
-} from "../../scripts/calcite-differential/plan-facts-rel-contract.ts";
+} from "../../scripts/calcite-differential/calcite-rel-boundary.ts";
 import { buildCalciteCausalEvidence } from "../../scripts/reconcile/consumer/target-field-causal-slice/calcite-causal-evidence.ts";
 
 const integerType = {
