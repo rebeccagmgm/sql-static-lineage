@@ -92,10 +92,10 @@ PLAN_FACTS_REL_V1 # 新主 lane
 新 canonical目录：
 
 ```text
-scripts/calcite-differential/
-tools/calcite-rel-bridge/
-tests/calcite-differential/
-tests/fixtures/calcite-differential/
+E:\02_area\股衍数据-数据cookbook\scripts\Calcite\
+├─ protocol.ts / plan-facts-rel-contract.ts
+├─ native-input/ / candidate-evidence/
+└─ *test.mjs / test-runtime.ps1
 ```
 
 旧 `scripts/calcite-oracle/` 导出 deprecated type/function aliases，旧 Java入口或 PowerShell命令在兼容期转发到新工具并输出迁移提示。协议中现有字段在 version 1兼容范围内保留；新 Plan Facts输入使用新协议版本。完成仓库内调用迁移和至少一个发布周期后，才可另开变更删除兼容入口。
