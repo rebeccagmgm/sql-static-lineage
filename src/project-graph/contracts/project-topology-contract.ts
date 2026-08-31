@@ -6,11 +6,8 @@ export const PROJECT_TOPOLOGY_SNAPSHOT_TYPE =
   "PROJECT_TOPOLOGY_SNAPSHOT" as const;
 export const PROJECT_TOPOLOGY_MANIFEST_TYPE =
   "PROJECT_TOPOLOGY_PROJECTION_MANIFEST" as const;
-export const PROJECT_EVIDENCE_SOURCE_SCHEMA_VERSION = "1.0.0" as const;
-export const PROJECT_EVIDENCE_ALGORITHM_VERSION = "1.0.0" as const;
 
-export type ProjectTopologySourceMode =
-  "LEGACY_ARTIFACT_PAIRS" | "DIRECT_PROJECT_EVIDENCE";
+export type ProjectTopologySourceMode = "LEGACY_ARTIFACT_PAIRS";
 
 export type ProjectTopologyCoverageStatus = "COMPLETE" | "PARTIAL";
 export type ProjectTopologyQueryStatus =
@@ -34,9 +31,7 @@ export type ProjectTopologyRelationLayer =
 export interface ProjectTopologyArtifactRef {
   readonly refId: string;
   readonly contract:
-    | "OneHopReconciliationResult"
-    | "MultiHopReconciliationResult"
-    | "ProjectRootTraversalView";
+    "OneHopReconciliationResult" | "MultiHopReconciliationResult";
   readonly artifactType:
     "TABLE_MULTI_HOP_RECONCILIATION" | "PROJECT_ROOT_TRAVERSAL_VIEW" | null;
   readonly schemaVersion: string;
@@ -46,41 +41,10 @@ export interface ProjectTopologyArtifactRef {
   readonly logicalLocator: string;
 }
 
-export interface ProjectEvidenceSourceDescriptorV1 {
-  readonly schemaVersion: typeof PROJECT_EVIDENCE_SOURCE_SCHEMA_VERSION;
-  readonly sourceMode: "DIRECT_PROJECT_EVIDENCE";
-  readonly algorithmVersion: typeof PROJECT_EVIDENCE_ALGORITHM_VERSION;
-  readonly sourceId: string;
-  readonly projectKey: string;
-  readonly rootTaskIds: readonly string[];
-  readonly inputFingerprint: string;
-  readonly producerIndexContentHash: string;
-  readonly terminalConfig: {
-    readonly version: string;
-    readonly contentHash: string;
-    readonly stopRoles: readonly string[];
-  };
-  readonly machineFacts: {
-    readonly contractVersion: string;
-    readonly adapterVersion: string;
-  };
-  readonly scheduleEvidenceContentHash: string;
-  readonly limits: {
-    readonly maxRoots: number;
-    readonly maxDepth: number;
-    readonly maxTasksPerRoot: number;
-    readonly maxEdgesPerRoot: number;
-    readonly maxUnionTasks: number;
-    readonly maxRounds: number;
-  };
-  readonly contentHash: string;
-}
-
 export interface ProjectTopologyRootSource {
   readonly rootTaskId: string;
   /** Missing means a pre-source-mode legacy snapshot. */
   readonly sourceMode?: ProjectTopologySourceMode;
-  readonly projectEvidence?: ProjectEvidenceSourceDescriptorV1;
   readonly oneHop: ProjectTopologyArtifactRef;
   readonly multiHop: ProjectTopologyArtifactRef;
   readonly producerIndex: {
@@ -243,9 +207,6 @@ export function projectSnapshotId(input: {
           ...(source.sourceMode === undefined
             ? {}
             : { sourceMode: source.sourceMode }),
-          ...(source.projectEvidence === undefined
-            ? {}
-            : { projectEvidence: source.projectEvidence }),
           oneHop: source.oneHop,
           multiHop: source.multiHop,
         })),
@@ -267,18 +228,6 @@ export function snapshotContentHash(
   snapshot: Omit<ProjectTopologySnapshotV1, "contentHash">,
 ): string {
   return sha256(canonicalJson(snapshot));
-}
-
-export function projectEvidenceSourceContentHash(
-  source: Omit<ProjectEvidenceSourceDescriptorV1, "sourceId" | "contentHash">,
-): string {
-  return sha256(canonicalJson(source));
-}
-
-export function projectEvidenceSourceId(contentHash: string): string {
-  if (!/^[a-f0-9]{64}$/i.test(contentHash))
-    throw new Error("PROJECT_EVIDENCE_SOURCE_HASH_INVALID");
-  return `project-evidence-${contentHash.toLowerCase()}`;
 }
 
 export function manifestContentHash(
@@ -357,8 +306,8 @@ function validateSourceModes(snapshot: ProjectTopologySnapshotV1): void {
       (source) => source.sourceMode ?? "LEGACY_ARTIFACT_PAIRS",
     ),
   );
-  if (modes.size !== 1) throw new Error("PROJECT_TOPOLOGY_SOURCE_MODE_MIXED");
-  const mode = [...modes][0]!;
+  if (modes.size !== 1 || !modes.has("LEGACY_ARTIFACT_PAIRS"))
+    throw new Error("PROJECT_TOPOLOGY_SOURCE_MODE_INVALID");
   const producerIdentities = new Set(
     snapshot.sources.map(
       (source) =>
@@ -367,39 +316,6 @@ function validateSourceModes(snapshot: ProjectTopologySnapshotV1): void {
   );
   if (producerIdentities.size !== 1)
     throw new Error("PROJECT_TOPOLOGY_SOURCE_IDENTITY_MIXED");
-  if (mode === "LEGACY_ARTIFACT_PAIRS") {
-    if (snapshot.sources.some((source) => source.projectEvidence !== undefined))
-      throw new Error("PROJECT_TOPOLOGY_LEGACY_SOURCE_INVALID");
-    return;
-  }
-  const descriptors = snapshot.sources.map((source) => {
-    if (!source.projectEvidence)
-      throw new Error("PROJECT_TOPOLOGY_DIRECT_SOURCE_MISSING");
-    return source.projectEvidence;
-  });
-  if (new Set(descriptors.map((source) => source.sourceId)).size !== 1)
-    throw new Error("PROJECT_TOPOLOGY_DIRECT_SOURCE_CONFLICT");
-  const descriptor = descriptors[0]!;
-  if (
-    descriptor.schemaVersion !== PROJECT_EVIDENCE_SOURCE_SCHEMA_VERSION ||
-    descriptor.sourceMode !== "DIRECT_PROJECT_EVIDENCE" ||
-    descriptor.algorithmVersion !== PROJECT_EVIDENCE_ALGORITHM_VERSION ||
-    descriptor.projectKey !== snapshot.projectKey ||
-    JSON.stringify(descriptor.rootTaskIds) !==
-      JSON.stringify(snapshot.rootTaskIds)
-  )
-    throw new Error("PROJECT_TOPOLOGY_DIRECT_SOURCE_INVALID");
-  const {
-    sourceId: _sourceId,
-    contentHash: _contentHash,
-    ...body
-  } = descriptor;
-  const expectedHash = projectEvidenceSourceContentHash(body);
-  if (
-    expectedHash !== descriptor.contentHash ||
-    projectEvidenceSourceId(expectedHash) !== descriptor.sourceId
-  )
-    throw new Error("PROJECT_TOPOLOGY_DIRECT_SOURCE_HASH_INVALID");
 }
 
 function assertSortedUnique(values: readonly string[], label: string): void {
