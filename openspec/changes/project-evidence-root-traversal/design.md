@@ -42,19 +42,23 @@ The real accepted roots `176827`, `181058` and `209119` now share the same Input
 
 ### Add a direct project run; do not widen the existing batch loop first
 
-Add a separate opt-in entry point shaped approximately as:
+The originally proposed direct entry point was shaped approximately as:
 
 ```text
-scripts/project-graph/project-evidence/
-  project-evidence-contract.ts
-  project-evidence-source.ts
-  project-evidence-workset.ts
-  project-root-traversal.ts
-  direct-project-topology.ts
-  project-evidence-cli.ts
+E:\02_area\股衍数据-数据cookbook\scripts\data-graph\
+  src/project-graph/topology/project-topology-source.ts
+  src/project-graph/topology/project-topology-projector.ts
+  src/project-graph/topology/project-topology-publication.ts
+  src/project-graph/project-topology-cli.ts
+  tests/project-topology.test.ts
+  tests/real-artifact-closed-loop.test.ts
 ```
 
 It accepts a project key, explicit root Task IDs, data root, output root, terminal config and hard limits. Existing `lineage:all` remains unchanged until parity and measured value are established.
+
+The shipped entry is the standalone legacy artifact-pair consumer; the direct
+project-evidence orchestration and cache are deferred because this extraction
+has no safe producer-boundary caller for them.
 
 Alternative: optimize the `for (const taskId)` loop in place. Rejected for the first slice because it mixes task artifact publication, field generation and project evidence construction before the shared contract is proven.
 
