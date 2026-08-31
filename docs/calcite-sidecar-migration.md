@@ -28,19 +28,19 @@ Sidecar 的 Java/Maven 依赖固定为 Calcite `1.42.0`。主仓库只产生和�
 
 行数口径是迁移前基线提交 `0319c75` 的 Git 文件行数；当前行数使用相同工作树的文本行统计。
 
-| 文件 | 迁移前 | 当前 | 分类与处理 |
-| --- | ---: | ---: | --- |
-| `bridge-client.ts` | 652 | 0 | **纯 Calcite 协议/进程执行（B）**。负责启动 Java、读写 JSONL、超时和输出校验；功能由 Sidecar `sidecar-runner.mjs` 接管，删除。 |
-| `build-causal-evidence-report.ts` | 287 | 0 | **纯差分实验报告编排（B）**。负责调用 bridge 并写独立报告；Sidecar 生成 `INDEPENDENT_DIFFERENTIAL_REPORT`，删除。主仓库只保留读取独立响应的薄适配器。 |
-| `calcite-rel-boundary.ts` | 0 | 414 | **Native 与 Sidecar 的最小类型/编码边界（C）**。只声明稳定 wire shape、fingerprint 和 Native 写侧序列化；不包含完整 contract validation 或 reconciliation。保留。 |
-| `machine-facts-gate-input.ts` | 655 | 655 | **必须理解主仓库内部类型/事实（A）**。读取 Input Pack、Machine Facts、`Schema`、Task/表身份和 hash；不能移到不认识主仓库 artifacts 的 Sidecar。保留。 |
-| `plan-facts-rel-contract.ts` | 587 | 0 | **纯 Calcite 协议 contract validation（C）**。定义关系图约束并校验 Sidecar 输入；已迁移为 Sidecar 同名模块。 |
-| `plan-facts-rel-projector.ts` | 1575 | 1559 | **必须理解主仓库内部类型（A）**。从 `PlanRelation`、`ExprSpec`、dialect、physical field identity 和 Native evidence 投影 JSON；迁移执行器而非投影器，保留。 |
-| `project-machine-facts-gate.ts` | 73 | 73 | **必须理解主仓库内部 artifacts（A）**。主仓库 CLI，读取 facts root 并输出 Plan Facts 请求；保留为显式入口，不启动 Sidecar。 |
-| `protocol.ts` | 1249 | 0 | **纯 Calcite JSON/file/process 协议（C）**。`PLAN_FACTS_REL_V1` envelope、硬上限、request/response validation 和 deterministic serialization 已迁移为 Sidecar 同名模块。 |
-| `reconciler.ts` | 478 | 0 | **纯 Calcite artifact reconciliation（C）**。只比较 Native/Calcite observations；已迁移为 Sidecar 同名模块，主仓库不再保留实现。 |
-| `run-differential.ts` | 550 | 0 | **纯 Calcite 协议/进程执行与 staging 编排（B）**。其 Sidecar 责任由外部 runner 和 Sidecar-local report 接管，删除。 |
-| `schema-type-projection.ts` | 1037 | 1037 | **必须理解主仓库内部类型/证据（A）**。把 DDL、schema provider、Column 和 nullable/type evidence 转为 Calcite-facing concrete type；只输出稳定 JSON，不包含 Calcite runtime，保留。 |
+| 文件                              | 迁移前 | 当前 | 分类与处理                                                                                                                                                                         |
+| --------------------------------- | -----: | ---: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bridge-client.ts`                |    652 |    0 | **纯 Calcite 协议/进程执行（B）**。负责启动 Java、读写 JSONL、超时和输出校验；功能由 Sidecar `sidecar-runner.mjs` 接管，删除。                                                     |
+| `build-causal-evidence-report.ts` |    287 |    0 | **纯差分实验报告编排（B）**。负责调用 bridge 并写独立报告；Sidecar 生成 `INDEPENDENT_DIFFERENTIAL_REPORT`，删除。主仓库只保留读取独立响应的薄适配器。                              |
+| `calcite-rel-boundary.ts`         |      0 |  414 | **Native 与 Sidecar 的最小类型/编码边界（C）**。只声明稳定 wire shape、fingerprint 和 Native 写侧序列化；不包含完整 contract validation 或 reconciliation。保留。                  |
+| `machine-facts-gate-input.ts`     |    655 |  655 | **必须理解主仓库内部类型/事实（A）**。读取 Input Pack、Machine Facts、`Schema`、Task/表身份和 hash；不能移到不认识主仓库 artifacts 的 Sidecar。保留。                              |
+| `plan-facts-rel-contract.ts`      |    587 |    0 | **纯 Calcite 协议 contract validation（C）**。定义关系图约束并校验 Sidecar 输入；已迁移为 Sidecar 同名模块。                                                                       |
+| `plan-facts-rel-projector.ts`     |   1575 | 1559 | **必须理解主仓库内部类型（A）**。从 `PlanRelation`、`ExprSpec`、dialect、physical field identity 和 Native evidence 投影 JSON；迁移执行器而非投影器，保留。                        |
+| `project-machine-facts-gate.ts`   |     73 |   73 | **必须理解主仓库内部 artifacts（A）**。主仓库 CLI，读取 facts root 并输出 Plan Facts 请求；保留为显式入口，不启动 Sidecar。                                                        |
+| `protocol.ts`                     |   1249 |    0 | **纯 Calcite JSON/file/process 协议（C）**。`PLAN_FACTS_REL_V1` envelope、硬上限、request/response validation 和 deterministic serialization 已迁移为 Sidecar 同名模块。           |
+| `reconciler.ts`                   |    478 |    0 | **纯 Calcite artifact reconciliation（C）**。只比较 Native/Calcite observations；已迁移为 Sidecar 同名模块，主仓库不再保留实现。                                                   |
+| `run-differential.ts`             |    550 |    0 | **纯 Calcite 协议/进程执行与 staging 编排（B）**。其 Sidecar 责任由外部 runner 和 Sidecar-local report 接管，删除。                                                                |
+| `schema-type-projection.ts`       |   1037 | 1037 | **必须理解主仓库内部类型/证据（A）**。把 DDL、schema provider、Column 和 nullable/type evidence 转为 Calcite-facing concrete type；只输出稳定 JSON，不包含 Calcite runtime，保留。 |
 
 因此，B 类执行、实验编排和 C 类完整协议/重协调均已外移；主仓库只保留 A 类事实投影以及 414 行的 Native 写侧边界。四个 A 类文件直接依赖 `scripts/plans`、Input Pack、Machine Facts、schema/provider 和 Native evidence 类型，逐文件移出会把主仓库内部模型复制进 Sidecar，或产生跨目录源码依赖；这是保留它们的边界证据。完整 contract validation 在 Sidecar 进程入口执行。
 
