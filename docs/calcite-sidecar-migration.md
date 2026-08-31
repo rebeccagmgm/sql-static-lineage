@@ -14,6 +14,7 @@ Sidecar 的精确目录是：
 - `96b7c38 feat: retain legacy Calcite compatibility in sidecar`
 - `d99be05 fix: isolate legacy sidecar compile output`
 - `cdad683 feat: move semantic shadow lane into sidecar`
+- `6e5754f feat: move differential protocol into sidecar`
 
 Sidecar 的 Java/Maven 依赖固定为 Calcite `1.42.0`。主仓库只产生和消费显式版本化的 `PLAN_FACTS_REL_V1` JSONL；Sidecar 只返回独立差分响应和 staging 报告。Sidecar 不写 canonical artifacts、causal decisions 或 negative conclusions。`RAW_SQL_V1` 仅保留显式调用的 legacy 兼容测试路径，Plan Facts Rel bridge 不把原始 SQL 当作输入。
 
@@ -25,26 +26,27 @@ Sidecar 的 Java/Maven 依赖固定为 Calcite `1.42.0`。主仓库只产生和�
 
 ## `scripts/calcite-differential` 逐文件分类
 
-行数口径是迁移前主仓库提交 `ed9b661` 的 Git 文件行数；当前行数使用相同工作树的文本行统计。
+行数口径是迁移前基线提交 `0319c75` 的 Git 文件行数；当前行数使用相同工作树的文本行统计。
 
 | 文件 | 迁移前 | 当前 | 分类与处理 |
 | --- | ---: | ---: | --- |
-| `bridge-client.ts` | 622 | 0 | **纯 Calcite 协议/进程执行（B）**。负责启动 Java、读写 JSONL、超时和输出校验；功能由 Sidecar `sidecar-runner.mjs` 接管，删除。 |
-| `build-causal-evidence-report.ts` | 274 | 0 | **纯差分实验报告编排（B）**。负责调用 bridge 并写独立报告；Sidecar 生成 `INDEPENDENT_DIFFERENTIAL_REPORT`，删除。主仓库只保留读取独立响应的薄适配器。 |
-| `machine-facts-gate-input.ts` | 622 | 655 | **必须理解主仓库内部类型/事实（A）**。读取 Input Pack、Machine Facts、`Schema`、Task/表身份和 hash；不能移到不认识主仓库 artifacts 的 Sidecar。保留。 |
-| `plan-facts-rel-contract.ts` | 548 | 587 | **稳定 JSON 协议边界（C）**。定义 Sidecar 可消费的关系图形状和 contract validation；它是主仓库投影器的权威出口，不含 Java/Calcite 执行，保留。 |
-| `plan-facts-rel-projector.ts` | 1539 | 1575 | **必须理解主仓库内部类型（A）**。从 `PlanRelation`、`ExprSpec`、dialect、physical field identity 和 Native evidence 投影 JSON；迁移执行器而非投影器，保留。 |
-| `project-machine-facts-gate.ts` | 66 | 73 | **必须理解主仓库内部 artifacts（A）**。主仓库 CLI，读取 facts root 并输出 Plan Facts 请求；保留为显式入口，不启动 Sidecar。 |
-| `protocol.ts` | 1173 | 1249 | **稳定 JSON/file/process 协议（C）**。定义 `PLAN_FACTS_REL_V1`、fingerprint、硬上限、序列化和 response validation；是主仓库与独立进程之间的版本化防火墙，保留。 |
-| `reconciler.ts` | 452 | 478 | **稳定 JSON artifact 消费（C）**。只比较已产生的 Native/Calcite observation，不读 SQL、不启动 Java、不写 canonical artifact；当前仍被兼容协议和既有单元测试使用，保留为协议侧兼容适配，不进入因果闭包。 |
-| `run-differential.ts` | 527 | 0 | **纯 Calcite 协议/进程执行与 staging 编排（B）**。其 Sidecar 责任由外部 runner 和 Sidecar-local report 接管，删除。 |
-| `schema-type-projection.ts` | 978 | 1037 | **必须理解主仓库内部类型/证据（A）**。把 DDL、schema provider、Column 和 nullable/type evidence 转为 Calcite-facing concrete type；只输出稳定 JSON，不包含 Calcite runtime，保留。 |
+| `bridge-client.ts` | 652 | 0 | **纯 Calcite 协议/进程执行（B）**。负责启动 Java、读写 JSONL、超时和输出校验；功能由 Sidecar `sidecar-runner.mjs` 接管，删除。 |
+| `build-causal-evidence-report.ts` | 287 | 0 | **纯差分实验报告编排（B）**。负责调用 bridge 并写独立报告；Sidecar 生成 `INDEPENDENT_DIFFERENTIAL_REPORT`，删除。主仓库只保留读取独立响应的薄适配器。 |
+| `calcite-rel-boundary.ts` | 0 | 414 | **Native 与 Sidecar 的最小类型/编码边界（C）**。只声明稳定 wire shape、fingerprint 和 Native 写侧序列化；不包含完整 contract validation 或 reconciliation。保留。 |
+| `machine-facts-gate-input.ts` | 655 | 655 | **必须理解主仓库内部类型/事实（A）**。读取 Input Pack、Machine Facts、`Schema`、Task/表身份和 hash；不能移到不认识主仓库 artifacts 的 Sidecar。保留。 |
+| `plan-facts-rel-contract.ts` | 587 | 0 | **纯 Calcite 协议 contract validation（C）**。定义关系图约束并校验 Sidecar 输入；已迁移为 Sidecar 同名模块。 |
+| `plan-facts-rel-projector.ts` | 1575 | 1559 | **必须理解主仓库内部类型（A）**。从 `PlanRelation`、`ExprSpec`、dialect、physical field identity 和 Native evidence 投影 JSON；迁移执行器而非投影器，保留。 |
+| `project-machine-facts-gate.ts` | 73 | 73 | **必须理解主仓库内部 artifacts（A）**。主仓库 CLI，读取 facts root 并输出 Plan Facts 请求；保留为显式入口，不启动 Sidecar。 |
+| `protocol.ts` | 1249 | 0 | **纯 Calcite JSON/file/process 协议（C）**。`PLAN_FACTS_REL_V1` envelope、硬上限、request/response validation 和 deterministic serialization 已迁移为 Sidecar 同名模块。 |
+| `reconciler.ts` | 478 | 0 | **纯 Calcite artifact reconciliation（C）**。只比较 Native/Calcite observations；已迁移为 Sidecar 同名模块，主仓库不再保留实现。 |
+| `run-differential.ts` | 550 | 0 | **纯 Calcite 协议/进程执行与 staging 编排（B）**。其 Sidecar 责任由外部 runner 和 Sidecar-local report 接管，删除。 |
+| `schema-type-projection.ts` | 1037 | 1037 | **必须理解主仓库内部类型/证据（A）**。把 DDL、schema provider、Column 和 nullable/type evidence 转为 Calcite-facing concrete type；只输出稳定 JSON，不包含 Calcite runtime，保留。 |
 
-因此，B 类执行和实验编排均已外移；A 类主仓库事实投影和 C 类稳定协议/兼容边界没有被错误地复制成跨目录 TypeScript import。C 类保留是为了让主仓库能确定性地产生/校验协议，并不是 Sidecar 依赖主仓库源码。
+因此，B 类执行、实验编排和 C 类完整协议/重协调均已外移；主仓库只保留 A 类事实投影以及 414 行的 Native 写侧边界。四个 A 类文件直接依赖 `scripts/plans`、Input Pack、Machine Facts、schema/provider 和 Native evidence 类型，逐文件移出会把主仓库内部模型复制进 Sidecar，或产生跨目录源码依赖；这是保留它们的边界证据。完整 contract validation 在 Sidecar 进程入口执行。
 
 ## 主仓库因果适配层
 
-`scripts/reconcile/consumer/target-field-causal-slice/calcite-causal-evidence.ts` 从迁移前 1391 行缩为 800 行，刚好落在约定的 300–800 行范围内。它现在只做：
+`scripts/reconcile/consumer/target-field-causal-slice/calcite-causal-evidence.ts` 从基线 1453 行缩为 798 行，落在约定的 300–800 行范围内。它现在只做：
 
 - 校验 Sidecar observation 到 Native relation occurrence、field/output ordinal 和 evidence ref 的唯一映射；
 - 把 `EVALUATED`、`NOT_EVALUATED`、`UNMAPPABLE` 转成独立证据及 fail-closed gap；
@@ -65,7 +67,15 @@ Sidecar 的 semantic-shadow 输入可以是 Native operator batch + Calcite resp
 scripts/calcite-differential/bridge-client.ts
 scripts/calcite-differential/build-causal-evidence-report.ts
 scripts/calcite-differential/run-differential.ts
+scripts/calcite-differential/plan-facts-rel-contract.ts
+scripts/calcite-differential/protocol.ts
+scripts/calcite-differential/reconciler.ts
+scripts/calcite-oracle/protocol.ts
+scripts/calcite-oracle/reconciler.ts
 tests/calcite-differential/bridge-client.test.ts
+tests/calcite-differential/plan-facts-rel-contract.test.ts
+tests/calcite-differential/protocol.test.ts
+tests/calcite-oracle-reconciler.test.ts
 tests/fixtures/calcite-oracle/basic-request.json
 tools/calcite-rel-bridge/README.md
 tools/calcite-rel-bridge/pom.xml
@@ -82,9 +92,9 @@ tests/target-field-causal-slice/calcite-shadow-report.test.ts
 tests/fixtures/target-field-causal-slice/calcite-differential/batches.ts
 ```
 
-`tools/calcite-oracle/README.md` 和 `tools/calcite-oracle/test-runtime.ps1` 没有删除：它们是短的 deprecated compatibility wrapper，明确指向 Sidecar；`scripts/calcite-oracle/protocol.ts`/`reconciler.ts` 也保留为稳定协议兼容出口。没有删除 Native causal closure、Native pipeline、write identity、Candidate Universe 或跨 Task propagation。
+`tools/calcite-oracle/README.md` 和 `tools/calcite-oracle/test-runtime.ps1` 没有删除：它们是短的 deprecated compatibility wrapper，明确指向 Sidecar。原 `scripts/calcite-oracle/protocol.ts`/`reconciler.ts` 已随纯协议迁移删除，兼容实现由 Sidecar 本地 `protocol.ts`/`reconciler.ts` 和 legacy runner 提供。没有删除 Native causal closure、Native pipeline、write identity、Candidate Universe 或跨 Task propagation。
 
-第一阶段明确替代文件清单共 4557 行；其迁移提交实际为 `+389/-6357`，其中包含 `calcite-causal-evidence.ts` 的适配层收缩。第二阶段 semantic-shadow 删除清单共 2046 行，另从通用重协调测试移除了 31 行 Calcite mapping 专项测试，提交实际为 `+32/-2144`。从基线 `0319c75` 到当前主仓库 HEAD 的三次迁移相关提交合计为 30 个文件、`+417/-8497`，净减少 8080 行（包含文档和 package 命令变更）；其中已迁移/删除的 Calcite 实现和测试均已在 Sidecar 独立提交中有对应能力或专项验证。
+第一阶段明确替代文件清单共 4557 行；其迁移提交实际为 `+389/-6357`，其中包含 `calcite-causal-evidence.ts` 的适配层收缩。第二阶段 semantic-shadow 删除清单共 2046 行，另从通用重协调测试移除了 31 行 Calcite mapping 专项测试，提交实际为 `+32/-2144`。本阶段把主仓库的 protocol/contract/reconciler 及其纯协议测试再删除 3514 行，并在 Sidecar 增加独立协议/contract/reconciliation 测试。以基线 `0319c75` 统计，主仓库源代码/测试/工具共 40 个文件、`+697/-12023`，净减少 11326 行；含迁移文档和 package 命令则为 42 个文件、`+860/-12025`，净减少 11165 行。`scripts/calcite-differential` 从 7143 行降为 3738 行，净减少 3405 行；其中 414 行是最小 Native wire boundary，`calcite-causal-evidence.ts` 从 1453 行降为 798 行，净减少 655 行。纯协议/contract/reconciliation 的 3514 行已删除，Sidecar 以本地 `protocol.ts`（1249）、`plan-facts-rel-contract.ts`（587）、`reconciler.ts`（478）和 `differential-test.mjs`（219）承接。
 
 ## 依赖扫描
 
@@ -107,6 +117,7 @@ Sidecar 只使用 Java 标准库、Calcite 1.42.0 Maven cache/classpath 和 Node
 Set-Location 'E:\02_area\股衍数据-数据cookbook\scripts\Calcite'
 npm run build
 npm test
+npm run test:differential
 npm run test:legacy
 npm run smoke
 npm run test:semantic-shadow
@@ -121,10 +132,11 @@ npm run smoke:semantic-shadow
 Set-Location 'C:\Users\13246\.codex\worktrees\0bdd\sql-static-lineage'
 npm run typecheck
 npm run test:calcite-differential
-npm run test:calcite-oracle
 npm run test:causal-slice
 npm run test:target-table-causal-closure
 ```
+
+结果：`typecheck` 通过；Calcite differential 为 4 个文件、38 个测试通过；causal slice 为 15 个文件、109 个测试通过；target-table causal closure 为 1 个文件、19 个测试通过。Sidecar 的 `npm test` 已完成真实 Java/JSONL 往返，并通过本阶段新增的 `test:differential`。未重复执行主仓库的 legacy wrapper，因为 Sidecar 的真实 smoke 已覆盖相同独立桥接路径。
 
 本轮按收口范围未运行全量 `npm test`、`format:check` 或额外的 field-lineage 矩阵；Native 默认隔离由 typecheck、causal/closure 目标测试、默认命令静态扫描和未调用 Sidecar 的执行路径共同覆盖。
 
@@ -139,10 +151,11 @@ Native 默认路径不调用 `calcite-differential:project`、`test:calcite-orac
 
 ## 提交与限制
 
-- Sidecar 独立提交：`7a500b6`、`96b7c38`、`d99be05`、`cdad683`，目标目录工作树应保持 clean。
+- Sidecar 独立提交：`7a500b6`、`96b7c38`、`d99be05`、`cdad683`、`6e5754f`，目标目录工作树应保持 clean。
 - 主仓库 package 命令调整单独提交：`ed9b661`，仅将旧 `calcite-causal-evidence` script 替换为 `calcite-differential:project`；`package-lock.json` 未改动。
-- 主仓库 semantic-shadow 删除/适配提交：`f93d2b9`，只删除 Sidecar 已接管的 semantic mapping/shadow 实现、专项 fixture/test，并移除旧 CLI writer；未改动 package 文件。
-- 主仓库删除/适配/测试/文档为本轮独立原子提交；不合并 main、不推送远端。
+- 主仓库 semantic-shadow 删除/适配提交：`a39dcb7`，只删除 Sidecar 已接管的 semantic mapping/shadow 实现、专项 fixture/test，并移除旧 CLI writer；未改动 package 文件。
+- 主仓库 package 清理提交：`8014497`，只移除已经迁移的 `tests/calcite-oracle-reconciler.test.ts` 测试入口；`package-lock.json` 未改动。
+- 主仓库协议迁移/冗余删除提交：`b2e09ad`，包含本阶段 15 个文件、`+429/-3527`；不合并 main、不推送远端。
 - Calcite 是差分证据，不是运行成功、数据到达或业务正确性的证明；Sidecar failure/unsupported/NOT_EVALUATED 不能反推负面业务结论。
 - 本次没有实现新的 join、aggregate、setop 或 window 算子语义；Sidecar 只承接已有 bridge 能力和兼容路径。
 - Maven 未安装是当前环境限制，不是 Sidecar 依赖主仓库的理由；独立 javac/runtime 检查已覆盖真实执行。
