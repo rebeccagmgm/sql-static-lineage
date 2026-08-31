@@ -49,8 +49,10 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeRelationCache,
+  readHoraeTaskTypeCache,
   scheduleEvidenceCachePath,
   writeHoraeRelationCache,
+  writeHoraeTaskTypeCache,
   type ScheduleEvidenceCacheStatus,
 } from "../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
@@ -71,6 +73,7 @@ const DEFAULT_MAX_TASKS = 1000;
 const DEFAULT_MAX_EDGES = 10000;
 const DEFAULT_MAX_DISCOVERED_TASKS = 5000;
 const DEFAULT_HORAE_PREFETCH_CONCURRENCY = 4;
+const DEFAULT_HORAE_MIN_INTERVAL_MS = 2_000;
 const DEFAULT_HORAE_PREFETCH_MAX_TOTAL_BYTES = 64 * 1024 * 1024;
 const DEFAULT_FIELD_PRODUCER_DISCOVERY_ATTEMPTS = 3;
 const execFileAsync = promisify(execFile);
@@ -126,6 +129,49 @@ function defaultSleep(milliseconds: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
+function defaultAsyncSleep(milliseconds: number): Promise<void> {
+  return milliseconds <= 0
+    ? Promise.resolve()
+    : new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export class HoraeSerialGate {
+  private tail: Promise<void> = Promise.resolve();
+
+  private lastStartedAt: number | undefined;
+
+  public constructor(
+    private readonly minIntervalMs: number,
+    private readonly now: () => number = Date.now,
+    private readonly sleep: (
+      milliseconds: number,
+    ) => Promise<void> = defaultAsyncSleep,
+  ) {
+    if (!Number.isSafeInteger(minIntervalMs) || minIntervalMs < 0)
+      throw new Error("HORAE_MIN_INTERVAL_INVALID");
+  }
+
+  public async run<T>(operation: () => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const previous = this.tail;
+    this.tail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      const previousStart = this.lastStartedAt;
+      if (previousStart !== undefined) {
+        const remaining = this.minIntervalMs - (this.now() - previousStart);
+        if (remaining > 0) await this.sleep(remaining);
+      }
+      this.lastStartedAt = this.now();
+      return await operation();
+    } finally {
+      release();
+    }
+  }
+}
+
 function defaultFieldProducerDiscovery(qualifiedName: string): readonly string[] {
   return queryProducerTaskIds(
     qualifiedName,
@@ -170,6 +216,10 @@ export interface HoraePrefetchOptions {
   readonly maxTotalBytes?: number;
   /** Null disables the cache; omitted uses the fixed root for the default runner. */
   readonly cacheRoot?: string | null;
+  /** Cache the complete normalized `horae detail` row beside relation evidence. */
+  readonly cacheTaskDetails?: boolean;
+  /** Minimum start-to-start interval for all Horae calls in this prefetch. */
+  readonly horaeMinIntervalMs?: number;
 }
 
 function rowsOfHorae(value: unknown, taskId: string): Record<string, unknown>[] {
@@ -187,6 +237,20 @@ function rowsOfHorae(value: unknown, taskId: string): Record<string, unknown>[] 
     if (Array.isArray(record[field])) return rowsOfHorae(record[field], taskId);
   }
   throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ENVELOPE:${taskId}`);
+}
+
+function detailOfHorae(
+  value: unknown,
+  taskId: string,
+): Record<string, unknown> {
+  const row = Array.isArray(value) ? value[0] : value;
+  if (!row || typeof row !== "object" || Array.isArray(row))
+    throw new Error(`HORAE_TASK_DETAIL_INVALID:${taskId}`);
+  return row as Record<string, unknown>;
+}
+
+function horaeDetailArguments(taskId: string): readonly string[] {
+  return ["horae", "detail", taskId, "-f", "json"];
 }
 
 async function defaultHoraeRunner(args: readonly string[]): Promise<unknown> {
@@ -221,6 +285,40 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
   const maxTotalBytes = options.maxTotalBytes ?? DEFAULT_HORAE_PREFETCH_MAX_TOTAL_BYTES;
   if (![maxRowsPerTask, maxTotalRows, maxTotalBytes].every((value) => Number.isSafeInteger(value) && value > 0)) throw new Error("HORAE_PREFETCH_BUDGET_INVALID");
   const result = new Map<string, PrefetchedScheduleEvidence>();
+  const cacheTaskDetails =
+    options.cacheTaskDetails ??
+    (options.run === undefined && cacheRoot !== null);
+  const horaeGate = new HoraeSerialGate(
+    options.horaeMinIntervalMs ??
+      (options.run === undefined ? DEFAULT_HORAE_MIN_INTERVAL_MS : 0),
+  );
+  const detailPromises = new Map<string, Promise<void>>();
+  const runHorae = (args: readonly string[]): Promise<unknown> =>
+    horaeGate.run(() => run(args));
+  const cacheTaskDetail = (taskId: string): Promise<void> => {
+    if (!cacheTaskDetails || cacheRoot === null) return Promise.resolve();
+    const cached = readHoraeTaskTypeCache(taskId, cacheRoot);
+    if (cached.status === "HIT") return Promise.resolve();
+    const existing = detailPromises.get(taskId);
+    if (existing !== undefined) return existing;
+    const promise = runHorae(horaeDetailArguments(taskId))
+      .then((response) => detailOfHorae(response, taskId))
+      .then((detail) => {
+        try {
+          writeHoraeTaskTypeCache(taskId, now(), detail, cacheRoot);
+        } catch {
+          // Detail enrichment is optional; relation evidence remains usable.
+        }
+      })
+      .catch(() => {
+        // Detail enrichment is optional; relation evidence remains usable.
+      })
+      .finally(() => {
+        detailPromises.delete(taskId);
+      });
+    detailPromises.set(taskId, promise);
+    return promise;
+  };
   let cursor = 0;
   let stopped = false;
   let totalRows = 0;
@@ -245,7 +343,7 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
           cachePath = cached.path;
         } else {
           const started = now();
-          const parsed = await run(args);
+          const parsed = await runHorae(args);
           rows = rowsOfHorae(parsed, taskId);
           observedAt = started;
           if (cacheRoot !== null) {
@@ -264,6 +362,15 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
           } catch {
             // Scheduler evidence remains usable when the optional cache is not writable.
           }
+        }
+        if (cacheTaskDetails) {
+          const detailTaskIds = [
+            taskId,
+            ...rows.map((row) => row.task_id ?? row.taskId),
+          ]
+            .filter((value): value is string => typeof value === "string")
+            .filter((value, index, values) => values.indexOf(value) === index);
+          await Promise.all(detailTaskIds.map(cacheTaskDetail));
         }
         result.set(taskId, {
           rows,
