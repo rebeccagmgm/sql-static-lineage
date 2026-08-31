@@ -8,14 +8,14 @@
 
 ## 文件处置
 
-| 主仓原文件 | 当前处置 | 边界理由 |
-| --- | --- | --- |
-| `scripts/calcite-differential/plan-facts-rel-projector.ts` | 迁至 `Calcite/native-input/plan-facts-rel-projector.ts` | 只把 canonical Plan Facts 关系形状投影为版本化 `PLAN_FACTS_REL_V1`；不做跨 Task 因果。 |
-| `scripts/calcite-differential/schema-type-projection.ts` | 迁至 `Calcite/native-input/schema-type-projection.ts` | 只构造 Calcite schema/type；DDL 读取器也改为 Sidecar 内的 `native-input/ddl-schema.ts`，不再依赖主仓 parser/provider。 |
-| `scripts/calcite-differential/machine-facts-gate-input.ts` | 迁至 `Calcite/native-input/machine-facts-gate-input.ts` | Sidecar 直接读取 canonical Machine Facts、table DDL 和 hash/identity gate；不重新生成或发布主仓 artifact。 |
-| `scripts/calcite-differential/calcite-rel-boundary.ts` | 从主仓删除 | wire protocol 和 Rel graph contract 已由 Sidecar 根目录的 `protocol.ts`、`plan-facts-rel-contract.ts` 承担，未复制第二份边界。 |
-| `scripts/calcite-differential/project-machine-facts-gate.ts` | 迁至 `Calcite/native-input/project-machine-facts-gate.ts` | 仅编排 canonical artifact 到请求 JSONL 的 Sidecar 输入阶段。 |
-| `scripts/reconcile/consumer/target-field-causal-slice/calcite-causal-evidence.ts` | 迁至 `Calcite/candidate-evidence/calcite-causal-evidence.ts` | 只生成独立、版本化 candidate evidence；不生成 semantic dependency、edge、assessment、negative proof 或 target closure。 |
+| 主仓原文件                                                                        | 当前处置                                                     | 边界理由                                                                                                                       |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/calcite-differential/plan-facts-rel-projector.ts`                        | 迁至 `Calcite/native-input/plan-facts-rel-projector.ts`      | 只把 canonical Plan Facts 关系形状投影为版本化 `PLAN_FACTS_REL_V1`；不做跨 Task 因果。                                         |
+| `scripts/calcite-differential/schema-type-projection.ts`                          | 迁至 `Calcite/native-input/schema-type-projection.ts`        | 只构造 Calcite schema/type；DDL 读取器也改为 Sidecar 内的 `native-input/ddl-schema.ts`，不再依赖主仓 parser/provider。         |
+| `scripts/calcite-differential/machine-facts-gate-input.ts`                        | 迁至 `Calcite/native-input/machine-facts-gate-input.ts`      | Sidecar 直接读取 canonical Machine Facts、table DDL 和 hash/identity gate；不重新生成或发布主仓 artifact。                     |
+| `scripts/calcite-differential/calcite-rel-boundary.ts`                            | 从主仓删除                                                   | wire protocol 和 Rel graph contract 已由 Sidecar 根目录的 `protocol.ts`、`plan-facts-rel-contract.ts` 承担，未复制第二份边界。 |
+| `scripts/calcite-differential/project-machine-facts-gate.ts`                      | 迁至 `Calcite/native-input/project-machine-facts-gate.ts`    | 仅编排 canonical artifact 到请求 JSONL 的 Sidecar 输入阶段。                                                                   |
+| `scripts/reconcile/consumer/target-field-causal-slice/calcite-causal-evidence.ts` | 迁至 `Calcite/candidate-evidence/calcite-causal-evidence.ts` | 只生成独立、版本化 candidate evidence；不生成 semantic dependency、edge、assessment、negative proof 或 target closure。        |
 
 对应专项测试也已迁移到 Sidecar 的 `native-input-test.mjs`、
 `candidate-evidence-test.mjs` 和 `native-artifact-test.mjs`。主仓原
