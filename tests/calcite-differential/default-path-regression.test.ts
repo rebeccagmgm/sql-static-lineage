@@ -55,9 +55,7 @@ describe("Calcite-disabled default path regression", () => {
       "write:task-1:0",
     ]);
 
-    expect(options.semanticOracle).toBeUndefined();
-    expect(options.calciteMappingReport).toBeUndefined();
-    expect(options.semanticOracleOutput).toBeUndefined();
+    expect(options.output).toBe("slice.json");
   });
 
   it("keeps the new differential module out of default canonical entrypoints", () => {

@@ -13,6 +13,7 @@ Sidecar 的精确目录是：
 - `7a500b6 feat: add independent Calcite sidecar`
 - `96b7c38 feat: retain legacy Calcite compatibility in sidecar`
 - `d99be05 fix: isolate legacy sidecar compile output`
+- `cdad683 feat: move semantic shadow lane into sidecar`
 
 Sidecar 的 Java/Maven 依赖固定为 Calcite `1.42.0`。主仓库只产生和消费显式版本化的 `PLAN_FACTS_REL_V1` JSONL；Sidecar 只返回独立差分响应和 staging 报告。Sidecar 不写 canonical artifacts、causal decisions 或 negative conclusions。`RAW_SQL_V1` 仅保留显式调用的 legacy 兼容测试路径，Plan Facts Rel bridge 不把原始 SQL 当作输入。
 
@@ -52,7 +53,9 @@ Sidecar 的 Java/Maven 依赖固定为 Calcite `1.42.0`。主仓库只产生和�
 
 它不再构造 `SemanticDependencyDefinition`、`SemanticDependencyApplication` 或 edge，不接收 Calcite 结果进入 canonical normalization/traversal，也不使用 `rootTargetFieldId` 制造 target edge。`--calcite-causal-evidence` 作为 canonical slice 输入会明确报错，独立报告必须在 Sidecar lane 单独检查。
 
-`calcite-semantic-mapping.ts` 与 `calcite-shadow-report.ts` 是既有的可选 semantic-shadow artifact consumer，仍需读取 Native operator/evidence identity，且由 `--semantic-oracle calcite` 显式调用；它们不进入默认 Native pipeline，也不包含 Java/Maven/进程执行。本次不把未完成的 join/aggregate 等语义扩展混入迁移。
+`calcite-semantic-mapping.ts` 与 `calcite-shadow-report.ts` 原本是由 `--semantic-oracle calcite` 显式调用的 Calcite 专属 semantic-shadow consumer。它们已迁移为 Sidecar 内的 `semantic-mapping.ts`、`semantic-shadow-report.ts`，并由 `semantic-shadow-runner.mjs` 通过 `CALCITE_SEMANTIC_SHADOW_V1` file/process contract 编排。主仓库不再保留该 flag 的实现或输出 writer；旧 flag 只返回迁移提示。本次不把未完成的 join/aggregate 等语义扩展混入迁移。
+
+Sidecar 的 semantic-shadow 输入可以是 Native operator batch + Calcite response，也可以是已准备的 mapping report；输出为 `CALCITE_SEMANTIC_SHADOW_REPORT`。映射失败、unsupported、failed 和不确定身份继续保持 `NOT_EVALUATED`/`UNMAPPABLE`/`CONFLICT` 等 fail-closed 状态。该报告只表达独立 shadow 对照，不写 canonical dependencies、assessments、rerun sets 或业务负面结论。
 
 ## 精确删除清单
 
@@ -72,11 +75,16 @@ tools/calcite-rel-bridge/src/main/java/com/gf/sqlstaticlineage/calciterelbridge/
 tools/calcite-oracle/.gitignore
 tools/calcite-oracle/pom.xml
 tools/calcite-oracle/src/main/java/com/gf/sqlstaticlineage/calciteoracle/CalciteOracle.java
+scripts/reconcile/consumer/target-field-causal-slice/calcite-semantic-mapping.ts
+scripts/reconcile/consumer/target-field-causal-slice/calcite-shadow-report.ts
+tests/target-field-causal-slice/calcite-semantic-mapping.test.ts
+tests/target-field-causal-slice/calcite-shadow-report.test.ts
+tests/fixtures/target-field-causal-slice/calcite-differential/batches.ts
 ```
 
 `tools/calcite-oracle/README.md` 和 `tools/calcite-oracle/test-runtime.ps1` 没有删除：它们是短的 deprecated compatibility wrapper，明确指向 Sidecar；`scripts/calcite-oracle/protocol.ts`/`reconciler.ts` 也保留为稳定协议兼容出口。没有删除 Native causal closure、Native pipeline、write identity、Candidate Universe 或跨 Task propagation。
 
-迁移前上述删除清单共 4557 行；截至提交前、排除尚未暂存的本迁移文档，主仓库迁移 diff（包含因果适配器/测试收缩和兼容 wrapper）为 252 additions、6357 deletions，净减少 6105 行。迁移提交后以 `git show --stat` 复核最终提交统计。
+第一阶段明确替代文件清单共 4557 行；其迁移提交实际为 `+389/-6357`，其中包含 `calcite-causal-evidence.ts` 的适配层收缩。第二阶段 semantic-shadow 删除清单共 2046 行，另从通用重协调测试移除了 31 行 Calcite mapping 专项测试，提交实际为 `+32/-2144`。从基线 `0319c75` 到当前主仓库 HEAD 的三次迁移相关提交合计为 30 个文件、`+417/-8497`，净减少 8080 行（包含文档和 package 命令变更）；其中已迁移/删除的 Calcite 实现和测试均已在 Sidecar 独立提交中有对应能力或专项验证。
 
 ## 依赖扫描
 
@@ -101,9 +109,11 @@ npm run build
 npm test
 npm run test:legacy
 npm run smoke
+npm run test:semantic-shadow
+npm run smoke:semantic-shadow
 ```
 
-结果：`build`、主 runtime suite、legacy compatibility suite 和 smoke 均通过。`npm test` 通过了真实 JSONL 往返，并验证 response 为 `PLAN_FACTS_REL_V1`、`SUCCESS`，含 `tableOccurrences` 与 `expressionLineage`；runner 同时生成 `reportKind=INDEPENDENT_DIFFERENTIAL_REPORT` 和内容 hash。当前机器没有 `mvn` 命令，因此 `test-runtime.ps1` 使用 sidecar 内的 `-BuildOnly`/runtime javac 路径和已存在的本地 Maven cache；`pom.xml` 仍固定完整依赖和版本，具备 Maven 环境时可用标准 Maven 构建。
+结果：上述命令均通过。`npm test` 通过了真实 JSONL 往返，并验证 response 为 `PLAN_FACTS_REL_V1`、`SUCCESS`，含 `tableOccurrences` 与 `expressionLineage`；runner 同时生成 `reportKind=INDEPENDENT_DIFFERENTIAL_REPORT` 和内容 hash。semantic-shadow fixture 通过真实 Node process 往返，得到 `CALCITE_SEMANTIC_SHADOW_REPORT`、`overall=GO`、5 条 `AGREED` observation，并验证 canonical artifact 未变更。当前机器没有 `mvn` 命令，因此 `test-runtime.ps1` 使用 sidecar 内的 `-BuildOnly`/runtime javac 路径和已存在的本地 Maven cache；`pom.xml` 仍固定完整依赖和版本，具备 Maven 环境时可用标准 Maven 构建。
 
 本轮删除后在主仓库实际执行并通过：
 
@@ -129,9 +139,10 @@ Native 默认路径不调用 `calcite-differential:project`、`test:calcite-orac
 
 ## 提交与限制
 
-- Sidecar 独立提交：`7a500b6`、`96b7c38`、`d99be05`，目标目录工作树应保持 clean。
+- Sidecar 独立提交：`7a500b6`、`96b7c38`、`d99be05`、`cdad683`，目标目录工作树应保持 clean。
 - 主仓库 package 命令调整单独提交：`ed9b661`，仅将旧 `calcite-causal-evidence` script 替换为 `calcite-differential:project`；`package-lock.json` 未改动。
-- 主仓库删除/适配/测试/文档为后续独立原子提交；不合并 main、不推送远端。
+- 主仓库 semantic-shadow 删除/适配提交：`f93d2b9`，只删除 Sidecar 已接管的 semantic mapping/shadow 实现、专项 fixture/test，并移除旧 CLI writer；未改动 package 文件。
+- 主仓库删除/适配/测试/文档为本轮独立原子提交；不合并 main、不推送远端。
 - Calcite 是差分证据，不是运行成功、数据到达或业务正确性的证明；Sidecar failure/unsupported/NOT_EVALUATED 不能反推负面业务结论。
 - 本次没有实现新的 join、aggregate、setop 或 window 算子语义；Sidecar 只承接已有 bridge 能力和兼容路径。
 - Maven 未安装是当前环境限制，不是 Sidecar 依赖主仓库的理由；独立 javac/runtime 检查已覆盖真实执行。

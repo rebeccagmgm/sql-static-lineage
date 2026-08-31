@@ -4,7 +4,6 @@ import {
   reconcileCalciteResponse,
   reconcileDifferential,
 } from "../scripts/calcite-oracle/reconciler.ts";
-import { reconcileCalciteResponseWithSemanticMapping } from "../scripts/reconcile/consumer/target-field-causal-slice/calcite-semantic-mapping.ts";
 import type {
   CalciteOracleResponse,
   DifferentialObservationSet,
@@ -133,36 +132,6 @@ describe("Calcite differential reconciler", () => {
     expect(
       result.results.find((item) => item.kind === "predicates")?.nativeValues,
     ).toEqual(native.predicates?.values);
-  });
-
-  it("does not turn a real Calcite metadata response into a mapped causal result", () => {
-    const response: CalciteOracleResponse = {
-      protocolVersion: 1,
-      requestId: "209119-real-probe",
-      status: "FAILED",
-      fingerprint: {
-        tool: "calcite-offline-oracle",
-        calciteVersion: "1.42.0",
-        protocolVersion: 1,
-        buildFingerprint:
-          "calcite-offline-oracle/0.1.0;calcite/1.42.0;protocol/1",
-      },
-      error: {
-        code: "PLANNER_FAILURE",
-        message:
-          "Incorrect syntax near the keyword CONDITION in the 209119 query.",
-      },
-    };
-    const mapped = reconcileCalciteResponseWithSemanticMapping({
-      nativeBatches: [],
-      response,
-    });
-
-    expect(mapped.results).toEqual([]);
-    expect(
-      mapped.batches.every((batch) => batch.status === "NOT_EVALUATED"),
-    ).toBe(true);
-    expect(mapped.fingerprint?.calciteVersion).toBe("1.42.0");
   });
 
   it("keeps the recorded 209119 probe explicitly NO_GO and decision-free", () => {

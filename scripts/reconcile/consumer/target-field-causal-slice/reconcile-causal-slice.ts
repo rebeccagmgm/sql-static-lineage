@@ -102,9 +102,6 @@ export interface TargetFieldCausalSliceOptions {
   readonly output?: string;
   readonly outputDir?: string;
   readonly summaryOutput?: string;
-  readonly semanticOracle?: "calcite";
-  readonly calciteMappingReport?: string;
-  readonly semanticOracleOutput?: string;
   readonly maxDepth?: number;
   readonly maxValueStates?: number;
   readonly maxValuePaths?: number;
