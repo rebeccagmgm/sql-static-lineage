@@ -20,7 +20,7 @@ npm run producer-index -- --data-root <input-pack-root> [--output <producer-inde
 
 ## 按 Input Pack fingerprint 固定缓存
 
-一次运行只需要认定一个 Input Pack fingerprint，不需要维护全局“最新版”索引：
+`producer-index:pin` 仍保留给需要不可变快照目录的离线场景：
 
 ```text
 npm run producer-index:pin -- --data-root <input-pack-root> \
@@ -28,9 +28,11 @@ npm run producer-index:pin -- --data-root <input-pack-root> \
 ```
 
 命令把索引和 manifest 写入 `<cache-root>/<inputFingerprint>/`。相同 fingerprint
-直接复用原缓存；Input Pack 变化后生成新的缓存目录，不覆盖或宣告旧运行失效。缓存目录
-必须位于 Input Pack 之外。该模式仍会扫描输入以确定 fingerprint；真正的按 Pack 增量重算
-不属于本阶段。
+直接复用原缓存；Input Pack 变化后生成新的缓存目录，不覆盖或宣告旧运行失效。
+
+**`lineage:all` / Input Pack 闭包默认不再走这条路径。** 热路径改为固定可变索引
+`<data-root>.producer-index/producer-index.json`：有则直接加载，缺了或本轮补采后
+再全量重建，运行时不做整仓 fingerprint 寻址。
 
 ## 持续更新（快照复用 + 变化检测）
 

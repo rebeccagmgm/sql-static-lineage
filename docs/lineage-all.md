@@ -35,7 +35,7 @@ artifacts/tasks/<task-id>/
    └─ field-lineage.html    # 仅 --with-fields
 ```
 
-Machine Facts 使用输入根目录下已有的 `field-facts/` 长期缓存，并按任务输入内容哈希增量复用；它不会改变上述正式目录契约。Producer Index 的 fingerprint 缓存仍由现有实现维护在输入根目录之外，Input Pack 后续扩充时会在下一次运行中产生新的缓存版本。Horae relation 使用固定的 read-through 缓存：`E:\02_area\股衍数据-数据cookbook\sql-static-lineage-cache\schedule-evidence\tasks\<taskId>\horae-relation-up-depth-1.json`。缓存命中且 schema、Task ID、方向、深度、行记录和内容 SHA-256 校验通过时不访问 OpenCLI；缺失或校验失败才实时查询，成功结果原子写入。缓存是可删除的派生证据快照，没有 TTL，需要刷新时删除对应 Task 文件即可。查询失败、超时、非法 envelope 或缺失任务键都会 fail closed。所有下游阶段复用闭包返回的同一 Producer Index snapshot，并仅在发布前执行一次最终 Input Pack fingerprint 校验，发现中途变化则不覆盖正式产物。
+Machine Facts 使用输入根目录下已有的 `field-facts/` 长期缓存，并按任务输入内容哈希增量复用；它不会改变上述正式目录契约。Producer Index 默认使用输入根目录外的固定可变文件 `<data-root>.producer-index/producer-index.json`：存在则直接加载，不按整仓 fingerprint 寻址；仅在索引缺失/损坏，或本轮补采了新 Pack 时全量重建。Horae relation 使用固定的 read-through 缓存：`E:\02_area\股衍数据-数据cookbook\sql-static-lineage-cache\schedule-evidence\tasks\<taskId>\horae-relation-up-depth-1.json`。缓存命中且 schema、Task ID、方向、深度、行记录和内容 SHA-256 校验通过时不访问 OpenCLI；缺失或校验失败才实时查询，成功结果原子写入。缓存是可删除的派生证据快照，没有 TTL，需要刷新时删除对应 Task 文件即可。查询失败、超时、非法 envelope 或缺失任务键都会 fail closed。所有下游阶段复用闭包返回的同一 Producer Index；发布前不再做整仓 Input Pack fingerprint 对账。
 
 `input-pack-closure.json` 保存初始闭包、字段驱动补入的生产任务、最终任务集合、发现表、轮次和 Producer Index fingerprint。字段驱动补链不会重新从根任务展开新任务的全部 JOIN；直接/间接上游的分类仍以 `multi-hop.json` 为准。
 

@@ -169,7 +169,7 @@ describe("multi-hop autofill", () => {
     });
 
     expect(existsSync(cacheRoot)).toBe(true);
-    expect(readdirSync(cacheRoot)).toHaveLength(2);
+    expect(readdirSync(cacheRoot)).toEqual(["producer-index.json"]);
     expect(collectedBatches).toEqual([["B"]]);
     expect(result.report).toMatchObject({
       status: "COMPLETE",

@@ -2,9 +2,10 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  defaultMutableProducerIndexRoot,
+  loadOrRebuildTableProducerIndex,
   loadTableProducerIndex,
   loadTableProducerInputManifest,
-  pinTableProducerIndex,
   updateTableProducerIndex,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
@@ -43,7 +44,10 @@ export interface MultiHopAutofillOptions {
   readonly taskId: string;
   readonly dataRoot: string;
   readonly producerIndexPath?: string;
+  /** @deprecated Prefer producerIndexRoot; kept for CLI compatibility. */
   readonly producerIndexCacheRoot?: string;
+  /** Fixed mutable Producer Index directory (default: `<data-root>.producer-index`). */
+  readonly producerIndexRoot?: string;
   /** Read-through cache for every Horae relation fetched during closure. */
   readonly scheduleEvidenceCacheRoot?: string;
   readonly outputPath?: string;
@@ -348,8 +352,10 @@ export function runMultiHopAutofill(
   const producerIndexPath = options.producerIndexPath
     ? resolve(options.producerIndexPath)
     : null;
-  const producerIndexCacheRoot = resolve(
-    options.producerIndexCacheRoot ?? `${dataRoot}.producer-index-cache`,
+  const producerIndexRoot = resolve(
+    options.producerIndexRoot ??
+      options.producerIndexCacheRoot ??
+      defaultMutableProducerIndexRoot(dataRoot),
   );
   const manifestPath = producerIndexPath
     ? `${producerIndexPath}.manifest.json`
@@ -404,7 +410,7 @@ export function runMultiHopAutofill(
           now,
           allowInputChanges: options.allowInputChanges,
         }).index
-      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, {
+      : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
           now,
           allowInputChanges: options.allowInputChanges,
         }).index;
@@ -587,7 +593,8 @@ export function runMultiHopAutofill(
           now,
           allowInputChanges: options.allowInputChanges,
         }).index
-      : pinTableProducerIndex(dataRoot, producerIndexCacheRoot, {
+      : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
+          forceRebuild: true,
           now,
           allowInputChanges: options.allowInputChanges,
         }).index;

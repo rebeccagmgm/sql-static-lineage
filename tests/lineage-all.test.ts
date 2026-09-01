@@ -11,7 +11,11 @@ import {
   runLineageAll,
   prefetchHoraeRelations,
 } from "../scripts/pipeline/lineage-all.ts";
-import { scheduleEvidenceCachePath } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  readHoraeRelationCache,
+  scheduleEvidenceCachePath,
+  writeHoraeRelationCache,
+} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 function fakeMultiHop(taskId: string): any {
   return {
@@ -105,6 +109,68 @@ describe("lineage:all", () => {
     });
   });
 
+  it("prefetches downstream relations into a separate resumable cache", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "schedule-evidence-down-cache-"));
+    writeHoraeRelationCache(
+      "owner",
+      "2026-08-31T00:00:00.000Z",
+      [{ task_id: "upstream", task_name: "upstream-task" }],
+      cacheRoot,
+    );
+    const upstreamPath = scheduleEvidenceCachePath("owner", cacheRoot, "up");
+    const upstreamBefore = readFileSync(upstreamPath, "utf8");
+    const calls: string[][] = [];
+    const run = async (args: readonly string[]) => {
+      calls.push([...args]);
+      return [{ task_id: "consumer", task_name: "consumer-task" }];
+    };
+
+    const first = await prefetchHoraeRelations(["owner"], {
+      cacheRoot,
+      direction: "down",
+      run,
+      now: () => "2026-09-01T00:00:00.000Z",
+    });
+    const cachePath = scheduleEvidenceCachePath("owner", cacheRoot, "down");
+
+    expect(calls).toEqual([
+      [
+        "horae",
+        "relation",
+        "owner",
+        "--direction",
+        "down",
+        "--depth",
+        "1",
+        "-f",
+        "json",
+      ],
+    ]);
+    expect(cachePath).toMatch(/horae-relation-down-depth-1\.json$/);
+    expect(first.get("owner")).toMatchObject({
+      cacheStatus: "MISS",
+      cachePath,
+      rows: [{ task_id: "consumer", task_name: "consumer-task" }],
+    });
+    expect(readHoraeRelationCache("owner", cacheRoot, "down")).toMatchObject({
+      status: "HIT",
+      rows: [{ task_id: "consumer", task_name: "consumer-task" }],
+    });
+    expect(JSON.parse(readFileSync(cachePath, "utf8"))).toMatchObject({
+      task_id: "owner",
+      direction: "down",
+      depth: 1,
+    });
+    expect(readFileSync(upstreamPath, "utf8")).toBe(upstreamBefore);
+
+    await prefetchHoraeRelations(["owner"], {
+      cacheRoot,
+      direction: "down",
+      run,
+    });
+    expect(calls).toHaveLength(1);
+  });
+
   it("stops prefetch assignment after failure and waits for active runners", async () => {
     let active = 0; let settled = false; let calls = 0;
     await expect(prefetchHoraeRelations(["a", "b", "c", "d", "e", "f"], {
@@ -150,43 +216,39 @@ describe("lineage:all", () => {
   it("reuses closure producer snapshot and passes trusted fingerprint downstream", async () => {
     const root = mkdtempSync(join(tmpdir(), "lineage-snapshot-"));
     mkdirSync(join(root, "tasks"), { recursive: true }); mkdirSync(join(root, "tables"), { recursive: true });
-    const fingerprint = "a".repeat(64); let repins = 0; let loaded = 0; let oneTrusted = ""; let multiTrusted = "";
+    const fingerprint = "a".repeat(64); let rebuilds = 0; let loaded = 0; let oneTrusted = ""; let multiTrusted = "";
     const fakeIndex: any = { inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] };
     const result = await runLineageAll({ dataRoot: root, taskIds: ["snap"], dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
       autofill: () => ({ taskIds: ["snap"], discoveredTaskIds: ["snap"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", reused: true } }),
-      producerIndex: () => { repins += 1; return { index: fakeIndex } as any; }, loadProducerIndex: () => { loaded += 1; return fakeIndex; }, fingerprintInput: () => fingerprint,
+      producerIndex: () => { rebuilds += 1; return { index: fakeIndex, inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", rebuilt: false } as any; },
+      loadProducerIndex: () => { loaded += 1; return fakeIndex; },
       machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (_ids, opts) => { oneTrusted = opts.trustedInputFingerprint ?? ""; return [fakeOneHop("snap")]; }, multiHop: (_id, opts) => { multiTrusted = opts.trustedInputFingerprint ?? ""; return fakeMultiHop("snap"); },
       visualizeMultiHop: ({ outputPath }) => { mkdirSync(join(outputPath!, ".."), { recursive: true }); writeFileSync(outputPath!, "<html/>\n"); return outputPath!; },
     } });
-    expect(result.status).toBe("SUCCESS"); expect(repins).toBe(0); expect(loaded).toBe(1); expect(oneTrusted).toBe(fingerprint); expect(multiTrusted).toBe(fingerprint);
+    expect(result.status).toBe("SUCCESS"); expect(rebuilds).toBe(0); expect(loaded).toBe(1); expect(oneTrusted).toBe(fingerprint); expect(multiTrusted).toBe(fingerprint);
   });
 
-  it("keeps the existing formal artifact when the final fingerprint changes", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lineage-final-guard-"));
+  it("publishes even when the live Input Pack has drifted from the loaded index fingerprint", async () => {
+    const root = mkdtempSync(join(tmpdir(), "lineage-no-final-guard-"));
     mkdirSync(join(root, "tasks"), { recursive: true });
     mkdirSync(join(root, "tables"), { recursive: true });
     const artifactRoot = join(root, "artifacts");
-    const oldPath = formalArtifactPaths(artifactRoot, "guard").oneHop;
-    mkdirSync(join(artifactRoot, "tasks", "guard"), { recursive: true });
-    writeFileSync(oldPath, "OLD-FORMAL-ONE-HOP\n");
     const fingerprintA = "a".repeat(64);
-    let repins = 0;
+    let rebuilds = 0;
     const result = await runLineageAll({ dataRoot: root, artifactRoot, taskIds: ["guard"], dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
       autofill: () => ({ taskIds: ["guard"], discoveredTaskIds: ["guard"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprintA, indexPath: "snapshot", manifestPath: "manifest", reused: true } }),
-      producerIndex: () => { repins += 1; throw new Error("PRODUCER_INDEX_REPIN_UNEXPECTED"); },
+      producerIndex: () => { rebuilds += 1; throw new Error("PRODUCER_INDEX_REBUILD_UNEXPECTED"); },
       loadProducerIndex: () => ({ inputFingerprint: fingerprintA, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] } as any),
-      fingerprintInput: () => "b".repeat(64),
       machineFacts: () => ({ tasks: [] }) as any,
       oneHopBatch: () => [fakeOneHop("guard")],
       multiHop: () => fakeMultiHop("guard"),
       visualizeMultiHop: ({ outputPath }) => { mkdirSync(join(outputPath!, ".."), { recursive: true }); writeFileSync(outputPath!, "<html/>\n"); return outputPath!; },
     } });
-    expect(result.tasks[0]?.status).toBe("FAILED");
-    expect(result.tasks[0]?.error).toBe("INPUT_CHANGED_DURING_LINEAGE_ALL");
-    expect(repins).toBe(0);
-    expect(readFileSync(oldPath, "utf8")).toBe("OLD-FORMAL-ONE-HOP\n");
+    expect(result.tasks[0]?.status).toBe("SUCCESS");
+    expect(rebuilds).toBe(0);
+    expect(existsSync(formalArtifactPaths(artifactRoot, "guard").oneHop)).toBe(true);
   });
 
   it("redraws the table view only after field-driven producer autofill stabilizes", async () => {
@@ -200,7 +262,7 @@ describe("lineage:all", () => {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
       autofill: () => { autofillCalls += 1; return ({ taskIds: ["root"], discoveredTaskIds: [], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", reused: true } }); },
       loadProducerIndex: () => ({ inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] } as any),
-      producerIndex: () => ({ index: { inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] } } as any), fingerprintInput: () => fingerprint,
+      producerIndex: () => ({ index: { inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] }, inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", rebuilt: true } as any),
       machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (ids) => ids.map((id) => fakeOneHop(id)),
       multiHop: (id, opts) => ({ ...fakeMultiHop(id), producerBridges: [], taskNodes: [{ taskId: id, marker: (opts.oneHopSnapshots?.size ?? 0) > 1 ? "final" : "first" }] } as any),
       fieldLineage: () => fieldRound++ === 0 ? ({ nodes: [missingField] } as any) : ({ nodes: [] } as any),
@@ -326,7 +388,13 @@ describe("lineage:all", () => {
         },
         producerIndex: () => {
           events.push("producer-index");
-          return { index: {} as any, cachePath: "", manifestPath: "" } as any;
+          return {
+            index: { inputFingerprint: "d".repeat(64) } as any,
+            inputFingerprint: "d".repeat(64),
+            indexPath: "idx",
+            manifestPath: "man",
+            rebuilt: true,
+          } as any;
         },
         oneHopBatch: (taskIds, options) => {
           oneHopConfig = options.terminalTableConfig;

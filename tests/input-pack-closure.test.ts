@@ -76,7 +76,7 @@ describe("input pack closure", () => {
     const result = runInputPackClosure({
       taskId: "A",
       dataRoot,
-      producerIndexCacheRoot: join(dirname(dataRoot), `${dataRoot.split(/[\\/]/).at(-1)}-producer-index-cache`),
+      producerIndexRoot: join(dirname(dataRoot), `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`),
       maxDepth: 3,
       maxTasks: 20,
       maxRounds: 4,
@@ -122,9 +122,9 @@ describe("input pack closure", () => {
     const result = runInputPackClosure({
       taskId: "A",
       dataRoot,
-      producerIndexCacheRoot: join(
+      producerIndexRoot: join(
         dirname(dataRoot),
-        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index-cache`,
+        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`,
       ),
       maxDepth: 3,
       maxTasks: 20,
@@ -195,9 +195,9 @@ describe("shared project Input Pack closure", () => {
     const result = runProjectInputPackClosure({
       rootTaskIds: ["root-a", "root-b"],
       dataRoot,
-      producerIndexCacheRoot: join(
+      producerIndexRoot: join(
         dirname(dataRoot),
-        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index-cache`,
+        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`,
       ),
       maxDepth: 5,
       maxTasksPerRoot: 20,

@@ -323,6 +323,80 @@ export interface PinTableProducerIndexResult {
   readonly reused: boolean;
 }
 
+export interface LoadOrRebuildTableProducerIndexOptions {
+  readonly forceRebuild?: boolean;
+  readonly now?: () => string;
+  readonly allowInputChanges?: boolean;
+}
+
+export interface LoadOrRebuildTableProducerIndexResult {
+  readonly index: TableProducerIndex;
+  readonly inputFingerprint: string;
+  readonly indexPath: string;
+  readonly manifestPath: string;
+  /** False when an existing fixed-path index was loaded without scanning the Input Pack. */
+  readonly rebuilt: boolean;
+}
+
+/** Fixed mutable Producer Index directory beside a data root (`<data-root>.producer-index`). */
+export function defaultMutableProducerIndexRoot(dataRootInput: string): string {
+  return `${resolve(dataRootInput)}.producer-index`;
+}
+
+export function mutableProducerIndexPaths(indexRootInput: string): {
+  readonly indexPath: string;
+  readonly manifestPath: string;
+} {
+  const indexRoot = resolve(indexRootInput);
+  return {
+    indexPath: join(indexRoot, "producer-index.json"),
+    manifestPath: join(indexRoot, "producer-index.manifest.json"),
+  };
+}
+
+/**
+ * Hot-path Producer Index for expanding Input Packs: load a fixed-path index
+ * without fingerprinting the whole tree. Rebuild only when missing/invalid or
+ * when the caller forces it after collecting packs. Does not use the
+ * fingerprint-keyed pin cache.
+ */
+export function loadOrRebuildTableProducerIndex(
+  dataRootInput: string,
+  indexRootInput: string,
+  options: LoadOrRebuildTableProducerIndexOptions = {},
+): LoadOrRebuildTableProducerIndexResult {
+  const dataRoot = resolve(dataRootInput);
+  const indexRoot = resolve(indexRootInput);
+  assertOutputOutsideDataRoot(dataRoot, indexRoot);
+  const { indexPath, manifestPath } = mutableProducerIndexPaths(indexRoot);
+  if (!options.forceRebuild && existsSync(indexPath)) {
+    try {
+      const index = loadTableProducerIndex(indexPath);
+      return {
+        index,
+        inputFingerprint: index.inputFingerprint,
+        indexPath,
+        manifestPath,
+        rebuilt: false,
+      };
+    } catch {
+      // Rebuild below when the on-disk index is unreadable or invalid.
+    }
+  }
+  const index = buildTableProducerIndex(dataRoot, {
+    now: options.now,
+    allowInputChanges: options.allowInputChanges,
+  });
+  writeTableProducerIndex(indexPath, index);
+  return {
+    index,
+    inputFingerprint: index.inputFingerprint,
+    indexPath,
+    manifestPath,
+    rebuilt: true,
+  };
+}
+
 interface LoadedTaskPack {
   readonly status: "AVAILABLE" | "INVALID";
   readonly taskId: string;

@@ -3,7 +3,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import {
-  pinTableProducerIndex,
+  loadOrRebuildTableProducerIndex,
   type TableProducerIndex,
 } from "../reconcile/producer/producer-index.ts";
 import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
@@ -20,7 +20,11 @@ const DEFAULT_MAX_DISCOVERY_TABLES = 1000;
 export interface InputPackClosureOptions {
   readonly taskId: string;
   readonly dataRoot: string;
-  readonly producerIndexCacheRoot: string;
+  /**
+   * Fixed mutable Producer Index directory (not a fingerprint-keyed cache).
+   * Default layout: `<root>/producer-index.json`.
+   */
+  readonly producerIndexRoot: string;
   readonly maxDepth: number;
   readonly maxTasks: number;
   readonly maxRounds: number;
@@ -43,7 +47,7 @@ export interface InputPackClosureResult {
   readonly rounds: number;
   readonly status: "COMPLETE" | "PARTIAL";
   readonly issues: readonly string[];
-  /** The exact immutable producer-index snapshot for the stabilized pack. */
+  /** Fixed-path Producer Index used for the stabilized pack. */
   readonly producerSnapshot?: {
     readonly inputFingerprint: string;
     readonly indexPath: string;
@@ -77,7 +81,7 @@ export interface ProjectInputPackClosureResult {
     readonly rootTaskOccurrences: number;
     readonly uniqueTasks: number;
     readonly taskReadsEvaluated: number;
-    readonly producerIndexPins: number;
+    readonly producerIndexRefreshes: number;
     readonly discoveryQueries: number;
     readonly collectionBatches: number;
   };
@@ -170,14 +174,15 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
   const queriedTables = new Set<string>();
   let rounds = 0;
   let stabilized = false;
-  let finalPin: ReturnType<typeof pinTableProducerIndex> | undefined;
+  let indexState = loadOrRebuildTableProducerIndex(
+    dataRoot,
+    resolve(options.producerIndexRoot),
+  );
 
   while (rounds < options.maxRounds) {
     rounds += 1;
     const taskPathIndex = indexTaskPackPaths(dataRoot);
-    const pin = pinTableProducerIndex(dataRoot, resolve(options.producerIndexCacheRoot));
-    finalPin = pin;
-    const index: TableProducerIndex = pin.index;
+    const index: TableProducerIndex = indexState.index;
     const queue: Array<{ taskId: string; depth: number }> = [...discoveredDepth.entries()]
       .filter(([taskId]) => !visited.has(taskId))
       .map(([taskId, depth]) => ({ taskId, depth }));
@@ -237,14 +242,24 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
       issues.push(`INPUT_PACK_COLLECTION_FAILED:${error instanceof Error ? error.message : String(error)}`);
     }
     const refreshedTaskPathIndex = indexTaskPackPaths(dataRoot);
-    for (const taskId of collectIds) if (loadTask(dataRoot, taskId, refreshedTaskPathIndex)) collected.add(taskId);
+    let collectedThisRound = false;
+    for (const taskId of collectIds) {
+      if (loadTask(dataRoot, taskId, refreshedTaskPathIndex)) {
+        collected.add(taskId);
+        collectedThisRound = true;
+      }
+    }
+    if (collectedThisRound) {
+      indexState = loadOrRebuildTableProducerIndex(
+        dataRoot,
+        resolve(options.producerIndexRoot),
+        { forceRebuild: true },
+      );
+      producerCache.clear();
+    }
   }
   if (!stabilized && rounds >= options.maxRounds) issues.push("MAX_AUTOFILL_ROUNDS_REACHED");
   const finalTaskPathIndex = indexTaskPackPaths(dataRoot);
-  // A final pin is required after the last collection round.  This is also
-  // the snapshot lineage:all must pass downstream, avoiding a second full
-  // manifest/fingerprint traversal.
-  if (!finalPin || !stabilized) finalPin = pinTableProducerIndex(dataRoot, resolve(options.producerIndexCacheRoot));
   const taskIds = unique([...visited, options.taskId].filter((taskId) => loadTask(dataRoot, taskId, finalTaskPathIndex) !== null));
   return {
     taskIds,
@@ -254,10 +269,10 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
     status: issues.length === 0 ? "COMPLETE" : "PARTIAL",
     issues: unique(issues),
     producerSnapshot: {
-      inputFingerprint: finalPin.inputFingerprint,
-      indexPath: finalPin.indexPath,
-      manifestPath: finalPin.manifestPath,
-      reused: finalPin.reused,
+      inputFingerprint: indexState.inputFingerprint,
+      indexPath: indexState.indexPath,
+      manifestPath: indexState.manifestPath,
+      reused: !indexState.rebuilt,
     },
   };
 }
@@ -304,19 +319,16 @@ export function runProjectInputPackClosure(
   const taskReadCache = new Map<string, string[]>();
   let rounds = 0;
   let stabilized = false;
-  let finalPin: ReturnType<typeof pinTableProducerIndex> | undefined;
-  let producerIndexPins = 0;
+  let indexState = loadOrRebuildTableProducerIndex(
+    dataRoot,
+    resolve(options.producerIndexRoot),
+  );
+  let producerIndexRefreshes = 1;
   let collectionBatches = 0;
 
   while (rounds < options.maxRounds) {
     rounds += 1;
     const taskPathIndex = indexTaskPackPaths(dataRoot);
-    const pin = pinTableProducerIndex(
-      dataRoot,
-      resolve(options.producerIndexCacheRoot),
-    );
-    producerIndexPins += 1;
-    finalPin = pin;
     const pending = new Set<string>();
 
     for (const rootTaskId of rootTaskIds) {
@@ -357,7 +369,7 @@ export function runProjectInputPackClosure(
             continue;
           let producerIds = producerCache.get(qualifiedName);
           if (!producerIds) {
-            producerIds = indexedProducerIds(pin.index, qualifiedName);
+            producerIds = indexedProducerIds(indexState.index, qualifiedName);
             if (
               discover &&
               producerIds.length === 0 &&
@@ -415,19 +427,26 @@ export function runProjectInputPackClosure(
       );
     }
     const refreshedIndex = indexTaskPackPaths(dataRoot);
-    for (const taskId of collectIds)
-      if (loadTask(dataRoot, taskId, refreshedIndex)) collected.add(taskId);
+    let collectedThisRound = false;
+    for (const taskId of collectIds) {
+      if (loadTask(dataRoot, taskId, refreshedIndex)) {
+        collected.add(taskId);
+        collectedThisRound = true;
+      }
+    }
+    if (collectedThisRound) {
+      indexState = loadOrRebuildTableProducerIndex(
+        dataRoot,
+        resolve(options.producerIndexRoot),
+        { forceRebuild: true },
+      );
+      producerIndexRefreshes += 1;
+      producerCache.clear();
+    }
   }
 
   if (!stabilized && rounds >= options.maxRounds)
     issues.push("MAX_AUTOFILL_ROUNDS_REACHED");
-  if (!finalPin || !stabilized) {
-    finalPin = pinTableProducerIndex(
-      dataRoot,
-      resolve(options.producerIndexCacheRoot),
-    );
-    producerIndexPins += 1;
-  }
   const finalTaskPathIndex = indexTaskPackPaths(dataRoot);
   const roots = rootTaskIds.map((rootTaskId) => {
     const depths = discoveredDepthByRoot.get(rootTaskId)!;
@@ -462,15 +481,15 @@ export function runProjectInputPackClosure(
       ),
       uniqueTasks: taskIds.length,
       taskReadsEvaluated: taskReadCache.size,
-      producerIndexPins,
+      producerIndexRefreshes,
       discoveryQueries: queriedTables.size,
       collectionBatches,
     },
     producerSnapshot: {
-      inputFingerprint: finalPin.inputFingerprint,
-      indexPath: finalPin.indexPath,
-      manifestPath: finalPin.manifestPath,
-      reused: finalPin.reused,
+      inputFingerprint: indexState.inputFingerprint,
+      indexPath: indexState.indexPath,
+      manifestPath: indexState.manifestPath,
+      reused: !indexState.rebuilt,
     },
   };
 }

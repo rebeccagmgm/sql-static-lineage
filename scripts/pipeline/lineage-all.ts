@@ -52,6 +52,7 @@ import {
   scheduleEvidenceCachePath,
   writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
+  type HoraeRelationDirection,
   type ScheduleEvidenceCacheStatus,
 } from "../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
@@ -63,9 +64,9 @@ import {
 } from "../reconcile/consumer/multi-hop/terminal-table-config.ts";
 import { queryProducerTaskIds } from "../reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
 import {
+  defaultMutableProducerIndexRoot,
+  loadOrRebuildTableProducerIndex,
   loadTableProducerIndex,
-  pinTableProducerIndex,
-  fingerprintTableProducerInputs,
 } from "../reconcile/producer/producer-index.ts";
 import {
   validateTaskDocument,
@@ -234,6 +235,8 @@ export interface HoraePrefetchOptions {
   readonly cacheTaskDetails?: boolean;
   /** Minimum start-to-start interval for all Horae calls in this prefetch. */
   readonly horaeMinIntervalMs?: number;
+  /** Relation direction. Existing lineage consumers default to upstream. */
+  readonly direction?: HoraeRelationDirection;
 }
 
 function rowsOfHorae(
@@ -341,6 +344,7 @@ export async function prefetchHoraeRelations(
   if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32)
     throw new Error("HORAE_PREFETCH_CONCURRENCY_INVALID");
   const run = options.run ?? defaultHoraeRunner;
+  const direction = options.direction ?? "up";
   const cacheRoot =
     options.cacheRoot === undefined
       ? options.run === undefined
@@ -411,7 +415,7 @@ export async function prefetchHoraeRelations(
         "relation",
         taskId,
         "--direction",
-        "up",
+        direction,
         "--depth",
         "1",
         "-f",
@@ -419,7 +423,9 @@ export async function prefetchHoraeRelations(
       ];
       try {
         const cached =
-          cacheRoot === null ? null : readHoraeRelationCache(taskId, cacheRoot);
+          cacheRoot === null
+            ? null
+            : readHoraeRelationCache(taskId, cacheRoot, direction);
         let rows: Record<string, unknown>[];
         let observedAt: string;
         let cacheStatus:
@@ -438,7 +444,8 @@ export async function prefetchHoraeRelations(
           if (cacheRoot !== null) {
             cacheStatus = cached?.status ?? "MISS";
             cachePath =
-              cached?.path ?? scheduleEvidenceCachePath(taskId, cacheRoot);
+              cached?.path ??
+              scheduleEvidenceCachePath(taskId, cacheRoot, direction);
           }
         }
         if (rows.length > maxRowsPerTask)
@@ -455,6 +462,7 @@ export async function prefetchHoraeRelations(
               observedAt,
               rows,
               cacheRoot,
+              direction,
             );
           } catch {
             // Scheduler evidence remains usable when the optional cache is not writable.
@@ -537,9 +545,8 @@ export interface LineageAllDependencies {
     options: ReconcileOneHopOptions,
   ) => readonly OneHopReconciliationResult[];
   readonly multiHop: typeof reconcileMultiHop;
-  readonly producerIndex: typeof pinTableProducerIndex;
+  readonly producerIndex: typeof loadOrRebuildTableProducerIndex;
   readonly loadProducerIndex: typeof loadTableProducerIndex;
-  readonly fingerprintInput: typeof fingerprintTableProducerInputs;
   readonly collectTaskPacks: (
     dataRoot: string,
     taskIds: readonly string[],
@@ -580,9 +587,8 @@ function dependencies(
     fieldLineage: reconcileFieldLineage,
     oneHopBatch: reconcileOneHopBatch,
     multiHop: reconcileMultiHop,
-    producerIndex: pinTableProducerIndex,
+    producerIndex: loadOrRebuildTableProducerIndex,
     loadProducerIndex: loadTableProducerIndex,
-    fingerprintInput: fingerprintTableProducerInputs,
     collectTaskPacks: runCollector,
     fieldProducerDiscovery: defaultFieldProducerDiscovery,
     // Dependency-injected test pipelines must not reach OpenCLI implicitly;
@@ -990,7 +996,9 @@ async function runTask(
     withFields: options.withFields === true,
   });
   try {
-    const producerCacheRoot = `${resolve(options.dataRoot)}.producer-index-cache`;
+    const producerIndexRoot = defaultMutableProducerIndexRoot(
+      resolve(options.dataRoot),
+    );
     const factsRoot = resolve(
       options.factsRoot ?? join(options.dataRoot, "field-facts"),
     );
@@ -1018,7 +1026,7 @@ async function runTask(
     let tableHtmlRendered = false;
 
     while (true) {
-      let producer: ReturnType<typeof pinTableProducerIndex>["index"];
+      let producer: ReturnType<typeof loadOrRebuildTableProducerIndex>["index"];
       let trustedInputFingerprint: string;
       if (taskNodeIds === null) {
         // The initial closure follows confirmed local Producer Index edges
@@ -1028,7 +1036,7 @@ async function runTask(
         const autofill = deps.autofill({
           taskId,
           dataRoot: resolve(options.dataRoot),
-          producerIndexCacheRoot: producerCacheRoot,
+          producerIndexRoot,
           maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
           maxTasks: options.maxTasks ?? DEFAULT_MAX_TASKS,
           maxRounds: options.maxRounds ?? DEFAULT_MAX_ROUNDS,
@@ -1049,12 +1057,11 @@ async function runTask(
           collected: autofill.collectedTaskIds.length,
           rounds: autofill.rounds,
         });
-        // Closure owns the immutable snapshot. Reuse it rather than pinning
-        // and fingerprinting the entire Input Pack a second time.
+        // Closure owns the fixed-path index. Reuse it rather than rebuilding.
         const snapshot = autofill.producerSnapshot;
         producer = snapshot
           ? deps.loadProducerIndex(snapshot.indexPath)
-          : deps.producerIndex(resolve(options.dataRoot), producerCacheRoot)
+          : deps.producerIndex(resolve(options.dataRoot), producerIndexRoot)
               .index;
         trustedInputFingerprint =
           snapshot?.inputFingerprint ?? producer.inputFingerprint;
@@ -1063,18 +1070,17 @@ async function runTask(
         taskNodeIds = [...new Set(autofill.taskIds)];
       } else {
         // A field-driven collection adds only the producer task(s) observed on
-        // the missing field path. Re-running the root closure here would
-        // recursively expand every read of those tasks, including unrelated
-        // JOINs, which is the source of the large task fan-out. Re-pin the index
-        // against the expanded pack and keep the existing task frontier.
-        const repinned = deps.producerIndex(
+        // the missing field path. Rebuild the fixed-path index against the
+        // expanded pack and keep the existing task frontier.
+        const refreshed = deps.producerIndex(
           resolve(options.dataRoot),
-          producerCacheRoot,
+          producerIndexRoot,
+          { forceRebuild: true },
         );
-        producer = repinned.index;
+        producer = refreshed.index;
         trustedInputFingerprint = producer.inputFingerprint;
-        finalProducerIndexPath = repinned.indexPath ?? null;
-        finalProducerManifestPath = repinned.manifestPath ?? null;
+        finalProducerIndexPath = refreshed.indexPath ?? null;
+        finalProducerManifestPath = refreshed.manifestPath ?? null;
       }
       const facts = deps.machineFacts({
         dataRoot: resolve(options.dataRoot),
@@ -1109,7 +1115,7 @@ async function runTask(
       const oneHopResults = deps.oneHopBatch(taskNodeIds, {
         dataRoot: resolve(options.dataRoot),
         producerIndex: producer,
-        verifyInputFingerprint: true,
+        verifyInputFingerprint: false,
         trustedInputFingerprint,
         scheduleEvidenceByTaskId,
         terminalTableConfig,
@@ -1310,12 +1316,6 @@ async function runTask(
       });
       files.push("field-lineage.json", "views/field-lineage.html");
     }
-    if (
-      typeof finalTrustedInputFingerprint === "string" &&
-      deps.fingerprintInput(resolve(options.dataRoot)) !==
-        finalTrustedInputFingerprint
-    )
-      throw new Error("INPUT_CHANGED_DURING_LINEAGE_ALL");
     publishStagedTask(stagedDir, paths.directory, artifactRoot);
     progress("task_complete", {
       taskId,

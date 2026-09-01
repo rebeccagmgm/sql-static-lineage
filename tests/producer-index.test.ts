@@ -26,6 +26,9 @@ import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
   pinTableProducerIndex,
+  loadOrRebuildTableProducerIndex,
+  defaultMutableProducerIndexRoot,
+  mutableProducerIndexPaths,
   validateTableProducerIndex,
   writeTableProducerIndex,
   updateTableProducerIndex,
@@ -1016,6 +1019,57 @@ describe("table producer index", () => {
     expect(() =>
       pinTableProducerIndex(root, join(root, "producer-index-cache")),
     ).toThrow("OUTPUT_MUST_BE_OUTSIDE_INPUT_PACK_ROOT");
+  });
+
+  it("loads a fixed-path producer index without rebuilding when present", () => {
+    const root = dataRoot();
+    writeTable(root, "lake.a");
+    writeTask(root, "p1", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const indexRoot = defaultMutableProducerIndexRoot(root);
+    const first = loadOrRebuildTableProducerIndex(root, indexRoot, {
+      now: () => "2026-08-23T01:00:00.000Z",
+    });
+    expect(first.rebuilt).toBe(true);
+    expect(first.indexPath).toBe(mutableProducerIndexPaths(indexRoot).indexPath);
+    expect(existsSync(first.indexPath)).toBe(true);
+
+    writeTask(root, "p2", {
+      target: {
+        platform: "hive",
+        dataSource: "gfhive",
+        qualifiedName: "lake.a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    });
+    const second = loadOrRebuildTableProducerIndex(root, indexRoot, {
+      now: () => "2026-08-23T02:00:00.000Z",
+    });
+    expect(second.rebuilt).toBe(false);
+    expect(second.index.generatedAt).toBe(first.index.generatedAt);
+    expect(
+      second.index.confirmedProducerEdges
+        .filter((edge) => edge.table.qualifiedName === "lake.a")
+        .map((edge) => edge.taskId),
+    ).toEqual(["p1"]);
+
+    const third = loadOrRebuildTableProducerIndex(root, indexRoot, {
+      forceRebuild: true,
+      now: () => "2026-08-23T03:00:00.000Z",
+    });
+    expect(third.rebuilt).toBe(true);
+    expect(
+      third.index.confirmedProducerEdges
+        .filter((edge) => edge.table.qualifiedName === "lake.a")
+        .map((edge) => edge.taskId)
+        .sort(),
+    ).toEqual(["p1", "p2"]);
   });
 
   it("does not resolve an explicit SQL write through an ambiguous table name", () => {
