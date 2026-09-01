@@ -314,9 +314,12 @@ needed(hop) = 值列
 
 查询期反向闭包已经存在于
 `scripts/reconcile/consumer/target-table-upstream-causal-closure/`，
-不另写引擎。缺的是 5.1（JOIN/FILTER 侧别与拉链键）和 3.4（部分字段不受影响时
-不得扩散到任务全部字段）。105387 必须收为该 consumer 的金样：四张参考表走
-`ROW_MEMBERSHIP`，理由链经 `Agt_Modifr`，不得只出现一张无理由的算子表。
+不另写引擎。5.1（JOIN 侧别）和 3.4（部分字段不扩散）已经落地；
+拉链 CASE 在 summary 层也已接到 `Agt_Modifr`。155015 档二已经用这套规则证出
+四张 ref。RS-3 已收口：值召回跳穿过 119044 问行决定，LEFT 维表在档三。
+详见 `docs/execution-plan-rerun-shrink.md` RS-3。
+105387 已是该 consumer 的金样：四张参考表走 `ROW_MEMBERSHIP`，
+理由链经 `Agt_Modifr`，不得只出现一张无理由的算子表。
 
 真正的规模收益来自常量分区谓词：分区共写表（如按 `SRC_TBL` 分区、每任务写一个
 分区）在表级血缘上呈现全部写入方扇入，按 `partitionPredicates` 匹配后只保留

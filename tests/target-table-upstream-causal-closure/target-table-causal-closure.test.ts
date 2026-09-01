@@ -274,6 +274,45 @@ describe("target table causal closure baseline", () => {
     expect(nearMatch.status).toBe("UNKNOWN");
   });
 
+  it("does not call missing VALUE_FLOW an occurrence miss", () => {
+    const dir = mkdtempSync(join(tmpdir(), "target-table-causal-none-"));
+    const path = join(dir, "field-lineage.json");
+    writeFileSync(path, JSON.stringify({ overallStatus: "COMPLETE", gaps: [], nodes: [], edges: [] }));
+    const provider = createFieldValueEvidenceProvider(path);
+    const result = provider.lookup(branch());
+    expect(result.status).toBe("NOT_APPLICABLE");
+    expect(result.gapRefs).toEqual([]);
+  });
+
+  it("uses pair/table VALUE_FLOW when the edge has no consumer-read token", () => {
+    const dir = mkdtempSync(join(tmpdir(), "target-table-causal-unbound-"));
+    const path = join(dir, "field-lineage.json");
+    writeFileSync(path, JSON.stringify({
+      overallStatus: "COMPLETE",
+      gaps: [],
+      nodes: [
+        { nodeId: "p-node", taskId: "p", bindingId: "b-p", field: tableWithColumn(table, "amount") },
+        { nodeId: "c-node", taskId: "c", bindingId: "b-c", field: tableWithColumn({ ...table, qualifiedName: "db.target", stableTableId: "db.target__gfhive" }, "amount") },
+      ],
+      edges: [{
+        kind: "VALUE_FLOW",
+        evidenceStatus: "CONFIRMED",
+        fromNodeId: "p-node",
+        toNodeId: "c-node",
+        consumerTaskId: "c",
+        producerTaskId: "p",
+        edgeId: "e-unbound",
+        mapping: "amount -> amount",
+        evidenceRefs: ["field-lineage:producer-write:p:write:p:0:binding:b-p"],
+      }],
+    }));
+    const provider = createFieldValueEvidenceProvider(path);
+    const result = provider.lookup(branch());
+    expect(result.status).toBe("CONFIRMED");
+    expect(result.affectedTargetFields).toEqual(["amount"]);
+    expect(result.gapRefs).toEqual([]);
+  });
+
   it("keeps relation status unknown for incomplete candidate evidence", () => {
     const candidate = branch({ gapRefs: ["boundary:read"], boundaryReason: "READ_EVIDENCE_BLOCKED" });
     const provider = { scanCount: 1, edgeCount: 0, lookup: (value: CandidateBranch) => ({ candidateBranchId: value.candidateBranchId, status: "PROVEN_ABSENT" as const, affectedTargetFields: [], outputFieldBindingIds: [], evidenceRefs: [], gapRefs: [] }) };

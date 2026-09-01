@@ -9,11 +9,12 @@ import { validateTableProducerIndex } from "../../producer/producer-index.ts";
 import { validateMultiHopReconciliation } from "../multi-hop/reconcile-multi-hop.ts";
 import { projectTargetTableCandidateUniverse, type CandidateBranch, type CandidateUniverse, type CandidateWriteScope } from "./candidate-universe.ts";
 import { canonicalizeTargetTableArtifact, TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE, TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION, type CausalStageMetric, type TargetTableCausalClosureArtifact } from "./artifact-contract.ts";
-import { buildCausalClosure } from "./causal-closure.ts";
+import { buildCausalClosure, type WriteScope } from "./causal-closure.ts";
 import { buildImpactGraph } from "./impact-graph.ts";
 import { formatTargetTableCausalSummary, renderTargetTableCausalHtml } from "./format-target-table-causal-closure.ts";
 import { createFieldValueEvidenceProvider } from "./field-value-provider.ts";
 import { validateCausalClosure } from "./proof-validator.ts";
+import { buildShrinkReport } from "./static-assessment.ts";
 import { relationSummaryKey, summarizeTaskRelations } from "./task-relation-summary.ts";
 import { resolveTargetWrite, type AnalysisSnapshotRef } from "./target-write-contract.ts";
 
@@ -52,6 +53,20 @@ function tableFromCatalog(entry: PhysicalTableCatalogEntry): { platform: string;
   return { platform: entry.platform, dataSource: entry.dataSource, qualifiedName: entry.qualifiedName, stableTableId: entry.stableTableId, identityStatus: "SCHEMA_BACKED" };
 }
 function normalized(value: string): string { return value.trim().toLowerCase(); }
+function uniqueFieldProducingWriteIds(
+  load: CurrentBundleLoad,
+  taskId: string,
+  targetTable: string,
+): readonly string[] {
+  return [...new Set(records(load.records["dataset-io.jsonl"])
+    .filter((record) =>
+      normalized(String(record.direction ?? "")) === "write"
+      && record.field_producing === true
+      && normalized(String(record.task_id ?? "")) === normalized(taskId)
+      && normalized(String(record.physical_dataset ?? "")) === normalized(targetTable))
+    .map((record) => String(record.write_observation_id ?? ""))
+    .filter((id) => id.length > 0))].sort((left, right) => left.localeCompare(right));
+}
 function records(value: unknown): readonly Record<string, unknown>[] { return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item)) : []; }
 function resolveCatalogTable(catalog: ReturnType<typeof loadPhysicalTableCatalog>, requested: string, task: Record<string, unknown>): PhysicalTableCatalogEntry {
   const key = normalized(requested);
@@ -192,6 +207,45 @@ function normalizeReadScopes(
   return { ...universe, branches };
 }
 
+function producerWritesForTable(
+  load: CurrentBundleLoad,
+  taskId: string,
+  targetTable: string,
+): readonly Record<string, unknown>[] {
+  return [...new Map(records(load.records["dataset-io.jsonl"])
+    .filter((record) =>
+      normalized(String(record.direction ?? "")) === "write"
+      && normalized(String(record.task_id ?? "")) === normalized(taskId)
+      && normalized(String(record.physical_dataset ?? "")) === normalized(targetTable)
+      && record.field_producing === true)
+    .map((record) => [String(record.write_observation_id ?? ""), record] as const)
+    .filter(([writeObservationId]) => writeObservationId.length > 0)).values()];
+}
+
+function bindProducerWrite(
+  branch: CandidateBranch,
+  load: CurrentBundleLoad,
+  write: Record<string, unknown>,
+): CandidateBranch {
+  const writeObservationId = String(write.write_observation_id);
+  const writeScope = producerWriteScope(load, branch.producerTaskId!, branch.table!.qualifiedName!, writeObservationId);
+  return {
+    ...branch,
+    writeObservationId,
+    ...(writeScope ? { writeScope } : {}),
+    evidenceRefs: [...branch.evidenceRefs, {
+      evidenceRefId: `producer-write-evidence:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
+      source: "MACHINE_FACTS_DATASET_IO",
+      locator: `machine-facts:${branch.producerTaskId}:dataset-io.jsonl#write-observation:${writeObservationId}`,
+    }, ...(writeScope ? [] : [{
+      evidenceRefId: `producer-write-scope-gap:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
+      source: "MACHINE_FACTS_OUTPUT_BINDINGS",
+      locator: `machine-facts:${branch.producerTaskId}:output-field-bindings.jsonl#write-observation:${writeObservationId}`,
+    }])],
+    gapRefs: writeScope ? branch.gapRefs : [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_SCOPE_UNRESOLVED`])],
+  };
+}
+
 function enrichProducerWriteBridges(
   universe: CandidateUniverse,
   loadForTask: (taskId: string) => CurrentBundleLoad,
@@ -199,42 +253,74 @@ function enrichProducerWriteBridges(
   let resolved = 0;
   let ambiguous = 0;
   let missing = 0;
-  const branches = universe.branches.map((branch): CandidateBranch => {
-    if (branch.branchKind !== "PHYSICAL_PRODUCER" || !branch.producerTaskId || !branch.table?.qualifiedName) return branch;
+  const branches = universe.branches.flatMap((branch): readonly CandidateBranch[] => {
+    if (branch.branchKind !== "PHYSICAL_PRODUCER" || !branch.producerTaskId || !branch.table?.qualifiedName) return [branch];
     const load = loadForTask(branch.producerTaskId);
-    const target = normalized(branch.table.qualifiedName);
-    const writes = [...new Map(records(load.records["dataset-io.jsonl"])
-      .filter((record) => normalized(String(record.direction ?? "")) === "write" && normalized(String(record.task_id ?? "")) === normalized(branch.producerTaskId!) && normalized(String(record.physical_dataset ?? "")) === target)
-      .map((record) => [String(record.write_observation_id ?? ""), record] as const)
-      .filter(([writeObservationId]) => writeObservationId.length > 0)).values()];
+    const writes = producerWritesForTable(load, branch.producerTaskId, branch.table.qualifiedName);
+    if (writes.length === 0) {
+      missing += 1;
+      return [{ ...branch, gapRefs: [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_OBSERVATION_MISSING`])] }];
+    }
     if (writes.length === 1) {
-      const writeObservationId = String(writes[0]!.write_observation_id);
-      const writeScope = producerWriteScope(load, branch.producerTaskId, branch.table.qualifiedName, writeObservationId);
       resolved += 1;
-      return {
+      return [bindProducerWrite(branch, load, writes[0]!)];
+    }
+    resolved += writes.length;
+    return writes.map((write) => {
+      const writeObservationId = String(write.write_observation_id);
+      return bindProducerWrite({
         ...branch,
-        writeObservationId,
-        ...(writeScope ? { writeScope } : {}),
-        evidenceRefs: [...branch.evidenceRefs, {
-          evidenceRefId: `producer-write-evidence:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
-          source: "MACHINE_FACTS_DATASET_IO",
-          locator: `machine-facts:${branch.producerTaskId}:dataset-io.jsonl#write-observation:${writeObservationId}`,
-        }, ...(writeScope ? [] : [{
-          evidenceRefId: `producer-write-scope-gap:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
-          source: "MACHINE_FACTS_OUTPUT_BINDINGS",
-          locator: `machine-facts:${branch.producerTaskId}:output-field-bindings.jsonl#write-observation:${writeObservationId}`,
-        }])],
-        gapRefs: writeScope ? branch.gapRefs : [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_SCOPE_UNRESOLVED`])],
-      };
-    }
-    if (writes.length > 1) {
-      ambiguous += 1;
-      return { ...branch, gapRefs: [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_AMBIGUOUS`])] };
-    }
-    missing += 1;
-    return { ...branch, gapRefs: [...new Set([...branch.gapRefs, `bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_OBSERVATION_MISSING`])] };
+        candidateBranchId: `${branch.candidateBranchId}:${writeObservationId}`,
+      }, load, write);
+    });
   });
   return { universe: { ...universe, branches }, stats: { resolved, ambiguous, missing } };
+}
+
+function sameTaskUpstreamWrites(
+  load: CurrentBundleLoad,
+  taskId: string,
+  writeObservationId: string,
+): readonly WriteScope[] {
+  const write = records(load.records["dataset-io.jsonl"]).find((record) =>
+    normalized(String(record.direction ?? "")) === "write"
+    && String(record.write_observation_id ?? "") === writeObservationId
+    && normalized(String(record.task_id ?? "")) === normalized(taskId));
+  if (!write) return [];
+  const statementId = text(write.write_statement_id) ?? text(write.statement_id);
+  const writeTable = normalized(String(write.physical_dataset ?? ""));
+  if (!statementId || !writeTable) return [];
+  const readTables = [...new Set(records(load.records["dataset-io.jsonl"])
+    .filter((record) =>
+      normalized(String(record.direction ?? "")) === "read"
+      && normalized(String(record.task_id ?? "")) === normalized(taskId)
+      && String(record.statement_id ?? "") === statementId)
+    .map((record) => String(record.physical_dataset ?? ""))
+    .filter((table) => table.length > 0 && normalized(table) !== writeTable))];
+  return readTables.flatMap((table) => producerWritesForTable(load, taskId, table).flatMap((producer) => {
+    const id = String(producer.write_observation_id ?? "");
+    if (!id || id === writeObservationId) return [];
+    const scope = producerWriteScope(load, taskId, table, id);
+    return scope ? [{ taskId, writeObservationId: id, ...scope }] : [];
+  }));
+}
+
+function buildSameTaskUpstreamWrites(
+  taskIds: readonly string[],
+  loadForTask: (taskId: string) => CurrentBundleLoad,
+): ReadonlyMap<string, readonly WriteScope[]> {
+  const map = new Map<string, readonly WriteScope[]>();
+  for (const taskId of [...new Set(taskIds.filter(Boolean))]) {
+    const load = loadForTask(taskId);
+    for (const write of records(load.records["dataset-io.jsonl"])) {
+      if (normalized(String(write.direction ?? "")) !== "write" || write.field_producing !== true) continue;
+      if (normalized(String(write.task_id ?? "")) !== normalized(taskId)) continue;
+      const id = String(write.write_observation_id ?? "");
+      if (!id) continue;
+      map.set(`${taskId}|${id}`, sameTaskUpstreamWrites(load, taskId, id));
+    }
+  }
+  return map;
 }
 
 export function runTargetTableCausalClosure(options: CliOptions): TargetTableCausalClosureArtifact {
@@ -272,7 +358,13 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     ...(options.fieldLineage && existsSync(options.fieldLineage) ? { fieldLineageHash: fileHash(options.fieldLineage) } : {}),
     semanticRuleVersion: "target-table-causal-closure-native-v1",
   };
-  const targetResolution = resolveTargetWrite({ taskId: options.taskId, targetTable: targetEntry.qualifiedName, writeObservationIds: options.writeObservationIds, load: rootLoad, snapshot });
+  const writeObservationIds = options.writeObservationIds.length > 0
+    ? options.writeObservationIds
+    : uniqueFieldProducingWriteIds(rootLoad, options.taskId, targetEntry.qualifiedName);
+  if (options.writeObservationIds.length === 0 && writeObservationIds.length > 1) {
+    throw new Error("TARGET_WRITE_UNRESOLVED:TARGET_WRITE_AMBIGUOUS");
+  }
+  const targetResolution = resolveTargetWrite({ taskId: options.taskId, targetTable: targetEntry.qualifiedName, writeObservationIds, load: rootLoad, snapshot });
   if (!targetResolution.ref) throw new Error(`TARGET_WRITE_UNRESOLVED:${targetResolution.gaps.map((gap) => gap.reasonCode).join(",")}`);
   assertBudget("target-write");
   const projectionStart = performance.now();
@@ -296,6 +388,10 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   universe = normalizeReadScopes(enriched.universe, loadForTask);
   stage("candidate-projection", projectionStart, 1, 0, 1, universe.branches.length, universe.branches.length);
   assertBudget("candidate-projection", universe.branches.length, Math.max(0, ...universe.branches.map((branch) => branch.readOccurrence?.relationPath.length ?? 0)));
+  const sameTaskUpstreamWrites = buildSameTaskUpstreamWrites(
+    [options.taskId, ...universe.branches.flatMap((branch) => [branch.consumerTaskId, branch.producerTaskId].filter((value): value is string => value !== null))],
+    loadForTask,
+  );
   const summaries = new Map<string, ReturnType<typeof summarizeTaskRelations>>();
   const summaryStart = performance.now();
   const scopes = [
@@ -312,6 +408,12 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
       sqlSourceId: branch.readOccurrence.sqlSourceId ?? branch.readOccurrence.occurrenceId,
       statementIndex: branch.readOccurrence.statementIndex,
       rootRelationId: branch.readOccurrence.rootRelationId ?? null,
+    })),
+    ...[...sameTaskUpstreamWrites.values()].flat().map((scope) => ({
+      taskId: scope.taskId,
+      sqlSourceId: scope.sqlSourceId,
+      statementIndex: scope.statementOrdinal,
+      rootRelationId: scope.rootRelationId,
     })),
   ];
   let summaryCacheHits = 0;
@@ -345,6 +447,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
       statementOrdinal: targetResolution.ref.identity.statementOrdinal,
       rootRelationId: targetResolution.ref.identity.rootRelationId,
     },
+    sameTaskUpstreamWrites,
     budget: {
       deadlineAt: runStart + options.maxTimeMs,
       maxStateUpdates: options.maxStateUpdates,
@@ -377,7 +480,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   )).length;
   const unknownReasonCounts = assessments
     .filter((assessment) => assessment.relationStatus === "UNKNOWN")
-    .flatMap((assessment) => assessment.gapRefs.map((gapId) => unknownReasonCode(gapId)))
+    .flatMap((assessment) => [...new Set(assessment.gapRefs.map((gapId) => unknownReasonCode(gapId)))])
     .reduce<Record<string, number>>((counts, reason) => ({ ...counts, [reason]: (counts[reason] ?? 0) + 1 }), {});
   const gapCandidates = [
     ...targetResolution.gaps.map((gap) => ({ gapId: gap.gapId, reasonCode: gap.reasonCode, message: gap.message, evidenceRefs: gap.evidenceRefs })),
@@ -396,7 +499,9 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   const raw: Omit<TargetTableCausalClosureArtifact, "contentHash"> = {
     schemaVersion: TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION, artifactType: TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE, generatedAt: new Date().toISOString(), targetWrite: targetResolution.ref,
     candidateUniverse: universe, assessments, taskRollup: closure.taskRollup, minimumCertainTaskIds: closure.minimumCertainTaskIds, conservativeSafetyTaskIds: closure.conservativeSafetyTaskIds,
-    runtimeRerunDecision: "NOT_EVALUATED", relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, sqlSourceId: summary.sqlSourceId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
+    runtimeRerunDecision: "NOT_EVALUATED",
+    shrinkReport: buildShrinkReport({ branches: universe.branches, assessments }),
+    relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, sqlSourceId: summary.sqlSourceId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
     metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, peakMemoryBytes, confirmedAssessmentCount: confirmed.length, writeScopedConfirmedCount, crossChannelConfirmedBranchCount, crossWriteScopeLeakCount: closure.writeScopeLeakCount, unknownReasonCounts },
     stages, gaps,
   };
@@ -410,6 +515,7 @@ function unknownReasonCode(gapId: string): string {
   if (/PRODUCER_WRITE_SCOPE_UNRESOLVED/i.test(gapId)) return "PRODUCER_WRITE_SCOPE_UNRESOLVED";
   if (/PRODUCER_WRITE_OBSERVATION_MISSING/i.test(gapId)) return "PRODUCER_WRITE_OBSERVATION_MISSING";
   if (/OCCURRENCE_EVIDENCE_NOT_FOUND/i.test(gapId)) return "OCCURRENCE_EVIDENCE_NOT_FOUND";
+  if (/VALUE_FLOW_OCCURRENCE_UNBOUND/i.test(gapId)) return "VALUE_FLOW_OCCURRENCE_UNBOUND";
   if (/UNSUPPORTED_OPERATOR/i.test(gapId)) return "UNSUPPORTED_OPERATOR";
   if (/BOUNDARY|UNBOUND|BLOCKED|COVERAGE/i.test(gapId)) return "CANDIDATE_BOUNDARY";
   if (/SUMMARY|RELATION_|ROOT_RELATION|SQL_SOURCE/i.test(gapId)) return "RELATION_SUMMARY";

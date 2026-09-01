@@ -20,7 +20,14 @@
 - [x] 3.1 复用 exact producer/read bridge、relation bridge 和 occurrence-specific evidence refs，输出 resolved/ambiguous/missing bridge 统计，并识别 `PRODUCER_WRITE_AMBIGUOUS`。
 - [ ] 3.2 先实现跨 Task provider 聚合的 `FIELD_VALUE` 接续，覆盖同表多次读取、self join 和多个 write observation 隔离；仅在 Gate A 证明 provider 不足时实现完整 field-port propagation。
 - [x] 3.3 验证 Task-local semantic edge 不携带 `candidateBranchId`，只有跨任务 bridge edge 携带候选分支身份。
-- [ ] 3.4 验证同一输入只影响部分输出字段时不会无差别传播到 Task 的全部字段。
+- [x] 3.4 验证同一输入只影响部分输出字段时不会无差别传播到 Task 的全部字段。
+
+> **2026-09-01 实测校准。** 3.4 生效：176827 档一里 119044 只挂
+> `book_bel_dept, cutp_pty_shor_name, end_prcg_date, erly_trmt_date, inr_ord_id` 五列，
+> 未广播到全部字段。第六列 `Book_Agt_Id` 不是输出列，是去 LEFT JOIN 持仓
+> PEPV 的键。LEFT 可空侧按 5.1 **不是** `ROW_MEMBERSHIP`，最多 `MULTIPLICITY`。
+> **不要**把 `t03_agt_rela_h` 写成档二完成标准（会和刚钉住的侧别打架）。
+> 档二要召回的是 105387 拉链四张 ref（176827 上是 163064 / 179886 / 78473）。
 
 ## 4. Gate A: 209119 structural and performance gate
 
@@ -30,10 +37,24 @@
 
 ## 5. M3: Row membership and task rollup
 
-- [ ] 5.1 实现 WHERE/HAVING/QUALIFY、INNER/OUTER/SEMI/ANTI/CROSS JOIN 的 `ROW_MEMBERSHIP`/`MULTIPLICITY` 规则；JOIN dependency 不以 uniqueness 为前提。
+- [x] 5.1 实现 WHERE/HAVING/QUALIFY、INNER/OUTER/SEMI/ANTI/CROSS JOIN 的 `ROW_MEMBERSHIP`/`MULTIPLICITY` 规则；JOIN dependency 不以 uniqueness 为前提。
 - [x] 5.2 建立去重 GlobalImpactGraph，local semantic edge 与 producer bridge edge 分层保存。
 - [x] 5.3 实现从 TargetWriteRef 出发的一次有界反向闭包和 task-level rollup，保留 channel、certainty、evidence/gap refs；`ROOT_WRITE` 不计入上游任务数量。
 - [x] 5.4 覆盖一个 Task 多个 branch、多通道和 task rollup 状态，验证任务级最小确定集与保守安全集。
+
+> **2026-09-01 代码核对（见 `176827-baseline-evidence.md` 与 `docs/execution-plan-rerun-shrink.md`）。**
+> 5.1 的侧别规则已经实现且方向正确：LEFT 保留侧
+> `[ROW_MEMBERSHIP, RELATION_EXISTENCE]`、可空侧 `[MULTIPLICITY, RELATION_EXISTENCE]`。
+> `join-side-and-field-scope.test.ts` 已按这个断言。拉链 CASE 在 summary 层
+> 由 `existenceCaseSelections()` 接到 `EXPRESSION_CONTROL` + `ROW_MEMBERSHIP`，
+> 夹具已绿。**不要再改 `joinSideChannels()`。**
+>
+> `176827-baseline.json`（13:07）里 RM CONFIRMED 仍为 0，是因为值链上 119044
+> 这一跳没把行通道问进去。13:51 播种把拉链三张和 LEFT 维表都送进了档二。
+> 14:17 收口：值召回任务用本地 `EXPRESSION_CONTROL` 问 RM，挂在 `FIELD_VALUE`
+> 上，不再把父节点 RM 广播给 LEFT 可空维表。LEFT 维表现在在档三。
+> 14:22 再收：generic CASE 不再给子孙 read 打 `EXPRESSION_CONTROL`，档二仅拉链三张。
+> **不要**改 `joinSideChannels()`。这不是 5.1。
 
 ## 6. M4: Relation-level dependencies and channel algebra
 
@@ -50,6 +71,29 @@
 - [x] 7.2 评估候选范围是否比纯表血缘合理、Unknown 是否可定位、bridge closure 是否值得继续投入；未通过则停止 M5/M6。
 
 > Gate B evaluation is complete. The Phase 4 projection-readiness prerequisite passes with scope, but the evidence still does not establish a runtime rerun list or justify M5/M6 expansion. M5/M6 remain paused.
+
+## 7b. P0 重跑收缩（176827 / 155015）
+
+执行方案：`docs/execution-plan-rerun-shrink.md`。
+播种前冻结：`176827-baseline.json`（13:07，档二空、UNKNOWN 32、OCCURRENCE 1499）。
+对照产物不要混：`155015.json`（14:22）档二仍是四张 ref，是规则正例；
+`176827.json`（14:22）档二仅拉链三张，LEFT / 103943 generic CASE 子查询在档三。
+13:51 的 16 条过宽、14:17 的 8 条中间态已被覆盖，不当金样。
+
+209119 的 Gate A/B 只证明骨架能跑。播种前 176827 的产品缺口是档二空、32/59 UNKNOWN。
+`unknownReasonCounts` 合计 2443 是 gap 字符串次数：OCCURRENCE 1499 不是 1499 次故障
+（见 `176827-rs1a-occurrence-diagnosis.md`：真正带该 gap 的 PHYSICAL_PRODUCER 是 222 条，
+其中 184 条根本没有 VALUE_FLOW）。
+
+- [ ] 7b.1 RS-0 基线固化：封装 176827 / 155015 复现命令；单条 canonical write 时自动推断 `--write-observation-id`；对比脚本去掉 `generatedAt` / `stages` 后比档位与 `unknownReasonCounts`。证据文件承认 155015 档二已有四张 ref；旧「档二 empty」作废。`176827-baseline.json` 档一 27 个 taskId 是金样；14:17 / 14:22 的 `176827.json` 不当播种前基线。
+- [ ] 7b.2 RS-0.5 按列过滤档一：可选 `--target-field`，纯输出层过滤，不传时档位 + 档一 taskId 集合与基线一致。**不算主线交付**——整表场景不过滤，收缩为零。
+- [x] 7b.3 RS-1a **待评审的已完成**。诊断在 `176827-rs1a-occurrence-diagnosis.md`。不要再做一遍 `sameOccurrence` vs `occurrenceTokenMatches`。采信默认：1499 不是档二原因；83% 是无 VALUE_FLOW 被错标成 OCCURRENCE。推翻须写明为什么那张表是错的。
+- [x] 7b.4 RS-1b 可选，不影响档二。范围仅诊断三条：（1）无 VALUE_FLOW → `FIELD_VALUE=NOT_APPLICABLE`；（2）有边无 consumer-read token → 单独 gap 或按 (任务, 表) 回退；（3）`unknownReasonCounts` 按 assessment 去重。不改匹配函数、不重构 occurrence。
+- [x] 7b.5 RS-2 只在 summary / rollup / `shrinkReport` 按 `(task, table)` 合并；`assessments` 数量与键不变。
+- [x] 7b.6 RS-3 **已收口**。值召回跳：本地有拉链 CASE（`EXPRESSION_CONTROL` 不是 N/A）才问 RM；问的时候挂在 `FIELD_VALUE` 上，不继承父节点 RM。generic CASE 不再给子孙 read 打 `EXPRESSION_CONTROL`（103943 LEFT 子查询不再开闸）。不改 `joinSideChannels()`，不接 `BRANCH_SELECTOR`，不勾 2.3。176827 档二仅 163064 / 179886 / 78473 via Agt_Modifr1；LEFT 维表进档三。
+- [x] 7b.7 RS-4 档四 198 条换成稳定原因码（无 bridge / 覆盖边界 / SCHEDULE_ONLY / UNBOUND_READ / 未建模算子）；文案只能是「本轮证不出」，禁止「无关」。档三按 `(任务, JOIN 节点)` 带 witness，summary 默认折叠。
+- [x] 7b.8 RS-5 跑 176827 + 155015 验收：档一 27 个任务不丢；176827 档二含 163064 / 179886 / 78473 且不含 LEFT 维表；155015 档二四张 ref 不得变空（回归，不是新能力）；档四有原因码；未触达现有 1GiB / 300s 预算。UNKNOWN 下降仅当 7b.4 已合入时考核。**2026-09-01 22:22：** 档一 27 unique taskId 与基线一致；档二仅拉链三张；LEFT / 103943 generic-CASE 子查询不在档二；155015 四张 ref 经 Agt_Modifr1；档四有原因码；peak ~552MB。
+- [ ] 7b.9 RS-6 条件启动：7b.4 之后（或决定不开 7b.4 时单独评审）按剩余 UNKNOWN 分布决定是否消费 `SRC_TBL` 分区谓词。
 
 ## 8. M5: Remaining operator semantics and bounded propagation (Gate B 通过后)
 

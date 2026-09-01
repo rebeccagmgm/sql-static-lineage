@@ -4,7 +4,11 @@ import type { ImpactChannel, LocalTransferKind, TaskRelationSummary } from "./ta
 import {
   canonicalAssessment,
   type ChannelAssessment,
+  type PrunedReason,
+  type PrunedReasonCode,
   type RelationStatus,
+  type ShrinkReport,
+  type ShrinkReportEntry,
   type TargetTableAssessment,
 } from "./artifact-contract.ts";
 
@@ -28,8 +32,27 @@ function canonicalOccurrence(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function occurrenceTail(value: string): string {
+  const normalized = canonicalOccurrence(value);
+  const relation = normalized.match(/:relation:(.+)$/);
+  if (relation?.[1]) return relation[1];
+  const slotted = normalized.match(/^(?:create|query)#\d+:(.+)$/);
+  if (slotted?.[1]) return slotted[1];
+  return normalized;
+}
+
 function sameOccurrence(left: string, right: string): boolean {
-  return canonicalOccurrence(left) === canonicalOccurrence(right);
+  const a = canonicalOccurrence(left);
+  const b = canonicalOccurrence(right);
+  if (a === b) return true;
+  const leftTail = occurrenceTail(a);
+  const rightTail = occurrenceTail(b);
+  return leftTail.length > 0 && leftTail === rightTail;
+}
+
+function certainProducerRole(role: string | null | undefined): boolean {
+  const normalized = (role ?? "PRIMARY").trim().toUpperCase();
+  return normalized === "PRIMARY" || normalized === "ADDITIONAL";
 }
 
 function emptyChannel(
@@ -62,7 +85,10 @@ function semantic(
       : emptyChannel(channel, "UNKNOWN", summary.gaps);
   }
   const refs = unique(relevant.flatMap((impact) => impact.evidenceRefs));
-  const gaps = unique(relevant.flatMap((impact) => impact.gaps));
+  const gaps = unique([
+    ...relevant.flatMap((impact) => impact.gaps),
+    ...(!summary.complete ? summary.gaps : []),
+  ]);
   const demandedFieldNames = unique(relevant.flatMap((impact) => impact.demandedFieldNames ?? []));
   const localTransferKinds = unique(relevant.flatMap((impact) => impact.localTransferKinds ?? [])) as LocalTransferKind[];
   return {
@@ -70,7 +96,7 @@ function semantic(
     status: gaps.length > 0 || !summary.complete ? "UNKNOWN" : "CONFIRMED",
     proofRefs: refs,
     witnessRefs: refs,
-    gapRefs: gaps,
+    gapRefs: gaps.length > 0 || summary.complete ? gaps : [`summary-gap:${branch.consumerTaskId ?? "unknown"}`],
     ...(localTransferKinds.length > 0 ? { localTransferKinds } : {}),
     ...(demandedFieldNames.length > 0 ? { demandedFieldNames } : {}),
   };
@@ -176,12 +202,19 @@ export function rollupAssessments(input: {
   readonly conservativeSafetyTaskIds: readonly string[];
 } {
   const byTask = new Map<string, TargetTableAssessment[]>();
+  const certainIds = new Set<string>();
   for (const assessment of input.assessments) {
     const branch = input.branches.find((candidate) => candidate.candidateBranchId === assessment.candidateBranchId);
     if (!branch?.producerTaskId || branch.branchKind === "ROOT_WRITE") continue;
     const list = byTask.get(branch.producerTaskId) ?? [];
     list.push(assessment);
     byTask.set(branch.producerTaskId, list);
+    if (
+      assessment.relationStatus === "CONFIRMED_RELATED" &&
+      (branch.branchKind !== "PHYSICAL_PRODUCER" || certainProducerRole(branch.producerRole))
+    ) {
+      certainIds.add(branch.producerTaskId);
+    }
   }
   const taskRollup = [...byTask.entries()].map(([producerTaskId, values]) => {
     const rank = (status: RelationStatus): number => status === "CONFIRMED_RELATED" ? 3 : status === "CONDITIONAL_RELATED" ? 2 : status === "UNKNOWN" ? 1 : 0;
@@ -197,7 +230,138 @@ export function rollupAssessments(input: {
   }).sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId));
   return {
     taskRollup,
-    minimumCertainTaskIds: taskRollup.filter((value) => value.relationStatus === "CONFIRMED_RELATED").map((value) => value.producerTaskId),
+    minimumCertainTaskIds: [...certainIds].sort((left, right) => left.localeCompare(right)),
     conservativeSafetyTaskIds: taskRollup.map((value) => value.producerTaskId),
   };
+}
+
+function confirmed(assessment: TargetTableAssessment, channel: ImpactChannel): ChannelAssessment | undefined {
+  return assessment.channelAssessments.find((item) => item.channel === channel && item.status === "CONFIRMED");
+}
+
+export function buildShrinkReport(input: {
+  readonly branches: readonly CandidateBranch[];
+  readonly assessments: readonly TargetTableAssessment[];
+}): ShrinkReport {
+  const branchById = new Map(input.branches.map((branch) => [branch.candidateBranchId, branch]));
+  const entry = (assessment: TargetTableAssessment, channel: ImpactChannel): ShrinkReportEntry | null => {
+    const branch = branchById.get(assessment.candidateBranchId);
+    if (!branch?.producerTaskId || branch.branchKind === "ROOT_WRITE") return null;
+    if (branch.branchKind === "PHYSICAL_PRODUCER" && !certainProducerRole(branch.producerRole)) return null;
+    const hit = confirmed(assessment, channel);
+    if (!hit) return null;
+    const joinNode = channel === "MULTIPLICITY" ? joinNodeOf(branch) : undefined;
+    return {
+      taskId: branch.producerTaskId,
+      table: branch.table?.qualifiedName ?? null,
+      channel,
+      viaFields: unique(hit.demandedFieldNames ?? hit.affectedTargetFields ?? []),
+      witness: unique([...hit.witnessRefs, ...hit.proofRefs]),
+      ...(joinNode ? { joinNode } : {}),
+    };
+  };
+  const valueCertain = input.assessments.map((assessment) => entry(assessment, "FIELD_VALUE")).filter((value): value is ShrinkReportEntry => value !== null);
+  const valueIds = new Set(valueCertain.map((item) => item.taskId));
+  const rowDetermining = input.assessments
+    .map((assessment) => entry(assessment, "ROW_MEMBERSHIP"))
+    .filter((value): value is ShrinkReportEntry => value !== null && !valueIds.has(value.taskId));
+  const rowIds = new Set(rowDetermining.map((item) => item.taskId));
+  const multiplicityRisk = input.assessments
+    .map((assessment) => entry(assessment, "MULTIPLICITY"))
+    .filter((value): value is ShrinkReportEntry => value !== null && !valueIds.has(value.taskId) && !rowIds.has(value.taskId));
+  const listed = new Set([...valueIds, ...rowIds, ...multiplicityRisk.map((item) => item.taskId)]);
+  const pruned = input.assessments.filter((assessment) => {
+    const branch = branchById.get(assessment.candidateBranchId);
+    if (!branch || branch.branchKind === "ROOT_WRITE") return false;
+    return !branch.producerTaskId || !listed.has(branch.producerTaskId);
+  });
+  return {
+    valueCertain: mergeShrinkEntries(valueCertain),
+    rowDetermining: mergeShrinkEntries(rowDetermining),
+    multiplicityRisk: mergeShrinkEntries(multiplicityRisk, "join"),
+    prunedCount: pruned.length,
+    prunedReasons: collectPrunedReasons(pruned, branchById),
+  };
+}
+
+const PRUNED_SAMPLE_LIMIT = 3;
+
+function joinNodeOf(branch: CandidateBranch): string | undefined {
+  const path = branch.readOccurrence?.relationPath ?? [];
+  return [...path].reverse().find((id) => /:relation:join(?:\.|$|:)/i.test(id) || /(?:^|[./:])join(?:[./:]|$)/i.test(id));
+}
+
+export function classifyPrunedReason(branch: CandidateBranch, assessment: TargetTableAssessment): PrunedReasonCode {
+  if (branch.branchKind === "SCHEDULE_ONLY") return "SCHEDULE_ONLY";
+  if (branch.branchKind === "UNBOUND_READ") return "UNBOUND_READ";
+  if (branch.branchKind === "BLOCKED_READ") return "BLOCKED_READ";
+  if (branch.branchKind === "COVERAGE_BOUNDARY") return "COVERAGE_BOUNDARY";
+  const gaps = [...branch.gapRefs, ...assessment.gapRefs];
+  if (gaps.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))) return "UNSUPPORTED_OPERATOR";
+  if (
+    !branch.producerTaskId
+    || branch.writeObservationId == null
+    || !branch.writeScope
+    || gaps.some((gap) => /PRODUCER_WRITE|WRITE_OBSERVATION/i.test(gap))
+  ) {
+    return "NO_PRODUCER_BRIDGE";
+  }
+  return "UNCLASSIFIED";
+}
+
+function collectPrunedReasons(
+  pruned: readonly TargetTableAssessment[],
+  branchById: ReadonlyMap<string, CandidateBranch>,
+): readonly PrunedReason[] {
+  const grouped = new Map<PrunedReasonCode, { count: number; samples: { taskId: string | null; table: string | null }[]; seen: Set<string> }>();
+  for (const assessment of pruned) {
+    const branch = branchById.get(assessment.candidateBranchId);
+    if (!branch) continue;
+    const reasonCode = classifyPrunedReason(branch, assessment);
+    const current = grouped.get(reasonCode) ?? { count: 0, samples: [], seen: new Set<string>() };
+    current.count += 1;
+    const sample = { taskId: branch.producerTaskId, table: branch.table?.qualifiedName ?? null };
+    const sampleKey = `${sample.taskId ?? ""}\0${sample.table ?? ""}`;
+    if (!current.seen.has(sampleKey) && current.samples.length < PRUNED_SAMPLE_LIMIT) {
+      current.seen.add(sampleKey);
+      current.samples.push(sample);
+    }
+    grouped.set(reasonCode, current);
+  }
+  return [...grouped.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([reasonCode, value]) => ({
+      reasonCode,
+      count: value.count,
+      samples: [...value.samples].sort((left, right) =>
+        (left.taskId ?? "").localeCompare(right.taskId ?? "") || (left.table ?? "").localeCompare(right.table ?? ""),
+      ),
+    }));
+}
+
+function mergeShrinkEntries(
+  entries: readonly ShrinkReportEntry[],
+  grain: "table" | "join" = "table",
+): readonly ShrinkReportEntry[] {
+  const merged = new Map<string, ShrinkReportEntry>();
+  for (const entry of entries) {
+    const key = grain === "join"
+      ? `${entry.taskId}\0${entry.table ?? ""}\0${entry.joinNode ?? ""}`
+      : `${entry.taskId}\0${entry.table ?? ""}`;
+    const current = merged.get(key);
+    if (!current) {
+      merged.set(key, entry);
+      continue;
+    }
+    merged.set(key, {
+      ...current,
+      viaFields: unique([...current.viaFields, ...entry.viaFields]),
+      witness: unique([...current.witness, ...entry.witness]),
+    });
+  }
+  return [...merged.values()].sort((left, right) =>
+    left.taskId.localeCompare(right.taskId)
+    || (left.table ?? "").localeCompare(right.table ?? "")
+    || (left.joinNode ?? "").localeCompare(right.joinNode ?? ""),
+  );
 }

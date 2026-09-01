@@ -177,18 +177,59 @@ function physicalColumnTables(row: JsonRecord): readonly string[] {
   return sorted(columns.flatMap((column) => records(column.physical).map((item) => text(item.table)).filter((value): value is string => value !== null)));
 }
 
-function physicalColumnNames(row: JsonRecord): readonly string[] {
-  const relation = relationOf(row);
-  const columns = [
-    ...records(relation.predicate_columns),
-    ...records(relation.condition_columns),
-    ...records(relation.input_columns),
-    ...records(relation.output_columns),
-  ];
+function columnNames(columns: readonly JsonRecord[]): readonly string[] {
   return sorted(columns.flatMap((column) => [
     text(column.column),
     text(column.name),
   ].filter((value): value is string => value !== null)));
+}
+
+function physicalColumnNames(row: JsonRecord): readonly string[] {
+  const relation = relationOf(row);
+  return columnNames([
+    ...records(relation.predicate_columns),
+    ...records(relation.condition_columns),
+    ...records(relation.input_columns),
+    ...records(relation.output_columns),
+  ]);
+}
+
+/** Join/filter demand the predicate keys, not every projected output column. */
+function operatorDemandColumns(row: JsonRecord): readonly string[] {
+  const type = relationType(row);
+  const relation = relationOf(row);
+  if (type === "join") return columnNames(records(relation.condition_columns));
+  if (type === "filter" || type === "having" || type === "qualify") {
+    return columnNames(records(relation.predicate_columns));
+  }
+  return physicalColumnNames(row);
+}
+
+function existenceCaseSelections(row: JsonRecord): readonly {
+  readonly output: string;
+  readonly columns: readonly string[];
+  readonly tables: readonly string[];
+}[] {
+  if (relationType(row) !== "project") return [];
+  const selections: { output: string; columns: string[]; tables: string[] }[] = [];
+  for (const expression of records(relationOf(row).expressions)) {
+    const body = `${text(expression.expr_text) ?? ""} ${text(expression.display_text) ?? ""}`;
+    if (!/IS\s+NOT\s+NULL/i.test(body)) continue;
+    const output = text(expression.output) ?? text(expression.output_name);
+    if (!output) continue;
+    const columns: string[] = [];
+    const tables: string[] = [];
+    for (const input of records(expression.input_columns)) {
+      for (const physical of records(input.physical)) {
+        const column = text(physical.column) ?? text(input.name);
+        const table = text(physical.table);
+        if (column) columns.push(column);
+        if (table) tables.push(table);
+      }
+    }
+    if (columns.length > 0) selections.push({ output, columns: [...new Set(columns)], tables: [...new Set(tables)] });
+  }
+  return selections;
 }
 
 function exprText(row: JsonRecord): string {
@@ -214,6 +255,31 @@ function hasFunction(row: JsonRecord, names: readonly string[]): boolean {
   return names.some((name) => new RegExp(`\\b${name}\\s*\\(`, "i").test(haystack));
 }
 
+function joinSideChannels(joinType: string): {
+  readonly left: readonly ImpactChannel[];
+  readonly right: readonly ImpactChannel[];
+} {
+  const kind = joinType.toUpperCase();
+  const membershipAndCard: readonly ImpactChannel[] = [
+    "ROW_MEMBERSHIP",
+    "MULTIPLICITY",
+    "RELATION_EXISTENCE",
+  ];
+  const membershipOnly: readonly ImpactChannel[] = ["ROW_MEMBERSHIP", "RELATION_EXISTENCE"];
+  // OUTER preserved = driving rows. Dropping a driving row drops output rows.
+  // OUTER nullable = padding only: can 1-N or null-fill values, does not delete driving rows.
+  const outerPreserved: readonly ImpactChannel[] = ["ROW_MEMBERSHIP", "RELATION_EXISTENCE"];
+  const outerNullable: readonly ImpactChannel[] = ["MULTIPLICITY", "RELATION_EXISTENCE"];
+  if (kind.includes("CROSS")) return { left: membershipAndCard, right: membershipAndCard };
+  if (kind.includes("SEMI") || kind.includes("ANTI")) {
+    return { left: membershipOnly, right: membershipOnly };
+  }
+  if (kind.includes("FULL")) return { left: membershipAndCard, right: membershipAndCard };
+  if (kind.includes("RIGHT")) return { left: outerNullable, right: outerPreserved };
+  if (kind.includes("LEFT")) return { left: outerPreserved, right: outerNullable };
+  return { left: membershipAndCard, right: membershipAndCard };
+}
+
 function impactChannels(row: JsonRecord): readonly ImpactChannel[] {
   const type = relationType(row);
   const relation = relationOf(row);
@@ -222,10 +288,8 @@ function impactChannels(row: JsonRecord): readonly ImpactChannel[] {
     case "filter":
       return ["ROW_MEMBERSHIP", "RELATION_EXISTENCE"];
     case "join": {
-      const joinType = (text(relation.join_type) ?? "INNER").toUpperCase();
-      const result: ImpactChannel[] = ["ROW_MEMBERSHIP", "MULTIPLICITY", "RELATION_EXISTENCE"];
-      if (joinType.includes("CROSS")) return result;
-      return result;
+      const sides = joinSideChannels(text(relation.join_type) ?? "INNER");
+      return sorted([...sides.left, ...sides.right]) as ImpactChannel[];
     }
     case "aggregate":
       return hasFunction(row, ["COUNT", "SUM", "AVG", "MIN", "MAX", "COLLECT", "ARRAY_AGG"])
@@ -252,13 +316,13 @@ function impactChannels(row: JsonRecord): readonly ImpactChannel[] {
   }
 }
 
-function localTransferKinds(row: JsonRecord): readonly LocalTransferKind[] {
-  const channels = impactChannels(row);
+function localTransferKinds(row: JsonRecord, channels: readonly ImpactChannel[]): readonly LocalTransferKind[] {
   if (channels.length === 0) return [];
+  const demanded = operatorDemandColumns(row);
   return [
     "RELATION_OPERATOR",
-    ...(physicalColumnNames(row).length > 0 && channels.includes("ROW_MEMBERSHIP") ? ["CONTROL_FIELD_DEMAND" as const] : []),
-    ...(physicalColumnNames(row).length > 0 && channels.includes("MULTIPLICITY") ? ["MULTIPLICITY_FIELD_DEMAND" as const] : []),
+    ...(demanded.length > 0 && channels.includes("ROW_MEMBERSHIP") ? ["CONTROL_FIELD_DEMAND" as const] : []),
+    ...(demanded.length > 0 && channels.includes("MULTIPLICITY") ? ["MULTIPLICITY_FIELD_DEMAND" as const] : []),
   ];
 }
 
@@ -438,25 +502,61 @@ export function summarizeTaskRelations(input: {
       const descendants = type === "read" ? [readOccurrenceId(row) ?? id] : descendantReads(id);
       const columnTables = physicalColumnTables(row);
       const shouldRestrictToColumns = type === "filter" || type === "having" || type === "qualify" || type === "join" || type === "project";
-      const readIds = shouldRestrictToColumns && columnTables.length > 0
-        ? descendants.filter((readId) => {
-            const table = readTables.get(readId);
-            return table !== undefined && columnTables.some((columnTable) => tableMatches(table, columnTable));
-          })
-        : descendants;
-      for (const readId of readIds) {
-        const current = readImpacts.get(readId) ?? { channels: new Set<ImpactChannel>(), transferKinds: new Set<LocalTransferKind>(), demandedFields: new Set<string>(), refs: new Set<string>(), gaps: new Set<string>() };
-        for (const channel of impactChannels(row)) current.channels.add(channel);
-        for (const transferKind of localTransferKinds(row)) current.transferKinds.add(transferKind);
-        for (const fieldName of physicalColumnNames(row)) current.demandedFields.add(fieldName);
-        current.refs.add(`machine-facts:${input.taskId}:relation:${id}`);
-        if (hasUnsupportedShape(row)) {
-          const gap = `relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`;
-          current.gaps.add(gap);
-          gaps.add(gap);
+      const restrict = (readIds: readonly string[]): readonly string[] =>
+        shouldRestrictToColumns && columnTables.length > 0
+          ? readIds.filter((readId) => {
+              const table = readTables.get(readId);
+              return table !== undefined && columnTables.some((columnTable) => tableMatches(table, columnTable));
+            })
+          : readIds;
+      const apply = (
+        readIds: readonly string[],
+        channels: readonly ImpactChannel[],
+        demandedNames: readonly string[] = operatorDemandColumns(row),
+      ): void => {
+        if (channels.length === 0) return;
+        const demanded = demandedNames;
+        const transfers = localTransferKinds(row, channels);
+        for (const readId of restrict(readIds)) {
+          const current = readImpacts.get(readId) ?? { channels: new Set<ImpactChannel>(), transferKinds: new Set<LocalTransferKind>(), demandedFields: new Set<string>(), refs: new Set<string>(), gaps: new Set<string>() };
+          for (const channel of channels) current.channels.add(channel);
+          for (const transferKind of transfers) current.transferKinds.add(transferKind);
+          for (const fieldName of demanded) current.demandedFields.add(fieldName);
+          current.refs.add(`machine-facts:${input.taskId}:relation:${id}`);
+          if (hasUnsupportedShape(row)) {
+            const gap = `relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`;
+            current.gaps.add(gap);
+            gaps.add(gap);
+          }
+          for (const sourceId of sourceRelationIds(row, incoming)) current.refs.add(`machine-facts:${input.taskId}:relation:${sourceId}`);
+          readImpacts.set(readId, current);
         }
-        for (const sourceId of sourceRelationIds(row, incoming)) current.refs.add(`machine-facts:${input.taskId}:relation:${sourceId}`);
-        readImpacts.set(readId, current);
+      };
+      const relation = relationOf(row);
+      const leftId = text(relation.left);
+      const rightId = text(relation.right);
+      if (type === "join" && leftId && rightId) {
+        const sides = joinSideChannels(text(relation.join_type) ?? "INNER");
+        apply(descendantReads(leftId), sides.left);
+        apply(descendantReads(rightId), sides.right);
+      } else if (type === "project") {
+        const selections = existenceCaseSelections(row);
+        if (selections.length > 0) {
+          for (const selection of selections) {
+            const readIds = descendants.filter((readId) => {
+              const table = readTables.get(readId);
+              return table !== undefined && selection.tables.some((candidate) => tableMatches(table, candidate));
+            });
+            apply(readIds, ["EXPRESSION_CONTROL", "ROW_MEMBERSHIP"], [...selection.columns, selection.output]);
+          }
+        } else {
+          // Generic CASE/IF/COALESCE selects a value. It is not the zipper
+          // IS NOT NULL CASE, so do not stamp EXPRESSION_CONTROL onto every
+          // descendant read (LEFT JOIN keys would then open the RM bridge).
+          apply(descendants, impactChannels(row).filter((channel) => channel !== "EXPRESSION_CONTROL"));
+        }
+      } else {
+        apply(descendants, impactChannels(row));
       }
     }
     if (hasUnsupportedShape(row)) gaps.add(`relation-summary-gap:${input.taskId}:${id}:UNSUPPORTED_OPERATOR`);

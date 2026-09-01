@@ -102,7 +102,7 @@ function nodeKey(scope: WriteScope): string {
   return canonicalJson(scope);
 }
 
-interface WriteScope extends CandidateWriteScope {
+export interface WriteScope extends CandidateWriteScope {
   readonly taskId: string;
   readonly writeObservationId: string;
 }
@@ -145,6 +145,20 @@ function summaryForBranch(
 
 function sameText(left: string | null | undefined, right: string | null | undefined): boolean {
   return left !== null && left !== undefined && right !== null && right !== undefined && left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
+const ROW_CONTROL_CHANNELS: ReadonlySet<ImpactChannel> = new Set([
+  "ROW_MEMBERSHIP",
+  "MULTIPLICITY",
+  "EXPRESSION_CONTROL",
+  "RELATION_EXISTENCE",
+]);
+
+function demandFieldsForChannel(summary: TaskRelationSummary | undefined, channel: ImpactChannel): readonly string[] {
+  if (!summary) return [];
+  return unique(summary.readImpacts
+    .filter((impact) => impact.impactChannels.includes(channel))
+    .flatMap((impact) => impact.demandedFieldNames ?? []));
 }
 
 function branchBelongsToWriteScope(
@@ -285,6 +299,7 @@ function propagate(input: {
   readonly summaries: ReadonlyMap<string, TaskRelationSummary>;
   readonly fieldValueProvider: FieldValueEvidenceProvider;
   readonly rootWriteScope?: WriteScope;
+  readonly sameTaskUpstreamWrites?: ReadonlyMap<string, readonly WriteScope[]>;
   readonly budget?: PropagationBudget;
 }): PropagationRun {
   const root = input.universe.branches.find((branch) => branch.branchKind === "ROOT_WRITE");
@@ -298,6 +313,13 @@ function propagate(input: {
   };
   const seedCertainty: PathCertainty = root && root.gapRefs.length > 0 ? "UNKNOWN" : "CONFIRMED";
   const seedEvidence = root ? branchEvidenceRefs(root) : [];
+  const rootSummary = summaryForOccurrence(
+    input.summaries,
+    input.rootTaskId,
+    rootScope.sqlSourceId,
+    rootScope.statementOrdinal,
+    rootScope.rootRelationId,
+  );
   const nodeStates = new Map<string, Map<ImpactChannel, PropagationState>>();
   const pending: WriteScope[] = [];
   const rootStates = new Map<ImpactChannel, PropagationState>();
@@ -315,7 +337,7 @@ function propagate(input: {
       witnessPredecessor: null,
       witnessDepth: 0,
       localTransferKinds: [],
-      demandedFieldNames: [],
+      demandedFieldNames: demandFieldsForChannel(rootSummary, channel),
     });
   }
   const rootNodeKey = nodeKey(rootScope);
@@ -379,6 +401,31 @@ function propagate(input: {
     const currentKey = nodeKey(currentScope);
     const currentStates = nodeStates.get(currentKey);
     if (!currentStates) continue;
+    for (const upstream of input.sameTaskUpstreamWrites?.get(`${currentScope.taskId}|${currentScope.writeObservationId}`) ?? []) {
+      const upKey = nodeKey(upstream);
+      if (!nodeStates.has(upKey) && nodeStates.size >= maxNodeStates) {
+        budgetGap("MAX_NODE_STATES");
+        break;
+      }
+      const upStates = nodeStates.get(upKey) ?? new Map<ImpactChannel, PropagationState>();
+      let changed = false;
+      for (const state of currentStates.values()) {
+        const scoped: PropagationState = {
+          ...state,
+          taskId: upstream.taskId,
+          writeObservationId: upstream.writeObservationId,
+          sqlSourceId: upstream.sqlSourceId,
+          statementOrdinal: upstream.statementOrdinal,
+          rootRelationId: upstream.rootRelationId,
+        };
+        const prior = upStates.get(scoped.channel);
+        const merged = prior ? mergeState(prior, scoped) : scoped;
+        upStates.set(scoped.channel, merged);
+        if (!prior || !sameState(prior, merged)) changed = true;
+      }
+      nodeStates.set(upKey, upStates);
+      if (changed) pending.push(upstream);
+    }
     const readScopeKey = `${currentScope.taskId}|${canonicalSqlSourceId(currentScope.sqlSourceId)}|${currentScope.statementOrdinal}`;
     for (const branch of branchesByReadScope.get(readScopeKey) ?? []) {
       if (stopped) break;
@@ -393,8 +440,9 @@ function propagate(input: {
         localValue: ChannelAssessment,
         transferKinds: readonly LocalTransferKind[],
         demandedFields: readonly string[],
+        downstreamOverride?: PropagationState,
       ): void => {
-        const downstream = currentStates.get(targetChannel);
+        const downstream = downstreamOverride ?? currentStates.get(targetChannel);
         if (!downstream || localValue.status === "NOT_APPLICABLE") return;
         const producerScope = scopeForBranch(branch);
         const unresolvedWrite = producerScope === null;
@@ -460,15 +508,29 @@ function propagate(input: {
         reachableTasks.add(branch.producerTaskId);
         if (!prior || !sameState(prior, merged)) pending.push(nextScope);
       };
+      const valueCarrier = currentStates.get("FIELD_VALUE");
+      const recalledAsValue = valueCarrier !== undefined && currentScope.taskId !== input.rootTaskId;
+      const localControl = local.get("EXPRESSION_CONTROL");
+      const zipperControl = localControl !== undefined && localControl.status !== "NOT_APPLICABLE";
       for (const channel of CAUSAL_IMPACT_CHANNELS) {
         const localValue = local.get(channel);
         if (!localValue || localValue.status === "NOT_APPLICABLE") continue;
-        emit(
-          channel,
-          localValue,
-          localValue.localTransferKinds ?? ["RELATION_OPERATOR"],
-          localValue.demandedFieldNames ?? currentStates.get(channel)?.demandedFieldNames ?? [],
-        );
+        const demanded = localValue.demandedFieldNames ?? currentStates.get(channel)?.demandedFieldNames ?? [];
+        const transfer = localValue.localTransferKinds ?? ["RELATION_OPERATOR"];
+        if (currentStates.get(channel)) {
+          if (channel === "ROW_MEMBERSHIP" && recalledAsValue) {
+            if (!zipperControl || !valueCarrier) continue;
+            emit(channel, localValue, transfer, demanded, valueCarrier);
+            continue;
+          }
+          emit(channel, localValue, transfer, demanded);
+          continue;
+        }
+        if (valueCarrier && ROW_CONTROL_CHANNELS.has(channel)) {
+          if (channel === "MULTIPLICITY" || channel === "RELATION_EXISTENCE") continue;
+          if (channel === "ROW_MEMBERSHIP" && !zipperControl) continue;
+          emit(channel, localValue, transfer, demanded, valueCarrier);
+        }
       }
       const fieldValue = local.get("FIELD_VALUE");
       if (fieldValue && fieldValue.status !== "NOT_APPLICABLE") {
@@ -478,6 +540,7 @@ function propagate(input: {
           const outputs = fieldValue.affectedTargetFields ?? [];
           const matched = outputs.filter((output) => demanded.some((field) => sameText(output, field)));
           if (!downstream || matched.length === 0) continue;
+          if (targetChannel === "ROW_MEMBERSHIP" && recalledAsValue && !zipperControl) continue;
           emit(targetChannel, fieldValue, ["VALUE_FLOW"], matched);
         }
       }
@@ -520,6 +583,7 @@ export function buildCausalClosure(input: {
   readonly fieldValueProvider: FieldValueEvidenceProvider;
   readonly baseGraph?: GlobalImpactGraph;
   readonly rootWriteScope?: WriteScope;
+  readonly sameTaskUpstreamWrites?: ReadonlyMap<string, readonly WriteScope[]>;
   readonly budget?: PropagationBudget;
 }): CausalClosureResult {
   const base = input.baseGraph ?? buildImpactGraph(input.universe.branches, input.summaries);

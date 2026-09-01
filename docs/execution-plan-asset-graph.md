@@ -6,23 +6,12 @@
 每个工作包（WP）按 1:1 可转成一个 OpenSpec change 的粒度切分。领取时执行
 `openspec new change "<wp-name>"` 再补齐 proposal / specs / design / tasks。
 
-## 先做这个（P0）：155015 重跑收缩
+## 先做这个（P0）：重跑收缩
 
-眼前要解决的是：已知 155015 要重跑，收缩全量上游，只留真正有影响的，
-并且每条都有理由。**不要从 WP-1 起做。** WP-1 修的是 field-lineage 体积，
-出不了这张清单。
-
-在已有 change `target-write-upstream-causal-closure` 上补两处，不新开 WP：
-
-1. **tasks.md 5.1**：JOIN/FILTER 按侧别和拉链键归入 `ROW_MEMBERSHIP` /
-   `MULTIPLICITY`，不要只按 relation 类型打标签。
-2. **tasks.md 3.4**：一个算子只影响部分输出列时，不得扩散到该任务全部字段。
-3. **金样 105387**：四张参考表必须出现在 155015 的行决定档，理由链必须经过
-   `Agt_Modifr` → 拉链匹配 → `STRT_DATE`/`END_DATE`。禁止「影响最终字段 1 个」
-   这种无理由抄写。值必达档仍是 `112715 → 114026` 与 `71698 → 105387`。
-
-验收就是跑 155015，得到分档清单：必查 4 个任务，行决定 4 张参考表带理由，
-其余全量上游只计数不展示。过了再回头做下面的 WP（地图、口径、体积）。
+完整方案见 `docs/execution-plan-rerun-shrink.md`。
+问题不在清单太长（field-lineage HTML 的「81→69」是另一个消费者）。
+P0 的 RS-5 已过（`176827.json` 14:22：档二仅拉链三张；`155015.json` 四张 ref 仍在）。
+**WP-1 可以领。** 总览表前置仍写 P0 RS-5，现在已满足；不要再按「立即开始」绕过 P0 的旧印象。
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
@@ -54,8 +43,8 @@
 
 | WP | 名称 | 仓库 | 前置 | 可并行 |
 |---|---|---|---|---|
-| WP-1 | `separate-field-impact-channels` | sql-static-lineage | 无 | 立即开始 |
-| WP-2 | `harvest-declared-semantics` | sql-static-lineage | 无 | 与 WP-1 并行 |
+| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **P0 RS-5 通过** | RS-5 之后，可与 WP-2 并行 |
+| WP-2 | `harvest-declared-semantics` | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
 | WP-3 | `task-local-graph-projection` | sql-static-lineage | WP-1 | WP-1 合入后 |
 | WP-4 | `task-processing-kind` | sql-static-lineage | WP-1 | 与 WP-3 并行 |
 | WP-5 | `task-local-union-source` | data-graph | WP-3 契约冻结 | 契约冻结后 |
@@ -66,8 +55,8 @@ WP-1 影响通道分离 ──┬─> WP-3 任务局部投影 ──> WP-5 data-
 WP-2 声明口径采集 ────────────────────────> （WP-3 后可加传播与矛盾检测）
 ```
 
-WP-1 和 WP-2 触及的文件不重叠，可由两个 agent 同时领取。WP-3 与 WP-4 都依赖
-WP-1 的分类结果，但一个产投影、一个产任务属性，文件不重叠，可并行。
+WP-1 **P0 RS-5 已过，可以领。** WP-2 不碰闭包播种，可先做采集，但不得暗示 WP-1
+已经开始。WP-3 与 WP-4 都依赖 WP-1 的分类结果，文件不重叠，可在 WP-1 合入后并行。
 
 ## 共享不变量
 
@@ -100,11 +89,15 @@ WP-1 的分类结果，但一个产投影、一个产任务属性，文件不重
 
 ```text
 已完成    Baseline、M1（除 2.3 完整 field-port）、Gate A（带范围）
-          M3 的图与 rollup（5.2–5.4）、M4 通道代数（除 6.6）
+          M3 的图与 rollup（5.1–5.4）、M4 通道代数（除 6.6）
+          5.1 JOIN 侧别（LEFT 保留侧 ROW_MEMBERSHIP，可空侧 MULTIPLICITY）
+          3.4 部分字段不扩散（119044 档一只挂 5 列）
+          拉链 CASE 的 summary 层标签（existenceCaseSelections）
+          105387 / 176827 夹具与 176827 基线产物
 未完成    2.3 完整 field-port
           3.2 跨任务 FIELD_VALUE 精确接续
-          3.4 部分输出字段不受影响时不得扩散到任务全部字段
-          5.1 JOIN/FILTER 的侧别与拉链键规则（类型→通道映射已有，规则未做）
+          闭包播种已收口：值召回跳本地有拉链 CASE 才问 RM；LEFT 维表在档三
+          （P0 RS-3 / 7b.6 + RS-5 / 7b.8：档二仅拉链三张）
 暂停      M5/M6（Gate B 未过）
 未开始    M7 独立 HTML/schema 发布
 Gate B    任务清单勾了，证据写 NOT VERIFIED / REOPENED
@@ -113,24 +106,30 @@ Gate B    任务清单勾了，证据写 NOT VERIFIED / REOPENED
 
 209119 最近一次：542 候选分支，46 `CONFIRMED_RELATED` / 496 `UNKNOWN`，
 最小确定 41 任务 / 保守安全 78 任务。`runtimeRerunDecision = NOT_EVALUATED`。
-155015 / 105387 拉链样例从未进入该 consumer 的金样。
+155015 / 105387 拉链样例**已经进入**该 consumer 的金样
+（`join-side-and-field-scope.test.ts` + `105387-zipper-relations.json`）。
+176827 也跑过基线：`176827-baseline.json` 档一 27 任务可用，档二/档三空，32/59 UNKNOWN。
+`155015.json` 档二已有四张 ref。`176827.json`（14:22）档二仅拉链三张；LEFT 维表
+和 103943 generic CASE 子查询在档三。RS-5 已过。
 
-现有 `summarizeTaskRelations` 把任意 `join` 一律标成
-`ROW_MEMBERSHIP + MULTIPLICITY + RELATION_EXISTENCE`，`demandedFieldNames`
-是算子上出现过的全部列名，不是"该输出列的行决定列"。所以 105387 的四张
-参考表会被召回，但给不出 `Agt_Modifr → 拉链匹配键 → STRT_DATE/END_DATE`
-这条理由——与页面上"算子间接表 / 影响最终字段 1 个"是同一类问题。
+现有 `summarizeTaskRelations` **已经按 JOIN 侧别分通道**，不再把任意 `join`
+一律标成三通道。`demandedFieldNames` 对 join 取 `condition_columns`，
+拉链 CASE 经 `existenceCaseSelections()` 能给出 `Agt_Modifr` 理由。
+176827 到 105387 **不是直连**（`176827 --FV--> 119044 --FV--> 105387`）。
+RS-3 已收口：值召回跳本地有拉链 CASE 才问 RM，LEFT 可空维表在档三。详见 P0 方案。
 
 分工因此固定：
 
-- 场景 3（单表重跑溯源）继续用该 consumer 做查询期反向闭包，先补 5.1 与 3.4，
-  并把 105387 收为金样。不在 WP-3 重写一遍闭包引擎。
+- 场景 3（单表重跑溯源）继续用该 consumer 做查询期反向闭包，先做 P0
+  （闭包播种 + UNKNOWN 可解释 + 档四归因）。不在 WP-3 重写一遍闭包引擎。
 - 场景 1（全局地图）仍需要 WP-3 的任务局部投影；该 consumer 是按 root 加载
   multi-hop universe 的，结构上铺不满 13,740 个任务。
 - WP-3 只物化 `TaskRelationSummary` 已有的通道为图边，查询期把闭包引擎接到
   这张图上。
 
 ## WP-1 `separate-field-impact-channels`
+
+**前置**：P0 重跑收缩的 RS-5 通过。总览表已写明；不要只看旧印象里的「立即开始」。
 
 **目标**：把"值影响"和"行集影响"拆成互不污染的两条通道。同时消除假阳性与 90% 体积。
 
@@ -236,9 +235,9 @@ scripts/visualize/field-lineage-visualize.ts
   | `DATASET_CONTROL` subtype `JOIN`/`FILTER` | `ROW_MEMBERSHIP` |
   | `grain` | `MULTIPLICITY` 的 certainty |
 
-  `demandedFieldNames` 在 5.1 / 3.4 补完之前精度不够（算子上出现过的列 ≠
-  该输出列的行决定列）。WP-3 可以先按现有摘要落边，105387 金样在 5.1 合入前
-  允许只断言召回、不断言理由链。
+  `demandedFieldNames` 在 JOIN 键闭包（P0 RS-3）补完之前，跨 hop 的行决定列
+  仍可能传不出去。WP-3 可以先按现有摘要落边；105387 金样允许先断言
+  summary 层标签（已绿），闭包层理由链等 P0 RS-3 合入后再收紧。
 - 常量谓词：形如 `SRC_TBL IN ('...')` 的字面量分区谓词单独记为
   `partitionPredicates[]`（列 + 字面量集合）。查询侧据此在多写入方分区表上
   剪掉不匹配分区的写入任务。
@@ -332,9 +331,12 @@ sourceMode: TASK_LOCAL_UNION
 ## 并行调度建议
 
 ```text
-第 1 波（可同时派两个 agent）
+第 0 波（现在）
+  P0 重跑收缩 RS-0…RS-5   见 docs/execution-plan-rerun-shrink.md
+  agent B -> WP-2         声明口径采集（不依赖 P0，可并行）
+
+第 1 波（P0 RS-5 通过后）
   agent A -> WP-1   影响通道分离      收益：假阳性消除 + 9x 体积下降
-  agent B -> WP-2   声明口径采集      收益：地图从"结构清晰"到"含口径"
 
 第 2 波（WP-1 合入后，可同时派两个 agent）
   agent C -> WP-3   任务局部投影
@@ -351,7 +353,8 @@ sourceMode: TASK_LOCAL_UNION
 ## 里程碑
 
 **M1（WP-1 + WP-2）**：影响分类正确、产物体积回到可用量级、口径层可查。
-此时重跑影响分析已可交付，业务地图具备结构与声明口径。
+**单表重跑收缩不在这个里程碑**——那是 P0 RS-5。M1 只覆盖 field-lineage HTML
+通道分离与声明口径。
 
 **M2（WP-3 + WP-4）**：`DM_RSK_N` 63 个任务铺满，成本模型实测有数，
 加工/通道可见。此时具备扩批依据。

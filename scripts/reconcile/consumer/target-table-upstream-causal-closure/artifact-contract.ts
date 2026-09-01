@@ -4,7 +4,7 @@ import type { CandidateBranch, CandidateUniverse } from "../target-field-causal-
 import type { ImpactChannel, LocalTransferKind } from "./task-relation-summary.ts";
 
 export const TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE = "TARGET_TABLE_UPSTREAM_CAUSAL_CLOSURE" as const;
-export const TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION = "1.1.0" as const;
+export const TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION = "1.2.0" as const;
 
 export type ChannelStatus = "CONFIRMED" | "CONDITIONAL" | "PROVEN_ABSENT" | "UNKNOWN" | "NOT_APPLICABLE";
 export type RelationStatus = "CONFIRMED_RELATED" | "CONDITIONAL_RELATED" | "PROVEN_UNRELATED" | "UNKNOWN";
@@ -89,6 +89,41 @@ export interface CausalStageMetric {
   readonly peakMemoryBytes: number;
 }
 
+export const PRUNED_REASON_CODES = [
+  "NO_PRODUCER_BRIDGE",
+  "COVERAGE_BOUNDARY",
+  "SCHEDULE_ONLY",
+  "UNBOUND_READ",
+  "BLOCKED_READ",
+  "UNSUPPORTED_OPERATOR",
+  "UNCLASSIFIED",
+] as const;
+export type PrunedReasonCode = (typeof PRUNED_REASON_CODES)[number];
+
+export interface ShrinkReportEntry {
+  readonly taskId: string;
+  readonly table: string | null;
+  readonly channel: ImpactChannel;
+  readonly viaFields: readonly string[];
+  readonly witness: readonly string[];
+  /** JOIN relation identity for 档三; omitted on 档一/档二. */
+  readonly joinNode?: string;
+}
+
+export interface PrunedReason {
+  readonly reasonCode: PrunedReasonCode | string;
+  readonly count: number;
+  readonly samples?: readonly { readonly taskId: string | null; readonly table: string | null }[];
+}
+
+export interface ShrinkReport {
+  readonly valueCertain: readonly ShrinkReportEntry[];
+  readonly rowDetermining: readonly ShrinkReportEntry[];
+  readonly multiplicityRisk: readonly ShrinkReportEntry[];
+  readonly prunedCount: number;
+  readonly prunedReasons: readonly PrunedReason[];
+}
+
 export interface TargetTableCausalClosureArtifact {
   readonly schemaVersion: typeof TARGET_TABLE_CAUSAL_CLOSURE_SCHEMA_VERSION;
   readonly artifactType: typeof TARGET_TABLE_CAUSAL_CLOSURE_ARTIFACT_TYPE;
@@ -96,6 +131,7 @@ export interface TargetTableCausalClosureArtifact {
   readonly targetWrite: TargetWriteRef;
   readonly candidateUniverse: CandidateUniverse;
   readonly assessments: readonly TargetTableAssessment[];
+  readonly shrinkReport?: ShrinkReport;
   readonly taskRollup: readonly UpstreamTaskRollup[];
   readonly minimumCertainTaskIds: readonly string[];
   readonly conservativeSafetyTaskIds: readonly string[];
@@ -116,6 +152,14 @@ export function channelRank(status: ChannelStatus): number {
 }
 
 function sorted(values: readonly string[]): readonly string[] { return [...new Set(values.filter(Boolean))].sort((left, right) => left.localeCompare(right)); }
+
+function sortShrinkEntries(entries: readonly ShrinkReportEntry[]): readonly ShrinkReportEntry[] {
+  return [...entries].sort((left, right) =>
+    left.taskId.localeCompare(right.taskId)
+    || (left.table ?? "").localeCompare(right.table ?? "")
+    || (left.joinNode ?? "").localeCompare(right.joinNode ?? ""),
+  );
+}
 function assessmentId(targetWriteId: string, branchId: string): string { return `target-table-assessment:${sha256(canonicalJson({ targetWriteId, branchId }))}`; }
 
 function sortedNegativeProofs(values: readonly NegativeProof[]): readonly NegativeProof[] {
@@ -165,6 +209,27 @@ export function canonicalizeTargetTableArtifact(
     taskRollup: [...input.taskRollup].sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId)),
     minimumCertainTaskIds: sorted(input.minimumCertainTaskIds),
     conservativeSafetyTaskIds: sorted(input.conservativeSafetyTaskIds),
+    ...(input.shrinkReport
+      ? {
+          shrinkReport: {
+            valueCertain: sortShrinkEntries(input.shrinkReport.valueCertain),
+            rowDetermining: sortShrinkEntries(input.shrinkReport.rowDetermining),
+            multiplicityRisk: sortShrinkEntries(input.shrinkReport.multiplicityRisk),
+            prunedCount: input.shrinkReport.prunedCount,
+            prunedReasons: [...input.shrinkReport.prunedReasons].sort((left, right) => left.reasonCode.localeCompare(right.reasonCode)).map((reason) => ({
+              reasonCode: reason.reasonCode,
+              count: reason.count,
+              ...(reason.samples
+                ? {
+                    samples: [...reason.samples].sort((left, right) =>
+                      (left.taskId ?? "").localeCompare(right.taskId ?? "") || (left.table ?? "").localeCompare(right.table ?? ""),
+                    ),
+                  }
+                : {}),
+            })),
+          },
+        }
+      : {}),
     relationSummaries: [...input.relationSummaries].sort((left, right) => left.taskId.localeCompare(right.taskId) || left.sqlSourceId.localeCompare(right.sqlSourceId) || left.statementIndex - right.statementIndex),
     stages: [...input.stages].sort((left, right) => left.stage.localeCompare(right.stage)),
     gaps: [...input.gaps].sort((left, right) => left.gapId.localeCompare(right.gapId)),
