@@ -22,6 +22,7 @@ import type {
   CausalTraversalResult,
   CausalTraversalRootResult,
 } from "./causal-traversal.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 
 export const NEGATIVE_PROOF_MODES = ["SAFE_RULES_ONLY"] as const;
 export type NegativeProofMode = (typeof NEGATIVE_PROOF_MODES)[number];
@@ -41,6 +42,7 @@ export interface NegativeProofObligation {
 
 export interface NegativeProofRequest {
   readonly mode: NegativeProofMode;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly checkedObligations: readonly NegativeProofObligation[];
@@ -51,6 +53,7 @@ export interface NegativeProofRequest {
  * this module and an omitted branch is never considered covered by the cut.
  */
 export interface KnownUnrelatedCut {
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly sourceCandidateBranchId: string;
   readonly sourceNegativeProofId: string;
@@ -61,6 +64,7 @@ export interface KnownUnrelatedCut {
 
 export interface NegativeCausalProof {
   readonly proofId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly reasonCode: NegativeProofReason;
@@ -79,6 +83,7 @@ export type NegativeCausalAssessment = Omit<CausalAssessment, "reasonCode"> & {
 export interface NegativeCausalAssessmentInput {
   readonly candidateUniverse: CandidateUniverse;
   readonly traversal: CausalTraversalResult;
+  readonly rootCriteria: readonly RootCriterion[];
   readonly assessments: readonly CausalAssessment[];
   readonly negativeProofRequests?: readonly NegativeProofRequest[];
   readonly knownCuts?: readonly KnownUnrelatedCut[];
@@ -126,6 +131,7 @@ function canonicalObligations(
 }
 
 function assessmentId(
+  rootCriterionId: string,
   pairId: string,
   status: CausalAssessmentStatus,
   reasonCode: string,
@@ -135,6 +141,7 @@ function assessmentId(
 ): string {
   return `causal-assessment:${sha256(
     canonicalJson({
+      rootCriterionId,
       pairId,
       status,
       reasonCode,
@@ -192,6 +199,7 @@ function normalizeObligations(
 }
 
 function makeProof(
+  rootCriterionId: string,
   rootTargetFieldId: string,
   candidateBranchId: string,
   reasonCode: NegativeProofReason,
@@ -201,6 +209,7 @@ function makeProof(
 ): NegativeCausalProof {
   const normalizedObligations = normalizeObligations(checkedObligations);
   const input: Omit<NegativeCausalProof, "proofId"> = {
+    rootCriterionId,
     rootTargetFieldId,
     candidateBranchId,
     reasonCode,
@@ -214,13 +223,31 @@ function makeProof(
   return { proofId: proofId(input), ...input };
 }
 
+function pathMatchesOccurrenceScope(
+  path: CausalTraversalPath,
+  rootCriterionId: string,
+  rootSemanticScopeId: string,
+): boolean {
+  return (
+    traversalPathCriterionId(path) === rootCriterionId &&
+    path.edges.length > 0 &&
+    path.edges.every((edge) => edge.rootCriterionId === rootCriterionId) &&
+    path.edges[0]!.toSemanticScopeId === rootSemanticScopeId &&
+    path.edges.slice(1).every(
+      (edge, index) =>
+        edge.toSemanticScopeId === path.edges[index]!.fromSemanticScopeId,
+    )
+  );
+}
+
 function exactPositivePath(
   path: CausalTraversalPath,
-  rootTargetFieldId: string,
+  rootCriterionId: string,
+  rootSemanticScopeId: string,
   branch: CandidateBranch,
 ): boolean {
   if (
-    path.rootTargetFieldId !== rootTargetFieldId ||
+    !pathMatchesOccurrenceScope(path, rootCriterionId, rootSemanticScopeId) ||
     branch.branchKind !== "PHYSICAL_PRODUCER" ||
     branch.consumerTaskId === null ||
     branch.producerTaskId === null ||
@@ -309,12 +336,34 @@ function tableMatchesPhysicalField(
   );
 }
 
+type OccurrenceScopedTraversalRoot = CausalTraversalRootResult & {
+  readonly rootCriterionId?: string;
+  readonly root: CausalTraversalRootResult["root"] & {
+    readonly rootCriterion?: RootCriterion;
+  };
+};
+
+function traversalRootCriterionId(root: CausalTraversalRootResult): string | null {
+  const scoped = root as OccurrenceScopedTraversalRoot;
+  return scoped.rootCriterionId ?? scoped.root.rootCriterion?.rootCriterionId ?? null;
+}
+
+function traversalPathCriterionId(path: CausalTraversalPath): string | null {
+  return (path as CausalTraversalPath & { readonly rootCriterionId?: string })
+    .rootCriterionId ?? null;
+}
+
+function traversalGapCriterionId(gap: CausalTraversalGap): string | null {
+  return (gap as CausalTraversalGap & { readonly rootCriterionId?: string })
+    .rootCriterionId ?? null;
+}
+
 function traversalRoot(
   traversal: CausalTraversalResult,
-  rootTargetFieldId: string,
+  rootCriterionId: string,
 ): CausalTraversalRootResult | null {
   const matches = traversal.roots.filter(
-    (root) => root.root.rootTargetFieldId === rootTargetFieldId,
+    (root) => traversalRootCriterionId(root) === rootCriterionId,
   );
   return matches.length === 1 ? matches[0]! : null;
 }
@@ -324,9 +373,11 @@ function relevantGaps(
   root: CausalTraversalRootResult,
 ): readonly CausalTraversalGap[] {
   const gaps = [
-    ...root.gaps,
+    ...root.gaps.filter(
+      (gap) => traversalGapCriterionId(gap) === traversalRootCriterionId(root),
+    ),
     ...traversal.gaps.filter(
-      (gap) => gap.rootTargetFieldId === root.root.rootTargetFieldId,
+      (gap) => traversalGapCriterionId(gap) === traversalRootCriterionId(root),
     ),
   ];
   const byId = new Map(gaps.map((gap) => [gap.gapId, gap]));
@@ -340,10 +391,23 @@ function requestErrors(
   branch: CandidateBranch | undefined,
 ): readonly string[] {
   const errors: string[] = [];
-  const pairKey = `${request.rootTargetFieldId}:${request.candidateBranchId}`;
+  const pairKey = `${request.rootCriterionId}:${request.candidateBranchId}`;
+  const matchingCriteria = input.rootCriteria.filter(
+    (item) => item.rootCriterionId === request.rootCriterionId,
+  );
+  const criterion = matchingCriteria.length === 1 ? matchingCriteria[0]! : null;
   if (request.mode !== "SAFE_RULES_ONLY")
     errors.push(`NEGATIVE_PROOF_MODE_INVALID:${pairKey}`);
-  if (!pair || pair.rootTargetFieldId !== request.rootTargetFieldId)
+  if (
+    !criterion ||
+    criterion.rootTargetFieldId !== request.rootTargetFieldId
+  )
+    errors.push(`ROOT_CRITERION_NOT_FOUND:${pairKey}`);
+  if (
+    !pair ||
+    pair.rootCriterionId !== request.rootCriterionId ||
+    pair.rootTargetFieldId !== request.rootTargetFieldId
+  )
     errors.push(`ASSESSMENT_PAIR_NOT_FOUND:${pairKey}`);
   else if (pair.status !== "UNKNOWN")
     errors.push(`ASSESSMENT_NOT_UNKNOWN:${pairKey}`);
@@ -360,28 +424,46 @@ function requestErrors(
   if (branch?.branchKind === "ROOT_WRITE")
     errors.push(`ROOT_WRITE_NEGATIVE_PROOF_FORBIDDEN:${request.candidateBranchId}`);
   errors.push(...obligationErrors(request.checkedObligations, pairKey));
+  const root = traversalRoot(input.traversal, request.rootCriterionId);
   const knownEvidenceRefs = new Set([
-    ...input.candidateUniverse.branches.flatMap((candidate) =>
-      candidate.evidenceRefs.map((ref) => ref.evidenceRefId),
-    ),
-    ...input.traversal.sharedEvidenceRefs,
-    ...input.traversal.edges.flatMap((edge) => edge.evidenceRefs),
+    ...(branch?.evidenceRefs.map((ref) => ref.evidenceRefId) ?? []),
+    ...(criterion?.evidenceRefs ?? []),
+    ...(root?.paths
+      .filter((path) =>
+        pathMatchesOccurrenceScope(
+          path,
+          request.rootCriterionId,
+          root.root.semanticScope.semanticScopeId,
+        )
+      )
+      .flatMap((path) =>
+        path.edges.flatMap((edge) => edge.evidenceRefs)
+      ) ?? []),
   ]);
   for (const obligation of request.checkedObligations)
     for (const evidenceRef of obligation.evidenceRefs)
       if (!knownEvidenceRefs.has(evidenceRef))
         errors.push(`NEGATIVE_OBLIGATION_EVIDENCE_UNKNOWN:${pairKey}:${obligation.kind}:${evidenceRef}`);
 
-  const root = traversalRoot(input.traversal, request.rootTargetFieldId);
   if (!root) {
-    errors.push(`ROOT_TRAVERSAL_RESULT_MISSING:${request.rootTargetFieldId}`);
+    errors.push(`ROOT_TRAVERSAL_RESULT_MISSING:${request.rootCriterionId}`);
     return errors;
   }
   if (!root.decision.valueClosed) errors.push(`VALUE_TRAVERSAL_NOT_CLOSED:${pairKey}`);
   if (!root.decision.controlClosed) errors.push(`CONTROL_TRAVERSAL_NOT_CLOSED:${pairKey}`);
   for (const gap of relevantGaps(input.traversal, root))
     errors.push(`TRAVERSAL_GAP_BLOCKS_NEGATIVE_PROOF:${gap.gapId}`);
-  if (branch && root.paths.some((path) => exactPositivePath(path, request.rootTargetFieldId, branch)))
+  if (
+    branch &&
+    root.paths.some((path) =>
+      exactPositivePath(
+        path,
+        request.rootCriterionId,
+        root.root.semanticScope.semanticScopeId,
+        branch,
+      )
+    )
+  )
     errors.push(`POSITIVE_PATH_EXISTS:${pairKey}`);
   return errors;
 }
@@ -394,6 +476,7 @@ function replaceWithNegativeAssessment(
   return {
     ...assessment,
     assessmentId: assessmentId(
+      assessment.rootCriterionId,
       assessment.pairId,
       "PROVEN_UNRELATED",
       proof.reasonCode,
@@ -411,11 +494,15 @@ function replaceWithNegativeAssessment(
 function pairMap(
   assessments: readonly CausalAssessment[],
 ): ReadonlyMap<string, CausalAssessment> {
+  const grouped = new Map<string, CausalAssessment[]>();
+  for (const assessment of assessments) {
+    const key = `${assessment.rootCriterionId}\u0000${assessment.candidateBranchId}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), assessment]);
+  }
   return new Map(
-    assessments.map((assessment) => [
-      `${assessment.rootTargetFieldId}\u0000${assessment.candidateBranchId}`,
-      assessment,
-    ]),
+    [...grouped.entries()].flatMap(([key, matches]) =>
+      matches.length === 1 ? [[key, matches[0]!] as const] : []
+    ),
   );
 }
 
@@ -433,15 +520,16 @@ export function assessNegativeCausalRelationships(
 
   for (const request of [...(input.negativeProofRequests ?? [])].sort((left, right) =>
     compareText(
-      `${left.rootTargetFieldId}\u0000${left.candidateBranchId}`,
-      `${right.rootTargetFieldId}\u0000${right.candidateBranchId}`,
+      `${left.rootCriterionId}\u0000${left.candidateBranchId}`,
+      `${right.rootCriterionId}\u0000${right.candidateBranchId}`,
     )
   )) {
-    const key = `${request.rootTargetFieldId}\u0000${request.candidateBranchId}`;
+    const key = `${request.rootCriterionId}\u0000${request.candidateBranchId}`;
     const pair = byPair.get(key);
     const branch = branches.get(request.candidateBranchId);
     if (requestErrors(input, request, pair, branch).length > 0 || !pair) continue;
     const proof = makeProof(
+      request.rootCriterionId,
       request.rootTargetFieldId,
       request.candidateBranchId,
       "EXPLICIT_SAFE_RULES_ONLY",
@@ -454,12 +542,12 @@ export function assessNegativeCausalRelationships(
 
   for (const cut of [...(input.knownCuts ?? [])].sort((left, right) =>
     compareText(
-      `${left.rootTargetFieldId}\u0000${left.sourceCandidateBranchId}`,
-      `${right.rootTargetFieldId}\u0000${right.sourceCandidateBranchId}`,
+      `${left.rootCriterionId}\u0000${left.sourceCandidateBranchId}`,
+      `${right.rootCriterionId}\u0000${right.sourceCandidateBranchId}`,
     )
   )) {
     if (!hasCanonicalRefs(cut.structuralEvidenceRefs)) continue;
-    const sourceKey = `${cut.rootTargetFieldId}\u0000${cut.sourceCandidateBranchId}`;
+    const sourceKey = `${cut.rootCriterionId}\u0000${cut.sourceCandidateBranchId}`;
     const sourceAssessment = replacements.get(sourceKey) ?? byPair.get(sourceKey);
     const sourceProof = proofs.get(cut.sourceNegativeProofId);
     const sourceBranch = branches.get(cut.sourceCandidateBranchId);
@@ -469,12 +557,13 @@ export function assessNegativeCausalRelationships(
       !sourceProof ||
       !sourceBranch ||
       sourceProof.reasonCode !== "EXPLICIT_SAFE_RULES_ONLY" ||
+      sourceProof.rootCriterionId !== cut.rootCriterionId ||
       sourceProof.rootTargetFieldId !== cut.rootTargetFieldId ||
       sourceProof.candidateBranchId !== cut.sourceCandidateBranchId
     )
       continue;
     for (const descendantCandidateBranchId of sortedUnique(cut.descendantCandidateBranchIds)) {
-      const key = `${cut.rootTargetFieldId}\u0000${descendantCandidateBranchId}`;
+      const key = `${cut.rootCriterionId}\u0000${descendantCandidateBranchId}`;
       const pair = byPair.get(key);
       const branch = branches.get(descendantCandidateBranchId);
       if (!pair || pair.status !== "UNKNOWN" || !branch) continue;
@@ -484,6 +573,7 @@ export function assessNegativeCausalRelationships(
         input,
         {
           mode: "SAFE_RULES_ONLY",
+          rootCriterionId: cut.rootCriterionId,
           rootTargetFieldId: cut.rootTargetFieldId,
           candidateBranchId: descendantCandidateBranchId,
           checkedObligations: sourceProof.checkedObligations,
@@ -493,6 +583,7 @@ export function assessNegativeCausalRelationships(
       );
       if (descendantErrors.length > 0) continue;
       const proof = makeProof(
+        cut.rootCriterionId,
         cut.rootTargetFieldId,
         descendantCandidateBranchId,
         "INHERITED_FROM_PROVEN_UNRELATED_CUT",
@@ -509,7 +600,7 @@ export function assessNegativeCausalRelationships(
     assessments: input.assessments
       .map((assessment) =>
         replacements.get(
-          `${assessment.rootTargetFieldId}\u0000${assessment.candidateBranchId}`,
+          `${assessment.rootCriterionId}\u0000${assessment.candidateBranchId}`,
         ) ?? assessment,
       )
       .sort((left, right) => compareText(left.pairId, right.pairId)),
@@ -526,13 +617,14 @@ function validateProof(
   directRequests: ReadonlyMap<string, NegativeProofRequest>,
 ): string[] {
   const errors: string[] = [];
-  const prefix = `${proof.rootTargetFieldId}:${proof.candidateBranchId}`;
+  const prefix = `${proof.rootCriterionId}:${proof.candidateBranchId}`;
   if (!branchesFor(input.candidateUniverse).has(proof.candidateBranchId))
     errors.push(`NEGATIVE_PROOF_BRANCH_NOT_ENUMERATED:${proof.proofId}`);
   errors.push(...obligationErrors(proof.checkedObligations, proof.proofId));
   if (!hasCanonicalRefs(proof.evidenceRefs))
     errors.push(`NEGATIVE_PROOF_EVIDENCE_INVALID:${proof.proofId}`);
   const expectedId = proofId({
+    rootCriterionId: proof.rootCriterionId,
     rootTargetFieldId: proof.rootTargetFieldId,
     candidateBranchId: proof.candidateBranchId,
     reasonCode: proof.reasonCode,
@@ -547,7 +639,7 @@ function validateProof(
       : proofById.get(proof.sourceNegativeProofId);
     if (!source || source.reasonCode !== "EXPLICIT_SAFE_RULES_ONLY")
       errors.push(`NEGATIVE_PROOF_SOURCE_INVALID:${proof.proofId}`);
-    const sourceRequestKey = `${proof.rootTargetFieldId}\u0000${source?.candidateBranchId ?? ""}`;
+    const sourceRequestKey = `${proof.rootCriterionId}\u0000${source?.candidateBranchId ?? ""}`;
     const sourceRequest = directRequests.get(sourceRequestKey);
     if (!sourceRequest || !source)
       errors.push(`NEGATIVE_PROOF_SOURCE_REQUEST_MISSING:${proof.proofId}`);
@@ -567,6 +659,7 @@ function validateProof(
           proof.candidateBranchId,
         );
         return (
+          cut.rootCriterionId === proof.rootCriterionId &&
           cut.rootTargetFieldId === proof.rootTargetFieldId &&
           cut.sourceNegativeProofId === proof.sourceNegativeProofId &&
           cut.descendantCandidateBranchIds.includes(proof.candidateBranchId) &&
@@ -587,7 +680,7 @@ function validateProof(
   } else if (proof.sourceNegativeProofId !== null) {
     errors.push(`NEGATIVE_PROOF_SOURCE_UNEXPECTED:${proof.proofId}`);
   } else {
-    const requestKey = `${proof.rootTargetFieldId}\u0000${proof.candidateBranchId}`;
+    const requestKey = `${proof.rootCriterionId}\u0000${proof.candidateBranchId}`;
     const request = directRequests.get(requestKey);
     if (!request) {
       errors.push(`NEGATIVE_PROOF_REQUEST_MISSING:${proof.proofId}`);
@@ -612,12 +705,12 @@ export function validateNegativeCausalAssessments(
   const errors: string[] = [];
   const directRequests = new Map<string, NegativeProofRequest>();
   for (const request of input.negativeProofRequests ?? []) {
-    const key = `${request.rootTargetFieldId}\u0000${request.candidateBranchId}`;
+    const key = `${request.rootCriterionId}\u0000${request.candidateBranchId}`;
     if (directRequests.has(key)) errors.push(`NEGATIVE_PROOF_REQUEST_DUPLICATE:${key}`);
     directRequests.set(key, request);
   }
   const expectedPairs = buildAssessmentPairSkeleton(
-    input.assessments.map((assessment) => assessment.rootTargetFieldId),
+    input.rootCriteria,
     input.candidateUniverse.branches,
   );
   const expectedPairIds = new Set(expectedPairs.map((pair) => pair.pairId));
@@ -633,7 +726,8 @@ export function validateNegativeCausalAssessments(
     const expectedPair = expectedPairsById.get(assessment.pairId);
     if (
       expectedPair &&
-      (assessment.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
+      (assessment.rootCriterionId !== expectedPair.rootCriterionId ||
+        assessment.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
         assessment.candidateBranchId !== expectedPair.candidateBranchId)
     )
       errors.push(`ASSESSMENT_PAIR_IDENTITY_MISMATCH:${assessment.assessmentId}`);
@@ -641,6 +735,7 @@ export function validateNegativeCausalAssessments(
     list.push(assessment);
     assessmentByPair.set(assessment.pairId, list);
     const expectedAssessmentId = assessmentId(
+      assessment.rootCriterionId,
       assessment.pairId,
       assessment.status,
       assessment.reasonCode,
@@ -683,7 +778,7 @@ export function validateNegativeCausalAssessments(
   const originalByPair = pairMap(input.assessments);
   for (const assessment of result.assessments) {
     const original = originalByPair.get(
-      `${assessment.rootTargetFieldId}\u0000${assessment.candidateBranchId}`,
+      `${assessment.rootCriterionId}\u0000${assessment.candidateBranchId}`,
     );
     if (!original) continue;
     if (
@@ -700,6 +795,7 @@ export function validateNegativeCausalAssessments(
         continue;
       }
       if (
+        proof.rootCriterionId !== assessment.rootCriterionId ||
         proof.rootTargetFieldId !== assessment.rootTargetFieldId ||
         proof.candidateBranchId !== assessment.candidateBranchId
       )

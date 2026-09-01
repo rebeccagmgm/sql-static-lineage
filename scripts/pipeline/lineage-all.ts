@@ -33,13 +33,12 @@ import {
   reconcileFieldLineage,
   type ReconcileFieldLineageOptions,
 } from "../reconcile/consumer/field-lineage/field-lineage.ts";
-import type { FactsPolicy, FieldLineageArtifact } from "../reconcile/consumer/field-lineage/field-lineage-contract.ts";
-import {
-  visualizeFieldLineage,
-} from "../visualize/field-lineage-visualize.ts";
-import {
-  visualizeMultiHop,
-} from "../visualize/multi-hop-visualize.ts";
+import type {
+  FactsPolicy,
+  FieldLineageArtifact,
+} from "../reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import { visualizeFieldLineage } from "../visualize/field-lineage-visualize.ts";
+import { visualizeMultiHop } from "../visualize/multi-hop-visualize.ts";
 import type { OneHopReconciliationResult } from "../reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
   reconcileOneHopBatch,
@@ -63,8 +62,15 @@ import {
   matchingTerminalRole,
 } from "../reconcile/consumer/multi-hop/terminal-table-config.ts";
 import { queryProducerTaskIds } from "../reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
-import { loadTableProducerIndex, pinTableProducerIndex, fingerprintTableProducerInputs } from "../reconcile/producer/producer-index.ts";
-import { validateTaskDocument, type TaskDocument } from "../input/shared/input-pack.ts";
+import {
+  loadTableProducerIndex,
+  pinTableProducerIndex,
+  fingerprintTableProducerInputs,
+} from "../reconcile/producer/producer-index.ts";
+import {
+  validateTaskDocument,
+  type TaskDocument,
+} from "../input/shared/input-pack.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_DEPTH = 25;
@@ -172,7 +178,9 @@ export class HoraeSerialGate {
   }
 }
 
-function defaultFieldProducerDiscovery(qualifiedName: string): readonly string[] {
+function defaultFieldProducerDiscovery(
+  qualifiedName: string,
+): readonly string[] {
   return queryProducerTaskIds(
     qualifiedName,
     defaultOpenCliRunner,
@@ -186,25 +194,31 @@ function fieldSourceTablesMissingProducerBridge(
   tableLineage: ReturnType<typeof reconcileMultiHop>,
 ): readonly string[] {
   const bridgedTables = new Set(
-    (Array.isArray(tableLineage.producerBridges) ? tableLineage.producerBridges : []).map((bridge) => {
-      const table = bridge.table?.qualifiedName?.trim().toLocaleLowerCase("en-US") ?? "";
+    (Array.isArray(tableLineage.producerBridges)
+      ? tableLineage.producerBridges
+      : []
+    ).map((bridge) => {
+      const table =
+        bridge.table?.qualifiedName?.trim().toLocaleLowerCase("en-US") ?? "";
       return `${bridge.consumerTaskId}\u0000${table}`;
     }),
   );
-  return [...new Set(
-    (Array.isArray(fieldArtifact.nodes) ? fieldArtifact.nodes : [])
-      .filter(
-        (node) =>
-          node.bindingId === null &&
-          node.expressionId === null &&
-          node.field.identityStatus === "SCHEMA_BACKED" &&
-          node.field.platform.toLocaleLowerCase("en-US") === "hive" &&
-          !bridgedTables.has(
-            `${node.taskId}\u0000${node.field.qualifiedName.toLocaleLowerCase("en-US")}`,
-          ),
-      )
-      .map((node) => node.field.qualifiedName),
-  )].sort((left, right) => left.localeCompare(right, "en-US"));
+  return [
+    ...new Set(
+      (Array.isArray(fieldArtifact.nodes) ? fieldArtifact.nodes : [])
+        .filter(
+          (node) =>
+            node.bindingId === null &&
+            node.expressionId === null &&
+            node.field.identityStatus === "SCHEMA_BACKED" &&
+            node.field.platform.toLocaleLowerCase("en-US") === "hive" &&
+            !bridgedTables.has(
+              `${node.taskId}\u0000${node.field.qualifiedName.toLocaleLowerCase("en-US")}`,
+            ),
+        )
+        .map((node) => node.field.qualifiedName),
+    ),
+  ].sort((left, right) => left.localeCompare(right, "en-US"));
 }
 
 export interface HoraePrefetchOptions {
@@ -222,17 +236,31 @@ export interface HoraePrefetchOptions {
   readonly horaeMinIntervalMs?: number;
 }
 
-function rowsOfHorae(value: unknown, taskId: string): Record<string, unknown>[] {
-  if (Array.isArray(value)) return value.map((row) => {
-    if (typeof row !== "object" || row === null || Array.isArray(row)) throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ROWS:${taskId}`);
-    const record = row as Record<string, unknown>;
-    const rowTask = record.task_id ?? record.taskId;
-    if (typeof rowTask !== "string" || !SAFE_TASK_ID.test(rowTask)) throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ROWS:${taskId}`);
-    return record;
-  });
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ENVELOPE:${taskId}`);
+function rowsOfHorae(
+  value: unknown,
+  taskId: string,
+): Record<string, unknown>[] {
+  if (Array.isArray(value))
+    return value.map((row) => {
+      if (typeof row !== "object" || row === null || Array.isArray(row))
+        throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ROWS:${taskId}`);
+      const record = row as Record<string, unknown>;
+      const rowTask = record.task_id ?? record.taskId;
+      if (typeof rowTask !== "string" || !SAFE_TASK_ID.test(rowTask))
+        throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ROWS:${taskId}`);
+      return record;
+    });
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ENVELOPE:${taskId}`);
   const record = value as Record<string, unknown>;
-  if (record.error !== undefined || record.success === false || ["fail", "failed", "failure", "error"].includes(String(record.status ?? "").toLowerCase())) throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ENVELOPE:${taskId}`);
+  if (
+    record.error !== undefined ||
+    record.success === false ||
+    ["fail", "failed", "failure", "error"].includes(
+      String(record.status ?? "").toLowerCase(),
+    )
+  )
+    throw new Error(`HORAE_RELATION_PREFETCH_INVALID_ENVELOPE:${taskId}`);
   for (const field of ["records", "rows", "data", "results"]) {
     if (Array.isArray(record[field])) return rowsOfHorae(record[field], taskId);
   }
@@ -253,37 +281,83 @@ function horaeDetailArguments(taskId: string): readonly string[] {
   return ["horae", "detail", taskId, "-f", "json"];
 }
 
-async function defaultHoraeRunner(args: readonly string[]): Promise<unknown> {
+export async function defaultHoraeRunner(
+  args: readonly string[],
+): Promise<unknown> {
   const appData = process.env.APPDATA;
-  const packageRoot = appData ? resolve(appData, "npm", "node_modules", "@jackwener", "opencli") : "";
-  const entry = packageRoot ? resolve(packageRoot, "dist", "src", "main.js") : "";
-  if (process.platform === "win32" && (!appData || !isAbsolute(entry) || !entry.startsWith(`${packageRoot}${sep}`) || !existsSync(entry))) throw new Error("LAUNCHER_UNAVAILABLE");
-  const executable = process.platform === "win32" ? process.execPath : (process.env.OPENCLI_EXECUTABLE ?? "opencli");
-  const executableArgs = process.platform === "win32" ? [entry, ...args] : [...args];
+  const packageRoot = appData
+    ? resolve(appData, "npm", "node_modules", "@jackwener", "opencli")
+    : "";
+  const entry = packageRoot
+    ? resolve(packageRoot, "dist", "src", "main.js")
+    : "";
+  if (
+    process.platform === "win32" &&
+    (!appData ||
+      !isAbsolute(entry) ||
+      !entry.startsWith(`${packageRoot}${sep}`) ||
+      !existsSync(entry))
+  )
+    throw new Error("LAUNCHER_UNAVAILABLE");
+  const executable =
+    process.platform === "win32"
+      ? process.execPath
+      : (process.env.OPENCLI_EXECUTABLE ?? "opencli");
+  const executableArgs =
+    process.platform === "win32" ? [entry, ...args] : [...args];
   try {
-    const { stdout } = await execFileAsync(executable, executableArgs, { cwd: process.cwd(), timeout: 90_000, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
-    try { return JSON.parse(stdout.trim()) as unknown; } catch { throw new Error("INVALID_JSON"); }
+    const { stdout } = await execFileAsync(executable, executableArgs, {
+      cwd: process.cwd(),
+      timeout: 90_000,
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+    });
+    try {
+      return JSON.parse(stdout.trim()) as unknown;
+    } catch {
+      throw new Error("INVALID_JSON");
+    }
   } catch (error) {
-    if (error instanceof Error && ["INVALID_JSON", "LAUNCHER_UNAVAILABLE"].includes(error.message)) throw error;
-    const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+    if (
+      error instanceof Error &&
+      ["INVALID_JSON", "LAUNCHER_UNAVAILABLE"].includes(error.message)
+    )
+      throw error;
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
     if (code === "ETIMEDOUT") throw new Error("TIMEOUT");
     if (code.includes("MAXBUFFER")) throw new Error("OUTPUT_LIMIT");
     throw new Error("RUNNER_FAILED");
   }
 }
 
-export async function prefetchHoraeRelations(taskIds: readonly string[], options: HoraePrefetchOptions = {}): Promise<ReadonlyMap<string, PrefetchedScheduleEvidence>> {
+export async function prefetchHoraeRelations(
+  taskIds: readonly string[],
+  options: HoraePrefetchOptions = {},
+): Promise<ReadonlyMap<string, PrefetchedScheduleEvidence>> {
   const concurrency = options.concurrency ?? DEFAULT_HORAE_PREFETCH_CONCURRENCY;
-  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32) throw new Error("HORAE_PREFETCH_CONCURRENCY_INVALID");
+  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32)
+    throw new Error("HORAE_PREFETCH_CONCURRENCY_INVALID");
   const run = options.run ?? defaultHoraeRunner;
-  const cacheRoot = options.cacheRoot === undefined
-    ? (options.run === undefined ? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT : null)
-    : options.cacheRoot;
+  const cacheRoot =
+    options.cacheRoot === undefined
+      ? options.run === undefined
+        ? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT
+        : null
+      : options.cacheRoot;
   const now = options.now ?? (() => new Date().toISOString());
   const maxRowsPerTask = options.maxRowsPerTask ?? 10_000;
   const maxTotalRows = options.maxTotalRows ?? 100_000;
-  const maxTotalBytes = options.maxTotalBytes ?? DEFAULT_HORAE_PREFETCH_MAX_TOTAL_BYTES;
-  if (![maxRowsPerTask, maxTotalRows, maxTotalBytes].every((value) => Number.isSafeInteger(value) && value > 0)) throw new Error("HORAE_PREFETCH_BUDGET_INVALID");
+  const maxTotalBytes =
+    options.maxTotalBytes ?? DEFAULT_HORAE_PREFETCH_MAX_TOTAL_BYTES;
+  if (
+    ![maxRowsPerTask, maxTotalRows, maxTotalBytes].every(
+      (value) => Number.isSafeInteger(value) && value > 0,
+    )
+  )
+    throw new Error("HORAE_PREFETCH_BUDGET_INVALID");
   const result = new Map<string, PrefetchedScheduleEvidence>();
   const cacheTaskDetails =
     options.cacheTaskDetails ??
@@ -328,13 +402,28 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
       const index = cursor++;
       if (index >= taskIds.length) return;
       const taskId = taskIds[index]!;
-      if (!SAFE_TASK_ID.test(taskId)) { stopped = true; throw new Error(`HORAE_RELATION_PREFETCH_INVALID_TASK:${taskId}`); }
-      const args = ["horae", "relation", taskId, "--direction", "up", "--depth", "1", "-f", "json"];
+      if (!SAFE_TASK_ID.test(taskId)) {
+        stopped = true;
+        throw new Error(`HORAE_RELATION_PREFETCH_INVALID_TASK:${taskId}`);
+      }
+      const args = [
+        "horae",
+        "relation",
+        taskId,
+        "--direction",
+        "up",
+        "--depth",
+        "1",
+        "-f",
+        "json",
+      ];
       try {
-        const cached = cacheRoot === null ? null : readHoraeRelationCache(taskId, cacheRoot);
+        const cached =
+          cacheRoot === null ? null : readHoraeRelationCache(taskId, cacheRoot);
         let rows: Record<string, unknown>[];
         let observedAt: string;
-        let cacheStatus: Exclude<ScheduleEvidenceCacheStatus, "DISABLED"> | undefined;
+        let cacheStatus:
+          Exclude<ScheduleEvidenceCacheStatus, "DISABLED"> | undefined;
         let cachePath: string | undefined;
         if (cached?.status === "HIT") {
           rows = [...cached.rows];
@@ -348,17 +437,25 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
           observedAt = started;
           if (cacheRoot !== null) {
             cacheStatus = cached?.status ?? "MISS";
-            cachePath = cached?.path ?? scheduleEvidenceCachePath(taskId, cacheRoot);
+            cachePath =
+              cached?.path ?? scheduleEvidenceCachePath(taskId, cacheRoot);
           }
         }
-        if (rows.length > maxRowsPerTask) throw new Error(`OUTPUT_LIMIT:${taskId}`);
+        if (rows.length > maxRowsPerTask)
+          throw new Error(`OUTPUT_LIMIT:${taskId}`);
         totalRows += rows.length;
         if (totalRows > maxTotalRows) throw new Error(`OUTPUT_LIMIT:${taskId}`);
         totalBytes += new TextEncoder().encode(JSON.stringify(rows)).byteLength;
-        if (totalBytes > maxTotalBytes) throw new Error(`OUTPUT_LIMIT:${taskId}`);
+        if (totalBytes > maxTotalBytes)
+          throw new Error(`OUTPUT_LIMIT:${taskId}`);
         if (cacheRoot !== null && cacheStatus !== "HIT") {
           try {
-            cachePath = writeHoraeRelationCache(taskId, observedAt, rows, cacheRoot);
+            cachePath = writeHoraeRelationCache(
+              taskId,
+              observedAt,
+              rows,
+              cacheRoot,
+            );
           } catch {
             // Scheduler evidence remains usable when the optional cache is not writable.
           }
@@ -382,13 +479,27 @@ export async function prefetchHoraeRelations(taskIds: readonly string[], options
         });
       } catch (error) {
         stopped = true;
-        const reason = error instanceof Error && /(?:^|_)(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)(?::|$)/.test(error.message) ? error.message.match(/(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)/)![1]! : "RUNNER_FAILED";
+        const reason =
+          error instanceof Error &&
+          /(?:^|_)(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)(?::|$)/.test(
+            error.message,
+          )
+            ? error.message.match(
+                /(TIMEOUT|LAUNCHER_UNAVAILABLE|INVALID_JSON|INVALID_ENVELOPE|INVALID_ROWS|OUTPUT_LIMIT|RUNNER_FAILED)/,
+              )![1]!
+            : "RUNNER_FAILED";
         throw new Error(`HORAE_RELATION_PREFETCH_${reason}:${taskId}`);
       }
     }
   };
-  const settled = await Promise.allSettled(Array.from({ length: Math.min(concurrency, taskIds.length) }, () => worker()));
-  const failed = settled.find((item): item is PromiseRejectedResult => item.status === "rejected");
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(concurrency, taskIds.length) }, () =>
+      worker(),
+    ),
+  );
+  const failed = settled.find(
+    (item): item is PromiseRejectedResult => item.status === "rejected",
+  );
   if (failed) throw failed.reason;
   return result;
 }
@@ -412,17 +523,32 @@ export interface LineageAllOptions {
 }
 
 export interface LineageAllDependencies {
-  readonly autofill: (options: InputPackClosureOptions) => InputPackClosureResult;
-  readonly machineFacts: (options: Parameters<typeof runInputPackMachineFacts>[0]) => InputPackMachineFactsRunResult;
-  readonly fieldLineage: (options: ReconcileFieldLineageOptions) => FieldLineageArtifact;
-  readonly oneHopBatch: (taskIds: readonly string[], options: ReconcileOneHopOptions) => readonly OneHopReconciliationResult[];
+  readonly autofill: (
+    options: InputPackClosureOptions,
+  ) => InputPackClosureResult;
+  readonly machineFacts: (
+    options: Parameters<typeof runInputPackMachineFacts>[0],
+  ) => InputPackMachineFactsRunResult;
+  readonly fieldLineage: (
+    options: ReconcileFieldLineageOptions,
+  ) => FieldLineageArtifact;
+  readonly oneHopBatch: (
+    taskIds: readonly string[],
+    options: ReconcileOneHopOptions,
+  ) => readonly OneHopReconciliationResult[];
   readonly multiHop: typeof reconcileMultiHop;
   readonly producerIndex: typeof pinTableProducerIndex;
   readonly loadProducerIndex: typeof loadTableProducerIndex;
   readonly fingerprintInput: typeof fingerprintTableProducerInputs;
-  readonly collectTaskPacks: (dataRoot: string, taskIds: readonly string[], force: boolean) => void;
+  readonly collectTaskPacks: (
+    dataRoot: string,
+    taskIds: readonly string[],
+    force: boolean,
+  ) => void;
   readonly fieldProducerDiscovery: (qualifiedName: string) => readonly string[];
-  readonly schedulePrefetch: (taskIds: readonly string[]) => Promise<ReadonlyMap<string, PrefetchedScheduleEvidence>>;
+  readonly schedulePrefetch: (
+    taskIds: readonly string[],
+  ) => Promise<ReadonlyMap<string, PrefetchedScheduleEvidence>>;
   readonly visualizeMultiHop: typeof visualizeMultiHop;
   readonly visualizeFieldLineage: typeof visualizeFieldLineage;
 }
@@ -445,7 +571,9 @@ export interface LineageAllResult {
 
 export interface ParsedLineageAllArgs extends LineageAllOptions {}
 
-function dependencies(overrides: Partial<LineageAllDependencies> | undefined): LineageAllDependencies {
+function dependencies(
+  overrides: Partial<LineageAllDependencies> | undefined,
+): LineageAllDependencies {
   return {
     autofill: runInputPackClosure,
     machineFacts: runInputPackMachineFacts,
@@ -472,36 +600,76 @@ function value(args: readonly string[], name: string): string | undefined {
   return result && !result.startsWith("--") ? result : undefined;
 }
 
-function integer(args: readonly string[], name: string, fallback: number): number {
+function integer(
+  args: readonly string[],
+  name: string,
+  fallback: number,
+): number {
   const raw = value(args, name);
   if (raw === undefined) return fallback;
   const parsed = Number(raw);
-  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error(`${name.slice(2).toUpperCase().replaceAll("-", "_")}_INVALID`);
+  if (!Number.isSafeInteger(parsed) || parsed < 0)
+    throw new Error(
+      `${name.slice(2).toUpperCase().replaceAll("-", "_")}_INVALID`,
+    );
   return parsed;
 }
 
-export function parseLineageAllArgs(args: readonly string[]): ParsedLineageAllArgs {
+export function parseLineageAllArgs(
+  args: readonly string[],
+): ParsedLineageAllArgs {
   const dataRoot = value(args, "--data-root");
   const rawIds = [
     ...(value(args, "--task-ids") ?? "").split(","),
-    ...args.flatMap((item, index) => item === "--task-id" && args[index + 1] ? args[index + 1]!.split(",") : []),
-  ].map((item) => item.trim()).filter(Boolean);
+    ...args.flatMap((item, index) =>
+      item === "--task-id" && args[index + 1]
+        ? args[index + 1]!.split(",")
+        : [],
+    ),
+  ]
+    .map((item) => item.trim())
+    .filter(Boolean);
   const taskIds = [...new Set(rawIds)];
-  if (!dataRoot || taskIds.length === 0) throw new Error("usage: lineage:all --data-root <input-pack-root> --task-ids <id[,id...]> [--artifact-root <path>] [--with-fields]");
-  const unknown = args.filter((item, index) => item.startsWith("--") && ![
-    "--data-root", "--task-ids", "--task-id", "--artifact-root", "--facts-root", "--with-fields", "--fields", "--facts-policy",
-    "--terminal-table-config", "--max-depth", "--max-tasks", "--max-edges", "--max-rounds", "--force",
-  ].includes(item) && !(index > 0 && args[index - 1] === "--task-ids"));
+  if (!dataRoot || taskIds.length === 0)
+    throw new Error(
+      "usage: lineage:all --data-root <input-pack-root> --task-ids <id[,id...]> [--artifact-root <path>] [--with-fields]",
+    );
+  const unknown = args.filter(
+    (item, index) =>
+      item.startsWith("--") &&
+      ![
+        "--data-root",
+        "--task-ids",
+        "--task-id",
+        "--artifact-root",
+        "--facts-root",
+        "--with-fields",
+        "--fields",
+        "--facts-policy",
+        "--terminal-table-config",
+        "--max-depth",
+        "--max-tasks",
+        "--max-edges",
+        "--max-rounds",
+        "--force",
+      ].includes(item) &&
+      !(index > 0 && args[index - 1] === "--task-ids"),
+  );
   if (unknown.length > 0) throw new Error(`UNKNOWN_ARGUMENT:${unknown[0]}`);
-  const factsPolicy = (value(args, "--facts-policy") ?? "current-only") as FactsPolicy;
-  if (factsPolicy !== "current-only" && factsPolicy !== "allow-legacy-partial") throw new Error("FACTS_POLICY_INVALID");
+  const factsPolicy = (value(args, "--facts-policy") ??
+    "current-only") as FactsPolicy;
+  if (factsPolicy !== "current-only" && factsPolicy !== "allow-legacy-partial")
+    throw new Error("FACTS_POLICY_INVALID");
   return {
     dataRoot,
     taskIds,
     artifactRoot: value(args, "--artifact-root"),
     factsRoot: value(args, "--facts-root"),
     withFields: args.includes("--with-fields"),
-    fields: (value(args, "--fields") ?? "").split(",").map((item) => item.trim()).filter(Boolean),
+    fields: (value(args, "--fields") ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
     factsPolicy,
     terminalTableConfigPath: value(args, "--terminal-table-config"),
     maxDepth: integer(args, "--max-depth", DEFAULT_MAX_DEPTH),
@@ -523,14 +691,23 @@ function taskPackExists(dataRoot: string, taskId: string): boolean {
   const visit = (directory: string): boolean => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
-      if (entry.isDirectory() && (entry.name === taskId ? existsSync(join(path, "task.json")) : visit(path))) return true;
+      if (
+        entry.isDirectory() &&
+        (entry.name === taskId
+          ? existsSync(join(path, "task.json"))
+          : visit(path))
+      )
+        return true;
     }
     return false;
   };
   return visit(tasksRoot);
 }
 
-export function formalArtifactPaths(artifactRootInput: string, taskId: string): {
+export function formalArtifactPaths(
+  artifactRootInput: string,
+  taskId: string,
+): {
   readonly directory: string;
   readonly oneHop: string;
   readonly multiHop: string;
@@ -559,6 +736,12 @@ function writeJson(path: string, valueToWrite: unknown): void {
   writeFileSync(path, `${JSON.stringify(valueToWrite, null, 2)}\n`, "utf8");
 }
 
+function progress(event: string, details: Record<string, unknown> = {}): void {
+  process.stderr.write(
+    `[lineage-all] ${JSON.stringify({ event, ...details })}\n`,
+  );
+}
+
 function taskTarget(dataRoot: string, taskId: string): string {
   const tasksRoot = join(resolve(dataRoot), "tasks");
   const candidates: string[] = [];
@@ -566,18 +749,30 @@ function taskTarget(dataRoot: string, taskId: string): string {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) visit(path);
-      else if (entry.isFile() && entry.name === "task.json" && path.includes(`${sep}${taskId}${sep}`)) candidates.push(path);
+      else if (
+        entry.isFile() &&
+        entry.name === "task.json" &&
+        path.includes(`${sep}${taskId}${sep}`)
+      )
+        candidates.push(path);
     }
   };
   if (existsSync(tasksRoot)) visit(tasksRoot);
-  if (candidates.length !== 1) throw new Error(candidates.length === 0 ? `TASK_INPUT_PACK_MISSING:${taskId}` : `TASK_INPUT_PACK_AMBIGUOUS:${taskId}`);
+  if (candidates.length !== 1)
+    throw new Error(
+      candidates.length === 0
+        ? `TASK_INPUT_PACK_MISSING:${taskId}`
+        : `TASK_INPUT_PACK_AMBIGUOUS:${taskId}`,
+    );
   const parsed: unknown = JSON.parse(readFileSync(candidates[0]!, "utf8"));
   validateTaskDocument(parsed);
   const target = (parsed as TaskDocument).target;
-  const qualifiedName = typeof target === "object" && target !== null && !Array.isArray(target)
-    ? (target as Record<string, unknown>).qualifiedName
-    : undefined;
-  if (typeof qualifiedName !== "string" || !qualifiedName.trim()) throw new Error(`TASK_TARGET_UNRESOLVED:${taskId}`);
+  const qualifiedName =
+    typeof target === "object" && target !== null && !Array.isArray(target)
+      ? (target as Record<string, unknown>).qualifiedName
+      : undefined;
+  if (typeof qualifiedName !== "string" || !qualifiedName.trim())
+    throw new Error(`TASK_TARGET_UNRESOLVED:${taskId}`);
   return qualifiedName.trim();
 }
 
@@ -593,9 +788,16 @@ function taskCategoryIndex(dataRoot: string): ReadonlyMap<string, string> {
       }
       if (!entry.isFile() || entry.name !== "task.json") continue;
       try {
-        const parsed = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-        const taskId = typeof parsed.taskId === "string" ? parsed.taskId : undefined;
-        const category = typeof parsed.taskCategory === "string" ? parsed.taskCategory : undefined;
+        const parsed = JSON.parse(readFileSync(path, "utf8")) as Record<
+          string,
+          unknown
+        >;
+        const taskId =
+          typeof parsed.taskId === "string" ? parsed.taskId : undefined;
+        const category =
+          typeof parsed.taskCategory === "string"
+            ? parsed.taskCategory
+            : undefined;
         if (taskId && category) result.set(taskId, category);
       } catch {
         // Invalid packs are handled by the normal Input Pack validation path.
@@ -618,7 +820,10 @@ export function checkDbFlagTaskIds(
       // Missing checkdbflag packs are scheduler-only nodes.  Horae names them
       // with the stable `checker.` prefix, which is the only classification
       // available before a metadata-only pack exists.
-      if (category === "checkdbflag" || /^checker\./i.test(parent.taskName ?? ""))
+      if (
+        category === "checkdbflag" ||
+        /^checker\./i.test(parent.taskName ?? "")
+      )
         result.add(parent.taskId);
     }
   }
@@ -635,7 +840,9 @@ export function withoutCheckDbFlagParents(
     ...snapshot,
     schedule: {
       ...snapshot.schedule,
-      parents: snapshot.schedule.parents.filter((parent) => keep(parent.taskId)),
+      parents: snapshot.schedule.parents.filter((parent) =>
+        keep(parent.taskId),
+      ),
     },
     finalUpstreamTaskIds: {
       ...snapshot.finalUpstreamTaskIds,
@@ -645,14 +852,20 @@ export function withoutCheckDbFlagParents(
     },
     dataPath: {
       ...snapshot.dataPath,
-      confirmedProducers: snapshot.dataPath.confirmedProducers.filter((producer) => keep(producer.taskId)),
-      readOccurrenceDecisions: snapshot.dataPath.readOccurrenceDecisions.map((decision) => ({
-        ...decision,
-        candidates: decision.candidates.filter((candidate) => keep(candidate.taskId)),
-        primary: decision.primary.filter(keep),
-        additional: decision.additional.filter(keep),
-        unknown: decision.unknown.filter(keep),
-      })),
+      confirmedProducers: snapshot.dataPath.confirmedProducers.filter(
+        (producer) => keep(producer.taskId),
+      ),
+      readOccurrenceDecisions: snapshot.dataPath.readOccurrenceDecisions.map(
+        (decision) => ({
+          ...decision,
+          candidates: decision.candidates.filter((candidate) =>
+            keep(candidate.taskId),
+          ),
+          primary: decision.primary.filter(keep),
+          additional: decision.additional.filter(keep),
+          unknown: decision.unknown.filter(keep),
+        }),
+      ),
     },
   };
 }
@@ -669,12 +882,19 @@ function acquireLock(artifactRoot: string, taskId: string): string {
     return path;
   } catch (error) {
     if (fd !== undefined) closeSync(fd);
-    throw new Error(`TASK_LOCK_UNAVAILABLE:${taskId}:${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `TASK_LOCK_UNAVAILABLE:${taskId}:${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
-export function publishStagedTask(stagedDir: string, finalDir: string, artifactRoot: string): void {
-  if (!isWithin(artifactRoot, stagedDir) || !isWithin(artifactRoot, finalDir)) throw new Error("ARTIFACT_PATH_OUTSIDE_ROOT");
+export function publishStagedTask(
+  stagedDir: string,
+  finalDir: string,
+  artifactRoot: string,
+): void {
+  if (!isWithin(artifactRoot, stagedDir) || !isWithin(artifactRoot, finalDir))
+    throw new Error("ARTIFACT_PATH_OUTSIDE_ROOT");
   mkdirSync(dirname(finalDir), { recursive: true });
   const backup = `${finalDir}.previous-${randomUUID()}`;
   const hadFinal = existsSync(finalDir);
@@ -691,15 +911,22 @@ export function publishStagedTask(stagedDir: string, finalDir: string, artifactR
     renameSync(stagedDir, finalDir);
     if (hadFinal) rmSync(backup, { recursive: true, force: true });
   } catch (error) {
-    if (existsSync(finalDir)) rmSync(finalDir, { recursive: true, force: true });
+    if (existsSync(finalDir))
+      rmSync(finalDir, { recursive: true, force: true });
     if (hadFinal && existsSync(backup)) renameSync(backup, finalDir);
     throw error;
   }
 }
 
 function isWindowsRenameBlocked(error: unknown): boolean {
-  if (process.platform !== "win32" || typeof error !== "object" || error === null) return false;
-  const code = "code" in error && typeof error.code === "string" ? error.code : undefined;
+  if (
+    process.platform !== "win32" ||
+    typeof error !== "object" ||
+    error === null
+  )
+    return false;
+  const code =
+    "code" in error && typeof error.code === "string" ? error.code : undefined;
   return code === "EACCES" || code === "EBUSY" || code === "EPERM";
 }
 
@@ -708,7 +935,8 @@ function relativeEntries(root: string, prefix = ""): string[] {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const relativePath = join(prefix, entry.name);
     entries.push(relativePath);
-    if (entry.isDirectory()) entries.push(...relativeEntries(join(root, entry.name), relativePath));
+    if (entry.isDirectory())
+      entries.push(...relativeEntries(join(root, entry.name), relativePath));
   }
   return entries;
 }
@@ -718,15 +946,21 @@ function publishStagedTaskInPlace(stagedDir: string, finalDir: string): void {
   const stagedSet = new Set(stagedPaths);
   mkdirSync(finalDir, { recursive: true });
 
-  for (const relativePath of stagedPaths.filter((path) => lstatSync(join(stagedDir, path)).isDirectory())) {
+  for (const relativePath of stagedPaths.filter((path) =>
+    lstatSync(join(stagedDir, path)).isDirectory(),
+  )) {
     const target = join(finalDir, relativePath);
-    if (existsSync(target) && !lstatSync(target).isDirectory()) rmSync(target, { force: true });
+    if (existsSync(target) && !lstatSync(target).isDirectory())
+      rmSync(target, { force: true });
     mkdirSync(target, { recursive: true });
   }
-  for (const relativePath of stagedPaths.filter((path) => !lstatSync(join(stagedDir, path)).isDirectory())) {
+  for (const relativePath of stagedPaths.filter(
+    (path) => !lstatSync(join(stagedDir, path)).isDirectory(),
+  )) {
     const source = join(stagedDir, relativePath);
     const target = join(finalDir, relativePath);
-    if (existsSync(target) && lstatSync(target).isDirectory()) rmSync(target, { recursive: true, force: true });
+    if (existsSync(target) && lstatSync(target).isDirectory())
+      rmSync(target, { recursive: true, force: true });
     mkdirSync(dirname(target), { recursive: true });
     copyFileSync(source, target);
   }
@@ -734,21 +968,36 @@ function publishStagedTaskInPlace(stagedDir: string, finalDir: string): void {
   const stalePaths = relativeEntries(finalDir)
     .filter((path) => !stagedSet.has(path))
     .sort((left, right) => right.split(sep).length - left.split(sep).length);
-  for (const relativePath of stalePaths) rmSync(join(finalDir, relativePath), { recursive: true, force: true });
+  for (const relativePath of stalePaths)
+    rmSync(join(finalDir, relativePath), { recursive: true, force: true });
   rmSync(stagedDir, { recursive: true, force: true });
 }
 
-async function runTask(options: LineageAllOptions, taskId: string, artifactRoot: string, deps: LineageAllDependencies): Promise<LineageAllTaskResult> {
+async function runTask(
+  options: LineageAllOptions,
+  taskId: string,
+  artifactRoot: string,
+  deps: LineageAllDependencies,
+): Promise<LineageAllTaskResult> {
   const paths = formalArtifactPaths(artifactRoot, taskId);
   const lock = acquireLock(artifactRoot, taskId);
   const stagingRoot = join(resolve(artifactRoot), ".staging");
   mkdirSync(stagingRoot, { recursive: true });
   const stagedDir = mkdtempSync(join(stagingRoot, `${taskId}-`));
+  progress("task_start", {
+    taskId,
+    stagedDir,
+    withFields: options.withFields === true,
+  });
   try {
     const producerCacheRoot = `${resolve(options.dataRoot)}.producer-index-cache`;
-    const factsRoot = resolve(options.factsRoot ?? join(options.dataRoot, "field-facts"));
+    const factsRoot = resolve(
+      options.factsRoot ?? join(options.dataRoot, "field-facts"),
+    );
     const terminalTableConfig = loadTerminalTableConfig(
-      resolve(options.terminalTableConfigPath ?? DEFAULT_TERMINAL_TABLE_CONFIG_PATH),
+      resolve(
+        options.terminalTableConfigPath ?? DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
+      ),
     );
     const queriedFieldTables = new Set<string>();
     const fieldDrivenProducerTables = new Set<string>();
@@ -788,15 +1037,27 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           force: options.force,
           terminalTableConfig,
         });
-        if (autofill.status !== "COMPLETE") throw new Error(`INPUT_PACK_CLOSURE_PARTIAL:${autofill.issues.join(";")}`);
+        if (autofill.status !== "COMPLETE")
+          throw new Error(
+            `INPUT_PACK_CLOSURE_PARTIAL:${autofill.issues.join(";")}`,
+          );
         initialClosure = autofill;
+        progress("closure_complete", {
+          taskId,
+          taskCount: autofill.taskIds.length,
+          discovered: autofill.discoveredTaskIds.length,
+          collected: autofill.collectedTaskIds.length,
+          rounds: autofill.rounds,
+        });
         // Closure owns the immutable snapshot. Reuse it rather than pinning
         // and fingerprinting the entire Input Pack a second time.
         const snapshot = autofill.producerSnapshot;
         producer = snapshot
           ? deps.loadProducerIndex(snapshot.indexPath)
-          : deps.producerIndex(resolve(options.dataRoot), producerCacheRoot).index;
-        trustedInputFingerprint = snapshot?.inputFingerprint ?? producer.inputFingerprint;
+          : deps.producerIndex(resolve(options.dataRoot), producerCacheRoot)
+              .index;
+        trustedInputFingerprint =
+          snapshot?.inputFingerprint ?? producer.inputFingerprint;
         finalProducerIndexPath = snapshot?.indexPath ?? null;
         finalProducerManifestPath = snapshot?.manifestPath ?? null;
         taskNodeIds = [...new Set(autofill.taskIds)];
@@ -806,18 +1067,45 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         // recursively expand every read of those tasks, including unrelated
         // JOINs, which is the source of the large task fan-out. Re-pin the index
         // against the expanded pack and keep the existing task frontier.
-        const repinned = deps.producerIndex(resolve(options.dataRoot), producerCacheRoot);
+        const repinned = deps.producerIndex(
+          resolve(options.dataRoot),
+          producerCacheRoot,
+        );
         producer = repinned.index;
         trustedInputFingerprint = producer.inputFingerprint;
         finalProducerIndexPath = repinned.indexPath ?? null;
         finalProducerManifestPath = repinned.manifestPath ?? null;
       }
-      const facts = deps.machineFacts({ dataRoot: resolve(options.dataRoot), taskIds: taskNodeIds, outputRoot: factsRoot, indexMode: "incremental" });
-      const failedFacts = facts.tasks.filter((fact) => fact.status === "FAILED" || fact.state === "FAILED");
-      if (failedFacts.length > 0) throw new Error(`MACHINE_FACTS_FAILED:${failedFacts.map((fact) => fact.task_id).join(",")}`);
+      const facts = deps.machineFacts({
+        dataRoot: resolve(options.dataRoot),
+        taskIds: taskNodeIds,
+        outputRoot: factsRoot,
+        indexMode: "incremental",
+      });
+      progress("machine_facts_complete", {
+        taskId,
+        taskCount: taskNodeIds.length,
+      });
+      const failedFacts = facts.tasks.filter(
+        (fact) => fact.status === "FAILED" || fact.state === "FAILED",
+      );
+      if (failedFacts.length > 0)
+        throw new Error(
+          `MACHINE_FACTS_FAILED:${failedFacts.map((fact) => fact.task_id).join(",")}`,
+        );
       const rawOneHopSnapshots = new Map<string, OneHopReconciliationResult>();
+      progress("schedule_prefetch_start", {
+        taskId,
+        taskCount: taskNodeIds.length,
+      });
       const scheduleEvidenceByTaskId = await deps.schedulePrefetch(taskNodeIds);
-      for (const nodeId of taskNodeIds) if (!scheduleEvidenceByTaskId.has(nodeId)) throw new Error(`SCHEDULE_PREFETCH_MISSING:${nodeId}`);
+      progress("schedule_prefetch_complete", {
+        taskId,
+        taskCount: scheduleEvidenceByTaskId.size,
+      });
+      for (const nodeId of taskNodeIds)
+        if (!scheduleEvidenceByTaskId.has(nodeId))
+          throw new Error(`SCHEDULE_PREFETCH_MISSING:${nodeId}`);
       const oneHopResults = deps.oneHopBatch(taskNodeIds, {
         dataRoot: resolve(options.dataRoot),
         producerIndex: producer,
@@ -826,14 +1114,23 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         scheduleEvidenceByTaskId,
         terminalTableConfig,
       });
-      const checkDbFlagIds = checkDbFlagTaskIds(resolve(options.dataRoot), oneHopResults);
-      for (const result of oneHopResults) rawOneHopSnapshots.set(result.taskId, result);
+      progress("one_hop_complete", { taskId, taskCount: oneHopResults.length });
+      const checkDbFlagIds = checkDbFlagTaskIds(
+        resolve(options.dataRoot),
+        oneHopResults,
+      );
+      for (const result of oneHopResults)
+        rawOneHopSnapshots.set(result.taskId, result);
       const oneHopSnapshots = new Map<string, OneHopReconciliationResult>();
       for (const result of oneHopResults)
-        oneHopSnapshots.set(result.taskId, withoutCheckDbFlagParents(result, checkDbFlagIds));
+        oneHopSnapshots.set(
+          result.taskId,
+          withoutCheckDbFlagParents(result, checkDbFlagIds),
+        );
       const rawRootOneHop = rawOneHopSnapshots.get(taskId);
       const rootOneHop = oneHopSnapshots.get(taskId);
-      if (!rawRootOneHop || !rootOneHop) throw new Error(`ROOT_ONE_HOP_SNAPSHOT_MISSING:${taskId}`);
+      if (!rawRootOneHop || !rootOneHop)
+        throw new Error(`ROOT_ONE_HOP_SNAPSHOT_MISSING:${taskId}`);
       const formalMultiHop = deps.multiHop(taskId, {
         dataRoot: resolve(options.dataRoot),
         producerIndex: producer,
@@ -845,15 +1142,30 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         trustedInputFingerprint,
         terminalTableConfig,
       });
+      progress("multi_hop_complete", {
+        taskId,
+        taskCount: formalMultiHop.taskNodes.length,
+      });
       if (!tableHtmlRendered) {
         writeJson(oneHopPath, rawRootOneHop);
         writeJson(multiHopPath, formalMultiHop);
-        deps.visualizeMultiHop({ taskId, artifactPath: multiHopPath, outputPath: tableHtml, vizModelPath: join(stagedDir, "viz-model.json") });
-        if (existsSync(join(stagedDir, "viz-model.json"))) rmSync(join(stagedDir, "viz-model.json"), { force: true });
+        deps.visualizeMultiHop({
+          taskId,
+          artifactPath: multiHopPath,
+          outputPath: tableHtml,
+          vizModelPath: join(stagedDir, "viz-model.json"),
+        });
+        if (existsSync(join(stagedDir, "viz-model.json")))
+          rmSync(join(stagedDir, "viz-model.json"), { force: true });
         tableHtmlRendered = true;
       }
       let fieldArtifact: FieldLineageArtifact | null = null;
       if (options.withFields) {
+        progress("field_lineage_start", {
+          taskId,
+          taskCount: taskNodeIds.length,
+          round: fieldAutofillRounds + 1,
+        });
         fieldArtifact = deps.fieldLineage({
           dataRoot: resolve(options.dataRoot),
           factsRoot,
@@ -866,7 +1178,14 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           maxStates: DEFAULT_FIELD_LINEAGE_MAX_STATES,
           maxPaths: DEFAULT_FIELD_LINEAGE_MAX_PATHS,
         });
-        const fieldTables = fieldSourceTablesMissingProducerBridge(fieldArtifact, formalMultiHop);
+        const fieldTables = fieldSourceTablesMissingProducerBridge(
+          fieldArtifact,
+          formalMultiHop,
+        );
+        progress("field_lineage_complete", {
+          taskId,
+          missingProducerTables: fieldTables.length,
+        });
         const producerTaskIds = new Set<string>();
         for (const qualifiedName of fieldTables) {
           if (matchingTerminalRole(terminalTableConfig, qualifiedName))
@@ -874,7 +1193,9 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
           fieldDrivenProducerTables.add(qualifiedName);
           if (queriedFieldTables.has(qualifiedName)) continue;
           queriedFieldTables.add(qualifiedName);
-          for (const producerTaskId of deps.fieldProducerDiscovery(qualifiedName)) {
+          for (const producerTaskId of deps.fieldProducerDiscovery(
+            qualifiedName,
+          )) {
             if (!SAFE_TASK_ID.test(producerTaskId)) continue;
             fieldDrivenProducerTaskIds.add(producerTaskId);
             producerTaskIds.add(producerTaskId);
@@ -883,14 +1204,35 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
         const knownTaskIds: Set<string> = new Set(taskNodeIds ?? []);
         const collectIds: string[] = [...producerTaskIds]
           .filter((producerTaskId) => !knownTaskIds.has(producerTaskId))
-          .sort((left, right) => left.localeCompare(right, "zh-Hans", { numeric: true }));
+          .sort((left, right) =>
+            left.localeCompare(right, "zh-Hans", { numeric: true }),
+          );
         if (collectIds.length > 0) {
-          if (fieldAutofillRounds >= (options.maxRounds ?? DEFAULT_MAX_ROUNDS)) throw new Error("MAX_FIELD_AUTOFILL_ROUNDS_REACHED");
-          deps.collectTaskPacks(resolve(options.dataRoot), collectIds, options.force === true);
-          const collectedIds = collectIds.filter((candidate) => taskPackExists(options.dataRoot, candidate));
-          for (const collectedId of collectedIds) fieldDrivenCollectedTaskIds.add(collectedId);
+          progress("field_input_pack_collect_start", {
+            taskId,
+            round: fieldAutofillRounds + 1,
+            batchSize: collectIds.length,
+            taskIds: collectIds,
+          });
+          if (fieldAutofillRounds >= (options.maxRounds ?? DEFAULT_MAX_ROUNDS))
+            throw new Error("MAX_FIELD_AUTOFILL_ROUNDS_REACHED");
+          deps.collectTaskPacks(
+            resolve(options.dataRoot),
+            collectIds,
+            options.force === true,
+          );
+          const collectedIds = collectIds.filter((candidate) =>
+            taskPackExists(options.dataRoot, candidate),
+          );
+          for (const collectedId of collectedIds)
+            fieldDrivenCollectedTaskIds.add(collectedId);
           taskNodeIds = [...new Set([...taskNodeIds, ...collectedIds])];
           fieldAutofillRounds += 1;
+          progress("field_input_pack_collect_done", {
+            taskId,
+            round: fieldAutofillRounds,
+            collected: collectedIds.length,
+          });
           continue;
         }
       }
@@ -900,7 +1242,8 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
       finalTrustedInputFingerprint = trustedInputFingerprint;
       break;
     }
-    if (!finalRawRootOneHop || !finalFormalMultiHop) throw new Error(`FINAL_LINEAGE_SNAPSHOT_MISSING:${taskId}`);
+    if (!finalRawRootOneHop || !finalFormalMultiHop)
+      throw new Error(`FINAL_LINEAGE_SNAPSHOT_MISSING:${taskId}`);
     writeJson(oneHopPath, finalRawRootOneHop);
     writeJson(multiHopPath, finalFormalMultiHop);
     const closurePath = join(stagedDir, "input-pack-closure.json");
@@ -923,7 +1266,9 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
       ]),
       fieldDrivenProducerTables: sortedUnique([...fieldDrivenProducerTables]),
       fieldDrivenProducerTaskIds: sortedUnique([...fieldDrivenProducerTaskIds]),
-      fieldDrivenCollectedTaskIds: sortedUnique([...fieldDrivenCollectedTaskIds]),
+      fieldDrivenCollectedTaskIds: sortedUnique([
+        ...fieldDrivenCollectedTaskIds,
+      ]),
       rounds: {
         inputPack: initialClosure?.rounds ?? 0,
         fieldAutofill: fieldAutofillRounds,
@@ -944,53 +1289,118 @@ async function runTask(options: LineageAllOptions, taskId: string, artifactRoot:
     writeJson(closurePath, closureArtifact);
     const files = ["input-pack-closure.json", "one-hop.json", "multi-hop.json"];
     if (fieldAutofillRounds > 0) {
-      deps.visualizeMultiHop({ taskId, artifactPath: multiHopPath, outputPath: tableHtml, vizModelPath: join(stagedDir, "viz-model.json") });
-      if (existsSync(join(stagedDir, "viz-model.json"))) rmSync(join(stagedDir, "viz-model.json"), { force: true });
+      deps.visualizeMultiHop({
+        taskId,
+        artifactPath: multiHopPath,
+        outputPath: tableHtml,
+        vizModelPath: join(stagedDir, "viz-model.json"),
+      });
+      if (existsSync(join(stagedDir, "viz-model.json")))
+        rmSync(join(stagedDir, "viz-model.json"), { force: true });
     }
     files.push("views/table-lineage.html");
     if (finalFieldArtifact) {
       const fieldPath = join(stagedDir, "field-lineage.json");
       writeJson(fieldPath, finalFieldArtifact);
       const fieldHtml = join(stagedDir, "views", "field-lineage.html");
-      deps.visualizeFieldLineage({ artifactPath: fieldPath, outputPath: fieldHtml, factsRoot });
+      deps.visualizeFieldLineage({
+        artifactPath: fieldPath,
+        outputPath: fieldHtml,
+        factsRoot,
+      });
       files.push("field-lineage.json", "views/field-lineage.html");
     }
-    if (typeof finalTrustedInputFingerprint === "string" && deps.fingerprintInput(resolve(options.dataRoot)) !== finalTrustedInputFingerprint)
+    if (
+      typeof finalTrustedInputFingerprint === "string" &&
+      deps.fingerprintInput(resolve(options.dataRoot)) !==
+        finalTrustedInputFingerprint
+    )
       throw new Error("INPUT_CHANGED_DURING_LINEAGE_ALL");
     publishStagedTask(stagedDir, paths.directory, artifactRoot);
+    progress("task_complete", {
+      taskId,
+      status: "SUCCESS",
+      artifactDir: paths.directory,
+    });
     return { taskId, status: "SUCCESS", artifactDir: paths.directory, files };
   } catch (error) {
-    if (existsSync(stagedDir)) rmSync(stagedDir, { recursive: true, force: true });
-    return { taskId, status: "FAILED", artifactDir: paths.directory, files: [], error: error instanceof Error ? error.message : String(error) };
+    progress("task_failed", {
+      taskId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    if (existsSync(stagedDir))
+      rmSync(stagedDir, { recursive: true, force: true });
+    return {
+      taskId,
+      status: "FAILED",
+      artifactDir: paths.directory,
+      files: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     if (existsSync(lock)) rmSync(lock, { force: true });
   }
 }
 
-export async function runLineageAll(options: LineageAllOptions): Promise<LineageAllResult> {
+export async function runLineageAll(
+  options: LineageAllOptions,
+): Promise<LineageAllResult> {
   const dataRoot = resolve(options.dataRoot);
-  const artifactRoot = resolve(options.artifactRoot ?? join(dataRoot, "artifacts"));
-  if (!existsSync(join(dataRoot, "tasks")) || !existsSync(join(dataRoot, "tables"))) throw new Error("INPUT_PACK_ROOT_INCOMPLETE");
+  const artifactRoot = resolve(
+    options.artifactRoot ?? join(dataRoot, "artifacts"),
+  );
+  if (
+    !existsSync(join(dataRoot, "tasks")) ||
+    !existsSync(join(dataRoot, "tables"))
+  )
+    throw new Error("INPUT_PACK_ROOT_INCOMPLETE");
   const deps = dependencies(options.dependencies);
-  const taskIds = [...new Set(options.taskIds.map((item) => item.trim()).filter(Boolean))].sort();
-  for (const taskId of taskIds) if (!SAFE_TASK_ID.test(taskId)) throw new Error(`INVALID_TASK_ID:${taskId}`);
+  const taskIds = [
+    ...new Set(options.taskIds.map((item) => item.trim()).filter(Boolean)),
+  ].sort();
+  for (const taskId of taskIds)
+    if (!SAFE_TASK_ID.test(taskId))
+      throw new Error(`INVALID_TASK_ID:${taskId}`);
   const tasks: LineageAllTaskResult[] = [];
-  for (const taskId of taskIds) tasks.push(await runTask({ ...options, dataRoot }, taskId, artifactRoot, deps));
-  for (const internalDir of [join(artifactRoot, ".staging"), join(artifactRoot, ".locks")]) {
-    if (existsSync(internalDir) && readdirSync(internalDir).length === 0) rmSync(internalDir, { recursive: true, force: true });
+  for (const taskId of taskIds)
+    tasks.push(
+      await runTask({ ...options, dataRoot }, taskId, artifactRoot, deps),
+    );
+  for (const internalDir of [
+    join(artifactRoot, ".staging"),
+    join(artifactRoot, ".locks"),
+  ]) {
+    if (existsSync(internalDir) && readdirSync(internalDir).length === 0)
+      rmSync(internalDir, { recursive: true, force: true });
   }
-  return { dataRoot, artifactRoot, taskIds, tasks, status: tasks.every((task) => task.status === "SUCCESS") ? "SUCCESS" : "PARTIAL_FAILURE" };
+  return {
+    dataRoot,
+    artifactRoot,
+    taskIds,
+    tasks,
+    status: tasks.every((task) => task.status === "SUCCESS")
+      ? "SUCCESS"
+      : "PARTIAL_FAILURE",
+  };
 }
 
 async function main(): Promise<void> {
   try {
-    const result = await runLineageAll(parseLineageAllArgs(process.argv.slice(2)));
+    const result = await runLineageAll(
+      parseLineageAllArgs(process.argv.slice(2)),
+    );
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (result.status !== "SUCCESS") process.exitCode = 1;
   } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `${error instanceof Error ? error.message : String(error)}\n`,
+    );
     process.exitCode = 1;
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) void main();
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+)
+  void main();

@@ -8,10 +8,16 @@ import type {
   WindowInputBinding,
 } from "../../../plans/plan-contract.ts";
 import {
+  canonicalJson,
+  sha256,
+} from "../../../machine-facts/machine-facts-contract.ts";
+import {
   createProofRef,
+  isCompleteSemanticOccurrenceScope,
   makeSemanticDependencyApplication,
   makeSemanticDependencyDefinition,
   makeSemanticDependencyEdge,
+  semanticScopeForRelation,
   type EffectKind,
   type LocalEdgeKind,
   type OperatorKind,
@@ -21,10 +27,12 @@ import {
   type SemanticDependencyApplication,
   type SemanticDependencyDefinition,
   type SemanticDependencyEdge,
+  type SemanticOccurrenceScope,
   type SemanticSubject,
   type SubjectKind,
   type SupportStatus,
 } from "./semantic-dependency-contract.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 import {
   lookupOperatorSupport,
   type OperatorRole,
@@ -45,21 +53,28 @@ export interface SemanticPhysicalFieldResolver {
 }
 
 export interface SemanticNormalizationRoot {
-  /** Stable physical field id owned by the caller. */
+  /** The original user-selected causal criterion carried end to end. */
+  readonly rootCriterion: RootCriterion;
+  /** The exact local producer write/output used to build this Plan. */
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
   readonly rootTargetFieldId: string;
-  /** Final relation containing the target expression. Defaults to the first plan root. */
-  readonly relationId?: string;
-  /** Output name used to select one expression in the target relation. */
-  readonly outputName?: string;
-  /** Optional richer subject; otherwise rootTargetFieldId is used as the field id. */
+  readonly relationId: string;
+  readonly outputName: string | null;
+  readonly localOutputExpressionId: string;
+  readonly sourceOrdinal: number;
+  readonly expressionRole: string;
   readonly targetSubject?: SemanticSubject;
 }
 
 export interface SemanticDependencyNormalizerInput {
   readonly plan: PlanFacts;
-  readonly roots: readonly SemanticNormalizationRoot[];
-  /** Task-scopes generated semantic ids without changing Plan Facts ids. */
-  readonly idNamespace?: string;
+  /** The original user-selected causal criterion. */
+  readonly rootCriterion: RootCriterion;
+  /** Defaults to rootCriterion for the root Task; required for an upstream write. */
+  readonly localRootCriterion?: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
+  readonly targetSubject?: SemanticSubject;
   readonly physicalFieldResolver?:
     SemanticPhysicalFieldResolver | SemanticPhysicalFieldResolver["resolve"];
   /** Accepted for callers that assemble Plan Facts beside a Machine Facts bundle. */
@@ -77,6 +92,10 @@ export interface SemanticDependencyGap {
   readonly operatorRole: string;
   readonly relationId: string | null;
   readonly rootTargetFieldId: string;
+  /** Null is reserved for explicitly unscoped supplementary evidence. */
+  readonly rootCriterionId: string | null;
+  readonly semanticScopeId: string | null;
+  readonly semanticScope: SemanticOccurrenceScope | null;
   /**
    * When a multi-source column reference contains both resolved and
    * unresolved physical candidates, scope the gap to the unresolved
@@ -86,6 +105,9 @@ export interface SemanticDependencyGap {
   readonly subject?: SemanticSubject;
   readonly message: string;
   readonly proofRefs: readonly ProofRef[];
+  readonly evidenceRefs: readonly string[];
+  /** A gap can never establish a confirmed causal branch. */
+  readonly blocksConfirmedCausality: true;
   /** Negative proof must treat every normalizer gap as a hard blocker. */
   readonly blocksNegativeProof: true;
 }
@@ -323,6 +345,19 @@ function relationColumns(relation: RelationRecord): readonly ColumnRef[] {
         : [];
 }
 
+function relationOutputArity(relation: RelationRecord): number {
+  const declared = Array.isArray(relation.output_columns)
+    ? relation.output_columns.length
+    : 0;
+  const expressions =
+    relation.type === "project"
+      ? (relation.expressions ?? []).length
+      : relation.type === "aggregate"
+        ? (relation.measures ?? []).length
+        : 0;
+  return Math.max(declared, expressions);
+}
+
 function expressionRoles(
   expression: ExprSpec,
 ): readonly ExpressionRoleBinding[] {
@@ -511,6 +546,79 @@ function querySupport(queryValue: Query) {
 export function normalizeSemanticDependencies(
   input: SemanticDependencyNormalizerInput,
 ): SemanticDependencyNormalization {
+  const rootCriterion = input.rootCriterion;
+  const localRootCriterion = input.localRootCriterion ?? rootCriterion;
+  const scopeValid = isCompleteSemanticOccurrenceScope(
+    input.semanticScope,
+    localRootCriterion,
+  ) && input.plan.meta.statement_index === localRootCriterion.statementIndex;
+  if (!scopeValid) {
+    const evidenceRefs = unique([
+      ...rootCriterion.evidenceRefs,
+      ...localRootCriterion.evidenceRefs,
+      rootCriterion.rootWriteObservationId,
+      rootCriterion.statementId,
+      rootCriterion.rootRelationId,
+      rootCriterion.outputExpressionId,
+      rootCriterion.outputBindingId,
+      localRootCriterion.rootWriteObservationId,
+      localRootCriterion.statementId,
+      localRootCriterion.rootRelationId,
+      localRootCriterion.outputExpressionId,
+      localRootCriterion.outputBindingId,
+    ], (value) => value);
+    const gapId = `semantic-gap:${sha256(canonicalJson({
+      rootCriterionId: rootCriterion.rootCriterionId,
+      reasonCode: "SEMANTIC_SCOPE_INCOMPLETE",
+      evidenceRefs,
+    }))}`;
+    const proofRefs = evidenceRefs.map((ref) => createProofRef(
+      ref === rootCriterion.rootWriteObservationId
+        ? "WRITE_OBSERVATION"
+        : "CANONICAL_FACT",
+      ref,
+    ));
+    const gap: SemanticDependencyGap = {
+      gapId,
+      status: "UNKNOWN",
+      reasonCode: "SEMANTIC_SCOPE_INCOMPLETE",
+      operatorKind: "RELATION",
+      operatorVariant: "SCOPE",
+      operatorRole: "ROOT",
+      relationId: null,
+      rootTargetFieldId: rootCriterion.rootTargetFieldId,
+      rootCriterionId: rootCriterion.rootCriterionId,
+      semanticScopeId: null,
+      semanticScope: null,
+      message: "semantic occurrence scope is incomplete or contradicts the root criterion",
+      proofRefs,
+      evidenceRefs,
+      blocksConfirmedCausality: true,
+      blocksNegativeProof: true,
+    };
+    return {
+      definitions: [],
+      applications: [],
+      edges: [],
+      semanticEdges: [],
+      gaps: [gap],
+      legacyEdges: [...(input.legacyEdges ?? [])],
+    };
+  }
+  const root: SemanticNormalizationRoot = {
+    rootCriterion,
+    localRootCriterion,
+    semanticScope: input.semanticScope,
+    rootTargetFieldId: rootCriterion.rootTargetFieldId,
+    relationId: localRootCriterion.localRootRelationId,
+    outputName: localRootCriterion.producerOutputName,
+    localOutputExpressionId: localRootCriterion.localOutputExpressionId,
+    sourceOrdinal: localRootCriterion.sourceOrdinal,
+    expressionRole: localRootCriterion.expressionRole,
+    ...(input.targetSubject === undefined
+      ? {}
+      : { targetSubject: input.targetSubject }),
+  };
   const byId = relationMap(input.plan);
   const definitions = new Map<string, SemanticDependencyDefinition>();
   const applications = new Map<string, SemanticDependencyApplication>();
@@ -527,8 +635,20 @@ export function normalizeSemanticDependencies(
   ): void => {
     const supported = querySupport(queryValue);
     const relationId = relation?.id ?? null;
-    const refs = [
+    const refs = unique([
       ...supportRefs,
+      ...root.rootCriterion.evidenceRefs.map((ref) => createProofRef(
+        ref === root.rootCriterion.rootWriteObservationId
+          ? "WRITE_OBSERVATION"
+          : "CANONICAL_FACT",
+        ref,
+      )),
+      ...root.localRootCriterion.evidenceRefs.map((ref) => createProofRef(
+        ref === root.localRootCriterion.rootWriteObservationId
+          ? "WRITE_OBSERVATION"
+          : "CANONICAL_FACT",
+        ref,
+      )),
       ...(relation
         ? [
             factRef("relation", relation.id),
@@ -536,9 +656,18 @@ export function normalizeSemanticDependencies(
           ]
         : []),
       ...(supported.gap?.proofRefs ?? supported.cell.proofRefs),
-    ];
-    const gapNamespace = input.idNamespace === undefined ? "" : `${input.idNamespace}:`;
-    const gapId = `semantic-gap:${gapNamespace}${root.rootTargetFieldId}:${relationId ?? "root"}:${queryValue.operatorKind}:${queryValue.operatorVariant}:${queryValue.operatorRole}:${gapSubject ? JSON.stringify(gapSubject) : ""}:${message}`;
+    ], (ref) => ref.proofRefId);
+    const semanticScope = relation
+      ? semanticScopeForRelation(root.semanticScope, relation.id)
+      : root.semanticScope;
+    const gapId = `semantic-gap:${sha256(canonicalJson({
+      rootCriterionId: root.rootCriterion.rootCriterionId,
+      semanticScopeId: semanticScope.semanticScopeId,
+      relationId,
+      queryValue,
+      gapSubject: gapSubject ?? null,
+      message,
+    }))}`;
     gaps.set(gapId, {
       gapId,
       status: supported.gap?.status ?? "UNKNOWN",
@@ -548,11 +677,16 @@ export function normalizeSemanticDependencies(
       operatorRole: queryValue.operatorRole,
       relationId,
       rootTargetFieldId: root.rootTargetFieldId,
+      rootCriterionId: root.rootCriterion.rootCriterionId,
+      semanticScopeId: semanticScope.semanticScopeId,
+      semanticScope,
       ...(gapSubject ? { subject: gapSubject } : {}),
       message: supported.gap?.message
         ? `${supported.gap.message} ${message}`
         : message,
-      proofRefs: unique(refs, (ref) => ref.proofRefId),
+      proofRefs: refs,
+      evidenceRefs: unique(refs.map((ref) => ref.refId), (ref) => ref),
+      blocksConfirmedCausality: true,
       blocksNegativeProof: true,
     });
   };
@@ -572,11 +706,27 @@ export function normalizeSemanticDependencies(
     const refs = unique(
       [
         ...args.proofRefs,
+        ...args.root.rootCriterion.evidenceRefs.map((ref) => createProofRef(
+          ref === args.root.rootCriterion.rootWriteObservationId
+            ? "WRITE_OBSERVATION"
+            : "CANONICAL_FACT",
+          ref,
+        )),
+        ...args.root.localRootCriterion.evidenceRefs.map((ref) => createProofRef(
+          ref === args.root.localRootCriterion.rootWriteObservationId
+            ? "WRITE_OBSERVATION"
+            : "CANONICAL_FACT",
+          ref,
+        )),
         factRef("relation", args.relation.id),
         sourceSpanRef("relation", args.relation.id, args.relation.span),
         ...support.cell.proofRefs,
       ],
       (ref) => ref.proofRefId,
+    );
+    const semanticScope = semanticScopeForRelation(
+      args.root.semanticScope,
+      args.relation.id,
     );
     const definition = makeSemanticDependencyDefinition(
       {
@@ -589,7 +739,8 @@ export function normalizeSemanticDependencies(
       },
       support.cell.status as SupportStatus,
       refs,
-      input.idNamespace,
+      undefined,
+      semanticScope,
     );
     const previousDefinition = definitions.get(definition.dependencyId);
     definitions.set(
@@ -618,6 +769,8 @@ export function normalizeSemanticDependencies(
       dependencyId: definition.dependencyId,
       scopeRelationId: args.relation.id,
       rootTargetFieldId: args.root.rootTargetFieldId,
+      rootCriterionId: args.root.rootCriterion.rootCriterionId,
+      semanticScope,
       rootDependenceKind,
       pathCertainty,
       proofRefs: refs,
@@ -646,6 +799,8 @@ export function normalizeSemanticDependencies(
       rootDependenceKind,
       localEdgeKind: args.query.localEdgeKind,
       scopeRelationId: args.relation.id,
+      rootCriterionId: args.root.rootCriterion.rootCriterionId,
+      semanticScope,
       pathCertainty,
       proofRefs: refs,
     });
@@ -1106,15 +1261,76 @@ export function normalizeSemanticDependencies(
     });
   }
 
-  type OutputDemand = readonly ReadonlySet<string>[] | null;
+  type OutputDemand = {
+    readonly names: ReadonlySet<string>;
+    readonly columns: readonly ColumnRef[];
+  } | null;
+
+  type ExpressionSelectionResult = {
+    readonly expressions: readonly ExprSpec[];
+    readonly ambiguousOutput: string | null;
+    readonly ambiguousMatchCount: number;
+  };
 
   const selectedExpressionsByRelation = new Map<string, readonly ExprSpec[]>();
   const demandedOutputsByRelation = new Map<string, OutputDemand>();
+  const ambiguousSelectionsByRelation = new Set<string>();
+
+  function columnPhysicalKeys(column: ColumnRef): ReadonlySet<string> {
+    return new Set(
+      (column.physical ?? [])
+        .map((physical) => {
+          const table = normalized(physical.table);
+          const field = normalized(physical.column);
+          return table && field ? `${table}\u0000${field}` : "";
+        })
+        .filter(Boolean),
+    );
+  }
+
+  function demandColumnKey(column: ColumnRef): string {
+    return canonicalJson({
+      name: normalized(column.name),
+      qualifier: normalized(column.qualifier),
+      physical: [...columnPhysicalKeys(column)].sort(compareText),
+    });
+  }
+
+  function expressionMatchesDemandEvidence(
+    relation: RelationRecord,
+    expression: ExprSpec,
+    demandColumns: readonly ColumnRef[],
+  ): boolean {
+    if (demandColumns.length === 0) return true;
+    const demandedPhysical = new Set(
+      demandColumns.flatMap((column) => [...columnPhysicalKeys(column)]),
+    );
+    const expressionPhysical = new Set(
+      expressionColumns(expression).flatMap((column) => [
+        ...columnPhysicalKeys(column),
+      ]),
+    );
+    if (demandedPhysical.size > 0 && expressionPhysical.size > 0)
+      return [...demandedPhysical].some((key) => expressionPhysical.has(key));
+    const qualifiers = new Set(
+      demandColumns.map((column) => normalized(column.qualifier)).filter(Boolean),
+    );
+    if (qualifiers.size === 0) return true;
+    const relationQualifiers = new Set([
+      ...text(relation.id).split("."),
+      ...text(relation.scope_id).split("."),
+      relation.type === "read" ? text(relation.binding) : "",
+    ].map(normalized).filter(Boolean));
+    return [...qualifiers].some((qualifier) =>
+      relationQualifiers.has(qualifier),
+    );
+  }
 
   function expressionSelection(
     relation: RelationRecord,
     demandedOutputs: OutputDemand,
-  ): readonly ExprSpec[] {
+    requireEvidenceMatch = false,
+  ): ExpressionSelectionResult {
     const expressions =
       relation.type === "project"
         ? (relation.expressions ?? [])
@@ -1122,28 +1338,139 @@ export function normalizeSemanticDependencies(
           ? (relation.measures ?? [])
           : [];
     if (demandedOutputs === null)
-      return expressions.length === 1 ? [expressions[0]!] : [];
-    for (const demand of demandedOutputs) {
-      const selected = expressions.filter((expression) =>
-        demand.has(normalized(expression.output)),
+      return {
+        expressions: expressions.length === 1 ? [expressions[0]!] : [],
+        ambiguousOutput: null,
+        ambiguousMatchCount: 0,
+      };
+    const selected: ExprSpec[] = [];
+    for (const output of [...demandedOutputs.names].sort(compareText)) {
+      const matches = expressions.filter(
+        (expression) => normalized(expression.output) === output,
       );
-      if (selected.length > 0) return selected;
+      if (matches.length > 1)
+        return {
+          expressions: [],
+          ambiguousOutput: output,
+          ambiguousMatchCount: matches.length,
+        };
+      if (
+        matches.length === 1 &&
+        (!requireEvidenceMatch ||
+          expressionMatchesDemandEvidence(
+            relation,
+            matches[0]!,
+            demandedOutputs.columns.filter(
+              (column) => normalized(column.name) === output,
+            ),
+          ))
+      )
+        selected.push(matches[0]!);
     }
-    return [];
+    if (selected.length > 0)
+      return {
+        expressions: unique(selected, (expression) =>
+          `${normalized(expression.output)}\u0000${expression.span.start}\u0000${expression.span.end}`,
+        ),
+        ambiguousOutput: null,
+        ambiguousMatchCount: 0,
+      };
+    return {
+      expressions: [],
+      ambiguousOutput: null,
+      ambiguousMatchCount: 0,
+    };
   }
 
-  function expressionDemand(expressions: readonly ExprSpec[]): OutputDemand {
-    const aliases = new Set<string>();
-    const inputs = new Set<string>();
-    for (const expression of expressions) {
-      if (text(expression.output)) aliases.add(normalized(expression.output));
-      for (const column of expressionColumns(expression))
-        if (text(column.name)) inputs.add(normalized(column.name));
+  function expressionDemand(
+    expressions: readonly ExprSpec[],
+  ): Exclude<OutputDemand, null> {
+    const columns = unique(
+      expressions.flatMap((expression) => expressionColumns(expression)),
+      demandColumnKey,
+    );
+    return {
+      names: new Set(
+        columns.map((column) => normalized(column.name)).filter(Boolean),
+      ),
+      columns,
+    };
+  }
+
+  function oneTermDemand(column: ColumnRef): Exclude<OutputDemand, null> {
+    return {
+      names: new Set([normalized(column.name)]),
+      columns: [column],
+    };
+  }
+
+  function nameOnlyDemand(name: string): Exclude<OutputDemand, null> {
+    return { names: new Set([name]), columns: [] };
+  }
+
+  function demandTerms(demand: Exclude<OutputDemand, null>): readonly Exclude<OutputDemand, null>[] {
+    if (demand.columns.length > 0)
+      return demand.columns.map((column) => oneTermDemand(column));
+    return [...demand.names]
+      .sort(compareText)
+      .map((name) => nameOnlyDemand(name));
+  }
+
+  function relationAcceptsDemand(
+    relationId: string,
+    demand: Exclude<OutputDemand, null>,
+    seen: ReadonlySet<string> = new Set(),
+  ): boolean {
+    if (seen.has(relationId)) return false;
+    const relation = byId.get(relationId);
+    if (!relation) return false;
+    if (relation.type === "project" || relation.type === "aggregate") {
+      const selection = expressionSelection(relation, demand, true);
+      return (
+        selection.expressions.length > 0 ||
+        selection.ambiguousOutput !== null
+      );
     }
-    const demand: ReadonlySet<string>[] = [];
-    if (aliases.size > 0) demand.push(aliases);
-    if (inputs.size > 0) demand.push(inputs);
-    return demand;
+    if (relation.type === "read") {
+      const demandedPhysical = new Set(
+        demand.columns.flatMap((column) => [...columnPhysicalKeys(column)]),
+      );
+      const table = normalized(relation.table);
+      if (
+        demandedPhysical.size > 0 &&
+        [...demandedPhysical].some((key) => key.startsWith(`${table}\u0000`))
+      )
+        return true;
+      const qualifiers = new Set(
+        demand.columns
+          .map((column) => normalized(column.qualifier))
+          .filter(Boolean),
+      );
+      if (
+        qualifiers.size > 0 &&
+        qualifiers.has(normalized(relation.binding))
+      )
+        return true;
+      return demandedPhysical.size === 0 && qualifiers.size === 0;
+    }
+    const nextSeen = new Set([...seen, relationId]);
+    return childrenOf(relation).some((child) =>
+      relationAcceptsDemand(child, demand, nextSeen),
+    );
+  }
+
+  function mergeDemand(
+    left: Exclude<OutputDemand, null> | undefined,
+    right: Exclude<OutputDemand, null>,
+  ): Exclude<OutputDemand, null> {
+    const columns = unique(
+      [...(left?.columns ?? []), ...right.columns],
+      demandColumnKey,
+    );
+    return {
+      names: new Set([...(left?.names ?? []), ...right.names]),
+      columns,
+    };
   }
 
   function computeRootSelections(
@@ -1152,8 +1479,9 @@ export function normalizeSemanticDependencies(
   ): void {
     selectedExpressionsByRelation.clear();
     demandedOutputsByRelation.clear();
+    ambiguousSelectionsByRelation.clear();
     const initialDemand = root.outputName
-      ? [new Set([normalized(root.outputName)])]
+      ? nameOnlyDemand(normalized(root.outputName))
       : null;
     const queue: {
       relationId: string;
@@ -1165,9 +1493,10 @@ export function normalizeSemanticDependencies(
       const relation = byId.get(current.relationId);
       if (!relation) continue;
       const demandKey = current.demandedOutputs
-        ? current.demandedOutputs
-            .map((demand) => [...demand].sort(compareText).join(","))
-            .join(">")
+        ? canonicalJson({
+            names: [...current.demandedOutputs.names].sort(compareText),
+            columns: current.demandedOutputs.columns.map(demandColumnKey),
+          })
         : "*";
       const visitKey = `${current.relationId}|${demandKey}`;
       if (seen.has(visitKey)) continue;
@@ -1177,10 +1506,79 @@ export function normalizeSemanticDependencies(
         current.demandedOutputs,
       );
       if (relation.type === "project" || relation.type === "aggregate") {
-        const selected = expressionSelection(relation, current.demandedOutputs);
+        const selection = current.relationId === targetRelationId
+          ? (() : ExpressionSelectionResult => {
+              const expressions = relation.type === "project"
+                ? relation.expressions ?? []
+                : relation.measures ?? [];
+              const expression = expressions[root.sourceOrdinal];
+              const expectedId = `${relation.id}:expression:${root.expressionRole.toLowerCase()}:${root.sourceOrdinal}`;
+              if (
+                !expression ||
+                expectedId !== root.localOutputExpressionId ||
+                (root.outputName !== null &&
+                  normalized(expression.output) !== normalized(root.outputName))
+              )
+                return {
+                  expressions: [],
+                  ambiguousOutput: null,
+                  ambiguousMatchCount: 0,
+                };
+              return {
+                expressions: [expression],
+                ambiguousOutput: null,
+                ambiguousMatchCount: 0,
+              };
+            })()
+          : expressionSelection(relation, current.demandedOutputs);
+        const selected = selection.expressions;
+        if (selection.ambiguousOutput !== null) {
+          ambiguousSelectionsByRelation.add(relation.id);
+          addGap(
+            root,
+            relation,
+            structuralQuery(relation),
+            `output ${selection.ambiguousOutput} has an ambiguous expression binding (${selection.ambiguousMatchCount} canonical matches)`,
+          );
+        }
         selectedExpressionsByRelation.set(relation.id, selected);
         const demand = expressionDemand(selected);
-        for (const child of childrenOf(relation))
+        if (demand.names.size > 0)
+          for (const child of childrenOf(relation))
+            queue.push({ relationId: child, demandedOutputs: demand });
+        continue;
+      }
+      if (
+        relation.type === "join" &&
+        current.demandedOutputs !== null &&
+        current.demandedOutputs.columns.length > 0
+      ) {
+        const children = childrenOf(relation);
+        const routed = new Map<string, Exclude<OutputDemand, null>>();
+        for (const term of demandTerms(current.demandedOutputs)) {
+          const matches = children.filter((child) =>
+            relationAcceptsDemand(child, term),
+          );
+          if (matches.length !== 1) {
+            addGap(
+              root,
+              relation,
+              query(
+                "PROJECT",
+                "COLUMN_EXPRESSION",
+                "VALUE",
+                "PHYSICAL_FIELD",
+                "VALUE_CONTRIBUTION",
+                "VALUE_FLOW",
+              ),
+              `join output demand ${[...term.names].join(",") || "<missing>"} maps to ${matches.length} child relations instead of exactly one`,
+            );
+            continue;
+          }
+          const child = matches[0]!;
+          routed.set(child, mergeDemand(routed.get(child), term));
+        }
+        for (const [child, demand] of routed)
           queue.push({ relationId: child, demandedOutputs: demand });
         continue;
       }
@@ -1195,13 +1593,14 @@ export function normalizeSemanticDependencies(
     // empty, so the caller cannot accidentally prove unrelatedness.
     for (const [relationId, selected] of selectedExpressionsByRelation) {
       if (selected.length > 0) continue;
+      if (ambiguousSelectionsByRelation.has(relationId)) continue;
       const relation = byId.get(relationId);
       if (relation)
         addGap(
           root,
           relation,
           structuralQuery(relation),
-          `target output ${root.outputName || "<unspecified>"} has no canonical expression binding`,
+          `target output ${root.outputName ?? "<unspecified>"} has no canonical expression binding`,
         );
     }
   }
@@ -1343,6 +1742,20 @@ export function normalizeSemanticDependencies(
         relation.distinct ?? relation.is_distinct ?? relation.deduplicate,
       );
       if (distinct) {
+        if (relationOutputArity(relation) > 1)
+          addGap(
+            root,
+            relation,
+            query(
+              "DISTINCT",
+              "DISTINCT_KEY",
+              "VALUE",
+              "PHYSICAL_FIELD",
+              "SET_MEMBERSHIP",
+              "ROWSET_CONTROL",
+            ),
+            "DISTINCT row identity includes sibling outputs whose target reachability is not modeled",
+          );
         for (const expression of selectedExpressionsByRelation.get(
           relation.id,
         ) ?? [])
@@ -1569,13 +1982,30 @@ export function normalizeSemanticDependencies(
         addGap(root, relation, setQuery, "set operation branches are missing");
         return;
       }
+      const outputArity = Math.max(
+        relationOutputArity(relation),
+        ...branches.map((branch) => {
+          const branchRelation = byId.get(branch);
+          return branchRelation ? relationOutputArity(branchRelation) : 0;
+        }),
+      );
+      if (
+        ["UNION", "INTERSECT", "EXCEPT"].includes(variant) &&
+        outputArity > 1
+      )
+        addGap(
+          root,
+          relation,
+          setQuery,
+          `${variant} row identity includes sibling outputs whose target reachability is not modeled`,
+        );
       for (const branch of branches) {
         const selectedBranch = selectedExpressionsByRelation.get(branch);
         const demanded = selectedBranch
           ? new Set(
               selectedBranch.map((expression) => normalized(expression.output)),
             )
-          : (demandedOutputsByRelation.get(branch)?.[0] ?? null);
+          : (demandedOutputsByRelation.get(branch)?.names ?? null);
         for (const output of relationOutputFields(
           branch,
           byId,
@@ -1727,29 +2157,23 @@ export function normalizeSemanticDependencies(
     );
   };
 
-  function planRoot(plan: PlanFacts): string {
-    return plan.roots[0] ?? "";
-  }
-
-  for (const root of input.roots) {
-    const targetRelationId = root.relationId ?? planRoot(input.plan);
-    const reachable = descendantIds(targetRelationId, byId);
-    if (!byId.has(targetRelationId)) {
-      addGap(
-        root,
-        null,
-        query(
-          "PROJECT",
-          "COLUMN_EXPRESSION",
-          "VALUE",
-          "PHYSICAL_FIELD",
-          "VALUE_CONTRIBUTION",
-          "VALUE_FLOW",
-        ),
-        `root relation ${targetRelationId || "<missing>"} is unavailable`,
-      );
-      continue;
-    }
+  const targetRelationId = root.relationId;
+  const reachable = descendantIds(targetRelationId, byId);
+  if (!byId.has(targetRelationId)) {
+    addGap(
+      root,
+      null,
+      query(
+        "PROJECT",
+        "COLUMN_EXPRESSION",
+        "VALUE",
+        "PHYSICAL_FIELD",
+        "VALUE_CONTRIBUTION",
+        "VALUE_FLOW",
+      ),
+      `root relation ${targetRelationId || "<missing>"} is unavailable`,
+    );
+  } else {
     computeRootSelections(root, targetRelationId);
     for (const relationId of [...reachable].sort(compareText)) {
       const relation = byId.get(relationId);

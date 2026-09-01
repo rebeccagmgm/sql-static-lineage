@@ -6,6 +6,42 @@ import {
   projectCandidateUniverse,
   validateAssessmentPairSkeleton,
 } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
+import type { RootCriterion } from "../../scripts/reconcile/consumer/target-field-causal-slice/write-scoped-plan-inputs.ts";
+
+function criterion(
+  targetFieldName: string,
+  writeOrdinal: number,
+): RootCriterion {
+  const writeObservationId = `write:100:${writeOrdinal}`;
+  return {
+    rootCriterionId: `root-criterion:${writeObservationId}:${targetFieldName}`,
+    rootTaskId: "100",
+    targetTableKey: "hive|warehouse|demo.target",
+    targetFieldName,
+    rootTargetFieldId: `hive|warehouse|target-id|demo.target|${targetFieldName}`,
+    targetFieldBindingId: `field:target:${targetFieldName}`,
+    rootWriteObservationId: writeObservationId,
+    writeKind: "INSERT",
+    sqlSourceId: "sql:100",
+    sqlSnapshot: "task-sql.sql",
+    sqlSha256: "sha256",
+    writeStatementId: `write-statement:${writeOrdinal}`,
+    writeStatementIndex: writeOrdinal,
+    statementId: `statement:${writeOrdinal}`,
+    statementIndex: writeOrdinal,
+    queryProducerStatementId: `query-statement:${writeOrdinal}`,
+    rootRelationId: `relation:${writeOrdinal}`,
+    outputExpressionId: `expression:${writeOrdinal}:${targetFieldName}`,
+    outputBindingId: `binding:${writeOrdinal}:${targetFieldName}`,
+    sourceOrdinal: 0,
+    targetOrdinal: 0,
+    producerOutputName: targetFieldName,
+    expressionRole: "PROJECT_EXPRESSION",
+    localRootRelationId: "root",
+    localOutputExpressionId: "root:expression:project_expression:0",
+    evidenceRefs: [writeObservationId],
+  };
+}
 
 function artifact(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -203,27 +239,99 @@ describe("candidate universe projection", () => {
 });
 
 describe("candidate assessment pair skeleton", () => {
-  it("creates exactly one empty pair for every root field and candidate branch", () => {
+  it("binds ROOT_WRITE branches to each criterion table instead of cross-producting write ids", () => {
+    const rootCriteria = [criterion("amount", 0), criterion("amount", 1)];
+    const result = projectCandidateUniverse({
+      rootCriteria,
+      tableArtifact: artifact({
+        writeEdges: [{
+          producerTaskId: "100",
+          table: {
+            platform: "hive",
+            dataSource: "warehouse",
+            qualifiedName: "demo.other",
+            stableTableId: "other-id",
+            identityStatus: "RESOLVED",
+          },
+          writes: [{
+            evidence: [{ source: "SQL_PARSE", locator: "wrong-table" }],
+          }],
+        }],
+      }),
+    });
+    const rootWrites = result.branches.filter(
+      (branch) => branch.branchKind === "ROOT_WRITE",
+    );
+
+    expect(rootWrites).toHaveLength(2);
+    expect(rootWrites.map((branch) => branch.writeObservationId).sort()).toEqual(
+      rootCriteria.map((rootCriterion) => rootCriterion.rootWriteObservationId).sort(),
+    );
+    expect(rootWrites.every((branch) =>
+      branch.table?.stableTableId === "target-id" &&
+      branch.table.qualifiedName === "demo.target" &&
+      branch.evidenceRefs.length === 0
+    )).toBe(true);
+  });
+
+  it("creates exactly one empty pair for every root criterion and eligible candidate branch", () => {
+    const rootCriteria = [criterion("amount", 0), criterion("amount", 1)];
     const { universe, pairs } = buildCandidateAssessmentPairSkeleton({
-      rootTargetFields: ["target.amount", "target.price"],
+      rootCriteria,
       tableArtifact: artifact(),
     });
-    expect(pairs).toHaveLength(universe.branches.length * 2);
-    expect(validateAssessmentPairSkeleton(["target.amount", "target.price"], universe.branches, pairs)).toEqual({
+    const nonRootBranches = universe.branches.filter(
+      (branch) => branch.branchKind !== "ROOT_WRITE",
+    );
+    expect(pairs).toHaveLength(nonRootBranches.length * 2 + 2);
+    expect(validateAssessmentPairSkeleton(rootCriteria, universe.branches, pairs)).toEqual({
       valid: true,
       errors: [],
     });
     expect(pairs.every((pair) => pair.assessment === null)).toBe(true);
+    expect(new Set(pairs.map((pair) => pair.rootCriterionId))).toEqual(
+      new Set(rootCriteria.map((rootCriterion) => rootCriterion.rootCriterionId)),
+    );
+    expect(
+      pairs.filter((pair) =>
+        universe.branches.find(
+          (branch) => branch.candidateBranchId === pair.candidateBranchId,
+        )?.branchKind === "ROOT_WRITE"
+      ),
+    ).toEqual(expect.arrayContaining(rootCriteria.map((rootCriterion) =>
+      expect.objectContaining({
+        rootCriterionId: rootCriterion.rootCriterionId,
+        rootTargetFieldId: rootCriterion.rootTargetFieldId,
+      })
+    )));
+    for (const rootCriterion of rootCriteria) {
+      const rootWritePair = pairs.find((pair) => {
+        const branch = universe.branches.find(
+          (candidate) => candidate.candidateBranchId === pair.candidateBranchId,
+        );
+        return pair.rootCriterionId === rootCriterion.rootCriterionId &&
+          branch?.branchKind === "ROOT_WRITE";
+      });
+      const rootWriteBranch = universe.branches.find(
+        (branch) => branch.candidateBranchId === rootWritePair?.candidateBranchId,
+      );
+      expect(rootWriteBranch?.writeObservationId).toBe(
+        rootCriterion.rootWriteObservationId,
+      );
+    }
   });
 
   it("rejects duplicate, missing, and pre-decided pairs", () => {
+    const rootCriteria = [criterion("amount", 0)];
     const universe = projectCandidateUniverse({
-      rootTargetFields: ["target.amount"],
       tableArtifact: artifact(),
+      rootWriteObservationIds: rootCriteria.map(
+        (rootCriterion) => rootCriterion.rootWriteObservationId,
+      ),
     });
-    const pairs = buildAssessmentPairSkeleton(["target.amount"], universe.branches);
+    const pairs = buildAssessmentPairSkeleton(rootCriteria, universe.branches);
     const invalid = [pairs[0]!, pairs[0]!, { ...pairs[1]!, assessment: "UNKNOWN" as never }];
-    const result = validateAssessmentPairSkeleton(["target.amount"], universe.branches, invalid);
+    const result = validateAssessmentPairSkeleton(rootCriteria, universe.branches, invalid);
     expect(result.valid).toBe(false);
     expect(result.errors.some((error) => error.startsWith("DUPLICATE:"))).toBe(true);
     expect(result.errors.some((error) => error.startsWith("MISSING:"))).toBe(true);

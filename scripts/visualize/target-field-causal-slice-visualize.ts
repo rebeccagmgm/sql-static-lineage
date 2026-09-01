@@ -22,12 +22,37 @@ function escapeHtml(value: unknown): string {
     .replaceAll("'", "&#39;");
 }
 
-function list(values: readonly string[]): string {
-  if (values.length === 0) return '<span class="muted">无</span>';
+interface TrustedHtml {
+  readonly kind: "TRUSTED_HTML";
+  readonly value: string;
+  toString(): string;
+}
+
+function trustedHtml(value: string): TrustedHtml {
+  return {
+    kind: "TRUSTED_HTML",
+    value,
+    toString: () => value,
+  };
+}
+
+function isTrustedHtml(value: unknown): value is TrustedHtml {
+  return typeof value === "object" && value !== null &&
+    (value as { readonly kind?: unknown }).kind === "TRUSTED_HTML" &&
+    typeof (value as { readonly value?: unknown }).value === "string";
+}
+
+function list(values: readonly string[]): TrustedHtml {
+  if (values.length === 0)
+    return trustedHtml('<span class="muted">无</span>');
   const visible = values.slice(0, DETAIL_LIMIT);
-  const items = visible.map((value) => `<li>${escapeHtml(value)}</li>`).join("");
+  const items = visible
+    .map((value) => `<li>${escapeHtml(value)}</li>`)
+    .join("");
   const omitted = values.length - visible.length;
-  return `<ul>${items}</ul>${omitted > 0 ? `<p class="muted">showing ${visible.length} of ${values.length}; omitted ${omitted}</p>` : ""}`;
+  return trustedHtml(
+    `<ul>${items}</ul>${omitted > 0 ? `<p class="muted">showing ${visible.length} of ${values.length}; omitted ${omitted}</p>` : ""}`,
+  );
 }
 
 function bounded<T>(values: readonly T[]): { items: T[]; total: number } {
@@ -47,7 +72,7 @@ function boundedTable(
 }
 
 function cell(value: unknown): string {
-  return `<td>${escapeHtml(value)}</td>`;
+  return `<td>${isTrustedHtml(value) ? value.value : escapeHtml(value)}</td>`;
 }
 
 function table(
@@ -78,7 +103,9 @@ function pathKind(path: {
   readonly rootDependenceKind: string;
   readonly edges: readonly { readonly frontierKind: string }[];
 }): string {
-  const kinds = [...new Set(bounded(path.edges).items.map((edge) => edge.frontierKind))];
+  const kinds = [
+    ...new Set(bounded(path.edges).items.map((edge) => edge.frontierKind)),
+  ];
   return kinds.length === 0 ? path.rootDependenceKind : kinds.join(" / ");
 }
 
@@ -89,11 +116,23 @@ function renderPaths(artifact: CausalSliceArtifact): string {
   );
   const summaryRows: (readonly unknown[])[] = [];
   const details: string[] = [];
+  const rootSet = bounded(artifact.traversal.roots);
+  const rootRows = rootSet.items.map((root) => [
+    root.rootCriterionId,
+    root.root.rootCriterion.rootTargetFieldId,
+    root.root.rootCriterion.rootWriteObservationId,
+    root.root.rootCriterion.statementId,
+    root.root.semanticScope.semanticScopeId,
+    root.paths.length,
+    root.gaps.length,
+  ]);
   let remaining = DETAIL_LIMIT;
   for (const root of artifact.traversal.roots) {
     for (const path of root.paths.slice(0, remaining)) {
       summaryRows.push([
-        root.root.rootTargetFieldId,
+        root.rootCriterionId,
+        root.root.rootCriterion.rootTargetFieldId,
+        root.root.semanticScope.semanticScopeId,
         path.pathId,
         pathKind(path),
         path.rootDependenceKind,
@@ -103,6 +142,9 @@ function renderPaths(artifact: CausalSliceArtifact): string {
       const edgeSet = bounded(path.edges);
       const edges = edgeSet.items.map((edge) => [
         edge.edgeId,
+        edge.rootCriterionId,
+        edge.fromSemanticScopeId,
+        edge.toSemanticScopeId,
         `${edge.fromTaskId}: ${subjectLabel(edge.fromSubject)}`,
         `${edge.toTaskId}: ${subjectLabel(edge.toSubject)}`,
         edge.frontierKind,
@@ -111,26 +153,55 @@ function renderPaths(artifact: CausalSliceArtifact): string {
         edge.readOccurrenceId ?? "",
         list(edge.evidenceRefs),
       ]);
-      details.push(`<details class="path-detail"><summary>${escapeHtml(`${path.pathId} · ${path.pathCertainty} · ${pathKind(path)}`)}</summary><p class="muted">edges ${omission(edgeSet.total, edgeSet.items.length)}</p>${table(
-        [
-          "edge",
-          "from",
-          "to",
-          "frontier",
-          "local edge",
-          "certainty",
-          "read occurrence",
-          "evidence",
-        ],
-        edges,
-      )}</details>`);
+      details.push(
+        `<details class="path-detail"><summary>${escapeHtml(`${path.pathId} · ${path.pathCertainty} · ${pathKind(path)}`)}</summary><p class="muted">edges ${omission(edgeSet.total, edgeSet.items.length)}</p>${table(
+          [
+            "edge",
+            "root criterion",
+            "from semantic scope",
+            "to semantic scope",
+            "from",
+            "to",
+            "frontier",
+            "local edge",
+            "certainty",
+            "read occurrence",
+            "evidence",
+          ],
+          edges,
+        )}</details>`,
+      );
       remaining -= 1;
     }
     if (remaining === 0) break;
   }
-  return `<section id="paths"><h2>因果路径</h2><p class="lede">展示 artifact 已记录的 value、control、relation 路径；此页面不重新计算路径。</p>${table(
+  const semanticEdgeSet = bounded(artifact.dependencies.edges);
+  const semanticEdgeRows = semanticEdgeSet.items.map((edge) => [
+    edge.edgeId,
+    edge.rootCriterionId ?? "",
+    edge.semanticScopeId ?? "",
+    subjectLabel(edge.fromSubject),
+    subjectLabel(edge.toSubject),
+    edge.rootDependenceKind,
+    edge.localEdgeKind,
+    edge.pathCertainty,
+  ]);
+  return `<section id="paths"><h2>因果路径</h2><p class="lede">展示 artifact 已记录的 value、control、relation 路径；此页面不重新计算路径。</p><h3>Root write occurrences</h3><p class="muted">${omission(rootSet.total, rootSet.items.length)}</p>${table(
     [
+      "root criterion",
       "root target field",
+      "write observation",
+      "statement",
+      "semantic scope",
+      "paths",
+      "gaps",
+    ],
+    rootRows,
+  )}<h3>Traversal paths</h3>${table(
+    [
+      "root criterion",
+      "root target field",
+      "semantic scope",
       "path",
       "path kind",
       "root dependence",
@@ -138,7 +209,19 @@ function renderPaths(artifact: CausalSliceArtifact): string {
       "edges",
     ],
     summaryRows,
-  )}<p class="muted">paths ${omission(totalPaths, summaryRows.length)}; detail limit ${DETAIL_LIMIT}</p>${details.join("")}</section>`;
+  )}<p class="muted">paths ${omission(totalPaths, summaryRows.length)}; detail limit ${DETAIL_LIMIT}</p>${details.join("")}<h3>Semantic dependency edges</h3><p class="muted">${omission(semanticEdgeSet.total, semanticEdgeSet.items.length)}</p>${table(
+    [
+      "edge",
+      "root criterion",
+      "semantic scope",
+      "from",
+      "to",
+      "root dependence",
+      "local edge",
+      "certainty",
+    ],
+    semanticEdgeRows,
+  )}</section>`;
 }
 
 function renderCandidateCoverage(artifact: CausalSliceArtifact): string {
@@ -182,9 +265,13 @@ function renderCandidateCoverage(artifact: CausalSliceArtifact): string {
 function renderAssessments(artifact: CausalSliceArtifact): string {
   const statusCounts = new Map<string, number>();
   for (const assessment of artifact.assessments)
-    statusCounts.set(assessment.status, (statusCounts.get(assessment.status) ?? 0) + 1);
+    statusCounts.set(
+      assessment.status,
+      (statusCounts.get(assessment.status) ?? 0) + 1,
+    );
   const assessmentSet = bounded(artifact.assessments);
   const rows = assessmentSet.items.map((assessment) => [
+    assessment.rootCriterionId,
     assessment.rootTargetFieldId,
     assessment.candidateBranchId,
     assessment.status,
@@ -193,9 +280,13 @@ function renderAssessments(artifact: CausalSliceArtifact): string {
     list(assessment.negativeProofIds),
     list(assessment.gapRefs),
   ]);
-  const statusSummary = [...statusCounts.entries()].map(([status, count]) => `${status}=${count}`).join(" · ") || "无记录";
+  const statusSummary =
+    [...statusCounts.entries()]
+      .map(([status, count]) => `${status}=${count}`)
+      .join(" · ") || "无记录";
   return `<section id="assessments"><h2>四类 assessment</h2><p>status 聚合：${escapeHtml(statusSummary)}</p><p class="muted">明细 ${omission(assessmentSet.total, assessmentSet.items.length)} · detail limit ${DETAIL_LIMIT}</p>${table(
     [
+      "root criterion",
       "root target field",
       "candidate branch",
       "status",
@@ -213,20 +304,19 @@ function renderProofsAndGaps(artifact: CausalSliceArtifact): string {
   const negativeSet = bounded(artifact.negativeProofs);
   const positive = positiveSet.items.map(
     (proof) =>
-      `<details><summary>Positive proof · ${escapeHtml(proof.proofId)}</summary><dl><dt>pair</dt><dd>${escapeHtml(`${proof.rootTargetFieldId} / ${proof.candidateBranchId}`)}</dd><dt>certainty</dt><dd>${escapeHtml(proof.pathCertainty)}</dd><dt>reason</dt><dd>${escapeHtml(proof.reasonCode)}</dd><dt>paths</dt><dd>${list(proof.pathIds)}</dd><dt>edges</dt><dd>${list(proof.edgeIds)}</dd><dt>evidence</dt><dd>${list(proof.evidenceRefs)}</dd></dl></details>`,
+      `<details><summary>Positive proof · ${escapeHtml(proof.proofId)}</summary><dl><dt>root criterion</dt><dd>${escapeHtml(proof.rootCriterionId)}</dd><dt>pair</dt><dd>${escapeHtml(`${proof.rootTargetFieldId} / ${proof.candidateBranchId}`)}</dd><dt>certainty</dt><dd>${escapeHtml(proof.pathCertainty)}</dd><dt>reason</dt><dd>${escapeHtml(proof.reasonCode)}</dd><dt>paths</dt><dd>${list(proof.pathIds)}</dd><dt>edges</dt><dd>${list(proof.edgeIds)}</dd><dt>evidence</dt><dd>${list(proof.evidenceRefs)}</dd></dl></details>`,
   );
-  const negative = negativeSet.items.map(
-    (proof) => {
-      const obligationSet = bounded(proof.checkedObligations);
-      return `<details><summary>Negative proof · ${escapeHtml(proof.proofId)}</summary><dl><dt>pair</dt><dd>${escapeHtml(`${proof.rootTargetFieldId} / ${proof.candidateBranchId}`)}</dd><dt>reason</dt><dd>${escapeHtml(proof.reasonCode)}</dd><dt>source proof</dt><dd>${escapeHtml(proof.sourceNegativeProofId ?? "无")}</dd><dt>obligations</dt><dd><p class="muted">${omission(obligationSet.total, obligationSet.items.length)}</p>${table(
-        ["kind", "evidence"],
-        obligationSet.items.map((item) => [item.kind, list(item.evidenceRefs)]),
-      )}</dd><dt>evidence</dt><dd>${list(proof.evidenceRefs)}</dd></dl></details>`;
-    },
-  );
+  const negative = negativeSet.items.map((proof) => {
+    const obligationSet = bounded(proof.checkedObligations);
+    return `<details><summary>Negative proof · ${escapeHtml(proof.proofId)}</summary><dl><dt>root criterion</dt><dd>${escapeHtml(proof.rootCriterionId)}</dd><dt>pair</dt><dd>${escapeHtml(`${proof.rootTargetFieldId} / ${proof.candidateBranchId}`)}</dd><dt>reason</dt><dd>${escapeHtml(proof.reasonCode)}</dd><dt>source proof</dt><dd>${escapeHtml(proof.sourceNegativeProofId ?? "无")}</dd><dt>obligations</dt><dd><p class="muted">${omission(obligationSet.total, obligationSet.items.length)}</p>${table(
+      ["kind", "evidence"],
+      obligationSet.items.map((item) => [item.kind, list(item.evidenceRefs)]),
+    )}</dd><dt>evidence</dt><dd>${list(proof.evidenceRefs)}</dd></dl></details>`;
+  });
   const assessmentGapSet = bounded(artifact.assessmentGaps);
   const assessmentGaps = assessmentGapSet.items.map((gap) => [
     gap.gapId,
+    gap.rootCriterionId,
     gap.rootTargetFieldId,
     gap.candidateBranchId,
     gap.reasonCode,
@@ -235,14 +325,29 @@ function renderProofsAndGaps(artifact: CausalSliceArtifact): string {
   const traversalGapSet = bounded(artifact.traversal.gaps);
   const traversalGaps = traversalGapSet.items.map((gap) => [
     gap.gapId,
+    gap.rootCriterionId,
+    gap.semanticScopeId,
     gap.rootTargetFieldId,
     gap.taskId,
     gap.frontierKind,
     gap.reasonCode,
     gap.message,
     list(gap.evidenceRefs),
+    gap.blocksConfirmedCausality,
+    gap.blocksNegativeProof,
   ]);
-  return `<section id="proof-gap-drilldown"><h2>Proof / gap drill-down</h2><p>counts：positive proofs=${positiveSet.total} · negative proofs=${negativeSet.total} · assessment gaps=${assessmentGapSet.total} · traversal gaps=${traversalGapSet.total} · dependency gaps=${artifact.dependencies.gaps.length}</p><h3>Positive proofs</h3><p class="muted">${omission(positiveSet.total, positive.length)} · detail limit ${DETAIL_LIMIT}</p>${positive.join("") || '<p class="muted">无记录</p>'}<h3>Negative proofs</h3><p class="muted">${omission(negativeSet.total, negative.length)} · detail limit ${DETAIL_LIMIT}</p>${negative.join("") || '<p class="muted">无记录</p>'}<h3>Assessment gaps</h3>${boundedTable(["gap", "root target field", "candidate branch", "reason", "evidence"], assessmentGaps)}<h3>Traversal gaps</h3>${boundedTable(["gap", "root target field", "task", "frontier", "reason", "message", "evidence"], traversalGaps)}</section>`;
+  const dependencyGapSet = bounded(artifact.dependencies.gaps);
+  const dependencyGaps = dependencyGapSet.items.map((gap) => [
+    gap.gapId,
+    gap.rootCriterionId ?? "",
+    gap.semanticScopeId ?? "",
+    gap.reasonCode,
+    gap.relationId ?? "",
+    list(gap.evidenceRefs),
+    gap.blocksConfirmedCausality,
+    gap.blocksNegativeProof,
+  ]);
+  return `<section id="proof-gap-drilldown"><h2>Proof / gap drill-down</h2><p>counts：positive proofs=${positiveSet.total} · negative proofs=${negativeSet.total} · assessment gaps=${assessmentGapSet.total} · traversal gaps=${traversalGapSet.total} · dependency gaps=${dependencyGapSet.total}</p><h3>Positive proofs</h3><p class="muted">${omission(positiveSet.total, positive.length)} · detail limit ${DETAIL_LIMIT}</p>${positive.join("") || '<p class="muted">无记录</p>'}<h3>Negative proofs</h3><p class="muted">${omission(negativeSet.total, negative.length)} · detail limit ${DETAIL_LIMIT}</p>${negative.join("") || '<p class="muted">无记录</p>'}<h3>Assessment gaps</h3>${boundedTable(["gap", "root criterion", "root target field", "candidate branch", "reason", "evidence"], assessmentGaps)}<h3>Traversal gaps</h3>${boundedTable(["gap", "root criterion", "semantic scope", "root target field", "task", "frontier", "reason", "message", "evidence", "blocks confirmed causality", "blocks negative proof"], traversalGaps)}<h3>Dependency gaps</h3>${boundedTable(["gap", "root criterion", "semantic scope", "reason", "relation", "evidence", "blocks confirmed causality", "blocks negative proof"], dependencyGaps)}</section>`;
 }
 
 function renderLimitsAndQuality(artifact: CausalSliceArtifact): string {
@@ -276,18 +381,27 @@ function renderRerunSet(
     entry.unresolvedReason ?? "",
     (() => {
       const triggerSet = bounded(entry.triggers);
-      return triggerSet.items
-        .map(
-        (trigger) =>
-          `${trigger.rootTargetFieldId} / ${trigger.candidateBranchId} / ${trigger.causalStatus} / ${trigger.assessmentId}`,
-        )
-        .join("\n") + (triggerSet.total > triggerSet.items.length ? `\n... omitted=${triggerSet.total - triggerSet.items.length}` : "");
+      return (
+        triggerSet.items
+          .map(
+            (trigger) =>
+              `${trigger.rootCriterionId} / ${trigger.rootTargetFieldId} / ${trigger.candidateBranchId} / ${trigger.causalStatus} / ${trigger.assessmentId}`,
+          )
+          .join("\n") +
+        (triggerSet.total > triggerSet.items.length
+          ? `\n... omitted=${triggerSet.total - triggerSet.items.length}`
+          : "")
+      );
     })(),
   ]);
   const unresolvedSet = bounded(set.unresolved);
   const unresolved = unresolvedSet.items.map(
     (entry) =>
-      `${entry.unresolvedReason ?? "UNRESOLVED"}: ${bounded(entry.triggers).items.map((trigger) => trigger.assessmentId).join(", ")}${entry.triggers.length > DETAIL_LIMIT ? ` ... omitted=${entry.triggers.length - DETAIL_LIMIT}` : ""}`,
+      `${entry.unresolvedReason ?? "UNRESOLVED"}: ${bounded(entry.triggers)
+        .items.map((trigger) => trigger.assessmentId)
+        .join(
+          ", ",
+        )}${entry.triggers.length > DETAIL_LIMIT ? ` ... omitted=${entry.triggers.length - DETAIL_LIMIT}` : ""}`,
   );
   const taskIds = bounded(set.taskIds);
   return `<h3>${escapeHtml(title)}</h3><p>task IDs：${escapeHtml(taskIds.items.join(", ") || "无")} · count=${taskIds.total} · ${omission(taskIds.total, taskIds.items.length)}</p><p class="muted">entries ${omission(entrySet.total, entrySet.items.length)} · unresolved ${omission(unresolvedSet.total, unresolvedSet.items.length)} · detail limit ${DETAIL_LIMIT}</p>${table(["task", "unresolved reason", "triggers"], rows)}<p>unresolved：</p>${list(unresolved)}`;
@@ -348,7 +462,9 @@ function readArtifact(path: string): CausalSliceArtifact {
     throw new Error(`TARGET_FIELD_CAUSAL_SLICE_ARTIFACT_INVALID:${path}`);
   const errors = validateCausalSliceArtifact(value);
   if (errors.length > 0)
-    throw new Error(`TARGET_FIELD_CAUSAL_SLICE_ARTIFACT_INVALID:${path}:${errors.join(";")}`);
+    throw new Error(
+      `TARGET_FIELD_CAUSAL_SLICE_ARTIFACT_INVALID:${path}:${errors.join(";")}`,
+    );
   return value as CausalSliceArtifact;
 }
 

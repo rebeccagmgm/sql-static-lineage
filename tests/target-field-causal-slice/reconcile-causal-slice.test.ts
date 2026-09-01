@@ -10,6 +10,7 @@ import { writeTaskInput } from "../../scripts/input/shared/input-pack.ts";
 import { reconcileMultiHop } from "../../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import {
   reconcileTargetFieldCausalSlice,
+  selectStatementScopedRelationReads,
 } from "../../scripts/reconcile/consumer/target-field-causal-slice/reconcile-causal-slice.ts";
 import { parseTargetFieldCausalSliceCli } from "../../scripts/reconcile/consumer/target-field-causal-slice/reconcile-target-field-causal-slice.ts";
 
@@ -85,6 +86,86 @@ describe("read-only target-field causal slice orchestration", () => {
     const paths = fixture();
     expect(() => reconcileTargetFieldCausalSlice({ ...paths, taskId: "task-1", targetTable: "db.target", writeObservationIds: ["write:task-1:0"] }))
       .toThrow("STALE_LAYER:MACHINE_FACTS");
+  });
+});
+
+describe("statement-scoped relation expansion", () => {
+  const statement = (statementIndex: number) => ({
+    task_id: "task-1",
+    statement_id: `task:task-1:slot:query:statement:${statementIndex}`,
+    statement_index: statementIndex,
+  });
+
+  const relation = (
+    statementIndex: number,
+    localId: string,
+    body: Readonly<Record<string, unknown>>,
+  ) => {
+    const relationId =
+      `task:task-1:statement:${statementIndex}:relation:${localId}`;
+    return {
+      task_id: "task-1",
+      statement_id: `task:task-1:slot:query:statement:${statementIndex}`,
+      relation_id: relationId,
+      relation_type: body.type,
+      relation: { id: relationId, ...body },
+    };
+  };
+
+  const twoInsertCountRelations = [
+    relation(0, "root.aggregate", {
+      type: "aggregate",
+      source: "task:task-1:statement:0:relation:root.read.source",
+    }),
+    relation(0, "root.read.source", {
+      type: "read",
+      table: "db.source_a",
+      read_occurrence_id:
+        "task:task-1:statement:0:relation:root.read.source",
+    }),
+    relation(1, "root.aggregate", {
+      type: "aggregate",
+      source: "task:task-1:statement:1:relation:root.read.source",
+    }),
+    relation(1, "root.read.source", {
+      type: "read",
+      table: "db.source_b",
+      read_occurrence_id:
+        "task:task-1:statement:1:relation:root.read.source",
+    }),
+  ];
+
+  it("does not expand a COUNT(*) relation into a sibling INSERT statement", () => {
+    const reads = selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations,
+      requestedRelationId: "relation:0:root.aggregate",
+    });
+
+    expect(reads.map((entry) =>
+      (entry.relation as { table?: string }).table
+    )).toEqual(["db.source_a"]);
+  });
+
+  it("fails closed when relation scope is missing or contradicts statement evidence", () => {
+    expect(selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations,
+      requestedRelationId: "root.aggregate",
+    })).toEqual([]);
+
+    expect(selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations.map((entry, index) =>
+        index === 1
+          ? { ...entry, statement_id: "task:task-1:slot:query:statement:1" }
+          : entry
+      ),
+      requestedRelationId: "relation:0:root.aggregate",
+    })).toEqual([]);
   });
 });
 

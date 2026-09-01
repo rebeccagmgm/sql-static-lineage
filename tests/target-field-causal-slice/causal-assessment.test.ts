@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { globalExpressionId, globalRelationId } from "../../scripts/machine-facts/plan-occurrence-id.ts";
 
 import {
   assessPositiveCausalRelationships,
@@ -16,9 +17,50 @@ import type {
   CausalTraversalRootResult,
 } from "../../scripts/reconcile/consumer/target-field-causal-slice/causal-traversal.ts";
 import type { PathCertainty } from "../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-contract.ts";
+import { makeSemanticOccurrenceScope } from "../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-contract.ts";
+import type { RootCriterion } from "../../scripts/reconcile/consumer/target-field-causal-slice/write-scoped-plan-inputs.ts";
 
 const ROOT_FIELD = "hive|warehouse|demo.root__warehouse|demo.root|out_a";
 const SOURCE_FIELD = "hive|warehouse|demo.source__warehouse|demo.source|src_a";
+
+function criterion(writeOrdinal = 0): RootCriterion {
+  const rootWriteObservationId = `write:100:${writeOrdinal}`;
+  return {
+    rootCriterionId: `root-criterion:${rootWriteObservationId}:out_a`,
+    rootTaskId: "100",
+    targetTableKey: "hive|warehouse|demo.root__warehouse",
+    targetFieldName: "out_a",
+    rootTargetFieldId: ROOT_FIELD,
+    targetFieldBindingId: "field:root:out_a",
+    rootWriteObservationId,
+    writeKind: "INSERT",
+    sqlSourceId: "sql:100",
+    sqlSnapshot: "task-sql.sql",
+    sqlSha256: "sha256",
+    writeStatementId: `write-statement:${writeOrdinal}`,
+    writeStatementIndex: writeOrdinal,
+    statementId: `statement:${writeOrdinal}`,
+    statementIndex: writeOrdinal,
+    queryProducerStatementId: `query-statement:${writeOrdinal}`,
+    rootRelationId: globalRelationId("100", writeOrdinal, "root"),
+    outputExpressionId: globalExpressionId(
+      "100",
+      writeOrdinal,
+      "root:expression:project_expression:0",
+    ),
+    outputBindingId: `binding:${writeOrdinal}:out_a`,
+    sourceOrdinal: 0,
+    targetOrdinal: 0,
+    producerOutputName: "out_a",
+    expressionRole: "PROJECT_EXPRESSION",
+    localRootRelationId: "root",
+    localOutputExpressionId: "root:expression:project_expression:0",
+    evidenceRefs: [rootWriteObservationId, `binding:${writeOrdinal}:out_a`],
+  };
+}
+
+const ROOT_CRITERION = criterion();
+const ROOT_SCOPE = makeSemanticOccurrenceScope({ rootCriterion: ROOT_CRITERION });
 
 function physicalBranch(
   id = "branch:source:r1",
@@ -52,15 +94,25 @@ function physicalBranch(
   };
 }
 
-function rootWriteBranch(): CandidateBranch {
+function rootWriteBranch(
+  rootCriterion: RootCriterion = ROOT_CRITERION,
+  candidateBranchId = "branch:root-write",
+): CandidateBranch {
   return {
-    candidateBranchId: "branch:root-write",
+    candidateBranchId,
     branchKind: "ROOT_WRITE",
     rootTaskId: "100",
     consumerTaskId: null,
     producerTaskId: "100",
-    table: null,
+    table: {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.root",
+      stableTableId: "demo.root__warehouse",
+      identityStatus: "SCHEMA_BACKED",
+    },
     readOccurrence: null,
+    writeObservationId: rootCriterion.rootWriteObservationId,
     producerRole: null,
     evidenceRefs: [],
     gapRefs: [],
@@ -109,12 +161,16 @@ function path(
 ): CausalTraversalPath {
   return {
     pathId: `path:${certainty}:${occurrenceId}`,
+    rootCriterionId: ROOT_CRITERION.rootCriterionId,
     rootTargetFieldId: ROOT_FIELD,
     rootDependenceKind: "VALUE_TO_TARGET",
     pathCertainty: certainty,
     edges: [
       {
         edgeId: `edge:${certainty}:${occurrenceId}`,
+        rootCriterionId: ROOT_CRITERION.rootCriterionId,
+        fromSemanticScopeId: ROOT_SCOPE.semanticScopeId,
+        toSemanticScopeId: ROOT_SCOPE.semanticScopeId,
         fromTaskId: "200",
         toTaskId: "100",
         fromSubject: { subjectKind: "PHYSICAL_FIELD", physicalFieldId: SOURCE_FIELD },
@@ -135,11 +191,15 @@ function relationPath(certainty: PathCertainty = "CONFIRMED"): CausalTraversalPa
   const relation = { subjectKind: "RELATION_OCCURRENCE" as const, relationOccurrenceId: "relation:read:r1" };
   return {
     pathId: `path:relation:${certainty}`,
+    rootCriterionId: ROOT_CRITERION.rootCriterionId,
     rootTargetFieldId: ROOT_FIELD,
     rootDependenceKind: "RELATION_TO_TARGET",
     pathCertainty: certainty,
     edges: [{
       edgeId: `edge:relation:${certainty}`,
+      rootCriterionId: ROOT_CRITERION.rootCriterionId,
+      fromSemanticScopeId: ROOT_SCOPE.semanticScopeId,
+      toSemanticScopeId: ROOT_SCOPE.semanticScopeId,
       fromTaskId: "200",
       toTaskId: "100",
       fromSubject: relation,
@@ -158,6 +218,8 @@ function relationPath(certainty: PathCertainty = "CONFIRMED"): CausalTraversalPa
 function blockingGap(): CausalTraversalGap {
   return {
     gapId: "traversal-gap:source",
+    rootCriterionId: ROOT_CRITERION.rootCriterionId,
+    semanticScopeId: ROOT_SCOPE.semanticScopeId,
     rootTargetFieldId: ROOT_FIELD,
     taskId: "200",
     subject: { subjectKind: "PHYSICAL_FIELD", physicalFieldId: SOURCE_FIELD },
@@ -166,6 +228,7 @@ function blockingGap(): CausalTraversalGap {
     reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
     message: "write evidence is unresolved",
     evidenceRefs: ["write:missing"],
+    blocksConfirmedCausality: true,
     blocksNegativeProof: true,
   };
 }
@@ -175,7 +238,11 @@ function rootResult(
   gaps: readonly CausalTraversalGap[] = [],
 ): CausalTraversalRootResult {
   return {
-    root: { rootTargetFieldId: ROOT_FIELD, taskId: "100" },
+    rootCriterionId: ROOT_CRITERION.rootCriterionId,
+    root: {
+      rootCriterion: ROOT_CRITERION,
+      semanticScope: ROOT_SCOPE,
+    },
     visitedStateKeys: [],
     activeCycleChecks: 0,
     frontiers: {
@@ -226,8 +293,9 @@ function assess(
   return assessPositiveCausalRelationships({
     candidateUniverse,
     traversal: causalTraversal,
+    rootCriteria: [ROOT_CRITERION],
     assessmentPairs: buildAssessmentPairSkeleton(
-      [ROOT_FIELD],
+      [ROOT_CRITERION],
       candidateUniverse.branches,
     ),
     rootWriteProofs,
@@ -249,7 +317,7 @@ describe("positive causal assessment", () => {
     expect(
       validatePositiveCausalAssessments(
         candidateUniverse,
-        [ROOT_FIELD],
+        [ROOT_CRITERION],
         traversal([path()]),
         result,
       ),
@@ -336,6 +404,28 @@ describe("positive causal assessment", () => {
     expect(result.assessments[0]?.status).toBe("CONFIRMED_RELATED");
   });
 
+  it.each([
+    ["sibling criterion edge", {
+      rootCriterionId: criterion(1).rootCriterionId,
+    }],
+    ["discontinuous semantic scope", {
+      toSemanticScopeId: "semantic-scope:sibling-write",
+    }],
+  ] as const)("rejects a path containing a %s", (_name, edgeOverride) => {
+    const validPath = path();
+    const malformed: CausalTraversalPath = {
+      ...validPath,
+      edges: validPath.edges.map((edge) => ({ ...edge, ...edgeOverride })),
+    };
+    const result = assess(universe(), traversal([malformed]));
+    expect(result.assessments[0]).toMatchObject({
+      rootCriterionId: ROOT_CRITERION.rootCriterionId,
+      status: "UNKNOWN",
+      reasonCode: "EXACT_OCCURRENCE_PATH_NOT_PROVEN",
+    });
+    expect(result.positiveProofs).toEqual([]);
+  });
+
   it("requires explicit proof for the root write", () => {
     const candidateUniverse = universe([rootWriteBranch()]);
     const missing = assess(candidateUniverse, traversal([]));
@@ -346,16 +436,93 @@ describe("positive causal assessment", () => {
 
     const confirmed = assess(candidateUniverse, traversal([]), [
       {
+        rootCriterionId: ROOT_CRITERION.rootCriterionId,
         rootTargetFieldId: ROOT_FIELD,
         candidateBranchId: "branch:root-write",
         pathCertainty: "CONFIRMED",
-        evidenceRefs: ["root-write:w1", "root-binding:b1"],
+        evidenceRefs: [
+          ROOT_CRITERION.rootWriteObservationId,
+          ROOT_CRITERION.outputBindingId,
+        ],
       },
     ]);
     expect(confirmed.assessments[0]).toMatchObject({
       status: "CONFIRMED_RELATED",
       reasonCode: "EXPLICIT_ROOT_WRITE_PROOF",
     });
+
+    const forged = assess(candidateUniverse, traversal([]), [{
+      rootCriterionId: ROOT_CRITERION.rootCriterionId,
+      rootTargetFieldId: ROOT_FIELD,
+      candidateBranchId: "branch:root-write",
+      pathCertainty: "CONFIRMED",
+      evidenceRefs: ["forged:write", "forged:binding"],
+    }]);
+    expect(forged.assessments[0]).toMatchObject({
+      status: "UNKNOWN",
+      reasonCode: "ROOT_WRITE_PROOF_MISSING",
+    });
+  });
+
+  it("rejects a ROOT_WRITE branch whose table is outside the criterion", () => {
+    const rootBranch = rootWriteBranch();
+    const candidateUniverse = universe([{
+      ...rootBranch,
+      table: {
+        ...rootBranch.table!,
+        stableTableId: "other-table",
+        qualifiedName: "demo.other",
+      },
+    }]);
+    const result = assess(candidateUniverse, traversal([]), [{
+      rootCriterionId: ROOT_CRITERION.rootCriterionId,
+      rootTargetFieldId: ROOT_FIELD,
+      candidateBranchId: rootBranch.candidateBranchId,
+      pathCertainty: "CONFIRMED",
+      evidenceRefs: [
+        ROOT_CRITERION.rootWriteObservationId,
+        ROOT_CRITERION.outputBindingId,
+      ],
+    }]);
+    expect(result.assessments[0]).toMatchObject({
+      status: "UNKNOWN",
+      reasonCode: "ASSESSMENT_PAIR_INPUT_INVALID",
+    });
+  });
+
+  it("matches ROOT_WRITE proof only to the same write criterion", () => {
+    const sibling = criterion(1);
+    const firstBranch = rootWriteBranch();
+    const siblingBranch = rootWriteBranch(sibling, "branch:root-write:sibling");
+    const candidateUniverse = universe([firstBranch, siblingBranch]);
+    const rootCriteria = [ROOT_CRITERION, sibling];
+    const result = assessPositiveCausalRelationships({
+      candidateUniverse,
+      traversal: traversal([]),
+      rootCriteria,
+      assessmentPairs: buildAssessmentPairSkeleton(
+        rootCriteria,
+        candidateUniverse.branches,
+      ),
+      rootWriteProofs: [{
+        rootCriterionId: ROOT_CRITERION.rootCriterionId,
+        rootTargetFieldId: ROOT_FIELD,
+        candidateBranchId: firstBranch.candidateBranchId,
+        pathCertainty: "CONFIRMED",
+        evidenceRefs: [
+          ROOT_CRITERION.rootWriteObservationId,
+          ROOT_CRITERION.outputBindingId,
+        ],
+      }],
+    });
+
+    expect(result.assessments).toHaveLength(2);
+    expect(result.assessments.find((item) =>
+      item.rootCriterionId === ROOT_CRITERION.rootCriterionId
+    )?.status).toBe("CONFIRMED_RELATED");
+    expect(result.assessments.find((item) =>
+      item.rootCriterionId === sibling.rootCriterionId
+    )?.status).toBe("UNKNOWN");
   });
 
   it("keeps incomplete boundary branches Unknown without lowering a closed positive branch", () => {
@@ -381,7 +548,7 @@ describe("positive causal assessment", () => {
     expect(
       validatePositiveCausalAssessments(
         candidateUniverse,
-        [ROOT_FIELD],
+        [ROOT_CRITERION],
         traversal([path()]),
         result,
       ).valid,
@@ -394,7 +561,7 @@ describe("positive causal assessment", () => {
     expect(
       validatePositiveCausalAssessments(
         candidateUniverse,
-        [ROOT_FIELD],
+        [ROOT_CRITERION],
         traversal([path()]),
         duplicate,
       ).errors,
@@ -412,7 +579,7 @@ describe("positive causal assessment", () => {
     expect(
       validatePositiveCausalAssessments(
         candidateUniverse,
-        [ROOT_FIELD],
+        [ROOT_CRITERION],
         traversal([path()]),
         fabricatedProof,
       ).errors,

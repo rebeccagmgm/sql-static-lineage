@@ -2,14 +2,17 @@ import {
   CAUSAL_ASSESSMENT_STATUSES,
   type CausalAssessment,
 } from "./causal-assessment.ts";
-import type {
-  CandidateBranch,
-  CandidateUniverse,
+import {
+  buildAssessmentPairSkeleton,
+  type CandidateBranch,
+  type CandidateUniverse,
 } from "./candidate-universe.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 
 export type RerunSetKind = "MINIMUM_CONFIRMED" | "CONSERVATIVE_SAFETY";
 
 export interface RerunTrigger {
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly assessmentId: string;
@@ -35,7 +38,7 @@ export interface RerunSet {
 
 export interface RerunSetsInput {
   readonly candidateUniverse: CandidateUniverse;
-  readonly rootTargetFieldIds: readonly string[];
+  readonly rootCriteria: readonly RootCriterion[];
   readonly assessments: readonly CausalAssessment[];
 }
 
@@ -75,6 +78,7 @@ function isAssessmentStatus(value: unknown): value is CausalAssessment["status"]
 
 function triggerFor(assessment: CausalAssessment): RerunTrigger {
   return {
+    rootCriterionId: assessment.rootCriterionId,
     rootTargetFieldId: assessment.rootTargetFieldId,
     candidateBranchId: assessment.candidateBranchId,
     assessmentId: assessment.assessmentId,
@@ -87,7 +91,7 @@ function triggerFor(assessment: CausalAssessment): RerunTrigger {
 
 function triggerKey(trigger: RerunTrigger): string {
   return [
-    trigger.rootTargetFieldId,
+    trigger.rootCriterionId,
     trigger.candidateBranchId,
     trigger.assessmentId,
   ].join("\u0000");
@@ -95,7 +99,7 @@ function triggerKey(trigger: RerunTrigger): string {
 
 function compareTriggers(left: RerunTrigger, right: RerunTrigger): number {
   return (
-    compareText(left.rootTargetFieldId, right.rootTargetFieldId) ||
+    compareText(left.rootCriterionId, right.rootCriterionId) ||
     compareText(left.candidateBranchId, right.candidateBranchId) ||
     compareText(left.assessmentId, right.assessmentId)
   );
@@ -210,12 +214,12 @@ function makeSet(
 
 /**
  * Build both rerun views from the same assessment snapshot. A task is grouped
- * once, while every distinct root-field/branch/assessment trigger is retained.
+ * once, while every distinct root-criterion/branch/assessment trigger is retained.
  */
 export function generateRerunSets(input: RerunSetsInput): RerunSetsResult {
   const validation = validateRerunInputs(
     input.candidateUniverse,
-    input.rootTargetFieldIds,
+    input.rootCriteria,
     input.assessments,
   );
   if (!validation.valid)
@@ -242,13 +246,25 @@ export const generateCausalRerunSets = generateRerunSets;
 /** Validate assessment statuses and branch references before rerun projection. */
 export function validateRerunInputs(
   candidateUniverse: CandidateUniverse,
-  rootTargetFieldIds: readonly string[],
+  rootCriteria: readonly RootCriterion[],
   assessments: readonly CausalAssessment[],
 ): RerunSetValidation {
   const errors: string[] = [];
   const branchIds = new Set(candidateUniverse.branches.map((branch) => branch.candidateBranchId));
   const assessmentIds = new Set<string>();
-  const roots = [...new Set(rootTargetFieldIds.filter((value) => value.length > 0))];
+  const criteria = new Map(
+    rootCriteria.map((criterion) => [criterion.rootCriterionId, criterion]),
+  );
+  if (criteria.size !== rootCriteria.length)
+    errors.push("ROOT_CRITERION_ID_DUPLICATE");
+  const expectedPairs = buildAssessmentPairSkeleton(
+    rootCriteria,
+    candidateUniverse.branches,
+  );
+  const expectedPairIds = new Set(expectedPairs.map((pair) => pair.pairId));
+  const expectedPairsById = new Map(
+    expectedPairs.map((pair) => [pair.pairId, pair]),
+  );
   const pairCounts = new Map<string, number>();
 
   for (const assessment of assessments) {
@@ -259,18 +275,29 @@ export function validateRerunInputs(
     assessmentIds.add(assessment.assessmentId);
     if (!branchIds.has(assessment.candidateBranchId))
       errors.push(`CANDIDATE_BRANCH_REFERENCE_DANGLING:${assessment.assessmentId}:${assessment.candidateBranchId}`);
-    if (!roots.includes(assessment.rootTargetFieldId))
-      errors.push(`ROOT_TARGET_FIELD_UNEXPECTED:${assessment.assessmentId}:${assessment.rootTargetFieldId}`);
-    const pairKey = `${assessment.rootTargetFieldId}\u0000${assessment.candidateBranchId}`;
+    const criterion = criteria.get(assessment.rootCriterionId);
+    if (!criterion)
+      errors.push(`ROOT_CRITERION_UNEXPECTED:${assessment.assessmentId}:${assessment.rootCriterionId}`);
+    else if (criterion.rootTargetFieldId !== assessment.rootTargetFieldId)
+      errors.push(`ROOT_CRITERION_FIELD_MISMATCH:${assessment.assessmentId}:${assessment.rootCriterionId}`);
+    const expectedPair = expectedPairsById.get(assessment.pairId);
+    if (!expectedPair)
+      errors.push(`ASSESSMENT_PAIR_UNEXPECTED:${assessment.assessmentId}:${assessment.pairId}`);
+    else if (
+      expectedPair.rootCriterionId !== assessment.rootCriterionId ||
+      expectedPair.rootTargetFieldId !== assessment.rootTargetFieldId ||
+      expectedPair.candidateBranchId !== assessment.candidateBranchId
+    )
+      errors.push(`ASSESSMENT_PAIR_IDENTITY_MISMATCH:${assessment.assessmentId}`);
+    const pairKey = `${assessment.rootCriterionId}\u0000${assessment.candidateBranchId}`;
     pairCounts.set(pairKey, (pairCounts.get(pairKey) ?? 0) + 1);
   }
 
-  for (const rootTargetFieldId of roots)
-    for (const candidateBranchId of branchIds) {
-      const pairKey = `${rootTargetFieldId}\u0000${candidateBranchId}`;
-      const count = pairCounts.get(pairKey) ?? 0;
-      if (count !== 1) errors.push(`ASSESSMENT_PAIR_CARDINALITY:${pairKey}:${count}`);
-    }
+  for (const pair of expectedPairs) {
+    const pairKey = `${pair.rootCriterionId}\u0000${pair.candidateBranchId}`;
+    const count = pairCounts.get(pairKey) ?? 0;
+    if (count !== 1) errors.push(`ASSESSMENT_PAIR_CARDINALITY:${pairKey}:${count}`);
+  }
 
   return { valid: errors.length === 0, errors: [...new Set(errors)].sort(compareText) };
 }
