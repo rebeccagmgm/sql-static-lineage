@@ -420,6 +420,11 @@ function runOpenCli(
 }
 
 export function taskSourceCommandArguments(taskId: string): readonly string[] {
+  const windowMode =
+    process.env.OPENCLI_WINDOW === "background" ||
+    process.env.OPENCLI_WINDOW === "foreground"
+      ? process.env.OPENCLI_WINDOW
+      : "foreground";
   return [
     "szdata",
     "task-source",
@@ -428,7 +433,7 @@ export function taskSourceCommandArguments(taskId: string): readonly string[] {
     "--full",
     "true",
     "--window",
-    "background",
+    windowMode,
     "-f",
     "json",
   ];
