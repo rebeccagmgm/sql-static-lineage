@@ -197,3 +197,46 @@ export function readRunScriptSqlCache(
     return { status: "MISS", path };
   }
 }
+
+export type RunScriptSqlCacheRead =
+  | { readonly status: "MISS"; readonly path: string }
+  | { readonly status: "INVALID"; readonly path: string; readonly reason: string }
+  | {
+      readonly status: "HIT";
+      readonly path: string;
+      readonly querySql: string | null;
+      readonly sqlStatus: RunScriptSqlStatus;
+    };
+
+export function parseRunScriptSqlCache(
+  taskId: string,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): RunScriptSqlCacheRead {
+  const path = runScriptSqlCachePath(taskId, cacheRoot);
+  if (!existsSync(path)) return { status: "MISS", path };
+  try {
+    const text = readFileSync(path, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    if (text.trim() === "") return { status: "MISS", path };
+    const lines = text.split("\n");
+    let index = 0;
+    const meta: Record<string, string> = {};
+    while (index < lines.length) {
+      const match = /^-- ([A-Za-z_]+): ?(.*)$/.exec(lines[index]!);
+      if (!match) break;
+      meta[match[1]!] = match[2]!.trim();
+      index += 1;
+    }
+    while (index < lines.length && lines[index]!.trim() === "") index += 1;
+    const body = lines.slice(index).join("\n").trim();
+    if (meta.task_id !== undefined && meta.task_id !== taskId)
+      return { status: "INVALID", path, reason: "TASK_ID_MISMATCH" };
+    const sqlStatus: RunScriptSqlStatus =
+      meta.sqlStatus === "UNAVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
+    const querySql = body === "" ? null : body;
+    if (sqlStatus === "AVAILABLE" && querySql === null)
+      return { status: "INVALID", path, reason: "SQL_EMPTY" };
+    return { status: "HIT", path, querySql, sqlStatus };
+  } catch {
+    return { status: "INVALID", path, reason: "READ_FAILED" };
+  }
+}

@@ -44,6 +44,7 @@ export type TaskStatusRecord = {
   tableReferencesUnavailable?: string[];
   warnings?: string[];
   staleLegacyTaskDirectories?: string[];
+  cacheArtifacts?: string[];
   error?: string;
   updatedAt: string;
 };
@@ -138,6 +139,7 @@ function validateRecord(
     ["tableReferencesUnavailable", candidate.tableReferencesUnavailable],
     ["warnings", candidate.warnings],
     ["staleLegacyTaskDirectories", candidate.staleLegacyTaskDirectories],
+    ["cacheArtifacts", candidate.cacheArtifacts],
   ] as const) {
     if (
       value !== undefined &&

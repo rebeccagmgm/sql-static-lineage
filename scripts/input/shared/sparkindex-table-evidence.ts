@@ -700,6 +700,17 @@ function uniqueCreateStatement(
   return { ddl: [...unique.values()][0], conflict: false };
 }
 
+export function uniqueTaskSqlCreateStatement(
+  sql: Partial<Record<SqlSlot, string>>,
+  qualifiedName: string,
+): { readonly ddl?: string; readonly conflict: boolean } {
+  return uniqueCreateStatement(
+    Object.values(sql).flatMap((content) =>
+      exactCreateStatements(content ?? "", qualifiedName),
+    ),
+  );
+}
+
 function resultRows(value: unknown): readonly JsonRecord[] {
   if (Array.isArray(value))
     return value.filter((item): item is JsonRecord => asRecord(item) !== undefined);
