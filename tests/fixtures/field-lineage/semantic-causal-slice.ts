@@ -1,13 +1,13 @@
 import type {
   OperatorSupportQuery,
   OperatorVariant,
-} from "../../../scripts/reconcile/consumer/field-lineage/operator-support-matrix.ts";
+} from "../../../scripts/reconcile/consumer/target-field-causal-slice/operator-support-matrix.ts";
 import type {
   EffectKind,
   LocalEdgeKind,
   OperatorKind,
   SubjectKind,
-} from "../../../scripts/reconcile/consumer/field-lineage/semantic-dependency-contract.ts";
+} from "../../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-contract.ts";
 
 export interface SemanticSupportFixture extends OperatorSupportQuery {
   readonly name: string;

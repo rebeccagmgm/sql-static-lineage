@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeSemanticDependencies,
   type SemanticDependencyNormalizerInput,
-} from "../scripts/reconcile/consumer/field-lineage/semantic-dependency-normalizer.ts";
+} from "../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-normalizer.ts";
 import {
   crossJoinPlan,
   existsPlan,

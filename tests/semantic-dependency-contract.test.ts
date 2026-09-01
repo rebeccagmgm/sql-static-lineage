@@ -9,7 +9,7 @@ import {
   makeSemanticDependencyApplication,
   makeSemanticDependencyDefinition,
   makeSemanticDependencyEdge,
-} from "../scripts/reconcile/consumer/field-lineage/semantic-dependency-contract.ts";
+} from "../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-contract.ts";
 
 describe("semantic dependency contract", () => {
   it("keeps dependency dimensions orthogonal", () => {

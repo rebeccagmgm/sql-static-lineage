@@ -5,7 +5,7 @@ import {
   OPERATOR_SUPPORT_MATRIX,
   operatorSupportMatrixKey,
   validateOperatorSupportMatrix,
-} from "../scripts/reconcile/consumer/field-lineage/operator-support-matrix.ts";
+} from "../scripts/reconcile/consumer/target-field-causal-slice/operator-support-matrix.ts";
 import {
   representativeOperatorSqlCorpus,
   representativeSemanticSupportFixtures,
