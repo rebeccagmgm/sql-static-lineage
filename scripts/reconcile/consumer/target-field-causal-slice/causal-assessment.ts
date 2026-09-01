@@ -15,8 +15,10 @@ import type {
   CausalTraversalPath,
   CausalTraversalPathEdge,
   CausalTraversalResult,
+  CausalTraversalRootResult,
 } from "./causal-traversal.ts";
 import type { PathCertainty, SemanticSubject } from "./semantic-dependency-contract.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 
 export const CAUSAL_ASSESSMENT_STATUSES = [
   "CONFIRMED_RELATED",
@@ -47,7 +49,24 @@ export type NegativeAssessmentReason =
   | "EXPLICIT_SAFE_RULES_ONLY"
   | "INHERITED_FROM_PROVEN_UNRELATED_CUT";
 
+export const CAUSAL_ASSESSMENT_REASON_CODES = [
+  "CONTINUOUS_CONFIRMED_PATH",
+  "CONTINUOUS_PROVISIONAL_PATH",
+  "EXPLICIT_ROOT_WRITE_PROOF",
+  "ASSESSMENT_PAIR_INPUT_INVALID",
+  "BRANCH_BOUNDARY_UNRESOLVED",
+  "BRANCH_KIND_REQUIRES_SEPARATE_PROOF",
+  "CONTINUOUS_PATH_EVIDENCE_INCOMPLETE",
+  "EXACT_OCCURRENCE_PATH_NOT_PROVEN",
+  "ROOT_TRAVERSAL_RESULT_MISSING",
+  "ROOT_WRITE_PROOF_MISSING",
+  "REQUIRED_PATH_UNKNOWN",
+  "EXPLICIT_SAFE_RULES_ONLY",
+  "INHERITED_FROM_PROVEN_UNRELATED_CUT",
+] as const;
+
 export interface RootWritePositiveProofInput {
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly pathCertainty: Exclude<PathCertainty, "UNKNOWN">;
@@ -56,6 +75,7 @@ export interface RootWritePositiveProofInput {
 
 export interface PositiveCausalProof {
   readonly proofId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly pathCertainty: Exclude<PathCertainty, "UNKNOWN">;
@@ -67,6 +87,7 @@ export interface PositiveCausalProof {
 
 export interface CausalAssessmentGap {
   readonly gapId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly reasonCode: UnknownAssessmentReason;
@@ -76,6 +97,7 @@ export interface CausalAssessmentGap {
 export interface CausalAssessment {
   readonly assessmentId: string;
   readonly pairId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   readonly status: CausalAssessmentStatus;
@@ -88,9 +110,44 @@ export interface CausalAssessment {
   readonly gapRefs: readonly string[];
 }
 
+export function canonicalCausalAssessmentId(input: Pick<
+  CausalAssessment,
+  | "rootCriterionId"
+  | "pairId"
+  | "status"
+  | "reasonCode"
+  | "positiveProofIds"
+  | "negativeProofIds"
+  | "gapRefs"
+>): string {
+  return `causal-assessment:${sha256(canonicalJson({
+    rootCriterionId: input.rootCriterionId,
+    pairId: input.pairId,
+    status: input.status,
+    reasonCode: input.reasonCode,
+    positiveProofIds: input.positiveProofIds,
+    negativeProofIds: input.negativeProofIds,
+    gapRefs: input.gapRefs,
+  }))}`;
+}
+
+export function canonicalCausalAssessmentGapId(input: Omit<
+  CausalAssessmentGap,
+  "gapId"
+>): string {
+  return `assessment-gap:${sha256(canonicalJson({
+    rootCriterionId: input.rootCriterionId,
+    rootTargetFieldId: input.rootTargetFieldId,
+    candidateBranchId: input.candidateBranchId,
+    reasonCode: input.reasonCode,
+    evidenceRefs: sortedUnique(input.evidenceRefs),
+  }))}`;
+}
+
 export interface PositiveCausalAssessmentInput {
   readonly candidateUniverse: CandidateUniverse;
   readonly traversal: CausalTraversalResult;
+  readonly rootCriteria: readonly RootCriterion[];
   readonly assessmentPairs?: readonly CandidateAssessmentPair[];
   readonly rootWriteProofs?: readonly RootWritePositiveProofInput[];
 }
@@ -111,6 +168,28 @@ type ExactPath = {
   readonly bridgeEdge: CausalTraversalPathEdge;
   readonly effectiveCertainty: PathCertainty;
 };
+
+type OccurrenceScopedTraversalRoot = CausalTraversalRootResult & {
+  readonly rootCriterionId?: string;
+  readonly root: CausalTraversalRootResult["root"] & {
+    readonly rootCriterion?: RootCriterion;
+  };
+};
+
+function traversalRootCriterionId(root: CausalTraversalRootResult): string | null {
+  const scoped = root as OccurrenceScopedTraversalRoot;
+  return scoped.rootCriterionId ?? scoped.root.rootCriterion?.rootCriterionId ?? null;
+}
+
+function traversalPathCriterionId(path: CausalTraversalPath): string | null {
+  return (path as CausalTraversalPath & { readonly rootCriterionId?: string })
+    .rootCriterionId ?? null;
+}
+
+function traversalGapCriterionId(gap: CausalTraversalGap): string | null {
+  return (gap as CausalTraversalGap & { readonly rootCriterionId?: string })
+    .rootCriterionId ?? null;
+}
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -154,6 +233,46 @@ function tableMatchesPhysicalField(
   );
 }
 
+function tableMatchesRootCriterion(
+  table: CandidatePhysicalTable | null,
+  criterion: RootCriterion,
+): boolean {
+  if (
+    table === null ||
+    table.platform === null ||
+    table.dataSource === null ||
+    table.stableTableId === null ||
+    table.qualifiedName === null
+  ) return false;
+  const parts = criterion.rootTargetFieldId.split("|");
+  if (parts.length < 5) return false;
+  const expected = parts.slice(0, 4);
+  const actual = [
+    table.platform,
+    table.dataSource,
+    table.stableTableId,
+    table.qualifiedName,
+  ];
+  return expected.every(
+    (value, index) => normalizeName(value) === normalizeName(actual[index] ?? ""),
+  );
+}
+
+function rootWriteProofIsEvidenceBound(
+  proof: RootWritePositiveProofInput,
+  criterion: RootCriterion,
+): boolean {
+  const criterionEvidence = new Set(criterion.evidenceRefs);
+  const proofEvidence = new Set(proof.evidenceRefs);
+  return (
+    proof.evidenceRefs.length > 0 &&
+    proof.evidenceRefs.every((ref) => criterionEvidence.has(ref)) &&
+    [criterion.rootWriteObservationId, criterion.outputBindingId].every((ref) =>
+      proofEvidence.has(ref)
+    )
+  );
+}
+
 function certaintyRank(value: PathCertainty): number {
   return value === "UNKNOWN" ? 2 : value === "CONDITIONAL" ? 1 : 0;
 }
@@ -188,17 +307,42 @@ function exactBridgeForBranch(
     edge.fromSubject.subjectKind === "RELATION_OCCURRENCE";
 }
 
+/**
+ * Return the one occurrence-exact physical bridge for a candidate on a path.
+ * Zero or multiple matches are deliberately unresolved; callers must not pick
+ * an arbitrary edge from an ambiguous persisted path.
+ */
+export function exactOccurrenceBridgeForCandidatePath(
+  path: CausalTraversalPath,
+  branch: CandidateBranch,
+): CausalTraversalPathEdge | null {
+  const matches = path.edges.filter((edge) => exactBridgeForBranch(edge, branch));
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 function exactPathsForBranch(
   paths: readonly CausalTraversalPath[],
   branch: CandidateBranch,
+  rootCriterionId: string,
+  rootSemanticScopeId: string,
 ): readonly ExactPath[] {
   return paths
+    .filter(
+      (path) =>
+        traversalPathCriterionId(path) === rootCriterionId &&
+        path.edges.every((edge) => edge.rootCriterionId === rootCriterionId) &&
+        path.edges[0]?.toSemanticScopeId === rootSemanticScopeId &&
+        path.edges.slice(1).every(
+          (edge, index) =>
+            edge.toSemanticScopeId === path.edges[index]!.fromSemanticScopeId,
+        ),
+    )
     .flatMap((path) => {
-      const matches = path.edges.filter((edge) => exactBridgeForBranch(edge, branch));
-      return matches.length === 1
+      const bridgeEdge = exactOccurrenceBridgeForCandidatePath(path, branch);
+      return bridgeEdge
         ? [{
             path,
-            bridgeEdge: matches[0]!,
+            bridgeEdge,
             effectiveCertainty: effectivePathCertainty(path),
           }]
         : [];
@@ -220,8 +364,42 @@ function pathSubjects(path: CausalTraversalPath): ReadonlySet<string> {
   );
 }
 
-function gapBlocksPath(gap: CausalTraversalGap, path: CausalTraversalPath): boolean {
+function gapBeginsBeyondTerminalRelationBridge(
+  gap: CausalTraversalGap,
+  path: CausalTraversalPath,
+): boolean {
+  if (gap.reasonCode !== "PRODUCER_RELATION_FRONTIER_UNEXPANDED") return false;
+  const terminal = path.edges.at(-1);
+  return Boolean(
+    terminal &&
+      terminal.localEdgeKind === "RELATION_CONTEXT" &&
+      terminal.fromTaskId === gap.taskId &&
+      terminal.fromSemanticScopeId === gap.semanticScopeId &&
+      gap.readOccurrenceId !== undefined &&
+      terminal.readOccurrenceId === gap.readOccurrenceId &&
+      (gap.subject === null ||
+        subjectKey(terminal.fromSubject) === subjectKey(gap.subject)),
+  );
+}
+
+/**
+ * Decide whether a traversal gap invalidates this exact positive path.
+ * Pure/read-only so artifact validation can apply the same boundary rule.
+ */
+export function traversalGapBlocksPositivePath(
+  gap: CausalTraversalGap,
+  path: CausalTraversalPath,
+): boolean {
+  const rootCriterionId = traversalPathCriterionId(path);
+  if (
+    rootCriterionId === null ||
+    traversalGapCriterionId(gap) !== rootCriterionId
+  ) return false;
   if (gap.rootDependenceKind !== path.rootDependenceKind) return false;
+  // This gap starts on the producer side of an exact relation bridge.  It
+  // blocks claims about anything further upstream, but the bridge itself is a
+  // complete occurrence-exact path to its immediate producer.
+  if (gapBeginsBeyondTerminalRelationBridge(gap, path)) return false;
   if (!pathTasks(path).has(gap.taskId)) return false;
   if (
     gap.readOccurrenceId !== undefined &&
@@ -243,44 +421,42 @@ function proofId(input: Omit<PositiveCausalProof, "proofId">): string {
 }
 
 function assessmentId(
+  rootCriterionId: string,
   pairId: string,
   status: CausalAssessmentStatus,
-  reasonCode: string,
+  reasonCode: CausalAssessment["reasonCode"],
   positiveProofIds: readonly string[],
   gapRefs: readonly string[],
 ): string {
-  return `causal-assessment:${sha256(
-    canonicalJson({
-      pairId,
-      status,
-      reasonCode,
-      positiveProofIds,
-      negativeProofIds: [],
-      gapRefs,
-    }),
-  )}`;
+  return canonicalCausalAssessmentId({
+    rootCriterionId,
+    pairId,
+    status,
+    reasonCode,
+    positiveProofIds,
+    negativeProofIds: [],
+    gapRefs,
+  });
 }
 
 function derivedGap(
+  rootCriterionId: string,
   rootTargetFieldId: string,
   candidateBranchId: string,
   reasonCode: UnknownAssessmentReason,
   evidenceRefs: readonly string[] = [],
 ): CausalAssessmentGap {
   const stableEvidenceRefs = sortedUnique(evidenceRefs);
-  return {
-    gapId: `assessment-gap:${sha256(
-      canonicalJson({
-        rootTargetFieldId,
-        candidateBranchId,
-        reasonCode,
-        evidenceRefs: stableEvidenceRefs,
-      }),
-    )}`,
+  const input = {
+    rootCriterionId,
     rootTargetFieldId,
     candidateBranchId,
     reasonCode,
     evidenceRefs: stableEvidenceRefs,
+  };
+  return {
+    gapId: canonicalCausalAssessmentGapId(input),
+    ...input,
   };
 }
 
@@ -292,6 +468,7 @@ function unknownAssessment(
   inheritedGapRefs: readonly string[] = [],
 ): CausalAssessment {
   const gap = derivedGap(
+    pair.rootCriterionId,
     pair.rootTargetFieldId,
     pair.candidateBranchId,
     reasonCode,
@@ -300,8 +477,16 @@ function unknownAssessment(
   gaps.set(gap.gapId, gap);
   const gapRefs = sortedUnique([...inheritedGapRefs, gap.gapId]);
   return {
-    assessmentId: assessmentId(pair.pairId, "UNKNOWN", reasonCode, [], gapRefs),
+    assessmentId: assessmentId(
+      pair.rootCriterionId,
+      pair.pairId,
+      "UNKNOWN",
+      reasonCode,
+      [],
+      gapRefs,
+    ),
     pairId: pair.pairId,
+    rootCriterionId: pair.rootCriterionId,
     rootTargetFieldId: pair.rootTargetFieldId,
     candidateBranchId: pair.candidateBranchId,
     status: "UNKNOWN",
@@ -320,8 +505,16 @@ function relatedAssessment(
     ? "CONFIRMED_RELATED"
     : "CONDITIONAL_RELATED";
   return {
-    assessmentId: assessmentId(pair.pairId, status, proof.reasonCode, [proof.proofId], []),
+    assessmentId: assessmentId(
+      pair.rootCriterionId,
+      pair.pairId,
+      status,
+      proof.reasonCode,
+      [proof.proofId],
+      [],
+    ),
     pairId: pair.pairId,
+    rootCriterionId: pair.rootCriterionId,
     rootTargetFieldId: pair.rootTargetFieldId,
     candidateBranchId: pair.candidateBranchId,
     status,
@@ -333,12 +526,14 @@ function relatedAssessment(
 }
 
 function createPathProof(
+  rootCriterionId: string,
   rootTargetFieldId: string,
   branch: CandidateBranch,
   path: CausalTraversalPath,
   pathCertainty: Exclude<PathCertainty, "UNKNOWN">,
 ): PositiveCausalProof {
   const input: Omit<PositiveCausalProof, "proofId"> = {
+    rootCriterionId,
     rootTargetFieldId,
     candidateBranchId: branch.candidateBranchId,
     pathCertainty,
@@ -356,6 +551,7 @@ function createRootWriteProof(
   inputProof: RootWritePositiveProofInput,
 ): PositiveCausalProof {
   const input: Omit<PositiveCausalProof, "proofId"> = {
+    rootCriterionId: inputProof.rootCriterionId,
     rootTargetFieldId: inputProof.rootTargetFieldId,
     candidateBranchId: inputProof.candidateBranchId,
     pathCertainty: inputProof.pathCertainty,
@@ -367,32 +563,53 @@ function createRootWriteProof(
   return { proofId: proofId(input), ...input };
 }
 
+function uniqueTraversalRoot(
+  traversal: CausalTraversalResult,
+  rootCriterionId: string,
+): CausalTraversalRootResult | null {
+  const matches = traversal.roots.filter(
+    (root) => traversalRootCriterionId(root) === rootCriterionId,
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+function uniqueCriterion(
+  rootCriteria: readonly RootCriterion[],
+  rootCriterionId: string,
+): RootCriterion | null {
+  const matches = rootCriteria.filter(
+    (criterion) => criterion.rootCriterionId === rootCriterionId,
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 export function assessPositiveCausalRelationships(
   input: PositiveCausalAssessmentInput,
 ): PositiveCausalAssessmentResult {
   const pairs = input.assessmentPairs ?? buildAssessmentPairSkeleton(
-    input.traversal.roots.map((root) => root.root.rootTargetFieldId),
+    input.rootCriteria,
     input.candidateUniverse.branches,
   );
   const branches = new Map(
     input.candidateUniverse.branches.map((branch) => [branch.candidateBranchId, branch]),
   );
-  const roots = new Map(
-    input.traversal.roots.map((root) => [root.root.rootTargetFieldId, root]),
-  );
-  const rootWriteProofs = new Map(
-    (input.rootWriteProofs ?? []).map((proof) => [
-      `${proof.rootTargetFieldId}\u0000${proof.candidateBranchId}`,
-      proof,
-    ]),
-  );
+  const rootWriteProofs = new Map<string, RootWritePositiveProofInput[]>();
+  for (const proof of input.rootWriteProofs ?? []) {
+    const key = `${proof.rootCriterionId}\u0000${proof.candidateBranchId}`;
+    rootWriteProofs.set(key, [...(rootWriteProofs.get(key) ?? []), proof]);
+  }
   const positiveProofs = new Map<string, PositiveCausalProof>();
   const gaps = new Map<string, CausalAssessmentGap>();
   const assessments: CausalAssessment[] = [];
 
   for (const pair of [...pairs].sort((left, right) => compareText(left.pairId, right.pairId))) {
     const branch = branches.get(pair.candidateBranchId);
-    if (!branch) {
+    const criterion = uniqueCriterion(input.rootCriteria, pair.rootCriterionId);
+    if (
+      !branch ||
+      !criterion ||
+      criterion.rootTargetFieldId !== pair.rootTargetFieldId
+    ) {
       assessments.push(unknownAssessment(pair, "ASSESSMENT_PAIR_INPUT_INVALID", gaps));
       continue;
     }
@@ -409,10 +626,24 @@ export function assessPositiveCausalRelationships(
       continue;
     }
     if (branch.branchKind === "ROOT_WRITE") {
-      const rootWriteProof = rootWriteProofs.get(
-        `${pair.rootTargetFieldId}\u0000${pair.candidateBranchId}`,
-      );
-      if (!rootWriteProof || rootWriteProof.evidenceRefs.length === 0) {
+      if (
+        branch.writeObservationId !== criterion.rootWriteObservationId ||
+        !tableMatchesRootCriterion(branch.table, criterion)
+      ) {
+        assessments.push(unknownAssessment(pair, "ASSESSMENT_PAIR_INPUT_INVALID", gaps));
+        continue;
+      }
+      const matchingProofs = rootWriteProofs.get(
+        `${pair.rootCriterionId}\u0000${pair.candidateBranchId}`,
+      ) ?? [];
+      const rootWriteProof = matchingProofs.length === 1
+        ? matchingProofs[0]!
+        : null;
+      if (
+        !rootWriteProof ||
+        rootWriteProof.rootTargetFieldId !== pair.rootTargetFieldId ||
+        !rootWriteProofIsEvidenceBound(rootWriteProof, criterion)
+      ) {
         assessments.push(unknownAssessment(pair, "ROOT_WRITE_PROOF_MISSING", gaps));
         continue;
       }
@@ -427,12 +658,17 @@ export function assessPositiveCausalRelationships(
       );
       continue;
     }
-    const root = roots.get(pair.rootTargetFieldId);
+    const root = uniqueTraversalRoot(input.traversal, pair.rootCriterionId);
     if (!root) {
       assessments.push(unknownAssessment(pair, "ROOT_TRAVERSAL_RESULT_MISSING", gaps));
       continue;
     }
-    const exactPaths = exactPathsForBranch(root.paths, branch);
+    const exactPaths = exactPathsForBranch(
+      root.paths,
+      branch,
+      pair.rootCriterionId,
+      root.root.semanticScope.semanticScopeId,
+    );
     if (exactPaths.length === 0) {
       assessments.push(
         unknownAssessment(pair, "EXACT_OCCURRENCE_PATH_NOT_PROVEN", gaps),
@@ -442,7 +678,9 @@ export function assessPositiveCausalRelationships(
     const completePaths = exactPaths.filter(
       ({ path }) =>
         pathEvidenceComplete(path) &&
-        !root.gaps.some((gap) => gapBlocksPath(gap, path)),
+        !root.gaps.some((gap) =>
+          traversalGapBlocksPositivePath(gap, path),
+        ),
     );
     const confirmed = completePaths.find(
       ({ effectiveCertainty }) => effectiveCertainty === "CONFIRMED",
@@ -453,6 +691,7 @@ export function assessPositiveCausalRelationships(
     const selected = confirmed ?? conditional;
     if (selected) {
       const proof = createPathProof(
+        pair.rootCriterionId,
         pair.rootTargetFieldId,
         branch,
         selected.path,
@@ -464,7 +703,9 @@ export function assessPositiveCausalRelationships(
     }
     const relevantGapRefs = sortedUnique(
       exactPaths.flatMap(({ path }) =>
-        root.gaps.filter((gap) => gapBlocksPath(gap, path)).map((gap) => gap.gapId),
+        root.gaps
+          .filter((gap) => traversalGapBlocksPositivePath(gap, path))
+          .map((gap) => gap.gapId),
       ),
     );
     const hasUnknownPath = exactPaths.some(
@@ -494,12 +735,12 @@ export function assessPositiveCausalRelationships(
 
 export function validatePositiveCausalAssessments(
   universe: CandidateUniverse,
-  rootTargetFieldIds: readonly string[],
+  rootCriteria: readonly RootCriterion[],
   traversal: CausalTraversalResult,
   result: PositiveCausalAssessmentResult,
 ): CausalAssessmentValidation {
   const errors: string[] = [];
-  const expectedPairs = buildAssessmentPairSkeleton(rootTargetFieldIds, universe.branches);
+  const expectedPairs = buildAssessmentPairSkeleton(rootCriteria, universe.branches);
   const expected = new Set(expectedPairs.map((pair) => pair.pairId));
   const expectedByPair = new Map(expectedPairs.map((pair) => [pair.pairId, pair]));
   const assessmentByPair = new Map<string, CausalAssessment[]>();
@@ -511,11 +752,13 @@ export function validatePositiveCausalAssessments(
     const expectedPair = expectedByPair.get(assessment.pairId);
     if (
       expectedPair &&
-      (assessment.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
+      (assessment.rootCriterionId !== expectedPair.rootCriterionId ||
+        assessment.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
         assessment.candidateBranchId !== expectedPair.candidateBranchId)
     )
       errors.push(`ASSESSMENT_PAIR_IDENTITY_MISMATCH:${assessment.assessmentId}`);
     const expectedAssessmentId = assessmentId(
+      assessment.rootCriterionId,
       assessment.pairId,
       assessment.status,
       assessment.reasonCode,
@@ -551,20 +794,32 @@ export function validatePositiveCausalAssessments(
   const branches = new Map(
     universe.branches.map((branch) => [branch.candidateBranchId, branch]),
   );
-  const traversalRoots = new Map(
-    traversal.roots.map((root) => [root.root.rootTargetFieldId, root]),
-  );
   for (const proof of result.positiveProofs) {
     const { proofId: actualProofId, ...proofInput } = proof;
     if (proofId(proofInput) !== actualProofId)
       errors.push(`POSITIVE_PROOF_ID_NON_CANONICAL:${actualProofId}`);
+    const criterion = uniqueCriterion(rootCriteria, proof.rootCriterionId);
+    if (
+      criterion === null ||
+      criterion.rootTargetFieldId !== proof.rootTargetFieldId
+    )
+      errors.push(`POSITIVE_PROOF_ROOT_CRITERION_INVALID:${actualProofId}`);
     const branch = branches.get(proof.candidateBranchId);
     if (!branch) {
       errors.push(`POSITIVE_PROOF_BRANCH_MISSING:${actualProofId}`);
       continue;
     }
     if (proof.reasonCode === "EXPLICIT_ROOT_WRITE_PROOF") {
-      if (branch.branchKind !== "ROOT_WRITE" || proof.pathIds.length !== 0 || proof.edgeIds.length !== 0)
+      if (
+        branch.branchKind !== "ROOT_WRITE" ||
+        criterion === null ||
+        branch.writeObservationId !== criterion.rootWriteObservationId ||
+        !tableMatchesRootCriterion(branch.table, criterion) ||
+        !rootWriteProofIsEvidenceBound(proof, criterion) ||
+        proof.rootTargetFieldId !== criterion.rootTargetFieldId ||
+        proof.pathIds.length !== 0 ||
+        proof.edgeIds.length !== 0
+      )
         errors.push(`ROOT_WRITE_PROOF_SHAPE_INVALID:${actualProofId}`);
       continue;
     }
@@ -572,13 +827,24 @@ export function validatePositiveCausalAssessments(
       errors.push(`POSITIVE_PROOF_PATH_CARDINALITY:${actualProofId}:${proof.pathIds.length}`);
       continue;
     }
-    const root = traversalRoots.get(proof.rootTargetFieldId);
-    const path = root?.paths.find((candidate) => candidate.pathId === proof.pathIds[0]);
+    const root = uniqueTraversalRoot(traversal, proof.rootCriterionId);
+    if (!root) {
+      errors.push(`POSITIVE_PROOF_TRAVERSAL_ROOT_MISSING:${actualProofId}`);
+      continue;
+    }
+    const path = root.paths.find((candidate) => candidate.pathId === proof.pathIds[0]);
     if (!path) {
       errors.push(`POSITIVE_PROOF_TRAVERSAL_PATH_MISSING:${actualProofId}`);
       continue;
     }
-    if (exactPathsForBranch([path], branch).length !== 1)
+    if (
+      exactPathsForBranch(
+        [path],
+        branch,
+        proof.rootCriterionId,
+        root.root.semanticScope.semanticScopeId,
+      ).length !== 1
+    )
       errors.push(`POSITIVE_PROOF_BRANCH_PATH_MISMATCH:${actualProofId}`);
     if (canonicalJson(proof.edgeIds) !== canonicalJson(path.edges.map((edge) => edge.edgeId)))
       errors.push(`POSITIVE_PROOF_EDGE_SEQUENCE_MISMATCH:${actualProofId}`);
@@ -598,6 +864,7 @@ export function validatePositiveCausalAssessments(
       if (proof.evidenceRefs.length === 0)
         errors.push(`POSITIVE_PROOF_EVIDENCE_EMPTY:${positiveProofId}`);
       if (
+        proof.rootCriterionId !== assessment.rootCriterionId ||
         proof.rootTargetFieldId !== assessment.rootTargetFieldId ||
         proof.candidateBranchId !== assessment.candidateBranchId
       )
@@ -618,6 +885,37 @@ export function validatePositiveCausalAssessments(
       )
         errors.push(`CONDITIONAL_PROOF_CERTAINTY_INVALID:${positiveProofId}`);
     }
+  }
+  const assessmentByCriterionBranch = new Map(
+    result.assessments.map((assessment) => [
+      `${assessment.rootCriterionId}\u0000${assessment.candidateBranchId}`,
+      assessment,
+    ]),
+  );
+  const gapIds = new Set<string>();
+  for (const gap of result.gaps) {
+    if (gapIds.has(gap.gapId)) errors.push(`ASSESSMENT_GAP_ID_DUPLICATE:${gap.gapId}`);
+    gapIds.add(gap.gapId);
+    const expectedGap = derivedGap(
+      gap.rootCriterionId,
+      gap.rootTargetFieldId,
+      gap.candidateBranchId,
+      gap.reasonCode,
+      gap.evidenceRefs,
+    );
+    if (expectedGap.gapId !== gap.gapId)
+      errors.push(`ASSESSMENT_GAP_ID_NON_CANONICAL:${gap.gapId}`);
+    const criterion = uniqueCriterion(rootCriteria, gap.rootCriterionId);
+    if (
+      criterion === null ||
+      criterion.rootTargetFieldId !== gap.rootTargetFieldId
+    )
+      errors.push(`ASSESSMENT_GAP_ROOT_CRITERION_INVALID:${gap.gapId}`);
+    const assessment = assessmentByCriterionBranch.get(
+      `${gap.rootCriterionId}\u0000${gap.candidateBranchId}`,
+    );
+    if (!assessment?.gapRefs.includes(gap.gapId))
+      errors.push(`ASSESSMENT_GAP_NOT_REFERENCED:${gap.gapId}`);
   }
   return { valid: errors.length === 0, errors: errors.sort(compareText) };
 }

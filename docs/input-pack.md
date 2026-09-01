@@ -162,4 +162,56 @@ The writer distinguishes omitted fields from explicit `null`. Empty strings, `-`
 Writes are assembled and validated under a temporary child of the external root, then the corresponding latest Task/Table directory is replaced. An unchanged content hash leaves the existing directory untouched; a failed build or validation cleans only staging and leaves the previous valid directory.
 Task and Table replacements are separate atomic operations; they are not a cross-asset transaction. If a Table write fails after the Task write succeeds, the summary marks `writePhase=TABLE_AFTER_TASK_COMMITTED` and records the committed Task directory so callers do not mistake the result for an all-or-nothing update. A non-physical direct target reference, such as `mysql_atp_tradingdb`, is reported with `tableReferencesUnavailable`, `warnings` containing `TABLE_REFERENCE_UNAVAILABLE`, and `collectionStatus=PARTIAL`; a bare source data-source label is not treated as a missing physical table because source identity must come from SQL READ evidence and Table Pack resolution.
 
+For a SparkIndex task that can be reconstructed from Horae detail, use the isolated collector:
+
+```powershell
+npm run input-pack:sparkindex -- --data-root "<input-pack-root>" --task-id 100931
+```
+
+It first validates and reads
+`<cache-root>/schedule-evidence/tasks/<taskId>/horae-task-type.json`. A cache
+hit avoids the Horae request. A missing or invalid entry triggers one
+`horae detail` call; a valid response is written back atomically before the
+Task Pack is emitted. The independent Portal schedule-detail artifact is
+`<cache-root>/schedule-evidence/tasks/<taskId>/szdata-schedule-detail.json`;
+it is never written as or merged into `horae-task-type.json`. Fill that
+artifact with the fixed-serial collector:
+
+```powershell
+npm run input-pack:fill-szdata-detail-cache -- --cache-root "<cache-root>" --limit 10 --max-errors 3
+```
+
+It skips valid HITs, calls `opencli szdata schedule-detail --full true` only
+for MISS/INVALID entries, and writes each successful task atomically. The
+default start-to-start interval is five seconds and can be lowered only with
+the non-negative `--interval-ms` option. Use `--cache-root <path>` to override
+the shared default cache root. The SparkIndex collector uses valid
+schedule-detail evidence first for its target, write mode, and SQL slots, with
+Horae detail retained as a separate fallback source. It does not fabricate
+physical endpoints: table candidates come only from the structured target and
+SQL relation/write clauses. The `lower(normalized db.table)@lower(dataSource)`
+key is only an in-process SparkIndex matching key; formal Table Packs retain
+the existing `<qualifiedName>__<dataSource>` `stableTableId` and directory
+contract. A valid existing Table Pack is reused. Otherwise, a unique ACTIVE
+Hive metadata snapshot must confirm the table before an exact task
+`CREATE TABLE` supplies DDL or the read-only `szdata table-guid` + `table-ddl`
+pair is called serially. The GUID is only a per-call locator and is not
+persisted as identity. Use `--metadata-snapshot <path>` to select the Hive
+metadata JSONL snapshot; ambiguous, missing, or non-unique ACTIVE rows remain
+`PARTIAL`. There is no separate task-level table manifest or raw MCP DDL cache.
+Neither collector proves runtime success or data arrival.
+
+To fill only the tasks already identified as `sparkIndex` by a valid
+`horae-task-type.json`, use the dedicated entrypoint:
+
+```powershell
+npm run input-pack:fill-sparkindex-schedule-detail-cache -- --cache-root "<cache-root>" --max-errors 10
+```
+
+This entrypoint keeps the same fixed-serial and atomic-write behavior, skips
+valid detail-cache HITs, defaults to a two-second start-to-start interval, and
+accepts `--limit` and non-negative `--interval-ms`. Missing or invalid
+`horae-task-type.json` files are excluded rather than classified as
+SparkIndex by inference.
+
 Table `platform` is a standard token such as `hive` or `oracle`; the writer rejects values such as `hive / Hive内部表` and `oracle / 物理表`. A Table with direct metadata status `DELETED` may still be saved when current `table.json` and `ddl.sql` are available, and the status remains explicit in `table.json` and the collection summary. If the platform reports a SQL slot as unavailable, that slot is omitted; for 246247 this is why only the real `truncate.sql` is present and no `query.sql` is fabricated. The checked-in cases in `tests/fixtures/input-pack/cases.ts` are de-identified shapes for tasks 39045, 180065, 86840, and 246247. They are not production evidence and do not claim scheduler execution, data correctness, or business acceptance. Live platform fields not present in a supplied evidence object remain omitted; only the separately documented structural SQL-target fallback can add a target, and it requires unique Table/DDL confirmation.

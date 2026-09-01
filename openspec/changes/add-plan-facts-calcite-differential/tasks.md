@@ -6,7 +6,7 @@
 
 ## 2. Differential naming and protocol
 
-- [x] 2.1 Create `scripts/calcite-differential/` with versioned differential protocol and conservative reconciliation statuses.
+- [x] 2.1 Create the external `E:\02_area\股衍数据-数据cookbook\scripts\Calcite\` sidecar with a versioned differential protocol and conservative reconciliation statuses.
 - [x] 2.2 Add `RAW_SQL_V1` and `PLAN_FACTS_REL_V1` request kinds, response issues, mapping references, fingerprints, and hard resource limits.
 - [ ] 2.3 Convert `scripts/calcite-oracle/` into deprecated compatibility exports/wrappers and migrate internal TypeScript callers to the differential naming.
 - [x] 2.4 Add protocol validation tests for malformed input, version mismatch, unsupported request kinds, limits, and deterministic serialization.

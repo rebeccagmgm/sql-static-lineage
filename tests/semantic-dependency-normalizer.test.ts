@@ -13,6 +13,7 @@ import {
   plan,
   read,
 } from "./fixtures/field-lineage/semantic-dependency-normalizer.ts";
+import { testSemanticRoot } from "./fixtures/field-lineage/semantic-occurrence-scope.ts";
 
 function normalize(
   planFacts: Parameters<typeof normalizeSemanticDependencies>[0]["plan"],
@@ -22,7 +23,11 @@ function normalize(
 ): ReturnType<typeof normalizeSemanticDependencies> {
   const input: SemanticDependencyNormalizerInput = {
     plan: planFacts,
-    roots: [{ rootTargetFieldId, relationId, outputName }],
+    ...testSemanticRoot(planFacts, {
+      rootTargetFieldId,
+      relationId,
+      ...(outputName === undefined ? {} : { outputName }),
+    }),
   };
   return normalizeSemanticDependencies(input);
 }
@@ -32,13 +37,11 @@ describe("semantic dependency normalizer", () => {
     const legacy = [{ edgeId: "legacy-value", kind: "VALUE_FLOW" }];
     const result = normalizeSemanticDependencies({
       plan: semanticNormalizerPlan,
-      roots: [
-        {
-          rootTargetFieldId: "target:amount-out",
-          relationId: "project",
-          outputName: "amount_out",
-        },
-      ],
+      ...testSemanticRoot(semanticNormalizerPlan, {
+        rootTargetFieldId: "target:amount-out",
+        relationId: "project",
+        outputName: "amount_out",
+      }),
       legacyEdges: legacy,
     });
 
@@ -76,13 +79,14 @@ describe("semantic dependency normalizer", () => {
       ["amount_out", "target:case"],
       ["score_out", "target:if"],
       ["fallback_out", "target:coalesce"],
-    ].flatMap(([outputName, rootTargetFieldId]) =>
-      normalize(
-        semanticNormalizerPlan,
-        rootTargetFieldId,
-        "project",
-        outputName,
-      ).definitions,
+    ].flatMap(
+      ([outputName, rootTargetFieldId]) =>
+        normalize(
+          semanticNormalizerPlan,
+          rootTargetFieldId,
+          "project",
+          outputName,
+        ).definitions,
     );
     const keys = new Set(
       definitions.map(
@@ -223,13 +227,11 @@ describe("semantic dependency normalizer", () => {
     const calls: string[] = [];
     const result = normalizeSemanticDependencies({
       plan: semanticNormalizerPlan,
-      roots: [
-        {
-          rootTargetFieldId: "target:amount",
-          relationId: "project",
-          outputName: "amount_out",
-        },
-      ],
+      ...testSemanticRoot(semanticNormalizerPlan, {
+        rootTargetFieldId: "target:amount",
+        relationId: "project",
+        outputName: "amount_out",
+      }),
       physicalFieldResolver: {
         resolve(reference) {
           calls.push(`${reference.table}.${reference.column}`);

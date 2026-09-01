@@ -61,12 +61,23 @@ function defaultText(artifact: CausalSliceArtifact): string {
     [...statuses.entries()]
       .map(([status, count]) => `${status}: ${count}`)
       .join("; ") || "none";
+  const criterionLines = artifact.rootCriteria.map((criterion) => {
+    const semanticScope = artifact.semanticScopes.find(
+      (scope) =>
+        scope.writeObservationId === criterion.rootWriteObservationId &&
+        scope.outputExpressionId === criterion.outputExpressionId &&
+        scope.outputBindingId === criterion.outputBindingId,
+    );
+    return `Root criterion: ${criterion.rootCriterionId}; field=${criterion.rootTargetFieldId}; write=${criterion.rootWriteObservationId}; statement=${criterion.statementId}; semanticScope=${semanticScope?.semanticScopeId ?? "none"}`;
+  });
   return (
     [
       "Target Field Causal Slice",
       `Task: ${artifact.request.rootTaskId}`,
       `Table: ${artifact.request.rootTable}`,
       `Target fields: ${artifact.request.rootFields.join(", ")}`,
+      `Root criteria: ${artifact.rootCriteria.length}`,
+      ...criterionLines,
       `Candidate branches: ${artifact.candidateUniverse.branches.length}`,
       `Assessments: ${statusLine}`,
       `Minimum confirmed rerun tasks: ${artifact.rerunSets.minimumConfirmed.taskIds.join(", ") || "none"}`,
@@ -140,7 +151,9 @@ function processIsAlive(pid: number): boolean {
 
 function readOwnerPid(lockPath: string): number | null {
   try {
-    const value = JSON.parse(readFileSync(lockPath, "utf8")) as { pid?: unknown };
+    const value = JSON.parse(readFileSync(lockPath, "utf8")) as {
+      pid?: unknown;
+    };
     return typeof value.pid === "number" ? value.pid : null;
   } catch {
     return null;
@@ -166,10 +179,13 @@ function acquireLock(lockPath: string): void {
       if (code !== "EEXIST") throw error;
       const ownerPid = readOwnerPid(lockPath);
       if (
-        (ownerPid === null && Date.now() - statSync(lockPath).mtimeMs < UNKNOWN_LOCK_STALE_MS) ||
+        (ownerPid === null &&
+          Date.now() - statSync(lockPath).mtimeMs < UNKNOWN_LOCK_STALE_MS) ||
         (ownerPid !== null && processIsAlive(ownerPid))
       )
-        throw new Error(`CAUSAL_SLICE_PUBLICATION_LOCKED:${ownerPid ?? "UNKNOWN"}`);
+        throw new Error(
+          `CAUSAL_SLICE_PUBLICATION_LOCKED:${ownerPid ?? "UNKNOWN"}`,
+        );
       unlinkSync(lockPath);
     }
   }
@@ -195,21 +211,22 @@ function rollbackJournal(
   }
 }
 
-function validatedJournal(
-  value: unknown,
-  outputDir: string,
-): PublishJournal {
+function validatedJournal(value: unknown, outputDir: string): PublishJournal {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("CAUSAL_SLICE_PUBLICATION_JOURNAL_INVALID");
   const journal = value as Partial<PublishJournal>;
   const allowedNames = new Set<string>(OUTPUT_NAMES);
   const validNames = (names: unknown): names is readonly OutputName[] =>
-    Array.isArray(names) && names.every((name) => typeof name === "string" && allowedNames.has(name));
+    Array.isArray(names) &&
+    names.every((name) => typeof name === "string" && allowedNames.has(name));
   const resolvedOutput = resolve(outputDir);
   const safeOwnedDir = (path: unknown, prefix: string): path is string => {
     if (typeof path !== "string") return false;
     const resolvedPath = resolve(path);
-    return resolvedPath.startsWith(`${resolvedOutput}${sep}`) && basename(resolvedPath).startsWith(prefix);
+    return (
+      resolvedPath.startsWith(`${resolvedOutput}${sep}`) &&
+      basename(resolvedPath).startsWith(prefix)
+    );
   };
   if (
     typeof journal.pid !== "number" ||
@@ -218,7 +235,8 @@ function validatedJournal(
     !validNames(journal.replaced) ||
     !validNames(journal.backedUp) ||
     !["PREPARED", "REPLACING", "COMMITTED"].includes(String(journal.status))
-  ) throw new Error("CAUSAL_SLICE_PUBLICATION_JOURNAL_INVALID");
+  )
+    throw new Error("CAUSAL_SLICE_PUBLICATION_JOURNAL_INVALID");
   return journal as PublishJournal;
 }
 
@@ -248,7 +266,9 @@ export function publishTargetFieldCausalSlice(
 ): TargetFieldCausalSlicePublishedFiles {
   const validationErrors = validateCausalSliceArtifact(options.artifact);
   if (validationErrors.length > 0)
-    throw new Error(`CAUSAL_SLICE_ARTIFACT_INVALID:${validationErrors.join(";")}`);
+    throw new Error(
+      `CAUSAL_SLICE_ARTIFACT_INVALID:${validationErrors.join(";")}`,
+    );
   const outputDir = resolve(options.outputDir);
   const paths = outputPaths(outputDir);
   const formatText =
@@ -344,7 +364,14 @@ export function publishTargetFieldCausalSlice(
   } catch (error) {
     try {
       rollbackJournal(
-        { pid: process.pid, stagingDir, backupDir, replaced, backedUp, status: "REPLACING" },
+        {
+          pid: process.pid,
+          stagingDir,
+          backupDir,
+          replaced,
+          backedUp,
+          status: "REPLACING",
+        },
         paths,
       );
       if (existsSync(journalPath)) unlinkSync(journalPath);

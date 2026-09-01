@@ -262,6 +262,8 @@ export interface TableProducerIndex {
 
 export interface BuildTableProducerIndexOptions {
   readonly now?: () => string;
+  /** Test-only escape hatch for append-only concurrent input roots. */
+  readonly allowInputChanges?: boolean;
 }
 
 /**
@@ -297,6 +299,7 @@ export interface TableProducerInputChanges {
 
 export interface UpdateTableProducerIndexOptions {
   readonly now?: () => string;
+  readonly allowInputChanges?: boolean;
 }
 
 export interface UpdateTableProducerIndexResult {
@@ -308,6 +311,7 @@ export interface UpdateTableProducerIndexResult {
 
 export interface PinTableProducerIndexOptions {
   readonly now?: () => string;
+  readonly allowInputChanges?: boolean;
 }
 
 export interface PinTableProducerIndexResult {
@@ -1366,7 +1370,11 @@ function manifestHash(
 
 export function buildTableProducerInputManifest(
   dataRootInput: string,
-  options: { readonly generation?: number; readonly now?: () => string } = {},
+  options: {
+    readonly generation?: number;
+    readonly now?: () => string;
+    readonly allowInputChanges?: boolean;
+  } = {},
 ): TableProducerInputManifest {
   const dataRoot = resolve(dataRootInput);
   const initialRawFingerprint = rawTreeFingerprint(dataRoot);
@@ -1380,7 +1388,10 @@ export function buildTableProducerInputManifest(
   const inputFingerprint = sha256Text(
     canonicalJson(packs as unknown as JsonValue),
   );
-  if (rawTreeFingerprint(dataRoot) !== initialRawFingerprint)
+  if (
+    !options.allowInputChanges &&
+    rawTreeFingerprint(dataRoot) !== initialRawFingerprint
+  )
     throw new Error("INPUT_CHANGED_DURING_MANIFEST");
   const withoutHash: Omit<TableProducerInputManifest, "contentHash"> = {
     schemaVersion: "1.0.0",
@@ -1740,7 +1751,10 @@ export function buildTableProducerIndex(
       businessCorrectness: "NOT_EVALUATED" as const,
     },
   };
-  if (rawTreeFingerprint(dataRoot) !== initialRawFingerprint)
+  if (
+    !options.allowInputChanges &&
+    rawTreeFingerprint(dataRoot) !== initialRawFingerprint
+  )
     throw new Error("INPUT_CHANGED_DURING_BUILD");
   return {
     ...withoutHash,
@@ -2565,6 +2579,7 @@ export function updateTableProducerIndex(
   const baseManifest = buildTableProducerInputManifest(dataRootInput, {
     generation: 1,
     now,
+    allowInputChanges: options.allowInputChanges,
   });
   const generation = previousManifest
     ? baseManifest.inputFingerprint === previousManifest.inputFingerprint
@@ -2586,7 +2601,15 @@ export function updateTableProducerIndex(
     changes.status !== "CHANGED";
   const index = reused
     ? previousIndex!
-    : buildTableProducerIndex(dataRootInput, { now });
+    : buildTableProducerIndex(dataRootInput, {
+        now,
+        allowInputChanges: options.allowInputChanges,
+      });
+  if (
+    options.allowInputChanges &&
+    index.inputFingerprint !== manifest.inputFingerprint
+  )
+    return { index, manifest, changes, reused: false };
   writeTableProducerIndex(indexPath, index);
   writeTableProducerInputManifest(manifestPath, manifest);
   return { index, manifest, changes, reused };
@@ -2609,6 +2632,7 @@ export function pinTableProducerIndex(
   const manifest = buildTableProducerInputManifest(dataRoot, {
     generation: 1,
     now: options.now,
+    allowInputChanges: options.allowInputChanges,
   });
   const snapshotRoot = join(cacheRoot, manifest.inputFingerprint);
   const indexPath = join(snapshotRoot, "producer-index.json");
@@ -2633,9 +2657,22 @@ export function pinTableProducerIndex(
       // Rebuild the current fingerprint entry below when either cache file is invalid.
     }
   }
-  const index = buildTableProducerIndex(dataRoot, { now: options.now });
-  if (index.inputFingerprint !== manifest.inputFingerprint)
+  const index = buildTableProducerIndex(dataRoot, {
+    now: options.now,
+    allowInputChanges: options.allowInputChanges,
+  });
+  if (index.inputFingerprint !== manifest.inputFingerprint) {
+    if (options.allowInputChanges)
+      return {
+        index,
+        manifest,
+        inputFingerprint: index.inputFingerprint,
+        indexPath,
+        manifestPath,
+        reused: false,
+      };
     throw new Error("INPUT_CHANGED_DURING_PINNED_INDEX_BUILD");
+  }
   writeTableProducerIndex(indexPath, index);
   writeTableProducerInputManifest(manifestPath, manifest);
   return {

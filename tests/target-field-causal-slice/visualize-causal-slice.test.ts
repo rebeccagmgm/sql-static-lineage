@@ -1,13 +1,73 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  globalExpressionId,
+  globalRelationId,
+} from "../../scripts/machine-facts/plan-occurrence-id.ts";
 import { renderTargetFieldCausalSliceHtml } from "../../scripts/visualize/target-field-causal-slice-visualize.ts";
 import type { CausalSliceArtifact } from "../../scripts/reconcile/consumer/target-field-causal-slice/causal-slice-contract.ts";
+import { makeSemanticOccurrenceScope } from "../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-contract.ts";
+import {
+  canonicalRootCriterionId,
+  type RootCriterion,
+} from "../../scripts/reconcile/consumer/target-field-causal-slice/write-scoped-plan-inputs.ts";
+
+const ROOT_FIELD = "hive|warehouse|target|demo.target|amount";
+
+function rootCriterion(writeOrdinal: number): RootCriterion {
+  const localRootRelationId = `root.project.${writeOrdinal}`;
+  const localOutputExpressionId = `${localRootRelationId}:expression:project_expression:0`;
+  const value: Omit<RootCriterion, "rootCriterionId"> = {
+    rootTaskId: "root-task",
+    targetTableKey: "hive|warehouse|target|demo.target",
+    targetFieldName: "amount",
+    rootTargetFieldId: ROOT_FIELD,
+    targetFieldBindingId: `target-binding:${writeOrdinal}`,
+    rootWriteObservationId: `write:root:${writeOrdinal}`,
+    writeKind: "INSERT",
+    sqlSourceId: `sql:root:${writeOrdinal}`,
+    sqlSnapshot: `snapshots/sql/root-${writeOrdinal}.sql`,
+    sqlSha256: `sql-hash-${writeOrdinal}`,
+    writeStatementId: `write-statement:${writeOrdinal}`,
+    writeStatementIndex: writeOrdinal,
+    statementId: `query-statement:${writeOrdinal}`,
+    statementIndex: writeOrdinal,
+    queryProducerStatementId: `query-statement:${writeOrdinal}`,
+    rootRelationId: globalRelationId(
+      "root-task",
+      writeOrdinal,
+      localRootRelationId,
+    ),
+    outputExpressionId: globalExpressionId(
+      "root-task",
+      writeOrdinal,
+      localOutputExpressionId,
+    ),
+    outputBindingId: `output-binding:${writeOrdinal}`,
+    sourceOrdinal: 0,
+    targetOrdinal: 0,
+    producerOutputName: "amount",
+    expressionRole: "PROJECT_EXPRESSION",
+    localRootRelationId,
+    localOutputExpressionId,
+    evidenceRefs: [`write:root:${writeOrdinal}`],
+  };
+  return { rootCriterionId: canonicalRootCriterionId(value), ...value };
+}
+
+const ROOT_A = rootCriterion(0);
+const ROOT_B = rootCriterion(1);
+const SCOPE_A = makeSemanticOccurrenceScope({ rootCriterion: ROOT_A });
+const SCOPE_B = makeSemanticOccurrenceScope({ rootCriterion: ROOT_B });
 
 function artifact(): CausalSliceArtifact {
-  const root = "hive|warehouse|target|demo.target|amount";
+  const root = ROOT_FIELD;
   const source = "hive|warehouse|source|demo.source|amount";
   const edge = {
     edgeId: "edge:source",
+    rootCriterionId: ROOT_A.rootCriterionId,
+    fromSemanticScopeId: SCOPE_A.semanticScopeId,
+    toSemanticScopeId: SCOPE_A.semanticScopeId,
     fromTaskId: "source-task",
     toTaskId: "root-task",
     fromSubject: {
@@ -28,15 +88,18 @@ function artifact(): CausalSliceArtifact {
   };
   return {
     artifactType: "TARGET_FIELD_CAUSAL_SLICE",
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     generatedAt: "2026-08-27T00:00:00Z",
     request: {
       rootTaskId: "root-task",
       rootTable: "demo.target",
       rootFields: [root],
-      rootWriteObservationIds: ["write:root:0"],
+      rootWriteObservationIds: ["write:root:0", "write:root:1"],
       negativeProofMode: "SAFE_RULES_ONLY",
     },
+    rootCriteria: [ROOT_A, ROOT_B],
+    semanticScopes: [SCOPE_A, SCOPE_B],
+    scopeGaps: [],
     inputFingerprints: {
       inputPack: [],
       machineFacts: [],
@@ -91,7 +154,12 @@ function artifact(): CausalSliceArtifact {
       },
       roots: [
         {
-          root: { rootTargetFieldId: root, taskId: "root-task" },
+          rootCriterionId: ROOT_A.rootCriterionId,
+          root: {
+            rootCriterion: ROOT_A,
+            semanticScope: SCOPE_A,
+            subject: { subjectKind: "PHYSICAL_FIELD", physicalFieldId: root },
+          },
           visitedStateKeys: [],
           activeCycleChecks: 0,
           frontiers: {
@@ -104,6 +172,7 @@ function artifact(): CausalSliceArtifact {
           paths: [
             {
               pathId: "path:source",
+              rootCriterionId: ROOT_A.rootCriterionId,
               rootTargetFieldId: root,
               rootDependenceKind: "VALUE_TO_TARGET",
               edges: [edge],
@@ -116,6 +185,33 @@ function artifact(): CausalSliceArtifact {
             controlPathCertainty: null,
             valueClosed: true,
             controlClosed: true,
+            valueGapIds: [],
+            controlGapIds: [],
+          },
+        },
+        {
+          rootCriterionId: ROOT_B.rootCriterionId,
+          root: {
+            rootCriterion: ROOT_B,
+            semanticScope: SCOPE_B,
+            subject: { subjectKind: "PHYSICAL_FIELD", physicalFieldId: root },
+          },
+          visitedStateKeys: [],
+          activeCycleChecks: 0,
+          frontiers: {
+            VALUE: 0,
+            EXPRESSION_CONTROL: 0,
+            ROWSET_CONTROL: 0,
+            WINDOW_CONTEXT: 0,
+            RELATION_CONTEXT: 0,
+          },
+          paths: [],
+          gaps: [],
+          decision: {
+            valuePathCertainty: null,
+            controlPathCertainty: null,
+            valueClosed: false,
+            controlClosed: false,
             valueGapIds: [],
             controlGapIds: [],
           },
@@ -134,6 +230,7 @@ function artifact(): CausalSliceArtifact {
       {
         assessmentId: "assessment:unknown",
         pairId: "pair:source",
+        rootCriterionId: ROOT_A.rootCriterionId,
         rootTargetFieldId: root,
         candidateBranchId: "branch:source",
         status: "UNKNOWN",
@@ -148,6 +245,7 @@ function artifact(): CausalSliceArtifact {
     assessmentGaps: [
       {
         gapId: "gap:source",
+        rootCriterionId: ROOT_A.rootCriterionId,
         rootTargetFieldId: root,
         candidateBranchId: "branch:source",
         reasonCode: "REQUIRED_PATH_UNKNOWN",
@@ -169,6 +267,7 @@ function artifact(): CausalSliceArtifact {
             taskId: "source-task",
             triggers: [
               {
+                rootCriterionId: ROOT_A.rootCriterionId,
                 rootTargetFieldId: root,
                 candidateBranchId: "branch:source",
                 assessmentId: "assessment:unknown",
@@ -248,11 +347,40 @@ describe("target-field causal-slice renderer", () => {
       "Conservative safety rerun set",
       "edge:source",
       "gap:source",
-      ])
+    ])
       expect(first).toContain(marker);
+    expect(first).toContain(ROOT_A.rootCriterionId);
+    expect(first).toContain(ROOT_B.rootCriterionId);
+    expect(first).toContain(`write:root:0`);
+    expect(first).toContain(`write:root:1`);
+    expect(first).toContain(SCOPE_A.semanticScopeId);
+    expect(first).toContain(SCOPE_B.semanticScopeId);
+    expect(first).toContain("from semantic scope");
+    expect(first).toContain("to semantic scope");
     expect(first).not.toContain("field-lineage");
     expect(first).toContain('href="target-field-causal-slice.json"');
     expect(first).not.toContain("window.__TARGET_FIELD_CAUSAL_SLICE__");
+  });
+
+  it("renders trusted list markup in table cells while escaping list values", () => {
+    const value = artifact();
+    const unsafe = '<script>alert("x")</script>';
+    const rendered = renderTargetFieldCausalSliceHtml({
+      ...value,
+      candidateUniverse: {
+        ...value.candidateUniverse,
+        branches: value.candidateUniverse.branches.map((branch, index) =>
+          index === 0 ? { ...branch, gapRefs: [unsafe] } : branch
+        ),
+      },
+    });
+
+    expect(rendered).toContain("<td><ul><li>");
+    expect(rendered).toContain(
+      "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;",
+    );
+    expect(rendered).not.toContain(unsafe);
+    expect(rendered).not.toContain("&lt;ul&gt;");
   });
 
   it("bounds large detail arrays and does not embed the canonical artifact", () => {

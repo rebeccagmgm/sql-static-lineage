@@ -14,6 +14,7 @@ import { validateCausalClosure } from "../../scripts/reconcile/consumer/target-t
 import { relationSummaryKey, summarizeTaskRelations, type TaskRelationSummary } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
 import { resolveTargetWrite } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/target-write-contract.ts";
 import type { CandidateBranch } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
+import { MACHINE_FACTS_CONTRACT_VERSION } from "../../scripts/machine-facts/machine-facts-contract.ts";
 
 const table: NonNullable<CandidateBranch["table"]> = { platform: "hive", dataSource: "gfhive", qualifiedName: "db.source", stableTableId: "db.source__gfhive", identityStatus: "SCHEMA_BACKED" };
 const occurrence = { occurrenceId: "task:c:statement:0:relation:read", readRelationId: "task:c:statement:0:relation:read", sqlSourceId: "task:c", statementIndex: 0, relationPath: ["root", "read"] } as const;
@@ -46,6 +47,67 @@ describe("target table causal closure baseline", () => {
     expect(result.ref?.identity.rootRelationId).toBe("task:root:statement:0:relation:root.project");
   });
 
+  it.each(["output binding", "dataset write"] as const)(
+    "fails closed when %s omits write_statement_id instead of using another statement identity",
+    (missingFrom) => {
+      const statementId = "task:root:slot:query:statement:0";
+      const binding = {
+        task_id: "root",
+        target_dataset: "db.target",
+        binding_status: "RESOLVED",
+        write_observation_id: "write:root:0",
+        write_statement_id: missingFrom === "output binding" ? undefined : statementId,
+        statement_id: statementId,
+        query_producer_statement_id: statementId,
+        expression_id: "task:root:statement:0:relation:root.project:expression:project_expression:0",
+        target_ordinal: 0,
+        evidence_refs: [],
+      };
+      const write = {
+        task_id: "root",
+        direction: "WRITE",
+        write_observation_id: "write:root:0",
+        write_statement_id: missingFrom === "dataset write" ? undefined : statementId,
+        statement_id: statementId,
+        query_producer_statement_id: statementId,
+        physical_dataset: "db.target",
+      };
+      const load = {
+        state: "CURRENT_L1",
+        factsRoot: "facts",
+        taskId: "root",
+        bundleDir: "",
+        indexPath: "",
+        statusPath: "",
+        records: {
+          "output-field-bindings.jsonl": [binding],
+          "dataset-io.jsonl": [write],
+        },
+        evidence: {},
+        issues: [],
+      } as any;
+
+      const result = resolveTargetWrite({
+        taskId: "root",
+        targetTable: "db.target",
+        writeObservationIds: ["write:root:0"],
+        load,
+        snapshot: {
+          inputPackFingerprint: "i",
+          machineFactsHash: "m",
+          producerIndexHash: "p",
+          tableMultiHopHash: "t",
+          semanticRuleVersion: "v",
+        },
+      });
+
+      expect(result.ref).toBeNull();
+      expect(result.gaps).toEqual([
+        expect.objectContaining({ reasonCode: "TARGET_WRITE_AMBIGUOUS" }),
+      ]);
+    },
+  );
+
   it("uses dataset write observation order instead of target field ordinal", () => {
     const load = { state: "CURRENT_L1", factsRoot: "facts", taskId: "root", bundleDir: "", indexPath: "", statusPath: "", records: {
       "output-field-bindings.jsonl": [{ task_id: "root", target_dataset: "db.target", binding_status: "RESOLVED", write_observation_id: "write:root:1", write_statement_id: "task:root:slot:query:statement:1", expression_id: "task:root:statement:1:relation:root.project:expression:project_expression:0", target_ordinal: 0, evidence_refs: [] }],
@@ -57,6 +119,82 @@ describe("target table causal closure baseline", () => {
     const result = resolveTargetWrite({ taskId: "root", targetTable: "db.target", writeObservationIds: ["write:root:1"], load, snapshot: { inputPackFingerprint: "i", machineFactsHash: "m", producerIndexHash: "p", tableMultiHopHash: "t", semanticRuleVersion: "v" } });
     expect(result.gaps).toHaveLength(0);
     expect(result.ref?.identity.taskWriteOrdinal).toBe(1);
+  });
+
+  it("retains target-table write-statement identity for the active publisher bundle", () => {
+    const load = {
+      state: "LEGACY_NOT_L1",
+      factsRoot: "facts",
+      taskId: "root",
+      bundleDir: "",
+      indexPath: "",
+      statusPath: "",
+      manifest: { schema_version: MACHINE_FACTS_CONTRACT_VERSION },
+      records: {
+        "output-field-bindings.jsonl": [{
+          task_id: "root",
+          target_dataset: "db.target",
+          binding_status: "RESOLVED",
+          write_observation_id: "write:root:2",
+          write_statement_id: "task:root:slot:insert:statement:2",
+          query_producer_statement_id: "task:root:slot:query:statement:7",
+          expression_id: "task:root:statement:7:relation:root.project:expression:project_expression:0",
+          target_ordinal: 0,
+          evidence_refs: [],
+        }],
+        "dataset-io.jsonl": [{
+          task_id: "root",
+          direction: "WRITE",
+          write_observation_id: "write:root:2",
+          write_statement_id: "task:root:slot:insert:statement:2",
+          query_producer_statement_id: "task:root:slot:query:statement:7",
+          physical_dataset: "db.target",
+        }],
+      },
+      evidence: {},
+      issues: [],
+    } as any;
+
+    const result = resolveTargetWrite({
+      taskId: "root",
+      targetTable: "db.target",
+      writeObservationIds: ["write:root:2"],
+      load,
+      snapshot: { inputPackFingerprint: "i", machineFactsHash: "m", producerIndexHash: "p", tableMultiHopHash: "t", semanticRuleVersion: "v" },
+    });
+
+    expect(result.gaps).toEqual([]);
+    expect(result.ref?.identity).toMatchObject({
+      sqlSourceId: "task:root:slot:insert",
+      statementOrdinal: 2,
+      rootRelationId: "task:root:statement:7:relation:root.project",
+    });
+  });
+
+  it("fails closed when a selected write has duplicate dataset-io records", () => {
+    const write = { task_id: "root", direction: "WRITE", write_observation_id: "write:root:0", write_statement_id: "task:root:slot:query:statement:0", physical_dataset: "db.target" };
+    const load = { state: "CURRENT_L1", factsRoot: "facts", taskId: "root", bundleDir: "", indexPath: "", statusPath: "", records: { "output-field-bindings.jsonl": [{ task_id: "root", target_dataset: "db.target", binding_status: "RESOLVED", write_observation_id: "write:root:0", write_statement_id: "task:root:slot:query:statement:0", expression_id: "task:root:statement:0:relation:root.project:expression:project_expression:0", target_ordinal: 0, evidence_refs: [] }], "dataset-io.jsonl": [write, { ...write }] }, evidence: {}, issues: [] } as any;
+
+    const result = resolveTargetWrite({ taskId: "root", targetTable: "db.target", writeObservationIds: ["write:root:0"], load, snapshot: { inputPackFingerprint: "i", machineFactsHash: "m", producerIndexHash: "p", tableMultiHopHash: "t", semanticRuleVersion: "v" } });
+
+    expect(result.ref).toBeNull();
+    expect(result.gaps).toEqual([
+      expect.objectContaining({ reasonCode: "TARGET_WRITE_EVIDENCE_MISSING" }),
+    ]);
+  });
+
+  it("fails closed when the write occurrence contradicts the requested target table", () => {
+    const load = { state: "CURRENT_L1", factsRoot: "facts", taskId: "root", bundleDir: "", indexPath: "", statusPath: "", records: {
+      "output-field-bindings.jsonl": [{ task_id: "root", target_dataset: "db.target", binding_status: "RESOLVED", write_observation_id: "write:root:0", write_statement_id: "task:root:slot:query:statement:0", expression_id: "task:root:statement:0:relation:root.project:expression:project_expression:0", target_ordinal: 0, evidence_refs: [] }],
+      "dataset-io.jsonl": [{ task_id: "root", direction: "WRITE", write_observation_id: "write:root:0", write_statement_id: "task:root:slot:query:statement:0", physical_dataset: "db.other" }],
+    }, evidence: {}, issues: [] } as any;
+
+    const result = resolveTargetWrite({ taskId: "root", targetTable: "db.target", writeObservationIds: ["write:root:0"], load, snapshot: { inputPackFingerprint: "i", machineFactsHash: "m", producerIndexHash: "p", tableMultiHopHash: "t", semanticRuleVersion: "v" } });
+
+    expect(result.ref).toBeNull();
+    expect(result.gaps).toEqual([
+      expect.objectContaining({ reasonCode: "TARGET_TABLE_MISMATCH" }),
+    ]);
   });
 
   it("propagates filter and join semantics to read occurrences once", () => {

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { Schema, SqlSession, type SchemaMapping } from "../../../../src/index.ts";
+import { Schema, type SchemaMapping } from "../../../../src/index.ts";
 import {
   canonicalJson,
   sha256,
@@ -20,12 +20,11 @@ import {
   type CurrentBundleLoad,
   type JsonRecord,
 } from "../../../query/current-task-bundle.ts";
+import { isCanonicalTargetWriteBundle } from "../target-write-evidence-resolver.ts";
 import {
   validateTaskDocument,
   type TaskDocument,
 } from "../../../input/shared/input-pack.ts";
-import { taskSqlDialect } from "../../../plans/task-sql-dialect.ts";
-import { buildPlanFacts } from "../../../plans/plan-adapter.ts";
 import {
   physicalFieldKey,
   type PhysicalFieldIdentity,
@@ -45,16 +44,26 @@ import {
   type SemanticDependencyGap,
   type SemanticDependencyNormalization,
 } from "./semantic-dependency-normalizer.ts";
-import {
-  integrateCalciteOperatorEvidence,
-  type CalciteOperatorCausalEvidence,
-} from "./calcite-causal-evidence.ts";
 import type {
   SemanticDependencyApplication,
   SemanticDependencyDefinition,
   SemanticDependencyEdge,
+  SemanticOccurrenceScope,
   SemanticSubject,
 } from "./semantic-dependency-contract.ts";
+import {
+  makeSemanticOccurrenceScope,
+  semanticWriteOccurrenceKey,
+} from "./semantic-dependency-contract.ts";
+import {
+  makeWriteScopedPlanInputGap,
+  resolveWriteScopedPlanInputs,
+  type RootCriterion,
+  type WriteScopedPlanInputGap,
+} from "./write-scoped-plan-inputs.ts";
+import { buildWriteScopedPlans } from "./write-scoped-plan-builder.ts";
+import { resolveUnambiguousRelationProducerScopes } from "./relation-producer-scope.ts";
+import { guardOccurrenceExactPhysicalExpansion } from "./strict-physical-expansion.ts";
 import {
   projectCandidateUniverse,
   buildAssessmentPairSkeleton,
@@ -64,6 +73,10 @@ import {
 import {
   traverseCausalDependencies,
   type CausalTraversalResult,
+  type ProducerScopeResolutionRequest,
+  type ResolvedProducerScope,
+  type SemanticTraversalLoadRequest,
+  type SemanticTraversalLoadResult,
 } from "./causal-traversal.ts";
 import {
   assessPositiveCausalRelationships,
@@ -106,11 +119,6 @@ export interface TargetFieldCausalSliceOptions {
   readonly output?: string;
   readonly outputDir?: string;
   readonly summaryOutput?: string;
-  readonly semanticOracle?: "calcite";
-  readonly calciteMappingReport?: string;
-  readonly semanticOracleOutput?: string;
-  /** Optional independent Calcite causal-evidence bundle; default is absent. */
-  readonly calciteCausalEvidence?: string;
   readonly maxDepth?: number;
   readonly maxValueStates?: number;
   readonly maxValuePaths?: number;
@@ -210,20 +218,102 @@ function relationEntryMatches(entry: JsonRecord, requestedId: string): boolean {
   return id !== null && sameRelationReference(id, requestedId);
 }
 
-function descendantReadEntries(
-  load: CurrentBundleLoad,
-  requestedId: string,
-): readonly JsonRecord[] {
-  const entries = relationEntries(load);
-  const byId = new Map<string, JsonRecord>();
-  for (const entry of entries) {
-    const id = relationEntryId(entry);
-    if (id && !byId.has(id)) byId.set(id, entry);
+interface ScopedRelationReference {
+  readonly taskId: string | null;
+  readonly statementIndex: number;
+}
+
+function scopedRelationReference(value: string): ScopedRelationReference | null {
+  const machineFacts = value.match(
+    /^task:([^:]+):statement:(\d+):relation:.+$/i,
+  );
+  const planOccurrence = value.match(/^relation:(\d+):.+$/i);
+  const legacyOccurrence = value.match(/^query#(\d+):.+$/i);
+  const match = machineFacts ?? planOccurrence ?? legacyOccurrence;
+  if (!match) return null;
+  const statementIndex = Number(match[machineFacts ? 2 : 1]);
+  if (!Number.isSafeInteger(statementIndex) || statementIndex < 0) return null;
+  return {
+    taskId: machineFacts ? machineFacts[1]! : null,
+    statementIndex,
+  };
+}
+
+function machineFactsRelationScope(
+  value: string,
+): { readonly taskId: string; readonly statementIndex: number } | null {
+  const scope = scopedRelationReference(value);
+  return scope?.taskId ? { taskId: scope.taskId, statementIndex: scope.statementIndex } : null;
+}
+
+/**
+ * Resolve relation descendants only inside the statement occurrence proven by
+ * both statements.jsonl and globally-scoped relation ids.  Local-id aliases
+ * are considered only after this boundary is fixed, so structurally identical
+ * sibling INSERT statements cannot contaminate one another.
+ */
+export function selectStatementScopedRelationReads(input: {
+  readonly taskId: string;
+  readonly statements: readonly JsonRecord[];
+  readonly relations: readonly JsonRecord[];
+  readonly requestedRelationId: string;
+}): readonly JsonRecord[] {
+  const requestedScope = scopedRelationReference(input.requestedRelationId);
+  if (
+    !requestedScope ||
+    (requestedScope.taskId !== null && requestedScope.taskId !== input.taskId)
+  ) return [];
+
+  const statementRows = input.statements.filter((entry) =>
+    text(entry.task_id) === input.taskId &&
+    entry.statement_index === requestedScope.statementIndex
+  );
+  if (statementRows.length !== 1) return [];
+  const statementId = text(statementRows[0]!.statement_id);
+  if (!statementId) return [];
+
+  const scopedEntries: JsonRecord[] = [];
+  for (const entry of input.relations) {
+    const relationId = relationEntryId(entry);
+    const entryStatementId = text(entry.statement_id);
+    if (!relationId) {
+      if (entryStatementId === statementId) return [];
+      continue;
+    }
+    const relationScope = machineFactsRelationScope(relationId);
+    if (!relationScope) {
+      if (entryStatementId === statementId) return [];
+      continue;
+    }
+    if (
+      relationScope.taskId !== input.taskId ||
+      relationScope.statementIndex !== requestedScope.statementIndex
+    ) continue;
+    const relation = record(entry.relation);
+    if (
+      text(entry.task_id) !== input.taskId ||
+      entryStatementId !== statementId ||
+      text(relation.id) !== relationId
+    ) return [];
+    scopedEntries.push(entry);
   }
-  const queue = entries
-    .filter((entry) => relationEntryMatches(entry, requestedId))
-    .map((entry) => relationEntryId(entry))
-    .filter((id): id is string => id !== null);
+
+  const byId = new Map<string, JsonRecord>();
+  for (const entry of scopedEntries) {
+    const id = relationEntryId(entry)!;
+    if (byId.has(id)) return [];
+    byId.set(id, entry);
+  }
+  const uniqueMatch = (reference: string): JsonRecord | null => {
+    const candidates = scopedEntries.filter((entry) =>
+      relationEntryMatches(entry, reference)
+    );
+    return candidates.length === 1 ? candidates[0]! : null;
+  };
+  const requestedEntry = uniqueMatch(input.requestedRelationId);
+  if (!requestedEntry) return [];
+
+  const queue = [relationEntryId(requestedEntry)!];
   const seen = new Set<string>();
   const reads: JsonRecord[] = [];
   while (queue.length > 0) {
@@ -231,20 +321,37 @@ function descendantReadEntries(
     if (seen.has(id)) continue;
     seen.add(id);
     const entry = byId.get(id);
-    if (!entry) continue;
+    if (!entry) return [];
     const relation = record(entry.relation);
     if (text(relation.type)?.toLowerCase() === "read") {
       if (relation.is_cte !== true) reads.push(entry);
       continue;
     }
     for (const child of relationChildren(relation)) {
-      const childEntry = [...byId.keys()].find((candidate) =>
-        sameRelationReference(candidate, child),
-      );
-      if (childEntry) queue.push(childEntry);
+      const childScope = machineFactsRelationScope(child);
+      if (
+        !childScope ||
+        childScope.taskId !== input.taskId ||
+        childScope.statementIndex !== requestedScope.statementIndex
+      ) return [];
+      const childEntry = uniqueMatch(child);
+      if (!childEntry) return [];
+      queue.push(relationEntryId(childEntry)!);
     }
   }
   return reads;
+}
+
+function descendantReadEntries(
+  load: CurrentBundleLoad,
+  requestedId: string,
+): readonly JsonRecord[] {
+  return selectStatementScopedRelationReads({
+    taskId: load.taskId,
+    statements: records(load.records["statements.jsonl"]),
+    relations: relationEntries(load),
+    requestedRelationId: requestedId,
+  });
 }
 
 function relationReadMatchesBridge(
@@ -321,22 +428,6 @@ function relationBridgeEvidenceRefs(
   return [...refs].sort((left, right) => left.localeCompare(right));
 }
 
-/**
- * Plan Facts produced directly by the SQL adapter uses the statement-local
- * relation id. The fingerprint-matched Machine Facts/Calcite lane uses the
- * same id behind an explicit task/statement prefix. Keep this as a strict
- * representation adapter; never fall back to table or column names.
- */
-function calciteRelationIdAliases(
-  taskId: string,
-  relationId: string,
-): readonly string[] {
-  const prefix = `task:${taskId}:statement:0:relation:`;
-  return relationId.startsWith(prefix)
-    ? [relationId, relationId.slice(prefix.length)]
-    : [relationId, prefix + relationId];
-}
-
 function readJson(path: string, layer: CausalSliceStaleLayer): JsonRecord {
   try {
     const value: unknown = JSON.parse(readFileSync(resolve(path), "utf8"));
@@ -349,40 +440,6 @@ function readJson(path: string, layer: CausalSliceStaleLayer): JsonRecord {
       `${resolve(path)}:${error instanceof Error ? error.message : String(error)}`,
     );
   }
-}
-
-function calciteEvidenceByTaskAndStatement(
-  path: string | undefined,
-): ReadonlyMap<string, readonly CalciteOperatorCausalEvidence[]> {
-  if (!path) return new Map();
-  const value = readJson(path, "CALCITE_DIFFERENTIAL");
-  if (text(value.reportKind) !== "INDEPENDENT_CALCITE_CAUSAL_EVIDENCE")
-    throw new TargetFieldCausalSliceStaleError(
-      "CALCITE_DIFFERENTIAL",
-      "report kind must be INDEPENDENT_CALCITE_CAUSAL_EVIDENCE",
-    );
-  if (!Array.isArray(value.observations))
-    throw new TargetFieldCausalSliceStaleError(
-      "CALCITE_DIFFERENTIAL",
-      "observations are missing",
-    );
-  const byKey = new Map<string, CalciteOperatorCausalEvidence[]>();
-  for (const candidate of value.observations) {
-    const item = record(candidate);
-    const taskId = text(item.taskId);
-    const statementId = text(item.statementId);
-    const evidenceId = text(item.evidenceId);
-    if (!taskId || !statementId || !evidenceId)
-      throw new TargetFieldCausalSliceStaleError(
-        "CALCITE_DIFFERENTIAL",
-        "every observation requires taskId, statementId and evidenceId",
-      );
-    const key = `${taskId}\u0000${statementId}`;
-    const values = byKey.get(key) ?? [];
-    values.push(candidate as unknown as CalciteOperatorCausalEvidence);
-    byKey.set(key, values);
-  }
-  return byKey;
 }
 
 function requireFingerprint(value: unknown, name: string, layer: CausalSliceStaleLayer): string {
@@ -488,81 +545,124 @@ function physicalResolver(
   };
 }
 
-function outputRoots(
-  taskId: string,
-  load: CurrentBundleLoad,
-  table: ReturnType<typeof targetEntry>,
-  requestedRootFields: readonly string[],
-): readonly { rootTargetFieldId: string; outputName: string }[] {
-  const bindings = (load.records["output-field-bindings.jsonl"] ?? [])
-    .filter((binding) =>
-      binding.task_id === taskId &&
-      binding.binding_status === "RESOLVED" &&
-      text(binding.target_dataset)?.toLowerCase() === table.qualifiedName.toLowerCase(),
-    );
-  const names = bindings.map((binding) => text(binding.target_field)).filter((value): value is string => value !== null);
-  const selected = requestedRootFields.length > 0 ? requestedRootFields : names;
-  return sortedUnique(selected.map((field) => field.split(".").at(-1) ?? field)).flatMap((name) => {
-    const identity = physicalFieldForTable(table, name);
-    return identity ? [{ rootTargetFieldId: physicalFieldKey(identity), outputName: name }] : [];
-  });
-}
-
 function buildPlanInputs(
-  dataRoot: string,
   taskId: string,
   pack: PhysicalFieldExpanderTaskPack,
   load: CurrentBundleLoad,
   catalog: PhysicalTableCatalog,
   validatedTableKeys: ReadonlySet<string>,
-  roots: readonly { rootTargetFieldId: string; outputName: string }[],
+  targetTable: ReturnType<typeof targetEntry>,
+  writeObservationIds: readonly string[],
+  requestedTargetFields: readonly string[],
+  causalRootCriterion?: RootCriterion,
+  exactOutputBindingIds?: ReadonlySet<string>,
 ): {
-  readonly normalizations: readonly SemanticDependencyNormalization[];
+  readonly normalizations: readonly {
+    readonly normalization: SemanticDependencyNormalization;
+    readonly semanticScope: SemanticOccurrenceScope;
+    readonly relationIds: ReadonlySet<string>;
+  }[];
   readonly identities: ReadonlyMap<string, PhysicalFieldIdentity>;
   /** Relation ids come from the current Plan Facts graph, never from Calcite. */
   readonly relationIds: ReadonlySet<string>;
   /** Only these relation ids are the actual roots of the Plan Facts statement. */
   readonly rootRelationIds: ReadonlySet<string>;
+  readonly rootCriteria: readonly RootCriterion[];
+  readonly semanticScopes: readonly SemanticOccurrenceScope[];
+  readonly scopeGaps: readonly WriteScopedPlanInputGap[];
 } {
-  const selected = selectLineageSql(dataRoot, pack.path, pack.document);
-  const sql = selected.selected.content;
   const schema = schemaFor(load, pack);
-  const session = SqlSession.create(sql, taskSqlDialect(String(pack.document.taskCategory)), { schema });
   const identities = new Map<string, PhysicalFieldIdentity>();
-  const normalizations: SemanticDependencyNormalization[] = [];
+  const normalizations: {
+    readonly normalization: SemanticDependencyNormalization;
+    readonly semanticScope: SemanticOccurrenceScope;
+    readonly relationIds: ReadonlySet<string>;
+  }[] = [];
   const relationIds = new Set<string>();
   const rootRelationIds = new Set<string>();
-  for (const cell of session.doc.statements) {
-    const plan = buildPlanFacts(cell, sql, {
-      dialect: taskSqlDialect(String(pack.document.taskCategory)),
-      schema,
-      include_expression_dependencies: true,
-    });
-    for (const relation of plan.relations) relationIds.add(relation.id);
-    for (const root of plan.roots) rootRelationIds.add(root);
-    const normalized = normalizeSemanticDependencies({
-      plan,
-      idNamespace: taskId,
-      roots: roots.map((root) => ({
-        rootTargetFieldId: root.rootTargetFieldId,
-        outputName: root.outputName,
-      })),
-      physicalFieldResolver: (reference, column) => {
-        const field = physicalResolver(
-          taskId,
-          pack,
-          load,
-          catalog,
-          validatedTableKeys,
-        )(reference, column);
-        if (field) identities.set(physicalFieldKey(field), field);
-        return field;
-      },
-      machineFacts: load.records,
-    });
-    normalizations.push(normalized);
+  const resolution = resolveWriteScopedPlanInputs({
+    taskId,
+    targetTableKey: physicalTableKey(targetTable),
+    writeObservationIds,
+    requestedTargetFields,
+    load,
+    resolveRootTargetFieldId: (targetFieldName) => {
+      const identity = physicalFieldForTable(targetTable, targetFieldName);
+      if (identity) identities.set(physicalFieldKey(identity), identity);
+      return identity ? physicalFieldKey(identity) : null;
+    },
+  });
+  const selectedCriteria = exactOutputBindingIds === undefined
+    ? resolution.rootCriteria
+    : resolution.rootCriteria.filter((criterion) =>
+        exactOutputBindingIds.has(criterion.outputBindingId),
+      );
+  const built = buildWriteScopedPlans({
+    rootCriteria: selectedCriteria,
+    load,
+    schema,
+  });
+  const scopes: SemanticOccurrenceScope[] = [];
+  for (const scopedPlan of built.plans) {
+    const scopedRelationIds = new Set(
+      scopedPlan.plan.relations.map((relation) => relation.id),
+    );
+    for (const relationId of scopedRelationIds) relationIds.add(relationId);
+    for (const root of scopedPlan.plan.roots) rootRelationIds.add(root);
+    for (const localRootCriterion of scopedPlan.rootCriteria) {
+      const semanticScope = makeSemanticOccurrenceScope({
+        rootCriterion: localRootCriterion,
+        evidenceRefs: localRootCriterion.evidenceRefs,
+      });
+      scopes.push(semanticScope);
+      const normalized = normalizeSemanticDependencies({
+        plan: scopedPlan.plan,
+        rootCriterion: causalRootCriterion ?? localRootCriterion,
+        localRootCriterion,
+        semanticScope,
+        ...(causalRootCriterion === undefined ||
+        causalRootCriterion.rootTargetFieldId ===
+          localRootCriterion.rootTargetFieldId
+          ? {}
+          : {
+              targetSubject: {
+                subjectKind: "PHYSICAL_FIELD" as const,
+                physicalFieldId: localRootCriterion.rootTargetFieldId,
+              },
+            }),
+        physicalFieldResolver: (reference, column) => {
+          const field = physicalResolver(
+            taskId,
+            pack,
+            load,
+            catalog,
+            validatedTableKeys,
+          )(reference, column);
+          if (field) identities.set(physicalFieldKey(field), field);
+          return field;
+        },
+        machineFacts: load.records,
+      });
+      normalizations.push({
+        normalization: normalized,
+        semanticScope,
+        relationIds: scopedRelationIds,
+      });
+    }
   }
-  return { normalizations, identities, relationIds, rootRelationIds };
+  return {
+    normalizations,
+    identities,
+    relationIds,
+    rootRelationIds,
+    rootCriteria: selectedCriteria,
+    semanticScopes: scopes.sort((left, right) =>
+      left.semanticScopeId.localeCompare(right.semanticScopeId),
+    ),
+    scopeGaps: [...resolution.gaps, ...built.gaps].sort((left, right) =>
+      left.gapId.localeCompare(right.gapId),
+    ),
+  };
 }
 
 function preflight(
@@ -737,24 +837,48 @@ export function reconcileTargetFieldCausalSlice(
   if (!rootPack || !rootLoad) throw new TargetFieldCausalSliceStaleError("MACHINE_FACTS", `${options.taskId}:root unavailable`);
   const table = targetEntry(catalog, rootPack, options.targetTable);
   const bindings = rootLoad.records["output-field-bindings.jsonl"] ?? [];
-  const availableWriteObservationIds = new Set(
-    bindings
-      .filter((binding) => text(binding.target_dataset)?.toLowerCase() === table.qualifiedName.toLowerCase())
-      .map((binding) => text(binding.write_observation_id))
-      .filter((value): value is string => value !== null),
-  );
-  for (const writeObservationId of options.writeObservationIds)
-    if (!availableWriteObservationIds.has(writeObservationId))
-      throw new Error(`ROOT_WRITE_OBSERVATION_UNRESOLVED:${writeObservationId}`);
   const requestedFields = options.fields ?? [];
-  const rootFields = outputRoots(options.taskId, rootLoad, table, requestedFields);
-  if (rootFields.length === 0)
+  const rootBuilt = buildPlanInputs(
+    options.taskId,
+    rootPack,
+    rootLoad,
+    catalog,
+    validatedTableKeys,
+    table,
+    options.writeObservationIds,
+    requestedFields,
+  );
+  const rootCriteria = rootBuilt.rootCriteria;
+  const requestedFieldNames = requestedFields.length > 0
+    ? requestedFields
+    : bindings
+        .filter((binding) =>
+          text(binding.target_dataset)?.toLowerCase() ===
+            table.qualifiedName.toLowerCase() &&
+          options.writeObservationIds!.includes(
+            text(binding.write_observation_id) ?? "",
+          ),
+        )
+        .map((binding) => text(binding.target_field))
+        .filter((value): value is string => value !== null);
+  const requestRootFieldIds = sortedUnique(
+    requestedFieldNames.flatMap((field) => {
+      const identity = physicalFieldForTable(
+        table,
+        field.split(".").at(-1) ?? field,
+      );
+      return identity ? [physicalFieldKey(identity)] : [];
+    }),
+  );
+  if (rootCriteria.length === 0 && requestRootFieldIds.length === 0)
     throw new Error(`ROOT_TARGET_FIELDS_UNRESOLVED:${options.targetTable}`);
-  const rootTargetFieldIds = rootFields.map((root) => root.rootTargetFieldId);
+  const rootTargetFieldIds = sortedUnique([
+    ...requestRootFieldIds,
+    ...rootCriteria.map((root) => root.rootTargetFieldId),
+  ]);
   const candidateUniverse = projectCandidateUniverse({
-    rootTargetFields: rootTargetFieldIds,
     tableArtifact,
-    rootWriteObservationIds: options.writeObservationIds,
+    rootCriteria,
     resolvePhysicalTable: (candidate: CandidatePhysicalTable): CandidatePhysicalTable | null => {
       const qualifiedName = text(candidate.qualifiedName)?.toLowerCase();
       const platform = text(candidate.platform)?.toLowerCase();
@@ -786,22 +910,38 @@ export function reconcileTargetFieldCausalSlice(
     for (const column of entry.columns) {
       const identity = physicalFieldForTable(entry, column);
       if (identity) allIdentities.set(physicalFieldKey(identity), identity);
-    }
+  }
   const semanticDependencies = new Map<string, readonly SemanticDependencyNormalization[]>();
-  const calciteEvidence = calciteEvidenceByTaskAndStatement(
-    options.calciteCausalEvidence,
-  );
   const semanticDefinitions = new Map<string, SemanticDependencyDefinition>();
   const semanticApplications = new Map<string, SemanticDependencyApplication>();
   const semanticEdges = new Map<string, SemanticDependencyEdge>();
   const semanticGaps = new Map<string, SemanticDependencyGap>();
+  const semanticScopeRegistry = new Map<string, SemanticOccurrenceScope>();
+  const scopeGapRegistry = new Map<string, WriteScopedPlanInputGap>();
   const semanticEdgeIndex = new Map<string, SemanticDependencyEdge[]>();
-  const initializedSemanticTasks = new Set<string>();
+  const semanticGapIndex = new Map<string, SemanticDependencyGap[]>();
+  const initializedSemanticScopes = new Set<string>();
   const loadedSemanticSubjects = new Set<string>();
-  const indexedSubjectKey = (taskId: string, subject: SemanticSubject): string =>
-    subject.subjectKind === "PHYSICAL_FIELD"
-      ? `${taskId}|field|${subject.physicalFieldId}`
-      : `${taskId}|relation|${subject.relationOccurrenceId}`;
+  const scopeLoadKey = (
+    rootCriterionId: string,
+    scope: SemanticOccurrenceScope,
+    taskId: string,
+  ): string =>
+    canonicalJson({
+      rootCriterionId,
+      semanticWriteOccurrence: semanticWriteOccurrenceKey(scope),
+      taskId,
+    });
+  const indexedSubjectKey = (
+    rootCriterionId: string,
+    scope: SemanticOccurrenceScope,
+    taskId: string,
+    subject: SemanticSubject,
+  ): string =>
+    canonicalJson({
+      scope: scopeLoadKey(rootCriterionId, scope, taskId),
+      subject,
+    });
   const setCanonical = <T>(
     values: Map<string, T>,
     id: string,
@@ -843,49 +983,69 @@ export function reconcileTargetFieldCausalSlice(
     }
     values.set(id, value);
   };
+  const addSemanticScope = (scope: SemanticOccurrenceScope): void => {
+    const previous = semanticScopeRegistry.get(scope.semanticScopeId);
+    if (!previous) {
+      semanticScopeRegistry.set(scope.semanticScopeId, scope);
+      return;
+    }
+    const { evidenceRefs: previousRefs, ...previousIdentity } = previous;
+    const { evidenceRefs: currentRefs, ...currentIdentity } = scope;
+    if (canonicalJson(previousIdentity) !== canonicalJson(currentIdentity))
+      throw new Error(`SEMANTIC_SCOPE_ID_CONFLICT:${scope.semanticScopeId}`);
+    semanticScopeRegistry.set(scope.semanticScopeId, {
+      ...previous,
+      evidenceRefs: sortedUnique([...previousRefs, ...currentRefs]),
+    });
+  };
   const addNormalizations = (
     taskId: string,
     built: ReturnType<typeof buildPlanInputs>,
+    causalRootCriterion?: RootCriterion,
   ): void => {
-    initializedSemanticTasks.add(taskId);
-    const taskEvidenceEntries = [...calciteEvidence.entries()]
-      .filter(([key]) => key.startsWith(`${taskId}\u0000`));
-    const exactCalciteEvidence = taskEvidenceEntries.length === 1 && built.normalizations.length === 1
-      ? taskEvidenceEntries[0]![1]
-      : [];
+    for (const scope of built.semanticScopes) addSemanticScope(scope);
+    for (const localRootCriterion of built.rootCriteria) {
+      const scope = built.semanticScopes.find((candidate) =>
+        candidate.writeObservationId ===
+          localRootCriterion.rootWriteObservationId &&
+        candidate.outputBindingId === localRootCriterion.outputBindingId,
+      );
+      if (scope)
+        initializedSemanticScopes.add(
+          scopeLoadKey(
+            (causalRootCriterion ?? localRootCriterion).rootCriterionId,
+            scope,
+            taskId,
+          ),
+        );
+    }
+    for (const gap of built.scopeGaps) {
+      const scopedGap = causalRootCriterion === undefined
+        ? gap
+        : makeWriteScopedPlanInputGap({
+            rootCriterionId: causalRootCriterion.rootCriterionId,
+            taskId: gap.taskId,
+            targetTableKey: gap.targetTableKey,
+            writeObservationId: gap.writeObservationId,
+            targetFieldName: gap.targetFieldName,
+            reasonCode: gap.reasonCode,
+            message: gap.message,
+            evidenceRefs: gap.evidenceRefs,
+          });
+      setCanonical(scopeGapRegistry, scopedGap.gapId, scopedGap, "WRITE_SCOPE_GAP");
+    }
     for (const [id, identity] of built.identities)
       setCanonical(allIdentities, id, identity, "PHYSICAL_FIELD");
-    for (const nativeNormalization of built.normalizations) {
-      const normalization = exactCalciteEvidence.length === 0
-        ? nativeNormalization
-        : integrateCalciteOperatorEvidence(
-            nativeNormalization,
-            { observations: exactCalciteEvidence },
-            {
-              relevantNativeRelationIds: new Set([
-                ...built.relationIds,
-                ...[...built.relationIds].flatMap((relationId) =>
-                  calciteRelationIdAliases(taskId, relationId),
-                ),
-              ]),
-              // The Calcite gate emits one independently validated request per
-              // Plan Facts relation.  A statement-level output root may be
-              // blocked by an unrelated opaque subquery even though a JOIN or
-              // FILTER on the target slice is fully projectable.  Scope by the
-              // exact parser-owned relation universe, not only by the final
-              // output root; causal traversal still decides relevance later.
-              relevantRequestRootNodeIds: new Set([
-                ...built.relationIds,
-                ...[...built.relationIds].flatMap((relationId) =>
-                  calciteRelationIdAliases(taskId, relationId),
-                ),
-              ]),
-              canonicalPhysicalFieldIds: new Set(allIdentities.keys()),
-              rootTargetFieldIds: nativeNormalization.applications.map(
-                (item) => item.rootTargetFieldId,
-              ),
-            },
-          ).normalization;
+    for (const scopedNormalization of built.normalizations) {
+      const normalization = scopedNormalization.normalization;
+      for (const definition of normalization.definitions)
+        if (definition.semanticScope) addSemanticScope(definition.semanticScope);
+      for (const application of normalization.applications)
+        if (application.semanticScope) addSemanticScope(application.semanticScope);
+      for (const edge of normalization.edges)
+        if (edge.semanticScope) addSemanticScope(edge.semanticScope);
+      for (const gap of normalization.gaps)
+        if (gap.semanticScope) addSemanticScope(gap.semanticScope);
       for (const definition of normalization.definitions)
         setCanonical(
           semanticDefinitions,
@@ -905,47 +1065,151 @@ export function reconcileTargetFieldCausalSlice(
       for (const gap of normalization.gaps)
         setCanonical(semanticGaps, gap.gapId, gap, "DEPENDENCY_GAP");
       for (const edge of normalization.edges) {
-        const key = indexedSubjectKey(taskId, edge.toSubject);
+        if (!edge.rootCriterionId || !edge.semanticScope) continue;
+        const key = indexedSubjectKey(
+          edge.rootCriterionId,
+          edge.semanticScope,
+          taskId,
+          edge.toSubject,
+        );
         const indexed = semanticEdgeIndex.get(key) ?? [];
         if (!indexed.some((item) => item.edgeId === edge.edgeId)) indexed.push(edge);
         semanticEdgeIndex.set(key, indexed);
       }
+      for (const gap of normalization.gaps) {
+        if (!gap.rootCriterionId || !gap.semanticScope) continue;
+        const key = scopeLoadKey(
+          gap.rootCriterionId,
+          gap.semanticScope,
+          taskId,
+        );
+        const indexed = semanticGapIndex.get(key) ?? [];
+        if (!indexed.some((item) => item.gapId === gap.gapId)) indexed.push(gap);
+        semanticGapIndex.set(key, indexed);
+      }
     }
   };
-  const rootBuilt = buildPlanInputs(
-    dataRoot,
-    options.taskId,
-    rootPack,
-    rootLoad,
-    catalog,
-    validatedTableKeys,
-    rootFields,
-  );
   addNormalizations(options.taskId, rootBuilt);
-  for (const root of rootFields)
-    loadedSemanticSubjects.add(`${options.taskId}|${root.rootTargetFieldId}`);
+  for (const root of rootCriteria) {
+    const scope = rootBuilt.semanticScopes.find((candidate) =>
+      candidate.writeObservationId === root.rootWriteObservationId &&
+      candidate.outputBindingId === root.outputBindingId,
+    );
+    if (scope)
+      loadedSemanticSubjects.add(
+        indexedSubjectKey(
+          root.rootCriterionId,
+          scope,
+          options.taskId,
+          {
+            subjectKind: "PHYSICAL_FIELD",
+            physicalFieldId: root.rootTargetFieldId,
+          },
+        ),
+      );
+  }
   const loadSemanticEdges = (
-    taskId: string,
-    subject: SemanticSubject,
-  ): readonly SemanticDependencyEdge[] | null => {
-    const subjectIndexKey = indexedSubjectKey(taskId, subject);
-    const current = semanticEdgeIndex.get(subjectIndexKey) ?? [];
-    if (subject.subjectKind !== "PHYSICAL_FIELD")
-      return initializedSemanticTasks.has(taskId) ? current : null;
-    const cacheKey = `${taskId}|${subject.physicalFieldId}`;
-    if (loadedSemanticSubjects.has(cacheKey)) return current;
-    const pack = packs.get(taskId);
-    const load = preflightResult.facts.get(taskId);
-    const identity = allIdentities.get(subject.physicalFieldId);
+    request: SemanticTraversalLoadRequest,
+  ): SemanticTraversalLoadResult | null => {
+    const subjectIndexKey = indexedSubjectKey(
+      request.rootCriterion.rootCriterionId,
+      request.semanticScope,
+      request.taskId,
+      request.subject,
+    );
+    const scopeKey = scopeLoadKey(
+      request.rootCriterion.rootCriterionId,
+      request.semanticScope,
+      request.taskId,
+    );
+    const result = (): SemanticTraversalLoadResult => ({
+      edges: semanticEdgeIndex.get(subjectIndexKey) ?? [],
+      gaps: semanticGapIndex.get(scopeKey) ?? [],
+    });
+    if (loadedSemanticSubjects.has(subjectIndexKey)) return result();
+    if (request.subject.subjectKind !== "PHYSICAL_FIELD")
+      return initializedSemanticScopes.has(scopeKey) ? result() : null;
+    const pack = packs.get(request.taskId);
+    const load = preflightResult.facts.get(request.taskId);
+    const identity = allIdentities.get(request.subject.physicalFieldId);
     if (!pack || !load || !identity)
-      return initializedSemanticTasks.has(taskId) ? current : null;
-    const built = buildPlanInputs(dataRoot, taskId, pack, load, catalog, validatedTableKeys, [{
-      rootTargetFieldId: subject.physicalFieldId,
-      outputName: identity.column,
-    }]);
-    addNormalizations(taskId, built);
-    loadedSemanticSubjects.add(cacheKey);
-    return semanticEdgeIndex.get(subjectIndexKey) ?? [];
+      return initializedSemanticScopes.has(scopeKey) ? result() : null;
+    const target = pack.target;
+    if (!target)
+      return initializedSemanticScopes.has(scopeKey) ? result() : null;
+    const built = buildPlanInputs(
+      request.taskId,
+      pack,
+      load,
+      catalog,
+      validatedTableKeys,
+      target,
+      [request.localRootCriterion.rootWriteObservationId],
+      [request.localRootCriterion.targetFieldName],
+      request.rootCriterion,
+      new Set([request.localRootCriterion.outputBindingId]),
+    );
+    addNormalizations(request.taskId, built, request.rootCriterion);
+    loadedSemanticSubjects.add(subjectIndexKey);
+    return result();
+  };
+  const resolveProducerScopes = (
+    request: ProducerScopeResolutionRequest,
+  ): readonly ResolvedProducerScope[] => {
+    const pack = packs.get(request.producerTaskId);
+    const load = preflightResult.facts.get(request.producerTaskId);
+    const target = pack?.target;
+    if (!pack || !load || !target) return [];
+    const exactBindingIds = new Set(
+      request.producerBindings
+        .map((binding) => text(binding.binding_id))
+        .filter((value): value is string => value !== null),
+    );
+    const writeObservationIds = sortedUnique(
+      request.producerBindings
+        .map((binding) => text(binding.write_observation_id))
+        .filter((value): value is string => value !== null),
+    );
+    if (
+      exactBindingIds.size !== request.producerBindings.length ||
+      writeObservationIds.length === 0
+    ) return [];
+    const resolution = resolveWriteScopedPlanInputs({
+      taskId: request.producerTaskId,
+      targetTableKey: physicalTableKey(target),
+      writeObservationIds,
+      requestedTargetFields: [request.producerField.column],
+      load,
+      resolveRootTargetFieldId: (targetFieldName) => {
+        const identity = physicalFieldForTable(target, targetFieldName);
+        if (identity) allIdentities.set(physicalFieldKey(identity), identity);
+        return identity ? physicalFieldKey(identity) : null;
+      },
+    });
+    const criteria = resolution.rootCriteria.filter((criterion) =>
+      exactBindingIds.has(criterion.outputBindingId) &&
+      criterion.rootTargetFieldId === physicalFieldKey(request.producerField),
+    );
+    if (
+      resolution.gaps.length > 0 ||
+      criteria.length !== exactBindingIds.size
+    ) return [];
+    return criteria
+      .map((localRootCriterion) => ({
+        localRootCriterion,
+        semanticScope: makeSemanticOccurrenceScope({
+          rootCriterion: localRootCriterion,
+          evidenceRefs: [
+            ...localRootCriterion.evidenceRefs,
+            ...request.evidenceRefs,
+          ],
+        }),
+      }))
+      .sort((left, right) =>
+        left.localRootCriterion.rootCriterionId.localeCompare(
+          right.localRootCriterion.rootCriterionId,
+        ),
+      );
   };
   const expander = createPhysicalFieldExpander({
     dataRoot,
@@ -956,15 +1220,25 @@ export function reconcileTargetFieldCausalSlice(
     factsPolicy: "current-only",
   }, { evidenceMode: "STRICT_CAUSAL" });
   const traversal = traverseCausalDependencies({
-    roots: rootFields.map((root) => ({ rootTargetFieldId: root.rootTargetFieldId, taskId: options.taskId })),
+    roots: rootCriteria.flatMap((rootCriterion) => {
+      const semanticScope = rootBuilt.semanticScopes.find((candidate) =>
+        candidate.writeObservationId ===
+          rootCriterion.rootWriteObservationId &&
+        candidate.outputBindingId === rootCriterion.outputBindingId,
+      );
+      return semanticScope
+        ? [{ rootCriterion, semanticScope }]
+        : [];
+    }),
     semanticDependencies,
     loadSemanticEdges,
+    resolveProducerScopes,
     resolvePhysicalField: (id) => allIdentities.get(id) ?? null,
     expandPhysicalField: (request) => {
       const pack = packs.get(request.taskId);
       const load = preflightResult.facts.get(request.taskId);
       if (!pack || !load) return { classified: false, ambiguous: false, producers: [], candidates: [], gaps: [] };
-      return expander.expand({
+      const expansion = expander.expand({
         consumerTaskId: request.taskId,
         consumerPack: pack,
         consumerLoad: load,
@@ -976,6 +1250,12 @@ export function reconcileTargetFieldCausalSlice(
         rootDependenceKind: request.rootDependenceKind,
         localDependenceKind: request.localEdgeKind,
         pathCertainty: request.pathCertainty,
+      });
+      return guardOccurrenceExactPhysicalExpansion({
+        taskId: request.taskId,
+        sourceNodeId: request.sourceNodeId,
+        field: request.field,
+        expansion,
       });
     },
     expandRelationOccurrence: (request) => {
@@ -989,6 +1269,8 @@ export function reconcileTargetFieldCausalSlice(
       const relationBridges: {
         readonly producerTaskId: string;
         readonly readOccurrenceId: string;
+        readonly producerRootCriterion?: RootCriterion;
+        readonly producerSemanticScope?: SemanticOccurrenceScope;
         readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
         readonly evidenceRefs: readonly string[];
       }[] = [];
@@ -1011,17 +1293,69 @@ export function reconcileTargetFieldCausalSlice(
               : "UNRESOLVED";
           const occurrenceId = text(record(bridge.readOccurrence).occurrenceId);
           if (!occurrenceId) continue;
-          relationBridges.push({
-            producerTaskId: text(bridge.producerTaskId)!,
-            readOccurrenceId: occurrenceId,
-            evidenceStatus,
-            evidenceRefs: relationBridgeEvidenceRefs(tableArtifact, bridge),
-          });
+          const producerTaskId = text(bridge.producerTaskId)!;
+          const bridgeEvidenceRefs = relationBridgeEvidenceRefs(
+            tableArtifact,
+            bridge,
+          );
+          const producerLoad = preflightResult.facts.get(producerTaskId);
+          const producerPack = packs.get(producerTaskId);
+          const producerTarget = producerPack?.target;
+          const unambiguousScopes = producerLoad && producerTarget
+            ? resolveUnambiguousRelationProducerScopes<ResolvedProducerScope>({
+                producerTaskId,
+                targetTable: tableName,
+                datasetWrites:
+                  producerLoad.records["dataset-io.jsonl"] ?? [],
+                outputBindings:
+                  producerLoad.records["output-field-bindings.jsonl"] ?? [],
+                resolveBinding: (binding) => {
+                  const targetFieldName = text(binding.target_field);
+                  const producerField = targetFieldName
+                    ? physicalFieldForTable(producerTarget, targetFieldName)
+                    : null;
+                  if (!producerField) return [];
+                  return resolveProducerScopes({
+                    rootCriterion: request.rootCriterion,
+                    localRootCriterion: request.localRootCriterion,
+                    semanticScope: request.semanticScope,
+                    producerTaskId,
+                    producerField,
+                    producerBindings: [binding],
+                    readOccurrenceId: occurrenceId,
+                    evidenceRefs: bridgeEvidenceRefs,
+                  });
+                },
+              })
+            : null;
+          if (!unambiguousScopes) {
+            relationBridges.push({
+              producerTaskId,
+              readOccurrenceId: occurrenceId,
+              evidenceStatus,
+              evidenceRefs: bridgeEvidenceRefs,
+            });
+            continue;
+          }
+          for (const resolvedScope of unambiguousScopes) {
+            addSemanticScope(resolvedScope.semanticScope);
+            relationBridges.push({
+              producerTaskId,
+              readOccurrenceId: occurrenceId,
+              producerRootCriterion: resolvedScope.localRootCriterion,
+              producerSemanticScope: resolvedScope.semanticScope,
+              evidenceStatus,
+              evidenceRefs: sortedUnique([
+                ...bridgeEvidenceRefs,
+                ...resolvedScope.semanticScope.evidenceRefs,
+              ]),
+            });
+          }
         }
       }
       const deduplicated = new Map<string, typeof relationBridges[number]>();
       for (const bridge of relationBridges) {
-        const key = `${bridge.producerTaskId}\u0000${bridge.readOccurrenceId}`;
+        const key = `${bridge.producerTaskId}\u0000${bridge.readOccurrenceId}\u0000${bridge.producerRootCriterion?.rootCriterionId ?? "UNRESOLVED"}`;
         const previous = deduplicated.get(key);
         if (!previous) deduplicated.set(key, bridge);
         else
@@ -1058,21 +1392,37 @@ export function reconcileTargetFieldCausalSlice(
     },
   });
   const rootWriteProofs: RootWritePositiveProofInput[] = [];
-  for (const root of rootFields) {
-    for (const branch of candidateUniverse.branches.filter((candidate) => candidate.branchKind === "ROOT_WRITE")) {
+  for (const root of rootCriteria) {
+    const rootQualifiedName = root.targetTableKey.split("|")[2]?.toLowerCase();
+    if (!rootQualifiedName) continue;
+    for (const branch of candidateUniverse.branches.filter((candidate) =>
+      candidate.branchKind === "ROOT_WRITE" &&
+      candidate.writeObservationId === root.rootWriteObservationId
+    )) {
       const evidenceRefs = bindings
       .filter((binding) =>
-        text(binding.target_dataset)?.toLowerCase() === table.qualifiedName.toLowerCase() &&
-        text(binding.target_field)?.toLowerCase() === root.outputName.toLowerCase() &&
-        text(binding.write_observation_id) === branch.writeObservationId &&
+        text(binding.binding_id) === root.outputBindingId &&
+        text(binding.target_dataset)?.toLowerCase() === rootQualifiedName &&
+        text(binding.target_field)?.toLowerCase() === root.targetFieldName.toLowerCase() &&
+        text(binding.write_observation_id) === root.rootWriteObservationId &&
         (branch.table?.qualifiedName === null || branch.table?.qualifiedName === undefined ||
-          branch.table.qualifiedName.toLowerCase() === table.qualifiedName.toLowerCase()),
+          branch.table.qualifiedName.toLowerCase() === rootQualifiedName),
       )
-      .flatMap((binding) => Array.isArray(binding.evidence_refs) ? binding.evidence_refs.map(String) : []);
+      .flatMap((binding) => [
+        root.rootWriteObservationId,
+        text(binding.binding_id),
+        ...(Array.isArray(binding.evidence_refs)
+          ? binding.evidence_refs.map(String)
+          : []),
+      ])
+      .filter((ref): ref is string => ref !== null);
       if (evidenceRefs.length > 0) rootWriteProofs.push({
+        rootCriterionId: root.rootCriterionId,
         rootTargetFieldId: root.rootTargetFieldId,
         candidateBranchId: branch.candidateBranchId,
-        pathCertainty: rootLoad.state === "CURRENT_L1" ? "CONFIRMED" : "CONDITIONAL",
+        pathCertainty: isCanonicalTargetWriteBundle(rootLoad, options.taskId)
+          ? "CONFIRMED"
+          : "CONDITIONAL",
         evidenceRefs,
       });
     }
@@ -1080,21 +1430,23 @@ export function reconcileTargetFieldCausalSlice(
   const positive = assessPositiveCausalRelationships({
     candidateUniverse,
     traversal,
-    assessmentPairs: buildAssessmentPairSkeleton(rootTargetFieldIds, candidateUniverse.branches),
+    rootCriteria,
+    assessmentPairs: buildAssessmentPairSkeleton(rootCriteria, candidateUniverse.branches),
     rootWriteProofs,
   });
-  const positiveValidation = validatePositiveCausalAssessments(candidateUniverse, rootTargetFieldIds, traversal, positive);
+  const positiveValidation = validatePositiveCausalAssessments(candidateUniverse, rootCriteria, traversal, positive);
   if (!positiveValidation.valid) throw new Error(`CAUSAL_ASSESSMENT_INVALID:${positiveValidation.errors.join(";")}`);
   const negative = assessNegativeCausalRelationships({
     candidateUniverse,
     traversal,
+    rootCriteria,
     assessments: positive.assessments,
     negativeProofRequests: options.negativeProofRequests ?? [],
     knownCuts: options.knownCuts ?? [],
   });
-  const negativeValidation = validateNegativeCausalAssessments({ candidateUniverse, traversal, assessments: positive.assessments, negativeProofRequests: options.negativeProofRequests ?? [], knownCuts: options.knownCuts ?? [] }, negative);
+  const negativeValidation = validateNegativeCausalAssessments({ candidateUniverse, traversal, rootCriteria, assessments: positive.assessments, negativeProofRequests: options.negativeProofRequests ?? [], knownCuts: options.knownCuts ?? [] }, negative);
   if (!negativeValidation.valid) throw new Error(`CAUSAL_NEGATIVE_PROOF_INVALID:${negativeValidation.errors.join(";")}`);
-  const rerunSets = generateRerunSets({ candidateUniverse, rootTargetFieldIds, assessments: negative.assessments });
+  const rerunSets = generateRerunSets({ candidateUniverse, rootCriteria, assessments: negative.assessments });
   const assessments = negative.assessments;
   const legacyHash = options.legacyFieldLineage && existsSync(resolve(options.legacyFieldLineage))
     ? sha256(readFileSync(resolve(options.legacyFieldLineage)))
@@ -1120,6 +1472,9 @@ export function reconcileTargetFieldCausalSlice(
       rootWriteObservationIds: sortedUnique(options.writeObservationIds ?? []),
       negativeProofMode: "SAFE_RULES_ONLY",
     },
+    rootCriteria,
+    semanticScopes: [...semanticScopeRegistry.values()],
+    scopeGaps: [...scopeGapRegistry.values()],
     inputFingerprints: {
       inputPack: [{
         fingerprint: preflightResult.inputPackFingerprint,
@@ -1146,13 +1501,6 @@ export function reconcileTargetFieldCausalSlice(
             fingerprint: legacyHash,
             reference: resolve(options.legacyFieldLineage!),
             artifactType: "FIELD_MULTI_HOP_RECONCILIATION",
-          }] }),
-      ...(options.calciteCausalEvidence === undefined
-        ? {}
-        : { calciteCausalEvidence: [{
-            fingerprint: sha256(readFileSync(resolve(options.calciteCausalEvidence))),
-            reference: resolve(options.calciteCausalEvidence),
-            artifactType: "INDEPENDENT_CALCITE_CAUSAL_EVIDENCE",
           }] }),
     },
     dependencies: {

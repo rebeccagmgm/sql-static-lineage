@@ -1,5 +1,9 @@
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
 import type { CurrentBundleLoad } from "../../../query/current-task-bundle.ts";
+import {
+  resolveCanonicalTargetWriteOccurrence,
+  type CanonicalTargetWriteResolution,
+} from "../target-write-evidence-resolver.ts";
 
 export interface TargetWriteIdentity {
   readonly targetWriteId: string;
@@ -52,87 +56,8 @@ export interface TargetWriteResolution {
   readonly gaps: readonly TargetWriteGap[];
 }
 
-type JsonRecord = Readonly<Record<string, unknown>>;
-
-function record(value: unknown): JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as JsonRecord
-    : {};
-}
-
-function text(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function records(value: unknown): readonly JsonRecord[] {
-  return Array.isArray(value) ? value.map(record) : [];
-}
-
 function tableKey(value: string): string {
   return value.trim().toLowerCase();
-}
-
-function refsOf(value: unknown): readonly string[] {
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => typeof item === "string" && item.trim() ? [item.trim()] : refsOf(item)).sort((left, right) => left.localeCompare(right));
-  }
-  return records(value)
-    .flatMap((item) => {
-      const ref = text(item.refId) ?? text(item.locator) ?? text(item.source);
-      return ref ? [ref] : [];
-    })
-    .sort((left, right) => left.localeCompare(right));
-}
-
-function statementOrdinal(value: string): number | null {
-  const match = value.match(/(?:^|:)statement:(\d+)(?::|$)/i);
-  return match ? Number(match[1]) : null;
-}
-
-function writeObservationRecords(load: CurrentBundleLoad, taskId: string): readonly JsonRecord[] {
-  const byObservation = new Map<string, JsonRecord>();
-  for (const record of records(load.records["dataset-io.jsonl"])) {
-    if (text(record.task_id) !== taskId || text(record.direction)?.toUpperCase() !== "WRITE") continue;
-    const observationId = text(record.write_observation_id);
-    if (observationId) byObservation.set(observationId, record);
-  }
-  return [...byObservation.values()];
-}
-
-function taskWriteOrdinalFor(
-  load: CurrentBundleLoad,
-  taskId: string,
-  writeObservationId: string,
-): { readonly ordinal: number | null; readonly evidenceRefs: readonly string[] } {
-  const writes = writeObservationRecords(load, taskId);
-  const ordered = [...writes].sort((left, right) => {
-    const leftStatement = statementOrdinal(text(left.write_statement_id) ?? text(left.statement_id) ?? "") ?? Number.MAX_SAFE_INTEGER;
-    const rightStatement = statementOrdinal(text(right.write_statement_id) ?? text(right.statement_id) ?? "") ?? Number.MAX_SAFE_INTEGER;
-    return leftStatement - rightStatement || (text(left.write_observation_id) ?? "").localeCompare(text(right.write_observation_id) ?? "");
-  });
-  const ordinal = ordered.findIndex((record) => text(record.write_observation_id) === writeObservationId);
-  const selected = ordinal >= 0 ? ordered[ordinal] : null;
-  const evidenceRefs = [
-    `machine-facts:${taskId}:dataset-io.jsonl`,
-    ...refsOf(selected?.evidence_refs),
-    ...refsOf(selected?.evidence),
-  ];
-  return { ordinal: ordinal >= 0 ? ordinal : null, evidenceRefs: [...new Set(evidenceRefs)].sort((left, right) => left.localeCompare(right)) };
-}
-
-function sqlSourceIdFromStatementId(value: string): string {
-  const normalized = value.trim();
-  const match = normalized.match(/^(.*?):statement:\d+(?::|$)/i);
-  return match?.[1] ?? normalized;
-}
-
-function relationFromExpression(value: string | null): string | null {
-  if (!value) return null;
-  const marker = ":expression:";
-  const index = value.indexOf(marker);
-  return index > 0 ? value.slice(0, index) : null;
 }
 
 function gap(
@@ -149,94 +74,98 @@ function gap(
   };
 }
 
+function gapForCanonicalFailure(
+  input: ResolveTargetWriteInput,
+  resolution: CanonicalTargetWriteResolution,
+): TargetWriteGap {
+  const evidenceRefs = resolution.evidenceRefs;
+  if (resolution.reasonCode === "OUTPUT_BINDING_MISSING") {
+    const ambiguous = resolution.observedWriteObservationIds.length > 1;
+    return gap(
+      input.taskId,
+      ambiguous ? "TARGET_WRITE_AMBIGUOUS" : "TARGET_WRITE_EVIDENCE_MISSING",
+      ambiguous
+        ? `requested write observation does not uniquely select one of ${resolution.observedWriteObservationIds.length} target writes`
+        : `target write observation is not bound to a resolved output-field binding: ${input.writeObservationIds.join(",")}`,
+      evidenceRefs,
+    );
+  }
+  if (resolution.reasonCode === "ROOT_RELATION_UNMAPPED") {
+    return gap(
+      input.taskId,
+      "TARGET_WRITE_RELATION_UNMAPPED",
+      "target output bindings do not expose one canonical root relation",
+      evidenceRefs,
+    );
+  }
+  if (resolution.reasonCode === "WRITE_TARGET_MISMATCH") {
+    return gap(
+      input.taskId,
+      "TARGET_TABLE_MISMATCH",
+      `write observation ${input.writeObservationIds.join(",")} does not write ${input.targetTable}`,
+      evidenceRefs,
+    );
+  }
+  if (
+    resolution.reasonCode === "WRITE_OBSERVATION_AMBIGUOUS" ||
+    resolution.reasonCode === "STATEMENT_CHAIN_CONFLICT" ||
+    resolution.reasonCode === "WRITE_STATEMENT_RECORD_CONFLICT" ||
+    resolution.reasonCode === "QUERY_STATEMENT_RECORD_CONFLICT" ||
+    resolution.reasonCode === "STATEMENT_OCCURRENCE_AMBIGUOUS"
+  ) {
+    return gap(
+      input.taskId,
+      "TARGET_WRITE_AMBIGUOUS",
+      "target write resolves to multiple or contradictory SQL statement identities",
+      evidenceRefs,
+    );
+  }
+  const message = resolution.reasonCode === "WRITE_OBSERVATION_MISSING"
+    ? `write observation ${input.writeObservationIds.join(",")} is not present in canonical dataset-io evidence`
+    : resolution.reasonCode === "WRITE_OBSERVATION_CONFLICT"
+    ? `write observation ${input.writeObservationIds.join(",")} has multiple canonical dataset-io records`
+    : resolution.reasonCode === "BUNDLE_NOT_CANONICAL"
+    ? `canonical Machine Facts bundle is unavailable for task ${input.taskId}`
+    : "an explicit canonical write observation is required";
+  return gap(
+    input.taskId,
+    "TARGET_WRITE_EVIDENCE_MISSING",
+    message,
+    evidenceRefs,
+  );
+}
+
 /** Resolve a write only from Machine Facts write/output-binding evidence. */
 export function resolveTargetWrite(
   input: ResolveTargetWriteInput,
 ): TargetWriteResolution {
   const targetTable = tableKey(input.targetTable);
-  const bindings = records(input.load.records["output-field-bindings.jsonl"])
-    .filter((binding) =>
-      text(binding.task_id) === input.taskId &&
-      tableKey(text(binding.target_dataset) ?? "") === targetTable &&
-      text(binding.binding_status) === "RESOLVED",
-    );
-  const requested = new Set(input.writeObservationIds.filter(Boolean));
-  const observed = [...new Set(
-    bindings.map((binding) => text(binding.write_observation_id)).filter((value): value is string => value !== null),
-  )];
-  const selected = bindings.filter((binding) => {
-    const id = text(binding.write_observation_id);
-    return id !== null && requested.has(id);
+  const canonical = resolveCanonicalTargetWriteOccurrence({
+    taskId: input.taskId,
+    targetTable,
+    writeObservationIds: input.writeObservationIds,
+    load: input.load,
   });
-  const evidenceRefs = [...new Set(selected.flatMap((binding) => [
-    ...refsOf(binding.evidence_refs),
-    ...refsOf(binding.evidence),
-    `machine-facts:${input.taskId}:output-field-bindings.jsonl`,
-  ]))].sort((left, right) => left.localeCompare(right));
-  if (selected.length === 0) {
+  if (!canonical.occurrence) {
     return {
       ref: null,
-      gaps: [gap(
-        input.taskId,
-        observed.length > 1 ? "TARGET_WRITE_AMBIGUOUS" : "TARGET_WRITE_EVIDENCE_MISSING",
-        observed.length > 1
-          ? `requested write observation does not uniquely select one of ${observed.length} target writes`
-          : `target write observation is not bound to a resolved output-field binding: ${[...requested].join(",")}`,
-        evidenceRefs,
-      )],
+      gaps: [gapForCanonicalFailure(input, canonical)],
     };
   }
-  const writeIds = new Set(selected.map((binding) => text(binding.write_observation_id)));
-  const statementIds = new Set(selected.map((binding) =>
-    text(binding.write_statement_id) ?? text(binding.statement_id) ?? text(binding.query_producer_statement_id),
-  ).filter((value): value is string => value !== null));
-  const relationIds = new Set(selected.map((binding) =>
-    relationFromExpression(text(binding.expression_id)),
-  ).filter((value): value is string => value !== null));
-  const statementOrdinals = new Set([...statementIds].map(statementOrdinal).filter((value): value is number => value !== null));
-  if (writeIds.size !== 1 || statementIds.size !== 1 || relationIds.size !== 1 || statementOrdinals.size !== 1) {
-    return {
-      ref: null,
-      gaps: [gap(
-        input.taskId,
-        relationIds.size === 1 ? "TARGET_WRITE_AMBIGUOUS" : "TARGET_WRITE_RELATION_UNMAPPED",
-        relationIds.size === 1
-          ? "target write resolves to multiple SQL source or statement identities"
-          : "target output bindings do not expose one canonical root relation",
-        evidenceRefs,
-      )],
-    };
-  }
-  const sqlSourceId = sqlSourceIdFromStatementId([...statementIds][0]!);
-  const writeObservationId = [...writeIds][0]!;
-  const rootRelationId = [...relationIds][0]!;
-  const ordinal = [...statementOrdinals][0]!;
-  const writeOrdinalResult = taskWriteOrdinalFor(input.load, input.taskId, writeObservationId);
-  if (writeOrdinalResult.ordinal === null) {
-    return {
-      ref: null,
-      gaps: [gap(
-        input.taskId,
-        "TARGET_WRITE_EVIDENCE_MISSING",
-        `write observation ${writeObservationId} is not present in canonical dataset-io evidence`,
-        [...evidenceRefs, ...writeOrdinalResult.evidenceRefs],
-      )],
-    };
-  }
-  const stableWriteOrdinal = writeOrdinalResult.ordinal;
+  const occurrence = canonical.occurrence;
   const identityInput = {
     taskId: input.taskId,
     targetTableKey: targetTable,
-    sqlSourceId,
-    statementOrdinal: ordinal,
-    taskWriteOrdinal: stableWriteOrdinal,
-    rootRelationId,
-    writeObservationId,
+    sqlSourceId: occurrence.sqlSourceId,
+    statementOrdinal: occurrence.statementOrdinal,
+    taskWriteOrdinal: occurrence.taskWriteOrdinal,
+    rootRelationId: occurrence.rootRelationId,
+    writeObservationId: occurrence.writeObservationId,
   };
   const identity: TargetWriteIdentity = {
     ...identityInput,
     targetWriteId: `target-write:${sha256(canonicalJson(identityInput))}`,
-    evidenceRefs: [...new Set([...evidenceRefs, ...writeOrdinalResult.evidenceRefs])].sort((left, right) => left.localeCompare(right)),
+    evidenceRefs: occurrence.evidenceRefs,
   };
   return { ref: { identity, snapshot: input.snapshot }, gaps: [] };
 }

@@ -10,6 +10,7 @@ import { writeTaskInput } from "../../scripts/input/shared/input-pack.ts";
 import { reconcileMultiHop } from "../../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import {
   reconcileTargetFieldCausalSlice,
+  selectStatementScopedRelationReads,
 } from "../../scripts/reconcile/consumer/target-field-causal-slice/reconcile-causal-slice.ts";
 import { parseTargetFieldCausalSliceCli } from "../../scripts/reconcile/consumer/target-field-causal-slice/reconcile-target-field-causal-slice.ts";
 
@@ -88,6 +89,86 @@ describe("read-only target-field causal slice orchestration", () => {
   });
 });
 
+describe("statement-scoped relation expansion", () => {
+  const statement = (statementIndex: number) => ({
+    task_id: "task-1",
+    statement_id: `task:task-1:slot:query:statement:${statementIndex}`,
+    statement_index: statementIndex,
+  });
+
+  const relation = (
+    statementIndex: number,
+    localId: string,
+    body: Readonly<Record<string, unknown>>,
+  ) => {
+    const relationId =
+      `task:task-1:statement:${statementIndex}:relation:${localId}`;
+    return {
+      task_id: "task-1",
+      statement_id: `task:task-1:slot:query:statement:${statementIndex}`,
+      relation_id: relationId,
+      relation_type: body.type,
+      relation: { id: relationId, ...body },
+    };
+  };
+
+  const twoInsertCountRelations = [
+    relation(0, "root.aggregate", {
+      type: "aggregate",
+      source: "task:task-1:statement:0:relation:root.read.source",
+    }),
+    relation(0, "root.read.source", {
+      type: "read",
+      table: "db.source_a",
+      read_occurrence_id:
+        "task:task-1:statement:0:relation:root.read.source",
+    }),
+    relation(1, "root.aggregate", {
+      type: "aggregate",
+      source: "task:task-1:statement:1:relation:root.read.source",
+    }),
+    relation(1, "root.read.source", {
+      type: "read",
+      table: "db.source_b",
+      read_occurrence_id:
+        "task:task-1:statement:1:relation:root.read.source",
+    }),
+  ];
+
+  it("does not expand a COUNT(*) relation into a sibling INSERT statement", () => {
+    const reads = selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations,
+      requestedRelationId: "relation:0:root.aggregate",
+    });
+
+    expect(reads.map((entry) =>
+      (entry.relation as { table?: string }).table
+    )).toEqual(["db.source_a"]);
+  });
+
+  it("fails closed when relation scope is missing or contradicts statement evidence", () => {
+    expect(selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations,
+      requestedRelationId: "root.aggregate",
+    })).toEqual([]);
+
+    expect(selectStatementScopedRelationReads({
+      taskId: "task-1",
+      statements: [statement(0), statement(1)],
+      relations: twoInsertCountRelations.map((entry, index) =>
+        index === 1
+          ? { ...entry, statement_id: "task:task-1:slot:query:statement:1" }
+          : entry
+      ),
+      requestedRelationId: "relation:0:root.aggregate",
+    })).toEqual([]);
+  });
+});
+
 describe("target-field causal slice CLI boundaries", () => {
   const required = [
     "--data-root", "input",
@@ -113,14 +194,22 @@ describe("target-field causal slice CLI boundaries", () => {
     ])).toThrow("causal-slice output paths must not collide");
   });
 
-  it("rejects overwriting the Calcite mapping input", () => {
+  it("rejects the removed Calcite semantic-oracle flags", () => {
     expect(() => parseTargetFieldCausalSliceCli([
       ...required,
       "--write-observation-id", "write:task-1:0",
       "--semantic-oracle", "calcite",
       "--calcite-mapping-report", "mapping.json",
       "--semantic-oracle-output", "mapping.json",
-    ])).toThrow("must not overwrite an input evidence file");
+    ])).toThrow("moved to the Calcite Sidecar");
+  });
+
+  it("rejects attaching independent Calcite causal evidence to the canonical slice", () => {
+    expect(() => parseTargetFieldCausalSliceCli([
+      ...required,
+      "--write-observation-id", "write:task-1:0",
+      "--calcite-causal-evidence", "sidecar-report.json",
+    ])).toThrow("independent-only");
   });
 
   it("rejects overwriting producer evidence or writing inside facts", () => {

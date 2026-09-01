@@ -57,6 +57,8 @@ npm run reconcile-multi-hop:autofill -- \
   --output <multi-hop.json> \
   --report <autofill-report.json> \
   [--producer-index-cache-root <cache-root>] \
+  [--schedule-evidence-cache-root <cache-root>] \
+  [--allow-input-changes] \
   [--producer-index <legacy-fixed-index.json>] \
   [--trust-existing-index]
 ```
@@ -72,6 +74,16 @@ WRITE 被新索引确认后才成为 Table bridge；表详情中的 Task ID 本�
 状态为 `PARTIAL`，不会冒充完整结果；不可用的任务不会再次进入 one-hop 递归，因此不会因
 缺失 Pack 让整条 autofill 命令异常退出。默认表查询最多重试 3 次，OpenCLI 单次调用限制
 30 秒，并由 `maxRounds`、`maxDiscoveryTables`、`maxDiscoveredTasks` 控制外部补采规模；默认值分别为 6、1000、5000。
+
+autofill 搜索阶段对每个 `horae relation` 使用同一份 read-through schedule-evidence 缓存：默认根目录为
+`E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-cache`，也可用
+`--schedule-evidence-cache-root` 显式指定。缓存 HIT 时不访问 Horae；MISS 或校验失败才实时查询，成功结果按
+Task ID 原子写回 `schedule-evidence/tasks/<taskId>/horae-relation-up-depth-1.json`。该缓存只复用调度证据，
+不会把调度父任务自动提升为确认的 producer。
+
+测试阶段若多个 collector 会并行向同一 Input Pack 根目录追加文件，可显式传
+`--allow-input-changes` 放宽 manifest/index 构建期间的一致性检查。该模式可能使用未包含最新追加文件的快照，
+只适合临时测试；若两次扫描 fingerprint 不一致，本次索引不会写入缓存。正式结果应在输入稳定后运行。
 
 表详情未返回 producer 时，Hive 表仍记录为
 `TABLE_PRODUCER_TASK_NOT_OBSERVED`；非 Hive 表不计入异常，而记录在 autofill report 的
@@ -102,6 +114,35 @@ npm run reconcile-multi-hop:batch:throughput -- <与批量入口相同的参数>
 批量入口按唯一访问 Task 复用解析结果和按需 DDL Schema，不会为每个 root
 重新建立全量上下文。bounded/default 会增加 GC CPU，但复杂样本默认不会任由 V8
 堆持续膨胀；`throughput` 只适用于调用方已提供外部内存隔离的场景。
+
+### 批量闭包盘点（只统计，不补包）
+
+需要先估算一批根任务跑 multi-hop 会涉及多少缺失 Input Pack 时，使用 closure audit：
+
+```text
+npm run reconcile-multi-hop:closure-audit -- \
+  --data-root <input-pack-root> \
+  --task-category sparkIndex \
+  --producer-index <producer-index.json> \
+  --schedule-evidence-cache-root <schedule-cache-root> \
+  --max-depth 25 --max-tasks 100000 --max-edges 1000000 \
+  --output <closure-audit.json>
+```
+
+脚本把所有根任务合并成一个去重 BFS：每个 Task 的 Horae 上游关系只查询一次，先命中
+`schedule-evidence` 缓存，MISS/INVALID 才调用 `horae relation` 并回写缓存；确认的表生产者
+优先来自 Producer Index，索引没有确认边时才查询 `szdata table`。它只写报告和调度证据缓存，
+不会采集或修改 Input Pack。报告的 `missingTaskIds` 可直接作为后续补包批次的输入。
+这是“调度父任务 + confirmed producer”的候选闭包盘点，不替代每个根任务最终
+one-hop primary frontier；因此它适合决定补包范围，最终 multi-hop artifact 仍要单独验收。
+
+`--cache-only` 可做完全离线的预盘点，但结果只覆盖已有调度缓存，`summary.scheduleCacheMisses`
+表示尚未核验的关系；此时 `summary.closureStatus=PARTIAL_CACHE`，
+`missingTaskPackCountIsFinal=false`，不能把缺包数当作最终缺口。报告同时区分 `missingTaskPackCount` 和
+`unresolvedTableCount`：前者是当前闭包已发现但本地没有的任务包，后者是没有确认生产者的表，
+不是可以直接补采的 Task 数。
+即使 schedule cache 全部命中，只要中间 Task Pack 缺失、存在未解析生产者的表，或遍历达到
+`max-depth`，报告仍为 `PARTIAL`，且缺包数保持非最终值。
 
 ## 可视化
 
