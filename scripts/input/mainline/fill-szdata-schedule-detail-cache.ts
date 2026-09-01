@@ -19,6 +19,7 @@ const DEFAULT_MAX_ERRORS = 3;
 export interface FillSzdataScheduleDetailOptions {
   readonly cacheRoot?: string;
   readonly taskIds?: readonly string[];
+  readonly startTaskId?: string;
   readonly limit?: number;
   readonly maxErrors?: number;
   readonly minIntervalMs?: number;
@@ -72,6 +73,19 @@ function nonNegativeInteger(
   return effective;
 }
 
+function fromStartTaskId(
+  taskIds: readonly string[],
+  startTaskId: string | undefined,
+): string[] {
+  if (startTaskId === undefined) return [...taskIds];
+  if (!SAFE_TASK_ID.test(startTaskId)) throw new Error("START_TASK_ID_INVALID");
+  const index = taskIds.findIndex(
+    (taskId) =>
+      taskId.localeCompare(startTaskId, "en-US", { numeric: true }) >= 0,
+  );
+  return index < 0 ? [] : taskIds.slice(index);
+}
+
 function selectedTaskIds(
   taskIds: readonly string[],
   limit: number | undefined,
@@ -106,7 +120,10 @@ export async function fillSzdataScheduleDetailCache(
     "SZDATA_SCHEDULE_DETAIL_MIN_INTERVAL_INVALID",
   );
   const taskIds = selectedTaskIds(
-    options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+    fromStartTaskId(
+      options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+      options.startTaskId,
+    ),
     options.limit,
   );
   const gate =
@@ -188,6 +205,7 @@ function parseIntegerOption(
 async function main(): Promise<void> {
   const summary = await fillSzdataScheduleDetailCache({
     cacheRoot: option("--cache-root"),
+    startTaskId: option("--start-task-id"),
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, false),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),
