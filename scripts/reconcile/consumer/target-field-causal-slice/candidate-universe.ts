@@ -86,17 +86,8 @@ export interface CandidateUniverse {
   }>;
 }
 
-export interface CandidateAssessmentPair {
-  readonly pairId: string;
-  readonly rootCriterionId: string;
-  readonly rootTargetFieldId: string;
-  readonly candidateBranchId: string;
-  /** Deliberately empty: 5.2 builds the skeleton, not a causal decision. */
-  readonly assessment: null;
-}
-
 export interface CandidateUniverseProjectionInput {
-  /** @deprecated Candidate projection is table-scoped; roots belong to pair construction. */
+  /** @deprecated Candidate projection is table-scoped; prefer rootCriteria. */
   readonly rootTargetFields?: readonly string[];
   readonly tableArtifact: unknown;
   /** Canonical path: exact write/output occurrences for ROOT_WRITE branches. */
@@ -107,11 +98,6 @@ export interface CandidateUniverseProjectionInput {
   readonly resolvePhysicalTable?: (
     table: CandidatePhysicalTable,
   ) => CandidatePhysicalTable | null;
-}
-
-export interface CandidateAssessmentPairValidation {
-  readonly valid: boolean;
-  readonly errors: readonly string[];
 }
 
 function record(value: unknown): JsonRecord | null {
@@ -699,94 +685,4 @@ export function projectCandidateUniverse(
       sourceLimitsTruncated,
     },
   };
-}
-
-export function buildAssessmentPairSkeleton(
-  rootCriteria: readonly RootCriterion[],
-  candidateBranches: readonly CandidateBranch[],
-): readonly CandidateAssessmentPair[] {
-  const pairs = rootCriteria.flatMap((rootCriterion) =>
-    candidateBranches
-      .filter((branch) =>
-        branch.branchKind !== "ROOT_WRITE" ||
-        branch.writeObservationId === rootCriterion.rootWriteObservationId,
-      )
-      .map((branch) => ({
-      pairId: `assessment-pair:${sha256(
-        canonicalJson({
-          rootCriterionId: rootCriterion.rootCriterionId,
-          candidateBranchId: branch.candidateBranchId,
-        } as unknown as JsonValue),
-      )}`,
-      rootCriterionId: rootCriterion.rootCriterionId,
-      rootTargetFieldId: rootCriterion.rootTargetFieldId,
-      candidateBranchId: branch.candidateBranchId,
-      assessment: null,
-    } satisfies CandidateAssessmentPair)),
-  );
-  return [...pairs].sort((left, right) => left.pairId.localeCompare(right.pairId));
-}
-
-export function buildCandidateAssessmentPairSkeleton(
-  input: CandidateUniverseProjectionInput & {
-    readonly rootCriteria: readonly RootCriterion[];
-  },
-): { readonly universe: CandidateUniverse; readonly pairs: readonly CandidateAssessmentPair[] } {
-  const universe = projectCandidateUniverse({
-    ...input,
-    rootCriteria: input.rootCriteria,
-  });
-  return {
-    universe,
-    pairs: buildAssessmentPairSkeleton(input.rootCriteria, universe.branches),
-  };
-}
-
-export function validateAssessmentPairSkeleton(
-  rootCriteria: readonly RootCriterion[],
-  candidateBranches: readonly CandidateBranch[],
-  pairs: readonly CandidateAssessmentPair[],
-): CandidateAssessmentPairValidation {
-  const errors: string[] = [];
-  const expected = new Set(
-    buildAssessmentPairSkeleton(rootCriteria, candidateBranches).map(
-      (pair) => pair.pairId,
-    ),
-  );
-  const expectedById = new Map(
-    buildAssessmentPairSkeleton(rootCriteria, candidateBranches).map(
-      (pair) => [pair.pairId, pair],
-    ),
-  );
-  const seen = new Set<string>();
-  for (const pair of pairs) {
-    if (seen.has(pair.pairId)) errors.push(`DUPLICATE:${pair.pairId}`);
-    seen.add(pair.pairId);
-    if (!expected.has(pair.pairId)) errors.push(`UNEXPECTED:${pair.pairId}`);
-    const expectedPair = expectedById.get(pair.pairId);
-    if (
-      expectedPair &&
-      (pair.rootCriterionId !== expectedPair.rootCriterionId ||
-        pair.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
-        pair.candidateBranchId !== expectedPair.candidateBranchId)
-    )
-      errors.push(`IDENTITY_MISMATCH:${pair.pairId}`);
-    if (pair.assessment !== null) errors.push(`DECISION_PRESENT:${pair.pairId}`);
-  }
-  for (const pairId of expected)
-    if (!seen.has(pairId)) errors.push(`MISSING:${pairId}`);
-  return { valid: errors.length === 0, errors: errors.sort((a, b) => a.localeCompare(b)) };
-}
-
-export function assertAssessmentPairSkeleton(
-  rootCriteria: readonly RootCriterion[],
-  candidateBranches: readonly CandidateBranch[],
-  pairs: readonly CandidateAssessmentPair[],
-): void {
-  const result = validateAssessmentPairSkeleton(
-    rootCriteria,
-    candidateBranches,
-    pairs,
-  );
-  if (!result.valid) throw new Error(`ASSESSMENT_PAIR_SKELETON_INVALID:${result.errors.join(",")}`);
 }

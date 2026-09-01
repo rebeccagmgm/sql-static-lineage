@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildCandidateAssessmentPairSkeleton,
-  buildAssessmentPairSkeleton,
   projectCandidateUniverse,
-  validateAssessmentPairSkeleton,
 } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
 import type { RootCriterion } from "../../scripts/reconcile/consumer/target-field-causal-slice/write-scoped-plan-inputs.ts";
 
@@ -238,7 +235,7 @@ describe("candidate universe projection", () => {
   });
 });
 
-describe("candidate assessment pair skeleton", () => {
+describe("candidate universe root-write binding", () => {
   it("binds ROOT_WRITE branches to each criterion table instead of cross-producting write ids", () => {
     const rootCriteria = [criterion("amount", 0), criterion("amount", 1)];
     const result = projectCandidateUniverse({
@@ -272,69 +269,5 @@ describe("candidate assessment pair skeleton", () => {
       branch.table.qualifiedName === "demo.target" &&
       branch.evidenceRefs.length === 0
     )).toBe(true);
-  });
-
-  it("creates exactly one empty pair for every root criterion and eligible candidate branch", () => {
-    const rootCriteria = [criterion("amount", 0), criterion("amount", 1)];
-    const { universe, pairs } = buildCandidateAssessmentPairSkeleton({
-      rootCriteria,
-      tableArtifact: artifact(),
-    });
-    const nonRootBranches = universe.branches.filter(
-      (branch) => branch.branchKind !== "ROOT_WRITE",
-    );
-    expect(pairs).toHaveLength(nonRootBranches.length * 2 + 2);
-    expect(validateAssessmentPairSkeleton(rootCriteria, universe.branches, pairs)).toEqual({
-      valid: true,
-      errors: [],
-    });
-    expect(pairs.every((pair) => pair.assessment === null)).toBe(true);
-    expect(new Set(pairs.map((pair) => pair.rootCriterionId))).toEqual(
-      new Set(rootCriteria.map((rootCriterion) => rootCriterion.rootCriterionId)),
-    );
-    expect(
-      pairs.filter((pair) =>
-        universe.branches.find(
-          (branch) => branch.candidateBranchId === pair.candidateBranchId,
-        )?.branchKind === "ROOT_WRITE"
-      ),
-    ).toEqual(expect.arrayContaining(rootCriteria.map((rootCriterion) =>
-      expect.objectContaining({
-        rootCriterionId: rootCriterion.rootCriterionId,
-        rootTargetFieldId: rootCriterion.rootTargetFieldId,
-      })
-    )));
-    for (const rootCriterion of rootCriteria) {
-      const rootWritePair = pairs.find((pair) => {
-        const branch = universe.branches.find(
-          (candidate) => candidate.candidateBranchId === pair.candidateBranchId,
-        );
-        return pair.rootCriterionId === rootCriterion.rootCriterionId &&
-          branch?.branchKind === "ROOT_WRITE";
-      });
-      const rootWriteBranch = universe.branches.find(
-        (branch) => branch.candidateBranchId === rootWritePair?.candidateBranchId,
-      );
-      expect(rootWriteBranch?.writeObservationId).toBe(
-        rootCriterion.rootWriteObservationId,
-      );
-    }
-  });
-
-  it("rejects duplicate, missing, and pre-decided pairs", () => {
-    const rootCriteria = [criterion("amount", 0)];
-    const universe = projectCandidateUniverse({
-      tableArtifact: artifact(),
-      rootWriteObservationIds: rootCriteria.map(
-        (rootCriterion) => rootCriterion.rootWriteObservationId,
-      ),
-    });
-    const pairs = buildAssessmentPairSkeleton(rootCriteria, universe.branches);
-    const invalid = [pairs[0]!, pairs[0]!, { ...pairs[1]!, assessment: "UNKNOWN" as never }];
-    const result = validateAssessmentPairSkeleton(rootCriteria, universe.branches, invalid);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((error) => error.startsWith("DUPLICATE:"))).toBe(true);
-    expect(result.errors.some((error) => error.startsWith("MISSING:"))).toBe(true);
-    expect(result.errors.some((error) => error.startsWith("DECISION_PRESENT:"))).toBe(true);
   });
 });

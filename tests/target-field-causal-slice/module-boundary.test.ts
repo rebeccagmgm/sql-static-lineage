@@ -48,7 +48,7 @@ describe("target-field causal-slice module boundary", () => {
     expect(Object.isFrozen(causal.canonicalEvidenceAdapter)).toBe(true);
   });
 
-  it("keeps the legacy area free of causal assessment and traversal imports", () => {
+  it("keeps the legacy area free of retired field-product assessment imports", () => {
     const legacyFiles = [
       "scripts/reconcile/consumer/field-lineage/semantic-dependency-contract.ts",
       "scripts/reconcile/consumer/field-lineage/operator-support-matrix.ts",
@@ -56,8 +56,19 @@ describe("target-field causal-slice module boundary", () => {
     ];
     for (const relativePath of legacyFiles) {
       const source = readFileSync(relativePath, "utf8");
-      expect(source).not.toMatch(/causal-(?:assessment|traversal)/i);
+      expect(source).not.toMatch(
+        /causal-(?:assessment|traversal|slice-contract)|rerun-sets|publish-causal-slice/i,
+      );
     }
+  });
+
+  it("no longer exports the retired field×branch product surface", () => {
+    expect(causal).not.toHaveProperty("reconcileTargetFieldCausalSlice");
+    expect(causal).not.toHaveProperty("publishTargetFieldCausalSlice");
+    expect(causal).not.toHaveProperty("formatCausalSlice");
+    expect(causal).not.toHaveProperty("TARGET_FIELD_CAUSAL_SLICE_ARTIFACT_TYPE");
+    expect(causal).not.toHaveProperty("assessPositiveCausalRelationships");
+    expect(causal).not.toHaveProperty("buildAssessmentPairSkeleton");
   });
 
   it("keeps the evidence adapter read-only and delegated to existing APIs", () => {
