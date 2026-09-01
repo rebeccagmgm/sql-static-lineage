@@ -19,10 +19,13 @@ export const DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT =
 export const SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION = "1.0.0" as const;
 export const SCHEDULE_EVIDENCE_CACHE_ARTIFACT_TYPE =
   "HORAE_RELATION_SCHEDULE_EVIDENCE" as const;
+export type HoraeRelationDirection = "up" | "down";
 export const SCHEDULE_EVIDENCE_CACHE_DIRECTION = "up" as const;
 export const SCHEDULE_EVIDENCE_CACHE_DEPTH = 1 as const;
 export const SCHEDULE_EVIDENCE_CACHE_FILE_NAME =
   "horae-relation-up-depth-1.json" as const;
+export const SCHEDULE_EVIDENCE_DOWN_CACHE_FILE_NAME =
+  "horae-relation-down-depth-1.json" as const;
 export const HORAE_TASK_TYPE_CACHE_FILE_NAME = "horae-task-type.json" as const;
 export const HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE =
   "HORAE_TASK_TYPE_EVIDENCE" as const;
@@ -39,7 +42,7 @@ export interface HoraeRelationCacheDocument {
   readonly schema_version: typeof SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION;
   readonly artifact_type: typeof SCHEDULE_EVIDENCE_CACHE_ARTIFACT_TYPE;
   readonly task_id: string;
-  readonly direction: typeof SCHEDULE_EVIDENCE_CACHE_DIRECTION;
+  readonly direction: HoraeRelationDirection;
   readonly depth: typeof SCHEDULE_EVIDENCE_CACHE_DEPTH;
   readonly observed_at: string;
   readonly rows: readonly JsonRecord[];
@@ -110,12 +113,13 @@ function cachePayload(
   taskId: string,
   observedAt: string,
   rows: readonly JsonRecord[],
+  direction: HoraeRelationDirection,
 ): Omit<HoraeRelationCacheDocument, "content_sha256"> {
   return {
     schema_version: SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION,
     artifact_type: SCHEDULE_EVIDENCE_CACHE_ARTIFACT_TYPE,
     task_id: taskId,
-    direction: SCHEDULE_EVIDENCE_CACHE_DIRECTION,
+    direction,
     depth: SCHEDULE_EVIDENCE_CACHE_DEPTH,
     observed_at: observedAt,
     rows,
@@ -126,21 +130,28 @@ function cacheDocument(
   taskId: string,
   observedAt: string,
   rows: readonly JsonRecord[],
+  direction: HoraeRelationDirection,
 ): HoraeRelationCacheDocument {
-  const payload = cachePayload(taskId, observedAt, rows);
+  const payload = cachePayload(taskId, observedAt, rows, direction);
   return {
     ...payload,
     content_sha256: sha256(canonicalJson(payload)),
   };
 }
 
-function cachePathForRoot(cacheRoot: string, taskId: string): string {
+function cachePathForRoot(
+  cacheRoot: string,
+  taskId: string,
+  direction: HoraeRelationDirection,
+): string {
   safeTaskId(taskId);
   return join(
     resolveScheduleEvidenceCacheRoot(cacheRoot),
     "tasks",
     taskId,
-    SCHEDULE_EVIDENCE_CACHE_FILE_NAME,
+    direction === "up"
+      ? SCHEDULE_EVIDENCE_CACHE_FILE_NAME
+      : SCHEDULE_EVIDENCE_DOWN_CACHE_FILE_NAME,
   );
 }
 
@@ -164,8 +175,9 @@ function taskTypeCachePathForRoot(cacheRoot: string, taskId: string): string {
 export function scheduleEvidenceCachePath(
   taskId: string,
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  direction: HoraeRelationDirection = SCHEDULE_EVIDENCE_CACHE_DIRECTION,
 ): string {
-  return cachePathForRoot(cacheRoot, taskId);
+  return cachePathForRoot(cacheRoot, taskId, direction);
 }
 
 export function horaeTaskTypeCachePath(
@@ -290,8 +302,9 @@ function invalid(path: string, reason: string): HoraeRelationCacheRead {
 export function readHoraeRelationCache(
   taskId: string,
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  direction: HoraeRelationDirection = SCHEDULE_EVIDENCE_CACHE_DIRECTION,
 ): HoraeRelationCacheRead {
-  const path = cachePathForRoot(cacheRoot, taskId);
+  const path = cachePathForRoot(cacheRoot, taskId, direction);
   if (!existsSync(path)) return { status: "MISS", path };
   try {
     const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
@@ -302,7 +315,7 @@ export function readHoraeRelationCache(
     if (record.artifact_type !== SCHEDULE_EVIDENCE_CACHE_ARTIFACT_TYPE)
       return invalid(path, "ARTIFACT_TYPE_MISMATCH");
     if (record.task_id !== taskId) return invalid(path, "TASK_ID_MISMATCH");
-    if (record.direction !== SCHEDULE_EVIDENCE_CACHE_DIRECTION)
+    if (record.direction !== direction)
       return invalid(path, "DIRECTION_MISMATCH");
     if (record.depth !== SCHEDULE_EVIDENCE_CACHE_DEPTH)
       return invalid(path, "DEPTH_MISMATCH");
@@ -315,7 +328,7 @@ export function readHoraeRelationCache(
       !SHA256.test(record.content_sha256)
     )
       return invalid(path, "CONTENT_HASH_INVALID");
-    const payload = cachePayload(taskId, observedAt, rows);
+    const payload = cachePayload(taskId, observedAt, rows, direction);
     if (sha256(canonicalJson(payload)) !== record.content_sha256)
       return invalid(path, "CONTENT_HASH_MISMATCH");
     return { status: "HIT", path, taskId, rows, observedAt };
@@ -332,17 +345,18 @@ export function writeHoraeRelationCache(
   observedAt: string,
   rows: readonly JsonRecord[],
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  direction: HoraeRelationDirection = SCHEDULE_EVIDENCE_CACHE_DIRECTION,
 ): string {
   safeTaskId(taskId);
   if (!nonEmptyString(observedAt)) throw new Error("OBSERVED_AT_MISSING");
   if (!validateRows(rows, taskId)) throw new Error("ROWS_INVALID");
-  const path = cachePathForRoot(cacheRoot, taskId);
+  const path = cachePathForRoot(cacheRoot, taskId, direction);
   const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
   mkdirSync(dirname(path), { recursive: true });
   try {
     writeFileSync(
       temporaryPath,
-      canonicalJson(cacheDocument(taskId, observedAt, rows)),
+      canonicalJson(cacheDocument(taskId, observedAt, rows, direction)),
       { encoding: "utf8", flag: "wx" },
     );
     renameSync(temporaryPath, path);
