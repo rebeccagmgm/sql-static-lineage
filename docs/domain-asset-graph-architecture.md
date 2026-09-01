@@ -307,10 +307,16 @@ needed(hop) = 值列
 
 | 档 | 判据 | 用途 |
 | --- | --- | --- |
-| 值必达 | `FIELD_DIRECT` + `CONFIRMED` | 排查起点 |
-| 行决定 | 供给 `rowDetermining` 闭包 | 值未变但行集变时看这里 |
-| 倍增风险 | 可空侧 JOIN 且 `grain ≠ PRESERVE` | 行数异常时看这里 |
-| 已剪除 | 作用域可证明不相交 | 不展示，仅计数 |
+| 值必达 | `FIELD_VALUE` / `FIELD_DIRECT` + `CONFIRMED` | 排查起点 |
+| 行决定 | `ROW_MEMBERSHIP` 闭包（含拉链匹配键与变更检测列） | 值未变但行集变时看这里 |
+| 倍增风险 | `MULTIPLICITY` 且 `grain ≠ PRESERVE` | 行数异常时看这里 |
+| 已剪除 | 作用域可证明不相交；当前禁止由"没找到路径"产生 | 不展示，仅计数 |
+
+查询期反向闭包已经存在于
+`scripts/reconcile/consumer/target-table-upstream-causal-closure/`，
+不另写引擎。缺的是 5.1（JOIN/FILTER 侧别与拉链键）和 3.4（部分字段不受影响时
+不得扩散到任务全部字段）。105387 必须收为该 consumer 的金样：四张参考表走
+`ROW_MEMBERSHIP`，理由链经 `Agt_Modifr`，不得只出现一张无理由的算子表。
 
 真正的规模收益来自常量分区谓词：分区共写表（如按 `SRC_TBL` 分区、每任务写一个
 分区）在表级血缘上呈现全部写入方扇入，按 `partitionPredicates` 匹配后只保留

@@ -6,6 +6,24 @@
 每个工作包（WP）按 1:1 可转成一个 OpenSpec change 的粒度切分。领取时执行
 `openspec new change "<wp-name>"` 再补齐 proposal / specs / design / tasks。
 
+## 先做这个（P0）：155015 重跑收缩
+
+眼前要解决的是：已知 155015 要重跑，收缩全量上游，只留真正有影响的，
+并且每条都有理由。**不要从 WP-1 起做。** WP-1 修的是 field-lineage 体积，
+出不了这张清单。
+
+在已有 change `target-write-upstream-causal-closure` 上补两处，不新开 WP：
+
+1. **tasks.md 5.1**：JOIN/FILTER 按侧别和拉链键归入 `ROW_MEMBERSHIP` /
+   `MULTIPLICITY`，不要只按 relation 类型打标签。
+2. **tasks.md 3.4**：一个算子只影响部分输出列时，不得扩散到该任务全部字段。
+3. **金样 105387**：四张参考表必须出现在 155015 的行决定档，理由链必须经过
+   `Agt_Modifr` → 拉链匹配 → `STRT_DATE`/`END_DATE`。禁止「影响最终字段 1 个」
+   这种无理由抄写。值必达档仍是 `112715 → 114026` 与 `71698 → 105387`。
+
+验收就是跑 155015，得到分档清单：必查 4 个任务，行决定 4 张参考表带理由，
+其余全量上游只计数不展示。过了再回头做下面的 WP（地图、口径、体积）。
+
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
 ```text
@@ -70,6 +88,47 @@ WP-1 的分类结果，但一个产投影、一个产任务属性，文件不重
    六个参考查询结果不得改变，用作回归基线。
 9. 每个 WP 自带 155015 金样断言。跨任务值流
    `112715 → 114026 → 155015` 与 `71698 → 105387 → 155015` 精度不得回退。
+10. 不另起通道词典。已有 `target-table-upstream-causal-closure` 的
+    `FIELD_VALUE` / `ROW_MEMBERSHIP` / `MULTIPLICITY` / `EXPRESSION_CONTROL`
+    是权威语义；WP-1 的 OpenLineage 投影与 WP-3 的图边必须是它的视图，
+    不得平行发明 `rowDetermining` 一类同义新词。
+
+## 既有 consumer 对齐（2026-09-01）
+
+`openspec/changes/target-write-upstream-causal-closure` 已覆盖场景 3 的骨架，
+不是空白。核对 `tasks.md` 与 `209119-gate-evidence.md` 后的状态：
+
+```text
+已完成    Baseline、M1（除 2.3 完整 field-port）、Gate A（带范围）
+          M3 的图与 rollup（5.2–5.4）、M4 通道代数（除 6.6）
+未完成    2.3 完整 field-port
+          3.2 跨任务 FIELD_VALUE 精确接续
+          3.4 部分输出字段不受影响时不得扩散到任务全部字段
+          5.1 JOIN/FILTER 的侧别与拉链键规则（类型→通道映射已有，规则未做）
+暂停      M5/M6（Gate B 未过）
+未开始    M7 独立 HTML/schema 发布
+Gate B    任务清单勾了，证据写 NOT VERIFIED / REOPENED
+          只过了更窄的 projection-readiness：可发表 overlay，不是运行期重跑清单
+```
+
+209119 最近一次：542 候选分支，46 `CONFIRMED_RELATED` / 496 `UNKNOWN`，
+最小确定 41 任务 / 保守安全 78 任务。`runtimeRerunDecision = NOT_EVALUATED`。
+155015 / 105387 拉链样例从未进入该 consumer 的金样。
+
+现有 `summarizeTaskRelations` 把任意 `join` 一律标成
+`ROW_MEMBERSHIP + MULTIPLICITY + RELATION_EXISTENCE`，`demandedFieldNames`
+是算子上出现过的全部列名，不是"该输出列的行决定列"。所以 105387 的四张
+参考表会被召回，但给不出 `Agt_Modifr → 拉链匹配键 → STRT_DATE/END_DATE`
+这条理由——与页面上"算子间接表 / 影响最终字段 1 个"是同一类问题。
+
+分工因此固定：
+
+- 场景 3（单表重跑溯源）继续用该 consumer 做查询期反向闭包，先补 5.1 与 3.4，
+  并把 105387 收为金样。不在 WP-3 重写一遍闭包引擎。
+- 场景 1（全局地图）仍需要 WP-3 的任务局部投影；该 consumer 是按 root 加载
+  multi-hop universe 的，结构上铺不满 13,740 个任务。
+- WP-3 只物化 `TaskRelationSummary` 已有的通道为图边，查询期把闭包引擎接到
+  这张图上。
 
 ## WP-1 `separate-field-impact-channels`
 
@@ -167,9 +226,19 @@ scripts/visualize/field-lineage-visualize.ts
   `PHYSICAL_FIELD`、`TARGET_WRITE`。身份函数与 data-graph 现有实现一致。
 - 边：`WRITES`、`READS`、`FIELD_DIRECT`、`FIELD_CONDITIONAL`、`DATASET_CONTROL`。
   全部限定在本任务内，**不做任何跨任务遍历**。
-- 每个输出列附带 `rowDetermining[]`：决定该列所在行是否存在、或存在于哪个版本的
-  本任务输入列集合。来源包括 JOIN 键、过滤谓词列、`GROUP BY` 键、拉链匹配键与
-  变更检测比较列。此集合与值血缘并列，**不得合并进 `FIELD_DIRECT`**。
+- 通道来源：直接读取 `summarizeTaskRelations()` 的 `readImpacts` /
+  `impactChannels` / `demandedFieldNames`，按下表投影，不平行实现一套规则。
+
+  | 图边 | 来自 |
+  | --- | --- |
+  | `FIELD_DIRECT` | `FIELD_VALUE` |
+  | `FIELD_CONDITIONAL` | `EXPRESSION_CONTROL` |
+  | `DATASET_CONTROL` subtype `JOIN`/`FILTER` | `ROW_MEMBERSHIP` |
+  | `grain` | `MULTIPLICITY` 的 certainty |
+
+  `demandedFieldNames` 在 5.1 / 3.4 补完之前精度不够（算子上出现过的列 ≠
+  该输出列的行决定列）。WP-3 可以先按现有摘要落边，105387 金样在 5.1 合入前
+  允许只断言召回、不断言理由链。
 - 常量谓词：形如 `SRC_TBL IN ('...')` 的字面量分区谓词单独记为
   `partitionPredicates[]`（列 + 字面量集合）。查询侧据此在多写入方分区表上
   剪掉不匹配分区的写入任务。
