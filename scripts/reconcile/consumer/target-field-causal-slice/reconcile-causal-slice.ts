@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { Schema, type SchemaMapping } from "../../../../src/index.ts";
+import { Schema, type SchemaMapping } from "sqllens";
 import {
   canonicalJson,
   sha256,

@@ -52,7 +52,7 @@ one-hop、multi-hop、field-lineage 及 target-table causal closure Artifact；�
 ## 目录边界
 
 ```text
-src/                         parser/analyzer engine snapshot
+(engine)                     npm package `sqllens@1.8.0` (no vendored src/)
 scripts/plans/               engine -> L1 observation adapter
 scripts/machine-facts/       per-task fact assembly and publication
 scripts/input/               external Task/Table input collection, contracts and repairs

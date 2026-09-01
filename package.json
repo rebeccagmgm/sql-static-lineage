@@ -15,7 +15,7 @@
   "scripts": {
     "prepare:deps": "node scripts/ensure-dependencies.mjs",
     "prebuild": "npm run prepare:deps",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node --input-type=module -e \"import { SqlSession, Schema } from 'sqllens'; if (!SqlSession || !Schema) throw new Error('sqllens engine missing'); console.log('build: sqllens engine ready');\"",
     "pretypecheck": "npm run prepare:deps",
     "typecheck": "tsc -p tsconfig.json",
     "pretest": "npm run prepare:deps",
@@ -92,6 +92,6 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "antlr4ng": "^3.0.16"
+    "sqllens": "^1.8.0"
   }
 }

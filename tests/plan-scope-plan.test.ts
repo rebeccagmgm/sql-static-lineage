@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SqlSession } from "../src/index.js";
+import { SqlSession } from "sqllens";
 import { buildPlanFacts } from "../scripts/plans/plan-adapter.ts";
 import {
 	buildScopePlan,

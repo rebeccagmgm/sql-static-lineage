@@ -10,7 +10,7 @@ import {
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 
-import { Schema, SqlSession, type SchemaMapping } from "../../src/index.ts";
+import { Schema, SqlSession, type SchemaMapping } from "sqllens";
 
 import {
 	sha256File,

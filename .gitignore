@@ -7,9 +7,5 @@
 desktop.ini
 
 # Local inspection outputs and temporary dependencies
-/tmp/node_modules/
-/tmp/inspect-results/
-/tmp/xlsx-inspect/
-/tmp/risk-control-rerun-lineage-*/
-/tmp/target-table-poc-176827/target-table-causal-closure.json
+/tmp/
 /tests/fixtures/reconcile-one-hop/86840-input-pack/

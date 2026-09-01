@@ -36,7 +36,7 @@ SQL bytes + declared dialect + Schema/View snapshot
 
 ## 模块职责
 
-`src/` 是 parser/analyzer engine 边界；它只输出项目无关的结构观察。`scripts/plans/plan-adapter.ts` 将这些观察转为 L1 计划事实。`scripts/machine-facts/` 负责 per-task Canonical assembly、hash、span、Write/ordinal 校验和发布。`scripts/query/current-task-bundle.ts` 是唯一允许 Reader 读取任务事实的入口；`task-inspection.ts` 只做派生 Projection。
+`sqllens`（npm）是 parser/analyzer engine 边界；它只输出项目无关的结构观察。`scripts/plans/plan-adapter.ts` 将这些观察转为 L1 计划事实。`scripts/machine-facts/` 负责 per-task Canonical assembly、hash、span、Write/ordinal 校验和发布。`scripts/query/current-task-bundle.ts` 是唯一允许 Reader 读取任务事实的入口；`task-inspection.ts` 只做派生 Projection。
 
 当前迁移的 Publisher 仍是旧 Contract 1.3.0 基线，因此不能宣称 L1 Ready。它只为旧 schema compatibility 保留空的 Hop 输出文件，不计算或发布 Hop 内容，相关 Gate 为 `false`。Contract 2.0 的 Core/Optional 分层、used Schema ref 精确闭包和 capability truth table 是下一阶段实现内容，不在目录整理中预先伪造。
 

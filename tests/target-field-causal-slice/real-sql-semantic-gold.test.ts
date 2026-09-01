@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { Schema, SqlSession } from "../../src/index.ts";
+import { Schema, SqlSession } from "sqllens";
 import {
   canonicalJson,
   sha256,

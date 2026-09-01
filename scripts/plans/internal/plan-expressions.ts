@@ -1,4 +1,4 @@
-import type { Expr } from "../../../src/ir/ir.js";
+import type { Expr } from "sqllens";
 import type {
 	ColumnRef,
 	ExpressionFacts,

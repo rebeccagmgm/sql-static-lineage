@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync, existsSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
-import { Schema, SqlSession, type SchemaMapping } from "../../src/index.ts";
+import { Schema, SqlSession, type SchemaMapping } from "sqllens";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { buildPlanFacts, EXPRESSION_DEPENDENCY_ADAPTER_VERSION } from "../plans/plan-adapter.ts";
 import type { PlanFacts } from "../plans/plan-contract.ts";

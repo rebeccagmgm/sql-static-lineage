@@ -1,7 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { Schema, type SchemaMapping } from "../../src/qualify/schema.js";
-import type { SchemaProvider } from "../../src/qualify/schema-provider.js";
+import {
+  Schema,
+  type SchemaMapping,
+  type SchemaProvider,
+} from "sqllens";
 import { sha256File, validateTableDocument, type TableDocument } from "../input/shared/input-pack.ts";
 
 export type DdlColumn = {

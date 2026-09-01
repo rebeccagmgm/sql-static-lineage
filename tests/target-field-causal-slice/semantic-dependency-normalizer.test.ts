@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Schema, SqlSession } from "../../src/index.ts";
+import { Schema, SqlSession } from "sqllens";
 import type {
   PlanFacts,
   PlanRelation,

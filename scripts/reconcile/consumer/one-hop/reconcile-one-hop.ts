@@ -16,12 +16,12 @@ import {
   sep,
 } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SqlSession } from "../../../../src/session.ts";
-import type { Dialect } from "../../../../src/dialect.ts";
 import {
   Schema,
+  SqlSession,
+  type Dialect,
   type SchemaMapping,
-} from "../../../../src/qualify/schema.ts";
+} from "sqllens";
 import {
   sha256File,
   validateTableDocument,

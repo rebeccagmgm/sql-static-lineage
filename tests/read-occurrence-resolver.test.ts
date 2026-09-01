@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Schema, SqlSession } from "../src/index.js";
+import { Schema, SqlSession } from "sqllens";
 import { resolveReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts";
 import { buildPlanFacts } from "../scripts/plans/plan-adapter.ts";
 import { resolveReadOccurrences } from "../scripts/plans/read-occurrence-resolver.ts";

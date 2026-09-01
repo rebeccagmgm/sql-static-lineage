@@ -1,5 +1,11 @@
-import type { Expr, Join, Source } from "../../../src/ir/ir.js";
-import type { ResolvedSource, Scope, ScopeTree } from "../../../src/scope/scope.js";
+import type {
+  Expr,
+  Join,
+  ResolvedSource,
+  Scope,
+  ScopeTree,
+  Source,
+} from "sqllens";
 
 /**
  * A normalized, plan-local view of ScopeTree.

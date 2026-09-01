@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { Schema } from "../../src/index.ts";
+import { Schema } from "sqllens";
 import {
   MACHINE_FACTS_CONTRACT_VERSION,
   sha256,

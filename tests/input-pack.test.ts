@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SqlSession } from "../src/session.ts";
+import { SqlSession } from "sqllens";
 import { cases } from "./fixtures/input-pack/cases.ts";
 import {
   canonicalHash,

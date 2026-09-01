@@ -18,13 +18,21 @@
 //          本文件所有 span/offset 平移 cellBase 后为 DOCUMENT 坐标。
 // ============================================================================
 import { readFileSync } from "node:fs";
-import type { Scope, ScopeTree } from "../../src/scope/scope.js";
-import { resolveColumnSource } from "../../src/sema/resolve.js";
 import {
   displayName,
   foldIdentifier,
-} from "../../src/dialect-behavior/public-fold.js";
-import type { SchemaProvider } from "../../src/qualify/schema-provider.js";
+  lineageAt,
+  lineageOf,
+  originsOfExpr,
+  qualify,
+  type Expr,
+  type LineageHop,
+  type Projection,
+  type Scope,
+  type ScopeTree,
+  type SchemaProvider,
+  type SelectExpr,
+} from "sqllens";
 import type {
 	AggregateRelation,
 	ColumnRef,
@@ -51,7 +59,6 @@ import type {
 	WindowInputBinding,
 	WindowSpecFacts,
 } from "./plan-contract.js";
-import type { Projection, SelectExpr, Expr } from "../../src/ir/ir.js";
 import {
 	collectColumns,
 	expressionFacts,
@@ -72,12 +79,6 @@ import {
   legacySourceBindingKey,
   type SelectScopePlan,
 } from "./internal/plan-scope-plan.js";
-import {
-  lineageAt,
-  lineageOf,
-  type LineageHop,
-} from "../../src/lineage/hops.js";
-import { originsOf } from "../../src/lineage/lineage.js";
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -144,7 +145,7 @@ function inputColumnsFor(
   collectColumns(e, clause, out);
   if (!includeNativeLineage || !e || !schema) return out;
   try {
-    for (const origin of originsOf(e, scope, schema as SchemaProvider)) {
+    for (const origin of originsOfExpr(e, scope, schema as SchemaProvider)) {
       const table = origin.table.join(".");
       if (!schemaContainsField(schema, table, origin.column, dialect)) continue;
       out.push({
@@ -756,6 +757,12 @@ function resolvePhysical(
     }
     return undefined;
   };
+  const qualification =
+    schema !== undefined && schema !== null
+      ? qualify(cell.scopes, schema as SchemaProvider)
+      : undefined;
+  const resolveColumnBinding = (parts: string[]) =>
+    qualification?.bindingOf(scope, { kind: "column", parts });
   for (const ref of refs) {
     const withOff = ref as RefWithOffset;
     if (withOff._cellOffset == null) continue;
@@ -897,12 +904,7 @@ function resolvePhysical(
           delete withOff._cellOffset;
           continue;
         }
-        const boundOnlySource =
-          resolveColumnSource(
-            scope,
-            [ref.name],
-            schema as SchemaProvider,
-          )?.source;
+        const boundOnlySource = resolveColumnBinding([ref.name])?.source;
         if (boundOnlySource?.kind === "subquery") {
           ref.resolution = "DERIVED_OUTPUT";
           ref.derived_from = `SUBQUERY_OUTPUT:${boundOnlySource.source.alias ?? ref.name}.${ref.name}`;
@@ -918,11 +920,7 @@ function resolvePhysical(
       }
     }
     if (!ref.qualifier) {
-      const bound = resolveColumnSource(
-        scope,
-        [ref.name],
-        schema as SchemaProvider,
-      );
+      const bound = resolveColumnBinding([ref.name]);
       if (bound?.source.kind === "lateral") {
         ref.resolution = "DERIVED_OUTPUT";
         ref.derived_from = `LATERAL_OUTPUT:${bound.source.source.alias ?? ref.name}.${ref.name}`;

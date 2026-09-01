@@ -9,7 +9,7 @@ import {
   resolve,
 } from "node:path";
 
-import { Schema, SqlSession } from "../../../../src/index.ts";
+import { Schema, SqlSession } from "sqllens";
 import { sha256 } from "../../../machine-facts/machine-facts-contract.ts";
 import {
   globalExpressionId,

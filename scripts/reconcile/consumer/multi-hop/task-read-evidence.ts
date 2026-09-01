@@ -14,8 +14,7 @@ import {
   resolve,
   sep,
 } from "node:path";
-import type { Dialect } from "../../../../src/dialect.ts";
-import { SqlSession } from "../../../../src/session.ts";
+import { SqlSession, type Dialect } from "sqllens";
 import {
   sha256Bytes,
   sha256File,

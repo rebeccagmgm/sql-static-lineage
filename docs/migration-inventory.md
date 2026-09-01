@@ -6,7 +6,7 @@
 
 | 内容                                              | 新目录位置                             | 来源与用途                                                                                             | 状态                    |
 | ------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------- |
-| parser/analyzer engine snapshot                   | `src/`                                 | f335 worktree `efeb98a` 的 `sql-static-lineage/src`；为 L1 提供 IR、Schema、resolve、lineage 和 span   | 已迁移                  |
+| parser/analyzer engine snapshot                   | npm `sqllens@1.8.0`（不再 vendoring `src/`） | 原 f335 worktree `efeb98a` 的 `sql-static-lineage/src`；现改为依赖已发布的 sqllens 包 | 已切到 npm 依赖          |
 | Plan adapter 与 plain-data contract               | `scripts/plans/`                       | f335 `sql-static-lineage/scripts/plans/{plan-adapter,plan-contract}.ts`；保持 engine 与 Publisher 分层 | 已迁移                  |
 | P0 Write/ordinal binding 与 fail-closed validator | `scripts/machine-facts/`               | f335 `efeb98a` 的 Machine Facts 变更；保留 `write_observation_id`、CTAS pairing、ordinal disposition   | 已迁移                  |
 | Schema/runtime publication helpers                | `scripts/machine-facts/`               | 同一 P0 基线；只接受本地 SQL/Schema snapshot                                                           | 已迁移                  |
