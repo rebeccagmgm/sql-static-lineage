@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createPhysicalFieldExpander,
+  type PhysicalFieldEvidenceMode,
   type PhysicalFieldExpanderTaskPack,
 } from "../scripts/reconcile/consumer/field-lineage/physical-field-expander.ts";
 import type { CurrentBundleLoad } from "../scripts/query/current-task-bundle.ts";
@@ -87,7 +88,9 @@ function context(options: {
   readonly producerBinding?: boolean;
   readonly multipleWrites?: boolean;
   readonly artifactWriteEvidence?: boolean;
+  readonly aggregateWrites?: boolean;
   readonly artifactSqlStart?: number;
+  readonly evidenceMode?: PhysicalFieldEvidenceMode;
   readonly mismatchedProducerTarget?: boolean;
   readonly legacyScheduleFallback?: boolean;
   readonly missingProducerPack?: boolean;
@@ -108,7 +111,9 @@ function context(options: {
   const producerRecords: Record<string, Record<string, any>[]> = options.producerBinding
     ? {
         "dataset-io.jsonl": (options.multipleWrites
-          ? ["INSERT_OVERWRITE", "INSERT_INTO"]
+          ? options.aggregateWrites
+            ? ["INSERT_OVERWRITE", "INSERT_OVERWRITE"]
+            : ["INSERT_OVERWRITE", "INSERT_INTO"]
           : ["PLATFORM_TARGET_QUERY_OUTPUT"]
         ).map((writeKind, index) => ({
           task_id: "200",
@@ -179,7 +184,17 @@ function context(options: {
                     observationKind: "SQL_EXPLICIT_WRITE",
                     declaredWriteMode: null,
                     sqlWriteKind: "INSERT_OVERWRITE",
-                    partition: [],
+                     partition: options.aggregateWrites
+                       ? [{
+                           field: "src_partition",
+                           expression: "'partition-a'",
+                           valueStatus: "OBSERVED_RENDERED_VALUE",
+                           observedValue: "partition-a",
+                         }]
+                       : [],
+                     ...(options.aggregateWrites
+                       ? { partitionStatus: "COMPLETE" }
+                       : {}),
                     evidence:
                       options.artifactSqlStart === undefined
                         ? []
@@ -214,7 +229,7 @@ function context(options: {
     },
     loadFacts: (taskId) => (taskId === "100" ? consumerLoad : producerLoad),
     factsPolicy: "current-only",
-  });
+  }, { evidenceMode: options.evidenceMode });
   return { expander, consumer, consumerLoad, source };
 }
 
@@ -404,6 +419,60 @@ describe("physical field expander", () => {
         }),
       ]),
     );
+  });
+
+  it("aggregates same-partition writes when every occurrence resolves the same field", () => {
+    const { expander, consumer, consumerLoad, source } = context({
+      occurrence,
+      producerBinding: true,
+      multipleWrites: true,
+      aggregateWrites: true,
+    });
+    const result = expander.expand({
+      consumerTaskId: "100",
+      consumerPack: consumer,
+      consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source,
+      expressionText: "s.src_a",
+      depth: 0,
+      maxDepth: 4,
+    });
+    expect(result.producers[0]).toMatchObject({
+      evidenceStatus: "CONFIRMED",
+      shouldRecurse: true,
+    });
+    expect(result.producers[0]!.producerBindings).toEqual([
+      expect.objectContaining({ write_observation_id: "write-observation:200:0" }),
+      expect.objectContaining({ write_observation_id: "write-observation:200:1" }),
+    ]);
+    expect(result.gaps).toEqual([]);
+  });
+
+  it("uses the same partition-field aggregation in strict causal mode", () => {
+    const { expander, consumer, consumerLoad, source } = context({
+      occurrence,
+      producerBinding: true,
+      multipleWrites: true,
+      aggregateWrites: true,
+      evidenceMode: "STRICT_CAUSAL",
+    });
+    const result = expander.expand({
+      consumerTaskId: "100",
+      consumerPack: consumer,
+      consumerLoad,
+      sourceNodeId: "field-source-node:100:source:src_a",
+      source,
+      expressionText: "s.src_a",
+      depth: 0,
+      maxDepth: 4,
+    });
+    expect(result.producers[0]).toMatchObject({
+      evidenceStatus: "CONFIRMED",
+      shouldRecurse: true,
+    });
+    expect(result.producers[0]!.producerBindings).toHaveLength(2);
+    expect(result.gaps).toEqual([]);
   });
 
   it("blocks recursion when the producer physical table disagrees with the bridge table", () => {

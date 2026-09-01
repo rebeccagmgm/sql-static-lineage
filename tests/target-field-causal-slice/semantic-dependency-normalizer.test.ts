@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { Schema, SqlSession } from "../../src/index.ts";
 import type {
   PlanFacts,
   PlanRelation,
 } from "../../scripts/plans/plan-contract.ts";
+import { buildPlanFacts } from "../../scripts/plans/plan-adapter.ts";
 import { normalizeSemanticDependencies } from "../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-normalizer.ts";
+import { testSemanticRoot } from "../fixtures/field-lineage/semantic-occurrence-scope.ts";
 
 const span = { start: 0, end: 10 };
 
@@ -91,9 +94,14 @@ function normalize(
   outputName?: string,
   relationId?: string,
 ) {
+  const root = testSemanticRoot(facts, {
+    rootTargetFieldId,
+    ...(outputName === undefined ? {} : { outputName }),
+    ...(relationId === undefined ? {} : { relationId }),
+  });
   return normalizeSemanticDependencies({
     plan: facts,
-    roots: [{ rootTargetFieldId, outputName, relationId }],
+    ...root,
   });
 }
 
@@ -150,6 +158,187 @@ describe("target-field semantic dependency normalization", () => {
     );
     expect(ids).not.toContain("physical:db.source:b");
     expect(result.gaps).toHaveLength(0);
+  });
+
+  it("fails closed instead of unioning duplicate child output expressions", () => {
+    const sql =
+      "SELECT q.x FROM (SELECT a AS x, b AS x FROM demo.t) q";
+    const schema = new Schema({
+      "demo.t": { a: "int", b: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    expect(session.syntaxDiagnostics).toEqual([]);
+    const facts = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    const result = normalize(facts, "target:x", "x", "root.project");
+    const gap = result.gaps.find(
+      (item) =>
+        item.relationId === "root.q.project" &&
+        item.message.includes("ambiguous expression binding"),
+    );
+
+    expect(gap).toMatchObject({
+      reasonCode: "STRUCTURALLY_INCOMPLETE",
+      blocksConfirmedCausality: true,
+      blocksNegativeProof: true,
+    });
+    expect(gap?.proofRefs.some((ref) => ref.kind === "SOURCE_SPAN")).toBe(
+      true,
+    );
+    expect(
+      result.edges.some(
+        (edge) =>
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+          edge.fromSubject.physicalFieldId === "physical:demo.t:b",
+      ),
+    ).toBe(false);
+  });
+
+  it("propagates a selected expression's input name instead of its renamed output", () => {
+    const sql =
+      "SELECT q.y AS x FROM (SELECT a AS x, b AS y FROM demo.t) q";
+    const schema = new Schema({
+      "demo.t": { a: "int", b: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    expect(session.syntaxDiagnostics).toEqual([]);
+    const facts = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    const result = normalize(facts, "target:x", "x", "root.project");
+    const confirmedFields = result.edges
+      .filter(
+        (edge) =>
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD",
+      )
+      .map((edge) =>
+        edge.fromSubject.subjectKind === "PHYSICAL_FIELD"
+          ? edge.fromSubject.physicalFieldId
+          : "",
+      );
+
+    expect(confirmedFields).toContain("physical:demo.t:b");
+    expect(confirmedFields).not.toContain("physical:demo.t:a");
+    expect(result.gaps).toEqual([]);
+  });
+
+  it("routes a qualified child output to one join branch without leaking its sibling alias", () => {
+    const sql =
+      "SELECT l.x AS out FROM (SELECT id, a AS x FROM demo.l) l JOIN (SELECT id, b AS x FROM demo.r) r ON l.id = r.id";
+    const schema = new Schema({
+      "demo.l": { id: "int", a: "int" },
+      "demo.r": { id: "int", b: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    expect(session.syntaxDiagnostics).toEqual([]);
+    const facts = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    const result = normalize(facts, "target:out", "out", "root.project");
+    const valueFields = result.edges
+      .filter(
+        (edge) =>
+          edge.rootDependenceKind === "VALUE_TO_TARGET" &&
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD",
+      )
+      .map((edge) =>
+        edge.fromSubject.subjectKind === "PHYSICAL_FIELD"
+          ? edge.fromSubject.physicalFieldId
+          : "",
+      );
+
+    expect(valueFields).toContain("physical:demo.l:a");
+    expect(valueFields).not.toContain("physical:demo.r:b");
+    expect(result.gaps).toEqual([]);
+  });
+
+  it("fails closed when an unqualified join output cannot map to one child", () => {
+    const sql =
+      "SELECT x AS out FROM (SELECT id, a AS x FROM demo.l) l JOIN (SELECT id, b AS x FROM demo.r) r ON l.id = r.id";
+    const schema = new Schema({
+      "demo.l": { id: "int", a: "int" },
+      "demo.r": { id: "int", b: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    expect(session.syntaxDiagnostics).toEqual([]);
+    const facts = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    const result = normalize(facts, "target:out", "out", "root.project");
+    const routingGap = result.gaps.find(
+      (gap) =>
+        gap.relationId === "root.join.1" &&
+        gap.message.includes("maps to 2 child relations instead of exactly one"),
+    );
+
+    expect(routingGap).toMatchObject({
+      reasonCode: "STRUCTURALLY_INCOMPLETE",
+      blocksConfirmedCausality: true,
+      blocksNegativeProof: true,
+    });
+    expect(
+      result.edges.some(
+        (edge) =>
+          edge.rootDependenceKind === "VALUE_TO_TARGET" &&
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+          ["physical:demo.l:a", "physical:demo.r:b"].includes(
+            edge.fromSubject.physicalFieldId,
+          ),
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps distinct child outputs when one target expression needs both", () => {
+    const sql =
+      "SELECT q.x + q.y AS z FROM (SELECT a AS x, b AS y FROM demo.t) q";
+    const schema = new Schema({
+      "demo.t": { a: "int", b: "int" },
+    });
+    const session = SqlSession.create(sql, "databricks", { schema });
+    expect(session.syntaxDiagnostics).toEqual([]);
+    const facts = buildPlanFacts(session.doc.statements[0]!, sql, {
+      dialect: "databricks",
+      schema,
+      include_expression_dependencies: true,
+    });
+
+    const result = normalize(facts, "target:z", "z", "root.project");
+    const confirmedFields = result.edges
+      .filter(
+        (edge) =>
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD",
+      )
+      .map((edge) =>
+        edge.fromSubject.subjectKind === "PHYSICAL_FIELD"
+          ? edge.fromSubject.physicalFieldId
+          : "",
+      );
+
+    expect(
+      result.gaps.some((gap) =>
+        gap.message.includes("ambiguous expression binding"),
+      ),
+    ).toBe(false);
+    expect(confirmedFields).toContain("physical:demo.t:a");
+    expect(confirmedFields).toContain("physical:demo.t:b");
   });
 
   it("uses role.operator for IF even when expr_kind is function and keeps results as value", () => {
@@ -239,9 +428,13 @@ describe("target-field semantic dependency normalization", () => {
         ]),
       ],
     };
+    const facts = plan([source, project], ["project"]);
     const result = normalizeSemanticDependencies({
-      plan: plan([source, project], ["project"]),
-      roots: [{ rootTargetFieldId: "target", outputName: "wanted" }],
+      plan: facts,
+      ...testSemanticRoot(facts, {
+        rootTargetFieldId: "target",
+        outputName: "wanted",
+      }),
       physicalFieldResolver: ({ table, column: name }) =>
         table === "db.source"
           ? {
@@ -260,7 +453,13 @@ describe("target-field semantic dependency normalization", () => {
         edge.fromSubject.physicalFieldId.endsWith("|a"),
     );
     expect(resolved?.pathCertainty).toBe("CONFIRMED");
-    expect(result.gaps.some((gap) => gap.subject?.subjectKind === "PHYSICAL_FIELD" && gap.subject.physicalFieldId === "physical:db.missing:a")).toBe(true);
+    expect(
+      result.gaps.some(
+        (gap) =>
+          gap.subject?.subjectKind === "PHYSICAL_FIELD" &&
+          gap.subject.physicalFieldId === "physical:db.missing:a",
+      ),
+    ).toBe(true);
   });
 
   it.each([
@@ -878,6 +1077,204 @@ describe("target-field semantic dependency normalization", () => {
       "RELATION:LITERAL_FROM_RELATION:RELATION",
     );
     expect(literal.gaps).toHaveLength(0);
+  });
+
+  it("fails closed when a sibling DISTINCT key can change target-row identity", () => {
+    const result = normalize(
+      plan(
+        [
+          read("read", "db.source"),
+          {
+            id: "project",
+            type: "project",
+            source: "read",
+            distinct: true,
+            span,
+            provenance: "extracted",
+            output_columns: ["a", "b"],
+            expressions: [
+              expression("a", "column", [column("db.source", "a")]),
+              expression("b", "column", [column("db.source", "b")]),
+            ],
+          } as PlanRelation,
+        ],
+        ["project"],
+      ),
+      "target:a",
+      "a",
+    );
+
+    const gap = result.gaps.find(
+      (item) =>
+        item.operatorKind === "DISTINCT" &&
+        item.operatorVariant === "DISTINCT_KEY" &&
+        item.message.includes("sibling output"),
+    );
+    expect(gap).toMatchObject({
+      reasonCode: "STRUCTURALLY_INCOMPLETE",
+      relationId: "project",
+      blocksConfirmedCausality: true,
+      blocksNegativeProof: true,
+    });
+    expect(gap?.proofRefs.some((ref) => ref.kind === "SOURCE_SPAN")).toBe(
+      true,
+    );
+    expect(
+      result.edges.some(
+        (edge) =>
+          edge.localEdgeKind === "VALUE_FLOW" &&
+          edge.pathCertainty === "CONFIRMED" &&
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+          edge.fromSubject.physicalFieldId === "physical:db.source:a",
+      ),
+    ).toBe(true);
+    expect(
+      result.edges.some(
+        (edge) =>
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+          edge.fromSubject.physicalFieldId === "physical:db.source:b",
+      ),
+    ).toBe(false);
+  });
+
+  it.each(["union", "intersect", "except"] as const)(
+    "fails closed for multi-column %s without inventing sibling set-op reachability",
+    (setop) => {
+      const result = normalize(
+        plan(
+          [
+            read("left", "db.left"),
+            read("right", "db.right"),
+            {
+              id: "left-project",
+              type: "project",
+              source: "left",
+              span,
+              provenance: "extracted",
+              output_columns: ["a", "b"],
+              expressions: [
+                expression("a", "column", [column("db.left", "a")]),
+                expression("b", "column", [column("db.left", "b")]),
+              ],
+            },
+            {
+              id: "right-project",
+              type: "project",
+              source: "right",
+              span,
+              provenance: "extracted",
+              output_columns: ["a", "b"],
+              expressions: [
+                expression("a", "column", [column("db.right", "a")]),
+                expression("b", "column", [column("db.right", "b")]),
+              ],
+            },
+            {
+              id: "setop",
+              type: "setop",
+              setop,
+              branches: ["left-project", "right-project"],
+              span,
+              provenance: "extracted",
+              output_columns: ["a", "b"],
+            },
+          ],
+          ["setop"],
+        ),
+        "target:a",
+        "a",
+      );
+
+      const gap = result.gaps.find(
+        (item) =>
+          item.operatorKind === "SETOP" &&
+          item.operatorVariant === setop.toUpperCase() &&
+          item.message.includes("sibling output"),
+      );
+      expect(gap).toMatchObject({
+        reasonCode: "STRUCTURALLY_INCOMPLETE",
+        relationId: "setop",
+        blocksConfirmedCausality: true,
+        blocksNegativeProof: true,
+      });
+      expect(gap?.proofRefs.some((ref) => ref.kind === "SOURCE_SPAN")).toBe(
+        true,
+      );
+      expect(
+        result.edges.some(
+          (edge) =>
+            edge.localEdgeKind === "VALUE_FLOW" &&
+            edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+            edge.fromSubject.physicalFieldId.endsWith(":a"),
+        ),
+      ).toBe(true);
+      expect(
+        result.edges.some(
+          (edge) =>
+            edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+            edge.fromSubject.physicalFieldId.endsWith(":b"),
+        ),
+      ).toBe(false);
+    },
+  );
+
+  it("keeps UNION ALL target-only without the distinct-row-identity gap", () => {
+    const result = normalize(
+      plan(
+        [
+          read("left", "db.left"),
+          read("right", "db.right"),
+          {
+            id: "left-project",
+            type: "project",
+            source: "left",
+            span,
+            provenance: "extracted",
+            output_columns: ["a", "b"],
+            expressions: [
+              expression("a", "column", [column("db.left", "a")]),
+              expression("b", "column", [column("db.left", "b")]),
+            ],
+          },
+          {
+            id: "right-project",
+            type: "project",
+            source: "right",
+            span,
+            provenance: "extracted",
+            output_columns: ["a", "b"],
+            expressions: [
+              expression("a", "column", [column("db.right", "a")]),
+              expression("b", "column", [column("db.right", "b")]),
+            ],
+          },
+          {
+            id: "setop",
+            type: "setop",
+            setop: "union",
+            all: true,
+            branches: ["left-project", "right-project"],
+            span,
+            provenance: "extracted",
+            output_columns: ["a", "b"],
+          },
+        ],
+        ["setop"],
+      ),
+      "target:a",
+      "a",
+    );
+
+    expect(
+      result.gaps.some((gap) => gap.message.includes("sibling output")),
+    ).toBe(false);
+    expect(
+      result.edges.some(
+        (edge) =>
+          edge.fromSubject.subjectKind === "PHYSICAL_FIELD" &&
+          edge.fromSubject.physicalFieldId.endsWith(":b"),
+      ),
+    ).toBe(false);
   });
 
   it("propagates a COUNT(*) target alias through QUALIFY and HAVING without selecting sibling measures", () => {

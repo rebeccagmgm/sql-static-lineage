@@ -8,13 +8,21 @@ import {
   sha256,
 } from "../../../machine-facts/machine-facts-contract.ts";
 import {
+  isCompleteSemanticOccurrenceScope,
+  sameSemanticWriteOccurrence,
+  semanticScopeForRelation,
   type LocalEdgeKind,
   type PathCertainty,
   type RootDependenceKind,
   type SemanticDependencyEdge,
+  type SemanticOccurrenceScope,
   type SemanticSubject,
 } from "./semantic-dependency-contract.ts";
-import type { SemanticDependencyNormalization } from "./semantic-dependency-normalizer.ts";
+import type {
+  SemanticDependencyGap,
+  SemanticDependencyNormalization,
+} from "./semantic-dependency-normalizer.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 
 export const TRAVERSAL_FRONTIER_KINDS = [
   "VALUE",
@@ -26,12 +34,47 @@ export const TRAVERSAL_FRONTIER_KINDS = [
 export type TraversalFrontierKind = (typeof TRAVERSAL_FRONTIER_KINDS)[number];
 
 export interface CausalTraversalRoot {
-  readonly rootTargetFieldId: string;
-  readonly taskId: string;
+  readonly rootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
   readonly subject?: SemanticSubject;
 }
 
+export interface SemanticTraversalLoadRequest {
+  /** The original user-selected root; never changes while traversing upstream. */
+  readonly rootCriterion: RootCriterion;
+  /** The exact local write/output currently being traversed. */
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
+  readonly taskId: string;
+  readonly subject: SemanticSubject;
+}
+
+export interface SemanticTraversalLoadResult {
+  readonly edges: readonly SemanticDependencyEdge[];
+  readonly gaps: readonly SemanticDependencyGap[];
+}
+
+export interface ProducerScopeResolutionRequest {
+  readonly rootCriterion: RootCriterion;
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
+  readonly producerTaskId: string;
+  readonly producerField: PhysicalFieldIdentity;
+  readonly producerBindings: readonly Readonly<Record<string, unknown>>[];
+  readonly readOccurrenceId?: string;
+  readonly evidenceRefs: readonly string[];
+}
+
+export interface ResolvedProducerScope {
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
+}
+
 export interface PhysicalFieldTraversalRequest {
+  readonly rootCriterion: RootCriterion;
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
+  /** Convenience projection of rootCriterion.rootTargetFieldId. */
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly field: PhysicalFieldIdentity;
@@ -45,6 +88,9 @@ export interface PhysicalFieldTraversalRequest {
 }
 
 export interface RelationTraversalRequest {
+  readonly rootCriterion: RootCriterion;
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly relationOccurrenceId: string;
@@ -63,12 +109,17 @@ export interface RelationTraversalExpansion {
   readonly relationBridges?: readonly {
     readonly producerTaskId: string;
     readonly readOccurrenceId: string;
+    readonly producerRootCriterion?: RootCriterion;
+    readonly producerSemanticScope?: SemanticOccurrenceScope;
     readonly evidenceStatus?: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
     readonly evidenceRefs?: readonly string[];
   }[];
   readonly relationOccurrences?: readonly {
     readonly taskId: string;
     readonly relationOccurrenceId: string;
+    readonly localRelationId?: string;
+    readonly producerRootCriterion?: RootCriterion;
+    readonly producerSemanticScope?: SemanticOccurrenceScope;
     readonly evidenceStatus?: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
     readonly evidenceRefs?: readonly string[];
   }[];
@@ -85,14 +136,12 @@ export interface CausalTraversalInput {
   >;
   /** Optional target-directed loader. It may populate/cache only the requested subject. */
   readonly loadSemanticDependencies?: (
-    taskId: string,
-    subject: SemanticSubject,
+    request: SemanticTraversalLoadRequest,
   ) => readonly SemanticDependencyNormalization[] | null;
   /** Fast path for large multi-root runs; returns only edges targeting the subject. */
   readonly loadSemanticEdges?: (
-    taskId: string,
-    subject: SemanticSubject,
-  ) => readonly SemanticDependencyEdge[] | null;
+    request: SemanticTraversalLoadRequest,
+  ) => SemanticTraversalLoadResult | null;
   /** The canonical adapter-backed physical expansion callback. */
   readonly expandPhysicalField?: (
     request: PhysicalFieldTraversalRequest,
@@ -102,6 +151,10 @@ export interface CausalTraversalInput {
     physicalFieldId: string,
     taskId: string,
   ) => PhysicalFieldIdentity | null;
+  /** Resolve exact producer write/output scopes from strict producer bindings. */
+  readonly resolveProducerScopes?: (
+    request: ProducerScopeResolutionRequest,
+  ) => readonly ResolvedProducerScope[];
   /** Optional relation-only expansion. It must not synthesize physical fields. */
   readonly expandRelationOccurrence?: (
     request: RelationTraversalRequest,
@@ -127,6 +180,8 @@ export const DEFAULT_CAUSAL_TRAVERSAL_OPTIONS: CausalTraversalOptions = {
 
 export interface CausalTraversalGap {
   readonly gapId: string;
+  readonly rootCriterionId: string;
+  readonly semanticScopeId: string;
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly subject: SemanticSubject | null;
@@ -146,14 +201,22 @@ export interface CausalTraversalGap {
     | "MAX_VALUE_STATES_REACHED"
     | "MAX_VALUE_PATHS_REACHED"
     | "MAX_CONTROL_STATES_REACHED"
-    | "MAX_CONTROL_PATHS_REACHED";
+    | "MAX_CONTROL_PATHS_REACHED"
+    | "PRODUCER_SCOPE_RESOLVER_UNAVAILABLE"
+    | "PRODUCER_SCOPE_UNRESOLVED"
+    | "PRODUCER_RELATION_FRONTIER_UNEXPANDED"
+    | "SEMANTIC_SCOPE_DISCONTINUITY";
   readonly message: string;
   readonly evidenceRefs: readonly string[];
+  readonly blocksConfirmedCausality: true;
   readonly blocksNegativeProof: true;
 }
 
 export interface CausalTraversalPathEdge {
   readonly edgeId: string;
+  readonly rootCriterionId: string;
+  readonly fromSemanticScopeId: string;
+  readonly toSemanticScopeId: string;
   readonly fromTaskId: string;
   readonly toTaskId: string;
   readonly fromSubject: SemanticSubject;
@@ -170,6 +233,7 @@ export interface CausalTraversalPathEdge {
 
 export interface CausalTraversalPath {
   readonly pathId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly rootDependenceKind: RootDependenceKind;
   readonly edges: readonly CausalTraversalPathEdge[];
@@ -187,6 +251,7 @@ export interface CausalTraversalDecisionState {
 }
 
 export interface CausalTraversalRootResult {
+  readonly rootCriterionId: string;
   readonly root: CausalTraversalRoot;
   readonly visitedStateKeys: readonly string[];
   readonly activeCycleChecks: number;
@@ -206,6 +271,9 @@ export interface CausalTraversalResult {
 }
 
 type TraversalSubject = {
+  readonly rootCriterion: RootCriterion;
+  readonly localRootCriterion: RootCriterion;
+  readonly semanticScope: SemanticOccurrenceScope;
   readonly taskId: string;
   readonly subject: SemanticSubject;
   readonly depth: number;
@@ -252,7 +320,9 @@ function sameSubject(left: SemanticSubject, right: SemanticSubject): boolean {
   return subjectKey(left) === subjectKey(right);
 }
 
-function frontierKind(localEdgeKind: LocalEdgeKind | null): TraversalFrontierKind {
+function frontierKind(
+  localEdgeKind: LocalEdgeKind | null,
+): TraversalFrontierKind {
   if (localEdgeKind === "VALUE_FLOW") return "VALUE";
   return localEdgeKind ?? "RELATION_CONTEXT";
 }
@@ -309,13 +379,16 @@ function rootSubjectOf(root: CausalTraversalRoot): SemanticSubject {
   return (
     root.subject ?? {
       subjectKind: "PHYSICAL_FIELD",
-      physicalFieldId: root.rootTargetFieldId,
+      physicalFieldId: root.rootCriterion.rootTargetFieldId,
     }
   );
 }
 
 function stateKey(state: TraversalSubject): string {
   return canonicalJson({
+    rootCriterionId: state.rootCriterion.rootCriterionId,
+    localRootCriterionId: state.localRootCriterion.rootCriterionId,
+    semanticScopeId: state.semanticScope.semanticScopeId,
     taskId: state.taskId,
     subject: state.subject,
     depth: state.depth,
@@ -328,6 +401,9 @@ function stateKey(state: TraversalSubject): string {
 
 function activeKey(state: TraversalSubject): string {
   return canonicalJson({
+    rootCriterionId: state.rootCriterion.rootCriterionId,
+    localRootCriterionId: state.localRootCriterion.rootCriterionId,
+    semanticScopeId: state.semanticScope.semanticScopeId,
     taskId: state.taskId,
     subject: state.subject,
     rootDependenceKind: state.rootDependenceKind,
@@ -339,6 +415,9 @@ function activeKey(state: TraversalSubject): string {
 
 function occurrenceAgnosticActiveKey(state: TraversalSubject): string {
   return canonicalJson({
+    rootCriterionId: state.rootCriterion.rootCriterionId,
+    localRootCriterionId: state.localRootCriterion.rootCriterionId,
+    semanticScopeId: state.semanticScope.semanticScopeId,
     taskId: state.taskId,
     subject: state.subject,
     rootDependenceKind: state.rootDependenceKind,
@@ -347,7 +426,10 @@ function occurrenceAgnosticActiveKey(state: TraversalSubject): string {
   });
 }
 
-function edgeId(input: {
+export function canonicalTraversalEdgeId(input: {
+  readonly rootCriterionId: string;
+  readonly fromSemanticScopeId: string;
+  readonly toSemanticScopeId: string;
   readonly rootTargetFieldId: string;
   readonly fromTaskId: string;
   readonly toTaskId: string;
@@ -361,16 +443,23 @@ function edgeId(input: {
   return `causal-edge:${sha256(canonicalJson(input))}`;
 }
 
-function pathId(
+export function canonicalTraversalPathId(
+  rootCriterionId: string,
   rootTargetFieldId: string,
   edges: readonly CausalTraversalPathEdge[],
 ): string {
   return `causal-path:${sha256(
-    canonicalJson({ rootTargetFieldId, edgeIds: edges.map((edge) => edge.edgeId) }),
+    canonicalJson({
+      rootCriterionId,
+      rootTargetFieldId,
+      edgeIds: edges.map((edge) => edge.edgeId),
+    }),
   )}`;
 }
 
 function makeGap(input: {
+  readonly rootCriterionId: string;
+  readonly semanticScopeId: string;
   readonly rootTargetFieldId: string;
   readonly taskId: string;
   readonly subject: SemanticSubject | null;
@@ -384,56 +473,175 @@ function makeGap(input: {
   const evidenceRefs = sortedUnique(input.evidenceRefs ?? []);
   return {
     ...input,
-    gapId: `causal-gap:${sha256(
-      canonicalJson({
-        rootTargetFieldId: input.rootTargetFieldId,
-        taskId: input.taskId,
-        subject: input.subject,
-        readOccurrenceId: input.readOccurrenceId ?? null,
-        rootDependenceKind: input.rootDependenceKind,
-        frontierKind: input.frontierKind,
-        reasonCode: input.reasonCode,
-        message: input.message,
-        evidenceRefs,
-      }),
-    )}`,
+    gapId: canonicalTraversalGapId({ ...input, evidenceRefs }),
     evidenceRefs,
+    blocksConfirmedCausality: true,
     blocksNegativeProof: true,
+  };
+}
+
+export function canonicalTraversalGapId(input: {
+  readonly rootCriterionId: string;
+  readonly semanticScopeId: string;
+  readonly rootTargetFieldId: string;
+  readonly taskId: string;
+  readonly subject: SemanticSubject | null;
+  readonly readOccurrenceId?: string;
+  readonly rootDependenceKind: RootDependenceKind;
+  readonly frontierKind: TraversalFrontierKind;
+  readonly reasonCode: CausalTraversalGap["reasonCode"];
+  readonly message: string;
+  readonly evidenceRefs?: readonly string[];
+}): string {
+  return `causal-gap:${sha256(
+    canonicalJson({
+      rootCriterionId: input.rootCriterionId,
+      semanticScopeId: input.semanticScopeId,
+      rootTargetFieldId: input.rootTargetFieldId,
+      taskId: input.taskId,
+      subject: input.subject,
+      readOccurrenceId: input.readOccurrenceId ?? null,
+      rootDependenceKind: input.rootDependenceKind,
+      frontierKind: input.frontierKind,
+      reasonCode: input.reasonCode,
+      message: input.message,
+      evidenceRefs: sortedUnique(input.evidenceRefs ?? []),
+    }),
+  )}`;
+}
+
+type LoadedSemanticDependencies = {
+  readonly edges: readonly SemanticDependencyEdge[];
+  readonly gaps: readonly SemanticDependencyGap[];
+  readonly scopeDiscontinuity: boolean;
+  readonly scopeDiscontinuityEvidenceRefs: readonly string[];
+};
+
+function semanticLoadRequest(
+  state: TraversalSubject,
+): SemanticTraversalLoadRequest {
+  return {
+    rootCriterion: state.rootCriterion,
+    localRootCriterion: state.localRootCriterion,
+    semanticScope: state.semanticScope,
+    taskId: state.taskId,
+    subject: state.subject,
+  };
+}
+
+function edgeScopeMatchesState(
+  edge: SemanticDependencyEdge,
+  state: TraversalSubject,
+): boolean {
+  return (
+    edge.rootCriterionId === state.rootCriterion.rootCriterionId &&
+    edge.semanticScopeId === edge.semanticScope?.semanticScopeId &&
+    isCompleteSemanticOccurrenceScope(
+      edge.semanticScope,
+      state.localRootCriterion,
+    ) &&
+    sameSemanticWriteOccurrence(edge.semanticScope, state.semanticScope)
+  );
+}
+
+function gapScopeMatchesState(
+  gap: SemanticDependencyGap,
+  state: TraversalSubject,
+): boolean {
+  return (
+    gap.rootCriterionId === state.rootCriterion.rootCriterionId &&
+    gap.semanticScopeId === gap.semanticScope?.semanticScopeId &&
+    isCompleteSemanticOccurrenceScope(
+      gap.semanticScope,
+      state.localRootCriterion,
+    ) &&
+    sameSemanticWriteOccurrence(gap.semanticScope, state.semanticScope)
+  );
+}
+
+function loadedSemanticDependencies(
+  edges: readonly SemanticDependencyEdge[],
+  gaps: readonly SemanticDependencyGap[],
+  state: TraversalSubject,
+): LoadedSemanticDependencies {
+  const scopedEdges = edges.filter((edge) =>
+    edgeScopeMatchesState(edge, state),
+  );
+  const scopedGaps = gaps.filter((gap) => gapScopeMatchesState(gap, state));
+  const scopeDiscontinuity =
+    scopedEdges.length !== edges.length || scopedGaps.length !== gaps.length;
+  return {
+    edges: scopedEdges
+      .filter((edge) => sameSubject(edge.toSubject, state.subject))
+      .sort((left, right) => left.edgeId.localeCompare(right.edgeId)),
+    gaps: scopedGaps.sort((left, right) =>
+      left.gapId.localeCompare(right.gapId),
+    ),
+    scopeDiscontinuity,
+    scopeDiscontinuityEvidenceRefs: sortedUnique([
+      ...edges
+        .filter((edge) => !edgeScopeMatchesState(edge, state))
+        .flatMap((edge) => edge.proofRefs.map((ref) => ref.refId)),
+      ...gaps
+        .filter((gap) => !gapScopeMatchesState(gap, state))
+        .flatMap((gap) => [
+          ...gap.evidenceRefs,
+          ...gap.proofRefs.map((ref) => ref.refId),
+        ]),
+    ]),
   };
 }
 
 function normalizationFor(
   input: CausalTraversalInput,
-  taskId: string,
-  subject: SemanticSubject,
-): readonly SemanticDependencyEdge[] | null {
+  state: TraversalSubject,
+): LoadedSemanticDependencies | null {
+  const request = semanticLoadRequest(state);
   if (input.loadSemanticEdges) {
-    const edges = input.loadSemanticEdges(taskId, subject);
-    return edges === null
+    const loaded = input.loadSemanticEdges(request);
+    return loaded === null
       ? null
-      : [...edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId));
+      : loadedSemanticDependencies(loaded.edges, loaded.gaps, state);
   }
-  const normalizations = input.loadSemanticDependencies
-    ? input.loadSemanticDependencies(taskId, subject)
-    : input.semanticDependencies.get(taskId);
-  if (!normalizations || normalizations.length === 0) return null;
-  return normalizations
-    .flatMap((normalization) => normalization.edges)
-    .filter((edge) => sameSubject(edge.toSubject, subject))
-    .sort((left, right) => left.edgeId.localeCompare(right.edgeId));
+  const loadedNormalizations = input.loadSemanticDependencies
+    ? input.loadSemanticDependencies(request)
+    : null;
+  if (input.loadSemanticDependencies && !loadedNormalizations) return null;
+  const normalizations =
+    loadedNormalizations ?? input.semanticDependencies.get(state.taskId);
+  if (!normalizations) return null;
+  const staticTaskMap = !input.loadSemanticDependencies;
+  const belongsToSelectedRoot = (
+    rootCriterionId: string | null | undefined,
+  ): boolean =>
+    !staticTaskMap ||
+    rootCriterionId === null ||
+    rootCriterionId === undefined ||
+    rootCriterionId === state.rootCriterion.rootCriterionId;
+  return loadedSemanticDependencies(
+    normalizations
+      .flatMap((normalization) => normalization.edges)
+      .filter((edge) => belongsToSelectedRoot(edge.rootCriterionId)),
+    normalizations
+      .flatMap((normalization) => normalization.gaps)
+      .filter((gap) => belongsToSelectedRoot(gap.rootCriterionId)),
+    state,
+  );
 }
 
 function addPath(
   result: MutableRootResult,
-  rootTargetFieldId: string,
   edges: readonly CausalTraversalPathEdge[],
   certainty: PathCertainty,
   rootDependenceKind: RootDependenceKind,
 ): void {
   if (edges.length === 0) return;
-  const id = pathId(rootTargetFieldId, edges);
+  const rootCriterionId = result.root.rootCriterion.rootCriterionId;
+  const rootTargetFieldId = result.root.rootCriterion.rootTargetFieldId;
+  const id = canonicalTraversalPathId(rootCriterionId, rootTargetFieldId, edges);
   result.paths.set(id, {
     pathId: id,
+    rootCriterionId,
     rootTargetFieldId,
     rootDependenceKind,
     edges: [...edges],
@@ -446,23 +654,39 @@ function addPath(
 
 function addGap(result: MutableRootResult, gap: CausalTraversalGap): void {
   result.gaps.set(gap.gapId, gap);
-  if (isValueRootDependence(gap.rootDependenceKind)) result.valueGapIds.add(gap.gapId);
+  if (isValueRootDependence(gap.rootDependenceKind))
+    result.valueGapIds.add(gap.gapId);
   else result.controlGapIds.add(gap.gapId);
-  if (isValueRootDependence(gap.rootDependenceKind)) result.valueTruncated.value ||= gap.reasonCode.startsWith("MAX_");
+  if (isValueRootDependence(gap.rootDependenceKind))
+    result.valueTruncated.value ||= gap.reasonCode.startsWith("MAX_");
   else result.controlTruncated.value ||= gap.reasonCode.startsWith("MAX_");
 }
 
 function limitFor(
   rootDependenceKind: RootDependenceKind,
   options: CausalTraversalOptions,
-): { readonly states: number; readonly paths: number; readonly prefix: "VALUE" | "CONTROL" } {
+): {
+  readonly states: number;
+  readonly paths: number;
+  readonly prefix: "VALUE" | "CONTROL";
+} {
   return isValueRootDependence(rootDependenceKind)
-    ? { states: options.maxValueStates, paths: options.maxValuePaths, prefix: "VALUE" }
-    : { states: options.maxControlStates, paths: options.maxControlPaths, prefix: "CONTROL" };
+    ? {
+        states: options.maxValueStates,
+        paths: options.maxValuePaths,
+        prefix: "VALUE",
+      }
+    : {
+        states: options.maxControlStates,
+        paths: options.maxControlPaths,
+        prefix: "CONTROL",
+      };
 }
 
 function makeLocalEdge(args: {
   readonly root: CausalTraversalRoot;
+  readonly fromSemanticScopeId: string;
+  readonly toSemanticScopeId: string;
   readonly fromTaskId: string;
   readonly toTaskId: string;
   readonly fromSubject: SemanticSubject;
@@ -475,9 +699,14 @@ function makeLocalEdge(args: {
   readonly readOccurrenceId?: string;
 }): CausalTraversalPathEdge {
   const frontier = frontierKind(args.localEdgeKind);
+  const rootCriterionId = args.root.rootCriterion.rootCriterionId;
+  const rootTargetFieldId = args.root.rootCriterion.rootTargetFieldId;
   return {
-    edgeId: edgeId({
-      rootTargetFieldId: args.root.rootTargetFieldId,
+    edgeId: canonicalTraversalEdgeId({
+      rootCriterionId,
+      fromSemanticScopeId: args.fromSemanticScopeId,
+      toSemanticScopeId: args.toSemanticScopeId,
+      rootTargetFieldId,
       fromTaskId: args.fromTaskId,
       toTaskId: args.toTaskId,
       fromSubject: args.fromSubject,
@@ -487,6 +716,9 @@ function makeLocalEdge(args: {
       dependencyId: args.dependencyId,
       readOccurrenceId: args.readOccurrenceId,
     }),
+    rootCriterionId,
+    fromSemanticScopeId: args.fromSemanticScopeId,
+    toSemanticScopeId: args.toSemanticScopeId,
     fromTaskId: args.fromTaskId,
     toTaskId: args.toTaskId,
     fromSubject: args.fromSubject,
@@ -505,7 +737,10 @@ function makeLocalEdge(args: {
 
 function initialState(root: CausalTraversalRoot): TraversalSubject {
   return {
-    taskId: root.taskId,
+    rootCriterion: root.rootCriterion,
+    localRootCriterion: root.rootCriterion,
+    semanticScope: root.semanticScope,
+    taskId: root.rootCriterion.rootTaskId,
     subject: rootSubjectOf(root),
     depth: 0,
     rootDependenceKind: "VALUE_TO_TARGET",
@@ -554,7 +789,10 @@ function addDependencyGap(
   addGap(
     result,
     makeGap({
-      rootTargetFieldId: result.root.rootTargetFieldId,
+      rootCriterionId: result.root.rootCriterion.rootCriterionId,
+      semanticScopeId:
+        edge.semanticScopeId ?? state.semanticScope.semanticScopeId,
+      rootTargetFieldId: result.root.rootCriterion.rootTargetFieldId,
       taskId: state.taskId,
       subject: edge.fromSubject,
       readOccurrenceId: state.readOccurrenceId,
@@ -565,6 +803,49 @@ function addDependencyGap(
       evidenceRefs: edge.proofRefs.map((ref) => ref.refId),
     }),
   );
+}
+
+function gapIdentity(
+  root: CausalTraversalRoot,
+  state: TraversalSubject,
+): Pick<
+  CausalTraversalGap,
+  "rootCriterionId" | "semanticScopeId" | "rootTargetFieldId"
+> {
+  return {
+    rootCriterionId: root.rootCriterion.rootCriterionId,
+    semanticScopeId: state.semanticScope.semanticScopeId,
+    rootTargetFieldId: root.rootCriterion.rootTargetFieldId,
+  };
+}
+
+function addNormalizerGaps(
+  result: MutableRootResult,
+  state: TraversalSubject,
+  gaps: readonly SemanticDependencyGap[],
+): void {
+  for (const gap of gaps) {
+    addGap(
+      result,
+      makeGap({
+        rootCriterionId: result.root.rootCriterion.rootCriterionId,
+        semanticScopeId:
+          gap.semanticScopeId ?? state.semanticScope.semanticScopeId,
+        rootTargetFieldId: result.root.rootCriterion.rootTargetFieldId,
+        taskId: state.taskId,
+        subject: gap.subject ?? state.subject,
+        readOccurrenceId: state.readOccurrenceId,
+        rootDependenceKind: state.rootDependenceKind,
+        frontierKind: state.frontierKind,
+        reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
+        message: `semantic normalizer gap ${gap.gapId}: ${gap.message}`,
+        evidenceRefs: [
+          ...gap.evidenceRefs,
+          ...gap.proofRefs.map((ref) => ref.refId),
+        ],
+      }),
+    );
+  }
 }
 
 function processRoot(
@@ -579,44 +860,57 @@ function processRoot(
   const expandPhysicalState = (
     state: TraversalSubject,
   ): "NOT_APPLICABLE" | "BLOCKED" | "EXPANDED" | "TERMINAL" => {
-    if (state.localEdgeKind === null || state.subject.subjectKind !== "PHYSICAL_FIELD")
+    if (
+      state.localEdgeKind === null ||
+      state.subject.subjectKind !== "PHYSICAL_FIELD"
+    )
       return "NOT_APPLICABLE";
     const kind = state.frontierKind;
     const active = new Set([...state.active, activeKey(state)]);
     if (state.readOccurrenceId !== undefined)
       active.add(occurrenceAgnosticActiveKey(state));
-    const physicalField = input.resolvePhysicalField?.(
-      state.subject.physicalFieldId,
-      state.taskId,
-    ) ?? null;
+    const physicalField =
+      input.resolvePhysicalField?.(
+        state.subject.physicalFieldId,
+        state.taskId,
+      ) ?? null;
     if (!input.expandPhysicalField) {
-      addGap(result, makeGap({
-        rootTargetFieldId: root.rootTargetFieldId,
-        taskId: state.taskId,
-        subject: state.subject,
-        readOccurrenceId: state.readOccurrenceId,
-        rootDependenceKind: state.rootDependenceKind,
-        frontierKind: kind,
-        reasonCode: "PHYSICAL_EXPANSION_UNAVAILABLE",
-        message: "canonical physical-field expansion callback is unavailable",
-      }));
+      addGap(
+        result,
+        makeGap({
+          ...gapIdentity(root, state),
+          taskId: state.taskId,
+          subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
+          rootDependenceKind: state.rootDependenceKind,
+          frontierKind: kind,
+          reasonCode: "PHYSICAL_EXPANSION_UNAVAILABLE",
+          message: "canonical physical-field expansion callback is unavailable",
+        }),
+      );
       return "BLOCKED";
     }
     if (!physicalField) {
-      addGap(result, makeGap({
-        rootTargetFieldId: root.rootTargetFieldId,
-        taskId: state.taskId,
-        subject: state.subject,
-        readOccurrenceId: state.readOccurrenceId,
-        rootDependenceKind: state.rootDependenceKind,
-        frontierKind: kind,
-        reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
-        message: `physical identity ${state.subject.physicalFieldId} cannot be resolved for canonical expansion`,
-      }));
+      addGap(
+        result,
+        makeGap({
+          ...gapIdentity(root, state),
+          taskId: state.taskId,
+          subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
+          rootDependenceKind: state.rootDependenceKind,
+          frontierKind: kind,
+          reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
+          message: `physical identity ${state.subject.physicalFieldId} cannot be resolved for canonical expansion`,
+        }),
+      );
       return "BLOCKED";
     }
     const expansion = input.expandPhysicalField({
-      rootTargetFieldId: root.rootTargetFieldId,
+      rootCriterion: root.rootCriterion,
+      localRootCriterion: state.localRootCriterion,
+      semanticScope: state.semanticScope,
+      rootTargetFieldId: root.rootCriterion.rootTargetFieldId,
       taskId: state.taskId,
       field: physicalField,
       sourceNodeId: state.path.at(-1)?.edgeId ?? subjectKey(state.subject),
@@ -628,19 +922,22 @@ function processRoot(
       readOccurrenceId: state.readOccurrenceId,
     });
     for (const expansionGap of expansion.gaps) {
-      addGap(result, makeGap({
-        rootTargetFieldId: root.rootTargetFieldId,
-        taskId: expansionGap.taskId,
-        subject: state.subject,
-        readOccurrenceId: state.readOccurrenceId,
-        rootDependenceKind: state.rootDependenceKind,
-        frontierKind: kind,
-        reasonCode: expansionGap.reasonCode.startsWith("MAX_DEPTH")
-          ? "MAX_DEPTH_REACHED"
-          : "REQUIRED_EVIDENCE_UNRESOLVED",
-        message: expansionGap.message,
-        evidenceRefs: expansionGap.evidenceRefs,
-      }));
+      addGap(
+        result,
+        makeGap({
+          ...gapIdentity(root, state),
+          taskId: expansionGap.taskId,
+          subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
+          rootDependenceKind: state.rootDependenceKind,
+          frontierKind: kind,
+          reasonCode: expansionGap.reasonCode.startsWith("MAX_DEPTH")
+            ? "MAX_DEPTH_REACHED"
+            : "REQUIRED_EVIDENCE_UNRESOLVED",
+          message: expansionGap.message,
+          evidenceRefs: expansionGap.evidenceRefs,
+        }),
+      );
     }
     if (expansion.ambiguous) return "BLOCKED";
     let expandedProducer = false;
@@ -651,107 +948,245 @@ function processRoot(
       );
       for (const ref of producer.evidenceRefs) sharedEvidenceRefs.add(ref);
       if (!producer.producerField || !producer.shouldRecurse) continue;
-      const bridges = producer.bridges.length > 0
-        ? producer.bridges
-        : producer.bridge
-          ? [producer.bridge]
-          : [];
+      const bridges =
+        producer.bridges.length > 0
+          ? producer.bridges
+          : producer.bridge
+            ? [producer.bridge]
+            : [];
       for (const bridge of bridges) {
-        const occurrence = bridge.readOccurrence as Record<string, unknown> | undefined;
-        const occurrenceId = typeof occurrence?.occurrenceId === "string"
-          ? occurrence.occurrenceId
-          : undefined;
+        const occurrence = bridge.readOccurrence as
+          Record<string, unknown> | undefined;
+        const occurrenceId =
+          typeof occurrence?.occurrenceId === "string"
+            ? occurrence.occurrenceId
+            : undefined;
         const producerSubject: SemanticSubject = {
           subjectKind: "PHYSICAL_FIELD",
           physicalFieldId: physicalFieldKey(producer.producerField),
         };
-        const bridgeEdge = makeLocalEdge({
-          root,
-          fromTaskId: producer.producerTaskId,
-          toTaskId: state.taskId,
-          fromSubject: producerSubject,
-          toSubject: state.subject,
-          rootDependenceKind: state.rootDependenceKind,
-          localEdgeKind: "VALUE_FLOW",
-          pathCertainty: producerCertainty,
-          dependencyId: null,
-          evidenceRefs: producer.evidenceRefs,
-          readOccurrenceId: occurrenceId,
-        });
-        const pathsUsed = isValueRootDependence(state.rootDependenceKind)
-          ? result.valuePathsUsed
-          : result.controlPathsUsed;
-        const limits = limitFor(state.rootDependenceKind, options);
-        if (pathsUsed.value >= limits.paths) {
-          addGap(result, makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
-            taskId: state.taskId,
-            subject: producerSubject,
-            readOccurrenceId: occurrenceId,
-            rootDependenceKind: state.rootDependenceKind,
-            frontierKind: "VALUE",
-            reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
-            message: `${limits.prefix.toLowerCase()} path budget ${limits.paths} reached before producer bridge`,
-            evidenceRefs: producer.evidenceRefs,
-          }));
+        if (!input.resolveProducerScopes) {
+          addGap(
+            result,
+            makeGap({
+              ...gapIdentity(root, state),
+              taskId: state.taskId,
+              subject: producerSubject,
+              readOccurrenceId: occurrenceId,
+              rootDependenceKind: state.rootDependenceKind,
+              frontierKind: "VALUE",
+              reasonCode: "PRODUCER_SCOPE_RESOLVER_UNAVAILABLE",
+              message: `producer write scope resolver is unavailable for Task ${producer.producerTaskId}`,
+              evidenceRefs: producer.evidenceRefs,
+            }),
+          );
           continue;
         }
-        pathsUsed.value += 1;
-        const next: TraversalSubject = {
-          taskId: producer.producerTaskId,
-          subject: producerSubject,
-          depth: state.depth + 1,
-          rootDependenceKind: state.rootDependenceKind,
-          localEdgeKind: "VALUE_FLOW",
-          frontierKind: "VALUE",
-          pathCertainty: producerCertainty,
-          active,
-          path: [...state.path, bridgeEdge],
-          readOccurrenceId: occurrenceId,
-        };
-        const hasMaterializedBridge = state.path.some(
-          (edge) => edge.fromTaskId !== edge.toTaskId,
-        );
-        if (producer.producerTaskId !== state.taskId || !hasMaterializedBridge)
-          addPath(
+        if (producer.producerBindings.length === 0) {
+          addGap(
             result,
-            root.rootTargetFieldId,
-            next.path,
-            producerCertainty,
-            state.rootDependenceKind,
+            makeGap({
+              ...gapIdentity(root, state),
+              taskId: state.taskId,
+              subject: producerSubject,
+              readOccurrenceId: occurrenceId,
+              rootDependenceKind: state.rootDependenceKind,
+              frontierKind: "VALUE",
+              reasonCode: "PRODUCER_SCOPE_UNRESOLVED",
+              message: `producer Task ${producer.producerTaskId} has no exact output binding`,
+              evidenceRefs: producer.evidenceRefs,
+            }),
           );
+          continue;
+        }
+        let resolvedScopes: readonly ResolvedProducerScope[];
+        try {
+          resolvedScopes = input.resolveProducerScopes({
+            rootCriterion: root.rootCriterion,
+            localRootCriterion: state.localRootCriterion,
+            semanticScope: state.semanticScope,
+            producerTaskId: producer.producerTaskId,
+            producerField: producer.producerField,
+            producerBindings: producer.producerBindings,
+            readOccurrenceId: occurrenceId,
+            evidenceRefs: producer.evidenceRefs,
+          });
+        } catch {
+          resolvedScopes = [];
+        }
+        const completeScopes = [...resolvedScopes]
+          .filter(
+            (candidate) =>
+              candidate.localRootCriterion.rootTaskId ===
+                producer.producerTaskId &&
+              candidate.localRootCriterion.rootTargetFieldId ===
+                producerSubject.physicalFieldId &&
+              isCompleteSemanticOccurrenceScope(
+                candidate.semanticScope,
+                candidate.localRootCriterion,
+              ),
+          )
+          .sort((left, right) =>
+            compareText(
+              `${left.localRootCriterion.rootCriterionId}\u0000${left.semanticScope.semanticScopeId}`,
+              `${right.localRootCriterion.rootCriterionId}\u0000${right.semanticScope.semanticScopeId}`,
+            ),
+          );
+        const uniqueScopes = completeScopes.filter(
+          (candidate, index, all) =>
+            index ===
+            all.findIndex(
+              (other) =>
+                other.localRootCriterion.rootCriterionId ===
+                  candidate.localRootCriterion.rootCriterionId &&
+                other.semanticScope.semanticScopeId ===
+                  candidate.semanticScope.semanticScopeId,
+            ),
+        );
         if (
-          active.has(activeKey(next)) ||
-          (next.readOccurrenceId !== undefined &&
-            active.has(occurrenceAgnosticActiveKey(next)))
+          resolvedScopes.length === 0 ||
+          completeScopes.length !== resolvedScopes.length
         ) {
-          result.activeCycleChecks.value += 1;
-          addGap(result, makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
+          addGap(
+            result,
+            makeGap({
+              ...gapIdentity(root, state),
+              taskId: state.taskId,
+              subject: producerSubject,
+              readOccurrenceId: occurrenceId,
+              rootDependenceKind: state.rootDependenceKind,
+              frontierKind: "VALUE",
+              reasonCode: "PRODUCER_SCOPE_UNRESOLVED",
+              message: `producer Task ${producer.producerTaskId} output binding did not resolve to complete write scopes`,
+              evidenceRefs: producer.evidenceRefs,
+            }),
+          );
+          continue;
+        }
+        for (const producerScope of uniqueScopes) {
+          if (producer.evidenceStatus === "UNRESOLVED")
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, {
+                  ...state,
+                  localRootCriterion: producerScope.localRootCriterion,
+                  semanticScope: producerScope.semanticScope,
+                }),
+                taskId: producer.producerTaskId,
+                subject: producerSubject,
+                readOccurrenceId: occurrenceId,
+                rootDependenceKind: state.rootDependenceKind,
+                frontierKind: "VALUE",
+                reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
+                message: `physical producer bridge ${occurrenceId ?? "without read occurrence"} for Task ${producer.producerTaskId} is unresolved`,
+                evidenceRefs: producer.evidenceRefs,
+              }),
+            );
+          const bridgeEdge = makeLocalEdge({
+            root,
+            fromSemanticScopeId: producerScope.semanticScope.semanticScopeId,
+            toSemanticScopeId: state.semanticScope.semanticScopeId,
+            fromTaskId: producer.producerTaskId,
+            toTaskId: state.taskId,
+            fromSubject: producerSubject,
+            toSubject: state.subject,
+            rootDependenceKind: state.rootDependenceKind,
+            localEdgeKind: "VALUE_FLOW",
+            pathCertainty: producerCertainty,
+            dependencyId: null,
+            evidenceRefs: producer.evidenceRefs,
+            readOccurrenceId: occurrenceId,
+          });
+          const pathsUsed = isValueRootDependence(state.rootDependenceKind)
+            ? result.valuePathsUsed
+            : result.controlPathsUsed;
+          const limits = limitFor(state.rootDependenceKind, options);
+          if (pathsUsed.value >= limits.paths) {
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, state),
+                taskId: state.taskId,
+                subject: producerSubject,
+                readOccurrenceId: occurrenceId,
+                rootDependenceKind: state.rootDependenceKind,
+                frontierKind: "VALUE",
+                reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
+                message: `${limits.prefix.toLowerCase()} path budget ${limits.paths} reached before producer bridge`,
+                evidenceRefs: producer.evidenceRefs,
+              }),
+            );
+            continue;
+          }
+          pathsUsed.value += 1;
+          const next: TraversalSubject = {
+            rootCriterion: root.rootCriterion,
+            localRootCriterion: producerScope.localRootCriterion,
+            semanticScope: producerScope.semanticScope,
             taskId: producer.producerTaskId,
             subject: producerSubject,
-            readOccurrenceId: occurrenceId,
+            depth: state.depth + 1,
             rootDependenceKind: state.rootDependenceKind,
+            localEdgeKind: "VALUE_FLOW",
             frontierKind: "VALUE",
-            reasonCode: "CYCLE",
-            message: `producer bridge cycle detected for ${occurrenceId ?? "unbound occurrence"}`,
-            evidenceRefs: producer.evidenceRefs,
-          }));
-        } else if (next.depth >= options.maxDepth) {
-          addGap(result, makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
-            taskId: producer.producerTaskId,
-            subject: producerSubject,
+            pathCertainty: producerCertainty,
+            active,
+            path: [...state.path, bridgeEdge],
             readOccurrenceId: occurrenceId,
-            rootDependenceKind: state.rootDependenceKind,
-            frontierKind: "VALUE",
-            reasonCode: "MAX_DEPTH_REACHED",
-            message: `maximum causal traversal depth ${options.maxDepth} reached before producer Task ${producer.producerTaskId}`,
-            evidenceRefs: producer.evidenceRefs,
-          }));
-        } else {
-          frontier.push(next);
-          expandedProducer = true;
+          };
+          const hasMaterializedBridge = state.path.some(
+            (edge) => edge.fromTaskId !== edge.toTaskId,
+          );
+          if (
+            producer.producerTaskId !== state.taskId ||
+            !hasMaterializedBridge
+          )
+            addPath(
+              result,
+              next.path,
+              producerCertainty,
+              state.rootDependenceKind,
+            );
+          if (
+            active.has(activeKey(next)) ||
+            (next.readOccurrenceId !== undefined &&
+              active.has(occurrenceAgnosticActiveKey(next)))
+          ) {
+            result.activeCycleChecks.value += 1;
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, next),
+                taskId: producer.producerTaskId,
+                subject: producerSubject,
+                readOccurrenceId: occurrenceId,
+                rootDependenceKind: state.rootDependenceKind,
+                frontierKind: "VALUE",
+                reasonCode: "CYCLE",
+                message: `producer bridge cycle detected for ${occurrenceId ?? "unbound occurrence"}`,
+                evidenceRefs: producer.evidenceRefs,
+              }),
+            );
+          } else if (next.depth >= options.maxDepth) {
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, next),
+                taskId: producer.producerTaskId,
+                subject: producerSubject,
+                readOccurrenceId: occurrenceId,
+                rootDependenceKind: state.rootDependenceKind,
+                frontierKind: "VALUE",
+                reasonCode: "MAX_DEPTH_REACHED",
+                message: `maximum causal traversal depth ${options.maxDepth} reached before producer Task ${producer.producerTaskId}`,
+                evidenceRefs: producer.evidenceRefs,
+              }),
+            );
+          } else {
+            frontier.push(next);
+            expandedProducer = true;
+          }
         }
       }
     }
@@ -788,7 +1223,7 @@ function processRoot(
         addGap(
           result,
           makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
+            ...gapIdentity(root, state),
             taskId: state.taskId,
             subject: state.subject,
             readOccurrenceId: state.readOccurrenceId,
@@ -805,12 +1240,12 @@ function processRoot(
     result.visited.add(currentKey);
     const physicalExpansionState = expandPhysicalState(state);
 
-    const dependencies = normalizationFor(input, state.taskId, state.subject);
-    if (dependencies === null) {
+    const loadedDependencies = normalizationFor(input, state);
+    if (loadedDependencies === null) {
       addGap(
         result,
         makeGap({
-          rootTargetFieldId: root.rootTargetFieldId,
+          ...gapIdentity(root, state),
           taskId: state.taskId,
           subject: state.subject,
           readOccurrenceId: state.readOccurrenceId,
@@ -822,15 +1257,34 @@ function processRoot(
       );
       continue;
     }
+    if (loadedDependencies.scopeDiscontinuity)
+      addGap(
+        result,
+        makeGap({
+          ...gapIdentity(root, state),
+          taskId: state.taskId,
+          subject: state.subject,
+          readOccurrenceId: state.readOccurrenceId,
+          rootDependenceKind: state.rootDependenceKind,
+          frontierKind: state.frontierKind,
+          reasonCode: "SEMANTIC_SCOPE_DISCONTINUITY",
+          message: `semantic facts cross the selected root/write scope for ${subjectKey(state.subject)}`,
+          evidenceRefs: loadedDependencies.scopeDiscontinuityEvidenceRefs,
+        }),
+      );
+    addNormalizerGaps(result, state, loadedDependencies.gaps);
+    const dependencies = loadedDependencies.edges;
     if (
       dependencies.length === 0 &&
+      loadedDependencies.gaps.length === 0 &&
+      !loadedDependencies.scopeDiscontinuity &&
       physicalExpansionState !== "TERMINAL" &&
       state.relationTerminalObserved !== true
     ) {
       addGap(
         result,
         makeGap({
-          rootTargetFieldId: root.rootTargetFieldId,
+          ...gapIdentity(root, state),
           taskId: state.taskId,
           subject: state.subject,
           readOccurrenceId: state.readOccurrenceId,
@@ -850,11 +1304,17 @@ function processRoot(
         dependency.rootDependenceKind,
       );
       addDependencyGap(result, state, dependency, nextRootDependenceKind);
-      const nextCertainty = worstCertainty(state.pathCertainty, dependency.pathCertainty);
+      const nextCertainty = worstCertainty(
+        state.pathCertainty,
+        dependency.pathCertainty,
+      );
       const localKind = dependency.localEdgeKind;
       const nextKind = frontierKind(localKind);
+      const dependencyScope = dependency.semanticScope!;
       const edge = makeLocalEdge({
         root,
+        fromSemanticScopeId: dependencyScope.semanticScopeId,
+        toSemanticScopeId: dependencyScope.semanticScopeId,
         fromTaskId: state.taskId,
         toTaskId: state.taskId,
         fromSubject: dependency.fromSubject,
@@ -875,7 +1335,10 @@ function processRoot(
         addGap(
           result,
           makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
+            ...gapIdentity(root, {
+              ...state,
+              semanticScope: dependencyScope,
+            }),
             taskId: state.taskId,
             subject: dependency.fromSubject,
             readOccurrenceId: state.readOccurrenceId,
@@ -894,15 +1357,12 @@ function processRoot(
       if (state.path.length === 0) {
         // The direct semantic edge itself is a completed path to the target;
         // keep it even when its source is fieldless relation context.
-        addPath(
-          result,
-          root.rootTargetFieldId,
-          path,
-          nextCertainty,
-          nextRootDependenceKind,
-        );
+        addPath(result, path, nextCertainty, nextRootDependenceKind);
       }
       const next: TraversalSubject = {
+        rootCriterion: root.rootCriterion,
+        localRootCriterion: state.localRootCriterion,
+        semanticScope: dependencyScope,
         taskId: state.taskId,
         subject: dependency.fromSubject,
         depth: state.depth,
@@ -923,7 +1383,7 @@ function processRoot(
         addGap(
           result,
           makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
+            ...gapIdentity(root, next),
             taskId: state.taskId,
             subject: dependency.fromSubject,
             readOccurrenceId: state.readOccurrenceId,
@@ -940,7 +1400,7 @@ function processRoot(
         addGap(
           result,
           makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
+            ...gapIdentity(root, next),
             taskId: state.taskId,
             subject: dependency.fromSubject,
             readOccurrenceId: state.readOccurrenceId,
@@ -958,7 +1418,7 @@ function processRoot(
           addGap(
             result,
             makeGap({
-              rootTargetFieldId: root.rootTargetFieldId,
+              ...gapIdentity(root, next),
               taskId: state.taskId,
               subject: dependency.fromSubject,
               readOccurrenceId: state.readOccurrenceId,
@@ -972,7 +1432,10 @@ function processRoot(
           continue;
         }
         const relationExpansion = input.expandRelationOccurrence({
-          rootTargetFieldId: root.rootTargetFieldId,
+          rootCriterion: root.rootCriterion,
+          localRootCriterion: state.localRootCriterion,
+          semanticScope: dependencyScope,
+          rootTargetFieldId: root.rootCriterion.rootTargetFieldId,
           taskId: state.taskId,
           relationOccurrenceId: dependency.fromSubject.relationOccurrenceId,
           depth: next.depth,
@@ -980,8 +1443,31 @@ function processRoot(
           rootDependenceKind: nextRootDependenceKind,
           pathCertainty: nextCertainty,
         });
-        for (const gap of relationExpansion.gaps ?? []) addGap(result, gap);
-        for (const ref of relationExpansion.evidenceRefs ?? []) sharedEvidenceRefs.add(ref);
+        for (const gap of relationExpansion.gaps ?? []) {
+          if (
+            gap.rootCriterionId === root.rootCriterion.rootCriterionId &&
+            gap.semanticScopeId === dependencyScope.semanticScopeId
+          ) {
+            addGap(result, gap);
+            continue;
+          }
+          addGap(
+            result,
+            makeGap({
+              ...gapIdentity(root, next),
+              taskId: state.taskId,
+              subject: dependency.fromSubject,
+              readOccurrenceId: state.readOccurrenceId,
+              rootDependenceKind: nextRootDependenceKind,
+              frontierKind: "RELATION_CONTEXT",
+              reasonCode: "SEMANTIC_SCOPE_DISCONTINUITY",
+              message: `relation expansion returned a gap outside root ${root.rootCriterion.rootCriterionId}`,
+              evidenceRefs: gap.evidenceRefs,
+            }),
+          );
+        }
+        for (const ref of relationExpansion.evidenceRefs ?? [])
+          sharedEvidenceRefs.add(ref);
         for (const bridge of relationExpansion.relationBridges ?? []) {
           const bridgeCertainty = worstCertainty(
             nextCertainty,
@@ -990,10 +1476,39 @@ function processRoot(
           const bridgeRefs = sortedUnique([
             ...dependency.proofRefs.map((ref) => ref.refId),
             ...(bridge.evidenceRefs ?? []),
+            ...(bridge.producerRootCriterion?.evidenceRefs ?? []),
+            ...(bridge.producerSemanticScope?.evidenceRefs ?? []),
           ]);
           for (const ref of bridgeRefs) sharedEvidenceRefs.add(ref);
+          if (
+            !bridge.producerRootCriterion ||
+            bridge.producerRootCriterion.rootTaskId !== bridge.producerTaskId ||
+            !isCompleteSemanticOccurrenceScope(
+              bridge.producerSemanticScope,
+              bridge.producerRootCriterion,
+            )
+          ) {
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, next),
+                taskId: state.taskId,
+                subject: dependency.fromSubject,
+                readOccurrenceId: bridge.readOccurrenceId,
+                rootDependenceKind: nextRootDependenceKind,
+                frontierKind: "RELATION_CONTEXT",
+                reasonCode: "PRODUCER_SCOPE_UNRESOLVED",
+                message: `relation producer bridge ${bridge.readOccurrenceId} has no complete producer write scope`,
+                evidenceRefs: bridgeRefs,
+              }),
+            );
+            continue;
+          }
+          const producerSemanticScope = bridge.producerSemanticScope;
           const bridgeEdge = makeLocalEdge({
             root,
+            fromSemanticScopeId: producerSemanticScope.semanticScopeId,
+            toSemanticScopeId: dependencyScope.semanticScopeId,
             fromTaskId: bridge.producerTaskId,
             toTaskId: state.taskId,
             // A relation-level bridge has no producer-side column identity.
@@ -1014,46 +1529,143 @@ function processRoot(
             : result.controlPathsUsed;
           const limits = limitFor(nextRootDependenceKind, options);
           if (pathsUsed.value >= limits.paths) {
-            addGap(result, makeGap({
-              rootTargetFieldId: root.rootTargetFieldId,
-              taskId: state.taskId,
-              subject: dependency.fromSubject,
-              readOccurrenceId: bridge.readOccurrenceId,
-              rootDependenceKind: nextRootDependenceKind,
-              frontierKind: "RELATION_CONTEXT",
-              reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
-              message: `${limits.prefix.toLowerCase()} path budget ${limits.paths} reached before relation producer bridge`,
-              evidenceRefs: bridgeRefs,
-            }));
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, next),
+                taskId: state.taskId,
+                subject: dependency.fromSubject,
+                readOccurrenceId: bridge.readOccurrenceId,
+                rootDependenceKind: nextRootDependenceKind,
+                frontierKind: "RELATION_CONTEXT",
+                reasonCode: `${limits.prefix === "VALUE" ? "MAX_VALUE" : "MAX_CONTROL"}_PATHS_REACHED`,
+                message: `${limits.prefix.toLowerCase()} path budget ${limits.paths} reached before relation producer bridge`,
+                evidenceRefs: bridgeRefs,
+              }),
+            );
             continue;
           }
           pathsUsed.value += 1;
           addPath(
             result,
-            root.rootTargetFieldId,
             [...next.path, bridgeEdge],
             bridgeCertainty,
             nextRootDependenceKind,
           );
-          if (bridgeCertainty === "UNKNOWN")
-            addGap(result, makeGap({
-              rootTargetFieldId: root.rootTargetFieldId,
+          addGap(
+            result,
+            makeGap({
+              ...gapIdentity(root, {
+                ...next,
+                localRootCriterion: bridge.producerRootCriterion,
+                semanticScope: producerSemanticScope,
+              }),
               taskId: bridge.producerTaskId,
               subject: dependency.fromSubject,
               readOccurrenceId: bridge.readOccurrenceId,
               rootDependenceKind: nextRootDependenceKind,
               frontierKind: "RELATION_CONTEXT",
-              reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
-              message: `relation producer bridge for ${bridge.readOccurrenceId} is unresolved`,
+              reasonCode: "PRODUCER_RELATION_FRONTIER_UNEXPANDED",
+              message: `relation producer bridge ${bridge.readOccurrenceId} has no producer-side relation frontier to continue`,
               evidenceRefs: bridgeRefs,
-            }));
+            }),
+          );
+          if (bridgeCertainty === "UNKNOWN")
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, {
+                  ...next,
+                  localRootCriterion: bridge.producerRootCriterion,
+                  semanticScope: producerSemanticScope,
+                }),
+                taskId: bridge.producerTaskId,
+                subject: dependency.fromSubject,
+                readOccurrenceId: bridge.readOccurrenceId,
+                rootDependenceKind: nextRootDependenceKind,
+                frontierKind: "RELATION_CONTEXT",
+                reasonCode: "REQUIRED_EVIDENCE_UNRESOLVED",
+                message: `relation producer bridge for ${bridge.readOccurrenceId} is unresolved`,
+                evidenceRefs: bridgeRefs,
+              }),
+            );
         }
         for (const occurrence of relationExpansion.relationOccurrences ?? []) {
+          const crossesTask = occurrence.taskId !== state.taskId;
+          if (crossesTask) {
+            const exactBridge = (relationExpansion.relationBridges ?? []).some(
+              (bridge) =>
+                bridge.producerTaskId === occurrence.taskId &&
+                bridge.readOccurrenceId.length > 0 &&
+                bridge.producerRootCriterion?.rootCriterionId ===
+                  occurrence.producerRootCriterion?.rootCriterionId &&
+                bridge.producerSemanticScope?.semanticScopeId ===
+                  occurrence.producerSemanticScope?.semanticScopeId,
+            );
+            if (!exactBridge)
+              addGap(
+                result,
+                makeGap({
+                  ...gapIdentity(root, next),
+                  taskId: state.taskId,
+                  subject: dependency.fromSubject,
+                  readOccurrenceId: state.readOccurrenceId,
+                  rootDependenceKind: nextRootDependenceKind,
+                  frontierKind: "RELATION_CONTEXT",
+                  reasonCode: "PRODUCER_SCOPE_UNRESOLVED",
+                  message: `cross-task relation occurrence ${occurrence.relationOccurrenceId} requires an occurrence-exact relation bridge`,
+                  evidenceRefs: occurrence.evidenceRefs,
+                }),
+              );
+            // A matching relation bridge was already materialized above.  The
+            // occurrence record is only a local relation expansion and must
+            // never switch Task/scope without its own dual-scope path edge.
+            continue;
+          }
+          const occurrenceLocalRoot = crossesTask
+            ? occurrence.producerRootCriterion
+            : state.localRootCriterion;
+          const occurrenceScope = crossesTask
+            ? occurrence.producerSemanticScope
+            : occurrence.localRelationId
+              ? semanticScopeForRelation(
+                  dependencyScope,
+                  occurrence.localRelationId,
+                  occurrence.evidenceRefs,
+                )
+              : undefined;
+          if (
+            !occurrenceLocalRoot ||
+            occurrenceLocalRoot.rootTaskId !== occurrence.taskId ||
+            !isCompleteSemanticOccurrenceScope(
+              occurrenceScope,
+              occurrenceLocalRoot,
+            )
+          ) {
+            addGap(
+              result,
+              makeGap({
+                ...gapIdentity(root, next),
+                taskId: state.taskId,
+                subject: dependency.fromSubject,
+                readOccurrenceId: state.readOccurrenceId,
+                rootDependenceKind: nextRootDependenceKind,
+                frontierKind: "RELATION_CONTEXT",
+                reasonCode: "PRODUCER_SCOPE_UNRESOLVED",
+                message: `relation occurrence ${occurrence.relationOccurrenceId} has no complete local write scope`,
+                evidenceRefs: occurrence.evidenceRefs,
+              }),
+            );
+            continue;
+          }
           const occurrenceCertainty = worstCertainty(
             nextCertainty,
             evidenceCertainty(occurrence.evidenceStatus),
           );
           const nextRelation: TraversalSubject = {
+            rootCriterion: root.rootCriterion,
+            localRootCriterion: occurrenceLocalRoot,
+            semanticScope: occurrenceScope,
             taskId: occurrence.taskId,
             subject: {
               subjectKind: "RELATION_OCCURRENCE",
@@ -1069,24 +1681,28 @@ function processRoot(
             readOccurrenceId: state.readOccurrenceId,
             relationTerminalObserved: true,
           };
-          if (!currentActive.has(activeKey(nextRelation))) frontier.push(nextRelation);
+          if (!currentActive.has(activeKey(nextRelation)))
+            frontier.push(nextRelation);
         }
         if (
           (relationExpansion.relationBridges?.length ?? 0) === 0 &&
           (relationExpansion.relationOccurrences?.length ?? 0) === 0 &&
           (relationExpansion.gaps?.length ?? 0) === 0
         ) {
-          addGap(result, makeGap({
-            rootTargetFieldId: root.rootTargetFieldId,
-            taskId: state.taskId,
-            subject: dependency.fromSubject,
-            readOccurrenceId: state.readOccurrenceId,
-            rootDependenceKind: nextRootDependenceKind,
-            frontierKind: nextKind,
-            reasonCode: "RELATION_EXPANSION_UNAVAILABLE",
-            message: `relation occurrence ${dependency.fromSubject.relationOccurrenceId} produced no exact upstream bridge`,
-            evidenceRefs: dependency.proofRefs.map((ref) => ref.refId),
-          }));
+          addGap(
+            result,
+            makeGap({
+              ...gapIdentity(root, next),
+              taskId: state.taskId,
+              subject: dependency.fromSubject,
+              readOccurrenceId: state.readOccurrenceId,
+              rootDependenceKind: nextRootDependenceKind,
+              frontierKind: nextKind,
+              reasonCode: "RELATION_EXPANSION_UNAVAILABLE",
+              message: `relation occurrence ${dependency.fromSubject.relationOccurrenceId} produced no exact upstream bridge`,
+              evidenceRefs: dependency.proofRefs.map((ref) => ref.refId),
+            }),
+          );
         }
         continue;
       }
@@ -1103,15 +1719,22 @@ function processRoot(
 }
 
 function finalizeRoot(result: MutableRootResult): CausalTraversalRootResult {
-  const valueCertainty = [...result.valueCertainties].sort(
-    (left, right) => certaintyRank(right) - certaintyRank(left),
-  )[0] ?? null;
-  const controlCertainty = [...result.controlCertainties].sort(
-    (left, right) => certaintyRank(right) - certaintyRank(left),
-  )[0] ?? null;
-  const gaps = [...result.gaps.values()].sort((left, right) => left.gapId.localeCompare(right.gapId));
-  const paths = [...result.paths.values()].sort((left, right) => left.pathId.localeCompare(right.pathId));
+  const valueCertainty =
+    [...result.valueCertainties].sort(
+      (left, right) => certaintyRank(right) - certaintyRank(left),
+    )[0] ?? null;
+  const controlCertainty =
+    [...result.controlCertainties].sort(
+      (left, right) => certaintyRank(right) - certaintyRank(left),
+    )[0] ?? null;
+  const gaps = [...result.gaps.values()].sort((left, right) =>
+    left.gapId.localeCompare(right.gapId),
+  );
+  const paths = [...result.paths.values()].sort((left, right) =>
+    left.pathId.localeCompare(right.pathId),
+  );
   return {
+    rootCriterionId: result.root.rootCriterion.rootCriterionId,
     root: result.root,
     visitedStateKeys: [...result.visited].sort(compareText),
     activeCycleChecks: result.activeCycleChecks.value,
@@ -1123,8 +1746,10 @@ function finalizeRoot(result: MutableRootResult): CausalTraversalRootResult {
       controlPathCertainty: controlCertainty,
       // A branch is closed only when its frontier drained without a budget
       // truncation. This is path state, not a final unrelated assessment.
-      valueClosed: result.valueGapIds.size === 0 && !result.valueTruncated.value,
-      controlClosed: result.controlGapIds.size === 0 && !result.controlTruncated.value,
+      valueClosed:
+        result.valueGapIds.size === 0 && !result.valueTruncated.value,
+      controlClosed:
+        result.controlGapIds.size === 0 && !result.controlTruncated.value,
       valueGapIds: [...result.valueGapIds].sort(compareText),
       controlGapIds: [...result.controlGapIds].sort(compareText),
     },
@@ -1135,22 +1760,38 @@ export function traverseCausalDependencies(
   input: CausalTraversalInput,
 ): CausalTraversalResult {
   const options = optionsOf(input.options);
+  for (const root of input.roots)
+    if (
+      !isCompleteSemanticOccurrenceScope(root.semanticScope, root.rootCriterion)
+    )
+      throw new Error(
+        `INVALID_CAUSAL_TRAVERSAL_ROOT_SCOPE:${root.rootCriterion.rootCriterionId}`,
+      );
   const sharedEvidenceRefs = new Set<string>();
   const mutableRoots = [...input.roots]
     .sort((left, right) =>
-      compareText(left.rootTargetFieldId, right.rootTargetFieldId) ||
-      compareText(left.taskId, right.taskId),
+      compareText(
+        left.rootCriterion.rootCriterionId,
+        right.rootCriterion.rootCriterionId,
+      ),
     )
     .map((root) => processRoot(input, root, options, sharedEvidenceRefs));
   const roots = mutableRoots.map(finalizeRoot);
   const edges = roots
     .flatMap((root) => root.paths.flatMap((path) => path.edges))
     .sort((left, right) => left.edgeId.localeCompare(right.edgeId))
-    .filter((edge, index, all) => index === all.findIndex((candidate) => candidate.edgeId === edge.edgeId));
+    .filter(
+      (edge, index, all) =>
+        index ===
+        all.findIndex((candidate) => candidate.edgeId === edge.edgeId),
+    );
   const gaps = roots
     .flatMap((root) => root.gaps)
     .sort((left, right) => left.gapId.localeCompare(right.gapId))
-    .filter((gap, index, all) => index === all.findIndex((candidate) => candidate.gapId === gap.gapId));
+    .filter(
+      (gap, index, all) =>
+        index === all.findIndex((candidate) => candidate.gapId === gap.gapId),
+    );
   return {
     options,
     roots,

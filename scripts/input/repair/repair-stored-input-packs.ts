@@ -166,7 +166,10 @@ function readRepairPlan(
       slot,
       String(sqlFile.evidenceProvider ?? task.evidenceProvider ?? "stored-pack"),
     );
-    if (normalized.content !== content)
+    // normalizeCollectedSqlSlot also canonicalizes line endings and appends a
+    // trailing newline. Those formatting-only differences are not evidence
+    // repairs and must not rewrite an otherwise valid stored source file.
+    if (normalized.content !== content && normalized.warnings.length > 0)
       updates.push({
         slot,
         path,

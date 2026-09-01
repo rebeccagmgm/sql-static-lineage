@@ -15,6 +15,7 @@ import {
   loadTerminalTableConfig,
   matchingTerminalRole,
 } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+import { readHoraeRelationCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const FIXED_NOW = "2026-08-26T08:00:00.000Z";
 
@@ -150,8 +151,7 @@ describe("multi-hop autofill", () => {
       sleep: () => undefined,
       openCliRunner: (args) => {
         runnerCalls.push([...args]);
-        if (args[0] === "horae" && args[2] === "A")
-          return [{ task_id: "C" }];
+        if (args[0] === "horae" && args[2] === "A") return [{ task_id: "C" }];
         if (args[0] === "horae" && args[2] === "C") return [];
         if (
           args[0] === "szdata" &&
@@ -196,15 +196,75 @@ describe("multi-hop autofill", () => {
       ),
     ).toBe(true);
     expect(
-      runnerCalls.filter(
-        (args) => args[0] === "szdata" && args[1] === "table",
-      ),
+      runnerCalls.filter((args) => args[0] === "szdata" && args[1] === "table"),
     ).toHaveLength(1);
     expect(
-      runnerCalls.some(
-        (args) => args[0] === "horae" && args[2] === "B",
-      ),
+      runnerCalls.some((args) => args[0] === "horae" && args[2] === "B"),
     ).toBe(false);
+  });
+
+  it("reads and writes the schedule-evidence cache during closure", () => {
+    const root = dataRoot();
+    writeProducer(root, "A", "lake.output");
+    const producerCacheRoot = join(
+      dirname(root),
+      `${root.split(/[\\/]/).at(-1)}-producer-index-cache`,
+    );
+    const scheduleCacheRoot = join(
+      dirname(root),
+      `${root.split(/[\\/]/).at(-1)}-schedule-evidence-cache`,
+    );
+    const terminalTableConfigPath = join(
+      import.meta.dirname,
+      "..",
+      "config",
+      "multi-hop-terminal-table-rules.json",
+    );
+    let firstCalls = 0;
+    runMultiHopAutofill({
+      taskId: "A",
+      dataRoot: root,
+      producerIndexCacheRoot: producerCacheRoot,
+      scheduleEvidenceCacheRoot: scheduleCacheRoot,
+      terminalTableConfigPath,
+      maxDepth: 2,
+      maxTasks: 20,
+      maxEdges: 100,
+      discoveryMinIntervalMs: 0,
+      discoveryAttempts: 1,
+      now: () => FIXED_NOW,
+      sleep: () => undefined,
+      openCliRunner: (args) => {
+        firstCalls += 1;
+        expect(args[0]).toBe("horae");
+        return [];
+      },
+      collectTaskPacks: () => undefined,
+    });
+    expect(firstCalls).toBe(1);
+    expect(readHoraeRelationCache("A", scheduleCacheRoot).status).toBe("HIT");
+
+    let secondCalls = 0;
+    runMultiHopAutofill({
+      taskId: "A",
+      dataRoot: root,
+      producerIndexCacheRoot: producerCacheRoot,
+      scheduleEvidenceCacheRoot: scheduleCacheRoot,
+      terminalTableConfigPath,
+      maxDepth: 2,
+      maxTasks: 20,
+      maxEdges: 100,
+      discoveryMinIntervalMs: 0,
+      discoveryAttempts: 1,
+      now: () => FIXED_NOW,
+      sleep: () => undefined,
+      openCliRunner: () => {
+        secondCalls += 1;
+        throw new Error("CACHE_MISS_SHOULD_NOT_CALL_HORAE");
+      },
+      collectTaskPacks: () => undefined,
+    });
+    expect(secondCalls).toBe(0);
   });
 
   it("automatically attempts missing schedule packs and reports unavailable ones without crashing", () => {

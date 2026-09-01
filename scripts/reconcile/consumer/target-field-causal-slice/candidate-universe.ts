@@ -1,8 +1,10 @@
 import {
   canonicalJson,
+  normalizeName,
   sha256,
   type JsonValue,
 } from "../../../machine-facts/machine-facts-contract.ts";
+import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 
@@ -86,6 +88,7 @@ export interface CandidateUniverse {
 
 export interface CandidateAssessmentPair {
   readonly pairId: string;
+  readonly rootCriterionId: string;
   readonly rootTargetFieldId: string;
   readonly candidateBranchId: string;
   /** Deliberately empty: 5.2 builds the skeleton, not a causal decision. */
@@ -93,8 +96,12 @@ export interface CandidateAssessmentPair {
 }
 
 export interface CandidateUniverseProjectionInput {
-  readonly rootTargetFields: readonly string[];
+  /** @deprecated Candidate projection is table-scoped; roots belong to pair construction. */
+  readonly rootTargetFields?: readonly string[];
   readonly tableArtifact: unknown;
+  /** Canonical path: exact write/output occurrences for ROOT_WRITE branches. */
+  readonly rootCriteria?: readonly RootCriterion[];
+  /** @deprecated Use rootCriteria; observation ids alone cannot prove the target table. */
   readonly rootWriteObservationIds?: readonly string[];
   /** Resolve table-level artifacts that predate stable physical identities. */
   readonly resolvePhysicalTable?: (
@@ -284,6 +291,34 @@ function branchIdentity(input: {
   };
 }
 
+export function canonicalCandidateBranchId(
+	branch: Pick<
+		CandidateBranch,
+		| "rootTaskId"
+		| "branchKind"
+		| "consumerTaskId"
+		| "producerTaskId"
+		| "table"
+		| "readOccurrence"
+		| "writeObservationId"
+		| "boundaryReason"
+	>,
+): string {
+	return branchId(
+		branch.rootTaskId,
+		branch.branchKind,
+		branchIdentity({
+			branchKind: branch.branchKind,
+			consumerTaskId: branch.consumerTaskId,
+			producerTaskId: branch.producerTaskId,
+			table: branch.table,
+			readOccurrence: branch.readOccurrence,
+			writeObservationId: branch.writeObservationId ?? null,
+			boundaryReason: branch.boundaryReason,
+		}),
+	);
+}
+
 function makeBranch(input: {
   readonly rootTaskId: string;
   readonly branchKind: CandidateBranchKind;
@@ -309,19 +344,9 @@ function makeBranch(input: {
   const readOccurrence = input.readOccurrence ?? null;
   const writeObservationId = input.writeObservationId ?? null;
   const boundaryReason = input.boundaryReason ?? null;
-  const identity = branchIdentity({
-    branchKind: input.branchKind,
-    consumerTaskId,
-    producerTaskId,
-    table,
-    readOccurrence,
-    writeObservationId,
-    boundaryReason,
-  });
-  return {
-    candidateBranchId: branchId(input.rootTaskId, input.branchKind, identity),
-    branchKind: input.branchKind,
-    rootTaskId: input.rootTaskId,
+	const branchInput = {
+		branchKind: input.branchKind,
+		rootTaskId: input.rootTaskId,
     consumerTaskId,
     producerTaskId,
     table,
@@ -331,9 +356,13 @@ function makeBranch(input: {
     evidenceRefs: [...(input.evidenceRefs ?? [])].sort((a, b) =>
       a.evidenceRefId.localeCompare(b.evidenceRefId),
     ),
-    gapRefs: sortedUnique(input.gapRefs ?? []),
-    boundaryReason,
-  };
+		gapRefs: sortedUnique(input.gapRefs ?? []),
+		boundaryReason,
+	};
+	return {
+		candidateBranchId: canonicalCandidateBranchId(branchInput),
+		...branchInput,
+	};
 }
 
 function readKey(
@@ -394,6 +423,52 @@ function sourceArtifactType(artifact: JsonRecord): string {
   return text(artifact.artifactType) ?? "TABLE_MULTI_HOP_RECONCILIATION";
 }
 
+function rootTableForCriterion(criterion: RootCriterion): CandidatePhysicalTable {
+  const parts = criterion.rootTargetFieldId.split("|");
+  if (parts.length < 5)
+    throw new Error(`ROOT_CRITERION_PHYSICAL_FIELD_INVALID:${criterion.rootCriterionId}`);
+  const [platform, dataSource, stableTableId, qualifiedName] = parts;
+  const targetKey = criterion.targetTableKey.split("|");
+  if (
+    targetKey.length !== 3 ||
+    [platform, dataSource, qualifiedName].some(
+      (value, index) =>
+        normalizeName(value ?? "") !== normalizeName(targetKey[index] ?? ""),
+    )
+  )
+    throw new Error(`ROOT_CRITERION_TARGET_TABLE_MISMATCH:${criterion.rootCriterionId}`);
+  return {
+    platform: platform!,
+    dataSource: dataSource!,
+    stableTableId: stableTableId!,
+    qualifiedName: qualifiedName!,
+    identityStatus: "ROOT_CRITERION",
+  };
+}
+
+function samePhysicalTable(
+  left: CandidatePhysicalTable | null,
+  right: CandidatePhysicalTable | null,
+): boolean {
+  if (!left || !right) return false;
+  const leftIdentity = [
+    left.platform,
+    left.dataSource,
+    left.stableTableId,
+    left.qualifiedName,
+  ];
+  const rightIdentity = [
+    right.platform,
+    right.dataSource,
+    right.stableTableId,
+    right.qualifiedName,
+  ];
+  return leftIdentity.every(
+    (value, index) =>
+      normalizeName(value ?? "") === normalizeName(rightIdentity[index] ?? ""),
+  );
+}
+
 export function projectCandidateUniverse(
   input: CandidateUniverseProjectionInput,
 ): CandidateUniverse {
@@ -424,8 +499,32 @@ export function projectCandidateUniverse(
   const rootWrites = writeEdges.filter(
     (edge) => text(edge.producerTaskId) === rootTaskId,
   );
+  const rootCriteria = input.rootCriteria ?? [];
   const selectedWriteObservationIds = sortedUnique(input.rootWriteObservationIds ?? []);
-  if (rootWrites.length === 0) {
+  if (rootCriteria.length > 0) {
+    for (const criterion of rootCriteria) {
+      if (criterion.rootTaskId !== rootTaskId)
+        throw new Error(`ROOT_CRITERION_TASK_MISMATCH:${criterion.rootCriterionId}`);
+      const criterionTable = rootTableForCriterion(criterion);
+      const matchingWrites = rootWrites.filter((write) => {
+        const sourceTable = tableOf(write.table);
+        const resolvedTable = sourceTable === null
+          ? null
+          : input.resolvePhysicalTable?.(sourceTable) ?? sourceTable;
+        return samePhysicalTable(resolvedTable, criterionTable);
+      });
+      const matchedTable = tableOf(matchingWrites[0]?.table);
+      add(makeBranch({
+        rootTaskId,
+        branchKind: "ROOT_WRITE",
+        producerTaskId: rootTaskId,
+        table: matchedTable ?? criterionTable,
+        evidenceRefs: matchingWrites.flatMap((write) => writeEvidenceRefs(write.writes)),
+        writeObservationId: criterion.rootWriteObservationId,
+        resolvePhysicalTable: input.resolvePhysicalTable,
+      }));
+    }
+  } else if (rootWrites.length === 0) {
     for (const writeObservationId of selectedWriteObservationIds.length > 0
       ? selectedWriteObservationIds
       : [null])
@@ -603,18 +702,24 @@ export function projectCandidateUniverse(
 }
 
 export function buildAssessmentPairSkeleton(
-  rootTargetFields: readonly string[],
+  rootCriteria: readonly RootCriterion[],
   candidateBranches: readonly CandidateBranch[],
 ): readonly CandidateAssessmentPair[] {
-  const pairs = rootTargetFields.flatMap((rootTargetFieldId) =>
-    candidateBranches.map((branch) => ({
+  const pairs = rootCriteria.flatMap((rootCriterion) =>
+    candidateBranches
+      .filter((branch) =>
+        branch.branchKind !== "ROOT_WRITE" ||
+        branch.writeObservationId === rootCriterion.rootWriteObservationId,
+      )
+      .map((branch) => ({
       pairId: `assessment-pair:${sha256(
         canonicalJson({
-          rootTargetFieldId,
+          rootCriterionId: rootCriterion.rootCriterionId,
           candidateBranchId: branch.candidateBranchId,
         } as unknown as JsonValue),
       )}`,
-      rootTargetFieldId,
+      rootCriterionId: rootCriterion.rootCriterionId,
+      rootTargetFieldId: rootCriterion.rootTargetFieldId,
       candidateBranchId: branch.candidateBranchId,
       assessment: null,
     } satisfies CandidateAssessmentPair)),
@@ -623,24 +728,34 @@ export function buildAssessmentPairSkeleton(
 }
 
 export function buildCandidateAssessmentPairSkeleton(
-  input: CandidateUniverseProjectionInput,
+  input: CandidateUniverseProjectionInput & {
+    readonly rootCriteria: readonly RootCriterion[];
+  },
 ): { readonly universe: CandidateUniverse; readonly pairs: readonly CandidateAssessmentPair[] } {
-  const universe = projectCandidateUniverse(input);
+  const universe = projectCandidateUniverse({
+    ...input,
+    rootCriteria: input.rootCriteria,
+  });
   return {
     universe,
-    pairs: buildAssessmentPairSkeleton(input.rootTargetFields, universe.branches),
+    pairs: buildAssessmentPairSkeleton(input.rootCriteria, universe.branches),
   };
 }
 
 export function validateAssessmentPairSkeleton(
-  rootTargetFields: readonly string[],
+  rootCriteria: readonly RootCriterion[],
   candidateBranches: readonly CandidateBranch[],
   pairs: readonly CandidateAssessmentPair[],
 ): CandidateAssessmentPairValidation {
   const errors: string[] = [];
   const expected = new Set(
-    buildAssessmentPairSkeleton(rootTargetFields, candidateBranches).map(
+    buildAssessmentPairSkeleton(rootCriteria, candidateBranches).map(
       (pair) => pair.pairId,
+    ),
+  );
+  const expectedById = new Map(
+    buildAssessmentPairSkeleton(rootCriteria, candidateBranches).map(
+      (pair) => [pair.pairId, pair],
     ),
   );
   const seen = new Set<string>();
@@ -648,6 +763,14 @@ export function validateAssessmentPairSkeleton(
     if (seen.has(pair.pairId)) errors.push(`DUPLICATE:${pair.pairId}`);
     seen.add(pair.pairId);
     if (!expected.has(pair.pairId)) errors.push(`UNEXPECTED:${pair.pairId}`);
+    const expectedPair = expectedById.get(pair.pairId);
+    if (
+      expectedPair &&
+      (pair.rootCriterionId !== expectedPair.rootCriterionId ||
+        pair.rootTargetFieldId !== expectedPair.rootTargetFieldId ||
+        pair.candidateBranchId !== expectedPair.candidateBranchId)
+    )
+      errors.push(`IDENTITY_MISMATCH:${pair.pairId}`);
     if (pair.assessment !== null) errors.push(`DECISION_PRESENT:${pair.pairId}`);
   }
   for (const pairId of expected)
@@ -656,12 +779,12 @@ export function validateAssessmentPairSkeleton(
 }
 
 export function assertAssessmentPairSkeleton(
-  rootTargetFields: readonly string[],
+  rootCriteria: readonly RootCriterion[],
   candidateBranches: readonly CandidateBranch[],
   pairs: readonly CandidateAssessmentPair[],
 ): void {
   const result = validateAssessmentPairSkeleton(
-    rootTargetFields,
+    rootCriteria,
     candidateBranches,
     pairs,
   );
