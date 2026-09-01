@@ -252,6 +252,7 @@ function createL1Facts(options: { kind: "insert" | "ctas" | "unprovable"; indepe
 					]
 				: [],
 		"schema-refs.jsonl": [],
+		"task-local-materializations.jsonl": [],
 	};
 	for (const [file, records] of Object.entries(files)) writeJsonl(join(bundle, file), records);
 	const capabilitySummary = {
