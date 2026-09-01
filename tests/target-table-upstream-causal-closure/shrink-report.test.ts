@@ -274,7 +274,12 @@ describe("RS-4 summary copy", () => {
     expect(summary).toMatch(/JOIN .*join\.left/);
     expect(summary).not.toMatch(/无关|无影响|已剪除|只计数/);
     expect(html).toContain("本轮证不出");
+    expect(html).toContain("档一 值必达");
+    expect(html).toContain("档二 行决定");
+    expect(html).toContain("FIELD_VALUE");
+    expect(html).toContain("ROW_MEMBERSHIP");
     expect(html).toContain("<details");
+    expect(html).toContain("write-observation-id");
     expect(html).not.toMatch(/无关|无影响|已剪除/);
     expect(html).not.toContain("branch:unbound-a");
   });

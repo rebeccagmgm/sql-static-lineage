@@ -25,6 +25,7 @@ import {
   lineageOf,
   originsOfExpr,
   qualify,
+  type ColumnRef as SqlLensColumnRef,
   type Expr,
   type LineageHop,
   type Projection,
@@ -762,7 +763,7 @@ function resolvePhysical(
       ? qualify(cell.scopes, schema as SchemaProvider)
       : undefined;
   const resolveColumnBinding = (parts: string[]) =>
-    qualification?.bindingOf(scope, { kind: "column", parts });
+    qualification?.bindingOf(scope, { kind: "columnref", parts } as SqlLensColumnRef);
   for (const ref of refs) {
     const withOff = ref as RefWithOffset;
     if (withOff._cellOffset == null) continue;

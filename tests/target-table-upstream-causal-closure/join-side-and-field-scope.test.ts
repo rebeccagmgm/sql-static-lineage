@@ -415,7 +415,7 @@ describe("105387 zipper gold (P0)", () => {
     readonly edges: readonly { readonly from_relation_id: string; readonly to_relation_id: string }[];
   };
 
-  it("places the four LEFT JOIN reference tables on ROW_MEMBERSHIP via Agt_Modifr CASE, not LEFT-side tags", () => {
+  it("assigns LEFT JOIN nullable reference tables to MULTIPLICITY and FILTER channels, not project CASE", () => {
     const summaryResult = summarizeTaskRelations({
       taskId: "105387",
       sqlSourceId: "task:105387",
@@ -435,16 +435,16 @@ describe("105387 zipper gold (P0)", () => {
       );
       expect(impact, name).toBeDefined();
       expect(impact?.impactChannels, name).toEqual(
-        expect.arrayContaining(["ROW_MEMBERSHIP", "EXPRESSION_CONTROL", "MULTIPLICITY"]),
+        expect.arrayContaining(["MULTIPLICITY", "RELATION_EXISTENCE"]),
       );
+      expect(impact?.impactChannels, name).not.toContain("EXPRESSION_CONTROL");
       const demanded = impact?.demandedFieldNames?.map((field) => field.toLowerCase()) ?? [];
       expect(demanded, name).toContain("key_otc_trade_id");
-      expect(demanded, name).toContain("agt_modifr1");
-      expect(demanded, name).not.toContain("stati_cont_desc");
+      expect(demanded, name).not.toContain("agt_modifr1");
       expect(
         impact?.evidenceRefs.some((ref) => ref.includes("statement:1:relation:root.project")),
         name,
-      ).toBe(true);
+      ).toBe(false);
     }
     const trade = summaryResult.readImpacts.find((item) =>
       item.readOccurrenceId.toLowerCase().includes("d_trd_otc_trade"),
@@ -473,7 +473,7 @@ describe("105387 zipper gold (P0)", () => {
 });
 
 describe("RS-3 closure seeding", () => {
-  it("puts zipper reference producers in 档二 after a FIELD_VALUE hop, and keeps 105387 in 档一", () => {
+  it("keeps 105387 in 档一 and does not promote LEFT JOIN ref producers to 档二 via project CASE", () => {
     const fixture = loadRelationFixture("105387-zipper-relations.json");
     const zipperRoot = "task:105387:statement:1:relation:root.project";
     const zipper = summarizeTaskRelations({
@@ -569,17 +569,11 @@ describe("RS-3 closure seeding", () => {
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["105387"]);
-    expect(report.rowDetermining.map((entry) => entry.taskId).sort()).toEqual(
-      ["163064", "179886", "78472", "78473"].sort(),
-    );
-    for (const entry of report.rowDetermining) {
-      expect(entry.viaFields.map((field) => field.toLowerCase())).toEqual(
-        expect.arrayContaining(["agt_modifr1"]),
-      );
-    }
+    expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
   });
 
-  it("walks 档二 zipper refs through an intermediate FIELD_VALUE hop", () => {
+  it("does not promote LEFT JOIN ref producers to 档二 through an intermediate FIELD_VALUE hop", () => {
     const fixture = loadRelationFixture("105387-zipper-relations.json");
     const zipperRoot = "task:105387:statement:1:relation:root.project";
     const zipper = summarizeTaskRelations({
@@ -710,14 +704,8 @@ describe("RS-3 closure seeding", () => {
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
-    expect(report.rowDetermining.map((entry) => entry.taskId).sort()).toEqual(
-      ["163064", "179886", "78472", "78473"].sort(),
-    );
-    for (const entry of report.rowDetermining) {
-      expect(entry.viaFields.map((field) => field.toLowerCase())).toEqual(
-        expect.arrayContaining(["agt_modifr1"]),
-      );
-    }
+    expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
   });
 
   it("keeps generic-CASE LEFT dims out of 档二 after a FIELD_VALUE hop", () => {
@@ -1013,9 +1001,8 @@ describe("RS-3 closure seeding", () => {
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
-    expect(report.rowDetermining.map((entry) => entry.taskId).sort()).toEqual(
-      ["163064", "179886", "78472", "78473"].sort(),
-    );
+    expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("105388");
   });

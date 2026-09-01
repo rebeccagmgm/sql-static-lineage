@@ -30,6 +30,7 @@ interface CliOptions {
   readonly output: string;
   readonly summaryOutput: string | null;
   readonly htmlOutput: string | null;
+  readonly fieldLineageHtmlHref: string | null;
   readonly maxTimeMs: number;
   readonly maxMemoryBytes: number;
   readonly maxBranches: number;
@@ -105,6 +106,7 @@ function parseArgs(argv: readonly string[]): CliOptions {
     fieldLineage: values.get("field-lineage") ?? null, taskId: required("task-id"), targetTable: required("target-table"),
     writeObservationIds: (values.get("write-observation-id") ?? "").split(",").map((value) => value.trim()).filter(Boolean),
     output: required("output"), summaryOutput: values.get("summary-output") ?? null, htmlOutput: values.get("html-output") ?? null,
+    fieldLineageHtmlHref: values.get("field-lineage-html-href") ?? null,
     maxTimeMs: budget("max-time-ms", 300_000), maxMemoryBytes: budget("max-memory-bytes", 1_073_741_824), maxBranches: budget("max-branches", 10_000), maxDepth: budget("max-depth", 25),
     maxStateUpdates: budget("max-state-updates", 100_000), maxNodeStates: budget("max-node-states", 50_000), maxWitnessDepth: budget("max-witness-depth", 25),
   };
@@ -529,7 +531,12 @@ export function main(argv = process.argv.slice(2)): void {
   writeFileSync(options.output, `${JSON.stringify(artifact, null, 2)}\n`, "utf8");
   const summary = formatTargetTableCausalSummary(artifact);
   if (options.summaryOutput) { outputPath(options.summaryOutput); writeFileSync(options.summaryOutput, `${summary}\n`, "utf8"); }
-  if (options.htmlOutput) { outputPath(options.htmlOutput); writeFileSync(options.htmlOutput, renderTargetTableCausalHtml(artifact), "utf8"); }
+  if (options.htmlOutput) {
+    outputPath(options.htmlOutput);
+    writeFileSync(options.htmlOutput, renderTargetTableCausalHtml(artifact, {
+      ...(options.fieldLineageHtmlHref ? { fieldLineageHtmlHref: options.fieldLineageHtmlHref } : {}),
+    }), "utf8");
+  }
   console.log(summary);
 }
 

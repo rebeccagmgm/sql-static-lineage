@@ -205,33 +205,6 @@ function operatorDemandColumns(row: JsonRecord): readonly string[] {
   return physicalColumnNames(row);
 }
 
-function existenceCaseSelections(row: JsonRecord): readonly {
-  readonly output: string;
-  readonly columns: readonly string[];
-  readonly tables: readonly string[];
-}[] {
-  if (relationType(row) !== "project") return [];
-  const selections: { output: string; columns: string[]; tables: string[] }[] = [];
-  for (const expression of records(relationOf(row).expressions)) {
-    const body = `${text(expression.expr_text) ?? ""} ${text(expression.display_text) ?? ""}`;
-    if (!/IS\s+NOT\s+NULL/i.test(body)) continue;
-    const output = text(expression.output) ?? text(expression.output_name);
-    if (!output) continue;
-    const columns: string[] = [];
-    const tables: string[] = [];
-    for (const input of records(expression.input_columns)) {
-      for (const physical of records(input.physical)) {
-        const column = text(physical.column) ?? text(input.name);
-        const table = text(physical.table);
-        if (column) columns.push(column);
-        if (table) tables.push(table);
-      }
-    }
-    if (columns.length > 0) selections.push({ output, columns: [...new Set(columns)], tables: [...new Set(tables)] });
-  }
-  return selections;
-}
-
 function exprText(row: JsonRecord): string {
   const relation = relationOf(row);
   return [
@@ -540,21 +513,7 @@ export function summarizeTaskRelations(input: {
         apply(descendantReads(leftId), sides.left);
         apply(descendantReads(rightId), sides.right);
       } else if (type === "project") {
-        const selections = existenceCaseSelections(row);
-        if (selections.length > 0) {
-          for (const selection of selections) {
-            const readIds = descendants.filter((readId) => {
-              const table = readTables.get(readId);
-              return table !== undefined && selection.tables.some((candidate) => tableMatches(table, candidate));
-            });
-            apply(readIds, ["EXPRESSION_CONTROL", "ROW_MEMBERSHIP"], [...selection.columns, selection.output]);
-          }
-        } else {
-          // Generic CASE/IF/COALESCE selects a value. It is not the zipper
-          // IS NOT NULL CASE, so do not stamp EXPRESSION_CONTROL onto every
-          // descendant read (LEFT JOIN keys would then open the RM bridge).
-          apply(descendants, impactChannels(row).filter((channel) => channel !== "EXPRESSION_CONTROL"));
-        }
+        apply(descendants, impactChannels(row).filter((channel) => channel !== "EXPRESSION_CONTROL"));
       } else {
         apply(descendants, impactChannels(row));
       }
