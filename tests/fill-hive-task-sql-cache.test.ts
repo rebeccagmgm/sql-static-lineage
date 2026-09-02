@@ -84,6 +84,58 @@ describe("hiveTask SQL cache fill", () => {
     });
   });
 
+  it("splits a single sql assignment that contains CREATE then INSERT", () => {
+    const script = `sql = """
+CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT(
+    Evt_Id STRING
+)COMMENT '财务预算调整申请事件'
+PARTITIONED BY (SRC_TBL STRING, BUSI_DATE STRING)
+STORED AS ORC;
+
+set hive.exec.dynamic.partition=true;
+INSERT OVERWRITE TABLE T05_FIN_BDGT_ADJ_APP_EVT PARTITION(SRC_TBL='\${src_table}',BUSI_DATE='\${data_day_str}')
+SELECT A.ID FROM \${src_table} A;
+"""`;
+    const extracted = extractHiveTaskSqlFromScript(script);
+    expect(extracted.createSql).toMatch(/^CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT/);
+    expect(extracted.createSql).toContain("STORED AS ORC;");
+    expect(extracted.createSql).not.toMatch(/INSERT OVERWRITE/i);
+    expect(extracted.querySql).toMatch(/INSERT OVERWRITE TABLE T05_FIN_BDGT_ADJ_APP_EVT/i);
+    expect(extracted.querySql).toContain("${src_table}");
+  });
+
+  it("reads a hive-task.sql that only marked createSql as create plus query", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-split-"));
+    writeHiveTaskSqlCache(
+      "100078",
+      "2026-09-01T00:00:00.000Z",
+      {
+        source: "LOCAL_CODE",
+        sqlStatus: "AVAILABLE",
+        scriptPath: "EVT/demo.py",
+        hiveDb: "pdata_n",
+        createSql: `CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT(
+    Evt_Id STRING
+)COMMENT '财务预算调整申请事件'
+PARTITIONED BY (SRC_TBL STRING, BUSI_DATE STRING)
+STORED AS ORC;
+
+set hive.merge.mapfiles = true;
+INSERT OVERWRITE TABLE T05_FIN_BDGT_ADJ_APP_EVT PARTITION(SRC_TBL='\${src_table}',BUSI_DATE='\${data_day_str}')
+SELECT A.ID FROM \${src_table} A;`,
+        querySql: null,
+      },
+      cacheRoot,
+    );
+    const cached = readHiveTaskSqlCache("100078", cacheRoot);
+    expect(cached.status).toBe("HIT");
+    if (cached.status !== "HIT") return;
+    expect(cached.createSql).toContain("CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT");
+    expect(cached.createSql).not.toMatch(/INSERT OVERWRITE/i);
+    expect(cached.querySql).toMatch(/INSERT OVERWRITE/i);
+    expect(cached.querySql).toContain("${data_day_str}");
+  });
+
   it("selects only hiveTask and hiveTask-2.0 ids that have scriptPath", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-ids-"));
     try {

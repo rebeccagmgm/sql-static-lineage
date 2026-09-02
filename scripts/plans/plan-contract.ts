@@ -298,6 +298,11 @@ export interface ReadRelation extends BaseRelation {
 	columns: string[] | null;
 	/** true = CTE 引用 (v1 不展开 CTE 子图, 列为表名占位)。 */
 	is_cte?: boolean;
+	/**
+	 * CTE 引用的定义体根关系。物理表读恒为 undefined。
+	 * 没有它, CTE 体子树与引用它的读节点之间没有边, 体内的物理读无法回溯到写根。
+	 */
+	source?: string;
 }
 
 /** 投影 (SELECT 列清单)。每个 select body 至少一个。 */

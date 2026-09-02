@@ -22,6 +22,7 @@ import {
   inferTaskDefaultSchema,
   type TaskDefaultSchema,
 } from "../../shared/task-default-schema.ts";
+import { isCheckdbflagTask } from "../../shared/lineage-scope.ts";
 import {
   physicalFieldForTable,
 } from "./physical-field-resolver.ts";
@@ -133,7 +134,10 @@ function nonEmpty(value: unknown): string | null {
 }
 
 function isSkippedLineageTask(document: TaskDocument & JsonRecord): boolean {
-  return nonEmpty(document.taskCategory)?.toLowerCase() === "checkdbflag";
+  return isCheckdbflagTask({
+    taskCategory: document.taskCategory,
+    taskName: document.taskName,
+  });
 }
 
 function factsStatus(

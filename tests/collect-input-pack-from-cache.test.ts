@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { collectInputPackFromCache } from "../scripts/input/mainline/collect-input-pack-from-cache.ts";
+import { writeHiveTaskSqlCache } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
 import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
@@ -29,12 +30,20 @@ function fixtureRoots() {
   return {
     dataRoot,
     cacheRoot,
-    hiveMetadataPath: writeJsonl(catalogDir, "hive-meta.jsonl", []),
+    hiveMetadataPath: writeJsonl(catalogDir, "hive-meta.jsonl", [
+      {
+        guid: "cd47666f-573f-44df-a106-b60fb73096e2",
+        qualifiedname_clean: "odata_n_uip.q_md_institution",
+        datasource: "gfhive",
+        status: "ACTIVE",
+        type_name: "hive_table",
+      },
+    ]),
     hiveDdlPath: writeJsonl(catalogDir, "hive-ddl.jsonl", [
       {
         qualifiedname: "odata_n_uip.q_md_institution@gfhive:1",
         querytext:
-          "CREATE TABLE odata_n_uip.q_md_institution (party_id string)",
+          "CREATE TABLE odata_n_uip.q_md_institution (party_id string) COMMENT '机构主表' PARTITIONED BY (busi_date string)",
       },
     ]),
     rdbmsCorePath: writeJsonl(catalogDir, "rdbms-core.jsonl", [
@@ -104,20 +113,36 @@ describe("collect input pack from cache", () => {
     const task = JSON.parse(readFileSync(taskPath, "utf8")) as {
       evidenceProvider: string;
       source: string;
+      target: { platform: string; qualifiedName: string; dataSource: string };
+      partition: Record<string, string>;
     };
     expect(task.evidenceProvider).toContain("local:schedule-evidence");
     expect(task.source).toBe("mysql_uip_datayes");
-    expect(
-      existsSync(
+    expect(task.target).toEqual({
+      platform: "hive",
+      qualifiedName: "odata_n_uip.q_md_institution",
+      dataSource: "gfhive",
+    });
+    expect(task.partition).toEqual({ busi_date: "${YYYY-MM-DD}" });
+    const table = JSON.parse(
+      readFileSync(
         join(
           roots.dataRoot,
           "tables",
           "hive",
           "odata_n_uip.q_md_institution__gfhive",
-          "ddl.sql",
+          "table.json",
         ),
+        "utf8",
       ),
-    ).toBe(true);
+    ) as {
+      guid?: string;
+      description?: string;
+      partitionFields?: string[];
+    };
+    expect(table.guid).toBeUndefined();
+    expect(table.description).toBe("机构主表");
+    expect(table.partitionFields).toEqual(["busi_date"]);
   });
 
   it("writes hive2oracle identity as PARTIAL when query is missing", () => {
@@ -173,6 +198,119 @@ describe("collect input pack from cache", () => {
     expect(
       existsSync(
         join(roots.dataRoot, "tasks", "hive2oracle", "180065", "task.json"),
+      ),
+    ).toBe(true);
+  });
+
+  it("writes sparkIndex create, query, and prepare when create only lives in prepareSql", () => {
+    const roots = fixtureRoots();
+    const create =
+      "CREATE TABLE IF NOT EXISTS dm_index_n.index_grp_assm_trust_auth_end_date( grp_id STRING ) COMMENT '失效日期' PARTITIONED BY ( busi_date STRING, tag_id STRING ) STORED AS ORC;";
+    writeSzdataScheduleDetailCache(
+      "100931",
+      observedAt,
+      {
+        taskId: "100931",
+        taskType: "64",
+        taskName: "dm_index_n.index_grp_assm_trust_auth_end_date",
+        topicName: "DM_INDEX_N",
+        status: "Y",
+        targetTable: "dm_index_n.index_grp_assm_trust_auth_end_date",
+        insertMode: "overwrite",
+        prepareSql: `${create}\nALTER TABLE dm_index_n.index_grp_assm_trust_auth_end_date DROP IF EXISTS PARTITION (busi_date='\${YYYY-MM-DD}' );`,
+        querySql: "SELECT 1 AS grp_id",
+      },
+      roots.cacheRoot,
+    );
+    const [summary] = collect(roots, ["100931"]);
+    expect(summary?.collectionStatus).toBe("SUCCESS");
+    const directory = join(roots.dataRoot, "tasks", "sparkIndex", "100931");
+    const task = JSON.parse(readFileSync(join(directory, "task.json"), "utf8")) as {
+      sqlFiles: { slot: string }[];
+    };
+    expect(task.sqlFiles.map((file) => file.slot)).toEqual([
+      "create",
+      "query",
+      "prepare",
+    ]);
+    expect(readFileSync(join(directory, "sql", "create.sql"), "utf8")).toContain(
+      "CREATE TABLE IF NOT EXISTS",
+    );
+    expect(readFileSync(join(directory, "sql", "prepare.sql"), "utf8")).toContain(
+      "ALTER TABLE",
+    );
+  });
+
+  it("writes hiveTask create and query plus the CREATE table pack", () => {
+    const roots = fixtureRoots();
+    writeHoraeTaskTypeCache(
+      "100078",
+      observedAt,
+      {
+        id: "100078",
+        taskType: "hiveTask",
+        hiveDb: "pdata_n",
+        name: "财务预算调整申请事件",
+      },
+      roots.cacheRoot,
+    );
+    writeSzdataScheduleDetailCache(
+      "100078",
+      observedAt,
+      {
+        taskId: "100078",
+        taskType: "59",
+        taskName: "PDATA_N.T05_FIN_BDGT_ADJ_APP_EVT_HBM002",
+        topicName: "EDW_EVT",
+        status: "Y",
+        database: "pdata_n",
+      },
+      roots.cacheRoot,
+    );
+    writeHiveTaskSqlCache(
+      "100078",
+      observedAt,
+      {
+        source: "LOCAL_CODE",
+        sqlStatus: "AVAILABLE",
+        scriptPath: "EVT/demo.py",
+        hiveDb: "pdata_n",
+        createSql: `CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT(
+    Evt_Id STRING
+)COMMENT '财务预算调整申请事件'
+PARTITIONED BY (SRC_TBL STRING, BUSI_DATE STRING)
+STORED AS ORC;
+
+INSERT OVERWRITE TABLE T05_FIN_BDGT_ADJ_APP_EVT PARTITION(SRC_TBL='\${src_table}',BUSI_DATE='\${data_day_str}')
+SELECT 1;`,
+        querySql: null,
+      },
+      roots.cacheRoot,
+    );
+    const [summary] = collect(roots, ["100078"]);
+    expect(summary?.collectionStatus).toBe("SUCCESS");
+    const directory = join(roots.dataRoot, "tasks", "hiveTask", "100078");
+    const task = JSON.parse(readFileSync(join(directory, "task.json"), "utf8")) as {
+      sqlFiles: { slot: string }[];
+      target: { qualifiedName: string; platform: string; dataSource: string };
+      targetEvidenceKind?: string;
+    };
+    expect(task.sqlFiles.map((file) => file.slot)).toEqual(["create", "query"]);
+    expect(task.target).toEqual({
+      platform: "hive",
+      qualifiedName: "pdata_n.t05_fin_bdgt_adj_app_evt",
+      dataSource: "gfhive",
+    });
+    expect(task.targetEvidenceKind).toBeUndefined();
+    expect(
+      existsSync(
+        join(
+          roots.dataRoot,
+          "tables",
+          "hive",
+          "pdata_n.t05_fin_bdgt_adj_app_evt__gfhive",
+          "table.json",
+        ),
       ),
     ).toBe(true);
   });

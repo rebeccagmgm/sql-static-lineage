@@ -41,19 +41,49 @@
 - **WHEN** `syncInfo` 给出 Hive source 与 Oracle target，但缓存没有抽数 query
 - **THEN** 系统 MUST 写出 task.json 与已有 SQL 槽，`collectionStatus` 为 PARTIAL
 
+#### Scenario: sparkIndex 从 prepareSql 抄出 create
+
+- **WHEN** schedule-detail 有以 `CREATE TABLE` 开头的 `prepareSql`，且没有单独 `createSql`
+- **THEN** Task Pack MUST 同时写出 `create` 与 `prepare`；`create` 为该 CREATE 语句，`prepare` 保持原文
+
+#### Scenario: hiveTask 拆开合并在 createSql 里的 INSERT
+
+- **WHEN** `hive-task.sql` 只标了 `-- createSql`，且内容先 CREATE TABLE 再 INSERT OVERWRITE
+- **THEN** `create` 槽 MUST 不含 INSERT，`query` 槽 MUST 含 INSERT
+
 ### Requirement: Table 从原信息 jsonl 按表名拼接
 
-系统 MUST 只读四份 jsonl：Hive 元数据、Hive DDL、RDBMS 核心、RDBMS DDL。xlsx/csv/sqlite/`_partial*` MUST NOT 作为输入。GUID MUST NOT 作为落盘或拼接的必要条件。Hive 按规范化 `db.table` 匹配，并去掉 `@gfhive` 与时间戳；内容相同的重复行 MUST 合成一条。RDBMS 按 `db.table@dataSource` 匹配。解析顺序 MUST 为：已有 Table Pack → Hive DDL 表名（可无元数据）→ Hive 元数据 + 任务 CREATE → RDBMS 核心+DDL。RDBMS 不得用任务 CREATE 冒充 DDL。platform MUST 由 dataSource 前缀映射；无法映射则不写 Table。jsonl 缺行 MUST 视为 MISS，不得解释为表不存在。
+系统 MUST 只读四份 jsonl：Hive 元数据、Hive DDL、RDBMS 核心、RDBMS DDL。xlsx/csv/sqlite/`_partial*` MUST NOT 作为输入。GUID MUST NOT 作为落盘或拼接的必要条件。jsonl / 快照里的 guid MUST NOT 写入 `table.json`（现网 OpenCLI guid 与快照 guid 不是同一套）；已有正式 Pack 复用时才保留其 guid。Hive 按规范化 `db.table` 匹配，并去掉 `@gfhive` 与时间戳；内容相同的重复行 MUST 合成一条。RDBMS 按 `db.table@dataSource` 匹配。解析顺序 MUST 为：已有 Table Pack → Hive DDL 表名（可无元数据）→ Hive 元数据 + 任务 CREATE → RDBMS 核心+DDL。RDBMS 不得用任务 CREATE 冒充 DDL。platform MUST 由 dataSource 前缀映射；无法映射则不写 Table。jsonl 缺行 MUST 视为 MISS，不得解释为表不存在。`table.json.partitionFields` 为空数组表示已确认无分区；RDBMS 在 DDL 含 `PARTITION BY` 或核心 `ispartitioned` 为真时 MUST NOT 写 `[]`。能从 `PARTITION BY RANGE|LIST|HASH (col)` 解析出的列名 MUST 写入；`PARTITION BY RANGE (null)` 等缺列名导出 MUST 省略该字段，不得编造列名。`description` MUST 取核心 `comment`（或 Hive 对应字段），不得改写 jsonl DDL 原文。
 
 #### Scenario: Oracle 目标用核心加 DDL 落盘
 
 - **WHEN** 候选为 `TITANS_TRADEFLOW.TRANS_SMT_ATP_T_REPORT@gforacle_gftzdb#gftzdb`，且核心与 DDL 有同一 qualifiedname
-- **THEN** 系统 MUST 写出 `tables/oracle/<qn>__<ds>/`，`ddl.sql` 为 jsonl 中的 ddl 原文，guid 可省略
+- **THEN** 系统 MUST 写出 `tables/oracle/<qn>__<ds>/`，`ddl.sql` 为 jsonl 中的 ddl 原文，且 MUST NOT 写入 jsonl guid
 
 #### Scenario: gfhive 只有 DDL 也可落盘
 
 - **WHEN** Hive DDL 按表名唯一命中（或重复行 querytext 相同），即使没有 guid 或元数据
 - **THEN** 系统 MUST 写出 `tables/hive/<qn>__gfhive/`
+
+#### Scenario: Hive PARTITIONED BY 写入 table.partitionFields
+
+- **WHEN** Hive DDL `querytext` 含 `PARTITIONED BY ( busi_date STRING, tag_id STRING )`
+- **THEN** `table.json.partitionFields` MUST 为 `["busi_date","tag_id"]`，不得把物理分区字段抄进 `task.json.partition`
+
+#### Scenario: Oracle 可解析 PARTITION BY 写入 partitionFields
+
+- **WHEN** RDBMS DDL 含 `PARTITION BY RANGE ("TRADE_DATE")`（或 LIST/HASH 同类列清单）
+- **THEN** `table.json.partitionFields` MUST 为解析出的列名（如 `["TRADE_DATE"]`），`description` MUST 来自核心 `comment`
+
+#### Scenario: Oracle PARTITION BY RANGE (null) 不得写成空数组
+
+- **WHEN** RDBMS 核心 `ispartitioned` 为 true，且 DDL 含 `PARTITION BY RANGE (null)`（导出缺列名），即使后面粘着 `COMMENT ON TABLE`
+- **THEN** `table.json` MUST 省略 `partitionFields`，MUST NOT 写 `[]`，MUST NOT 编造列名，MUST NOT 写入 jsonl guid；`description` MUST 仍取核心 `comment`
+
+#### Scenario: Hive ALTER querytext 不得当物理 DDL
+
+- **WHEN** Hive DDL jsonl 仅有 `ALTER TABLE`，且元数据唯一 ACTIVE，任务 SQL 有唯一 CREATE
+- **THEN** 系统 MUST 忽略该 ALTER，用任务 CREATE 写 `ddl.sql`，`evidenceProvider` 为 `input-pack:task-sql-create`
 
 #### Scenario: Hive 元数据有、DDL 无
 

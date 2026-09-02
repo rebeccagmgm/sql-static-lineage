@@ -210,6 +210,108 @@ function parseConcatenatedPythonString(
   return found && trimmed !== "" ? trimmed : null;
 }
 
+function skipQuotedAndParens(sql: string, start: number): number | undefined {
+  let index = start;
+  let depth = 0;
+  let quote: string | undefined;
+  while (index < sql.length) {
+    const current = sql[index]!;
+    if (quote !== undefined) {
+      if (current === "\\" && index + 1 < sql.length) {
+        index += 2;
+        continue;
+      }
+      if (current === quote) quote = undefined;
+      index += 1;
+      continue;
+    }
+    if (current === "'" || current === '"') {
+      quote = current;
+      index += 1;
+      continue;
+    }
+    if (current === "(") {
+      depth += 1;
+      index += 1;
+      continue;
+    }
+    if (current === ")") {
+      depth = Math.max(0, depth - 1);
+      index += 1;
+      continue;
+    }
+    if (current === ";" && depth === 0) return index;
+    index += 1;
+  }
+  return undefined;
+}
+
+function firstCreateTableEnd(sql: string): number | undefined {
+  const match = sql.match(/\bCREATE\s+(?:EXTERNAL\s+)?TABLE\b/iu);
+  if (match?.index === undefined) return undefined;
+  const semicolon = skipQuotedAndParens(sql, match.index);
+  return semicolon === undefined ? undefined : semicolon + 1;
+}
+
+/** First CREATE TABLE statement when it is the leading statement in `sql`. */
+export function leadingCreateTableStatement(sql: string): string | undefined {
+  const trimmed = sql.trim();
+  const match = trimmed.match(/\bCREATE\s+(?:EXTERNAL\s+)?TABLE\b/iu);
+  if (match?.index === undefined) return undefined;
+  if (trimmed.slice(0, match.index).trim() !== "") return undefined;
+  const end = firstCreateTableEnd(trimmed);
+  if (end === undefined) return undefined;
+  return nullableSql(trimmed.slice(0, end)) ?? undefined;
+}
+
+function firstWriteStatementStart(sql: string): number | undefined {
+  const match = sql.match(/\bINSERT\s+(?:OVERWRITE|INTO)\b/iu);
+  return match?.index;
+}
+
+export function splitCombinedHiveTaskSql(sql: string | null): {
+  readonly createSql: string | null;
+  readonly querySql: string | null;
+} {
+  if (sql === null) return { createSql: null, querySql: null };
+  const trimmed = sql.trim();
+  if (trimmed === "") return { createSql: null, querySql: null };
+  const createMatch = trimmed.match(/\bCREATE\s+(?:EXTERNAL\s+)?TABLE\b/iu);
+  const writeStart = firstWriteStatementStart(trimmed);
+  if (
+    createMatch?.index !== undefined &&
+    writeStart !== undefined &&
+    writeStart > createMatch.index
+  ) {
+    const createEnd =
+      firstCreateTableEnd(trimmed.slice(0, writeStart)) ?? writeStart;
+    return {
+      createSql: nullableSql(trimmed.slice(0, createEnd)) ?? null,
+      querySql: nullableSql(trimmed.slice(writeStart)) ?? null,
+    };
+  }
+  if (createMatch !== null && writeStart === undefined)
+    return { createSql: nullableSql(trimmed) ?? null, querySql: null };
+  return { createSql: null, querySql: nullableSql(trimmed) ?? null };
+}
+
+function mergeHiveTaskSqlSlots(
+  createSql: string | null,
+  querySql: string | null,
+): { readonly createSql: string | null; readonly querySql: string | null } {
+  const splitCreate = splitCombinedHiveTaskSql(createSql);
+  const splitQuery =
+    querySql === null ? { createSql: null, querySql: null } : splitCombinedHiveTaskSql(querySql);
+  const create = splitCreate.createSql ?? splitQuery.createSql;
+  const queryParts = [splitCreate.querySql, splitQuery.querySql].filter(
+    (part): part is string => part !== null,
+  );
+  return {
+    createSql: create,
+    querySql: queryParts.length === 0 ? null : queryParts.join("\n\n"),
+  };
+}
+
 export function extractHiveTaskSqlFromScript(source: string): {
   readonly createSql: string | null;
   readonly querySql: string | null;
@@ -222,9 +324,9 @@ export function extractHiveTaskSqlFromScript(source: string): {
       (match.index ?? 0) + match[0].length,
     );
     if (block === null) continue;
-    const head = block.slice(0, 80).toLowerCase();
-    if (head.startsWith("create table")) create.push(block);
-    else query.push(block);
+    const split = splitCombinedHiveTaskSql(block);
+    if (split.createSql !== null) create.push(split.createSql);
+    if (split.querySql !== null) query.push(split.querySql);
   }
   return {
     createSql: create.length === 0 ? null : create.join("\n\n"),
@@ -310,6 +412,7 @@ function parseHiveTaskSqlFile(
   } else {
     querySql = nullableSql(body) ?? null;
   }
+  ({ createSql, querySql } = mergeHiveTaskSqlSlots(createSql, querySql));
   const evidence = validateEvidence({
     source: meta.source,
     sqlStatus: meta.sqlStatus,

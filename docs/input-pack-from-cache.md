@@ -113,8 +113,13 @@ schedule-detail 的 `taskType` 是数字码（如 `64`），用现有
 ```
 
 `100931` 已证明：schedule-detail 有 `targetTable`、`insertMode=overwrite`、
-`prepareSql`+`querySql`；Horae 只有 `querySql`。缓存路径足以复现现有 Pack
-的 SQL 槽，只是 `evidenceProvider` 从 `task-source` 换成缓存出处。
+`prepareSql`+`querySql`；Horae 只有 `querySql`。现网 `create.sql` 来自 sql-mcp，
+内容等于 `prepareSql` 开头那条 `CREATE TABLE`。缓存没有单独 `createSql` 时，
+离线把这条 CREATE 抄进 `create` 槽，**完整 `prepareSql` 仍留在 `prepare`**
+（官方也是 create 与 prepare 里各有一份 CREATE）。
+
+FROM/JOIN 读表仍按 §4 解析。jsonl 没有 CREATE TABLE 的读表会 PARTIAL，
+不能从 ALTER/RENAME 编造 `ddl.sql`。
 
 ### 3.2 hiveTask / hiveTask-2.0（缓存 4931 / 已落约 413）
 
@@ -126,11 +131,18 @@ Horae 几乎没有 SQL（2567 条里只有 1 条带 SQL）。SQL 在 `hive-task.
 SQL ：hive-task.sql
       -- createSql → sql.create
       -- querySql  → sql.query
-      source=LOCAL_CODE | SQL_MCP
+      若 `-- createSql` 一块里同时有 CREATE 和 INSERT OVERWRITE/INTO，
+      拆成两个槽（与现网 create.sql / query.sql 一致）；中间 SET 丢弃
 target：
       1. schedule-detail.targetTable（若有）
-      2. 否则 SQL 精确写目标（INSERT/CTAS），需后续 Table 校验
-      3. 都没有则省略 target，不从任务名猜
+      2. 否则 SQL 精确写目标（INSERT/CTAS），无库名时用任务名 schema
+         或 hive-task.sql 头的 hiveDb 限定
+      3. 都没有则省略 target，不从中文任务名猜
+
+落盘校验要求 `SQL_EXACT_TABLE_TARGET` 必须带
+`sql-mcp:explicit-table-target` + `opencli:szdata.table`。缓存路径不能伪造
+这两条，所以 hiveTask 的物理 target 对象会写出来，但 **不写**
+`targetEvidenceKind: SQL_EXACT_TABLE_TARGET`。
 ```
 
 `hive-task.sql` 头必须能被现有 `readHiveTaskSqlCache` 读成 HIT，
@@ -208,12 +220,12 @@ sqlite / `_partial*` 是还原中间件，接入层不读。
 
 ### 4.1 四份正式目录
 
-| 角色       | 路径                                                | 行数                                                            | 报告               | 主键                                          | 给 Table Pack 什么                                                                       |
-| ---------- | --------------------------------------------------- | --------------------------------------------------------------- | ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Hive 身份  | `hive元信息-20260831快照/hive_table_restored.jsonl` | 211922，全部 `datasource=gfhive`；ACTIVE 150098 / DELETED 61824 | 无完整 report      | 查询键 `lower(db.table)`；guid 可选           | `qualifiedName` / `dataSource=gfhive` / `status` / `objectType=hive_table`；有 guid 才写 |
-| Hive DDL   | `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 142409                                                          | SUCCESS            | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘                                                      |
-| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 1223553                                                         | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource`                  | 拆 `@` 后的 qn+ds / `primarykeys` / `comment`；guid 可选                                 |
-| RDBMS DDL  | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 1202531                                                         | INCOMPLETE，缺 92  | 查询键同上                                    | `ddl` → `ddl.sql`（禁止 strip）                                                          |
+| 角色       | 路径                                                | 行数                                                            | 报告               | 主键                                          | 给 Table Pack 什么                                                                 |
+| ---------- | --------------------------------------------------- | --------------------------------------------------------------- | ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Hive 身份  | `hive元信息-20260831快照/hive_table_restored.jsonl` | 211922，全部 `datasource=gfhive`；ACTIVE 150098 / DELETED 61824 | 无完整 report      | 查询键 `lower(db.table)`                      | `qualifiedName` / `dataSource=gfhive` / `status` / `objectType=hive_table`；不写快照 guid |
+| Hive DDL   | `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 142409                                                          | SUCCESS            | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘                                                |
+| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 1223553                                                         | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource`                  | 拆 `@` 后的 qn+ds / `comment`；不写 jsonl guid                                      |
+| RDBMS DDL  | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 1202531                                                         | INCOMPLETE，缺 92  | 查询键同上                                    | `ddl` → `ddl.sql`（禁止 strip）                                                    |
 
 Hive 现网 collector 已经在读第一份（`DEFAULT_HIVE_METADATA_SNAPSHOT_PATH`），
 但只当“表存在”门闩，**还没接 DDL jsonl**。`180065` 的 Oracle 目标
@@ -271,7 +283,7 @@ DDL 里都有，guid 与已落 `table.json` 的 `5a571b33-…` 一致。
 
 ### 4.3 拼接规则
 
-- 身份键是规范化表名，**不是 guid**。`table.json.guid` 有则写、没有可省略。
+- 身份键是规范化表名，**不是 guid**。jsonl / 快照 guid 不写入 `table.json`；已有正式 Pack 复用时才保留其 guid。
 - Hive：`lower(db.table)`。DDL `qualifiedname` 的 `@gfhive:时间戳` 先剥掉再匹配。
   同名且 `querytext` / `querytext_md5` 相同 → 合成一条；内容不同才 AMBIGUOUS。
 - gfhive 行内容相同可直接加。Hive 只有唯一 DDL 也可以落 Table Pack。

@@ -1522,6 +1522,10 @@ export function buildPlanFacts(
 
   // 每个 scope 的根节点 id 缓存 (子查询源可能被多次引用, 如 join 右臂 + from 列表)
   const rootIds = new Map<Scope, string>();
+  const pendingCteBodyLinks: {
+    readonly readRelation: ReadRelation;
+    readonly bodyScope: Scope;
+  }[] = [];
 
   function addTopN(
     scope: Scope,
@@ -1764,6 +1768,11 @@ export function buildPlanFacts(
         relations.push(r);
         relationScopes.set(id, scope);
         nodeIds.set(key, id);
+        // The CTE body is built as its own subtree. Record the reference so it
+        // can be wired once every scope has an id; without that edge the body's
+        // physical reads never reach the statement root.
+        if (src.kind === "cte" && src.ref?.scope)
+          pendingCteBodyLinks.push({ readRelation: r, bodyScope: src.ref.scope });
       } else if (src.kind === "lateral") {
         const id = `${path}.expand.${key}`;
         const e: ExpandRelation = {
@@ -1800,14 +1809,17 @@ export function buildPlanFacts(
     for (let fi = 0; fi < fromEntries.length; fi++) {
       const f = fromEntries[fi] as SelectExpr["from"][number];
       const normalizedFrom = selectPlan?.from[fi];
-      let boundKey =
+      // An unaliased derived table binds under the empty key, which is a valid
+      // Scope source. Testing truthiness here dropped the whole FROM entry and
+      // orphaned its subtree from the statement root.
+      const planBindingKey = normalizedFrom?.bindingKey ?? null;
+      const boundKey =
         scopePlanIndex === null
           ? legacySourceBindingKey(scope, f)
-          : normalizedFrom?.bindingKey &&
-              scope.sources.has(normalizedFrom.bindingKey)
-            ? normalizedFrom.bindingKey
+          : planBindingKey !== null && scope.sources.has(planBindingKey)
+            ? planBindingKey
             : null;
-      if (!boundKey) {
+      if (boundKey === null) {
         unknowns.push({
           node_id: `${path}.from.${fi}`,
           field: "source_binding",
@@ -1816,13 +1828,17 @@ export function buildPlanFacts(
         });
         continue;
       }
-      const isLateral = scope.sources.get(boundKey ?? "")?.kind === "lateral";
-      const nodeId = boundKey
-        ? sourceNodeId(
-            boundKey,
-            scope.sources.get(boundKey) as { kind: string; scope?: Scope },
-          )
-        : null;
+      // scope.sources is keyed by name, so a derived table and a LATERAL VIEW
+      // that share an alias collapse onto one entry. Resolve through
+      // sourceList by ordinal, which keeps both.
+      const boundSource = (normalizedFrom?.sourceOrdinal != null
+        ? scope.sourceList[normalizedFrom.sourceOrdinal]?.source
+        : undefined) ?? scope.sources.get(boundKey);
+      const isLateral = boundSource?.kind === "lateral";
+      const nodeId = sourceNodeId(
+        boundKey,
+        boundSource as { kind: string; scope?: Scope },
+      );
       if (!nodeId) continue;
 
       if (isLateral) {
@@ -2381,6 +2397,12 @@ export function buildPlanFacts(
   }
 
   roots.push(buildScope(root, "root"));
+
+  for (const link of pendingCteBodyLinks) {
+    const bodyRootId = rootIds.get(link.bodyScope);
+    if (bodyRootId && bodyRootId !== link.readRelation.id)
+      link.readRelation.source = bodyRootId;
+  }
 
   const scopeBindings: PlanScopeBinding[] = pendingScopeBindings.map(
     (pending) => ({

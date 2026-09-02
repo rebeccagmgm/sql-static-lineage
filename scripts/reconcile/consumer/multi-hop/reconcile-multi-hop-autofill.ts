@@ -32,6 +32,7 @@ import {
   readHoraeRelationCache,
   writeHoraeRelationCache,
 } from "../one-hop/schedule-evidence-cache.ts";
+import { isNonHiveProducerBoundary } from "../../shared/lineage-scope.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -524,9 +525,10 @@ export function runMultiHopAutofill(
             sleep,
           );
           if (taskIds.length === 0)
-            if (read.table.platform.toLocaleLowerCase("en-US") === "hive")
+            if (isNonHiveProducerBoundary(read.table.platform))
+              nonHiveSourceBoundaries.add(qualifiedName);
+            else
               issues.push(`TABLE_PRODUCER_TASK_NOT_OBSERVED:${qualifiedName}`);
-            else nonHiveSourceBoundaries.add(qualifiedName);
           for (const taskId of taskIds) {
             enqueueMissingTaskPack(taskId);
           }

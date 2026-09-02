@@ -13,8 +13,9 @@ import { buildCausalClosure, type WriteScope } from "./causal-closure.ts";
 import { buildImpactGraph } from "./impact-graph.ts";
 import { formatTargetTableCausalSummary, renderTargetTableCausalHtml } from "./format-target-table-causal-closure.ts";
 import { createFieldValueEvidenceProvider } from "./field-value-provider.ts";
+import { normalizeReadScopes } from "./read-scope.ts";
 import { validateCausalClosure } from "./proof-validator.ts";
-import { buildShrinkReport } from "./static-assessment.ts";
+import { buildShrinkReport, unknownReasonCodesForAssessment } from "./static-assessment.ts";
 import { relationSummaryKey, summarizeTaskRelations } from "./task-relation-summary.ts";
 import { resolveTargetWrite, type AnalysisSnapshotRef } from "./target-write-contract.ts";
 
@@ -147,66 +148,6 @@ function producerWriteScope(
     statementOrdinal: [...ordinals][0]!,
     rootRelationId: [...rootRelationIds][0]!,
   };
-}
-
-function inferReadScope(load: CurrentBundleLoad, branch: CandidateBranch): { readonly sqlSourceId: string | null; readonly rootRelationId: string | null } {
-  const occurrence = branch.readOccurrence;
-  if (!occurrence) return { sqlSourceId: null, rootRelationId: null };
-  const explicit = occurrence.sqlSourceId ? canonicalSqlSourceId(occurrence.sqlSourceId) : null;
-  if (explicit && !/^query#\d+$/i.test(explicit) && !/^create#\d+$/i.test(explicit)) return { sqlSourceId: explicit, rootRelationId: occurrence.rootRelationId ?? null };
-  const paths = new Set(occurrence.relationPath.map((value) => value.trim().toLowerCase()));
-  const relationRows = records(load.records["relation-nodes.jsonl"]);
-  const relationIds = relationRows
-    .filter((row) => {
-      const id = text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id);
-      const index = statementOrdinal(text(row.statement_id));
-      return id !== null && index === occurrence.statementIndex && [...paths].some((path) => id.toLowerCase().endsWith(`:relation:${path}`));
-    })
-    .map((row) => text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id))
-    .filter((value): value is string => value !== null);
-  const sources = new Set(
-    relationRows
-      .filter((row) => {
-        const id = text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id);
-        const index = statementOrdinal(text(row.statement_id));
-        return id !== null && index === occurrence.statementIndex && relationIds.includes(id) && text(row.statement_id) !== null;
-      })
-      .map((row) => canonicalSqlSourceId(text(row.statement_id)!)),
-  );
-  const parentByChild = new Map<string, string>();
-  for (const edge of records(load.records["relation-edges.jsonl"])) {
-    const child = text(edge.from_relation_id);
-    const parent = text(edge.to_relation_id);
-    if (child && parent) parentByChild.set(child, parent);
-  }
-  const roots = new Set<string>();
-  for (const relationId of relationIds) {
-    let current = relationId;
-    const seen = new Set<string>();
-    while (parentByChild.has(current) && !seen.has(current)) {
-      seen.add(current);
-      current = parentByChild.get(current)!;
-    }
-    roots.add(current);
-  }
-  return {
-    sqlSourceId: sources.size === 1 ? [...sources][0]! : explicit,
-    rootRelationId: roots.size === 1 ? [...roots][0]! : occurrence.rootRelationId ?? null,
-  };
-}
-
-function normalizeReadScopes(
-  universe: CandidateUniverse,
-  loadForTask: (taskId: string) => CurrentBundleLoad,
-): CandidateUniverse {
-  const branches = universe.branches.map((branch) => {
-    if (!branch.consumerTaskId || !branch.readOccurrence) return branch;
-    const scope = inferReadScope(loadForTask(branch.consumerTaskId), branch);
-    return scope.sqlSourceId && (scope.sqlSourceId !== branch.readOccurrence.sqlSourceId || scope.rootRelationId !== branch.readOccurrence.rootRelationId)
-      ? { ...branch, readOccurrence: { ...branch.readOccurrence, sqlSourceId: scope.sqlSourceId, ...(scope.rootRelationId ? { rootRelationId: scope.rootRelationId } : {}) } }
-      : branch;
-  });
-  return { ...universe, branches };
 }
 
 function producerWritesForTable(
@@ -482,7 +423,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   )).length;
   const unknownReasonCounts = assessments
     .filter((assessment) => assessment.relationStatus === "UNKNOWN")
-    .flatMap((assessment) => [...new Set(assessment.gapRefs.map((gapId) => unknownReasonCode(gapId)))])
+    .flatMap((assessment) => unknownReasonCodesForAssessment(branchesById.get(assessment.candidateBranchId), assessment))
     .reduce<Record<string, number>>((counts, reason) => ({ ...counts, [reason]: (counts[reason] ?? 0) + 1 }), {});
   const gapCandidates = [
     ...targetResolution.gaps.map((gap) => ({ gapId: gap.gapId, reasonCode: gap.reasonCode, message: gap.message, evidenceRefs: gap.evidenceRefs })),
@@ -508,20 +449,6 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     stages, gaps,
   };
   return canonicalizeTargetTableArtifact(raw);
-}
-
-function unknownReasonCode(gapId: string): string {
-  if (/PROPAGATION_BUDGET/i.test(gapId)) return gapId.split(":").at(-1) ?? "PROPAGATION_BUDGET";
-  if (/NOT_REACHED_FROM_ROOT/i.test(gapId)) return "NOT_REACHED_FROM_ROOT";
-  if (/PRODUCER_WRITE_AMBIGUOUS/i.test(gapId)) return "PRODUCER_WRITE_AMBIGUOUS";
-  if (/PRODUCER_WRITE_SCOPE_UNRESOLVED/i.test(gapId)) return "PRODUCER_WRITE_SCOPE_UNRESOLVED";
-  if (/PRODUCER_WRITE_OBSERVATION_MISSING/i.test(gapId)) return "PRODUCER_WRITE_OBSERVATION_MISSING";
-  if (/OCCURRENCE_EVIDENCE_NOT_FOUND/i.test(gapId)) return "OCCURRENCE_EVIDENCE_NOT_FOUND";
-  if (/VALUE_FLOW_OCCURRENCE_UNBOUND/i.test(gapId)) return "VALUE_FLOW_OCCURRENCE_UNBOUND";
-  if (/UNSUPPORTED_OPERATOR/i.test(gapId)) return "UNSUPPORTED_OPERATOR";
-  if (/BOUNDARY|UNBOUND|BLOCKED|COVERAGE/i.test(gapId)) return "CANDIDATE_BOUNDARY";
-  if (/SUMMARY|RELATION_|ROOT_RELATION|SQL_SOURCE/i.test(gapId)) return "RELATION_SUMMARY";
-  return "OTHER";
 }
 
 export function main(argv = process.argv.slice(2)): void {

@@ -5,6 +5,14 @@ import {
   type JsonValue,
 } from "../../../machine-facts/machine-facts-contract.ts";
 import type { RootCriterion } from "./write-scoped-plan-inputs.ts";
+import {
+  isCheckdbflagTask,
+  isNonHiveProducerBoundary,
+  isOutOfScopePhysicalRead,
+  isOutOfScopeTerminalReason,
+  isSameTaskScratchProducerBridge,
+  isSameTaskScratchTable,
+} from "../../shared/lineage-scope.ts";
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 
@@ -370,9 +378,13 @@ function bridgeMatchesRead(
 ): boolean {
   if (text(bridge.consumerTaskId) !== text(read.consumerTaskId)) return false;
   if (tableKey(tableOf(bridge.table)) !== tableKey(readTable)) return false;
-  const bridgeOccurrence = occurrenceOf(bridge.readOccurrence);
+  if (text(bridge.producerTaskId) === null) return false;
   const readOccurrence = occurrenceOf(read.readOccurrence);
-  if (bridgeOccurrence === null || readOccurrence === null) return false;
+  // Table multi-hop readEdges are consumer+table grain and do not carry
+  // occurrence. A producer bridge for that pair already covers the read.
+  if (readOccurrence === null) return true;
+  const bridgeOccurrence = occurrenceOf(bridge.readOccurrence);
+  if (bridgeOccurrence === null) return false;
   return canonicalJson(occurrenceIdentity(bridgeOccurrence)) ===
     canonicalJson(occurrenceIdentity(readOccurrence));
 }
@@ -403,6 +415,17 @@ function boundaryTerminalReason(value: unknown): string | null {
   )
     return reason;
   return null;
+}
+
+function isCheckdbflagProducer(artifact: JsonRecord, producerTaskId: string): boolean {
+  return records(artifact.taskNodes).some((node) => {
+    if (text(node.taskId) !== producerTaskId) return false;
+    return isCheckdbflagTask({
+      taskCategory: node.taskCategory,
+      taskName: node.taskName,
+      locators: records(node.evidence).map((item) => item.locator),
+    });
+  });
 }
 
 function sourceArtifactType(artifact: JsonRecord): string {
@@ -542,6 +565,9 @@ export function projectCandidateUniverse(
     const consumerTaskId = text(bridge.consumerTaskId);
     const producerTaskId = text(bridge.producerTaskId);
     if (consumerTaskId === null || producerTaskId === null) continue;
+    const bridgeTable = tableOf(bridge.table);
+    if (!bridgeTable) continue;
+    if (isSameTaskScratchProducerBridge(consumerTaskId, producerTaskId, bridgeTable.qualifiedName)) continue;
     add(
       makeBranch({
         rootTaskId,
@@ -557,10 +583,17 @@ export function projectCandidateUniverse(
   }
 
   const scheduleEdges = records(artifact.scheduleEdges);
+  const physicalPairs = new Set(
+    [...branches.values()]
+      .filter((branch) => branch.branchKind === "PHYSICAL_PRODUCER")
+      .map((branch) => `${branch.consumerTaskId ?? ""}\0${branch.producerTaskId ?? ""}`),
+  );
   for (const edge of scheduleEdges) {
     const consumerTaskId = text(edge.consumerTaskId);
     const producerTaskId = text(edge.producerTaskId);
     if (consumerTaskId === null || producerTaskId === null) continue;
+    if (physicalPairs.has(`${consumerTaskId}\0${producerTaskId}`)) continue;
+    if (isCheckdbflagProducer(artifact, producerTaskId)) continue;
     add(
       makeBranch({
         rootTaskId,
@@ -580,6 +613,8 @@ export function projectCandidateUniverse(
     const consumerTaskId = text(read.consumerTaskId);
     if (consumerTaskId === null) continue;
     const table = tableOf(read.table);
+    if (!table || isOutOfScopePhysicalRead(table)) continue;
+    if (consumerTaskId === rootTaskId && isSameTaskScratchTable(table.qualifiedName)) continue;
     const occurrence = occurrenceOf(read.readOccurrence);
     const matchingBridge = producerBridges.some((bridge) =>
       bridgeMatchesRead(bridge, read, table),
@@ -634,6 +669,9 @@ export function projectCandidateUniverse(
   for (const terminal of records(artifact.terminals)) {
     const reason = boundaryTerminalReason(terminal.reason);
     if (reason === null) continue;
+    if (isOutOfScopeTerminalReason(terminal.reason)) continue;
+    const terminalTable = tableOf(terminal.table);
+    if (isOutOfScopePhysicalRead(terminalTable)) continue;
     const terminalGap = gapId(
       rootTaskId,
       "TERMINAL",
@@ -641,7 +679,7 @@ export function projectCandidateUniverse(
         taskId: text(terminal.taskId),
         depth: integer(terminal.depth),
         reason,
-        table: tableIdentity(tableOf(terminal.table)),
+        table: tableIdentity(terminalTable),
       } as unknown as JsonValue,
     );
     boundaryGapRefs.push(terminalGap);
@@ -650,7 +688,7 @@ export function projectCandidateUniverse(
         rootTaskId,
         branchKind: "COVERAGE_BOUNDARY",
         consumerTaskId: text(terminal.taskId),
-        table: tableOf(terminal.table),
+        table: terminalTable,
         gapRefs: [terminalGap],
         boundaryReason: reason,
         resolvePhysicalTable: input.resolvePhysicalTable,

@@ -10,7 +10,7 @@ import {
   type TargetTableCausalClosureArtifact,
 } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/artifact-contract.ts";
 import { formatTargetTableCausalSummary, renderTargetTableCausalHtml } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/format-target-table-causal-closure.ts";
-import { buildShrinkReport } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/static-assessment.ts";
+import { buildShrinkReport, classifyPrunedReason, unknownReasonCodesForAssessment } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/static-assessment.ts";
 import type { CandidateBranch } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
 import type { ImpactChannel } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
 
@@ -29,6 +29,8 @@ const STABLE_PRUNED_REASONS = [
   "UNBOUND_READ",
   "BLOCKED_READ",
   "UNSUPPORTED_OPERATOR",
+  "NO_CLOSED_PATH",
+  "LEFT_DIM",
   "UNCLASSIFIED",
 ] as const;
 
@@ -104,7 +106,7 @@ function reasonMap(report: ShrinkReport): ReadonlyMap<string, { readonly count: 
 }
 
 describe("RS-4 pruned reasons and 档三 join-node grain", () => {
-  it("classifies 档四 onto the stable reason set and keeps UNCLASSIFIED samples", () => {
+  it("classifies 档四 onto the stable reason set without leaking parse gaps", () => {
     const listed = branch({ candidateBranchId: "branch:listed", producerTaskId: "listed", table: { ...table, qualifiedName: "db.keep" } });
     const unbound = branch({
       candidateBranchId: "branch:unbound",
@@ -171,16 +173,54 @@ describe("RS-4 pruned reasons and 档三 join-node grain", () => {
     });
     const reasons = reasonMap(report);
     expect(report.prunedCount).toBe(7);
-    expect(report.prunedReasons.map((item) => item.reasonCode).sort()).toEqual([...STABLE_PRUNED_REASONS].sort());
+    expect(report.prunedReasons.map((item) => item.reasonCode).sort()).toEqual([
+      "BLOCKED_READ",
+      "COVERAGE_BOUNDARY",
+      "NO_CLOSED_PATH",
+      "NO_PRODUCER_BRIDGE",
+      "SCHEDULE_ONLY",
+      "UNBOUND_READ",
+      "UNSUPPORTED_OPERATOR",
+    ]);
+    expect([...STABLE_PRUNED_REASONS]).toContain("NO_CLOSED_PATH");
+    expect([...STABLE_PRUNED_REASONS]).toContain("LEFT_DIM");
+    expect([...STABLE_PRUNED_REASONS]).toContain("UNCLASSIFIED");
     expect(reasons.get("UNBOUND_READ")?.count).toBe(1);
     expect(reasons.get("BLOCKED_READ")?.count).toBe(1);
     expect(reasons.get("COVERAGE_BOUNDARY")?.count).toBe(1);
     expect(reasons.get("SCHEDULE_ONLY")?.count).toBe(1);
     expect(reasons.get("NO_PRODUCER_BRIDGE")?.count).toBe(1);
     expect(reasons.get("UNSUPPORTED_OPERATOR")?.count).toBe(1);
-    expect(reasons.get("UNCLASSIFIED")?.count).toBe(1);
-    expect(reasons.get("UNCLASSIFIED")?.samples).toEqual([{ taskId: "144289", table: "dm_rsk_n.d_ref_trs" }]);
-    expect(report.prunedReasons.some((item) => item.reasonCode === "PARSE_PARTIAL" || item.reasonCode === "NO_CLOSED_PATH")).toBe(false);
+    expect(reasons.get("NO_CLOSED_PATH")?.count).toBe(1);
+    expect(reasons.get("NO_CLOSED_PATH")?.samples).toEqual([{ taskId: "144289", table: "dm_rsk_n.d_ref_trs" }]);
+    expect(report.prunedReasons.some((item) => item.reasonCode === "PARSE_PARTIAL")).toBe(false);
+  });
+
+  it("maps TERMINAL and LEFT-dim gaps onto stable unknownReason codes", () => {
+    const terminal = branch({
+      candidateBranchId: "branch:terminal",
+      branchKind: "COVERAGE_BOUNDARY",
+      producerTaskId: null,
+      writeObservationId: null,
+      writeScope: null,
+      table: { ...table, qualifiedName: "pdata_news_n.t02_scr_cd_rplc_info" },
+      gapRefs: ["candidate-gap:181058:TERMINAL:abc"],
+    });
+    const leftDim = branch({
+      candidateBranchId: "branch:left",
+      producerTaskId: "105380",
+      table: { ...table, qualifiedName: "pdata_n.t01_pty_clas_h" },
+    });
+    const leftAssessment = assessment("branch:left", {
+      gapRefs: ["causal-closure-gap:branch:left:NO_CLOSED_PATH"],
+      channels: [
+        { channel: "FIELD_VALUE", status: "NOT_APPLICABLE" },
+        { channel: "MULTIPLICITY", status: "UNKNOWN" },
+      ],
+    });
+    expect(unknownReasonCodesForAssessment(terminal, assessment("branch:terminal"))).toEqual(["COVERAGE_BOUNDARY"]);
+    expect(unknownReasonCodesForAssessment(leftDim, leftAssessment)).toEqual(["LEFT_DIM"]);
+    expect(classifyPrunedReason(leftDim, leftAssessment)).toBe("LEFT_DIM");
   });
 
   it("merges 档一 by (task, table) without collapsing assessments", () => {

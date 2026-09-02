@@ -10,10 +10,14 @@ import {
   buildSparkIndexTaskEvidence,
   mergeSparkIndexEvidence,
 } from "../mainline/collect-one-task-input-pack-sparkindex.ts";
-import { readHiveTaskSqlCache } from "../mainline/hive-task-sql-cache.ts";
+import {
+  leadingCreateTableStatement,
+  readHiveTaskSqlCache,
+} from "../mainline/hive-task-sql-cache.ts";
 import { parseRunScriptSqlCache } from "../mainline/run-script-sql-cache.ts";
 import { readSzdataScheduleDetailCache } from "../mainline/szdata-schedule-detail-cache.ts";
 import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { isNoSqlTaskCategory } from "../../reconcile/shared/lineage-scope.ts";
 import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
 import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
 
@@ -34,17 +38,6 @@ const SQL_SLOTS: readonly SqlSlot[] = [
   "truncate",
   "finish",
 ];
-const NO_SQL_CATEGORIES = new Set([
-  "checkdbflag",
-  "checkHdfsFlag",
-  "alert",
-  "checkAlert",
-  "exeSql",
-  "qualityTask",
-  "hiveEmail",
-  "file2hive",
-  "hive2file",
-]);
 const TO_HIVE_EXCLUDED = new Set(["file2hive", "hdfs2hive", "email2hive"]);
 const HIVE2_PLATFORMS = new Set([
   "oracle",
@@ -319,18 +312,52 @@ function compactSql(
   return result;
 }
 
+function sqlInputsFromSlots(
+  sql: Partial<Record<SqlSlot, SqlSlotEvidence>>,
+): Partial<Record<SqlSlot, string>> {
+  return Object.fromEntries(
+    Object.entries(sql).map(([slot, evidence]) => [slot, evidence.content]),
+  ) as Partial<Record<SqlSlot, string>>;
+}
+
+function sqlExactTarget(
+  sql: Partial<Record<SqlSlot, SqlSlotEvidence>>,
+  taskName: string | undefined,
+) {
+  return findSqlFinalTargetEvidence(sqlInputsFromSlots(sql), taskName, {
+    allowSchemaOnlyQualification: true,
+  });
+}
+
 function targetKind(
   target: JsonValue | null | undefined,
   sql: Partial<Record<SqlSlot, SqlSlotEvidence>>,
   taskName: string | undefined,
 ): TaskEvidence["targetEvidenceKind"] {
   if (target !== undefined && target !== null) return "DIRECT_PLATFORM_TARGET";
-  const inputs = Object.fromEntries(
-    Object.entries(sql).map(([slot, evidence]) => [slot, evidence.content]),
-  ) as Partial<Record<SqlSlot, string>>;
-  return findSqlFinalTargetEvidence(inputs, taskName) === undefined
+  return sqlExactTarget(sql, taskName) === undefined
     ? undefined
     : "SQL_EXACT_TABLE_TARGET";
+}
+
+function fillCreateFromPrepare(evidence: TaskEvidence): TaskEvidence {
+  const create = evidence.sql?.create;
+  const prepare = evidence.sql?.prepare;
+  if (create !== undefined || prepare == null) return evidence;
+  const content = typeof prepare === "string" ? prepare : prepare.content;
+  const evidenceProvider =
+    typeof prepare === "string"
+      ? evidence.evidenceProvider
+      : prepare.evidenceProvider;
+  const leading = leadingCreateTableStatement(content);
+  if (leading === undefined || evidenceProvider === undefined) return evidence;
+  return {
+    ...evidence,
+    sql: {
+      ...evidence.sql,
+      create: { content: leading, evidenceProvider },
+    },
+  };
 }
 
 function assembleSparkIndex(
@@ -355,7 +382,7 @@ function assembleSparkIndex(
     parts.length === 2
       ? mergeSparkIndexEvidence(parts[0]!, parts[1]!)
       : parts[0]!;
-  return remapSparkIndexProviders(merged);
+  return fillCreateFromPrepare(remapSparkIndexProviders(merged));
 }
 
 function assembleHiveTask(
@@ -382,16 +409,28 @@ function assembleHiveTask(
       if (query !== undefined) sql.query = query;
     }
   }
-  const target =
-    toJsonValue(firstString(schedule, ["targetTable", "target"])) ??
-    null;
+  const scheduledTarget = toJsonValue(
+    firstString(schedule, ["targetTable", "target"]),
+  );
+  const hiveDb = cached.status === "HIT" ? cached.hiveDb ?? undefined : undefined;
+  const sqlTarget =
+    sqlExactTarget(sql, identity.taskName ?? undefined) ??
+    (hiveDb !== undefined
+      ? sqlExactTarget(sql, `${hiveDb}._`)
+      : undefined);
+  const target = scheduledTarget ?? sqlTarget?.qualifiedName ?? null;
   return {
     ...identity,
     source: null,
     target,
     writeMode: firstString(schedule, ["insertMode", "loadMode"]),
     sql: compactSql(sql),
-    targetEvidenceKind: targetKind(target, sql, identity.taskName ?? undefined),
+    // SQL_EXACT_TABLE_TARGET is a write-contract token that requires
+    // sql-mcp + szdata.table providers; cache path cannot mint those.
+    targetEvidenceKind:
+      scheduledTarget !== undefined && scheduledTarget !== null
+        ? "DIRECT_PLATFORM_TARGET"
+        : undefined,
   };
 }
 
@@ -564,6 +603,17 @@ export function sqlSlotCount(evidence: Pick<TaskEvidence, "sql">): number {
   return SQL_SLOTS.filter((slot) => evidence.sql?.[slot] !== undefined).length;
 }
 
+function hasSchedulerIdentity(
+  evidence: Pick<TaskEvidence, "taskName" | "topicName">,
+): boolean {
+  const taskName = evidence.taskName?.trim();
+  const topicName = evidence.topicName?.trim();
+  return (
+    (taskName !== undefined && taskName !== "") ||
+    (topicName !== undefined && topicName !== "")
+  );
+}
+
 export function assembleCacheTaskEvidence(
   taskId: string,
   cacheRoot: string,
@@ -630,7 +680,12 @@ export function assembleCacheTaskEvidence(
   else evidence = assembleGeneric(taskId, category, horae, schedule);
 
   const slots = sqlSlotCount(evidence);
-  if (category !== undefined && NO_SQL_CATEGORIES.has(category) && slots === 0)
+  if (
+    category !== undefined &&
+    isNoSqlTaskCategory(category) &&
+    slots === 0 &&
+    !hasSchedulerIdentity(evidence)
+  )
     return {
       kind: "SKIPPED",
       reason: "NO_SQL_SLOT",

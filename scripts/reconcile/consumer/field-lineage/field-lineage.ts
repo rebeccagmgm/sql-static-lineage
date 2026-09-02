@@ -26,6 +26,7 @@ import {
   inferTaskDefaultSchema,
   type TaskDefaultSchema,
 } from "../../shared/task-default-schema.ts";
+import { isCheckdbflagTask } from "../../shared/lineage-scope.ts";
 import {
   FIELD_LINEAGE_ARTIFACT_TYPE,
   FIELD_LINEAGE_SCHEMA_VERSION,
@@ -135,7 +136,6 @@ const CONTROL_TYPES = new Set([
 	"distinct",
 ]);
 
-const SKIPPED_LINEAGE_TASK_CATEGORIES = new Set(["checkdbflag"]);
 
 const FIELD_LINEAGE_BUNDLE_FILES = [
 	"statements.jsonl",
@@ -167,11 +167,10 @@ function nonEmpty(value: unknown): string | null {
 }
 
 function isSkippedLineageTask(document: TaskDocument & JsonRecord): boolean {
-  const category = nonEmpty(document.taskCategory);
-  return (
-    category !== null &&
-    SKIPPED_LINEAGE_TASK_CATEGORIES.has(category.toLowerCase())
-  );
+  return isCheckdbflagTask({
+    taskCategory: document.taskCategory,
+    taskName: document.taskName,
+  });
 }
 
 function taskTarget(

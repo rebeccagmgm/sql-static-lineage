@@ -70,6 +70,8 @@ export interface SimpleTaskPartitionMapInput {
   readonly allowSourceTemporalPartitionDefault?: boolean;
   /** Enable the broader target-expression projection used by sparkIndex. */
   readonly sparkIndexMode?: boolean;
+  /** Proven variable bindings from schedule-evidence cache (e.g. src_table → source qn). */
+  readonly partitionBindingOverrides?: TaskPartitionMap;
 }
 
 function normalize(value: string): string {
@@ -264,6 +266,25 @@ export function buildCompactTaskPartition(
     const singleMap = map as TaskPartitionMap;
     if (target.fields.some((field) => singleMap[field] === undefined))
       return undefined;
+  }
+  if (
+    input.partitionBindingOverrides !== undefined &&
+    map !== undefined &&
+    !Array.isArray(map)
+  ) {
+    const merged: TaskPartitionMap = { ...(map as TaskPartitionMap) };
+    for (const [field, value] of Object.entries(input.partitionBindingOverrides)) {
+      const key =
+        target.fields.find((item) => item.toLowerCase() === field.toLowerCase()) ??
+        field.toLowerCase();
+      const existing = merged[key];
+      if (
+        existing === undefined ||
+        (typeof existing === "string" && /^\$\{/u.test(existing))
+      )
+        merged[key] = value;
+    }
+    return merged;
   }
   return map;
 }
@@ -992,6 +1013,12 @@ function dynamicAssignments(
         ? "DYNAMIC_PARTITION_ALIAS_NOT_USED"
         : undefined,
   };
+}
+
+export function partitionFieldsFromDdl(
+  sql: string | undefined,
+): readonly string[] {
+  return partitionFieldsFromCreateSql(sql);
 }
 
 function partitionFieldsFromCreateSql(sql: string | undefined): string[] {

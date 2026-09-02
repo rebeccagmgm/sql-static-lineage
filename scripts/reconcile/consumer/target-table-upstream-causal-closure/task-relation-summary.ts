@@ -302,7 +302,10 @@ function localTransferKinds(row: JsonRecord, channels: readonly ImpactChannel[])
 function hasUnsupportedShape(row: JsonRecord): boolean {
   const type = relationType(row);
   const relation = relationOf(row);
-  return type === "other" || type === "expand" || Boolean(relation.unsupported) || Boolean(relation.dynamic);
+  // Modeled LATERAL VIEW is type=expand. Field-lineage already binds sibling
+  // JOIN columns from Table Pack / default schema; that node must not fail-close
+  // every other read in the statement.
+  return type === "other" || Boolean(relation.unsupported) || Boolean(relation.dynamic);
 }
 
 /** Normalize relation facts once per task; it never parses raw SQL. */

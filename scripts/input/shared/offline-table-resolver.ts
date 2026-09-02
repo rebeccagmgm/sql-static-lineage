@@ -20,6 +20,7 @@ import {
 import { uniqueTaskSqlCreateStatement } from "./sparkindex-table-evidence.ts";
 import { extractSqlWriteTableNames } from "./sql-target-evidence.ts";
 import { extractSqlReadTableNames } from "./sql-table-references.ts";
+import { partitionFieldsFromDdl } from "./task-partition-evidence.ts";
 
 export const DEFAULT_HIVE_METADATA_JSONL_PATH =
   "E:\\02_area\\股衍数据-数据cookbook\\数综基础信息\\原信息\\hive元信息-20260831快照\\hive_table_restored.jsonl";
@@ -175,7 +176,89 @@ function hiveMetadataKeys(record: JsonRecord): string | undefined {
   return parsed?.qualifiedName.toLowerCase();
 }
 
+function isHivePhysicalDdl(sql: string | undefined): boolean {
+  return (
+    sql !== undefined &&
+    /^\s*CREATE\s+(?:EXTERNAL\s+)?(?:TABLE|VIEW)\b/iu.test(sql)
+  );
+}
+
+function skipBalancedParens(sql: string, start: number): number {
+  if (sql[start] !== "(") return start;
+  let depth = 0;
+  for (let index = start; index < sql.length; index += 1) {
+    const current = sql[index];
+    if (current === "(") depth += 1;
+    else if (current === ")") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return sql.length;
+}
+
+function skipQualifiedName(sql: string, start: number): number {
+  let index = start;
+  while (index < sql.length && /\s/u.test(sql[index]!)) index += 1;
+  while (index < sql.length) {
+    const current = sql[index]!;
+    if (current === "`" || current === '"') {
+      const quote = current;
+      index += 1;
+      while (index < sql.length && sql[index] !== quote) index += 1;
+      if (index < sql.length) index += 1;
+    } else if (/[A-Za-z0-9_$#]/u.test(current)) {
+      while (index < sql.length && /[A-Za-z0-9_$#]/u.test(sql[index]!))
+        index += 1;
+    } else break;
+    while (index < sql.length && /\s/u.test(sql[index]!)) index += 1;
+    if (sql[index] === ".") {
+      index += 1;
+      continue;
+    }
+    break;
+  }
+  return index;
+}
+
+function unquoteSqlString(value: string): string {
+  const quote = value[0];
+  if ((quote === "'" || quote === '"') && value.endsWith(quote))
+    return value.slice(1, -1).replaceAll(`\\${quote}`, quote).replaceAll(
+      `${quote}${quote}`,
+      quote,
+    );
+  return value;
+}
+
+export function tableCommentFromDdl(sql: string | undefined): string | undefined {
+  if (sql === undefined) return undefined;
+  const header = sql.match(
+    /\bCREATE\s+(?:EXTERNAL\s+)?(?:TABLE|VIEW)\s+(?:IF\s+NOT\s+EXISTS\s+)?/iu,
+  );
+  if (header?.index === undefined) return undefined;
+  let index = skipQualifiedName(sql, header.index + header[0].length);
+  while (index < sql.length && /\s/u.test(sql[index]!)) index += 1;
+  if (sql[index] === "(") index = skipBalancedParens(sql, index);
+  const comment = sql
+    .slice(index)
+    .match(/^\s*COMMENT\s+('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")/iu);
+  return comment?.[1] === undefined ? undefined : unquoteSqlString(comment[1]);
+}
+
+function tableDescription(
+  record: JsonRecord | undefined,
+  ddl: string | undefined,
+): string | undefined {
+  return (
+    nonEmptyString(record?.description) ??
+    nonEmptyString(record?.comment) ??
+    nonEmptyString(tableCommentFromDdl(ddl))
+  );
+}
+
 function hiveDdlKeys(record: JsonRecord): readonly string[] | undefined {
+  if (!isHivePhysicalDdl(nonEmptyString(record.querytext))) return undefined;
   const parsed = parsePhysicalTableName(record.qualifiedname);
   if (parsed === undefined) return undefined;
   const qn = parsed.qualifiedName.toLowerCase();
@@ -269,7 +352,12 @@ export function extractOfflineTableCandidates(
     extractSqlReadTableNames(content ?? ""),
   ))
     add(name);
-  for (const name of extractSqlWriteTableNames(sql)) add(name);
+  for (const name of extractSqlWriteTableNames(
+    sql,
+    typeof taskEvidence.taskName === "string" ? taskEvidence.taskName : undefined,
+    { allowSchemaOnlyQualification: true },
+  ))
+    add(name);
   return [...byKey.values()].sort((left, right) =>
     left.qualifiedName.localeCompare(right.qualifiedName),
   );
@@ -408,6 +496,75 @@ function stringArray(value: unknown): readonly string[] | undefined {
   return values.length === 0 ? undefined : values;
 }
 
+function hivePartitionFields(
+  record: JsonRecord | undefined,
+  ddl: string,
+): readonly string[] {
+  const fromMetadata =
+    stringArray(record?.partitionFields) ??
+    stringArray(record?.partition) ??
+    stringArray(record?.partitionkeys);
+  if (fromMetadata !== undefined)
+    return fromMetadata.map((field) => field.toLowerCase());
+  return partitionFieldsFromDdl(ddl);
+}
+
+function isTruthyFlag(value: unknown): boolean {
+  if (value === true) return true;
+  const text = nonEmptyString(value)?.toLowerCase();
+  return text === "true" || text === "1" || text === "y" || text === "yes";
+}
+
+function rdbmsPartitionColumnName(part: string): string | undefined {
+  const trimmed = part.trim();
+  if (trimmed === "" || /^null$/iu.test(trimmed)) return undefined;
+  const quoted = normalizeIdentifierPart(trimmed);
+  if (quoted === undefined || quoted === "" || /^null$/iu.test(quoted))
+    return undefined;
+  if (!/^[A-Za-z_][A-Za-z0-9_$#]*$/u.test(quoted)) return undefined;
+  return quoted;
+}
+
+function rdbmsPartitionFieldsFromDdl(ddl: string): {
+  readonly partitioned: boolean;
+  readonly fields: readonly string[];
+} {
+  const header = ddl.match(
+    /\bPARTITION\s+BY\s+(?:(?:RANGE|LIST|HASH|REFERENCE|SYSTEM)\s*)?\(/iu,
+  );
+  if (header?.index === undefined)
+    return { partitioned: false, fields: [] };
+  const open = header.index + header[0].length - 1;
+  const close = skipBalancedParens(ddl, open);
+  const inner = close > open + 1 ? ddl.slice(open + 1, close - 1) : "";
+  const fields = inner
+    .split(",")
+    .map(rdbmsPartitionColumnName)
+    .filter((field): field is string => field !== undefined);
+  return { partitioned: true, fields };
+}
+
+function rdbmsPartitionFields(
+  record: JsonRecord,
+  ddl: string,
+): readonly string[] | undefined {
+  const fromDdl = rdbmsPartitionFieldsFromDdl(ddl);
+  if (fromDdl.fields.length > 0) return fromDdl.fields;
+  const fromCore =
+    stringArray(record.partitionFields) ??
+    stringArray(record.partition) ??
+    stringArray(record.partitionkeys);
+  if (fromCore !== undefined) return fromCore;
+  if (
+    fromDdl.partitioned ||
+    isTruthyFlag(
+      record.ispartitioned ?? record.isPartitioned ?? record.is_partitioned,
+    )
+  )
+    return undefined;
+  return [];
+}
+
 function hiveFromMetadata(
   record: JsonRecord,
   ddl: string,
@@ -428,7 +585,6 @@ function hiveFromMetadata(
   if (platform === undefined) return undefined;
   const parts = parsed.qualifiedName.split(".");
   return {
-    guid: nonEmptyString(record.guid),
     platform,
     dataSource,
     qualifiedName: parsed.qualifiedName,
@@ -436,8 +592,41 @@ function hiveFromMetadata(
     name: parts[1],
     objectType: nonEmptyString(record.type_name) ?? "hive_table",
     status: nonEmptyString(record.status),
+    description: tableDescription(record, ddl),
+    partitionFields: hivePartitionFields(record, ddl),
     ddl,
     evidenceProvider,
+    collectedAt,
+  };
+}
+
+function candidateLooksRelational(candidate: OfflineTableCandidate): boolean {
+  if (candidate.dataSource === undefined) return false;
+  const platform = platformFromDataSource(candidate.dataSource);
+  return platform !== undefined && platform !== "hive";
+}
+
+function hiveFromTaskCreate(
+  candidate: OfflineTableCandidate,
+  ddl: string,
+  collectedAt: string,
+): TableEvidence | undefined {
+  const dataSource = (candidate.dataSource ?? HIVE_DATA_SOURCE).toLowerCase();
+  const platform = platformFromDataSource(dataSource);
+  if (platform === undefined) return undefined;
+  const parts = candidate.qualifiedName.split(".");
+  const qualifiedName = candidate.qualifiedName.toLowerCase();
+  return {
+    platform,
+    dataSource,
+    qualifiedName,
+    schema: parts[0]?.toLowerCase(),
+    name: parts[1]?.toLowerCase(),
+    objectType: "hive_table",
+    description: tableDescription(undefined, ddl),
+    partitionFields: hivePartitionFields(undefined, ddl),
+    ddl,
+    evidenceProvider: "input-pack:task-sql-create",
     collectedAt,
   };
 }
@@ -454,13 +643,14 @@ function hiveFromDdl(
   if (platform === undefined) return undefined;
   const parts = parsed.qualifiedName.split(".");
   return {
-    guid: nonEmptyString(record.guid),
     platform,
     dataSource,
     qualifiedName: parsed.qualifiedName,
     schema: parts[0],
     name: parts[1],
     objectType: "hive_table",
+    description: tableDescription(undefined, querytext),
+    partitionFields: hivePartitionFields(record, querytext),
     ddl: querytext,
     evidenceProvider: "local:hive-ddl-jsonl",
     collectedAt,
@@ -479,16 +669,15 @@ function rdbmsFromCore(
   if (platform === undefined) return undefined;
   const parts = parsed.qualifiedName.split(".");
   return {
-    guid: nonEmptyString(record.guid),
     platform,
     dataSource: parsed.dataSource,
     qualifiedName: parsed.qualifiedName,
     schema: parts.length > 1 ? parts.slice(0, -1).join(".") : undefined,
     name: parts.at(-1),
-    description: nonEmptyString(record.comment),
+    description: tableDescription(record, ddl),
     objectType: nonEmptyString(record.type_name) ?? "gf_rdbms_table",
     status: undefined,
-    primaryKey: stringArray(record.primarykeys),
+    partitionFields: rdbmsPartitionFields(record, ddl),
     ddl,
     evidenceProvider,
     collectedAt,
@@ -545,20 +734,21 @@ function resolveOne(
     return { reason: "HIVE_METADATA_AMBIGUOUS_ACTIVE" };
   if (hiveDdl.status === "HIT") {
     const querytext = nonEmptyString(hiveDdl.record.querytext);
-    if (querytext === undefined) return { reason: "HIVE_DDL_QUERYTEXT_MISSING" };
-    if (hiveIdentity.status === "HIT") {
-      const evidence = hiveFromMetadata(
-        hiveIdentity.record,
-        querytext,
-        "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
-        collectedAt,
-      );
+    if (querytext !== undefined && isHivePhysicalDdl(querytext)) {
+      if (hiveIdentity.status === "HIT") {
+        const evidence = hiveFromMetadata(
+          hiveIdentity.record,
+          querytext,
+          "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+          collectedAt,
+        );
+        if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
+        return { evidence };
+      }
+      const evidence = hiveFromDdl(hiveDdl.record, collectedAt);
       if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
       return { evidence };
     }
-    const evidence = hiveFromDdl(hiveDdl.record, collectedAt);
-    if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
-    return { evidence };
   }
   if (hiveIdentity.status === "HIT") {
     const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
@@ -574,6 +764,16 @@ function resolveOne(
       return { evidence };
     }
     return { reason: "HIVE_DDL_MISS" };
+  }
+
+  if (!candidateLooksRelational(candidate)) {
+    const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
+    if (created.conflict) return { reason: "SQL_CREATE_CONFLICT" };
+    if (created.ddl !== undefined) {
+      const evidence = hiveFromTaskCreate(candidate, created.ddl, collectedAt);
+      if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
+      return { evidence };
+    }
   }
 
   if (catalog.rdbmsCore !== undefined) {
