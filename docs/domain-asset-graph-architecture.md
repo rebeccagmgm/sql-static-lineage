@@ -238,13 +238,11 @@ Neo4j 索引全部保持不变；两种 mode 不混入同一份快照。节点�
 
 同一次变更问三个不同问题，走三条不同通道，不互相冒充：
 
-
-| 变更含义   | 通道                          | 用途           |
-| ------ | --------------------------- | ------------ |
-| 改值     | `FIELD_DIRECT`              | 字段下钻、指标取值来源  |
-| 改口径分支  | `FIELD_CONDITIONAL`         | CASE/IF 条件字段 |
-| 改样本或粒度 | `DATASET_CONTROL` + `grain` | 重跑范围、行集风险    |
-
+| 变更含义     | 通道                        | 用途                   |
+| ------------ | --------------------------- | ---------------------- |
+| 改值         | `FIELD_DIRECT`              | 字段下钻、指标取值来源 |
+| 改口径分支   | `FIELD_CONDITIONAL`         | CASE/IF 条件字段       |
+| 改样本或粒度 | `DATASET_CONTROL` + `grain` | 重跑范围、行集风险     |
 
 硬约束：`DATASET_CONTROL` **不得**投影到输出字段节点，也不得产生 `affectedRootFields`
 一类字段级断言。当前 `scripts/reconcile/consumer/field-lineage/field-lineage.ts` 中
@@ -252,7 +250,7 @@ Neo4j 索引全部保持不变；两种 mode 不混入同一份快照。节点�
 JOIN/FILTER 改为独立的数据集通道。
 
 `grain` 第一版只做可证明的粗档：`GROUP BY`/`DISTINCT` 记 `REDUCE`；能证明多对一或
-一对一的 JOIN 记 `PRESERVE`；一对多风险或证据不足记 `EXPAND_RISK`/`UNKNOWN`。
+一对一的 JOIN 记 `PRESERVE`；证不出基数的 JOIN 记 `EXPAND_RISK`。`WINDOW` 等非 JOIN 算子证据不足才记 `UNKNOWN`。
 不做唯一键证明，不做行数估算。
 
 ### 第二正交轴：关联范围（WP-1 之后的细化，不并入 WP-1）
@@ -305,12 +303,12 @@ needed(hop) = 值列
 
 结果按档输出并标注理由，不输出单棵树（一棵树无法同时表达值必达与行决定）：
 
-| 档 | 判据 | 用途 |
-| --- | --- | --- |
-| 值必达 | `FIELD_VALUE` / `FIELD_DIRECT` + `CONFIRMED` | 排查起点 |
-| 行决定 | `ROW_MEMBERSHIP` 闭包（含拉链匹配键与变更检测列） | 值未变但行集变时看这里 |
-| 倍增风险 | `MULTIPLICITY` 且 `grain ≠ PRESERVE` | 行数异常时看这里 |
-| 已剪除 | 作用域可证明不相交；当前禁止由"没找到路径"产生 | 不展示，仅计数 |
+| 档       | 判据                                              | 用途                   |
+| -------- | ------------------------------------------------- | ---------------------- |
+| 值必达   | `FIELD_VALUE` / `FIELD_DIRECT` + `CONFIRMED`      | 排查起点               |
+| 行决定   | `ROW_MEMBERSHIP` 闭包（含拉链匹配键与变更检测列） | 值未变但行集变时看这里 |
+| 倍增风险 | `MULTIPLICITY` 且 `grain ≠ PRESERVE`              | 行数异常时看这里       |
+| 已剪除   | 作用域可证明不相交；当前禁止由"没找到路径"产生    | 不展示，仅计数         |
 
 查询期反向闭包已经存在于
 `scripts/reconcile/consumer/target-table-upstream-causal-closure/`，
@@ -330,20 +328,18 @@ needed(hop) = 值列
 本设计不做，且不为其预留隐式接口：
 
 - 指标口径与指标目录绑定。口径不能由 SQL 推导，须由数综/指标目录/人工确认独立供给，
-以绑定形式挂到 `PHYSICAL_FIELD`；归并发生在物理节点，不是合并口径文本。
+  以绑定形式挂到 `PHYSICAL_FIELD`；归并发生在物理节点，不是合并口径文本。
 - 业务粒度词典（一行 = 交易 / 账户 / 日终快照）。
 - 更换解析引擎。SQLLens 已在 2,694 个真实任务上覆盖现有方言与证据语义；
-ScopeLineage（sqlglot / Python）、SQLLineage、Calcite 占的是同一格，替换只会回归。
-可借鉴 ScopeLineage 的 `logic_blocks[]` 类型化与 grain 标注设计，不引入其实现。
+  ScopeLineage（sqlglot / Python）、SQLLineage、Calcite 占的是同一格，替换只会回归。
+  可借鉴 ScopeLineage 的 `logic_blocks[]` 类型化与 grain 标注设计，不引入其实现。
 - 以 OpenLineage 作为内部模型。其 columnLineage facet 无法表达 `grain`、证据等级、
-typed gaps 与 `write_observation_id`，落成内部契约会丢证据。只借用
-`DIRECT`/`INDIRECT` 分层词典。OpenLineage 1.0+ 的 `JobEvent` 确实支持静态血缘
-（无需 run），但只作为将来对接外部目录时的**有损出口视图**，不反向充当事实来源，
-本期不实现。
+  typed gaps 与 `write_observation_id`，落成内部契约会丢证据。只借用
+  `DIRECT`/`INDIRECT` 分层词典。OpenLineage 1.0+ 的 `JobEvent` 确实支持静态血缘
+  （无需 run），但只作为将来对接外部目录时的**有损出口视图**，不反向充当事实来源，
+  本期不实现。
 - 运行时是否跑成功、数据是否正确、业务是否验收。
 - 把数据集级 JOIN/FILTER 精确分摊到具体输出字段。
-
-
 
 ## 验收
 
@@ -356,7 +352,7 @@ typed gaps 与 `write_observation_id`，落成内部契约会丢证据。只借�
 2. 二次运行在 Input Pack 未变时全部命中内容哈希缓存，产出字节一致。
 3. 快照通过 `TASK_LOCAL_UNION` 校验；已发布 root 快照的校验与查询结果不变。
 4. 单任务投影耗时与批次总耗时留档，作为扩批到 `DM_OTC_N`（732 缓存 / 412 已有包）
-  与 `ODATA_N_TIT`（1,061 / 546）的成本依据。
+   与 `ODATA_N_TIT`（1,061 / 546）的成本依据。
 5. 追加一批任务后，既有节点与边身份不变，覆盖状态单调改善。
 6. 去重生效可度量：`DATASET_CONTROL` 条数等于不同 `relation × 控制表` 组合数，
    不随受影响字段数增长；209119 的控制注解由 11,783 条降至 219 量级，
@@ -367,7 +363,6 @@ typed gaps 与 `write_observation_id`，落成内部契约会丢证据。只借�
 1. `internal_trade_id` 的 `FIELD_DIRECT` 上游不含那四张 LEFT JOIN 表。
 2. 四张表以 `DATASET_CONTROL / JOIN` 出现在 Task 105387 的目标写入上，带 `grain` 判定。
 3. 跨任务字段值流精度不回退：`112715 → 114026 → 155015` 与
-  `71698 → 105387 → 155015` 仍完整，且跨域连通不被批次划分切断。
+   `71698 → 105387 → 155015` 仍完整，且跨域连通不被批次划分切断。
 4. 字段值流与数据集控制在产物与页面上分列统计，不合并成单一"影响表数"。
 5. `processingKind` 与 `taskCategory` 的分歧项显式输出，数量留档。
-

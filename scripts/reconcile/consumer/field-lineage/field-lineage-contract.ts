@@ -4,7 +4,7 @@ import {
 	type InputDependencyStatus,
 } from "../../../machine-facts/machine-facts-contract.ts";
 
-export const FIELD_LINEAGE_SCHEMA_VERSION = "1.1.0" as const;
+export const FIELD_LINEAGE_SCHEMA_VERSION = "1.2.0" as const;
 export const FIELD_LINEAGE_ARTIFACT_TYPE = "FIELD_MULTI_HOP_RECONCILIATION" as const;
 
 export type FieldEvidenceStatus =
@@ -67,13 +67,42 @@ export interface FieldLineageEdge {
 	readonly evidenceRefs: readonly string[];
 }
 
-export interface RowsetControlAnnotation {
+export type OpenLineageDirectSubtype = "IDENTITY" | "TRANSFORMATION" | "AGGREGATION";
+export type OpenLineageIndirectSubtype = "JOIN" | "GROUP_BY" | "FILTER" | "SORT" | "WINDOW" | "CONDITIONAL";
+export type DatasetControlGrain = "REDUCE" | "PRESERVE" | "EXPAND_RISK" | "UNKNOWN";
+export type DatasetControlGrainReason =
+	| "GRAIN_JOIN_CARDINALITY_UNPROVEN"
+	| "GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND"
+	| "GRAIN_GROUPING_REDUCES_ROWS"
+	| "GRAIN_SETOP_REDUCES_ROWS"
+	| "GRAIN_FILTER_MAY_DROP_ROWS"
+	| "GRAIN_WINDOW_CARDINALITY_UNPROVEN";
+
+export interface DatasetControlAnnotation {
 	readonly controlId: string;
+	readonly taskId: string;
+	readonly statementId: string;
+	readonly relationId: string | null;
+	readonly subtype: OpenLineageIndirectSubtype;
+	readonly masking: boolean;
+	readonly grain: DatasetControlGrain;
+	/** Why `grain` is not PRESERVE. Required unless grain === "PRESERVE". Independent of evidence `reasonCode`. */
+	readonly grainReason: DatasetControlGrainReason | null;
+	readonly field: PhysicalFieldIdentity | null;
+	readonly sourceText: string | null;
+	readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
+	readonly reasonCode: string | null;
+	readonly evidenceRefs: readonly string[];
+}
+
+export interface FieldConditionalAnnotation {
+	readonly conditionalId: string;
 	readonly taskId: string;
 	readonly nodeId: string;
 	readonly statementId: string;
 	readonly relationId: string | null;
-	readonly controlType: "filter" | "join" | "aggregate" | "setop" | "window" | "distinct";
+	readonly subtype: "CONDITIONAL";
+	readonly masking: boolean;
 	readonly fields: readonly PhysicalFieldIdentity[];
 	readonly sourceText: string | null;
 	readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
@@ -124,7 +153,8 @@ export interface FieldLineageArtifact {
 	readonly rootNodeIds: readonly string[];
 	readonly nodes: readonly FieldLineageNode[];
 	readonly edges: readonly FieldLineageEdge[];
-	readonly rowsetControls: readonly RowsetControlAnnotation[];
+	readonly datasetControls: readonly DatasetControlAnnotation[];
+	readonly fieldConditionals: readonly FieldConditionalAnnotation[];
 	readonly candidates: readonly FieldProducerCandidate[];
 	readonly gaps: readonly FieldLineageGap[];
 	readonly tableEdges: readonly FieldLineageTableEdge[];
@@ -132,7 +162,8 @@ export interface FieldLineageArtifact {
 	readonly counts: {
 		readonly nodes: number;
 		readonly edges: number;
-		readonly rowsetControls: number;
+		readonly datasetControls: number;
+		readonly fieldConditionals: number;
 		readonly candidates: number;
 		readonly gaps: number;
 	};
@@ -170,7 +201,11 @@ export function canonicalizeFieldLineageArtifact(input: ArtifactInput): FieldLin
 		...item,
 		evidenceRefs: [...new Set(item.evidenceRefs)].sort(compareText),
 	}));
-	const rowsetControls = sortedUnique(input.rowsetControls, (item) => item.controlId).map((item) => ({
+	const datasetControls = sortedUnique(input.datasetControls, (item) => item.controlId).map((item) => ({
+		...item,
+		evidenceRefs: [...new Set(item.evidenceRefs)].sort(compareText),
+	}));
+	const fieldConditionals = sortedUnique(input.fieldConditionals, (item) => item.conditionalId).map((item) => ({
 		...item,
 		fields: sortedUnique(item.fields, physicalFieldKey),
 		evidenceRefs: [...new Set(item.evidenceRefs)].sort(compareText),
@@ -194,7 +229,8 @@ export function canonicalizeFieldLineageArtifact(input: ArtifactInput): FieldLin
 		rootNodeIds,
 		nodes,
 		edges,
-		rowsetControls,
+		datasetControls,
+		fieldConditionals,
 		candidates,
 		gaps,
 		tableEdges,
@@ -202,7 +238,8 @@ export function canonicalizeFieldLineageArtifact(input: ArtifactInput): FieldLin
 		counts: {
 			nodes: nodes.length,
 			edges: edges.length,
-			rowsetControls: rowsetControls.length,
+			datasetControls: datasetControls.length,
+			fieldConditionals: fieldConditionals.length,
 			candidates: candidates.length,
 			gaps: gaps.length,
 		},
@@ -234,9 +271,41 @@ function nonEmpty(value: unknown): value is string {
 	return typeof value === "string" && value.trim() !== "";
 }
 
+const INDIRECT_SUBTYPES = new Set<OpenLineageIndirectSubtype>([
+	"JOIN",
+	"GROUP_BY",
+	"FILTER",
+	"SORT",
+	"WINDOW",
+	"CONDITIONAL",
+]);
+const GRAINS = new Set<DatasetControlGrain>(["REDUCE", "PRESERVE", "EXPAND_RISK", "UNKNOWN"]);
+const GRAIN_REASONS = new Set<DatasetControlGrainReason>([
+	"GRAIN_JOIN_CARDINALITY_UNPROVEN",
+	"GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND",
+	"GRAIN_GROUPING_REDUCES_ROWS",
+	"GRAIN_SETOP_REDUCES_ROWS",
+	"GRAIN_FILTER_MAY_DROP_ROWS",
+	"GRAIN_WINDOW_CARDINALITY_UNPROVEN",
+]);
+
+function recordHas(value: object, key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(value, key);
+}
+
 export function validateFieldLineageArtifact(value: unknown): string[] {
 	const errors: string[] = [];
 	if (typeof value !== "object" || value === null || Array.isArray(value)) return ["artifact must be an object"];
+	const raw = value as Record<string, unknown>;
+	if (recordHas(raw, "rowsetControls")) errors.push("rowsetControls is not allowed");
+	if (recordHas(raw, "affectedRootFields")) errors.push("affectedRootFields is not allowed");
+	if (Array.isArray(raw.datasetControls)) {
+		for (const control of raw.datasetControls) {
+			if (typeof control !== "object" || control === null) continue;
+			if (recordHas(control, "nodeId")) errors.push("datasetControls must not include nodeId");
+			if (recordHas(control, "affectedRootFields")) errors.push("affectedRootFields is not allowed");
+		}
+	}
 	const artifact = value as FieldLineageArtifact;
 	if (artifact.schemaVersion !== FIELD_LINEAGE_SCHEMA_VERSION) errors.push("schemaVersion is unsupported");
 	if (artifact.artifactType !== FIELD_LINEAGE_ARTIFACT_TYPE) errors.push("artifactType is invalid");
@@ -276,10 +345,31 @@ export function validateFieldLineageArtifact(value: unknown): string[] {
 	}
 	for (const rootId of artifact.rootNodeIds ?? []) if (!nodeSet.has(rootId)) errors.push(`root node ${rootId} is missing`);
 	if (!ordered(artifact.rootNodeIds ?? [])) errors.push("rootNodeIds must be sorted");
+	const controlIds = artifact.datasetControls?.map((control) => control.controlId) ?? [];
+	if (new Set(controlIds).size !== controlIds.length) errors.push("controlId values must be unique");
+	if (!ordered(controlIds)) errors.push("datasetControls must be sorted by controlId");
+	for (const control of artifact.datasetControls ?? []) {
+		if (!INDIRECT_SUBTYPES.has(control.subtype)) errors.push(`dataset control ${control.controlId} has an invalid subtype`);
+		if (!GRAINS.has(control.grain)) errors.push(`dataset control ${control.controlId} has an invalid grain`);
+		if (control.grain !== "PRESERVE") {
+			if (!nonEmpty(control.grainReason))
+				errors.push(`dataset control ${control.controlId} is missing grainReason`);
+			else if (!GRAIN_REASONS.has(control.grainReason))
+				errors.push(`dataset control ${control.controlId} has an invalid grainReason`);
+		} else if (control.grainReason !== null && !GRAIN_REASONS.has(control.grainReason))
+			errors.push(`dataset control ${control.controlId} has an invalid grainReason`);
+		if (typeof control.masking !== "boolean") errors.push(`dataset control ${control.controlId} masking must be boolean`);
+	}
+	const conditionalIds = artifact.fieldConditionals?.map((item) => item.conditionalId) ?? [];
+	if (new Set(conditionalIds).size !== conditionalIds.length) errors.push("conditionalId values must be unique");
+	if (!ordered(conditionalIds)) errors.push("fieldConditionals must be sorted by conditionalId");
 	if (artifact.counts) {
 		if (artifact.counts.nodes !== (artifact.nodes?.length ?? 0)) errors.push("counts.nodes does not match");
 		if (artifact.counts.edges !== (artifact.edges?.length ?? 0)) errors.push("counts.edges does not match");
-		if (artifact.counts.rowsetControls !== (artifact.rowsetControls?.length ?? 0)) errors.push("counts.rowsetControls does not match");
+		if (artifact.counts.datasetControls !== (artifact.datasetControls?.length ?? 0))
+			errors.push("counts.datasetControls does not match");
+		if (artifact.counts.fieldConditionals !== (artifact.fieldConditionals?.length ?? 0))
+			errors.push("counts.fieldConditionals does not match");
 		if (artifact.counts.candidates !== (artifact.candidates?.length ?? 0)) errors.push("counts.candidates does not match");
 		if (artifact.counts.gaps !== (artifact.gaps?.length ?? 0)) errors.push("counts.gaps does not match");
 	} else errors.push("counts are required");
@@ -289,7 +379,8 @@ export function validateFieldLineageArtifact(value: unknown): string[] {
 		if (
 			(artifact.nodes ?? []).some((node) => node.evidenceStatus !== "CONFIRMED") ||
 			(artifact.edges ?? []).some((edge) => edge.evidenceStatus !== "CONFIRMED") ||
-			(artifact.rowsetControls ?? []).some((control) => control.evidenceStatus !== "CONFIRMED")
+			(artifact.datasetControls ?? []).some((control) => control.evidenceStatus !== "CONFIRMED") ||
+			(artifact.fieldConditionals ?? []).some((item) => item.evidenceStatus !== "CONFIRMED")
 		)
 			errors.push("COMPLETE cannot contain legacy or unresolved evidence");
 	}

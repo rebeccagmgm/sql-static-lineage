@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -26,6 +26,17 @@ type JsonRecord = Record<string, unknown>;
 
 function readJson<T>(name: string): T {
   return JSON.parse(readFileSync(join(GOLDEN_ROOT, name), "utf8")) as T;
+}
+
+const UPDATE_GOLDEN = process.env.UPDATE_FIELD_LINEAGE_GOLDEN === "1";
+
+function writeGolden(name: string, value: unknown): void {
+  writeFileSync(join(GOLDEN_ROOT, name), `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function expectGolden(name: string, actual: unknown): void {
+  if (UPDATE_GOLDEN) writeGolden(name, actual);
+  expect(actual).toEqual(readJson(name));
 }
 
 function roots(name: string): {
@@ -99,8 +110,9 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
       maxPaths: 100,
     });
 
-    expect(stableArtifactProjection(artifact, fixture.tempRoot)).toEqual(
-      readJson("value-flow.json"),
+    expectGolden(
+      "value-flow.json",
+      stableArtifactProjection(artifact, fixture.tempRoot),
     );
   });
 
@@ -125,12 +137,11 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
       maxPaths: 100,
     });
 
-    expect(
-      stableProjection(artifact.rowsetControls, {
+    expectGolden(
+      "rowset-control.json",
+      stableProjection(artifact.datasetControls, {
         tempRoots: [fixture.tempRoot],
       }),
-    ).toEqual(
-      readJson("rowset-control.json"),
     );
   });
 
@@ -165,20 +176,17 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
     });
     const identityProjection = {
       rootNodeFields: artifact.nodes.map((node) => node.field),
-      rowsetControlFields: artifact.rowsetControls.map((control) => control.fields),
-      rowsetControlReasonCodes: artifact.rowsetControls.map(
+      datasetControlFields: artifact.datasetControls.map((control) => control.field),
+      datasetControlReasonCodes: artifact.datasetControls.map(
         (control) => control.reasonCode,
       ),
     };
 
-    expect(
+    expectGolden(
+      "default-hive-schema.json",
       stableProjection(artifact, { tempRoots: [fixture.tempRoot] }),
-    ).toEqual(
-      readJson("default-hive-schema.json"),
     );
-    expect(identityProjection).toEqual(
-      readJson("default-hive-identities.json"),
-    );
+    expectGolden("default-hive-identities.json", identityProjection);
   });
 
   it("deep-compares self-join paths with hard-coded occurrence identities", () => {
@@ -196,9 +204,9 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
       };
       readonly artifact: unknown;
     }>("self-join-occurrence.json");
-    expect(selfJoinOccurrenceIdentities(fixture.factsRoot)).toEqual(
-      golden.occurrences,
-    );
+    const occurrences = selfJoinOccurrenceIdentities(fixture.factsRoot);
+    if (!UPDATE_GOLDEN)
+      expect(occurrences).toEqual(golden.occurrences);
     const artifact = reconcileFieldLineage({
       dataRoot: fixture.dataRoot,
       factsRoot: fixture.factsRoot,
@@ -232,7 +240,7 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
               dataSource: "warehouse",
               qualifiedName: "demo.same",
             },
-            readOccurrence: golden.occurrences.left,
+            readOccurrence: UPDATE_GOLDEN ? occurrences.left : golden.occurrences.left,
           },
           {
             consumerTaskId: "120",
@@ -243,7 +251,7 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
               dataSource: "warehouse",
               qualifiedName: "demo.same",
             },
-            readOccurrence: golden.occurrences.right,
+            readOccurrence: UPDATE_GOLDEN ? occurrences.right : golden.occurrences.right,
           },
         ],
       },
@@ -256,9 +264,10 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
       maxPaths: 100,
     });
 
-    expect(
-      stableProjection(artifact, { tempRoots: [fixture.tempRoot] }),
-    ).toEqual(golden.artifact);
+    expectGolden("self-join-occurrence.json", {
+      occurrences,
+      artifact: stableProjection(artifact, { tempRoots: [fixture.tempRoot] }),
+    });
   });
 
   it("reads the legacy artifact and renders the current evidence separation", () => {
@@ -267,9 +276,10 @@ describe("legacy field-lineage 1.1 golden compatibility", () => {
     const outputPath = join(fixture.dataRoot, "legacy-field-lineage.html");
     visualizeFieldLineage({ artifactPath, outputPath });
 
-    expect(
+    expectGolden(
+      "legacy-artifact.json",
       stableProjection(JSON.parse(readFileSync(artifactPath, "utf8"))),
-    ).toEqual(readJson("legacy-artifact.json"));
+    );
     const html = readFileSync(outputPath, "utf8");
     expect(html).toContain("字段血缘 · legacy-root");
     expect(html).toContain('"artifactType":"FIELD_MULTI_HOP_RECONCILIATION"');

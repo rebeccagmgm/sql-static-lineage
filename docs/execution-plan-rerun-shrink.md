@@ -9,13 +9,13 @@
 
 **对照产物（都在 `sql-static-lineage-artifacts/target-table-causal-closure/`，不要混用）：**
 
-| 文件 | 生成时间 | 用来干什么 |
-| --- | --- | --- |
-| `176827-baseline.json` | 13:07 | **播种前**冻结点：档二空、RM CONFIRMED=0、UNKNOWN 32、OCCURRENCE 1499 |
-| `176827.json`（中间态，已被覆盖） | 13:51 | 播种后过宽：档二 16 条，拉链三张已在，LEFT 维表误入 |
-| `176827.json`（中间态，已被覆盖） | 14:17 | LEFT 已出档二；档二仍有 5 条 generic CASE 子查询 |
-| `176827.json` | 14:22 | **现状**：档一 27；档二仅拉链三张；LEFT / 103943 子查询在档三 |
-| `155015.json` | 14:22 | **规则正例 / 回归**：档二恰好四张 ref，经 `Agt_Modifr1` |
+| 文件                              | 生成时间 | 用来干什么                                                            |
+| --------------------------------- | -------- | --------------------------------------------------------------------- |
+| `176827-baseline.json`            | 13:07    | **播种前**冻结点：档二空、RM CONFIRMED=0、UNKNOWN 32、OCCURRENCE 1499 |
+| `176827.json`（中间态，已被覆盖） | 13:51    | 播种后过宽：档二 16 条，拉链三张已在，LEFT 维表误入                   |
+| `176827.json`（中间态，已被覆盖） | 14:17    | LEFT 已出档二；档二仍有 5 条 generic CASE 子查询                      |
+| `176827.json`                     | 14:22    | **现状**：档一 27；档二仅拉链三张；LEFT / 103943 子查询在档三         |
+| `155015.json`                     | 14:22    | **规则正例 / 回归**：档二恰好四张 ref，经 `Agt_Modifr1`               |
 
 基线证据文件必须跟这几份对齐。RS-0 的「与基线一致」指档一 27 个 taskId 对 `176827-baseline.json`；
 155015 档二四张 ref 是回归，**不得把旧的空档二当金样**。`176827-baseline.json` 未改。
@@ -89,11 +89,11 @@ generic CASE 子查询在档三。generic CASE 不再给子孙 read 打 `EXPRESS
 
 ### 档二该留什么、不该留什么
 
-| 依赖 | 通道 | 档 |
-| --- | --- | --- |
-| 105387 拉链四张 ref（176827 上是 163064 / 179886 / 78473） | `ROW_MEMBERSHIP` 经 `Agt_Modifr` | 档二 |
-| `t03_agt_rela_h` / `Book_Agt_Id` | LEFT 可空侧键，最多 `MULTIPLICITY` | 档三或仍 UNKNOWN，**不要写进档二完成标准** |
-| 119044 未使用维表（`t01_pty_*` / `t03_agt_clas_h` 等） | 同 LEFT 可空侧 | 不得进档一/档二 |
+| 依赖                                                       | 通道                               | 档                                         |
+| ---------------------------------------------------------- | ---------------------------------- | ------------------------------------------ |
+| 105387 拉链四张 ref（176827 上是 163064 / 179886 / 78473） | `ROW_MEMBERSHIP` 经 `Agt_Modifr`   | 档二                                       |
+| `t03_agt_rela_h` / `Book_Agt_Id`                           | LEFT 可空侧键，最多 `MULTIPLICITY` | 档三或仍 UNKNOWN，**不要写进档二完成标准** |
+| 119044 未使用维表（`t01_pty_*` / `t03_agt_clas_h` 等）     | 同 LEFT 可空侧                     | 不得进档一/档二                            |
 
 `Book_Agt_Id` 是 176827 去 LEFT JOIN 持仓/119044 的键。LEFT 可空侧按现行规则
 **不是** `ROW_MEMBERSHIP`。改这个键会改维表配上哪一行（值 / 倍增），不会删
@@ -188,11 +188,11 @@ FULL OUTER JOIN TEMP.T03_AGT_STATI_INFO_H_TEMP_TIT165 B
 
 探针读 `field-facts/registry/tasks/<id>/bundle/`：
 
-| 任务 | join 节点 | join_type | 有 left+right | `condition_columns` |
-| --- | --- | --- | --- | --- |
-| 176827 | 16 | LEFT×10 / INNER×6 | 16/16 | 82/82 `PHYSICAL` |
-| 119044 | 15 | LEFT×15 | 15/15 | 96/96 `PHYSICAL` |
-| 105387 | 5 | LEFT×4 / FULL×1 | 5/5 | 24/24 `PHYSICAL` |
+| 任务   | join 节点 | join_type         | 有 left+right | `condition_columns` |
+| ------ | --------- | ----------------- | ------------- | ------------------- |
+| 176827 | 16        | LEFT×10 / INNER×6 | 16/16         | 82/82 `PHYSICAL`    |
+| 119044 | 15        | LEFT×15           | 15/15         | 96/96 `PHYSICAL`    |
+| 105387 | 5         | LEFT×4 / FULL×1   | 5/5           | 24/24 `PHYSICAL`    |
 
 `field-expression-nodes.jsonl`：176827 有 1312 个节点带 `input_fields` 且
 `input_dependency_status = PHYSICAL`，`unresolved_input_columns` 全为 0。
@@ -452,17 +452,17 @@ RS-2 要修的是 summary 文本仍按 branch 展开、以及 `taskRollup` 是�
 
 ## 8. 领取
 
-| 包 | 领取条件 |
-| --- | --- |
-| RS-0 | 立即。先改证据文件承认 155015 档二已有四张 ref |
-| RS-0.5 | RS-0 合入。可与 RS-1a 评审并行。**不算主线交付** |
-| RS-1a | **评审已有诊断**，不要再做一遍两套 matcher |
-| RS-1b | RS-1a 采信之后可选。范围=诊断三条。不开不算主线失败 |
-| RS-2 | RS-0 合入，可与 RS-1b 并行（只改 summary/rollup，不改传播、不改 assessments） |
-| RS-3 | **已收口（7b.6）**。LEFT 维表不得进档二；不要当未做包再领 |
-| RS-4 | RS-3 合入 |
-| RS-5 | **已勾（7b.8，14:22）**。档二仅拉链三张；LEFT / generic CASE 子查询在档三 |
-| RS-6 | RS-1b 之后（或决定不开 RS-1b 时单独评审）按剩余 UNKNOWN 分布决定 |
+| 包     | 领取条件                                                                      |
+| ------ | ----------------------------------------------------------------------------- |
+| RS-0   | 立即。先改证据文件承认 155015 档二已有四张 ref                                |
+| RS-0.5 | RS-0 合入。可与 RS-1a 评审并行。**不算主线交付**                              |
+| RS-1a  | **评审已有诊断**，不要再做一遍两套 matcher                                    |
+| RS-1b  | RS-1a 采信之后可选。范围=诊断三条。不开不算主线失败                           |
+| RS-2   | RS-0 合入，可与 RS-1b 并行（只改 summary/rollup，不改传播、不改 assessments） |
+| RS-3   | **已收口（7b.6）**。LEFT 维表不得进档二；不要当未做包再领                     |
+| RS-4   | RS-3 合入                                                                     |
+| RS-5   | **已勾（7b.8，14:22）**。档二仅拉链三张；LEFT / generic CASE 子查询在档三     |
+| RS-6   | RS-1b 之后（或决定不开 RS-1b 时单独评审）按剩余 UNKNOWN 分布决定              |
 
 每个包合入前：`npm run test:target-table-causal-closure`、`npm run typecheck`，
 并跑 RS-0 的对比脚本确认档一不丢、预算未触达。

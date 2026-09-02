@@ -99,10 +99,22 @@ export function formatFieldLineageSummary(artifact: FieldLineageArtifact): strin
 	if (mappings.length === 0) lines.push("- 无可证明字段映射");
 	for (const item of mappings)
 		lines.push(`- ${item.from.taskId}:${fieldLabel(item.from)} -> ${item.to.taskId}:${fieldLabel(item.to)} [${item.edge.evidenceStatus}]`);
-	lines.push("", "ROWSET_CONTROL");
-	if (artifact.rowsetControls.length === 0) lines.push("- 无可证明行集控制注解");
-	for (const control of artifact.rowsetControls)
-		lines.push(`- ${control.taskId}:${control.controlType} ${control.fields.map((field) => `${field.qualifiedName}.${field.column}`).join(", ") || "字段作用域未解析"} [${control.evidenceStatus}${control.reasonCode ? `/${control.reasonCode}` : ""}]`);
+	lines.push("", "DATASET_CONTROL");
+	if (artifact.datasetControls.length === 0) lines.push("- 无可证明数据集控制");
+	for (const control of artifact.datasetControls) {
+		const fieldLabelText = control.field
+			? `${control.field.qualifiedName}.${control.field.column}`
+			: "控制字段未解析";
+		lines.push(
+			`- ${control.taskId}:${control.subtype} ${fieldLabelText} grain=${control.grain}${control.grainReason ? `/${control.grainReason}` : ""} [${control.evidenceStatus}${control.reasonCode ? `/${control.reasonCode}` : ""}]`,
+		);
+	}
+	lines.push("", "FIELD_CONDITIONAL");
+	if (artifact.fieldConditionals.length === 0) lines.push("- 无口径分支");
+	for (const item of artifact.fieldConditionals)
+		lines.push(
+			`- ${item.taskId}:${item.subtype} ${item.fields.map((field) => `${field.qualifiedName}.${field.column}`).join(", ") || "字段作用域未解析"} [${item.evidenceStatus}${item.reasonCode ? `/${item.reasonCode}` : ""}]`,
+		);
 	lines.push("", "候选与缺口");
 	if (artifact.candidates.length === 0 && artifact.gaps.length === 0) lines.push("- 无");
 	for (const candidate of artifact.candidates)
@@ -111,7 +123,7 @@ export function formatFieldLineageSummary(artifact: FieldLineageArtifact): strin
 	lines.push(
 		"",
 		`边界: static SQL only；调度运行、数据正确性、业务验收均未评估。`,
-		`计数: nodes=${artifact.counts.nodes}, edges=${artifact.counts.edges}, controls=${artifact.counts.rowsetControls}, candidates=${artifact.counts.candidates}, gaps=${artifact.counts.gaps}`,
+		`计数: nodes=${artifact.counts.nodes}, edges=${artifact.counts.edges}, datasetControls=${artifact.counts.datasetControls}, fieldConditionals=${artifact.counts.fieldConditionals}, candidates=${artifact.counts.candidates}, gaps=${artifact.counts.gaps}`,
 	);
 	return `${lines.join("\n")}\n`;
 }

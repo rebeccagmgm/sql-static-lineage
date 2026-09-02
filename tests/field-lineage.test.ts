@@ -92,11 +92,43 @@ describe("field multi-hop lineage", () => {
     expect(schema.properties.artifactType.const).toBe(
       "FIELD_MULTI_HOP_RECONCILIATION",
     );
-    expect(schema.properties.schemaVersion.const).toBe("1.1.0");
+    expect(schema.properties.schemaVersion.const).toBe("1.2.0");
     expect(schema.$defs.physicalField.properties.identityStatus.enum).toEqual([
       "SCHEMA_BACKED",
       "TASK_LOCAL_SCHEMA_BACKED",
     ]);
+    expect(schema.$defs.datasetControl.required).toContain("grainReason");
+    expect(schema.$defs.datasetControl.properties.grainReason.anyOf).toBeDefined();
+  });
+
+  it("rejects legacy rowsetControls nodeId and affectedRootFields", () => {
+    const errors = validateFieldLineageArtifact({
+      schemaVersion: "1.1.0",
+      rowsetControls: [{ nodeId: "field-node:x", affectedRootFields: ["out_a"] }],
+      affectedRootFields: ["out_a"],
+    });
+    expect(errors.join(" ")).toMatch(/rowsetControls is not allowed/);
+    expect(errors.join(" ")).toMatch(/affectedRootFields is not allowed/);
+    expect(
+      validateFieldLineageArtifact({
+        schemaVersion: "1.2.0",
+        datasetControls: [{ nodeId: "field-node:x", controlId: "x" }],
+      }).join(" "),
+    ).toMatch(/datasetControls must not include nodeId/);
+    expect(
+      validateFieldLineageArtifact({
+        schemaVersion: "1.2.0",
+        datasetControls: [
+          {
+            controlId: "dataset-control:missing-grain-reason",
+            subtype: "JOIN",
+            grain: "UNKNOWN",
+            grainReason: null,
+            masking: false,
+          },
+        ],
+      }).join(" "),
+    ).toMatch(/missing grainReason/);
   });
   it("recurses primary only, annotates rowset control, and preserves gaps", () => {
     const f = fixture();
@@ -144,14 +176,23 @@ describe("field multi-hop lineage", () => {
     ).toBe(true);
     expect(artifact.gaps.some((gap) => gap.reasonCode === "CYCLE")).toBe(true);
     expect(
-      artifact.rowsetControls.some(
-        (control) => control.controlType === "filter",
+      artifact.datasetControls.some(
+        (control) => control.subtype === "FILTER",
+      ),
+    ).toBe(true);
+    expect(
+      artifact.datasetControls.every(
+        (control) =>
+          control.grain === "PRESERVE" ||
+          (typeof control.grainReason === "string" && control.grainReason.length > 0),
       ),
     ).toBe(true);
     expect(validateFieldLineageArtifact(artifact)).toEqual([]);
     const summary = formatFieldLineageSummary(artifact);
     expect(summary).toContain("字段 VALUE_FLOW Task 树");
-    expect(summary).toContain("ROWSET_CONTROL");
+    expect(summary).toContain("DATASET_CONTROL");
+    expect(summary).not.toContain("ROWSET_CONTROL");
+    expect(summary).not.toContain("影响表数");
   });
 
   it("uses the Task Pack default schema before resolving a bare field input", () => {
@@ -208,16 +249,13 @@ describe("field multi-hop lineage", () => {
       ),
     ).toBe(true);
     expect(
-      artifact.rowsetControls.some(
+      artifact.datasetControls.some(
         (control) =>
           control.taskId === "100" &&
-          control.controlType === "filter" &&
+          control.subtype === "FILTER" &&
           control.reasonCode === null &&
-          control.fields.some(
-            (field) =>
-              field.qualifiedName === "demo.mid" &&
-              field.column === "filter_key",
-          ),
+          control.field?.qualifiedName === "demo.mid" &&
+          control.field.column === "filter_key",
       ),
     ).toBe(true);
   });
@@ -239,6 +277,24 @@ describe("field multi-hop lineage", () => {
     expect(artifact.request.rootFieldSelection).toBe("ALL_TARGET_COLUMNS");
     expect(artifact.request.rootFields).toEqual(["out_a", "out_b"]);
     expect(artifact.rootNodeIds).toHaveLength(2);
+    const oneField = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: syntheticTableLineage(),
+      rootTaskId: "100",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    expect(artifact.datasetControls.map((control) => control.controlId).sort()).toEqual(
+      oneField.datasetControls.map((control) => control.controlId).sort(),
+    );
+    expect(artifact.datasetControls.every((control) => !("nodeId" in control))).toBe(
+      true,
+    );
   });
 
   it("skips checkdbflag upstream tasks without turning them into field gaps", () => {
@@ -1948,5 +2004,382 @@ describe("field multi-hop lineage", () => {
         maxPaths: 100,
       }),
     ).toThrow(/ROOT_WRITE_OBSERVATION_REQUIRED|ROOT_WRITE_OBSERVATION_NOT_FOUND/);
+  });
+
+  it("keeps zipper LEFT refs off internal_trade_id VALUE_FLOW and on 105387 JOIN controls", () => {
+    const parent = mkdtempSync(join(tmpdir(), "field-lineage-zipper-"));
+    const dataRoot = join(parent, "data");
+    const factsRoot = join(parent, "facts");
+    const zipperTables = [
+      "demo.d_ref_fx_forward",
+      "demo.d_ref_fast_trs",
+      "demo.d_ref_otc_option_deal",
+      "demo.d_ref_trs",
+    ];
+    for (const table of [
+      { qualifiedName: "demo.audit_log", columns: "internal_trade_id STRING, entity_id STRING" },
+      { qualifiedName: "demo.stati", columns: "internal_trade_id STRING, stati_cont_desc STRING" },
+      { qualifiedName: "demo.audit", columns: "entity_id STRING" },
+      { qualifiedName: "demo.audit_src", columns: "entity_id STRING" },
+      { qualifiedName: "demo.raw_audit", columns: "entity_id STRING" },
+      { qualifiedName: "demo.trades", columns: "internal_trade_id STRING, k STRING, v STRING" },
+      { qualifiedName: "demo.raw_trades", columns: "internal_trade_id STRING, k STRING, v STRING" },
+      ...zipperTables.map((qualifiedName) => ({
+        qualifiedName,
+        columns: "k STRING, v STRING",
+      })),
+    ])
+      writeTableInput(dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: table.qualifiedName,
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: `CREATE TABLE ${table.qualifiedName} (${table.columns});`,
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    writeTaskInput(dataRoot, {
+      taskId: "155015",
+      taskCategory: "sparkIndex",
+      taskName: "demo.audit_log.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.audit_log",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT s.internal_trade_id AS internal_trade_id, a.entity_id AS entity_id FROM demo.stati s JOIN demo.audit a ON s.internal_trade_id = a.entity_id",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "105387",
+      taskCategory: "sparkIndex",
+      taskName: "demo.stati.zipper",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.stati",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.stati SELECT t.internal_trade_id AS internal_trade_id, CASE WHEN r1.k IS NOT NULL THEN r1.v ELSE t.v END AS stati_cont_desc FROM demo.trades t LEFT JOIN demo.d_ref_fx_forward r1 ON t.k = r1.k LEFT JOIN demo.d_ref_fast_trs r2 ON t.k = r2.k LEFT JOIN demo.d_ref_otc_option_deal r3 ON t.k = r3.k LEFT JOIN demo.d_ref_trs r4 ON t.k = r4.k",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "114026",
+      taskCategory: "sparkIndex",
+      taskName: "demo.audit.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.audit",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE demo.audit SELECT src.entity_id AS entity_id FROM demo.audit_src src",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "112715",
+      taskCategory: "sparkIndex",
+      taskName: "demo.audit_src.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.audit_src",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE demo.audit_src SELECT src.entity_id AS entity_id FROM demo.raw_audit src",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(dataRoot, {
+      taskId: "71698",
+      taskCategory: "sparkIndex",
+      taskName: "demo.trades.task",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.trades",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.trades SELECT src.internal_trade_id AS internal_trade_id, src.k AS k, src.v AS v FROM demo.raw_trades src",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    runInputPackMachineFacts({
+      dataRoot,
+      taskIds: ["155015", "105387", "114026", "112715", "71698"],
+      outputRoot: factsRoot,
+    });
+    const hive = { platform: "hive", dataSource: "warehouse" };
+    const artifact = reconcileFieldLineage({
+      dataRoot,
+      factsRoot,
+      tableLineage: syntheticTableLineageWithFacts(factsRoot, {
+        ...syntheticTableLineage(),
+        rootTaskId: "155015",
+        taskNodes: [
+          {
+            taskId: "155015",
+            upstreamDecision: { primary: ["114026", "105387"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "114026",
+            upstreamDecision: { primary: ["112715"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "105387",
+            upstreamDecision: { primary: ["71698"], additional: [], unknown: [] },
+          },
+          {
+            taskId: "112715",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+          {
+            taskId: "71698",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [
+          {
+            consumerTaskId: "155015",
+            producerTaskId: "114026",
+            table: { ...hive, qualifiedName: "demo.audit" },
+          },
+          {
+            consumerTaskId: "155015",
+            producerTaskId: "105387",
+            table: { ...hive, qualifiedName: "demo.stati" },
+          },
+          {
+            consumerTaskId: "114026",
+            producerTaskId: "112715",
+            table: { ...hive, qualifiedName: "demo.audit_src" },
+          },
+          {
+            consumerTaskId: "105387",
+            producerTaskId: "71698",
+            table: { ...hive, qualifiedName: "demo.trades" },
+          },
+        ],
+      }),
+      rootTaskId: "155015",
+      rootTable: "demo.audit_log",
+      rootFields: ["internal_trade_id", "entity_id"],
+      factsPolicy: "current-only",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    const zipperName = (qualifiedName: string): boolean =>
+      zipperTables.some((table) => qualifiedName.includes(table.split(".").at(-1)!));
+    const walkTasks = (rootColumn: string): string[] => {
+      const pending = artifact.nodes
+        .filter((node) => node.taskId === "155015" && node.field.column === rootColumn)
+        .map((node) => node.nodeId);
+      const seen = new Set<string>();
+      const tasks = new Set<string>();
+      const tables = new Set<string>();
+      while (pending.length > 0) {
+        const nodeId = pending.pop()!;
+        if (seen.has(nodeId)) continue;
+        seen.add(nodeId);
+        const node = artifact.nodes.find((candidate) => candidate.nodeId === nodeId);
+        if (node) {
+          tasks.add(node.taskId);
+          tables.add(node.field.qualifiedName);
+        }
+        for (const edge of artifact.edges.filter((candidate) => candidate.toNodeId === nodeId))
+          pending.push(edge.fromNodeId);
+      }
+      return [...tasks].sort();
+    };
+    const tradeTables = new Set(
+      artifact.nodes
+        .filter((node) => {
+          const pending = [node.nodeId];
+          const seen = new Set<string>();
+          const roots = new Set(
+            artifact.nodes
+              .filter((candidate) => candidate.taskId === "155015" && candidate.field.column === "internal_trade_id")
+              .map((candidate) => candidate.nodeId),
+          );
+          while (pending.length > 0) {
+            const nodeId = pending.pop()!;
+            if (seen.has(nodeId)) continue;
+            seen.add(nodeId);
+            if (roots.has(nodeId)) return true;
+            for (const edge of artifact.edges.filter((candidate) => candidate.fromNodeId === nodeId))
+              pending.push(edge.toNodeId);
+          }
+          return false;
+        })
+        .map((node) => node.field.qualifiedName),
+    );
+    expect([...tradeTables].some(zipperName)).toBe(false);
+    expect(
+      artifact.fieldConditionals.some((item) => item.fields.some((field) => zipperName(field.qualifiedName))),
+    ).toBe(false);
+    const joinControls = artifact.datasetControls.filter(
+      (control) =>
+        control.taskId === "105387" &&
+        control.subtype === "JOIN" &&
+        control.field !== null &&
+        zipperName(control.field.qualifiedName),
+    );
+    expect(new Set(joinControls.map((control) => control.field!.qualifiedName.split(".").at(-1))).size).toBe(4);
+    expect(joinControls.every((control) => control.grain === "EXPAND_RISK" || control.grain === "UNKNOWN")).toBe(
+      true,
+    );
+    expect(joinControls.every((control) => control.grain !== "PRESERVE")).toBe(true);
+    expect(
+      joinControls.every((control) => control.grainReason === "GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND"),
+    ).toBe(true);
+    expect(
+      artifact.datasetControls.every(
+        (control) =>
+          control.grain === "PRESERVE" ||
+          (typeof control.grainReason === "string" && control.grainReason.length > 0),
+      ),
+    ).toBe(true);
+    const tradeTasks = walkTasks("internal_trade_id");
+    const auditTasks = walkTasks("entity_id");
+    expect(tradeTasks).toEqual(expect.arrayContaining(["71698", "105387", "155015"]));
+    expect(auditTasks).toEqual(expect.arrayContaining(["112715", "114026", "155015"]));
+    expect(validateFieldLineageArtifact(artifact)).toEqual([]);
+  });
+
+  it("assigns distinct grainReason codes to INNER JOIN and LEFT JOIN", () => {
+    const parent = mkdtempSync(join(tmpdir(), "field-lineage-grain-reason-"));
+    const dataRoot = join(parent, "data");
+    const factsRoot = join(parent, "facts");
+    for (const table of [
+      { qualifiedName: "demo.root", columns: "out_a STRING" },
+      { qualifiedName: "demo.left_keep", columns: "k STRING, v STRING" },
+      { qualifiedName: "demo.inner_side", columns: "k STRING, v STRING" },
+      { qualifiedName: "demo.left_side", columns: "k STRING, v STRING" },
+    ])
+      writeTableInput(dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: table.qualifiedName,
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: `CREATE TABLE ${table.qualifiedName} (${table.columns});`,
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    writeTaskInput(dataRoot, {
+      taskId: "1600",
+      taskCategory: "sparkIndex",
+      taskName: "demo.root.grain",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT a.v AS out_a FROM demo.left_keep a INNER JOIN demo.inner_side b ON a.k = b.k LEFT JOIN demo.left_side c ON a.k = c.k",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    runInputPackMachineFacts({
+      dataRoot,
+      taskIds: ["1600"],
+      outputRoot: factsRoot,
+    });
+    const artifact = reconcileFieldLineage({
+      dataRoot,
+      factsRoot,
+      tableLineage: {
+        rootTaskId: "1600",
+        taskNodes: [
+          {
+            taskId: "1600",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [],
+      },
+      rootTaskId: "1600",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "current-only",
+      maxDepth: 4,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    const joinControls = artifact.datasetControls.filter((control) => control.subtype === "JOIN");
+    const innerReasons = new Set(
+      joinControls
+        .filter((control) => control.field?.qualifiedName === "demo.inner_side")
+        .map((control) => control.grainReason),
+    );
+    const leftReasons = new Set(
+      joinControls
+        .filter((control) => control.field?.qualifiedName === "demo.left_side")
+        .map((control) => control.grainReason),
+    );
+    expect(innerReasons.size).toBeGreaterThan(0);
+    expect(leftReasons.size).toBeGreaterThan(0);
+    expect([...innerReasons]).toEqual(["GRAIN_JOIN_CARDINALITY_UNPROVEN"]);
+    expect([...leftReasons]).toEqual(["GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND"]);
+    expect(
+      joinControls
+        .filter((control) => control.field?.qualifiedName === "demo.inner_side")
+        .every((control) => control.grain === "EXPAND_RISK"),
+    ).toBe(true);
+    expect(joinControls.every((control) => control.grain !== "UNKNOWN")).toBe(true);
+    expect(
+      artifact.datasetControls.every(
+        (control) =>
+          control.grain === "PRESERVE" ||
+          (typeof control.grainReason === "string" && control.grainReason.length > 0),
+      ),
+    ).toBe(true);
+    expect(validateFieldLineageArtifact(artifact)).toEqual([]);
   });
 });
