@@ -148,17 +148,18 @@ target：
 `hive-task.sql` 头必须能被现有 `readHiveTaskSqlCache` 读成 HIT，
 `sqlStatus=UNAVAILABLE` 时省略 SQL 槽。
 
-### 3.3 runScript / runScript-2.0（缓存 803 / 已落 0）
+### 3.3 runScript / runScript-2.0 / sparkScript（SQL 来自 Horae log）
 
 ```text
 身份：horae-task-type + schedule-detail
-SQL ：run-script.sql 全文（去掉 -- 头）→ sql.query
+SQL ：horae log → 抽「待执行sql为[…]」→ run-script.sql → sql.query
       source=HORAE_LOG
 target：只认 SQL 精确写目标；没有就不写
 ```
 
-这批目前没有 Input Pack，是缓存路径的净增量。没有 `run-script.sql` 的
-runScript 任务标 `PARTIAL` 或不写，不回退 OpenCLI。
+`sparkScript` 与 `runScript*` 同一条证据链（`fill-run-script-sql-cache` /
+`assembleRunScript`），不是 schedule-detail SQL 槽。没有 `run-script.sql` 时
+标 `PARTIAL` 或不写完整 SQL，不回退 OpenCLI。
 
 ### 3.4 `*2hive` 同步（oracle2hive / mysql2hive / postgre2hive / mongo2hive / oceanbase2hive）
 
@@ -179,6 +180,30 @@ Horae `querySql` 覆盖几乎全集。关键在 `syncInfo`，不是 task-source�
 
 `source` 保持数据源标签，不把它当成物理表。物理读表只从 SQL `FROM`/`JOIN`
 发现，再用 §4 解析。这与现网 “受控库到 Hive 任务的 source 不是表” 一致。
+
+Hive **目标表 DDL** 常不在原信息 jsonl。`*2hive` AnyLoader 日志里有
+`Process hive ddl:` → `CREATE EXTERNAL TABLE`。走日志缓存（与 runScript 同型）：
+
+```text
+summaries.jsonl → ONLY_HIVE_TARGET_GAP
+        │
+        ▼
+fill-hive-ddl-from-log（opencli horae log → script-log/）
+        │
+        ▼
+tasks/<id>/hive-target-ddl.sql  →  assembleToHive.sql.create
+        │
+        ▼
+input-pack:from-cache --force   →  Table Pack（evidenceProvider=…hive-target-ddl）
+```
+
+```powershell
+npm run input-pack:fill-hive-ddl-from-log -- `
+  --from-summaries sql-static-lineage-data\tmp\from-cache-full\logs-oracle2hive-refresh\summaries.jsonl `
+  --bucket ONLY_HIVE_TARGET_GAP `
+  --write-ids-dir sql-static-lineage-data\tmp\from-cache-full\partial-analysis `
+  --data-date 2026-08-27
+```
 
 ### 3.5 `hive2*` 同步（hive2oracle / hive2mysql / hive2starrocks / hive2postgre / hive2oceanbase）
 

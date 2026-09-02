@@ -19,6 +19,7 @@ import {
 	MACHINE_FACTS_ADAPTER_VERSION,
 	MACHINE_FACTS_CONTRACT_VERSION,
 	MACHINE_FACTS_STATUS_VERSION,
+	PACK_DECLARED_QUERY_OUTPUT,
 	canonicalJson,
 	canonicalJsonl,
 	datasetId,
@@ -1050,6 +1051,18 @@ export function validateBundle(bundleDir: string): string[] {
 	const datasetIo = readJsonlForValidation(join(bundleDir, "dataset-io.jsonl"), errors);
 	const unknownRecords = readJsonlForValidation(join(bundleDir, "unknowns.jsonl"), errors);
 	const writeObservations = new Map(datasetIo.filter((record) => record.direction === "WRITE" && typeof record.write_observation_id === "string").map((record) => [record.write_observation_id, record]));
+	const expectedInputPackSqlSha256 = typeof manifest.inputs.input_pack?.sql_sha256 === "string"
+		? manifest.inputs.input_pack.sql_sha256
+		: manifest.inputs.sql_sha256;
+	for (const write of writeObservations.values()) {
+		if (write.write_kind !== PACK_DECLARED_QUERY_OUTPUT) continue;
+		if (write.provenance !== "PLATFORM_TARGET") errors.push(`pack-declared write provenance is invalid ${write.write_observation_id}`);
+		if (typeof write.source_sql_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(write.source_sql_sha256)) {
+			errors.push(`pack-declared write source SQL hash is invalid ${write.write_observation_id}`);
+		} else if (write.source_sql_sha256 !== expectedInputPackSqlSha256) {
+			errors.push(`pack-declared write source SQL hash does not match manifest ${write.write_observation_id}`);
+		}
+	}
 	const bindingOrdinals = new Set<string>();
 	const bindings = readJsonlForValidation(join(bundleDir, "output-field-bindings.jsonl"), errors);
 	for (const binding of bindings) {
@@ -1061,6 +1074,11 @@ export function validateBundle(bundleDir: string): string[] {
 		else {
 			if (binding.task_id !== manifest.task_id || write.task_id !== manifest.task_id) errors.push(`output binding task isolation failed ${binding.binding_id}`);
 			if (binding.write_kind !== write.write_kind || binding.write_statement_id !== write.write_statement_id || binding.statement_id !== write.statement_id || binding.query_producer_statement_id !== (write.query_producer_statement_id ?? null)) errors.push(`output binding write identity mismatch ${binding.binding_id}`);
+			if (binding.evidence_kind === PACK_DECLARED_QUERY_OUTPUT) {
+				if (typeof binding.source_sql_sha256 !== "string" || binding.source_sql_sha256 !== write.source_sql_sha256 || binding.source_sql_sha256 !== expectedInputPackSqlSha256) {
+					errors.push(`pack-declared binding source SQL hash mismatch ${binding.binding_id}`);
+				}
+			}
 			const ordinalKey = `${binding.write_observation_id}:${binding.source_ordinal}`;
 			if (bindingOrdinals.has(ordinalKey)) errors.push(`duplicate output binding producer ordinal ${ordinalKey}`);
 			bindingOrdinals.add(ordinalKey);
@@ -1178,6 +1196,7 @@ function buildTaskBundle(
 	const sqlBytes = readFileSync(sqlPath);
 	const sql = sqlBytes.toString("utf8");
 	const sqlHash = sha256(sqlBytes);
+	const sourceSqlSha256 = task.input_pack_provenance?.sql_sha256 ?? sqlHash;
 	const sqlSnapshot = snapshot(root, "sql", sqlHash, sqlBytes);
 	const schemaBytes = Buffer.from(canonicalJson(schemaBundle), "utf8");
 	const schemaSnapshot = snapshot(root, "schema", schemaBundleHash, schemaBytes);
@@ -1364,7 +1383,7 @@ function buildTaskBundle(
 	if (task.platform_target_query_output && !hasExplicitPlatformTargetWrite) {
 		const target = normalizeName(task.platform_target_query_output.target);
 		const uniqueQueryOutputCandidates = dedupeEquivalentQueryOutputs(queryOutputCandidates);
-		if (uniqueQueryOutputCandidates.length === 1) {
+		if (uniqueQueryOutputCandidates.length === 1 && /^[a-f0-9]{64}$/.test(sourceSqlSha256)) {
 			const candidate = uniqueQueryOutputCandidates[0]!;
 			const writeObservationId = `write-observation:${task.task_id}:platform-target:${candidate.statementIndex}`;
 			datasetIo.push({
@@ -1376,9 +1395,10 @@ function buildTaskBundle(
 				provenance: "PLATFORM_TARGET",
 				resolution_status: "RESOLVED",
 				write_observation_id: writeObservationId,
-				write_kind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				write_kind: PACK_DECLARED_QUERY_OUTPUT,
 				write_statement_id: candidate.statementId,
 				query_producer_statement_id: candidate.statementId,
+				source_sql_sha256: sourceSqlSha256,
 				producer_ordinals: candidate.expressions.map((expression) => expression.ordinal),
 				producer_enumeration_status: "COMPLETE",
 				field_producing: true,
@@ -1388,17 +1408,27 @@ function buildTaskBundle(
 				writeObservationId,
 				statementId: candidate.statementId,
 				statementType: "PLATFORM_TARGET_QUERY",
-				writeKind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				writeKind: PACK_DECLARED_QUERY_OUTPUT,
 				rawSql: candidate.rawSql,
 				target,
 				queryProducerStatementId: candidate.statementId,
 				queryBoundaryProven: true,
 				producerEnumerationStatus: "COMPLETE",
 				expressions: candidate.expressions,
-				evidenceKind: "PLATFORM_TARGET_QUERY_OUTPUT",
+				evidenceKind: PACK_DECLARED_QUERY_OUTPUT,
+				sourceSqlSha256,
 				partitionStatus: task.platform_target_query_output.partition_status,
 				partitionColumns: task.platform_target_query_output.partition_columns,
 				evidenceRefs: task.platform_target_query_output.evidence_refs,
+			});
+		} else if (uniqueQueryOutputCandidates.length === 1 && !/^[a-f0-9]{64}$/.test(sourceSqlSha256)) {
+			unknowns.push({
+				unknown_id: `unknown:platform-target:${task.task_id}:sql-hash`,
+				task_id: task.task_id,
+				outcome_class: "NOT_EVALUABLE",
+				reason_code: "PLATFORM_TARGET_SQL_HASH_NOT_PROVABLE",
+				message: "platform target requires a valid original Input Pack SQL SHA-256",
+				subject: target,
 			});
 		} else {
 			unknowns.push({

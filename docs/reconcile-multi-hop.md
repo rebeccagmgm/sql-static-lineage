@@ -11,6 +11,8 @@ one-hop reconciliation；BFS 下一层只取该结果的
 `finalUpstreamTaskIds.primary`。`additional` 作为当前层的保留证据但不再展开，
 `finalUpstreamTaskIds.unknown` 永不进入 frontier。遇到
 `MULTIPLE_OVERLAPPING_PRODUCERS` 时保留候选和 terminal 证据，但停止该表分支。
+无冻结 one-hop snapshot 时，multi-hop 会离线读取
+`schedule-evidence` 缓存（不调用 live Horae）；缓存未命中才退回空调度行。
 遍历仍只消费经过校验的 Task/Table Input Pack V1 和 `TABLE_PRODUCER_INDEX`
 candidate/WRITE bridge；producer index 不重新决定递归集合。
 

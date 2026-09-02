@@ -159,10 +159,10 @@ export function renderTargetTableCausalHtml(
 <body>
   <h1>目标表上游因果闭包</h1>
   <p class="meta"><strong>taskId</strong>: ${escapeHtml(identity.taskId)} · <strong>目标表</strong>: ${escapeHtml(identity.targetTableKey)} · <strong>write-observation-id</strong>: ${escapeHtml(identity.writeObservationId)}</p>
-  <p class="meta"><strong>档一</strong> = field-lineage <code>VALUE_FLOW</code>（值必达） · <strong>档二</strong> = JOIN/WHERE 行集（行决定）</p>
+  <p class="meta"><strong>档一</strong> = 根任务 + field-lineage <code>VALUE_FLOW</code> 上游（值必达） · <strong>档二</strong> = JOIN/WHERE 行集（行决定）</p>
   ${fieldLineageLink}
   ${renderMetricsBlock(artifact)}
-  <h2>档一 值必达 (${valueCertain.length})</h2>
+  <h2>档一 值必达 (${valueCertain.length}，含根)</h2>
   ${renderShrinkTierTable(valueCertain, false)}
   <h2>档二 行决定 (${rowDetermining.length})</h2>
   ${renderShrinkTierTable(rowDetermining, false)}

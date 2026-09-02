@@ -238,6 +238,38 @@ describe("RS-4 pruned reasons and 档三 join-node grain", () => {
     ]);
   });
 
+  it("includes the ROOT_WRITE task itself in 档一", () => {
+    const root = branch({
+      candidateBranchId: "branch:root",
+      branchKind: "ROOT_WRITE",
+      producerTaskId: "181058",
+      consumerTaskId: null,
+      table: { ...table, qualifiedName: "dm_rsk_n.otc_opt_inr_comp_pal_sum" },
+      readOccurrence: null,
+      evidenceRefs: [{
+        evidenceRefId: "root-write",
+        source: "TARGET_WRITE",
+        locator: "target-write:181058",
+      }],
+    });
+    const upstream = branch({
+      candidateBranchId: "branch:119044",
+      producerTaskId: "119044",
+      table: { ...table, qualifiedName: "pdata_n.t98" },
+    });
+    const report = buildShrinkReport({
+      branches: [root, upstream],
+      assessments: [confirmedValue("branch:119044", ["stati_cont_desc"])],
+    });
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["119044", "181058"]);
+    expect(report.valueCertain.find((entry) => entry.taskId === "181058")).toMatchObject({
+      table: "dm_rsk_n.otc_opt_inr_comp_pal_sum",
+      channel: "FIELD_VALUE",
+      viaFields: [],
+      witness: ["root-write"],
+    });
+  });
+
   it("keeps 档三 at (task, JOIN node) and does not split by column", () => {
     const joinA = "task:c:statement:0:relation:join.left";
     const joinB = "task:c:statement:0:relation:join.right";
@@ -315,6 +347,8 @@ describe("RS-4 summary copy", () => {
     expect(summary).not.toMatch(/无关|无影响|已剪除|只计数/);
     expect(html).toContain("本轮证不出");
     expect(html).toContain("档一 值必达");
+    expect(html).toContain("含根");
+    expect(html).toContain("根任务 + field-lineage");
     expect(html).toContain("档二 行决定");
     expect(html).toContain("FIELD_VALUE");
     expect(html).toContain("ROW_MEMBERSHIP");

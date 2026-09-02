@@ -420,6 +420,7 @@ export function readTaskPartitionBindingsCache(
   if (!existsSync(path)) return { status: "MISS", path };
   try {
     const record = JSON.parse(readFileSync(path, "utf8")) as JsonRecord;
+    const bindingsRecord = asRecord(record.bindings);
     if (
       record.schema_version !== SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION ||
       record.artifact_type !== TASK_PARTITION_BINDINGS_CACHE_ARTIFACT_TYPE ||
@@ -427,11 +428,11 @@ export function readTaskPartitionBindingsCache(
       typeof record.observed_at !== "string" ||
       typeof record.content_sha256 !== "string" ||
       !SHA256.test(record.content_sha256) ||
-      !asRecord(record.bindings) ||
-      !validateBindings(record.bindings)
+      !bindingsRecord ||
+      !validateBindings(bindingsRecord)
     )
       return { status: "INVALID", path, reason: "ENVELOPE_INVALID" };
-    const bindings = record.bindings as JsonRecord;
+    const bindings = bindingsRecord;
     const payload = partitionBindingsCachePayload(
       taskId,
       record.observed_at,

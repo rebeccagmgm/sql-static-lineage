@@ -568,9 +568,11 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["105387"]);
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["105387", "root"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["163064", "179886", "78472", "78473"].sort(),
+    );
   });
 
   it("does not promote LEFT JOIN ref producers to 档二 through an intermediate FIELD_VALUE hop", () => {
@@ -703,9 +705,11 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
+    expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044", "176827"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["163064", "179886", "78472", "78473"].sort(),
+    );
   });
 
   it("keeps generic-CASE LEFT dims out of 档二 after a FIELD_VALUE hop", () => {
@@ -840,7 +844,7 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["103943"]);
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["103943", "176827"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("102845");
   });
 
@@ -1000,9 +1004,11 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
+    expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044", "176827"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["105388", "163064", "179886", "78472", "78473"].sort(),
+    );
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("105388");
   });
@@ -1080,7 +1086,7 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["119044"]);
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["119044", "176827"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("74850");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("74850");
   });
@@ -1194,7 +1200,7 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches, assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["119044"]);
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["119044", "176827"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("106661");
@@ -1338,7 +1344,7 @@ describe("RS-3 closure seeding", () => {
       },
     });
     const report = buildShrinkReport({ branches: [root, evtProducer, dim], assessments: result.assessments });
-    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["124566"]);
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["124566", "181058"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.multiplicityRisk.map((entry) => entry.taskId)).toContain("105388");
     expect(report.prunedReasons.find((reason) => reason.reasonCode === "UNSUPPORTED_OPERATOR")).toBeUndefined();

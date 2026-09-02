@@ -251,6 +251,38 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     expect(result.cacheArtifacts).toContain("run-script.sql");
   });
 
+  it("reads sparkScript query from the same run-script.sql log cache", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
+    writeHoraeTaskTypeCache(
+      "3233",
+      observedAt,
+      { id: "3233", taskType: "sparkScript", name: "demo_spark_script" },
+      cacheRoot,
+    );
+    writeRunScriptSqlCache(
+      "3233",
+      observedAt,
+      {
+        source: "HORAE_LOG",
+        sqlStatus: "AVAILABLE",
+        querySql: "INSERT OVERWRITE TABLE demo.t SELECT 1 AS id",
+        sqlFile: null,
+        scriptPath: "BigData-demo/main.sh",
+        hiveDb: "demo",
+        dataDate: "2026-08-27",
+      },
+      cacheRoot,
+    );
+    const result = assembleCacheTaskEvidence("3233", cacheRoot);
+    expect(result.kind).toBe("EVIDENCE");
+    if (result.kind !== "EVIDENCE") return;
+    expect(result.evidence.taskCategory).toBe("sparkScript");
+    expect(sqlContent(result.evidence.sql?.query)).toBe(
+      "INSERT OVERWRITE TABLE demo.t SELECT 1 AS id",
+    );
+    expect(result.cacheArtifacts).toContain("run-script.sql");
+  });
+
   it("remaps sparkIndex evidence providers away from OpenCLI", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
     writeSzdataScheduleDetailCache(

@@ -26,6 +26,8 @@ import {
   inferTaskDefaultSchema,
   type TaskDefaultSchema,
 } from "../../shared/task-default-schema.ts";
+import { buildControlsByStatement, datasetControlsForStatement } from "../../shared/dataset-controls.ts";
+export { datasetControlsForStatement } from "../../shared/dataset-controls.ts";
 import { isCheckdbflagTask } from "../../shared/lineage-scope.ts";
 import {
   FIELD_LINEAGE_ARTIFACT_TYPE,
@@ -43,8 +45,6 @@ import {
   type FieldConditionalAnnotation,
   type PhysicalTableIdentity,
   type PhysicalFieldIdentity,
-  type DatasetControlGrain,
-  type OpenLineageIndirectSubtype,
 } from "./field-lineage-contract.ts";
 import {
 	physicalFieldForTable,
@@ -126,16 +126,6 @@ type TraversalState = {
     readonly evidenceRefs: readonly string[];
   } | null;
 };
-
-const CONTROL_TYPES = new Set([
-  "filter",
-  "join",
-  "aggregate",
-  "setop",
-  "window",
-	"distinct",
-]);
-
 
 const FIELD_LINEAGE_BUNDLE_FILES = [
 	"statements.jsonl",
@@ -432,15 +422,7 @@ function bundleIndexesFor(load: CurrentBundleLoad): BundleIndexes {
 		values.push(from);
 		incomingRelations.set(to, values);
 	}
-	const controlsByStatement = new Map<string, JsonRecord[]>();
-	for (const relation of relations.values()) {
-		if (!CONTROL_TYPES.has(String(relation.relation_type).toLowerCase())) continue;
-		const statementId = String(relation.statement_id ?? "");
-		if (!statementId) continue;
-		const values = controlsByStatement.get(statementId) ?? [];
-		values.push(relation);
-		controlsByStatement.set(statementId, values);
-	}
+	const controlsByStatement = buildControlsByStatement(relations);
 	const valueInputFieldsByExpressionId = new Map<string, readonly JsonRecord[]>();
 	for (const [expressionId, expression] of expressions) {
 		const relation = relations.get(String(expression.relation_id ?? ""));
@@ -634,110 +616,6 @@ function lineageDecisions(tableLineage: TableLineageArtifact): ReadonlyMap<strin
 	return result;
 }
 
-function collectPhysicalPairs(
-  value: unknown,
-  output: { table: string; column: string }[] = [],
-): { table: string; column: string }[] {
-  if (Array.isArray(value)) {
-    for (const item of value) collectPhysicalPairs(item, output);
-    return output;
-  }
-  const record = asRecord(value);
-  if (!record) return output;
-  if (nonEmpty(record.table) && nonEmpty(record.column))
-    output.push({
-      table: normalizeName(String(record.table)),
-      column: normalizeName(String(record.column)),
-    });
-  for (const child of Object.values(record))
-    collectPhysicalPairs(child, output);
-  return output;
-}
-
-function relationBody(relation: JsonRecord): JsonRecord {
-  return asRecord(relation.relation) ?? relation;
-}
-
-function joinGrain(joinType: string): {
-  grain: DatasetControlGrain;
-  grainReason: NonNullable<DatasetControlAnnotation["grainReason"]>;
-} {
-  const kind = joinType.toUpperCase();
-  if (
-    kind.includes("LEFT") ||
-    kind.includes("RIGHT") ||
-    kind.includes("FULL") ||
-    kind.includes("CROSS")
-  )
-    return {
-      grain: "EXPAND_RISK",
-      grainReason: "GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND",
-    };
-  return {
-    grain: "EXPAND_RISK",
-    grainReason: "GRAIN_JOIN_CARDINALITY_UNPROVEN",
-  };
-}
-
-function datasetControlMapping(
-  relation: JsonRecord,
-): {
-  subtype: OpenLineageIndirectSubtype;
-  grain: DatasetControlGrain;
-  grainReason: NonNullable<DatasetControlAnnotation["grainReason"]>;
-} | null {
-  const type = String(relation.relation_type ?? "").toLowerCase();
-  const body = relationBody(relation);
-  switch (type) {
-    case "join":
-      return { subtype: "JOIN", ...joinGrain(String(body.join_type ?? "")) };
-    case "filter":
-      return {
-        subtype: "FILTER",
-        grain: "REDUCE",
-        grainReason: "GRAIN_FILTER_MAY_DROP_ROWS",
-      };
-    case "aggregate":
-      return {
-        subtype: "GROUP_BY",
-        grain: "REDUCE",
-        grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
-      };
-    case "window":
-      return {
-        subtype: "WINDOW",
-        grain: "UNKNOWN",
-        grainReason: "GRAIN_WINDOW_CARDINALITY_UNPROVEN",
-      };
-    case "distinct":
-      return {
-        subtype: "GROUP_BY",
-        grain: "REDUCE",
-        grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
-      };
-    case "setop": {
-      const op = String(body.setop ?? "").toUpperCase();
-      const all = body.all === true;
-      if (op === "UNION" && all) return null;
-      if (op === "UNION")
-        return {
-          subtype: "GROUP_BY",
-          grain: "REDUCE",
-          grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
-        };
-      if (op === "EXCEPT" || op === "INTERSECT")
-        return {
-          subtype: "FILTER",
-          grain: "REDUCE",
-          grainReason: "GRAIN_SETOP_REDUCES_ROWS",
-        };
-      return null;
-    }
-    default:
-      return null;
-  }
-}
-
 function isZipperExistenceCase(text: string | null): boolean {
   return text !== null && /\bIS\s+NOT\s+NULL\b/i.test(text);
 }
@@ -816,82 +694,15 @@ function branchSelectionInputFields(
   );
 }
 
-function datasetControlsForStatement(
+export function sourceFieldsForExpression(
+  expression: JsonRecord,
+  catalog: PhysicalTableCatalog,
   load: CurrentBundleLoad,
   taskId: string,
-  statementId: string,
-  catalog: PhysicalTableCatalog,
+  taskTarget: PhysicalTableCatalogEntry,
   defaultSchema: TaskDefaultSchema | null,
-  fallbackTable: Pick<PhysicalTableCatalogEntry, "platform" | "dataSource">,
-  status: "CONFIRMED" | "PROVISIONAL_LEGACY",
-  indexes: BundleIndexes = bundleIndexesFor(load),
-): DatasetControlAnnotation[] {
-  const allControls = indexes.controlsByStatement.get(statementId) ?? [];
-  const output: DatasetControlAnnotation[] = [];
-  for (const relation of allControls) {
-    const mapping = datasetControlMapping(relation);
-    if (!mapping) continue;
-    const relationId = nonEmpty(relation.relation_id);
-    const fields = new Map<string, PhysicalFieldIdentity>();
-    let unresolved = false;
-    for (const pair of collectPhysicalPairs(relation.relation)) {
-      const resolution = resolvePhysicalInputField(
-        {
-          catalog,
-          taskId,
-          defaultSchema,
-          fallbackTable,
-          schemaRefs: load.records["schema-refs.jsonl"] ?? [],
-        },
-        pair,
-      );
-      if (resolution.status === "RESOLVED")
-        fields.set(physicalFieldKey(resolution.field), resolution.field);
-      else unresolved = true;
-    }
-    const evidenceRefs = [
-      load.evidence["relation-nodes.jsonl"] ?? "machine-facts:relation-nodes.jsonl",
-    ];
-    const sourceText = nonEmpty(relation.source_text);
-    const pushControl = (
-      field: PhysicalFieldIdentity | null,
-      evidenceStatus: DatasetControlAnnotation["evidenceStatus"],
-      reasonCode: string | null,
-    ): void => {
-      const fieldKey = field ? physicalFieldKey(field) : "unresolved";
-      output.push({
-        controlId: `dataset-control:${taskId}:${relationId ?? "unresolved"}:${fieldKey}`,
-        taskId,
-        statementId,
-        relationId,
-        subtype: mapping.subtype,
-        masking: false,
-        grain: mapping.grain,
-        grainReason: mapping.grain === "PRESERVE" ? null : mapping.grainReason,
-        field,
-        sourceText,
-        evidenceStatus,
-        reasonCode,
-        evidenceRefs,
-      });
-    };
-    if (fields.size === 0) {
-      pushControl(
-        null,
-        unresolved || !relationId ? "UNRESOLVED" : status,
-        unresolved
-          ? "ROWSET_FIELD_IDENTITY_UNRESOLVED"
-          : relationId
-            ? null
-            : "ROWSET_SCOPE_UNRESOLVED",
-      );
-      continue;
-    }
-    for (const field of fields.values()) pushControl(field, status, null);
-    if (unresolved)
-      pushControl(null, "UNRESOLVED", "ROWSET_FIELD_IDENTITY_UNRESOLVED");
-  }
-  return output;
+): ReturnType<typeof sourceFields> {
+  return sourceFields(expression, catalog, load, taskId, taskTarget, defaultSchema);
 }
 
 function fieldConditionalsFor(
@@ -948,6 +759,44 @@ function fieldConditionalsFor(
       ],
     },
   ];
+}
+
+export function fieldConditionalsForExpression(
+  load: CurrentBundleLoad,
+  taskId: string,
+  outputColumn: string,
+  expression: JsonRecord,
+  catalog: PhysicalTableCatalog,
+  defaultSchema: TaskDefaultSchema | null,
+  fallbackTable: Pick<PhysicalTableCatalogEntry, "platform" | "dataSource">,
+  status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+): FieldConditionalAnnotation[] {
+  return fieldConditionalsFor(
+    load,
+    {
+      nodeId: `task-local:${taskId}:${outputColumn}`,
+      taskId,
+      taskName: null,
+      depth: 0,
+      field: {
+        platform: fallbackTable.platform,
+        dataSource: fallbackTable.dataSource,
+        stableTableId: "",
+        qualifiedName: "",
+        column: outputColumn,
+        identityStatus: "SCHEMA_BACKED",
+      },
+      bindingId: null,
+      expressionId: String(expression.expression_id ?? ""),
+      expressionText: String(expression.expression_text ?? ""),
+      evidenceStatus: status,
+    },
+    expression,
+    catalog,
+    defaultSchema,
+    fallbackTable,
+    status,
+  );
 }
 
 function tableEdgesOf(

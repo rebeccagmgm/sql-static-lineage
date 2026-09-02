@@ -1,4 +1,8 @@
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
+import {
+  qualifyBareTableName,
+  type TaskDefaultSchema,
+} from "../../shared/task-default-schema.ts";
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 
@@ -317,6 +321,7 @@ export function summarizeTaskRelations(input: {
   readonly statementRecords?: readonly JsonRecord[];
   readonly statementIndex?: number;
   readonly rootRelationId?: string;
+  readonly defaultSchema?: TaskDefaultSchema | null;
 }): TaskRelationSummary {
   const statementIndexes = new Map<string, number>();
   const statementSources = new Map<string, string>();
@@ -441,7 +446,9 @@ export function summarizeTaskRelations(input: {
     if (relationType(row) !== "read") continue;
     const id = readOccurrenceId(row);
     const table = text(relationOf(row).table);
-    if (id && table) readTables.set(id, table);
+    if (id && table) {
+      readTables.set(id, qualifyBareTableName(table, input.defaultSchema ?? null));
+    }
   }
   const readImpacts = new Map<string, { channels: Set<ImpactChannel>; transferKinds: Set<LocalTransferKind>; demandedFields: Set<string>; refs: Set<string>; gaps: Set<string> }>();
   const gaps = new Set<string>();

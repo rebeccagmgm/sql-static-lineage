@@ -20,7 +20,16 @@ import {
 import { uniqueTaskSqlCreateStatement } from "./sparkindex-table-evidence.ts";
 import { extractSqlWriteTableNames } from "./sql-target-evidence.ts";
 import { extractSqlReadTableNames } from "./sql-table-references.ts";
-import { partitionFieldsFromDdl } from "./task-partition-evidence.ts";
+import {
+  isDatabaseSourceToHiveTask,
+  partitionFieldsFromDdl,
+} from "./task-partition-evidence.ts";
+import {
+  loadHoraeDatasourceIndex,
+  preferredRdbmsDataSourceFromTaskSource,
+  type HoraeDatasourceIndex,
+} from "./horae-datasource-cache.ts";
+import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 export const DEFAULT_HIVE_METADATA_JSONL_PATH =
   "E:\\02_area\\股衍数据-数据cookbook\\数综基础信息\\原信息\\hive元信息-20260831快照\\hive_table_restored.jsonl";
@@ -48,6 +57,10 @@ export interface OfflineTableCatalogPaths {
   readonly rdbmsCorePath?: string;
   readonly rdbmsDdlPath?: string;
   readonly indexDir?: string;
+  /** schedule-evidence cache root; used to load horae-datasource map */
+  readonly scheduleEvidenceCacheRoot?: string;
+  /** skip loading horae-datasource (tests) */
+  readonly horaeDatasource?: HoraeDatasourceIndex | null;
 }
 
 export interface OfflineTableCatalog {
@@ -55,6 +68,12 @@ export interface OfflineTableCatalog {
   readonly hiveDdl?: JsonlOffsetIndex;
   readonly rdbmsCore?: JsonlOffsetIndex;
   readonly rdbmsDdl?: JsonlOffsetIndex;
+  readonly horaeDatasource?: HoraeDatasourceIndex;
+  /**
+   * Secondary index: `${schema.table}#${service}` → concrete
+   * `schema.table@gforacle_…#service` key (or AMBIGUOUS if several).
+   */
+  readonly rdbmsQnServiceIndex?: ReadonlyMap<string, string | "AMBIGUOUS">;
 }
 
 export interface OfflineTableCandidate {
@@ -302,6 +321,15 @@ export function loadOfflineTableCatalog(
   const hiveDdlPath = options.hiveDdlPath ?? DEFAULT_HIVE_DDL_JSONL_PATH;
   const rdbmsCorePath = options.rdbmsCorePath ?? DEFAULT_RDBMS_CORE_JSONL_PATH;
   const rdbmsDdlPath = options.rdbmsDdlPath ?? DEFAULT_RDBMS_DDL_JSONL_PATH;
+  const horaeDatasource =
+    options.horaeDatasource === null
+      ? undefined
+      : (options.horaeDatasource ??
+        loadHoraeDatasourceIndex(
+          options.scheduleEvidenceCacheRoot ??
+            DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+        ));
+  const rdbmsCore = optionalIndex(rdbmsCorePath, rdbmsKeys, options.indexDir);
   return {
     hiveMetadata: optionalIndex(
       hiveMetadataPath,
@@ -309,9 +337,43 @@ export function loadOfflineTableCatalog(
       options.indexDir,
     ),
     hiveDdl: optionalIndex(hiveDdlPath, hiveDdlKeys, options.indexDir),
-    rdbmsCore: optionalIndex(rdbmsCorePath, rdbmsKeys, options.indexDir),
+    rdbmsCore,
     rdbmsDdl: optionalIndex(rdbmsDdlPath, rdbmsKeys, options.indexDir),
+    horaeDatasource,
+    rdbmsQnServiceIndex:
+      rdbmsCore === undefined
+        ? undefined
+        : buildRdbmsQnServiceIndex(rdbmsCore.keyOffsets),
   };
+}
+
+/** Build `${qn}#${service}` → concrete `qn@…#service` (or AMBIGUOUS). */
+export function buildRdbmsQnServiceIndex(
+  keyOffsets: ReadonlyMap<string, number | "AMBIGUOUS">,
+): ReadonlyMap<string, string | "AMBIGUOUS"> {
+  const map = new Map<string, string | "AMBIGUOUS">();
+  for (const key of keyOffsets.keys()) {
+    const at = key.lastIndexOf("@");
+    const hash = key.lastIndexOf("#");
+    if (at <= 0 || hash <= at) continue;
+    const qn = key.slice(0, at);
+    const service = key.slice(hash + 1).trim().toLowerCase();
+    if (qn === "" || service === "") continue;
+    const secondary = `${qn}#${service}`;
+    const existing = map.get(secondary);
+    if (existing === undefined) map.set(secondary, key);
+    else if (existing !== key) map.set(secondary, "AMBIGUOUS");
+  }
+  return map;
+}
+
+export function serviceSuffixFromAtlasDataSource(
+  dataSource: string,
+): string | undefined {
+  const hash = dataSource.lastIndexOf("#");
+  if (hash < 0) return undefined;
+  const service = dataSource.slice(hash + 1).trim().toLowerCase();
+  return service === "" ? undefined : service;
 }
 
 function sqlInputs(
@@ -346,7 +408,11 @@ export function extractOfflineTableCandidates(
       byKey.set(key, parsed);
   };
   add(taskEvidence.target);
-  add(taskEvidence.source);
+  // *2hive: source is a platform datasource label (e.g. oracle_rbjygl_85.236),
+  // not a physical table. Adding it creates TABLE_JSONL_MISS noise and can keep
+  // the whole task PARTIAL even when real tables resolve.
+  if (!isDatabaseSourceToHiveTask(taskEvidence.taskCategory))
+    add(taskEvidence.source);
   const sql = sqlInputs(taskEvidence);
   for (const name of Object.values(sql).flatMap((content) =>
     extractSqlReadTableNames(content ?? ""),
@@ -691,6 +757,35 @@ function candidateKeys(candidate: OfflineTableCandidate): readonly string[] {
   return [`${qn}@${HIVE_DATA_SOURCE}`, qn];
 }
 
+/** Prefer concrete `@…#service` before bare schema.table (often AMBIGUOUS). */
+export function rdbmsLookupKeys(
+  candidate: OfflineTableCandidate,
+  preferredRdbmsDataSource?: string,
+  qnServiceIndex?: ReadonlyMap<string, string | "AMBIGUOUS">,
+): readonly string[] {
+  const qn = candidate.qualifiedName.toLowerCase();
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  const push = (key: string): void => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    keys.push(key);
+  };
+  if (candidate.dataSource !== undefined)
+    push(`${qn}@${candidate.dataSource.toLowerCase()}`);
+  if (preferredRdbmsDataSource !== undefined) {
+    const preferred = preferredRdbmsDataSource.toLowerCase();
+    push(`${qn}@${preferred}`);
+    const service = serviceSuffixFromAtlasDataSource(preferred);
+    if (service !== undefined && qnServiceIndex !== undefined) {
+      const byService = qnServiceIndex.get(`${qn}#${service}`);
+      if (typeof byService === "string") push(byService);
+    }
+  }
+  push(qn);
+  return keys;
+}
+
 function lookupFirst(
   index: JsonlOffsetIndex | undefined,
   keys: readonly string[],
@@ -711,6 +806,7 @@ function resolveOne(
   catalog: OfflineTableCatalog,
   sql: Partial<Record<SqlSlot, string>>,
   collectedAt: string,
+  preferredRdbmsDataSource?: string,
 ):
   | { readonly evidence: TableEvidence }
   | { readonly reason: string } {
@@ -777,7 +873,11 @@ function resolveOne(
   }
 
   if (catalog.rdbmsCore !== undefined) {
-    const keys = candidateKeys(candidate);
+    const keys = rdbmsLookupKeys(
+      candidate,
+      preferredRdbmsDataSource,
+      catalog.rdbmsQnServiceIndex,
+    );
     const coreLookup = lookupFirst(catalog.rdbmsCore, keys);
     if (coreLookup.status === "AMBIGUOUS")
       return { reason: "RDBMS_CORE_AMBIGUOUS" };
@@ -791,7 +891,9 @@ function resolveOne(
       const evidence = rdbmsFromCore(
         coreLookup.record,
         ddl,
-        "local:rdbms-core-jsonl,local:rdbms-ddl-jsonl",
+        preferredRdbmsDataSource !== undefined
+          ? "local:rdbms-core-jsonl,local:rdbms-ddl-jsonl,local:horae-datasource"
+          : "local:rdbms-core-jsonl,local:rdbms-ddl-jsonl",
         collectedAt,
       );
       if (evidence === undefined) return { reason: "RDBMS_PLATFORM_UNMAPPED" };
@@ -813,6 +915,14 @@ export function resolveOfflineTables(
   const localPacks = packStore ?? openOfflineTablePackStore(dataRoot);
   const sql = sqlInputs(taskEvidence);
   const collectedAt = now().toISOString();
+  const preferredRdbmsDataSource = isDatabaseSourceToHiveTask(
+    taskEvidence.taskCategory,
+  )
+    ? preferredRdbmsDataSourceFromTaskSource(
+        taskEvidence.source,
+        catalog.horaeDatasource,
+      )
+    : undefined;
   const resolved: TableEvidence[] = [];
   const unavailable: { qualifiedName: string; reason: string }[] = [];
   const seen = new Set<string>();
@@ -820,9 +930,20 @@ export function resolveOfflineTables(
     const dedupe = candidate.qualifiedName.toLowerCase();
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
-    const result = resolveOne(candidate, localPacks, catalog, sql, collectedAt);
+    const result = resolveOne(
+      candidate,
+      localPacks,
+      catalog,
+      sql,
+      collectedAt,
+      preferredRdbmsDataSource,
+    );
     if ("evidence" in result) resolved.push(result.evidence);
-    else unavailable.push({ qualifiedName: candidate.qualifiedName, reason: result.reason });
+    else
+      unavailable.push({
+        qualifiedName: candidate.qualifiedName,
+        reason: result.reason,
+      });
   }
   return { candidates, resolved, unavailable };
 }

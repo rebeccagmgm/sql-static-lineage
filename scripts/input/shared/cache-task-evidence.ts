@@ -15,6 +15,7 @@ import {
   readHiveTaskSqlCache,
 } from "../mainline/hive-task-sql-cache.ts";
 import { parseRunScriptSqlCache } from "../mainline/run-script-sql-cache.ts";
+import { parseHiveDdlFromLogCache } from "../mainline/hive-ddl-from-log-cache.ts";
 import { readSzdataScheduleDetailCache } from "../mainline/szdata-schedule-detail-cache.ts";
 import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { isNoSqlTaskCategory } from "../../reconcile/shared/lineage-scope.ts";
@@ -29,6 +30,8 @@ export const CACHE_EVIDENCE_HIVE_TASK_SQL =
   "local:schedule-evidence:hive-task-sql" as const;
 export const CACHE_EVIDENCE_RUN_SCRIPT_SQL =
   "local:schedule-evidence:run-script-sql" as const;
+export const CACHE_EVIDENCE_HIVE_DDL_FROM_LOG =
+  "local:schedule-evidence:hive-target-ddl" as const;
 
 const TASK_TYPE_CODE_MAP: Readonly<Record<string, string>> = taskTypeCodeMap;
 const SQL_SLOTS: readonly SqlSlot[] = [
@@ -470,6 +473,8 @@ function assembleToHive(
   category: string,
   horae: JsonRecord | undefined,
   schedule: JsonRecord | undefined,
+  cacheRoot: string,
+  artifacts: string[],
 ): TaskEvidence {
   const sync = syncInfoOf(horae);
   const identity = buildIdentity(taskId, category, horae, schedule, [
@@ -499,6 +504,21 @@ function assembleToHive(
     sql.query,
   );
   if (query !== undefined) sql.query = query;
+  if (sql.create === undefined) {
+    const fromLog = parseHiveDdlFromLogCache(taskId, cacheRoot);
+    if (
+      fromLog.status === "HIT" &&
+      fromLog.evidence.ddlStatus === "AVAILABLE" &&
+      fromLog.evidence.createSql
+    ) {
+      artifacts.push("hive-target-ddl.sql");
+      const create = sqlSlot(
+        fromLog.evidence.createSql,
+        CACHE_EVIDENCE_HIVE_DDL_FROM_LOG,
+      );
+      if (create !== undefined) sql.create = create;
+    }
+  }
   const hivePartition =
     firstString(sync, ["hivePartition"]) ??
     firstString(horae, ["hivePartition"]);
@@ -664,7 +684,11 @@ export function assembleCacheTaskEvidence(
       cacheRoot,
       artifacts,
     );
-  else if (category === "runScript" || category === "runScript-2.0")
+  else if (
+    category === "runScript" ||
+    category === "runScript-2.0" ||
+    category === "sparkScript"
+  )
     evidence = assembleRunScript(
       taskId,
       category,
@@ -674,7 +698,14 @@ export function assembleCacheTaskEvidence(
       artifacts,
     );
   else if (category !== undefined && isToHiveSync(category))
-    evidence = assembleToHive(taskId, category, horae, schedule);
+    evidence = assembleToHive(
+      taskId,
+      category,
+      horae,
+      schedule,
+      cacheRoot,
+      artifacts,
+    );
   else if (category !== undefined && isHive2Sync(category))
     evidence = assembleHive2(taskId, category, horae, schedule);
   else evidence = assembleGeneric(taskId, category, horae, schedule);

@@ -11,6 +11,10 @@ import {
   type OneHopReconciliationResult,
 } from "../one-hop/reconcile-one-hop.ts";
 import {
+  DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  readHoraeRelationCache,
+} from "../one-hop/schedule-evidence-cache.ts";
+import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,
   validateTableProducerIndex,
@@ -219,6 +223,12 @@ export interface ReconcileMultiHopOptions {
   readonly terminalTableConfig?: TerminalTableConfig;
   /** Fingerprint already verified by an owning pipeline snapshot. */
   readonly trustedInputFingerprint?: string;
+  /**
+   * Offline Horae relation cache root used when a task has no frozen one-hop
+   * snapshot. `undefined` uses the default cache; `null` disables cache reads
+   * and keeps empty schedule rows (fail-closed for overlapping overwrites).
+   */
+  readonly scheduleEvidenceCacheRoot?: string | null;
 }
 
 interface MultiHopPreparedContext {
@@ -1027,9 +1037,22 @@ function reconcileMultiHopRootTraversalKernel(
       );
       oneHop = frozenOneHop;
     } else {
-      // Multi-hop is an offline artifact builder.  An absent snapshot means
-      // no scheduler rows are available, so one-hop must not silently fall
-      // back to its default Horae runner.
+      // Multi-hop is an offline artifact builder: never call the live Horae
+      // runner. Prefer a frozen snapshot; otherwise reuse the read-through
+      // schedule evidence cache. Empty rows remain the fail-closed fallback
+      // when the cache misses, but must not be the default when parents are
+      // already on disk — otherwise overlapping INSERT OVERWRITE writers are
+      // falsely demoted to UNKNOWN (e.g. 105387/108951 under 119044).
+      const cacheRoot =
+        options.scheduleEvidenceCacheRoot === undefined
+          ? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT
+          : options.scheduleEvidenceCacheRoot;
+      const cached =
+        cacheRoot === null
+          ? null
+          : readHoraeRelationCache(current.taskId, cacheRoot);
+      const scheduleRows =
+        cached?.status === "HIT" ? cached.rows : [];
       oneHop = reconcileOneHopWithPreparedContext(
         current.taskId,
         {
@@ -1037,7 +1060,7 @@ function reconcileMultiHopRootTraversalKernel(
           producerIndex: options.producerIndex,
           verifyInputFingerprint: true,
           trustedInputFingerprint: preparedContext.inputFingerprint,
-          scheduleRows: [],
+          scheduleRows,
           now,
         },
         preparedContext.oneHopContext,

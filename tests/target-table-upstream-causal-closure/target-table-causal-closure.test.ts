@@ -463,14 +463,14 @@ describe("target table causal closure baseline", () => {
     expect(result.gaps.some((gap) => gap.reasonCode === "CAUSAL_CLOSURE_BOUNDARY" && gap.gapId.includes("MAX_STATE_UPDATES"))).toBe(true);
   });
 
-  it("rolls multiple branches up without counting the root write", () => {
+  it("rolls multiple branches up and always includes the root write", () => {
     const confirmed = canonicalAssessment({ targetWriteId: "write", candidateBranchId: "branch:p", relationStatus: "CONFIRMED_RELATED", channelAssessments: [], evidenceRefs: ["e"], gapRefs: [], negativeProofs: [] });
     const unknown = canonicalAssessment({ targetWriteId: "write", candidateBranchId: "branch:q", relationStatus: "UNKNOWN", channelAssessments: [{ channel: "ROW_MEMBERSHIP", status: "UNKNOWN", proofRefs: [], witnessRefs: [], gapRefs: ["g"] }], evidenceRefs: [], gapRefs: ["g"], negativeProofs: [] });
     const root = { ...confirmed, candidateBranchId: "branch:root" };
     const result = rollupAssessments({ branches: [branch(), branch({ candidateBranchId: "branch:q", producerTaskId: "q" }), branch({ candidateBranchId: "branch:root", branchKind: "ROOT_WRITE", producerTaskId: "root" })], assessments: [confirmed, unknown, root] });
-    expect(result.taskRollup.map((value) => value.producerTaskId).sort()).toEqual(["p", "q"]);
-    expect(result.minimumCertainTaskIds).toEqual(["p"]);
-    expect([...result.conservativeSafetyTaskIds].sort()).toEqual(["p", "q"]);
+    expect(result.taskRollup.map((value) => value.producerTaskId).sort()).toEqual(["p", "q", "root"]);
+    expect(result.minimumCertainTaskIds).toEqual(["p", "root"]);
+    expect([...result.conservativeSafetyTaskIds].sort()).toEqual(["p", "q", "root"]);
   });
 
   it("projects one assessment per candidate branch rather than per field", () => {

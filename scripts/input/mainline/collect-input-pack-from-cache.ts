@@ -40,7 +40,10 @@ import {
   findStaleLegacyTaskDirectories,
   relocateTaskPacks,
 } from "./collect-one-task-input-pack.ts";
-import { taskIdsFromScheduleEvidenceCache } from "./fill-horae-relation-cache.ts";
+import {
+  taskIdsFromFile,
+  taskIdsFromScheduleEvidenceCache,
+} from "./fill-horae-relation-cache.ts";
 import { exitCodeForTaskBatch } from "./task-batch.ts";
 import {
   assertStatusFileOutsideDataRoot,
@@ -645,16 +648,21 @@ export function parseCollectInputPackFromCacheArgs(
   argv: readonly string[],
 ): CollectInputPackFromCacheOptions {
   const taskIdsRaw = optionValue(argv, "--task-ids");
+  const taskIdsFile = optionValue(argv, "--task-ids-file");
+  if (taskIdsRaw !== undefined && taskIdsFile !== undefined)
+    throw new Error("Use only one of --task-ids or --task-ids-file");
   return {
     dataRoot: requiredOption(argv, "--data-root"),
     cacheRoot: optionValue(argv, "--cache-root"),
     taskIds:
-      taskIdsRaw === undefined
-        ? undefined
-        : taskIdsRaw
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
+      taskIdsFile !== undefined
+        ? taskIdsFromFile(taskIdsFile)
+        : taskIdsRaw === undefined
+          ? undefined
+          : taskIdsRaw
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
     force: flag(argv, "--force"),
     dryRun: flag(argv, "--dry-run"),
     hiveMetadataPath: optionValue(argv, "--hive-metadata-jsonl"),

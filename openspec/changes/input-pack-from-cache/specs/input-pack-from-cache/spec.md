@@ -24,7 +24,7 @@
 
 - sparkIndex：schedule-detail 为主，horae-task-type 补缺槽
 - hiveTask / hiveTask-2.0：SQL 只来自 `hive-task.sql`
-- runScript / runScript-2.0：SQL 只来自 `run-script.sql` 的 query
+- runScript / runScript-2.0 / sparkScript：SQL 只来自 `run-script.sql` 的 query（Horae log 抽取）
 - `*2hive`：query 与 target 来自 Horae `querySql` / `syncInfo`
 - `hive2*`：端点来自 `syncInfo` 与 schedule-detail；缺 query 时 MUST 仍写出身份和已有槽位，并标 PARTIAL
 - 无 SQL 的非加工类任务 MUST 记 SKIPPED，不得写入空 Task Pack

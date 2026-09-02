@@ -16,3 +16,16 @@ new or incomplete:
 For dependency-only setup, run `npm run prepare:deps`. Do not use `npx` for
 project validation, because it can resolve a package outside the lockfile or
 hide that the current worktree has not been initialized.
+
+## Task-local projection goldens
+
+`npm run test:task-local-projection` skips TL-6/TL-7 real-Facts goldens unless
+sibling `sql-static-lineage-data/field-facts` (or `TASK_LOCAL_GOLDEN_*` roots)
+is present. On CI jobs that mount that data pack, set:
+
+```bash
+TASK_LOCAL_GOLDEN_REQUIRED=1
+```
+
+so missing Facts fail closed instead of silently skipping. Schedule neighbors
+on TASK nodes are `scheduleReference` only — not data lineage.

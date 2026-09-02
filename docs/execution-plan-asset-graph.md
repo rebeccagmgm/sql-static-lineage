@@ -10,7 +10,12 @@
 
 完整方案见 `docs/execution-plan-rerun-shrink.md`。
 P0 的 RS-5 已过。**WP-1 已合入**（`cdc187a` / PR #10）。
-WP-3 完整方案见 `docs/execution-plan-task-local-projection.md`。
+WP-3 已验收（schema 1.1.0）；细则见 `docs/execution-plan-task-local-projection.md`。
+WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `docs/execution-plan-task-local-union.md`；
+但全量语料（Pack 14,113 / Facts 344 / producer-index / 调度缓存）与消费者代码审计表明：图的基本单位（任务/表）
+不足以承载多写、temp 折叠、分区可判性与算子语义，且现有 field-lineage / one-hop / 闭包含多处启发式与静默升级。
+**当前优先级转为准确性**：见 `docs/graph-accuracy-architecture.md`（WP-6…WP-12）与
+`docs/graph-user-narrative.md`（对用户陈述准/不准）。资产图扩批、WP-2、Neo4j 上线排在其后。
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
@@ -44,18 +49,19 @@ WP-3 完整方案见 `docs/execution-plan-task-local-projection.md`。
 | ---- | -------------------------------- | ------------------ | -------------------------------- | ------------------------------- |
 | WP-1 | `separate-field-impact-channels` | sql-static-lineage | **已合入 `cdc187a`**           | 已完成                          |
 | WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
-| WP-3 | `task-local-graph-projection`    | sql-static-lineage | WP-1                             | WP-1 合入后                     |
-| WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 与 WP-3 并行                    |
-| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结                    | 契约冻结后                      |
+| WP-3 | `task-local-graph-projection`    | sql-static-lineage | **已验收** schema **1.1.0**（含 WP-3.1） | 已完成                    |
+| WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 可与 WP-5 并行                  |
+| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结（已满足）          | **下一包**                      |
 
 ```text
-WP-1 影响通道分离 ──┬─> WP-3 任务局部投影 ──> WP-5 data-graph 接入
+WP-1 影响通道分离 ──┬─> WP-3 任务局部投影（已验收）──> WP-5 data-graph 并集接入
                     └─> WP-4 加工/通道识别
 WP-2 声明口径采集 ────────────────────────> （WP-3 后可加传播与矛盾检测）
 ```
 
-WP-1 已合入。WP-2 仍可并行。WP-3 与 WP-4 文件不重叠，可同时领。
+WP-1 / WP-3 已合入。WP-2、WP-4 仍可并行。WP-5 细则见 `docs/execution-plan-task-local-union.md`。
 WP-3 细则与完成定义以 `docs/execution-plan-task-local-projection.md` 为准，不要再用本节旧的「递归展开到四张 ref 任务号」。
+**调度为 `scheduleReference`，非数据血缘。**
 
 ## 共享不变量
 
@@ -63,6 +69,9 @@ WP-3 细则与完成定义以 `docs/execution-plan-task-local-projection.md` 为
 
 1. 不修改 SQLLens、`scripts/plans/`、`scripts/machine-facts/` 的事实生产逻辑。
    事实不足时补 typed gap，不在消费侧猜测或补齐。
+   增补（2026-09-02，见 `docs/graph-accuracy-architecture.md` §2）：对运行契约明确为“query 输出写入 Pack target”的任务，
+   Facts 生产侧允许从已确认的 Pack target、partition 和唯一 query producer 构造 `PACK_DECLARED_QUERY_OUTPUT` 写观察；
+   不得修改或伪装原始 SQL，必须保留 provenance、原 SQL hash，并在目标、查询边界、Schema 或分区证据不足时 fail closed。
 2. 不引入新解析器（Calcite / sqlglot / ScopeLineage / SQLLineage）。
 3. 数据集级控制证据**不得**挂到字段节点，不得产生 `affectedRootFields`
    一类字段级断言。这是 WP-1 的核心，也是其余 WP 的前提。
@@ -213,14 +222,17 @@ scripts/visualize/field-lineage-visualize.ts
 
 ## WP-3 `task-local-graph-projection`
 
-**前置**：WP-1 已合入。
+**状态**：**已验收**（TL-0…TL-8 归档 + WP-3.1）。契约 `TASK_LOCAL_PROJECTION` **1.1.0**。
+OpenSpec：`openspec/changes/archive/2026-09-02-task-local-graph-projection/`、`openspec/changes/task-local-projection-wp31/`。
 
 **完整方案**：`docs/execution-plan-task-local-projection.md`（TL-0…TL-8）。
 
 一句话：每个任务只投影自己的 READ/WRITE/值边/控制边；任务之间靠物理表身份在查询期用 producer-index 拼接。
-不要在本 WP 把上游 taskId 写进投影，也不要把「从 176827 递归走到四张拉链 ref」当完成定义——那是 105387 自己的 `DATASET_CONTROL`，外加查询期拼接。
+调度邻居只落在 TASK 的 `scheduleReference`（`SCHEDULE_REFERENCE_ONLY`），**不是数据血缘**。
+不要把上游 taskId 写进数据边，也不要把「从 176827 递归走到四张拉链 ref」当完成定义——那是 105387 自己的 `DATASET_CONTROL`，外加查询期拼接。
 
-**金样**：176827 为主，105387 必须 `--also-task-ids` 点名（它不在 `DM_RSK_N` 63 里），155015 只回归本任务值边。
+**金样**：176827 为主；119044 / 105387 用 `--also-task-ids` 点名（105387 不在 `DM_RSK_N` 63 里）。
+并集链形状：105387 写 `t03_agt_stati_info_h` → 119044 读它（并主读 `t03_otc_opt_comp_info`）→ 写 `t98` → 176827 读 `t98`。
 
 ## WP-4 `task-processing-kind`
 
@@ -254,31 +266,19 @@ UNKNOWN        SQL 缺失或证据不足
 
 ## WP-5 `task-local-union-source`
 
-**目标**：让 data-graph 消费任务局部并集图，复用其全部投影、查询与索引能力。
+**完整方案**：`docs/execution-plan-task-local-union.md`（TU-0…TU-8）。
 
-**前置**：WP-3 的 `TASK_LOCAL_PROJECTION` 契约冻结（不必等全量铺完）。
+**目标**：让 data-graph 消费 WP-3 的 N 份局部投影，并成一张可查询的并集图；跨任务依赖在**查询期**用物理表身份 + producer-index + `partitionPredicateStatus` 拼接，不在构建期跑 multi-hop 闭包。
+
+**前置**：WP-3 `TASK_LOCAL_PROJECTION` 契约冻结（当前 **1.1.0**；不必等全库铺完）。
 
 **仓库**：`scripts/data-graph`（独立 git 仓库）。
 
-**契约要点**
+**一句话**：新增 `sourceMode: TASK_LOCAL_UNION` loader，与 `LEGACY_ARTIFACT_PAIRS` 并列；不修改 `maxRoots = 32` 及已发布 root 快照行为。
 
-```text
-sourceMode: TASK_LOCAL_UNION
-  taskSources[]   taskId + 局部投影 sha256 + Input Pack fingerprint + 覆盖状态
-  producerIndex   contentHash + inputFingerprint（单一身份，沿用现有校验）
-  无 rootTaskIds  并集图没有 root，规模上限按任务数与总字节独立设定
-```
+**金样（并集链）**：105387 → 119044 → 176827 表级接续（经 `t03_agt_stati_info_h` / `t98`；`t03_otc_opt_comp_info` writer 不在三金样内）+ 与 10 份 root 快照 nodeId 交叉比对。
 
-新增 loader 与现有 `loadProjectTopologySources` 并列，**不修改** `maxRoots = 32`
-及 `LEGACY_ARTIFACT_PAIRS` 的任何行为。两种 mode 不混入同一份快照。
-
-**完成定义**
-
-1. `LEGACY_ARTIFACT_PAIRS` 路径的校验、快照 ID、六个参考查询结果逐字节不变。
-2. 并集图与已发布 root 快照在同一 ID 空间：同一任务/数据集节点 ID 可比对，
-   用现有 10 份 root 产物做交叉验证并留档差异。
-3. `npm run typecheck` / `build` / `test` / `format:check` 在 data-graph 仓库全绿。
-4. 现有 `test:real-artifact` 闭环测试不回归。
+细则、查询期剪枝、调度 `scheduleReference` 处理、完成定义见 `docs/execution-plan-task-local-union.md`。
 
 ## 并行调度建议
 
@@ -290,17 +290,17 @@ sourceMode: TASK_LOCAL_UNION
 第 1 波
   WP-1 已合入
 
-第 2 波（现在，可同时派两个 agent）
-  agent C -> WP-3   任务局部投影   见 docs/execution-plan-task-local-projection.md
-  agent D -> WP-4   加工/通道识别
+第 2 波
+  WP-3 已验收（schema 1.1.0 + WP-3.1）   见 docs/execution-plan-task-local-projection.md
+  agent D -> WP-4   加工/通道识别（仍可做）
 
-第 3 波
-  agent E -> WP-5   data-graph 接入（WP-3 契约冻结即可开始，不必等铺完）
+第 3 波（现在）
+  agent E -> WP-5   data-graph 并集接入   见 docs/execution-plan-task-local-union.md
   WP-2 扩展         INHERITED 传播与"声明 vs 实现"矛盾检测（需 WP-3 的图）
 ```
 
-派单 WP-3 时必须同时给出：本文件的**共享不变量**、`docs/execution-plan-task-local-projection.md`、
-以及 `docs/domain-asset-graph-architecture.md`。
+派单 WP-5 时必须同时给出：本文件的**共享不变量**、`docs/execution-plan-task-local-union.md`、
+`docs/execution-plan-task-local-projection.md`（上游契约）、以及 `docs/domain-asset-graph-architecture.md`。
 
 ## 里程碑
 
@@ -308,8 +308,7 @@ sourceMode: TASK_LOCAL_UNION
 **单表重跑收缩不在这个里程碑**——那是 P0 RS-5。M1 只覆盖 field-lineage HTML
 通道分离与声明口径。
 
-**M2（WP-3 + WP-4）**：`DM_RSK_N` 63 个任务铺满，成本模型实测有数，
-加工/通道可见。此时具备扩批依据。
+**M2（WP-3 + WP-4）**：WP-3 侧 `DM_RSK_N` 成本模型已留档；WP-4 加工/通道可见后具备扩批依据。
 
 **M3（WP-5）**：并集图进入 data-graph 的查询与索引管线，
 地图与影响分析共用同一份图。

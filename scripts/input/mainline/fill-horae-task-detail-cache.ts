@@ -22,6 +22,8 @@ export interface FillHoraeTaskDetailCacheOptions {
   readonly taskIds?: readonly string[];
   readonly maxErrors?: number;
   readonly minIntervalMs?: number;
+  /** When true, rewrite HIT caches instead of skipping them. */
+  readonly force?: boolean;
   readonly gate?: HoraeSerialGate;
   readonly runner?: (taskId: string) => unknown;
   readonly now?: () => Date;
@@ -105,6 +107,7 @@ export async function fillHoraeTaskDetailCache(
   if (!Number.isSafeInteger(minIntervalMs) || minIntervalMs < 0)
     throw new Error("HORAE_DETAIL_MIN_INTERVAL_INVALID");
   const taskIds = options.taskIds ?? taskIdsFromCache(cacheRoot);
+  const force = options.force === true;
   const gate = options.gate ?? new HoraeSerialGate({ minIntervalMs });
   const runner = options.runner ?? runHoraeDetail;
   const now = options.now ?? (() => new Date());
@@ -116,7 +119,7 @@ export async function fillHoraeTaskDetailCache(
 
   for (const [index, taskId] of taskIds.entries()) {
     const existing = readHoraeTaskTypeCache(taskId, cacheRoot);
-    if (existing.status === "HIT") {
+    if (!force && existing.status === "HIT") {
       skipped += 1;
       continue;
     }
@@ -187,6 +190,7 @@ async function main(): Promise<void> {
     option("--interval-ms"),
     DEFAULT_MIN_INTERVAL_MS,
   );
+  const force = process.argv.includes("--force");
   const taskIdsFile = option("--task-ids-file");
   const taskIds = boundedTaskIds(
     taskIdsFile ? taskIdsFromFile(taskIdsFile) : taskIdsFromCache(cacheRoot),
@@ -198,6 +202,7 @@ async function main(): Promise<void> {
       taskIdsFile: taskIdsFile ?? null,
       maxErrors,
       minIntervalMs,
+      force,
     })}\n`,
   );
   const summary = await fillHoraeTaskDetailCache({
@@ -205,6 +210,7 @@ async function main(): Promise<void> {
     taskIds,
     maxErrors,
     minIntervalMs,
+    force,
   });
   process.stdout.write(`${JSON.stringify(summary)}\n`);
   if (summary.errors > 0) process.exitCode = 1;

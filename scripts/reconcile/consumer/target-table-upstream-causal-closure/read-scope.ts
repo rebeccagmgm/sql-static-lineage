@@ -160,6 +160,53 @@ function localRelationPath(relationId: string): string {
   return canonicalRelationIdentity(relationId) ?? relationId;
 }
 
+function resolveLeafRelationId(
+  load: CurrentBundleLoad,
+  branch: CandidateBranch,
+  occurrence: CandidateReadOccurrence,
+): string | null {
+  const tableName = branch.table?.qualifiedName;
+  if (tableName) {
+    const proof = proveReadOccurrence(load, { qualifiedName: tableName }, occurrence);
+    if (proof.valid && proof.relationId) return proof.relationId;
+  }
+  for (const row of matchingRelationRows(load, occurrence)) {
+    const id = relationIdOf(row);
+    if (id) return id;
+  }
+  return null;
+}
+
+const MAX_RELATION_PATH_DEPTH = 25;
+
+/** Walk relation-edges from the proven read toward ancestors (includes JOIN when present). */
+export function enrichRelationPathFromFacts(
+  load: CurrentBundleLoad,
+  branch: CandidateBranch,
+  occurrence: CandidateReadOccurrence,
+): readonly string[] {
+  const leafRelationId = resolveLeafRelationId(load, branch, occurrence);
+  if (!leafRelationId) return occurrence.relationPath;
+  const parents = parentByChild(load);
+  const chain: string[] = [];
+  let current: string | null = leafRelationId;
+  const seen = new Set<string>();
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    chain.unshift(localRelationPath(current));
+    current = parents.get(current) ?? null;
+  }
+  if (chain.length <= occurrence.relationPath.length) return occurrence.relationPath;
+  const joinIndex = chain.findIndex((value) => /(?:^|[./:])join(?:[./:]|$)/i.test(value));
+  if (joinIndex >= 0) {
+    const from = Math.max(0, joinIndex - 1);
+    const trimmed = chain.slice(from, from + MAX_RELATION_PATH_DEPTH);
+    return trimmed.length > occurrence.relationPath.length ? trimmed : occurrence.relationPath;
+  }
+  const capped = chain.length > MAX_RELATION_PATH_DEPTH ? chain.slice(-MAX_RELATION_PATH_DEPTH) : chain;
+  return capped.length > occurrence.relationPath.length ? capped : occurrence.relationPath;
+}
+
 /**
  * When multi-hop still carries a stale query#/create# occurrence, rebind it
  * from the current machine-facts dataset-io read_occurrences for that table.
@@ -188,12 +235,16 @@ export function refreshReadOccurrenceFromDatasetIo(
   if (!relationId || !occurrenceId) return null;
   const localPath = localRelationPath(relationId);
   const statementId = text(reads[0]?.statement_id);
-  return {
+  const base: CandidateReadOccurrence = {
     ...occurrence,
     occurrenceId,
     readRelationId: localPath,
     relationPath: [localPath],
     ...(planSlotSqlSourceId(statementId) ? { sqlSourceId: planSlotSqlSourceId(statementId)! } : {}),
+  };
+  return {
+    ...base,
+    relationPath: enrichRelationPathFromFacts(load, branch, base),
   };
 }
 
@@ -230,8 +281,9 @@ export function normalizeReadScopes(
 ): CandidateUniverse {
   const branches = universe.branches.map((branch) => {
     if (!branch.consumerTaskId || !branch.readOccurrence) return branch;
+    const originalOccurrence = branch.readOccurrence;
     const load = loadForTask(branch.consumerTaskId);
-    let readOccurrence = branch.readOccurrence;
+    let readOccurrence = originalOccurrence;
     if (
       branch.table?.qualifiedName
       && !proveReadOccurrence(load, { qualifiedName: branch.table.qualifiedName }, readOccurrence).valid
@@ -239,19 +291,30 @@ export function normalizeReadScopes(
       const refreshed = refreshReadOccurrenceFromDatasetIo(load, branch);
       if (refreshed) readOccurrence = refreshed;
     }
-    const workingBranch = readOccurrence === branch.readOccurrence
+    const workingBranch = readOccurrence === originalOccurrence
       ? branch
       : { ...branch, readOccurrence };
     const scope = inferReadScope(load, workingBranch);
+    const enrichedPath = enrichRelationPathFromFacts(load, workingBranch, readOccurrence);
+    const relationPath = enrichedPath.length > 0
+      ? enrichedPath
+      : (readOccurrence.relationPath ?? []);
+    const resolvedSqlSourceId = scope.sqlSourceId
+      ?? planSlotSqlSourceId(readOccurrence.occurrenceId)
+      ?? readOccurrence.sqlSourceId
+      ?? null;
     const nextOccurrence = {
       ...readOccurrence,
-      ...(scope.sqlSourceId ? { sqlSourceId: scope.sqlSourceId } : {}),
+      relationPath,
+      ...(resolvedSqlSourceId ? { sqlSourceId: resolvedSqlSourceId } : {}),
       ...(scope.rootRelationId ? { rootRelationId: scope.rootRelationId } : {}),
     };
-    return scope.sqlSourceId !== branch.readOccurrence.sqlSourceId
-      || scope.rootRelationId !== branch.readOccurrence.rootRelationId
-      || readOccurrence.occurrenceId !== branch.readOccurrence.occurrenceId
-      || readOccurrence.readRelationId !== branch.readOccurrence.readRelationId
+    return scope.sqlSourceId !== originalOccurrence.sqlSourceId
+      || scope.rootRelationId !== originalOccurrence.rootRelationId
+      || readOccurrence.occurrenceId !== originalOccurrence.occurrenceId
+      || readOccurrence.readRelationId !== originalOccurrence.readRelationId
+      || relationPath.length !== (originalOccurrence.relationPath?.length ?? 0)
+      || relationPath.some((value, index) => value !== (originalOccurrence.relationPath?.[index] ?? ""))
       ? { ...workingBranch, readOccurrence: nextOccurrence }
       : branch;
   });
