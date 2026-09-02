@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -69,7 +70,7 @@ function createL1Facts(options: { kind: "insert" | "ctas" | "unprovable"; indepe
 	root: string;
 	taskId: string;
 } {
-	const root = mkdtempSync(join("C:\\Users\\13246\\AppData\\Local\\Temp", "task-inspection-canary-"));
+	const root = mkdtempSync(join(tmpdir(), "task-inspection-canary-"));
 	roots.push(root);
 	const factsRoot = join(root, "machine-facts");
 	const taskId = `canary-${options.kind}`;
