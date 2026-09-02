@@ -137,9 +137,9 @@ function summaryForBranch(
 ): TaskRelationSummary | undefined {
   const occurrence = branch.readOccurrence;
   if (!occurrence || !branch.consumerTaskId) return undefined;
-  const source = occurrence.sqlSourceId
-    ? canonicalSqlSourceId(occurrence.sqlSourceId)
-    : canonicalSqlSourceId(occurrence.occurrenceId);
+  const rawSource = occurrence.sqlSourceId ?? occurrence.occurrenceId;
+  if (!rawSource) return undefined;
+  const source = canonicalSqlSourceId(rawSource);
   return summaryForOccurrence(summaries, branch.consumerTaskId, source, occurrence.statementIndex, occurrence.rootRelationId);
 }
 
@@ -241,8 +241,18 @@ function finalAssessment(input: {
   }
   const channels = new Map<ImpactChannel, ChannelAssessment>();
   for (const [channel, state] of input.propagated) channels.set(channel, propagatedChannelAssessment(state));
+  const localFieldValue = input.local.find((channel) => channel.channel === "FIELD_VALUE");
   for (const local of input.local) {
-    if (channels.has(local.channel)) continue;
+    const prior = channels.get(local.channel);
+    const leftDimMultiplicity = localFieldValue?.status === "NOT_APPLICABLE"
+      && local.channel === "MULTIPLICITY"
+      && local.status === "CONFIRMED";
+    if (prior && !leftDimMultiplicity) continue;
+    if (leftDimMultiplicity) {
+      channels.set(local.channel, local);
+      continue;
+    }
+    if (prior) continue;
     if (local.status === "NOT_APPLICABLE" && input.reached) {
       channels.set(local.channel, local);
       continue;

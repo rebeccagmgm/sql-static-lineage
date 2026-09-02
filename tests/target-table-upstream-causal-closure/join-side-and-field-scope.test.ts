@@ -570,7 +570,9 @@ describe("RS-3 closure seeding", () => {
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["105387"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["163064", "179886", "78472", "78473"].sort(),
+    );
   });
 
   it("does not promote LEFT JOIN ref producers to 档二 through an intermediate FIELD_VALUE hop", () => {
@@ -705,7 +707,9 @@ describe("RS-3 closure seeding", () => {
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["163064", "179886", "78472", "78473"].sort(),
+    );
   });
 
   it("keeps generic-CASE LEFT dims out of 档二 after a FIELD_VALUE hop", () => {
@@ -1002,7 +1006,9 @@ describe("RS-3 closure seeding", () => {
     const report = buildShrinkReport({ branches, assessments: result.assessments });
     expect(report.valueCertain.map((entry) => entry.taskId).sort()).toEqual(["105387", "119044"]);
     expect(report.rowDetermining.map((entry) => entry.taskId)).toEqual([]);
-    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual([]);
+    expect(report.multiplicityRisk.map((entry) => entry.taskId).sort()).toEqual(
+      ["105388", "163064", "179886", "78472", "78473"].sort(),
+    );
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("105388");
   });

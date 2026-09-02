@@ -71,7 +71,7 @@ function emptyChannel(
 
 function statementLevelGaps(summary: TaskRelationSummary): readonly string[] {
   return summary.gaps.filter((gap) =>
-    /relation-summary-gap:[^:]+:(?:PARSE_|SQL_SOURCE_ID_UNRESOLVED|ROOT_RELATION_NOT_FOUND|RELATION_IDENTITY_UNRESOLVED)/i.test(gap),
+    /relation-summary-gap:[^:]+:(?:PARSE_|SQL_SOURCE_ID_UNRESOLVED|ROOT_RELATION_NOT_FOUND)/i.test(gap),
   );
 }
 

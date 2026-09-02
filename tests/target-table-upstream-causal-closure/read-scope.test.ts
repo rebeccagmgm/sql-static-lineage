@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { CandidateBranch } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
 import { buildCausalClosure } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/causal-closure.ts";
-import { inferReadScope, normalizeReadScopes } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/read-scope.ts";
-import { relationSummaryKey } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
+import { inferReadScope, normalizeReadScopes, enrichRelationPathFromFacts } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/read-scope.ts";
+import { assessBranch, buildShrinkReport } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/static-assessment.ts";
+import { relationSummaryKey, summarizeTaskRelations } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
 import type { CurrentBundleLoad, JsonRecord } from "../../scripts/query/current-task-bundle.ts";
 
 const table = {
@@ -362,5 +363,102 @@ describe("inferReadScope", () => {
     expect(assessment?.channelAssessments.find((item) => item.channel === "FIELD_VALUE")?.status).toBe(
       "CONFIRMED",
     );
+  });
+
+  it("extends relationPath through LEFT JOIN ancestors for downstream 档三 assessment", () => {
+    const driver = "task:181058:statement:0:relation:root.read.driver";
+    const dim = "task:181058:statement:0:relation:root.read.dim";
+    const join = "task:181058:statement:0:relation:root.join.dim";
+    const project = "task:181058:statement:0:relation:root.project";
+    const table = "pdata_n.t03_agt_rela_h";
+    const occurrenceId = "query#0:root.read.dim";
+    const facts = load("181058", {
+      "statements.jsonl": [
+        { statement_id: "task:181058:slot:query:statement:0", statement_index: 0 },
+      ],
+      "relation-nodes.jsonl": [
+        readNode({ taskId: "181058", relationId: driver, table: "db.fact", occurrenceId: "query#0:root.read.driver" }),
+        readNode({ taskId: "181058", relationId: dim, table, occurrenceId }),
+        {
+          relation_id: join,
+          statement_id: "task:181058:slot:query:statement:0",
+          relation_type: "join",
+          relation: { id: join, type: "join", join_type: "LEFT", left: driver, right: dim },
+        },
+        { relation_id: project, statement_id: "task:181058:slot:query:statement:0", relation_type: "project", relation: { id: project, type: "project" } },
+      ],
+      "relation-edges.jsonl": [
+        { from_relation_id: driver, to_relation_id: join },
+        { from_relation_id: dim, to_relation_id: join },
+        { from_relation_id: join, to_relation_id: project },
+      ],
+      "dataset-io.jsonl": [uniqueReadIo("181058", table, occurrenceId, dim)],
+    });
+    const dimBranch = producer({
+      candidateBranchId: "branch:dim",
+      consumerTaskId: "181058",
+      producerTaskId: "105388",
+      table: physicalTable(table),
+      readOccurrence: {
+        occurrenceId,
+        readRelationId: "root.read.dim",
+        statementIndex: 0,
+        relationPath: ["root.read.dim"],
+      },
+      writeObservationId: "write:105388",
+      writeScope: { sqlSourceId: "task:105388", statementOrdinal: 0, rootRelationId: "task:105388:root" },
+    });
+    const enriched = enrichRelationPathFromFacts(facts, dimBranch, dimBranch.readOccurrence!);
+    expect(enriched.length).toBeGreaterThan(1);
+    expect(enriched.some((value) => /join/i.test(value))).toBe(true);
+
+    const summarized = summarizeTaskRelations({
+      taskId: "181058",
+      sqlSourceId: "task:181058:slot:query",
+      statementIndex: 0,
+      rootRelationId: project,
+      relationRecords: facts.records["relation-nodes.jsonl"] ?? [],
+      relationEdgeRecords: facts.records["relation-edges.jsonl"] ?? [],
+      statementRecords: facts.records["statements.jsonl"] ?? [],
+    });
+    const universe = normalizeReadScopes(
+      {
+        rootTaskId: "181058",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [dimBranch],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+    );
+    const branch = universe.branches[0]!;
+    const assessment = assessBranch({
+      targetWriteId: "write:181058",
+      branch,
+      universeComplete: true,
+      summary: summarized,
+      fieldValueProvider: {
+        scanCount: 0,
+        edgeCount: 0,
+        lookup: (value) => ({
+          candidateBranchId: value.candidateBranchId,
+          status: "NOT_APPLICABLE",
+          affectedTargetFields: [],
+          outputFieldBindingIds: [],
+          evidenceRefs: [],
+          gapRefs: [],
+        }),
+      },
+    });
+    expect(assessment.channelAssessments.find((channel) => channel.channel === "MULTIPLICITY")?.status).toBe(
+      "CONFIRMED",
+    );
+    const report = buildShrinkReport({ branches: [branch], assessments: [assessment] });
+    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toEqual(["105388"]);
   });
 });

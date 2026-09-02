@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 
-import { loadPhysicalTableCatalog, type PhysicalTableCatalogEntry } from "../../../machine-facts/input-pack-machine-facts.ts";
+import { indexTaskInputPacks, loadPhysicalTableCatalog, type PhysicalTableCatalogEntry } from "../../../machine-facts/input-pack-machine-facts.ts";
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
 import { canonicalBundleIdentity, createCurrentTaskBundleReader, type CurrentBundleLoad } from "../../../query/current-task-bundle.ts";
 import { validateTableProducerIndex } from "../../producer/producer-index.ts";
@@ -18,6 +18,7 @@ import { validateCausalClosure } from "./proof-validator.ts";
 import { buildShrinkReport, unknownReasonCodesForAssessment } from "./static-assessment.ts";
 import { relationSummaryKey, summarizeTaskRelations } from "./task-relation-summary.ts";
 import { resolveTargetWrite, type AnalysisSnapshotRef } from "./target-write-contract.ts";
+import { inferTaskDefaultSchema } from "../../shared/task-default-schema.ts";
 
 interface CliOptions {
   readonly dataRoot: string;
@@ -44,11 +45,38 @@ interface CliOptions {
 function readJson(path: string): unknown { return JSON.parse(readFileSync(path, "utf8")); }
 function fileHash(path: string): string { return sha256(readFileSync(path)); }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value.trim() : null; }
-function taskJson(dataRoot: string, taskId: string): Record<string, unknown> {
-  const path = resolve(dataRoot, "tasks", "sparkIndex", taskId, "task.json");
-  if (!existsSync(path)) return {};
-  const value = readJson(path);
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+/**
+ * Resolve Task Pack documents the same way field-lineage / one-hop do:
+ * scan every `tasks/<category>/<taskId>/task.json`, not only sparkIndex.
+ * Ambiguous or missing packs stay empty so defaultSchema fails closed.
+ */
+export function createTaskPackDocumentReader(
+  dataRoot: string,
+): (taskId: string) => Record<string, unknown> {
+  let index: ReadonlyMap<string, readonly string[]> | null = null;
+  const cache = new Map<string, Record<string, unknown>>();
+  return (taskId: string): Record<string, unknown> => {
+    const cached = cache.get(taskId);
+    if (cached) return cached;
+    index ??= indexTaskInputPacks(dataRoot);
+    const paths = index.get(taskId) ?? [];
+    if (paths.length !== 1) {
+      cache.set(taskId, {});
+      return {};
+    }
+    try {
+      const value = readJson(paths[0]!);
+      const record = typeof value === "object" && value !== null && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : {};
+      cache.set(taskId, record);
+      return record;
+    } catch {
+      cache.set(taskId, {});
+      return {};
+    }
+  };
 }
 function outputPath(path: string): void { mkdirSync(dirname(resolve(path)), { recursive: true }); }
 function tableFromCatalog(entry: PhysicalTableCatalogEntry): { platform: string; dataSource: string; qualifiedName: string; stableTableId: string; identityStatus: string } {
@@ -143,10 +171,13 @@ function producerWriteScope(
   const rootRelationIds = new Set(bindings.map((binding) => relationFromExpression(text(binding.expression_id))).filter((value): value is string => value !== null));
   const ordinals = new Set([...statementIds].map(statementOrdinal).filter((value): value is number => value !== null));
   if (statementIds.size !== 1 || rootRelationIds.size !== 1 || ordinals.size !== 1) return null;
+  const rootRelationId = [...rootRelationIds][0]!;
+  const rootStatement = statementOrdinal(rootRelationId);
+  const writeStatement = [...ordinals][0]!;
   return {
     sqlSourceId: canonicalSqlSourceId([...statementIds][0]!),
-    statementOrdinal: [...ordinals][0]!,
-    rootRelationId: [...rootRelationIds][0]!,
+    statementOrdinal: rootStatement ?? writeStatement,
+    rootRelationId,
   };
 }
 
@@ -288,7 +319,8 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   const tableArtifact = readJson(options.tableMultiHop);
   validateMultiHopReconciliation(tableArtifact);
   const catalog = loadPhysicalTableCatalog(options.dataRoot, { lazyDdl: true });
-  const targetEntry = resolveCatalogTable(catalog, options.targetTable, taskJson(options.dataRoot, options.taskId));
+  const taskJson = createTaskPackDocumentReader(options.dataRoot);
+  const targetEntry = resolveCatalogTable(catalog, options.targetTable, taskJson(options.taskId));
   const targetTable = tableFromCatalog(targetEntry);
   const rootReader = createCurrentTaskBundleReader(options.factsRoot, { requestedFiles: ["statements.jsonl", "relation-nodes.jsonl", "relation-edges.jsonl", "output-field-bindings.jsonl", "dataset-io.jsonl"], validateOutputHashes: "requested" });
   const rootLoad = rootReader.load(options.taskId);
@@ -330,7 +362,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   const enriched = enrichProducerWriteBridges(universe, loadForTask);
   universe = normalizeReadScopes(enriched.universe, loadForTask);
   stage("candidate-projection", projectionStart, 1, 0, 1, universe.branches.length, universe.branches.length);
-  assertBudget("candidate-projection", universe.branches.length, Math.max(0, ...universe.branches.map((branch) => branch.readOccurrence?.relationPath.length ?? 0)));
+  assertBudget("candidate-projection", universe.branches.length, Math.max(0, ...universe.branches.map((branch) => branch.readOccurrence?.relationPath?.length ?? 0)));
   const sameTaskUpstreamWrites = buildSameTaskUpstreamWrites(
     [options.taskId, ...universe.branches.flatMap((branch) => [branch.consumerTaskId, branch.producerTaskId].filter((value): value is string => value !== null))],
     loadForTask,
@@ -361,10 +393,20 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   ];
   let summaryCacheHits = 0;
   for (const scope of scopes) {
+    if (!scope.taskId || scope.sqlSourceId == null || !Number.isSafeInteger(scope.statementIndex)) continue;
     const key = relationSummaryKey(scope.taskId, scope.sqlSourceId, scope.statementIndex, scope.rootRelationId);
     if (summaries.has(key)) { summaryCacheHits += 1; continue; }
     const load = loadForTask(scope.taskId);
-    summaries.set(key, summarizeTaskRelations({ taskId: scope.taskId, sqlSourceId: scope.sqlSourceId, statementIndex: scope.statementIndex, rootRelationId: scope.rootRelationId ?? undefined, relationRecords: load.records["relation-nodes.jsonl"] ?? [], relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [], statementRecords: load.records["statements.jsonl"] ?? [] }));
+    summaries.set(key, summarizeTaskRelations({
+      taskId: scope.taskId,
+      sqlSourceId: scope.sqlSourceId,
+      statementIndex: scope.statementIndex,
+      rootRelationId: scope.rootRelationId ?? undefined,
+      relationRecords: load.records["relation-nodes.jsonl"] ?? [],
+      relationEdgeRecords: load.records["relation-edges.jsonl"] ?? [],
+      statementRecords: load.records["statements.jsonl"] ?? [],
+      defaultSchema: inferTaskDefaultSchema(taskJson(scope.taskId)),
+    }));
   }
   stage("semantic-summary", summaryStart, scopes.length, summaryCacheHits, scopes.length - summaryCacheHits, summaries.size, [...summaries.values()].reduce((sum, value) => sum + value.edgeCount, 0));
   assertBudget("semantic-summary", universe.branches.length);

@@ -67,7 +67,7 @@ function branchOccurrenceKeys(branch: CandidateBranch): readonly string[] {
     occurrence.occurrenceId,
     occurrence.readRelationId,
     `${occurrence.occurrenceId}:${occurrence.readRelationId}`,
-    ...occurrence.relationPath,
+    ...occurrence.relationPath ?? [],
   ]) {
     if (!raw) continue;
     keys.add(occurrenceKey(raw));
