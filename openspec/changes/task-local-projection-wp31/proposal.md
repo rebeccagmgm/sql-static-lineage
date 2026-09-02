@@ -22,4 +22,4 @@ Bump projection schema to `1.1.0` (cache invalidation).
 - `summarizeTaskRelations` intersection
 - `FIELD_DIRECT.subtype` derivation (WP-4)
 - Splitting `WRITES` edge types (WP-5)
-- CI workflow edits for `TASK_LOCAL_GOLDEN_REQUIRED`
+- Full GitHub Actions wiring when no data pack is mounted (document `TASK_LOCAL_GOLDEN_REQUIRED=1` for jobs that have Facts)

@@ -47,6 +47,8 @@
 
 ## Archive notes (post-audit)
 
+- **调度为 `scheduleReference`，非数据血缘**（WP-3.1）：TASK 属性 `role: SCHEDULE_REFERENCE_ONLY`；不得变成 TASK→TASK 数据边。见 `task-local-projection-wp31`。
 - Golden tests need sibling `sql-static-lineage-data/field-facts` (or `TASK_LOCAL_GOLDEN_DATA_ROOT` / `TASK_LOCAL_GOLDEN_FACTS_ROOT`). Without Facts they `describe.skip`; set `TASK_LOCAL_GOLDEN_REQUIRED=1` to fail closed when CI has the data pack.
-- `DATASET_CONTROL` is statement-scoped via `datasetControlsForStatement` (TL-6 frozen). Intersecting with `summarizeTaskRelations()` READ channels is documented debt in `design.md`, not a WP-3 blocker.
+- `DATASET_CONTROL` is statement-scoped via `datasetControlsForStatement` (TL-6 frozen); WP-3.1 attaches controls to the owning `write_observation_id`. Intersecting with `summarizeTaskRelations()` READ channels remains optional hardening.
 - FIELD_DIRECT table column freezes follow current Facts (e.g. 119044 `t01_pty_name` = 3), not older prose “约 6”.
+- Schema **1.1.0** adds `scheduleReference` and `partitionPredicateStatus` (`NONE` | `LITERAL` | `NON_LITERAL_PRESENT`).

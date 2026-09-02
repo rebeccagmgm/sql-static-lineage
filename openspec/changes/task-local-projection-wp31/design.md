@@ -2,6 +2,8 @@
 
 Post-archive WP-3.1 patch for `TASK_LOCAL_PROJECTION` before WP-5 consumption.
 
+**一句话：调度为 `scheduleReference`，非数据血缘。**
+
 ## Goals / Non-Goals
 
 **Goals:** scheduleReference on all covered statuses that have schedule cache; partitionPredicateStatus; statement-scoped control→write attribution; schema 1.1.0.

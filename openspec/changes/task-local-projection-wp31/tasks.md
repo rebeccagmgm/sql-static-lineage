@@ -17,3 +17,4 @@
 ## 4. Verification
 
 - [x] 4.1 `npm run test:task-local-projection` and `npm run typecheck` green.
+- [x] 4.2 Document `TASK_LOCAL_GOLDEN_REQUIRED=1` in `AGENTS.md` for CI jobs that mount Facts (no `.github` workflow in this repo yet).
