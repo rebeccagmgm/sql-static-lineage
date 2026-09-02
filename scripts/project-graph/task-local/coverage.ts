@@ -24,25 +24,35 @@ export function factsEvidenceStatus(
   return null;
 }
 
+export function taskNodeProperties(input: {
+  readonly packTaskName?: string | null;
+  readonly schedule?: TaskScheduleContext | null;
+}): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  const taskName = input.schedule?.taskName ?? input.packTaskName ?? null;
+  if (taskName) properties.taskName = taskName;
+  if (input.schedule?.topicName) properties.topicName = input.schedule.topicName;
+  if (input.schedule) properties.scheduleReference = input.schedule.scheduleReference;
+  return properties;
+}
+
 export function buildScheduleOnlyProjection(input: {
   readonly taskId: string;
   readonly generatedAt: string;
   readonly schedule: TaskScheduleContext;
 }): TaskLocalProjection {
-  const properties: Record<string, unknown> = {};
-  if (input.schedule.taskName) properties.taskName = input.schedule.taskName;
-  if (input.schedule.topicName) properties.topicName = input.schedule.topicName;
-  if (input.schedule.scheduleUpstreamTaskIds.length > 0) {
-    properties.scheduleUpstreamTaskIds = input.schedule.scheduleUpstreamTaskIds;
-  }
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
     coverageStatus: "SCHEDULE_ONLY",
     failureReasonCode: null,
-    nodes: [{ nodeId: taskNodeId(input.taskId), nodeType: "TASK", properties }],
+    nodes: [{
+      nodeId: taskNodeId(input.taskId),
+      nodeType: "TASK",
+      properties: taskNodeProperties({ schedule: input.schedule }),
+    }],
     edges: [],
   });
 }
@@ -54,7 +64,7 @@ export function buildCollectionFailedProjection(input: {
   readonly taskProperties?: Readonly<Record<string, unknown>>;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,

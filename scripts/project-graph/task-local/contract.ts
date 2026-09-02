@@ -1,6 +1,6 @@
 import { canonicalJson, sha256 } from "../../machine-facts/machine-facts-contract.ts";
 
-export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.0.0" as const;
+export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.1.0" as const;
 export const TASK_LOCAL_PROJECTION_ARTIFACT_TYPE = "TASK_LOCAL_PROJECTION" as const;
 
 export type TaskLocalCoverageStatus =
@@ -132,6 +132,23 @@ export function taskLocalProjectionContentHash(
   return sha256(canonicalJson(rest));
 }
 
+function scheduleReferenceTaskIds(properties: Readonly<Record<string, unknown>>): string[] {
+  const reference = properties.scheduleReference;
+  if (typeof reference !== "object" || reference === null || Array.isArray(reference)) {
+    return [];
+  }
+  const record = reference as Record<string, unknown>;
+  const ids: string[] = [];
+  for (const key of ["upstreamTaskIds", "downstreamTaskIds"] as const) {
+    const values = record[key];
+    if (!Array.isArray(values)) continue;
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) ids.push(value.trim());
+    }
+  }
+  return ids;
+}
+
 export function validateTaskLocalProjection(projection: TaskLocalProjection): void {
   if (
     projection.schemaVersion !== TASK_LOCAL_PROJECTION_SCHEMA_VERSION
@@ -143,6 +160,7 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
 
   const nodeIds = new Set<string>();
   let taskNodeCount = 0;
+  const scheduleNeighborIds = new Set<string>();
   for (const node of projection.nodes) {
     if (nodeIds.has(node.nodeId)) throw new Error("TASK_LOCAL_PROJECTION_NODE_DUPLICATE");
     nodeIds.add(node.nodeId);
@@ -151,6 +169,9 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
       taskNodeCount += 1;
       if (taskIdFromNodeId(node.nodeId) !== projection.taskId) {
         throw new Error("TASK_LOCAL_PROJECTION_TASK_NODE_MISMATCH");
+      }
+      for (const neighborId of scheduleReferenceTaskIds(node.properties)) {
+        scheduleNeighborIds.add(neighborId);
       }
     }
   }
@@ -171,6 +192,9 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
       const foreignTaskId = taskIdFromNodeId(endpoint);
       if (foreignTaskId !== null && foreignTaskId !== projection.taskId) {
         throw new Error("TASK_LOCAL_PROJECTION_CROSS_TASK_DATA_EDGE");
+      }
+      if (foreignTaskId !== null && scheduleNeighborIds.has(foreignTaskId)) {
+        throw new Error("TASK_LOCAL_PROJECTION_SCHEDULE_REFERENCE_ON_DATA_EDGE");
       }
     }
     if (edge.edgeType === "DATASET_CONTROL") {

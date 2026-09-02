@@ -27,11 +27,56 @@ function detailField(detail: Record<string, unknown>, keys: readonly string[]): 
   return null;
 }
 
+function neighborTaskIds(
+  rows: readonly Record<string, unknown>[],
+  selfTaskId: string,
+): string[] {
+  const ids = new Set<string>();
+  for (const row of rows) {
+    const neighborId = text(row.task_id ?? row.taskId);
+    if (neighborId && neighborId !== selfTaskId) ids.add(neighborId);
+  }
+  return [...ids].sort((left, right) => left.localeCompare(right));
+}
+
+export const SCHEDULE_REFERENCE_ROLE = "SCHEDULE_REFERENCE_ONLY" as const;
+
+export interface ScheduleReference {
+  readonly role: typeof SCHEDULE_REFERENCE_ROLE;
+  readonly topicName: string | null;
+  readonly taskName: string | null;
+  readonly upstreamTaskIds: readonly string[];
+  readonly downstreamTaskIds: readonly string[];
+  readonly source: "schedule-evidence-cache";
+  readonly observedAt: string | null;
+}
+
 export interface TaskScheduleContext {
   readonly inSchedule: boolean;
   readonly taskName: string | null;
   readonly topicName: string | null;
   readonly scheduleUpstreamTaskIds: readonly string[];
+  readonly scheduleDownstreamTaskIds: readonly string[];
+  readonly observedAt: string | null;
+  readonly scheduleReference: ScheduleReference;
+}
+
+export function buildScheduleReference(input: {
+  readonly topicName: string | null;
+  readonly taskName: string | null;
+  readonly upstreamTaskIds: readonly string[];
+  readonly downstreamTaskIds: readonly string[];
+  readonly observedAt: string | null;
+}): ScheduleReference {
+  return {
+    role: SCHEDULE_REFERENCE_ROLE,
+    topicName: input.topicName,
+    taskName: input.taskName,
+    upstreamTaskIds: [...input.upstreamTaskIds],
+    downstreamTaskIds: [...input.downstreamTaskIds],
+    source: "schedule-evidence-cache",
+    observedAt: input.observedAt,
+  };
 }
 
 export function readTaskScheduleContext(
@@ -40,23 +85,37 @@ export function readTaskScheduleContext(
 ): TaskScheduleContext | null {
   if (!scheduleCacheRoot) return null;
   const taskType = readHoraeTaskTypeCache(taskId, scheduleCacheRoot);
-  const relation = readHoraeRelationCache(taskId, scheduleCacheRoot, "up");
-  const inSchedule = taskType.status === "HIT" || relation.status === "HIT";
+  const up = readHoraeRelationCache(taskId, scheduleCacheRoot, "up");
+  const down = readHoraeRelationCache(taskId, scheduleCacheRoot, "down");
+  const inSchedule =
+    taskType.status === "HIT" || up.status === "HIT" || down.status === "HIT";
   if (!inSchedule) return null;
 
   const detail = taskType.status === "HIT" ? taskType.detail : {};
-  const upstreamIds = new Set<string>();
-  if (relation.status === "HIT") {
-    for (const row of relation.rows) {
-      const upstreamTaskId = text(row.task_id ?? row.taskId);
-      if (upstreamTaskId && upstreamTaskId !== taskId) upstreamIds.add(upstreamTaskId);
-    }
-  }
+  const upstreamTaskIds = up.status === "HIT" ? neighborTaskIds(up.rows, taskId) : [];
+  const downstreamTaskIds = down.status === "HIT" ? neighborTaskIds(down.rows, taskId) : [];
+  const observedCandidates = [
+    taskType.status === "HIT" ? taskType.observedAt : null,
+    up.status === "HIT" ? up.observedAt : null,
+    down.status === "HIT" ? down.observedAt : null,
+  ].filter((value): value is string => value !== null);
+  const observedAt = observedCandidates.sort().at(-1) ?? null;
+  const topicName = detailField(detail, ["topicName", "topic_name", "topic"]);
+  const taskName = detailField(detail, ["taskName", "task_name", "name"]);
 
   return {
     inSchedule: true,
-    taskName: detailField(detail, ["taskName", "task_name", "name"]),
-    topicName: detailField(detail, ["topicName", "topic_name", "topic"]),
-    scheduleUpstreamTaskIds: [...upstreamIds].sort(),
+    taskName,
+    topicName,
+    scheduleUpstreamTaskIds: upstreamTaskIds,
+    scheduleDownstreamTaskIds: downstreamTaskIds,
+    observedAt,
+    scheduleReference: buildScheduleReference({
+      topicName,
+      taskName,
+      upstreamTaskIds,
+      downstreamTaskIds,
+      observedAt,
+    }),
   };
 }

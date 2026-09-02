@@ -5,6 +5,16 @@ export interface PartitionPredicate {
   readonly values: readonly string[];
 }
 
+export type PartitionPredicateStatus =
+  | "NONE"
+  | "LITERAL"
+  | "NON_LITERAL_PRESENT";
+
+export interface ReadPartitionPredicates {
+  readonly status: PartitionPredicateStatus;
+  readonly predicates: readonly PartitionPredicate[];
+}
+
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -61,50 +71,67 @@ function columnName(operand: JsonRecord): string | null {
   return text(column?.name) ?? text(operand.expression);
 }
 
-/** Only EQ / IN literals — value-set shape for producer partition matching. */
-function collectLiteralPredicates(
+function atomIsLiteralEqOrIn(node: JsonRecord): boolean {
+  const operator = text(node.operator)?.toUpperCase();
+  if (operator !== "EQ" && operator !== "IN") return false;
+  const operands = records(node.operands);
+  if (operands.length < 2) return false;
+  if (!columnName(operands[0]!)) return false;
+  return operands.slice(1).every((operand) => literalValue(operand) !== null);
+}
+
+function walkPredicateAtoms(
   tree: unknown,
-  into: Map<string, { column: string; values: Set<string> }>,
+  visit: (atom: JsonRecord) => void,
 ): void {
   const node = record(tree);
   if (!node) return;
   const kind = text(node.kind)?.toUpperCase();
   if (kind === "AND" || kind === "OR") {
-    for (const child of records(node.children)) {
-      collectLiteralPredicates(child, into);
-    }
+    for (const child of records(node.children)) walkPredicateAtoms(child, visit);
     return;
   }
-  if (kind !== "ATOM") return;
-  const operator = text(node.operator)?.toUpperCase();
-  if (operator !== "EQ" && operator !== "IN") return;
-  const operands = records(node.operands);
-  if (operands.length < 2) return;
-  const column = columnName(operands[0]!);
-  if (!column) return;
-  const values: string[] = [];
-  for (const operand of operands.slice(1)) {
-    const value = literalValue(operand);
-    if (value === null) return;
-    values.push(value);
-  }
-  if (values.length === 0) return;
-  const key = column.toLowerCase();
-  const existing = into.get(key) ?? { column, values: new Set<string>() };
-  for (const value of values) existing.values.add(value);
-  into.set(key, existing);
+  if (kind === "ATOM") visit(node);
 }
 
-function predicatesFromFilter(filterRow: JsonRecord): PartitionPredicate[] {
-  const relation = record(filterRow.relation) ?? filterRow;
+/** Only EQ / IN literals — value-set shape for producer partition matching. */
+function collectLiteralPredicates(
+  tree: unknown,
+  into: Map<string, { column: string; values: Set<string> }>,
+): void {
+  walkPredicateAtoms(tree, (atom) => {
+    if (!atomIsLiteralEqOrIn(atom)) return;
+    const operands = records(atom.operands);
+    const column = columnName(operands[0]!);
+    if (!column) return;
+    const values = operands.slice(1).map((operand) => literalValue(operand)!);
+    const key = column.toLowerCase();
+    const existing = into.get(key) ?? { column, values: new Set<string>() };
+    for (const value of values) existing.values.add(value);
+    into.set(key, existing);
+  });
+}
+
+function classifyFilterTree(tree: unknown): {
+  readonly predicates: PartitionPredicate[];
+  readonly hasAtom: boolean;
+  readonly hasNonLiteralAtom: boolean;
+} {
   const collected = new Map<string, { column: string; values: Set<string> }>();
-  collectLiteralPredicates(relation.predicate_tree, collected);
-  return [...collected.values()]
+  collectLiteralPredicates(tree, collected);
+  let hasAtom = false;
+  let hasNonLiteralAtom = false;
+  walkPredicateAtoms(tree, (atom) => {
+    hasAtom = true;
+    if (!atomIsLiteralEqOrIn(atom)) hasNonLiteralAtom = true;
+  });
+  const predicates = [...collected.values()]
     .map((entry) => ({
       column: entry.column,
       values: [...entry.values].sort((left, right) => left.localeCompare(right)),
     }))
     .sort((left, right) => left.column.localeCompare(right.column));
+  return { predicates, hasAtom, hasNonLiteralAtom };
 }
 
 function mergePredicates(
@@ -130,35 +157,64 @@ function mergePredicates(
 }
 
 /**
- * Map read_occurrence_id → literal FILTER predicates that directly wrap that
- * read relation (RELATION_INPUT from read → filter).
+ * Map read relation id → literal FILTER predicates + status for filters that
+ * directly wrap that read (RELATION_INPUT from read → filter).
  */
 export function partitionPredicatesByReadOccurrence(input: {
   readonly taskId: string;
   readonly relationRecords: readonly JsonRecord[];
   readonly relationEdgeRecords: readonly JsonRecord[];
-}): ReadonlyMap<string, readonly PartitionPredicate[]> {
-  const filters = new Map<string, PartitionPredicate[]>();
+}): ReadonlyMap<string, ReadPartitionPredicates> {
+  const filters = new Map<string, ReturnType<typeof classifyFilterTree>>();
   for (const row of input.relationRecords) {
     if (text(row.task_id) !== null && text(row.task_id) !== input.taskId) continue;
     if (relationTypeOf(row) !== "filter") continue;
     const id = relationIdOf(row);
     if (!id) continue;
-    filters.set(id, predicatesFromFilter(row));
+    const relation = record(row.relation) ?? row;
+    filters.set(id, classifyFilterTree(relation.predicate_tree));
   }
 
-  const byOccurrence = new Map<string, PartitionPredicate[]>();
+  const byOccurrence = new Map<string, {
+    predicates: PartitionPredicate[];
+    hasFilter: boolean;
+    hasNonLiteralAtom: boolean;
+  }>();
   for (const edge of input.relationEdgeRecords) {
     if (text(edge.task_id) !== null && text(edge.task_id) !== input.taskId) continue;
     const from = text(edge.from_relation_id);
     const to = text(edge.to_relation_id);
     if (!from || !to) continue;
-    const predicates = filters.get(to);
-    if (!predicates || predicates.length === 0) continue;
-    byOccurrence.set(
-      from,
-      mergePredicates(byOccurrence.get(from) ?? [], predicates),
-    );
+    const classified = filters.get(to);
+    if (!classified) continue;
+    const existing = byOccurrence.get(from) ?? {
+      predicates: [],
+      hasFilter: false,
+      hasNonLiteralAtom: false,
+    };
+    byOccurrence.set(from, {
+      predicates: mergePredicates(existing.predicates, classified.predicates),
+      hasFilter: true,
+      hasNonLiteralAtom: existing.hasNonLiteralAtom || classified.hasNonLiteralAtom,
+    });
   }
-  return byOccurrence;
+
+  const result = new Map<string, ReadPartitionPredicates>();
+  for (const [occurrenceId, entry] of byOccurrence) {
+    const status: PartitionPredicateStatus = !entry.hasFilter
+      ? "NONE"
+      : entry.hasNonLiteralAtom
+      ? "NON_LITERAL_PRESENT"
+      : "LITERAL";
+    result.set(occurrenceId, { status, predicates: entry.predicates });
+  }
+  return result;
+}
+
+export function readPartitionPredicatesForOccurrence(
+  byOccurrence: ReadonlyMap<string, ReadPartitionPredicates>,
+  relationId: string | null,
+): ReadPartitionPredicates {
+  if (!relationId) return { status: "NONE", predicates: [] };
+  return byOccurrence.get(relationId) ?? { status: "NONE", predicates: [] };
 }

@@ -339,5 +339,49 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
         .filter((edge) => edge.edgeType === "READS")
         .every((edge) => Array.isArray(edge.properties.partitionPredicates)),
     ).toBe(true);
+    expect(
+      p176827.edges
+        .filter((edge) => edge.edgeType === "READS")
+        .every((edge) =>
+          ["NONE", "LITERAL", "NON_LITERAL_PRESENT"].includes(
+            String(edge.properties.partitionPredicateStatus ?? ""),
+          ),
+        ),
+    ).toBe(true);
+  }, 60_000);
+
+  it("WP-3.1: PROJECTED keeps scheduleReference; 105387 controls stay on owning writes", () => {
+    const scheduleCacheRoot =
+      process.env.TASK_LOCAL_GOLDEN_SCHEDULE_CACHE?.trim()
+      || resolve(REPO_ROOT, "../sql-static-lineage-cache");
+    const hasSchedule = existsSync(scheduleCacheRoot);
+
+    const p176827 = projectTaskLocal({
+      dataRoot: roots!.dataRoot,
+      factsRoot: roots!.factsRoot,
+      taskId: "176827",
+      ...(hasSchedule ? { scheduleCacheRoot } : {}),
+      generatedAt: "2026-09-02T00:00:00.000Z",
+    });
+    validateTaskLocalProjection(p176827);
+    if (hasSchedule) {
+      const scheduleReference = p176827.nodes.find((node) => node.nodeType === "TASK")
+        ?.properties.scheduleReference as { role?: string; upstreamTaskIds?: string[] } | undefined;
+      expect(scheduleReference?.role).toBe("SCHEDULE_REFERENCE_ONLY");
+      expect(Array.isArray(scheduleReference?.upstreamTaskIds)).toBe(true);
+      expect((scheduleReference?.upstreamTaskIds?.length ?? 0) > 0).toBe(true);
+    }
+
+    const p105387 = projectGolden("105387");
+    const controlsByWrite = new Map<string, number>();
+    for (const edge of p105387.edges.filter((item) => item.edgeType === "DATASET_CONTROL")) {
+      const writeId = String(edge.properties.writeObservationId ?? "");
+      controlsByWrite.set(writeId, (controlsByWrite.get(writeId) ?? 0) + 1);
+    }
+    expect(controlsByWrite.size).toBeGreaterThan(1);
+    expect(controlsByWrite.has("write-observation:105387:1")).toBe(true);
+    expect(controlsByWrite.has("write-observation:105387:6")).toBe(true);
+    const total = [...controlsByWrite.values()].reduce((sum, count) => sum + count, 0);
+    expect(Math.max(...controlsByWrite.values())).toBeLessThan(total);
   }, 60_000);
 });

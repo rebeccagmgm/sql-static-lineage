@@ -31,6 +31,7 @@ import {
   buildScheduleOnlyProjection,
   factsEvidenceStatus,
   failureReasonFromLoad,
+  taskNodeProperties,
 } from "./coverage.ts";
 import {
   canonicalizeTaskLocalProjection,
@@ -46,8 +47,11 @@ import {
   taskLocalEdgeId,
   taskNodeId,
 } from "./ids.ts";
-import { partitionPredicatesByReadOccurrence } from "./partition-predicates.ts";
-import { readTaskScheduleContext } from "./schedule-context.ts";
+import {
+  partitionPredicatesByReadOccurrence,
+  readPartitionPredicatesForOccurrence,
+} from "./partition-predicates.ts";
+import { readTaskScheduleContext, type TaskScheduleContext } from "./schedule-context.ts";
 
 export interface ProjectTaskLocalOptions {
   readonly factsRoot: string;
@@ -151,8 +155,9 @@ function projectTaskLocalFromFacts(input: {
   readonly load: CurrentBundleLoad;
   readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY";
   readonly dataRoot: string;
+  readonly schedule: TaskScheduleContext | null;
 }): TaskLocalProjection {
-  const { taskId, generatedAt, load, evidenceStatus, dataRoot } = input;
+  const { taskId, generatedAt, load, evidenceStatus, dataRoot, schedule } = input;
   const catalog = loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
   const pack = loadTaskPack(dataRoot, catalog, taskId);
   const fallbackTable = pack?.target ?? { platform: "hive", dataSource: "unknown" };
@@ -170,7 +175,10 @@ function projectTaskLocalFromFacts(input: {
   ensureNode(nodes, {
     nodeId: taskNodeId(taskId),
     nodeType: "TASK",
-    properties: pack?.document.taskName ? { taskName: pack.document.taskName } : {},
+    properties: taskNodeProperties({
+      packTaskName: pack?.document.taskName ?? null,
+      schedule,
+    }),
   });
 
   const writeRecords = records(load.records["dataset-io.jsonl"]).filter(
@@ -184,7 +192,10 @@ function projectTaskLocalFromFacts(input: {
       taskId,
       generatedAt,
       failureReasonCode: "NO_RESOLVED_WRITE",
-      taskProperties: pack?.document.taskName ? { taskName: pack.document.taskName } : {},
+      taskProperties: taskNodeProperties({
+        packTaskName: pack?.document.taskName ?? null,
+        schedule,
+      }),
     });
   }
 
@@ -200,8 +211,29 @@ function projectTaskLocalFromFacts(input: {
       taskId,
       generatedAt,
       failureReasonCode: "SCHEMA_UNRESOLVED",
-      taskProperties: pack?.document.taskName ? { taskName: pack.document.taskName } : {},
+      taskProperties: taskNodeProperties({
+        packTaskName: pack?.document.taskName ?? null,
+        schedule,
+      }),
     });
+  }
+
+  const writeObservationByStatement = new Map<string, string>();
+  for (const write of writeRecords) {
+    const writeObservationId = text(write.write_observation_id)!;
+    const statementId =
+      text(write.write_statement_id)
+      ?? text(write.statement_id);
+    if (statementId) writeObservationByStatement.set(statementId, writeObservationId);
+  }
+  for (const binding of resolvedBindings) {
+    const writeObservationId = text(binding.write_observation_id);
+    const statementId =
+      text(binding.write_statement_id)
+      ?? text(binding.statement_id);
+    if (writeObservationId && statementId && !writeObservationByStatement.has(statementId)) {
+      writeObservationByStatement.set(statementId, writeObservationId);
+    }
   }
 
   const targetWriteNodes = new Map<string, string>();
@@ -292,9 +324,10 @@ function projectTaskLocalFromFacts(input: {
       }))
       : [{ occurrenceId: null, relationId: null }];
     for (const occurrence of readOccurrenceIds) {
-      const predicates = occurrence.relationId
-        ? predicatesByOccurrence.get(occurrence.relationId) ?? []
-        : [];
+      const partition = readPartitionPredicatesForOccurrence(
+        predicatesByOccurrence,
+        occurrence.relationId,
+      );
       pushEdge({
         edgeId: taskLocalEdgeId({
           edgeType: "READS",
@@ -307,7 +340,8 @@ function projectTaskLocalFromFacts(input: {
         toNodeId: datasetNodeId,
         properties: {
           ...(occurrence.occurrenceId ? { readOccurrenceId: occurrence.occurrenceId } : {}),
-          partitionPredicates: predicates,
+          partitionPredicates: partition.predicates,
+          partitionPredicateStatus: partition.status,
         },
       });
     }
@@ -382,6 +416,10 @@ function projectTaskLocalFromFacts(input: {
     }
   }
 
+  for (const statementId of writeObservationByStatement.keys()) {
+    statementIds.add(statementId);
+  }
+
   for (const statementId of [...statementIds].sort(compareText)) {
     for (const control of datasetControlsForStatement(
       load,
@@ -393,7 +431,12 @@ function projectTaskLocalFromFacts(input: {
       evidenceStatus,
     )) {
       if (!control.field) continue;
-      const targetWriteNode = [...targetWriteNodes.values()].sort(compareText)[0];
+      const writeObservationId =
+        writeObservationByStatement.get(control.statementId)
+        ?? writeObservationByStatement.get(statementId);
+      const targetWriteNode = writeObservationId
+        ? targetWriteNodes.get(writeObservationId)
+        : undefined;
       if (!targetWriteNode) continue;
       const fromNodeId = ensureFieldNode(nodes, control.field);
       pushEdge({
@@ -412,13 +455,14 @@ function projectTaskLocalFromFacts(input: {
           ...(control.grainReason ? { grainReason: control.grainReason } : {}),
           relationId: control.relationId,
           statementId: control.statementId,
+          writeObservationId,
         },
       });
     }
   }
 
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt,
     taskId,
@@ -456,6 +500,7 @@ export function projectTaskLocal(options: ProjectTaskLocalOptions): TaskLocalPro
       load,
       evidenceStatus,
       dataRoot,
+      schedule,
     });
   } catch (error) {
     const failureReasonCode: TaskLocalFailureReasonCode =

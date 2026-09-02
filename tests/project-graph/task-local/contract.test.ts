@@ -42,7 +42,7 @@ function minimalProjected(overrides: Partial<TaskLocalProjection> = {}): TaskLoc
     semanticKey: { readOccurrenceId: "occ:0" },
   });
   const base = {
-    schemaVersion: "1.0.0" as const,
+    schemaVersion: "1.1.0" as const,
     artifactType: "TASK_LOCAL_PROJECTION" as const,
     generatedAt: "2026-09-02T00:00:00.000Z",
     taskId: TASK_ID,
@@ -189,7 +189,7 @@ describe("task-local projection contract", () => {
 
   it("allows SCHEDULE_ONLY with task node and no edges", () => {
     const projection = canonicalizeTaskLocalProjection({
-      schemaVersion: "1.0.0",
+      schemaVersion: "1.1.0",
       artifactType: "TASK_LOCAL_PROJECTION",
       generatedAt: "2026-09-02T00:00:00.000Z",
       taskId: TASK_ID,
@@ -199,11 +199,66 @@ describe("task-local projection contract", () => {
         {
           nodeId: TASK_NODE,
           nodeType: "TASK",
-          properties: { scheduleUpstreamTaskIds: ["119044"] },
+          properties: {
+            scheduleReference: {
+              role: "SCHEDULE_REFERENCE_ONLY",
+              topicName: "DM_RSK_N",
+              taskName: null,
+              upstreamTaskIds: ["119044"],
+              downstreamTaskIds: [],
+              source: "schedule-evidence-cache",
+              observedAt: "2026-09-02T00:00:00.000Z",
+            },
+          },
         },
       ],
       edges: [],
     });
     expect(projection.coverageStatus).toBe("SCHEDULE_ONLY");
+  });
+
+  it("rejects scheduleReference task ids used as data-edge endpoints", () => {
+    const foreignTask = "task:119044";
+    expect(() =>
+      canonicalizeTaskLocalProjection({
+        schemaVersion: "1.1.0",
+        artifactType: "TASK_LOCAL_PROJECTION",
+        generatedAt: "2026-09-02T00:00:00.000Z",
+        taskId: TASK_ID,
+        coverageStatus: "PROJECTED",
+        failureReasonCode: null,
+        nodes: [
+          {
+            nodeId: TASK_NODE,
+            nodeType: "TASK",
+            properties: {
+              scheduleReference: {
+                role: "SCHEDULE_REFERENCE_ONLY",
+                topicName: null,
+                taskName: null,
+                upstreamTaskIds: ["119044"],
+                downstreamTaskIds: [],
+                source: "schedule-evidence-cache",
+                observedAt: null,
+              },
+            },
+          },
+          {
+            nodeId: foreignTask,
+            nodeType: "PHYSICAL_DATASET",
+            properties: { qualifiedName: "spoof.table" },
+          },
+        ],
+        edges: [
+          {
+            edgeId: "edge:bad",
+            edgeType: "READS",
+            fromNodeId: TASK_NODE,
+            toNodeId: foreignTask,
+            properties: {},
+          },
+        ],
+      }),
+    ).toThrow(/TASK_LOCAL_PROJECTION_(CROSS_TASK_DATA_EDGE|SCHEDULE_REFERENCE_ON_DATA_EDGE)/);
   });
 });

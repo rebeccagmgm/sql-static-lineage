@@ -159,6 +159,13 @@ describe("task-local coverage states", () => {
 
     const schedule = readTaskScheduleContext("888001", cacheRoot);
     expect(schedule?.scheduleUpstreamTaskIds).toEqual(["119044"]);
+    expect(schedule?.scheduleDownstreamTaskIds).toEqual([]);
+    expect(schedule?.scheduleReference).toMatchObject({
+      role: "SCHEDULE_REFERENCE_ONLY",
+      upstreamTaskIds: ["119044"],
+      downstreamTaskIds: [],
+      source: "schedule-evidence-cache",
+    });
 
     const projection = projectTaskLocal({
       dataRoot,
@@ -171,7 +178,11 @@ describe("task-local coverage states", () => {
     expect(projection.failureReasonCode).toBeNull();
     expect(projection.edges).toHaveLength(0);
     expect(projection.nodes).toHaveLength(1);
-    expect(projection.nodes[0]?.properties.scheduleUpstreamTaskIds).toEqual(["119044"]);
+    expect(projection.nodes[0]?.properties.scheduleReference).toMatchObject({
+      role: "SCHEDULE_REFERENCE_ONLY",
+      upstreamTaskIds: ["119044"],
+      topicName: "DM_RSK_N",
+    });
     expect(projection.nodes[0]?.properties.topicName).toBe("DM_RSK_N");
   });
 
