@@ -759,7 +759,7 @@ describe("collect-one-task-input-pack-sparkindex", () => {
       expect(result.taskCategory).toBe("sparkIndex");
       expect(result.sqlSlots).toEqual(["query"]);
       expect(result.evidenceProvider).toBe("opencli:horae.detail");
-      expect(result.directory).toContain("tasks\\sparkIndex\\100931");
+      expect(result.directory).toContain(join("tasks", "sparkIndex", "100931"));
       expect(readHoraeTaskTypeCache("100931", cacheRoot)).toMatchObject({
         status: "HIT",
         detail: {
