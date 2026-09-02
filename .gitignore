@@ -10,6 +10,7 @@ desktop.ini
 
 # Local inspection outputs and temporary dependencies
 /tmp/
+/tmp-*
 tmp-inspect-*.ts
 **/corpus-survey-raw.json
 /scripts/survey/
