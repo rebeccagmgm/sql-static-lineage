@@ -1,0 +1,70 @@
+import type { CurrentBundleLoad } from "../../query/current-task-bundle.ts";
+import {
+  canonicalizeTaskLocalProjection,
+  type TaskLocalFailureReasonCode,
+  type TaskLocalProjection,
+} from "./contract.ts";
+import { taskNodeId } from "./ids.ts";
+import type { TaskScheduleContext } from "./schedule-context.ts";
+
+export function failureReasonFromLoad(load: CurrentBundleLoad): TaskLocalFailureReasonCode {
+  if (load.issues.some((issue) => issue.startsWith("TASK_NOT_INDEXED"))) return "FACTS_UNAVAILABLE";
+  if (load.issues.some((issue) => issue.startsWith("CURRENT_INDEX_MISSING"))) return "FACTS_UNAVAILABLE";
+  if (load.issues.some((issue) => issue.startsWith("STATUS_OR_MANIFEST"))) return "FACTS_STALE";
+  if (load.state === "INVALID") return "FACTS_INVALID";
+  if (load.state === "STALE") return "FACTS_STALE";
+  return "FACTS_UNAVAILABLE";
+}
+
+export function factsEvidenceStatus(
+  load: CurrentBundleLoad,
+): "CONFIRMED" | "PROVISIONAL_LEGACY" | null {
+  if (load.state === "CURRENT_L1") return "CONFIRMED";
+  if (load.state === "LEGACY_NOT_L1") return "PROVISIONAL_LEGACY";
+  return null;
+}
+
+export function buildScheduleOnlyProjection(input: {
+  readonly taskId: string;
+  readonly generatedAt: string;
+  readonly schedule: TaskScheduleContext;
+}): TaskLocalProjection {
+  const properties: Record<string, unknown> = {};
+  if (input.schedule.taskName) properties.taskName = input.schedule.taskName;
+  if (input.schedule.topicName) properties.topicName = input.schedule.topicName;
+  if (input.schedule.scheduleUpstreamTaskIds.length > 0) {
+    properties.scheduleUpstreamTaskIds = input.schedule.scheduleUpstreamTaskIds;
+  }
+  return canonicalizeTaskLocalProjection({
+    schemaVersion: "1.0.0",
+    artifactType: "TASK_LOCAL_PROJECTION",
+    generatedAt: input.generatedAt,
+    taskId: input.taskId,
+    coverageStatus: "SCHEDULE_ONLY",
+    failureReasonCode: null,
+    nodes: [{ nodeId: taskNodeId(input.taskId), nodeType: "TASK", properties }],
+    edges: [],
+  });
+}
+
+export function buildCollectionFailedProjection(input: {
+  readonly taskId: string;
+  readonly generatedAt: string;
+  readonly failureReasonCode: TaskLocalFailureReasonCode;
+  readonly taskProperties?: Readonly<Record<string, unknown>>;
+}): TaskLocalProjection {
+  return canonicalizeTaskLocalProjection({
+    schemaVersion: "1.0.0",
+    artifactType: "TASK_LOCAL_PROJECTION",
+    generatedAt: input.generatedAt,
+    taskId: input.taskId,
+    coverageStatus: "COLLECTION_FAILED",
+    failureReasonCode: input.failureReasonCode,
+    nodes: [{
+      nodeId: taskNodeId(input.taskId),
+      nodeType: "TASK",
+      properties: input.taskProperties ?? {},
+    }],
+    edges: [],
+  });
+}
