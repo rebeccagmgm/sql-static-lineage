@@ -7,7 +7,12 @@ export const PROJECT_TOPOLOGY_SNAPSHOT_TYPE =
 export const PROJECT_TOPOLOGY_MANIFEST_TYPE =
   "PROJECT_TOPOLOGY_PROJECTION_MANIFEST" as const;
 
-export type ProjectTopologySourceMode = "LEGACY_ARTIFACT_PAIRS";
+/**
+ * Topology snapshot source modes are mutually exclusive per snapshot.
+ * `DIRECT_PROJECT_EVIDENCE` is reserved for a future change (not implemented here).
+ */
+export type ProjectTopologySourceMode =
+  "LEGACY_ARTIFACT_PAIRS" | "TASK_LOCAL_UNION";
 
 export type ProjectTopologyCoverageStatus = "COMPLETE" | "PARTIAL";
 export type ProjectTopologyQueryStatus =
@@ -306,6 +311,8 @@ function validateSourceModes(snapshot: ProjectTopologySnapshotV1): void {
       (source) => source.sourceMode ?? "LEGACY_ARTIFACT_PAIRS",
     ),
   );
+  // Legacy projection path: only LEGACY_ARTIFACT_PAIRS. TASK_LOCAL_UNION uses
+  // validateTaskLocalUnionSnapshot and must never appear in root sources[].
   if (modes.size !== 1 || !modes.has("LEGACY_ARTIFACT_PAIRS"))
     throw new Error("PROJECT_TOPOLOGY_SOURCE_MODE_INVALID");
   const producerIdentities = new Set(
