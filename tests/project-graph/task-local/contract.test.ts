@@ -9,6 +9,7 @@ import {
 import {
   fieldEvidencePhysicalFieldNodeId,
   physicalDatasetNodeId,
+  readOccurrenceNodeId,
   targetWriteNodeId,
   taskLocalEdgeId,
   taskNodeId,
@@ -106,6 +107,70 @@ describe("task-local projection contract", () => {
     const projection = minimalProjected();
     expect(() => validateTaskLocalProjection(projection)).not.toThrow();
     expect(projection.contentHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("accepts 1.2.0 occurrence nodes and the two-hop READS shape", () => {
+    const occurrenceNode = readOccurrenceNodeId({
+      consumerTaskId: TASK_ID,
+      occurrenceId: "occ:0",
+      readRelationId: "rel:0",
+    });
+    const projection = canonicalizeTaskLocalProjection({
+      schemaVersion: "1.2.0",
+      artifactType: "TASK_LOCAL_PROJECTION",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+      taskId: TASK_ID,
+      coverageStatus: "PROJECTED",
+      failureReasonCode: null,
+      nodes: [
+        { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+        { nodeId: occurrenceNode, nodeType: "READ_OCCURRENCE", properties: { occurrenceId: "occ:0" } },
+        { nodeId: DATASET_NODE, nodeType: "PHYSICAL_DATASET", properties: {} },
+      ],
+      edges: [
+        {
+          edgeId: taskLocalEdgeId({ edgeType: "READS", fromNodeId: TASK_NODE, toNodeId: occurrenceNode }),
+          edgeType: "READS",
+          fromNodeId: TASK_NODE,
+          toNodeId: occurrenceNode,
+          properties: { readOccurrenceId: "occ:0" },
+        },
+        {
+          edgeId: taskLocalEdgeId({ edgeType: "READS", fromNodeId: occurrenceNode, toNodeId: DATASET_NODE }),
+          edgeType: "READS",
+          fromNodeId: occurrenceNode,
+          toNodeId: DATASET_NODE,
+          properties: { readOccurrenceId: "occ:0", partitionPredicates: [] },
+        },
+      ],
+    });
+    expect(projection.schemaVersion).toBe("1.2.0");
+    expect(() => validateTaskLocalProjection(projection)).not.toThrow();
+  });
+
+  it("rejects a direct TASK-to-dataset READS edge in 1.2.0", () => {
+    const projection = withContentHash({
+      schemaVersion: "1.2.0",
+      artifactType: "TASK_LOCAL_PROJECTION",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+      taskId: TASK_ID,
+      coverageStatus: "PROJECTED",
+      failureReasonCode: null,
+      nodes: [
+        { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+        { nodeId: DATASET_NODE, nodeType: "PHYSICAL_DATASET", properties: {} },
+      ],
+      edges: [{
+        edgeId: taskLocalEdgeId({ edgeType: "READS", fromNodeId: TASK_NODE, toNodeId: DATASET_NODE }),
+        edgeType: "READS",
+        fromNodeId: TASK_NODE,
+        toNodeId: DATASET_NODE,
+        properties: {},
+      }],
+    });
+    expect(() => validateTaskLocalProjection(projection)).toThrow(
+      "TASK_LOCAL_PROJECTION_READ_OCCURRENCE_EDGE_INVALID",
+    );
   });
 
   it("rejects cross-task data edges", () => {

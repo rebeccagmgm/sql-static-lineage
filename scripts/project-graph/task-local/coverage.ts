@@ -42,7 +42,7 @@ export function buildScheduleOnlyProjection(input: {
   readonly schedule: TaskScheduleContext;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.1.0",
+    schemaVersion: "1.2.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
@@ -64,7 +64,7 @@ export function buildCollectionFailedProjection(input: {
   readonly taskProperties?: Readonly<Record<string, unknown>>;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.1.0",
+    schemaVersion: "1.2.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,

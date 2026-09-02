@@ -1,6 +1,10 @@
 import { canonicalJson, sha256 } from "../../machine-facts/machine-facts-contract.ts";
 
-export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.1.0" as const;
+export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.2.0" as const;
+export const TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION = "1.1.0" as const;
+export type TaskLocalProjectionSchemaVersion =
+  | typeof TASK_LOCAL_PROJECTION_SCHEMA_VERSION
+  | typeof TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION;
 export const TASK_LOCAL_PROJECTION_ARTIFACT_TYPE = "TASK_LOCAL_PROJECTION" as const;
 
 export type TaskLocalCoverageStatus =
@@ -53,7 +57,8 @@ export type TaskLocalNodeType =
   | "TASK"
   | "PHYSICAL_DATASET"
   | "PHYSICAL_FIELD"
-  | "TARGET_WRITE";
+  | "TARGET_WRITE"
+  | "READ_OCCURRENCE";
 
 export type TaskLocalEdgeType =
   | "READS"
@@ -88,8 +93,42 @@ export interface TaskLocalEdge {
   readonly properties: Readonly<Record<string, unknown>>;
 }
 
+export type TaskLocalIdentityStatus = "CONFIRMED" | "CANDIDATE_DATASET" | "UNRESOLVED";
+export type TaskLocalQualificationStatus =
+  | "CONFIRMED(TASK_TARGET)"
+  | "ASSUMED(TASK_NAME_ONLY)"
+  | "UNRESOLVED";
+
+export interface TaskLocalFinalWriteSummary {
+  readonly writeObservationId: string;
+  readonly targetWriteNodeId: string;
+  readonly datasetNodeId: string;
+  readonly qualifiedName: string;
+}
+
+export interface TaskLocalExternalReadSummary {
+  readonly readOccurrenceId: string;
+  readonly readOccurrenceNodeId: string;
+  readonly datasetNodeId: string;
+  readonly qualifiedName: string;
+  readonly identityStatus: TaskLocalIdentityStatus;
+}
+
+export interface TaskLocalFieldPathSummary {
+  readonly sourceFieldNodeId: string;
+  readonly targetWriteNodeId: string;
+  readonly outputColumn: string;
+  readonly materializationBridgeIds: readonly string[];
+}
+
+export interface TaskLocalClosureSummary {
+  readonly finalWrites: readonly TaskLocalFinalWriteSummary[];
+  readonly externalReads: readonly TaskLocalExternalReadSummary[];
+  readonly localFieldPaths: readonly TaskLocalFieldPathSummary[];
+}
+
 export interface TaskLocalProjection {
-  readonly schemaVersion: typeof TASK_LOCAL_PROJECTION_SCHEMA_VERSION;
+  readonly schemaVersion: TaskLocalProjectionSchemaVersion;
   readonly artifactType: typeof TASK_LOCAL_PROJECTION_ARTIFACT_TYPE;
   readonly generatedAt: string;
   readonly taskId: string;
@@ -98,6 +137,7 @@ export interface TaskLocalProjection {
   readonly contentHash: string;
   readonly nodes: readonly TaskLocalNode[];
   readonly edges: readonly TaskLocalEdge[];
+  readonly localClosure?: TaskLocalClosureSummary;
 }
 
 const DATA_EDGE_TYPES = new Set<TaskLocalEdgeType>([
@@ -151,7 +191,10 @@ function scheduleReferenceTaskIds(properties: Readonly<Record<string, unknown>>)
 
 export function validateTaskLocalProjection(projection: TaskLocalProjection): void {
   if (
-    projection.schemaVersion !== TASK_LOCAL_PROJECTION_SCHEMA_VERSION
+    ![
+      TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
+      TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION,
+    ].includes(projection.schemaVersion)
     || projection.artifactType !== TASK_LOCAL_PROJECTION_ARTIFACT_TYPE
   ) {
     throw new Error("TASK_LOCAL_PROJECTION_CONTRACT_INVALID");
@@ -178,6 +221,7 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
   if (taskNodeCount !== 1) throw new Error("TASK_LOCAL_PROJECTION_TASK_NODE_COUNT_INVALID");
 
   const edgeIds = new Set<string>();
+  const nodeById = new Map(projection.nodes.map((node) => [node.nodeId, node]));
   for (const edge of projection.edges) {
     if (edgeIds.has(edge.edgeId)) throw new Error("TASK_LOCAL_PROJECTION_EDGE_DUPLICATE");
     edgeIds.add(edge.edgeId);
@@ -198,9 +242,20 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
       }
     }
     if (edge.edgeType === "DATASET_CONTROL") {
-      const toType = projection.nodes.find((node) => node.nodeId === edge.toNodeId)?.nodeType;
+      const toType = nodeById.get(edge.toNodeId)?.nodeType;
       if (toType !== "TARGET_WRITE") {
         throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_TARGET_INVALID");
+      }
+    }
+    if (projection.schemaVersion === TASK_LOCAL_PROJECTION_SCHEMA_VERSION && edge.edgeType === "READS") {
+      const fromType = nodeById.get(edge.fromNodeId)?.nodeType;
+      const toType = nodeById.get(edge.toNodeId)?.nodeType;
+      if (
+        (fromType === "TASK" && toType !== "READ_OCCURRENCE")
+        || (fromType === "READ_OCCURRENCE" && toType !== "PHYSICAL_DATASET")
+        || (fromType !== "TASK" && fromType !== "READ_OCCURRENCE")
+      ) {
+        throw new Error("TASK_LOCAL_PROJECTION_READ_OCCURRENCE_EDGE_INVALID");
       }
     }
   }
@@ -210,6 +265,24 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
   }
   if (projection.coverageStatus === "COLLECTION_FAILED" && !text(projection.failureReasonCode)) {
     throw new Error("TASK_LOCAL_PROJECTION_FAILURE_REASON_REQUIRED");
+  }
+
+  if (projection.localClosure) {
+    for (const write of projection.localClosure.finalWrites) {
+      if (!nodeIds.has(write.targetWriteNodeId) || !nodeIds.has(write.datasetNodeId)) {
+        throw new Error("TASK_LOCAL_PROJECTION_CLOSURE_REFERENCE_MISSING");
+      }
+    }
+    for (const read of projection.localClosure.externalReads) {
+      if (!nodeIds.has(read.readOccurrenceNodeId) || !nodeIds.has(read.datasetNodeId)) {
+        throw new Error("TASK_LOCAL_PROJECTION_CLOSURE_REFERENCE_MISSING");
+      }
+    }
+    for (const path of projection.localClosure.localFieldPaths) {
+      if (!nodeIds.has(path.sourceFieldNodeId) || !nodeIds.has(path.targetWriteNodeId)) {
+        throw new Error("TASK_LOCAL_PROJECTION_CLOSURE_REFERENCE_MISSING");
+      }
+    }
   }
 
   const expectedHash = taskLocalProjectionContentHash(projection);
@@ -222,7 +295,7 @@ export function canonicalizeTaskLocalProjection(
   input: Omit<TaskLocalProjection, "contentHash"> & { readonly contentHash?: string },
 ): TaskLocalProjection {
   const body = {
-    schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
+    schemaVersion: input.schemaVersion,
     artifactType: TASK_LOCAL_PROJECTION_ARTIFACT_TYPE,
     generatedAt: input.generatedAt,
     taskId: input.taskId,
@@ -230,6 +303,7 @@ export function canonicalizeTaskLocalProjection(
     failureReasonCode: input.failureReasonCode,
     nodes: [...input.nodes].sort((left, right) => left.nodeId.localeCompare(right.nodeId)),
     edges: [...input.edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId)),
+    ...(input.localClosure ? { localClosure: input.localClosure } : {}),
   };
   const contentHash = text(input.contentHash) ?? taskLocalProjectionContentHash({
     ...body,
