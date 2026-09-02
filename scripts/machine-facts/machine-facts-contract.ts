@@ -4,6 +4,19 @@ export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
 export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.7";
 
+/** Canonical evidence kind for a Pack-declared query output write. */
+export const PACK_DECLARED_QUERY_OUTPUT = "PACK_DECLARED_QUERY_OUTPUT" as const;
+/** Legacy value retained so already-published bundles remain readable. */
+export const LEGACY_PLATFORM_TARGET_QUERY_OUTPUT = "PLATFORM_TARGET_QUERY_OUTPUT" as const;
+export type PlatformTargetQueryOutputKind =
+	| typeof PACK_DECLARED_QUERY_OUTPUT
+	| typeof LEGACY_PLATFORM_TARGET_QUERY_OUTPUT;
+export type OutputEvidenceKind = "SQL_EXPLICIT_WRITE" | PlatformTargetQueryOutputKind;
+
+export function isPlatformTargetQueryOutputKind(value: unknown): value is PlatformTargetQueryOutputKind {
+	return value === PACK_DECLARED_QUERY_OUTPUT || value === LEGACY_PLATFORM_TARGET_QUERY_OUTPUT;
+}
+
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type OutcomeClass = "UNKNOWN" | "NOT_EVALUABLE" | "NOT_APPLICABLE" | "FAILURE";
 export type AnalysisState = "ANALYZING" | "SUCCESS" | "FAILED";
@@ -104,7 +117,21 @@ export interface SchemaReferenceRecord {
 	readonly partition_columns: readonly string[];
 	readonly [key: string]: unknown;
 }
-export interface DatasetIoRecord { readonly task_id: string; readonly direction: string; readonly dataset_id: string; readonly physical_dataset: string; readonly provenance: string; readonly resolution_status: string; readonly read_occurrences?: readonly unknown[]; readonly [key: string]: unknown; }
+export interface DatasetIoRecord {
+	readonly task_id: string;
+	readonly direction: string;
+	readonly dataset_id: string;
+	readonly physical_dataset: string;
+	readonly provenance: string;
+	readonly resolution_status: string;
+	readonly write_kind?: string;
+	readonly write_observation_id?: string;
+	readonly write_statement_id?: string;
+	readonly query_producer_statement_id?: string | null;
+	readonly source_sql_sha256?: string;
+	readonly read_occurrences?: readonly unknown[];
+	readonly [key: string]: unknown;
+}
 export interface TaskLocalMaterializationRecord {
 	readonly bridge_id: string;
 	readonly task_id: string;
@@ -239,7 +266,8 @@ export interface OutputFieldBindingRecord {
 	readonly target_schema_status: "MATCH" | "DRIFT_EXTRA_TARGET_COLUMNS" | "NOT_AVAILABLE";
 	readonly static_partition_columns: readonly string[];
 	readonly evidence_refs: readonly string[];
-	readonly evidence_kind?: "SQL_EXPLICIT_WRITE" | "PLATFORM_TARGET_QUERY_OUTPUT";
+	readonly evidence_kind?: OutputEvidenceKind;
+	readonly source_sql_sha256?: string;
 	readonly [key: string]: unknown;
 }
 export interface UnknownOutcomeRecord { readonly outcome_class: OutcomeClass; readonly reason_code: string; readonly message: string; readonly [key: string]: unknown; }

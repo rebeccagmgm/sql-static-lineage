@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import {
   MACHINE_FACTS_CONTRACT_VERSION,
+  isPlatformTargetQueryOutputKind,
   normalizeName,
 } from "../../../machine-facts/machine-facts-contract.ts";
 import {
@@ -1108,7 +1109,7 @@ function strictWriteMatchesArtifact(
   if (observationKind === "DIRECT_TARGET")
     return (
       provenance === "PLATFORM_TARGET" ||
-      String(producerRecord.write_kind ?? "") === "PLATFORM_TARGET_QUERY_OUTPUT"
+      isPlatformTargetQueryOutputKind(producerRecord.write_kind)
     );
   return false;
 }
@@ -1161,7 +1162,7 @@ function legacyWriteMatchesArtifact(
   if (observationKind === "DIRECT_TARGET")
     return (
       provenance === "PLATFORM_TARGET" ||
-      String(producerRecord.write_kind ?? "") === "PLATFORM_TARGET_QUERY_OUTPUT"
+      isPlatformTargetQueryOutputKind(producerRecord.write_kind)
     );
   return false;
 }
@@ -1330,7 +1331,7 @@ function strictProducerWriteProof(
       });
     const hasExactPlatformWrite =
       String(record.provenance ?? "") === "PLATFORM_TARGET" &&
-      String(record.write_kind ?? "") === "PLATFORM_TARGET_QUERY_OUTPUT";
+      isPlatformTargetQueryOutputKind(record.write_kind);
     const hasExactBinding = (producerLoad.records["output-field-bindings.jsonl"] ?? []).some(
       (binding) =>
         binding.task_id === producerTaskId &&

@@ -170,9 +170,23 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(bindings).toHaveLength(2);
     expect(
       bindings.every(
-        (binding) => binding.evidence_kind === "PLATFORM_TARGET_QUERY_OUTPUT",
+        (binding) =>
+          binding.evidence_kind === "PACK_DECLARED_QUERY_OUTPUT" &&
+          binding.source_sql_sha256 === manifest.inputs.input_pack.sql_sha256,
       ),
     ).toBe(true);
+    const writes = jsonl(join(bundle, "dataset-io.jsonl")).filter(
+      (write) => write.direction === "WRITE" && write.write_observation_id,
+    );
+    expect(writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          write_kind: "PACK_DECLARED_QUERY_OUTPUT",
+          provenance: "PLATFORM_TARGET",
+          source_sql_sha256: manifest.inputs.input_pack.sql_sha256,
+        }),
+      ]),
+    );
   });
 
   it("binds platform query output when the SELECT includes target partition columns", () => {
@@ -257,7 +271,7 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(bindings).toHaveLength(2);
     expect(
       bindings.every(
-        (binding) => binding.evidence_kind === "PLATFORM_TARGET_QUERY_OUTPUT",
+        (binding) => binding.evidence_kind === "PACK_DECLARED_QUERY_OUTPUT",
       ),
     ).toBe(true);
     expect(
@@ -291,6 +305,26 @@ describe("Input Pack-driven Machine Facts", () => {
         (binding) => binding.evidence_kind === "SQL_EXPLICIT_WRITE",
       ),
     ).toBe(true);
+    const writes = jsonl(
+      join(
+        f.factsRoot,
+        "registry",
+        "tasks",
+        "200",
+        "bundle",
+        "dataset-io.jsonl",
+      ),
+    );
+    expect(
+      writes.find(
+        (write) =>
+          write.direction === "WRITE" &&
+          write.write_kind === "INSERT_OVERWRITE",
+      ),
+    ).toMatchObject({
+      provenance: "SQL_PARSE",
+      source_as_boundary: { proven: false },
+    });
   });
 
   it("fails closed when an Input Pack file changes during preparation", () => {

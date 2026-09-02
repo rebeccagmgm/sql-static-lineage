@@ -35,7 +35,7 @@ SQL slot 准备规则：
 3. statement 身份使用 Task ID、原 slot 名和 slot 内 ordinal。
 4. 没有 `query` 时，只允许唯一一个结构上产生字段的 slot；多个候选或没有候选时返回 `SQL_SLOT_SELECTION_AMBIGUOUS`。
 
-SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在平台目标唯一、目标 Schema 可用、查询 producer 唯一、非分区目标列与输出 ordinal 完整对应，并且分区处理可证明时，才使用 `PLATFORM_TARGET_QUERY_OUTPUT`。同一 Input Pack 中语义等价的重复查询输出候选会在派生分析视图中去重；原始 SQL slot 仍按原字节保留，真正不同的候选仍 fail-closed。
+SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在 Pack 目标唯一、目标 Schema 可用、查询 producer 唯一、非分区目标列与输出 ordinal 完整对应，并且分区处理可证明时，才使用 `PACK_DECLARED_QUERY_OUTPUT`。该写观察和绑定同时保留 `provenance=PLATFORM_TARGET` 与原始 Pack SQL 的 `source_sql_sha256`；既有 Facts 中的 `PLATFORM_TARGET_QUERY_OUTPUT` 仅作为兼容读取别名。同一 Input Pack 中语义等价的重复查询输出候选会在派生分析视图中去重；原始 SQL slot 仍按原字节保留，真正不同的候选仍 fail-closed。
 
 ## 第二步：生成字段 multi-hop
 

@@ -4,6 +4,8 @@ import {
 	normalizeName,
 	type FieldExpressionRecord,
 	type OutputFieldBindingRecord,
+	isPlatformTargetQueryOutputKind,
+	type OutputEvidenceKind,
 	type SchemaReferenceRecord,
 	type StatementRecord,
 	type UnknownOutcomeRecord,
@@ -40,7 +42,8 @@ export interface WriteOutputContext {
 	readonly queryBoundaryProven: boolean;
 	readonly producerEnumerationStatus: "COMPLETE" | "NOT_EVALUABLE" | "NOT_APPLICABLE";
 	readonly expressions: readonly FieldExpressionRecord[];
-	readonly evidenceKind?: "SQL_EXPLICIT_WRITE" | "PLATFORM_TARGET_QUERY_OUTPUT";
+	readonly evidenceKind?: OutputEvidenceKind;
+	readonly sourceSqlSha256?: string;
 	readonly partitionStatus?: "NOT_PARTITIONED" | "COMPLETE" | "INCOMPLETE" | "UNKNOWN" | "CONFLICT";
 	readonly partitionColumns?: readonly string[];
 	readonly evidenceRefs?: readonly string[];
@@ -328,7 +331,7 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 	for (const write of input.writes) {
 		const isInsert = write.statementType === "INSERT_OVERWRITE" || write.statementType === "INSERT_INTO";
 		const isCtas = write.writeKind === "CTAS";
-		const isPlatformTarget = write.evidenceKind === "PLATFORM_TARGET_QUERY_OUTPUT";
+		const isPlatformTarget = isPlatformTargetQueryOutputKind(write.evidenceKind);
 		if (!isInsert && !isCtas && !isPlatformTarget) continue;
 		const parsedInsert = isInsert ? parseInsert(write.rawSql) : null;
 		const create = creates.find((candidate) => candidate.statementId === write.statementId) ?? null;
@@ -520,7 +523,10 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 					...(!parsedInsert ? (write.partitionColumns ?? []) : []),
 				],
 				evidence_refs: [...new Set(evidenceRefs)].sort(),
-				evidence_kind: isPlatformTarget ? "PLATFORM_TARGET_QUERY_OUTPUT" : "SQL_EXPLICIT_WRITE",
+				evidence_kind: isPlatformTarget ? write.evidenceKind : "SQL_EXPLICIT_WRITE",
+				...(isPlatformTarget && write.sourceSqlSha256
+					? { source_sql_sha256: write.sourceSqlSha256 }
+					: {}),
 			});
 		}
 	}
