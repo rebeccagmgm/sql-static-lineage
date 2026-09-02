@@ -23,13 +23,13 @@
 
 ## 5. TL-4 Content-hash cache
 
-- [ ] 5.1 Cache key: taskId + pack hash + facts manifest + projection schema version.
-- [ ] 5.2 Second batch all cache hit; single changed SQL hash only misses that task.
+- [x] 5.1 Cache key: taskId + pack hash + facts manifest + projection schema version.
+- [x] 5.2 Second batch all cache hit; single changed SQL hash only misses that task.
 
 ## 6. TL-5 Batch CLI
 
-- [ ] 6.1 `npm run project-task-local --` with `--topic DM_RSK_N`, `--also-task-ids 105387,119044`, `--no-prepare-facts`.
-- [ ] 6.2 Output under project-graph root, not task artifacts.
+- [x] 6.1 `npm run project-task-local --` with `--topic DM_RSK_N`, `--also-task-ids 105387,119044`, `--no-prepare-facts`.
+- [x] 6.2 Output under project-graph root, not task artifacts.
 
 ## 7. TL-6 Golden samples
 

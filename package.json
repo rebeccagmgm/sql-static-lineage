@@ -46,6 +46,7 @@
     "test:causal-slice": "vitest run tests/target-field-causal-slice --no-file-parallelism",
     "test:target-table-causal-closure": "vitest run tests/target-table-upstream-causal-closure --no-file-parallelism",
     "test:task-local-projection": "vitest run tests/project-graph/task-local tests/reconcile/shared/dataset-controls.test.ts",
+    "project-task-local": "tsx scripts/project-graph/task-local/project-task-local-cli.ts",
     "reconcile-one-hop": "tsx scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts",
     "reconcile-one-hop:autofill": "tsx scripts/reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts",
     "reconcile-one-hop:batch": "tsx scripts/reconcile/consumer/one-hop/reconcile-one-hop-batch.ts",
