@@ -52,7 +52,7 @@ describe("runScript-2.0 SQL from horae log", () => {
     });
   });
 
-  it("selects only runScript-2.0 ids", () => {
+  it("selects runScript-2.0 and sparkScript ids for log SQL fill", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "run-script-ids-"));
     try {
       writeType(cacheRoot, "100036", { taskType: "hiveTask" });
@@ -61,7 +61,43 @@ describe("runScript-2.0 SQL from horae log", () => {
         scriptPath: "BigData-pdata_pcav_n/main.sh",
         hiveDb: "pdata_pcav_n",
       });
-      expect(runScriptIdsFromHoraeTypeCache(cacheRoot)).toEqual(["101499"]);
+      writeType(cacheRoot, "3233", {
+        taskType: "sparkScript",
+        scriptPath: "BigData-demo/main.sh",
+      });
+      expect(runScriptIdsFromHoraeTypeCache(cacheRoot)).toEqual([
+        "3233",
+        "101499",
+      ]);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fills sparkScript SQL from injected horae log", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "spark-script-fill-"));
+    try {
+      writeType(cacheRoot, "3233", {
+        taskType: "sparkScript",
+        scriptPath: "BigData-demo/main.sh",
+        hiveDb: "demo_db",
+      });
+      const summary = await fillRunScriptSqlCache({
+        cacheRoot,
+        dataDate: "2026-08-27",
+        taskIds: ["3233"],
+        logRunner: () => SAMPLE_LOG,
+      });
+      expect(summary).toMatchObject({
+        total: 1,
+        cached: 1,
+        errors: 0,
+      });
+      const raw = readFileSync(
+        join(tasksRoot(cacheRoot), "3233", "run-script.sql"),
+        "utf8",
+      );
+      expect(raw).toContain("insert overwrite table ods_acs_connect_relation_all");
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

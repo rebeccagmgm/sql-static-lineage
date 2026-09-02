@@ -19,7 +19,11 @@ import {
   readHoraeTaskTypeCache,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
-const RUN_SCRIPT_TYPE = "runScript-2.0";
+/** Task types whose SQL evidence is extracted from Horae execution logs. */
+export const SCRIPT_SQL_FROM_LOG_TASK_TYPES = new Set([
+  "runScript-2.0",
+  "sparkScript",
+]);
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DATA_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_MAX_ERRORS = 0;
@@ -68,7 +72,9 @@ export function runScriptIdsFromHoraeTypeCache(cacheRoot: string): string[] {
   return taskIdsFromScheduleEvidenceCache(cacheRoot).filter((taskId) => {
     const cached = readHoraeTaskTypeCache(taskId, cacheRoot);
     return (
-      cached.status === "HIT" && cached.detail.taskType === RUN_SCRIPT_TYPE
+      cached.status === "HIT" &&
+      typeof cached.detail.taskType === "string" &&
+      SCRIPT_SQL_FROM_LOG_TASK_TYPES.has(cached.detail.taskType)
     );
   });
 }
@@ -109,7 +115,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function isHoraeLogInstanceMissing(error: unknown): boolean {
+export function isHoraeLogInstanceMissing(error: unknown): boolean {
   const parts = [errorMessage(error)];
   if (error !== null && typeof error === "object") {
     const record = error as { stdout?: unknown; stderr?: unknown };

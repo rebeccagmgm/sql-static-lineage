@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  extractOfflineTableCandidates,
   loadOfflineTableCatalog,
   parsePhysicalTableName,
   platformFromDataSource,
@@ -49,6 +50,209 @@ describe("offline table name helpers", () => {
   it("maps gfhive and oracle prefixes", () => {
     expect(platformFromDataSource("gfhive")).toBe("hive");
     expect(platformFromDataSource("gforacle_gftzdb#gftzdb")).toBe("oracle");
+  });
+
+  it("skips *2hive source datasource labels as table candidates", () => {
+    const names = extractOfflineTableCandidates(
+      task({
+        taskId: "68",
+        taskCategory: "oracle2hive",
+        source: "oracle_rbjygl_85.236",
+        target: "odata_ygt.nygt_t_coverstockjour",
+        sql: {
+          query:
+            "SELECT 1 FROM HS_OPT.COVERSTOCKJOUR WHERE INIT_DATE = '${YYYY-MM-DD}'",
+        },
+      }),
+    ).map((item) => item.qualifiedName.toLowerCase());
+    expect(names).toContain("odata_ygt.nygt_t_coverstockjour");
+    expect(names).toContain("hs_opt.coverstockjour");
+    expect(names).not.toContain("oracle_rbjygl_85.236");
+  });
+
+  it("still includes source table candidates for non-*2hive tasks", () => {
+    const names = extractOfflineTableCandidates(
+      task({
+        taskCategory: "hive2oracle",
+        source: "pdata_n.some_src",
+        target: "HS_USER.STKCODE",
+        sql: { query: "SELECT 1 FROM pdata_n.some_src" },
+      }),
+    ).map((item) => item.qualifiedName.toLowerCase());
+    expect(names).toContain("pdata_n.some_src");
+  });
+});
+
+describe("RDBMS disambiguation via horae-datasource", () => {
+  it("resolves ambiguous Oracle core rows using server_tag → service", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-amb-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_ygt.nygt_t_coverstockjour@gfhive",
+          querytext:
+            "CREATE TABLE odata_ygt.nygt_t_coverstockjour (id string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_gfufjy2#gfufjy",
+          name: "COVERSTOCKJOUR",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_jyglrac#jyglrac",
+          name: "COVERSTOCKJOUR",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_gfufjy2#gfufjy",
+          ddl: "CREATE TABLE HS_OPT.COVERSTOCKJOUR (ID NUMBER)",
+        },
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_jyglrac#jyglrac",
+          ddl: "CREATE TABLE HS_OPT.COVERSTOCKJOUR (ID NUMBER, X NUMBER)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_rbjygl_85.236",
+            {
+              serverTag: "oracle_rbjygl_85.236",
+              serverType: "oracle",
+              service: "jyglrac",
+            },
+          ],
+        ]),
+      },
+    });
+    const dataRoot = mkdtempSync(join(tmpdir(), "pack-"));
+    const resolved = resolveOfflineTables(
+      dataRoot,
+      task({
+        taskId: "68",
+        taskCategory: "oracle2hive",
+        source: "oracle_rbjygl_85.236",
+        target: "odata_ygt.nygt_t_coverstockjour",
+        sql: {
+          query: "SELECT 1 FROM HS_OPT.COVERSTOCKJOUR",
+        },
+      }),
+      catalog,
+      () => new Date("2026-09-02T00:00:00.000Z"),
+    );
+    expect(resolved.unavailable).toEqual([]);
+    const oracle = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "hs_opt.coverstockjour",
+    );
+    expect(oracle?.dataSource?.toLowerCase()).toBe("gforacle_jyglrac#jyglrac");
+    expect(oracle?.evidenceProvider).toContain("local:horae-datasource");
+  });
+
+  it("matches #service suffix when gforacle_service#service instance is numbered", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-svc-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "CRMII.TAPP_CHANNELTYPE@gforacle_jgjdb1#jgjdb",
+          name: "TAPP_CHANNELTYPE",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "CRMII.TAPP_CHANNELTYPE@gforacle_jgjdbuat#jgjdbuat",
+          name: "TAPP_CHANNELTYPE",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "CRMII.TAPP_CHANNELTYPE@gforacle_jgjdb1#jgjdb",
+          ddl: "CREATE TABLE CRMII.TAPP_CHANNELTYPE (ID NUMBER)",
+        },
+        {
+          qualifiedname: "CRMII.TAPP_CHANNELTYPE@gforacle_jgjdbuat#jgjdbuat",
+          ddl: "CREATE TABLE CRMII.TAPP_CHANNELTYPE (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_jgj_69.202",
+            {
+              serverTag: "oracle_jgj_69.202",
+              serverType: "oracle",
+              service: "jgjdb",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "124",
+        taskCategory: "oracle2hive",
+        source: "oracle_jgj_69.202",
+        target: undefined,
+        sql: { query: "SELECT 1 FROM CRMII.TAPP_CHANNELTYPE" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]?.dataSource?.toLowerCase()).toBe(
+      "gforacle_jgjdb1#jgjdb",
+    );
+  });
+
+  it("stays AMBIGUOUS when horae-datasource is absent", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-amb2-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_gfufjy2#gfufjy",
+          name: "COVERSTOCKJOUR",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_jyglrac#jyglrac",
+          name: "COVERSTOCKJOUR",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "HS_OPT.COVERSTOCKJOUR@gforacle_jyglrac#jyglrac",
+          ddl: "CREATE TABLE HS_OPT.COVERSTOCKJOUR (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: null,
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "68",
+        taskCategory: "oracle2hive",
+        source: "oracle_rbjygl_85.236",
+        target: undefined,
+        sql: { query: "SELECT 1 FROM HS_OPT.COVERSTOCKJOUR" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([
+      {
+        qualifiedName: "HS_OPT.COVERSTOCKJOUR",
+        reason: "RDBMS_CORE_AMBIGUOUS",
+      },
+    ]);
   });
 });
 

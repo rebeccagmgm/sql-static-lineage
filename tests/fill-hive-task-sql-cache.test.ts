@@ -84,6 +84,68 @@ describe("hiveTask SQL cache fill", () => {
     });
   });
 
+  it("extracts CREATE and INSERT from differently named sql variables passed to exec_sql", () => {
+    const script = `#!/usr/bin/env python
+from HiveTask import HiveTask
+ht = HiveTask()
+db_name = ht.schema_name
+sql_create_table = """
+CREATE TABLE IF NOT EXISTS t02_demo(
+  busi_date string comment '数据日期'
+)
+COMMENT 'demo table';
+"""
+ht.exec_sql(schema_name = db_name, sql = sql_create_table)
+sql = """
+INSERT overwrite TABLE t02_demo
+SELECT '2026-01-01' as busi_date;
+"""
+ht.exec_sql(schema_name = db_name, sql = sql)
+`;
+    expect(extractHiveTaskSqlFromScript(script)).toEqual({
+      createSql:
+        "CREATE TABLE IF NOT EXISTS t02_demo(\n  busi_date string comment '数据日期'\n)\nCOMMENT 'demo table';",
+      querySql:
+        "INSERT overwrite TABLE t02_demo\nSELECT '2026-01-01' as busi_date;",
+    });
+  });
+
+  it("extracts query SQL from a non-sql variable name passed to exec_sql", () => {
+    const script = `#!/usr/bin/env python
+from HiveTask import HiveTask
+ht = HiveTask()
+db_name = ht.schema_name
+sql_tmp_table = """
+INSERT OVERWRITE TABLE t02_demo PARTITION(busi_date='2026-01-01')
+SELECT col_a FROM src_table;
+"""
+ht.exec_sql(schema_name = db_name, sql = sql_tmp_table)
+`;
+    const extracted = extractHiveTaskSqlFromScript(script);
+    expect(extracted.createSql).toBeNull();
+    expect(extracted.querySql).toMatch(/INSERT OVERWRITE TABLE t02_demo/i);
+    expect(extracted.querySql).toContain("SELECT col_a FROM src_table");
+  });
+
+  it("ignores unused triple-quoted strings when exec_sql is present", () => {
+    const script = `#!/usr/bin/env python
+from HiveTask import HiveTask
+ht = HiveTask()
+db_name = ht.schema_name
+unused_sql = """
+DROP TABLE IF EXISTS should_not_appear;
+"""
+sql = """
+INSERT INTO t02_demo SELECT 1;
+"""
+ht.exec_sql(schema_name = db_name, sql = sql)
+`;
+    const extracted = extractHiveTaskSqlFromScript(script);
+    expect(extracted.createSql).toBeNull();
+    expect(extracted.querySql).toMatch(/INSERT INTO t02_demo/i);
+    expect(extracted.querySql).not.toMatch(/DROP TABLE/i);
+  });
+
   it("splits a single sql assignment that contains CREATE then INSERT", () => {
     const script = `sql = """
 CREATE TABLE IF NOT EXISTS T05_FIN_BDGT_ADJ_APP_EVT(
@@ -247,6 +309,93 @@ SELECT A.ID FROM \${src_table} A;`,
       expect(
         readFileSync(join(tasksRoot(cacheRoot), "100037", "hive-task.sql"), "utf8"),
       ).toContain("SELECT 100037");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("force-overwrites HIT from local code and does not re-call MCP for cached misses", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-force-"));
+    const codeRoot = join(cacheRoot, "code");
+    try {
+      const scriptPath =
+        "BigData-pdata_news_n/news_dm02/pdata_news_n.t02_idx_mkt_quot_s_WD_grp13";
+      mkdirSync(join(codeRoot, "pdata_news_n", "news_dm02"), { recursive: true });
+      writeFileSync(
+        join(
+          codeRoot,
+          "pdata_news_n",
+          "news_dm02",
+          "pdata_news_n.t02_idx_mkt_quot_s_WD_grp13",
+        ),
+        SAMPLE_SCRIPT,
+      );
+      writeType(cacheRoot, "100036", {
+        taskType: "hiveTask",
+        scriptPath,
+        hiveDb: "pdata_news_n",
+      });
+      writeType(cacheRoot, "100037", {
+        taskType: "hiveTask-2.0",
+        scriptPath: "BigData-missing_repo/nope.sql",
+        hiveDb: "dm_otc_n",
+      });
+      writeHiveTaskSqlCache(
+        "100036",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "LOCAL_CODE",
+          sqlStatus: "AVAILABLE",
+          scriptPath,
+          hiveDb: "pdata_news_n",
+          createSql: null,
+          querySql: "INSERT OVERWRITE TABLE stale SELECT 1;",
+        },
+        cacheRoot,
+      );
+      writeHiveTaskSqlCache(
+        "100037",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "SQL_MCP",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing_repo/nope.sql",
+          hiveDb: "dm_otc_n",
+          createSql: "CREATE TABLE mcp_keep (id INT);",
+          querySql: "SELECT kept",
+        },
+        cacheRoot,
+      );
+      const mcpCalls: string[] = [];
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot,
+        force: true,
+        minIntervalMs: 0,
+        mcpRunner: (taskId) => {
+          mcpCalls.push(taskId);
+          throw new Error(`unexpected MCP ${taskId}`);
+        },
+      });
+      expect(summary).toMatchObject({
+        total: 2,
+        skipped: 1,
+        localCached: 1,
+        mcpCached: 0,
+        errors: 0,
+      });
+      expect(mcpCalls).toEqual([]);
+      const refreshed = readHiveTaskSqlCache("100036", cacheRoot);
+      expect(refreshed).toMatchObject({ status: "HIT", source: "LOCAL_CODE" });
+      if (refreshed.status !== "HIT") throw new Error("expected HIT");
+      expect(refreshed.createSql).toMatch(/CREATE TABLE IF NOT EXISTS t02_idx_mkt_quot_s/i);
+      expect(refreshed.querySql).toContain("${data_day_str}");
+      expect(refreshed.querySql).not.toMatch(/stale/);
+      expect(readHiveTaskSqlCache("100037", cacheRoot)).toMatchObject({
+        status: "HIT",
+        source: "SQL_MCP",
+        querySql: "SELECT kept",
+      });
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

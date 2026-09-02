@@ -28,6 +28,7 @@ export type HiveTaskSqlSource = (typeof HIVE_TASK_SQL_SOURCES)[number];
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/i;
 const SQL_ASSIGNMENT_PREFIX = /\b(?:sql|hql)\s*=/gi;
+const EXEC_SQL_CALL_PREFIX = /\bexec_sql\s*\(/gi;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -312,13 +313,100 @@ function mergeHiveTaskSqlSlots(
   };
 }
 
-export function extractHiveTaskSqlFromScript(source: string): {
+function findMatchingParen(source: string, openIndex: number): number | undefined {
+  let depth = 0;
+  let quote: string | undefined;
+  let index = openIndex;
+  while (index < source.length) {
+    const current = source[index]!;
+    if (quote !== undefined) {
+      if (current === "\\" && index + 1 < source.length) {
+        index += 2;
+        continue;
+      }
+      if (
+        quote.length === 3 &&
+        source.startsWith(quote, index)
+      ) {
+        quote = undefined;
+        index += 3;
+        continue;
+      }
+      if (quote.length === 1 && current === quote) quote = undefined;
+      index += 1;
+      continue;
+    }
+    if (source.startsWith('"""', index) || source.startsWith("'''", index)) {
+      quote = source.slice(index, index + 3);
+      index += 3;
+      continue;
+    }
+    if (current === "'" || current === '"') {
+      quote = current;
+      index += 1;
+      continue;
+    }
+    if (current === "(") {
+      depth += 1;
+      index += 1;
+      continue;
+    }
+    if (current === ")") {
+      depth -= 1;
+      if (depth === 0) return index;
+      index += 1;
+      continue;
+    }
+    index += 1;
+  }
+  return undefined;
+}
+
+function resolveLastStringAssignment(
+  source: string,
+  identifier: string,
+  beforeIndex: number,
+): string | null {
+  const pattern = new RegExp(`\\b${identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=\\s*`, "g");
+  let last: string | null = null;
+  for (const match of source.matchAll(pattern)) {
+    const assignIndex = match.index ?? 0;
+    if (assignIndex >= beforeIndex) break;
+    const value = parseConcatenatedPythonString(
+      source,
+      assignIndex + match[0].length,
+    );
+    if (value !== null) last = value;
+  }
+  return last;
+}
+
+function extractSqlFromExecSqlCall(
+  source: string,
+  execSqlIndex: number,
+): string | null {
+  const openParen = source.indexOf("(", execSqlIndex);
+  if (openParen < 0) return null;
+  const closeParen = findMatchingParen(source, openParen);
+  if (closeParen === undefined) return null;
+  const callBody = source.slice(openParen + 1, closeParen);
+  const sqlArg = /\bsql\s*=\s*/i.exec(callBody);
+  if (!sqlArg || sqlArg.index === undefined) return null;
+  const valueStart = openParen + 1 + sqlArg.index + sqlArg[0].length;
+  const inline = parseConcatenatedPythonString(source, valueStart);
+  if (inline !== null) return inline;
+  const identMatch = /^[A-Za-z_][A-Za-z0-9_]*/.exec(source.slice(valueStart));
+  if (!identMatch) return null;
+  return resolveLastStringAssignment(source, identMatch[0], valueStart);
+}
+
+function extractHiveTaskSqlFromAssignments(source: string): {
   readonly createSql: string | null;
   readonly querySql: string | null;
 } {
   const create: string[] = [];
   const query: string[] = [];
-  for (const match of String(source).matchAll(SQL_ASSIGNMENT_PREFIX)) {
+  for (const match of source.matchAll(SQL_ASSIGNMENT_PREFIX)) {
     const block = parseConcatenatedPythonString(
       source,
       (match.index ?? 0) + match[0].length,
@@ -327,6 +415,31 @@ export function extractHiveTaskSqlFromScript(source: string): {
     const split = splitCombinedHiveTaskSql(block);
     if (split.createSql !== null) create.push(split.createSql);
     if (split.querySql !== null) query.push(split.querySql);
+  }
+  return {
+    createSql: create.length === 0 ? null : create.join("\n\n"),
+    querySql: query.length === 0 ? null : query.join("\n\n"),
+  };
+}
+
+export function extractHiveTaskSqlFromScript(source: string): {
+  readonly createSql: string | null;
+  readonly querySql: string | null;
+} {
+  const create: string[] = [];
+  const query: string[] = [];
+  let foundExecSql = false;
+  for (const match of String(source).matchAll(EXEC_SQL_CALL_PREFIX)) {
+    foundExecSql = true;
+    const block = extractSqlFromExecSqlCall(source, match.index ?? 0);
+    if (block === null) continue;
+    const split = splitCombinedHiveTaskSql(block);
+    if (split.createSql !== null) create.push(split.createSql);
+    if (split.querySql !== null) query.push(split.querySql);
+  }
+  if (!foundExecSql) {
+    // Scripts without exec_sql may still expose sql/hql assignments directly.
+    return extractHiveTaskSqlFromAssignments(source);
   }
   return {
     createSql: create.length === 0 ? null : create.join("\n\n"),

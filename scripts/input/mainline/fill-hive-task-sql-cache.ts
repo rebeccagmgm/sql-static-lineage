@@ -40,6 +40,7 @@ export interface FillHiveTaskSqlCacheOptions {
   readonly mcpRunner?: HiveTaskSqlMcpRunner;
   readonly gate?: HoraeSerialGate;
   readonly now?: () => Date;
+  readonly force?: boolean;
 }
 
 export interface HiveTaskSqlFillError {
@@ -191,13 +192,16 @@ function shouldStop(errors: number, maxErrors: number): boolean {
  * Only tasks with scriptPath/fileName are selected. Local BigData checkout
  * is written first; MCP is only used for remaining misses, and only MCP
  * calls honor --interval-ms. Empty MCP SQL is recorded as UNAVAILABLE and
- * does not stop the batch.
+ * does not stop the batch. `--force` re-extracts from local code over existing
+ * HIT files; tasks without a local script keep their cache and are not
+ * re-fetched from MCP.
  */
 export async function fillHiveTaskSqlCache(
   options: FillHiveTaskSqlCacheOptions = {},
 ): Promise<FillHiveTaskSqlCacheSummary> {
   const cacheRoot = options.cacheRoot ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
   const codeRoot = options.codeRoot ?? defaultHiveTaskCodeRoot(cacheRoot);
+  const force = options.force === true;
   const maxErrors = nonNegativeInteger(
     options.maxErrors,
     DEFAULT_MAX_ERRORS,
@@ -234,7 +238,12 @@ export async function fillHiveTaskSqlCache(
 
   for (const taskId of taskIds) {
     const existing = readHiveTaskSqlCache(taskId, cacheRoot);
-    if (existing.status === "HIT") {
+    const typeCache = readHoraeTaskTypeCache(taskId, cacheRoot);
+    const scriptPath =
+      typeCache.status === "HIT" ? hiveTaskScriptPath(typeCache.detail) : null;
+    const hiveDb =
+      typeCache.status === "HIT" ? optionalText(typeCache.detail.hiveDb) : null;
+    if (existing.status === "HIT" && !force) {
       if (existing.path.endsWith(HIVE_TASK_SQL_LEGACY_CACHE_FILE_NAME)) {
         writeHiveTaskSqlCache(
           taskId,
@@ -246,14 +255,13 @@ export async function fillHiveTaskSqlCache(
       skipped += 1;
       continue;
     }
-    const typeCache = readHoraeTaskTypeCache(taskId, cacheRoot);
-    const scriptPath =
-      typeCache.status === "HIT" ? hiveTaskScriptPath(typeCache.detail) : null;
-    const hiveDb =
-      typeCache.status === "HIT" ? optionalText(typeCache.detail.hiveDb) : null;
     try {
       const local = evidenceFromLocal(codeRoot, scriptPath, hiveDb);
       if (local === null) {
+        if (existing.status === "HIT") {
+          skipped += 1;
+          continue;
+        }
         pendingMcp.push({ taskId, scriptPath, hiveDb });
         continue;
       }
@@ -359,6 +367,7 @@ async function main(): Promise<void> {
   const minIntervalMs = parseIntegerOption("--interval-ms", undefined, true);
   const taskIdsFile = option("--task-ids-file");
   const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined;
+  const force = process.argv.includes("--force");
   process.stderr.write(
     `[hive-task-sql-cache] start ${JSON.stringify({
       cacheRoot,
@@ -368,6 +377,7 @@ async function main(): Promise<void> {
       taskIds: taskIds?.length ?? null,
       maxErrors: maxErrors ?? DEFAULT_MAX_ERRORS,
       minIntervalMs: minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS,
+      force,
     })}\n`,
   );
   const summary = await fillHiveTaskSqlCache({
@@ -378,6 +388,7 @@ async function main(): Promise<void> {
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors,
     minIntervalMs,
+    force,
   });
   process.stdout.write(`${JSON.stringify(summary)}\n`);
   if (summary.errors > 0) process.exitCode = 1;
