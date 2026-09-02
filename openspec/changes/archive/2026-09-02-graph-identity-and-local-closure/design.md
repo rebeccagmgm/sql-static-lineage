@@ -29,10 +29,11 @@ statement + dataset + ordinal 生成稳定 legacy occurrence。
 
 ### Local materialization fold
 
-按 `(physical_dataset,column)` 建立 Facts materialization 索引。仅 `RESOLVED` 且有
-`output_binding_id` 的行递归展开到其 output binding 的物理输入，循环或无 binding
-时保留原 temp field。`AMBIGUOUS`/`UNRESOLVED` 不折叠并带 boundary reason。折叠只
-影响当前投影的字段来源边和 `localFieldPaths` 摘要，不写回 Facts。
+按 `(physical_dataset,column)` 建立 Facts materialization 索引；展开时优先用当前读表达式
+的 `read_expression_ids`，其次用 `read_statement_id` 做精确筛选。仅对应候选唯一、状态为
+`RESOLVED` 且有 `output_binding_id` 的行递归展开到其 output binding 的物理输入，循环、无
+binding 或同一读次存在冲突时保留原 temp field。`AMBIGUOUS`/`UNRESOLVED` 不折叠并带
+boundary reason。折叠只影响当前投影的字段来源边和 `localFieldPaths` 摘要，不写回 Facts。
 
 ### Self-read and closure summary
 

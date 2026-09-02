@@ -162,5 +162,5 @@ describe("projectTaskLocal", () => {
     );
     expect(joinControls.length).toBeLessThanOrEqual(outputColumns.size * 4);
     expect(joinControls.length).toBeGreaterThan(0);
-  });
+  }, 60_000);
 });

@@ -420,5 +420,22 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
       "MATERIALIZATION_NOT_RESOLVED",
     );
     expect(unresolvedTemp?.properties.readDisposition).toBe("EXTERNAL_READ");
-  }, 60_000);
+
+    const p158641 = projectGolden("158641");
+    const tempWriteDataset = p158641.nodes.find(
+      (node) =>
+        node.nodeType === "PHYSICAL_DATASET"
+        && node.properties.qualifiedName === "temp_n.odata_n_tit_d_mkt_option_eod_pt_metric_cur",
+    );
+    expect(tempWriteDataset?.properties.identityStatus).toBe("CANDIDATE_DATASET");
+    expect(tempWriteDataset?.properties.identityReasonCode).toBe("TEMP_MATERIALIZATION_MISSING");
+
+    const p181058 = projectGolden("181058");
+    expect(p181058.localClosure?.localFieldPaths.length).toBeGreaterThan(0);
+    expect(
+      p181058.edges.some(
+        (edge) => edge.edgeType === "FIELD_DIRECT" && edge.properties.materializationFolded === true,
+      ),
+    ).toBe(true);
+  }, 180_000);
 });

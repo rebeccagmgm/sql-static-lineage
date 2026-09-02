@@ -4,7 +4,10 @@ import type {
   PhysicalTableCatalog,
   PhysicalTableCatalogEntry,
 } from "../../../scripts/machine-facts/input-pack-machine-facts.ts";
-import { resolveTaskLocalTableIdentity } from "../../../scripts/project-graph/task-local/identity.ts";
+import {
+  isTempLikeTableName,
+  resolveTaskLocalTableIdentity,
+} from "../../../scripts/project-graph/task-local/identity.ts";
 
 function catalogWith(entry: PhysicalTableCatalogEntry): PhysicalTableCatalog {
   return {
@@ -31,6 +34,13 @@ const ENTRY: PhysicalTableCatalogEntry = {
 };
 
 describe("task-local identity", () => {
+  it("recognizes the surveyed temporary schemas and scratch suffixes", () => {
+    expect(isTempLikeTableName("temp_n.odata_n_tit_d_mkt_option_eod_pt_metric_cur")).toBe(true);
+    expect(isTempLikeTableName("gfstest.some_table")).toBe(true);
+    expect(isTempLikeTableName("dm_rsk_n.otc_opt_inr_comp_pal_sum_temp")).toBe(true);
+    expect(isTempLikeTableName("pdata_n.t03_otc_opt_comp_info")).toBe(false);
+  });
+
   it("does not promote task-name-only bare qualification to confirmed", () => {
     const result = resolveTaskLocalTableIdentity({
       catalog: catalogWith(ENTRY),

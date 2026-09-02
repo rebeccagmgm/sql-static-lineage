@@ -51,9 +51,11 @@ WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LO
 `TASK → READ_OCCURRENCE → PHYSICAL_DATASET`，分区谓词仍只挂在对应读次上。
 
 身份由 catalog exact match 与 `inferTaskDefaultSchema` 佐证决定：不使用 catalog tail
-或任务名正则补全裸名；`TASK_NAME` 只有 `ASSUMED` qualification。临时表只按
-`task-local-materializations.jsonl` 的 `RESOLVED` 行折叠，未解决行保留边界。投影还
-提供任务内 `finalWrites` / `externalReads` / `localFieldPaths` 摘要，供 WP-8 使用。
+或任务名正则补全裸名；`TASK_NAME` 只有 `ASSUMED` qualification。临时库/临时后缀的
+写读在没有 materialization 证据时保持 `CANDIDATE_DATASET`；字段只按当前读表达式的
+`read_expression_ids`（其次 `read_statement_id`）唯一匹配 `RESOLVED` 行后折叠，未解决
+或冲突行保留边界。投影还提供任务内 `finalWrites` / `externalReads` / `localFieldPaths`
+摘要，供 WP-8 使用。
 旧 1.1.0 缓存和夹具仍可由 validator 读取，缓存 key 随 1.2.0 自然失效。
 
 ---
