@@ -109,5 +109,9 @@ export function resolveTaskLocalTableIdentity(input: {
 
 export function isTempLikeTableName(value: string): boolean {
   const normalized = normalizeName(value);
-  return normalized.startsWith("temp.") || normalized.includes("_tmp") || normalized.includes("_temp_");
+  const [schema = "", ...tableParts] = normalized.split(".");
+  const tableName = tableParts.join(".");
+  const scratchSchema = /^(?:temp(?:_[a-z0-9]+)?|gfstest(?:_[a-z0-9]+)?)$/.test(schema);
+  const scratchTable = /(?:^|[._])(?:tmp|temp)(?:[._]|$)/.test(tableName);
+  return scratchSchema || scratchTable;
 }

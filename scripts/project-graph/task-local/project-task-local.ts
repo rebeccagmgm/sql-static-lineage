@@ -185,6 +185,59 @@ function materializationKey(dataset: string, column: string): string {
   return `${normalizeName(dataset)}\u0000${normalizeName(column)}`;
 }
 
+interface MaterializationContext {
+  readonly statementId: string | null;
+  readonly expressionId: string | null;
+}
+
+function materializationContextForExpression(expression: JsonRecord): MaterializationContext {
+  return {
+    statementId: text(expression.statement_id),
+    expressionId: text(expression.expression_id),
+  };
+}
+
+function materializationContextKey(context: MaterializationContext): string {
+  return `${context.statementId ?? ""}\u0000${context.expressionId ?? ""}`;
+}
+
+function materializationRecordsForDataset(
+  materializationRecords: readonly JsonRecord[],
+  rawDataset: string,
+  qualifiedDataset: string,
+): readonly JsonRecord[] {
+  const normalizedRaw = normalizeName(rawDataset);
+  const normalizedQualified = normalizeName(qualifiedDataset);
+  return materializationRecords.filter((materialization) => {
+    const materializedDataset = normalizeName(String(materialization.physical_dataset ?? ""));
+    return materializedDataset === normalizedRaw || materializedDataset === normalizedQualified;
+  });
+}
+
+function materializationRecordsForField(
+  materializationsByField: ReadonlyMap<string, readonly JsonRecord[]>,
+  source: PhysicalFieldIdentity,
+  context: MaterializationContext,
+): readonly JsonRecord[] {
+  const all = materializationsByField.get(materializationKey(source.qualifiedName, source.column)) ?? [];
+  if (context.expressionId) {
+    const expressionMatches = all.filter((materialization) =>
+      Array.isArray(materialization.read_expression_ids)
+      && materialization.read_expression_ids.some(
+        (value: unknown) => text(value) === context.expressionId,
+      ),
+    );
+    if (expressionMatches.length > 0) return expressionMatches;
+  }
+  if (context.statementId) {
+    const statementMatches = all.filter(
+      (materialization) => text(materialization.read_statement_id) === context.statementId,
+    );
+    if (statementMatches.length > 0) return statementMatches;
+  }
+  return all;
+}
+
 function isFinalWrite(
   physicalDataset: string,
   targetQualifiedName: string | null,
@@ -356,12 +409,26 @@ function projectTaskLocalFromFacts(input: {
   const finalDatasetNames = new Set<string>();
   for (const write of writeRecords) {
     const writeObservationId = text(write.write_observation_id)!;
-    const identity = resolveTaskLocalTableIdentity({
+    const baseIdentity = resolveTaskLocalTableIdentity({
       catalog,
       rawName: String(write.physical_dataset ?? ""),
       defaultSchema,
       fallback: fallbackTable,
     });
+    const writeMaterializations = materializationRecordsForDataset(
+      materializationRecords,
+      String(write.physical_dataset ?? ""),
+      baseIdentity.qualifiedName,
+    );
+    const identity = isTempLikeTableName(String(write.physical_dataset ?? ""))
+      && writeMaterializations.length === 0
+      && baseIdentity.identityStatus === "CONFIRMED"
+      ? {
+        ...baseIdentity,
+        identityStatus: "CANDIDATE_DATASET" as const,
+        identityReasonCode: "TEMP_MATERIALIZATION_MISSING",
+      }
+      : baseIdentity;
     const datasetNodeId = ensureDatasetNode(nodes, identity);
     const writeNodeId = targetWriteNodeId({
       taskId,
@@ -433,11 +500,11 @@ function projectTaskLocalFromFacts(input: {
       fallback: fallbackTable,
     });
     const rawReadDataset = normalizeName(String(read.physical_dataset ?? ""));
-    const datasetMaterializations = materializationRecords.filter((materialization) => {
-      const materializedDataset = normalizeName(String(materialization.physical_dataset ?? ""));
-      return materializedDataset === rawReadDataset
-        || materializedDataset === baseIdentity.qualifiedName;
-    });
+    const datasetMaterializations = materializationRecordsForDataset(
+      materializationRecords,
+      rawReadDataset,
+      baseIdentity.qualifiedName,
+    );
     const identity = isTempLikeTableName(rawReadDataset) && datasetMaterializations.length === 0
       ? {
         ...baseIdentity,
@@ -556,20 +623,27 @@ function projectTaskLocalFromFacts(input: {
   const expandMaterializedField = (
     source: PhysicalFieldIdentity,
     visited: ReadonlySet<string> = new Set(),
+    context: MaterializationContext = { statementId: null, expressionId: null },
   ): ExpandedSource[] => {
-    const key = materializationKey(source.qualifiedName, source.column);
+    const fieldKey = materializationKey(source.qualifiedName, source.column);
+    const memoKey = `${fieldKey}\u0000${materializationContextKey(context)}`;
     if (visited.size === 0) {
-      const cached = expandedMaterializationMemo.get(key);
+      const cached = expandedMaterializationMemo.get(memoKey);
       if (cached) return cached;
     }
-    const resolved = (materializationsByField.get(key) ?? []).filter(
+    const candidates = materializationRecordsForField(
+      materializationsByField,
+      source,
+      context,
+    );
+    const resolved = candidates.filter(
       (materialization) =>
         String(materialization.status ?? "").toUpperCase() === "RESOLVED"
         && text(materialization.output_binding_id),
     );
-    if (resolved.length !== 1 || !primaryTarget || visited.has(key)) {
+    if (candidates.length !== 1 || resolved.length !== 1 || !primaryTarget || visited.has(fieldKey)) {
       const result = [{ field: source, materializationBridgeIds: [] }];
-      if (visited.size === 0) expandedMaterializationMemo.set(key, result);
+      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
     const materialization = resolved[0]!;
@@ -577,7 +651,7 @@ function projectTaskLocalFromFacts(input: {
     const expression = binding ? expressionFor(load, binding) : null;
     if (!expression) {
       const result = [{ field: source, materializationBridgeIds: [] }];
-      if (visited.size === 0) expandedMaterializationMemo.set(key, result);
+      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
     const underlying = taskLocalSourceFieldsForExpression(
@@ -590,13 +664,14 @@ function projectTaskLocalFromFacts(input: {
     );
     if (underlying.fields.length === 0) {
       const result = [{ field: source, materializationBridgeIds: [] }];
-      if (visited.size === 0) expandedMaterializationMemo.set(key, result);
+      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
     const nextVisited = new Set(visited);
-    nextVisited.add(key);
+    nextVisited.add(fieldKey);
+    const nestedContext = materializationContextForExpression(expression);
     const result = underlying.fields.flatMap((field) =>
-      expandMaterializedField(field, nextVisited).map((expanded) => ({
+      expandMaterializedField(field, nextVisited, nestedContext).map((expanded) => ({
         field: expanded.field,
         materializationBridgeIds: [
           text(materialization.bridge_id) ?? "",
@@ -604,7 +679,7 @@ function projectTaskLocalFromFacts(input: {
         ].filter(Boolean),
       })),
     );
-    if (visited.size === 0) expandedMaterializationMemo.set(key, result);
+    if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
     return result;
   };
 
@@ -629,7 +704,10 @@ function projectTaskLocalFromFacts(input: {
       primaryTarget,
       defaultSchema,
     );
-    for (const source of sources.fields.flatMap((field) => expandMaterializedField(field))) {
+    const materializationContext = materializationContextForExpression(expression);
+    for (const source of sources.fields.flatMap((field) =>
+      expandMaterializedField(field, new Set(), materializationContext),
+    )) {
       const fromNodeId = ensureFieldNode(nodes, source.field, catalog);
       const bridgeIds = [...new Set(source.materializationBridgeIds)].sort(compareText);
       pushEdge({
