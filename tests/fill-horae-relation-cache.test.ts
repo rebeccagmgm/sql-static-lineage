@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import { HoraeSerialGate } from "../scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts";
 import {
   fillHoraeRelationCache,
+  neighborTaskIdsFromRelationCache,
   rowsOfHoraeRelation,
+  taskIdsFromFile,
 } from "../scripts/input/mainline/fill-horae-relation-cache.ts";
 import {
   readHoraeRelationCache,
@@ -103,5 +105,58 @@ describe("fillHoraeRelationCache", () => {
   it("parses empty relation envelopes as empty rows", () => {
     expect(rowsOfHoraeRelation([], "1")).toEqual([]);
     expect(rowsOfHoraeRelation({ records: [] }, "1")).toEqual([]);
+  });
+
+  it("reads task ids from file and harvests missing down neighbors", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-relation-neighbors-"));
+    const idsFile = join(cacheRoot, "ids.txt");
+    try {
+      makeTaskDirectories(cacheRoot, ["10", "20"]);
+      writeHoraeRelationCache(
+        "10",
+        "2026-08-31T00:00:00.000Z",
+        [{ task_id: "10" }, { task_id: "99" }, { task_id: "20" }],
+        cacheRoot,
+        "down",
+      );
+      writeFileSync(idsFile, "# seed\n99\n\n88\n99\n", "utf8");
+      expect(taskIdsFromFile(idsFile)).toEqual(["88", "99"]);
+      expect(neighborTaskIdsFromRelationCache(cacheRoot, "down")).toEqual([
+        "99",
+      ]);
+      expect(
+        neighborTaskIdsFromRelationCache(cacheRoot, "down", {
+          onlyMissingTaskDirs: false,
+        }),
+      ).toEqual(["10", "20", "99"]);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fills an explicit task-id list even when directories are missing", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-relation-explicit-"));
+    try {
+      const summary = await fillHoraeRelationCache({
+        cacheRoot,
+        taskIds: ["501", "502"],
+        direction: "up",
+        maxErrors: 1,
+        minIntervalMs: 0,
+        gate: new HoraeSerialGate({ minIntervalMs: 0 }),
+        runner: (taskId) => [{ task_id: `parent-${taskId}` }],
+      });
+      expect(summary).toMatchObject({
+        total: 2,
+        skipped: 0,
+        cached: 2,
+        errors: 0,
+        direction: "up",
+      });
+      expect(readHoraeRelationCache("501", cacheRoot, "up").status).toBe("HIT");
+      expect(readHoraeRelationCache("502", cacheRoot, "up").status).toBe("HIT");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
   });
 });

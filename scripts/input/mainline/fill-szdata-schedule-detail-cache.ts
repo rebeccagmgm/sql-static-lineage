@@ -11,6 +11,7 @@ import {
   writeSzdataScheduleDetailCache,
   type ScheduleDetailRunner,
 } from "./szdata-schedule-detail-cache.ts";
+import { taskIdsFromFile } from "./fill-horae-relation-cache.ts";
 import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
@@ -203,9 +204,11 @@ function parseIntegerOption(
 }
 
 async function main(): Promise<void> {
+  const taskIdsFile = option("--task-ids-file");
   const summary = await fillSzdataScheduleDetailCache({
     cacheRoot: option("--cache-root"),
     startTaskId: option("--start-task-id"),
+    taskIds: taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, false),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),

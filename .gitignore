@@ -1,11 +1,20 @@
 /node_modules/
 /dist/
 /staging/calcite-differential/
+/staging/audit-*.json
 /tools/calcite-rel-bridge/target/
+/tools/calcite-oracle/target/
 .evidence-cache/
 *.input-pack-status.json
 desktop.ini
 
 # Local inspection outputs and temporary dependencies
 /tmp/
+tmp-inspect-*.ts
+**/corpus-survey-raw.json
+/scripts/survey/
+/tests/survey/
+/tools/audit-corpus-survey*.ts
+/tsconfig.survey.json
+/openspec/changes/generalize-operator-channel-mapping/
 /tests/fixtures/reconcile-one-hop/86840-input-pack/

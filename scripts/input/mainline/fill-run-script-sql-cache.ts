@@ -109,6 +109,16 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function isHoraeLogInstanceMissing(error: unknown): boolean {
+  const parts = [errorMessage(error)];
+  if (error !== null && typeof error === "object") {
+    const record = error as { stdout?: unknown; stderr?: unknown };
+    if (typeof record.stdout === "string") parts.push(record.stdout);
+    if (typeof record.stderr === "string") parts.push(record.stderr);
+  }
+  return /HORAE_LOG_INSTANCE_MISSING(?:[:\s]|$)/.test(parts.join("\n"));
+}
+
 function shouldStop(errors: number, maxErrors: number): boolean {
   return maxErrors > 0 && errors >= maxErrors;
 }
@@ -262,6 +272,27 @@ export async function fillRunScriptSqlCache(
       if (available) cached += 1;
       else empty += 1;
     } catch (error) {
+      if (isHoraeLogInstanceMissing(error)) {
+        writeRunScriptSqlCache(
+          taskId,
+          now().toISOString(),
+          {
+            source: "HORAE_LOG",
+            sqlStatus: "UNAVAILABLE",
+            hiveDb,
+            dataDate,
+            querySql: null,
+            sqlFile: null,
+            scriptPath: configuredPath,
+          },
+          cacheRoot,
+        );
+        empty += 1;
+        process.stderr.write(
+          `[run-script-sql-cache] ${taskId} HORAE_LOG_INSTANCE_MISSING:${dataDate}\n`,
+        );
+        continue;
+      }
       errors += 1;
       failedTaskIds.push(taskId);
       process.stderr.write(

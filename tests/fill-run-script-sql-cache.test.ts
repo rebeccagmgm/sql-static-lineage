@@ -156,4 +156,53 @@ describe("runScript-2.0 SQL from horae log", () => {
       "json",
     ]);
   });
+
+  it("records HORAE_LOG_INSTANCE_MISSING as UNAVAILABLE and continues the batch", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "run-script-missing-"));
+    try {
+      writeType(cacheRoot, "66256", {
+        taskType: "runScript-2.0",
+        scriptPath: "BigData-dm_index_n/hold_index/run.sh",
+        hiveDb: "dm_index_n",
+      });
+      writeType(cacheRoot, "101499", {
+        taskType: "runScript-2.0",
+        scriptPath: "BigData-pdata_pcav_n/main.sh",
+        hiveDb: "pdata_pcav_n",
+      });
+      const logCalls: string[] = [];
+      const summary = await fillRunScriptSqlCache({
+        cacheRoot,
+        dataDate: "2026-08-27",
+        minIntervalMs: 0,
+        logRunner: (taskId, dataDate) => {
+          logCalls.push(taskId);
+          if (taskId === "66256") {
+            throw new Error(
+              `Command failed: opencli.cmd horae log ${taskId}\nok: false\nerror:\n  message: HORAE_LOG_INSTANCE_MISSING:${taskId}:${dataDate}\n  exitCode: 1`,
+            );
+          }
+          return SAMPLE_LOG;
+        },
+      });
+      expect(summary).toMatchObject({
+        total: 2,
+        cached: 1,
+        empty: 1,
+        errors: 0,
+        failedTaskIds: [],
+        stopped: false,
+      });
+      expect(logCalls).toEqual(["66256", "101499"]);
+      const missing = readFileSync(
+        join(tasksRoot(cacheRoot), "66256", "run-script.sql"),
+        "utf8",
+      );
+      expect(missing).toContain("-- sqlStatus: UNAVAILABLE");
+      expect(missing).toContain("-- dataDate: 2026-08-27");
+      expect(missing).not.toContain("insert overwrite");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
 });

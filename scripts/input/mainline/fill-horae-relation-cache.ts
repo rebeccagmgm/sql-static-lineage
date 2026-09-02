@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -66,6 +66,59 @@ export function taskIdsFromScheduleEvidenceCache(cacheRoot: string): string[] {
     .sort((left, right) =>
       left.localeCompare(right, "en-US", { numeric: true }),
     );
+}
+
+/** Load one task id per line; blank lines and `#` comments are ignored. */
+export function taskIdsFromFile(path: string): string[] {
+  if (!existsSync(path)) throw new Error(`TASK_IDS_FILE_MISSING:${path}`);
+  const seen = new Set<string>();
+  const taskIds: string[] = [];
+  for (const rawLine of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    if (!SAFE_TASK_ID.test(line)) throw new Error(`TASK_IDS_FILE_INVALID:${line}`);
+    if (seen.has(line)) continue;
+    seen.add(line);
+    taskIds.push(line);
+  }
+  return taskIds.sort((left, right) =>
+    left.localeCompare(right, "en-US", { numeric: true }),
+  );
+}
+
+/**
+ * Collect neighbor task ids from existing one-hop relation cache files.
+ * By default returns ids that do not yet have a task directory under the cache.
+ */
+export function neighborTaskIdsFromRelationCache(
+  cacheRoot: string,
+  direction: HoraeRelationDirection,
+  options: { readonly onlyMissingTaskDirs?: boolean } = {},
+): string[] {
+  const onlyMissing = options.onlyMissingTaskDirs ?? true;
+  const tasksRoot = join(resolveScheduleEvidenceCacheRoot(cacheRoot), "tasks");
+  if (!existsSync(tasksRoot))
+    throw new Error(`CACHE_TASKS_ROOT_MISSING:${tasksRoot}`);
+  const known = new Set(taskIdsFromScheduleEvidenceCache(cacheRoot));
+  const neighbors = new Set<string>();
+  for (const taskId of known) {
+    const cached = readHoraeRelationCache(taskId, cacheRoot, direction);
+    if (cached.status !== "HIT") continue;
+    for (const row of cached.rows) {
+      const neighbor =
+        typeof row.task_id === "string"
+          ? row.task_id
+          : typeof row.taskId === "string"
+            ? row.taskId
+            : null;
+      if (!neighbor || !SAFE_TASK_ID.test(neighbor)) continue;
+      if (onlyMissing && known.has(neighbor)) continue;
+      neighbors.add(neighbor);
+    }
+  }
+  return [...neighbors].sort((left, right) =>
+    left.localeCompare(right, "en-US", { numeric: true }),
+  );
 }
 
 export function horaeRelationCommandArguments(
@@ -322,11 +375,15 @@ async function main(): Promise<void> {
   const startTaskId = option("--start-task-id");
   const maxErrors = parseIntegerOption("--max-errors", undefined, false);
   const minIntervalMs = parseIntegerOption("--interval-ms", undefined, true);
+  const taskIdsFile = option("--task-ids-file");
+  const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined;
   process.stderr.write(
     `[horae-relation-cache] start ${JSON.stringify({
       cacheRoot,
       direction,
       startTaskId: startTaskId ?? null,
+      taskIdsFile: taskIdsFile ?? null,
+      taskIds: taskIds?.length ?? null,
       maxErrors: maxErrors ?? DEFAULT_MAX_ERRORS,
       minIntervalMs: minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS,
     })}\n`,
@@ -335,6 +392,7 @@ async function main(): Promise<void> {
     cacheRoot,
     direction,
     startTaskId,
+    taskIds,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors,
     minIntervalMs,
