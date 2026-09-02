@@ -240,7 +240,7 @@ Facts 基线（`pdata_n`，写 `t98_sb_otc_opt_comp_info`，79 列全 RESOLVED�
 1. 一个 `TARGET_WRITE`：`write-observation:119044:0` → `pdata_n.t98_sb_otc_opt_comp_info`。`READS` 恰好 14 个物理表，且都是本任务 `dataset-io.jsonl` 里的 READ；不得出现 176827 的 `otc_opt_greek_val_det_h`，也不得出现 105387 的四张 ref。
 2. **值边不扩散**：`FIELD_DIRECT` 的起点按表统计要与 `column-lineage-edges.jsonl` 一致，量级冻结在测试里：`t03_otc_opt_comp_info` 约 26 列（主表）、`t01_pty_name` 6 列、`t03_agt_stati_info_h` 2 列（`inr_ord_id`、`book_bel_dept`）、`t03_agt_rela_h` 2 列（`book_agt_id`、`book_agt_modifr`）、`ref_dw_cd_val` / `t03_agt_stat_h` / `t03_agt_clas_h` / `t01_pty_rat` / `t01_pty_clas_h` / `t01_pty_cutp` / `t03_agt_name_h` 各 1 列。任何一张 LEFT 维表不得成为 79 列的整表 `FIELD_DIRECT` 起点。
 3. **控制边**：15 个 LEFT JOIN 各自的 ON 列与 15 条 `SRC_TBL` FILTER 列全部以 `DATASET_CONTROL` 挂到 `TARGET_WRITE`；JOIN `grain` 不得 `UNKNOWN`（LEFT 证不出基数 → `EXPAND_RISK`）；FILTER → `REDUCE`。控制条数量级 = relation × 控制列，**不得**乘 79。
-4. 本任务纸条里不得出现 105387 / 176827 或任何其它 `taskId`。`t98_sb_otc_opt_comp_info` 被 176827 读、`t03_otc_opt_comp_info` 被 105387 写，这两条对接留给 WP-5 用物理表身份去做。
+4. 本任务纸条里不得出现 105387 / 176827 或任何其它 `taskId`。`t98_sb_otc_opt_comp_info` 被 176827 读、`t03_agt_stati_info_h` 被 105387 写（本任务读它两次，`SRC_TBL` 字面量各异），这两条对接留给 WP-5 用物理表身份去做。`t03_otc_opt_comp_info` 的 writer 不在三金样内。
 
 **105387（强制点名）**
 
@@ -273,7 +273,7 @@ Facts 基线（`pdata_n`，写 `t98_sb_otc_opt_comp_info`，79 列全 RESOLVED�
 
 给后续 WP-5 的是 N 份互不引用 taskId 的文件 + 一份批次清单（taskId、覆盖状态、投影 sha256、Pack fingerprint）。
 
-用 105387 + 119044 + 176827 三份文件**人工**能对上拉链故事：105387 写 `t03_otc_opt_comp_info` 并 JOIN 四张 ref；119044 读 `t03_otc_opt_comp_info`、LEFT JOIN 13 张维表、写 `t98_sb_otc_opt_comp_info`；176827 读 `t98`。三份纸条互不引用对方 taskId，程序在本 WP **不必**把它们拼成一条路径。
+用 105387 + 119044 + 176827 三份文件**人工**能对上拉链故事：105387 写 `pdata_n.t03_agt_stati_info_h` 并 JOIN 四张 ref；119044 主读 `t03_otc_opt_comp_info`、两次读 `t03_agt_stati_info_h`、LEFT JOIN 13 张维表、写 `t98_sb_otc_opt_comp_info`；176827 读 `t98`。三份纸条互不引用对方 taskId，程序在本 WP **不必**把它们拼成一条路径。
 
 二次运行未变任务 cache hit。`npm run test` 里聚焦新测试 + `test:field-lineage` + `test:target-table-causal-closure` 仍绿。
 
