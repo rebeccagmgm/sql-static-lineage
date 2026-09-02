@@ -10,6 +10,7 @@ import {
 import {
   TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
   canonicalizeTaskLocalProjection,
+  type TaskLocalProjectionSchemaVersion,
   type TaskLocalProjection,
 } from "./contract.ts";
 
@@ -17,7 +18,7 @@ export interface TaskLocalCacheKeyParts {
   readonly taskId: string;
   readonly packContentHash: string;
   readonly factsManifestSha256: string;
-  readonly schemaVersion: typeof TASK_LOCAL_PROJECTION_SCHEMA_VERSION;
+  readonly schemaVersion: TaskLocalProjectionSchemaVersion;
 }
 
 export interface TaskLocalCacheEnvelope {

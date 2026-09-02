@@ -25,7 +25,7 @@ WP-1 已合入（`cdc187a` / PR #10）。本文件只解决一件事：
   TASK 176827
   WRITES  → TARGET_WRITE(write-observation:176827:platform-target:0)
            → PHYSICAL_DATASET dm_rsk_n.otc_opt_greek_val_det_h
-  READS   → PHYSICAL_DATASET t98_sb_otc_opt_comp_info  （带 read_occurrence_id）
+  READS   → READ_OCCURRENCE → PHYSICAL_DATASET t98_sb_otc_opt_comp_info
   FIELD_DIRECT  本任务输出列 → 本任务 SQL 读到的物理列
   DATASET_CONTROL  JOIN/FILTER 控制列 → 本任务 TARGET_WRITE
   没有「上游是 119044」
@@ -43,6 +43,18 @@ WP-1 已合入（`cdc187a` / PR #10）。本文件只解决一件事：
 四张拉链 ref 出现在 **105387 自己的** `DATASET_CONTROL` 上，不出现在 176827 的纸条上。
 
 `processingKind` 是 WP-4。本 WP 的 TASK 节点可以没有该字段，或显式 `null`。不要在这里实现加工/通道识别。
+
+## WP-7 增量（2026-09-02）
+
+WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LOCAL_PROJECTION`
+1.2.0。1.2.0 将每个 `read_occurrence` 投影为 `READ_OCCURRENCE` 节点，读取路径为
+`TASK → READ_OCCURRENCE → PHYSICAL_DATASET`，分区谓词仍只挂在对应读次上。
+
+身份由 catalog exact match 与 `inferTaskDefaultSchema` 佐证决定：不使用 catalog tail
+或任务名正则补全裸名；`TASK_NAME` 只有 `ASSUMED` qualification。临时表只按
+`task-local-materializations.jsonl` 的 `RESOLVED` 行折叠，未解决行保留边界。投影还
+提供任务内 `finalWrites` / `externalReads` / `localFieldPaths` 摘要，供 WP-8 使用。
+旧 1.1.0 缓存和夹具仍可由 validator 读取，缓存 key 随 1.2.0 自然失效。
 
 ---
 
@@ -89,7 +101,7 @@ WP-1 已合入（`cdc187a` / PR #10）。本文件只解决一件事：
 - 物理表：`platform | dataSource | qualifiedName` 小写后 `stableId("dataset", …)`
 - 物理字段：data-graph 的 `normalizedPhysicalField` 要五元组 `platform | dataSource | stableTableId | qualifiedName | column`，**少 `stableTableId` 就对不上**；列名小写；**一份身份**，不按路径、不按输出字段复制
 - `TARGET_WRITE`：`taskId + datasetNodeId + write_observation_id`
-- `READS` 边携带 `read_occurrence_id`，节点仍是物理表，不把 occurrence 变成第二种表身份
+- 1.1.0 的 `READS` 边携带 `read_occurrence_id`；1.2.0 将 occurrence 单独成节点，物理表仍是唯一 dataset 身份
 
 同一 `hive|gfhive|dm_rsk_n.otc_opt_greek_val_det_h` 在 176827 纸条和以后的并集图里必须是同一个 `nodeId`。
 
@@ -107,7 +119,7 @@ COLLECTION_FAILED 有 Pack 或 Facts 但投影失败；产物里写原因码
 ```
 
 首批按调度缓存枚举 `DM_RSK_N`（约 63 个）。域只排批次，**不写入投影契约的 scope**。
-批次里没有的任务（如 105387）不会以 `SCHEDULE_ONLY` 自动出现在这份批次清单里——这不是切断血缘：176827 的 `READS` 指向物理表 `t98_sb_otc_opt_comp_info`；等 119044 被投影后，WRITES 对上同一张表。
+批次里没有的任务（如 105387）不会以 `SCHEDULE_ONLY` 自动出现在这份批次清单里——这不是切断血缘：176827 的 occurrence 仍指向物理表 `t98_sb_otc_opt_comp_info`；等 119044 被投影后，WRITES 对上同一张表。
 
 ---
 
@@ -128,7 +140,7 @@ Facts 未变、Pack 未变而投影代码变了：必须有 schema/投影版本�
 1. 不改事实生产。不够就 typed gap，不猜。
 2. 不引入新解析器。
 3. 投影过程不读 producer-index、不读其它任务的投影、不跑 one-hop/multi-hop。
-4. **数据边**（`READS` / `WRITES` / `FIELD_*` / `DATASET_CONTROL`）里不得出现其它 `taskId`：`READS` 的对端是物理表，不是上游 TASK。调度缓存里的上下游任务号是**另一类事实**，若要保留只能作为 TASK 节点上的 `scheduleUpstreamTaskIds` 属性，不得变成图边、不得参与任何字段/数据集推导。`SCHEDULE_ONLY` 任务也遵守这条：只有 TASK 节点 + 该属性。
+4. **数据边**（`READS` / `WRITES` / `FIELD_*` / `DATASET_CONTROL`）里不得出现其它 `taskId`：1.2.0 的 `READS` 只连接当前 TASK、`READ_OCCURRENCE` 与物理表，不连接上游 TASK。调度缓存里的上下游任务号是**另一类事实**，若要保留只能作为 TASK 节点上的 `scheduleUpstreamTaskIds` 属性，不得变成图边、不得参与任何字段/数据集推导。`SCHEDULE_ONLY` 任务也遵守这条：只有 TASK 节点 + 该属性。
 5. `DATASET_CONTROL` 不得挂到输出字段节点，不得产生 `affectedRootFields`。
 6. 通道词典不平行发明。权威仍是 `FIELD_VALUE` / `ROW_MEMBERSHIP` / `MULTIPLICITY` / `EXPRESSION_CONTROL`。
 7. 证据三态不升级。
@@ -176,7 +188,7 @@ TL-8  成本留档
 **落边顺序**：
 
 1. TASK、TARGET_WRITE、WRITES
-2. 每次 READ → PHYSICAL_DATASET + `READS`
+2. 每次 READ → `READ_OCCURRENCE` → PHYSICAL_DATASET + `READS`
 3. 每个 RESOLVED output binding → 本任务内 `FIELD_DIRECT`（证不出 subtype 则 `UNKNOWN` + gap，不猜 IDENTITY）
 4. `summarizeTaskRelations` 的 READ 通道 ∩ WP-1 控制收集 → `DATASET_CONTROL`
 5. `FIELD_CONDITIONAL` 仅 `BRANCH_SELECTION`
@@ -253,7 +265,7 @@ Facts 基线（`pdata_n`，写 `t98_sb_otc_opt_comp_info`，79 列全 RESOLVED�
 
 从本任务 FILTER 中抽出**字面量**谓词：列 + 值集合。只认常量，不解析跨表子查询。
 
-**粒度按 READ（`read_occurrence_id`），不按任务合并。** 119044 的 15 条 `SRC_TBL` 里同时有 `ODATA_N_TIT.D_REF_OTC_OPTION_DEAL` 和 `ODATA_N_TIT.D_TRD_OTC_TRADE`，分别挂在不同 relation 上；合并成任务级 `{SRC_TBL: [两值]}` 会让查询侧剪多写入方时剪错。产物形状：每条 `READS` 边上一组 `partitionPredicates`，任务级只做汇总视图（可省）。
+**粒度按 READ（`read_occurrence_id`），不按任务合并。** 119044 的 15 条 `SRC_TBL` 里同时有 `ODATA_N_TIT.D_REF_OTC_OPTION_DEAL` 和 `ODATA_N_TIT.D_TRD_OTC_TRADE`，分别挂在不同 relation 上；合并成任务级 `{SRC_TBL: [两值]}` 会让查询侧剪多写入方时剪错。产物形状：1.1.0 为每条 `READS` 边，1.2.0 为 occurrence → dataset 的 `READS` 边，各自带一组 `partitionPredicates`，任务级只做汇总视图（可省）。
 
 105387 完成定义：`D_TRD_OTC_TRADE` 那次读的谓词含 `SRC_TBL = ODATA_N_TIT.D_TRD_OTC_TRADE`（大小写与 Facts 里的字面量一致，测试里规范化后再比）。
 

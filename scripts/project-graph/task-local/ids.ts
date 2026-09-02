@@ -79,6 +79,15 @@ export function targetWriteNodeId(input: {
   return stableId("target-write", input);
 }
 
+/** Kept in parity with data-graph field-evidence occurrence identities. */
+export function readOccurrenceNodeId(input: {
+  readonly consumerTaskId: string;
+  readonly occurrenceId: string;
+  readonly readRelationId: string;
+}): string {
+  return stableId("read-occurrence", input);
+}
+
 export function taskLocalEdgeId(input: {
   readonly edgeType: string;
   readonly fromNodeId: string;

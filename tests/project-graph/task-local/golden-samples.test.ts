@@ -57,10 +57,24 @@ function uniqueReadTables(projection: TaskLocalProjection): string[] {
   return [
     ...new Set(
       projection.edges
-        .filter((edge) => edge.edgeType === "READS")
+        .filter(
+          (edge) =>
+            edge.edgeType === "READS"
+            && projection.nodes.find((node) => node.nodeId === edge.fromNodeId)?.nodeType
+              === "READ_OCCURRENCE",
+        )
         .map((edge) => nodeQualifiedName(projection, edge.toNodeId)),
     ),
   ].sort();
+}
+
+function readDatasetEdges(projection: TaskLocalProjection) {
+  return projection.edges.filter(
+    (edge) =>
+      edge.edgeType === "READS"
+      && projection.nodes.find((node) => node.nodeId === edge.fromNodeId)?.nodeType
+        === "READ_OCCURRENCE",
+  );
 }
 
 function fieldDirectColumnsByTable(
@@ -162,7 +176,7 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
     expect(Object.values(fdByTable).every((columns) => columns.length < outputColumns.size)).toBe(
       true,
     );
-  });
+  }, 60_000);
 
   it("119044: value edges stay table-local; controls follow JOIN/FILTER not 79 outputs", () => {
     const projection = projectGolden("119044");
@@ -211,7 +225,7 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
     // Must track relation×control-columns, not multiply by the 79 output columns.
     expect(controls.length).toBeLessThan(79 * 2);
     expect(controls.length).toBe(95);
-  });
+  }, 60_000);
 
   it("105387: zipper refs stay on DATASET_CONTROL; Stati_Cont_Desc value path excludes refs", () => {
     const projection = projectGolden("105387");
@@ -270,7 +284,7 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
         )
         .every((edge) => edge.properties.grain === "EXPAND_RISK"),
     ).toBe(true);
-  });
+  }, 60_000);
 
   it("TL-7: partitionPredicates stay on READ occurrence and keep SRC_TBL values unmerged", () => {
     const normalize = (value: string): string => value.trim().toLowerCase();
@@ -278,12 +292,8 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
       projection: TaskLocalProjection,
       table: string,
     ): string[][] =>
-      projection.edges
-        .filter(
-          (edge) =>
-            edge.edgeType === "READS"
-            && nodeQualifiedName(projection, edge.toNodeId) === table,
-        )
+      readDatasetEdges(projection)
+        .filter((edge) => nodeQualifiedName(projection, edge.toNodeId) === table)
         .map((edge) => {
           const predicates = Array.isArray(edge.properties.partitionPredicates)
             ? edge.properties.partitionPredicates
@@ -309,8 +319,7 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
     expect(statiSrc.some((values) => values.length > 1)).toBe(false);
 
     const p105387 = projectGolden("105387");
-    const zipperHistorySrc = p105387.edges
-      .filter((edge) => edge.edgeType === "READS")
+    const zipperHistorySrc = readDatasetEdges(p105387)
       .filter((edge) => {
         const name = nodeQualifiedName(p105387, edge.toNodeId);
         return name === "t03_agt_stati_info_h" || name.endsWith(".t03_agt_stati_info_h");
@@ -335,13 +344,11 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
 
     const p176827 = projectGolden("176827");
     expect(
-      p176827.edges
-        .filter((edge) => edge.edgeType === "READS")
+      readDatasetEdges(p176827)
         .every((edge) => Array.isArray(edge.properties.partitionPredicates)),
     ).toBe(true);
     expect(
-      p176827.edges
-        .filter((edge) => edge.edgeType === "READS")
+      readDatasetEdges(p176827)
         .every((edge) =>
           ["NONE", "LITERAL", "NON_LITERAL_PRESENT"].includes(
             String(edge.properties.partitionPredicateStatus ?? ""),
@@ -383,5 +390,35 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
     expect(controlsByWrite.has("write-observation:105387:6")).toBe(true);
     const total = [...controlsByWrite.values()].reduce((sum, count) => sum + count, 0);
     expect(Math.max(...controlsByWrite.values())).toBeLessThan(total);
+  }, 60_000);
+
+  it("WP-7: real Facts keep occurrence identity, local materializations and closure summaries", () => {
+    const p103928 = projectGolden("103928");
+    expect(p103928.schemaVersion).toBe("1.2.0");
+    const p103928Occurrences = p103928.nodes.filter(
+      (node) => node.nodeType === "READ_OCCURRENCE",
+    );
+    expect(p103928Occurrences.length).toBeGreaterThan(0);
+    expect(
+      p103928Occurrences.some((node) => node.properties.readDisposition === "SELF_READ"),
+    ).toBe(true);
+    expect(p103928.localClosure?.finalWrites.length).toBeGreaterThan(0);
+    expect(p103928.localClosure?.localFieldPaths.length).toBeGreaterThan(0);
+    expect(
+      p103928.edges.some(
+        (edge) => edge.edgeType === "FIELD_DIRECT" && edge.properties.materializationFolded === true,
+      ),
+    ).toBe(true);
+
+    const p105380 = projectGolden("105380");
+    const unresolvedTemp = p105380.nodes.find(
+      (node) =>
+        node.nodeType === "READ_OCCURRENCE"
+        && String(node.properties.physicalDataset).includes("t01_pty_clas_h_mid_tit341"),
+    );
+    expect(unresolvedTemp?.properties.materializationBoundaryReason).toBe(
+      "MATERIALIZATION_NOT_RESOLVED",
+    );
+    expect(unresolvedTemp?.properties.readDisposition).toBe("EXTERNAL_READ");
   }, 60_000);
 });

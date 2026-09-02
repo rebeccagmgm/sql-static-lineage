@@ -150,7 +150,7 @@ describe("task-local projection cache (TL-4)", () => {
       dataRoot,
       factsRoot,
     });
-    expect(before.schemaVersion).toBe("1.1.0");
+    expect(before.schemaVersion).toBe("1.2.0");
     expect(before.packContentHash).toBe(packContentHashForTask(dataRoot, "300001"));
     expect(before.factsManifestSha256).not.toBe("NO_FACTS");
 

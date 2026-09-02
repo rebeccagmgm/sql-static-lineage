@@ -17,6 +17,11 @@ WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `
 **当前优先级转为准确性**：见 `docs/graph-accuracy-architecture.md`（WP-6…WP-12）与
 `docs/graph-user-narrative.md`（对用户陈述准/不准）。资产图扩批、WP-2、Neo4j 上线排在其后。
 
+WP-7 已在 sql-static-lineage 落地：task-local 投影的新产物为 schema 1.2.0（兼容读取
+历史 1.1.0），读次以 `READ_OCCURRENCE` 节点承载，身份、临时表 materialization 和
+`SELF_READ` 按 `graph-accuracy-architecture.md` §3 取证。data-graph 的 UNION 接入
+仍属于 WP-8，不在本次变更内。
+
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
 ```text
