@@ -2,6 +2,12 @@ import type { CandidateBranch } from "../target-field-causal-slice/candidate-uni
 import type { FieldValueEvidenceProvider } from "./field-value-provider.ts";
 import type { ImpactChannel, LocalTransferKind, TaskRelationSummary } from "./task-relation-summary.ts";
 import {
+  isOutOfScopePhysicalRead,
+  isReferenceConfigTable,
+  isSameTaskScratchProducerBridge,
+  isSameTaskScratchTable,
+} from "../../shared/lineage-scope.ts";
+import {
   canonicalAssessment,
   type ChannelAssessment,
   type PrunedReason,
@@ -63,6 +69,12 @@ function emptyChannel(
   return { channel, status, proofRefs: [], witnessRefs: [], gapRefs: unique(gapRefs) };
 }
 
+function statementLevelGaps(summary: TaskRelationSummary): readonly string[] {
+  return summary.gaps.filter((gap) =>
+    /relation-summary-gap:[^:]+:(?:PARSE_|SQL_SOURCE_ID_UNRESOLVED|ROOT_RELATION_NOT_FOUND|RELATION_IDENTITY_UNRESOLVED)/i.test(gap),
+  );
+}
+
 function semantic(
   branch: CandidateBranch,
   summary: TaskRelationSummary | undefined,
@@ -73,30 +85,31 @@ function semantic(
   }
   const ids = [branch.readOccurrence.occurrenceId, branch.readOccurrence.readRelationId];
   const matches = summary.readImpacts.filter((impact) => ids.some((id) => sameOccurrence(id, impact.readOccurrenceId)));
+  const parseGaps = statementLevelGaps(summary);
   if (matches.length === 0) {
-    return summary.complete
+    return summary.complete && parseGaps.length === 0
       ? emptyChannel(channel, "NOT_APPLICABLE")
-      : emptyChannel(channel, "UNKNOWN", summary.gaps);
+      : emptyChannel(channel, "UNKNOWN", parseGaps.length > 0 ? parseGaps : summary.gaps);
   }
   const relevant = matches.filter((impact) => impact.impactChannels.includes(channel));
   if (relevant.length === 0) {
-    return summary.complete
-      ? emptyChannel(channel, "NOT_APPLICABLE")
-      : emptyChannel(channel, "UNKNOWN", summary.gaps);
+    return parseGaps.length > 0
+      ? emptyChannel(channel, "UNKNOWN", parseGaps)
+      : emptyChannel(channel, "NOT_APPLICABLE");
   }
   const refs = unique(relevant.flatMap((impact) => impact.evidenceRefs));
   const gaps = unique([
     ...relevant.flatMap((impact) => impact.gaps),
-    ...(!summary.complete ? summary.gaps : []),
+    ...parseGaps,
   ]);
   const demandedFieldNames = unique(relevant.flatMap((impact) => impact.demandedFieldNames ?? []));
   const localTransferKinds = unique(relevant.flatMap((impact) => impact.localTransferKinds ?? [])) as LocalTransferKind[];
   return {
     channel,
-    status: gaps.length > 0 || !summary.complete ? "UNKNOWN" : "CONFIRMED",
+    status: gaps.length > 0 ? "UNKNOWN" : "CONFIRMED",
     proofRefs: refs,
     witnessRefs: refs,
-    gapRefs: gaps.length > 0 || summary.complete ? gaps : [`summary-gap:${branch.consumerTaskId ?? "unknown"}`],
+    gapRefs: gaps,
     ...(localTransferKinds.length > 0 ? { localTransferKinds } : {}),
     ...(demandedFieldNames.length > 0 ? { demandedFieldNames } : {}),
   };
@@ -292,12 +305,44 @@ function joinNodeOf(branch: CandidateBranch): string | undefined {
 }
 
 export function classifyPrunedReason(branch: CandidateBranch, assessment: TargetTableAssessment): PrunedReasonCode {
+  const tableName = branch.table?.qualifiedName ?? null;
+  if (
+    isSameTaskScratchProducerBridge(branch.consumerTaskId, branch.producerTaskId, tableName)
+    || (branch.branchKind === "UNBOUND_READ" && isSameTaskScratchTable(tableName))
+  ) {
+    return "TASK_LOCAL_MATERIALIZATION";
+  }
+  if (branch.branchKind === "UNBOUND_READ") {
+    if (isOutOfScopePhysicalRead(branch.table) || isReferenceConfigTable(tableName)) {
+      return "COVERAGE_BOUNDARY";
+    }
+    return "UNBOUND_READ";
+  }
   if (branch.branchKind === "SCHEDULE_ONLY") return "SCHEDULE_ONLY";
-  if (branch.branchKind === "UNBOUND_READ") return "UNBOUND_READ";
   if (branch.branchKind === "BLOCKED_READ") return "BLOCKED_READ";
   if (branch.branchKind === "COVERAGE_BOUNDARY") return "COVERAGE_BOUNDARY";
   const gaps = [...branch.gapRefs, ...assessment.gapRefs];
   if (gaps.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))) return "UNSUPPORTED_OPERATOR";
+  if (gaps.some((gap) => /OCCURRENCE_EVIDENCE_NOT_FOUND/i.test(gap))) {
+    return "FIELD_LINEAGE_OCC_MISMATCH";
+  }
+  if (gaps.some((gap) => /NOT_REACHED_FROM_ROOT/i.test(gap))) {
+    const fieldValue = assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE");
+    if (fieldValue?.status === "NOT_APPLICABLE") return "LEFT_DIM";
+    return "NOT_REACHED_FROM_ROOT";
+  }
+  if (gaps.some((gap) => /NO_CLOSED_PATH/i.test(gap))) {
+    const fieldValue = assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE");
+    if (fieldValue?.status === "NOT_APPLICABLE") return "LEFT_DIM";
+    return "NO_CLOSED_PATH";
+  }
+  if (gaps.some((gap) =>
+    /relation-summary-gap:|RELATION_SUMMARY|PARSE_|ROOT_RELATION_NOT_FOUND|RELATION_IDENTITY_UNRESOLVED/i.test(gap),
+  )) {
+    const fieldValue = assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE");
+    if (fieldValue?.status === "NOT_APPLICABLE") return "LEFT_DIM";
+    return "RELATION_SUMMARY_INCOMPLETE";
+  }
   if (
     !branch.producerTaskId
     || branch.writeObservationId == null
@@ -307,6 +352,57 @@ export function classifyPrunedReason(branch: CandidateBranch, assessment: Target
     return "NO_PRODUCER_BRIDGE";
   }
   return "UNCLASSIFIED";
+}
+
+/** Assessment-level UNKNOWN reasons aligned with 档四 pruned taxonomy. */
+export function unknownReasonCodesForAssessment(
+  branch: CandidateBranch | undefined,
+  assessment: TargetTableAssessment,
+): readonly string[] {
+  const gaps = [...new Set([...(branch?.gapRefs ?? []), ...assessment.gapRefs])];
+  const reasons = new Set<string>();
+  const fieldValue = assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE");
+
+  for (const gap of gaps) {
+    if (/PROPAGATION_BUDGET/i.test(gap)) {
+      reasons.add(gap.split(":").at(-1) ?? "PROPAGATION_BUDGET");
+      continue;
+    }
+    if (/OCCURRENCE_EVIDENCE_NOT_FOUND/i.test(gap)) {
+      reasons.add("FIELD_LINEAGE_OCC_MISMATCH");
+      continue;
+    }
+    if (/NOT_REACHED_FROM_ROOT/i.test(gap)) {
+      reasons.add(fieldValue?.status === "NOT_APPLICABLE" ? "LEFT_DIM" : "NOT_REACHED_FROM_ROOT");
+      continue;
+    }
+    if (/NO_CLOSED_PATH/i.test(gap)) {
+      reasons.add(fieldValue?.status === "NOT_APPLICABLE" ? "LEFT_DIM" : "NO_CLOSED_PATH");
+      continue;
+    }
+    if (/UNSUPPORTED_OPERATOR/i.test(gap)) {
+      reasons.add("UNSUPPORTED_OPERATOR");
+      continue;
+    }
+    if (/relation-summary-gap:|RELATION_SUMMARY|PARSE_|ROOT_RELATION_NOT_FOUND|RELATION_IDENTITY_UNRESOLVED/i.test(gap)) {
+      reasons.add(fieldValue?.status === "NOT_APPLICABLE" ? "LEFT_DIM" : "RELATION_SUMMARY_INCOMPLETE");
+      continue;
+    }
+    if (/PRODUCER_WRITE|WRITE_OBSERVATION/i.test(gap)) {
+      reasons.add("NO_PRODUCER_BRIDGE");
+      continue;
+    }
+    if (/TERMINAL|BOUNDARY|UNBOUND|BLOCKED|COVERAGE/i.test(gap)) {
+      reasons.add("COVERAGE_BOUNDARY");
+      continue;
+    }
+  }
+
+  if (reasons.size === 0 && branch) {
+    reasons.add(classifyPrunedReason(branch, assessment));
+  }
+  if (reasons.size === 0) reasons.add("UNCLASSIFIED");
+  return [...reasons].sort((left, right) => left.localeCompare(right));
 }
 
 function collectPrunedReasons(

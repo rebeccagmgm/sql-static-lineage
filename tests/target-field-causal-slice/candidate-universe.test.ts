@@ -184,22 +184,40 @@ describe("candidate universe projection", () => {
     expect(firstBranch?.candidateBranchId).toBe(changedBranch?.candidateBranchId);
   });
 
-  it("keeps a read with missing occurrence unbound and marks the universe incomplete", () => {
+  it("does not project UNBOUND_READ for a table-level readEdge that already has a producer bridge", () => {
     const base = artifact();
     const sourceRead = (base.readEdges as Record<string, unknown>[])[0]!;
-    const { readOccurrence: _readOccurrence, ...readWithoutOccurrence } = sourceRead;
+    const { readOccurrence: _readOccurrence, ...tableLevelRead } = sourceRead;
     const result = projectCandidateUniverse({
       rootTargetFields: ["target.amount"],
-      tableArtifact: artifact({ readEdges: [readWithoutOccurrence] }),
+      tableArtifact: artifact({ readEdges: [tableLevelRead] }),
+    });
+
+    expect(result.branches.some((branch) => branch.branchKind === "PHYSICAL_PRODUCER")).toBe(true);
+    expect(result.branches.some((branch) => branch.branchKind === "UNBOUND_READ")).toBe(false);
+    expect(result.status).toBe("COMPLETE_OBSERVED_EVIDENCE");
+  });
+
+  it("projects UNBOUND_READ only when no producer bridge exists for that consumer and table", () => {
+    const base = artifact();
+    const sourceRead = (base.readEdges as Record<string, unknown>[])[0]!;
+    const { readOccurrence: _readOccurrence, ...tableLevelRead } = sourceRead;
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        producerBridges: [],
+        readEdges: [tableLevelRead],
+      }),
     });
 
     const unbound = result.branches.find((branch) => branch.branchKind === "UNBOUND_READ");
     expect(unbound?.readOccurrence).toBeNull();
+    expect(unbound?.table?.qualifiedName).toBe("demo.mid");
     expect(unbound?.gapRefs).not.toHaveLength(0);
     expect(result.status).toBe("INCOMPLETE");
   });
 
-  it("keeps a read with malformed occurrence unbound and marks the universe incomplete", () => {
+  it("treats a readEdge with an unusable occurrence as table-level when a producer bridge exists", () => {
     const base = artifact();
     const sourceRead = (base.readEdges as Record<string, unknown>[])[0]!;
     const result = projectCandidateUniverse({
@@ -219,8 +237,142 @@ describe("candidate universe projection", () => {
       }),
     });
 
-    expect(result.branches.some((branch) => branch.branchKind === "UNBOUND_READ")).toBe(true);
-    expect(result.status).toBe("INCOMPLETE");
+    expect(result.branches.some((branch) => branch.branchKind === "PHYSICAL_PRODUCER")).toBe(true);
+    expect(result.branches.some((branch) => branch.branchKind === "UNBOUND_READ")).toBe(false);
+    expect(result.status).toBe("COMPLETE_OBSERVED_EVIDENCE");
+  });
+
+  it("does not project SCHEDULE_ONLY when a physical producer already covers the same consumer and producer", () => {
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        scheduleEdges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "200",
+            evidence: [{ source: "HORAE_RELATION", locator: "schedule:100:200" }],
+          },
+        ],
+      }),
+    });
+
+    expect(result.branches.filter((branch) => branch.branchKind === "PHYSICAL_PRODUCER").map((branch) => branch.producerTaskId)).toEqual(["200"]);
+    expect(result.branches.some((branch) => branch.branchKind === "SCHEDULE_ONLY")).toBe(false);
+  });
+
+  it("does not project SCHEDULE_ONLY for checkdbflag producers", () => {
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        producerBridges: [],
+        scheduleEdges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "149695",
+            evidence: [{ source: "HORAE_RELATION", locator: "schedule:100:149695" }],
+          },
+        ],
+        taskNodes: [
+          {
+            taskId: "149695",
+            expansionStatus: "TERMINAL",
+            evidence: [
+              {
+                source: "INPUT_PACK_TASK",
+                locator: "tasks/checkdbflag/149695/task.json",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(result.branches.some((branch) => branch.producerTaskId === "149695")).toBe(false);
+    expect(result.branches.some((branch) => branch.branchKind === "SCHEDULE_ONLY")).toBe(false);
+  });
+
+  it("does not project SCHEDULE_ONLY for checkdbflag producers that never got an Input Pack", () => {
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        producerBridges: [],
+        scheduleEdges: [
+          {
+            consumerTaskId: "100",
+            producerTaskId: "169692",
+            evidence: [{ source: "HORAE_RELATION", locator: "schedule:100:169692" }],
+          },
+        ],
+        taskNodes: [
+          {
+            taskId: "169692",
+            expansionStatus: "TERMINAL",
+            taskName: "checker.POS_OTC_POSITION_DAILY_ETL",
+            evidence: [],
+          },
+        ],
+      }),
+    });
+
+    expect(result.branches.some((branch) => branch.producerTaskId === "169692")).toBe(false);
+    expect(result.branches.some((branch) => branch.branchKind === "SCHEDULE_ONLY")).toBe(false);
+  });
+
+  it("does not project COVERAGE_BOUNDARY for non-Hive terminal sources", () => {
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        producerBridges: [],
+        terminals: [
+          {
+            taskId: "100",
+            depth: 2,
+            reason: "NO_CONFIRMED_PRODUCER_OBSERVED",
+            table: {
+              platform: "oracle",
+              dataSource: "gforacle_gftzdb#gftzdb",
+              qualifiedName: "titans_dm.ref_option_deal_pr",
+              stableTableId: "titans-dm-ref",
+              identityStatus: "RESOLVED",
+            },
+          },
+        ],
+      }),
+    });
+
+    expect(
+      result.branches.some((branch) => branch.table?.qualifiedName === "titans_dm.ref_option_deal_pr"),
+    ).toBe(false);
+  });
+
+  it("does not project UNBOUND_READ for non-Hive terminal sources", () => {
+    const result = projectCandidateUniverse({
+      rootTargetFields: ["target.amount"],
+      tableArtifact: artifact({
+        producerBridges: [],
+        readEdges: [
+          {
+            consumerTaskId: "100",
+            table: {
+              platform: "oracle",
+              dataSource: "gforacle_gftzdb#gftzdb",
+              qualifiedName: "titans_dm.ref_option_deal_pr",
+              stableTableId: "titans-dm-ref",
+              identityStatus: "RESOLVED",
+            },
+            recursionStatus: "ELIGIBLE",
+            blockedStatementIndexes: [],
+            blockReasons: [],
+            evidence: [{ source: "INPUT_PACK_SQL", locator: "read:100:oracle" }],
+          },
+        ],
+      }),
+    });
+
+    expect(result.branches.some((branch) => branch.branchKind === "UNBOUND_READ")).toBe(false);
+    expect(
+      result.branches.some((branch) => branch.table?.qualifiedName === "titans_dm.ref_option_deal_pr"),
+    ).toBe(false);
   });
 
   it("binds a read only when both sides have the same complete occurrence identity", () => {

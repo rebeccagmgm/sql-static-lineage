@@ -9,9 +9,8 @@
 ## 先做这个（P0）：重跑收缩
 
 完整方案见 `docs/execution-plan-rerun-shrink.md`。
-问题不在清单太长（field-lineage HTML 的「81→69」是另一个消费者）。
-P0 的 RS-5 已过（`176827.json` 14:22：档二仅拉链三张；`155015.json` 四张 ref 仍在）。
-**WP-1 可以领。** 总览表前置仍写 P0 RS-5，现在已满足；不要再按「立即开始」绕过 P0 的旧印象。
+P0 的 RS-5 已过。**WP-1 已合入**（`cdc187a` / PR #10）。
+WP-3 完整方案见 `docs/execution-plan-task-local-projection.md`。
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
@@ -43,7 +42,7 @@ P0 的 RS-5 已过（`176827.json` 14:22：档二仅拉链三张；`155015.json`
 
 | WP   | 名称                             | 仓库               | 前置                             | 可并行                          |
 | ---- | -------------------------------- | ------------------ | -------------------------------- | ------------------------------- |
-| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **P0 RS-5 通过**                 | RS-5 之后，可与 WP-2 并行       |
+| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **已合入 `cdc187a`**           | 已完成                          |
 | WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
 | WP-3 | `task-local-graph-projection`    | sql-static-lineage | WP-1                             | WP-1 合入后                     |
 | WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 与 WP-3 并行                    |
@@ -55,8 +54,8 @@ WP-1 影响通道分离 ──┬─> WP-3 任务局部投影 ──> WP-5 data-
 WP-2 声明口径采集 ────────────────────────> （WP-3 后可加传播与矛盾检测）
 ```
 
-WP-1 **P0 RS-5 已过，可以领。** WP-2 不碰闭包播种，可先做采集，但不得暗示 WP-1
-已经开始。WP-3 与 WP-4 都依赖 WP-1 的分类结果，文件不重叠，可在 WP-1 合入后并行。
+WP-1 已合入。WP-2 仍可并行。WP-3 与 WP-4 文件不重叠，可同时领。
+WP-3 细则与完成定义以 `docs/execution-plan-task-local-projection.md` 为准，不要再用本节旧的「递归展开到四张 ref 任务号」。
 
 ## 共享不变量
 
@@ -214,64 +213,14 @@ scripts/visualize/field-lineage-visualize.ts
 
 ## WP-3 `task-local-graph-projection`
 
-**目标**：建立 O(N) 任务局部投影，把遍历从构建期移到查询期。
+**前置**：WP-1 已合入。
 
-**前置**：WP-1 合入（需要 `FIELD_DIRECT` subtype 与 `DATASET_CONTROL`）。
+**完整方案**：`docs/execution-plan-task-local-projection.md`（TL-0…TL-8）。
 
-**改动范围**：新增 `scripts/project-graph/task-local/`。不写入
-`artifacts/tasks/<task-id>/`，不改动 one-hop / multi-hop / field-lineage 生产。
+一句话：每个任务只投影自己的 READ/WRITE/值边/控制边；任务之间靠物理表身份在查询期用 producer-index 拼接。
+不要在本 WP 把上游 taskId 写进投影，也不要把「从 176827 递归走到四张拉链 ref」当完成定义——那是 105387 自己的 `DATASET_CONTROL`，外加查询期拼接。
 
-**契约要点**
-
-- 节点：`TASK`（含 `topicName`、`taskCategory`）、`PHYSICAL_DATASET`、
-  `PHYSICAL_FIELD`、`TARGET_WRITE`。身份函数与 data-graph 现有实现一致。
-- 边：`WRITES`、`READS`、`FIELD_DIRECT`、`FIELD_CONDITIONAL`、`DATASET_CONTROL`。
-  全部限定在本任务内，**不做任何跨任务遍历**。
-- 通道来源：直接读取 `summarizeTaskRelations()` 的 `readImpacts` /
-  `impactChannels` / `demandedFieldNames`，按下表投影，不平行实现一套规则。
-
-  | 图边                                      | 来自                        |
-  | ----------------------------------------- | --------------------------- |
-  | `FIELD_DIRECT`                            | `FIELD_VALUE`               |
-  | `FIELD_CONDITIONAL`                       | `EXPRESSION_CONTROL`        |
-  | `DATASET_CONTROL` subtype `JOIN`/`FILTER` | `ROW_MEMBERSHIP`            |
-  | `grain`                                   | `MULTIPLICITY` 的 certainty |
-
-  `demandedFieldNames` 在 JOIN 键闭包（P0 RS-3）补完之前，跨 hop 的行决定列
-  仍可能传不出去。WP-3 可以先按现有摘要落边；105387 金样允许先断言
-  summary 层标签（已绿），闭包层理由链等 P0 RS-3 合入后再收紧。
-
-- 常量谓词：形如 `SRC_TBL IN ('...')` 的字面量分区谓词单独记为
-  `partitionPredicates[]`（列 + 字面量集合）。查询侧据此在多写入方分区表上
-  剪掉不匹配分区的写入任务。
-- 不落盘路径。路径在查询时展开并受查询侧上限约束。
-- 增量：按 Input Pack 内容哈希复用，机制沿用现有 `task-fact-index.jsonl`
-  （`sql_sha256` + `manifest_sha256`）。
-- 覆盖状态：`PROJECTED | SCHEDULE_ONLY | COLLECTION_FAILED`。
-  `SCHEDULE_ONLY` 只承载调度边，不产生字段边。
-
-**首批范围**：`DM_RSK_N`，调度缓存 63 个任务，其中 57 个已有 Input Pack（90%），
-含 155015。域仅用于批次顺序，**不进入图或快照契约的 scope**。
-
-**完成定义**
-
-1. 首批 63 个任务全部产出局部投影或显式失败原因，不静默跳过。
-2. 二次运行在 Input Pack 未变时全部命中缓存，产出字节一致。
-3. 物理字段身份全局唯一：同一 `platform|dataSource|table|column` 只有一个节点，
-   不再出现 209119 那样的 36 倍重复。
-4. `DATASET_CONTROL` 条数等于不同 `relation × 控制表` 组合数，不随字段数增长。
-5. 跨域连通不被批次切断：155015 的上游 `EDW_EVT` / `ODATA_N_TIT` / `EDW_AGT`
-   以 `SCHEDULE_ONLY` 或 `PROJECTED` 出现，不缺失。
-6. 追加第二批后既有节点与边身份不变，覆盖状态单调改善。
-7. 单任务投影耗时与批次总耗时留档，作为扩批 `DM_OTC_N`（732 / 412 已有包）与
-   `ODATA_N_TIT`（1,061 / 546）的成本依据。
-8. 105387 作为回归样例固化：其输出列 `Stati_Cont_Desc` 的 `FIELD_DIRECT`
-   只含 `D_TRD_OTC_TRADE.INTERNAL_TRADE_ID`；其 `rowDetermining` 必须覆盖
-   `Agt_Modifr`、`Agt_Type_Cd`、`STRT_DATE`、`END_DATE`、`SRC_TBL`，
-   经递归展开后可达 `D_REF_TRS`、`D_REF_OTC_OPTION_DEAL`、`D_REF_FX_FORWARD`、
-   `D_REF_FAST_TRS` 四张参考表。仅按值血缘剪枝会漏掉这四个上游，属不可接受的假阴性。
-9. 105387 的 `partitionPredicates` 含
-   `SRC_TBL = {'ODATA_N_TIT.D_TRD_OTC_TRADE'}`。
+**金样**：176827 为主，105387 必须 `--also-task-ids` 点名（它不在 `DM_RSK_N` 63 里），155015 只回归本任务值边。
 
 ## WP-4 `task-processing-kind`
 
@@ -334,15 +283,15 @@ sourceMode: TASK_LOCAL_UNION
 ## 并行调度建议
 
 ```text
-第 0 波（现在）
-  P0 重跑收缩 RS-0…RS-5   见 docs/execution-plan-rerun-shrink.md
-  agent B -> WP-2         声明口径采集（不依赖 P0，可并行）
+第 0 波
+  P0 重跑收缩 RS-5 已过   见 docs/execution-plan-rerun-shrink.md
+  agent B -> WP-2         声明口径采集（仍可做）
 
-第 1 波（P0 RS-5 通过后）
-  agent A -> WP-1   影响通道分离      收益：假阳性消除 + 9x 体积下降
+第 1 波
+  WP-1 已合入
 
-第 2 波（WP-1 合入后，可同时派两个 agent）
-  agent C -> WP-3   任务局部投影
+第 2 波（现在，可同时派两个 agent）
+  agent C -> WP-3   任务局部投影   见 docs/execution-plan-task-local-projection.md
   agent D -> WP-4   加工/通道识别
 
 第 3 波
@@ -350,8 +299,8 @@ sourceMode: TASK_LOCAL_UNION
   WP-2 扩展         INHERITED 传播与"声明 vs 实现"矛盾检测（需 WP-3 的图）
 ```
 
-派单给 agent 时必须同时给出：本文件的**共享不变量**全文、目标 WP 全文、
-以及 `docs/domain-asset-graph-architecture.md`。缺不变量会导致并行改动互相破坏。
+派单 WP-3 时必须同时给出：本文件的**共享不变量**、`docs/execution-plan-task-local-projection.md`、
+以及 `docs/domain-asset-graph-architecture.md`。
 
 ## 里程碑
 

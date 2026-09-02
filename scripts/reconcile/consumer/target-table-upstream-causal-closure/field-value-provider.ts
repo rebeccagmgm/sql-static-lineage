@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import { canonicalRelationIdentity, sameRelationIdentity } from "../../../machine-facts/relation-identity.ts";
 import type { CandidateBranch } from "../target-field-causal-slice/candidate-universe.ts";
 
 export interface FieldValueImpact {
@@ -49,17 +50,31 @@ function occurrenceKey(value: string): string {
 
 function occurrenceTokenMatches(token: string, branchKeys: ReadonlySet<string>): boolean {
   const normalized = occurrenceKey(token);
-  return branchKeys.has(normalized);
+  if (branchKeys.has(normalized)) return true;
+  const canonical = canonicalRelationIdentity(token);
+  if (canonical !== null && branchKeys.has(occurrenceKey(canonical))) return true;
+  for (const key of branchKeys) {
+    if (sameRelationIdentity(key, token)) return true;
+  }
+  return false;
 }
 
 function branchOccurrenceKeys(branch: CandidateBranch): readonly string[] {
   if (!branch.readOccurrence) return [];
   const occurrence = branch.readOccurrence;
-  return [
+  const keys = new Set<string>();
+  for (const raw of [
     occurrence.occurrenceId,
     occurrence.readRelationId,
     `${occurrence.occurrenceId}:${occurrence.readRelationId}`,
-  ].map(occurrenceKey);
+    ...occurrence.relationPath,
+  ]) {
+    if (!raw) continue;
+    keys.add(occurrenceKey(raw));
+    const canonical = canonicalRelationIdentity(raw);
+    if (canonical) keys.add(occurrenceKey(canonical));
+  }
+  return [...keys];
 }
 
 function occurrenceEvidenceRefs(edge: JsonRecord, consumerTaskId: string): readonly string[] {

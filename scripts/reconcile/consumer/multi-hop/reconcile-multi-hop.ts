@@ -33,6 +33,10 @@ import {
   matchingTerminalRole,
   type TerminalTableConfig,
 } from "./terminal-table-config.ts";
+import {
+  isSameTaskScratchTable,
+  isTaskLocalTempTable,
+} from "../../shared/lineage-scope.ts";
 
 type ExpansionStatus = "EXPANDED" | "TERMINAL" | "TRUNCATED";
 
@@ -802,10 +806,6 @@ function readKey(taskId: string, table: TaskReadTableRef): string {
   return `${taskId}\u0000${tableKey(table)}`;
 }
 
-function isTaskLocalTempTable(qualifiedName: string): boolean {
-  return /^temp\./i.test(qualifiedName.trim());
-}
-
 function writeKey(taskId: string, table: ProducerTableIdentity): string {
   return `${taskId}\u0000${tableKey(table)}`;
 }
@@ -1125,13 +1125,21 @@ function reconcileMultiHopRootTraversalKernel(
         });
       }
       tableNodes.set(tableKey(read.tableRef), { ...read.tableRef });
-      if (isTaskLocalTempTable(read.tableRef.qualifiedName)) {
+      if (
+        isTaskLocalTempTable(read.tableRef.qualifiedName)
+        || isSameTaskScratchTable(read.tableRef.qualifiedName)
+      ) {
         addTerminal({
           taskId: current.taskId,
           depth: current.depth,
           reason: "TASK_LOCAL_MATERIALIZATION",
           table: read.tableRef,
-          detail: { rule: "QUALIFIED_NAME_PREFIX", pattern: "TEMP.*" },
+          detail: {
+            rule: isTaskLocalTempTable(read.tableRef.qualifiedName)
+              ? "QUALIFIED_NAME_PREFIX"
+              : "SAME_TASK_SCRATCH_SUFFIX",
+            pattern: isTaskLocalTempTable(read.tableRef.qualifiedName) ? "TEMP.*" : "*_TEMP",
+          },
         });
         continue;
       }

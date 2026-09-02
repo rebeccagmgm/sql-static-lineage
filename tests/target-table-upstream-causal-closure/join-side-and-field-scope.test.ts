@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { buildCausalClosure } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/causal-closure.ts";
-import { buildShrinkReport } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/static-assessment.ts";
+import { assessBranch, buildShrinkReport, classifyPrunedReason } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/static-assessment.ts";
 import { relationSummaryKey, summarizeTaskRelations, type TaskRelationSummary } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
 import type { CandidateBranch } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
 
@@ -1199,5 +1199,207 @@ describe("RS-3 closure seeding", () => {
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("105388");
     expect(report.valueCertain.map((entry) => entry.taskId)).not.toContain("106661");
     expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("106661");
+  });
+
+  it("does not stamp schema-backed LEFT dims as UNSUPPORTED_OPERATOR just because the statement has LATERAL VIEW", () => {
+    const evt = "task:181058:statement:0:relation:root.read.evt";
+    const expand = "task:181058:statement:0:relation:root.expand.t";
+    const rela = "task:181058:statement:0:relation:root.read.rela";
+    const join = "task:181058:statement:0:relation:root.join.rela";
+    const project = "task:181058:statement:0:relation:root.project";
+    const summarized = summarizeTaskRelations({
+      taskId: "181058",
+      sqlSourceId: "task:181058",
+      statementIndex: 0,
+      relationRecords: [
+        {
+          task_id: "181058",
+          relation_id: evt,
+          relation_type: "read",
+          relation: { id: evt, type: "read", table: "pdata_n.t05_otc_comp_dura_chg_evt" },
+        },
+        {
+          task_id: "181058",
+          relation_id: expand,
+          relation_type: "expand",
+          relation: { id: expand, type: "expand", expand_kind: "lateral", produced_columns: ["pos", "val"] },
+        },
+        {
+          task_id: "181058",
+          relation_id: rela,
+          relation_type: "read",
+          relation: { id: rela, type: "read", table: "pdata_n.t03_agt_rela_h" },
+        },
+        {
+          task_id: "181058",
+          relation_id: join,
+          relation_type: "join",
+          relation: {
+            id: join,
+            type: "join",
+            join_type: "LEFT",
+            left: expand,
+            right: rela,
+            condition_expr: "evt.agt_id = rela.agt_id",
+            condition_columns: [
+              { name: "agt_id", physical: [{ column: "agt_id", table: "pdata_n.t05_otc_comp_dura_chg_evt" }] },
+              { name: "agt_id", physical: [{ column: "agt_id", table: "pdata_n.t03_agt_rela_h" }] },
+            ],
+          },
+        },
+        {
+          task_id: "181058",
+          relation_id: project,
+          relation_type: "project",
+          relation: { id: project, type: "project" },
+        },
+      ],
+      relationEdgeRecords: [
+        { from_relation_id: evt, to_relation_id: expand },
+        { from_relation_id: expand, to_relation_id: join },
+        { from_relation_id: rela, to_relation_id: join },
+        { from_relation_id: join, to_relation_id: project },
+      ],
+    });
+    const dimImpact = summarized.readImpacts.find((item) => item.readOccurrenceId === rela);
+    expect(summarized.complete).toBe(true);
+    expect(summarized.gaps.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))).toBe(false);
+    expect(dimImpact?.gaps.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))).toBe(false);
+    expect(dimImpact?.impactChannels).not.toContain("ROW_MEMBERSHIP");
+    expect(dimImpact?.impactChannels).toContain("MULTIPLICITY");
+
+    const dim = branch({
+      candidateBranchId: "branch:105388",
+      consumerTaskId: "181058",
+      producerTaskId: "105388",
+      table: namedTable("pdata_n.t03_agt_rela_h"),
+      readOccurrence: {
+        occurrenceId: rela,
+        readRelationId: rela,
+        sqlSourceId: "task:181058",
+        statementIndex: 0,
+        relationPath: [join, rela],
+        rootRelationId: project,
+      },
+      writeObservationId: "write:105388",
+      writeScope: { sqlSourceId: "task:105388", statementOrdinal: 0, rootRelationId: "task:105388:root" },
+    });
+    const assessment = assessBranch({
+      targetWriteId: "write:181058",
+      branch: dim,
+      universeComplete: true,
+      summary: summarized,
+      fieldValueProvider: noFieldEvidenceProvider(),
+    });
+    expect(assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE")?.status).toBe("NOT_APPLICABLE");
+    expect(assessment.channelAssessments.find((channel) => channel.channel === "MULTIPLICITY")?.status).toBe("CONFIRMED");
+    expect(assessment.gapRefs.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))).toBe(false);
+    expect(classifyPrunedReason(dim, assessment)).not.toBe("UNSUPPORTED_OPERATOR");
+
+    const root = branch({
+      branchKind: "ROOT_WRITE",
+      candidateBranchId: "branch:root",
+      consumerTaskId: null,
+      producerTaskId: "181058",
+      table: null,
+      readOccurrence: null,
+      writeObservationId: "write:181058",
+    });
+    const evtProducer = branch({
+      candidateBranchId: "branch:124566",
+      consumerTaskId: "181058",
+      producerTaskId: "124566",
+      table: namedTable("pdata_n.t05_otc_comp_dura_chg_evt"),
+      readOccurrence: {
+        occurrenceId: evt,
+        readRelationId: evt,
+        sqlSourceId: "task:181058",
+        statementIndex: 0,
+        relationPath: [project, join, expand, evt],
+        rootRelationId: project,
+      },
+      writeObservationId: "write:124566",
+      writeScope: { sqlSourceId: "task:124566", statementOrdinal: 0, rootRelationId: "task:124566:root" },
+    });
+    const result = buildCausalClosure({
+      targetWriteId: "write:181058",
+      rootTaskId: "181058",
+      universe: completeUniverse([root, evtProducer, dim]),
+      summaries: new Map([
+        [relationSummaryKey("181058", summarized.sqlSourceId, summarized.statementIndex, summarized.rootRelationId), summarized],
+      ]),
+      fieldValueProvider: fieldProvider({ "124566": ["evt_id"] }),
+      rootWriteScope: {
+        taskId: "181058",
+        writeObservationId: "write:181058",
+        sqlSourceId: summarized.sqlSourceId,
+        statementOrdinal: summarized.statementIndex,
+        rootRelationId: summarized.rootRelationId ?? project,
+      },
+    });
+    const report = buildShrinkReport({ branches: [root, evtProducer, dim], assessments: result.assessments });
+    expect(report.valueCertain.map((entry) => entry.taskId)).toEqual(["124566"]);
+    expect(report.rowDetermining.map((entry) => entry.taskId)).not.toContain("105388");
+    expect(report.multiplicityRisk.map((entry) => entry.taskId)).toContain("105388");
+    expect(report.prunedReasons.find((reason) => reason.reasonCode === "UNSUPPORTED_OPERATOR")).toBeUndefined();
+  });
+
+  it("does not let an unrelated other-body fail-close a schema-backed LEFT dim in the same statement", () => {
+    const driver = "task:c:statement:0:relation:read.driver";
+    const dim = "task:c:statement:0:relation:read.dim";
+    const join = "task:c:statement:0:relation:join.dim";
+    const other = "task:c:statement:0:relation:other";
+    const summarized = summarizeTaskRelations({
+      taskId: "c",
+      sqlSourceId: "task:c",
+      relationRecords: [
+        { task_id: "c", relation_id: driver, relation_type: "read", relation: { id: driver, type: "read", table: "db.fact" } },
+        { task_id: "c", relation_id: dim, relation_type: "read", relation: { id: dim, type: "read", table: "pdata_n.t01_pty_clas_h" } },
+        {
+          task_id: "c",
+          relation_id: join,
+          relation_type: "join",
+          relation: { id: join, type: "join", join_type: "LEFT", left: driver, right: dim },
+        },
+        {
+          task_id: "c",
+          relation_id: other,
+          relation_type: "other",
+          relation: { id: other, type: "other", body_kind: "pipe", note: "unmodeled" },
+        },
+      ],
+      relationEdgeRecords: [
+        { from_relation_id: driver, to_relation_id: join },
+        { from_relation_id: dim, to_relation_id: join },
+      ],
+    });
+    expect(summarized.complete).toBe(false);
+    const dimImpact = summarized.readImpacts.find((item) => item.readOccurrenceId === dim);
+    expect(dimImpact?.gaps.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))).toBe(false);
+    const dimBranch = branch({
+      candidateBranchId: "branch:dim",
+      producerTaskId: "74850",
+      table: namedTable("pdata_n.t01_pty_clas_h"),
+      readOccurrence: {
+        occurrenceId: dim,
+        readRelationId: dim,
+        sqlSourceId: "task:c",
+        statementIndex: 0,
+        relationPath: [join, dim],
+      },
+      writeObservationId: "write:74850",
+      writeScope: { sqlSourceId: "task:74850", statementOrdinal: 0, rootRelationId: "task:74850:root" },
+    });
+    const assessment = assessBranch({
+      targetWriteId: "write:c",
+      branch: dimBranch,
+      universeComplete: true,
+      summary: summarized,
+      fieldValueProvider: noFieldEvidenceProvider(),
+    });
+    expect(assessment.channelAssessments.find((channel) => channel.channel === "FIELD_VALUE")?.status).toBe("NOT_APPLICABLE");
+    expect(assessment.channelAssessments.find((channel) => channel.channel === "MULTIPLICITY")?.status).toBe("CONFIRMED");
+    expect(assessment.gapRefs.some((gap) => /UNSUPPORTED_OPERATOR/i.test(gap))).toBe(false);
+    expect(classifyPrunedReason(dimBranch, assessment)).not.toBe("UNSUPPORTED_OPERATOR");
   });
 });

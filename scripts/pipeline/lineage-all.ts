@@ -72,6 +72,7 @@ import {
   validateTaskDocument,
   type TaskDocument,
 } from "../input/shared/input-pack.ts";
+import { isCheckdbflagTask } from "../reconcile/shared/lineage-scope.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_DEPTH = 25;
@@ -822,13 +823,11 @@ export function checkDbFlagTaskIds(
   const result = new Set<string>();
   for (const snapshot of snapshots) {
     for (const parent of snapshot.schedule?.parents ?? []) {
-      const category = categories.get(parent.taskId)?.toLowerCase();
-      // Missing checkdbflag packs are scheduler-only nodes.  Horae names them
-      // with the stable `checker.` prefix, which is the only classification
-      // available before a metadata-only pack exists.
       if (
-        category === "checkdbflag" ||
-        /^checker\./i.test(parent.taskName ?? "")
+        isCheckdbflagTask({
+          taskCategory: categories.get(parent.taskId),
+          taskName: parent.taskName,
+        })
       )
         result.add(parent.taskId);
     }

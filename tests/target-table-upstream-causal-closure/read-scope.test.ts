@@ -1,0 +1,366 @@
+import { describe, expect, it } from "vitest";
+
+import type { CandidateBranch } from "../../scripts/reconcile/consumer/target-field-causal-slice/candidate-universe.ts";
+import { buildCausalClosure } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/causal-closure.ts";
+import { inferReadScope, normalizeReadScopes } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/read-scope.ts";
+import { relationSummaryKey } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
+import type { CurrentBundleLoad, JsonRecord } from "../../scripts/query/current-task-bundle.ts";
+
+const table = {
+  platform: "hive",
+  dataSource: "gfhive",
+  qualifiedName: "pdata_n.t05_otc_comp_dura_chg_evt",
+  stableTableId: "pdata_n.t05_otc_comp_dura_chg_evt__gfhive",
+  identityStatus: "SCHEMA_BACKED" as const,
+};
+
+function readNode(input: {
+  readonly taskId: string;
+  readonly relationId: string;
+  readonly table: string;
+  readonly occurrenceId: string;
+}): JsonRecord {
+  return {
+    task_id: input.taskId,
+    relation_id: input.relationId,
+    statement_id: `task:${input.taskId}:slot:query:statement:0`,
+    relation_type: "read",
+    relation: {
+      type: "read",
+      table: input.table,
+      id: input.relationId,
+      read_occurrence_id: input.occurrenceId,
+    },
+    read_occurrence_id: input.occurrenceId,
+  };
+}
+
+function uniqueReadIo(
+  taskId: string,
+  table: string,
+  occurrenceId: string,
+  relationId: string,
+): JsonRecord {
+  return {
+    task_id: taskId,
+    direction: "READ",
+    physical_dataset: table,
+    statement_id: `task:${taskId}:slot:query:statement:0`,
+    read_occurrences: [{ occurrence_id: occurrenceId, relation_id: relationId }],
+  };
+}
+
+function physicalTable(qualifiedName: string) {
+  return {
+    platform: "hive",
+    dataSource: "gfhive",
+    qualifiedName,
+    stableTableId: `${qualifiedName}__gfhive`,
+    identityStatus: "SCHEMA_BACKED" as const,
+  };
+}
+
+function load(taskId: string, records: Record<string, JsonRecord[]>): CurrentBundleLoad {
+  return {
+    state: "CURRENT_L1",
+    factsRoot: "facts",
+    taskId,
+    bundleDir: "",
+    indexPath: "",
+    statusPath: "",
+    records,
+    evidence: {},
+    issues: [],
+  };
+}
+
+function producer(overrides: Partial<CandidateBranch> = {}): CandidateBranch {
+  return {
+    candidateBranchId: "branch:p",
+    branchKind: "PHYSICAL_PRODUCER",
+    rootTaskId: "181058",
+    consumerTaskId: "181058",
+    producerTaskId: "124566",
+    table,
+    readOccurrence: {
+      occurrenceId: "query#0:root.casttable.evt.(child).read.toe",
+      readRelationId: "root.casttable.evt.(child).read.toe",
+      sqlSourceId: "task:181058:slot:query",
+      statementIndex: 0,
+      rootRelationId: "task:181058:statement:0:relation:root.casttable.evt.(child).project",
+      relationPath: ["root.casttable.evt.(child).read.toe"],
+    },
+    writeObservationId: "write-observation:124566:0",
+    writeScope: {
+      sqlSourceId: "task:124566:slot:query",
+      statementOrdinal: 0,
+      rootRelationId: "task:124566:statement:0:relation:root.project",
+    },
+    producerRole: "PRIMARY",
+    evidenceRefs: [],
+    gapRefs: [],
+    boundaryReason: null,
+    ...overrides,
+  };
+}
+
+describe("inferReadScope", () => {
+  it("walks CAST child reads to the statement write root even when sqlSourceId is already a slot", () => {
+    const read = "task:181058:statement:0:relation:root.casttable.evt.(child).read.toe";
+    const child = "task:181058:statement:0:relation:root.casttable.evt.(child).project";
+    const root = "task:181058:statement:0:relation:root.project";
+    const table = "pdata_n.t05_otc_comp_dura_chg_evt";
+    const occurrenceId = `query#0:${read}`;
+    const facts = load("181058", {
+      "statements.jsonl": [
+        { statement_id: "task:181058:slot:query:statement:0", statement_index: 0 },
+      ],
+      "relation-nodes.jsonl": [
+        readNode({ taskId: "181058", relationId: read, table, occurrenceId }),
+        { relation_id: child, statement_id: "task:181058:slot:query:statement:0" },
+        { relation_id: root, statement_id: "task:181058:slot:query:statement:0" },
+      ],
+      "relation-edges.jsonl": [
+        { from_relation_id: read, to_relation_id: child },
+        { from_relation_id: child, to_relation_id: root },
+      ],
+      "dataset-io.jsonl": [uniqueReadIo("181058", table, occurrenceId, read)],
+    });
+    expect(inferReadScope(facts, producer())).toEqual({
+      sqlSourceId: "task:181058:slot:query",
+      rootRelationId: root,
+    });
+  });
+
+  it("still resolves the slot by relation path when the occurrence cannot be proven", () => {
+    const read = "task:105386:statement:1:relation:root.a.read.d_trd_otc_trade";
+    const filter = "task:105386:statement:1:relation:root.a.filter";
+    const root = "task:105386:statement:1:relation:root.project";
+    const facts = load("105386", {
+      "statements.jsonl": [
+        { statement_id: "task:105386:slot:create:statement:1", statement_index: 1 },
+      ],
+      "relation-nodes.jsonl": [
+        {
+          task_id: "105386",
+          relation_id: read,
+          statement_id: "task:105386:slot:create:statement:1",
+          relation_type: "read",
+          relation: { type: "read", table: "odata_n_tit.d_trd_otc_trade", id: read },
+        },
+        { relation_id: filter, statement_id: "task:105386:slot:create:statement:1" },
+        { relation_id: root, statement_id: "task:105386:slot:create:statement:1" },
+      ],
+      "relation-edges.jsonl": [
+        { from_relation_id: read, to_relation_id: filter },
+        { from_relation_id: filter, to_relation_id: root },
+      ],
+      "dataset-io.jsonl": [],
+    });
+    const branch = producer({
+      consumerTaskId: "105386",
+      producerTaskId: "71698",
+      table: physicalTable("odata_n_tit.d_trd_otc_trade"),
+      readOccurrence: {
+        occurrenceId: "create#1:root.a.read.d_trd_otc_trade",
+        readRelationId: "root.a.read.d_trd_otc_trade",
+        statementIndex: 1,
+        relationPath: ["root.a.read.d_trd_otc_trade"],
+      },
+    });
+    expect(inferReadScope(facts, branch)).toEqual({
+      sqlSourceId: "task:105386:slot:create",
+      rootRelationId: root,
+    });
+  });
+
+  it("fills a missing slot from local UNION-branch relation ids without collapsing b0 and b1", () => {
+    const b0Local = "root.t.setop.b0.read.d_pos_position_daily";
+    const b1Local = "root.t.setop.b1.a.read.d_pos_position_daily";
+    const root = "root.project";
+    const table = "odata_n_tit.d_pos_position_daily";
+    const facts = load("106590", {
+      "statements.jsonl": [
+        { statement_id: "task:106590:slot:query:statement:0", statement_index: 0 },
+      ],
+      "relation-nodes.jsonl": [
+        readNode({
+          taskId: "106590",
+          relationId: b0Local,
+          table,
+          occurrenceId: `query#0:${b0Local}`,
+        }),
+        readNode({
+          taskId: "106590",
+          relationId: b1Local,
+          table,
+          occurrenceId: `query#0:${b1Local}`,
+        }),
+        { relation_id: root, statement_id: "task:106590:slot:query:statement:0" },
+      ],
+      "relation-edges.jsonl": [
+        { from_relation_id: b0Local, to_relation_id: root },
+        { from_relation_id: b1Local, to_relation_id: root },
+      ],
+      "dataset-io.jsonl": [
+        {
+          task_id: "106590",
+          direction: "READ",
+          physical_dataset: table,
+          statement_id: "task:106590:slot:query:statement:0",
+          read_occurrences: [
+            { occurrence_id: `query#0:${b0Local}`, relation_id: b0Local },
+            { occurrence_id: `query#0:${b1Local}`, relation_id: b1Local },
+          ],
+        },
+      ],
+    });
+    const b0 = producer({
+      candidateBranchId: "branch:b0",
+      consumerTaskId: "106590",
+      producerTaskId: "78585",
+      table: physicalTable(table),
+      readOccurrence: {
+        occurrenceId: `query#0:${b0Local}`,
+        readRelationId: b0Local,
+        statementIndex: 0,
+        relationPath: [b0Local],
+      },
+    });
+    const b1 = producer({
+      candidateBranchId: "branch:b1",
+      consumerTaskId: "106590",
+      producerTaskId: "78585",
+      table: physicalTable(table),
+      readOccurrence: {
+        occurrenceId: `query#0:${b1Local}`,
+        readRelationId: b1Local,
+        statementIndex: 0,
+        relationPath: [b1Local],
+      },
+    });
+    expect(inferReadScope(facts, b0)).toEqual({
+      sqlSourceId: "task:106590:slot:query",
+      rootRelationId: root,
+    });
+    expect(inferReadScope(facts, b1)).toEqual({
+      sqlSourceId: "task:106590:slot:query",
+      rootRelationId: root,
+    });
+    const universe = normalizeReadScopes(
+      {
+        rootTaskId: "181058",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [b0, b1],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+    );
+    expect(universe.branches[0]?.readOccurrence?.occurrenceId).toContain("setop.b0");
+    expect(universe.branches[1]?.readOccurrence?.occurrenceId).toContain("setop.b1");
+    expect(universe.branches[0]?.readOccurrence?.occurrenceId).not.toBe(
+      universe.branches[1]?.readOccurrence?.occurrenceId,
+    );
+  });
+
+  it("lets a CAST nested VALUE_FLOW hop become reachable after read-scope normalization", () => {
+    const read = "task:181058:statement:0:relation:root.casttable.evt.(child).read.toe";
+    const child = "task:181058:statement:0:relation:root.casttable.evt.(child).project";
+    const rootRel = "task:181058:statement:0:relation:root.project";
+    const table = "pdata_n.t05_otc_comp_dura_chg_evt";
+    const occurrenceId = `query#0:${read}`;
+    const facts = load("181058", {
+      "statements.jsonl": [
+        { statement_id: "task:181058:slot:query:statement:0", statement_index: 0 },
+      ],
+      "relation-nodes.jsonl": [
+        readNode({ taskId: "181058", relationId: read, table, occurrenceId }),
+        { relation_id: child, statement_id: "task:181058:slot:query:statement:0" },
+        { relation_id: rootRel, statement_id: "task:181058:slot:query:statement:0" },
+      ],
+      "relation-edges.jsonl": [
+        { from_relation_id: read, to_relation_id: child },
+        { from_relation_id: child, to_relation_id: rootRel },
+      ],
+      "dataset-io.jsonl": [uniqueReadIo("181058", table, occurrenceId, read)],
+    });
+    const root = producer({
+      candidateBranchId: "branch:root",
+      branchKind: "ROOT_WRITE",
+      consumerTaskId: null,
+      producerTaskId: "181058",
+      table: null,
+      readOccurrence: null,
+      writeObservationId: "write-observation:181058:1",
+    });
+    const nested = producer({ candidateBranchId: "branch:cast" });
+    const universe = normalizeReadScopes(
+      {
+        rootTaskId: "181058",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [root, nested],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+    );
+    const result = buildCausalClosure({
+      targetWriteId: "write",
+      rootTaskId: "181058",
+      universe,
+      summaries: new Map([
+        [
+          relationSummaryKey("181058", "task:181058:slot:query", 0, rootRel),
+          {
+            taskId: "181058",
+            sqlSourceId: "task:181058:slot:query",
+            statementIndex: 0,
+            rootRelationId: rootRel,
+            digest: "d",
+            complete: true,
+            readImpacts: [],
+            relationCount: 0,
+            readCount: 0,
+            edgeCount: 0,
+            gaps: [],
+          },
+        ],
+      ]),
+      fieldValueProvider: {
+        scanCount: 1,
+        edgeCount: 1,
+        lookup: (value) => ({
+          candidateBranchId: value.candidateBranchId,
+          status: "CONFIRMED",
+          affectedTargetFields: ["busi_date"],
+          outputFieldBindingIds: ["b"],
+          evidenceRefs: ["field-lineage:e"],
+          gapRefs: [],
+        }),
+      },
+      rootWriteScope: {
+        taskId: "181058",
+        writeObservationId: "write-observation:181058:1",
+        sqlSourceId: "task:181058:slot:query",
+        statementOrdinal: 0,
+        rootRelationId: rootRel,
+      },
+    });
+    const assessment = result.assessments.find((item) => item.candidateBranchId === "branch:cast");
+    expect(result.graph.reachableBranchIds).toContain("branch:cast");
+    expect(assessment?.channelAssessments.find((item) => item.channel === "FIELD_VALUE")?.status).toBe(
+      "CONFIRMED",
+    );
+  });
+});

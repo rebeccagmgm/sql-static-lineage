@@ -25,6 +25,12 @@ export interface ScopePlanFrom {
 	readonly ordinal: number;
 	readonly source: Source;
 	readonly bindingKey: string | null;
+	/**
+	 * Index into `Scope.sourceList`. Scope.sources is keyed by name, so two
+	 * sources sharing an alias (a derived table plus a LATERAL VIEW named `t`)
+	 * collapse there; only this ordinal identifies the source unambiguously.
+	 */
+	readonly sourceOrdinal: number | null;
 	readonly match: "identity" | "fallback" | "unresolved";
 }
 
@@ -33,6 +39,7 @@ export interface ScopePlanJoin {
 	readonly join: Join;
 	readonly sourceIndex: number;
 	readonly bindingKey: string | null;
+	readonly sourceOrdinal: number | null;
 	readonly match: "identity" | "fallback" | "unresolved";
 }
 
@@ -73,6 +80,7 @@ export interface ScopePlanIndex {
 
 interface SourceMatch {
 	readonly key: string | null;
+	readonly sourceOrdinal: number | null;
 	readonly match: ScopePlanFrom["match"];
 }
 
@@ -186,6 +194,7 @@ export function buildScopePlanFromScope(scope: Scope): ScopePlan {
 				ordinal,
 				source,
 				bindingKey: match.key,
+				sourceOrdinal: match.sourceOrdinal,
 				match: match.match,
 			};
 		});
@@ -197,6 +206,7 @@ export function buildScopePlanFromScope(scope: Scope): ScopePlan {
 				join,
 				sourceIndex,
 				bindingKey: match.key,
+				sourceOrdinal: match.sourceOrdinal,
 				match: match.match,
 			};
 		});
@@ -221,14 +231,26 @@ export function buildScopePlanFromScope(scope: Scope): ScopePlan {
 }
 
 function matchSource(scope: Scope, source: Source): SourceMatch {
-	const identity = scope.sourceList.find(
+	const identity = scope.sourceList.findIndex(
 		(entry) => resolvedSourceObject(entry.source) === source,
 	);
-	if (identity) return { key: identity.key, match: "identity" };
+	if (identity >= 0)
+		return {
+			key: scope.sourceList[identity]!.key,
+			sourceOrdinal: identity,
+			match: "identity",
+		};
 
-	const fallback = scope.sourceList.find((entry) => sourceLooksLike(entry.source, source));
-	if (fallback) return { key: fallback.key, match: "fallback" };
-	return { key: null, match: "unresolved" };
+	const fallback = scope.sourceList.findIndex((entry) =>
+		sourceLooksLike(entry.source, source),
+	);
+	if (fallback >= 0)
+		return {
+			key: scope.sourceList[fallback]!.key,
+			sourceOrdinal: fallback,
+			match: "fallback",
+		};
+	return { key: null, sourceOrdinal: null, match: "unresolved" };
 }
 
 function resolvedSourceObject(source: ResolvedSource): object | undefined {
