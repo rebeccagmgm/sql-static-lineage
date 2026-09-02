@@ -11,7 +11,11 @@
 完整方案见 `docs/execution-plan-rerun-shrink.md`。
 P0 的 RS-5 已过。**WP-1 已合入**（`cdc187a` / PR #10）。
 WP-3 已验收（schema 1.1.0）；细则见 `docs/execution-plan-task-local-projection.md`。
-WP-5 下一包，细则见 `docs/execution-plan-task-local-union.md`。
+WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `docs/execution-plan-task-local-union.md`；
+但全量语料（Pack 14,113 / Facts 344 / producer-index / 调度缓存）与消费者代码审计表明：图的基本单位（任务/表）
+不足以承载多写、temp 折叠、分区可判性与算子语义，且现有 field-lineage / one-hop / 闭包含多处启发式与静默升级。
+**当前优先级转为准确性**：见 `docs/graph-accuracy-architecture.md`（WP-6…WP-12）与
+`docs/graph-user-narrative.md`（对用户陈述准/不准）。资产图扩批、WP-2、Neo4j 上线排在其后。
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
@@ -65,6 +69,9 @@ WP-3 细则与完成定义以 `docs/execution-plan-task-local-projection.md` 为
 
 1. 不修改 SQLLens、`scripts/plans/`、`scripts/machine-facts/` 的事实生产逻辑。
    事实不足时补 typed gap，不在消费侧猜测或补齐。
+   增补（2026-09-02，见 `docs/graph-accuracy-architecture.md` §2）：对运行契约明确为“query 输出写入 Pack target”的任务，
+   Facts 生产侧允许从已确认的 Pack target、partition 和唯一 query producer 构造 `PACK_DECLARED_QUERY_OUTPUT` 写观察；
+   不得修改或伪装原始 SQL，必须保留 provenance、原 SQL hash，并在目标、查询边界、Schema 或分区证据不足时 fail closed。
 2. 不引入新解析器（Calcite / sqlglot / ScopeLineage / SQLLineage）。
 3. 数据集级控制证据**不得**挂到字段节点，不得产生 `affectedRootFields`
    一类字段级断言。这是 WP-1 的核心，也是其余 WP 的前提。
