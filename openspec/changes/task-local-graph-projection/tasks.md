@@ -33,14 +33,14 @@
 
 ## 7. TL-6 Golden samples
 
-- [ ] 7.1 Assertions for 176827, 119044, 105387 per execution plan TL-6.
-- [ ] 7.2 Control edges must not scale with output column count.
+- [x] 7.1 Assertions for 176827, 119044, 105387 per execution plan TL-6.
+- [x] 7.2 Control edges must not scale with output column count.
 
 ## 8. TL-7 partitionPredicates
 
-- [ ] 8.1 Literal FILTER predicates per READ occurrence (not task-merged).
-- [ ] 8.2 Golden checks for 105387 and 119044 SRC_TBL placement.
+- [x] 8.1 Literal FILTER predicates per READ occurrence (not task-merged).
+- [x] 8.2 Golden checks for 105387 and 119044 SRC_TBL placement.
 
 ## 9. TL-8 Cost record
 
-- [ ] 9.1 Document p50/p95 and wall clock for DM_RSK_N + goldens in change notes.
+- [x] 9.1 Document p50/p95 and wall clock for DM_RSK_N + goldens in change notes.

@@ -46,6 +46,7 @@ import {
   taskLocalEdgeId,
   taskNodeId,
 } from "./ids.ts";
+import { partitionPredicatesByReadOccurrence } from "./partition-predicates.ts";
 import { readTaskScheduleContext } from "./schedule-context.ts";
 
 export interface ProjectTaskLocalOptions {
@@ -247,8 +248,25 @@ function projectTaskLocalFromFacts(input: {
       toNodeId: writeNodeId,
       properties: { writeObservationId },
     });
+    pushEdge({
+      edgeId: taskLocalEdgeId({
+        edgeType: "WRITES",
+        fromNodeId: writeNodeId,
+        toNodeId: datasetNodeId,
+        semanticKey: { writeObservationId },
+      }),
+      edgeType: "WRITES",
+      fromNodeId: writeNodeId,
+      toNodeId: datasetNodeId,
+      properties: { writeObservationId },
+    });
   }
 
+  const predicatesByOccurrence = partitionPredicatesByReadOccurrence({
+    taskId,
+    relationRecords: records(load.records["relation-nodes.jsonl"]),
+    relationEdgeRecords: records(load.records["relation-edges.jsonl"]),
+  });
   for (const read of records(load.records["dataset-io.jsonl"])) {
     if (text(read.task_id) !== taskId || String(read.direction ?? "").toUpperCase() !== "READ") continue;
     const identity = tableIdentity(
@@ -268,20 +286,29 @@ function projectTaskLocalFromFacts(input: {
     });
     const occurrences = records(read.read_occurrences);
     const readOccurrenceIds = occurrences.length > 0
-      ? occurrences.map((occurrence) => text(occurrence.occurrence_id)).filter((id): id is string => id !== null)
-      : [null];
-    for (const readOccurrenceId of readOccurrenceIds) {
+      ? occurrences.map((occurrence) => ({
+        occurrenceId: text(occurrence.occurrence_id),
+        relationId: text(occurrence.relation_id) ?? text(occurrence.occurrence_id),
+      }))
+      : [{ occurrenceId: null, relationId: null }];
+    for (const occurrence of readOccurrenceIds) {
+      const predicates = occurrence.relationId
+        ? predicatesByOccurrence.get(occurrence.relationId) ?? []
+        : [];
       pushEdge({
         edgeId: taskLocalEdgeId({
           edgeType: "READS",
           fromNodeId: taskNodeId(taskId),
           toNodeId: datasetNodeId,
-          semanticKey: { readOccurrenceId: readOccurrenceId ?? "legacy" },
+          semanticKey: { readOccurrenceId: occurrence.occurrenceId ?? "legacy" },
         }),
         edgeType: "READS",
         fromNodeId: taskNodeId(taskId),
         toNodeId: datasetNodeId,
-        properties: readOccurrenceId ? { readOccurrenceId } : {},
+        properties: {
+          ...(occurrence.occurrenceId ? { readOccurrenceId: occurrence.occurrenceId } : {}),
+          partitionPredicates: predicates,
+        },
       });
     }
   }

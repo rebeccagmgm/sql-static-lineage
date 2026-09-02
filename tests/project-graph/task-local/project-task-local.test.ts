@@ -104,6 +104,26 @@ describe("projectTaskLocal", () => {
     expect(projection.taskId).toBe("105387");
     expect(projection.nodes.some((node) => node.nodeId.startsWith("task:71698"))).toBe(false);
 
+    const targetWrites = projection.nodes.filter((node) => node.nodeType === "TARGET_WRITE");
+    expect(targetWrites.length).toBeGreaterThan(0);
+    for (const writeNode of targetWrites) {
+      const taskToWrite = projection.edges.some(
+        (edge) =>
+          edge.edgeType === "WRITES"
+          && edge.fromNodeId === "task:105387"
+          && edge.toNodeId === writeNode.nodeId,
+      );
+      const writeToDataset = projection.edges.find(
+        (edge) =>
+          edge.edgeType === "WRITES"
+          && edge.fromNodeId === writeNode.nodeId
+          && projection.nodes.find((node) => node.nodeId === edge.toNodeId)?.nodeType
+            === "PHYSICAL_DATASET",
+      );
+      expect(taskToWrite).toBe(true);
+      expect(writeToDataset).toBeDefined();
+    }
+
     const zipperTail = (name: string): boolean =>
       ["d_ref_fx_forward", "d_ref_fast_trs", "d_ref_otc_option_deal", "d_ref_trs"].includes(name);
     const fieldDirectSourcesFor = (outputColumn: string): string[] =>
