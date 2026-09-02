@@ -33,6 +33,7 @@ import {
 } from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/consumer/multi-hop/task-read-evidence.ts";
 import type { TerminalTableConfig } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+import { writeHoraeRelationCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";
 
@@ -166,6 +167,7 @@ function run(
     now?: () => string;
     rootOneHop?: OneHopReconciliationResult;
     terminalTableConfig?: TerminalTableConfig;
+    scheduleEvidenceCacheRoot?: string | null;
   } = {},
 ) {
   return reconcileMultiHop(taskId, {
@@ -175,6 +177,11 @@ function run(
     maxTasks: options.maxTasks ?? 100,
     maxEdges: options.maxEdges ?? 500,
     now: options.now ?? (() => FIXED_NOW),
+    // Isolate fixtures from the workstation schedule cache unless a test opts in.
+    scheduleEvidenceCacheRoot:
+      options.scheduleEvidenceCacheRoot === undefined
+        ? null
+        : options.scheduleEvidenceCacheRoot,
     ...(options.rootOneHop ? { rootOneHop: options.rootOneHop } : {}),
     ...(options.terminalTableConfig
       ? { terminalTableConfig: options.terminalTableConfig }
@@ -700,6 +707,62 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
     );
   });
 
+  it("uses offline schedule cache to pick the unique parent among overlapping overwrite producers", () => {
+    const root = dataRoot();
+    const cacheRoot = mkdtempSync(join(tmpdir(), "sql-lineage-schedule-cache-"));
+    for (const table of ["lake.shared", "lake.current", "lake.seed"])
+      writeTable(root, table);
+    writeReader(root, "A", ["lake.shared"]);
+    writeProducer(root, "B", "lake.shared", ["lake.seed"]);
+    writeProducer(root, "C", "lake.shared", ["lake.seed"]);
+    writeHoraeRelationCache(
+      "A",
+      FIXED_NOW,
+      [{ task_id: "B", task_name: "producer-b", direction: "上游" }],
+      cacheRoot,
+    );
+    const index = buildTableProducerIndex(root, { now: () => FIXED_NOW });
+
+    const result = run(root, index, "A", {
+      maxDepth: 2,
+      scheduleEvidenceCacheRoot: cacheRoot,
+    });
+
+    expect(result.taskNodes[0]?.upstreamDecision).toMatchObject({
+      primary: ["B"],
+      additional: [],
+      unknown: [],
+      decision: "SCHEDULE_DATA_INTERSECTION",
+    });
+    expect(
+      result.producerBridges.find(
+        (bridge) =>
+          bridge.consumerTaskId === "A" && bridge.producerTaskId === "B",
+      )?.producerRole,
+    ).toBe("PRIMARY");
+    expect(
+      result.producerBridges.find(
+        (bridge) =>
+          bridge.consumerTaskId === "A" && bridge.producerTaskId === "C",
+      )?.producerRole,
+    ).toBe("CANDIDATE");
+    expect(result.taskNodes.map((node) => node.taskId)).toEqual(
+      expect.arrayContaining(["A", "B"]),
+    );
+    expect(result.taskNodes.find((node) => node.taskId === "B")).toMatchObject({
+      expansionStatus: expect.stringMatching(/EXPANDED|TERMINAL/),
+    });
+    expect(result.taskNodes.find((node) => node.taskId === "C")).toMatchObject({
+      expansionStatus: "TERMINAL",
+      upstreamDecision: null,
+    });
+    expect(result.terminals).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reason: "MULTIPLE_OVERLAPPING_PRODUCERS" }),
+      ]),
+    );
+  });
+
   it("reuses a prepared evidence context without changing the graph result", () => {
     const root = dataRoot();
     for (const table of ["lake.t1", "lake.t2"]) writeTable(root, table);
@@ -715,6 +778,7 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
       maxTasks: 100,
       maxEdges: 500,
       now: () => FIXED_NOW,
+      scheduleEvidenceCacheRoot: null,
     });
 
     expect(semanticSnapshot(prepared!)).toEqual(semanticSnapshot(standalone));
