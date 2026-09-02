@@ -282,7 +282,8 @@ function readArtifact(path: string): FieldLineageVisualizationArtifact {
     !Array.isArray(value.rootNodeIds) ||
     !Array.isArray(value.nodes) ||
     !Array.isArray(value.edges) ||
-    !Array.isArray(value.rowsetControls) ||
+    (!legacySchema && !Array.isArray(value.datasetControls)) ||
+    (!legacySchema && !Array.isArray(value.fieldConditionals)) ||
     !Array.isArray(value.candidates) ||
     !Array.isArray(value.tableEdges) ||
     !isRecord(value.counts) ||
@@ -291,7 +292,15 @@ function readArtifact(path: string): FieldLineageVisualizationArtifact {
     throw new Error(
       `FIELD_LINEAGE_ARTIFACT_INVALID:visualization fields are incomplete`,
     );
-  return value as unknown as FieldLineageVisualizationArtifact;
+  return {
+    ...(value as unknown as FieldLineageVisualizationArtifact),
+    datasetControls: Array.isArray(value.datasetControls)
+      ? value.datasetControls
+      : [],
+    fieldConditionals: Array.isArray(value.fieldConditionals)
+      ? value.fieldConditionals
+      : [],
+  } as FieldLineageVisualizationArtifact;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -893,7 +902,7 @@ export function renderFieldLineageHtml(
 ): string {
   const rootTaskId = escapeHtml(artifact.request.rootTaskId);
   const rootTable = escapeHtml(artifact.request.rootTable);
-  const data = serialized({ ...artifact, rowsetControls: [] });
+  const data = serialized(artifact);
   const impactData = serialized(buildFieldLineageImpactGraph(artifact));
   return `<!doctype html>
 <html lang="zh-CN">
@@ -903,7 +912,7 @@ export function renderFieldLineageHtml(
 <title>Field lineage ${rootTaskId}</title>
 <style>
 :root{color-scheme:light dark;--bg:light-dark(#f4f6f8,#11171d);--surface:light-dark(#fff,#182128);--surface-2:light-dark(#f8fafb,#202b34);--text:light-dark(#1f2933,#e6edf2);--muted:light-dark(#667482,#aab9c5);--line:light-dark(#dbe2e9,#35434e);--flow:light-dark(#237a58,#69d6a0);--candidate:light-dark(#9a6517,#e8bc6d);--danger:light-dark(#a33a3a,#f08b8b)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Microsoft YaHei",sans-serif}header{padding:20px 24px 16px;background:var(--surface);border-bottom:1px solid var(--line)}h1,h2,h3,p{margin:0}h1{font-size:23px;font-weight:500}h2{font-size:16px;font-weight:500;margin-bottom:10px}h3{font-size:14px;font-weight:500;margin:18px 0 8px}.subtitle,.meta,.note{color:var(--muted)}.subtitle{margin-top:4px}.meta{margin-top:8px;font-size:12px}.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;max-width:1400px;margin:0 auto;padding:18px 22px}.panel{min-width:0}.field-list{display:grid;gap:2px}.field{display:block;width:100%;padding:6px 8px;border:0;border-left:2px solid transparent;background:transparent;color:var(--text);text-align:left;cursor:pointer;font:inherit;overflow-wrap:anywhere}.field:hover,.field[aria-pressed="true"]{color:var(--flow);border-left-color:var(--flow)}.badge{display:inline-block;color:var(--muted);font-size:12px}.route-list{display:grid;gap:12px}.route{padding:12px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:6px;overflow:auto}.route-label{display:flex;align-items:baseline;gap:12px;color:var(--muted);font-size:12px;margin-bottom:10px}.task-chain{color:var(--text);font-weight:500}.route-nodes{display:flex;align-items:stretch;gap:9px;min-width:max-content}.task-group{min-width:230px;max-width:330px;padding:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px}.task-group-title{font-weight:600;margin-bottom:7px}.task-group-name{display:block;color:var(--muted);font-size:11px;font-weight:400;overflow-wrap:anywhere}.task-field{padding:7px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.task-field:first-child{border-top:0;padding-top:0}.task-field-name{display:block;font-weight:500}.task-field small{display:block;margin-top:3px;color:var(--muted);overflow-wrap:anywhere}.field-link{padding:4px 0;color:var(--flow);font-size:11px;overflow-wrap:anywhere}.task-bridge{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:105px;color:var(--flow);text-align:center}.task-bridge strong{font-size:19px;font-weight:400}.task-bridge small{color:var(--muted);font-size:11px;max-width:140px;overflow-wrap:anywhere}.empty{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--muted)}.detail{margin-top:18px;padding:13px 0;border-top:1px solid var(--line)}.detail-line{margin-top:5px;overflow-wrap:anywhere}.status strong{color:var(--flow);font-weight:500}.candidate-list,.control-list,.table-list{display:grid;gap:0}.candidate,.control,.table-edge{padding:7px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.candidate{color:var(--candidate)}.candidate small,.control small,.table-edge small{display:block;color:var(--muted);margin-top:2px}.control,.table-edge{color:var(--text)}.section{margin-top:20px}.section:first-child{margin-top:0}.counts{display:grid;grid-template-columns:repeat(4,minmax(72px,1fr));gap:8px;margin-bottom:18px}.count{padding:9px;background:var(--surface);border:1px solid var(--line);border-radius:5px}.count strong{display:block;font-size:18px;font-weight:500}.count span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:12px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px}.legend .flow{background:var(--flow)}.legend .candidate-mark{background:var(--candidate)}.legend .control-mark{background:var(--muted)}@media(max-width:720px){.layout{grid-template-columns:1fr;padding:14px}.field-list{grid-template-columns:repeat(2,minmax(0,1fr))}.counts{grid-template-columns:repeat(3,minmax(72px,1fr))}.route-nodes{min-width:0;display:grid;grid-template-columns:1fr;gap:5px}.task-group{max-width:none}.task-bridge{min-width:0;flex-direction:row}.task-bridge strong{transform:rotate(90deg)}.task-bridge small{max-width:none}.route-label{display:block}.task-chain{display:block;margin-top:3px}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Microsoft YaHei",sans-serif}header{padding:20px 24px 16px;background:var(--surface);border-bottom:1px solid var(--line)}h1,h2,h3,p{margin:0}h1{font-size:23px;font-weight:500}h2{font-size:16px;font-weight:500;margin-bottom:10px}h3{font-size:14px;font-weight:500;margin:18px 0 8px}.subtitle,.meta,.note{color:var(--muted)}.subtitle{margin-top:4px}.meta{margin-top:8px;font-size:12px}.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;max-width:1400px;margin:0 auto;padding:18px 22px}.panel{min-width:0}.field-list{display:grid;gap:2px}.field{display:block;width:100%;padding:6px 8px;border:0;border-left:2px solid transparent;background:transparent;color:var(--text);text-align:left;cursor:pointer;font:inherit;overflow-wrap:anywhere}.field:hover,.field[aria-pressed="true"]{color:var(--flow);border-left-color:var(--flow)}.badge{display:inline-block;color:var(--muted);font-size:12px}.route-list{display:grid;gap:12px}.route{padding:12px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--flow);border-radius:6px;overflow:auto}.route-label{display:flex;align-items:baseline;gap:12px;color:var(--muted);font-size:12px;margin-bottom:10px}.task-chain{color:var(--text);font-weight:500}.route-nodes{display:flex;align-items:stretch;gap:9px;min-width:max-content}.task-group{min-width:230px;max-width:330px;padding:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px}.task-group-title{font-weight:600;margin-bottom:7px}.task-group-name{display:block;color:var(--muted);font-size:11px;font-weight:400;overflow-wrap:anywhere}.task-field{padding:7px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.task-field:first-child{border-top:0;padding-top:0}.task-field-name{display:block;font-weight:500}.task-field small{display:block;margin-top:3px;color:var(--muted);overflow-wrap:anywhere}.field-link{padding:4px 0;color:var(--flow);font-size:11px;overflow-wrap:anywhere}.task-bridge{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:105px;color:var(--flow);text-align:center}.task-bridge strong{font-size:19px;font-weight:400}.task-bridge small{color:var(--muted);font-size:11px;max-width:140px;overflow-wrap:anywhere}.empty{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--muted)}.detail{margin-top:18px;padding:13px 0;border-top:1px solid var(--line)}.detail-line{margin-top:5px;overflow-wrap:anywhere}.status strong{color:var(--flow);font-weight:500}.candidate-list,.control-list,.table-list{display:grid;gap:0}.candidate,.control,.table-edge{padding:7px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.candidate{color:var(--candidate)}.candidate small,.control small,.table-edge small{display:block;color:var(--muted);margin-top:2px}.control,.table-edge{color:var(--text)}.section{margin-top:20px}.section:first-child{margin-top:0}.counts{display:grid;grid-template-columns:repeat(5,minmax(72px,1fr));gap:8px;margin-bottom:18px}.count{padding:9px;background:var(--surface);border:1px solid var(--line);border-radius:5px}.count strong{display:block;font-size:18px;font-weight:500}.count span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:12px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px}.legend .flow{background:var(--flow)}.legend .candidate-mark{background:var(--candidate)}.legend .control-mark{background:var(--muted)}@media(max-width:720px){.layout{grid-template-columns:1fr;padding:14px}.field-list{grid-template-columns:repeat(2,minmax(0,1fr))}.counts{grid-template-columns:repeat(3,minmax(72px,1fr))}.route-nodes{min-width:0;display:grid;grid-template-columns:1fr;gap:5px}.task-group{max-width:none}.task-bridge{min-width:0;flex-direction:row}.task-bridge strong{transform:rotate(90deg)}.task-bridge small{max-width:none}.route-label{display:block}.task-chain{display:block;margin-top:3px}}
 .route-summary{margin:8px 0 12px;color:var(--muted);font-size:12px}.evidence-list{display:grid;gap:7px;margin-top:12px}.evidence{border:1px solid var(--line);border-radius:5px;background:var(--surface-2);overflow:hidden}.evidence summary{padding:9px 11px;cursor:pointer;color:var(--text);font-weight:500}.evidence summary::marker{color:var(--flow)}.evidence-body{padding:0 11px 11px}.evidence-meta{color:var(--muted);font-size:12px;margin-bottom:8px;overflow-wrap:anywhere}.evidence-step,.evidence-edge{padding:6px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.evidence-step strong,.evidence-edge strong{font-weight:500}.evidence-step small,.evidence-edge small{display:block;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}.evidence-edge{color:var(--flow)}
 .semantic-list{display:grid;gap:9px;margin-top:12px}.semantic-branch{padding:11px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px}.semantic-title{font-weight:600}.semantic-flow{margin-top:7px;color:var(--flow);font-weight:500;overflow-wrap:anywhere}.semantic-meta{margin-top:6px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.technical-evidence{margin-top:9px;border-top:1px solid var(--line);padding-top:7px}.technical-evidence summary{color:var(--muted);font-size:12px;cursor:pointer}
 .semantic-list{gap:14px}.semantic-branch{padding:15px 16px;background:var(--surface);box-shadow:0 2px 8px rgba(31,41,51,.05)}.semantic-title{font-size:15px}.flow-cards{display:flex;align-items:stretch;gap:8px;margin-top:13px;overflow-x:auto;padding:2px 2px 6px}.flow-card{flex:0 1 250px;min-width:210px;padding:11px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:7px}.flow-card-source{border-top:3px solid var(--flow)}.flow-card-middle{border-top:3px solid var(--candidate)}.flow-card-target{border-top:3px solid var(--flow)}.flow-card-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.flow-card-task{margin-top:4px;font-weight:600}.flow-card-table{margin-top:6px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.flow-card-column{margin-top:3px;font-size:14px;font-weight:500;overflow-wrap:anywhere}.flow-card-op{margin-top:7px;padding-top:7px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;overflow-wrap:anywhere}.flow-arrow{display:flex;align-items:center;justify-content:center;min-width:44px;color:var(--flow);font-size:22px}.flow-arrow small{display:block;margin-left:3px;color:var(--muted);font-size:10px;overflow-wrap:anywhere}.branch-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.branch-tag{padding:3px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:11px}.route-summary{font-size:13px}.panel:first-child{align-self:start;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;position:sticky;top:14px}.panel:first-child h2{font-size:15px}.counts{gap:10px}.count{padding:11px 12px}.count strong{font-size:20px}
@@ -924,6 +933,7 @@ export function renderFieldLineageHtml(
     <div class="counts" id="counts"></div>
     <section class="section"><h2>当前字段的多分支汇聚</h2><div id="routes" class="route-list" aria-live="polite"></div></section>
     <section class="detail" aria-live="polite"><h2>字段详情</h2><p id="status" class="status"></p><p id="detail-source" class="detail-line"></p><p id="detail-evidence" class="detail-line"></p></section>
+    <section class="section"><h2>DATASET_CONTROL</h2><p class="note">数据集控制按 relation 收集，不计入字段值流上游表。</p><div id="dataset-controls" class="control-list"></div></section>
     <section class="section"><h2>候选 producer</h2><p class="note">候选关系不进入确认的 VALUE_FLOW 主路径。</p><div id="candidates" class="candidate-list"></div></section>
     <section class="section"><h2>表级关系（未做字段确认）</h2><div id="table-edges" class="table-list"></div></section>
   </main>
@@ -944,7 +954,7 @@ const nodeById=new Map(DATA.nodes.map((node)=>[node.nodeId,node]));
 const edgesByTo=new Map();
 for(const edge of DATA.edges){const list=edgesByTo.get(edge.toNodeId)||[];list.push(edge);edgesByTo.set(edge.toNodeId,list)}
 const rootIds=new Set(DATA.rootNodeIds);
-const fieldList=document.getElementById("field-list"),routes=document.getElementById("routes"),counts=document.getElementById("counts"),status=document.getElementById("status"),detailSource=document.getElementById("detail-source"),detailEvidence=document.getElementById("detail-evidence"),candidateBox=document.getElementById("candidates"),tableBox=document.getElementById("table-edges");
+const fieldList=document.getElementById("field-list"),routes=document.getElementById("routes"),counts=document.getElementById("counts"),status=document.getElementById("status"),detailSource=document.getElementById("detail-source"),detailEvidence=document.getElementById("detail-evidence"),candidateBox=document.getElementById("candidates"),datasetControlBox=document.getElementById("dataset-controls"),tableBox=document.getElementById("table-edges");
 const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const nodeLabel=(node)=>node?{task:node.taskId,table:node.field.qualifiedName,column:node.field.column}:null;
 const fields=[...new Set(DATA.request.rootFields)].sort();
@@ -1017,7 +1027,7 @@ function pathsFrom(rootId,limit=32){
   return {paths:result,truncated};
 }
 function renderCounts(){
-  const items=[[DATA.counts.nodes,"节点"],[DATA.counts.edges,"值流边"],[DATA.counts.candidates,"候选"],[DATA.counts.gaps,"缺口"]];
+  const items=[[DATA.counts.nodes,"节点"],[DATA.counts.edges,"值流边"],[DATA.counts.datasetControls,"数据集控制"],[DATA.counts.candidates,"候选"],[DATA.counts.gaps,"缺口"]];
   counts.innerHTML=items.map(([value,label])=>'<div class="count"><strong>'+esc(value)+'</strong><span>'+label+'</span></div>').join("");
 }
 function renderFields(selected){
@@ -1207,6 +1217,13 @@ function renderCandidates(field){
   const items=DATA.candidates.filter((candidate)=>!candidate.field||candidate.field.column===field);
   candidateBox.innerHTML=items.length?items.map((candidate)=>'<div class="candidate">'+esc(candidate.consumerTaskId)+' ← '+esc(candidate.producerTaskId)+' · '+esc(candidate.field?.qualifiedName||"物理字段未解析")+'.'+esc(candidate.field?.column||'')+'<small>'+esc(candidate.reasonCode)+'</small></div>').join(""):'<div class="empty">当前字段没有候选 producer</div>';
 }
+function renderDatasetControls(){
+  const items=DATA.datasetControls||[];
+  datasetControlBox.innerHTML=items.length?items.map((control)=>{
+    const field=control.field?esc(control.field.qualifiedName)+'.'+esc(control.field.column):'控制字段未解析';
+    return '<div class="control">'+esc(control.taskId)+' · '+esc(control.subtype)+' · '+field+'<small>grain='+esc(control.grain)+(control.grainReason?' / '+esc(control.grainReason):'')+' · '+esc(control.evidenceStatus)+(control.reasonCode?' / '+esc(control.reasonCode):'')+'</small></div>';
+  }).join(""):'<div class="empty">没有可证明数据集控制</div>';
+}
 function renderTableEdges(pathNodeIds){
   const reachableTasks=new Set([...pathNodeIds].map((id)=>nodeById.get(id)?.taskId).filter(Boolean));
   const items=DATA.tableEdges.filter((edge)=>reachableTasks.has(edge.consumerTaskId)&&reachableTasks.has(edge.producerTaskId));
@@ -1221,7 +1238,7 @@ function render(field){
   const confirmedGroups=groupPathsBySemantic(confirmedPaths);
   const provisionalGroups=groupPathsBySemantic(provisionalPaths);
   const root=roots[0];
-  renderFields(field);renderCandidates(field);
+  renderFields(field);renderCandidates(field);renderDatasetControls();
   const pathNodeIds=new Set(paths.flatMap((path)=>path.nodes));renderTableEdges(pathNodeIds);
   const pathNote=pathResults.some((result)=>result.truncated)?'<div class="note">当前页面只显示每个根绑定最多 32 条路径；完整路径仍保留在 JSON 产物中。</div>':'';
   routes.innerHTML=pathNote+(paths.length?multiBranchOverviewHtml(field,root,confirmedGroups,provisionalGroups,confirmedPaths.length,provisionalPaths.length):'<div class="empty">当前字段没有可展示的 VALUE_FLOW 路径</div>');

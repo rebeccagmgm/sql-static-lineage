@@ -9,19 +9,19 @@
 
 当前库存（2026-09-01）：
 
-| 根 | 规模 |
-|---|---|
-| `sql-static-lineage-cache/schedule-evidence/tasks` | 17962 任务目录 |
-| 其中 `horae-task-type.json` | 15116 |
-| 其中 `szdata-schedule-detail.json` | 15846 |
-| 其中 `hive-task.sql` | 4565 |
-| 其中 `run-script.sql` | 746 |
-| `sql-static-lineage-data/tasks` | 2708 个 `task.json` |
-| `sql-static-lineage-data/tables` | 4740 个 `table.json` |
-| `数综基础信息/原信息` Hive 元数据 jsonl | 211922（ACTIVE 150098） |
-| 同上 Hive DDL jsonl | 142409 |
-| 同上 RDBMS 核心 jsonl | 1223553（INCOMPLETE，缺 114） |
-| 同上 RDBMS DDL jsonl | 1202531（INCOMPLETE，缺 92） |
+| 根                                                 | 规模                          |
+| -------------------------------------------------- | ----------------------------- |
+| `sql-static-lineage-cache/schedule-evidence/tasks` | 17962 任务目录                |
+| 其中 `horae-task-type.json`                        | 15116                         |
+| 其中 `szdata-schedule-detail.json`                 | 15846                         |
+| 其中 `hive-task.sql`                               | 4565                          |
+| 其中 `run-script.sql`                              | 746                           |
+| `sql-static-lineage-data/tasks`                    | 2708 个 `task.json`           |
+| `sql-static-lineage-data/tables`                   | 4740 个 `table.json`          |
+| `数综基础信息/原信息` Hive 元数据 jsonl            | 211922（ACTIVE 150098）       |
+| 同上 Hive DDL jsonl                                | 142409                        |
+| 同上 RDBMS 核心 jsonl                              | 1223553（INCOMPLETE，缺 114） |
+| 同上 RDBMS DDL jsonl                               | 1202531（INCOMPLETE，缺 92）  |
 
 ---
 
@@ -66,17 +66,17 @@ schedule-evidence/tasks/<taskId>/
 
 ## 2. 原路径每一步对照
 
-| 原步骤 | 原证据 | 缓存替代 | 缺失时 |
-|---|---|---|---|
-| 手工/冻结预分类 | `horae search --cycle 手工` / `--status F` | `horae-task-type.detail.cycle` + `.status`；`szdata-schedule-detail.detail.status` | 两边都没有状态 → 不排除，继续采；两边都没有任务记录 → `HORAE_TASK_NOT_FOUND` |
-| 任务不存在 | 全状态 search 无此 ID | 无 `horae-task-type` 且无 `szdata-schedule-detail` | 归档到 `.not-found-tasks`，不进主根 |
-| 任务身份 | `szdata task-source` | 见 §3 类型路由 | 无类型且无 SQL → `FAILED`，不写半包 |
-| SQL 槽 | task-source `sqlSlots`；不可用再 `horae detail` | 类型路由后的 SQL 文件 / detail 字段 | 槽位省略，不编造；标 `PARTIAL` |
-| 直接 source/target | task-source `source`/`target`/`loadMode`/`hivePartition` | Horae `syncInfo` + schedule-detail `targetTable`/`insertMode`/`hivePartition` | 保留原始字符串或省略；不用类型猜表名 |
-| 表候选 | 直接端点 + SQL `FROM`/`JOIN` + 终端 INSERT/CTAS | 同样的抽取函数，输入换成缓存 SQL | 无候选则 Task 仍可写，Table 为 0 |
-| Table 元数据+DDL | `szdata table-search` + `table` + `table-ddl` | ① 已有 `tables/` ② `原信息` jsonl 按表名拼接（Hive 可只靠 DDL） ③ Hive 无 DDL 时才用任务 CREATE ④ 否则 PARTIAL | **不**现场打 table-ddl |
-| 任务关系兜底 | `szdata table --view full` 的 `taskIds` | **无等价缓存**。只用 SQL 精确写目标 + 已有 Table Pack | 不根据任务名猜表 |
-| 落盘 | `materializeTaskAndTablePacks` | 原样复用 | 原子替换；hash 不变不重写 |
+| 原步骤             | 原证据                                                   | 缓存替代                                                                                                       | 缺失时                                                                       |
+| ------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 手工/冻结预分类    | `horae search --cycle 手工` / `--status F`               | `horae-task-type.detail.cycle` + `.status`；`szdata-schedule-detail.detail.status`                             | 两边都没有状态 → 不排除，继续采；两边都没有任务记录 → `HORAE_TASK_NOT_FOUND` |
+| 任务不存在         | 全状态 search 无此 ID                                    | 无 `horae-task-type` 且无 `szdata-schedule-detail`                                                             | 归档到 `.not-found-tasks`，不进主根                                          |
+| 任务身份           | `szdata task-source`                                     | 见 §3 类型路由                                                                                                 | 无类型且无 SQL → `FAILED`，不写半包                                          |
+| SQL 槽             | task-source `sqlSlots`；不可用再 `horae detail`          | 类型路由后的 SQL 文件 / detail 字段                                                                            | 槽位省略，不编造；标 `PARTIAL`                                               |
+| 直接 source/target | task-source `source`/`target`/`loadMode`/`hivePartition` | Horae `syncInfo` + schedule-detail `targetTable`/`insertMode`/`hivePartition`                                  | 保留原始字符串或省略；不用类型猜表名                                         |
+| 表候选             | 直接端点 + SQL `FROM`/`JOIN` + 终端 INSERT/CTAS          | 同样的抽取函数，输入换成缓存 SQL                                                                               | 无候选则 Task 仍可写，Table 为 0                                             |
+| Table 元数据+DDL   | `szdata table-search` + `table` + `table-ddl`            | ① 已有 `tables/` ② `原信息` jsonl 按表名拼接（Hive 可只靠 DDL） ③ Hive 无 DDL 时才用任务 CREATE ④ 否则 PARTIAL | **不**现场打 table-ddl                                                       |
+| 任务关系兜底       | `szdata table --view full` 的 `taskIds`                  | **无等价缓存**。只用 SQL 精确写目标 + 已有 Table Pack                                                          | 不根据任务名猜表                                                             |
+| 落盘               | `materializeTaskAndTablePacks`                           | 原样复用                                                                                                       | 原子替换；hash 不变不重写                                                    |
 
 ---
 
@@ -154,16 +154,16 @@ Horae `querySql` 覆盖几乎全集。关键在 `syncInfo`，不是 task-source�
 
 以 `62190` mysql2hive 为例，缓存已有现网 Pack 的全部直接字段：
 
-| Task Pack 字段 | 缓存位置 |
-|---|---|
-| `taskCategory` | `horae.taskType=mysql2hive` |
-| `taskType` | schedule-detail `19` 或字典反查 |
-| `taskName` | schedule-detail.taskName / Horae.name |
-| `topicName` | Horae.topic / schedule-detail.topicName |
-| `source` | Horae.source / `syncInfo.sourceServer`（数据源标签，不是表） |
-| `target.qualifiedName` | `syncInfo.targetTable` 或 `hiveDb.hiveTable` |
-| `partition` / `hivePartition` | `syncInfo.hivePartition` |
-| `sql.query` | Horae.querySql / `syncInfo.querySql` |
+| Task Pack 字段                | 缓存位置                                                     |
+| ----------------------------- | ------------------------------------------------------------ |
+| `taskCategory`                | `horae.taskType=mysql2hive`                                  |
+| `taskType`                    | schedule-detail `19` 或字典反查                              |
+| `taskName`                    | schedule-detail.taskName / Horae.name                        |
+| `topicName`                   | Horae.topic / schedule-detail.topicName                      |
+| `source`                      | Horae.source / `syncInfo.sourceServer`（数据源标签，不是表） |
+| `target.qualifiedName`        | `syncInfo.targetTable` 或 `hiveDb.hiveTable`                 |
+| `partition` / `hivePartition` | `syncInfo.hivePartition`                                     |
+| `sql.query`                   | Horae.querySql / `syncInfo.querySql`                         |
 
 `source` 保持数据源标签，不把它当成物理表。物理读表只从 SQL `FROM`/`JOIN`
 发现，再用 §4 解析。这与现网 “受控库到 Hive 任务的 source 不是表” 一致。
@@ -174,14 +174,14 @@ Horae **通常没有 querySql**。身份和端点在 `syncInfo` + schedule-detai
 
 以 `180065` hive2oracle 对照：
 
-| 现网 Pack | 缓存能否复原 |
-|---|---|
-| source `dm_otc_n.trd_sso_exch_scr_mtch_day` | 能。`syncInfo.hiveDb` + `hiveTable` |
+| 现网 Pack                                        | 缓存能否复原                                                   |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| source `dm_otc_n.trd_sso_exch_scr_mtch_day`      | 能。`syncInfo.hiveDb` + `hiveTable`                            |
 | target `TITANS_TRADEFLOW.TRANS_SMT_ATP_T_REPORT` | 能。`syncInfo.targetTable` 与 schedule-detail.targetTable 一致 |
-| writeMode `append` | 能。`syncInfo.loadMode` / schedule-detail.insertMode |
-| hivePartition | 能。`syncInfo.hivePartition` |
-| `sql.truncate` | 能。schedule-detail.truncateSql |
-| `sql.query`（sql-mcp 抽数 SQL） | **不能。** 缓存没有这条 SELECT |
+| writeMode `append`                               | 能。`syncInfo.loadMode` / schedule-detail.insertMode           |
+| hivePartition                                    | 能。`syncInfo.hivePartition`                                   |
+| `sql.truncate`                                   | 能。schedule-detail.truncateSql                                |
+| `sql.query`（sql-mcp 抽数 SQL）                  | **不能。** 缓存没有这条 SELECT                                 |
 
 因此 `hive2*` 的缓存路径：
 
@@ -208,12 +208,12 @@ sqlite / `_partial*` 是还原中间件，接入层不读。
 
 ### 4.1 四份正式目录
 
-| 角色 | 路径 | 行数 | 报告 | 主键 | 给 Table Pack 什么 |
-|---|---|---|---|---|---|
-| Hive 身份 | `hive元信息-20260831快照/hive_table_restored.jsonl` | 211922，全部 `datasource=gfhive`；ACTIVE 150098 / DELETED 61824 | 无完整 report | 查询键 `lower(db.table)`；guid 可选 | `qualifiedName` / `dataSource=gfhive` / `status` / `objectType=hive_table`；有 guid 才写 |
-| Hive DDL | `20260830211426ddl/hive_table_ddl_restored.jsonl` | 142409 | SUCCESS | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘 |
-| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl` | 1223553 | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource` | 拆 `@` 后的 qn+ds / `primarykeys` / `comment`；guid 可选 |
-| RDBMS DDL | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl` | 1202531 | INCOMPLETE，缺 92 | 查询键同上 | `ddl` → `ddl.sql`（禁止 strip） |
+| 角色       | 路径                                                | 行数                                                            | 报告               | 主键                                          | 给 Table Pack 什么                                                                       |
+| ---------- | --------------------------------------------------- | --------------------------------------------------------------- | ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Hive 身份  | `hive元信息-20260831快照/hive_table_restored.jsonl` | 211922，全部 `datasource=gfhive`；ACTIVE 150098 / DELETED 61824 | 无完整 report      | 查询键 `lower(db.table)`；guid 可选           | `qualifiedName` / `dataSource=gfhive` / `status` / `objectType=hive_table`；有 guid 才写 |
+| Hive DDL   | `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 142409                                                          | SUCCESS            | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘                                                      |
+| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 1223553                                                         | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource`                  | 拆 `@` 后的 qn+ds / `primarykeys` / `comment`；guid 可选                                 |
+| RDBMS DDL  | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 1202531                                                         | INCOMPLETE，缺 92  | 查询键同上                                    | `ddl` → `ddl.sql`（禁止 strip）                                                          |
 
 Hive 现网 collector 已经在读第一份（`DEFAULT_HIVE_METADATA_SNAPSHOT_PATH`），
 但只当“表存在”门闩，**还没接 DDL jsonl**。`180065` 的 Oracle 目标
@@ -223,16 +223,16 @@ DDL 里都有，guid 与已落 `table.json` 的 `5a571b33-…` 一致。
 `type_name` 在 RDBMS 里全是 `gf_rdbms_table`。现网 `tablePlatform()` 会丢掉
 `gf_rdbms`，平台必须从 **dataSource 前缀** 映射，不能从 `type_name` 猜：
 
-| dataSource 前缀 | platform |
-|---|---|
-| `gforacle_` | `oracle` |
-| `gfmysql_` | `mysql` |
-| `gfpostgre_` / `gfpg_` | `postgre` |
-| `gfstarrocks_` | `starrocks` |
-| 含 `oceanbase` | `oceanbase` |
-| 含 `tidb` | `tidb` |
-| `gfgoldendb_` | `goldendb` |
-| `gfsqlserver_` | `sqlserver` |
+| dataSource 前缀        | platform    |
+| ---------------------- | ----------- |
+| `gforacle_`            | `oracle`    |
+| `gfmysql_`             | `mysql`     |
+| `gfpostgre_` / `gfpg_` | `postgre`   |
+| `gfstarrocks_`         | `starrocks` |
+| 含 `oceanbase`         | `oceanbase` |
+| 含 `tidb`              | `tidb`      |
+| `gfgoldendb_`          | `goldendb`  |
+| `gfsqlserver_`         | `sqlserver` |
 
 对不上前缀 → 不写 Table。核心里还有少量 `gfclickhouse_*` / `gfdolphindb_*`，
 现 Writer 没有对应 platform token，保持缺口。
@@ -328,30 +328,30 @@ guid `0c376750-…`，**不在** Hive DDL jsonl。已有 Table Pack 走 ①；�
 ```
 
 批次：从缓存列 ID，不从调用方手写 1 万个 `--task-ids`。单批仍 ≤ 1000，
-或按类型切片（先 sparkIndex / *2hive / hiveTask / runScript / hive2*）。
+或按类型切片（先 sparkIndex / _2hive / hiveTask / runScript / hive2_）。
 
 ---
 
 ## 6. 字段映射（TaskEvidence）
 
-| TaskEvidence | 取值顺序（有值即停） |
-|---|---|
-| `taskId` | 目录名，必须等于两个 detail 的 id |
-| `taskCategory` | Horae.taskType → 字典名；否则 schedule-detail.taskType 码映射 |
-| `taskType` | schedule-detail.taskType（数字码）否则 Horae 名称 |
-| `taskName` | schedule-detail.taskName → Horae.name |
-| `topicName` | schedule-detail.topicName → Horae.topic |
-| `scheduleCycle` | Horae.cycle → schedule-detail.cycle |
-| `scheduleStatus` | schedule-detail.status → Horae.status |
-| `source` | 直接对象优先；否则 Horae.source / syncInfo.sourceServer；`*2hive` 保持标签 |
-| `target` | schedule-detail.targetTable → syncInfo.targetTable → hiveDb.hiveTable |
-| `writeMode` | schedule-detail.insertMode → syncInfo.loadMode |
-| `schedulerEvidence.hivePartition` | syncInfo.hivePartition → Horae.hivePartition |
-| `sql.create` | hive-task.createSql → schedule-detail.createSql → Horae.createSql |
-| `sql.query` | 类型主源（§3）→ schedule-detail.querySql → Horae.querySql |
-| `sql.prepare/truncate/finish` | schedule-detail 对应槽 → Horae 对应槽 |
-| `partition` | 现有 `buildCompactTaskPartition`，输入换成上面这些证据 |
-| `targetEvidenceKind` | 有直接 target 文本 → `DIRECT_PLATFORM_TARGET`；仅 SQL 写目标 → `SQL_EXACT_TABLE_TARGET`；**不再**标 `TABLE_TASK_RELATION_DIRECTION_UNKNOWN`（缓存没有任务关系） |
+| TaskEvidence                      | 取值顺序（有值即停）                                                                                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `taskId`                          | 目录名，必须等于两个 detail 的 id                                                                                                                               |
+| `taskCategory`                    | Horae.taskType → 字典名；否则 schedule-detail.taskType 码映射                                                                                                   |
+| `taskType`                        | schedule-detail.taskType（数字码）否则 Horae 名称                                                                                                               |
+| `taskName`                        | schedule-detail.taskName → Horae.name                                                                                                                           |
+| `topicName`                       | schedule-detail.topicName → Horae.topic                                                                                                                         |
+| `scheduleCycle`                   | Horae.cycle → schedule-detail.cycle                                                                                                                             |
+| `scheduleStatus`                  | schedule-detail.status → Horae.status                                                                                                                           |
+| `source`                          | 直接对象优先；否则 Horae.source / syncInfo.sourceServer；`*2hive` 保持标签                                                                                      |
+| `target`                          | schedule-detail.targetTable → syncInfo.targetTable → hiveDb.hiveTable                                                                                           |
+| `writeMode`                       | schedule-detail.insertMode → syncInfo.loadMode                                                                                                                  |
+| `schedulerEvidence.hivePartition` | syncInfo.hivePartition → Horae.hivePartition                                                                                                                    |
+| `sql.create`                      | hive-task.createSql → schedule-detail.createSql → Horae.createSql                                                                                               |
+| `sql.query`                       | 类型主源（§3）→ schedule-detail.querySql → Horae.querySql                                                                                                       |
+| `sql.prepare/truncate/finish`     | schedule-detail 对应槽 → Horae 对应槽                                                                                                                           |
+| `partition`                       | 现有 `buildCompactTaskPartition`，输入换成上面这些证据                                                                                                          |
+| `targetEvidenceKind`              | 有直接 target 文本 → `DIRECT_PLATFORM_TARGET`；仅 SQL 写目标 → `SQL_EXACT_TABLE_TARGET`；**不再**标 `TABLE_TASK_RELATION_DIRECTION_UNKNOWN`（缓存没有任务关系） |
 
 空串、`-`、缺槽：省略，不写 `null`（与现 Writer 一致）。
 

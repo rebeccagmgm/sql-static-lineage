@@ -45,14 +45,14 @@ P0 已在 `target-table-upstream-causal-closure` 把 `FIELD_VALUE` / `ROW_MEMBER
 | JOIN / FILTER / GROUP BY / SORT / WINDOW | `DATASET_CONTROL` + 对应 INDIRECT subtype |
 | 拉链 IS NOT NULL CASE | 仍不是 `FIELD_CONDITIONAL`；行决定留在闭包 `ROW_MEMBERSHIP` |
 
-`grain`：`GROUP BY`/`DISTINCT` → `REDUCE`；能证明多对一或一对一 JOIN → `PRESERVE`；否则 `EXPAND_RISK`/`UNKNOWN`。第一版宁缺毋滥，不把 LEFT 可空侧标成 `PRESERVE`。
+`grain`：`GROUP BY`/`DISTINCT`/`FILTER`/`EXCEPT`/`INTERSECT` → `REDUCE`；能证明多对一或一对一 JOIN → `PRESERVE`；证不出基数的 JOIN（含 INNER）→ `EXPAND_RISK`。第一版不做唯一键证明，因此 JOIN 不会发 `PRESERVE`，也不把 INNER 落成 `UNKNOWN`。`grain !== "PRESERVE"` 时必须另写 `grainReason`（大写下划线常量，按分支一一对应），不得复用证据解析失败的 `reasonCode`，也不得把 `UNKNOWN` 当无原因兜底。`WINDOW` 仍是 `UNKNOWN`。
 
 现有 `controlType` 对词典的落点（借鉴 OpenLineage Spark 生产者与 ScopeLineage，不自造 `SETOP`）：
 
 | 现有 | subtype | grain | 依据 |
 | --- | --- | --- | --- |
-| `join` | `JOIN` | 按 JOIN 规则 | OpenLineage INDIRECT |
-| `filter` | `FILTER` | 不标 `PRESERVE` | OpenLineage INDIRECT |
+| `join` | `JOIN` | `EXPAND_RISK`（第一版证不出 `PRESERVE`） | OpenLineage INDIRECT；可空侧与 INNER 用 `grainReason` 区分，不把 INNER 落成 `UNKNOWN` |
+| `filter` | `FILTER` | `REDUCE` | OpenLineage INDIRECT；过滤只会丢行不会增行，与 `EXCEPT`/`INTERSECT` 同档 |
 | `aggregate` | `GROUP_BY` | `REDUCE` | OpenLineage INDIRECT；值聚合仍走 `FIELD_DIRECT`/`AGGREGATION` |
 | `window` | `WINDOW` | `UNKNOWN` | OpenLineage INDIRECT |
 | `distinct` | `GROUP_BY` | `REDUCE` | OpenLineage Spark 把 `Distinct` 收成 `GROUP_BY`（issue 3084） |
@@ -69,6 +69,20 @@ P0 已在 `target-table-upstream-causal-closure` 把 `FIELD_VALUE` / `ROW_MEMBER
 回归不得回退：`112715 → 114026 → 155015` 与 `71698 → 105387 → 155015`。新增：`internal_trade_id` 的 `FIELD_DIRECT` 不含四张拉链 ref；四张表在 105387 目标写入上以 `DATASET_CONTROL / JOIN` 出现并带 `grain`。体积：209119 `< 3 MB`、176827 `< 2 MB`，`nodes`/`edges` 不降。
 
 测试入口：`npm run test:field-lineage`。不把因果闭包 176827 档位测试改成本 change 的完成条件。
+
+本 worktree 用现有 Input Pack / Facts、`--no-prepare-facts`，并对齐旧产物的 `maxDepth` / `maxStates` / `maxPaths` 重跑后的实测：
+
+| 任务 | 控制条数 | distinct relationId | 控制/relation | nodes | edges | 文件 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 155015 | 78 → 38 | 25 → 21 | 3.12 → 1.81 | 91 → 91 | 77 → 77 | 272,006 → 199,366 B |
+| 176827 | 4,376 → 502 | 202 → 210 | 21.7 → 2.39 | 538 → 538 | 441 → 441 | 10,828,563 → 1,440,236 B（1.37 MB < 2 MB） |
+| 209119 | 11,783 → 711 | 219 → 339 | 53.8 → 2.10 | 951 → 1,048 | 814 → 911 | 23,290,979 → 2,822,962 B（2.69 MB < 3 MB） |
+
+209119 的 `relationId` 从 219 增到 339，不是笛卡尔积回潮。收集点从「每个输出字段的 relation 祖先集」改成「每个 statement 整句」后，原先没落进某字段祖先路径的 JOIN/FILTER 也会被收进来。这是收集范围变化。
+
+排除「还在按字段复制」的证据：711 / 339 ≈ 2.10，接近每 relation 的控制字段数；若仍按 137 个输出字段复制，量级会接近 137 × 339 ≈ 46,443，而不是 711。旧形态 11,783 / 219 = 53.8 才是逐字段复制。nodes / edges 增加 97 条，全部是已可达任务上多出来的 VALUE_FLOW 绑定（0 条旧节点被删），规格禁止减少、允许增加。
+
+`grain` 不是 `PRESERVE` 时必须带独立的 `grainReason`（不复用证据解析失败用的 `reasonCode`）。209119 的 711 条全部有原因码，实测分布：`FILTER`/`REDUCE` 354、`JOIN`/`EXPAND_RISK` 334、`GROUP_BY`/`REDUCE` 23。JOIN 不再出现 `UNKNOWN`（334 = 原先 287 条可空侧 + 47 条 INNER）；`WINDOW` 才允许 `UNKNOWN`，这三个任务里没有窗口控制。
 
 ### 5. HTML / 摘要分列，不合并「影响表数」
 

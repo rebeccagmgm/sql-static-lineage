@@ -18,7 +18,7 @@
     }
   },
   "artifact": {
-    "schemaVersion": "1.1.0",
+    "schemaVersion": "1.2.0",
     "artifactType": "FIELD_MULTI_HOP_RECONCILIATION",
     "request": {
       "rootTaskId": "120",
@@ -282,48 +282,24 @@
         ]
       }
     ],
-    "rowsetControls": [
+    "datasetControls": [
       {
-        "controlId": "rowset-control:field-node:120:hive|warehouse|demo.root__warehouse|demo.root|left_amount:output-binding:120:task:120:slot:query:statement:0:0:task:120:statement:0:relation:root.join.1",
+        "controlId": "dataset-control:120:task:120:statement:0:relation:root.join.1:hive|warehouse|demo.same__warehouse|demo.same|id",
         "taskId": "120",
-        "nodeId": "field-node:120:hive|warehouse|demo.root__warehouse|demo.root|left_amount:output-binding:120:task:120:slot:query:statement:0:0",
         "statementId": "task:120:slot:query:statement:0",
         "relationId": "task:120:statement:0:relation:root.join.1",
-        "controlType": "join",
-        "fields": [
-          {
-            "platform": "hive",
-            "dataSource": "warehouse",
-            "stableTableId": "demo.same__warehouse",
-            "qualifiedName": "demo.same",
-            "column": "id",
-            "identityStatus": "SCHEMA_BACKED"
-          }
-        ],
-        "sourceText": "JOIN demo.same r ON l.id = r.id",
-        "evidenceStatus": "CONFIRMED",
-        "reasonCode": null,
-        "evidenceRefs": [
-          "machine-facts:registry/tasks/120/bundle/relation-nodes.jsonl"
-        ]
-      },
-      {
-        "controlId": "rowset-control:field-node:120:hive|warehouse|demo.root__warehouse|demo.root|right_amount:output-binding:120:task:120:slot:query:statement:0:1:task:120:statement:0:relation:root.join.1",
-        "taskId": "120",
-        "nodeId": "field-node:120:hive|warehouse|demo.root__warehouse|demo.root|right_amount:output-binding:120:task:120:slot:query:statement:0:1",
-        "statementId": "task:120:slot:query:statement:0",
-        "relationId": "task:120:statement:0:relation:root.join.1",
-        "controlType": "join",
-        "fields": [
-          {
-            "platform": "hive",
-            "dataSource": "warehouse",
-            "stableTableId": "demo.same__warehouse",
-            "qualifiedName": "demo.same",
-            "column": "id",
-            "identityStatus": "SCHEMA_BACKED"
-          }
-        ],
+        "subtype": "JOIN",
+        "masking": false,
+        "grain": "EXPAND_RISK",
+        "grainReason": "GRAIN_JOIN_CARDINALITY_UNPROVEN",
+        "field": {
+          "platform": "hive",
+          "dataSource": "warehouse",
+          "stableTableId": "demo.same__warehouse",
+          "qualifiedName": "demo.same",
+          "column": "id",
+          "identityStatus": "SCHEMA_BACKED"
+        },
         "sourceText": "JOIN demo.same r ON l.id = r.id",
         "evidenceStatus": "CONFIRMED",
         "reasonCode": null,
@@ -332,6 +308,7 @@
         ]
       }
     ],
+    "fieldConditionals": [],
     "candidates": [],
     "gaps": [],
     "tableEdges": [
@@ -362,10 +339,11 @@
     "counts": {
       "nodes": 8,
       "edges": 6,
-      "rowsetControls": 2,
+      "datasetControls": 1,
+      "fieldConditionals": 0,
       "candidates": 0,
       "gaps": 0
     },
-    "contentHash": "8df08c37e8e38bea660e2d57e448ee7d8373497d8fd8db13bc35250eb1181cc8"
+    "contentHash": "3810dfdcc4773f80ae3073c56b6ffdc0ff65f241ea560b050a989bba48768749"
   }
 }

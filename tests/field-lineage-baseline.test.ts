@@ -28,8 +28,8 @@ function roots(name: string): { readonly dataRoot: string; readonly factsRoot: s
   return { dataRoot: join(parent, "data"), factsRoot: join(parent, "facts") };
 }
 
-describe("field-lineage 1.1 baseline", () => {
-  it("freezes current VALUE_FLOW and ROWSET_CONTROL behavior", () => {
+describe("field-lineage 1.2 baseline", () => {
+  it("freezes current VALUE_FLOW and DATASET_CONTROL behavior", () => {
     const fixture = roots("value-rowset");
     createValueAndRowsetFixture(fixture.dataRoot);
     runInputPackMachineFacts({
@@ -62,7 +62,21 @@ describe("field-lineage 1.1 baseline", () => {
       ),
     ).toBe(true);
     expect(
-      artifact.rowsetControls.some((control) => control.controlType === "filter"),
+      artifact.datasetControls.some((control) => control.subtype === "FILTER"),
+    ).toBe(true);
+    expect(
+      artifact.datasetControls.every(
+        (control) =>
+          control.grain === "PRESERVE" ||
+          (typeof control.grainReason === "string" && control.grainReason.length > 0),
+      ),
+    ).toBe(true);
+    expect(
+      artifact.datasetControls.some(
+        (control) =>
+          control.subtype === "FILTER" &&
+          control.grainReason === "GRAIN_FILTER_MAY_DROP_ROWS",
+      ),
     ).toBe(true);
     expect(
       artifact.gaps.some(
@@ -71,7 +85,8 @@ describe("field-lineage 1.1 baseline", () => {
       ),
     ).toBe(true);
     expect(artifact.gaps.some((gap) => gap.reasonCode === "CYCLE")).toBe(true);
-    expect(formatFieldLineageSummary(artifact)).toContain("ROWSET_CONTROL");
+    expect(formatFieldLineageSummary(artifact)).toContain("DATASET_CONTROL");
+    expect(formatFieldLineageSummary(artifact)).not.toContain("ROWSET_CONTROL");
   });
 
   it("freezes Task default-Hive-schema resolution for value and rowset inputs", () => {
@@ -119,10 +134,10 @@ describe("field-lineage 1.1 baseline", () => {
       ),
     ).toBe(true);
     expect(
-      artifact.rowsetControls.some(
+      artifact.datasetControls.some(
         (control) =>
-          control.controlType === "filter" &&
-          control.fields.length === 0 &&
+          control.subtype === "FILTER" &&
+          control.field === null &&
           control.reasonCode === "ROWSET_FIELD_IDENTITY_UNRESOLVED",
       ),
     ).toBe(true);
@@ -228,6 +243,20 @@ describe("field-lineage 1.1 baseline", () => {
     expect(producerIdsFor("left_amount")).not.toContain("122");
     expect(producerIdsFor("right_amount")).toContain("122");
     expect(producerIdsFor("right_amount")).not.toContain("121");
+    const joinReasons = new Set(
+      artifact.datasetControls
+        .filter((control) => control.subtype === "JOIN")
+        .map((control) => control.grainReason),
+    );
+    expect(joinReasons.has("GRAIN_JOIN_CARDINALITY_UNPROVEN")).toBe(true);
+    expect(joinReasons.has("GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND")).toBe(false);
+    expect(
+      artifact.datasetControls.every(
+        (control) =>
+          control.grain === "PRESERVE" ||
+          (typeof control.grainReason === "string" && control.grainReason.length > 0),
+      ),
+    ).toBe(true);
     expect(
       artifact.gaps.some(
         (gap) => gap.reasonCode === "READ_OCCURRENCE_FIELD_BINDING_UNKNOWN",

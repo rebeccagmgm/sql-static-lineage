@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1.0",
+  "schemaVersion": "1.2.0",
   "artifactType": "FIELD_MULTI_HOP_RECONCILIATION",
   "request": {
     "rootTaskId": "100",
@@ -210,24 +210,24 @@
       ]
     }
   ],
-  "rowsetControls": [
+  "datasetControls": [
     {
-      "controlId": "rowset-control:field-node:100:hive|warehouse|demo.root__warehouse|demo.root|out_a:output-binding:100:task:100:slot:query:statement:0:0:task:100:statement:0:relation:root.filter",
+      "controlId": "dataset-control:100:task:100:statement:0:relation:root.filter:hive|warehouse|demo.mid__warehouse|demo.mid|filter_key",
       "taskId": "100",
-      "nodeId": "field-node:100:hive|warehouse|demo.root__warehouse|demo.root|out_a:output-binding:100:task:100:slot:query:statement:0:0",
       "statementId": "task:100:slot:query:statement:0",
       "relationId": "task:100:statement:0:relation:root.filter",
-      "controlType": "filter",
-      "fields": [
-        {
-          "platform": "hive",
-          "dataSource": "warehouse",
-          "stableTableId": "demo.mid__warehouse",
-          "qualifiedName": "demo.mid",
-          "column": "filter_key",
-          "identityStatus": "SCHEMA_BACKED"
-        }
-      ],
+      "subtype": "FILTER",
+      "masking": false,
+      "grain": "REDUCE",
+      "grainReason": "GRAIN_FILTER_MAY_DROP_ROWS",
+      "field": {
+        "platform": "hive",
+        "dataSource": "warehouse",
+        "stableTableId": "demo.mid__warehouse",
+        "qualifiedName": "demo.mid",
+        "column": "filter_key",
+        "identityStatus": "SCHEMA_BACKED"
+      },
       "sourceText": "m.filter_key <> 'X'",
       "evidenceStatus": "PROVISIONAL_LEGACY",
       "reasonCode": null,
@@ -236,6 +236,7 @@
       ]
     }
   ],
+  "fieldConditionals": [],
   "candidates": [
     {
       "candidateId": "candidate:200:400:hive|warehouse|demo.source__warehouse|demo.source|src_a",
@@ -362,9 +363,10 @@
   "counts": {
     "nodes": 6,
     "edges": 5,
-    "rowsetControls": 1,
+    "datasetControls": 1,
+    "fieldConditionals": 0,
     "candidates": 1,
     "gaps": 3
   },
-  "contentHash": "f98f6c296dca9131b7085f65b6db9127e1144d5103c40c4e6ff494a03d4f6ad0"
+  "contentHash": "24f89317d62631c8b088b457b26c70ea740fca224ea15ade0b880b9ad6933f2b"
 }

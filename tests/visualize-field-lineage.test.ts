@@ -48,7 +48,7 @@ function artifact(): FieldLineageArtifact {
   ];
 
   return {
-    schemaVersion: "1.1.0",
+    schemaVersion: "1.2.0",
     artifactType: "FIELD_MULTI_HOP_RECONCILIATION",
     generatedAt: "2026-08-27T00:00:00.000Z",
     request: {
@@ -86,7 +86,8 @@ function artifact(): FieldLineageArtifact {
         evidenceRefs: [],
       },
     ],
-    rowsetControls: [],
+    datasetControls: [],
+    fieldConditionals: [],
     candidates: [],
     gaps: [],
     tableEdges: [],
@@ -100,7 +101,8 @@ function artifact(): FieldLineageArtifact {
     counts: {
       nodes: nodes.length,
       edges: 2,
-      rowsetControls: 0,
+      datasetControls: 0,
+      fieldConditionals: 0,
       candidates: 0,
       gaps: 0,
     },
@@ -154,7 +156,9 @@ describe("field lineage visualization", () => {
     expect(html).toContain("调度影响范围");
     expect(html).toContain("链路总览");
     expect(html).not.toContain("相关 ROWSET_CONTROL");
-    expect(html).toContain('"rowsetControls":[]');
+    expect(html).toContain("DATASET_CONTROL");
+    expect(html).toContain('"datasetControls":[]');
+    expect(html).not.toContain("影响表数");
     expect(html).toContain("const IMPACT=");
     expect(html).toContain('class="impact-card-name" title="');
     const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1];

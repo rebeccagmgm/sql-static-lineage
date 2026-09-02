@@ -38,9 +38,12 @@ import {
   type FieldLineageNode,
   type FieldLineageTableEdge,
   type FieldProducerCandidate,
+  type DatasetControlAnnotation,
+  type FieldConditionalAnnotation,
   type PhysicalTableIdentity,
   type PhysicalFieldIdentity,
-  type RowsetControlAnnotation,
+  type DatasetControlGrain,
+  type OpenLineageIndirectSubtype,
 } from "./field-lineage-contract.ts";
 import {
 	physicalFieldForTable,
@@ -652,38 +655,193 @@ function collectPhysicalPairs(
   return output;
 }
 
-function rowsetControlsFor(
-	load: CurrentBundleLoad,
-	node: FieldLineageNode,
-	expression: JsonRecord,
-	catalog: PhysicalTableCatalog,
-	defaultSchema: TaskDefaultSchema | null,
-	status: "CONFIRMED" | "PROVISIONAL_LEGACY",
-	indexes: BundleIndexes = bundleIndexesFor(load),
-): RowsetControlAnnotation[] {
-	const ancestry = new Set<string>();
-	const frontier = [String(expression.relation_id ?? "")].filter(Boolean);
-	while (frontier.length > 0) {
-		const current = frontier.shift()!;
-		if (ancestry.has(current)) continue;
-		ancestry.add(current);
-		frontier.push(...(indexes.incomingRelations.get(current) ?? []));
-	}
-	const statementId = String(expression.statement_id ?? "");
-	const allControls = indexes.controlsByStatement.get(statementId) ?? [];
-  const output: RowsetControlAnnotation[] = [];
-  for (const relation of allControls.filter((item) =>
-    ancestry.has(String(item.relation_id)),
-  )) {
+function relationBody(relation: JsonRecord): JsonRecord {
+  return asRecord(relation.relation) ?? relation;
+}
+
+function joinGrain(joinType: string): {
+  grain: DatasetControlGrain;
+  grainReason: NonNullable<DatasetControlAnnotation["grainReason"]>;
+} {
+  const kind = joinType.toUpperCase();
+  if (
+    kind.includes("LEFT") ||
+    kind.includes("RIGHT") ||
+    kind.includes("FULL") ||
+    kind.includes("CROSS")
+  )
+    return {
+      grain: "EXPAND_RISK",
+      grainReason: "GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND",
+    };
+  return {
+    grain: "EXPAND_RISK",
+    grainReason: "GRAIN_JOIN_CARDINALITY_UNPROVEN",
+  };
+}
+
+function datasetControlMapping(
+  relation: JsonRecord,
+): {
+  subtype: OpenLineageIndirectSubtype;
+  grain: DatasetControlGrain;
+  grainReason: NonNullable<DatasetControlAnnotation["grainReason"]>;
+} | null {
+  const type = String(relation.relation_type ?? "").toLowerCase();
+  const body = relationBody(relation);
+  switch (type) {
+    case "join":
+      return { subtype: "JOIN", ...joinGrain(String(body.join_type ?? "")) };
+    case "filter":
+      return {
+        subtype: "FILTER",
+        grain: "REDUCE",
+        grainReason: "GRAIN_FILTER_MAY_DROP_ROWS",
+      };
+    case "aggregate":
+      return {
+        subtype: "GROUP_BY",
+        grain: "REDUCE",
+        grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
+      };
+    case "window":
+      return {
+        subtype: "WINDOW",
+        grain: "UNKNOWN",
+        grainReason: "GRAIN_WINDOW_CARDINALITY_UNPROVEN",
+      };
+    case "distinct":
+      return {
+        subtype: "GROUP_BY",
+        grain: "REDUCE",
+        grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
+      };
+    case "setop": {
+      const op = String(body.setop ?? "").toUpperCase();
+      const all = body.all === true;
+      if (op === "UNION" && all) return null;
+      if (op === "UNION")
+        return {
+          subtype: "GROUP_BY",
+          grain: "REDUCE",
+          grainReason: "GRAIN_GROUPING_REDUCES_ROWS",
+        };
+      if (op === "EXCEPT" || op === "INTERSECT")
+        return {
+          subtype: "FILTER",
+          grain: "REDUCE",
+          grainReason: "GRAIN_SETOP_REDUCES_ROWS",
+        };
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+function isZipperExistenceCase(text: string | null): boolean {
+  return text !== null && /\bIS\s+NOT\s+NULL\b/i.test(text);
+}
+
+function branchSelectionInputFields(
+  value: unknown,
+  outputName: string,
+): JsonRecord[] | null {
+  const normalizedOutput = normalizeName(outputName);
+  if (!normalizedOutput) return null;
+  const matches: JsonRecord[] = [];
+  const visit = (candidate: unknown): void => {
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) visit(item);
+      return;
+    }
+    const record = asRecord(candidate);
+    if (!record) return;
+    const candidateOutput = normalizeName(
+      String(record.output ?? record.output_name ?? ""),
+    );
+    if (
+      candidateOutput === normalizedOutput &&
+      Array.isArray(record.expression_roles) &&
+      record.expression_roles.length > 0
+    )
+      matches.push(record);
+    for (const key of ["expressions", "measures"]) visit(record[key]);
+  };
+  visit(value);
+  if (matches.length === 0) return null;
+  if (
+    matches.some((match) =>
+      isZipperExistenceCase(
+        nonEmpty(match.expr_text) ??
+          nonEmpty(match.expression_text) ??
+          nonEmpty(match.display_text),
+      ),
+    )
+  )
+    return [];
+
+  const fields = new Map<string, JsonRecord>();
+  for (const match of matches) {
+    const roles = Array.isArray(match.expression_roles)
+      ? match.expression_roles
+      : [];
+    for (const rawRole of roles) {
+      const role = asRecord(rawRole);
+      const effects = Array.isArray(role?.effects)
+        ? role.effects.map((effect) => normalizeName(String(effect)))
+        : [];
+      if (
+        !effects.includes("branch_selection") ||
+        effects.includes("value_contribution")
+      )
+        continue;
+      const inputColumns = Array.isArray(role?.input_columns)
+        ? role.input_columns
+        : [];
+      for (const rawInput of inputColumns) {
+        const input = asRecord(rawInput);
+        const physical = Array.isArray(input?.physical) ? input.physical : [];
+        for (const rawField of physical) {
+          const field = asRecord(rawField);
+          const table = normalizeName(String(field?.table ?? ""));
+          const column = normalizeName(String(field?.column ?? ""));
+          if (!table || !column) continue;
+          fields.set(`${table}.${column}`, { table, column });
+        }
+      }
+    }
+  }
+  return [...fields.values()].sort((left, right) =>
+    compareText(`${left.table}.${left.column}`, `${right.table}.${right.column}`),
+  );
+}
+
+function datasetControlsForStatement(
+  load: CurrentBundleLoad,
+  taskId: string,
+  statementId: string,
+  catalog: PhysicalTableCatalog,
+  defaultSchema: TaskDefaultSchema | null,
+  fallbackTable: Pick<PhysicalTableCatalogEntry, "platform" | "dataSource">,
+  status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+  indexes: BundleIndexes = bundleIndexesFor(load),
+): DatasetControlAnnotation[] {
+  const allControls = indexes.controlsByStatement.get(statementId) ?? [];
+  const output: DatasetControlAnnotation[] = [];
+  for (const relation of allControls) {
+    const mapping = datasetControlMapping(relation);
+    if (!mapping) continue;
+    const relationId = nonEmpty(relation.relation_id);
     const fields = new Map<string, PhysicalFieldIdentity>();
     let unresolved = false;
     for (const pair of collectPhysicalPairs(relation.relation)) {
       const resolution = resolvePhysicalInputField(
         {
           catalog,
-          taskId: node.taskId,
+          taskId,
           defaultSchema,
-          fallbackTable: node.field,
+          fallbackTable,
           schemaRefs: load.records["schema-refs.jsonl"] ?? [],
         },
         pair,
@@ -692,47 +850,105 @@ function rowsetControlsFor(
         fields.set(physicalFieldKey(resolution.field), resolution.field);
       else unresolved = true;
     }
-    output.push({
-      controlId: `rowset-control:${node.nodeId}:${String(relation.relation_id)}`,
-      taskId: node.taskId,
-      nodeId: node.nodeId,
-      statementId,
-      relationId: String(relation.relation_id),
-      controlType: String(
-        relation.relation_type,
-      ).toLowerCase() as RowsetControlAnnotation["controlType"],
-      fields: [...fields.values()],
-      sourceText: nonEmpty(relation.source_text),
-      evidenceStatus: unresolved ? "UNRESOLVED" : status,
-      reasonCode: unresolved ? "ROWSET_FIELD_IDENTITY_UNRESOLVED" : null,
-      evidenceRefs: [
-        load.evidence["relation-nodes.jsonl"] ??
-          "machine-facts:relation-nodes.jsonl",
-      ],
-    });
-  }
-  if (
-    status === "PROVISIONAL_LEGACY" &&
-    allControls.some((item) => !ancestry.has(String(item.relation_id)))
-  ) {
-    output.push({
-      controlId: `rowset-control:${node.nodeId}:scope-unresolved`,
-      taskId: node.taskId,
-      nodeId: node.nodeId,
-      statementId,
-      relationId: null,
-      controlType: "filter",
-      fields: [],
-      sourceText: null,
-      evidenceStatus: "UNRESOLVED",
-      reasonCode: "ROWSET_SCOPE_UNRESOLVED",
-      evidenceRefs: [
-        load.evidence["relation-edges.jsonl"] ??
-          "machine-facts:relation-edges.jsonl",
-      ],
-    });
+    const evidenceRefs = [
+      load.evidence["relation-nodes.jsonl"] ?? "machine-facts:relation-nodes.jsonl",
+    ];
+    const sourceText = nonEmpty(relation.source_text);
+    const pushControl = (
+      field: PhysicalFieldIdentity | null,
+      evidenceStatus: DatasetControlAnnotation["evidenceStatus"],
+      reasonCode: string | null,
+    ): void => {
+      const fieldKey = field ? physicalFieldKey(field) : "unresolved";
+      output.push({
+        controlId: `dataset-control:${taskId}:${relationId ?? "unresolved"}:${fieldKey}`,
+        taskId,
+        statementId,
+        relationId,
+        subtype: mapping.subtype,
+        masking: false,
+        grain: mapping.grain,
+        grainReason: mapping.grain === "PRESERVE" ? null : mapping.grainReason,
+        field,
+        sourceText,
+        evidenceStatus,
+        reasonCode,
+        evidenceRefs,
+      });
+    };
+    if (fields.size === 0) {
+      pushControl(
+        null,
+        unresolved || !relationId ? "UNRESOLVED" : status,
+        unresolved
+          ? "ROWSET_FIELD_IDENTITY_UNRESOLVED"
+          : relationId
+            ? null
+            : "ROWSET_SCOPE_UNRESOLVED",
+      );
+      continue;
+    }
+    for (const field of fields.values()) pushControl(field, status, null);
+    if (unresolved)
+      pushControl(null, "UNRESOLVED", "ROWSET_FIELD_IDENTITY_UNRESOLVED");
   }
   return output;
+}
+
+function fieldConditionalsFor(
+  load: CurrentBundleLoad,
+  node: FieldLineageNode,
+  expression: JsonRecord,
+  catalog: PhysicalTableCatalog,
+  defaultSchema: TaskDefaultSchema | null,
+  fallbackTable: Pick<PhysicalTableCatalogEntry, "platform" | "dataSource">,
+  status: "CONFIRMED" | "PROVISIONAL_LEGACY",
+  indexes: BundleIndexes = bundleIndexesFor(load),
+): FieldConditionalAnnotation[] {
+  if (isZipperExistenceCase(nonEmpty(expression.expression_text))) return [];
+  const relation = indexes.relations.get(String(expression.relation_id ?? ""));
+  const inputs = branchSelectionInputFields(
+    relation?.relation,
+    String(expression.output_name ?? expression.output ?? node.field.column),
+  );
+  if (!inputs || inputs.length === 0) return [];
+  const fields = new Map<string, PhysicalFieldIdentity>();
+  let unresolved = false;
+  for (const pair of inputs) {
+    const resolution = resolvePhysicalInputField(
+      {
+        catalog,
+        taskId: node.taskId,
+        defaultSchema,
+        fallbackTable,
+        schemaRefs: load.records["schema-refs.jsonl"] ?? [],
+      },
+      { table: String(pair.table), column: String(pair.column) },
+    );
+    if (resolution.status === "RESOLVED")
+      fields.set(physicalFieldKey(resolution.field), resolution.field);
+    else unresolved = true;
+  }
+  if (fields.size === 0 && !unresolved) return [];
+  return [
+    {
+      conditionalId: `field-conditional:${node.nodeId}`,
+      taskId: node.taskId,
+      nodeId: node.nodeId,
+      statementId: String(expression.statement_id ?? ""),
+      relationId: nonEmpty(expression.relation_id),
+      subtype: "CONDITIONAL",
+      masking: false,
+      fields: [...fields.values()],
+      sourceText: nonEmpty(expression.expression_text),
+      evidenceStatus: unresolved ? "UNRESOLVED" : status,
+      reasonCode: unresolved ? "FIELD_CONDITIONAL_IDENTITY_UNRESOLVED" : null,
+      evidenceRefs: [
+        load.evidence["field-expression-nodes.jsonl"] ??
+          "machine-facts:field-expression-nodes.jsonl",
+      ],
+    },
+  ];
 }
 
 function tableEdgesOf(
@@ -801,12 +1017,14 @@ export function reconcileFieldLineage(
 
   const nodes = new Map<string, FieldLineageNode>();
   const edges = new Map<string, FieldLineageEdge>();
-  const controls = new Map<string, RowsetControlAnnotation>();
+  const controls = new Map<string, DatasetControlAnnotation>();
+  const fieldConditionals = new Map<string, FieldConditionalAnnotation>();
 	const candidates = new Map<string, FieldProducerCandidate>();
 	const gaps = new Map<string, FieldLineageGap>();
 	const rootNodeIds: string[] = [];
 	const frontier: TraversalState[] = [];
 	const visited = new Set<string>();
+	const collectedStatements = new Set<string>();
 	const limitReasons = new Set<
 		"MAX_DEPTH_REACHED" | "MAX_STATES_REACHED" | "MAX_PATHS_REACHED"
 	>();
@@ -1133,15 +1351,35 @@ export function reconcileFieldLineage(
     nodes.set(currentNodeId, resolvedNode);
     if (current.depth === 0) startedRoots += 1;
     const taskDefaultSchema = inferTaskDefaultSchema(pack.document);
-    for (const control of rowsetControlsFor(
+    const fallbackTable = pack.target ?? {
+      platform: resolvedNode.field.platform,
+      dataSource: resolvedNode.field.dataSource,
+    };
+    const statementId = String(expression.statement_id ?? "");
+    const statementKey = `${current.taskId}:${statementId}`;
+    if (statementId && !collectedStatements.has(statementKey)) {
+      collectedStatements.add(statementKey);
+      for (const control of datasetControlsForStatement(
+        load,
+        current.taskId,
+        statementId,
+        catalog,
+        taskDefaultSchema,
+        fallbackTable,
+        evidenceStatus,
+      ))
+        controls.set(control.controlId, control);
+    }
+    for (const conditional of fieldConditionalsFor(
       load,
       resolvedNode,
       expression,
       catalog,
       taskDefaultSchema,
+      fallbackTable,
       evidenceStatus,
     ))
-      controls.set(control.controlId, control);
+      fieldConditionals.set(conditional.conditionalId, conditional);
 
     const sources = sourceFields(
       expression,
@@ -1383,6 +1621,7 @@ export function reconcileFieldLineage(
   const allNodes = [...nodes.values()];
   const allEdges = [...edges.values()];
   const allControls = [...controls.values()];
+  const allConditionals = [...fieldConditionals.values()];
   const allGaps = [...gaps.values()];
   const hasLegacy =
     allNodes.some((node) => node.evidenceStatus === "PROVISIONAL_LEGACY") ||
@@ -1390,7 +1629,8 @@ export function reconcileFieldLineage(
   const hasUnresolved =
     allNodes.some((node) => node.evidenceStatus === "UNRESOLVED") ||
     allEdges.some((edge) => edge.evidenceStatus === "UNRESOLVED") ||
-    allControls.some((control) => control.evidenceStatus === "UNRESOLVED");
+    allControls.some((control) => control.evidenceStatus === "UNRESOLVED") ||
+    allConditionals.some((item) => item.evidenceStatus === "UNRESOLVED");
   const overallStatus =
     startedRoots === 0
       ? "BLOCKED"
@@ -1419,7 +1659,8 @@ export function reconcileFieldLineage(
     rootNodeIds,
     nodes: allNodes,
     edges: allEdges,
-    rowsetControls: allControls,
+    datasetControls: allControls,
+    fieldConditionals: allConditionals,
     candidates: [...candidates.values()],
     gaps: allGaps,
     tableEdges: tableEdgesOf(options.tableLineage),

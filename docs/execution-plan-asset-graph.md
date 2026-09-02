@@ -41,13 +41,13 @@ P0 的 RS-5 已过（`176827.json` 14:22：档二仅拉链三张；`155015.json`
 
 ## 工作包总览
 
-| WP | 名称 | 仓库 | 前置 | 可并行 |
-|---|---|---|---|---|
-| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **P0 RS-5 通过** | RS-5 之后，可与 WP-2 并行 |
-| WP-2 | `harvest-declared-semantics` | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
-| WP-3 | `task-local-graph-projection` | sql-static-lineage | WP-1 | WP-1 合入后 |
-| WP-4 | `task-processing-kind` | sql-static-lineage | WP-1 | 与 WP-3 并行 |
-| WP-5 | `task-local-union-source` | data-graph | WP-3 契约冻结 | 契约冻结后 |
+| WP   | 名称                             | 仓库               | 前置                             | 可并行                          |
+| ---- | -------------------------------- | ------------------ | -------------------------------- | ------------------------------- |
+| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **P0 RS-5 通过**                 | RS-5 之后，可与 WP-2 并行       |
+| WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
+| WP-3 | `task-local-graph-projection`    | sql-static-lineage | WP-1                             | WP-1 合入后                     |
+| WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 与 WP-3 并行                    |
+| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结                    | 契约冻结后                      |
 
 ```text
 WP-1 影响通道分离 ──┬─> WP-3 任务局部投影 ──> WP-5 data-graph 接入
@@ -166,9 +166,9 @@ scripts/visualize/field-lineage-visualize.ts
 - `FIELD_CONDITIONAL` 即 OpenLineage 的 `INDIRECT/CONDITIONAL`，
   仅在 `expression_roles` 命中 `BRANCH_SELECTION` 时产生。
 - `grain` 是**本地扩展**（OpenLineage 无行倍增语义），第一版只做可证明的粗档：
-  `GROUP BY`/`DISTINCT` → `REDUCE`；可证明多对一或一对一的 JOIN → `PRESERVE`；
-  一对多风险或证据不足 → `EXPAND_RISK` / `UNKNOWN`。
-  不做唯一键证明，不做行数估算。
+  `GROUP BY`/`DISTINCT`/`FILTER` → `REDUCE`；可证明多对一或一对一的 JOIN → `PRESERVE`；
+  证不出基数的 JOIN → `EXPAND_RISK`（INNER 不落 `UNKNOWN`）。
+  `WINDOW` 证据不足才记 `UNKNOWN`。不做唯一键证明，不做行数估算。
 - 证据三态与 typed gaps 沿用本仓库既有模型，同样标注为本地扩展。
 - 重跑影响集分两档：最小确定集（`FIELD_DIRECT` + `CONFIRMED`），
   保守安全集（并入 `FIELD_CONDITIONAL` 与非 `PRESERVE` 的 `DATASET_CONTROL`）。
@@ -177,8 +177,10 @@ scripts/visualize/field-lineage-visualize.ts
 
 1. 155015：`internal_trade_id` 的 `FIELD_DIRECT` 上游不含那四张 LEFT JOIN 表。
 2. 155015：四张表以 `DATASET_CONTROL / JOIN` 出现在 Task 105387 的目标写入上，带 `grain`。
-3. 209119：控制注解由 11,783 条降至 219 量级，`field-lineage.json` 由 22.21 MB
-   降至 3 MB 以内。176827 由 10.15 MB 降至 2 MB 以内。
+3. 209119：控制注解由 11,783 条降到与不同 `relationId` 同量级（实测 711 条 /
+   339 个 relationId，比值 2.10；旧形态是 11,783 / 219 = 53.8 的逐字段复制），
+   `field-lineage.json` 由 22.21 MB 降至 3 MB 以内（实测 2.69 MB）。
+   176827 由 10.33 MB 降至 2 MB 以内（实测 1.37 MB）。
 4. 155015、176827、209119 的 `nodes` / `edges` 计数不减少。
 5. 产物与页面中字段值流与数据集控制分列统计。
 6. `npm run test:field-lineage`、`npm run typecheck`、`npm run build`、
@@ -228,16 +230,17 @@ scripts/visualize/field-lineage-visualize.ts
 - 通道来源：直接读取 `summarizeTaskRelations()` 的 `readImpacts` /
   `impactChannels` / `demandedFieldNames`，按下表投影，不平行实现一套规则。
 
-  | 图边 | 来自 |
-  | --- | --- |
-  | `FIELD_DIRECT` | `FIELD_VALUE` |
-  | `FIELD_CONDITIONAL` | `EXPRESSION_CONTROL` |
-  | `DATASET_CONTROL` subtype `JOIN`/`FILTER` | `ROW_MEMBERSHIP` |
-  | `grain` | `MULTIPLICITY` 的 certainty |
+  | 图边                                      | 来自                        |
+  | ----------------------------------------- | --------------------------- |
+  | `FIELD_DIRECT`                            | `FIELD_VALUE`               |
+  | `FIELD_CONDITIONAL`                       | `EXPRESSION_CONTROL`        |
+  | `DATASET_CONTROL` subtype `JOIN`/`FILTER` | `ROW_MEMBERSHIP`            |
+  | `grain`                                   | `MULTIPLICITY` 的 certainty |
 
   `demandedFieldNames` 在 JOIN 键闭包（P0 RS-3）补完之前，跨 hop 的行决定列
   仍可能传不出去。WP-3 可以先按现有摘要落边；105387 金样允许先断言
   summary 层标签（已绿），闭包层理由链等 P0 RS-3 合入后再收紧。
+
 - 常量谓词：形如 `SRC_TBL IN ('...')` 的字面量分区谓词单独记为
   `partitionPredicates[]`（列 + 字面量集合）。查询侧据此在多写入方分区表上
   剪掉不匹配分区的写入任务。

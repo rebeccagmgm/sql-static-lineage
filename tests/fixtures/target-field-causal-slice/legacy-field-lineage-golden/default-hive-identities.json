@@ -9,10 +9,10 @@
       "identityStatus": "SCHEMA_BACKED"
     }
   ],
-  "rowsetControlFields": [
-    []
+  "datasetControlFields": [
+    null
   ],
-  "rowsetControlReasonCodes": [
+  "datasetControlReasonCodes": [
     "ROWSET_FIELD_IDENTITY_UNRESOLVED"
   ]
 }
