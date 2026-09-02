@@ -9,6 +9,7 @@
 - [x] 2.2 Hive DDL MISS 且任务 SQL 唯一 CREATE 时才写 ddl.sql；RDBMS 不用 CREATE
 - [x] 2.3 dataSource 前缀映射 platform；对不上不写 Table
 - [x] 2.4 fixture 覆盖 gfhive 无 guid、guid 不一致仍按表名拼接、180065 Oracle
+- [x] 2.5 RDBMS partitionFields：可解析 PARTITION BY 写列名；RANGE (null)/ispartitioned 省略字段，不得写 []
 
 ## 3. TaskEvidence 类型路由
 

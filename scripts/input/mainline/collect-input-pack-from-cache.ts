@@ -12,6 +12,7 @@ import {
   sha256File,
   validateTaskDocument,
   type SqlSlot,
+  type TableEvidence,
   type TaskDocument,
   type TaskEvidence,
 } from "../shared/input-pack.ts";
@@ -22,6 +23,7 @@ import {
 import {
   loadOfflineTableCatalog,
   openOfflineTablePackStore,
+  parsePhysicalTableName,
   resolveOfflineTables,
   type OfflineTableCatalog,
   type OfflineTableCatalogPaths,
@@ -31,7 +33,8 @@ import {
   buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
 } from "../shared/task-partition-evidence.ts";
-import { inputCollectionStatus } from "../shared/task-endpoints.ts";
+import { enrichTaskEndpoint, inputCollectionStatus } from "../shared/task-endpoints.ts";
+import { findSqlFinalTargetEvidence } from "../shared/sql-target-evidence.ts";
 import {
   findStaleLegacyTaskDirectories,
   relocateTaskPacks,
@@ -210,23 +213,69 @@ function writeProgress(
   );
 }
 
+function tableForEndpoint(
+  value: unknown,
+  tables: readonly TableEvidence[],
+): TableEvidence | undefined {
+  const parsed = parsePhysicalTableName(value);
+  if (parsed === undefined) return undefined;
+  const matches = tables.filter(
+    (table) =>
+      table.qualifiedName.toLowerCase() === parsed.qualifiedName.toLowerCase(),
+  );
+  if (parsed.dataSource !== undefined) {
+    const byDataSource = matches.filter(
+      (table) =>
+        table.dataSource.toLowerCase() === parsed.dataSource!.toLowerCase(),
+    );
+    if (byDataSource.length === 1) return byDataSource[0];
+  }
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function sqlWriteTable(
+  evidence: TaskEvidence,
+  tables: readonly TableEvidence[],
+): TableEvidence | undefined {
+  const fromTarget = tableForEndpoint(evidence.target, tables);
+  if (fromTarget !== undefined) return fromTarget;
+  const sqlTarget = findSqlFinalTargetEvidence(
+    sqlContent(evidence),
+    typeof evidence.taskName === "string" ? evidence.taskName : undefined,
+    { allowSchemaOnlyQualification: true },
+  );
+  return sqlTarget === undefined
+    ? undefined
+    : tableForEndpoint(sqlTarget.qualifiedName, tables);
+}
+
 function enrichEvidence(
   evidence: TaskEvidence,
-  tables: readonly import("../shared/input-pack.ts").TableEvidence[],
+  tables: readonly TableEvidence[],
 ): TaskEvidence {
   const category = evidence.taskCategory ?? "unknown";
+  const source = enrichTaskEndpoint(
+    evidence.source ?? undefined,
+    tableForEndpoint(evidence.source, tables),
+  );
+  const target = enrichTaskEndpoint(
+    evidence.target === null ? undefined : evidence.target,
+    sqlWriteTable(evidence, tables),
+  );
   return {
     ...evidence,
     taskCategory: category,
+    source,
+    target,
     partition: buildCompactTaskPartition({
       taskTarget:
-        typeof evidence.target === "string"
-          ? evidence.target
-          : evidence.target &&
-              typeof evidence.target === "object" &&
-              !Array.isArray(evidence.target) &&
-              typeof evidence.target.qualifiedName === "string"
-            ? evidence.target.qualifiedName
+        typeof target === "string"
+          ? target
+          : target &&
+              typeof target === "object" &&
+              !Array.isArray(target) &&
+              typeof target.qualifiedName === "string"
+            ? target.qualifiedName
             : undefined,
       tables,
       schedulerEvidence: evidence.schedulerEvidence,

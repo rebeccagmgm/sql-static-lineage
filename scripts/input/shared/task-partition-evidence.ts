@@ -994,6 +994,12 @@ function dynamicAssignments(
   };
 }
 
+export function partitionFieldsFromDdl(
+  sql: string | undefined,
+): readonly string[] {
+  return partitionFieldsFromCreateSql(sql);
+}
+
 function partitionFieldsFromCreateSql(sql: string | undefined): string[] {
   if (sql === undefined) return [];
   const match = sql.match(/\bPARTITIONED\s+BY\s*\(([^)]*)\)/iu);

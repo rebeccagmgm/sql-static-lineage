@@ -667,6 +667,23 @@ function isCompleteCreateSql(sql: string, targetEnd: number): boolean {
   );
 }
 
+function createStatementTargetMatches(
+  rawTarget: string | undefined,
+  qualifiedName: string,
+): boolean {
+  if (rawTarget === undefined) return false;
+  const parsed = normalizeSparkIndexQualifiedName(rawTarget);
+  if (parsed !== undefined)
+    return parsed.toLowerCase() === qualifiedName.toLowerCase();
+  const tableOnly = normalizeIdentifierPart(rawTarget.trim());
+  if (tableOnly === undefined || tableOnly.includes(".")) return false;
+  const expectedTable = qualifiedName.split(".").at(-1);
+  return (
+    expectedTable !== undefined &&
+    tableOnly.toLowerCase() === expectedTable.toLowerCase()
+  );
+}
+
 function exactCreateStatements(
   sql: string,
   qualifiedName: string,
@@ -676,12 +693,7 @@ function exactCreateStatements(
   CREATE_PATTERN.lastIndex = 0;
   for (const match of masked.matchAll(CREATE_PATTERN)) {
     const rawTarget = match[1];
-    const parsedTarget = normalizeSparkIndexQualifiedName(rawTarget);
-    if (
-      parsedTarget === undefined ||
-      parsedTarget.toLowerCase() !== qualifiedName.toLowerCase()
-    )
-      continue;
+    if (!createStatementTargetMatches(rawTarget, qualifiedName)) continue;
     const start = match.index ?? 0;
     const targetEnd = start + match[0].indexOf(rawTarget ?? "") + (rawTarget?.length ?? 0);
     const end = sqlStatementEnd(sql, start);
