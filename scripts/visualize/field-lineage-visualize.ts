@@ -922,7 +922,7 @@ export function renderFieldLineageHtml(
 .lineage-section{display:grid;gap:8px}.lineage-section-title{font-size:13px;font-weight:600}.provisional-section{border:1px solid var(--candidate);border-radius:7px;background:color-mix(in srgb,var(--candidate) 6%,var(--surface));overflow:hidden}.provisional-section>summary{padding:11px 12px;color:var(--candidate);font-weight:600;cursor:pointer}.provisional-section>.branch-list{padding:0 10px 10px}.provisional-note{padding:0 12px 10px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.branch-detail.provisional{border-color:color-mix(in srgb,var(--candidate) 55%,var(--line))}.branch-detail.provisional>summary::before{color:var(--candidate)}
 .view-tabs{display:flex;gap:2px;margin-top:16px;padding:0 22px;background:var(--surface);border-bottom:1px solid var(--line)}.view-tab{padding:10px 18px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.view-tab:hover{color:var(--text)}.view-tab[aria-selected="true"]{border-bottom-color:var(--flow);color:var(--flow);font-weight:600}.view-hidden{display:none!important}.impact-layout{max-width:1400px;margin:0 auto;padding:14px 18px}.impact-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}.impact-title{font-size:17px;font-weight:600}.impact-subtitle{margin-top:3px;color:var(--muted);font-size:12px}.impact-summary{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}.impact-graph-shell{overflow:auto;padding:2px 2px 10px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-graph{position:relative;min-width:640px;min-height:220px}.impact-svg{position:absolute;inset:0;overflow:visible;pointer-events:none}.impact-svg path{fill:none;stroke:var(--flow);stroke-width:1.25;opacity:.7}.impact-svg text{fill:var(--muted);font-size:10px}.impact-card{position:absolute;width:210px;height:96px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line);border-top:3px solid var(--flow);border-radius:7px;box-shadow:0 1px 4px rgba(31,41,51,.05);overflow:hidden;text-align:left;color:var(--text);font:inherit}.impact-card-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-name{margin-top:2px;color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.impact-card-summary{margin-top:8px;color:var(--flow);font-size:12px}.impact-note{margin:8px 2px 0;color:var(--muted);font-size:11px}.impact-unresolved{color:var(--candidate)}.impact-empty{padding:18px;color:var(--muted);text-align:center}@media(max-width:720px){.view-tabs{padding:0 14px}.impact-layout{padding:12px}.impact-header{display:block}.impact-summary{text-align:left;margin-top:6px;white-space:normal}.impact-card{width:190px}}
 .task-flow{min-width:0;max-width:100%;width:100%;overflow-x:auto}.branch-detail-body{min-width:0;overflow:hidden}
-.impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
+.impact-tree-shell{margin-bottom:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}.impact-tree-title{margin:0 0 6px;font-size:13px;font-weight:600}.impact-tree-stats{width:100%;margin:0 0 10px;border-collapse:collapse;font-size:12px}.impact-tree-stats th,.impact-tree-stats td{padding:6px 8px;border:1px solid var(--line);text-align:left}.impact-tree-stats th{width:42%;color:var(--muted);font-weight:500;background:var(--surface-2)}.impact-tree-stats td{font-variant-numeric:tabular-nums;font-weight:600}.impact-tree{margin:0;max-height:260px;overflow:auto;color:var(--text);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,"Microsoft YaHei",monospace;white-space:pre}.impact-tree-note{margin-top:6px;color:var(--muted);font-size:11px}
 </style>
 </head>
 <body>
@@ -940,7 +940,7 @@ export function renderFieldLineageHtml(
 </div>
 <section id="impact-view" class="impact-layout view-hidden" aria-labelledby="impact-title">
   <div class="impact-header"><div><h2 id="impact-title" class="impact-title">调度影响范围</h2><p class="impact-subtitle">每张卡片代表一个调度，数字表示它影响的最终表字段数量。</p></div></div>
-  <section class="impact-tree-shell" aria-labelledby="impact-tree-title"><h3 id="impact-tree-title" class="impact-tree-title">链路总览</h3><pre id="impact-tree" class="impact-tree"></pre><p class="impact-tree-note">箭头方向为上游 → 下游；树状文字从最终调度向上游展开。</p></section>
+  <section class="impact-tree-shell" aria-labelledby="impact-tree-title"><h3 id="impact-tree-title" class="impact-tree-title">链路总览</h3><table id="impact-tree-stats" class="impact-tree-stats" aria-label="链路总览统计"><tbody></tbody></table><pre id="impact-tree" class="impact-tree"></pre><p class="impact-tree-note">箭头方向为上游 → 下游；树状文字从最终调度向上游展开。</p></section>
   <div class="impact-graph-shell"><div id="impact-graph" class="impact-graph"><svg id="impact-svg" class="impact-svg" aria-hidden="true"><defs><marker id="impact-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"></path></marker></defs></svg><div id="impact-cards"></div></div></div>
   <p id="impact-note" class="impact-note"></p>
 </section>
@@ -949,7 +949,7 @@ const DATA=${data};
 const IMPACT=${impactData};
 const IMPACT_TREE=${serialized(renderFieldLineageImpactTree(buildFieldLineageImpactGraph(artifact)))};
 const app=document.getElementById("field-lineage-app");
-const impactView=document.getElementById("impact-view"),impactTree=document.getElementById("impact-tree"),impactGraph=document.getElementById("impact-graph"),impactSvg=document.getElementById("impact-svg"),impactCards=document.getElementById("impact-cards"),impactNote=document.getElementById("impact-note");
+const impactView=document.getElementById("impact-view"),impactTreeStats=document.getElementById("impact-tree-stats"),impactTree=document.getElementById("impact-tree"),impactGraph=document.getElementById("impact-graph"),impactSvg=document.getElementById("impact-svg"),impactCards=document.getElementById("impact-cards"),impactNote=document.getElementById("impact-note");
 const nodeById=new Map(DATA.nodes.map((node)=>[node.nodeId,node]));
 const edgesByTo=new Map();
 for(const edge of DATA.edges){const list=edgesByTo.get(edge.toNodeId)||[];list.push(edge);edgesByTo.set(edge.toNodeId,list)}
@@ -974,7 +974,20 @@ function impactCardHtml(task){
   const taskName=task.taskName||"调度名称未提供";
   return '<div class="impact-card" data-task-id="'+esc(task.taskId)+'"><div class="impact-card-title">调度 '+esc(task.taskId)+'</div><div class="impact-card-name" title="'+esc(taskName)+'">'+esc(taskName)+'</div><div class="impact-card-summary"><span>影响最终字段 '+task.fieldCount+' 个</span></div></div>';
 }
+function impactTreeStatsRows(){
+  const upstreamTaskCount=IMPACT.tasks.filter((task)=>task.taskId!==DATA.request.rootTaskId).length;
+  const rows=[
+    ['调度任务（含根）',IMPACT.tasks.length],
+    ['上游调度',upstreamTaskCount],
+    ['调度边（上游 → 下游）',IMPACT.edges.length],
+    ['影响最终字段',IMPACT.fieldCount],
+  ];
+  if(IMPACT.unresolvedFieldCount)rows.push(['未纳入确认统计的最终字段',IMPACT.unresolvedFieldCount]);
+  if(IMPACT.truncated)rows.push(['原始血缘截断','是']);
+  return rows;
+}
 function renderImpactGraph(){
+  impactTreeStats.querySelector('tbody').innerHTML=impactTreeStatsRows().map(([label,value])=>'<tr><th scope="row">'+esc(label)+'</th><td>'+esc(value)+'</td></tr>').join('');
   impactTree.textContent=IMPACT_TREE;
   const notes=['统计基于 root 可达且非 UNRESOLVED 的 VALUE_FLOW；同一字段经过同一节点只计一次。'];
   if(IMPACT.unresolvedFieldCount)notes.push('未纳入确认统计：'+IMPACT.unresolvedFieldCount+' 个最终字段');

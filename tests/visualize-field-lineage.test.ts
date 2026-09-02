@@ -155,6 +155,12 @@ describe("field lineage visualization", () => {
     expect(html).toContain("影响范围");
     expect(html).toContain("调度影响范围");
     expect(html).toContain("链路总览");
+    expect(html).toContain('id="impact-tree-stats"');
+    expect(html).toContain("impactTreeStatsRows");
+    expect(html).toContain("调度任务（含根）");
+    expect(html).toContain("上游调度");
+    expect(html).toContain("调度边（上游 → 下游）");
+    expect(html).toContain("影响最终字段");
     expect(html).not.toContain("相关 ROWSET_CONTROL");
     expect(html).toContain("DATASET_CONTROL");
     expect(html).toContain('"datasetControls":[]');

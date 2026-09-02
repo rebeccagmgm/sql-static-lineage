@@ -214,6 +214,19 @@ export function rollupAssessments(input: {
   readonly minimumCertainTaskIds: readonly string[];
   readonly conservativeSafetyTaskIds: readonly string[];
 } {
+  const rootBranch = input.branches.find((branch) => branch.branchKind === "ROOT_WRITE");
+  const rootTaskId = rootBranch?.producerTaskId ?? null;
+  const rootAssessment = rootBranch
+    ? input.assessments.find((assessment) => assessment.candidateBranchId === rootBranch.candidateBranchId)
+    : undefined;
+  const rootEvidenceIds = unique([
+    ...(rootBranch?.evidenceRefs ?? []).map((ref) => ref.evidenceRefId),
+    ...(rootAssessment?.evidenceRefs ?? []),
+  ]);
+  const rootGapIds = unique([
+    ...(rootBranch?.gapRefs ?? []),
+    ...(rootAssessment?.gapRefs ?? []),
+  ]);
   const byTask = new Map<string, TargetTableAssessment[]>();
   const certainIds = new Set<string>();
   for (const assessment of input.assessments) {
@@ -229,7 +242,10 @@ export function rollupAssessments(input: {
       certainIds.add(branch.producerTaskId);
     }
   }
-  const taskRollup = [...byTask.entries()].map(([producerTaskId, values]) => {
+  // Target root write is always part of the operational certain/safety sets:
+  // rerunning upstream without the sink itself is incomplete.
+  if (rootTaskId) certainIds.add(rootTaskId);
+  const upstreamRollup = [...byTask.entries()].map(([producerTaskId, values]) => {
     const rank = (status: RelationStatus): number => status === "CONFIRMED_RELATED" ? 3 : status === "CONDITIONAL_RELATED" ? 2 : status === "UNKNOWN" ? 1 : 0;
     const best = values.reduce((left, right) => rank(right.relationStatus) > rank(left.relationStatus) ? right : left);
     return {
@@ -240,7 +256,19 @@ export function rollupAssessments(input: {
       evidenceRefs: unique(values.flatMap((value) => value.evidenceRefs)),
       gapRefs: unique(values.flatMap((value) => value.gapRefs)),
     };
-  }).sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId));
+  });
+  const rootRollup = rootTaskId && rootBranch
+    ? [{
+        producerTaskId: rootTaskId,
+        branchIds: [rootBranch.candidateBranchId],
+        relationStatus: "CONFIRMED_RELATED" as const,
+        impactChannels: ["FIELD_VALUE"] as ImpactChannel[],
+        evidenceRefs: rootEvidenceIds,
+        gapRefs: rootGapIds,
+      }]
+    : [];
+  const taskRollup = [...rootRollup, ...upstreamRollup]
+    .sort((left, right) => left.producerTaskId.localeCompare(right.producerTaskId));
   return {
     taskRollup,
     minimumCertainTaskIds: [...certainIds].sort((left, right) => left.localeCompare(right)),
@@ -273,7 +301,25 @@ export function buildShrinkReport(input: {
       ...(joinNode ? { joinNode } : {}),
     };
   };
-  const valueCertain = input.assessments.map((assessment) => entry(assessment, "FIELD_VALUE")).filter((value): value is ShrinkReportEntry => value !== null);
+  const upstreamValueCertain = input.assessments
+    .map((assessment) => entry(assessment, "FIELD_VALUE"))
+    .filter((value): value is ShrinkReportEntry => value !== null);
+  const rootBranch = input.branches.find((branch) => branch.branchKind === "ROOT_WRITE");
+  const rootValueCertain: ShrinkReportEntry | null =
+    rootBranch?.producerTaskId
+      ? {
+          taskId: rootBranch.producerTaskId,
+          table: rootBranch.table?.qualifiedName ?? null,
+          channel: "FIELD_VALUE",
+          // Root is the sink write itself; viaFields stay empty so upstream
+          // VALUE_FLOW columns remain the only column-level carriers.
+          viaFields: [],
+          witness: unique((rootBranch.evidenceRefs ?? []).map((ref) => ref.evidenceRefId)),
+        }
+      : null;
+  const valueCertain = mergeShrinkEntries(
+    rootValueCertain ? [rootValueCertain, ...upstreamValueCertain] : upstreamValueCertain,
+  );
   const valueIds = new Set(valueCertain.map((item) => item.taskId));
   const rowDetermining = input.assessments
     .map((assessment) => entry(assessment, "ROW_MEMBERSHIP"))
@@ -289,7 +335,7 @@ export function buildShrinkReport(input: {
     return !branch.producerTaskId || !listed.has(branch.producerTaskId);
   });
   return {
-    valueCertain: mergeShrinkEntries(valueCertain),
+    valueCertain,
     rowDetermining: mergeShrinkEntries(rowDetermining),
     multiplicityRisk: mergeShrinkEntries(multiplicityRisk, "join"),
     prunedCount: pruned.length,
