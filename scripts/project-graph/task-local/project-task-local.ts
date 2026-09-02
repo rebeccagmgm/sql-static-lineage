@@ -185,7 +185,7 @@ function materializationKey(dataset: string, column: string): string {
   return `${normalizeName(dataset)}\u0000${normalizeName(column)}`;
 }
 
-interface MaterializationContext {
+export interface MaterializationContext {
   readonly statementId: string | null;
   readonly expressionId: string | null;
 }
@@ -214,7 +214,13 @@ function materializationRecordsForDataset(
   });
 }
 
-function materializationRecordsForField(
+function materializationRecordHasContext(materialization: JsonRecord): boolean {
+  return text(materialization.read_statement_id) !== null
+    || (Array.isArray(materialization.read_expression_ids)
+      && materialization.read_expression_ids.some((value: unknown) => text(value) !== null));
+}
+
+export function materializationRecordsForField(
   materializationsByField: ReadonlyMap<string, readonly JsonRecord[]>,
   source: PhysicalFieldIdentity,
   context: MaterializationContext,
@@ -235,7 +241,7 @@ function materializationRecordsForField(
     );
     if (statementMatches.length > 0) return statementMatches;
   }
-  return all;
+  return all.every((materialization) => !materializationRecordHasContext(materialization)) ? all : [];
 }
 
 function isFinalWrite(
