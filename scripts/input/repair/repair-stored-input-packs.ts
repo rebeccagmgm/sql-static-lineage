@@ -9,7 +9,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import {
   canonicalHash,
@@ -133,7 +133,7 @@ function safeSqlPath(taskDirectory: string, relativePath: string): string {
   if (isAbsolute(relativePath)) throw new Error("SQL path must be relative");
   const taskRoot = resolve(taskDirectory);
   const path = resolve(taskDirectory, relativePath);
-  if (path !== taskRoot && !path.startsWith(`${taskRoot}\\`))
+  if (path !== taskRoot && !path.startsWith(`${taskRoot}${sep}`))
     throw new Error(`SQL path escapes task directory: ${relativePath}`);
   return path;
 }
@@ -361,7 +361,7 @@ export function repairStoredInputPacks(
   if (
     backupRoot &&
     (resolve(backupRoot) === resolvedTasksRoot ||
-      resolve(backupRoot).startsWith(`${resolvedTasksRoot}\\`))
+      resolve(backupRoot).startsWith(`${resolvedTasksRoot}${sep}`))
   )
     throw new Error("Backup root must not be inside tasks/");
   if (backupRoot) mkdirSync(dirname(backupRoot), { recursive: true });
