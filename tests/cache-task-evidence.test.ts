@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { assembleCacheTaskEvidence } from "../scripts/input/shared/cache-task-evidence.ts";
+import { assembleCacheTaskEvidence, sqlSlotCount } from "../scripts/input/shared/cache-task-evidence.ts";
 import { writeHiveTaskSqlCache } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { writeRunScriptSqlCache } from "../scripts/input/mainline/run-script-sql-cache.ts";
 import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
@@ -336,12 +336,35 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     expect(result.scheduleCycle).toBe("手工");
   });
 
-  it("skips no-sql categories", () => {
+  it("materializes metadata-only no-sql categories when scheduler identity exists", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
     writeHoraeTaskTypeCache(
       "12",
       observedAt,
-      { id: "12", taskType: "checkdbflag", name: "flag" },
+      { id: "12", taskType: "checkdbflag", name: "flag", topic: "ODATA_N_TIT" },
+      cacheRoot,
+    );
+    const result = assembleCacheTaskEvidence("12", cacheRoot);
+    expect(result).toMatchObject({
+      kind: "EVIDENCE",
+      evidence: {
+        taskId: "12",
+        taskCategory: "checkdbflag",
+        taskName: "flag",
+        topicName: "ODATA_N_TIT",
+      },
+      missingQuery: true,
+    });
+    if (result.kind !== "EVIDENCE") return;
+    expect(sqlSlotCount(result.evidence)).toBe(0);
+  });
+
+  it("skips no-sql categories without scheduler identity", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
+    writeHoraeTaskTypeCache(
+      "12",
+      observedAt,
+      { id: "12", taskType: "checkdbflag" },
       cacheRoot,
     );
     const result = assembleCacheTaskEvidence("12", cacheRoot);

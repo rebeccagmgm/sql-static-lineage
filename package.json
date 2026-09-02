@@ -68,6 +68,7 @@
     "producer-index:query": "tsx scripts/query/producer-index-query.ts",
     "input-pack:tasks": "tsx scripts/input/mainline/collect-task-input-pack.ts",
     "input-pack:from-cache": "tsx scripts/input/mainline/collect-input-pack-from-cache.ts",
+    "input-pack:patch-priority-evidence": "tsx scripts/input/mainline/patch-priority-evidence-cache.ts",
     "input-pack:sparkindex": "tsx scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts",
     "input-pack:fill-horae-detail-cache": "tsx scripts/input/mainline/fill-horae-task-detail-cache.ts",
     "input-pack:fill-horae-relation-cache": "tsx scripts/input/mainline/fill-horae-relation-cache.ts",

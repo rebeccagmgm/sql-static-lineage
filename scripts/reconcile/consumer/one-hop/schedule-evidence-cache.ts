@@ -29,6 +29,10 @@ export const SCHEDULE_EVIDENCE_DOWN_CACHE_FILE_NAME =
 export const HORAE_TASK_TYPE_CACHE_FILE_NAME = "horae-task-type.json" as const;
 export const HORAE_TASK_TYPE_CACHE_ARTIFACT_TYPE =
   "HORAE_TASK_TYPE_EVIDENCE" as const;
+export const TASK_PARTITION_BINDINGS_CACHE_FILE_NAME =
+  "task-partition-bindings.json" as const;
+export const TASK_PARTITION_BINDINGS_CACHE_ARTIFACT_TYPE =
+  "TASK_PARTITION_BINDINGS_EVIDENCE" as const;
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -337,6 +341,142 @@ export function readHoraeRelationCache(
       path,
       error instanceof SyntaxError ? "JSON_INVALID" : "READ_FAILED",
     );
+  }
+}
+
+export interface TaskPartitionBindingsCacheDocument {
+  readonly schema_version: typeof SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION;
+  readonly artifact_type: typeof TASK_PARTITION_BINDINGS_CACHE_ARTIFACT_TYPE;
+  readonly task_id: string;
+  readonly observed_at: string;
+  readonly bindings: JsonRecord;
+  readonly content_sha256: string;
+}
+
+export type TaskPartitionBindingsCacheRead =
+  | { readonly status: "MISS"; readonly path: string }
+  | {
+      readonly status: "INVALID";
+      readonly path: string;
+      readonly reason: string;
+    }
+  | {
+      readonly status: "HIT";
+      readonly path: string;
+      readonly taskId: string;
+      readonly bindings: JsonRecord;
+      readonly observedAt: string;
+    };
+
+function partitionBindingsCachePathForRoot(
+  cacheRoot: string,
+  taskId: string,
+): string {
+  return join(
+    resolveScheduleEvidenceCacheRoot(cacheRoot),
+    "tasks",
+    taskId,
+    TASK_PARTITION_BINDINGS_CACHE_FILE_NAME,
+  );
+}
+
+function partitionBindingsCachePayload(
+  taskId: string,
+  observedAt: string,
+  bindings: JsonRecord,
+): Omit<TaskPartitionBindingsCacheDocument, "content_sha256"> {
+  return {
+    schema_version: SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION,
+    artifact_type: TASK_PARTITION_BINDINGS_CACHE_ARTIFACT_TYPE,
+    task_id: taskId,
+    observed_at: observedAt,
+    bindings,
+  };
+}
+
+function partitionBindingsCacheDocument(
+  taskId: string,
+  observedAt: string,
+  bindings: JsonRecord,
+): TaskPartitionBindingsCacheDocument {
+  const payload = partitionBindingsCachePayload(taskId, observedAt, bindings);
+  return {
+    ...payload,
+    content_sha256: sha256(canonicalJson(payload)),
+  };
+}
+
+function validateBindings(bindings: JsonRecord): boolean {
+  return Object.values(bindings).every(
+    (value) => typeof value === "string" && value.trim() !== "",
+  );
+}
+
+export function readTaskPartitionBindingsCache(
+  taskId: string,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): TaskPartitionBindingsCacheRead {
+  const path = partitionBindingsCachePathForRoot(cacheRoot, taskId);
+  if (!existsSync(path)) return { status: "MISS", path };
+  try {
+    const record = JSON.parse(readFileSync(path, "utf8")) as JsonRecord;
+    if (
+      record.schema_version !== SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION ||
+      record.artifact_type !== TASK_PARTITION_BINDINGS_CACHE_ARTIFACT_TYPE ||
+      record.task_id !== taskId ||
+      typeof record.observed_at !== "string" ||
+      typeof record.content_sha256 !== "string" ||
+      !SHA256.test(record.content_sha256) ||
+      !asRecord(record.bindings) ||
+      !validateBindings(record.bindings)
+    )
+      return { status: "INVALID", path, reason: "ENVELOPE_INVALID" };
+    const bindings = record.bindings as JsonRecord;
+    const payload = partitionBindingsCachePayload(
+      taskId,
+      record.observed_at,
+      bindings,
+    );
+    if (sha256(canonicalJson(payload)) !== record.content_sha256)
+      return { status: "INVALID", path, reason: "CONTENT_HASH_MISMATCH" };
+    return {
+      status: "HIT",
+      path,
+      taskId,
+      bindings,
+      observedAt: record.observed_at,
+    };
+  } catch (error) {
+    return {
+      status: "INVALID",
+      path,
+      reason: error instanceof SyntaxError ? "JSON_INVALID" : "READ_FAILED",
+    };
+  }
+}
+
+export function writeTaskPartitionBindingsCache(
+  taskId: string,
+  observedAt: string,
+  bindings: JsonRecord,
+  cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+): string {
+  safeTaskId(taskId);
+  if (!nonEmptyString(observedAt)) throw new Error("OBSERVED_AT_MISSING");
+  if (!validateBindings(bindings)) throw new Error("BINDINGS_INVALID");
+  const path = partitionBindingsCachePathForRoot(cacheRoot, taskId);
+  const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  mkdirSync(dirname(path), { recursive: true });
+  try {
+    writeFileSync(
+      temporaryPath,
+      canonicalJson(partitionBindingsCacheDocument(taskId, observedAt, bindings)),
+      { encoding: "utf8", flag: "wx" },
+    );
+    renameSync(temporaryPath, path);
+    return path;
+  } finally {
+    if (existsSync(temporaryPath)) rmSync(temporaryPath, { force: true });
   }
 }
 

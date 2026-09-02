@@ -17,6 +17,7 @@ import {
 import { parseRunScriptSqlCache } from "../mainline/run-script-sql-cache.ts";
 import { readSzdataScheduleDetailCache } from "../mainline/szdata-schedule-detail-cache.ts";
 import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { isNoSqlTaskCategory } from "../../reconcile/shared/lineage-scope.ts";
 import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
 import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
 
@@ -37,17 +38,6 @@ const SQL_SLOTS: readonly SqlSlot[] = [
   "truncate",
   "finish",
 ];
-const NO_SQL_CATEGORIES = new Set([
-  "checkdbflag",
-  "checkHdfsFlag",
-  "alert",
-  "checkAlert",
-  "exeSql",
-  "qualityTask",
-  "hiveEmail",
-  "file2hive",
-  "hive2file",
-]);
 const TO_HIVE_EXCLUDED = new Set(["file2hive", "hdfs2hive", "email2hive"]);
 const HIVE2_PLATFORMS = new Set([
   "oracle",
@@ -613,6 +603,17 @@ export function sqlSlotCount(evidence: Pick<TaskEvidence, "sql">): number {
   return SQL_SLOTS.filter((slot) => evidence.sql?.[slot] !== undefined).length;
 }
 
+function hasSchedulerIdentity(
+  evidence: Pick<TaskEvidence, "taskName" | "topicName">,
+): boolean {
+  const taskName = evidence.taskName?.trim();
+  const topicName = evidence.topicName?.trim();
+  return (
+    (taskName !== undefined && taskName !== "") ||
+    (topicName !== undefined && topicName !== "")
+  );
+}
+
 export function assembleCacheTaskEvidence(
   taskId: string,
   cacheRoot: string,
@@ -679,7 +680,12 @@ export function assembleCacheTaskEvidence(
   else evidence = assembleGeneric(taskId, category, horae, schedule);
 
   const slots = sqlSlotCount(evidence);
-  if (category !== undefined && NO_SQL_CATEGORIES.has(category) && slots === 0)
+  if (
+    category !== undefined &&
+    isNoSqlTaskCategory(category) &&
+    slots === 0 &&
+    !hasSchedulerIdentity(evidence)
+  )
     return {
       kind: "SKIPPED",
       reason: "NO_SQL_SLOT",

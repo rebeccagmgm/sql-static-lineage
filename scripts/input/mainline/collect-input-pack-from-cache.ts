@@ -33,6 +33,7 @@ import {
   buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
 } from "../shared/task-partition-evidence.ts";
+import { readTaskPartitionBindingsCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { enrichTaskEndpoint, inputCollectionStatus } from "../shared/task-endpoints.ts";
 import { findSqlFinalTargetEvidence } from "../shared/sql-target-evidence.ts";
 import {
@@ -252,6 +253,7 @@ function sqlWriteTable(
 function enrichEvidence(
   evidence: TaskEvidence,
   tables: readonly TableEvidence[],
+  partitionBindingOverrides?: Readonly<Record<string, string>>,
 ): TaskEvidence {
   const category = evidence.taskCategory ?? "unknown";
   const source = enrichTaskEndpoint(
@@ -283,6 +285,7 @@ function enrichEvidence(
       allowImplicitQueryOutput: !isDatabaseSourceToHiveTask(category),
       allowSourceTemporalPartitionDefault: isDatabaseSourceToHiveTask(category),
       sparkIndexMode: category === "sparkIndex",
+      partitionBindingOverrides,
     }),
   };
 }
@@ -408,7 +411,23 @@ export function collectOneTaskInputPackFromCache(
     options.now,
     options.packStore,
   );
-  const evidence = enrichEvidence(assembled.evidence, resolution.resolved);
+  const bindingsCache = readTaskPartitionBindingsCache(taskId, options.cacheRoot);
+  if (bindingsCache.status === "HIT")
+    cacheArtifacts.push("task-partition-bindings.json");
+  const partitionBindingOverrides =
+    bindingsCache.status === "HIT"
+      ? Object.fromEntries(
+          Object.entries(bindingsCache.bindings).map(([field, value]) => [
+            field,
+            String(value),
+          ]),
+        )
+      : undefined;
+  const evidence = enrichEvidence(
+    assembled.evidence,
+    resolution.resolved,
+    partitionBindingOverrides,
+  );
   const tablesUnavailable = resolution.unavailable.map((item) => item.qualifiedName);
   const collectionStatus = inputCollectionStatus(
     resolution.resolved.length + resolution.unavailable.length,

@@ -480,6 +480,27 @@ describe("task partition map fallback", () => {
     ]);
   });
 
+  it("applies partitionBindingOverrides when SQL keeps runtime placeholders", () => {
+    expect(
+      buildCompactTaskPartition({
+        taskTarget: "pdata_n.t05_fin_bdgt_adj_app_evt",
+        tables: [table(["src_tbl", "busi_date"])],
+        sql: {
+          create:
+            "CREATE TABLE pdata_n.t05_fin_bdgt_adj_app_evt (id string) PARTITIONED BY (src_tbl string, busi_date string);",
+          query:
+            "INSERT OVERWRITE TABLE pdata_n.t05_fin_bdgt_adj_app_evt PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}') SELECT 1;",
+        },
+        partitionBindingOverrides: {
+          src_tbl: "ODATA_N_HBM.H_CUX_ADJ_DOCUMENT",
+        },
+      }),
+    ).toEqual({
+      src_tbl: "ODATA_N_HBM.H_CUX_ADJ_DOCUMENT",
+      busi_date: "${YYYY-MM-DD}",
+    });
+  });
+
   it("keeps multiple partition fields as the same flat map", () => {
     expect(
       buildSimpleTaskPartitionMap({
