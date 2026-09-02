@@ -31,6 +31,17 @@ function goldenRoots(): { dataRoot: string; factsRoot: string } | null {
 }
 
 const roots = goldenRoots();
+const requireGolden =
+  process.env.TASK_LOCAL_GOLDEN_REQUIRED === "1"
+  || process.env.TASK_LOCAL_GOLDEN_REQUIRED === "true";
+if (requireGolden && !roots) {
+  throw new Error(
+    "TASK_LOCAL_GOLDEN_REQUIRED is set but golden Facts are missing. "
+    + "Set TASK_LOCAL_GOLDEN_DATA_ROOT / TASK_LOCAL_GOLDEN_FACTS_ROOT "
+    + "or place sibling sql-static-lineage-data/field-facts with 176827/119044/105387 bundles.",
+  );
+}
+/** Without sibling Facts (or TASK_LOCAL_GOLDEN_*), TL-6/TL-7 goldens skip. CI with data must set TASK_LOCAL_GOLDEN_REQUIRED=1. */
 const describeGolden = roots ? describe : describe.skip;
 
 function nodeQualifiedName(

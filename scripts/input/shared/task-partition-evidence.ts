@@ -272,7 +272,7 @@ export function buildCompactTaskPartition(
     map !== undefined &&
     !Array.isArray(map)
   ) {
-    const merged: TaskPartitionMap = { ...(map as TaskPartitionMap) };
+    const merged: Record<string, string> = { ...(map as TaskPartitionMap) };
     for (const [field, value] of Object.entries(input.partitionBindingOverrides)) {
       const key =
         target.fields.find((item) => item.toLowerCase() === field.toLowerCase()) ??
@@ -284,7 +284,7 @@ export function buildCompactTaskPartition(
       )
         merged[key] = value;
     }
-    return merged;
+    return merged as TaskPartitionMap;
   }
   return map;
 }

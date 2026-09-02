@@ -25,7 +25,9 @@ Copy `taskNodeId`, `physicalDatasetNodeId`, `fieldEvidencePhysicalFieldNodeId`, 
 
 ### Inputs
 
-Per task: Facts bundle (`dataset-io`, relation nodes/edges, bindings, column-lineage, schema-refs), schedule cache row, Input Pack fingerprint + `task-fact-index.jsonl` manifest hashes. Channel mapping uses existing `summarizeTaskRelations()` + WP-1 control collection.
+Per task: Facts bundle (`dataset-io`, relation nodes/edges, bindings, column-lineage, schema-refs), schedule cache row, Input Pack fingerprint + `task-fact-index.jsonl` manifest hashes.
+
+**Control collection (as shipped):** `DATASET_CONTROL` comes from WP-1 `datasetControlsForStatement` over statement ids reached by this task’s resolved bindings. That is enough for the TL-6 goldens (119044 frozen at 95 controls). Execution-plan prose also mentions intersecting with `summarizeTaskRelations()` READ channels; that intersection is **not wired** in this change and remains optional hardening if a later Facts shape over-includes controls.
 
 ### Edge mapping
 
@@ -33,7 +35,7 @@ Per task: Facts bundle (`dataset-io`, relation nodes/edges, bindings, column-lin
 | --- | --- |
 | `FIELD_DIRECT` | `FIELD_VALUE` (subtype `UNKNOWN` unless derived in TL-1) |
 | `FIELD_CONDITIONAL` | `EXPRESSION_CONTROL` + `BRANCH_SELECTION` |
-| `DATASET_CONTROL` | `ROW_MEMBERSHIP` / `MULTIPLICITY` controls via shared collector |
+| `DATASET_CONTROL` | Shared `datasetControlsForStatement` (statement-scoped); not yet filtered by `summarizeTaskRelations` READ channels |
 
 ### Coverage
 
@@ -49,7 +51,8 @@ Per task: Facts bundle (`dataset-io`, relation nodes/edges, bindings, column-lin
 
 - **Identity drift vs data-graph** → frozen vector tests in TL-0.
 - **Duplicated control collection** until TL-2 extract → temporary bridge import acceptable for TL-1 if tests green.
-- **Golden sample data availability** → `--also-task-ids` for tasks outside `DM_RSK_N` topic filter.
+- **Golden sample data availability** → `--also-task-ids` for tasks outside `DM_RSK_N` topic filter. Golden *tests* need sibling `sql-static-lineage-data/field-facts` (or `TASK_LOCAL_GOLDEN_*`); without data they `describe.skip`. Set `TASK_LOCAL_GOLDEN_REQUIRED=1` in environments that must fail closed.
+- **`summarizeTaskRelations` not intersected** → accepted for WP-3; goldens pass on statement-scoped controls. Revisit if control counts inflate beyond relation×control-column.
 
 ## Migration Plan
 

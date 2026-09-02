@@ -44,3 +44,9 @@
 ## 9. TL-8 Cost record
 
 - [x] 9.1 Document p50/p95 and wall clock for DM_RSK_N + goldens in change notes.
+
+## Archive notes (post-audit)
+
+- Golden tests need sibling `sql-static-lineage-data/field-facts` (or `TASK_LOCAL_GOLDEN_DATA_ROOT` / `TASK_LOCAL_GOLDEN_FACTS_ROOT`). Without Facts they `describe.skip`; set `TASK_LOCAL_GOLDEN_REQUIRED=1` to fail closed when CI has the data pack.
+- `DATASET_CONTROL` is statement-scoped via `datasetControlsForStatement` (TL-6 frozen). Intersecting with `summarizeTaskRelations()` READ channels is documented debt in `design.md`, not a WP-3 blocker.
+- FIELD_DIRECT table column freezes follow current Facts (e.g. 119044 `t01_pty_name` = 3), not older prose “约 6”.

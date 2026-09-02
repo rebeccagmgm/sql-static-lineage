@@ -6,7 +6,14 @@ import {
 } from "../target-field-causal-slice/candidate-universe.ts";
 import type { TargetWriteRef } from "./target-write-contract.ts";
 
-export type { CandidateBranch, CandidateBranchKind, CandidatePhysicalTable, CandidateUniverse, CandidateUniverseStatus } from "../target-field-causal-slice/candidate-universe.ts";
+export type {
+  CandidateBranch,
+  CandidateBranchKind,
+  CandidatePhysicalTable,
+  CandidateUniverse,
+  CandidateUniverseStatus,
+  CandidateWriteScope,
+} from "../target-field-causal-slice/candidate-universe.ts";
 
 function targetBranchId(targetWrite: TargetWriteRef, table: CandidatePhysicalTable): string {
   return `target-table-root-write:${sha256(canonicalJson({
