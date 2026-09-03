@@ -21,6 +21,8 @@ export type HoraeDatasourceEntry = {
 
 export type HoraeDatasourceIndex = {
   readonly byServerTag: ReadonlyMap<string, HoraeDatasourceEntry>;
+  /** Lower-cased labels whose rows disagree on physical datasource identity. */
+  readonly ambiguousServerTags?: ReadonlySet<string>;
 };
 
 function nonEmptyString(value: unknown): string | undefined {
@@ -57,6 +59,34 @@ export function oracleAtlasDataSourceFromService(
   return `gforacle_${lower}#${lower}`;
 }
 
+/** Concrete Atlas instance used by successful oracle_wande / uip_winddb packs. */
+export const ORACLE_UIP_WINDDB_ATLAS_DATASOURCE =
+  "gforacle_oracle_uip_winddb#winddb" as const;
+
+/**
+ * When Horae service is winddb but core has multiple `#winddb` instances,
+ * prefer the UIP instance for 万得/UIP tags (and host 10.2.89.132).
+ */
+export function shouldPreferOracleUipWinddbAtlas(
+  entry: Pick<HoraeDatasourceEntry, "serverTag" | "service" | "host">,
+): boolean {
+  if (entry.service.trim().toLowerCase() !== "winddb") return false;
+  const tag = entry.serverTag.trim().toLowerCase();
+  if (tag.startsWith("oracle_wande_") || tag.startsWith("oracle_uip_winddb"))
+    return true;
+  const host = entry.host?.trim();
+  return host === "10.2.89.132";
+}
+
+function preferredAtlasFromHoraeEntry(
+  entry: HoraeDatasourceEntry,
+): string | undefined {
+  if (entry.serverType.toLowerCase() !== "oracle") return undefined;
+  if (shouldPreferOracleUipWinddbAtlas(entry))
+    return ORACLE_UIP_WINDDB_ATLAS_DATASOURCE;
+  return oracleAtlasDataSourceFromService(entry.service);
+}
+
 export function parseHoraeDatasourceRow(
   value: unknown,
 ): HoraeDatasourceEntry | undefined {
@@ -81,12 +111,32 @@ function indexEntries(
   rows: readonly unknown[],
 ): HoraeDatasourceIndex {
   const byServerTag = new Map<string, HoraeDatasourceEntry>();
+  const ambiguousServerTags = new Set<string>();
+  const keysByLowerTag = new Map<string, string>();
   for (const row of rows) {
     const entry = parseHoraeDatasourceRow(row);
     if (entry === undefined) continue;
-    byServerTag.set(entry.serverTag, entry);
+    const lowerTag = entry.serverTag.toLowerCase();
+    const existingKey = keysByLowerTag.get(lowerTag);
+    if (existingKey === undefined) {
+      keysByLowerTag.set(lowerTag, entry.serverTag);
+      byServerTag.set(entry.serverTag, entry);
+      continue;
+    }
+    const existing = byServerTag.get(existingKey);
+    if (
+      existing !== undefined &&
+      existing.serverType === entry.serverType &&
+      existing.service === entry.service &&
+      existing.serverAlias === entry.serverAlias &&
+      existing.host === entry.host &&
+      existing.port === entry.port
+    )
+      continue;
+    ambiguousServerTags.add(lowerTag);
+    byServerTag.delete(existingKey);
   }
-  return { byServerTag };
+  return { byServerTag, ambiguousServerTags };
 }
 
 export function loadHoraeDatasourceIndex(
@@ -135,8 +185,33 @@ export function preferredRdbmsDataSourceFromTaskSource(
       : nonEmptyString(asRecord(source)?.qualifiedName) ??
         nonEmptyString(asRecord(source)?.dataSource);
   if (tag === undefined) return undefined;
-  const entry = index.byServerTag.get(tag);
-  if (entry === undefined) return undefined;
-  if (entry.serverType.toLowerCase() !== "oracle") return undefined;
-  return oracleAtlasDataSourceFromService(entry.service);
+  if (index.ambiguousServerTags?.has(tag.toLowerCase())) return undefined;
+  const direct = index.byServerTag.get(tag);
+  if (direct !== undefined) return preferredAtlasFromHoraeEntry(direct);
+  const lower = tag.toLowerCase();
+  for (const [key, value] of index.byServerTag) {
+    if (key.toLowerCase() === lower)
+      return preferredAtlasFromHoraeEntry(value);
+  }
+  return undefined;
+}
+
+/** True only for a unique exact Horae server_tag; unknown values are not filtered. */
+export function isKnownHoraeDatasourceLabel(
+  source: unknown,
+  index: HoraeDatasourceIndex | undefined,
+): boolean {
+  if (index === undefined) return false;
+  const tag =
+    typeof source === "string"
+      ? nonEmptyString(source)
+      : nonEmptyString(asRecord(source)?.qualifiedName) ??
+        nonEmptyString(asRecord(source)?.dataSource);
+  if (tag === undefined) return false;
+  const lower = tag.toLowerCase();
+  if (index.ambiguousServerTags?.has(lower)) return false;
+  if (index.byServerTag.has(tag)) return true;
+  return [...index.byServerTag.keys()].some(
+    (key) => key.toLowerCase() === lower,
+  );
 }

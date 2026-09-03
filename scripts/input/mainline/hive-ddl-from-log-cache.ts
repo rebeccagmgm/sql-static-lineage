@@ -233,6 +233,7 @@ export function writeHiveDdlFromLogCache(
   observedAt: string,
   evidence: HiveDdlFromLogEvidence,
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  options: { readonly overwrite?: boolean } = {},
 ): string {
   safeTaskId(taskId);
   const path = hiveDdlFromLogCachePath(taskId, cacheRoot);
@@ -244,7 +245,21 @@ export function writeHiveDdlFromLogCache(
       formatHiveDdlFromLogFile(taskId, observedAt, evidence),
       { encoding: "utf8", flag: "wx" },
     );
-    renameSync(temporaryPath, path);
+    if (options.overwrite && existsSync(path)) {
+      const backupPath = `${path}.${process.pid}.${randomUUID()}.bak`;
+      renameSync(path, backupPath);
+      try {
+        renameSync(temporaryPath, path);
+        rmSync(backupPath, { force: true });
+      } catch (error) {
+        if (!existsSync(path) && existsSync(backupPath)) {
+          renameSync(backupPath, path);
+        }
+        throw error;
+      }
+    } else {
+      renameSync(temporaryPath, path);
+    }
     return path;
   } finally {
     if (existsSync(temporaryPath)) rmSync(temporaryPath, { force: true });

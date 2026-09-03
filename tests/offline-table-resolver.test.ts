@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -11,6 +11,11 @@ import {
   platformFromDataSource,
   resolveOfflineTables,
 } from "../scripts/input/shared/offline-table-resolver.ts";
+import {
+  isKnownHoraeDatasourceLabel,
+  loadHoraeDatasourceIndex,
+  preferredRdbmsDataSourceFromTaskSource,
+} from "../scripts/input/shared/horae-datasource-cache.ts";
 import { writeTableInput, type TaskEvidence } from "../scripts/input/shared/input-pack.ts";
 
 function writeJsonl(dir: string, name: string, lines: readonly unknown[]): string {
@@ -80,6 +85,76 @@ describe("offline table name helpers", () => {
       }),
     ).map((item) => item.qualifiedName.toLowerCase());
     expect(names).toContain("pdata_n.some_src");
+  });
+
+  it("filters only a unique exact datasource label and keeps unknown physical values", () => {
+    const horaeDatasource = {
+      byServerTag: new Map([
+        [
+          "oracle_known_1",
+          {
+            serverTag: "oracle_known_1",
+            serverType: "oracle",
+            service: "known",
+          },
+        ],
+      ]),
+    };
+    const known = extractOfflineTableCandidates(
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_known_1",
+        target: "odata.target",
+        sql: { query: "SELECT 1 FROM schema.read_table" },
+      }),
+      horaeDatasource,
+    ).map((item) => item.qualifiedName.toLowerCase());
+    expect(known).not.toContain("oracle_known_1");
+
+    const unknownPhysical = extractOfflineTableCandidates(
+      task({
+        taskCategory: "oracle2hive",
+        source: "schema.read_table@gforacle_unknown#unknown",
+        target: "odata.target",
+        sql: { query: "SELECT 1 FROM schema.read_table" },
+      }),
+      horaeDatasource,
+    );
+    expect(unknownPhysical).toContainEqual({
+      qualifiedName: "schema.read_table",
+      dataSource: "gforacle_unknown#unknown",
+    });
+  });
+
+  it("marks conflicting Horae server tags ambiguous instead of choosing a row", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-datasource-conflict-"));
+    const directory = join(cacheRoot, "schedule-evidence", "horae-datasource");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      join(directory, "rows.jsonl"),
+      [
+        { server_tag: "oracle_conflict", server_type: "oracle", service: "a" },
+        { server_tag: "oracle_conflict", server_type: "oracle", service: "b" },
+      ].map((row) => JSON.stringify(row)).join("\n") + "\n",
+      "utf8",
+    );
+    const index = loadHoraeDatasourceIndex(cacheRoot);
+    expect(index?.ambiguousServerTags).toEqual(new Set(["oracle_conflict"]));
+    expect(isKnownHoraeDatasourceLabel("oracle_conflict", index)).toBe(false);
+    expect(preferredRdbmsDataSourceFromTaskSource("oracle_conflict", index)).toBe(
+      undefined,
+    );
+    const mysqlIndex = {
+      byServerTag: new Map([
+        [
+          "mysql_sag_sagg",
+          { serverTag: "mysql_sag_sagg", serverType: "mysql", service: "sagg" },
+        ],
+      ]),
+    };
+    expect(preferredRdbmsDataSourceFromTaskSource("mysql_sag_sagg", mysqlIndex)).toBe(
+      undefined,
+    );
   });
 });
 
@@ -211,6 +286,71 @@ describe("RDBMS disambiguation via horae-datasource", () => {
     );
   });
 
+  it("prefers gforacle_oracle_uip_winddb#winddb for oracle_wande when #winddb is multi", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-wind-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "WIND.TB_OBJECT_1021@gforacle_jcywdb3#jcywdb",
+          name: "TB_OBJECT_1021",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname:
+            "WIND.TB_OBJECT_1021@gforacle_oracle_uip_winddb#winddb",
+          name: "TB_OBJECT_1021",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "WIND.TB_OBJECT_1021@gforacle_winddb4#winddb",
+          name: "TB_OBJECT_1021",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname:
+            "WIND.TB_OBJECT_1021@gforacle_oracle_uip_winddb#winddb",
+          ddl: "CREATE TABLE WIND.TB_OBJECT_1021 (ID NUMBER)",
+        },
+        {
+          qualifiedname: "WIND.TB_OBJECT_1021@gforacle_winddb4#winddb",
+          ddl: "CREATE TABLE WIND.TB_OBJECT_1021 (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_wande_89.132",
+            {
+              serverTag: "oracle_wande_89.132",
+              serverType: "oracle",
+              service: "winddb",
+              host: "10.2.89.132",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "166",
+        taskCategory: "oracle2hive",
+        source: "oracle_wande_89.132",
+        target: undefined,
+        sql: { query: "SELECT 1 FROM WIND.TB_OBJECT_1021" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]?.dataSource?.toLowerCase()).toBe(
+      "gforacle_oracle_uip_winddb#winddb",
+    );
+  });
+
   it("stays AMBIGUOUS when horae-datasource is absent", () => {
     const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-amb2-"));
     const catalog = loadOfflineTableCatalog({
@@ -257,6 +397,49 @@ describe("RDBMS disambiguation via horae-datasource", () => {
 });
 
 describe("offline table resolver", () => {
+  it("uses a unique Hive2 endpoint hint without inventing a non-Oracle datasource", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-hive2-hint-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_n.demo_source@gfhive",
+          querytext: "CREATE TABLE odata_n.demo_source (ID INT)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "HS_OPT.DEMO_TARGET@gforacle_jgjdb#jgjdb",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "HS_OPT.DEMO_TARGET@gforacle_jgjdb#jgjdb",
+          ddl: "CREATE TABLE HS_OPT.DEMO_TARGET (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: null,
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "hive2oracle",
+        source: "odata_n.demo_source",
+        target: "HS_OPT.DEMO_TARGET",
+        endpointDataSourceHints: { target: "gforacle_jgjdb#jgjdb" },
+        sql: { query: "INSERT INTO HS_OPT.DEMO_TARGET SELECT 1" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]).toMatchObject({
+      qualifiedName: "HS_OPT.DEMO_TARGET",
+      dataSource: "gforacle_jgjdb#jgjdb",
+      platform: "oracle",
+    });
+  });
+
   it("adds a gfhive table from ddl alone when names match, without guid", () => {
     const dir = mkdtempSync(join(tmpdir(), "offline-table-"));
     const catalog = loadOfflineTableCatalog({

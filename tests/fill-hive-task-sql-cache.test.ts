@@ -314,7 +314,7 @@ SELECT A.ID FROM \${src_table} A;`,
     }
   });
 
-  it("force-overwrites HIT from local code and does not re-call MCP for cached misses", async () => {
+  it("force-overwrites HIT from local code and does not re-call MCP for available caches", async () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-force-"));
     const codeRoot = join(cacheRoot, "code");
     try {
@@ -395,6 +395,79 @@ SELECT A.ID FROM \${src_table} A;`,
         status: "HIT",
         source: "SQL_MCP",
         querySql: "SELECT kept",
+      });
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("force retries an unavailable cache through MCP and preserves an available cache", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-force-unavailable-"));
+    try {
+      writeType(cacheRoot, "100037", {
+        taskType: "hiveTask-2.0",
+        scriptPath: "BigData-missing_repo/nope.sql",
+        hiveDb: "dm_otc_n",
+      });
+      writeType(cacheRoot, "100038", {
+        taskType: "hiveTask-2.0",
+        scriptPath: "BigData-missing_repo/keep.sql",
+        hiveDb: "dm_otc_n",
+      });
+      writeHiveTaskSqlCache(
+        "100037",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "SQL_MCP",
+          sqlStatus: "UNAVAILABLE",
+          scriptPath: "BigData-missing_repo/nope.sql",
+          hiveDb: "dm_otc_n",
+          createSql: null,
+          querySql: null,
+        },
+        cacheRoot,
+      );
+      writeHiveTaskSqlCache(
+        "100038",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "SQL_MCP",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing_repo/keep.sql",
+          hiveDb: "dm_otc_n",
+          createSql: null,
+          querySql: "SELECT keep",
+        },
+        cacheRoot,
+      );
+      const mcpCalls: string[] = [];
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        force: true,
+        minIntervalMs: 0,
+        mcpRunner: (taskId) => {
+          mcpCalls.push(taskId);
+          return [{ createSql: null, querySql: "SELECT recovered" }];
+        },
+      });
+      expect(summary).toMatchObject({
+        total: 2,
+        skipped: 1,
+        mcpCached: 1,
+        errors: 0,
+      });
+      expect(mcpCalls).toEqual(["100037"]);
+      expect(readHiveTaskSqlCache("100037", cacheRoot)).toMatchObject({
+        status: "HIT",
+        source: "SQL_MCP",
+        sqlStatus: "AVAILABLE",
+        querySql: "SELECT recovered",
+      });
+      expect(readHiveTaskSqlCache("100038", cacheRoot)).toMatchObject({
+        status: "HIT",
+        source: "SQL_MCP",
+        sqlStatus: "AVAILABLE",
+        querySql: "SELECT keep",
       });
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
