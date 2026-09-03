@@ -62,6 +62,15 @@ export interface CandidateEvidenceRef {
   readonly locator: string | null;
 }
 
+/** Read-only continuation evidence attached by the union-v2 consumer path. */
+export interface CandidateContinuation {
+  readonly source: "IN_UNION_FINAL_WRITE" | "PRODUCER_INDEX_ONLY";
+  readonly partitionMatchStatus: "CONFIRMED" | "ASSUMED" | "UNKNOWN" | "DISJOINT";
+  readonly evidenceLayer: "L1" | "L2";
+  readonly l1Eligible: boolean;
+  readonly indexEntryRef: string;
+}
+
 export interface CandidateBranch {
   readonly candidateBranchId: string;
   readonly branchKind: CandidateBranchKind;
@@ -79,6 +88,7 @@ export interface CandidateBranch {
   readonly evidenceRefs: readonly CandidateEvidenceRef[];
   readonly gapRefs: readonly string[];
   readonly boundaryReason: string | null;
+  readonly continuation?: CandidateContinuation;
 }
 
 export interface CandidateUniverse {

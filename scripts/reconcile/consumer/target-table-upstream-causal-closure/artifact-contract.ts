@@ -69,6 +69,8 @@ export interface TargetTableCausalMetrics {
   readonly evidenceClosureRate: number | "NOT_APPLICABLE";
   readonly decisionCoverage: { readonly numerator: number; readonly denominator: number; readonly rate: number };
   readonly bridgeStats: { readonly resolved: number; readonly ambiguous: number; readonly missing: number };
+  /** Union-v2-only counters; absent in legacy artifacts for hash compatibility. */
+  readonly continuationStats?: ContinuationStats;
   readonly peakMemoryBytes: number;
   /** Gate-B diagnostics; optional so older 1.1.0 artifacts remain readable. */
   readonly confirmedAssessmentCount?: number;
@@ -76,6 +78,16 @@ export interface TargetTableCausalMetrics {
   readonly crossChannelConfirmedBranchCount?: number;
   readonly crossWriteScopeLeakCount?: number;
   readonly unknownReasonCounts?: Readonly<Record<string, number>>;
+}
+
+export interface ContinuationStats {
+  readonly l1: number;
+  readonly l2Assumed: number;
+  readonly l2Unknown: number;
+  readonly piOnly: number;
+  readonly disjointPruned: number;
+  readonly ambiguousReads: number;
+  readonly unmatchedReads: number;
 }
 
 export interface CausalStageMetric {

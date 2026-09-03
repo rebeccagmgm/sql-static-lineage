@@ -52,10 +52,14 @@ describe("runScript-2.0 SQL from horae log", () => {
     });
   });
 
-  it("selects runScript-2.0 and sparkScript ids for log SQL fill", () => {
+  it("selects runScript, runScript-2.0, and sparkScript ids for log SQL fill", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "run-script-ids-"));
     try {
       writeType(cacheRoot, "100036", { taskType: "hiveTask" });
+      writeType(cacheRoot, "101498", {
+        taskType: "runScript",
+        scriptPath: "BigData-demo/main.sh",
+      });
       writeType(cacheRoot, "101499", {
         taskType: "runScript-2.0",
         scriptPath: "BigData-pdata_pcav_n/main.sh",
@@ -67,6 +71,7 @@ describe("runScript-2.0 SQL from horae log", () => {
       });
       expect(runScriptIdsFromHoraeTypeCache(cacheRoot)).toEqual([
         "3233",
+        "101498",
         "101499",
       ]);
     } finally {
@@ -237,6 +242,54 @@ describe("runScript-2.0 SQL from horae log", () => {
       expect(missing).toContain("-- sqlStatus: UNAVAILABLE");
       expect(missing).toContain("-- dataDate: 2026-08-27");
       expect(missing).not.toContain("insert overwrite");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("force retries an UNAVAILABLE cache and preserves an AVAILABLE cache", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "run-script-force-"));
+    try {
+      writeType(cacheRoot, "700", { taskType: "runScript" });
+      writeType(cacheRoot, "701", { taskType: "runScript" });
+      const unavailable = await fillRunScriptSqlCache({
+        cacheRoot,
+        taskIds: ["700"],
+        dataDate: "2026-08-27",
+        minIntervalMs: 0,
+        logRunner: () => {
+          throw new Error("HORAE_LOG_INSTANCE_MISSING:700:2026-08-27");
+        },
+      });
+      expect(unavailable.empty).toBe(1);
+      const available = await fillRunScriptSqlCache({
+        cacheRoot,
+        taskIds: ["701"],
+        dataDate: "2026-08-27",
+        minIntervalMs: 0,
+        logRunner: () => SAMPLE_LOG,
+      });
+      expect(available.cached).toBe(1);
+      const calls: string[] = [];
+      const retried = await fillRunScriptSqlCache({
+        cacheRoot,
+        taskIds: ["700", "701"],
+        dataDate: "2026-08-27",
+        minIntervalMs: 0,
+        force: true,
+        logRunner: (taskId) => {
+          calls.push(taskId);
+          return SAMPLE_LOG;
+        },
+      });
+      expect(retried).toMatchObject({ total: 2, cached: 1, skipped: 1 });
+      expect(calls).toEqual(["700"]);
+      expect(readFileSync(join(tasksRoot(cacheRoot), "700", "run-script.sql"), "utf8")).toContain(
+        "-- sqlStatus: AVAILABLE",
+      );
+      expect(readFileSync(join(tasksRoot(cacheRoot), "701", "run-script.sql"), "utf8")).toContain(
+        "-- sqlStatus: AVAILABLE",
+      );
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

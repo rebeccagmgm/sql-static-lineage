@@ -85,6 +85,24 @@ export function bucketCollectSummary(row: CollectSummaryRow): PartialGapBucket {
   return "OTHER_PARTIAL";
 }
 
+function inventoryFromLatestRows(
+  latest: ReadonlyMap<string, CollectSummaryRow>,
+): PartialGapInventory {
+  const rows = [...latest.values()];
+  const buckets = new Map<PartialGapBucket, string[]>();
+  for (const row of rows) {
+    const bucket = bucketCollectSummary(row);
+    const list = buckets.get(bucket) ?? [];
+    list.push(row.taskId);
+    buckets.set(bucket, list);
+  }
+  for (const [bucket, ids] of buckets) {
+    ids.sort((a, b) => a.localeCompare(b, "en-US", { numeric: true }));
+    buckets.set(bucket, ids);
+  }
+  return { byBucket: buckets, rows };
+}
+
 /**
  * Inventory Input Pack collect `summaries.jsonl` into gap buckets.
  * Later fill scripts should take IDs from these buckets instead of ad-hoc greps.
@@ -99,19 +117,89 @@ export function inventoryPartialGapsFromSummaries(
     if (row === undefined) continue;
     latest.set(row.taskId, row);
   }
-  const rows = [...latest.values()];
-  const buckets = new Map<PartialGapBucket, string[]>();
+  return inventoryFromLatestRows(latest);
+}
+
+/**
+ * Merge multiple collect summaries (later files win per taskId), then bucket.
+ * Use when refresh / force runs wrote separate `summaries.jsonl` trees.
+ */
+export function inventoryPartialGapsFromSummaryFiles(
+  summariesPaths: readonly string[],
+): PartialGapInventory {
+  if (summariesPaths.length === 0) throw new Error("SUMMARIES_PATHS_EMPTY");
+  const latest = new Map<string, CollectSummaryRow>();
+  for (const summariesPath of summariesPaths) {
+    const lines = readFileSync(summariesPath, "utf8").split(/\r?\n/u);
+    for (const line of lines) {
+      const row = parseCollectSummaryLine(line);
+      if (row === undefined) continue;
+      latest.set(row.taskId, row);
+    }
+  }
+  return inventoryFromLatestRows(latest);
+}
+
+export interface HiveDdlLogHealSelection {
+  /** ONLY_HIVE_TARGET_GAP ∩ eligible *2hive types (AnyLoader log DDL). */
+  readonly eligibleIds: readonly string[];
+  /** ONLY_HIVE_TARGET_GAP but not a log-DDL task type (hiveTask / sparkIndex…). */
+  readonly skippedIds: readonly string[];
+  readonly skippedByCategory: Readonly<Record<string, number>>;
+  readonly eligibleByCategory: Readonly<Record<string, number>>;
+}
+
+const HIVE_DDL_WARN_RE = /:(HIVE_DDL_MISS|HIVE_DDL_AMBIGUOUS)\b/u;
+const HIVEISH_TABLE_MISS_RE =
+  /^(odata_|pdata_|ndata_|dm_|ads_|dwd_|dws_|gf_|temp)[^:]*:TABLE_JSONL_MISS\b/iu;
+
+/** True when log-extracted target DDL could plausibly clear the gap. */
+export function warningLooksLikeHiveTargetDdlGap(
+  warnings: readonly string[],
+): boolean {
+  return warnings.some(
+    (warning) =>
+      HIVE_DDL_WARN_RE.test(warning) || HIVEISH_TABLE_MISS_RE.test(warning),
+  );
+}
+
+/**
+ * Split ONLY_HIVE_TARGET_GAP into tasks that can use `fill-hive-ddl-from-log`
+ * vs types that need another path (read-table catalog gaps, etc.).
+ *
+ * *2hive rows whose warnings are only cold RDBMS `TABLE_JSONL_MISS` (no Hive
+ * target shape) are skipped — Horae AnyLoader DDL will not help.
+ */
+export function selectHiveDdlLogHealCandidates(
+  rows: readonly CollectSummaryRow[],
+  eligibleTaskTypes: ReadonlySet<string>,
+): HiveDdlLogHealSelection {
+  const eligibleIds: string[] = [];
+  const skippedIds: string[] = [];
+  const skippedByCategory: Record<string, number> = {};
+  const eligibleByCategory: Record<string, number> = {};
   for (const row of rows) {
-    const bucket = bucketCollectSummary(row);
-    const list = buckets.get(bucket) ?? [];
-    list.push(row.taskId);
-    buckets.set(bucket, list);
+    if (bucketCollectSummary(row) !== "ONLY_HIVE_TARGET_GAP") continue;
+    const category = row.taskCategory?.trim() || "unknown";
+    const canHeal =
+      eligibleTaskTypes.has(category) &&
+      warningLooksLikeHiveTargetDdlGap(row.warnings);
+    if (canHeal) {
+      eligibleIds.push(row.taskId);
+      eligibleByCategory[category] = (eligibleByCategory[category] ?? 0) + 1;
+    } else {
+      skippedIds.push(row.taskId);
+      skippedByCategory[category] = (skippedByCategory[category] ?? 0) + 1;
+    }
   }
-  for (const [bucket, ids] of buckets) {
+  const sortIds = (ids: string[]) =>
     ids.sort((a, b) => a.localeCompare(b, "en-US", { numeric: true }));
-    buckets.set(bucket, ids);
-  }
-  return { byBucket: buckets, rows };
+  return {
+    eligibleIds: sortIds(eligibleIds),
+    skippedIds: sortIds(skippedIds),
+    skippedByCategory,
+    eligibleByCategory,
+  };
 }
 
 export function hiveTargetNamesFromWarnings(

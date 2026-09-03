@@ -19,8 +19,18 @@ import { buildShrinkReport, unknownReasonCodesForAssessment } from "./static-ass
 import { relationSummaryKey, summarizeTaskRelations } from "./task-relation-summary.ts";
 import { resolveTargetWrite, type AnalysisSnapshotRef } from "./target-write-contract.ts";
 import { inferTaskDefaultSchema } from "../../shared/task-default-schema.ts";
+import { canonicalCandidateBranchId } from "../target-field-causal-slice/candidate-universe.ts";
+import {
+  continuationIndexEntryReference,
+  loadUnionContinuationCandidateSource,
+  type UnionContinuationCandidateSource,
+  type UnionContinuationIndexCandidate,
+} from "./union-continuation-candidate-source.ts";
+import type { ContinuationStats } from "./artifact-contract.ts";
 
-interface CliOptions {
+export type CandidateSourceMode = "legacy" | "union-v2";
+
+export interface CliOptions {
   readonly dataRoot: string;
   readonly factsRoot: string;
   readonly producerIndex: string;
@@ -40,6 +50,8 @@ interface CliOptions {
   readonly maxStateUpdates: number;
   readonly maxNodeStates: number;
   readonly maxWitnessDepth: number;
+  readonly candidateSource: CandidateSourceMode;
+  readonly continuationIndex: string | null;
 }
 
 function readJson(path: string): unknown { return JSON.parse(readFileSync(path, "utf8")); }
@@ -112,7 +124,7 @@ function resolveCatalogTable(catalog: ReturnType<typeof loadPhysicalTableCatalog
   // an unqualified table name into a SCHEMA_BACKED/confirmed target.
   throw new Error(`TARGET_TABLE_PHYSICAL_IDENTITY_UNRESOLVED:${requested}`);
 }
-function parseArgs(argv: readonly string[]): CliOptions {
+export function parseArgs(argv: readonly string[]): CliOptions {
   const values = new Map<string, string>();
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index];
@@ -130,6 +142,10 @@ function parseArgs(argv: readonly string[]): CliOptions {
     if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`ARGUMENT_INVALID:${key}`);
     return parsed;
   };
+  const candidateSource = values.get("candidate-source") ?? "legacy";
+  if (candidateSource !== "legacy" && candidateSource !== "union-v2") throw new Error("ARGUMENT_INVALID:candidate-source");
+  const continuationIndex = values.get("continuation-index") ?? null;
+  if (candidateSource === "union-v2" && continuationIndex === null) throw new Error("ARGUMENT_MISSING:continuation-index");
   return {
     dataRoot: required("data-root"), factsRoot: required("facts-root"), producerIndex: required("producer-index"), tableMultiHop: required("table-multi-hop"),
     fieldLineage: values.get("field-lineage") ?? null, taskId: required("task-id"), targetTable: required("target-table"),
@@ -138,6 +154,8 @@ function parseArgs(argv: readonly string[]): CliOptions {
     fieldLineageHtmlHref: values.get("field-lineage-html-href") ?? null,
     maxTimeMs: budget("max-time-ms", 300_000), maxMemoryBytes: budget("max-memory-bytes", 1_073_741_824), maxBranches: budget("max-branches", 10_000), maxDepth: budget("max-depth", 25),
     maxStateUpdates: budget("max-state-updates", 100_000), maxNodeStates: budget("max-node-states", 50_000), maxWitnessDepth: budget("max-witness-depth", 25),
+    candidateSource,
+    continuationIndex,
   };
 }
 
@@ -239,7 +257,9 @@ function enrichProducerWriteBridges(
       resolved += 1;
       return [bindProducerWrite(branch, load, writes[0]!)];
     }
-    resolved += writes.length;
+    // Preserve the legacy artifact count one write at a time. Union-v2 below
+    // counts only L1-eligible candidates whose exact scope binds successfully.
+    for (let index = 0; index < writes.length; index += 1) resolved += 1;
     return writes.map((write) => {
       const writeObservationId = String(write.write_observation_id);
       return bindProducerWrite({
@@ -249,6 +269,153 @@ function enrichProducerWriteBridges(
     });
   });
   return { universe: { ...universe, branches }, stats: { resolved, ambiguous, missing } };
+}
+
+function unionContinuationGapRefs(
+  branchId: string,
+  entry: { readonly gaps: readonly { readonly reasonCode: string }[] },
+  candidate: UnionContinuationIndexCandidate,
+): readonly string[] {
+  const codes = [
+    ...entry.gaps.map((gap) => gap.reasonCode),
+    candidate.alignmentGapCode,
+    candidate.reasonCode,
+  ].filter((value): value is string => Boolean(value));
+  return [...new Set(codes)].sort((left, right) => left.localeCompare(right)).map((code) => `continuation-gap:${branchId}:${code}`);
+}
+
+function sameQualifiedName(left: string | null | undefined, right: string | null | undefined): boolean {
+  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase());
+}
+
+function branchIdForWrite(branch: CandidateBranch, writeObservationId: string): string {
+  return canonicalCandidateBranchId({ ...branch, writeObservationId });
+}
+
+function bindIndexedProducerWrite(
+  branch: CandidateBranch,
+  load: CurrentBundleLoad,
+  candidate: UnionContinuationIndexCandidate,
+  continuation: NonNullable<CandidateBranch["continuation"]>,
+  indexEntryRef: string,
+  entry: { readonly gaps: readonly { readonly reasonCode: string }[] },
+): CandidateBranch {
+  const writeObservationId = candidate.writeObservationId;
+  const writeScope = branch.producerTaskId && branch.table?.qualifiedName
+    ? producerWriteScope(load, branch.producerTaskId, branch.table.qualifiedName, writeObservationId)
+    : null;
+  const scopeGap = writeScope ? [] : [`bridge-gap:${branch.candidateBranchId}:PRODUCER_WRITE_SCOPE_UNRESOLVED`];
+  return {
+    ...branch,
+    candidateBranchId: branchIdForWrite(branch, writeObservationId),
+    writeObservationId,
+    ...(writeScope ? { writeScope } : {}),
+    continuation,
+    evidenceRefs: [
+      ...branch.evidenceRefs,
+      {
+        evidenceRefId: indexEntryRef,
+        source: "UNION_CONTINUATION_INDEX",
+        locator: indexEntryRef,
+      },
+      {
+        evidenceRefId: `producer-write-evidence:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
+        source: "MACHINE_FACTS_DATASET_IO",
+        locator: `machine-facts:${branch.producerTaskId}:dataset-io.jsonl#write-observation:${writeObservationId}`,
+      },
+      ...(writeScope ? [] : [{
+        evidenceRefId: `producer-write-scope-gap:${sha256(canonicalJson({ taskId: branch.producerTaskId, writeObservationId, table: branch.table }))}`,
+        source: "MACHINE_FACTS_OUTPUT_BINDINGS",
+        locator: `machine-facts:${branch.producerTaskId}:output-field-bindings.jsonl#write-observation:${writeObservationId}`,
+      }]),
+    ].filter((value, index, all) => all.findIndex((other) => other.evidenceRefId === value.evidenceRefId) === index),
+    gapRefs: [...new Set([...branch.gapRefs, ...unionContinuationGapRefs(branch.candidateBranchId, entry, candidate), ...scopeGap])],
+  };
+}
+
+export function enrichUnionV2ProducerBridges(
+  universe: CandidateUniverse,
+  source: UnionContinuationCandidateSource,
+  loadForTask: (taskId: string) => CurrentBundleLoad,
+): {
+  readonly universe: CandidateUniverse;
+  readonly stats: { readonly resolved: number; readonly ambiguous: number; readonly missing: number };
+  readonly continuationStats: ContinuationStats;
+} {
+  let resolved = 0;
+  let ambiguous = 0;
+  let missing = 0;
+  const continuationStats = {
+    l1: 0,
+    l2Assumed: 0,
+    l2Unknown: 0,
+    piOnly: 0,
+    disjointPruned: 0,
+    ambiguousReads: 0,
+    unmatchedReads: 0,
+  } satisfies ContinuationStats;
+  const ambiguousReadKeys = new Set<string>();
+  const unmatchedReadKeys = new Set<string>();
+  const branches = universe.branches.flatMap((branch): readonly CandidateBranch[] => {
+    if (branch.branchKind === "SCHEDULE_ONLY") return [];
+    if (branch.branchKind !== "PHYSICAL_PRODUCER" || !branch.producerTaskId || !branch.table?.qualifiedName || !branch.consumerTaskId || !branch.readOccurrence) return [branch];
+    const readKey = `${branch.consumerTaskId}\u0000${branch.readOccurrence.occurrenceId}`;
+    const entry = source.entryForRead(branch.consumerTaskId, branch.readOccurrence.occurrenceId);
+    if (!entry) {
+      if (!unmatchedReadKeys.has(readKey)) {
+        unmatchedReadKeys.add(readKey);
+        continuationStats.unmatchedReads += 1;
+      }
+      missing += 1;
+      return [{
+        ...branch,
+        gapRefs: [...new Set([...branch.gapRefs, `continuation-gap:${branch.candidateBranchId}:CONTINUATION_READ_NOT_FOUND`])],
+      }];
+    }
+    const matchingCandidates = source.candidatesForRead(branch.consumerTaskId, branch.readOccurrence.occurrenceId)
+      .filter((candidate) => candidate.taskId === branch.producerTaskId && sameQualifiedName(candidate.qualifiedName, branch.table?.qualifiedName));
+    const retainedCandidates = matchingCandidates.filter((candidate) => candidate.partitionMatchStatus !== "DISJOINT");
+    if (retainedCandidates.length >= 2 && !ambiguousReadKeys.has(readKey)) {
+      ambiguousReadKeys.add(readKey);
+      ambiguous += 1;
+      continuationStats.ambiguousReads += 1;
+    }
+    if (matchingCandidates.length === 0) {
+      missing += 1;
+      return [{
+        ...branch,
+        gapRefs: [...new Set([...branch.gapRefs, `continuation-gap:${branch.candidateBranchId}:CONTINUATION_PRODUCER_NOT_FOUND`])],
+      }];
+    }
+    const retained = matchingCandidates.flatMap((candidate): readonly CandidateBranch[] => {
+      if (candidate.partitionMatchStatus === "DISJOINT") {
+        continuationStats.disjointPruned += 1;
+        return [];
+      }
+      if (candidate.source === "PRODUCER_INDEX_ONLY") continuationStats.piOnly += 1;
+      else if (candidate.l1Eligible && candidate.partitionMatchStatus === "CONFIRMED" && candidate.evidenceLayer === "L1") continuationStats.l1 += 1;
+      else if (candidate.partitionMatchStatus === "ASSUMED") continuationStats.l2Assumed += 1;
+      else continuationStats.l2Unknown += 1;
+      const indexEntryRef = continuationIndexEntryReference(source, branch.consumerTaskId!, branch.readOccurrence!.occurrenceId);
+      const continuation = {
+        source: candidate.source,
+        partitionMatchStatus: candidate.partitionMatchStatus,
+        evidenceLayer: candidate.evidenceLayer,
+        l1Eligible: candidate.l1Eligible,
+        indexEntryRef,
+      } satisfies NonNullable<CandidateBranch["continuation"]>;
+      const loaded = loadForTask(branch.producerTaskId!);
+      const bound = bindIndexedProducerWrite(branch, loaded, candidate, continuation, indexEntryRef, entry);
+      if (candidate.l1Eligible && bound.writeScope) resolved += 1;
+      return [bound];
+    });
+    return retained;
+  });
+  return {
+    universe: { ...universe, branches },
+    stats: { resolved, ambiguous, missing },
+    continuationStats,
+  };
 }
 
 function sameTaskUpstreamWrites(
@@ -359,8 +526,21 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     taskLoads.set(taskId, loaded);
     return loaded;
   };
-  const enriched = enrichProducerWriteBridges(universe, loadForTask);
-  universe = normalizeReadScopes(enriched.universe, loadForTask);
+  let bridgeEnrichmentStats: { readonly resolved: number; readonly ambiguous: number; readonly missing: number };
+  let continuationStats: ContinuationStats | undefined;
+  if (options.candidateSource === "union-v2") {
+    if (!options.continuationIndex) throw new Error("ARGUMENT_MISSING:continuation-index");
+    const continuationSource = loadUnionContinuationCandidateSource(options.continuationIndex);
+    universe = normalizeReadScopes(universe, loadForTask);
+    const enriched = enrichUnionV2ProducerBridges(universe, continuationSource, loadForTask);
+    universe = enriched.universe;
+    bridgeEnrichmentStats = enriched.stats;
+    continuationStats = enriched.continuationStats;
+  } else {
+    const enriched = enrichProducerWriteBridges(universe, loadForTask);
+    universe = normalizeReadScopes(enriched.universe, loadForTask);
+    bridgeEnrichmentStats = enriched.stats;
+  }
   stage("candidate-projection", projectionStart, 1, 0, 1, universe.branches.length, universe.branches.length);
   assertBudget("candidate-projection", universe.branches.length, Math.max(0, ...universe.branches.map((branch) => branch.readOccurrence?.relationPath?.length ?? 0)));
   const sameTaskUpstreamWrites = buildSameTaskUpstreamWrites(
@@ -476,9 +656,9 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
   ];
   const gaps = [...new Map(gapCandidates.map((gap) => [gap.gapId, gap])).values()].sort((a, b) => a.gapId.localeCompare(b.gapId));
   const bridgeStats = {
-    resolved: enriched.stats.resolved,
-    ambiguous: enriched.stats.ambiguous,
-    missing: enriched.stats.missing + universe.branches.filter((branch) => branch.branchKind === "UNBOUND_READ" || branch.branchKind === "BLOCKED_READ" || branch.branchKind === "COVERAGE_BOUNDARY").length,
+    resolved: bridgeEnrichmentStats.resolved,
+    ambiguous: bridgeEnrichmentStats.ambiguous,
+    missing: bridgeEnrichmentStats.missing + universe.branches.filter((branch) => branch.branchKind === "UNBOUND_READ" || branch.branchKind === "BLOCKED_READ" || branch.branchKind === "COVERAGE_BOUNDARY").length,
   };
   peakMemoryBytes = Math.max(peakMemoryBytes, process.memoryUsage().rss);
   const raw: Omit<TargetTableCausalClosureArtifact, "contentHash"> = {
@@ -487,7 +667,7 @@ export function runTargetTableCausalClosure(options: CliOptions): TargetTableCau
     runtimeRerunDecision: "NOT_EVALUATED",
     shrinkReport: buildShrinkReport({ branches: universe.branches, assessments }),
     relationSummaries: [...summaries.values()].map((summary) => ({ taskId: summary.taskId, sqlSourceId: summary.sqlSourceId, statementIndex: summary.statementIndex, rootRelationId: summary.rootRelationId, digest: summary.digest, complete: summary.complete, gapCount: summary.gaps.length })),
-    metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, peakMemoryBytes, confirmedAssessmentCount: confirmed.length, writeScopedConfirmedCount, crossChannelConfirmedBranchCount, crossWriteScopeLeakCount: closure.writeScopeLeakCount, unknownReasonCounts },
+    metrics: { candidateBranchCount: universe.branches.length, assessmentCount: assessments.length, upstreamTaskCount: closure.taskRollup.length, fieldValueEvidenceScanCount: fieldProvider.scanCount, evidenceClosureRate: closureRate, decisionCoverage: { numerator: assessments.length, denominator: universe.branches.length, rate: universe.branches.length === 0 ? 1 : assessments.length / universe.branches.length }, bridgeStats, ...(continuationStats ? { continuationStats } : {}), peakMemoryBytes, confirmedAssessmentCount: confirmed.length, writeScopedConfirmedCount, crossChannelConfirmedBranchCount, crossWriteScopeLeakCount: closure.writeScopeLeakCount, unknownReasonCounts },
     stages, gaps,
   };
   return canonicalizeTargetTableArtifact(raw);

@@ -185,17 +185,30 @@ Hive **目标表 DDL** 常不在原信息 jsonl。`*2hive` AnyLoader 日志里�
 `Process hive ddl:` → `CREATE EXTERNAL TABLE`。走日志缓存（与 runScript 同型）：
 
 ```text
-summaries.jsonl → ONLY_HIVE_TARGET_GAP
+summaries.jsonl → ONLY_HIVE_TARGET_GAP ∩ *2hive
         │
         ▼
-fill-hive-ddl-from-log（opencli horae log → script-log/）
+heal-hive-target-ddl（一键：填日志 DDL + from-cache --force）
         │
-        ▼
-tasks/<id>/hive-target-ddl.sql  →  assembleToHive.sql.create
-        │
-        ▼
-input-pack:from-cache --force   →  Table Pack（evidenceProvider=…hive-target-ddl）
+        ├── fill-hive-ddl-from-log → tasks/<id>/hive-target-ddl.sql
+        └── input-pack:from-cache --force → Table Pack
 ```
+
+推荐（合并多份 summaries，跳过 hiveTask/sparkIndex 等非日志类型）：
+
+```powershell
+npm run input-pack:heal-hive-target-ddl -- `
+  --data-root sql-static-lineage-data `
+  --from-summaries sql-static-lineage-data\tmp\from-cache-full\logs\summaries.jsonl,sql-static-lineage-data\tmp\from-cache-full\logs-oracle2hive-hive-ddl-force\summaries.jsonl `
+  --data-date 2026-08-27 `
+  --write-ids-dir sql-static-lineage-data\tmp\from-cache-full\partial-analysis `
+  --log-dir sql-static-lineage-data\tmp\from-cache-full\logs-heal-hive-ddl
+```
+
+先看会处理谁（不打 Horae、不写 Pack）：加 `--dry-run`。  
+只要补缓存、不 force：`--skip-force`。缓存已有、只 force：`--skip-fill`。
+
+底层分步（仍可用）：
 
 ```powershell
 npm run input-pack:fill-hive-ddl-from-log -- `
@@ -420,3 +433,50 @@ guid `0c376750-…`，**不在** Hive DDL jsonl。已有 Table Pack 走 ①；�
 
 第 2 步不需要新契约。第 3 步是 Table 离线路径的前置。第 4–6 步接
 `TaskEvidence`。第 7 步不要为了补 query 重新打开在线采集。
+
+## 9. PARTIAL 修复入口（2026-09-03）
+
+上一节描述的是默认离线组装路径；本节是针对已有 PARTIAL 的显式、可审计修复入口。它不会改变默认 `input-pack:from-cache` 的证据边界，也不会把 relation cache 当成表或 SQL。
+
+### 9.1 盘点与修复命令
+
+```powershell
+# 先生成稳定 inventory；相关 cache writer 活跃时不会发布最终结论
+npm run input-pack:partial-inventory -- `
+  --data-root sql-static-lineage-data `
+  --cache-root sql-static-lineage-cache `
+  --output sql-static-lineage-data\tmp\from-cache-partial-repair\final-inventory.json
+
+# 默认只读本地 cache/catalog；缺表证据时不访问在线接口
+npm run input-pack:repair-partials -- `
+  --data-root sql-static-lineage-data `
+  --cache-root sql-static-lineage-cache `
+  --inventory sql-static-lineage-data\tmp\from-cache-partial-repair\final-inventory.json `
+  --manifest sql-static-lineage-data\tmp\from-cache-partial-repair\local-table-repair-manifest.jsonl
+
+# 只有明确允许 backup 时才启用在线 table adapter；每次应使用有界 task-id workset
+npm run input-pack:repair-partials -- `
+  --data-root sql-static-lineage-data `
+  --cache-root sql-static-lineage-cache `
+  --task-ids-file sql-static-lineage-data\tmp\from-cache-partial-repair\online-hive2-table-ids.txt `
+  --allow-online-backup `
+  --manifest sql-static-lineage-data\tmp\from-cache-partial-repair\online-hive2-table-manifest.jsonl
+```
+
+repair runner 每次只处理一个有界 workset；成功写入的 evidence 才会进入正式 Table Pack，并由调用方把 changed task IDs 交给 `input-pack:from-cache --force`。manifest 是证据审计，不是把失败任务改成成功的替代品。
+
+### 9.2 重试、datasource 与失败语义
+
+- `fill-hive-task-sql-cache`、`fill-run-script-sql-cache`、`fill-hive-ddl-from-log` 的 `--force` 只重试已经存在且 `UNAVAILABLE` 的缓存；AVAILABLE 内容和 provider 保留不动。
+- `runScript` / `sparkScript` 的 SQL 只能来自 Horae log 中可定位的实例。实例缺失时记录 `HORAE_LOG_INSTANCE_MISSING`，不回退到不等价的 schedule SQL。
+- Table resolution 先用已有 Pack，再用 Hive/RDBMS 本地 jsonl；在线 fallback 必须 exact-match qualified name、platform、dataSource，并且只能有一个可对账候选。多个 GUID、多个 datasource、404/not found、403、429、timeout、malformed response 都不写 evidence。
+- Horae datasource 映射只作为 endpoint hint。映射冲突时保留未知；唯一 hint 也不能覆盖 SQL/目录的多实例冲突。`*2hive` 的 source 标签不转成物理表，hive2* 的 target server hint 只在 SQL 精确写目标与 datasource 同时成立时使用。
+- 任务 SQL 的 query fallback 只能从同任务的 `hive-task.sql` query 槽补 specialized route 的空 query；create 槽永远不提升为 Table Pack 的 `ddl.sql`。
+
+### 9.3 本轮执行结果
+
+2026-09-03 的稳定基线为 `SUCCESS 5472 / PARTIAL 5938 / FAILED 238`，最终稳定 inventory 为 `SUCCESS 5615 / PARTIAL 5795 / FAILED 238`。实际可复用的证据已经重跑并落盘；失败和未知仍保留原 warning 及 manifest failure class。详见 [`input-pack-from-cache-partial-analysis.md`](E:/02_area/股衍数据-数据cookbook/sql-static-lineage/docs/input-pack-from-cache-partial-analysis.md) §10，以及最终 inventory：
+
+`E:\02_area\股衍数据-数据cookbook\sql-static-lineage-data\tmp\from-cache-partial-repair\final-inventory.json`
+
+默认离线入口仍不因为这套修复 runner 而自动访问在线接口；要做 online backup，必须显式传 `--allow-online-backup` 并保存逐条 manifest。

@@ -7,3 +7,4 @@ export * from "./proof-validator.ts";
 export * from "./static-assessment.ts";
 export * from "./task-relation-summary.ts";
 export * from "./target-write-contract.ts";
+export * from "./union-continuation-candidate-source.ts";

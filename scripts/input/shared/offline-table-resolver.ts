@@ -26,6 +26,7 @@ import {
 } from "./task-partition-evidence.ts";
 import {
   loadHoraeDatasourceIndex,
+  isKnownHoraeDatasourceLabel,
   preferredRdbmsDataSourceFromTaskSource,
   type HoraeDatasourceIndex,
 } from "./horae-datasource-cache.ts";
@@ -396,6 +397,7 @@ function sqlInputs(
 
 export function extractOfflineTableCandidates(
   taskEvidence: TaskEvidence,
+  horaeDatasource?: HoraeDatasourceIndex,
 ): readonly OfflineTableCandidate[] {
   const byKey = new Map<string, OfflineTableCandidate>();
   const add = (value: unknown): void => {
@@ -411,8 +413,13 @@ export function extractOfflineTableCandidates(
   // *2hive: source is a platform datasource label (e.g. oracle_rbjygl_85.236),
   // not a physical table. Adding it creates TABLE_JSONL_MISS noise and can keep
   // the whole task PARTIAL even when real tables resolve.
-  if (!isDatabaseSourceToHiveTask(taskEvidence.taskCategory))
-    add(taskEvidence.source);
+  const sourceCandidate = parsePhysicalTableName(taskEvidence.source);
+  if (
+    !isDatabaseSourceToHiveTask(taskEvidence.taskCategory) ||
+    (!isKnownHoraeDatasourceLabel(taskEvidence.source, horaeDatasource) &&
+      sourceCandidate?.dataSource !== undefined)
+  )
+    add(sourceCandidate);
   const sql = sqlInputs(taskEvidence);
   for (const name of Object.values(sql).flatMap((content) =>
     extractSqlReadTableNames(content ?? ""),
@@ -723,7 +730,7 @@ function hiveFromDdl(
   };
 }
 
-function rdbmsFromCore(
+export function rdbmsFromCore(
   record: JsonRecord,
   ddl: string,
   evidenceProvider: string,
@@ -911,18 +918,22 @@ export function resolveOfflineTables(
   now: () => Date = () => new Date(),
   packStore?: ReturnType<typeof openOfflineTablePackStore>,
 ): OfflineTableResolution {
-  const candidates = extractOfflineTableCandidates(taskEvidence);
+  const candidates = extractOfflineTableCandidates(
+    taskEvidence,
+    catalog.horaeDatasource,
+  );
   const localPacks = packStore ?? openOfflineTablePackStore(dataRoot);
   const sql = sqlInputs(taskEvidence);
   const collectedAt = now().toISOString();
   const preferredRdbmsDataSource = isDatabaseSourceToHiveTask(
     taskEvidence.taskCategory,
   )
-    ? preferredRdbmsDataSourceFromTaskSource(
+    ? (taskEvidence.endpointDataSourceHints?.source ??
+      preferredRdbmsDataSourceFromTaskSource(
         taskEvidence.source,
         catalog.horaeDatasource,
-      )
-    : undefined;
+      ))
+    : taskEvidence.endpointDataSourceHints?.target;
   const resolved: TableEvidence[] = [];
   const unavailable: { qualifiedName: string; reason: string }[] = [];
   const seen = new Set<string>();
