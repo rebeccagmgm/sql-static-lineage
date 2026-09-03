@@ -10,8 +10,11 @@ import {
   type ProjectTopologySourceMode,
 } from "../../contracts/project-topology-contract.ts";
 
-/** WP-3 projection schema versions accepted by the TASK_LOCAL_UNION loader. */
-export const TASK_LOCAL_UNION_SUPPORTED_PROJECTION_SCHEMAS = ["1.1.0"] as const;
+/** WP-3/WP-7 projection schema versions accepted by the TASK_LOCAL_UNION loader. */
+export const TASK_LOCAL_UNION_SUPPORTED_PROJECTION_SCHEMAS = [
+  "1.1.0",
+  "1.2.0",
+] as const;
 
 export type TaskLocalUnionSupportedProjectionSchema =
   (typeof TASK_LOCAL_UNION_SUPPORTED_PROJECTION_SCHEMAS)[number];
@@ -73,6 +76,29 @@ export interface TaskLocalProjectionBody {
   readonly contentHash: string;
   readonly nodes: readonly unknown[];
   readonly edges: readonly unknown[];
+  /** WP-7 task-local summaries consumed by union-continuation-v2. */
+  readonly localClosure?: TaskLocalProjectionClosure;
+}
+
+export interface TaskLocalProjectionClosure {
+  readonly finalWrites: readonly TaskLocalFinalWrite[];
+  readonly externalReads: readonly TaskLocalExternalRead[];
+  readonly localFieldPaths?: readonly unknown[];
+}
+
+export interface TaskLocalFinalWrite {
+  readonly writeObservationId: string;
+  readonly targetWriteNodeId: string;
+  readonly datasetNodeId: string;
+  readonly qualifiedName: string;
+}
+
+export interface TaskLocalExternalRead {
+  readonly readOccurrenceId: string;
+  readonly readOccurrenceNodeId: string;
+  readonly datasetNodeId: string;
+  readonly qualifiedName: string;
+  readonly identityStatus: string;
 }
 
 export interface TaskLocalProjectionEnvelope {
@@ -320,6 +346,7 @@ function parseEnvelope(value: unknown): TaskLocalProjectionEnvelope {
       ? null
       : text(projection.failureReasonCode);
 
+  const localClosure = parseLocalClosure(projection.localClosure);
   return {
     cacheKey,
     cacheKeyParts: {
@@ -341,8 +368,70 @@ function parseEnvelope(value: unknown): TaskLocalProjectionEnvelope {
       contentHash,
       nodes: projection.nodes,
       edges: projection.edges,
+      ...(localClosure ? { localClosure } : {}),
     },
   };
+}
+
+function parseLocalClosure(
+  value: unknown,
+): TaskLocalProjectionClosure | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("TASK_LOCAL_PROJECTION_LOCAL_CLOSURE_INVALID");
+  }
+  const record = value as Record<string, unknown>;
+  if (
+    !Array.isArray(record.finalWrites) ||
+    !Array.isArray(record.externalReads)
+  ) {
+    throw new Error("TASK_LOCAL_PROJECTION_LOCAL_CLOSURE_INVALID");
+  }
+  const finalWrites = record.finalWrites.map((item) => {
+    const write = objectRecord(item);
+    return {
+      writeObservationId: requiredText(write.writeObservationId),
+      targetWriteNodeId: requiredText(write.targetWriteNodeId),
+      datasetNodeId: requiredText(write.datasetNodeId),
+      qualifiedName: requiredText(write.qualifiedName),
+    } satisfies TaskLocalFinalWrite;
+  });
+  const externalReads = record.externalReads.map((item) => {
+    const read = objectRecord(item);
+    return {
+      readOccurrenceId: requiredText(read.readOccurrenceId),
+      readOccurrenceNodeId: requiredText(read.readOccurrenceNodeId),
+      datasetNodeId: requiredText(read.datasetNodeId),
+      qualifiedName: requiredText(read.qualifiedName),
+      identityStatus: requiredText(read.identityStatus),
+    } satisfies TaskLocalExternalRead;
+  });
+  if (
+    record.localFieldPaths !== undefined &&
+    !Array.isArray(record.localFieldPaths)
+  ) {
+    throw new Error("TASK_LOCAL_PROJECTION_LOCAL_CLOSURE_INVALID");
+  }
+  return {
+    finalWrites,
+    externalReads,
+    ...(record.localFieldPaths !== undefined
+      ? { localFieldPaths: record.localFieldPaths }
+      : {}),
+  };
+}
+
+function objectRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("TASK_LOCAL_PROJECTION_LOCAL_CLOSURE_INVALID");
+  }
+  return value as Record<string, unknown>;
+}
+
+function requiredText(value: unknown): string {
+  const result = text(value);
+  if (!result) throw new Error("TASK_LOCAL_PROJECTION_LOCAL_CLOSURE_INVALID");
+  return result;
 }
 
 function text(value: unknown): string | null {

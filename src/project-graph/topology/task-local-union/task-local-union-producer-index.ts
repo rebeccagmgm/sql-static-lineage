@@ -42,11 +42,32 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
         : null;
     const qualifiedName = table ? text(table.qualifiedName) : null;
     const writes = Array.isArray(record.writes) ? record.writes : [];
-    const partition = flattenPartitions(writes);
-    writers.push({
-      taskId,
-      qualifiedName: qualifiedName ?? undefined,
-      partition,
+    if (writes.length === 0) {
+      writers.push({
+        taskId,
+        qualifiedName: qualifiedName ?? undefined,
+      });
+      continue;
+    }
+    // Keep one producer-index item per write observation.  Flattening all
+    // writes into one task-level partition silently cross-combines partitions
+    // for same-table multi-write tasks.
+    writes.forEach((write, index) => {
+      if (typeof write !== "object" || write === null || Array.isArray(write)) {
+        return;
+      }
+      const writeRecord = write as Record<string, unknown>;
+      writers.push({
+        taskId,
+        writeObservationId:
+          text(writeRecord.writeObservationId) ??
+          text(writeRecord.write_observation_id) ??
+          text(record.writeObservationId) ??
+          text(record.write_observation_id) ??
+          `write-observation:${taskId}:${index}`,
+        qualifiedName: qualifiedName ?? undefined,
+        partition: parsePartition(writeRecord),
+      });
     });
   }
   return {
@@ -67,35 +88,37 @@ export function writersForQualifiedName(
   );
 }
 
-function flattenPartitions(
-  writes: readonly unknown[],
+function parsePartition(
+  write: Record<string, unknown>,
 ): ProducerIndexWriter["partition"] {
   const parts: NonNullable<ProducerIndexWriter["partition"]>[number][] = [];
-  for (const write of writes) {
-    if (typeof write !== "object" || write === null || Array.isArray(write)) {
+  const partitionStatus = text(write.partitionStatus) ?? undefined;
+  const partition = Array.isArray(write.partition) ? write.partition : [];
+  for (const item of partition) {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) {
       continue;
     }
-    const record = write as Record<string, unknown>;
-    const partitionStatus = text(record.partitionStatus) ?? undefined;
-    const partition = Array.isArray(record.partition) ? record.partition : [];
-    for (const item of partition) {
-      if (typeof item !== "object" || item === null || Array.isArray(item)) {
-        continue;
-      }
-      const part = item as Record<string, unknown>;
-      const column = text(part.field) ?? text(part.column);
-      if (!column) continue;
-      const values: string[] = [];
-      const observed = text(part.observedValue);
-      if (observed) values.push(observed);
-      const expression = text(part.expression);
-      if (expression && !values.includes(expression)) values.push(expression);
-      parts.push({
-        column,
-        values,
-        ...(partitionStatus ? { partitionStatus } : {}),
-      });
-    }
+    const part = item as Record<string, unknown>;
+    const column = text(part.field) ?? text(part.column);
+    if (!column) continue;
+    const observedValue =
+      part.observedValue === null ? null : text(part.observedValue);
+    const expression = text(part.expression);
+    const values: string[] = [];
+    if (observedValue) values.push(observedValue);
+    if (expression && !values.includes(expression)) values.push(expression);
+    parts.push({
+      column,
+      values,
+      ...(partitionStatus ? { partitionStatus } : {}),
+      ...(text(part.valueStatus)
+        ? { valueStatus: text(part.valueStatus)! }
+        : {}),
+      ...(part.observedValue === null || observedValue
+        ? { observedValue }
+        : {}),
+      ...(expression ? { expression } : {}),
+    });
   }
   return parts;
 }

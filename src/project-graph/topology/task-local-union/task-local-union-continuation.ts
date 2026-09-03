@@ -27,12 +27,17 @@ export interface TaskLocalUnionContinuationGap {
 
 export interface ProducerIndexWriter {
   readonly taskId: string;
+  /** Stable write-observation identity when the producer index carries it. */
+  readonly writeObservationId?: string;
   readonly datasetNodeId?: string;
   readonly qualifiedName?: string;
   readonly partition?: readonly {
     readonly column: string;
     readonly values: readonly string[];
     readonly partitionStatus?: string;
+    readonly valueStatus?: string;
+    readonly observedValue?: string | null;
+    readonly expression?: string;
   }[];
 }
 

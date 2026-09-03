@@ -15,6 +15,7 @@ import {
   unpackTaskLocalProjectionEnvelope,
   validateTaskLocalUnionSnapshot,
   type TaskLocalProjectionEnvelope,
+  type TaskLocalProjectionClosure,
   type TaskLocalUnionSnapshotV1,
   type TaskLocalUnionTaskSource,
 } from "../src/project-graph/topology/task-local-union/task-local-union-contract.ts";
@@ -45,6 +46,7 @@ function envelope(input: {
   readonly nodes?: unknown[];
   readonly edges?: unknown[];
   readonly failureReasonCode?: string | null;
+  readonly localClosure?: TaskLocalProjectionClosure;
 }): TaskLocalProjectionEnvelope {
   const schemaVersion = input.schemaVersion ?? "1.1.0";
   return {
@@ -80,6 +82,7 @@ function envelope(input: {
         },
       ],
       edges: input.edges ?? [],
+      ...(input.localClosure ? { localClosure: input.localClosure } : {}),
     },
   };
 }
@@ -151,6 +154,33 @@ describe("TASK_LOCAL_UNION contract (TU-0)", () => {
       coverageStatus: "PROJECTED",
     });
     expect(unpacked.projection.schemaVersion).toBe("1.1.0");
+  });
+
+  it("preserves WP-7 1.2.0 localClosure for v2 consumers", () => {
+    const localClosure: TaskLocalProjectionClosure = {
+      finalWrites: [],
+      externalReads: [
+        {
+          readOccurrenceId: "task:119044:statement:0:relation:root.c.read",
+          readOccurrenceNodeId: "read-occurrence:119044:0",
+          datasetNodeId: "dataset:table",
+          qualifiedName: "pdata_n.t03_agt_stati_info_h",
+          identityStatus: "CONFIRMED",
+        },
+      ],
+    };
+    const env = envelope({
+      taskId: "119044",
+      contentHash: HASH_A,
+      coverageStatus: "PROJECTED",
+      schemaVersion: "1.2.0",
+      localClosure,
+    });
+    const unpacked = unpackTaskLocalProjectionEnvelope({
+      envelope: env,
+      manifestTaskContentHash: HASH_A,
+    });
+    expect(unpacked.projection.localClosure).toEqual(localClosure);
   });
 
   it("fails closed on triple contentHash mismatch", () => {

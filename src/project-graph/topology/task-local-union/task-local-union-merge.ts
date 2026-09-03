@@ -6,6 +6,11 @@ import type {
   LoadedTaskLocalUnionSources,
   LoadedTaskLocalUnionTask,
 } from "./task-local-union-source.ts";
+import type {
+  TaskLocalProjectionClosure,
+  TaskLocalUnionBatchManifestRef,
+  TaskLocalUnionProducerIndexRef,
+} from "./task-local-union-contract.ts";
 
 export type TaskLocalUnionGapCode =
   "DATASET_IDENTITY_DIVERGENT" | "UNION_EDGE_CONFLICT";
@@ -56,6 +61,20 @@ export interface TaskLocalUnionMergeResult {
   readonly nodes: readonly TaskLocalUnionNode[];
   readonly edges: readonly TaskLocalUnionEdge[];
   readonly report: TaskLocalUnionMergeReport;
+  /** WP-7 summaries retained for read-occurrence/write-observation tracing. */
+  readonly taskEvidence: readonly TaskLocalUnionTaskEvidence[];
+  readonly producerIndex: TaskLocalUnionProducerIndexRef;
+  readonly batchManifestRef: TaskLocalUnionBatchManifestRef;
+}
+
+export interface TaskLocalUnionTaskEvidence {
+  readonly taskId: string;
+  readonly contentHash: string;
+  readonly packContentHash: string;
+  readonly factsManifestSha256: string;
+  readonly projectionSchemaVersion: string;
+  readonly coverageStatus: string;
+  readonly localClosure: TaskLocalProjectionClosure | null;
 }
 
 /** Match WP-3 / machine-facts name normalization for identity divergence checks. */
@@ -72,6 +91,7 @@ export function mergeTaskLocalUnion(
   const nodeMap = new Map<string, TaskLocalUnionNode>();
   const edgeMap = new Map<string, TaskLocalUnionEdge>();
   const gaps: TaskLocalUnionGap[] = [];
+  const taskEvidence: TaskLocalUnionTaskEvidence[] = [];
   /** normalized qualifiedName → distinct physical dataset nodeIds + observations */
   const datasetIdentity = new Map<
     string,
@@ -93,6 +113,15 @@ export function mergeTaskLocalUnion(
   let boundaryOnlyCount = 0;
 
   for (const task of loaded.tasks) {
+    taskEvidence.push({
+      taskId: task.taskSource.taskId,
+      contentHash: task.taskSource.contentHash,
+      packContentHash: task.taskSource.packContentHash,
+      factsManifestSha256: task.taskSource.factsManifestSha256,
+      projectionSchemaVersion: task.projection.schemaVersion,
+      coverageStatus: task.taskSource.coverageStatus,
+      localClosure: task.projection.localClosure ?? null,
+    });
     if (task.boundaryOnly) boundaryOnlyCount += 1;
     else projectedCount += 1;
 
@@ -147,6 +176,11 @@ export function mergeTaskLocalUnion(
     sourceMode: "TASK_LOCAL_UNION",
     nodes,
     edges,
+    producerIndex: loaded.producerIndex,
+    batchManifestRef: loaded.batchManifestRef,
+    taskEvidence: taskEvidence.sort((left, right) =>
+      compareText(left.taskId, right.taskId),
+    ),
     report: {
       taskCount: loaded.tasks.length,
       projectedCount,
