@@ -283,13 +283,18 @@ function confirmed(assessment: TargetTableAssessment, channel: ImpactChannel): C
 export function buildShrinkReport(input: {
   readonly branches: readonly CandidateBranch[];
   readonly assessments: readonly TargetTableAssessment[];
+  /** Union-v2 combined proof: L1 continuation plus current Facts local closure. */
+  readonly unionV2ValueCertainBranchIds?: ReadonlySet<string>;
 }): ShrinkReport {
   const branchById = new Map(input.branches.map((branch) => [branch.candidateBranchId, branch]));
   const entry = (assessment: TargetTableAssessment, channel: ImpactChannel): ShrinkReportEntry | null => {
     const branch = branchById.get(assessment.candidateBranchId);
     if (!branch?.producerTaskId || branch.branchKind === "ROOT_WRITE") return null;
     if (branch.branchKind === "PHYSICAL_PRODUCER" && !certainProducerRole(branch.producerRole)) return null;
-    const hit = confirmed(assessment, channel);
+    const hit = confirmed(assessment, channel)
+      ?? (channel === "FIELD_VALUE" && input.unionV2ValueCertainBranchIds?.has(assessment.candidateBranchId)
+        ? assessment.channelAssessments.find((item) => item.channel === channel && item.status === "CONDITIONAL")
+        : undefined);
     if (!hit) return null;
     const joinNode = channel === "MULTIPLICITY" ? joinNodeOf(branch) : undefined;
     return {

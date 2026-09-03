@@ -19,7 +19,8 @@ write-observation partition judgments.
 
 **Non-Goals:**
 
-- Do not replace the multi-hop candidate universe in this slice; C2 owns that.
+- The C2 follow-up may replace the union-v2 physical candidate source with the
+  continuation INDEX; legacy projection remains unchanged.
 - Do not implement partition matching, WP-8/8.1 kernels, producer-index-query,
   value-evidence downgrade, Gate B-UNION, or L0-L3 envelope work.
 
@@ -29,11 +30,13 @@ write-observation partition judgments.
 
 `runTargetTableCausalClosure` will branch after the existing table projection.
 Legacy continues through the current `enrichProducerWriteBridges` function.
-Union-v2 normalizes read occurrences before exact index lookup, removes
-schedule-only producer branches, and expands only existing multi-hop physical
-bridges using matching index candidates. Index-only writers do not create new
-table edges in C1; if a base bridge has no matching entry, it remains an
-UNKNOWN boundary.
+Union-v2 normalizes read occurrences before exact index lookup. In the C2
+candidate projection, every physical producer comes from an INDEX candidate;
+the raw multi-hop `scheduleEdges` are passed independently as a consumer-side
+whitelist for cross-Task candidates. A schedule edge never creates a producer
+branch, and a missing/unparseable relation produces an UNKNOWN boundary rather
+than an INDEX fan-out. Same-Task candidates do not require a scheduler edge.
+If a base bridge has no exact INDEX entry, it remains an UNKNOWN boundary.
 
 ### 2. Use a local, strict DTO adapter
 
@@ -74,5 +77,6 @@ binding an L1 candidate with a non-null exact scope.
 - [Legacy regression] → Keep the old enrichment function and all new metrics
   optional/absent in legacy artifacts; run the existing target-table suite and
   compare a legacy artifact hash.
-- [C1 does not widen the universe] → PI-only candidates without a corresponding
-  multi-hop table bridge remain outside the candidate universe until C2.
+- [Schedule relation drift] → Apply the raw relation only as a whitelist for
+  INDEX candidates; missing or malformed relation evidence remains UNKNOWN and
+  never widens the candidate universe.

@@ -41,13 +41,30 @@ branch with gap `CONTINUATION_READ_NOT_FOUND`.
 
 ### Requirement: union-v2 attaches write observations precisely
 
-Union-v2 MUST use existing multi-hop producer bridges as the table-level
-candidate universe. For each indexed candidate retained for that bridge, it
-MUST bind `writeScope` using that candidate's exact `writeObservationId`.
+Union-v2 MUST use exact continuation-INDEX candidates for the physical
+producer universe. For a cross-Task candidate, the producer Task MUST also be
+present in the raw multi-hop schedule relation for that consumer; this is a
+consumer-side whitelist and is not producer evidence. Same-Task candidates do
+not require a schedule edge. For each retained candidate it MUST bind
+`writeScope` using that candidate's exact `writeObservationId`.
 `DISJOINT` candidates MUST be pruned, and `SCHEDULE_ONLY` edges MUST NOT
 produce producer branches. Alignment ambiguity MUST preserve each distinct
 write observation as UNKNOWN and MUST NOT create or use a shared producer
 index `:0` identity.
+
+#### Scenario: schedule relation narrows INDEX candidates
+
+- **WHEN** an INDEX read has candidates from several Tasks but raw
+  `scheduleEdges` contains only a subset of those producer Tasks
+- **THEN** only the intersection is eligible for `PHYSICAL_PRODUCER`; the
+  other INDEX candidates are not emitted as producer branches
+
+#### Scenario: schedule relation is unavailable
+
+- **WHEN** the raw schedule relation is missing or cannot be parsed for a
+  cross-Task INDEX candidate
+- **THEN** no physical producer branch is emitted and the read remains an
+  UNKNOWN boundary with a schedule-relation gap
 
 #### Scenario: a disjoint write is pruned
 

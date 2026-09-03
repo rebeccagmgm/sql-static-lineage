@@ -8,3 +8,6 @@ export * from "./static-assessment.ts";
 export * from "./task-relation-summary.ts";
 export * from "./target-write-contract.ts";
 export * from "./union-continuation-candidate-source.ts";
+export * from "./union-v2-candidate-universe.ts";
+export * from "./union-v2-field-value-provider.ts";
+export * from "./closure-diff.ts";

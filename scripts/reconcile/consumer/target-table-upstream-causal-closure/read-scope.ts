@@ -2,6 +2,7 @@ import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts"
 import {
   canonicalPlanSlotId,
   canonicalRelationIdentity,
+  isPlaceholderSqlSourceId,
   planSlotSqlSourceId,
   sameRelationIdentity,
 } from "../../../machine-facts/relation-identity.ts";
@@ -19,7 +20,10 @@ function text(value: unknown): string | null {
 
 function records(value: unknown): readonly Record<string, unknown>[] {
   return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item))
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null && !Array.isArray(item),
+      )
     : [];
 }
 
@@ -36,14 +40,17 @@ function statementIndexForId(
   const normalizedStatementId = text(statementId);
   if (!normalizedStatementId) return null;
   const statement = records(load.records["statements.jsonl"]).find(
-    (candidate) => String(candidate.statement_id ?? "") === normalizedStatementId,
+    (candidate) =>
+      String(candidate.statement_id ?? "") === normalizedStatementId,
   );
   const statementIndex = statement?.statement_index;
   if (Number.isSafeInteger(statementIndex)) return Number(statementIndex);
   return statementOrdinal(normalizedStatementId);
 }
 
-function occurrencePlanSlot(occurrenceId: string | null | undefined): string | null {
+function occurrencePlanSlot(
+  occurrenceId: string | null | undefined,
+): string | null {
   const raw = text(occurrenceId);
   if (!raw) return null;
   const match = raw.match(/^(query|finish|create)#(\d+)/i);
@@ -56,11 +63,16 @@ function statementMatchesOccurrenceSlot(
 ): boolean {
   const slot = occurrencePlanSlot(occurrence.occurrenceId);
   if (!slot || !statementId) return true;
-  return statementId.toLowerCase().includes(`:slot:${slot}:statement:${occurrence.statementIndex}`);
+  return statementId
+    .toLowerCase()
+    .includes(`:slot:${slot}:statement:${occurrence.statementIndex}`);
 }
 
 function relationIdOf(row: Record<string, unknown>): string | null {
-  return text(row.relation_id) ?? text((row.relation as Record<string, unknown> | undefined)?.id);
+  return (
+    text(row.relation_id) ??
+    text((row.relation as Record<string, unknown> | undefined)?.id)
+  );
 }
 
 function parentByChild(load: CurrentBundleLoad): Map<string, string> {
@@ -91,10 +103,12 @@ function matchingRelationRows(
     const id = relationIdOf(row);
     const statementId = text(row.statement_id);
     const index = statementIndexForId(load, statementId);
-    return id !== null
-      && index === occurrence.statementIndex
-      && statementMatchesOccurrenceSlot(statementId, occurrence)
-      && occurrence.relationPath.some((path) => sameRelationIdentity(id, path));
+    return (
+      id !== null &&
+      index === occurrence.statementIndex &&
+      statementMatchesOccurrenceSlot(statementId, occurrence) &&
+      occurrence.relationPath.some((path) => sameRelationIdentity(id, path))
+    );
   });
 }
 
@@ -110,10 +124,13 @@ function slotForRelation(
         const id = relationIdOf(row);
         const statementId = text(row.statement_id);
         const index = statementIndexForId(load, statementId);
-        return id !== null
-          && sameRelationIdentity(id, relationId)
-          && index === statementIndex
-          && (!occurrence || statementMatchesOccurrenceSlot(statementId, occurrence));
+        return (
+          id !== null &&
+          sameRelationIdentity(id, relationId) &&
+          index === statementIndex &&
+          (!occurrence ||
+            statementMatchesOccurrenceSlot(statementId, occurrence))
+        );
       })
       .map((row) => text(row.statement_id))
       .filter((value): value is string => value !== null)
@@ -127,10 +144,18 @@ function walkWriteRoot(
   load: CurrentBundleLoad,
   relationId: string,
   occurrence: CandidateReadOccurrence,
-): { readonly sqlSourceId: string | null; readonly rootRelationId: string | null } {
+): {
+  readonly sqlSourceId: string | null;
+  readonly rootRelationId: string | null;
+} {
   const root = walkParents(relationId, parentByChild(load));
   return {
-    sqlSourceId: slotForRelation(load, relationId, occurrence.statementIndex, occurrence),
+    sqlSourceId: slotForRelation(
+      load,
+      relationId,
+      occurrence.statementIndex,
+      occurrence,
+    ),
     rootRelationId: root,
   };
 }
@@ -139,7 +164,10 @@ function walkByPath(
   load: CurrentBundleLoad,
   occurrence: CandidateReadOccurrence,
   explicit: string | null,
-): { readonly sqlSourceId: string | null; readonly rootRelationId: string | null } {
+): {
+  readonly sqlSourceId: string | null;
+  readonly rootRelationId: string | null;
+} {
   const relationIds = matchingRelationRows(load, occurrence)
     .map((row) => relationIdOf(row))
     .filter((value): value is string => value !== null);
@@ -147,12 +175,15 @@ function walkByPath(
   const roots = new Set(relationIds.map((id) => walkParents(id, parents)));
   const sources = new Set(
     relationIds
-      .map((id) => slotForRelation(load, id, occurrence.statementIndex, occurrence))
+      .map((id) =>
+        slotForRelation(load, id, occurrence.statementIndex, occurrence),
+      )
       .filter((value): value is string => value !== null),
   );
   return {
     sqlSourceId: sources.size === 1 ? [...sources][0]! : explicit,
-    rootRelationId: roots.size === 1 ? [...roots][0]! : occurrence.rootRelationId ?? null,
+    rootRelationId:
+      roots.size === 1 ? [...roots][0]! : (occurrence.rootRelationId ?? null),
   };
 }
 
@@ -167,7 +198,11 @@ function resolveLeafRelationId(
 ): string | null {
   const tableName = branch.table?.qualifiedName;
   if (tableName) {
-    const proof = proveReadOccurrence(load, { qualifiedName: tableName }, occurrence);
+    const proof = proveReadOccurrence(
+      load,
+      { qualifiedName: tableName },
+      occurrence,
+    );
     if (proof.valid && proof.relationId) return proof.relationId;
   }
   for (const row of matchingRelationRows(load, occurrence)) {
@@ -196,15 +231,25 @@ export function enrichRelationPathFromFacts(
     chain.unshift(localRelationPath(current));
     current = parents.get(current) ?? null;
   }
-  if (chain.length <= occurrence.relationPath.length) return occurrence.relationPath;
-  const joinIndex = chain.findIndex((value) => /(?:^|[./:])join(?:[./:]|$)/i.test(value));
+  if (chain.length <= occurrence.relationPath.length)
+    return occurrence.relationPath;
+  const joinIndex = chain.findIndex((value) =>
+    /(?:^|[./:])join(?:[./:]|$)/i.test(value),
+  );
   if (joinIndex >= 0) {
     const from = Math.max(0, joinIndex - 1);
     const trimmed = chain.slice(from, from + MAX_RELATION_PATH_DEPTH);
-    return trimmed.length > occurrence.relationPath.length ? trimmed : occurrence.relationPath;
+    return trimmed.length > occurrence.relationPath.length
+      ? trimmed
+      : occurrence.relationPath;
   }
-  const capped = chain.length > MAX_RELATION_PATH_DEPTH ? chain.slice(-MAX_RELATION_PATH_DEPTH) : chain;
-  return capped.length > occurrence.relationPath.length ? capped : occurrence.relationPath;
+  const capped =
+    chain.length > MAX_RELATION_PATH_DEPTH
+      ? chain.slice(-MAX_RELATION_PATH_DEPTH)
+      : chain;
+  return capped.length > occurrence.relationPath.length
+    ? capped
+    : occurrence.relationPath;
 }
 
 /**
@@ -217,17 +262,39 @@ export function refreshReadOccurrenceFromDatasetIo(
 ): CandidateReadOccurrence | null {
   const tableName = branch.table?.qualifiedName;
   const occurrence = branch.readOccurrence;
-  if (!tableName || !occurrence || !Number.isSafeInteger(occurrence.statementIndex)) return null;
+  if (
+    !tableName ||
+    !occurrence ||
+    !Number.isSafeInteger(occurrence.statementIndex)
+  )
+    return null;
   const qualifiedTable = normalizeName(tableName);
-  const reads = records(load.records["dataset-io.jsonl"]).filter((record) =>
-    record.direction === "READ"
-    && String(record.task_id ?? "") === load.taskId
-    && normalizeName(String(record.physical_dataset ?? "")) === qualifiedTable
-    && statementIndexForId(load, record.statement_id) === occurrence.statementIndex
-    && statementMatchesOccurrenceSlot(text(record.statement_id), occurrence));
-  const readOccurrences = reads.flatMap((record) =>
-    Array.isArray(record.read_occurrences) ? record.read_occurrences : [],
+  const reads = records(load.records["dataset-io.jsonl"]).filter(
+    (record) =>
+      record.direction === "READ" &&
+      String(record.task_id ?? "") === load.taskId &&
+      normalizeName(String(record.physical_dataset ?? "")) === qualifiedTable &&
+      statementIndexForId(load, record.statement_id) ===
+        occurrence.statementIndex &&
+      statementMatchesOccurrenceSlot(text(record.statement_id), occurrence),
   );
+  const readOccurrences = reads
+    .flatMap((record) =>
+      Array.isArray(record.read_occurrences) ? record.read_occurrences : [],
+    )
+    .filter((rawOccurrence) => {
+      const record = rawOccurrence as Record<string, unknown>;
+      return (
+        sameRelationIdentity(
+          record.occurrence_id ?? record.occurrenceId,
+          occurrence.occurrenceId,
+        ) &&
+        sameRelationIdentity(
+          record.relation_id ?? record.relationId,
+          occurrence.readRelationId,
+        )
+      );
+    });
   if (readOccurrences.length !== 1) return null;
   const raw = readOccurrences[0] as Record<string, unknown>;
   const relationId = text(raw.relation_id) ?? text(raw.relationId);
@@ -240,12 +307,24 @@ export function refreshReadOccurrenceFromDatasetIo(
     occurrenceId,
     readRelationId: localPath,
     relationPath: [localPath],
-    ...(planSlotSqlSourceId(statementId) ? { sqlSourceId: planSlotSqlSourceId(statementId)! } : {}),
+    ...(planSlotSqlSourceId(statementId)
+      ? { sqlSourceId: planSlotSqlSourceId(statementId)! }
+      : {}),
   };
   return {
     ...base,
     relationPath: enrichRelationPathFromFacts(load, branch, base),
   };
+}
+
+export interface NormalizeReadScopesOptions {
+  /**
+   * Rebind query#/create# occurrence placeholders to the exact Facts
+   * dataset-io occurrence. This is needed at the union-v2 adapter boundary:
+   * the INDEX carries the Facts-global id while legacy multi-hop may carry
+   * the equivalent placeholder spelling.
+   */
+  readonly canonicalizePlaceholderOccurrences?: boolean;
 }
 
 /**
@@ -255,20 +334,28 @@ export function refreshReadOccurrenceFromDatasetIo(
 export function inferReadScope(
   load: CurrentBundleLoad,
   branch: CandidateBranch,
-): { readonly sqlSourceId: string | null; readonly rootRelationId: string | null } {
+): {
+  readonly sqlSourceId: string | null;
+  readonly rootRelationId: string | null;
+} {
   const occurrence = branch.readOccurrence;
   if (!occurrence) return { sqlSourceId: null, rootRelationId: null };
   const explicit = planSlotSqlSourceId(occurrence.sqlSourceId ?? null);
   const tableName = branch.table?.qualifiedName;
   if (tableName) {
-    const proof = proveReadOccurrence(load, { qualifiedName: tableName }, occurrence);
+    const proof = proveReadOccurrence(
+      load,
+      { qualifiedName: tableName },
+      occurrence,
+    );
     // An unprovable occurrence must not lose the scope the relation path can
     // still establish; only a proven read may claim the stronger walk.
     if (proof.valid && proof.relationId) {
       const walked = walkWriteRoot(load, proof.relationId, occurrence);
       return {
         sqlSourceId: walked.sqlSourceId ?? explicit,
-        rootRelationId: walked.rootRelationId ?? occurrence.rootRelationId ?? null,
+        rootRelationId:
+          walked.rootRelationId ?? occurrence.rootRelationId ?? null,
       };
     }
   }
@@ -278,43 +365,62 @@ export function inferReadScope(
 export function normalizeReadScopes(
   universe: CandidateUniverse,
   loadForTask: (taskId: string) => CurrentBundleLoad,
+  options: NormalizeReadScopesOptions = {},
 ): CandidateUniverse {
   const branches = universe.branches.map((branch) => {
     if (!branch.consumerTaskId || !branch.readOccurrence) return branch;
     const originalOccurrence = branch.readOccurrence;
     const load = loadForTask(branch.consumerTaskId);
     let readOccurrence = originalOccurrence;
+    const shouldCanonicalizePlaceholder =
+      options.canonicalizePlaceholderOccurrences === true &&
+      isPlaceholderSqlSourceId(originalOccurrence.occurrenceId);
     if (
-      branch.table?.qualifiedName
-      && !proveReadOccurrence(load, { qualifiedName: branch.table.qualifiedName }, readOccurrence).valid
+      branch.table?.qualifiedName &&
+      (shouldCanonicalizePlaceholder ||
+        !proveReadOccurrence(
+          load,
+          { qualifiedName: branch.table.qualifiedName },
+          readOccurrence,
+        ).valid)
     ) {
       const refreshed = refreshReadOccurrenceFromDatasetIo(load, branch);
       if (refreshed) readOccurrence = refreshed;
     }
-    const workingBranch = readOccurrence === originalOccurrence
-      ? branch
-      : { ...branch, readOccurrence };
+    const workingBranch =
+      readOccurrence === originalOccurrence
+        ? branch
+        : { ...branch, readOccurrence };
     const scope = inferReadScope(load, workingBranch);
-    const enrichedPath = enrichRelationPathFromFacts(load, workingBranch, readOccurrence);
-    const relationPath = enrichedPath.length > 0
-      ? enrichedPath
-      : (readOccurrence.relationPath ?? []);
-    const resolvedSqlSourceId = scope.sqlSourceId
-      ?? planSlotSqlSourceId(readOccurrence.occurrenceId)
-      ?? readOccurrence.sqlSourceId
-      ?? null;
+    const enrichedPath = enrichRelationPathFromFacts(
+      load,
+      workingBranch,
+      readOccurrence,
+    );
+    const relationPath =
+      enrichedPath.length > 0
+        ? enrichedPath
+        : (readOccurrence.relationPath ?? []);
+    const resolvedSqlSourceId =
+      scope.sqlSourceId ??
+      planSlotSqlSourceId(readOccurrence.occurrenceId) ??
+      readOccurrence.sqlSourceId ??
+      null;
     const nextOccurrence = {
       ...readOccurrence,
       relationPath,
       ...(resolvedSqlSourceId ? { sqlSourceId: resolvedSqlSourceId } : {}),
       ...(scope.rootRelationId ? { rootRelationId: scope.rootRelationId } : {}),
     };
-    return scope.sqlSourceId !== originalOccurrence.sqlSourceId
-      || scope.rootRelationId !== originalOccurrence.rootRelationId
-      || readOccurrence.occurrenceId !== originalOccurrence.occurrenceId
-      || readOccurrence.readRelationId !== originalOccurrence.readRelationId
-      || relationPath.length !== (originalOccurrence.relationPath?.length ?? 0)
-      || relationPath.some((value, index) => value !== (originalOccurrence.relationPath?.[index] ?? ""))
+    return scope.sqlSourceId !== originalOccurrence.sqlSourceId ||
+      scope.rootRelationId !== originalOccurrence.rootRelationId ||
+      readOccurrence.occurrenceId !== originalOccurrence.occurrenceId ||
+      readOccurrence.readRelationId !== originalOccurrence.readRelationId ||
+      relationPath.length !== (originalOccurrence.relationPath?.length ?? 0) ||
+      relationPath.some(
+        (value, index) =>
+          value !== (originalOccurrence.relationPath?.[index] ?? ""),
+      )
       ? { ...workingBranch, readOccurrence: nextOccurrence }
       : branch;
   });

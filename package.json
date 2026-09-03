@@ -66,6 +66,7 @@
     "input-pack:machine-facts": "tsx scripts/machine-facts/input-pack-machine-facts.ts",
     "reconcile-field-lineage": "tsx scripts/reconcile/consumer/field-lineage/reconcile-field-lineage.ts",
     "reconcile-target-table-causal-closure": "node --max-old-space-size=1024 --import tsx scripts/reconcile/consumer/target-table-upstream-causal-closure/reconcile-target-table-causal-closure.ts",
+    "reconcile-target-table-causal-closure:diff": "tsx scripts/reconcile/consumer/target-table-upstream-causal-closure/reconcile-target-table-causal-closure-diff.ts",
     "visualize-multi-hop": "tsx scripts/visualize/multi-hop-visualize.ts",
     "visualize-field-lineage": "tsx scripts/visualize/field-lineage-visualize.ts",
     "lineage:all": "node --max-old-space-size=512 --import tsx scripts/pipeline/lineage-all.ts",

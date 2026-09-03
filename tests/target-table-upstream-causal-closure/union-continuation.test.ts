@@ -14,6 +14,7 @@ import {
   parseArgs,
 } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/reconcile-target-table-causal-closure.ts";
 import { relationSummaryKey, type TaskRelationSummary } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/task-relation-summary.ts";
+import { createUnionV2ScheduleRelationLookup } from "../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-v2-candidate-universe.ts";
 import type { CurrentBundleLoad } from "../../scripts/query/current-task-bundle.ts";
 
 const TABLE = {
@@ -158,6 +159,15 @@ function load(taskId: string, writeObservationIds: readonly string[]): CurrentBu
 
 const noopLoad = (taskId: string): CurrentBundleLoad => load(taskId, []);
 
+function scheduleRelation(producerTaskIds: readonly string[], consumerTaskId = "119044") {
+  return createUnionV2ScheduleRelationLookup({
+    scheduleEdges: producerTaskIds.map((producerTaskId) => ({
+      consumerTaskId,
+      producerTaskId,
+    })),
+  });
+}
+
 describe("closure-on-union C0/C1", () => {
   it("parses the new CLI flags and defaults to legacy", () => {
     const common = [
@@ -199,6 +209,7 @@ describe("closure-on-union C0/C1", () => {
       universe([branch(readId), scheduleBranch()]),
       continuation,
       (taskId) => load(taskId, ["write-observation:105387:3", "write-observation:105387:9"]),
+      scheduleRelation(["105387"])
     );
     expect(result.universe.branches.some((value) => value.branchKind === "SCHEDULE_ONLY")).toBe(false);
     const physical = result.universe.branches.filter((value) => value.branchKind === "PHYSICAL_PRODUCER");
@@ -219,6 +230,7 @@ describe("closure-on-union C0/C1", () => {
       universe([branch(readId)]),
       createUnionContinuationCandidateSource(index([entry(readId, [candidate()])])),
       noopLoad,
+      scheduleRelation(["105387"])
     );
     expect(result.universe.branches[0]?.continuation?.l1Eligible).toBe(true);
     expect(result.universe.branches[0]?.writeScope).toBeUndefined();
@@ -238,10 +250,26 @@ describe("closure-on-union C0/C1", () => {
       universe([branch(readC, "SRC_TBL"), branch(readK, "SRC_TBL")]),
       continuation,
       noopLoad,
+      scheduleRelation(["SRC_TBL"])
     );
     expect(result.universe.branches).toEqual([]);
     expect(result.continuationStats.disjointPruned).toBe(2);
     expect(result.stats.resolved).toBe(0);
+  });
+
+  it("reuses the schedule selector during enrichment and keeps a rejected bridge UNKNOWN", () => {
+    const readId = "task:119044:statement:0:relation:root.c.read.t03_agt_stati_info_h";
+    const result = enrichUnionV2ProducerBridges(
+      universe([branch(readId, "105387")]),
+      createUnionContinuationCandidateSource(index([entry(readId, [candidate({ taskId: "105387" })])])),
+      noopLoad,
+      scheduleRelation(["105388"]),
+    );
+
+    expect(result.universe.branches).toHaveLength(1);
+    expect(result.universe.branches[0]?.branchKind).toBe("UNBOUND_READ");
+    expect(result.universe.branches[0]?.boundaryReason).toBe("SCHEDULE_RELATION_NO_MATCH");
+    expect(result.universe.branches.some((value) => value.branchKind === "PHYSICAL_PRODUCER")).toBe(false);
   });
 
   it("preserves 105387 #3/#6 alignment ambiguity and never shares PI :0", () => {
@@ -256,6 +284,7 @@ describe("closure-on-union C0/C1", () => {
       universe([branch(readId)]),
       continuation,
       (taskId) => load(taskId, ["write-observation:105387:3", "write-observation:105387:6"]),
+      scheduleRelation(["105387"])
     );
     const physical = result.universe.branches.filter((value) => value.branchKind === "PHYSICAL_PRODUCER");
     expect(physical.map((value) => value.writeObservationId)).toEqual([
@@ -279,6 +308,7 @@ describe("closure-on-union C0/C1", () => {
       universe([preScoped]),
       createUnionContinuationCandidateSource(index([])),
       noopLoad,
+      scheduleRelation(["105387"])
     );
     expect(result.universe.branches).toHaveLength(1);
     expect(result.universe.branches[0]?.writeObservationId).toBe(preScoped.writeObservationId);
@@ -296,6 +326,7 @@ describe("closure-on-union C0/C1", () => {
         entry(readId, [candidate({ partitionMatchStatus: "ASSUMED", evidenceLayer: "L2", l1Eligible: false })]),
       ])),
       (taskId) => load(taskId, ["write-observation:105387:3"]),
+      scheduleRelation(["105387"])
     );
     const root: CandidateBranch = {
       candidateBranchId: "root-write",
