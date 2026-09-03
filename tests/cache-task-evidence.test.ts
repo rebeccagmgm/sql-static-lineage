@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,7 +8,11 @@ import { assembleCacheTaskEvidence, sqlSlotCount } from "../scripts/input/shared
 import { writeHiveTaskSqlCache } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { writeRunScriptSqlCache } from "../scripts/input/mainline/run-script-sql-cache.ts";
 import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
-import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { createTaskDocument } from "../scripts/input/shared/input-pack.ts";
+import {
+  resolveScheduleEvidenceCacheRoot,
+  writeHoraeTaskTypeCache,
+} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const observedAt = "2026-09-02T00:00:00.000Z";
 
@@ -222,6 +226,41 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     expect(result.evidence.targetEvidenceKind).toBeUndefined();
   });
 
+  it("uses only an available task-sql query as fallback for a non-specialized task", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-fallback-"));
+    writeHoraeTaskTypeCache(
+      "7004",
+      observedAt,
+      { id: "7004", taskType: "exeSql", name: "demo_sql_task" },
+      cacheRoot,
+    );
+    writeHiveTaskSqlCache(
+      "7004",
+      observedAt,
+      {
+        source: "SQL_MCP",
+        sqlStatus: "AVAILABLE",
+        scriptPath: null,
+        hiveDb: null,
+        createSql: "CREATE TABLE should_not_be_used (id INT)",
+        querySql: "INSERT OVERWRITE TABLE demo.target SELECT 1",
+      },
+      cacheRoot,
+    );
+    const result = assembleCacheTaskEvidence("7004", cacheRoot);
+    expect(result.kind).toBe("EVIDENCE");
+    if (result.kind !== "EVIDENCE") return;
+    expect(sqlContent(result.evidence.sql?.query)).toBe(
+      "INSERT OVERWRITE TABLE demo.target SELECT 1",
+    );
+    expect(sqlProvider(result.evidence.sql?.query)).toBe(
+      "local:schedule-evidence:task-sql",
+    );
+    expect(result.evidence.sql?.create).toBeUndefined();
+    expect(result.missingQuery).toBe(false);
+    expect(result.cacheArtifacts).toContain("hive-task.sql");
+  });
+
   it("reads runScript query from run-script.sql", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
     writeHoraeTaskTypeCache(
@@ -249,6 +288,48 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     if (result.kind !== "EVIDENCE") return;
     expect(sqlContent(result.evidence.sql?.query)).toBe("SELECT 1 AS id");
     expect(result.cacheArtifacts).toContain("run-script.sql");
+  });
+
+  it("keeps a unique Hive2 Oracle endpoint hint internal to TaskEvidence", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-datasource-hint-"));
+    const directory = join(
+      resolveScheduleEvidenceCacheRoot(cacheRoot),
+      "horae-datasource",
+    );
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      join(directory, "rows.jsonl"),
+      `${JSON.stringify({
+        server_tag: "oracle_jgj_69.202",
+        server_type: "oracle",
+        service: "jgjdb",
+      })}\n`,
+      "utf8",
+    );
+    writeHoraeTaskTypeCache(
+      "6456",
+      observedAt,
+      {
+        id: "6456",
+        taskType: "hive2oracle",
+        syncInfo: {
+          hiveDb: "dm_otc_n",
+          hiveTable: "demo_source",
+          targetTable: "HS_OPT.DEMO_TARGET",
+          targetServer: "oracle_jgj_69.202",
+          querySql: "INSERT INTO HS_OPT.DEMO_TARGET SELECT 1",
+        },
+      },
+      cacheRoot,
+    );
+    const result = assembleCacheTaskEvidence("6456", cacheRoot);
+    expect(result.kind).toBe("EVIDENCE");
+    if (result.kind !== "EVIDENCE") return;
+    expect(result.evidence.endpointDataSourceHints).toEqual({
+      target: "gforacle_jgjdb#jgjdb",
+    });
+    const taskDocument = createTaskDocument(result.evidence);
+    expect(taskDocument).not.toHaveProperty("endpointDataSourceHints");
   });
 
   it("reads sparkScript query from the same run-script.sql log cache", () => {

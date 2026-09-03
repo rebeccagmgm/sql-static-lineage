@@ -10,7 +10,7 @@ import {
 import {
   DEFAULT_RUN_SCRIPT_LOG_DATE,
   extractRunScriptSqlFromLog,
-  readRunScriptSqlCache,
+  parseRunScriptSqlCache,
   runScriptLogCachePath,
   writeRunScriptSqlCache,
 } from "./run-script-sql-cache.ts";
@@ -21,6 +21,7 @@ import {
 
 /** Task types whose SQL evidence is extracted from Horae execution logs. */
 export const SCRIPT_SQL_FROM_LOG_TASK_TYPES = new Set([
+  "runScript",
   "runScript-2.0",
   "sparkScript",
 ]);
@@ -46,6 +47,8 @@ export interface FillRunScriptSqlCacheOptions {
   readonly logRunner?: RunScriptLogRunner;
   readonly gate?: HoraeSerialGate;
   readonly now?: () => Date;
+  /** Retry only an existing UNAVAILABLE cache; AVAILABLE evidence is immutable. */
+  readonly force?: boolean;
 }
 
 export interface FillRunScriptSqlCacheSummary {
@@ -235,8 +238,11 @@ export async function fillRunScriptSqlCache(
   const failedTaskIds: string[] = [];
 
   for (const taskId of taskIds) {
-    const existing = readRunScriptSqlCache(taskId, cacheRoot);
-    if (existing.status === "HIT") {
+    const existing = parseRunScriptSqlCache(taskId, cacheRoot);
+    if (
+      existing.status === "HIT" &&
+      (!options.force || existing.sqlStatus === "AVAILABLE")
+    ) {
       skipped += 1;
       continue;
     }
@@ -274,6 +280,7 @@ export async function fillRunScriptSqlCache(
           scriptPath: extracted.scriptPath ?? configuredPath,
         },
         cacheRoot,
+        { overwrite: existing.status === "HIT" },
       );
       if (available) cached += 1;
       else empty += 1;
@@ -292,6 +299,7 @@ export async function fillRunScriptSqlCache(
             scriptPath: configuredPath,
           },
           cacheRoot,
+          { overwrite: existing.status === "HIT" },
         );
         empty += 1;
         process.stderr.write(
@@ -371,6 +379,7 @@ async function main(): Promise<void> {
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, true),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),
+    force: process.argv.includes("--force"),
   });
   process.stdout.write(`${JSON.stringify(summary)}\n`);
   if (summary.errors > 0) process.exitCode = 1;

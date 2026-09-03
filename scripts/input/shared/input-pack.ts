@@ -126,6 +126,11 @@ export interface TaskEvidence {
   readonly source?: JsonValue | null;
   /** Direct platform endpoint config; table endpoints may include dataSource. */
   readonly target?: JsonValue | null;
+  /** Internal-only exact RDBMS identity hints derived from unique Horae servers. */
+  readonly endpointDataSourceHints?: {
+    readonly source?: string;
+    readonly target?: string;
+  };
   /** Explains the evidence level of a populated target endpoint. */
   readonly targetEvidenceKind?:
     | "DIRECT_PLATFORM_TARGET"

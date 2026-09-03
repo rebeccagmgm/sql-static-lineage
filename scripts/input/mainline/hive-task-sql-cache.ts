@@ -663,6 +663,7 @@ export function writeHiveTaskSqlCache(
     readonly sqlStatus?: HiveTaskSqlStatus;
   },
   cacheRoot = DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  options: { readonly overwrite?: boolean } = {},
 ): string {
   safeTaskId(taskId);
   if (!nonEmptyString(observedAt)) throw new Error("OBSERVED_AT_MISSING");
@@ -676,7 +677,20 @@ export function writeHiveTaskSqlCache(
       encoding: "utf8",
       flag: "wx",
     });
-    renameSync(temporaryPath, path);
+    if (options.overwrite && existsSync(path)) {
+      const backupPath = `${path}.${process.pid}.${randomUUID()}.bak`;
+      renameSync(path, backupPath);
+      try {
+        renameSync(temporaryPath, path);
+        rmSync(backupPath, { force: true });
+      } catch (error) {
+        if (!existsSync(path) && existsSync(backupPath))
+          renameSync(backupPath, path);
+        throw error;
+      }
+    } else {
+      renameSync(temporaryPath, path);
+    }
     const legacyPath = hiveTaskSqlLegacyCachePath(taskId, cacheRoot);
     if (existsSync(legacyPath)) rmSync(legacyPath, { force: true });
     return path;

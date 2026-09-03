@@ -18,6 +18,11 @@ import { parseRunScriptSqlCache } from "../mainline/run-script-sql-cache.ts";
 import { parseHiveDdlFromLogCache } from "../mainline/hive-ddl-from-log-cache.ts";
 import { readSzdataScheduleDetailCache } from "../mainline/szdata-schedule-detail-cache.ts";
 import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  loadHoraeDatasourceIndex,
+  preferredRdbmsDataSourceFromTaskSource,
+  type HoraeDatasourceIndex,
+} from "./horae-datasource-cache.ts";
 import { isNoSqlTaskCategory } from "../../reconcile/shared/lineage-scope.ts";
 import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
 import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
@@ -28,6 +33,8 @@ export const CACHE_EVIDENCE_SCHEDULE_DETAIL =
   "local:schedule-evidence:szdata-schedule-detail" as const;
 export const CACHE_EVIDENCE_HIVE_TASK_SQL =
   "local:schedule-evidence:hive-task-sql" as const;
+export const CACHE_EVIDENCE_TASK_SQL =
+  "local:schedule-evidence:task-sql" as const;
 export const CACHE_EVIDENCE_RUN_SCRIPT_SQL =
   "local:schedule-evidence:run-script-sql" as const;
 export const CACHE_EVIDENCE_HIVE_DDL_FROM_LOG =
@@ -363,6 +370,47 @@ function fillCreateFromPrepare(evidence: TaskEvidence): TaskEvidence {
   };
 }
 
+function withTaskSqlQueryFallback(
+  taskId: string,
+  evidence: TaskEvidence,
+  cacheRoot: string,
+  artifacts: string[],
+): TaskEvidence {
+  if (evidence.sql?.query !== undefined) return evidence;
+  const cached = readHiveTaskSqlCache(taskId, cacheRoot);
+  if (
+    cached.status !== "HIT" ||
+    cached.sqlStatus !== "AVAILABLE" ||
+    cached.querySql === null ||
+    cached.querySql.trim() === ""
+  )
+    return evidence;
+  if (!artifacts.includes("hive-task.sql")) artifacts.push("hive-task.sql");
+  return {
+    ...evidence,
+    sql: {
+      ...evidence.sql,
+      query: {
+        content: cached.querySql,
+        evidenceProvider: CACHE_EVIDENCE_TASK_SQL,
+      },
+    },
+    evidenceProvider: joinProviders([
+      evidence.evidenceProvider,
+      CACHE_EVIDENCE_TASK_SQL,
+    ]),
+  };
+}
+
+function endpointDataSourceHint(
+  value: string | undefined,
+  index: HoraeDatasourceIndex | undefined,
+): string | undefined {
+  return value === undefined
+    ? undefined
+    : preferredRdbmsDataSourceFromTaskSource(value, index);
+}
+
 function assembleSparkIndex(
   taskId: string,
   horae: JsonRecord | undefined,
@@ -475,6 +523,7 @@ function assembleToHive(
   schedule: JsonRecord | undefined,
   cacheRoot: string,
   artifacts: string[],
+  horaeDatasource: HoraeDatasourceIndex | undefined,
 ): TaskEvidence {
   const sync = syncInfoOf(horae);
   const identity = buildIdentity(taskId, category, horae, schedule, [
@@ -486,6 +535,8 @@ function assembleToHive(
       firstString(horae, ["source"]) ??
         firstString(sync, ["sourceServer"]),
     ) ?? null;
+  const sourceServer =
+    firstString(horae, ["source"]) ?? firstString(sync, ["sourceServer"]);
   const target =
     toJsonValue(
       firstString(sync, ["targetTable"]) ??
@@ -525,6 +576,12 @@ function assembleToHive(
   return {
     ...identity,
     source,
+    endpointDataSourceHints:
+      endpointDataSourceHint(sourceServer, horaeDatasource) === undefined
+        ? undefined
+        : {
+            source: endpointDataSourceHint(sourceServer, horaeDatasource),
+          },
     target,
     writeMode:
       firstString(schedule, ["insertMode"]) ??
@@ -546,6 +603,7 @@ function assembleHive2(
   category: string,
   horae: JsonRecord | undefined,
   schedule: JsonRecord | undefined,
+  horaeDatasource: HoraeDatasourceIndex | undefined,
 ): TaskEvidence {
   const sync = syncInfoOf(horae);
   const identity = buildIdentity(taskId, category, horae, schedule, [
@@ -564,6 +622,9 @@ function assembleHive2(
       firstString(sync, ["targetTable"]) ??
         firstString(schedule, ["targetTable"]),
     ) ?? null;
+  const targetServer =
+    firstString(sync, ["targetServer"]) ??
+    firstString(horae, ["targetServer"]);
   const sql = compactSql(sqlFromScheduleAndHorae(schedule, horae, sync));
   const hivePartition =
     firstString(sync, ["hivePartition"]) ??
@@ -572,6 +633,12 @@ function assembleHive2(
     ...identity,
     source,
     target,
+    endpointDataSourceHints:
+      endpointDataSourceHint(targetServer, horaeDatasource) === undefined
+        ? undefined
+        : {
+            target: endpointDataSourceHint(targetServer, horaeDatasource),
+          },
     writeMode:
       firstString(schedule, ["insertMode"]) ??
       firstString(sync, ["loadMode"]),
@@ -640,6 +707,7 @@ export function assembleCacheTaskEvidence(
 ): CacheTaskEvidenceResult {
   const artifacts: string[] = [];
   const horaeRead = readHoraeTaskTypeCache(taskId, cacheRoot);
+  const horaeDatasource = loadHoraeDatasourceIndex(cacheRoot);
   const scheduleRead = readSzdataScheduleDetailCache(taskId, cacheRoot);
   const horae =
     horaeRead.status === "HIT" && sameTaskId(horaeRead.detail, taskId)
@@ -705,10 +773,19 @@ export function assembleCacheTaskEvidence(
       schedule,
       cacheRoot,
       artifacts,
+      horaeDatasource,
     );
   else if (category !== undefined && isHive2Sync(category))
-    evidence = assembleHive2(taskId, category, horae, schedule);
+    evidence = assembleHive2(
+      taskId,
+      category,
+      horae,
+      schedule,
+      horaeDatasource,
+    );
   else evidence = assembleGeneric(taskId, category, horae, schedule);
+
+  evidence = withTaskSqlQueryFallback(taskId, evidence, cacheRoot, artifacts);
 
   const slots = sqlSlotCount(evidence);
   if (

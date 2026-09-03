@@ -666,6 +666,51 @@ function directTableName(value: unknown): string | undefined {
   return qualifiedName.includes(".") ? qualifiedName : undefined;
 }
 
+function isAmbiguousPhysicalTableError(error: unknown): boolean {
+  return /Ambiguous physical table/i.test(String(error));
+}
+
+function exactTableSearchByDataSource(
+  qualifiedName: string,
+  expectedDataSource: string,
+): Record<string, unknown> | undefined {
+  const searched = openCliJson([
+    "szdata",
+    "table-search",
+    "--keyword",
+    qualifiedName,
+    "--type",
+    "003000",
+    "--size",
+    "10",
+  ]);
+  const candidates = (Array.isArray(searched) ? searched : [searched]).filter(
+    (item): item is Record<string, unknown> => {
+      if (!item || typeof item !== "object" || Array.isArray(item))
+        return false;
+      const candidateName = directString(item.qualifiedName);
+      if (candidateName === undefined) return false;
+      return baseQualifiedName(candidateName).toLowerCase() === qualifiedName.toLowerCase();
+    },
+  );
+  const expected = expectedDataSource.toLowerCase();
+  const matches = candidates.filter((item) => {
+    const candidateName = directString(item.qualifiedName);
+    if (candidateName === undefined) return false;
+    const at = candidateName.lastIndexOf("@");
+    return at > 0 && candidateName.slice(at + 1).toLowerCase() === expected;
+  });
+  const uniquePhysicalNames = new Map<string, Record<string, unknown>>();
+  for (const match of matches) {
+    const candidateName = directString(match.qualifiedName);
+    if (candidateName !== undefined)
+      uniquePhysicalNames.set(candidateName.toLowerCase(), match);
+  }
+  return uniquePhysicalNames.size === 1
+    ? [...uniquePhysicalNames.values()][0]
+    : undefined;
+}
+
 /**
  * Returns only direct endpoint values that are expected to be physical table
  * references but cannot be resolved. A bare source value is a task data-source
@@ -763,6 +808,8 @@ export type TableEvidenceLookupOptions = {
   sourceHint?: string;
   /** The physical platform expected from the controlled task category. */
   expectedPlatform?: string;
+  /** Preserve upstream 403/429/timeout errors for bounded repair manifests. */
+  throwOnLookupError?: boolean;
 };
 
 function tableFromDirectEvidenceUncached(
@@ -774,11 +821,26 @@ function tableFromDirectEvidenceUncached(
   let table: Record<string, unknown> | undefined;
   let tableDiscovery = "table-search";
   if (options.preferDirectLookup) {
-    try {
-      table = tableSummaryByName(qualifiedName);
-      if (table !== undefined) tableDiscovery = "table";
-    } catch {
-      table = undefined;
+    if (options.directOnly && expectedDataSource !== undefined) {
+      table = exactTableSearchByDataSource(qualifiedName, expectedDataSource);
+      if (table !== undefined) tableDiscovery = "table-search-exact";
+    } else {
+      try {
+        table = tableSummaryByName(qualifiedName);
+        if (table !== undefined) tableDiscovery = "table";
+      } catch (error) {
+        if (
+          expectedDataSource !== undefined &&
+          isAmbiguousPhysicalTableError(error)
+        ) {
+          table = exactTableSearchByDataSource(qualifiedName, expectedDataSource);
+          if (table !== undefined) tableDiscovery = "table-search-exact";
+          else if (options.throwOnLookupError) throw error;
+        } else {
+          if (options.throwOnLookupError) throw error;
+          table = undefined;
+        }
+      }
     }
   }
   if (requiredTaskId === undefined && !options.directOnly) {
@@ -811,9 +873,10 @@ function tableFromDirectEvidenceUncached(
           expectedDataSource,
           options.sourceHint,
         );
-      } catch {
-        table = undefined;
-      }
+        } catch (error) {
+          if (options.throwOnLookupError) throw error;
+          table = undefined;
+        }
     }
   }
   if (
@@ -826,7 +889,8 @@ function tableFromDirectEvidenceUncached(
       if (table !== undefined)
         tableDiscovery =
           requiredTaskId === undefined ? "table" : "table-task-relation";
-    } catch {
+    } catch (error) {
+      if (options.throwOnLookupError) throw error;
       table = undefined;
     }
   }
@@ -847,7 +911,8 @@ function tableFromDirectEvidenceUncached(
           ? undefined
           : directOptionalString(summary.description);
       if (description !== undefined) table = { ...table, description };
-    } catch {
+    } catch (error) {
+      if (options.throwOnLookupError) throw error;
       // The Table search result remains valid even when display metadata is unavailable.
     }
   }
@@ -897,7 +962,10 @@ function tableFromDirectEvidenceUncached(
         : qualifiedName,
   );
   if (platform === undefined || dataSource === undefined) return undefined;
-  if (expectedDataSource !== undefined && dataSource !== expectedDataSource)
+  if (
+    expectedDataSource !== undefined &&
+    dataSource.toLowerCase() !== expectedDataSource.toLowerCase()
+  )
     return undefined;
   if (
     options.expectedPlatform !== undefined &&

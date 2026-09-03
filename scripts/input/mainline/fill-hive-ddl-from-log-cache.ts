@@ -34,6 +34,7 @@ export const HIVE_DDL_FROM_LOG_TASK_TYPES = new Set([
   "oracle2hive",
   "mysql2hive",
   "postgre2hive",
+  "oceanbase2hive",
   "sqlserver2hive",
   "db2hive",
   "teradata2hive",
@@ -211,7 +212,13 @@ export async function fillHiveDdlFromLogCache(
         hiveDb: extracted.hiveDb,
         hiveTable: extracted.hiveTable,
       };
-      writeHiveDdlFromLogCache(taskId, now().toISOString(), evidence, cacheRoot);
+      writeHiveDdlFromLogCache(
+        taskId,
+        now().toISOString(),
+        evidence,
+        cacheRoot,
+        { overwrite: existing.status === "HIT" },
+      );
       if (evidence.ddlStatus === "AVAILABLE") cached += 1;
       else {
         empty += 1;
@@ -234,6 +241,9 @@ export async function fillHiveDdlFromLogCache(
             hiveTable: null,
           },
           cacheRoot,
+          {
+            overwrite: parseHiveDdlFromLogCache(taskId, cacheRoot).status === "HIT",
+          },
         );
         empty += 1;
         process.stderr.write(

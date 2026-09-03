@@ -193,8 +193,8 @@ function shouldStop(errors: number, maxErrors: number): boolean {
  * is written first; MCP is only used for remaining misses, and only MCP
  * calls honor --interval-ms. Empty MCP SQL is recorded as UNAVAILABLE and
  * does not stop the batch. `--force` re-extracts from local code over existing
- * HIT files; tasks without a local script keep their cache and are not
- * re-fetched from MCP.
+ * HIT files and retries existing UNAVAILABLE files through MCP when local code
+ * is unavailable; AVAILABLE evidence is preserved.
  */
 export async function fillHiveTaskSqlCache(
   options: FillHiveTaskSqlCacheOptions = {},
@@ -234,6 +234,7 @@ export async function fillHiveTaskSqlCache(
     readonly taskId: string;
     readonly scriptPath: string | null;
     readonly hiveDb: string | null;
+    readonly overwrite: boolean;
   }> = [];
 
   for (const taskId of taskIds) {
@@ -258,14 +259,25 @@ export async function fillHiveTaskSqlCache(
     try {
       const local = evidenceFromLocal(codeRoot, scriptPath, hiveDb);
       if (local === null) {
-        if (existing.status === "HIT") {
+        if (existing.status === "HIT" && existing.sqlStatus === "AVAILABLE") {
           skipped += 1;
           continue;
         }
-        pendingMcp.push({ taskId, scriptPath, hiveDb });
+        pendingMcp.push({
+          taskId,
+          scriptPath,
+          hiveDb,
+          overwrite: existing.status === "HIT",
+        });
         continue;
       }
-      writeHiveTaskSqlCache(taskId, now().toISOString(), local, cacheRoot);
+      writeHiveTaskSqlCache(
+        taskId,
+        now().toISOString(),
+        local,
+        cacheRoot,
+        { overwrite: existing.status === "HIT" },
+      );
       localCached += 1;
     } catch (error) {
       errors += 1;
@@ -306,6 +318,7 @@ export async function fillHiveTaskSqlCache(
             querySql: slots.querySql,
           },
           cacheRoot,
+          { overwrite: item.overwrite },
         );
         if (available) mcpCached += 1;
         else mcpEmpty += 1;
