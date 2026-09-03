@@ -331,6 +331,35 @@ describe("SZData schedule-detail evidence cache", () => {
     }
   });
 
+  it("supports descending task-id order", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "szdata-detail-order-"));
+    try {
+      const starts: string[] = [];
+      const summary = await fillSzdataScheduleDetailCache({
+        cacheRoot,
+        taskIds: ["10", "2", "30"],
+        order: "desc",
+        maxErrors: 1,
+        minIntervalMs: 0,
+        gate: new ScheduleDetailSerialGate({ minIntervalMs: 0 }),
+        runner: (id) => {
+          starts.push(id);
+          return detail({ taskId: id });
+        },
+      });
+
+      expect(summary).toMatchObject({
+        total: 3,
+        cached: 3,
+        errors: 0,
+        order: "desc",
+      });
+      expect(starts).toEqual(["30", "10", "2"]);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
   it("lets the offline SparkIndex collector use 66411 target/mode/SQL slots", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "szdata-detail-spark-cache-"));
     const dataRoot = mkdtempSync(join(tmpdir(), "szdata-detail-spark-pack-"));

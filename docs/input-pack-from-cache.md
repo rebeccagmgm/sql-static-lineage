@@ -468,9 +468,10 @@ repair runner 每次只处理一个有界 workset；成功写入的 evidence 才
 ### 9.2 重试、datasource 与失败语义
 
 - `fill-hive-task-sql-cache`、`fill-run-script-sql-cache`、`fill-hive-ddl-from-log` 的 `--force` 只重试已经存在且 `UNAVAILABLE` 的缓存；AVAILABLE 内容和 provider 保留不动。
+- `hiveTask` / `hiveTask-2.0`：本地代码优先；若 SQL 仍含结构性 `${…}`（如 `${DB_TEMP}`，不含 `data_day*` 等日期变量），再试 MCP（`szdata task-sql`）——只要返回非空 SQL 即写入 `SQL_MCP`；MCP 为空则拉 Horae log 的 `hive -e` 展开体写入 `HORAE_LOG`。
 - `runScript` / `sparkScript` 的 SQL 只能来自 Horae log 中可定位的实例。实例缺失时记录 `HORAE_LOG_INSTANCE_MISSING`，不回退到不等价的 schedule SQL。
 - Table resolution 先用已有 Pack，再用 Hive/RDBMS 本地 jsonl；在线 fallback 必须 exact-match qualified name、platform、dataSource，并且只能有一个可对账候选。多个 GUID、多个 datasource、404/not found、403、429、timeout、malformed response 都不写 evidence。
-- Horae datasource 映射只作为 endpoint hint。映射冲突时保留未知；唯一 hint 也不能覆盖 SQL/目录的多实例冲突。`*2hive` 的 source 标签不转成物理表，hive2* 的 target server hint 只在 SQL 精确写目标与 datasource 同时成立时使用。
+- Horae datasource 映射只作为 endpoint hint。映射冲突时保留未知；唯一 hint 也不能覆盖 SQL/目录的多实例冲突。`*2hive` 的 source 标签不转成物理表，hive2* 的 target server hint 只在 SQL 精确写目标与 datasource 同时成立时使用。Oracle / Postgre / OceanBase 用 `gf*_${service}#${service}`；MySQL / StarRocks / GoldenDB 用无 `#` 的 `gf*_${service}`，并在 core 中按 exact → 唯一前缀 → 唯一家族行消歧。
 - 任务 SQL 的 query fallback 只能从同任务的 `hive-task.sql` query 槽补 specialized route 的空 query；create 槽永远不提升为 Table Pack 的 `ddl.sql`。
 
 ### 9.3 本轮执行结果

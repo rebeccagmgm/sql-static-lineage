@@ -7,7 +7,9 @@ import { HoraeSerialGate } from "../scripts/input/mainline/collect-one-task-inpu
 import {
   fillHoraeRelationCache,
   neighborTaskIdsFromRelationCache,
+  parseTaskIdOrder,
   rowsOfHoraeRelation,
+  sortTaskIds,
   taskIdsFromFile,
 } from "../scripts/input/mainline/fill-horae-relation-cache.ts";
 import {
@@ -102,6 +104,44 @@ describe("fillHoraeRelationCache", () => {
     }
   });
 
+  it("supports descending task-id order", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-relation-order-"));
+    try {
+      const starts: string[] = [];
+      const summary = await fillHoraeRelationCache({
+        cacheRoot,
+        taskIds: ["10", "2", "30"],
+        order: "desc",
+        startTaskId: "20",
+        direction: "down",
+        maxErrors: 1,
+        minIntervalMs: 0,
+        gate: new HoraeSerialGate({ minIntervalMs: 0 }),
+        runner: (taskId) => {
+          starts.push(taskId);
+          return [];
+        },
+      });
+
+      expect(summary).toMatchObject({
+        total: 2,
+        cached: 2,
+        errors: 0,
+        order: "desc",
+      });
+      expect(starts).toEqual(["10", "2"]);
+      expect(sortTaskIds(["10", "2", "30"], "desc")).toEqual([
+        "30",
+        "10",
+        "2",
+      ]);
+      expect(parseTaskIdOrder("desc")).toBe("desc");
+      expect(parseTaskIdOrder(undefined)).toBe("asc");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
   it("parses empty relation envelopes as empty rows", () => {
     expect(rowsOfHoraeRelation([], "1")).toEqual([]);
     expect(rowsOfHoraeRelation({ records: [] }, "1")).toEqual([]);
@@ -121,6 +161,7 @@ describe("fillHoraeRelationCache", () => {
       );
       writeFileSync(idsFile, "# seed\n99\n\n88\n99\n", "utf8");
       expect(taskIdsFromFile(idsFile)).toEqual(["88", "99"]);
+      expect(taskIdsFromFile(idsFile, "desc")).toEqual(["99", "88"]);
       expect(neighborTaskIdsFromRelationCache(cacheRoot, "down")).toEqual([
         "99",
       ]);

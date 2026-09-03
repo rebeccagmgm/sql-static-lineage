@@ -5,11 +5,14 @@ import { describe, expect, it } from "vitest";
 
 import { HoraeSerialGate } from "../scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts";
 import {
+  extractHiveTaskSqlFromHoraeLog,
   extractHiveTaskSqlFromScript,
   readHiveTaskSqlCache,
   resolveLocalHiveTaskScriptPath,
+  sqlHasStructuralTemplateVars,
   writeHiveTaskSqlCache,
 } from "../scripts/input/mainline/hive-task-sql-cache.ts";
+import { extractSqlWriteTableNames } from "../scripts/input/shared/sql-target-evidence.ts";
 import {
   fillHiveTaskSqlCache,
   hiveTaskIdsFromHoraeTypeCache,
@@ -314,6 +317,42 @@ SELECT A.ID FROM \${src_table} A;`,
     }
   });
 
+  it("supports descending task-id order", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-order-"));
+    try {
+      for (const taskId of ["10", "2", "30"]) {
+        writeType(cacheRoot, taskId, {
+          taskType: "hiveTask",
+          scriptPath: `BigData-demo/${taskId}.py`,
+          hiveDb: "demo",
+        });
+      }
+      const calls: string[] = [];
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        taskIds: ["10", "2", "30"],
+        order: "desc",
+        maxErrors: 1,
+        minIntervalMs: 0,
+        gate: new HoraeSerialGate({ minIntervalMs: 0 }),
+        mcpRunner: (taskId) => {
+          calls.push(taskId);
+          return [{ querySql: `SELECT ${taskId}` }];
+        },
+      });
+
+      expect(summary).toMatchObject({
+        total: 3,
+        mcpCached: 3,
+        errors: 0,
+        order: "desc",
+      });
+      expect(calls).toEqual(["30", "10", "2"]);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
   it("force-overwrites HIT from local code and does not re-call MCP for available caches", async () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-force-"));
     const codeRoot = join(cacheRoot, "code");
@@ -563,6 +602,7 @@ SELECT A.ID FROM \${src_table} A;`,
           mcpCalls.push(taskId);
           return [{ createSql: null, querySql: null }];
         },
+        logRunner: async () => "",
       });
       expect(hiveTaskIdsFromHoraeTypeCache(cacheRoot)).toEqual([
         "358",
@@ -574,6 +614,8 @@ SELECT A.ID FROM \${src_table} A;`,
         localCached: 1,
         mcpCached: 0,
         mcpEmpty: 1,
+        logCached: 0,
+        logEmpty: 1,
         errors: 0,
         stopped: false,
       });
@@ -585,10 +627,171 @@ SELECT A.ID FROM \${src_table} A;`,
       });
       expect(readHiveTaskSqlCache("358", cacheRoot)).toMatchObject({
         status: "HIT",
-        source: "SQL_MCP",
+        source: "HORAE_LOG",
         sqlStatus: "UNAVAILABLE",
       });
       expect(readHiveTaskSqlCache("129", cacheRoot)).toMatchObject({
+        status: "MISS",
+      });
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("upgrades LOCAL_CODE structural ${} via MCP, or Horae log when MCP is empty", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-structural-"));
+    try {
+      writeType(cacheRoot, "61477", {
+        taskType: "hiveTask",
+        scriptPath: "BigData-missing/x.py",
+        hiveDb: "pdata_n",
+      });
+      writeHiveTaskSqlCache(
+        "61477",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "LOCAL_CODE",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing/x.py",
+          hiveDb: "pdata_n",
+          createSql:
+            "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T04_USER_TEMP AS SELECT 1",
+          querySql: "SELECT * FROM ${DB_ODATA_N_GKS}.M_TUSER",
+        },
+        cacheRoot,
+      );
+      expect(
+        sqlHasStructuralTemplateVars(
+          "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T04_USER_TEMP AS SELECT 1",
+          "SELECT '${data_day_str}'",
+        ),
+      ).toBe(true);
+      expect(sqlHasStructuralTemplateVars("SELECT '${data_day_str}'")).toBe(
+        false,
+      );
+
+      const mcpOnly = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        minIntervalMs: 0,
+        mcpRunner: () => [
+          {
+            createSql: "CREATE TABLE IF NOT EXISTS T04_USER(id string)",
+            querySql: "SELECT 1",
+          },
+        ],
+        logRunner: async () => {
+          throw new Error("log should not run when MCP returns SQL");
+        },
+      });
+      expect(mcpOnly).toMatchObject({
+        mcpCached: 1,
+        logCached: 0,
+        structuralUpgrades: 1,
+      });
+      expect(readHiveTaskSqlCache("61477", cacheRoot)).toMatchObject({
+        source: "SQL_MCP",
+        sqlStatus: "AVAILABLE",
+      });
+
+      writeHiveTaskSqlCache(
+        "61477",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "LOCAL_CODE",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing/x.py",
+          hiveDb: "pdata_n",
+          createSql:
+            "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T04_USER_TEMP AS SELECT 1",
+          querySql: null,
+        },
+        cacheRoot,
+        { overwrite: true },
+      );
+      const sampleLog = `[2026-08-28 02:16:56]-[INFO] hive -e"
+[2026-08-28 02:16:56]-[INFO] use pdata_n;
+[2026-08-28 02:16:56]-[INFO] CREATE TABLE IF NOT EXISTS T04_USER(
+[2026-08-28 02:16:56]-[INFO]   id STRING
+[2026-08-28 02:16:56]-[INFO] );
+[2026-08-28 02:16:56]-[INFO] INSERT OVERWRITE TABLE T04_USER SELECT id FROM ODATA_N_GKS.M_TUSER;
+[2026-08-28 02:16:56]-[INFO] "
+[2026-08-28 02:18:06]-[INFO] hive -e"
+[2026-08-28 02:18:06]-[INFO] CREATE TABLE IF NOT EXISTS TEMP.T04_USER_TEMP_GKS002 AS SELECT 1;
+[2026-08-28 02:18:06]-[INFO] "
+`;
+      expect(extractHiveTaskSqlFromHoraeLog(sampleLog).createSql).toMatch(
+        /CREATE TABLE IF NOT EXISTS T04_USER/i,
+      );
+      const logFallback = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        minIntervalMs: 0,
+        mcpRunner: () => [{ createSql: null, querySql: null }],
+        logRunner: async () => sampleLog,
+      });
+      expect(logFallback).toMatchObject({
+        mcpEmpty: 1,
+        logCached: 1,
+        structuralUpgrades: 1,
+      });
+      expect(readHiveTaskSqlCache("61477", cacheRoot)).toMatchObject({
+        source: "HORAE_LOG",
+        sqlStatus: "AVAILABLE",
+      });
+      expect(
+        extractSqlWriteTableNames(
+          {
+            create:
+              "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T04_USER_TEMP AS SELECT 1",
+          },
+          "PDATA_N.T04_USER_GKS002",
+          { allowSchemaOnlyQualification: true },
+        ),
+      ).not.toContain("PDATA_N.IF");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("skips non-hiveTask types such as exeSql without calling MCP or log", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-exesql-"));
+    try {
+      writeType(cacheRoot, "14806", {
+        taskType: "exeSql",
+        name: "crm_xc.pkg_prod_wallet.pro_calc_main",
+      });
+      writeType(cacheRoot, "100036", {
+        taskType: "hiveTask",
+        scriptPath: "BigData-missing/x.py",
+        hiveDb: "pdata_n",
+      });
+      const mcpCalls: string[] = [];
+      const logCalls: string[] = [];
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        taskIds: ["14806", "100036"],
+        minIntervalMs: 0,
+        mcpRunner: (taskId) => {
+          mcpCalls.push(taskId);
+          return [{ createSql: null, querySql: `SELECT ${taskId}` }];
+        },
+        logRunner: async (taskId) => {
+          logCalls.push(taskId);
+          return "";
+        },
+      });
+      expect(summary).toMatchObject({
+        total: 2,
+        skipped: 1,
+        mcpCached: 1,
+        logCached: 0,
+        errors: 0,
+      });
+      expect(mcpCalls).toEqual(["100036"]);
+      expect(logCalls).toEqual([]);
+      expect(readHiveTaskSqlCache("14806", cacheRoot)).toMatchObject({
         status: "MISS",
       });
     } finally {

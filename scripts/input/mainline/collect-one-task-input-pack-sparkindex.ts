@@ -1,6 +1,9 @@
 import { execFileSync } from "node:child_process";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 import {
+  isFrozenScheduleStatus,
+  isManualScheduleCycle,
   type JsonValue,
   type SqlSlotEvidence,
   type SqlSlot,
@@ -26,6 +29,7 @@ import {
   type SzdataScheduleDetailCacheStatus,
   type ScheduleDetailRunner,
 } from "./szdata-schedule-detail-cache.ts";
+import { relocateTaskPacks } from "./collect-one-task-input-pack.ts";
 
 const HORAE_EVIDENCE_PROVIDER = "opencli:horae.detail";
 const SZDATA_SCHEDULE_DETAIL_EVIDENCE_PROVIDER =
@@ -368,6 +372,7 @@ export interface CollectSparkIndexOptions {
   readonly scheduleDetailGate?: ScheduleDetailSerialGate;
   readonly horaeGate?: HoraeSerialGate;
   readonly cacheRoot?: string;
+  readonly manualDataRoot?: string;
   readonly metadataSnapshotPath?: string | null;
   readonly runTableGuid?: SparkIndexTableGuidRunner;
   readonly runTableDdl?: SparkIndexTableDdlRunner;
@@ -390,11 +395,31 @@ export interface SparkIndexCollectionSummary {
   readonly cacheStatus: SparkIndexCacheStatus;
   readonly scheduleDetailCacheStatus: SzdataScheduleDetailCacheStatus | "DISABLED";
   readonly horaeCacheStatus: "HIT" | "MISS" | "INVALID" | "DISABLED";
-  readonly collectionStatus: "SUCCESS" | "PARTIAL";
+  readonly collectionStatus: "SUCCESS" | "PARTIAL" | "EXCLUDED";
+  readonly exclusionReason?: "MANUAL_OR_FROZEN";
   readonly tableCandidates: readonly string[];
   readonly tablesWritten: number;
   readonly tablesUnavailable: readonly string[];
   readonly tableResolutionReasons: readonly string[];
+}
+
+function manualArchiveRoot(dataRoot: string, configured?: string): string {
+  const dataRootAbsolute = resolve(dataRoot);
+  const archiveRoot = resolve(
+    configured ?? `${dataRootAbsolute}.manual-tasks`,
+  );
+  const archiveRelative = relative(dataRootAbsolute, archiveRoot);
+  if (
+    archiveRoot === dataRootAbsolute ||
+    (archiveRelative !== "" &&
+      archiveRelative !== ".." &&
+      !archiveRelative.startsWith(`..${sep}`) &&
+      !isAbsolute(archiveRelative))
+  )
+    throw new Error(
+      `--manual-data-root must be outside --data-root: ${archiveRoot}`,
+    );
+  return archiveRoot;
 }
 
 const defaultHoraeGate = new HoraeSerialGate();
@@ -697,6 +722,33 @@ export function collectOneSparkIndexTask(
   if (normalizedTaskId === "") throw new Error("TASK_ID_REQUIRED");
   const collected = collectSparkIndexEvidence(normalizedTaskId, options);
   const evidence = collected.evidence;
+  const isManualOrFrozen =
+    isManualScheduleCycle(evidence.scheduleCycle) ||
+    isFrozenScheduleStatus(evidence.scheduleStatus);
+  if (isManualOrFrozen) {
+    const archiveRoot = manualArchiveRoot(dataRoot, options.manualDataRoot);
+    const moved = relocateTaskPacks(dataRoot, archiveRoot, normalizedTaskId);
+    return {
+      taskId: normalizedTaskId,
+      taskCategory: "sparkIndex",
+      changed: moved.length > 0,
+      directory: moved[0] ?? archiveRoot,
+      contentHash: "",
+      sqlSlots: SQL_SLOTS.filter(
+        (slot) => evidence.sql?.[slot] !== undefined,
+      ),
+      evidenceProvider: evidence.evidenceProvider ?? HORAE_EVIDENCE_PROVIDER,
+      cacheStatus: collected.cacheStatus,
+      scheduleDetailCacheStatus: collected.scheduleDetailCacheStatus,
+      horaeCacheStatus: collected.horaeCacheStatus,
+      collectionStatus: "EXCLUDED",
+      exclusionReason: "MANUAL_OR_FROZEN",
+      tableCandidates: [],
+      tablesWritten: 0,
+      tablesUnavailable: [],
+      tableResolutionReasons: [],
+    };
+  }
   const materialized = materializeSparkIndexTaskAndTables(dataRoot, evidence, {
     metadataSnapshotPath: options.metadataSnapshotPath,
     runTableGuid: options.runTableGuid,
@@ -764,6 +816,7 @@ if (isDirectExecution()) {
       readCliOption("--task-id"),
       {
         cacheRoot: optionalCliOption("--cache-root"),
+        manualDataRoot: optionalCliOption("--manual-data-root"),
         metadataSnapshotPath: optionalCliOption("--metadata-snapshot"),
       },
     );

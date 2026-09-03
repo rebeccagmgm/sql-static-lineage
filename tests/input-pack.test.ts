@@ -55,6 +55,7 @@ import {
   normalizeConcatenatedSqlStatements,
   repairOrphanedSqlCommentContinuations,
   normalizeRepeatedSqlContent,
+  partitionTaskIdsForCollection,
   relocateTaskPacks,
   selectTableCandidate,
   taskCategory,
@@ -164,11 +165,36 @@ describe("Input Pack V1", () => {
       ),
     ).toBe(true);
     expect(
+      isExcludedHoraeSearchRecord({ id: "frozen-2", cycle: "每日" }, {
+        status: "F",
+      }),
+    ).toBe(true);
+    expect(
       isExcludedHoraeSearchRecord(
         { id: "manual-1", cycle: "每日", status: "Y" },
         { status: "Y", cycle: "手工" },
       ),
     ).toBe(false);
+  });
+
+  it("keeps excluded task IDs out of the runnable collection set", () => {
+    const partition = partitionTaskIdsForCollection(
+      ["normal-1", "frozen-1", "missing-1", "physical-missing-1"],
+      new Map([
+        ["frozen-1", { exclusionReason: "MANUAL_OR_FROZEN" }],
+        ["missing-1", { exclusionReason: "HORAE_TASK_NOT_FOUND" }],
+        [
+          "physical-missing-1",
+          { exclusionReason: "PHYSICAL_TABLE_NOT_FOUND" },
+        ],
+      ]),
+    );
+
+    expect(partition).toEqual({
+      runnableTaskIds: ["normal-1"],
+      manualFrozenTaskIds: ["frozen-1"],
+      notFoundTaskIds: ["missing-1", "physical-missing-1"],
+    });
   });
 
   it("relocates an existing manual Task Pack without overwriting evidence", () => {
@@ -518,6 +544,19 @@ describe("Input Pack V1", () => {
     expect(loadTaskStatus(statusFile, root).tasks["166630"]).toMatchObject({
       status: "EXCLUDED",
       exclusionReason: "PHYSICAL_TABLE_NOT_FOUND",
+    });
+
+    updateTaskStatus(loaded, {
+      taskId: "frozen-1",
+      status: "EXCLUDED",
+      exclusionReason: "MANUAL_OR_FROZEN",
+      changed: false,
+      warnings: [],
+    });
+    saveTaskStatus(statusFile, loaded);
+    expect(loadTaskStatus(statusFile, root).tasks["frozen-1"]).toMatchObject({
+      status: "EXCLUDED",
+      exclusionReason: "MANUAL_OR_FROZEN",
     });
   });
 

@@ -175,6 +175,126 @@ describe("inferReadScope", () => {
     });
   });
 
+  it("refreshes a placeholder occurrence from relation-nodes when dataset-io has no nested ids", () => {
+    const read = "task:105386:statement:1:relation:root.a.read.d_trd_otc_trade";
+    const facts = load("105386", {
+      "statements.jsonl": [
+        { statement_id: "task:105386:slot:create:statement:1", statement_index: 1 },
+      ],
+      "relation-nodes.jsonl": [
+        {
+          task_id: "105386",
+          relation_id: read,
+          statement_id: "task:105386:slot:create:statement:1",
+          relation_type: "read",
+          relation: { type: "read", table: "ODATA_N_TIT.D_TRD_OTC_TRADE", id: read },
+        },
+      ],
+      "relation-edges.jsonl": [],
+      "dataset-io.jsonl": [
+        {
+          task_id: "105386",
+          direction: "READ",
+          physical_dataset: "odata_n_tit.d_trd_otc_trade",
+          statement_id: "task:105386:slot:create:statement:1",
+        },
+      ],
+    });
+    const branch = producer({
+      consumerTaskId: "105386",
+      producerTaskId: "71698",
+      table: physicalTable("odata_n_tit.d_trd_otc_trade"),
+      readOccurrence: {
+        occurrenceId: "create#1:root.a.read.d_trd_otc_trade",
+        readRelationId: "root.a.read.d_trd_otc_trade",
+        statementIndex: 1,
+        relationPath: ["root.a.read.d_trd_otc_trade"],
+      },
+    });
+    const normalized = normalizeReadScopes(
+      {
+        rootTaskId: "181058",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [branch],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+      { canonicalizePlaceholderOccurrences: true },
+    );
+    expect(normalized.branches[0]?.readOccurrence?.occurrenceId).toBe(read);
+    expect(normalized.branches[0]?.readOccurrence?.readRelationId).toBe(
+      "root.a.read.d_trd_otc_trade",
+    );
+  });
+
+  it("maps a query-local placeholder to its global Facts statement index", () => {
+    const read = "task:103937:statement:3:relation:root.setop.b0.read.t03_agt_stat_h";
+    const placeholder = "query#0:root.setop.b0.read.t03_agt_stat_h";
+    const facts = load("103937", {
+      "statements.jsonl": [
+        { statement_id: "task:103937:slot:create:statement:0", statement_index: 0 },
+        { statement_id: "task:103937:slot:query:statement:0", statement_index: 3 },
+      ],
+      "relation-nodes.jsonl": [
+        {
+          task_id: "103937",
+          relation_id: read,
+          statement_id: "task:103937:slot:query:statement:0",
+          relation_type: "read",
+          relation: { type: "read", table: "t03_agt_stat_h", id: read },
+        },
+      ],
+      "relation-edges.jsonl": [],
+      "dataset-io.jsonl": [
+        {
+          task_id: "103937",
+          direction: "READ",
+          physical_dataset: "t03_agt_stat_h",
+          statement_id: "task:103937:slot:query:statement:0",
+          read_occurrences: [{ occurrence_id: read, relation_id: read }],
+        },
+      ],
+    });
+    const branch = producer({
+      consumerTaskId: "103937",
+      table: physicalTable("pdata_n.t03_agt_stat_h"),
+      readOccurrence: {
+        occurrenceId: placeholder,
+        readRelationId: "root.setop.b0.read.t03_agt_stat_h",
+        statementIndex: 0,
+        relationPath: ["root.setop.b0.read.t03_agt_stat_h"],
+      },
+    });
+    const normalized = normalizeReadScopes(
+      {
+        rootTaskId: "181058",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [branch],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+      { canonicalizePlaceholderOccurrences: true },
+    );
+    expect(normalized.branches[0]?.readOccurrence).toMatchObject({
+      occurrenceId: read,
+      readRelationId: "root.setop.b0.read.t03_agt_stat_h",
+      statementIndex: 3,
+      sqlSourceId: "task:103937:slot:query",
+    });
+  });
+
   it("fills a missing slot from local UNION-branch relation ids without collapsing b0 and b1", () => {
     const b0Local = "root.t.setop.b0.read.d_pos_position_daily";
     const b1Local = "root.t.setop.b1.a.read.d_pos_position_daily";
@@ -267,6 +387,65 @@ describe("inferReadScope", () => {
     expect(universe.branches[1]?.readOccurrence?.occurrenceId).toContain("setop.b1");
     expect(universe.branches[0]?.readOccurrence?.occurrenceId).not.toBe(
       universe.branches[1]?.readOccurrence?.occurrenceId,
+    );
+  });
+
+  it("canonicalizes a shorter multi-hop path when Facts has one same-table occurrence", () => {
+    const tableName = "odata_n_tit.d_ref_instrument";
+    const factsRelation =
+      "task:103230:statement:0:relation:root.a.tmp_ref_instrument.a.read.d_ref_instrument";
+    const multiHopRelation = "root.a.read.d_ref_instrument";
+    const branch = producer({
+      consumerTaskId: "103230",
+      table: physicalTable(tableName),
+      readOccurrence: {
+        occurrenceId: `query#0:${multiHopRelation}`,
+        readRelationId: multiHopRelation,
+        sqlSourceId: "task:103230:slot:query",
+        statementIndex: 0,
+        relationPath: [multiHopRelation],
+      },
+    });
+    const facts = load("103230", {
+      "statements.jsonl": [
+        {
+          statement_id: "task:103230:slot:query:statement:0",
+          statement_index: 0,
+        },
+      ],
+      "relation-nodes.jsonl": [
+        readNode({
+          taskId: "103230",
+          relationId: factsRelation,
+          table: tableName,
+          occurrenceId: factsRelation,
+        }),
+      ],
+      "dataset-io.jsonl": [
+        uniqueReadIo("103230", tableName, factsRelation, factsRelation),
+      ],
+    });
+    const result = normalizeReadScopes(
+      {
+        rootTaskId: "176827",
+        status: "COMPLETE_OBSERVED_EVIDENCE",
+        branches: [branch],
+        boundaryGapRefs: [],
+        coverage: {
+          sourceArtifactType: "test",
+          sourceCoverageStatus: "COMPLETE_OBSERVED_EVIDENCE",
+          sourceCoverageSemantics: null,
+          sourceLimitsTruncated: false,
+        },
+      },
+      () => facts,
+      { canonicalizePlaceholderOccurrences: true },
+    );
+    expect(result.branches[0]?.readOccurrence?.occurrenceId).toBe(
+      factsRelation,
+    );
+    expect(result.branches[0]?.readOccurrence?.readRelationId).toBe(
+      "root.a.tmp_ref_instrument.a.read.d_ref_instrument",
     );
   });
 

@@ -1,4 +1,7 @@
-# WP-10 闭包接并集图：执行方案（`closure-on-union`）
+# WP-10 闭包接并集图：执行方案（`closure-on-union`）— **已暂停，仅供维护参考**
+
+> **2026-09-03**：迁出产品主链。当前副本在 `docs/experimental/`；OpenSpec 在
+> `openspec/changes/archive/2026-09-03-closure-on-union-paused/`。见 `docs/experimental/README.md`。
 
 配套：
 
@@ -142,7 +145,7 @@ contentHash（忽略 generatedAt）
 3. **`CandidateBranch` 新增字段**（可选字段，legacy 模式为空）：
    `continuation { source, partitionMatchStatus, evidenceLayer, l1Eligible, indexEntryRef }`。
 4. **附着步**：仍用 `bindProducerWrite` 绑 `writeScope`（按 `writeObservationId` 精确，不再"表内全部写"）。
-5. **计数**：新增 `continuationStats { l1, l2Assumed, l2Unknown, piOnly, disjointPruned, ambiguousReads, unmatchedReads }`；
+5. **计数**：新增 `continuationStats { l1, l2Assumed, l2Unknown, piOnly, disjointPruned, ambiguousReads, unmatchedReads, selfReadBoundaries? }`；同任务自读属于本地 UNKNOWN 边界 `SELF_READ_NOT_EXTERNAL`，不计入 `unmatchedReads`；
    `bridgeStats.resolved` **仅**计 `l1Eligible` 且 scope 绑定成功者；`bridgeStats.ambiguous` = 分区档后同读次仍 ≥2 写观察的读次数。
 6. **值证据降级**：union-v2 模式下 `field-value-provider` 结果最高 **CONDITIONAL/L2**，不得单独构成 `valueCertain`；
    `valueCertain`（档一）只由 `l1Eligible` 链 + 本任务 Facts `localFieldPaths`/output-field-bindings 支撑。
@@ -187,6 +190,7 @@ contentHash（忽略 generatedAt）
 | `PRODUCER_INDEX_ONLY` | 是（边界） | 表级可叙；不进 L1 | `piOnly` + gap `WRITER_NOT_IN_UNION` |
 | gap `WRITE_OBSERVATION_ALIGNMENT_AMBIGUOUS` | 对应写观察按 UNKNOWN 处理 | L2 | 透传；**禁止**用 PI `:0` 消歧 |
 | 索引中找不到该读次 | 分支退 UNKNOWN | — | `unmatchedReads` + gap `CONTINUATION_READ_NOT_FOUND` |
+| 同任务写回同表的本地自读不在 `externalReads` | 分支退 UNKNOWN | — | `selfReadBoundaries` + gap `SELF_READ_NOT_EXTERNAL` |
 | multi-hop SCHEDULE_ONLY | **不生成 producer 分支** | — | 仅参考属性 |
 
 **`ambiguous` 真计数**：同一读次在分区档保留后仍有 ≥2 个写观察 → 该读次计 1（`ambiguousReads`，同时写入 `bridgeStats.ambiguous`）。
@@ -312,6 +316,7 @@ C0+C1 单独验收信心 ~80%；整包仍 ~65%。
 sql-static-lineage：`npm run test:target-table-causal-closure`、`npm run test:field-lineage`、`npm run typecheck`、`npm run build`
 data-graph（WP-8.1）：`npx vitest run tests/task-local-union-continuation-v2.test.ts`、`npm test`、`npm run build`
 真语料：`npm run reconcile-target-table-causal-closure -- … --candidate-source union-v2 --continuation-index <index.json>`（176827 / 209119）
+Gate B-UNION L1 集合：`npm run gate-b-union -- --closure-artifact <union-v2-closure.json> --continuation-index <index.json> --output <l1-set.json>`
 
 ---
 

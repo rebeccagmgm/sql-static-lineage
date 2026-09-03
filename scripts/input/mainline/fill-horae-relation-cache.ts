@@ -19,6 +19,25 @@ const DEFAULT_MIN_INTERVAL_MS = 2_000;
 const DEFAULT_DIRECTION: HoraeRelationDirection = "down";
 const DEFAULT_HORAE_TIMEOUT_MS = 90_000;
 
+export type TaskIdOrder = "asc" | "desc";
+
+export function parseTaskIdOrder(value: string | undefined): TaskIdOrder {
+  if (value === undefined || value === "asc") return "asc";
+  if (value === "desc") return "desc";
+  throw new Error("ORDER_INVALID");
+}
+
+export function sortTaskIds(
+  taskIds: readonly string[],
+  order: TaskIdOrder = "asc",
+): string[] {
+  const direction = order === "desc" ? -1 : 1;
+  return [...taskIds].sort(
+    (left, right) =>
+      direction * left.localeCompare(right, "en-US", { numeric: true }),
+  );
+}
+
 export type HoraeRelationRunner = (
   taskId: string,
   direction: HoraeRelationDirection,
@@ -27,6 +46,7 @@ export type HoraeRelationRunner = (
 export interface FillHoraeRelationCacheOptions {
   readonly cacheRoot?: string;
   readonly taskIds?: readonly string[];
+  readonly order?: TaskIdOrder;
   readonly startTaskId?: string;
   readonly limit?: number;
   readonly maxErrors?: number;
@@ -50,26 +70,31 @@ export interface FillHoraeRelationCacheSummary {
   readonly maxErrors: number;
   readonly minIntervalMs: number;
   readonly direction: HoraeRelationDirection;
+  readonly order: TaskIdOrder;
   readonly startTaskId: string | null;
   readonly failedTaskIds: readonly string[];
   readonly errorDetails: readonly HoraeRelationFillError[];
   readonly stopped: boolean;
 }
 
-export function taskIdsFromScheduleEvidenceCache(cacheRoot: string): string[] {
+export function taskIdsFromScheduleEvidenceCache(
+  cacheRoot: string,
+  order: TaskIdOrder = "asc",
+): string[] {
   const tasksRoot = join(resolveScheduleEvidenceCacheRoot(cacheRoot), "tasks");
   if (!existsSync(tasksRoot))
     throw new Error(`CACHE_TASKS_ROOT_MISSING:${tasksRoot}`);
-  return readdirSync(tasksRoot, { withFileTypes: true })
+  const taskIds = readdirSync(tasksRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && SAFE_TASK_ID.test(entry.name))
-    .map((entry) => entry.name)
-    .sort((left, right) =>
-      left.localeCompare(right, "en-US", { numeric: true }),
-    );
+    .map((entry) => entry.name);
+  return sortTaskIds(taskIds, order);
 }
 
 /** Load one task id per line; blank lines and `#` comments are ignored. */
-export function taskIdsFromFile(path: string): string[] {
+export function taskIdsFromFile(
+  path: string,
+  order: TaskIdOrder = "asc",
+): string[] {
   if (!existsSync(path)) throw new Error(`TASK_IDS_FILE_MISSING:${path}`);
   const seen = new Set<string>();
   const taskIds: string[] = [];
@@ -81,9 +106,7 @@ export function taskIdsFromFile(path: string): string[] {
     seen.add(line);
     taskIds.push(line);
   }
-  return taskIds.sort((left, right) =>
-    left.localeCompare(right, "en-US", { numeric: true }),
-  );
+  return sortTaskIds(taskIds, order);
 }
 
 /**
@@ -244,13 +267,16 @@ function parseDirection(
 function fromStartTaskId(
   taskIds: readonly string[],
   startTaskId: string | undefined,
+  order: TaskIdOrder,
 ): string[] {
   if (startTaskId === undefined) return [...taskIds];
   if (!SAFE_TASK_ID.test(startTaskId)) throw new Error("START_TASK_ID_INVALID");
-  const index = taskIds.findIndex(
-    (taskId) =>
-      taskId.localeCompare(startTaskId, "en-US", { numeric: true }) >= 0,
-  );
+  const index = taskIds.findIndex((taskId) => {
+    const comparison = taskId.localeCompare(startTaskId, "en-US", {
+      numeric: true,
+    });
+    return order === "desc" ? comparison <= 0 : comparison >= 0;
+  });
   return index < 0 ? [] : taskIds.slice(index);
 }
 
@@ -276,6 +302,7 @@ export async function fillHoraeRelationCache(
 ): Promise<FillHoraeRelationCacheSummary> {
   const cacheRoot = options.cacheRoot ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
   const direction = options.direction ?? DEFAULT_DIRECTION;
+  const order = options.order ?? "asc";
   const maxErrors = positiveInteger(
     options.maxErrors,
     DEFAULT_MAX_ERRORS,
@@ -288,8 +315,12 @@ export async function fillHoraeRelationCache(
   );
   const taskIds = selectedTaskIds(
     fromStartTaskId(
-      options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+      sortTaskIds(
+        options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+        order,
+      ),
       options.startTaskId,
+      order,
     ),
     options.limit,
   );
@@ -341,6 +372,7 @@ export async function fillHoraeRelationCache(
     maxErrors,
     minIntervalMs,
     direction,
+    order,
     startTaskId: options.startTaskId ?? null,
     failedTaskIds,
     errorDetails,
@@ -372,15 +404,17 @@ function parseIntegerOption(
 async function main(): Promise<void> {
   const cacheRoot = option("--cache-root") ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
   const direction = parseDirection(option("--direction"));
+  const order = parseTaskIdOrder(option("--order"));
   const startTaskId = option("--start-task-id");
   const maxErrors = parseIntegerOption("--max-errors", undefined, false);
   const minIntervalMs = parseIntegerOption("--interval-ms", undefined, true);
   const taskIdsFile = option("--task-ids-file");
-  const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined;
+  const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile, order) : undefined;
   process.stderr.write(
     `[horae-relation-cache] start ${JSON.stringify({
       cacheRoot,
       direction,
+      order,
       startTaskId: startTaskId ?? null,
       taskIdsFile: taskIdsFile ?? null,
       taskIds: taskIds?.length ?? null,
@@ -391,6 +425,7 @@ async function main(): Promise<void> {
   const summary = await fillHoraeRelationCache({
     cacheRoot,
     direction,
+    order,
     startTaskId,
     taskIds,
     limit: parseIntegerOption("--limit", undefined, false),

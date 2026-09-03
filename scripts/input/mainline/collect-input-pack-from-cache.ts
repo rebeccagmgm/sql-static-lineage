@@ -333,8 +333,18 @@ export function collectOneTaskInputPackFromCache(
   }
 
   if (assembled.kind === "MANUAL_OR_FROZEN") {
-    if (!options.dryRun)
-      relocateTaskPacks(dataRoot, options.manualDataRoot, taskId);
+    const moved = options.dryRun
+      ? []
+      : relocateTaskPacks(dataRoot, options.manualDataRoot, taskId);
+    persistStatus(options.status, options.dryRun, {
+      taskId,
+      status: "EXCLUDED",
+      exclusionReason: "MANUAL_OR_FROZEN",
+      changed: moved.length > 0,
+      cacheArtifacts,
+      warnings: ["ARCHIVED_MANUAL_OR_FROZEN"],
+      staleLegacyTaskDirectories: [],
+    });
     return {
       taskId,
       collectionStatus: "EXCLUDED",

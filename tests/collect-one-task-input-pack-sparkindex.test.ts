@@ -22,7 +22,11 @@ import {
   SparkIndexTableMcpGate,
   sparkIndexStableTableKey,
 } from "../scripts/input/shared/sparkindex-table-evidence.ts";
-import { writeTableInput, type TaskEvidence } from "../scripts/input/shared/input-pack.ts";
+import {
+  writeTableInput,
+  writeTaskInput,
+  type TaskEvidence,
+} from "../scripts/input/shared/input-pack.ts";
 import {
   horaeTaskTypeCachePath,
   readHoraeTaskTypeCache,
@@ -799,6 +803,44 @@ describe("collect-one-task-input-pack-sparkindex", () => {
       expect(result.sqlSlots).toEqual(["query"]);
     } finally {
       rmSync(dataRoot, { recursive: true, force: true });
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("archives a frozen direct collection instead of writing the main pack", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "sparkindex-input-pack-"));
+    const cacheRoot = mkdtempSync(join(tmpdir(), "sparkindex-cache-"));
+    const taskId = "67485";
+    try {
+      writeTaskInput(dataRoot, {
+        taskId,
+        taskCategory: "sparkIndex",
+        scheduleStatus: "Y",
+        sql: { query: "SELECT 1" },
+        evidenceProvider: "test",
+      });
+
+      const result = collectOneSparkIndexTask(dataRoot, taskId, {
+        cacheRoot,
+        runScheduleDetail: () => ({
+          status: "F",
+          querySql: "SELECT 1",
+        }),
+      });
+
+      expect(result.collectionStatus).toBe("EXCLUDED");
+      expect(result.changed).toBe(true);
+      expect(existsSync(join(dataRoot, "tasks", "sparkIndex", taskId))).toBe(
+        false,
+      );
+      expect(
+        existsSync(
+          join(`${dataRoot}.manual-tasks`, "tasks", "sparkIndex", taskId),
+        ),
+      ).toBe(true);
+    } finally {
+      rmSync(dataRoot, { recursive: true, force: true });
+      rmSync(`${dataRoot}.manual-tasks`, { recursive: true, force: true });
       rmSync(cacheRoot, { recursive: true, force: true });
     }
   });

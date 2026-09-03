@@ -5,7 +5,8 @@
 
 依据：2026-09-02 对 **Input Pack 14,113 / Facts 344 / producer-index 2,666 边 / 调度缓存 41,844 目录** 的三份独立量化调查，
 以及对 field-lineage / one-hop / multi-hop / causal-closure 的代码审计。三金样只作回归样例，不再作设计依据。
-状态：**冻结版（2026-09-02 晚）**，WP-6～WP-12 按 §8 分阶段领取。
+状态：**冻结版（2026-09-02 晚）**；WP-6 / WP-7 已合入 `main`（验收样例以 §8.2 落地行为准）。
+WP-8～WP-12 按 §8 分阶段领取。
 
 ---
 
@@ -105,7 +106,9 @@ Facts 目前把裸名读标 `RESOLVED` 且 `dataset_id=dataset:hive-gfhive:<bare
 | B 分区级 | P_r 各列 × w.partition 各列 | 逐写观察 `partitionMatchStatus` | 任一相关列字面量不等 → `DISJOINT`（剪除）；全部相关列字面量相等 → `CONFIRMED`；含运行时模板相等 / 日期默认 → `ASSUMED`；写侧 `DYNAMIC`/`LEGACY_UNKNOWN` 或读侧列 `NON_LITERAL` → `UNKNOWN`（保留） |
 | C 写观察级 | B 后仍多写 | 列出每个写观察 + 状态 | 不选唯一；L1 文案“多写扇入，已按分区收窄至 n（CONFIRMED n1 / ASSUMED n2 / UNKNOWN n3）” |
 
-复用 `producer-index-query` 的**字面量**匹配与 `PROVEN_DISJOINT`；其 `DATE_PARTITION_DEFAULTED` 与 `POSSIBLE_OVERLAP` 映射为 `ASSUMED`，永不进 L1。
+分区四态由 WP-8（data-graph）按已冻结契约实现：`partitionMatchStatus ∈ CONFIRMED|ASSUMED|UNKNOWN|DISJOINT`。
+语义对齐历史上 PIQ 的字面量相等 / `PROVEN_DISJOINT`，以及把 `DATE_PARTITION_DEFAULTED` / `POSSIBLE_OVERLAP` 收成 `ASSUMED`（永不进 L1）；
+**不是**闭包或索引侧直接调用 / 复用 `producer-index-query` 代码。闭包侧不新增匹配逻辑，也不重新解释分区状态。
 **禁止**：调度父节点作 producer 或打破多写平局；任务名正则推表。
 `scheduleReference` / `SCHEDULE_DEPENDS_ON` 只在参考层，带 `scheduleNeighborStatus`。
 
@@ -147,8 +150,8 @@ Facts 目前把裸名读标 `RESOLVED` 且 `dataset_id=dataset:hive-gfhive:<bare
 |------|------|------|
 | Machine Facts 记录（bindings / expression_nodes + IR roles / dataset-io / relation / materializations） | 复用 | 证据承载体，角色来自 IR |
 | `machine-facts.ts` 平台目标写观察 + `output-field-bindings.ts` fail-closed 门 | 复用 | 即形态 B 的结构化路径 |
-| `producer-index-query` 字面量匹配、`PROVEN_DISJOINT` | 复用 | 判定可靠 |
-| `producer-index-query` `DATE_PARTITION_DEFAULTED` / `POSSIBLE_OVERLAP` | 映射为 `partitionMatchStatus=ASSUMED` | 现被当 PROVEN/PRIMARY |
+| WP-8 四态 `partitionMatchStatus`（语义对齐 PIQ 字面量/`PROVEN_DISJOINT`；`DATE_PARTITION_DEFAULTED`/`POSSIBLE_OVERLAP`→`ASSUMED`） | **契约权威，只读** | 内核自实现；非代码复用 PIQ；闭包/索引不重算 |
+| `producer-index-query` 运行时调用 | 不复用为分区判定入口 | 避免「语义对齐」与「代码复用」混淆 |
 | `datasetControlsForStatement` + grain、`causal-closure.ts` 传播、`task-relation-summary` JOIN 侧别 | 复用 | 结构字段驱动、自检 |
 | `task-relation-summary` 的 project/aggregate 文本正则 | 替换为 IR | 文本启发式 |
 | `field-lineage.ts` 遍历骨架 | 带守卫复用 | 修 548-552 混合角色；去拉链正则；仅 STRICT_CAUSAL |
@@ -181,7 +184,7 @@ Facts 目前把裸名读标 `RESOLVED` 且 `dataset_id=dataset:hive-gfhive:<bare
 ```text
 WP-6 Pack 声明写观察（结构化路径核验）
   → WP-7 一个任务的 读次 / 写观察 投影（含逐列分区谓词）
-  → WP-8 用 119044 两个真实读次完成逐列分区接续
+  → WP-8 用 119044 对目标表 `pdata_n.t03_agt_stati_info_h` 的两个真实读次完成逐列分区接续
   → 输出 L0–L3 查询 envelope
 ```
 
@@ -192,17 +195,17 @@ WP-6 Pack 声明写观察（结构化路径核验）
 
 | WP | 名称 | 侧 | 完成定义（真语料断言；括号内回归样例） | 难度 | 粗估 | 信心 | 主要风险 |
 |----|------|----|------------------------------------------|------|------|------|----------|
-| WP-6 | `pack-declared-write-observation` | Facts | 用当前版本重生成一批 sparkIndex Facts；`PACK_DECLARED_QUERY_OUTPUT` 写观察带 provenance、原 SQL hash；fail-closed 门覆盖目标/边界/Schema/分区；不修改原 SQL（132028 / 155939 / 176827） | 中 | 1～3 | 85% | 若重生成后关键绑定仍缺失才开 spike；坚持拼 SQL 信心降至 ~60% |
-| WP-7 | `graph-identity-and-local-closure` | 投影（WP-3 契约 1.2.0） | 身份按 §3 五级（103928 / 103234 / 103230）；temp 仅按 materializations（105387 / 103928 / 105380 含 UNRESOLVED）；`SELF_READ`（100513 / 100629 / 100815）；`READ_OCCURRENCE` 成节点，谓词按列 | 高 | 5～8 | 70% | 裸名资格、temp、多写、自读、读次同时改投影契约 |
-| WP-8 | `union-continuation-v2` | data-graph | 三档 + `partitionMatchStatus`；复用 PIQ 字面量匹配；`ASSUMED` 不进 L1；调度不进任何档；119044 两读次按 §7；多写同表任务抽 20 个写观察级不塌回 taskId | 高 | 5～8 | 75% | 从 task/dataset 提升到读次×写观察 |
+| WP-6 | `pack-declared-write-observation` | Facts | **已合入 main（2026-09-02）**。`PACK_DECLARED_QUERY_OUTPUT` 写观察带 provenance、原 SQL hash；fail-closed 门覆盖目标/边界/Schema/分区；不修改原 SQL。验收：132028 / 155939（目标身份 unresolved → FAILED）/ 176827；测试内临时重生，不覆盖共享 evidence pack | 中 | 1～3 | 85% | 若重生成后字段绑定仍缺失才开 spike；坚持拼 SQL 信心降至 ~60% |
+| WP-7 | `graph-identity-and-local-closure` | 投影（WP-3 契约 1.2.0） | **已合入 main（`9393ba4`，2026-09-03）**。身份按 §3；temp 仅按 materializations；`SELF_READ`；`READ_OCCURRENCE` 成节点，谓词按列。**落地验收金样**：103928（含 SELF_READ + 折叠路径）、105380（UNRESOLVED 边界）、158641（无 materialization → `CANDIDATE`）、181058（折叠）；身份 ASSUMED/TARGET 另有单测。调查期候选 103234 / 103230 / 100513 / 100629 / 100815 **未绑回归** | 高 | 5～8 | 70% | 裸名资格、temp、多写、自读、读次同时改投影契约 |
+| WP-8 | `union-continuation-v2` | data-graph | **内核与 CLI 已落地（2026-09-03）**：三档 + 自实现四态 `partitionMatchStatus`（契约对齐 PIQ 字面量语义，非调用 PIQ）；`ASSUMED` 不进 L1；调度不进任何档；119044 目标表 `pdata_n.t03_agt_stati_info_h` 两读次按 §7；多写同表任务抽 20 个写观察级不塌回 taskId；CLI：`npm run union-continuation-v2` → `src/project-graph/topology/task-local-union/union-continuation-v2-cli.ts` | 高 | 5～8 | 75% | 从 task/dataset 提升到读次×写观察 |
 | WP-9 | `transfer-graph` | 投影 | 形态 C：源表取 `FROM`；列级仅 DDL 对齐；无 query 的 hive2* 显式表级 + gap（86840 夹具） | 高 | 4～7 | 60% | 类别异构、无 SQL/DDL 上限低；受建包覆盖约束 |
-| WP-10 | `closure-on-union` | closure | 候选分支由 §4 生成；`ambiguous` 真计数；176827 / 209119 在 UNION 与 legacy 差异逐条可解释；Gate B 不再依赖 LEGACY_COMPAT | 很高 | 5～9 | 65% | fan-out、状态传播、路径粒度 |
+| WP-10 | `closure-on-union` | closure | **已暂停（2026-09-03）**。C0–C3 已落地；归档 `openspec/changes/archive/2026-09-03-closure-on-union-paused/`。不再以 legacy 对比 / Gate B-UNION L1 计数作产品验收。接续库代码 maintenance-only | 很高 | — | — | 已迁出主链 |
 | WP-11 | `output-derivation-kind` + WP-4 | Facts 消费 / 投影 | 修混合角色丢列（带回归）；window 上下文列不进值流；`outputDerivationKind` 登记；`CONSTANT` 不生成来源边；344 Facts 上分布留档；`processingKind` 分歧留档 | 中 | 3～5 | 80% | 别把 CONSTANT/WINDOW 装成字段来源 |
 | WP-12 | `build-narrative` | 两侧 | L0–L3 结构化 + 人读；覆盖性事实只出现在 L0 | 中 | 2～4 | 90% | 过早做会返工 |
 
 串行约 25～44 人日；并行关键路径约 18～28 人日。基于代码面估算，非实测。
 
-顺序：WP-6 → WP-7 → WP-8（决策闭环）→ WP-10；WP-11 与 WP-8 并行；WP-9 独立；WP-12 贯穿但在上游契约稳定后成型。
+顺序：WP-6 → WP-7 → WP-8（决策闭环）→ **金样调查页**；WP-10 暂停；WP-11 冻结至案例列讲透；WP-9 独立；WP-12 与调查页同步推进。
 每包合入：两仓 `typecheck/build/test/format:check`；`test:field-lineage`、`test:target-table-causal-closure`、legacy topology 回归绿；**新增断言必须来自真 Pack/Facts**。
 
 ### 8.3 工程信心（主观）

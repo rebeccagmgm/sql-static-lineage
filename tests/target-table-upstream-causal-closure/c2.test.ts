@@ -344,6 +344,30 @@ describe("closure-on-union C2", () => {
     expect(result.disjointPruned).toBe(1);
   });
 
+  it("keeps same-task self-reads as local boundaries instead of unmatched INDEX reads", () => {
+    const readId = "task:root:statement:0:relation:self-read";
+    const result = projectUnionV2CandidateUniverse({
+      rootTaskId: "root",
+      baseUniverse: universe([physicalBranch(readId)]),
+      source: source([]),
+      scheduleRelation: scheduleRelation(["producer"]),
+      isSameTaskSelfRead: (consumerTaskId, qualifiedName) =>
+        consumerTaskId === "root" && qualifiedName === TABLE.qualifiedName,
+    });
+
+    expect(result.unmatchedReads).toBe(0);
+    expect(result.selfReadBoundaries).toBe(1);
+    const boundary = result.universe.branches.find(
+      (branch) => branch.branchKind === "UNBOUND_READ",
+    );
+    expect(boundary?.boundaryReason).toBe(
+      "SELF_READ_NOT_EXTERNAL",
+    );
+    expect(boundary?.gapRefs).toContain(
+      "continuation-gap:legacy:task:root:statement:0:relation:self-read:SELF_READ_NOT_EXTERNAL",
+    );
+  });
+
   it("intersects INDEX candidates with the raw schedule relation before projection", () => {
     const readId = "task:root:statement:0:relation:indexed";
     const candidates = ["103234", "103235", "103236", "103237"].map(

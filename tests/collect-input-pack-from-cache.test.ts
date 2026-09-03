@@ -8,6 +8,7 @@ import { collectInputPackFromCache } from "../scripts/input/mainline/collect-inp
 import { writeHiveTaskSqlCache } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
 import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { writeTaskInput } from "../scripts/input/shared/input-pack.ts";
 
 const observedAt = "2026-09-02T00:00:00.000Z";
 
@@ -348,6 +349,54 @@ SELECT 1;`,
     expect(summary).toMatchObject({
       collectionStatus: "EXCLUDED",
       reason: "HORAE_TASK_NOT_FOUND",
+    });
+  });
+
+  it("excludes frozen tasks without materializing them in the main root", () => {
+    const roots = fixtureRoots();
+    writeTaskInput(roots.dataRoot, {
+      taskId: "67485",
+      taskCategory: "hiveTask",
+      evidenceProvider: "fixture:frozen-task",
+    });
+    writeSzdataScheduleDetailCache(
+      "67485",
+      observedAt,
+      {
+        taskId: "67485",
+        taskType: "59",
+        taskName: "hold_inc_fin_cnt",
+        status: "F",
+      },
+      roots.cacheRoot,
+    );
+
+    const [summary] = collect(roots, ["67485"]);
+
+    expect(summary).toMatchObject({
+      collectionStatus: "EXCLUDED",
+      reason: "MANUAL_OR_FROZEN",
+    });
+    expect(
+      existsSync(join(roots.dataRoot, "tasks", "hiveTask", "67485")),
+    ).toBe(false);
+    expect(
+      existsSync(
+        join(
+          `${roots.dataRoot}.manual-tasks`,
+          "tasks",
+          "hiveTask",
+          "67485",
+          "task.json",
+        ),
+      ),
+    ).toBe(true);
+    const status = JSON.parse(
+      readFileSync(`${roots.dataRoot}.input-pack-status.json`, "utf8"),
+    ) as { tasks: Record<string, { status: string; exclusionReason?: string }> };
+    expect(status.tasks["67485"]).toMatchObject({
+      status: "EXCLUDED",
+      exclusionReason: "MANUAL_OR_FROZEN",
     });
   });
 });

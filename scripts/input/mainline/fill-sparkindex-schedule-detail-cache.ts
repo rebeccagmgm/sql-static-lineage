@@ -2,6 +2,10 @@ import {
   fillSzdataScheduleDetailCache,
   taskIdsFromScheduleEvidenceCache,
 } from "./fill-szdata-schedule-detail-cache.ts";
+import {
+  parseTaskIdOrder,
+  type TaskIdOrder,
+} from "./fill-horae-relation-cache.ts";
 import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "./szdata-schedule-detail-cache.ts";
 import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
@@ -42,12 +46,14 @@ function parseIntegerOption(
 
 async function main(): Promise<void> {
   const cacheRoot = option("--cache-root") ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
+  const order: TaskIdOrder = parseTaskIdOrder(option("--order"));
   const taskIds = sparkIndexTaskIdsFromHoraeTypeCache(cacheRoot);
   process.stderr.write(
     `[sparkindex-schedule-detail-cache] start ${JSON.stringify({
       total: taskIds.length,
       cacheRoot,
       taskType: SPARK_INDEX_TASK_TYPE,
+      order,
       minIntervalMs: parseIntegerOption(
         "--interval-ms",
         DEFAULT_MIN_INTERVAL_MS,
@@ -58,6 +64,7 @@ async function main(): Promise<void> {
   const summary = await fillSzdataScheduleDetailCache({
     cacheRoot,
     taskIds,
+    order,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, false),
     minIntervalMs: parseIntegerOption(

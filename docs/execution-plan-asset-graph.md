@@ -17,10 +17,20 @@ WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `
 **当前优先级转为准确性**：见 `docs/graph-accuracy-architecture.md`（WP-6…WP-12）与
 `docs/graph-user-narrative.md`（对用户陈述准/不准）。资产图扩批、WP-2、Neo4j 上线排在其后。
 
-WP-7 已在 sql-static-lineage 落地：task-local 投影的新产物为 schema 1.2.0（兼容读取
-历史 1.1.0），读次以 `READ_OCCURRENCE` 节点承载，身份、临时表 materialization 和
-`SELF_READ` 按 `graph-accuracy-architecture.md` §3 取证。data-graph 的 UNION 接入
-仍属于 WP-8，不在本次变更内。
+WP-6 / WP-7 已合入 `main`（WP-7 tip `9393ba4`）。WP-6：`PACK_DECLARED_QUERY_OUTPUT`
+（132028 / 155939 / 176827）。WP-7：task-local schema 1.2.0（兼容读 1.1.0），
+`READ_OCCURRENCE`、身份 / materialization / `SELF_READ` 按
+`graph-accuracy-architecture.md` §3 取证；落地金样为 103928 / 105380 / 158641 / 181058
+（细则见 `execution-plan-task-local-projection.md` WP-7 节）。
+
+WP-8 接续核已合入 data-graph（`5c83639`）。**当前主链**为金样调查页
+（`105387 → 119044 → 176827`）：task-local 投影 + 最小跨任务接续（WP-8 瘦身）+
+机器图可视化（`scripts/visualize/task-local-machine-graph.ts`）+ L0–L3 陈述（WP-12 V0）。
+
+**WP-10 `closure-on-union` 已暂停**（2026-09-03）：OpenSpec 归档于
+`openspec/changes/archive/2026-09-03-closure-on-union-paused/`，执行方案见
+`docs/experimental/execution-plan-closure-on-union.md`。闭包/legacy 对比不再作产品验收。
+WP-9 传输图独立；WP-11 冻结至案例列路径讲透之后。
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 

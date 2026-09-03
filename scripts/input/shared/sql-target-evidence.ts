@@ -124,6 +124,39 @@ function normalizeQualifiedName(token: string): string | undefined {
     .map((part) => part.trim().replace(/^([`"])(.*)\1$/, "$2"));
   if (parts.some((part) => part === "" || part.includes("@"))) return undefined;
   if (parts.length !== 1 && parts.length !== 2) return undefined;
+  // CREATE TABLE IF NOT EXISTS ${DB}.t → false capture "IF" + schema qualify
+  const reserved = new Set([
+    "if",
+    "exists",
+    "not",
+    "table",
+    "set",
+    "values",
+    "select",
+    "from",
+    "join",
+    "where",
+    "and",
+    "or",
+    "as",
+    "on",
+    "into",
+    "overwrite",
+    "partition",
+    "by",
+    "drop",
+    "create",
+    "alter",
+    "insert",
+    "update",
+    "delete",
+    "with",
+    "using",
+    "true",
+    "false",
+    "null",
+  ]);
+  if (parts.some((part) => reserved.has(part.toLowerCase()))) return undefined;
   return parts.join(".");
 }
 

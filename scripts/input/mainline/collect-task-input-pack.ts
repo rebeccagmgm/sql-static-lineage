@@ -8,6 +8,7 @@ import {
   collectOneTask,
   findExcludedTaskIds,
   hasPhysicalTableEvidenceGap,
+  partitionTaskIdsForCollection,
   relocateTaskPacks,
   taskCategory,
   type TaskCollectionSummary,
@@ -170,18 +171,16 @@ for (const taskId of knownExcludedTaskIds)
   excludedTaskInfo.set(taskId, {
     exclusionReason: status.tasks[taskId]!.exclusionReason!,
   });
-const excludedTaskIds = new Set(excludedTaskInfo.keys());
-const notFoundTaskIds = new Set(
-  [...excludedTaskInfo]
-    .filter(
-      ([, classification]) =>
-        classification.exclusionReason === "HORAE_TASK_NOT_FOUND",
-    )
-    .map(([taskId]) => taskId),
+const taskPartition = partitionTaskIdsForCollection(
+  taskIds,
+  excludedTaskInfo,
 );
-const archiveTaskIds = new Set(
-  [...excludedTaskIds].filter((taskId) => !notFoundTaskIds.has(taskId)),
-);
+const excludedTaskIds = new Set([
+  ...taskPartition.manualFrozenTaskIds,
+  ...taskPartition.notFoundTaskIds,
+]);
+const notFoundTaskIds = new Set(taskPartition.notFoundTaskIds);
+const manualFrozenTaskIds = new Set(taskPartition.manualFrozenTaskIds);
 if (excludedTaskIds.size > 0)
   console.error(
     JSON.stringify({
@@ -189,11 +188,14 @@ if (excludedTaskIds.size > 0)
       taskIds: [...excludedTaskIds].sort(),
       count: excludedTaskIds.size,
       notFoundTaskIds: [...notFoundTaskIds].sort(),
+      manualFrozenTaskIds: [...manualFrozenTaskIds].sort(),
       source: "opencli:horae.search",
     }),
   );
-for (const taskId of archiveTaskIds) {
+const manualFrozenMoves = new Map<string, readonly string[]>();
+for (const taskId of manualFrozenTaskIds) {
   const moved = relocateTaskPacks(dataRoot, manualDataRoot, taskId);
+  manualFrozenMoves.set(taskId, moved);
   if (moved.length > 0)
     console.error(
       JSON.stringify({
@@ -305,10 +307,40 @@ for (const taskId of notFoundTaskIds) {
     }),
   );
 }
+for (const taskId of manualFrozenTaskIds) {
+  const previous = status.tasks[taskId];
+  const moved = manualFrozenMoves.get(taskId) ?? [];
+  if (
+    previous?.status === "EXCLUDED" &&
+    previous.exclusionReason === "MANUAL_OR_FROZEN" &&
+    moved.length === 0 &&
+    !force
+  )
+    continue;
+  persistStatus({
+    taskId,
+    status: "EXCLUDED",
+    exclusionReason: "MANUAL_OR_FROZEN",
+    changed: moved.length > 0,
+    directory: moved[0] === undefined ? undefined : resolve(moved[0]),
+    tablesWritten: 0,
+    tableAssets: [],
+    warnings: [],
+    staleLegacyTaskDirectories: [],
+  });
+  console.log(
+    JSON.stringify({
+      taskId,
+      collectionStatus: "EXCLUDED",
+      reason: "MANUAL_OR_FROZEN",
+      archiveRoot: manualDataRoot,
+      moved,
+    }),
+  );
+}
 const skippedTaskIds: string[] = [];
-const runnableTaskIds = taskIds.filter((taskId) => {
-  if (notFoundTaskIds.has(taskId)) return false;
-  const taskDataRoot = archiveTaskIds.has(taskId)
+const runnableTaskIds = taskPartition.runnableTaskIds.filter((taskId) => {
+  const taskDataRoot = manualFrozenTaskIds.has(taskId)
     ? manualDataRoot
     : dataRoot;
   const reusable =
@@ -332,7 +364,9 @@ const hadFailure = runTaskBatch(
   dataRoot,
   runnableTaskIds,
   (root, taskId) => {
-    const taskDataRoot = archiveTaskIds.has(taskId) ? manualDataRoot : root;
+    const taskDataRoot = manualFrozenTaskIds.has(taskId)
+      ? manualDataRoot
+      : root;
     const summary = collectOneTask(taskDataRoot, taskId, {
       ...(excludedTaskInfo.get(taskId) ?? {}),
     });
@@ -454,7 +488,7 @@ const statusSummary = {
   ),
   cleanSuccess: taskIds.filter((taskId) => {
     const record = status.tasks[taskId];
-    const taskDataRoot = archiveTaskIds.has(taskId)
+    const taskDataRoot = manualFrozenTaskIds.has(taskId)
       ? manualDataRoot
       : dataRoot;
     return (
@@ -477,7 +511,7 @@ const statusSummary = {
       (record.staleLegacyTaskDirectories?.length ?? 0) === 0 &&
       !isReusableSuccess(
         record,
-        archiveTaskIds.has(taskId) ? manualDataRoot : dataRoot,
+        manualFrozenTaskIds.has(taskId) ? manualDataRoot : dataRoot,
       )
     );
   }),
