@@ -9,6 +9,7 @@ import type { TargetWriteRef } from "./target-write-contract.ts";
 export type {
   CandidateBranch,
   CandidateBranchKind,
+  CandidateContinuation,
   CandidatePhysicalTable,
   CandidateUniverse,
   CandidateUniverseStatus,

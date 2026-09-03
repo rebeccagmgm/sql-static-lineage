@@ -182,7 +182,8 @@ function branchBelongsToWriteScope(
 
 function scopeForBranch(branch: CandidateBranch): WriteScope | null {
   if (!branch.producerTaskId || !branch.writeObservationId || !branch.writeScope) return null;
-  if (branch.gapRefs.some((gap) => /PRODUCER_WRITE|WRITE_OBSERVATION|WRITE_SCOPE/i.test(gap))) return null;
+  if (branch.gapRefs.some((gap) => /CONTINUATION_(?:READ_NOT_FOUND|PRODUCER_NOT_FOUND)/i.test(gap))) return null;
+  if (!branch.continuation && branch.gapRefs.some((gap) => /PRODUCER_WRITE|WRITE_OBSERVATION|WRITE_SCOPE/i.test(gap))) return null;
   return {
     taskId: branch.producerTaskId,
     writeObservationId: branch.writeObservationId,
@@ -212,6 +213,19 @@ function propagatedChannelAssessment(state: PropagationState): ChannelAssessment
       ? { affectedTargetFields: state.affectedTargetFields }
       : {}),
   };
+}
+
+function continuationCertainty(branch: CandidateBranch): PathCertainty | null {
+  const continuation = branch.continuation;
+  if (!continuation) return null;
+  if (
+    continuation.source === "IN_UNION_FINAL_WRITE"
+    && continuation.partitionMatchStatus === "CONFIRMED"
+    && continuation.evidenceLayer === "L1"
+    && continuation.l1Eligible
+  ) return "CONFIRMED";
+  if (continuation.source === "IN_UNION_FINAL_WRITE" && continuation.partitionMatchStatus === "ASSUMED") return "CONDITIONAL";
+  return "UNKNOWN";
 }
 
 function finalRelationStatus(channels: readonly ChannelAssessment[]): "CONFIRMED_RELATED" | "CONDITIONAL_RELATED" | "UNKNOWN" {
@@ -478,11 +492,15 @@ function propagate(input: {
           outputFieldBindingIds: localValue.outputFieldBindingIds,
           affectedTargetFields: localValue.affectedTargetFields,
         };
+        const continuationPath = continuationCertainty(branch);
+        const localCertainty = continuationPath === null
+          ? localValue.status as PathCertainty
+          : composePath(localValue.status as PathCertainty, continuationPath);
         const next: PropagationState = {
           ...common,
           certainty: unresolvedWrite || depthExceeded
             ? "UNKNOWN"
-            : composePath(downstream.certainty, localValue.status as PathCertainty),
+            : composePath(downstream.certainty, localCertainty),
           gapRefs: unique([
             ...downstream.gapRefs,
             ...localValue.gapRefs,
