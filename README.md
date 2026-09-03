@@ -25,7 +25,19 @@ npm run project-topology       -> src/project-graph/project-topology-cli.ts
 npm run project-topology-view  -> src/project-graph/project-topology-view-cli.ts
 npm run field-evidence-graph   -> src/project-graph/field-evidence/field-evidence-cli.ts
 npm run target-causal-overlay  -> src/project-graph/target-causal-overlay/target-causal-overlay-cli.ts
+npm run union-continuation-v2  -> src/project-graph/topology/task-local-union/union-continuation-v2-cli.ts
+npm run union-continuation-index -> src/project-graph/topology/task-local-union/union-continuation-index-cli.ts
 npm run query-index             -> src/project-graph/query-index/query-index-cli.ts
+```
+
+Build a replayable WP-8.1 continuation index from current task-local 1.2.0
+projections. The command indexes every `PROJECTED` task by default; pass
+`--consumer-task-id` to limit the consumer tasks. `SCHEDULE_ONLY` and
+`COLLECTION_FAILED` inputs are excluded, and any non-1.2.0 `PROJECTED` input
+fails the whole run before output is written.
+
+```text
+npm run union-continuation-index -- --batch-dir tmp/wp8-real-v2-119044 --producer-index ../../sql-static-lineage-data.producer-index/producer-index.json --consumer-task-id 119044 --output-dir tmp/wp8-continuation-index
 ```
 
 For example, publish a target-causal overlay and build the query index from
