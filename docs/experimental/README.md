@@ -10,6 +10,7 @@ for regression and optional CLI use. It is **not** the current product mainline.
   `openspec/changes/archive/2026-09-03-closure-on-union-paused/`
 - **Execution plan (historical)**:
   `docs/experimental/execution-plan-closure-on-union.md`
+  （旧路径 `docs/execution-plan-closure-on-union.md` 为重定向桩）
 - **Still useful**: union-v2 attachment + `UNION_CONTINUATION_INDEX` adapter as a
   library; **case-first continuation** should use a thin WP-8 slice only.
 

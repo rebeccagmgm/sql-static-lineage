@@ -20,8 +20,8 @@ WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `
 WP-6 / WP-7 已合入 `main`（WP-7 tip `9393ba4`）。WP-6：`PACK_DECLARED_QUERY_OUTPUT`
 （132028 / 155939 / 176827）。WP-7：task-local schema 1.2.0（兼容读 1.1.0），
 `READ_OCCURRENCE`、身份 / materialization / `SELF_READ` 按
-`graph-accuracy-architecture.md` §3 取证；落地金样为 103928 / 105380 / 158641 / 181058
-（细则见 `execution-plan-task-local-projection.md` WP-7 节）。
+`docs/graph-accuracy-architecture.md` §3 取证；落地金样为 103928 / 105380 / 158641 / 181058
+（细则见 `docs/execution-plan-task-local-projection.md` WP-7 节）。
 
 WP-8 接续核已合入 data-graph（`5c83639`）。**当前主链**为金样调查页
 （`105387 → 119044 → 176827`）：task-local 投影 + 最小跨任务接续（WP-8 瘦身）+

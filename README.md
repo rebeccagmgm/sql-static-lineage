@@ -13,6 +13,9 @@
 - [L1 scope 与架构](docs/l1-scope-and-architecture.md)
 - [迁移清单与来源证据](docs/migration-inventory.md)
 - [验收入口与 Gate](docs/acceptance.md)
+- [数据资产图执行方案](docs/execution-plan-asset-graph.md)（当前主链与金样 `105387 → 119044 → 176827`）
+- [图谱准确性架构](docs/graph-accuracy-architecture.md)
+- [文档索引](docs/README.md)
 - [86840 Gold Case 入口](tests/gold/README.md)
 - [统一 Task/Table Input Pack V1](docs/input-pack.md)
 - [表级单跳对账器](docs/reconcile-one-hop.md)
@@ -36,6 +39,7 @@ npm run reconcile-multi-hop -- --task-id 86840 --data-root <input-pack-root> --p
 npm run reconcile-multi-hop:autofill -- --task-id 181058 --data-root <input-pack-root> --max-depth 3 --max-tasks 1000 --max-edges 10000 --output <result.json> --report <autofill-report.json>
 npm run reconcile-multi-hop:batch -- --task-ids 181058,176827 --data-root <input-pack-root> --producer-index <producer-index.json> --output-dir <result-dir>
 npm run visualize-multi-hop -- --task-id 181058 --artifact-dir <multi-hop-output-dir> --output <lineage.html>
+npm run visualize-task-local-machine-graph -- --help
 npm run input-pack:machine-facts -- --data-root <input-pack-root> --task-id 155015,114026,105387 --output <facts-root>
 npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <facts-root> --multi-hop-artifact <table-multi-hop.json> --task-id 155015 --target-table dm_rsk_n.v_risk_audit_log [--write-observation-id <write-observation-id>] [--fields entity_id,entity_field_name] --facts-policy allow-legacy-partial --output <field-lineage.json> --summary-output <field-lineage.txt>
 ```

@@ -320,16 +320,18 @@ Gate B-UNION L1 集合：`npm run gate-b-union -- --closure-artifact <union-v2-c
 
 ---
 
-## 11. 完成定义（整包 WP-10）
+## 11. 完成定义（整包 WP-10）— 暂停时交付状态
 
-- [ ] WP-8.1 `UNION_CONTINUATION_INDEX` 合入 data-graph
-- [ ] C0–C3 合入 sql-static-lineage（C4 可选）
-- [ ] union-v2：`ambiguousReads` 真计数；无 `resolved += N`；SCHEDULE_ONLY 不作 producer
-- [ ] 119044 / 105387 与 WP-8 状态一致
-- [ ] 176827、209119 union-v2 vs legacy 差异逐条可解释（锚定集自动化）；档一收缩有原因码
-- [ ] Gate B-UNION 机读通过；历史 Gate B 状态原样保留并注明区别
-- [ ] legacy 模式产物 hash 不变
-- [ ] OpenSpec 归档；`graph-accuracy-architecture.md` §8.2 WP-10 行更新（范围注明）
+> **2026-09-03 暂停**：下列项为归档前已交付 / 未交付记录，**不再作产品验收清单**。
+
+- [x] WP-8.1 `UNION_CONTINUATION_INDEX` 合入 data-graph（WP-8 接续核 `5c83639`）
+- [x] C0–C3 合入 sql-static-lineage（C4 未做；产品已暂停）
+- [x] union-v2：`ambiguousReads` 真计数路径；SCHEDULE_ONLY 不作 producer（维护测试覆盖）
+- [~] 119044 / 105387 与 WP-8 状态一致（合成金样有测；全量 diff 非验收项）
+- [ ] 176827、209119 union-v2 vs legacy 差异逐条可解释 — **暂停，不作 Gate**
+- [~] Gate B-UNION CLI 与测试（`gate-b-union.ts`）— maintenance-only
+- [x] legacy 模式默认开关；产物 hash 回归在既有测试中
+- [x] OpenSpec 归档；`graph-accuracy-architecture.md` §8.2 WP-10 行已更新
 
 ---
 
