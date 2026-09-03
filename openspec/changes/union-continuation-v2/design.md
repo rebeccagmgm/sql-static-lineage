@@ -42,7 +42,8 @@ producer-index 的 fallback ID 不得广播到同一任务/同一物理表的多
 `UNION_CONTINUATION_EVIDENCE` 1.0.0：L0 带消费者覆盖、三档数量和所有任务/PI/
 batch manifest 哈希；L1/L2 带写观察候选；L3 带显式 gaps；完整 v2 结果原样保留。
 `generatedAt` 不进入 envelope content hash。该 factory 是可消费的契约，批量 CLI
-仍作为后续接入项。
+`union-continuation-v2`（`union-continuation-v2-cli.ts`）只编排已有 loader、merge、
+v2 trace 和 envelope 写出，不改变接续匹配语义；CLI 不负责 SQL/Facts 重算、闭包或 UI。
 
 ## Rollback
 

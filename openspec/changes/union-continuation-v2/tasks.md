@@ -18,4 +18,4 @@
 - [x] 3.3 Cover `ASSUMED` L1 exclusion, legacy rejection, and same-table multi-write isolation
 - [x] 3.4 Fail-closed on ambiguous 105387 `#3/#6` producer-index alignment
 - [x] 3.5 Add current producer-index twenty-scope same-table multi-write sample and L0-L3 envelope checks
-- [ ] 3.6 Wire v2 continuation into a user-facing batch CLI (separate follow-up)
+- [x] 3.6 Wire v2 continuation into a user-facing batch CLI; CLI only orchestrates loader → merge → v2 trace → envelope and does not change continuation semantics

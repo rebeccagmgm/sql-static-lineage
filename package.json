@@ -15,6 +15,7 @@
     "project-topology-view": "tsx src/project-graph/project-topology-view-cli.ts",
     "field-evidence-graph": "tsx src/project-graph/field-evidence/field-evidence-cli.ts",
     "target-causal-overlay": "tsx src/project-graph/target-causal-overlay/target-causal-overlay-cli.ts",
+    "union-continuation-v2": "tsx src/project-graph/topology/task-local-union/union-continuation-v2-cli.ts",
     "query-index": "tsx src/project-graph/query-index/query-index-cli.ts",
     "query-index:build": "tsx src/project-graph/query-index/query-index-cli.ts build",
     "query-index:status": "tsx src/project-graph/query-index/query-index-cli.ts status",
