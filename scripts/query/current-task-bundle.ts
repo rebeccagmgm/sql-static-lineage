@@ -2,6 +2,12 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
 import { canonicalJson, sha256 } from "../machine-facts/machine-facts-contract.ts";
+import {
+	hashJsonlStore,
+	inspectJsonlStore,
+	jsonlStoreExists,
+	readJsonlRecords,
+} from "../machine-facts/jsonl-store.ts";
 
 export type CurrentBundleState = "CURRENT_L1" | "LEGACY_NOT_L1" | "STALE" | "INVALID";
 export type JsonRecord = Record<string, any>;
@@ -54,9 +60,16 @@ function json(path: string): JsonRecord {
 }
 
 function jsonl(path: string): JsonRecord[] {
-	if (!existsSync(path)) return [];
-	const text = readFileSync(path, "utf8").trim();
-	return text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
+	if (!jsonlStoreExists(path)) return [];
+	return readJsonlRecords(path);
+}
+
+function bundleJsonlExists(bundleDir: string, file: string): boolean {
+	return jsonlStoreExists(join(bundleDir, file));
+}
+
+function bundleOutputExists(bundleDir: string, file: string): boolean {
+	return file.endsWith(".jsonl") ? bundleJsonlExists(bundleDir, file) : existsSync(join(bundleDir, file));
 }
 
 function safeTaskId(taskId: string): boolean {
@@ -307,7 +320,7 @@ function loadCurrentTaskBundleWithContext(
 	if (requestedFiles) {
 		for (const file of requestedFiles) {
 			if (!outputRecords.some((output) => output && output.path === file)) integrityIssues.push(`REQUESTED_OUTPUT_NOT_DECLARED:${file}`);
-			if (!existsSync(join(bundleDir, file))) integrityIssues.push(`REQUESTED_OUTPUT_MISSING:${file}`);
+			if (!bundleOutputExists(bundleDir, file)) integrityIssues.push(`REQUESTED_OUTPUT_MISSING:${file}`);
 		}
 	}
 	const outputPaths = new Set<string>();
@@ -323,17 +336,38 @@ function loadCurrentTaskBundleWithContext(
 	if (isL1)
 		for (const required of REQUIRED_L1_FILES) {
 			if (!outputPaths.has(required)) integrityIssues.push(`L1_REQUIRED_OUTPUT_NOT_DECLARED:${required}`);
-			if (!existsSync(join(bundleDir, required))) integrityIssues.push(`L1_REQUIRED_OUTPUT_MISSING:${required}`);
+			if (!bundleOutputExists(bundleDir, required)) integrityIssues.push(`L1_REQUIRED_OUTPUT_MISSING:${required}`);
 		}
 	for (const output of outputRecords) {
 		const outputPath = safeRelativePath(bundleDir, output.path);
-		if (!outputPath || !existsSync(outputPath) || !realPathContained(bundleDir, outputPath)) {
+		if (!outputPath) {
 			integrityIssues.push(`OUTPUT_MISSING:${String(output.path)}`);
 			continue;
 		}
-		if (context?.validateOutputHashes !== "requested" || requestedFiles?.has(String(output.path))) {
+		const fileName = String(output.path);
+		if (fileName.endsWith(".jsonl")) {
+			const stored = inspectJsonlStore(outputPath);
+			if (stored.status === "CONFLICT") {
+				integrityIssues.push(`OUTPUT_JSONL_STORE_CONFLICT:${fileName}`);
+				continue;
+			}
+			if (stored.status === "MISSING" || !realPathContained(bundleDir, stored.path)) {
+				integrityIssues.push(`OUTPUT_MISSING:${fileName}`);
+				continue;
+			}
+			if (context?.validateOutputHashes !== "requested" || requestedFiles?.has(fileName)) {
+				if (hashJsonlStore(outputPath) !== output.content_sha256)
+					integrityIssues.push(`OUTPUT_HASH_MISMATCH:${fileName}`);
+			}
+			continue;
+		}
+		if (!existsSync(outputPath) || !realPathContained(bundleDir, outputPath)) {
+			integrityIssues.push(`OUTPUT_MISSING:${fileName}`);
+			continue;
+		}
+		if (context?.validateOutputHashes !== "requested" || requestedFiles?.has(fileName)) {
 			if (sha256(readFileSync(outputPath)) !== output.content_sha256)
-			integrityIssues.push(`OUTPUT_HASH_MISMATCH:${String(output.path)}`);
+				integrityIssues.push(`OUTPUT_HASH_MISMATCH:${fileName}`);
 		}
 	}
 	const sourceArtifactPath = join(bundleDir, "source-artifact.json");
@@ -356,7 +390,13 @@ function loadCurrentTaskBundleWithContext(
 	const parsedJsonl = new Map<string, JsonRecord[]>();
 	for (const output of outputRecords) {
 		const outputPath = safeRelativePath(bundleDir, output.path);
-		if (!outputPath || !existsSync(outputPath) || !String(output.path).endsWith(".jsonl") || (requestedFiles && !requestedFiles.has(String(output.path)))) continue;
+		if (
+			!outputPath ||
+			!String(output.path).endsWith(".jsonl") ||
+			(requestedFiles && !requestedFiles.has(String(output.path)))
+		)
+			continue;
+		if (!jsonlStoreExists(outputPath)) continue;
 		try {
 			const rows = jsonl(outputPath);
 			parsedJsonl.set(String(output.path), rows);
@@ -430,7 +470,7 @@ function loadCurrentTaskBundleWithContext(
 	try {
 		for (const file of [...new Set(files)].sort()) {
 			const path = join(bundleDir, file);
-			if (!existsSync(path)) continue;
+			if (!bundleOutputExists(bundleDir, file)) continue;
 			records[file] = file.endsWith(".jsonl")
 				? parsedJsonl.get(file) ?? []
 				: [json(path)];

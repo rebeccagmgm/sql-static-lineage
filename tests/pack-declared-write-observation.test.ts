@@ -4,7 +4,6 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -13,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { runInputPackMachineFacts } from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import { validateBundle } from "../scripts/machine-facts/machine-facts.ts";
+import { readJsonlRecords, writeCanonicalJsonl } from "../scripts/machine-facts/jsonl-store.ts";
 import { createSyntheticFieldLineageInputPack } from "./fixtures/field-lineage/cases.ts";
 
 const TASK_IDS = ["132028", "155939", "176827"] as const;
@@ -39,12 +39,7 @@ function realDataRoot(): string | null {
 }
 
 function jsonl(path: string): Record<string, unknown>[] {
-  const text = readFileSync(path, "utf8").trim();
-  return text
-    ? text
-        .split(/\r?\n/)
-        .map((line) => JSON.parse(line) as Record<string, unknown>)
-    : [];
+  return readJsonlRecords(path);
 }
 
 function bundle(outputRoot: string, taskId: string): string {
@@ -211,16 +206,8 @@ describe("WP-6 Pack-declared write observation", () => {
           ? { ...binding, source_sql_sha256: tamperedHash }
           : binding,
       );
-      writeFileSync(
-        writePath,
-        `${writes.map((write) => JSON.stringify(write)).join("\n")}\n`,
-        "utf8",
-      );
-      writeFileSync(
-        bindingPath,
-        `${bindings.map((binding) => JSON.stringify(binding)).join("\n")}\n`,
-        "utf8",
-      );
+      writeCanonicalJsonl(writePath, writes);
+      writeCanonicalJsonl(bindingPath, bindings);
       const errors = validateBundle(bundleRoot);
       expect(errors).toEqual(
         expect.arrayContaining([

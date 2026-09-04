@@ -10,6 +10,7 @@ import {
   prepareInputPackTask,
   runInputPackMachineFacts,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
+import { readJsonlRecords } from "../scripts/machine-facts/jsonl-store.ts";
 import {
   writeTableInput,
   writeTaskInput,
@@ -25,8 +26,7 @@ function fixture() {
 }
 
 function jsonl(path: string): Record<string, unknown>[] {
-  const text = readFileSync(path, "utf8").trim();
-  return text ? text.split(/\r?\n/).map((line) => JSON.parse(line)) : [];
+  return readJsonlRecords(path);
 }
 
 describe("Input Pack-driven Machine Facts", () => {

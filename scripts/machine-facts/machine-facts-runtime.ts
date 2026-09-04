@@ -1,23 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { canonicalJson, canonicalJsonl, sha256 } from "./machine-facts-contract.ts";
+import { canonicalJson, sha256 } from "./machine-facts-contract.ts";
+export { writeCanonicalJsonl } from "./jsonl-store.ts";
 
 export type BundleValidator = (bundleDir: string) => string[];
 
 export function writeCanonical(path: string, value: unknown): void {
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, canonicalJson(value), "utf8");
-}
-
-export function writeCanonicalJsonl(
-	path: string,
-	records: readonly unknown[],
-): { row_count: number; content_sha256: string } {
-	const bytes = canonicalJsonl(records);
-	mkdirSync(dirname(path), { recursive: true });
-	writeFileSync(path, bytes, "utf8");
-	return { row_count: records.length, content_sha256: sha256(bytes) };
 }
 
 export function fileHash(path: string): string {

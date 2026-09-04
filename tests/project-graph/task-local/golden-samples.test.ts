@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { jsonlStoreExists } from "../../../scripts/machine-facts/jsonl-store.ts";
+
 import {
   validateTaskLocalProjection,
   type TaskLocalProjection,
@@ -24,9 +26,8 @@ function goldenRoots(): { dataRoot: string; factsRoot: string } | null {
   const required = ["176827", "119044", "105387"].map((taskId) =>
     join(factsRoot, "registry", "tasks", taskId, "bundle", "dataset-io.jsonl"),
   );
-  if (![dataRoot, factsRoot, ...required].every((path) => existsSync(path))) {
-    return null;
-  }
+  if (!existsSync(dataRoot) || !existsSync(factsRoot)) return null;
+  if (!required.every((path) => jsonlStoreExists(path))) return null;
   return { dataRoot, factsRoot };
 }
 

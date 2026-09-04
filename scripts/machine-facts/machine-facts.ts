@@ -15,6 +15,7 @@ import {
 	writeCanonical as runtimeWriteCanonical,
 	writeCanonicalJsonl,
 } from "./machine-facts-runtime.ts";
+import { hashJsonlStore, inspectJsonlStore, jsonlStoreExists, readJsonlRecords } from "./jsonl-store.ts";
 import {
 	MACHINE_FACTS_ADAPTER_VERSION,
 	MACHINE_FACTS_CONTRACT_VERSION,
@@ -984,13 +985,18 @@ export function validateBundle(bundleDir: string): string[] {
 			errors.push(`unsafe output path ${output.path}`);
 			continue;
 		}
-		if (!existsSync(path)) {
+		const stored = inspectJsonlStore(path);
+		if (stored.status === "CONFLICT") {
+			errors.push(`jsonl store conflict ${output.path}`);
+			continue;
+		}
+		if (stored.status === "MISSING") {
 			errors.push(`missing output ${output.path}`);
 			continue;
 		}
-		if (fileHash(path) !== output.content_sha256) errors.push(`hash mismatch ${output.path}`);
+		if (hashJsonlStore(path) !== output.content_sha256) errors.push(`hash mismatch ${output.path}`);
 		try {
-			const rows = readJsonl(path);
+			const rows = readJsonlRecords(path);
 			if (rows.length !== output.row_count) errors.push(`row count mismatch ${output.path}`);
 			const recordSchema = recordSchemas[output.path] as JsonRecord | undefined;
 			if (!recordSchema) errors.push(`record schema missing ${output.path}`);
@@ -1114,13 +1120,17 @@ export function validateBundle(bundleDir: string): string[] {
 }
 
 function readJsonl(path: string): JsonRecord[] {
-	if (!existsSync(path)) return [];
-	const text = readFileSync(path, "utf8").trim();
-	return text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
+	if (!jsonlStoreExists(path)) return [];
+	return readJsonlRecords(path);
 }
 
 function readJsonlForValidation(path: string, errors: string[]): JsonRecord[] {
 	try {
+		const stored = inspectJsonlStore(path);
+		if (stored.status === "CONFLICT") {
+			errors.push(`jsonl store conflict ${basename(path)}`);
+			return [];
+		}
 		return readJsonl(path);
 	} catch (error) {
 		errors.push(`invalid JSONL ${basename(path)}: ${error instanceof Error ? error.message : String(error)}`);
