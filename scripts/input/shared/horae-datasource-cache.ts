@@ -92,6 +92,22 @@ export const ORACLE_UIP_WINDDB_ATLAS_DATASOURCE =
   "gforacle_oracle_uip_winddb#winddb" as const;
 
 /**
+ * Canonical Atlas instance for Horae service `jgjdb`.
+ *
+ * Horae/atlas **service form** is `gforacle_jgjdb#jgjdb`, but RDBMS-core often
+ * stores numbered siblings (`gforacle_jgjdb1#jgjdb`, `gforacle_jgjdb2#jgjdb`, …)
+ * so `${qn}#jgjdb` stays AMBIGUOUS.
+ *
+ * Decision process (repo convention when unique physical proof is unavailable):
+ * count SUCCESS `tables/oracle` packs by atlas dataSource, then pin the majority.
+ * 2026-09-04 census: `gforacle_jgjdb1#jgjdb`=191, `jgjdb2`=0 → prefer jgjdb1
+ * (`ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE`). Not unique physical proof; change
+ * the constant and force affected tasks if the majority shifts.
+ */
+export const ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE =
+  "gforacle_jgjdb1#jgjdb" as const;
+
+/**
  * When Horae service is winddb but core has multiple `#winddb` instances,
  * prefer the UIP instance for 万得/UIP tags (and host 10.2.89.132).
  */
@@ -106,6 +122,16 @@ export function shouldPreferOracleUipWinddbAtlas(
   return host === "10.2.89.132";
 }
 
+/** Horae Oracle service `jgjdb` → prefer numbered prod instance jgjdb1. */
+export function shouldPreferOracleJgjdb1Atlas(
+  entry: Pick<HoraeDatasourceEntry, "serverType" | "service">,
+): boolean {
+  return (
+    entry.serverType.trim().toLowerCase() === "oracle" &&
+    entry.service.trim().toLowerCase() === "jgjdb"
+  );
+}
+
 function preferredAtlasFromHoraeEntry(
   entry: HoraeDatasourceEntry,
 ): string | undefined {
@@ -114,6 +140,8 @@ function preferredAtlasFromHoraeEntry(
     shouldPreferOracleUipWinddbAtlas(entry)
   )
     return ORACLE_UIP_WINDDB_ATLAS_DATASOURCE;
+  if (shouldPreferOracleJgjdb1Atlas(entry))
+    return ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE;
   return atlasDataSourceFromHoraeService(entry.serverType, entry.service);
 }
 

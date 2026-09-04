@@ -326,7 +326,9 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     expect(result.kind).toBe("EVIDENCE");
     if (result.kind !== "EVIDENCE") return;
     expect(result.evidence.endpointDataSourceHints).toEqual({
-      target: "gforacle_jgjdb#jgjdb",
+      // Special prefer: Oracle service jgjdb pins to gforacle_jgjdb1#jgjdb
+      // (see ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE), not the bare service form.
+      target: "gforacle_jgjdb1#jgjdb",
     });
     const taskDocument = createTaskDocument(result.evidence);
     expect(taskDocument).not.toHaveProperty("endpointDataSourceHints");
