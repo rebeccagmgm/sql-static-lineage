@@ -4,14 +4,29 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [execution-plan-asset-graph.md](execution-plan-asset-graph.md) | 工作包总地图与优先级 |
-| [graph-accuracy-architecture.md](graph-accuracy-architecture.md) | WP-6…WP-12 准确性冻结架构 |
-| [graph-user-narrative.md](graph-user-narrative.md) | L0–L3 对用户陈述准/不准 |
-| [execution-plan-task-local-projection.md](execution-plan-task-local-projection.md) | WP-3 / WP-7 任务局部投影 |
-| [execution-plan-task-local-union.md](execution-plan-task-local-union.md) | WP-5 并集接续（data-graph 侧） |
-| [domain-asset-graph-architecture.md](domain-asset-graph-architecture.md) | 图模型契约 |
+| [execution-plan-gold-case-investigation.md](execution-plan-gold-case-investigation.md) | **P0 执行规格**：方案、命令链、产物契约、路线图（§0 / §8） |
+| [domain-asset-graph-architecture.md](domain-asset-graph-architecture.md) | **架构**：机器单位、三层、两条产品线、端到端数据流 |
+| [execution-plan-asset-graph.md](execution-plan-asset-graph.md) | **执行总地图**：WP 状态、里程碑 M0–M3 |
 
-**金样调查页**（`105387 → 119044 → 176827`）：task-local 投影 + 最小跨任务接续 + 机器图 HTML（`npm run visualize-task-local-machine-graph`）+ L0–L3 陈述（WP-12 V0）。
+| 文档 | 用途 |
+| --- | --- |
+| [graph-accuracy-architecture.md](graph-accuracy-architecture.md) | WP-6…WP-12 准确性冻结 |
+| [graph-user-narrative.md](graph-user-narrative.md) | L0–L3 对用户陈述 |
+| [execution-plan-task-local-projection.md](execution-plan-task-local-projection.md) | WP-3 纸条 |
+| [execution-plan-task-local-union.md](execution-plan-task-local-union.md) | WP-5 并集 + WP-8 接续 |
+
+### 金样一句话
+
+四锚点 taskId → **`--expand-upstream` 穿透闭包** → 纸条 + **`union-continuation-index.json`** → gaps / L0–L3；HTML 可选。
+
+### 接下来做什么（顺序）
+
+1. 跑 `project-task-local --task-ids … --expand-upstream`（GC-0 步骤 1）
+2. 跑 `union-continuation-index`（GC-0 步骤 2）
+3. 写 `gold-case-gaps.jsonl` + 分锚点 L0–L3（GC-3）
+4. 扩 golden / 一键脚本（GC-4 / GC-2）
+
+细节：**[execution-plan-gold-case-investigation.md §8](execution-plan-gold-case-investigation.md)**。
 
 ## L1 主线与采集
 

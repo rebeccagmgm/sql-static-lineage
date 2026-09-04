@@ -16,8 +16,4 @@ for regression and optional CLI use. It is **not** the current product mainline.
 
 ## Current mainline (2026-09-03)
 
-Gold-case investigation for `105387 → 119044 → 176827`:
-
-- task-local projection + minimal cross-task continuation
-- machine-graph HTML under `scripts/visualize/` (`npm run visualize-task-local-machine-graph`)
-- L0–L3 narrative on the investigation page (WP-12 V0), not closure tier counts
+金样调查页: four DM_RSK_N anchors, one union batch; **primary deliverable** is consumable JSON (`batch-manifest`, per-task projections, `union-continuation-index.json`, `gold-case-gaps.jsonl`). HTML optional.

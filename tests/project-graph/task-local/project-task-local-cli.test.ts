@@ -67,6 +67,33 @@ describe("task-local batch CLI (TL-5)", () => {
     expect(selection.taskIds).toEqual(["105387", "119044", "176827"]);
   });
 
+  it("selects explicit task-ids without topic scan", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "task-local-cli-anchor-"));
+    seedScheduleCache(cacheRoot);
+    const selection = selectTaskLocalBatchTaskIds({
+      scheduleCacheRoot: cacheRoot,
+      taskIds: ["181058", "176827", "209119", "155015"],
+    });
+    expect(selection.anchorTaskIds).toEqual(["155015", "176827", "181058", "209119"]);
+    expect(selection.topicTaskIds).toEqual([]);
+    expect(selection.taskIds).toEqual(["155015", "176827", "181058", "209119"]);
+  });
+
+  it("parses anchor and expand-upstream flags", () => {
+    const options = parseProjectTaskLocalCli([
+      "--data-root", "D:/data",
+      "--facts-root", "D:/facts",
+      "--schedule-cache", "D:/cache",
+      "--task-ids", "181058,176827",
+      "--expand-upstream",
+      "--max-upstream-depth", "12",
+      "--output-root", "D:/out",
+    ]);
+    expect(options.taskIds).toEqual(["181058", "176827"]);
+    expect(options.expandUpstream).toBe(true);
+    expect(options.maxUpstreamDepth).toBe(12);
+  });
+
   it("parses CLI flags and rejects prepare-facts", () => {
     const options = parseProjectTaskLocalCli([
       "--data-root", "D:/data",
@@ -85,6 +112,7 @@ describe("task-local batch CLI (TL-5)", () => {
       "--facts-root", "D:/facts",
       "--schedule-cache", "D:/cache",
       "--output-root", "D:/out",
+      "--topic", "DM_RSK_N",
       "--prepare-facts",
     ])).toThrow(/PREPARE_FACTS_UNSUPPORTED/);
   });
@@ -150,6 +178,8 @@ describe("task-local batch CLI (TL-5)", () => {
       scheduleCacheRoot: cacheRoot,
       outputRoot,
       topic: "DM_RSK_N",
+      taskIds: [],
+      expandUpstream: false,
       alsoTaskIds: ["105387", "119044"],
       prepareFacts: false,
       generatedAt: "2026-09-02T00:00:00.000Z",

@@ -13,7 +13,8 @@
 - [L1 scope 与架构](docs/l1-scope-and-architecture.md)
 - [迁移清单与来源证据](docs/migration-inventory.md)
 - [验收入口与 Gate](docs/acceptance.md)
-- [数据资产图执行方案](docs/execution-plan-asset-graph.md)（当前主链与金样 `105387 → 119044 → 176827`）
+- [金样调查页执行方案](docs/execution-plan-gold-case-investigation.md)（P0：`105387 → 119044 → 176827`）
+- [数据资产图执行方案](docs/execution-plan-asset-graph.md)
 - [图谱准确性架构](docs/graph-accuracy-architecture.md)
 - [文档索引](docs/README.md)
 - [86840 Gold Case 入口](tests/gold/README.md)

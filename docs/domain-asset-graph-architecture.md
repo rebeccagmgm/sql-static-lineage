@@ -8,7 +8,89 @@
 **对用户怎么陈述「准 / 不准」**（建图与查询交付的强制分层）见
 `docs/graph-user-narrative.md`。资产图扩图可暂缓，该陈述规范不暂缓。
 
-现状基线（2026-09-01 实测）：
+**执行与当前 P0**见 `docs/execution-plan-gold-case-investigation.md`（**DM_RSK_N 四锚点 · 一张并集图**）、
+`docs/execution-plan-asset-graph.md`（总地图）。
+准确性冻结（WP-6…WP-12）见 `docs/graph-accuracy-architecture.md`。
+
+---
+
+## 产品语义：三层加工（不是三张表）
+
+用户口中的「三层加工」在资产图里指 **三个任务阶段**，不是三张物理表：
+
+```text
+105387  拉链 ref + 写 stati 表        （EDW_AGT）
+119044  多表 JOIN + 写 t98 宽表       （pdata_n，~14 读表）
+176827  读 t98 + 写 dm_rsk 目标表     （DM_RSK_N，~11 读表）
+```
+
+每个阶段内部是 **fan-in**（单任务多表读、多列写）；跨阶段才是 **spine**（同一张物理表上的 WRITES→READS 对接）。  
+不要把「三层」误解为「三层表」或「三个 TASK→TASK 边」。
+
+---
+
+## 机器单位：写观察 × 读次
+
+图的基本机器单位不是「任务」或「表」，而是：
+
+| 概念 | 节点 / 标识 | 含义 |
+| --- | --- | --- |
+| **写观察** | `TARGET_WRITE` + `writeObservationId` | 本任务 SQL 能证明的一次写入（含分区、多写观察） |
+| **读次** | `READ_OCCURRENCE` + `read_occurrence_id` | 本任务 SQL 中**一次**对物理表的读取（谓词、JOIN 侧别各异） |
+| **物理表** | `PHYSICAL_DATASET` | 全局身份；跨任务拼接的锚点 |
+| **任务** | `TASK` | **归因**（谁跑的 SQL），不是跨任务数据边的端点 |
+
+跨任务接续的正确问题形式：
+
+```text
+消费者读次 R 读了表 D
+  → 在并集内找所有 TARGET_WRITE →WRITES→ D
+  → 用读侧谓词 + 写侧分区匹配到具体 writeObservationId（WP-8）
+```
+
+**禁止**：在 `TASK_LOCAL_PROJECTION` 上写 `TASK→TASK` 数据边；用 `scheduleReference.upstreamTaskIds` 当 writer；用调度 `targetTable` 升 `CONFIRMED`。
+
+---
+
+## 两条产品线（共用 Facts，分叉消费）
+
+| 产品线 | 问法 | 生产单位 | 状态 |
+| --- | --- | --- | --- |
+| **A. 资产地图** | 这批任务一起长什么样？上游是谁？ | 任务局部投影 → 并集 → 查询期 walk | **主链**；金样 V0 先行 |
+| **B. 单表重跑溯源** | 这张表要重跑，最小/保守上游任务集？ | root → 反向闭包 → per-root artifact | **已有** consumer；WP-10 扩并集闭包 **已暂停** |
+
+A 与 B **共用** Input Pack / Machine Facts，**不共用**遍历方式：A 在查询期按图 walk；B 在闭包 consumer 内按 root 反向播种。  
+不要把 B 的 L1 计数 KPI 当作 A 的产品验收（见 `docs/experimental/`）。
+
+---
+
+## 端到端数据流（2026-09-03 落地视图）
+
+```text
+Input Pack + Machine Facts          sql-static-lineage（L1 事实，不改 SQLLens）
+        │
+        ▼
+TASK_LOCAL_PROJECTION 1.2.0         WP-3 每任务纸条（已验收）
+  TASK / READ_OCCURRENCE / TARGET_WRITE / FIELD_* / DATASET_CONTROL
+  localClosure: finalWrites, externalReads, …
+        │
+        ├──────────────────────────────────────┐
+        ▼                                      ▼
+mergeTaskLocalUnion (可选)              traceUnionContinuationV2 + INDEX
+  WP-5 并集快照契约                      WP-8 / 8.1 读次×写观察接续（data-graph 库+CLI）
+  TU-0…TU-7 库完成；主拓扑 CLI 未接          金样调查页推荐路径
+        │                                      │
+        └──────────────┬───────────────────────┘
+                       ▼
+              呈现：可消费 JSON（INDEX、gap、L0–L3）+ 可选 HTML
+              见 execution-plan-gold-case-investigation.md
+```
+
+**CROSS_TASK_PAIR**（调查页粉虚线）是 **查询期派生边**，不在纸条 JSON 里；完整版带 `partitionMatchStatus` 来自 `UNION_CONTINUATION_INDEX`。
+
+---
+
+## 现状基线（2026-09-01 实测）
 
 ```text
 schedule-evidence 缓存      13,740 任务   13,284 带 topicName（290 个域）
@@ -64,34 +146,33 @@ root 之间重复遍历，结构上到不了铺满。
 
 图的内容 = 已投影任务的并集。新增任务只追加，不需要重算既有部分，也不需要预先决定范围。
 
-## 任务局部投影契约（新增，生产侧）
+## 任务局部投影契约（WP-3，schema 1.2.0）
 
 `TASK_LOCAL_PROJECTION`，每任务一份，落在图投影根下，不写入 `artifacts/tasks/<task-id>/`。
 
-节点：
+### 节点
 
 ```text
-TASK              taskId, taskName, topicName, taskCategory, processingKind
-PHYSICAL_DATASET  platform | dataSource | qualifiedName      （复用现有身份函数）
+TASK              taskId, taskName, topicName, taskCategory, processingKind?
+READ_OCCURRENCE   read_occurrence_id（WP-7）；承载读侧分区谓词摘要
+PHYSICAL_DATASET  platform | dataSource | qualifiedName
 PHYSICAL_FIELD    上述 + normalizedColumn
 TARGET_WRITE      write_observation_id + 物理目标
 ```
 
-边（全部限定在本任务内，不跨任务）：
+### 边（全部限定在本任务内，不跨任务）
 
 ```text
-WRITES            TASK -> TARGET_WRITE -> PHYSICAL_DATASET
-READS             TASK -> PHYSICAL_DATASET        携带 read_occurrence_id
-FIELD_DIRECT      PHYSICAL_FIELD -> PHYSICAL_FIELD
-                  subtype: IDENTITY | TRANSFORMATION | AGGREGATION
-                  masking: boolean（hash、count 等脱敏变换）
-FIELD_CONDITIONAL PHYSICAL_FIELD -> PHYSICAL_FIELD
-                  OpenLineage 对应 INDIRECT/CONDITIONAL
-                  仅 expression_roles 命中 BRANCH_SELECTION 时产生
+WRITES            TASK -> TARGET_WRITE -> PHYSICAL_DATASET   （两跳，同 edgeType）
+READS             READ_OCCURRENCE -> PHYSICAL_DATASET      （两跳；谓词挂在读次/边上）
+FIELD_DIRECT      PHYSICAL_FIELD -> TARGET_WRITE 侧字段
+                  subtype: IDENTITY | TRANSFORMATION | AGGREGATION | UNKNOWN
+FIELD_CONDITIONAL 分支选择列；仅 BRANCH_SELECTION
 DATASET_CONTROL   PHYSICAL_FIELD -> TARGET_WRITE
-                  subtype: JOIN | GROUP_BY | FILTER | SORT | WINDOW
-                  grain:   PRESERVE | REDUCE | EXPAND_RISK | UNKNOWN
+                  subtype: JOIN | FILTER | GROUP_BY | … ; grain: PRESERVE | REDUCE | EXPAND_RISK | UNKNOWN
 ```
+
+`localClosure`（1.2.0）：`finalWrites`、`externalReads`、`localFieldPaths` 等摘要，供 WP-8 索引与调查页接续，**不**替代边上的证据。
 
 `FIELD_DIRECT`、`FIELD_CONDITIONAL` 的 `subtype` 与 `masking`，以及 `DATASET_CONTROL`
 的 `subtype`，逐字采用 OpenLineage `ColumnLineageDatasetFacet` 的分类词典
@@ -167,7 +248,9 @@ sql-static-lineage（生产侧）
 
 data-graph（消费侧）
   topology / field-evidence / query / query-index / view   不重写
-  + TASK_LOCAL_UNION source loader                          新增
+  + TASK_LOCAL_UNION loader + merge                       WP-5（库完成）
+  + traceUnionContinuationV2 + UNION_CONTINUATION_INDEX   WP-8 / 8.1（CLI 完成）
+  + project-topology-cli 接入 TASK_LOCAL_UNION              未做（非金样 P0）
 ```
 
 两侧只通过已发布产物契约交互，不共享源码路径或依赖目录，沿用现有边界。
@@ -194,8 +277,19 @@ sourceMode: TASK_LOCAL_UNION
 
 `LEGACY_ARTIFACT_PAIRS` 的现有行为、`maxRoots` 上限、快照 ID 算法、六个参考查询和
 Neo4j 索引全部保持不变；两种 mode 不混入同一份快照。节点与边身份复用 `taskNodeId`、
-`physicalDatasetNodeId`、`stableId`，使并集图与已发布 root 快照在同一 ID 空间内可比对，
-便于用现有 10 份 root 产物做交叉验证。
+`physicalDatasetNodeId`、`stableId`，使并集图与已发布 root 快照在同一 ID 空间内可比对。
+
+### 实现状态（2026-09-03）
+
+| 能力 | 位置 | 状态 |
+| --- | --- | --- |
+| WP-3 投影生产 | sql-static-lineage `project-task-local` | **已验收** 1.2.0 |
+| `loadTaskLocalUnionSources` + `mergeTaskLocalUnion` | data-graph `task-local-union-*` | **库完成**，TU-7 金样绿 |
+| `traceUnionContinuationV2` + `UNION_CONTINUATION_INDEX` | data-graph 同上 | **CLI 完成** |
+| `TASK_LOCAL_UNION` → `project-topology-cli` / 地图 / Neo4j | data-graph 主管线 | **未接**；金样不阻塞 |
+| 调查页消费 | `UNION_CONTINUATION_INDEX` + 批 manifest/纸条；HTML 可选 | 见金样执行方案 §2 |
+
+金样链不必等主管线接入：并集 merge 与 INDEX 在专用 CLI 内完成即可支撑调查页 V0。
 
 ## 规模与去重
 
@@ -346,10 +440,10 @@ needed(hop) = 值列
 
 ## 验收
 
-先在一批小样本验证成本模型，再按批次铺开。首批建议 `DM_RSK_N`：调度缓存 63 个任务，
-其中 57 个已有 Input Pack（90%），含 155015，可立即开跑。
+**当前 P0 验收**以金样调查页为准（`docs/execution-plan-gold-case-investigation.md` GC-0），
+不以全库 `DM_RSK_N` 铺并为门槛。
 
-工程门槛：
+历史工程门槛（扩批时仍适用）：
 
 1. 首批任务全部产出局部投影或显式失败原因，不静默跳过。
 2. 二次运行在 Input Pack 未变时全部命中内容哈希缓存，产出字节一致。

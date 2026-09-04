@@ -1,36 +1,119 @@
 # 数据资产图执行方案
 
-配套架构文档：`docs/domain-asset-graph-architecture.md`。本文件只讲**怎么执行**：
-工作包切分、依赖关系、并行边界、每包的完成定义。
+配套架构文档：`docs/domain-asset-graph-architecture.md`（**是什么**）。  
+本文件讲 **怎么执行**：工作包、依赖、状态、当前主路径。
 
-每个工作包（WP）按 1:1 可转成一个 OpenSpec change 的粒度切分。领取时执行
-`openspec new change "<wp-name>"` 再补齐 proposal / specs / design / tasks。
+细则按 WP 拆分，不要在本文件重复实现细节：
 
-## 先做这个（P0）：重跑收缩
+| 文档 | 内容 |
+| --- | --- |
+| `execution-plan-task-local-projection.md` | WP-3 纸条 TL-0…TL-8 |
+| `execution-plan-task-local-union.md` | WP-5 并集 + WP-8 接续（data-graph） |
+| `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4 |
+| `graph-accuracy-architecture.md` | WP-6…WP-12 准确性冻结 |
+| `graph-user-narrative.md` | L0–L3 对用户陈述 |
 
-完整方案见 `docs/execution-plan-rerun-shrink.md`。
-P0 的 RS-5 已过。**WP-1 已合入**（`cdc187a` / PR #10）。
-WP-3 已验收（schema 1.1.0）；细则见 `docs/execution-plan-task-local-projection.md`。
-WP-5（data-graph 并集内核 TU-0…TU-8）已实现并有金样，细则见 `docs/execution-plan-task-local-union.md`；
-但全量语料（Pack 14,113 / Facts 344 / producer-index / 调度缓存）与消费者代码审计表明：图的基本单位（任务/表）
-不足以承载多写、temp 折叠、分区可判性与算子语义，且现有 field-lineage / one-hop / 闭包含多处启发式与静默升级。
-**当前优先级转为准确性**：见 `docs/graph-accuracy-architecture.md`（WP-6…WP-12）与
-`docs/graph-user-narrative.md`（对用户陈述准/不准）。资产图扩批、WP-2、Neo4j 上线排在其后。
+每个工作包（WP）按 1:1 可转成一个 OpenSpec change。领取时 `openspec new change "<wp-name>"`。
 
-WP-6 / WP-7 已合入 `main`（WP-7 tip `9393ba4`）。WP-6：`PACK_DECLARED_QUERY_OUTPUT`
-（132028 / 155939 / 176827）。WP-7：task-local schema 1.2.0（兼容读 1.1.0），
-`READ_OCCURRENCE`、身份 / materialization / `SELF_READ` 按
-`docs/graph-accuracy-architecture.md` §3 取证；落地金样为 103928 / 105380 / 158641 / 181058
-（细则见 `docs/execution-plan-task-local-projection.md` WP-7 节）。
+---
 
-WP-8 接续核已合入 data-graph（`5c83639`）。**当前主链**为金样调查页
-（`105387 → 119044 → 176827`）：task-local 投影 + 最小跨任务接续（WP-8 瘦身）+
-机器图可视化（`scripts/visualize/task-local-machine-graph.ts`）+ L0–L3 陈述（WP-12 V0）。
+## 北极星与范围（2026-09-03）
 
-**WP-10 `closure-on-union` 已暂停**（2026-09-03）：OpenSpec 归档于
-`openspec/changes/archive/2026-09-03-closure-on-union-paused/`，执行方案见
-`docs/experimental/execution-plan-closure-on-union.md`。闭包/legacy 对比不再作产品验收。
-WP-9 传输图独立；WP-11 冻结至案例列路径讲透之后。
+### 我们要建什么
+
+一张 **可增量长大、无域边界** 的静态资产图：每个任务只贡献本任务 SQL 能证明的局部事实；
+跨任务在 **查询期** 用物理表身份 + 读次×写观察接续拼接；对用户按 L0–L3 诚实陈述准/不准。
+
+### 当前不追求什么
+
+- 不以「闭包 L1 计数追 legacy」为产品北星（WP-10 **已暂停**）
+- 不先铺 13k 任务全库并集或 Neo4j 全图上线
+- 不在 WP-11 列路径讲透之前扩 operator 全矩阵
+- 不把调度边当数据血缘
+
+### P0 交付物
+
+**金样调查页：DM_RSK_N 四锚点 · 向上穿透 · 一张并集图**
+
+| 锚点 | taskId | 目标表 |
+| --- | --- | --- |
+| A | 181058 | `dm_rsk_n.otc_opt_inr_comp_pal_sum` |
+| B | 176827 | `dm_rsk_n.otc_opt_greek_val_det_h` |
+| C | 209119 | `dm_rsk_n.otc_opt_sub_trd_info` |
+| D | 155015 | `dm_rsk_n.v_risk_audit_log` |
+
+**方案**：四锚点 `--expand-upstream` 定批 → WP-3 纸条 → WP-8.1 INDEX → gaps + L0–L3（JSON 主交付，HTML 可选）。
+
+**当前阻塞**：真数据 **GC-0 尚未跑通**（代码已齐：穿透 CLI、INDEX CLI）。
+
+**接下来（按序）**：见 `execution-plan-gold-case-investigation.md` **§0 / §8** — 跑穿透批 → INDEX → gaps.jsonl → L0–L3 →（可选）GC-2 一键脚本。
+
+```text
+四锚点 --expand-upstream → WP-3 → WP-8.1 INDEX → gaps/报告
+```
+
+细则：**`docs/execution-plan-gold-case-investigation.md`**（本 P0 的唯一执行规格）。
+
+---
+
+## 架构三层 ↔ 工作包
+
+产品上的「三层」= **Facts → 投影/接续 → 呈现**（见架构文档「端到端数据流」）。
+
+| 层 | 职责 | 主要 WP | 仓库 | 状态 |
+| --- | --- | --- | --- | --- |
+| ① 事实 | Input Pack、Machine Facts、写观察/读次证据 | WP-6 | sql-static-lineage | **已合入** |
+| ②a 纸条 | 每任务 `TASK_LOCAL_PROJECTION` 1.2.0 | WP-3、WP-7 | sql-static-lineage | **已验收** |
+| ②b 并集 | N 份纸条 merge 为 `TASK_LOCAL_UNION` | WP-5 | data-graph | **库完成**；主 CLI 未接 |
+| ②c 接续 | 读次×写观察 + `partitionMatchStatus` | WP-8、WP-8.1 | data-graph | **CLI 完成** |
+| ③ 呈现 | 可消费 JSON + L0–L3 | GC、WP-12 | sql-static-lineage | INDEX/gaps **P0**；HTML 可选 |
+| — | 单表重跑闭包 | WP-10 等 | sql-static-lineage | **暂停** / 维护 |
+
+**金样锚点** = 四写任务（181058 / 176827 / 209119 / 155015）+ **`--expand-upstream` 穿透闭包**；不是四张表、也不是 `DM_RSK_N` topic 全扫。表级 spine 见金样执行方案 §3.1。
+
+---
+
+## 工作包状态总览
+
+### 地图主链（WP-1～WP-5 + GC）
+
+| WP | 名称 | 状态 | 说明 |
+| --- | --- | --- | --- |
+| WP-1 | 影响通道分离 | **已合入** | field-lineage 体积与假阳性 |
+| WP-2 | 声明口径采集 | 未做 | 非 P0 阻塞 |
+| WP-3 | 任务局部投影 | **已验收** | schema **1.2.0**；三金样 TL-6/7 |
+| WP-4 | 加工/通道识别 | 未做 | 非 P0 阻塞 |
+| WP-5 | 并集 source | **库完成** | 见 union 执行方案；主管线未接 |
+| GC | 金样调查页 | **进行中** | **四锚点一张图**；见 gold-case 执行方案 |
+
+### 准确性链（WP-6～WP-12，见 graph-accuracy-architecture）
+
+| WP | 状态 | 与 P0 关系 |
+| --- | --- | --- |
+| WP-6 Pack 声明写观察 | **已合入** | 事实基础 |
+| WP-7 身份/读次/1.2.0 | **已合入** | 纸条契约 |
+| WP-8 接续 v2 + INDEX | **CLI 完成** | 调查页接续层 |
+| WP-9 传输图 | 独立 | 非阻塞 |
+| WP-10 closure-on-union | **暂停** | experimental |
+| WP-11 列路径/算子 | **冻结** | 金样列讲透后再开 |
+| WP-12 L0–L3 envelope | 与 GC 同步 | 调查页文案 |
+
+### 历史 P0：重跑收缩
+
+`docs/execution-plan-rerun-shrink.md` — RS-5 **已过**。闭包 consumer 仍服务场景 B，不是地图 P0。
+
+---
+
+## 先读这些
+
+1. **架构**：`domain-asset-graph-architecture.md` — 机器单位、三层、两条产品线、数据流。
+2. **P0 怎么做**：`execution-plan-gold-case-investigation.md` — 命令链与 GC 完成定义。
+3. **准确性**：`graph-accuracy-architecture.md` — 为何从「任务/表」升级到「写观察×读次」。
+4. **陈述**：`graph-user-narrative.md` — L0–L3 不准升级证据。
+
+全量语料审计说明：**必须先诚实再扩图**；P0 从「铺批」改为「金样端到端可调查」。
+
+---
 
 ## 现状事实（2026-09-01 实测，作为所有 WP 的共同基线）
 
@@ -64,14 +147,17 @@ WP-9 传输图独立；WP-11 冻结至案例列路径讲透之后。
 | ---- | -------------------------------- | ------------------ | -------------------------------- | ------------------------------- |
 | WP-1 | `separate-field-impact-channels` | sql-static-lineage | **已合入 `cdc187a`**           | 已完成                          |
 | WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
-| WP-3 | `task-local-graph-projection`    | sql-static-lineage | **已验收** schema **1.1.0**（含 WP-3.1） | 已完成                    |
+| WP-3 | `task-local-graph-projection`    | sql-static-lineage | **已验收** schema **1.2.0**（含 WP-3.1 / WP-7） | 已完成                    |
 | WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 可与 WP-5 并行                  |
-| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结（已满足）          | **下一包**                      |
+| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结（**1.2.0**）       | **库完成**；主拓扑 CLI 未接；金样调查见 `execution-plan-gold-case-investigation.md` |
 
 ```text
-WP-1 影响通道分离 ──┬─> WP-3 任务局部投影（已验收）──> WP-5 data-graph 并集接入
-                    └─> WP-4 加工/通道识别
-WP-2 声明口径采集 ────────────────────────> （WP-3 后可加传播与矛盾检测）
+WP-1 影响通道分离 ──┬─> WP-3 任务局部投影（已验收 1.2.0）──> WP-5 并集（库完成）──> WP-8 接续 INDEX
+                    │                                      └──> GC 金样调查页（P0）
+                    └─> WP-4 加工/通道识别（未做）
+WP-6→WP-7 准确性 ──> 并入 WP-3 契约 1.2.0
+WP-2 声明口径 ─────────────────────────────> 非 P0
+场景 B 闭包 consumer ──────────────────────> 维护；WP-10 暂停
 ```
 
 WP-1 / WP-3 已合入。WP-2、WP-4 仍可并行。WP-5 细则见 `docs/execution-plan-task-local-union.md`。
@@ -105,7 +191,10 @@ WP-3 细则与完成定义以 `docs/execution-plan-task-local-projection.md` 为
     是权威语义；WP-1 的 OpenLineage 投影与 WP-3 的图边必须是它的视图，
     不得平行发明 `rowDetermining` 一类同义新词。
 
-## 既有 consumer 对齐（2026-09-01）
+## 既有 consumer 对齐（场景 B：单表重跑，非地图 P0）
+
+> 以下描述 **target-table-upstream-causal-closure**（产品线 B）。地图主链不依赖 Gate B 通过。
+> WP-10 将闭包接到并集 INDEX 的工作 **已暂停**（`docs/experimental/`）。
 
 `openspec/changes/target-write-upstream-causal-closure` 已覆盖场景 3 的骨架，
 不是空白。核对 `tasks.md` 与 `209119-gate-evidence.md` 后的状态：
@@ -237,10 +326,12 @@ scripts/visualize/field-lineage-visualize.ts
 
 ## WP-3 `task-local-graph-projection`
 
-**状态**：**已验收**（TL-0…TL-8 归档 + WP-3.1）。契约 `TASK_LOCAL_PROJECTION` **1.1.0**。
+**状态**：**已验收**（TL-0…TL-8 + WP-3.1 + WP-7 并入 1.2.0）。
 OpenSpec：`openspec/changes/archive/2026-09-02-task-local-graph-projection/`、`openspec/changes/task-local-projection-wp31/`。
 
 **完整方案**：`docs/execution-plan-task-local-projection.md`（TL-0…TL-8）。
+
+**契约**：`TASK_LOCAL_PROJECTION` **1.2.0**（`READ_OCCURRENCE` 两跳 READS、`localClosure`）。
 
 一句话：每个任务只投影自己的 READ/WRITE/值边/控制边；任务之间靠物理表身份在查询期用 producer-index 拼接。
 调度邻居只落在 TASK 的 `scheduleReference`（`SCHEDULE_REFERENCE_ONLY`），**不是数据血缘**。
@@ -279,21 +370,19 @@ UNKNOWN        SQL 缺失或证据不足
 2. `UNKNOWN` 必须给出原因码，不得作为兜底默认值。
 3. 同一输入两次运行结果一致。
 
-## WP-5 `task-local-union-source`
+## WP-5 `task-local-union-source` + WP-8 接续
 
-**完整方案**：`docs/execution-plan-task-local-union.md`（TU-0…TU-8）。
+**完整方案**：`docs/execution-plan-task-local-union.md`（TU-0…TU-8 + §5.0 WP-8）。
 
-**目标**：让 data-graph 消费 WP-3 的 N 份局部投影，并成一张可查询的并集图；跨任务依赖在**查询期**用物理表身份 + producer-index + `partitionPredicateStatus` 拼接，不在构建期跑 multi-hop 闭包。
+**WP-5 目标**：N 份局部投影并成 `TASK_LOCAL_UNION` 快照；表级 walk（§5.1）+ producer-index 边界。
 
-**前置**：WP-3 `TASK_LOCAL_PROJECTION` 契约冻结（当前 **1.1.0**；不必等全库铺完）。
+**WP-8 目标**：在读次级用 `partitionMatchStatus` 把读次绑到具体 `writeObservationId`；批索引 `UNION_CONTINUATION_INDEX`。
 
-**仓库**：`scripts/data-graph`（独立 git 仓库）。
+**实现（2026-09-03）**：data-graph `task-local-union-*` + `npm run union-continuation-index` **已完成**；`project-topology-cli` **未接**。
 
-**一句话**：新增 `sourceMode: TASK_LOCAL_UNION` loader，与 `LEGACY_ARTIFACT_PAIRS` 并列；不修改 `maxRoots = 32` 及已发布 root 快照行为。
+**金样调查页**：不必等 WP-5 入主拓扑；INDEX CLI 内嵌 merge 即可（见金样执行方案 §5.2）。
 
-**金样（并集链）**：105387 → 119044 → 176827 表级接续（经 `t03_agt_stati_info_h` / `t98`；`t03_otc_opt_comp_info` writer 不在三金样内）+ 与 10 份 root 快照 nodeId 交叉比对。
-
-细则、查询期剪枝、调度 `scheduleReference` 处理、完成定义见 `docs/execution-plan-task-local-union.md`。
+**金样链**：105387 → 119044 → 176827（`t03_agt_stati_info_h` / `t98`）；`t03_otc_opt_comp_info` writer 不在三金样内 → 边界。
 
 ## 并行调度建议
 
@@ -306,27 +395,37 @@ UNKNOWN        SQL 缺失或证据不足
   WP-1 已合入
 
 第 2 波
-  WP-3 已验收（schema 1.1.0 + WP-3.1）   见 docs/execution-plan-task-local-projection.md
+  WP-3 已验收（schema 1.2.0 + WP-3.1）   见 docs/execution-plan-task-local-projection.md
   agent D -> WP-4   加工/通道识别（仍可做）
 
-第 3 波（现在）
-  agent E -> WP-5   data-graph 并集接入   见 docs/execution-plan-task-local-union.md
-  WP-2 扩展         INHERITED 传播与"声明 vs 实现"矛盾检测（需 WP-3 的图）
+第 3 波（已完成库实现，未接主拓扑）
+  WP-5 / WP-8   data-graph 并集 + 接续 INDEX   见 docs/execution-plan-task-local-union.md
+
+第 4 波（现在）
+  GC-0…GC-3     金样调查页 V0   见 docs/execution-plan-gold-case-investigation.md
+  agent B -> WP-2         声明口径采集（仍可做，非阻塞）
+  agent D -> WP-4   加工/通道识别（仍可做，非阻塞）
 ```
 
 派单 WP-5 时必须同时给出：本文件的**共享不变量**、`docs/execution-plan-task-local-union.md`、
 `docs/execution-plan-task-local-projection.md`（上游契约）、以及 `docs/domain-asset-graph-architecture.md`。
 
-## 里程碑
+## 里程碑（修订：case-first）
 
-**M1（WP-1 + WP-2）**：影响分类正确、产物体积回到可用量级、口径层可查。
-**单表重跑收缩不在这个里程碑**——那是 P0 RS-5。M1 只覆盖 field-lineage HTML
-通道分离与声明口径。
+**M0（GC-0）**：四锚点向上穿透 → INDEX + gaps + L0–L3 可程序消费。**当前 P0。**
 
-**M2（WP-3 + WP-4）**：WP-3 侧 `DM_RSK_N` 成本模型已留档；WP-4 加工/通道可见后具备扩批依据。
+| 子阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| M0.1 | `--expand-upstream` CLI（GC-1） | **完成** |
+| M0.2 | 真数据跑穿透批 + INDEX（GC-0 A1–A3） | **未做** |
+| M0.3 | gaps.jsonl + L0–L3（GC-3） | **未做** |
+| M0.4 | golden / 一键脚本（GC-4 / GC-2） | **未做** |
 
-**M3（WP-5）**：并集图进入 data-graph 的查询与索引管线，
-地图与影响分析共用同一份图。
+**M1（WP-1 + WP-2）**：影响分类正确、产物体积可用、口径层可查（155015 等）。
+
+**M2（WP-3 + WP-4）**：域级投影成本留档；加工/通道分歧可见。
+
+**M3（WP-5 入主拓扑）**：`TASK_LOCAL_UNION` 进入 data-graph 地图/Neo4j 主管线——**在 M0 之后**，非金样前置。
 
 ## 明确不在本方案内
 

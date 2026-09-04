@@ -1,7 +1,12 @@
 # WP-5 任务局部并集：执行方案
 
+> **实现状态（2026-09-03）**：data-graph 仓 `src/project-graph/topology/task-local-union/`  
+> TU-0～TU-7 主项已落地（loader、merge、表级接续、WP-8 v2、`union-continuation-index` CLI）。  
+> **未做**：`TASK_LOCAL_UNION` 接入 `project-topology-cli` / 地图主管线；TU-7.2b nodeId 留档；TU-8 成本文档。  
+> **产品主路径**见 `docs/execution-plan-gold-case-investigation.md`（金样调查页 V0，不依赖全库并集发布）。
+
 配套：`docs/domain-asset-graph-architecture.md`（架构）、`docs/execution-plan-asset-graph.md`（总地图）、`docs/execution-plan-task-local-projection.md`（WP-3 上游产物）。
-WP-3 已验收（`TASK_LOCAL_PROJECTION` schema **1.1.0** + WP-3.1）。本文件只解决一件事：
+WP-3 已验收（`TASK_LOCAL_PROJECTION` schema **1.2.0** + WP-3.1；兼容读 1.1.0）。本文件只解决一件事：
 
 **把 N 份任务局部投影并成一张可查询的图；跨任务依赖在并集图上靠同一物理表节点的 READS/WRITES 对接，并集外的 writer 用 producer-index 补边界；不在构建期跑 multi-hop 闭包。**
 
@@ -58,7 +63,7 @@ ProjectTopologySnapshotV1
 | 输入                   | 路径（典型）                                                 | 用途                                                                    |
 | ---------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
 | `batch-manifest.json`  | `<project-graph-root>/batch-manifest.json`                   | 任务列表、覆盖汇总、每任务 `contentHash` / `cacheKey` / `path`          |
-| 投影 **envelope**      | `<project-graph-root>/tasks/<id>/task-local-projection.json` | 见 §2.2；内含 `projection`（schema 1.1.0）                              |
+| 投影 **envelope**      | `<project-graph-root>/tasks/<id>/task-local-projection.json` | 见 §2.2；内含 `projection`（schema **1.1.0 或 1.2.0**；WP-8 INDEX 要求 1.2.0） |
 | `TABLE_PRODUCER_INDEX` | data-root 侧 producer-index 产物                             | 并集外 writer 边界；writer 分区（`ProducerWriteObservation.partition`） |
 | 调度缓存               | schedule-evidence cache                                      | 仅 `SCHEDULE_ONLY` CANDIDATE writer（§5.3）与展示                       |
 
@@ -83,16 +88,19 @@ tasks[] { taskId, coverageStatus, failureReasonCode, contentHash, cacheHit, cach
   cacheKey,
   cacheKeyParts { taskId, packContentHash, factsManifestSha256, schemaVersion },
   projectionContentHash,
-  projection { schemaVersion:"1.1.0", artifactType:"TASK_LOCAL_PROJECTION", coverageStatus, nodes, edges, contentHash, ... }
+  projection { schemaVersion:"1.2.0", artifactType:"TASK_LOCAL_PROJECTION", coverageStatus, nodes, edges, contentHash, localClosure?, ... }
 }
 ```
 
 loader 必须：解 envelope → 校验 `projectionContentHash === projection.contentHash === manifest.tasks[].contentHash` → 校验 `projection.schemaVersion` 在支持集合内 → 才并入。`cacheKeyParts.packContentHash` 直接进 `taskSources[]`，不必重读 Task Pack。
 
-### 2.3 上游契约要点（WP-3 1.1.0）
+1.1.0 仍可被 loader 读取；`union-continuation-index` 预检要求批内全部 `PROJECTED` 为 **1.2.0**。
+
+### 2.3 上游契约要点（WP-3 1.2.0）
 
 | 字段 / 结构                                              | WP-5 用法                                                                                                                                          |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `READ_OCCURRENCE` 节点 + 两跳 `READS`                    | WP-8 v2 接续键；并集 merge 按 `edgeId` 去重                                                                                                        |
 | `coverageStatus`                                         | `PROJECTED` 并入完整边；`SCHEDULE_ONLY` 仅 TASK + `scheduleReference`；`COLLECTION_FAILED` 仅 TASK + `failureReasonCode`（作显式边界，不进数据边） |
 | `scheduleReference.role`                                 | 必须为 `SCHEDULE_REFERENCE_ONLY`；不得参与 §5 拼接                                                                                                 |
 | `READS.partitionPredicates` + `partitionPredicateStatus` | `LITERAL` / `NON_LITERAL_PRESENT` / `NONE`，一表多写剪枝的读侧输入                                                                                 |
@@ -151,7 +159,19 @@ TU-2 必须：
 
 ## 5. 跨任务接续（核心）
 
-WP-3 故意不在局部纸条上写「上游是 119044」。接续分两层：
+WP-3 故意不在局部纸条上写「上游是 119044」。接续分两层（**另有 WP-8 读次级 v2**，见下）。
+
+### 5.0 WP-8 读次×写观察接续（已实现，data-graph）
+
+与 §5.1 表级 `traceUnionUpstream` 并存：
+
+| 组件 | 路径 |
+| --- | --- |
+| v2 内核 | `task-local-union-continuation-v2.ts` |
+| 批索引 | `union-continuation-index.ts` + CLI `npm run union-continuation-index` |
+| 消费（闭包，暂停） | sql-static-lineage `union-continuation-candidate-source.ts` |
+
+金样调查页 **推荐**消费 `UNION_CONTINUATION_INDEX` + 批内纸条（见 `docs/execution-plan-gold-case-investigation.md` §2）；`visualize-task-local-machine-graph` 仅可选人读。
 
 ### 5.1 第一层：并集图内部对接（不需要 producer-index）
 
