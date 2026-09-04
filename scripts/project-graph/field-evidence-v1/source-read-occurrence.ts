@@ -317,11 +317,20 @@ export function expandSetopBranchExpressions(input: {
 
   const directRelation = input.index.relations.get(relationId);
   if (directRelation?.relationType === "setop") {
-    return expandSetopBranches({
+    const nested = expandSetopBranches({
       setopRelation: directRelation,
       ordinal,
       expressionsByRelation: input.expressionsByRelation,
+      index: input.index,
     });
+    return nested.length > 0
+      ? nested
+      : [{
+        expressionId,
+        expression: input.expression,
+        relationId,
+        ordinal,
+      }];
   }
 
   const setopAncestor = nearestSetopAncestor(input.index, relationId);
@@ -337,6 +346,7 @@ export function expandSetopBranchExpressions(input: {
     setopRelation: setopAncestor,
     ordinal,
     expressionsByRelation: input.expressionsByRelation,
+    index: input.index,
   });
   return branchContexts.length > 0
     ? branchContexts
@@ -352,19 +362,49 @@ function expandSetopBranches(input: {
   readonly setopRelation: RelationRecord;
   readonly ordinal: number;
   readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+  readonly index: RelationTreeIndex;
+  readonly seenSetops?: ReadonlySet<string>;
 }): readonly FieldExpressionContext[] {
+  const seen = new Set(input.seenSetops ?? []);
+  if (seen.has(input.setopRelation.relationId)) return [];
+  seen.add(input.setopRelation.relationId);
+
   const contexts: FieldExpressionContext[] = [];
   for (const branchRelationId of input.setopRelation.setopBranches) {
+    const branchRelation = input.index.relations.get(branchRelationId);
+    if (branchRelation?.relationType === "setop") {
+      contexts.push(...expandSetopBranches({
+        setopRelation: branchRelation,
+        ordinal: input.ordinal,
+        expressionsByRelation: input.expressionsByRelation,
+        index: input.index,
+        seenSetops: seen,
+      }));
+      continue;
+    }
+
     const branchExpression = input.expressionsByRelation
       .get(branchRelationId)
       ?.get(input.ordinal);
     if (!branchExpression) continue;
     const expressionId = text(branchExpression.expression_id);
     if (!expressionId) continue;
+    const expressionRelationId = text(branchExpression.relation_id) ?? branchRelationId;
+    const expressionRelation = input.index.relations.get(expressionRelationId);
+    if (expressionRelation?.relationType === "setop") {
+      contexts.push(...expandSetopBranches({
+        setopRelation: expressionRelation,
+        ordinal: numberValue(branchExpression.ordinal) ?? input.ordinal,
+        expressionsByRelation: input.expressionsByRelation,
+        index: input.index,
+        seenSetops: seen,
+      }));
+      continue;
+    }
     contexts.push({
       expressionId,
       expression: branchExpression,
-      relationId: text(branchExpression.relation_id),
+      relationId: expressionRelationId,
       ordinal: numberValue(branchExpression.ordinal),
     });
   }

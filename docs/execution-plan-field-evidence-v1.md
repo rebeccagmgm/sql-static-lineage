@@ -295,6 +295,8 @@ fail-closed：`sourceReadOccurrenceStatus ≠ RESOLVED` → 必填 `sourceReadOc
 
 ```text
 for each FieldEdge (leaf expression E, input field (T, C)):
+  先 setop 按 ordinal 下沉（含嵌套 setop 递归到非 setop 叶）；下沉后仅保留
+  该支表达式 input_fields 含 (T,C) 的配对——禁止顶层合入 sources × 各支的笛卡尔积。
   S0 := relation 子树(E.relation_id) 内所有 relation_type = read 且 physical table = T 的 relation
   S  := 按 Facts scope_id 过滤：表达式不在某 CTE body（`.(child)` scope）内时，丢弃该 CTE body 内的读
   R  := S 对应的 read_occurrence_id 集合
@@ -315,7 +317,7 @@ for each FieldEdge (leaf expression E, input field (T, C)):
 
 `sourceReadOccurrenceReason` 只在非 RESOLVED 时必填，码表：`SETOP_BRANCH_UNRESOLVED | SELF_JOIN_NO_QUALIFIER | CTE_SCOPE_UNRESOLVED | MATERIALIZATION_LEAF_MISSING`（最后一条：折叠链末端缺 leaf 上下文，指向 FE-1′）。
 
-scope 过滤与 qualifier 提取对齐 legacy `physical-field-expander` / Plan `scope_id` 约定，**不**按任务/表特例。**禁止**在 `|R| > 1` 时取第一个。**禁止**派生代码出现任务 id、表名、列名字面量（§5.5 有 lint 测试）。
+scope 过滤、qualifier 提取与 setop 支内 source 过滤对齐 Plan/Facts 结构，**不**按任务/表特例。**禁止**在 `|R| > 1` 时取第一个。**禁止**派生代码出现任务 id、表名、列名字面量（§5.5 有 lint 测试）。
 
 Facts 层若将来在 `input_fields[]` 直接带 `source_relation_id`，FE-1 的子树搜索退化为查表——这是**独立的 Facts 增强 WP**，不在 Phase 1 内，Phase 1 不等它。
 
