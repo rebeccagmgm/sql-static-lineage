@@ -99,7 +99,7 @@ Input Pack → Machine Facts (sqlglot)
 | `write_kind` / `resolution_status` / `physical_dataset` | 对账 |
 | `partition_json` | 第一期可空；分区匹配仍以纸条 + Facts 为准 |
 
-PK：`(table_key, writer_task_id, write_observation_id)`  
+PK：`(table_key, writer_task_id, write_observation_id)`
 INDEX：`table_key`；`writer_task_id`
 
 单任务刷新：`DELETE … WHERE writer_task_id=?` 再 `INSERT`，与 `task_coverage` 同一事务。
