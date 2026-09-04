@@ -14,9 +14,7 @@ export function applyScheduleWhitelist(input: {
   const scheduleAvailable =
     input.ports.scheduleLookup?.statusFor(input.consumerTaskId) === "AVAILABLE";
   if (!scheduleAvailable) {
-    return input.policy.horaeUnavailable === "FAIL_CLOSED_NO_PRUNE"
-      ? input.candidates
-      : input.candidates;
+    return input.candidates;
   }
 
   return input.candidates
