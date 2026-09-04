@@ -56,7 +56,7 @@
 | 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                    |
 | Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                         |
 | Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                    |
-| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-7；金样 A–E + `test:field-evidence`）               |
+| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-8；金样 A–E + `test:field-evidence` + `field-evidence:query`） |
 | OpenSpec change `field-evidence-schedule-preference`（Phase 2.5）         | **已完成**（frontier Horae 推荐排序；`FIELD_IMPACT_RESULT` 1.1.0）       |
 
 ### 立刻做什么（顺序）
@@ -723,6 +723,7 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 | **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                             | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                |
 | **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence` | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed         |
 | **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`             | 输出 `confirmedTwoHopRatio / dominantGap / decision`                |
+| **FE-8** 单锚点查询 CLI | `npm run field-evidence:query -- --task-id <id> --column <col>` | stdout 输出校验过的 `FIELD_IMPACT_RESULT` 1.1.0 JSON；默认锚定任务 `finalWrites[0]` |
 
 Phase 2 的行为契约草稿即本文件 §6–§7；开 change 时以此为 spec 起点（首版 OpenSpec `specs/field-evidence-v1/spec.md` 已并入本文件，不再单独维护）。
 
