@@ -9,6 +9,11 @@ const DERIVATION_ROOTS = [
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/source-read-occurrence.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/subtype-classifier.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/field-evidence-emission.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/field-edge-index.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/resolve-read-field.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/control-scope.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/impact-query.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/impact-result-contract.ts"),
   join(REPO_ROOT, "scripts/project-graph/task-local/project-task-local.ts"),
 ];
 

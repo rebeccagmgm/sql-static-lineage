@@ -1,0 +1,147 @@
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
+import { loadCurrentTaskBundle } from "../../query/current-task-bundle.ts";
+import { loadUnionContinuationCandidateSource } from "../../reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
+import { projectTaskLocal } from "../task-local/project-task-local.ts";
+import type { TaskLocalProjection } from "../task-local/contract.ts";
+import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
+import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+export interface FieldEvidenceQueryRoots {
+  readonly dataRoot: string;
+  readonly factsRoot: string;
+  readonly indexPath: string;
+}
+
+export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
+  const dataRoot = resolve(
+    process.env.TASK_LOCAL_GOLDEN_DATA_ROOT?.trim() || join(REPO_ROOT, "../sql-static-lineage-data"),
+  );
+  const factsRoot = resolve(
+    process.env.TASK_LOCAL_GOLDEN_FACTS_ROOT?.trim() || join(dataRoot, "field-facts"),
+  );
+  const required = join(factsRoot, "registry", "tasks");
+  if (!existsSync(required)) return null;
+
+  const indexPath = resolve(
+    process.env.FIELD_EVIDENCE_INDEX_PATH?.trim()
+    || join(
+      REPO_ROOT,
+      "../sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-continuation-index-full-recovered-v2/union-continuation-index.json",
+    ),
+  );
+  if (!existsSync(indexPath)) return null;
+
+  return { dataRoot, factsRoot, indexPath };
+}
+
+export function fieldEvidenceGoldenRequired(): boolean {
+  return process.env.FIELD_EVIDENCE_GOLDEN_REQUIRED === "1";
+}
+
+export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots): {
+  readonly index: ReturnType<typeof loadUnionContinuationCandidateSource>;
+  readonly projectionForTask: (taskId: string) => TaskLocalProjection;
+  readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
+  readonly runImpactQuery: (
+    anchor: FieldImpactAnchor,
+    options?: Pick<ImpactQueryInput, "maxDepth" | "budget" | "expandCandidates">,
+  ) => FieldImpactResult;
+} {
+  const index = loadUnionContinuationCandidateSource(roots.indexPath);
+  const projectionCache = new Map<string, TaskLocalProjection>();
+  const bundleCache = new Map<string, ReturnType<typeof loadCurrentTaskBundle>>();
+
+  function projectionForTask(taskId: string): TaskLocalProjection {
+    let cached = projectionCache.get(taskId);
+    if (!cached) {
+      cached = projectTaskLocal({
+        factsRoot: roots.factsRoot,
+        dataRoot: roots.dataRoot,
+        taskId,
+      });
+      projectionCache.set(taskId, cached);
+    }
+    return cached;
+  }
+
+  const factsBundleForTask: ImpactQueryInput["factsBundleForTask"] = (taskId) => {
+    let bundle = bundleCache.get(taskId);
+    if (!bundle) {
+      bundle = loadCurrentTaskBundle(roots.factsRoot, taskId);
+      bundleCache.set(taskId, bundle);
+    }
+    const relationNodes = bundle.records["relation-nodes.jsonl"] ?? [];
+    const relationEdges = bundle.records["relation-edges.jsonl"] ?? [];
+    if (relationNodes.length === 0 || relationEdges.length === 0) return null;
+    return { relationNodes, relationEdges };
+  };
+
+  function runImpactQuery(
+    anchor: FieldImpactAnchor,
+    options?: Pick<ImpactQueryInput, "maxDepth" | "budget" | "expandCandidates">,
+  ): FieldImpactResult {
+    return impactQuery({
+      anchor,
+      index,
+      projectionForTask,
+      factsBundleForTask,
+      ...options,
+    });
+  }
+
+  return { index, projectionForTask, factsBundleForTask, runImpactQuery };
+}
+
+export function primaryFinalWrite(projection: TaskLocalProjection): {
+  readonly writeObservationId: string;
+} | null {
+  const write = projection.localClosure?.finalWrites[0];
+  if (!write) return null;
+  return { writeObservationId: write.writeObservationId };
+}
+
+export function materializationBreakColumns(projection: TaskLocalProjection): readonly string[] {
+  const gap = projection.gaps?.find(
+    (item) => item.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
+  );
+  const columns = gap?.details.columns;
+  return Array.isArray(columns) ? columns.map(String) : [];
+}
+
+export function anchorFromTempTableSource(
+  projection: TaskLocalProjection,
+): FieldImpactAnchor | null {
+  const materializationGap = projection.gaps?.find(
+    (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
+  );
+  const physicalDataset = String(materializationGap?.details.physicalDataset ?? "");
+  if (!physicalDataset) return null;
+  const normalizedDataset = normalizeName(physicalDataset);
+  const nodeById = new Map(projection.nodes.map((node) => [node.nodeId, node]));
+  for (const edge of projection.edges) {
+    if (edge.edgeType !== "FIELD_DIRECT" && edge.edgeType !== "FIELD_CONDITIONAL") {
+      continue;
+    }
+    const from = nodeById.get(edge.fromNodeId);
+    const qualifiedName = normalizeName(String(from?.properties.qualifiedName ?? ""));
+    if (qualifiedName !== normalizedDataset) continue;
+    const outputColumn = String(edge.properties.outputColumn ?? "");
+    if (!outputColumn) continue;
+    const writeObservationId = String(
+      nodeById.get(edge.toNodeId)?.properties.writeObservationId ?? "",
+    );
+    if (!writeObservationId) continue;
+    return {
+      taskId: projection.taskId,
+      writeObservationId,
+      outputColumn,
+    };
+  }
+  return null;
+}

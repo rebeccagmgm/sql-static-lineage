@@ -52,11 +52,11 @@
 | 两跳数据可达性（四锚点）                                                  | **已确认** 66/67、121/122、45/52、14/14（§2.2）                         |
 | 简单子树读次算法实测                                                      | **已测** 63.29%（5,740/9,070）；181058 仅 11.56% ← 折叠丢上下文（§2.5） |
 | SQL 结构全库分布（防过拟合）                                              | **已测** setop 40% / 同表多读 47% / LEFT 49% / 物化 10%（§2.6）         |
-| OpenSpec change 裁为纯 Phase 1                                            | **待改**（§11）                                                         |
-| 契约 1.3.0                                                                | **未做**（FE-0）                                                        |
-| Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **未做**（FE-1…FE-3）                                                   |
-| Phase 1 baseline（三组 cohort）                                           | **未做**（§5.5）                                                        |
-| Impact Query / 金样 / 止损                                                | **Phase 2 change**，Phase 1 baseline 达标后再开                         |
+| OpenSpec change 裁为纯 Phase 1                                            | **已完成**（`field-evidence-v1`）                                       |
+| 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                    |
+| Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                         |
+| Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                    |
+| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **进行中**（FE-4…FE-7；金样 A–E + `test:field-evidence`）               |
 
 ### 立刻做什么（顺序）
 
@@ -441,14 +441,18 @@ impactQuery({
 3. 递归（深度 d < maxDepth）
    对每条 VALUE 边（及 FIELD_SCOPED 控制列自身的值链）：
      key := (sourceReadOccurrenceId, column)
-     若 sourceReadOccurrenceStatus ≠ RESOLVED → gap，停在此分支
+     若 sourceReadOccurrenceStatus 为 AMBIGUOUS / UNRESOLVED → 拷贝 Phase 1 读次 gap，停在此分支
+     （未折叠 temp 读次可为 RESOLVED；materialization break 见下条，不单凭 status 停）
+     若当前任务 gaps[] 含 TASK_LOCAL_MATERIALIZATION_FIELD_BREAK 且本跳 source 表 = physicalDataset
+       → 原样拷入 gaps[]，停在此分支（禁止改标 PRODUCER_NOT_PROJECTED）
      entry := INDEX[consumerTaskId = 当前任务, readOccurrenceId = key.ro]
      若 entry 不存在                     → gap PRODUCER_NOT_PROJECTED（终止表/未采集）
      candidates := entry.candidates
        |candidates| = 1 且 l1Eligible   → CONFIRMED 接续：
-           在 producer 投影里取 FieldEdge where writeObservationId = c.wo 且 outputColumn = key.column
+           在 producer 投影里取 **全部** FieldEdge where writeObservationId = c.wo 且 outputColumn = key.column
+           （setop 下沉后同列多支，用 sourceRelationId / expressionId 区分；禁止只取第一条）
            无 → gap PRODUCER_BINDING_NOT_FOUND
-           有 → 作为下一层 VALUE，继续
+           有 → 每条作为下一层 VALUE，继续
        否则                               → CANDIDATE frontier：
            frontier += { readField: key, candidates[] (每个带 partitionMatchStatus, reasonCode) }
            不递归（除非 expandCandidates = true，且每个候选各自计入预算）
@@ -460,14 +464,16 @@ impactQuery({
 
 ### 6.3 scope 计算（第二正交轴，查询期）
 
-输入：某条 VALUE 边 `v`（带 `sourceRelationId`）、同写观察的某条控制边 `c`（带 `subtype / joinType / controlSide / relationId`）。
+**关系树来源**：`FieldEdgeIndex` 构建时编入同任务 Facts 的 `relation-nodes.jsonl` + `relation-edges.jsonl`；查询期用 `relation-tree.ts` 的 `subtreeContains` 与 setop 分支枚举（`setopBranches` + `subtreeContains`，非 `nearestSetopAncestor` 单父链）判定分支/侧别。禁止按表名/后缀判 scope。
+
+输入：某条 VALUE 边 `v`（带 `sourceRelationId`）、同写观察的某条控制边 `c`（带 `subtype / joinType / controlSide / relationId / leftRelationId / rightRelationId`）。
 
 | 情形                                                                                                                                                         | scope                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
 | `c.subtype = JOIN`，`v.sourceRelationId` 位于 `c` 的**可空侧**子树（LEFT 的 right / RIGHT 的 left / FULL 任一侧）                                            | `FIELD_SCOPED` —— join 键决定该列取值或 NULL     |
 | `c.subtype = JOIN`，`v.sourceRelationId` 位于**保留侧**                                                                                                      | `DATASET_SCOPED`，保留 `grain` 提示倍增风险      |
 | `c.subtype = JOIN`，`joinType = INNER`                                                                                                                       | `DATASET_SCOPED`，**不得标无关**                 |
-| `c.subtype = FILTER / GROUP_BY`                                                                                                                              | `DATASET_SCOPED`                                 |
+| `c.subtype = FILTER / GROUP_BY`                                                                                                                              | 默认 `DATASET_SCOPED`；若 `c.relationId` 与 `v.sourceRelationId` 可证处于不同 setop 分支 → `SCOPE_DISJOINT`（先于 subtype 默认） |
 | `c.relationId` 与 `v.sourceRelationId` 处于**不同 setop 分支**（如 176827 的 `setop.b0` vs `setop.b1`），或 `c` 所在 CTE 子树与 `v` 子树无公共祖先直至写观察 | `SCOPE_DISJOINT`                                 |
 | `controlSide = BOTH` 且无法判                                                                                                                                | `DATASET_SCOPED` + gap `CONTROL_SIDE_UNRESOLVED` |
 
@@ -600,8 +606,8 @@ impactQuery({
 
 ### Case E 临时表断链具名
 
-- 锚点：`181058` 任一来自 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp` 的输出列（7 个输入字段之一）
-- 不变量：`gaps[]` 含 `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`，`details.columns` 非空；不出现假的 `PRODUCER_NOT_PROJECTED`
+- 锚点：`181058` 的 `gaps[].details.columns` 所列 7 列之一（值边 source 为该临时表；非任意输出列）
+- 不变量：`gaps[]` 含 `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`，`details.columns` 非空；INDEX 查前原样透传，**禁止**改标 `PRODUCER_NOT_PROJECTED`；未折叠 temp 读次可为 `RESOLVED`
 
 ### 金样位置与运行
 
