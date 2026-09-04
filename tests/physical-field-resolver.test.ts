@@ -189,6 +189,38 @@ describe("physical field resolver", () => {
     });
   });
 
+  it("prefers same-Task CREATE schema over a stale physical Table Pack", () => {
+    const result = resolvePhysicalInputField(
+      {
+        catalog: catalog([table("pdata_n.stage_mid", ["stale_column"])]),
+        taskId: "100",
+        defaultSchema: {
+          schema: "pdata_n",
+          evidenceSources: ["TASK_NAME"],
+        },
+        fallbackTable,
+        schemaRefs: [
+          {
+            qualified_name: "pdata_n.stage_mid",
+            physical_columns: ["id", "amount"],
+            source: "input-pack-task-local-ddl:100:create",
+          },
+        ],
+      },
+      { table: "stage_mid", column: "amount" },
+    );
+
+    expect(result).toMatchObject({
+      status: "RESOLVED",
+      field: {
+        stableTableId: "task-local:100:pdata_n.stage_mid",
+        qualifiedName: "pdata_n.stage_mid",
+        column: "amount",
+        identityStatus: "TASK_LOCAL_SCHEMA_BACKED",
+      },
+    });
+  });
+
   it("does not collapse duplicate task-local schema evidence into a false identity", () => {
     const schemaRef = {
       qualified_name: "pdata_n.stage_mid",

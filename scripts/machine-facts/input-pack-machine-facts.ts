@@ -428,8 +428,14 @@ function taskPartitionEvidence(
 	schemaEntries: readonly PhysicalTableCatalogEntry[],
 	sources: readonly SelectedLineageSql[],
 	ddlCache?: Map<string, string>,
+	taskLocalSchemas: readonly JsonRecord[] = [],
 ): TaskPartitionEvidence {
-	const tables: TableEvidence[] = schemaEntries.map((entry) => ({
+	const taskLocalNames = new Set(
+		taskLocalSchemas.map((record) => normalizeName(String(record.qualified_name))),
+	);
+	const tables: TableEvidence[] = schemaEntries
+		.filter((entry) => !taskLocalNames.has(normalizeName(entry.qualifiedName)))
+		.map((entry) => ({
 		platform: entry.platform,
 		dataSource: entry.dataSource,
 		qualifiedName: entry.qualifiedName,
@@ -444,6 +450,23 @@ function taskPartitionEvidence(
 		})(),
 		evidenceProvider: `input-pack:${entry.tableContentHash}`,
 	}));
+	for (const record of taskLocalSchemas) {
+		const columns = Array.isArray(record.columns)
+			? record.columns.map(asRecord).filter((column): column is JsonRecord => column !== null)
+			: [];
+		tables.push({
+			platform: taskTarget.platform,
+			dataSource: taskTarget.dataSource,
+			qualifiedName: normalizeName(String(record.qualified_name)),
+			objectType: "TASK_LOCAL_TABLE",
+			partitionFields: columns
+				.filter((column) => column.partition === true)
+				.map((column) => normalizeName(String(column.name)))
+				.filter(Boolean),
+			ddl: "",
+			evidenceProvider: String(record.source ?? `input-pack-task-local:${task.taskId}`),
+		});
+	}
 	const sql = Object.fromEntries(sources.map((source) => [source.slot, source.content])) as Partial<Record<SqlSlot, string>>;
 	return buildTaskPartitionEvidence({
 		taskTarget: taskTarget.qualifiedName,
@@ -578,6 +601,7 @@ function sqlWritePartitionEvidence(
 	sources: readonly SelectedLineageSql[],
 	evidence: TaskPartitionEvidence,
 	defaultSchema: TaskDefaultSchema | null,
+	taskLocalNames: ReadonlySet<string>,
 ): readonly SqlWritePartitionEvidence[] {
 	return evidence.targets
 		.filter((target) => target.writes.length > 0)
@@ -597,7 +621,7 @@ function sqlWritePartitionEvidence(
 						);
 				const evidenceRefs = [
 					...write.evidence.map((item) => `${item.source}:${item.locator}`),
-					...(tableEntry
+					...(tableEntry && !taskLocalNames.has(qualifiedTarget)
 						? [
 							`TABLE_PACK:${relativeLocator(dataRoot, tableEntry.tablePath)}`,
 							`DDL:${relativeLocator(dataRoot, tableEntry.ddlPath)}`,
@@ -614,8 +638,14 @@ function sqlWritePartitionEvidence(
 								statement_start: sqlWrite.statementSpan.start,
 								statement_end: sqlWrite.statementSpan.end,
 							}),
-					status: tableEntry === undefined ? "UNKNOWN" : write.status,
-					partition_columns: tableEntry === undefined ? [] : target.fields,
+					status:
+						tableEntry === undefined && !taskLocalNames.has(qualifiedTarget)
+							? "UNKNOWN"
+							: write.status,
+					partition_columns:
+						tableEntry === undefined && !taskLocalNames.has(qualifiedTarget)
+							? []
+							: target.fields,
 					evidence_refs: [...new Set(evidenceRefs)].sort(compareText),
 				};
 			});
@@ -690,21 +720,6 @@ function taskLocalCreateSchema(sql: string): {
 	};
 }
 
-function hasUniquePhysicalTable(
-	catalog: PhysicalTableCatalog,
-	target: string,
-): boolean {
-	const normalized = normalizeName(target);
-	if ((catalog.byQualifiedName.get(normalized) ?? []).length === 1) return true;
-	if (normalized.includes(".")) return false;
-	const tail = normalized.split(".").at(-1) ?? normalized;
-	return catalog.entries.filter(
-		(entry) =>
-			normalizeName(entry.qualifiedName.split(".").at(-1) ?? entry.qualifiedName) ===
-			tail,
-	).length === 1;
-}
-
 function uniquePhysicalTableForReference(
 	catalog: PhysicalTableCatalog,
 	target: string,
@@ -768,9 +783,11 @@ function deriveTaskLocalSchemas(
 	schemaEntries: readonly PhysicalTableCatalogEntry[],
 	sources: readonly SelectedLineageSql[],
 	taskId: string,
+	declaredTarget: string,
 	defaultSchema: TaskDefaultSchema | null,
 	dialect: "databricks" | "duckdb",
 ): JsonRecord[] {
+	const normalizedDeclaredTarget = normalizeName(declaredTarget);
 	const mapping: SchemaMapping = {};
 	for (const entry of schemaEntries) addSchemaMapping(mapping, entry.qualifiedName, entry.columns);
 	const records = new Map<string, JsonRecord>();
@@ -796,7 +813,11 @@ function deriveTaskLocalSchemas(
 			const createTarget = createSchema
 				? qualifyBareTableName(createSchema.target, defaultSchema)
 				: null;
-			if (createSchema && createTarget && !hasUniquePhysicalTable(catalog, createTarget)) {
+			if (
+				createSchema &&
+				createTarget &&
+				createTarget !== normalizedDeclaredTarget
+			) {
 				addTaskLocalMapping(createTarget, createSchema.columns);
 				records.set(createTarget, {
 					qualified_name: createTarget,
@@ -818,7 +839,14 @@ function deriveTaskLocalSchemas(
 			const target = rawTarget
 				? qualifyBareTableName(rawTarget, defaultSchema)
 				: null;
-			if (!target || hasUniquePhysicalTable(catalog, target) || records.has(target)) continue;
+			if (
+				!target ||
+				target === normalizedDeclaredTarget ||
+				records.has(target)
+			) continue;
+			const physicalSchema = uniquePhysicalTableForReference(catalog, target);
+			const isCtas = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\b[\s\S]*?\bas\s+(?:select|with)\b/i.test(rawSql);
+			if (!isCtas && (physicalSchema?.columns.length ?? 0) > 0) continue;
 			const session = SqlSession.create(rawSql, dialect, { schema: new Schema(mapping) });
 			const statement = session.doc.statements[0];
 			if (!statement) continue;
@@ -834,7 +862,6 @@ function deriveTaskLocalSchemas(
 				: [];
 			if (rootColumns.length === 0 || new Set(rootColumns).size !== rootColumns.length) continue;
 			addTaskLocalMapping(target, rootColumns);
-			if ((catalog.byQualifiedName.get(target) ?? []).length === 1) continue;
 			records.set(target, {
 				qualified_name: target,
 				guid: null,
@@ -953,18 +980,26 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	);
 	if (target.columns.length === 0) throw new Error(`TARGET_SCHEMA_NOT_PROVABLE:${target.qualifiedName}`);
 	const baseBundle = schemaBundle(catalog, logicalSourceId, schemaEntries);
+	const taskLocalSchemas = deriveTaskLocalSchemas(
+		catalog,
+		schemaEntries,
+		selected.sources,
+		options.taskId,
+		target.qualifiedName,
+		defaultSchema,
+		dialect,
+	);
+	const taskLocalNames = new Set(
+		taskLocalSchemas.map((record) => normalizeName(String(record.qualified_name))),
+	);
 	const bundle = {
 		...baseBundle,
 		records: [
-			...((baseBundle.records as JsonRecord[]) ?? []),
-			...deriveTaskLocalSchemas(
-				catalog,
-				schemaEntries,
-				selected.sources,
-				options.taskId,
-				defaultSchema,
-				dialect,
+			...((baseBundle.records as JsonRecord[]) ?? []).filter(
+				(record) =>
+					!taskLocalNames.has(normalizeName(String(record.qualified_name))),
 			),
+			...taskLocalSchemas,
 		],
 	};
 	const bundleHash = sha256(canonicalJson(bundle));
@@ -995,6 +1030,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		schemaEntries,
 		selected.sources,
 		options.ddlCache,
+		taskLocalSchemas,
 	);
 	const platformPartition = taskPartitionEvidence(
 		task,
@@ -1027,6 +1063,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		selected.sources,
 		detailedPartition,
 		defaultSchema,
+		taskLocalNames,
 	);
 	const profileTask: GenericTaskProfile = {
 		task_id: options.taskId,

@@ -115,6 +115,13 @@ export function resolvePhysicalInputField(
 	const rawTable = normalizeName(reference.table);
 	const column = normalizeName(reference.column);
 	const qualifiedTable = qualifyBareTableName(rawTable, context.defaultSchema);
+	const local = taskLocalResolution(
+		context,
+		rawTable,
+		qualifiedTable,
+		column,
+	);
+	if (local) return local;
 	const exact = context.catalog.byQualifiedName.get(qualifiedTable) ?? [];
 	const tailMatches =
 		rawTable.includes(".") || context.defaultSchema !== null
@@ -138,14 +145,6 @@ export function resolvePhysicalInputField(
 					reason: "FIELD_NOT_IN_SCHEMA",
 				};
 	}
-
-	const local = taskLocalResolution(
-		context,
-		rawTable,
-		qualifiedTable,
-		column,
-	);
-	if (local) return local;
 
 	return {
 		status: "UNRESOLVED",

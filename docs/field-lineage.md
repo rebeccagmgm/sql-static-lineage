@@ -76,7 +76,7 @@ CLI 默认先从主 Input Pack 为表级 artifact 中可用的 Task 准备 Machi
 ## 图语义
 
 - 主树只包含 `VALUE_FLOW`：目标输出字段表达式到 Schema-backed 物理输入字段，再精确桥接到上游 Task 的同一物理目标字段。
-- 跨 SQL slot 的临时 CTAS、field-producing INSERT，或由同一 Task 的 `CREATE [TEMPORARY] TABLE` DDL 提供列结构的内部表字段，使用 `TASK_LOCAL_SCHEMA_BACKED`，只在当前 Task 内回溯；它们不能成为跨 Task 物理桥。内部表省略 schema 时，仅在 Task Pack 的任务名与目标表共同证明同一默认 schema 后补齐限定名；证据冲突时不猜。
+- 跨 SQL slot 的临时 CTAS、field-producing INSERT，或由同一 Task 的 `CREATE [TEMPORARY] TABLE` DDL 提供列结构的内部表字段，使用 `TASK_LOCAL_SCHEMA_BACKED`，只在当前 Task 内回溯；它们不能成为跨 Task 物理桥。同 Task 内部 CREATE 的 schema 优先于同名全局 Table Pack，CTAS 没有显式列清单时可由其唯一、连续的查询输出推导；任务最终目标表不按此规则改写。内部表省略 schema 时，仅在 Task Pack 的任务名与目标表共同证明同一默认 schema 后补齐限定名；证据冲突时不猜。
 - Machine Facts 额外发布 `task-local-materializations.jsonl`。只有同一 Task、同一物理表、写入语句严格早于读取语句且 output binding 唯一匹配的记录才是 `RESOLVED`；多次写入或绑定不完整时保留 `AMBIGUOUS/UNRESOLVED`。
 - 字段 consumer 和 Task-local Data Graph 投影优先消费 Task-local materialization，再消费跨 Task `primary`。投影折叠后用中间写入的叶子表达式核验真实来源字段和 read occurrence；同 Task 自生产不会进入 Task frontier，也不会把 `additional` 提升为 `primary`。
 - `ROWSET_CONTROL` 单独列出 Join、filter、aggregate、set operation、window 和 distinct。不能证明跨 CTE/子查询作用域时记录 `ROWSET_SCOPE_UNRESOLVED`。

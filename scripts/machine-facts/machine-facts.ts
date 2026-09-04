@@ -1434,6 +1434,12 @@ function buildTaskBundle(
 				producer_ordinals: producerOrdinals,
 				producer_enumeration_status: producerEnumerationStatus,
 				field_producing: fieldProducing,
+				...(partitionEvidence
+					? {
+						partition_status: partitionEvidence.status,
+						partition_columns: partitionEvidence.partition_columns.map(normalizeName),
+					}
+					: {}),
 				source_as_boundary: { proven: hasCtasBoundary, statement_span: span },
 			});
 			writeContexts.push({
@@ -1569,8 +1575,16 @@ function buildTaskBundle(
 	});
 	outputBindings.push(...outputBindingResult.bindings);
 	unknowns.push(...outputBindingResult.unknowns);
+	const writeContextByObservation = new Map(
+		writeContexts.map((context) => [context.writeObservationId, context]),
+	);
 	for (const [index, record] of datasetIo.entries()) {
-		if (record.write_kind !== PACK_DECLARED_QUERY_OUTPUT || typeof record.write_observation_id !== "string") continue;
+		if (typeof record.write_observation_id !== "string" || record.field_producing !== true) continue;
+		const writeContext = writeContextByObservation.get(record.write_observation_id);
+		if (
+			record.write_kind !== PACK_DECLARED_QUERY_OUTPUT &&
+			writeContext?.partitionStatus === undefined
+		) continue;
 		const producerCount = Array.isArray(record.producer_ordinals) ? record.producer_ordinals.length : 0;
 		const writeBindings = outputBindings.filter(
 			(binding) => binding.write_observation_id === record.write_observation_id,
@@ -1578,7 +1592,9 @@ function buildTaskBundle(
 		const fullyBound = producerCount > 0 && writeBindings.length === producerCount;
 		const boundStaticColumns = [...new Set(writeBindings.flatMap((binding) => binding.static_partition_columns).map(normalizeName))];
 		const boundDynamicColumns = [...new Set(writeBindings.flatMap((binding) => binding.dynamic_partition_columns ?? []).map(normalizeName))];
-		let partitionMode = record.partition_mode;
+		const partitionStatus = record.partition_status ?? writeContext?.partitionStatus;
+		const partitionColumns = (record.partition_columns ?? writeContext?.partitionColumns ?? []).map(normalizeName);
+		let partitionMode = record.partition_mode ?? writeContext?.partitionMode;
 		let staticPartitionColumns = record.static_partition_columns;
 		let dynamicPartitionColumns = record.dynamic_partition_columns;
 		if (fullyBound) {
@@ -1590,23 +1606,35 @@ function buildTaskBundle(
 					? "STATIC"
 					: boundDynamicColumns.length > 0
 						? "DYNAMIC"
-						: "NONE";
+						: partitionStatus === "NOT_PARTITIONED" && partitionColumns.length === 0
+							? "NONE"
+							: partitionMode ?? "UNKNOWN";
 		}
 		const assignmentConflict = Array.isArray(record.partition_assignments) && record.partition_assignments.some(
 			(assignment: unknown) => assignment !== null && typeof assignment === "object" && (assignment as JsonRecord).status === "CONFLICT",
 		);
+		const classifiedColumns = new Set([
+			...(staticPartitionColumns ?? []).map(normalizeName),
+			...(dynamicPartitionColumns ?? []).map(normalizeName),
+		]);
+		const partitionColumnsFullyClassified =
+			partitionColumns.length > 0 &&
+			classifiedColumns.size === partitionColumns.length &&
+			partitionColumns.every((column) => classifiedColumns.has(column));
 		let partitionBindingStatus: DatasetIoRecord["partition_binding_status"];
-		if (record.partition_status === "CONFLICT" || assignmentConflict) partitionBindingStatus = "CONFLICT";
-		else if (partitionMode === "NONE" && record.partition_status === "NOT_PARTITIONED") {
+		if (partitionStatus === "CONFLICT" || assignmentConflict) partitionBindingStatus = "CONFLICT";
+		else if (partitionMode === "NONE" && partitionStatus === "NOT_PARTITIONED") {
 			partitionBindingStatus = "NOT_PARTITIONED";
-		} else if (fullyBound) partitionBindingStatus = "COMPLETE";
-		else if (record.partition_status === "UNKNOWN" || partitionMode === "UNKNOWN") {
+		} else if (fullyBound && partitionColumnsFullyClassified) partitionBindingStatus = "COMPLETE";
+		else if (partitionStatus === "UNKNOWN" || partitionMode === "UNKNOWN") {
 			partitionBindingStatus = "UNKNOWN";
 		} else partitionBindingStatus = "INCOMPLETE";
 		datasetIo[index] = {
 			...record,
+			partition_status: partitionStatus,
+			partition_columns: partitionColumns,
 			partition_binding_status: partitionBindingStatus,
-			partition_mode: partitionMode,
+			partition_mode: partitionMode ?? "UNKNOWN",
 			static_partition_columns: staticPartitionColumns,
 			dynamic_partition_columns: dynamicPartitionColumns,
 		};
