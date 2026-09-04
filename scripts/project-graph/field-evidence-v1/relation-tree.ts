@@ -9,6 +9,7 @@ export type RelationRecord = Readonly<{
   readonly leftRelationId: string | null;
   readonly rightRelationId: string | null;
   readonly setopBranches: readonly string[];
+  readonly scopeId: string | null;
 }>;
 
 export interface RelationTreeIndex {
@@ -57,6 +58,7 @@ export function buildRelationTreeIndex(
       leftRelationId: text(body.left),
       rightRelationId: text(body.right),
       setopBranches: branches,
+      scopeId: text(row.scope_id) ?? text(body.scope_id),
     });
   }
   return { relations, incomingByTo: new Map() };

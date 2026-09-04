@@ -60,17 +60,17 @@ describe("source-read-occurrence", () => {
       {
         relation_id: "rel:read:left",
         relation_type: "read",
-        relation: { table: "demo.source", type: "read", binding: "a" },
+        relation: { table: "demo.source", type: "read", binding: "a", scope_id: "root.a" },
       },
       {
         relation_id: "rel:read:right",
         relation_type: "read",
-        relation: { table: "demo.source", type: "read", binding: "b" },
+        relation: { table: "demo.source", type: "read", binding: "b", scope_id: "root.b" },
       },
       {
         relation_id: "rel:join:0",
         relation_type: "join",
-        relation: { type: "join" },
+        relation: { type: "join", scope_id: "root" },
       },
     ];
     const relationEdges = [
@@ -98,6 +98,133 @@ describe("source-read-occurrence", () => {
     expect(resolution.sourceReadOccurrenceStatus).toBe("AMBIGUOUS");
     expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
     expect(resolution.gap?.reasonCode).toBe("FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS");
+  });
+
+  it("excludes CTE-body reads when the expression is outside that CTE scope", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:root.a.read.source",
+        relation_type: "read",
+        relation: {
+          table: "demo.source",
+          type: "read",
+          binding: "source",
+          scope_id: "root.a",
+        },
+      },
+      {
+        relation_id: "rel:root.(child).t.read.source",
+        relation_type: "read",
+        relation: {
+          table: "demo.source",
+          type: "read",
+          binding: "source",
+          scope_id: "root.(child).t",
+        },
+      },
+      {
+        relation_id: "rel:root.read.temp",
+        relation_type: "read",
+        relation: {
+          table: "demo.temp",
+          type: "read",
+          binding: "temp",
+          scope_id: "root",
+        },
+      },
+      {
+        relation_id: "rel:root.project",
+        relation_type: "project",
+        relation: { type: "project", scope_id: "root" },
+      },
+    ];
+    const relationEdges = [
+      { from_relation_id: "rel:root.(child).t.read.source", to_relation_id: "rel:root.read.temp" },
+      { from_relation_id: "rel:root.read.temp", to_relation_id: "rel:root.project" },
+      { from_relation_id: "rel:root.a.read.source", to_relation_id: "rel:root.project" },
+    ];
+    const index = withIncomingRelations(
+      buildRelationTreeIndex(relationNodes),
+      relationEdges,
+    );
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-1",
+      expressionId: "expr:0",
+      sourceTable: "demo.source",
+      sourceColumn: "amount",
+      inputField: { table: "demo.source", column: "amount" },
+      leafRelationId: "rel:root.project",
+      index,
+      readOccurrenceByRelationId: new Map([
+        ["rel:root.a.read.source", "occ:main"],
+        ["rel:root.(child).t.read.source", "occ:cte"],
+      ]),
+      bindingByReadRelation: new Map([
+        ["rel:root.a.read.source", "source"],
+        ["rel:root.(child).t.read.source", "source"],
+      ]),
+    });
+    expect(resolution.sourceReadOccurrenceStatus).toBe("RESOLVED");
+    expect(resolution.sourceReadOccurrenceId).toBe("occ:main");
+    expect(resolution.sourceRelationId).toBe("rel:root.a.read.source");
+  });
+
+  it("resolves same-table joins using qualifier from expression text against path/scope", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:root.b.read.lookup",
+        relation_type: "read",
+        relation: {
+          table: "demo.lookup",
+          type: "read",
+          binding: "lookup",
+          scope_id: "root.b",
+        },
+      },
+      {
+        relation_id: "rel:root.c.read.lookup",
+        relation_type: "read",
+        relation: {
+          table: "demo.lookup",
+          type: "read",
+          binding: "lookup",
+          scope_id: "root.c",
+        },
+      },
+      {
+        relation_id: "rel:root.project",
+        relation_type: "project",
+        relation: { type: "project", scope_id: "root" },
+      },
+    ];
+    const relationEdges = [
+      { from_relation_id: "rel:root.b.read.lookup", to_relation_id: "rel:root.project" },
+      { from_relation_id: "rel:root.c.read.lookup", to_relation_id: "rel:root.project" },
+    ];
+    const index = withIncomingRelations(
+      buildRelationTreeIndex(relationNodes),
+      relationEdges,
+    );
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-1",
+      expressionId: "expr:0",
+      sourceTable: "demo.lookup",
+      sourceColumn: "code",
+      inputField: { table: "demo.lookup", column: "code" },
+      expressionText: "NVL(B.CODE, ASSET_TYPE) AS Asset_Type",
+      leafRelationId: "rel:root.project",
+      index,
+      readOccurrenceByRelationId: new Map([
+        ["rel:root.b.read.lookup", "occ:b"],
+        ["rel:root.c.read.lookup", "occ:c"],
+      ]),
+      bindingByReadRelation: new Map([
+        ["rel:root.b.read.lookup", "lookup"],
+        ["rel:root.c.read.lookup", "lookup"],
+      ]),
+    });
+    expect(resolution.sourceReadOccurrenceStatus).toBe("RESOLVED");
+    expect(resolution.sourceReadOccurrenceId).toBe("occ:b");
   });
 
   it("expands setop branches by output ordinal", () => {

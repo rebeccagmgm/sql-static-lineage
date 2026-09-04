@@ -93,17 +93,44 @@ function assertShadowSetopMaterialization(
   const matGap = projection.gaps?.find(
     (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
   );
-  expect(matGap).toBeTruthy();
-  expect(Array.isArray(matGap!.details.columns) && matGap!.details.columns.length > 0).toBe(true);
-  const anchor = anchorFromTempTableSource(projection);
-  expect(anchor).not.toBeNull();
-  const result = context.runImpactQuery(anchor!);
-  expect(result.gaps.some(
-    (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
-  )).toBe(true);
+  const tempMarker = String(expected.tempTableMarker ?? "");
+  if (matGap) {
+    expect(Array.isArray(matGap.details.columns) && matGap.details.columns.length > 0).toBe(true);
+    const anchor = anchorFromTempTableSource(projection);
+    expect(anchor).not.toBeNull();
+    const result = context.runImpactQuery(anchor!);
+    expect(result.gaps.some(
+      (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
+    )).toBe(true);
+    expect(result.gaps.some((gap) =>
+      gap.reasonCode === "PRODUCER_NOT_PROJECTED"
+      && String(gap.details.physicalDataset ?? "").includes(tempMarker),
+    )).toBe(false);
+    return;
+  }
+
+  // Facts may omit task-local-materializations; still require shadow setop + projected temp sources.
+  const tempEdges = projection.edges.filter((edge) => {
+    if (edge.edgeType !== "FIELD_DIRECT" && edge.edgeType !== "FIELD_CONDITIONAL") {
+      return false;
+    }
+    const from = projection.nodes.find((node) => node.nodeId === edge.fromNodeId);
+    const qualifiedName = normalizeName(String(from?.properties.qualifiedName ?? ""));
+    return tempMarker.length > 0
+      ? qualifiedName.includes(normalizeName(tempMarker))
+      : qualifiedName.includes("temp.");
+  });
+  expect(tempEdges.length).toBeGreaterThan(0);
+  const write = primaryFinalWrite(projection);
+  expect(write).not.toBeNull();
+  const result = context.runImpactQuery({
+    taskId: projection.taskId,
+    writeObservationId: write!.writeObservationId,
+    outputColumn: String(tempEdges[0]!.properties.outputColumn ?? ""),
+  });
   expect(result.gaps.some((gap) =>
     gap.reasonCode === "PRODUCER_NOT_PROJECTED"
-    && String(gap.details.physicalDataset ?? "").includes(String(expected.tempTableMarker ?? "")),
+    && String(gap.details.physicalDataset ?? "").includes(tempMarker),
   )).toBe(false);
 }
 

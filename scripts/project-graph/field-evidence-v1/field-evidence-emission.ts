@@ -143,6 +143,7 @@ export function emitFieldEvidenceForInput(input: {
       sourceTable: input.sourceField.qualifiedName,
       sourceColumn: input.sourceField.column,
       inputField: input.inputField,
+      expressionText: text(context.expression.expression_text),
       leafRelationId,
       index: input.indexes.relationTree,
       readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
