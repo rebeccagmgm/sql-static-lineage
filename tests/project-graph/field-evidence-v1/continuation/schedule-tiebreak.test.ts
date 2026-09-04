@@ -30,7 +30,7 @@ function indexCandidate(
 function ports(lookup: ContinuationPorts["scheduleLookup"]): ContinuationPorts {
   return {
     scheduleLookup: lookup,
-    producerIndex: null,
+    writerCatalog: null,
     taskCategoryFor: () => "sparkIndex",
     readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
     tableIdentityFor: ({ qualifiedName }) => ({

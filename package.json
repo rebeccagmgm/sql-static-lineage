@@ -85,6 +85,7 @@
     "producer-index:pin": "tsx scripts/reconcile/producer/producer-index.ts --pin",
     "producer-index:update": "tsx scripts/reconcile/producer/producer-index.ts --update",
     "producer-index:query": "tsx scripts/query/producer-index-query.ts",
+    "writer-catalog:backfill": "tsx scripts/query/backfill-writer-catalog.ts",
     "input-pack:tasks": "tsx scripts/input/mainline/collect-task-input-pack.ts",
     "input-pack:from-cache": "tsx scripts/input/mainline/collect-input-pack-from-cache.ts",
     "input-pack:partial-inventory": "tsx scripts/input/mainline/inventory-input-pack-partials.ts",

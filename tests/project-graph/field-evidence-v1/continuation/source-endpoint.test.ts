@@ -1,28 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { createContinuationPorts } from "../../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
-import type { TableProducerIndex } from "../../../../scripts/reconcile/producer/producer-index.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
 } from "../../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
 
-function emptyProducerIndex(): TableProducerIndex {
-  return {
-    schemaVersion: "1.0.0",
-    artifactType: "TABLE_PRODUCER_INDEX",
-    generatedAt: "2026-09-04T00:00:00.000Z",
-    contentHash: "test-hash",
-    inputFingerprint: "test-fingerprint",
-    confirmedProducerEdges: [],
-    nonConfirmedRelations: [],
-  } as unknown as TableProducerIndex;
-}
-
-describe("continuation read scope from task category", () => {
-  it("emits SOURCE_ENDPOINT_BOUNDARY for *2hive when PI has no writers", () => {
+describe("continuation read scope from facts bundle", () => {
+  it("builds read scope when facts bundle is present", () => {
     const ports = createContinuationPorts({
       scheduleRelationLookup: createHoraeScheduleRelationLookupFromScheduleEdges([]),
-      producerIndex: emptyProducerIndex(),
+      writerCatalogPath: null,
       factsBundleForTask: () => ({ relationNodes: [], relationEdges: [] }),
       taskCategoryFor: () => "oracle2hive",
     });
@@ -30,17 +17,14 @@ describe("continuation read scope from task category", () => {
       consumerTaskId: "consumer-sync",
       readOccurrenceId: "read:consumer-sync:0",
       qualifiedName: "source_schema.example_table",
-    })).toEqual({
-      kind: "UNAVAILABLE",
-      reasonCode: "SOURCE_ENDPOINT_BOUNDARY",
-    });
+    }).kind).toBe("OK");
   });
 
-  it("keeps READ_SCOPE_UNAVAILABLE for native Hive compute when PI has no writers", () => {
+  it("returns READ_SCOPE_UNAVAILABLE when facts bundle is missing", () => {
     const ports = createContinuationPorts({
       scheduleRelationLookup: createHoraeScheduleRelationLookupFromScheduleEdges([]),
-      producerIndex: emptyProducerIndex(),
-      factsBundleForTask: () => ({ relationNodes: [], relationEdges: [] }),
+      writerCatalogPath: null,
+      factsBundleForTask: () => null,
       taskCategoryFor: () => "sparkIndex",
     });
     expect(ports.readScopeFor({

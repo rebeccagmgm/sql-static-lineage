@@ -17,6 +17,11 @@ import {
   type CurrentBundleLoad,
 } from "../../../query/current-task-bundle.ts";
 import { validateTableProducerIndex } from "../../producer/producer-index.ts";
+import {
+  catalogFingerprint,
+  openWriterCatalog,
+} from "../../../query/writer-catalog.ts";
+import { isLegacyProducerIndexPath } from "../../../query/table-writer-lookup.ts";
 import { validateMultiHopReconciliation } from "../multi-hop/reconcile-multi-hop.ts";
 import {
   projectTargetTableCandidateUniverse,
@@ -275,7 +280,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   return {
     dataRoot: required("data-root"),
     factsRoot: required("facts-root"),
-    producerIndex: required("producer-index"),
+    producerIndex: values.get("writer-catalog") ?? required("producer-index"),
     tableMultiHop: required("table-multi-hop"),
     fieldLineage: values.get("field-lineage") ?? null,
     taskId: required("task-id"),
@@ -873,8 +878,13 @@ export function runTargetTableCausalClosure(
       );
   };
   const loadStart = performance.now();
-  const producerIndex = readJson(options.producerIndex);
-  validateTableProducerIndex(producerIndex);
+  const producerIndexHash = isLegacyProducerIndexPath(options.producerIndex)
+    ? (() => {
+        const producerIndex = readJson(options.producerIndex);
+        validateTableProducerIndex(producerIndex);
+        return fileHash(options.producerIndex);
+      })()
+    : catalogFingerprint(openWriterCatalog(options.producerIndex));
   const tableArtifact = readJson(options.tableMultiHop);
   validateMultiHopReconciliation(tableArtifact);
   const catalog = loadPhysicalTableCatalog(options.dataRoot, { lazyDdl: true });
@@ -904,7 +914,7 @@ export function runTargetTableCausalClosure(
       canonicalBundleIdentity(rootLoad),
     machineFactsHash:
       rootLoad.manifestSha256 ?? sha256(canonicalJson(rootLoad.records)),
-    producerIndexHash: fileHash(options.producerIndex),
+    producerIndexHash,
     tableMultiHopHash: fileHash(options.tableMultiHop),
     ...(options.fieldLineage && existsSync(options.fieldLineage)
       ? { fieldLineageHash: fileHash(options.fieldLineage) }

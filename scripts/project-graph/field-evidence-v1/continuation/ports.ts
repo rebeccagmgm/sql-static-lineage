@@ -1,6 +1,6 @@
 import type { ReadPartitionScope } from "../../../evidence/sql-read-scope.ts";
 import type { ProducerTableIdentity } from "../../../reconcile/producer/producer-index.ts";
-import type { TableProducerIndex } from "../../../reconcile/producer/producer-index.ts";
+import type { WriterCatalogPort } from "../../../query/writer-catalog.ts";
 import type { HoraeScheduleRelationLookup } from "../schedule-preference.ts";
 
 export type ReadScopeLookupResult =
@@ -12,7 +12,7 @@ export type ReadScopeLookupResult =
 
 export interface ContinuationPorts {
   readonly scheduleLookup: HoraeScheduleRelationLookup | null;
-  readonly producerIndex: TableProducerIndex | null;
+  readonly writerCatalog: WriterCatalogPort | null;
   readonly taskCategoryFor: (consumerTaskId: string) => string | null;
   readonly readScopeFor: (input: {
     readonly consumerTaskId: string;

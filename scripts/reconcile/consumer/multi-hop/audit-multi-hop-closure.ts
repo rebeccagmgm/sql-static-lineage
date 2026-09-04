@@ -13,6 +13,13 @@ import {
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
 import {
+  isLegacyProducerIndexPath,
+} from "../../../query/table-writer-lookup.ts";
+import {
+  openWriterCatalog,
+  writerTaskIdsByQualifiedName,
+} from "../../../query/writer-catalog.ts";
+import {
   defaultOpenCliRunner,
   type OpenCliRunner,
 } from "../one-hop/reconcile-one-hop.ts";
@@ -256,7 +263,7 @@ function taskReads(loaded: LoadedTask): string[] {
   return unique(names);
 }
 
-function producerMap(index: TableProducerIndex): Map<string, string[]> {
+function producerMapFromIndex(index: TableProducerIndex): Map<string, string[]> {
   const result = new Map<string, string[]>();
   for (const edge of index.confirmedProducerEdges) {
     const key = edge.table.qualifiedName.toLocaleLowerCase("en-US");
@@ -265,6 +272,24 @@ function producerMap(index: TableProducerIndex): Map<string, string[]> {
     result.set(key, unique(taskIds));
   }
   return result;
+}
+
+function producerMapFromPath(path: string): {
+  readonly producersByTable: Map<string, string[]>;
+  readonly fingerprint: string;
+} {
+  if (isLegacyProducerIndexPath(path)) {
+    const index = loadTableProducerIndex(path);
+    return {
+      producersByTable: producerMapFromIndex(index),
+      fingerprint: index.inputFingerprint,
+    };
+  }
+  const handle = openWriterCatalog(path);
+  return {
+    producersByTable: writerTaskIdsByQualifiedName(handle),
+    fingerprint: handle.path,
+  };
 }
 
 function relationResponse(value: unknown): {
@@ -379,8 +404,8 @@ function audit(
   );
   if (index.roots.length === 0)
     throw new Error(`ROOT_TASKS_NOT_FOUND:${options.taskCategory}`);
-  const producerIndex = loadTableProducerIndex(options.producerIndexPath);
-  const producersByTable = producerMap(producerIndex);
+  const { producersByTable, fingerprint: producerIndexInputFingerprint } =
+    producerMapFromPath(options.producerIndexPath);
   const terminalConfig: TerminalTableConfig = loadTerminalTableConfig(
     resolve(options.terminalTableConfigPath),
   );
@@ -596,7 +621,7 @@ function audit(
     dataRoot: resolve(options.dataRoot),
     taskCategory: options.taskCategory,
     producerIndexPath: resolve(options.producerIndexPath),
-    producerIndexInputFingerprint: producerIndex.inputFingerprint,
+    producerIndexInputFingerprint,
     scheduleEvidenceCacheRoot: resolve(options.scheduleEvidenceCacheRoot),
     roots: index.roots,
     discoveredTaskIds,

@@ -5,6 +5,11 @@ import {
   loadTableProducerIndex,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
+import { isLegacyProducerIndexPath } from "../../../query/table-writer-lookup.ts";
+import {
+  openWriterCatalog,
+  type WriterCatalogHandle,
+} from "../../../query/writer-catalog.ts";
 import {
   reconcileMultiHopBatch as reconcileMultiHopRoots,
   type MultiHopBatchRoot,
@@ -33,7 +38,8 @@ const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 export interface ReconcileMultiHopBatchOptions {
   readonly taskIds: readonly string[];
   readonly dataRoot: string;
-  readonly producerIndex: TableProducerIndex;
+  readonly producerIndex?: TableProducerIndex;
+  readonly writerCatalog?: WriterCatalogHandle;
   readonly outputDir?: string;
   readonly rootOneHopDir?: string | null;
   readonly maxDepth: number;
@@ -58,6 +64,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--task-ids",
     "--data-root",
     "--producer-index",
+    "--writer-catalog",
     "--output-dir",
     "--root-one-hop-dir",
     "--max-depth",
@@ -97,7 +104,8 @@ function parseCli(argv: readonly string[]): CliOptions {
   return {
     taskIds: parseTaskIds(required("--task-ids")),
     dataRoot: required("--data-root"),
-    producerIndexPath: required("--producer-index"),
+    producerIndexPath:
+      values.get("--writer-catalog") ?? required("--producer-index"),
     outputDir: required("--output-dir"),
     rootOneHopDir: values.get("--root-one-hop-dir") ?? null,
     maxDepth: integer("--max-depth", 3),
@@ -147,6 +155,7 @@ export function reconcileMultiHopBatch(
   return reconcileMultiHopRoots(roots, {
     dataRoot: options.dataRoot,
     producerIndex: options.producerIndex,
+    writerCatalog: options.writerCatalog,
     maxDepth: options.maxDepth,
     maxTasks: options.maxTasks,
     maxEdges: options.maxEdges,
@@ -156,8 +165,18 @@ export function reconcileMultiHopBatch(
 
 function main(): void {
   const cli = parseCli(process.argv.slice(2));
-  const producerIndex = loadTableProducerIndex(cli.producerIndexPath);
-  const results = reconcileMultiHopBatch({ ...cli, producerIndex });
+  const lookupPath = resolve(cli.producerIndexPath);
+  const producerIndex = isLegacyProducerIndexPath(lookupPath)
+    ? loadTableProducerIndex(lookupPath)
+    : undefined;
+  const writerCatalog = isLegacyProducerIndexPath(lookupPath)
+    ? undefined
+    : openWriterCatalog(lookupPath);
+  const results = reconcileMultiHopBatch({
+    ...cli,
+    producerIndex,
+    writerCatalog,
+  });
   mkdirSync(resolve(cli.outputDir), { recursive: true });
   const summary = results.map((result) => {
     const output = outputPath(resolve(cli.outputDir), result.rootTaskId);

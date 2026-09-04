@@ -45,6 +45,11 @@ import {
 	type ProfileRunResult,
 	type TaskRunResult,
 } from "./machine-facts.ts";
+import {
+	defaultWriterCatalogPath,
+	openWriterCatalog,
+	syncWriterCatalogAfterMachineFacts,
+} from "../query/writer-catalog.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -121,6 +126,9 @@ export interface RunInputPackMachineFactsOptions {
 	readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
 	readonly indexMode?: "full" | "incremental";
 	readonly beforeFinalVerification?: (taskId: string) => void;
+	/** SQLite writer catalog path; defaults to sibling of data root. Pass null to disable. */
+	readonly writerCatalogPath?: string | null;
+	readonly noWriterCatalog?: boolean;
 }
 
 export interface InputPackMachineFactsRunResult {
@@ -795,7 +803,15 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(options.dataRoot);
 	const ddlCache = new Map<string, string>();
 	const tasks: TaskRunResult[] = [];
+	const preparedByTaskId = new Map<string, {
+		taskCategory: string;
+		taskContentHash: string;
+	}>();
 	const preparedSummary: InputPackMachineFactsRunResult["prepared"][number][] = [];
+	const writerCatalogEnabled = options.noWriterCatalog !== true && options.writerCatalogPath !== null;
+	const writerCatalogPath = writerCatalogEnabled
+		? resolve(options.writerCatalogPath ?? defaultWriterCatalogPath(options.dataRoot))
+		: null;
 	for (const taskId of [...new Set(options.taskIds)].sort(compareText)) {
 		const taskPaths = taskPathIndex.get(taskId) ?? [];
 		try {
@@ -819,6 +835,10 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 				tasks: [profileTask],
 			};
 			tasks.push(runTask(profileTask, profile, prepared.logicalSourceId, outputRoot, prepared.schemaBundle, prepared.schemaBundleHash));
+			preparedByTaskId.set(taskId, {
+				taskCategory: prepared.taskCategory,
+				taskContentHash: String(prepared.task.contentHash),
+			});
 			preparedSummary.push({
 				taskId,
 				sqlSlot: prepared.sql.slot,
@@ -836,6 +856,20 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 					reason_code: "INPUT_PACK_PREPARATION_FAILED",
 					message: error instanceof Error ? error.message : String(error),
 				}],
+			});
+		}
+	}
+	if (writerCatalogPath) {
+		const catalogHandle = openWriterCatalog(writerCatalogPath);
+		for (const task of tasks) {
+			const prepared = preparedByTaskId.get(task.task_id);
+			syncWriterCatalogAfterMachineFacts({
+				handle: catalogHandle,
+				factsRoot: outputRoot,
+				taskId: task.task_id,
+				taskCategory: prepared?.taskCategory ?? "",
+				taskContentHash: prepared?.taskContentHash ?? "",
+				taskResult: task,
 			});
 		}
 	}
@@ -866,8 +900,16 @@ function parseCli(args: readonly string[]): RunInputPackMachineFactsOptions {
 		.map((value) => value.trim())
 		.filter(Boolean);
 	if (!dataRoot || !outputRoot || taskIds.length === 0)
-		throw new Error("usage: input-pack-machine-facts --data-root <path> --task-id <id[,id]> --output <path>");
-	return { dataRoot, outputRoot, taskIds };
+		throw new Error("usage: input-pack-machine-facts --data-root <path> --task-id <id[,id]> --output <path> [--writer-catalog <sqlite>] [--no-writer-catalog]");
+	return {
+		dataRoot,
+		outputRoot,
+		taskIds,
+		...(option(args, "--writer-catalog") === undefined
+			? {}
+			: { writerCatalogPath: resolve(option(args, "--writer-catalog")!) }),
+		...(args.includes("--no-writer-catalog") ? { noWriterCatalog: true } : {}),
+	};
 }
 
 if (process.argv[1] && basename(process.argv[1]).startsWith("input-pack-machine-facts")) {

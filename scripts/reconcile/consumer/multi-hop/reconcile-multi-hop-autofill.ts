@@ -10,6 +10,16 @@ import {
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
 import {
+  catalogHasWriterForTableKey,
+  isLegacyProducerIndexPath,
+  resolveWriterLookup,
+  writerLookupMeta,
+} from "../../../query/table-writer-lookup.ts";
+import {
+  openWriterCatalog,
+  resolveWriterCatalogPath,
+} from "../../../query/writer-catalog.ts";
+import {
   defaultOpenCliRunner,
   prepareOneHopContext,
   reconcileOneHopWithPreparedContext,
@@ -49,6 +59,7 @@ export interface MultiHopAutofillOptions {
   readonly producerIndexCacheRoot?: string;
   /** Fixed mutable Producer Index directory (default: `<data-root>.producer-index`). */
   readonly producerIndexRoot?: string;
+  readonly writerCatalogPath?: string;
   /** Read-through cache for every Horae relation fetched during closure. */
   readonly scheduleEvidenceCacheRoot?: string;
   readonly outputPath?: string;
@@ -392,39 +403,60 @@ export function runMultiHopAutofill(
     allowInputChanges: options.allowInputChanges === true,
   });
 
-  let producerIndex: TableProducerIndex;
-  if (options.trustExistingIndex === true) {
-    if (
-      producerIndexPath === null ||
-      manifestPath === null ||
-      !existsSync(producerIndexPath) ||
-      !existsSync(manifestPath)
-    )
-      throw new Error("TRUSTED_EXISTING_INDEX_OR_MANIFEST_MISSING");
-    producerIndex = loadTableProducerIndex(producerIndexPath);
-    const manifest = loadTableProducerInputManifest(manifestPath);
-    if (manifest.inputFingerprint !== producerIndex.inputFingerprint)
-      throw new Error("TRUSTED_EXISTING_INDEX_MANIFEST_MISMATCH");
-  } else {
-    producerIndex = producerIndexPath
-      ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
-          now,
-          allowInputChanges: options.allowInputChanges,
-        }).index
-      : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
-          now,
-          allowInputChanges: options.allowInputChanges,
-        }).index;
+  const useLegacyIndex =
+    options.trustExistingIndex === true ||
+    (producerIndexPath !== null && isLegacyProducerIndexPath(producerIndexPath)) ||
+    (producerIndexPath === null &&
+      options.writerCatalogPath === undefined &&
+      (options.producerIndexRoot !== undefined ||
+        options.producerIndexCacheRoot !== undefined));
+
+  let producerIndex: TableProducerIndex | undefined;
+  if (useLegacyIndex) {
+    if (options.trustExistingIndex === true) {
+      if (
+        producerIndexPath === null ||
+        manifestPath === null ||
+        !existsSync(producerIndexPath) ||
+        !existsSync(manifestPath)
+      )
+        throw new Error("TRUSTED_EXISTING_INDEX_OR_MANIFEST_MISSING");
+      producerIndex = loadTableProducerIndex(producerIndexPath);
+      const manifest = loadTableProducerInputManifest(manifestPath);
+      if (manifest.inputFingerprint !== producerIndex.inputFingerprint)
+        throw new Error("TRUSTED_EXISTING_INDEX_MANIFEST_MISMATCH");
+    } else {
+      producerIndex = producerIndexPath
+        ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
+            now,
+            allowInputChanges: options.allowInputChanges,
+          }).index
+        : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
+            now,
+            allowInputChanges: options.allowInputChanges,
+          }).index;
+    }
   }
+  const writerCatalog = useLegacyIndex
+    ? undefined
+    : openWriterCatalog(
+        resolveWriterCatalogPath(dataRoot, {
+          writerCatalogPath: options.writerCatalogPath,
+        }),
+      );
+  const lookup = resolveWriterLookup({ writerCatalog, producerIndex });
+  if (!lookup) throw new Error("WRITER_LOOKUP_REQUIRED");
 
   while (rounds < maxRounds) {
     rounds += 1;
     const context = prepareOneHopContext(dataRoot, {
       includeFingerprint: false,
-      trustedInputFingerprint: producerIndex.inputFingerprint,
+      trustedInputFingerprint: producerIndex?.inputFingerprint,
       schemaLoading: "TASK_SCOPED",
     });
-    const producerTables = confirmedProducerTableKeys(producerIndex);
+    const producerTables = producerIndex
+      ? confirmedProducerTableKeys(producerIndex)
+      : new Set<string>();
     const snapshots = new Map<string, OneHopReconciliationResult>();
     const pendingTaskIds = new Set<string>();
     const enqueueMissingTaskPack = (taskId: string): void => {
@@ -475,7 +507,8 @@ export function runMultiHopAutofill(
         {
           dataRoot,
           producerIndex,
-          verifyInputFingerprint: true,
+          writerCatalog,
+          verifyInputFingerprint: producerIndex !== undefined,
           scheduleRows: frozenSchedule,
           now,
           terminalTableConfig: terminalConfig,
@@ -508,7 +541,15 @@ export function runMultiHopAutofill(
         )
           continue;
         const key = tableKey({ ...read.table, qualifiedName });
-        if (producerTables.has(key) || queriedTables.has(key)) continue;
+        const known =
+          producerIndex !== undefined
+            ? producerTables.has(key)
+            : catalogHasWriterForTableKey(lookup, {
+                platform: String(read.table.platform),
+                dataSource: String(read.table.dataSource),
+                qualifiedName,
+              });
+        if (known || queriedTables.has(key)) continue;
         if (queriedTables.size >= maxDiscoveryTables)
           throw new Error("MAX_DISCOVERY_TABLES_REACHED");
         const remaining =
@@ -590,16 +631,18 @@ export function runMultiHopAutofill(
         issues.push(`DISCOVERED_TASK_PACK_UNAVAILABLE:${taskId}`);
       }
     }
-    producerIndex = producerIndexPath
-      ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
-          now,
-          allowInputChanges: options.allowInputChanges,
-        }).index
-      : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
-          forceRebuild: true,
-          now,
-          allowInputChanges: options.allowInputChanges,
-        }).index;
+    if (useLegacyIndex) {
+      producerIndex = producerIndexPath
+        ? updateTableProducerIndex(dataRoot, producerIndexPath, manifestPath!, {
+            now,
+            allowInputChanges: options.allowInputChanges,
+          }).index
+        : loadOrRebuildTableProducerIndex(dataRoot, producerIndexRoot, {
+            forceRebuild: true,
+            now,
+            allowInputChanges: options.allowInputChanges,
+          }).index;
+    }
   }
 
   if (!stabilized) throw new Error("MAX_AUTOFILL_ROUNDS_REACHED");
@@ -608,6 +651,7 @@ export function runMultiHopAutofill(
   const artifact = reconcileMultiHop(options.taskId, {
     dataRoot,
     producerIndex,
+    writerCatalog,
     maxDepth: options.maxDepth,
     maxTasks: options.maxTasks,
     maxEdges: options.maxEdges,
@@ -628,8 +672,10 @@ export function runMultiHopAutofill(
     collectedTaskIds: unique([...collectedTaskIds]),
     nonHiveSourceBoundaries: unique([...nonHiveSourceBoundaries]),
     issues: unique(issues),
-    producerIndexContentHash: producerIndex.contentHash,
-    producerIndexInputFingerprint: producerIndex.inputFingerprint,
+    producerIndexContentHash:
+      producerIndex?.contentHash ?? writerLookupMeta(lookup).contentHash,
+    producerIndexInputFingerprint:
+      producerIndex?.inputFingerprint ?? writerLookupMeta(lookup).contentHash,
     initialIndexMode:
       options.trustExistingIndex === true
         ? "TRUSTED_EXISTING_FROZEN_INPUT"
@@ -691,6 +737,7 @@ interface CliOptions {
   readonly dataRoot: string;
   readonly producerIndexPath?: string;
   readonly producerIndexCacheRoot?: string;
+  readonly writerCatalogPath?: string;
   readonly scheduleEvidenceCacheRoot?: string;
   readonly outputPath?: string;
   readonly reportPath?: string;
@@ -714,6 +761,7 @@ function parseCli(args: readonly string[]): CliOptions {
     "--data-root",
     "--producer-index",
     "--producer-index-cache-root",
+    "--writer-catalog",
     "--schedule-evidence-cache-root",
     "--output",
     "--report",
@@ -761,6 +809,7 @@ function parseCli(args: readonly string[]): CliOptions {
     dataRoot: required("--data-root"),
     producerIndexPath: values.get("--producer-index"),
     producerIndexCacheRoot: values.get("--producer-index-cache-root"),
+    writerCatalogPath: values.get("--writer-catalog"),
     scheduleEvidenceCacheRoot: values.get("--schedule-evidence-cache-root"),
     outputPath: values.get("--output"),
     reportPath: values.get("--report"),

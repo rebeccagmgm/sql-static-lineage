@@ -1,4 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -22,6 +23,14 @@ import {
   type ProducerWriteObservation,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
+import {
+  isLegacyProducerIndexPath,
+  resolveWriterLookup,
+  taskContentHashesFor,
+  writerLookupMeta,
+  type WriterLookup,
+} from "../../../query/table-writer-lookup.ts";
+import type { WriterCatalogHandle } from "../../../query/writer-catalog.ts";
 import {
   buildTaskReadEvidenceRepository,
   type TaskReadEvidenceRepository,
@@ -212,7 +221,8 @@ export interface MultiHopReconciliationResult {
 
 export interface ReconcileMultiHopOptions {
   readonly dataRoot: string;
-  readonly producerIndex: TableProducerIndex;
+  readonly producerIndex?: TableProducerIndex;
+  readonly writerCatalog?: WriterCatalogHandle;
   readonly maxDepth: number;
   readonly maxTasks: number;
   readonly maxEdges: number;
@@ -742,10 +752,68 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function catalogModule(): typeof import("../../../query/writer-catalog.ts") {
+  return createRequire(import.meta.url)(
+    "../../../query/writer-catalog.ts",
+  ) as typeof import("../../../query/writer-catalog.ts");
+}
+
+function requireWriterLookup(options: ReconcileMultiHopOptions): WriterLookup {
+  const lookup = resolveWriterLookup({
+    writerCatalog: options.writerCatalog,
+    producerIndex: options.producerIndex,
+  });
+  if (!lookup) throw new Error("WRITER_LOOKUP_REQUIRED");
+  return lookup;
+}
+
+function packFingerprintFor(options: ReconcileMultiHopOptions): string {
+  if (options.trustedInputFingerprint !== undefined) {
+    if (!/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint))
+      throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
+    return options.trustedInputFingerprint;
+  }
+  return fingerprintTableProducerInputs(options.dataRoot);
+}
+
+function assertLegacyIndexFresh(
+  lookup: WriterLookup,
+  packFingerprint: string,
+  trusted: string | undefined,
+): void {
+  if (lookup.kind !== "legacyIndex") return;
+  if (
+    trusted !== undefined &&
+    lookup.index.inputFingerprint !== trusted
+  )
+    throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
+  if (packFingerprint !== lookup.index.inputFingerprint)
+    throw new Error("PRODUCER_INDEX_STALE");
+}
+
+function emittedIndexMeta(
+  lookup: WriterLookup,
+  packFingerprint: string,
+): {
+  readonly contentHash: string;
+  readonly inputFingerprint: string;
+  readonly status: "VALID_SUCCESS" | "VALID_PARTIAL";
+} {
+  const meta = writerLookupMeta(lookup);
+  return {
+    contentHash: meta.contentHash,
+    inputFingerprint:
+      lookup.kind === "legacyIndex"
+        ? lookup.index.inputFingerprint
+        : packFingerprint,
+    status: meta.status,
+  };
+}
+
 function validateRootOneHopSnapshot(
   value: unknown,
   rootTaskId: string,
-  producerIndex: TableProducerIndex,
+  indexMeta: { readonly contentHash: string; readonly inputFingerprint: string },
 ): asserts value is OneHopReconciliationResult {
   const snapshot = asRecord(value);
   const schedule = asRecord(snapshot?.schedule);
@@ -755,8 +823,8 @@ function validateRootOneHopSnapshot(
     schedule?.direction !== "UPSTREAM" ||
     schedule.depth !== 1 ||
     !Array.isArray(schedule.parents) ||
-    index?.contentHash !== producerIndex.contentHash ||
-    index.inputFingerprint !== producerIndex.inputFingerprint
+    index?.contentHash !== indexMeta.contentHash ||
+    index.inputFingerprint !== indexMeta.inputFingerprint
   )
     throw new Error("ROOT_ONE_HOP_INVALID");
   for (const parent of schedule.parents) {
@@ -903,18 +971,22 @@ function reconcileMultiHopRootTraversalKernel(
   requireLimit(options.maxDepth, "max_depth", 0);
   requireLimit(options.maxTasks, "max_tasks", 1);
   requireLimit(options.maxEdges, "max_edges", 1);
-  validateTableProducerIndex(options.producerIndex);
+  const lookup = requireWriterLookup(options);
+  if (lookup.kind === "legacyIndex") validateTableProducerIndex(lookup.index);
+  const lookupMeta = writerLookupMeta(lookup);
+  const indexMeta = emittedIndexMeta(lookup, preparedContext.inputFingerprint);
   const terminalTableConfig = options.terminalTableConfig;
   const repository = preparedContext.repository;
   if (
-    preparedContext.inputFingerprint !== options.producerIndex.inputFingerprint
+    lookup.kind === "legacyIndex" &&
+    preparedContext.inputFingerprint !== lookup.index.inputFingerprint
   )
     throw new Error("PRODUCER_INDEX_STALE");
   if (options.rootOneHop)
     validateRootOneHopSnapshot(
       options.rootOneHop,
       rootTaskId,
-      options.producerIndex,
+      indexMeta,
     );
   const now = options.now ?? (() => new Date().toISOString());
   const taskNodes = new Map<string, MutableTaskNode>();
@@ -923,12 +995,7 @@ function reconcileMultiHopRootTraversalKernel(
   const writeEdges = new Map<string, MultiHopWriteEdge>();
   const bridges = new Map<string, MultiHopProducerBridge>();
   const scheduleEdges = new Map<string, MultiHopScheduleEdge>();
-  const producerTaskContentHashes = new Map(
-    options.producerIndex.confirmedProducerEdges.map((edge) => [
-      edge.taskId,
-      edge.taskContentHash,
-    ]),
-  );
+  const producerTaskContentHashes = new Map(taskContentHashesFor(lookup));
   const terminals: MultiHopTerminal[] = [];
   const terminalKeys = new Set<string>();
   const adjacency = new Map<string, Set<string>>();
@@ -1033,7 +1100,7 @@ function reconcileMultiHopRootTraversalKernel(
       validateRootOneHopSnapshot(
         frozenOneHop,
         current.taskId,
-        options.producerIndex,
+        indexMeta,
       );
       oneHop = frozenOneHop;
     } else {
@@ -1058,6 +1125,7 @@ function reconcileMultiHopRootTraversalKernel(
         {
           dataRoot: options.dataRoot,
           producerIndex: options.producerIndex,
+          writerCatalog: options.writerCatalog,
           verifyInputFingerprint: true,
           trustedInputFingerprint: preparedContext.inputFingerprint,
           scheduleRows,
@@ -1360,7 +1428,7 @@ function reconcileMultiHopRootTraversalKernel(
             producerTaskId: producer.taskId,
             table: identity,
             writes: producer.writes,
-            producerIndexContentHash: options.producerIndex.contentHash,
+            producerIndexContentHash: indexMeta.contentHash,
           });
         }
         const currentBridgeKey = bridgeKey(
@@ -1557,10 +1625,7 @@ function reconcileMultiHopRootTraversalKernel(
     ),
   );
   const orderedTerminals = [...terminals].sort(sortTerminals);
-  const producerIndexStatus =
-    options.producerIndex.buildStatus === "PARTIAL"
-      ? ("VALID_PARTIAL" as const)
-      : ("VALID_SUCCESS" as const);
+  const producerIndexStatus = indexMeta.status;
   const scheduleParents = (options.rootOneHop?.schedule.parents ?? [])
     .map((parent) => ({
       taskId: parent.taskId,
@@ -1574,8 +1639,8 @@ function reconcileMultiHopRootTraversalKernel(
     rootTaskId,
     generatedAt: now(),
     producerIndex: {
-      contentHash: options.producerIndex.contentHash,
-      inputFingerprint: options.producerIndex.inputFingerprint,
+      contentHash: indexMeta.contentHash,
+      inputFingerprint: indexMeta.inputFingerprint,
       status: producerIndexStatus,
     },
     terminalTableConfig: {
@@ -1597,16 +1662,16 @@ function reconcileMultiHopRootTraversalKernel(
       semantics: "OBSERVED_EVIDENCE_ONLY" as const,
       status:
         producerIndexStatus === "VALID_PARTIAL" ||
-        options.producerIndex.counts.invalidTaskPacks > 0 ||
-        options.producerIndex.counts.invalidTablePacks > 0 ||
+        lookupMeta.counts.invalidTaskPacks > 0 ||
+        lookupMeta.counts.tablePacksInvalid > 0 ||
         truncationReason !== null
           ? ("PARTIAL_EVIDENCE" as const)
           : ("COMPLETE_OBSERVED_EVIDENCE" as const),
       producerIndexStatus,
-      taskPacksDiscovered: options.producerIndex.counts.taskPacksDiscovered,
-      taskPacksInvalid: options.producerIndex.counts.invalidTaskPacks,
-      tablePacksDiscovered: options.producerIndex.counts.tablePacksDiscovered,
-      tablePacksInvalid: options.producerIndex.counts.invalidTablePacks,
+      taskPacksDiscovered: lookupMeta.counts.taskPacksDiscovered,
+      taskPacksInvalid: lookupMeta.counts.invalidTaskPacks,
+      tablePacksDiscovered: lookupMeta.counts.tablePacksDiscovered,
+      tablePacksInvalid: lookupMeta.counts.tablePacksInvalid,
       eligibleReadEdges: orderedReadEdges.filter(
         (edge) => edge.recursionStatus === "ELIGIBLE",
       ).length,
@@ -1634,7 +1699,7 @@ function reconcileMultiHopRootTraversalKernel(
       terminals: orderedTerminals.length,
     },
     countSemantics: "NODE_AND_UNIQUE_EDGE_COUNTS" as const,
-    issues: options.producerIndex.issues,
+    issues: lookupMeta.issues,
     boundaries: {
       staticSqlOnly: true as const,
       openCli: "NOT_USED" as const,
@@ -1660,10 +1725,9 @@ export function reconcileMultiHop(
   rootTaskId: string,
   options: ReconcileMultiHopOptions,
 ): MultiHopReconciliationResult {
-  if (options.trustedInputFingerprint !== undefined && (!/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint) || options.producerIndex.inputFingerprint !== options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
-  const inputFingerprint = options.trustedInputFingerprint ?? fingerprintTableProducerInputs(options.dataRoot);
-  if (inputFingerprint !== options.producerIndex.inputFingerprint)
-    throw new Error("PRODUCER_INDEX_STALE");
+  const lookup = requireWriterLookup(options);
+  const inputFingerprint = packFingerprintFor(options);
+  assertLegacyIndexFresh(lookup, inputFingerprint, options.trustedInputFingerprint);
   return reconcileMultiHopRootTraversalKernel(
     rootTaskId,
     options,
@@ -1680,10 +1744,9 @@ export function reconcileMultiHopBatch(
   roots: readonly MultiHopBatchRoot[],
   options: Omit<ReconcileMultiHopOptions, "rootOneHop">,
 ): readonly MultiHopReconciliationResult[] {
-  if (options.trustedInputFingerprint !== undefined && (!/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint) || options.producerIndex.inputFingerprint !== options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
-  const inputFingerprint = options.trustedInputFingerprint ?? fingerprintTableProducerInputs(options.dataRoot);
-  if (inputFingerprint !== options.producerIndex.inputFingerprint)
-    throw new Error("PRODUCER_INDEX_STALE");
+  const lookup = requireWriterLookup(options);
+  const inputFingerprint = packFingerprintFor(options);
+  assertLegacyIndexFresh(lookup, inputFingerprint, options.trustedInputFingerprint);
   const preparedContext = prepareMultiHopContext(
     options.dataRoot,
     inputFingerprint,
@@ -1726,6 +1789,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--task-id",
     "--data-root",
     "--producer-index",
+    "--writer-catalog",
     "--root-one-hop",
     "--one-hop-snapshots",
     "--output",
@@ -1766,7 +1830,10 @@ function parseCli(argv: readonly string[]): CliOptions {
   return {
     taskId: required("--task-id"),
     dataRoot: required("--data-root"),
-    producerIndexPath: required("--producer-index"),
+    producerIndexPath:
+      values.get("--writer-catalog") ??
+      values.get("--producer-index") ??
+      catalogModule().defaultWriterCatalogPath(required("--data-root")),
     rootOneHopPath: values.get("--root-one-hop") ?? null,
     oneHopSnapshotPaths: (values.get("--one-hop-snapshots") ?? "")
       .split(",")
@@ -1784,7 +1851,13 @@ function parseCli(argv: readonly string[]): CliOptions {
 
 function main(): void {
   const cli = parseCli(process.argv.slice(2));
-  const producerIndex = loadTableProducerIndex(cli.producerIndexPath);
+  const lookupPath = resolve(cli.producerIndexPath);
+  const producerIndex = isLegacyProducerIndexPath(lookupPath)
+    ? loadTableProducerIndex(lookupPath)
+    : undefined;
+  const writerCatalog = isLegacyProducerIndexPath(lookupPath)
+    ? undefined
+    : catalogModule().openWriterCatalog(lookupPath);
   const terminalTableConfig = loadTerminalTableConfig(
     resolve(cli.terminalTableConfigPath),
   );
@@ -1805,6 +1878,7 @@ function main(): void {
   const result = reconcileMultiHop(cli.taskId, {
     dataRoot: cli.dataRoot,
     producerIndex,
+    writerCatalog,
     maxDepth: cli.maxDepth,
     maxTasks: cli.maxTasks,
     maxEdges: cli.maxEdges,

@@ -3,9 +3,11 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 
 import { runCollector } from "../reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import {
-  loadOrRebuildTableProducerIndex,
-  type TableProducerIndex,
-} from "../reconcile/producer/producer-index.ts";
+	openWriterCatalog,
+	resolveWriterCatalogPath,
+	writersForQualifiedName,
+	type WriterCatalogHandle,
+} from "../query/writer-catalog.ts";
 import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
 import { validateTaskDocument, type TaskDocument } from "../input/shared/input-pack.ts";
 import {
@@ -21,10 +23,11 @@ export interface InputPackClosureOptions {
   readonly taskId: string;
   readonly dataRoot: string;
   /**
-   * Fixed mutable Producer Index directory (not a fingerprint-keyed cache).
-   * Default layout: `<root>/producer-index.json`.
+   * Writer catalog sqlite path (default: `<data-root>.writer-catalog/writer-catalog.sqlite`).
    */
-  readonly producerIndexRoot: string;
+  readonly writerCatalogPath?: string;
+  /** @deprecated use writerCatalogPath */
+  readonly producerIndexRoot?: string;
   readonly maxDepth: number;
   readonly maxTasks: number;
   readonly maxRounds: number;
@@ -47,12 +50,9 @@ export interface InputPackClosureResult {
   readonly rounds: number;
   readonly status: "COMPLETE" | "PARTIAL";
   readonly issues: readonly string[];
-  /** Fixed-path Producer Index used for the stabilized pack. */
-  readonly producerSnapshot?: {
-    readonly inputFingerprint: string;
-    readonly indexPath: string;
-    readonly manifestPath: string;
-    readonly reused: boolean;
+  /** Writer catalog used for table-writer lookups. */
+  readonly writerCatalogSnapshot?: {
+    readonly catalogPath: string;
   };
 }
 
@@ -81,12 +81,12 @@ export interface ProjectInputPackClosureResult {
     readonly rootTaskOccurrences: number;
     readonly uniqueTasks: number;
     readonly taskReadsEvaluated: number;
-    readonly producerIndexRefreshes: number;
+    readonly writerCatalogRefreshes: number;
     readonly discoveryQueries: number;
     readonly collectionBatches: number;
   };
-  readonly producerSnapshot: NonNullable<
-    InputPackClosureResult["producerSnapshot"]
+  readonly writerCatalogSnapshot: NonNullable<
+    InputPackClosureResult["writerCatalogSnapshot"]
   >;
 }
 
@@ -142,11 +142,13 @@ function taskReads(dataRoot: string, loaded: { path: string; document: TaskDocum
   return unique(names);
 }
 
-function indexedProducerIds(index: TableProducerIndex, qualifiedName: string): string[] {
-  const normalized = qualifiedName.toLocaleLowerCase("en-US");
-  return unique(index.confirmedProducerEdges
-    .filter((edge) => edge.table.qualifiedName.toLocaleLowerCase("en-US") === normalized)
-    .map((edge) => edge.taskId));
+function catalogWriterTaskIds(
+  catalog: WriterCatalogHandle,
+  qualifiedName: string,
+): string[] {
+  return unique(
+    writersForQualifiedName(catalog, qualifiedName).map((hit) => hit.taskId),
+  );
 }
 
 function requireLimits(options: InputPackClosureOptions): void {
@@ -174,15 +176,12 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
   const queriedTables = new Set<string>();
   let rounds = 0;
   let stabilized = false;
-  let indexState = loadOrRebuildTableProducerIndex(
-    dataRoot,
-    resolve(options.producerIndexRoot),
-  );
+  const catalogPath = resolveWriterCatalogPath(dataRoot, options);
+  const catalog = openWriterCatalog(catalogPath);
 
   while (rounds < options.maxRounds) {
     rounds += 1;
     const taskPathIndex = indexTaskPackPaths(dataRoot);
-    const index: TableProducerIndex = indexState.index;
     const queue: Array<{ taskId: string; depth: number }> = [...discoveredDepth.entries()]
       .filter(([taskId]) => !visited.has(taskId))
       .map(([taskId, depth]) => ({ taskId, depth }));
@@ -207,7 +206,7 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
           continue;
         let producerIds = producerCache.get(qualifiedName);
         if (!producerIds) {
-          producerIds = indexedProducerIds(index, qualifiedName);
+          producerIds = catalogWriterTaskIds(catalog, qualifiedName);
           if (discover && producerIds.length === 0 && !queriedTables.has(qualifiedName)) {
             if (queriedTables.size >= maxDiscoveryTables) throw new Error("MAX_DISCOVERY_TABLES_REACHED");
             queriedTables.add(qualifiedName);
@@ -250,11 +249,6 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
       }
     }
     if (collectedThisRound) {
-      indexState = loadOrRebuildTableProducerIndex(
-        dataRoot,
-        resolve(options.producerIndexRoot),
-        { forceRebuild: true },
-      );
       producerCache.clear();
     }
   }
@@ -268,17 +262,14 @@ export function runInputPackClosure(options: InputPackClosureOptions): InputPack
     rounds,
     status: issues.length === 0 ? "COMPLETE" : "PARTIAL",
     issues: unique(issues),
-    producerSnapshot: {
-      inputFingerprint: indexState.inputFingerprint,
-      indexPath: indexState.indexPath,
-      manifestPath: indexState.manifestPath,
-      reused: !indexState.rebuilt,
+    writerCatalogSnapshot: {
+      catalogPath,
     },
   };
 }
 
 /**
- * Builds all root closures against one sequence of Producer Index snapshots.
+ * Builds all root closures against one writer catalog snapshot.
  * Task SQL reads and table discovery are cached across roots; root membership
  * and depth remain independent.
  */
@@ -319,11 +310,9 @@ export function runProjectInputPackClosure(
   const taskReadCache = new Map<string, string[]>();
   let rounds = 0;
   let stabilized = false;
-  let indexState = loadOrRebuildTableProducerIndex(
-    dataRoot,
-    resolve(options.producerIndexRoot),
-  );
-  let producerIndexRefreshes = 1;
+  const catalogPath = resolveWriterCatalogPath(dataRoot, options);
+  const catalog = openWriterCatalog(catalogPath);
+  let writerCatalogRefreshes = 1;
   let collectionBatches = 0;
 
   while (rounds < options.maxRounds) {
@@ -369,7 +358,7 @@ export function runProjectInputPackClosure(
             continue;
           let producerIds = producerCache.get(qualifiedName);
           if (!producerIds) {
-            producerIds = indexedProducerIds(indexState.index, qualifiedName);
+            producerIds = catalogWriterTaskIds(catalog, qualifiedName);
             if (
               discover &&
               producerIds.length === 0 &&
@@ -435,12 +424,7 @@ export function runProjectInputPackClosure(
       }
     }
     if (collectedThisRound) {
-      indexState = loadOrRebuildTableProducerIndex(
-        dataRoot,
-        resolve(options.producerIndexRoot),
-        { forceRebuild: true },
-      );
-      producerIndexRefreshes += 1;
+      writerCatalogRefreshes += 1;
       producerCache.clear();
     }
   }
@@ -481,15 +465,12 @@ export function runProjectInputPackClosure(
       ),
       uniqueTasks: taskIds.length,
       taskReadsEvaluated: taskReadCache.size,
-      producerIndexRefreshes,
+      writerCatalogRefreshes,
       discoveryQueries: queriedTables.size,
       collectionBatches,
     },
-    producerSnapshot: {
-      inputFingerprint: indexState.inputFingerprint,
-      indexPath: indexState.indexPath,
-      manifestPath: indexState.manifestPath,
-      reused: !indexState.rebuilt,
+    writerCatalogSnapshot: {
+      catalogPath,
     },
   };
 }

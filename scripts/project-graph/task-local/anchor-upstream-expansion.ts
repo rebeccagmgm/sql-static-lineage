@@ -4,7 +4,7 @@ import {
   DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   loadTerminalTableConfig,
 } from "../../reconcile/consumer/multi-hop/terminal-table-config.ts";
-import { defaultMutableProducerIndexRoot } from "../../reconcile/producer/producer-index.ts";
+import { defaultWriterCatalogPath } from "../../query/writer-catalog.ts";
 import { runProjectInputPackClosure } from "../../pipeline/input-pack-closure.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
@@ -12,6 +12,8 @@ const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 export interface AnchorUpstreamExpansionOptions {
   readonly dataRoot: string;
   readonly anchorTaskIds: readonly string[];
+  readonly writerCatalogPath?: string;
+  /** @deprecated use writerCatalogPath */
   readonly producerIndexRoot?: string;
   readonly terminalTableConfigPath?: string;
   readonly maxDepth?: number;
@@ -29,7 +31,7 @@ export interface AnchorUpstreamExpansionResult {
   readonly counters: {
     readonly uniqueTasks: number;
     readonly taskReadsEvaluated: number;
-    readonly producerIndexRefreshes: number;
+    readonly writerCatalogRefreshes: number;
     readonly discoveryQueries: number;
     readonly collectionBatches: number;
   };
@@ -47,7 +49,7 @@ function normalizeAnchorTaskIds(anchorTaskIds: readonly string[]): string[] {
 }
 
 /**
- * From anchor task ids, walk SQL READ tables through confirmed producer-index
+ * From anchor task ids, walk SQL READ tables through confirmed writer-catalog
  * edges until terminal tables or depth/union limits. Does not collect Input
  * Packs or call live discovery APIs — only tasks with packs already in dataRoot
  * are returned.
@@ -57,8 +59,9 @@ export function expandAnchorUpstreamTaskIds(
 ): AnchorUpstreamExpansionResult {
   const anchorTaskIds = normalizeAnchorTaskIds(options.anchorTaskIds);
   const dataRoot = resolve(options.dataRoot);
-  const producerIndexRoot = resolve(
-    options.producerIndexRoot ?? defaultMutableProducerIndexRoot(dataRoot),
+  const writerCatalogPath = resolve(
+    options.writerCatalogPath
+    ?? (options.producerIndexRoot ? defaultWriterCatalogPath(dataRoot) : defaultWriterCatalogPath(dataRoot)),
   );
   const terminalTableConfigPath = resolve(
     options.terminalTableConfigPath ?? DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
@@ -66,7 +69,8 @@ export function expandAnchorUpstreamTaskIds(
   const closure = runProjectInputPackClosure({
     rootTaskIds: anchorTaskIds,
     dataRoot,
-    producerIndexRoot,
+    writerCatalogPath,
+    producerIndexRoot: options.producerIndexRoot,
     terminalTableConfig: loadTerminalTableConfig(terminalTableConfigPath),
     maxDepth: options.maxDepth ?? 25,
     maxTasksPerRoot: options.maxTasksPerRoot ?? 500,
@@ -80,6 +84,12 @@ export function expandAnchorUpstreamTaskIds(
     discoveredTaskIds: closure.discoveredTaskIds,
     status: closure.status,
     issues: closure.issues,
-    counters: closure.counters,
+    counters: {
+      uniqueTasks: closure.counters.uniqueTasks,
+      taskReadsEvaluated: closure.counters.taskReadsEvaluated,
+      writerCatalogRefreshes: closure.counters.writerCatalogRefreshes,
+      discoveryQueries: closure.counters.discoveryQueries,
+      collectionBatches: closure.counters.collectionBatches,
+    },
   };
 }

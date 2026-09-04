@@ -5,6 +5,11 @@ import {
   loadTableProducerIndex,
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
+import { isLegacyProducerIndexPath } from "../../../query/table-writer-lookup.ts";
+import {
+  openWriterCatalog,
+  type WriterCatalogHandle,
+} from "../../../query/writer-catalog.ts";
 import {
   reconcileOneHopBatch as reconcileOneHopRoots,
   type OneHopReconciliationResult,
@@ -29,7 +34,8 @@ const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 export interface ReconcileOneHopBatchOptions {
   readonly taskIds: readonly string[];
   readonly dataRoot: string;
-  readonly producerIndex: TableProducerIndex;
+  readonly producerIndex?: TableProducerIndex;
+  readonly writerCatalog?: WriterCatalogHandle;
   readonly verifyInputFingerprint?: boolean;
   readonly terminalTableConfig?: TerminalTableConfig;
 }
@@ -51,6 +57,7 @@ function parseCli(argv: readonly string[]): CliOptions {
     "--task-ids",
     "--data-root",
     "--producer-index",
+    "--writer-catalog",
     "--output-dir",
     "--terminal-table-config",
     verifyFlag,
@@ -87,7 +94,8 @@ function parseCli(argv: readonly string[]): CliOptions {
   return {
     taskIds: parseTaskIds(required("--task-ids")),
     dataRoot: required("--data-root"),
-    producerIndexPath: required("--producer-index"),
+    producerIndexPath:
+      values.get("--writer-catalog") ?? required("--producer-index"),
     outputDir: required("--output-dir"),
     verifyInputFingerprint,
     terminalTableConfigPath:
@@ -102,6 +110,7 @@ export function reconcileOneHopBatch(
   return reconcileOneHopRoots(options.taskIds, {
     dataRoot: options.dataRoot,
     producerIndex: options.producerIndex,
+    writerCatalog: options.writerCatalog,
     verifyInputFingerprint: options.verifyInputFingerprint,
     terminalTableConfig: options.terminalTableConfig,
   });
@@ -109,10 +118,17 @@ export function reconcileOneHopBatch(
 
 function main(): void {
   const cli = parseCli(process.argv.slice(2));
-  const producerIndex = loadTableProducerIndex(cli.producerIndexPath);
+  const lookupPath = resolve(cli.producerIndexPath);
+  const producerIndex = isLegacyProducerIndexPath(lookupPath)
+    ? loadTableProducerIndex(lookupPath)
+    : undefined;
+  const writerCatalog = isLegacyProducerIndexPath(lookupPath)
+    ? undefined
+    : openWriterCatalog(lookupPath);
   const results = reconcileOneHopBatch({
     ...cli,
     producerIndex,
+    writerCatalog,
     terminalTableConfig: loadTerminalTableConfig(
       resolve(cli.terminalTableConfigPath),
     ),

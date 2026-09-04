@@ -21,13 +21,16 @@ function main(argv: readonly string[]): void {
   const dataRoot = option(args, "--data-root");
   if (!dataRoot) {
     throw new Error(
-      "usage: preflight-upstream-expansion --data-root <path> [--anchor-task-ids 181058,176827] [--producer-index-root <path>]",
+      "usage: preflight-upstream-expansion --data-root <path> [--anchor-task-ids 181058,176827] [--writer-catalog <sqlite>] [--producer-index-root <path>]",
     );
   }
   const anchorTaskIds = csvOption(args, "--anchor-task-ids");
   const result = expandAnchorUpstreamTaskIds({
     dataRoot: resolve(dataRoot),
     anchorTaskIds: anchorTaskIds.length > 0 ? anchorTaskIds : [...DEFAULT_ANCHORS],
+    writerCatalogPath: option(args, "--writer-catalog")
+      ? resolve(option(args, "--writer-catalog")!)
+      : undefined,
     producerIndexRoot: option(args, "--producer-index-root")
       ? resolve(option(args, "--producer-index-root")!)
       : undefined,

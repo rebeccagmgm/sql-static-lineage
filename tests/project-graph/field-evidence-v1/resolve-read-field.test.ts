@@ -20,7 +20,7 @@ function continuationPorts(
 ): ContinuationPorts {
   return {
     scheduleLookup: lookup,
-    producerIndex: null,
+    writerCatalog: null,
     readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
     tableIdentityFor: ({ qualifiedName }) => ({
       platform: "warehouse",

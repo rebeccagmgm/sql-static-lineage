@@ -112,6 +112,9 @@ function main(argv: readonly string[]): void {
   const anchorExpansion = expandAnchorUpstreamTaskIds({
     dataRoot: resolvedDataRoot,
     anchorTaskIds: [...DEFAULT_ANCHORS],
+    writerCatalogPath: option(args, "--writer-catalog")
+      ? resolve(option(args, "--writer-catalog")!)
+      : undefined,
     producerIndexRoot: option(args, "--producer-index-root")
       ? resolve(option(args, "--producer-index-root")!)
       : undefined,

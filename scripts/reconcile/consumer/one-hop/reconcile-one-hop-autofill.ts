@@ -6,6 +6,8 @@ import {
   loadTableProducerIndex,
   updateTableProducerIndex,
 } from "../../producer/producer-index.ts";
+import { isLegacyProducerIndexPath } from "../../../query/table-writer-lookup.ts";
+import { openWriterCatalog } from "../../../query/writer-catalog.ts";
 import { INPUT_PACK_BATCH_SIZE_HARD_LIMIT } from "../../../input/mainline/task-batch.ts";
 import {
   reconcileOneHop,
@@ -55,6 +57,7 @@ function parseCli(args: readonly string[]): CliOptions {
     "--task-id",
     "--data-root",
     "--producer-index",
+    "--writer-catalog",
     "--output",
     "--summary-output",
     "--terminal-table-config",
@@ -73,7 +76,9 @@ function parseCli(args: readonly string[]): CliOptions {
   return {
     taskId: requiredOption(args, "--task-id"),
     dataRoot: requiredOption(args, "--data-root"),
-    producerIndexPath: requiredOption(args, "--producer-index"),
+    producerIndexPath:
+      option(args, "--writer-catalog") ??
+      requiredOption(args, "--producer-index"),
     output: option(args, "--output"),
     summaryOutput: option(args, "--summary-output"),
     force: args.includes("--force"),
@@ -168,6 +173,26 @@ export function missingTaskInputPackIds(
 export function runOneHopAutofill(options: CliOptions): OneHopReconciliationResult {
   const dataRoot = resolve(options.dataRoot);
   const producerIndexPath = resolve(options.producerIndexPath);
+  const terminalTableConfig = loadTerminalTableConfig(
+    resolve(options.terminalTableConfigPath),
+  );
+  if (!isLegacyProducerIndexPath(producerIndexPath)) {
+    const writerCatalog = openWriterCatalog(producerIndexPath);
+    const firstPass = reconcileOneHop(options.taskId, {
+      dataRoot,
+      writerCatalog,
+      terminalTableConfig,
+    });
+    const missingIds = missingTaskInputPackIds(firstPass);
+    runCollector(dataRoot, missingIds, options.force);
+    const finalResult = reconcileOneHop(options.taskId, {
+      dataRoot,
+      writerCatalog,
+      terminalTableConfig,
+    });
+    writeResult(finalResult, options.output, options.summaryOutput);
+    return finalResult;
+  }
   const initialIndex = existsSync(producerIndexPath)
     ? loadTableProducerIndex(producerIndexPath)
     : updateTableProducerIndex(
@@ -175,9 +200,6 @@ export function runOneHopAutofill(options: CliOptions): OneHopReconciliationResu
         producerIndexPath,
         `${producerIndexPath}.manifest.json`,
       ).index;
-  const terminalTableConfig = loadTerminalTableConfig(
-    resolve(options.terminalTableConfigPath),
-  );
 
   const firstPass = reconcileOneHop(options.taskId, {
     dataRoot,
