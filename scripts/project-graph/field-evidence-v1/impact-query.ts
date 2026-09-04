@@ -26,6 +26,10 @@ import {
   type FieldImpactValueEntry,
 } from "./impact-result-contract.ts";
 import { resolveReadField } from "./resolve-read-field.ts";
+import {
+  enrichFrontierCandidates,
+  type HoraeScheduleRelationLookup,
+} from "./schedule-preference.ts";
 
 export interface ImpactQueryBudget {
   readonly maxEdges?: number;
@@ -43,6 +47,7 @@ export interface ImpactQueryInput {
   readonly maxDepth?: number;
   readonly budget?: ImpactQueryBudget;
   readonly expandCandidates?: boolean;
+  readonly scheduleRelationLookup?: HoraeScheduleRelationLookup | null;
 }
 
 interface TraversalState {
@@ -274,23 +279,36 @@ function traverseValueEdge(input: {
       return;
     }
     state.frontierCount += 1;
+    const baseCandidates = resolved.candidates.map((candidate) => ({
+      taskId: candidate.taskId,
+      writeObservationId: candidate.writeObservationId,
+      partitionMatchStatus: candidate.partitionMatchStatus,
+      ...(candidate.reasonCode ? { reasonCode: candidate.reasonCode } : {}),
+      l1Eligible: candidate.l1Eligible,
+      schedulePreferred: false,
+      scheduleRelation: "HORAE_UNAVAILABLE" as const,
+    }));
+    const scheduleEnrichment = enrichFrontierCandidates({
+      consumerTaskId: taskId,
+      readOccurrenceId: resolved.readOccurrenceId,
+      column: resolved.column,
+      candidates: baseCandidates,
+      lookup: query.scheduleRelationLookup,
+    });
+    for (const gap of scheduleEnrichment.gaps) {
+      pushGap(state, gap);
+    }
     state.frontiers.push({
       depth: depth + 1,
       readField: {
         readOccurrenceId: resolved.readOccurrenceId,
         column: resolved.column,
       },
-      candidates: resolved.candidates.map((candidate) => ({
-        taskId: candidate.taskId,
-        writeObservationId: candidate.writeObservationId,
-        partitionMatchStatus: candidate.partitionMatchStatus,
-        ...(candidate.reasonCode ? { reasonCode: candidate.reasonCode } : {}),
-        l1Eligible: candidate.l1Eligible,
-      })),
+      candidates: scheduleEnrichment.candidates,
       reasonCode: resolved.reasonCode,
     });
     if (!query.expandCandidates) return;
-    for (const candidate of resolved.candidates) {
+    for (const candidate of scheduleEnrichment.candidates) {
       if (state.exhausted) return;
       const producerIndex = loadIndex(indexCache, query, candidate.taskId);
       if (!producerIndex) continue;
@@ -450,7 +468,7 @@ export function impactQuery(input: ImpactQueryInput): FieldImpactResult {
 
   return {
     artifactType: "FIELD_IMPACT_RESULT",
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     anchor,
     value: state.values,
     control: state.controls,

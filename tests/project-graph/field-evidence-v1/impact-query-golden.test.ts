@@ -255,6 +255,29 @@ describeGolden("field-evidence-v1 impact query goldens", () => {
       outputColumn: anchor!.outputColumn,
     }, { expandCandidates: true });
     expect(expanded.value.some((entry) => entry.evidenceStatus === "CANDIDATE")).toBe(true);
+
+    const frontier = result.frontier.find((entry) =>
+      entry.reasonCode === "MULTI_WRITER_CANDIDATE_FRONTIER",
+    );
+    expect(frontier).toBeTruthy();
+    const scheduleStatus = context.scheduleRelationLookup.statusFor(projection.taskId);
+    if (scheduleStatus === "AVAILABLE") {
+      const preferred = frontier!.candidates.filter((candidate) => candidate.schedulePreferred);
+      expect(preferred).toHaveLength(1);
+      expect(frontier!.candidates[0]?.schedulePreferred).toBe(true);
+      expect(frontier!.candidates[0]?.scheduleRelation).toBe("DIRECT_PARENT");
+      expect(frontier!.candidates.every((candidate) =>
+        candidate.l1Eligible === false || candidate.schedulePreferred === false,
+      )).toBe(true);
+    } else if (fieldEvidenceGoldenRequired()) {
+      throw new Error(
+        "FIELD_EVIDENCE_GOLDEN_REQUIRED but Horae schedule cache is unavailable for case D",
+      );
+    } else {
+      expect(frontier!.candidates.every((candidate) =>
+        candidate.scheduleRelation === "HORAE_UNAVAILABLE",
+      )).toBe(true);
+    }
   }, 300_000);
 
   it("case E: materialization gap passthrough without fake producer gap", () => {
