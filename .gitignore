@@ -19,3 +19,21 @@ tmp-inspect-*.ts
 /tsconfig.survey.json
 /openspec/changes/generalize-operator-channel-mapping/
 /tests/fixtures/reconcile-one-hop/86840-input-pack/
+
+# Local machine-graph / demo scratch workspaces
+.tmp-*/
+.tmp-machine-graph-demo/
+.tmp-machine-graph-demo-gold-chain/
+
+# Input pipeline scratch
+/scripts/input/tmp/
+
+# Local inspection artifacts (checked-in baselines live under field-evidence-v1/)
+/artifacts/demo/
+/artifacts/gold-case-dm-rsk-n/project-graph/
+/artifacts/gold-case-dm-rsk-n/_mem-probe/
+/artifacts/gold-case-dm-rsk-n/gold-case-gaps.jsonl
+/artifacts/gold-case-dm-rsk-n/gold-case-trace-report.json
+
+# Editor / IDE local settings
+.vscode/
