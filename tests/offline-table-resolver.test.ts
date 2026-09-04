@@ -153,8 +153,22 @@ describe("offline table name helpers", () => {
       ]),
     };
     expect(preferredRdbmsDataSourceFromTaskSource("mysql_sag_sagg", mysqlIndex)).toBe(
-      undefined,
+      "gfmysql_sagg",
     );
+    expect(
+      preferredRdbmsDataSourceFromTaskSource("postgres_fxjs_85.234", {
+        byServerTag: new Map([
+          [
+            "postgres_fxjs_85.234",
+            {
+              serverTag: "postgres_fxjs_85.234",
+              serverType: "postgre",
+              service: "risk",
+            },
+          ],
+        ]),
+      }),
+    ).toBe("gfpostgre_risk#risk");
   });
 });
 
@@ -227,6 +241,74 @@ describe("RDBMS disambiguation via horae-datasource", () => {
     );
     expect(oracle?.dataSource?.toLowerCase()).toBe("gforacle_jyglrac#jyglrac");
     expect(oracle?.evidenceProvider).toContain("local:horae-datasource");
+  });
+
+  it("resolves ambiguous MySQL core rows via gfmysql_${service} prefix", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-mysql-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_sag.s_related_person@gfhive",
+          querytext: "CREATE TABLE odata_sag.s_related_person (id string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "sagg.related_person@gfmysql_sagg5",
+          name: "related_person",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "sagg.related_person@gfmysql_sbhf",
+          name: "related_person",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "sagg.related_person@gfmysql_sagg5",
+          ddl: "CREATE TABLE sagg.related_person (id bigint)",
+        },
+        {
+          qualifiedname: "sagg.related_person@gfmysql_sbhf",
+          ddl: "CREATE TABLE sagg.related_person (id bigint)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "mysql_sag_sagg",
+            {
+              serverTag: "mysql_sag_sagg",
+              serverType: "mysql",
+              service: "sagg",
+            },
+          ],
+        ]),
+      },
+    });
+    const dataRoot = mkdtempSync(join(tmpdir(), "pack-mysql-"));
+    const resolved = resolveOfflineTables(
+      dataRoot,
+      task({
+        taskId: "5439",
+        taskCategory: "mysql2hive",
+        source: "mysql_sag_sagg",
+        target: "odata_sag.s_related_person",
+        sql: {
+          query: "SELECT 1 FROM sagg.related_person",
+        },
+      }),
+      catalog,
+      () => new Date("2026-09-03T00:00:00.000Z"),
+    );
+    expect(resolved.unavailable).toEqual([]);
+    const mysql = resolved.resolved.find(
+      (item) => item.qualifiedName.toLowerCase() === "sagg.related_person",
+    );
+    expect(mysql?.dataSource?.toLowerCase()).toBe("gfmysql_sagg5");
+    expect(mysql?.evidenceProvider).toContain("local:horae-datasource");
   });
 
   it("matches #service suffix when gforacle_service#service instance is numbered", () => {

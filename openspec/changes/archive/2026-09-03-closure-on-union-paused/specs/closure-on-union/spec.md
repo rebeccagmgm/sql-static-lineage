@@ -108,10 +108,19 @@ not become L1 confirmed. The branch MUST expose the continuation fields
 
 Union-v2 MUST emit `continuationStats` with counters `l1`, `l2Assumed`,
 `l2Unknown`, `piOnly`, `disjointPruned`, `ambiguousReads`, and
-`unmatchedReads`. `bridgeStats.resolved` MUST count only L1-eligible candidates
+`unmatchedReads`; it MAY additionally emit `selfReadBoundaries` for same-task
+reads that are intentionally absent from INDEX externalReads. `bridgeStats.resolved` MUST count only L1-eligible candidates
 whose exact scope binding succeeds. `bridgeStats.ambiguous` MUST count read
 occurrences retaining at least two write observations after DISJOINT pruning;
 it MUST NOT be implemented as `resolved += writes.length`.
+
+#### Scenario: same-task reads remain local boundaries
+
+- **WHEN** a multi-hop physical branch has a same-task write for the same
+  physical table and its read occurrence is absent from INDEX externalReads
+- **THEN** union-v2 emits an UNKNOWN `UNBOUND_READ` boundary with
+  `SELF_READ_NOT_EXTERNAL`, increments `selfReadBoundaries`, and does not
+  increment `unmatchedReads` or synthesize a producer
 
 #### Scenario: ambiguous reads are counted once per read
 
@@ -126,3 +135,29 @@ it MUST NOT be implemented as `resolved += writes.length`.
   binds successfully
 - **THEN** `l1` and `bridgeStats.resolved` each increase by one, while no
   other candidate is counted as resolved implicitly
+
+### Requirement: Gate B-UNION exports an evidence-bounded L1 set
+
+The union-v2 consumer MUST be able to export a separate, machine-readable
+Gate B-UNION L1 set from a validated closure artifact and its exact
+`UNION_CONTINUATION_INDEX`. Each member MUST retain the consumer task,
+producer task, exact write observation, read-occurrence chain, exact write
+scope, continuation status, and evidence references. The set MUST include the
+closure and INDEX content hashes and MUST reject a legacy closure, a closure
+whose root task does not match its target write, or a member that is not
+`IN_UNION_FINAL_WRITE` + `CONFIRMED` + `L1` + `l1Eligible=true`.
+
+#### Scenario: an L1 set is exported from a union-v2 closure
+
+- **WHEN** a schema-valid union-v2 closure and matching continuation INDEX are
+  supplied to the Gate B-UNION export command
+- **THEN** it writes a deterministic L1 member set with a schema version,
+  content hash, input artifact references, and no `ASSUMED`, `UNKNOWN`,
+  `SCHEDULE_ONLY`, or legacy-only value-evidence member
+
+#### Scenario: the 209119 Gate B-UNION input is unavailable
+
+- **WHEN** the required 209119 union-v2 closure or continuation INDEX is
+  absent
+- **THEN** the verification records an explicit input blocker and does not
+  claim a Gate B-UNION pass or emit an empty substitute set

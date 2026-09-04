@@ -21,6 +21,7 @@ export type PersistedTaskStatus =
   | "FAILED"
   | "EXCLUDED";
 export type TaskExclusionReason =
+  | "MANUAL_OR_FROZEN"
   | "HORAE_TASK_NOT_FOUND"
   | "PHYSICAL_TABLE_NOT_FOUND";
 
@@ -109,6 +110,7 @@ function validateRecord(
     throw new Error(`Invalid task status record: ${taskId}`);
   if (
     candidate.exclusionReason !== undefined &&
+    candidate.exclusionReason !== "MANUAL_OR_FROZEN" &&
     candidate.exclusionReason !== "HORAE_TASK_NOT_FOUND" &&
     candidate.exclusionReason !== "PHYSICAL_TABLE_NOT_FOUND"
   )

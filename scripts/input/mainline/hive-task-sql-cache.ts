@@ -22,8 +22,16 @@ export const HIVE_TASK_SQL_CACHE_SCHEMA_VERSION = "1.0.0" as const;
 export const HIVE_TASK_SQL_CACHE_ARTIFACT_TYPE = "HIVE_TASK_SQL_EVIDENCE" as const;
 export const HIVE_TASK_SQL_CACHE_FILE_NAME = "hive-task.sql" as const;
 export const HIVE_TASK_SQL_LEGACY_CACHE_FILE_NAME = "hive-task-sql.json" as const;
-export const HIVE_TASK_SQL_SOURCES = ["LOCAL_CODE", "SQL_MCP"] as const;
+export const HIVE_TASK_SQL_SOURCES = ["LOCAL_CODE", "SQL_MCP", "HORAE_LOG"] as const;
 export type HiveTaskSqlSource = (typeof HIVE_TASK_SQL_SOURCES)[number];
+
+/** Template vars that are OK to keep unresolved in offline packs. */
+const DATE_LIKE_TEMPLATE_VAR =
+  /^(?:data_day|data_today|data_date|busi_date|run_date|etl_date|filename|data_time|data_upt|sysdate)/iu;
+
+const LINE_PREFIX = /^\[[0-9]{4}-[0-9]{2}-[0-9]{2} [^\]]+\]-\[INFO\] /;
+const INNER_LOG_PREFIX =
+  /^(?:\d{4}-\d{2}-\d{2} [0-9:.]+-\[(?:INFO|WARN|ERROR)\]-?\s*)?(?:\[DUBBO\]\s*)?/;
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -448,7 +456,93 @@ export function extractHiveTaskSqlFromScript(source: string): {
 }
 
 export function provenanceFor(source: HiveTaskSqlSource): string {
-  return source === "LOCAL_CODE" ? "local-code" : "opencli:szdata.task-sql";
+  if (source === "LOCAL_CODE") return "local-code";
+  if (source === "HORAE_LOG") return "opencli:horae.log";
+  return "opencli:szdata.task-sql";
+}
+
+/** All `${var}` names in SQL text, de-duplicated in appearance order. */
+export function listSqlTemplateVariables(
+  ...sqlParts: Array<string | null | undefined>
+): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const part of sqlParts) {
+    if (typeof part !== "string" || part === "") continue;
+    for (const match of part.matchAll(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g)) {
+      const name = match[1]!;
+      if (seen.has(name)) continue;
+      seen.add(name);
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+export function isDateLikeSqlTemplateVariable(name: string): boolean {
+  return DATE_LIKE_TEMPLATE_VAR.test(name.trim());
+}
+
+/**
+ * True when SQL still has `${…}` placeholders that are not date/batch vars
+ * (e.g. `${DB_TEMP}`, `${DB_ODATA_N_GKS}`). Those need MCP or Horae log expand.
+ */
+export function sqlHasStructuralTemplateVars(
+  ...sqlParts: Array<string | null | undefined>
+): boolean {
+  return listSqlTemplateVariables(...sqlParts).some(
+    (name) => !isDateLikeSqlTemplateVariable(name),
+  );
+}
+
+function stripHoraeLogLine(line: string): string {
+  return line.replace(LINE_PREFIX, "").replace(INNER_LOG_PREFIX, "");
+}
+
+/**
+ * Pull `hive -e"…"` bodies from a Horae task log (already variable-expanded).
+ */
+export function extractHiveEBodiesFromHoraeLog(
+  logText: string,
+): readonly string[] {
+  const lines = String(logText)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map(stripHoraeLogLine);
+  const bodies: string[] = [];
+  let collecting: string[] | null = null;
+  let quote: '"' | "'" | null = null;
+  for (const line of lines) {
+    if (collecting === null) {
+      const start = /^\s*hive\s+-e\s*(["'])\s*$/i.exec(line);
+      if (!start) continue;
+      quote = start[1] as '"' | "'";
+      collecting = [];
+      continue;
+    }
+    if (quote !== null && line.trim() === quote) {
+      const body = collecting.join("\n").trim();
+      if (body !== "") bodies.push(body);
+      collecting = null;
+      quote = null;
+      continue;
+    }
+    collecting.push(line);
+  }
+  return bodies;
+}
+
+/**
+ * Build create/query slots from expanded hive -e blocks in a Horae log.
+ */
+export function extractHiveTaskSqlFromHoraeLog(logText: string): {
+  readonly createSql: string | null;
+  readonly querySql: string | null;
+} {
+  const bodies = extractHiveEBodiesFromHoraeLog(logText);
+  if (bodies.length === 0) return { createSql: null, querySql: null };
+  return splitCombinedHiveTaskSql(bodies.join("\n;\n"));
 }
 
 function normalizeSqlText(sql: string): string {
@@ -575,7 +669,7 @@ function validateEvidence(
   record: JsonRecord,
 ): HiveTaskSqlEvidence | { reason: string } {
   const source = record.source;
-  if (source !== "LOCAL_CODE" && source !== "SQL_MCP")
+  if (source !== "LOCAL_CODE" && source !== "SQL_MCP" && source !== "HORAE_LOG")
     return { reason: "SOURCE_INVALID" };
   const scriptPath =
     record.scriptPath === null ? null : nonEmptyString(record.scriptPath);

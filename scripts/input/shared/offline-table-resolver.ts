@@ -75,6 +75,11 @@ export interface OfflineTableCatalog {
    * `schema.table@gforacle_…#service` key (or AMBIGUOUS if several).
    */
   readonly rdbmsQnServiceIndex?: ReadonlyMap<string, string | "AMBIGUOUS">;
+  /**
+   * All concrete `schema.table@dataSource` keys per bare qualified name.
+   * Used to uniquely pick no-`#` MySQL / StarRocks / GoldenDB atlas rows.
+   */
+  readonly rdbmsQnAtlasKeys?: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface OfflineTableCandidate {
@@ -345,6 +350,10 @@ export function loadOfflineTableCatalog(
       rdbmsCore === undefined
         ? undefined
         : buildRdbmsQnServiceIndex(rdbmsCore.keyOffsets),
+    rdbmsQnAtlasKeys:
+      rdbmsCore === undefined
+        ? undefined
+        : buildRdbmsQnAtlasKeysIndex(rdbmsCore.keyOffsets),
   };
 }
 
@@ -366,6 +375,69 @@ export function buildRdbmsQnServiceIndex(
     else if (existing !== key) map.set(secondary, "AMBIGUOUS");
   }
   return map;
+}
+
+/** Group concrete `qn@dataSource` keys by bare qualified name. */
+export function buildRdbmsQnAtlasKeysIndex(
+  keyOffsets: ReadonlyMap<string, number | "AMBIGUOUS">,
+): ReadonlyMap<string, readonly string[]> {
+  const map = new Map<string, string[]>();
+  for (const key of keyOffsets.keys()) {
+    const at = key.lastIndexOf("@");
+    if (at <= 0) continue;
+    const qn = key.slice(0, at);
+    if (qn === "") continue;
+    const list = map.get(qn);
+    if (list === undefined) map.set(qn, [key]);
+    else list.push(key);
+  }
+  return map;
+}
+
+const NO_HASH_ATLAS_PREFIXES = [
+  "gfmysql_",
+  "gfstarrocks_",
+  "gfgoldendb_",
+] as const;
+
+/**
+ * When preferred is `gfmysql_${service}` (no `#`), pick the unique concrete
+ * `qn@gfmysql_…` key: exact → unique service prefix → sole family row.
+ */
+export function resolveUniqueNoHashAtlasKey(
+  qualifiedName: string,
+  preferredDataSource: string,
+  atlasKeysByQn: ReadonlyMap<string, readonly string[]> | undefined,
+): string | undefined {
+  if (atlasKeysByQn === undefined) return undefined;
+  const preferred = preferredDataSource.trim().toLowerCase();
+  const prefix = NO_HASH_ATLAS_PREFIXES.find((item) =>
+    preferred.startsWith(item),
+  );
+  if (prefix === undefined) return undefined;
+  const service = preferred.slice(prefix.length);
+  if (service === "") return undefined;
+  const familyKeys = (atlasKeysByQn.get(qualifiedName.toLowerCase()) ?? []).filter(
+    (key) => {
+      const at = key.lastIndexOf("@");
+      if (at < 0) return false;
+      const dataSource = key.slice(at + 1).toLowerCase();
+      return dataSource.startsWith(prefix) && !dataSource.includes("#");
+    },
+  );
+  const exact = familyKeys.filter((key) => {
+    const at = key.lastIndexOf("@");
+    return key.slice(at + 1).toLowerCase() === preferred;
+  });
+  if (exact.length === 1) return exact[0];
+  const prefixed = familyKeys.filter((key) => {
+    const at = key.lastIndexOf("@");
+    const atlasId = key.slice(at + 1).toLowerCase().slice(prefix.length);
+    return atlasId === service || atlasId.startsWith(service);
+  });
+  if (prefixed.length === 1) return prefixed[0];
+  if (familyKeys.length === 1) return familyKeys[0];
+  return undefined;
 }
 
 export function serviceSuffixFromAtlasDataSource(
@@ -769,6 +841,7 @@ export function rdbmsLookupKeys(
   candidate: OfflineTableCandidate,
   preferredRdbmsDataSource?: string,
   qnServiceIndex?: ReadonlyMap<string, string | "AMBIGUOUS">,
+  qnAtlasKeys?: ReadonlyMap<string, readonly string[]>,
 ): readonly string[] {
   const qn = candidate.qualifiedName.toLowerCase();
   const keys: string[] = [];
@@ -788,6 +861,8 @@ export function rdbmsLookupKeys(
       const byService = qnServiceIndex.get(`${qn}#${service}`);
       if (typeof byService === "string") push(byService);
     }
+    const noHash = resolveUniqueNoHashAtlasKey(qn, preferred, qnAtlasKeys);
+    if (noHash !== undefined) push(noHash);
   }
   push(qn);
   return keys;
@@ -884,6 +959,7 @@ function resolveOne(
       candidate,
       preferredRdbmsDataSource,
       catalog.rdbmsQnServiceIndex,
+      catalog.rdbmsQnAtlasKeys,
     );
     const coreLookup = lookupFirst(catalog.rdbmsCore, keys);
     if (coreLookup.status === "AMBIGUOUS")

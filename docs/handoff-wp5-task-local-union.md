@@ -1,7 +1,7 @@
 # Handoff：WP-5 `task-local-union-source`
 
-日期：2026-09-02  
-用途：新对话直接执行 WP-5（TU-0 起）。不要在本仓混做无关 hive/causal-closure 脏改动。
+日期：2026-09-03（原 2026-09-02）  
+用途：data-graph 侧 WP-5 技术 handoff。**产品主路径**已迁至 `docs/execution-plan-gold-case-investigation.md`。
 
 ---
 
@@ -26,9 +26,10 @@
 
 ## 必读文档（按顺序）
 
-1. `sql-static-lineage/docs/execution-plan-task-local-union.md` — **WP-5 执行方案 TU-0…TU-8**（主规格）
-2. `sql-static-lineage/docs/execution-plan-asset-graph.md` — 总地图；WP-3 已验收、WP-5 为下一包
-3. `sql-static-lineage/docs/execution-plan-task-local-projection.md` — 上游契约 1.1.0
+1. `docs/execution-plan-gold-case-investigation.md` — **金样调查页 V0（当前 P0）**
+2. `sql-static-lineage/docs/execution-plan-task-local-union.md` — **WP-5 执行方案 TU-0…TU-8**（主规格）
+2. `sql-static-lineage/docs/execution-plan-asset-graph.md` — 总地图
+3. `sql-static-lineage/docs/execution-plan-task-local-projection.md` — 上游契约 1.2.0
 4. `sql-static-lineage/docs/domain-asset-graph-architecture.md` — 共享不变量
 5. data-graph 内现有 `DIRECT_PROJECT_EVIDENCE` / `project-evidence-root-traversal` design（避免重复造轮子）
 

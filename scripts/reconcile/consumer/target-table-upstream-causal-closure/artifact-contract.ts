@@ -88,6 +88,8 @@ export interface ContinuationStats {
   readonly disjointPruned: number;
   readonly ambiguousReads: number;
   readonly unmatchedReads: number;
+  /** Same-task local reads that are not part of INDEX.externalReads. */
+  readonly selfReadBoundaries?: number;
 }
 
 export interface CausalStageMetric {

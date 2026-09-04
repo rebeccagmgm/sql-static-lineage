@@ -16,13 +16,16 @@ write-observation partition judgments.
 - Add a strict index DTO/parser and exact read lookup.
 - Attach WP-8 statuses to existing multi-hop table edges, bind exact write
   scopes, and expose evidence-bounded counters.
+- Export a separate Gate B-UNION L1 set with content-hashed closure/INDEX
+  input references and bounded 176827/209119 acceptance evidence.
 
 **Non-Goals:**
 
 - The C2 follow-up may replace the union-v2 physical candidate source with the
   continuation INDEX; legacy projection remains unchanged.
 - Do not implement partition matching, WP-8/8.1 kernels, producer-index-query,
-  value-evidence downgrade, Gate B-UNION, or L0-L3 envelope work.
+  or the L0-L3 envelope. Gate B-UNION is the C3 acceptance projection in this
+  follow-up; it does not revise the historical runtime Gate B.
 
 ## Decisions
 
@@ -67,6 +70,16 @@ The adapter stage counts retained candidates per exact read after DISJOINT
 pruning. A read with two or more retained write observations contributes one
 `ambiguousReads`/`bridgeStats.ambiguous`. `resolved` is incremented only while
 binding an L1 candidate with a non-null exact scope.
+
+### 6. Keep Gate B-UNION as a separate acceptance projection
+
+The L1 set is derived only from union-v2 closure branches whose continuation
+status and exact INDEX candidate agree. Its serialized members are keyed by
+consumer task, producer task, write observation, and read occurrence; the
+closure and INDEX hashes are retained as input references. 176827 is the
+available real-input anchor. 209119 is accepted only as an explicit sample or
+input blocker, never as an empty successful run. The historical Gate B evidence
+remains unchanged and continues to describe the runtime rerun/product gate.
 
 ## Risks / Trade-offs
 

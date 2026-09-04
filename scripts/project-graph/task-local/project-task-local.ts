@@ -85,8 +85,99 @@ function records(value: unknown): readonly JsonRecord[] {
     : [];
 }
 
+function record(value: unknown): JsonRecord | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as JsonRecord
+    : null;
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+export interface TaskLocalReadOccurrenceIdentity {
+  readonly occurrenceId: string;
+  readonly relationId: string | null;
+}
+
+/**
+ * Recover a task-global read occurrence from relation evidence when the
+ * dataset-io row predates nested read_occurrences. Only an exact same-task,
+ * same-statement, same-physical-table read relation is accepted. When that
+ * evidence is unavailable, retain the historical legacy fallback so callers
+ * can keep the read unresolved instead of inventing a canonical id.
+ */
+export function resolveTaskLocalReadOccurrenceIdentities(input: {
+  readonly taskId: string;
+  readonly read: JsonRecord;
+  readonly qualifiedName: string;
+  readonly relationRecords: readonly JsonRecord[];
+}): readonly TaskLocalReadOccurrenceIdentity[] {
+  const statementId = text(input.read.statement_id);
+  const rawName = text(input.read.physical_dataset);
+  const normalizedQualifiedName = normalizeName(input.qualifiedName);
+  const normalizedRawName = rawName ? normalizeName(rawName) : null;
+  const relationIds = input.relationRecords
+    .filter((row) => {
+      if (text(row.task_id) !== input.taskId) return false;
+      if (text(row.statement_id) !== statementId || !statementId) return false;
+      const relation = record(row.relation);
+      const relationType = (
+        text(row.relation_type)
+        ?? text(relation?.type)
+        ?? ""
+      ).toLowerCase();
+      if (relationType !== "read") return false;
+      const relationName =
+        text(row.physical_dataset)
+        ?? text(relation?.table)
+        ?? text(relation?.physical_dataset)
+        ?? text(relation?.qualifiedName)
+        ?? text(relation?.qualified_name);
+      if (relationName === null) return false;
+      const normalizedRelationName = normalizeName(relationName);
+      return normalizedRelationName === normalizedQualifiedName
+        || (normalizedRawName !== null
+          && !normalizedRawName.includes(".")
+          && normalizedRelationName === normalizedRawName);
+    })
+    .map((row) => {
+      const relation = record(row.relation);
+      return text(row.relation_id) ?? text(relation?.id);
+    })
+    .filter((value): value is string => value !== null);
+  const uniqueRelationIds = [...new Set(relationIds)].sort(compareText);
+  const relationIdSet = new Set(uniqueRelationIds);
+  const occurrences = records(input.read.read_occurrences);
+  const fallback = (index: number): TaskLocalReadOccurrenceIdentity => ({
+    occurrenceId: `legacy:${input.taskId}:${statementId ?? "statement"}:${input.qualifiedName}:${index}`,
+    relationId: null,
+  });
+
+  if (occurrences.length > 0) {
+    return occurrences.map((occurrence, index) => {
+      const occurrenceId = text(occurrence.occurrence_id);
+      const relationId = text(occurrence.relation_id) ?? occurrenceId;
+      if (occurrenceId) return { occurrenceId, relationId };
+      if (relationId && relationIdSet.has(relationId)) {
+        return { occurrenceId: relationId, relationId };
+      }
+      if (!relationId && uniqueRelationIds.length === occurrences.length) {
+        const recovered = uniqueRelationIds[index];
+        if (recovered) return { occurrenceId: recovered, relationId: recovered };
+      }
+      if (!relationId && uniqueRelationIds.length === 1) {
+        const recovered = uniqueRelationIds[0]!;
+        return { occurrenceId: recovered, relationId: recovered };
+      }
+      return fallback(index);
+    });
+  }
+
+  if (uniqueRelationIds.length > 0) {
+    return uniqueRelationIds.map((relationId) => ({ occurrenceId: relationId, relationId }));
+  }
+  return [fallback(0)];
 }
 
 function loadTaskPack(
@@ -491,9 +582,10 @@ function projectTaskLocalFromFacts(input: {
     }
   }
 
+  const relationRecords = records(load.records["relation-nodes.jsonl"]);
   const predicatesByOccurrence = partitionPredicatesByReadOccurrence({
     taskId,
-    relationRecords: records(load.records["relation-nodes.jsonl"]),
+    relationRecords,
     relationEdgeRecords: records(load.records["relation-edges.jsonl"]),
   });
   const externalReadSummaries: TaskLocalExternalReadSummary[] = [];
@@ -525,17 +617,12 @@ function projectTaskLocalFromFacts(input: {
     const hasUnresolvedMaterialization = datasetMaterializations.some(
       (materialization) => String(materialization.status ?? "").toUpperCase() !== "RESOLVED",
     );
-    const occurrences = records(read.read_occurrences);
-    const readOccurrenceIds = occurrences.length > 0
-      ? occurrences.map((occurrence, index) => ({
-        occurrenceId: text(occurrence.occurrence_id)
-          ?? `legacy:${taskId}:${text(read.statement_id) ?? "statement"}:${identity.qualifiedName}:${index}`,
-        relationId: text(occurrence.relation_id) ?? text(occurrence.occurrence_id),
-      }))
-      : [{
-        occurrenceId: `legacy:${taskId}:${text(read.statement_id) ?? "statement"}:${identity.qualifiedName}:0`,
-        relationId: null,
-      }];
+    const readOccurrenceIds = resolveTaskLocalReadOccurrenceIdentities({
+      taskId,
+      read,
+      qualifiedName: identity.qualifiedName,
+      relationRecords,
+    });
     for (const [occurrenceIndex, occurrence] of readOccurrenceIds.entries()) {
       const partition = readPartitionPredicatesForOccurrence(
         predicatesByOccurrence,

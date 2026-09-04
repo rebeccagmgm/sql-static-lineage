@@ -186,6 +186,8 @@ export function runHoraeLog(
     windowsHide: true,
     maxBuffer: 32 * 1024 * 1024,
     timeout: effectiveTimeoutMs,
+    // Keep opencli "Extension update available" off our terminal.
+    stdio: ["ignore", "pipe", "pipe"],
   });
   const expected = join(
     saveTo,

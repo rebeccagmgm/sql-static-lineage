@@ -11,7 +11,12 @@ import {
   writeSzdataScheduleDetailCache,
   type ScheduleDetailRunner,
 } from "./szdata-schedule-detail-cache.ts";
-import { taskIdsFromFile } from "./fill-horae-relation-cache.ts";
+import {
+  parseTaskIdOrder,
+  sortTaskIds,
+  taskIdsFromFile,
+  type TaskIdOrder,
+} from "./fill-horae-relation-cache.ts";
 import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
@@ -20,6 +25,7 @@ const DEFAULT_MAX_ERRORS = 3;
 export interface FillSzdataScheduleDetailOptions {
   readonly cacheRoot?: string;
   readonly taskIds?: readonly string[];
+  readonly order?: TaskIdOrder;
   readonly startTaskId?: string;
   readonly limit?: number;
   readonly maxErrors?: number;
@@ -41,6 +47,7 @@ export interface FillSzdataScheduleDetailSummary {
   readonly errors: number;
   readonly maxErrors: number;
   readonly minIntervalMs: number;
+  readonly order: TaskIdOrder;
   readonly failedTaskIds: readonly string[];
   readonly errorDetails: readonly SzdataScheduleDetailFillError[];
   readonly stopped: boolean;
@@ -50,12 +57,10 @@ export function taskIdsFromScheduleEvidenceCache(cacheRoot: string): string[] {
   const tasksRoot = join(resolveScheduleEvidenceCacheRoot(cacheRoot), "tasks");
   if (!existsSync(tasksRoot))
     throw new Error(`CACHE_TASKS_ROOT_MISSING:${tasksRoot}`);
-  return readdirSync(tasksRoot, { withFileTypes: true })
+  const taskIds = readdirSync(tasksRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && SAFE_TASK_ID.test(entry.name))
-    .map((entry) => entry.name)
-    .sort((left, right) =>
-      left.localeCompare(right, "en-US", { numeric: true }),
-    );
+    .map((entry) => entry.name);
+  return sortTaskIds(taskIds);
 }
 
 function positiveInteger(value: number | undefined, fallback: number, code: string): number {
@@ -77,13 +82,16 @@ function nonNegativeInteger(
 function fromStartTaskId(
   taskIds: readonly string[],
   startTaskId: string | undefined,
+  order: TaskIdOrder,
 ): string[] {
   if (startTaskId === undefined) return [...taskIds];
   if (!SAFE_TASK_ID.test(startTaskId)) throw new Error("START_TASK_ID_INVALID");
-  const index = taskIds.findIndex(
-    (taskId) =>
-      taskId.localeCompare(startTaskId, "en-US", { numeric: true }) >= 0,
-  );
+  const index = taskIds.findIndex((taskId) => {
+    const comparison = taskId.localeCompare(startTaskId, "en-US", {
+      numeric: true,
+    });
+    return order === "desc" ? comparison <= 0 : comparison >= 0;
+  });
   return index < 0 ? [] : taskIds.slice(index);
 }
 
@@ -110,6 +118,7 @@ export async function fillSzdataScheduleDetailCache(
   options: FillSzdataScheduleDetailOptions = {},
 ): Promise<FillSzdataScheduleDetailSummary> {
   const cacheRoot = options.cacheRoot ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
+  const order = options.order ?? "asc";
   const maxErrors = positiveInteger(
     options.maxErrors,
     DEFAULT_MAX_ERRORS,
@@ -122,8 +131,12 @@ export async function fillSzdataScheduleDetailCache(
   );
   const taskIds = selectedTaskIds(
     fromStartTaskId(
-      options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+      sortTaskIds(
+        options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+        order,
+      ),
       options.startTaskId,
+      order,
     ),
     options.limit,
   );
@@ -175,6 +188,7 @@ export async function fillSzdataScheduleDetailCache(
     errors,
     maxErrors,
     minIntervalMs,
+    order,
     failedTaskIds,
     errorDetails,
     stopped,
@@ -205,10 +219,12 @@ function parseIntegerOption(
 
 async function main(): Promise<void> {
   const taskIdsFile = option("--task-ids-file");
+  const order = parseTaskIdOrder(option("--order"));
   const summary = await fillSzdataScheduleDetailCache({
     cacheRoot: option("--cache-root"),
+    order,
     startTaskId: option("--start-task-id"),
-    taskIds: taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined,
+    taskIds: taskIdsFile ? taskIdsFromFile(taskIdsFile, order) : undefined,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, false),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),

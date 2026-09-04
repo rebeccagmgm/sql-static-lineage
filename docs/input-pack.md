@@ -11,7 +11,9 @@ the main Input Pack root. Existing matching Task Pack directories are moved
 there without overwriting an existing archive directory; no evidence is
 deleted. Use `--manual-data-root <path>` to choose another external archive
 root. A failed manual-task lookup fails closed instead of silently creating
-lineage noise.
+lineage noise. The checkpoint records these tasks as
+`EXCLUDED/MANUAL_OR_FROZEN`; later batches skip them and `--force` retries the
+Horae classification.
 
 When Horae's exact all-status search returns no task record, the task is classified as
 `HORAE_TASK_NOT_FOUND`, is not sent to `szdata task-source`, and is recorded as
@@ -200,6 +202,13 @@ persisted as identity. Use `--metadata-snapshot <path>` to select the Hive
 metadata JSONL snapshot; ambiguous, missing, or non-unique ACTIVE rows remain
 `PARTIAL`. There is no separate task-level table manifest or raw MCP DDL cache.
 Neither collector proves runtime success or data arrival.
+
+The direct cache-fill entrypoints for Horae relation, SZData schedule detail,
+Hive task SQL, and the SparkIndex schedule-detail wrapper accept
+`--order asc|desc`. The default is `asc`; `--start-task-id` and `--limit` are
+applied in that selected order. This changes only processing order and does
+not partition the work: do not run ascending and descending commands over the
+same full task set at the same time, because they will overlap.
 
 To fill only the tasks already identified as `sparkIndex` by a valid
 `horae-task-type.json`, use the dedicated entrypoint:

@@ -156,3 +156,68 @@ Projection-readiness: **PASS WITH SCOPE**.
 
 This closes the input/publication prerequisite for Phase 4. It does not reopen
 M5/M6 or change the original Gate B runtime conclusion.
+
+## Gate B-UNION (C3 machine-readable acceptance; separate gate)
+
+Date: 2026-09-03
+
+This is the C3 acceptance projection defined by
+`docs/experimental/execution-plan-closure-on-union.md` §5–§8. It is not a rewrite of the
+historical Gate B section above. The historical Gate B remains
+**NOT VERIFIED / REOPENED** and continues to mean the runtime rerun/product
+gate; Gate B-UNION means that the union-v2 closure has produced an
+evidence-bounded L1 set.
+
+### 176827 real-input anchor
+
+The exporter read the C2 union-v2 closure and continuation INDEX as read-only
+inputs:
+
+- Closure:
+  `sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-union-v2-full-index-recovered-v5.json`
+  with content hash
+  `08b4902d2a04804c860e91985f9dbde11331c213f32e5aad750b96f3f0bad5d6`.
+- INDEX:
+  `sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-continuation-index-full-recovered-v2/union-continuation-index.json`
+  with content hash
+  `d7961a2b6493856fa75860ae3a330d851cc1e69590ce7987fa6c01f4e2a83ea1`.
+- L1 set:
+  `sql-static-lineage-artifacts/target-table-causal-closure/c3/176827-gate-b-union-l1-set.json`.
+
+The set contains 11 members, matching the current closure's
+`continuationStats.l1=11`; it records 109 INDEX-backed physical producer
+branches in the source closure. A representative member is consumer `176827`
+reading producer `103234` through the exact
+`write-observation:103234:0` and its read occurrence. Every emitted member
+retains the exact read occurrence, write scope, INDEX entry reference and
+Facts write evidence. The exporter rejects non-`IN_UNION_FINAL_WRITE`,
+non-`CONFIRMED`, non-`L1`, or non-`l1Eligible` branches and does not consume
+legacy `field-lineage.json` as an L1 source.
+
+The independent `gate-b-union` command revalidated the closure hash, INDEX
+hash and output `contentHash=62bb34a568e288ac6bba6227bcf5fb96478ff4cf45df18afa6d984b3b39eebae`.
+This is **Gate B-UNION PASS WITH SCOPE for the available 176827 anchor**.
+
+### 209119 input blocker
+
+The C3 sample was not run as an empty or legacy substitute. The required
+union-v2 inputs are absent:
+
+- `sql-static-lineage-artifacts/target-table-causal-closure/c2/209119-union-v2.json`
+- `sql-static-lineage-artifacts/target-table-causal-closure/c2/209119-continuation-index/union-continuation-index.json`
+
+The existing `209119.json` / `209119-path-propagation.json` artifacts are
+historical closure outputs without the required union-v2 continuation INDEX,
+so they cannot satisfy this gate. The automated test records
+`GATE_B_UNION_INPUT_BLOCKER:209119` and deliberately emits no empty L1 set.
+209119 is therefore **INPUT BLOCKED**, not passed.
+
+### C3 limits and distinction
+
+Gate B-UNION is a static, evidence-bounded closure-set check. It does not
+prove scheduler execution, runtime data arrival, business correctness or the
+historical runtime rerun decision. The known C2 residuals remain outside L1:
+34 same-task self-read boundaries remain `UNKNOWN`, and two 103230 CTE paths
+retain an alias gap. No self-read is forced into the L1 set, and no `:0`
+write-observation identity is synthesized. The missing 209119 union-v2 inputs
+are the remaining C3 sample limitation.

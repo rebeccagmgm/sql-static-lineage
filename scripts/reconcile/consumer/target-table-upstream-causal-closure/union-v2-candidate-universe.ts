@@ -25,6 +25,7 @@ export interface UnionV2CandidateUniverseResult {
   readonly universe: CandidateUniverse;
   readonly disjointPruned: number;
   readonly unmatchedReads: number;
+  readonly selfReadBoundaries: number;
 }
 
 export type UnionV2ScheduleRelationStatus = "AVAILABLE" | "UNKNOWN";
@@ -417,7 +418,11 @@ function boundaryForRead(
     boundaryReason: reason,
     gapRefs: unique([
       ...branch.gapRefs,
-      `continuation-gap:${branch.candidateBranchId}:CONTINUATION_READ_NOT_FOUND`,
+      `continuation-gap:${branch.candidateBranchId}:${
+        reason === "SELF_READ_NOT_EXTERNAL"
+          ? "SELF_READ_NOT_EXTERNAL"
+          : "CONTINUATION_READ_NOT_FOUND"
+      }`,
     ]),
   } satisfies Omit<CandidateBranch, "candidateBranchId">;
   return {
@@ -485,6 +490,15 @@ export function projectUnionV2CandidateUniverse(input: {
   readonly baseUniverse: CandidateUniverse;
   readonly source: UnionContinuationCandidateSource;
   readonly scheduleRelation: UnionV2ScheduleRelationLookup;
+  /**
+   * Same-task reads are local closure boundaries, not INDEX external reads.
+   * The callback is deliberately supplied by the Facts-aware caller so this
+   * adapter never infers a producer from a table name on its own.
+   */
+  readonly isSameTaskSelfRead?: (
+    consumerTaskId: string,
+    qualifiedName: string,
+  ) => boolean;
   readonly resolvePhysicalTable?: (
     table: CandidatePhysicalTable,
   ) => CandidatePhysicalTable | null;
@@ -507,6 +521,7 @@ export function projectUnionV2CandidateUniverse(input: {
   }
 
   let disjointPruned = 0;
+  let selfReadBoundaries = 0;
   const indexedReadKeys = new Set<string>();
   for (const entry of input.source.index.entries) {
     const entryTable: CandidatePhysicalTable = {
@@ -645,6 +660,19 @@ export function projectUnionV2CandidateUniverse(input: {
     );
     if (indexedReadKeys.has(key) || unmatchedKeys.has(key)) continue;
     unmatchedKeys.add(key);
+    if (
+      input.isSameTaskSelfRead?.(
+        branch.consumerTaskId,
+        branch.table?.qualifiedName ?? "",
+      )
+    ) {
+      selfReadBoundaries += 1;
+      addBranch(
+        branches,
+        boundaryForRead(branch, "UNBOUND_READ", "SELF_READ_NOT_EXTERNAL"),
+      );
+      continue;
+    }
     unmatchedReads += 1;
     addBranch(
       branches,
@@ -702,5 +730,6 @@ export function projectUnionV2CandidateUniverse(input: {
     },
     disjointPruned,
     unmatchedReads,
+    selfReadBoundaries,
   };
 }

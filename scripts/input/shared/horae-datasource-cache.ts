@@ -53,10 +53,38 @@ export function horaeDatasourceDir(
 export function oracleAtlasDataSourceFromService(
   service: string,
 ): string | undefined {
+  return atlasDataSourceFromHoraeService("oracle", service);
+}
+
+/**
+ * Map Horae `server_type` + `service` to the RDBMS-core `@dataSource` hint.
+ * Oracle/Postgre/OceanBase use `…#service`; MySQL/StarRocks/GoldenDB have no `#`.
+ */
+export function atlasDataSourceFromHoraeService(
+  serverType: string,
+  service: string,
+): string | undefined {
   const trimmed = service.trim();
   if (trimmed === "") return undefined;
   const lower = trimmed.toLowerCase();
-  return `gforacle_${lower}#${lower}`;
+  switch (serverType.trim().toLowerCase()) {
+    case "oracle":
+      return `gforacle_${lower}#${lower}`;
+    case "postgre":
+    case "postgres":
+    case "postgresql":
+      return `gfpostgre_${lower}#${lower}`;
+    case "oceanbase":
+      return `gfoceanbase_${lower}#${lower}`;
+    case "mysql":
+      return `gfmysql_${lower}`;
+    case "starrocks":
+      return `gfstarrocks_${lower}`;
+    case "goldendb":
+      return `gfgoldendb_${lower}`;
+    default:
+      return undefined;
+  }
 }
 
 /** Concrete Atlas instance used by successful oracle_wande / uip_winddb packs. */
@@ -81,10 +109,12 @@ export function shouldPreferOracleUipWinddbAtlas(
 function preferredAtlasFromHoraeEntry(
   entry: HoraeDatasourceEntry,
 ): string | undefined {
-  if (entry.serverType.toLowerCase() !== "oracle") return undefined;
-  if (shouldPreferOracleUipWinddbAtlas(entry))
+  if (
+    entry.serverType.toLowerCase() === "oracle" &&
+    shouldPreferOracleUipWinddbAtlas(entry)
+  )
     return ORACLE_UIP_WINDDB_ATLAS_DATASOURCE;
-  return oracleAtlasDataSourceFromService(entry.service);
+  return atlasDataSourceFromHoraeService(entry.serverType, entry.service);
 }
 
 export function parseHoraeDatasourceRow(

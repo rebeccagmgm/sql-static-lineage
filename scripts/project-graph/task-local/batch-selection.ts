@@ -45,12 +45,20 @@ export function topicNameForCachedTask(
 export function selectTaskLocalBatchTaskIds(input: {
   readonly scheduleCacheRoot: string;
   readonly topic?: string;
+  readonly taskIds?: readonly string[];
   readonly alsoTaskIds?: readonly string[];
 }): {
+  readonly anchorTaskIds: readonly string[];
   readonly topicTaskIds: readonly string[];
   readonly alsoTaskIds: readonly string[];
   readonly taskIds: readonly string[];
 } {
+  const anchorTaskIds = [...new Set(
+    (input.taskIds ?? [])
+      .map((value) => value.trim())
+      .filter((value) => SAFE_TASK_ID.test(value)),
+  )].sort((left, right) => left.localeCompare(right, "en-US", { numeric: true }));
+
   const allCached = listScheduleCacheTaskIds(input.scheduleCacheRoot);
   const topic = input.topic ? normalizeTopic(input.topic) : null;
   const topicTaskIds = topic
@@ -58,7 +66,9 @@ export function selectTaskLocalBatchTaskIds(input: {
         const topicName = topicNameForCachedTask(taskId, input.scheduleCacheRoot);
         return topicName !== null && normalizeTopic(topicName) === topic;
       })
-    : [...allCached];
+    : anchorTaskIds.length > 0
+      ? []
+      : [...allCached];
 
   const alsoTaskIds = [...new Set(
     (input.alsoTaskIds ?? [])
@@ -66,8 +76,8 @@ export function selectTaskLocalBatchTaskIds(input: {
       .filter((value) => SAFE_TASK_ID.test(value)),
   )].sort((left, right) => left.localeCompare(right, "en-US", { numeric: true }));
 
-  const taskIds = [...new Set([...topicTaskIds, ...alsoTaskIds])]
+  const taskIds = [...new Set([...anchorTaskIds, ...topicTaskIds, ...alsoTaskIds])]
     .sort((left, right) => left.localeCompare(right, "en-US", { numeric: true }));
 
-  return { topicTaskIds, alsoTaskIds, taskIds };
+  return { anchorTaskIds, topicTaskIds, alsoTaskIds, taskIds };
 }

@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { canonicalJson } from "../../machine-facts/machine-facts-contract.ts";
+import { expandAnchorUpstreamTaskIds } from "./anchor-upstream-expansion.ts";
 import { selectTaskLocalBatchTaskIds } from "./batch-selection.ts";
 import { projectTaskLocalBatch } from "./project-task-local-batch.ts";
 import { taskLocalProjectionPath } from "./projection-cache.ts";
@@ -12,6 +13,10 @@ export interface ProjectTaskLocalCliOptions {
   readonly scheduleCacheRoot: string;
   readonly outputRoot: string;
   readonly topic?: string;
+  readonly taskIds: readonly string[];
+  readonly expandUpstream: boolean;
+  readonly producerIndexRoot?: string;
+  readonly maxUpstreamDepth?: number;
   readonly alsoTaskIds: readonly string[];
   readonly prepareFacts: boolean;
   readonly generatedAt?: string;
@@ -39,11 +44,32 @@ export function parseProjectTaskLocalCli(
     ?? option(args, "--schedule-evidence-cache-root");
   const outputRoot = option(args, "--output-root");
   const topic = option(args, "--topic");
+  const taskIds = csvOption(args, "--task-ids");
   const alsoTaskIds = csvOption(args, "--also-task-ids");
+  const expandUpstream = args.includes("--expand-upstream");
+  const producerIndexRoot = option(args, "--producer-index-root");
+  const maxUpstreamDepthRaw = option(args, "--max-upstream-depth");
+  const maxUpstreamDepth = maxUpstreamDepthRaw
+    ? Number(maxUpstreamDepthRaw)
+    : undefined;
+  if (
+    maxUpstreamDepth !== undefined
+    && (!Number.isSafeInteger(maxUpstreamDepth) || maxUpstreamDepth < 1)
+  ) {
+    throw new Error("MAX_UPSTREAM_DEPTH_INVALID");
+  }
   if (!dataRoot || !factsRoot || !scheduleCacheRoot || !outputRoot) {
     throw new Error(
-      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
+      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--expand-upstream] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
     );
+  }
+  if (taskIds.length === 0 && !topic && alsoTaskIds.length === 0) {
+    throw new Error(
+      "TASK_LOCAL_BATCH_SELECTOR_REQUIRED: pass --task-ids and/or --topic and/or --also-task-ids",
+    );
+  }
+  if (expandUpstream && taskIds.length === 0) {
+    throw new Error("EXPAND_UPSTREAM_REQUIRES_TASK_IDS");
   }
   if (args.includes("--prepare-facts")) {
     throw new Error("PREPARE_FACTS_UNSUPPORTED: TL-5 defaults to --no-prepare-facts; omit --prepare-facts");
@@ -54,6 +80,10 @@ export function parseProjectTaskLocalCli(
     scheduleCacheRoot: resolve(scheduleCacheRoot),
     outputRoot: resolve(outputRoot),
     topic,
+    taskIds,
+    expandUpstream,
+    producerIndexRoot,
+    maxUpstreamDepth,
     alsoTaskIds,
     prepareFacts: false,
     generatedAt: option(args, "--generated-at"),
@@ -68,10 +98,26 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
   const selection = selectTaskLocalBatchTaskIds({
     scheduleCacheRoot: options.scheduleCacheRoot,
     topic: options.topic,
+    taskIds: options.taskIds,
     alsoTaskIds: options.alsoTaskIds,
   });
-  if (selection.taskIds.length === 0) {
-    throw new Error("TASK_LOCAL_BATCH_EMPTY: no tasks matched --topic / --also-task-ids");
+  let upstreamExpansion: ReturnType<typeof expandAnchorUpstreamTaskIds> | null = null;
+  const batchTaskIds = options.expandUpstream
+    ? (() => {
+        upstreamExpansion = expandAnchorUpstreamTaskIds({
+          dataRoot: options.dataRoot,
+          anchorTaskIds: selection.anchorTaskIds,
+          producerIndexRoot: options.producerIndexRoot,
+          maxDepth: options.maxUpstreamDepth,
+        });
+        return [...new Set([
+          ...upstreamExpansion.taskIds,
+          ...selection.alsoTaskIds,
+        ])].sort((left, right) => left.localeCompare(right, "en-US", { numeric: true }));
+      })()
+    : selection.taskIds;
+  if (batchTaskIds.length === 0) {
+    throw new Error("TASK_LOCAL_BATCH_EMPTY: no tasks matched batch selectors");
   }
 
   mkdirSync(options.outputRoot, { recursive: true });
@@ -79,7 +125,7 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
     dataRoot: options.dataRoot,
     factsRoot: options.factsRoot,
     scheduleCacheRoot: options.scheduleCacheRoot,
-    taskIds: selection.taskIds,
+    taskIds: batchTaskIds,
     outputRoot: options.outputRoot,
     generatedAt: options.generatedAt,
   });
@@ -90,9 +136,21 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
     artifactType: "TASK_LOCAL_BATCH_MANIFEST",
     generatedAt,
     topic: options.topic ?? null,
+    anchorTaskIds: selection.anchorTaskIds,
+    expandUpstream: options.expandUpstream,
+    upstreamExpansion: upstreamExpansion
+      ? {
+          status: upstreamExpansion.status,
+          anchorTaskIds: upstreamExpansion.anchorTaskIds,
+          discoveredTaskIds: upstreamExpansion.discoveredTaskIds,
+          taskIds: upstreamExpansion.taskIds,
+          issues: upstreamExpansion.issues,
+          counters: upstreamExpansion.counters,
+        }
+      : null,
     alsoTaskIds: selection.alsoTaskIds,
     topicTaskIds: selection.topicTaskIds,
-    taskIds: selection.taskIds,
+    taskIds: batchTaskIds,
     summary: batch.summary,
     cache: batch.cache,
     tasks: batch.results.map((result) => ({
@@ -109,7 +167,7 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
   writeFileSync(batchManifestPath, `${canonicalJson(manifest)}\n`, "utf8");
   return {
     batchManifestPath,
-    taskIds: selection.taskIds,
+    taskIds: batchTaskIds,
     cache: batch.cache,
   };
 }

@@ -492,6 +492,40 @@ export type TaskSchedulingClassification = {
   scheduleStatus?: string;
 };
 
+export type TaskCollectionPartition = {
+  readonly runnableTaskIds: readonly string[];
+  readonly manualFrozenTaskIds: readonly string[];
+  readonly notFoundTaskIds: readonly string[];
+};
+
+export function partitionTaskIdsForCollection(
+  taskIds: readonly string[],
+  exclusions: ReadonlyMap<string, TaskSchedulingClassification>,
+): TaskCollectionPartition {
+  const manualFrozen = new Set(
+    [...exclusions]
+      .filter(([, classification]) =>
+        classification.exclusionReason === "MANUAL_OR_FROZEN",
+      )
+      .map(([taskId]) => taskId),
+  );
+  const notFound = new Set(
+    [...exclusions]
+      .filter(([, classification]) =>
+        classification.exclusionReason === "HORAE_TASK_NOT_FOUND" ||
+        classification.exclusionReason === "PHYSICAL_TABLE_NOT_FOUND",
+      )
+      .map(([taskId]) => taskId),
+  );
+  return {
+    runnableTaskIds: taskIds.filter(
+      (taskId) => !manualFrozen.has(taskId) && !notFound.has(taskId),
+    ),
+    manualFrozenTaskIds: taskIds.filter((taskId) => manualFrozen.has(taskId)),
+    notFoundTaskIds: taskIds.filter((taskId) => notFound.has(taskId)),
+  };
+}
+
 export function isExcludedHoraeSearchRecord(
   record: Record<string, unknown>,
   query: { readonly status: string; readonly cycle?: string },
@@ -500,7 +534,8 @@ export function isExcludedHoraeSearchRecord(
   if (query.cycle !== undefined && !isManualScheduleCycle(cycle)) return false;
   const status =
     directString(record.status) ?? directString(record.taskStatus);
-  return query.status !== "F" || isFrozenScheduleStatus(status);
+  if (query.status !== "F") return false;
+  return status === undefined || isFrozenScheduleStatus(status);
 }
 
 export function findExcludedTaskIds(
@@ -512,14 +547,17 @@ export function findExcludedTaskIds(
   const chunkSize = 100;
   for (let offset = 0; offset < taskIds.length; offset += chunkSize) {
     const chunk = taskIds.slice(offset, offset + chunkSize);
-    const allRows = openCliHoraeSearch(chunk, "");
-    const allRecords = Array.isArray(allRows) ? allRows : [allRows];
     const foundTaskIds = new Set<string>();
-    for (const value of allRecords) {
-      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
-      const taskId = directString((value as Record<string, unknown>).id);
-      if (taskId !== undefined && requested.has(taskId))
-        foundTaskIds.add(taskId);
+    for (const status of ["Y", "F", "C"] as const) {
+      const allRows = openCliHoraeSearch(chunk, status);
+      const allRecords = Array.isArray(allRows) ? allRows : [allRows];
+      for (const value of allRecords) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          continue;
+        const taskId = directString((value as Record<string, unknown>).id);
+        if (taskId !== undefined && requested.has(taskId))
+          foundTaskIds.add(taskId);
+      }
     }
     for (const taskId of chunk) {
       if (!foundTaskIds.has(taskId))

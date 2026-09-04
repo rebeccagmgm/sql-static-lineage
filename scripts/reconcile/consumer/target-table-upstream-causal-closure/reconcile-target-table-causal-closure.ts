@@ -162,6 +162,30 @@ function tableFromCatalog(entry: PhysicalTableCatalogEntry): {
 function normalized(value: string): string {
   return value.trim().toLowerCase();
 }
+function samePhysicalTableName(left: string, right: string): boolean {
+  const normalizedLeft = normalized(left);
+  const normalizedRight = normalized(right);
+  if (normalizedLeft === normalizedRight) return true;
+  if (normalizedLeft.includes(".") && normalizedRight.includes("."))
+    return false;
+  const leftTail = normalizedLeft.slice(normalizedLeft.lastIndexOf(".") + 1);
+  const rightTail = normalizedRight.slice(normalizedRight.lastIndexOf(".") + 1);
+  return leftTail === rightTail;
+}
+function isSameTaskSelfRead(
+  load: CurrentBundleLoad,
+  qualifiedName: string,
+): boolean {
+  if (!qualifiedName) return false;
+  return records(load.records["dataset-io.jsonl"]).some(
+    (record) =>
+      normalized(String(record.direction ?? "")) === "write" &&
+      samePhysicalTableName(
+        String(record.physical_dataset ?? ""),
+        qualifiedName,
+      ),
+  );
+}
 function uniqueFieldProducingWriteIds(
   load: CurrentBundleLoad,
   taskId: string,
@@ -963,6 +987,8 @@ export function runTargetTableCausalClosure(
       baseUniverse: universe,
       source: continuationSource,
       scheduleRelation,
+      isSameTaskSelfRead: (consumerTaskId, qualifiedName) =>
+        isSameTaskSelfRead(loadForTask(consumerTaskId), qualifiedName),
       resolvePhysicalTable: (table) => {
         if (table.stableTableId) {
           const match = catalog.entries.find(
@@ -991,6 +1017,7 @@ export function runTargetTableCausalClosure(
         enriched.continuationStats.disjointPruned + projected.disjointPruned,
       unmatchedReads:
         enriched.continuationStats.unmatchedReads + projected.unmatchedReads,
+      selfReadBoundaries: projected.selfReadBoundaries,
     };
     unionV2FieldProvider = createUnionV2FieldValueEvidenceProvider({
       legacyProvider: createFieldValueEvidenceProvider(options.fieldLineage),

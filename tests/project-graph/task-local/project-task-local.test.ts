@@ -9,7 +9,10 @@ import {
   writeTableInput,
   writeTaskInput,
 } from "../../../scripts/input/shared/input-pack.ts";
-import { projectTaskLocal } from "../../../scripts/project-graph/task-local/project-task-local.ts";
+import {
+  projectTaskLocal,
+  resolveTaskLocalReadOccurrenceIdentities,
+} from "../../../scripts/project-graph/task-local/project-task-local.ts";
 
 function setupZipper105387(): { dataRoot: string; factsRoot: string } {
   const parent = mkdtempSync(join(tmpdir(), "task-local-zipper-"));
@@ -92,6 +95,91 @@ function setupZipper105387(): { dataRoot: string; factsRoot: string } {
 }
 
 describe("projectTaskLocal", () => {
+  it("recovers a canonical read occurrence from exact relation evidence", () => {
+    const occurrenceId = "task:102845:statement:0:relation:root.read.ref_option_deal_pr";
+    const result = resolveTaskLocalReadOccurrenceIdentities({
+      taskId: "102845",
+      qualifiedName: "titans_dm.ref_option_deal_pr",
+      read: {
+        direction: "READ",
+        physical_dataset: "titans_dm.ref_option_deal_pr",
+        statement_id: "task:102845:slot:query:statement:0",
+        task_id: "102845",
+      },
+      relationRecords: [{
+        relation_id: occurrenceId,
+        relation_type: "read",
+        relation: {
+          id: occurrenceId,
+          table: "TITANS_DM.REF_OPTION_DEAL_PR",
+          type: "read",
+        },
+        statement_id: "task:102845:slot:query:statement:0",
+        task_id: "102845",
+      }],
+    });
+
+    expect(result).toEqual([{ occurrenceId, relationId: occurrenceId }]);
+  });
+
+  it("matches an unqualified dataset read to the same unqualified relation evidence", () => {
+    const occurrenceId = "task:106661:statement:3:relation:root.setop.b0.read.t03_agt_clas_h";
+    const result = resolveTaskLocalReadOccurrenceIdentities({
+      taskId: "106661",
+      qualifiedName: "pdata_n.t03_agt_clas_h",
+      read: {
+        direction: "READ",
+        physical_dataset: "t03_agt_clas_h",
+        statement_id: "task:106661:slot:query:statement:0",
+        task_id: "106661",
+      },
+      relationRecords: [{
+        relation_id: occurrenceId,
+        relation_type: "read",
+        relation: { table: "T03_AGT_CLAS_H", type: "read" },
+        statement_id: "task:106661:slot:query:statement:0",
+        task_id: "106661",
+      }],
+    });
+
+    expect(result).toEqual([{ occurrenceId, relationId: occurrenceId }]);
+  });
+
+  it("keeps the legacy fallback when relation evidence is not unique", () => {
+    const result = resolveTaskLocalReadOccurrenceIdentities({
+      taskId: "102845",
+      qualifiedName: "titans_dm.ref_option_deal_pr",
+      read: {
+        direction: "READ",
+        physical_dataset: "titans_dm.ref_option_deal_pr",
+        statement_id: "task:102845:slot:query:statement:0",
+        task_id: "102845",
+        read_occurrences: [{ relation_id: "missing-relation-id" }],
+      },
+      relationRecords: [
+        {
+          relation_id: "task:102845:statement:0:relation:root.a",
+          relation_type: "read",
+          relation: { table: "TITANS_DM.REF_OPTION_DEAL_PR", type: "read" },
+          statement_id: "task:102845:slot:query:statement:0",
+          task_id: "102845",
+        },
+        {
+          relation_id: "task:102845:statement:0:relation:root.b",
+          relation_type: "read",
+          relation: { table: "TITANS_DM.REF_OPTION_DEAL_PR", type: "read" },
+          statement_id: "task:102845:slot:query:statement:0",
+          task_id: "102845",
+        },
+      ],
+    });
+
+    expect(result).toEqual([{
+      occurrenceId: "legacy:102845:task:102845:slot:query:statement:0:titans_dm.ref_option_deal_pr:0",
+      relationId: null,
+    }]);
+  });
+
   it("keeps zipper refs on DATASET_CONTROL JOIN, not FIELD_DIRECT (105387 shape)", () => {
     const { dataRoot, factsRoot } = setupZipper105387();
     const projection = projectTaskLocal({

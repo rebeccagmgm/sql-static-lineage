@@ -68,11 +68,58 @@ function statementMatchesOccurrenceSlot(
     .includes(`:slot:${slot}:statement:${occurrence.statementIndex}`);
 }
 
+function statementMatchesOccurrenceRecord(
+  load: CurrentBundleLoad,
+  statementId: unknown,
+  occurrence: CandidateReadOccurrence,
+  allowSlotLocalIndex: boolean,
+): boolean {
+  const normalizedStatementId = text(statementId);
+  const hasPlaceholderSlot =
+    allowSlotLocalIndex && occurrencePlanSlot(occurrence.occurrenceId) !== null;
+  return hasPlaceholderSlot
+    ? statementMatchesOccurrenceSlot(normalizedStatementId, occurrence)
+    : statementIndexForId(load, normalizedStatementId) ===
+        occurrence.statementIndex &&
+        statementMatchesOccurrenceSlot(normalizedStatementId, occurrence);
+}
+
 function relationIdOf(row: Record<string, unknown>): string | null {
   return (
     text(row.relation_id) ??
     text((row.relation as Record<string, unknown> | undefined)?.id)
   );
+}
+
+function relationTypeOf(row: Record<string, unknown>): string {
+  return (
+    text(row.relation_type) ??
+    text((row.relation as Record<string, unknown> | undefined)?.type) ??
+    ""
+  ).toLowerCase();
+}
+
+function relationTableOf(row: Record<string, unknown>): string | null {
+  const relation = row.relation as Record<string, unknown> | undefined;
+  return (
+    text(row.physical_dataset) ??
+    text(relation?.table) ??
+    text(relation?.physical_dataset) ??
+    text(relation?.qualifiedName) ??
+    text(relation?.qualified_name)
+  );
+}
+
+function sameReadTableName(
+  left: string | null,
+  right: string | null,
+): boolean {
+  if (!left || !right) return false;
+  const normalizedLeft = normalizeName(left);
+  const normalizedRight = normalizeName(right);
+  if (normalizedLeft === normalizedRight) return true;
+  return !normalizedLeft.includes(".")
+    && normalizedLeft === normalizedRight.slice(normalizedRight.lastIndexOf(".") + 1);
 }
 
 function parentByChild(load: CurrentBundleLoad): Map<string, string> {
@@ -254,11 +301,14 @@ export function enrichRelationPathFromFacts(
 
 /**
  * When multi-hop still carries a stale query#/create# occurrence, rebind it
- * from the current machine-facts dataset-io read_occurrences for that table.
+ * from the current machine-facts occurrence evidence for that table. The
+ * dataset-io read_occurrences is preferred; relation-nodes is the exact
+ * fallback for older Facts bundles where that nested array is absent.
  */
 export function refreshReadOccurrenceFromDatasetIo(
   load: CurrentBundleLoad,
   branch: CandidateBranch,
+  options: { readonly allowSlotLocalIndex?: boolean } = {},
 ): CandidateReadOccurrence | null {
   const tableName = branch.table?.qualifiedName;
   const occurrence = branch.readOccurrence;
@@ -269,44 +319,119 @@ export function refreshReadOccurrenceFromDatasetIo(
   )
     return null;
   const qualifiedTable = normalizeName(tableName);
+  const allowSlotLocalIndex = options.allowSlotLocalIndex === true;
   const reads = records(load.records["dataset-io.jsonl"]).filter(
     (record) =>
       record.direction === "READ" &&
       String(record.task_id ?? "") === load.taskId &&
-      normalizeName(String(record.physical_dataset ?? "")) === qualifiedTable &&
-      statementIndexForId(load, record.statement_id) ===
-        occurrence.statementIndex &&
-      statementMatchesOccurrenceSlot(text(record.statement_id), occurrence),
+      (allowSlotLocalIndex
+        ? sameReadTableName(String(record.physical_dataset ?? ""), qualifiedTable)
+        : normalizeName(String(record.physical_dataset ?? "")) === qualifiedTable) &&
+      statementMatchesOccurrenceRecord(
+        load,
+        record.statement_id,
+        occurrence,
+        allowSlotLocalIndex,
+      ),
   );
-  const readOccurrences = reads
+  const allReadOccurrences = reads
     .flatMap((record) =>
       Array.isArray(record.read_occurrences) ? record.read_occurrences : [],
-    )
-    .filter((rawOccurrence) => {
-      const record = rawOccurrence as Record<string, unknown>;
-      return (
-        sameRelationIdentity(
-          record.occurrence_id ?? record.occurrenceId,
-          occurrence.occurrenceId,
-        ) &&
-        sameRelationIdentity(
-          record.relation_id ?? record.relationId,
-          occurrence.readRelationId,
-        )
-      );
-    });
-  if (readOccurrences.length !== 1) return null;
-  const raw = readOccurrences[0] as Record<string, unknown>;
-  const relationId = text(raw.relation_id) ?? text(raw.relationId);
-  const occurrenceId = text(raw.occurrence_id) ?? text(raw.occurrenceId);
+    );
+  const uniqueReadOccurrences = (
+    candidates: readonly unknown[],
+  ): readonly unknown[] => {
+    const unique = new Map<string, unknown>();
+    for (const candidate of candidates) {
+      const raw = candidate as Record<string, unknown>;
+      const occurrenceId =
+        text(raw.occurrence_id) ?? text(raw.occurrenceId);
+      const relationId = text(raw.relation_id) ?? text(raw.relationId);
+      if (occurrenceId && relationId)
+        unique.set(`${occurrenceId}\u0000${relationId}`, candidate);
+    }
+    return [...unique.values()];
+  };
+  const exactReadOccurrences = allReadOccurrences.filter((rawOccurrence) => {
+    const record = rawOccurrence as Record<string, unknown>;
+    return (
+      sameRelationIdentity(
+        record.occurrence_id ?? record.occurrenceId,
+        occurrence.occurrenceId,
+      ) &&
+      sameRelationIdentity(
+        record.relation_id ?? record.relationId,
+        occurrence.readRelationId,
+      )
+    );
+  });
+  // A multi-hop branch may identify the same SQL read with a shorter local
+  // path (for example `root.a.read.x`) than the Facts relation path
+  // (`root.a.tmp_x.a.read.x`).  If the table+statement slice contains exactly
+  // one occurrence, that is safe evidence for canonicalization.  Never pick
+  // one from an ambiguous same-table/same-statement slice.
+  const readOccurrences =
+    exactReadOccurrences.length > 0
+      ? uniqueReadOccurrences(exactReadOccurrences)
+      : allowSlotLocalIndex
+        ? uniqueReadOccurrences(allReadOccurrences)
+        : [];
+  let relationId: string | null = null;
+  let occurrenceId: string | null = null;
+  let statementId: string | null = null;
+  if (readOccurrences.length === 1) {
+    const raw = readOccurrences[0] as Record<string, unknown>;
+    relationId = text(raw.relation_id) ?? text(raw.relationId);
+    occurrenceId = text(raw.occurrence_id) ?? text(raw.occurrenceId);
+    statementId = text(reads[0]?.statement_id);
+  } else if (readOccurrences.length === 0 && allowSlotLocalIndex) {
+    const relationRowsForTable = records(load.records["relation-nodes.jsonl"])
+      .filter((row) => {
+        const id = relationIdOf(row);
+        return (
+          id !== null &&
+          String(row.task_id ?? "") === load.taskId &&
+          relationTypeOf(row) === "read" &&
+          statementMatchesOccurrenceRecord(
+            load,
+            row.statement_id,
+            occurrence,
+            true,
+          ) &&
+          sameReadTableName(relationTableOf(row), tableName)
+        );
+      });
+    const exactRelationRows = relationRowsForTable.filter((row) =>
+      sameRelationIdentity(relationIdOf(row), occurrence.readRelationId),
+    );
+    const relationRows =
+      exactRelationRows.length > 0 ? exactRelationRows : relationRowsForTable;
+    const relationIds = [
+      ...new Set(
+        relationRows
+          .map((row) => relationIdOf(row))
+          .filter((value): value is string => value !== null),
+      ),
+    ];
+    if (relationIds.length !== 1) return null;
+    relationId = relationIds[0]!;
+    occurrenceId = relationId;
+    statementId = text(relationRows[0]?.statement_id);
+  } else {
+    return null;
+  }
   if (!relationId || !occurrenceId) return null;
   const localPath = localRelationPath(relationId);
-  const statementId = text(reads[0]?.statement_id);
   const base: CandidateReadOccurrence = {
     ...occurrence,
     occurrenceId,
     readRelationId: localPath,
     relationPath: [localPath],
+    ...(allowSlotLocalIndex &&
+    statementId &&
+    statementIndexForId(load, statementId) !== null
+      ? { statementIndex: statementIndexForId(load, statementId)! }
+      : {}),
     ...(planSlotSqlSourceId(statementId)
       ? { sqlSourceId: planSlotSqlSourceId(statementId)! }
       : {}),
@@ -384,7 +509,9 @@ export function normalizeReadScopes(
           readOccurrence,
         ).valid)
     ) {
-      const refreshed = refreshReadOccurrenceFromDatasetIo(load, branch);
+      const refreshed = refreshReadOccurrenceFromDatasetIo(load, branch, {
+        allowSlotLocalIndex: options.canonicalizePlaceholderOccurrences === true,
+      });
       if (refreshed) readOccurrence = refreshed;
     }
     const workingBranch =

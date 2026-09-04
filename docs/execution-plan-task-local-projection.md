@@ -44,7 +44,7 @@ WP-1 已合入（`cdc187a` / PR #10）。本文件只解决一件事：
 
 `processingKind` 是 WP-4。本 WP 的 TASK 节点可以没有该字段，或显式 `null`。不要在这里实现加工/通道识别。
 
-## WP-7 增量（2026-09-02）
+## WP-7 增量（2026-09-02，已合入 main）
 
 WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LOCAL_PROJECTION`
 1.2.0。1.2.0 将每个 `read_occurrence` 投影为 `READ_OCCURRENCE` 节点，读取路径为
@@ -57,6 +57,19 @@ WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LO
 或冲突行保留边界。投影还提供任务内 `finalWrites` / `externalReads` / `localFieldPaths`
 摘要，供 WP-8 使用。
 旧 1.1.0 缓存和夹具仍可由 validator 读取，缓存 key 随 1.2.0 自然失效。
+
+**落地验收金样**（`tests/project-graph/task-local/golden-samples.test.ts` WP-7 case；
+另有 `identity.test.ts` 覆盖裸名 ASSUMED vs TASK_TARGET）：
+
+| 能力 | 任务 | 断言要点 |
+| --- | --- | --- |
+| `READ_OCCURRENCE` + `SELF_READ` + 折叠 | 103928 | schema 1.2.0；有自读 disposition；`localFieldPaths` / `materializationFolded` |
+| materialization UNRESOLVED 边界 | 105380 | mid 表读次保留 `MATERIALIZATION_NOT_RESOLVED`，不折成 LOCAL |
+| 无 materialization 的 temp | 158641 | `temp_n.*` 写表 `identityStatus=CANDIDATE_DATASET` / `TEMP_MATERIALIZATION_MISSING` |
+| 多跳本地折叠 | 181058 | `localFieldPaths` 与折叠 `FIELD_DIRECT` |
+
+`graph-accuracy-architecture.md` 调查期候选（103234 / 103230 / 100513 / 100629 / 100815）
+未绑本包回归；105387 仍以 WP-3 金样覆盖拉链/控制边，不重复充当 WP-7 temp 清单。
 
 ---
 
