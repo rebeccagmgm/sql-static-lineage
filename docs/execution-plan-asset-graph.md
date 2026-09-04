@@ -95,7 +95,7 @@
 | WP-8 接续 v2 + INDEX   | **CLI 完成**       | 调查页接续层                                                                                                                                         |
 | WP-9 传输图            | 独立               | 非阻塞                                                                                                                                               |
 | WP-10 closure-on-union | **暂停**           | experimental                                                                                                                                         |
-| WP-11 字段证据链 V1    | **Phase 1 已拆解** | 纯 Phase 1 → `openspec/changes/field-evidence-v1`；Phase 2 Impact Query 待 baseline 达标后另开 change；见 `execution-plan-field-evidence-v1.md` §5.5 |
+| WP-11 字段证据链 V1    | **Phase 2 进行中** | Phase 1 已完成（`field-evidence-v1`）；Impact Query + 金样 + 止损 → `openspec/changes/field-evidence-v1-impact-query`；见 `execution-plan-field-evidence-v1.md` §6–§9 |
 | WP-12 L0–L3 envelope   | 与 GC 同步         | 调查页文案                                                                                                                                           |
 
 ### 历史 P0：重跑收缩
