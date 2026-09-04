@@ -476,6 +476,21 @@ impactQuery({
 
 **禁止**：因 Horae 有边而改 `l1Eligible`、自动 depth+1、把 frontier 标成 CONFIRMED，或向 `TASK_LOCAL_PROJECTION` 写入 TASK→TASK 数据边。
 
+#### 6.2.2 Continuation rules pipeline（Phase 2.6）
+
+INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuationRules()`（`scripts/project-graph/field-evidence-v1/continuation/`）。
+
+| 阶段 | 规则 | 能力 | 行为 |
+| ---- | ---- | ---- | ---- |
+| PRUNE | `PRUNE_DISJOINT` | PRUNE_ONLY | 丢弃 INDEX `DISJOINT` |
+| PRUNE | `SCHEDULE_WHITELIST` | PRUNE_ONLY | Horae AVAILABLE 时丢弃跨任务且非 `DIRECT_PARENT` |
+| REMATCH | `PARTITION_REMATCH` | MAY_MARK_ELIGIBLE | `matchProducersByReadScope` 重算 `partitionOverlap` |
+| DECIDE | `reduce` | — | `pruneOn` 丢弃；`confirmOn` 且无 `SCHEDULE_PARENT_AMBIGUOUS` → `continuationEligible` |
+
+`resolveReadField`：管道后 `|candidates|===1 && continuationEligible && producer FieldEdge` → CONFIRMED，否则 FRONTIER。INDEX `l1Eligible` 仅作初始值；管道后的 `continuationEligible` 为准。Harness 从 `PRODUCER_INDEX_PATH`（或默认 sibling `producer-index.json`）加载 PI；缺失时 rematch 跳过并记 `PRODUCER_INDEX_UNAVAILABLE`，调度 prune 仍可用。`readScopeFor` 用 Facts 谓词 + `resolveReadPartitionScope`；scope 不可得时记 `READ_SCOPE_UNAVAILABLE`（【缺证据】），不伪造 scope。
+
+未纳入本波：`DATE_PARTITION_DEFAULTED` 确认放宽、`overwrite-schedule` 规则。
+
 ### 6.3 scope 计算（第二正交轴，查询期）
 
 **关系树来源**：`FieldEdgeIndex` 构建时编入同任务 Facts 的 `relation-nodes.jsonl` + `relation-edges.jsonl`；查询期用 `relation-tree.ts` 的 `subtreeContains` 与 setop 分支枚举（`setopBranches` + `subtreeContains`，非 `nearestSetopAncestor` 单父链）判定分支/侧别。禁止按表名/后缀判 scope。

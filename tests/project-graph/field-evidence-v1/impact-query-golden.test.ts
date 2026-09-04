@@ -262,10 +262,12 @@ describeGolden("field-evidence-v1 impact query goldens", () => {
     expect(frontier).toBeTruthy();
     const scheduleStatus = context.scheduleRelationLookup.statusFor(projection.taskId);
     if (scheduleStatus === "AVAILABLE") {
+      expect(frontier!.candidates).toHaveLength(1);
       const preferred = frontier!.candidates.filter((candidate) => candidate.schedulePreferred);
       expect(preferred).toHaveLength(1);
       expect(frontier!.candidates[0]?.schedulePreferred).toBe(true);
       expect(frontier!.candidates[0]?.scheduleRelation).toBe("DIRECT_PARENT");
+      expect(frontier!.candidates[0]?.taskId).toBe("121574");
       expect(frontier!.candidates.every((candidate) =>
         candidate.l1Eligible === false || candidate.schedulePreferred === false,
       )).toBe(true);

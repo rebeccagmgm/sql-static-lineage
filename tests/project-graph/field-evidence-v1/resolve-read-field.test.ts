@@ -7,9 +7,28 @@ import {
   type UnionContinuationIndexEntry,
 } from "../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { canonicalJson, sha256 } from "../../../scripts/machine-facts/machine-facts-contract.ts";
+import type { ContinuationPorts } from "../../../scripts/project-graph/field-evidence-v1/continuation/ports.ts";
 import { buildFieldEdgeIndex } from "../../../scripts/project-graph/field-evidence-v1/field-edge-index.ts";
 import { resolveReadField } from "../../../scripts/project-graph/field-evidence-v1/resolve-read-field.ts";
+import {
+  createHoraeScheduleRelationLookupFromScheduleEdges,
+} from "../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
 import type { TaskLocalProjection } from "../../../scripts/project-graph/task-local/contract.ts";
+
+function continuationPorts(
+  lookup: ContinuationPorts["scheduleLookup"],
+): ContinuationPorts {
+  return {
+    scheduleLookup: lookup,
+    producerIndex: null,
+    readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
+    tableIdentityFor: (qualifiedName) => ({
+      platform: "warehouse",
+      dataSource: "default",
+      qualifiedName: qualifiedName.split(".").slice(-1)[0] ?? qualifiedName,
+    }),
+  };
+}
 
 function candidate(
   overrides: Partial<UnionContinuationIndexCandidate> = {},
@@ -132,7 +151,7 @@ describe("resolveReadField", () => {
   const readOccurrenceId = "task:consumer-x:statement:0:relation:root.read.example";
   const column = "amount";
 
-  it("returns CONFIRMED for a unique l1Eligible candidate with producer binding", () => {
+  it("returns CONFIRMED for a unique continuationEligible candidate with producer binding", () => {
     const writeObservationId = "write-observation:producer-a:0";
     const source = createUnionContinuationCandidateSource(index([
       entry(consumerTaskId, readOccurrenceId, [candidate({ writeObservationId })]),
@@ -150,6 +169,7 @@ describe("resolveReadField", () => {
       index: source,
       producerIndexForTask: (taskId) =>
         taskId === "producer-a" ? buildFieldEdgeIndex({ projection: producerProjection }) : null,
+      continuationPorts: continuationPorts(null),
     });
     expect(resolved.kind).toBe("CONFIRMED");
     if (resolved.kind === "CONFIRMED") {
@@ -170,8 +190,59 @@ describe("resolveReadField", () => {
       column,
       index: source,
       producerIndexForTask: () => null,
+      continuationPorts: continuationPorts(null),
     });
     expect(resolved.kind).toBe("FRONTIER");
+  });
+
+  it("schedule-prunes to a single frontier candidate before continuationEligible check", () => {
+    const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
+      { consumerTaskId, producerTaskId: "producer-b" },
+    ]);
+    const source = createUnionContinuationCandidateSource(index([
+      entry(consumerTaskId, readOccurrenceId, [
+        candidate({ taskId: "producer-a", l1Eligible: false, partitionMatchStatus: "UNKNOWN" }),
+        candidate({
+          taskId: "producer-b",
+          writeObservationId: "write-observation:producer-b:0",
+          l1Eligible: false,
+          partitionMatchStatus: "UNKNOWN",
+        }),
+      ]),
+    ]));
+    const resolved = resolveReadField({
+      consumerTaskId,
+      readOccurrenceId,
+      column,
+      index: source,
+      producerIndexForTask: () => null,
+      continuationPorts: continuationPorts(lookup),
+    });
+    expect(resolved.kind).toBe("FRONTIER");
+    if (resolved.kind === "FRONTIER") {
+      expect(resolved.candidates.map((entry) => entry.taskId)).toEqual(["producer-b"]);
+    }
+  });
+
+  it("does not schedule-prune when Horae lookup is unavailable", () => {
+    const source = createUnionContinuationCandidateSource(index([
+      entry(consumerTaskId, readOccurrenceId, [
+        candidate({ taskId: "producer-a" }),
+        candidate({ taskId: "producer-b", writeObservationId: "write-observation:producer-b:0" }),
+      ]),
+    ]));
+    const resolved = resolveReadField({
+      consumerTaskId,
+      readOccurrenceId,
+      column,
+      index: source,
+      producerIndexForTask: () => null,
+      continuationPorts: continuationPorts(null),
+    });
+    expect(resolved.kind).toBe("FRONTIER");
+    if (resolved.kind === "FRONTIER") {
+      expect(resolved.candidates).toHaveLength(2);
+    }
   });
 
   it("returns NO_INDEX_ENTRY when the read occurrence is absent", () => {
@@ -182,6 +253,7 @@ describe("resolveReadField", () => {
       column,
       index: source,
       producerIndexForTask: () => null,
+      continuationPorts: continuationPorts(null),
     });
     expect(resolved.kind).toBe("NO_INDEX_ENTRY");
   });
@@ -203,6 +275,7 @@ describe("resolveReadField", () => {
       column,
       index: source,
       producerIndexForTask: () => buildFieldEdgeIndex({ projection: emptyProducer }),
+      continuationPorts: continuationPorts(null),
     });
     expect(resolved.kind).toBe("NO_BINDING");
   });

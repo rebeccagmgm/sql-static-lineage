@@ -15,6 +15,7 @@ const DERIVATION_ROOTS = [
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/impact-query.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/impact-result-contract.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/schedule-preference.ts"),
+  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/continuation"),
   join(REPO_ROOT, "scripts/project-graph/task-local/project-task-local.ts"),
 ];
 

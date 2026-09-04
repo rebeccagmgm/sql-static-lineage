@@ -4,10 +4,20 @@ import { fileURLToPath } from "node:url";
 
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
 import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  loadTableProducerIndex,
+  type ProducerTableIdentity,
+  type TableProducerIndex,
+} from "../../reconcile/producer/producer-index.ts";
 import { loadCurrentTaskBundle } from "../../query/current-task-bundle.ts";
 import { loadUnionContinuationCandidateSource } from "../../reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { projectTaskLocal } from "../task-local/project-task-local.ts";
 import type { TaskLocalProjection } from "../task-local/contract.ts";
+import type { ContinuationPorts } from "./continuation/ports.ts";
+import {
+  buildReadScopeFromFacts,
+  partitionFieldsFromWrites,
+} from "./continuation/read-scope-from-facts.ts";
 import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
 import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
 import {
@@ -22,6 +32,14 @@ export interface FieldEvidenceQueryRoots {
   readonly factsRoot: string;
   readonly indexPath: string;
   readonly scheduleCacheRoot: string;
+  readonly producerIndexPath: string | null;
+}
+
+function defaultProducerIndexPath(): string {
+  return resolve(
+    process.env.PRODUCER_INDEX_PATH?.trim()
+    || join(REPO_ROOT, "../sql-static-lineage-data.producer-index/producer-index.json"),
+  );
 }
 
 export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
@@ -48,16 +66,100 @@ export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
     || DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   );
 
-  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot };
+  const producerIndexCandidate = defaultProducerIndexPath();
+  const producerIndexPath = existsSync(producerIndexCandidate)
+    ? producerIndexCandidate
+    : null;
+
+  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot, producerIndexPath };
 }
 
 export function fieldEvidenceGoldenRequired(): boolean {
   return process.env.FIELD_EVIDENCE_GOLDEN_REQUIRED === "1";
 }
 
+function parseQualifiedName(qualifiedName: string): ProducerTableIdentity {
+  const normalized = normalizeName(qualifiedName);
+  const parts = normalized.split(".");
+  if (parts.length >= 3) {
+    return {
+      platform: parts[0]!,
+      dataSource: parts[1]!,
+      qualifiedName: parts.slice(2).join("."),
+    };
+  }
+  return {
+    platform: "unknown",
+    dataSource: "unknown",
+    qualifiedName: normalized,
+  };
+}
+
+function sameProducerTable(
+  edgeTable: ProducerTableIdentity,
+  table: ProducerTableIdentity,
+): boolean {
+  const edgeName = normalizeName(edgeTable.qualifiedName);
+  const wantedName = normalizeName(table.qualifiedName);
+  if (edgeName === wantedName) return true;
+  if (wantedName.endsWith(`.${edgeName}`) || edgeName.endsWith(`.${wantedName}`)) {
+    return true;
+  }
+  return false;
+}
+
+function partitionFieldsForTable(
+  producerIndex: TableProducerIndex | null,
+  table: ProducerTableIdentity,
+): readonly string[] | null {
+  if (!producerIndex) return null;
+  const writes = producerIndex.confirmedProducerEdges
+    .filter((edge) => sameProducerTable(edge.table, table))
+    .flatMap((edge) => edge.writes);
+  return partitionFieldsFromWrites(writes);
+}
+
+export function createContinuationPorts(input: {
+  readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
+  readonly producerIndex: TableProducerIndex | null;
+  readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
+}): ContinuationPorts {
+  const partitionFieldCache = new Map<string, readonly string[] | null>();
+
+  return {
+    scheduleLookup: input.scheduleRelationLookup,
+    producerIndex: input.producerIndex,
+    tableIdentityFor: (qualifiedName) => parseQualifiedName(qualifiedName),
+    readScopeFor: ({ consumerTaskId, readOccurrenceId, qualifiedName }) => {
+      const table = parseQualifiedName(qualifiedName);
+      const cacheKey = `${table.platform}\u0000${table.dataSource}\u0000${table.qualifiedName}`;
+      let partitionFields = partitionFieldCache.get(cacheKey);
+      if (partitionFields === undefined) {
+        partitionFields = partitionFieldsForTable(input.producerIndex, table);
+        partitionFieldCache.set(cacheKey, partitionFields);
+      }
+
+      const bundle = input.factsBundleForTask?.(consumerTaskId);
+      if (!bundle) {
+        return { kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" };
+      }
+
+      return buildReadScopeFromFacts({
+        readOccurrenceId,
+        qualifiedName,
+        relationRecords: bundle.relationNodes,
+        relationEdgeRecords: bundle.relationEdges,
+        partitionFields,
+      });
+    },
+  };
+}
+
 export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots): {
   readonly index: ReturnType<typeof loadUnionContinuationCandidateSource>;
   readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
+  readonly producerIndex: TableProducerIndex | null;
+  readonly continuationPorts: ContinuationPorts;
   readonly projectionForTask: (taskId: string) => TaskLocalProjection;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
   readonly runImpactQuery: (
@@ -69,6 +171,9 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   const scheduleRelationLookup = createHoraeScheduleRelationLookupFromCache(
     roots.scheduleCacheRoot,
   );
+  const producerIndex = roots.producerIndexPath
+    ? loadTableProducerIndex(roots.producerIndexPath)
+    : null;
   const projectionCache = new Map<string, TaskLocalProjection>();
   const bundleCache = new Map<string, ReturnType<typeof loadCurrentTaskBundle>>();
 
@@ -97,6 +202,12 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
     return { relationNodes, relationEdges };
   };
 
+  const continuationPorts = createContinuationPorts({
+    scheduleRelationLookup,
+    producerIndex,
+    factsBundleForTask,
+  });
+
   function runImpactQuery(
     anchor: FieldImpactAnchor,
     options?: Pick<ImpactQueryInput, "maxDepth" | "budget" | "expandCandidates">,
@@ -107,6 +218,7 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
       projectionForTask,
       factsBundleForTask,
       scheduleRelationLookup,
+      continuationPorts,
       ...options,
     });
   }
@@ -114,6 +226,8 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   return {
     index,
     scheduleRelationLookup,
+    producerIndex,
+    continuationPorts,
     projectionForTask,
     factsBundleForTask,
     runImpactQuery,
