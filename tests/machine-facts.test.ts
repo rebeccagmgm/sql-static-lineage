@@ -233,7 +233,8 @@ describe("machine facts contract", () => {
 		expect(bindings.find((binding) => binding.target_field === "out_col")).toMatchObject({
 			write_observation_id: writes[0].write_observation_id,
 			expression_id: expressions.find((expression) => expression.output_name === "out_col").expression_id,
-			static_partition_columns: ["busi_date"],
+			static_partition_columns: [],
+			dynamic_partition_columns: ["busi_date"],
 		});
 		expect(bindings.find((binding) => binding.target_field === "busi_date")).toMatchObject({
 			write_observation_id: writes[0].write_observation_id,
