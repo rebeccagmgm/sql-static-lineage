@@ -1,13 +1,24 @@
-import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
 import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  loadTableProducerIndex,
+  type ProducerTableIdentity,
+  type TableProducerIndex,
+} from "../../reconcile/producer/producer-index.ts";
 import { loadCurrentTaskBundle } from "../../query/current-task-bundle.ts";
 import { loadUnionContinuationCandidateSource } from "../../reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { projectTaskLocal } from "../task-local/project-task-local.ts";
 import type { TaskLocalProjection } from "../task-local/contract.ts";
+import type { ContinuationPorts } from "./continuation/ports.ts";
+import {
+  buildReadScopeFromFacts,
+  partitionFieldsFromWrites,
+} from "./continuation/read-scope-from-facts.ts";
+import { resolveProducerTableIdentity, unavailableReadScopeReason } from "./continuation/table-identity.ts";
 import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
 import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
 import {
@@ -22,6 +33,14 @@ export interface FieldEvidenceQueryRoots {
   readonly factsRoot: string;
   readonly indexPath: string;
   readonly scheduleCacheRoot: string;
+  readonly producerIndexPath: string | null;
+}
+
+function defaultProducerIndexPath(): string {
+  return resolve(
+    process.env.PRODUCER_INDEX_PATH?.trim()
+    || join(REPO_ROOT, "../sql-static-lineage-data.producer-index/producer-index.json"),
+  );
 }
 
 export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
@@ -48,16 +67,123 @@ export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
     || DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   );
 
-  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot };
+  const producerIndexCandidate = defaultProducerIndexPath();
+  const producerIndexPath = existsSync(producerIndexCandidate)
+    ? producerIndexCandidate
+    : null;
+
+  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot, producerIndexPath };
 }
 
 export function fieldEvidenceGoldenRequired(): boolean {
   return process.env.FIELD_EVIDENCE_GOLDEN_REQUIRED === "1";
 }
 
+function lookupTaskCategory(dataRoot: string, taskId: string): string | null {
+  const tasksRoot = join(dataRoot, "tasks");
+  if (!existsSync(tasksRoot) || taskId.includes("/") || taskId.includes("\\")) {
+    return null;
+  }
+  const hits = readdirSync(tasksRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(tasksRoot, entry.name, taskId, "task.json"))
+    .filter((taskPath) => existsSync(taskPath));
+  if (hits.length !== 1) return null;
+  try {
+    const document = JSON.parse(readFileSync(hits[0]!, "utf8")) as {
+      readonly taskCategory?: unknown;
+    };
+    if (typeof document.taskCategory === "string" && document.taskCategory.trim()) {
+      return document.taskCategory.trim();
+    }
+  } catch {
+    return null;
+  }
+  return basename(dirname(dirname(hits[0]!)));
+}
+
+function sameProducerTable(
+  edgeTable: ProducerTableIdentity,
+  table: ProducerTableIdentity,
+): boolean {
+  const edgeName = normalizeName(edgeTable.qualifiedName);
+  const wantedName = normalizeName(table.qualifiedName);
+  if (edgeName === wantedName) return true;
+  if (wantedName.endsWith(`.${edgeName}`) || edgeName.endsWith(`.${wantedName}`)) {
+    return true;
+  }
+  return false;
+}
+
+function partitionFieldsForTable(
+  producerIndex: TableProducerIndex | null,
+  table: ProducerTableIdentity,
+): readonly string[] | null {
+  if (!producerIndex) return null;
+  const writes = producerIndex.confirmedProducerEdges
+    .filter((edge) => sameProducerTable(edge.table, table))
+    .flatMap((edge) => edge.writes);
+  return partitionFieldsFromWrites(writes);
+}
+
+export function createContinuationPorts(input: {
+  readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
+  readonly producerIndex: TableProducerIndex | null;
+  readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
+  readonly taskCategoryFor: (taskId: string) => string | null;
+}): ContinuationPorts {
+  const partitionFieldCache = new Map<string, readonly string[] | null>();
+
+  const tableIdentityFor: ContinuationPorts["tableIdentityFor"] = ({
+    consumerTaskId,
+    qualifiedName,
+  }) => resolveProducerTableIdentity({
+    qualifiedName,
+    taskCategory: input.taskCategoryFor(consumerTaskId),
+  });
+
+  return {
+    scheduleLookup: input.scheduleRelationLookup,
+    producerIndex: input.producerIndex,
+    taskCategoryFor: input.taskCategoryFor,
+    tableIdentityFor,
+    readScopeFor: ({ consumerTaskId, readOccurrenceId, qualifiedName }) => {
+      const table = tableIdentityFor({ consumerTaskId, qualifiedName });
+      const cacheKey = `${table.platform}\u0000${table.dataSource}\u0000${table.qualifiedName}`;
+      let partitionFields = partitionFieldCache.get(cacheKey);
+      if (partitionFields === undefined) {
+        partitionFields = partitionFieldsForTable(input.producerIndex, table);
+        partitionFieldCache.set(cacheKey, partitionFields);
+      }
+
+      if (partitionFields === null) {
+        return {
+          kind: "UNAVAILABLE",
+          reasonCode: unavailableReadScopeReason(input.taskCategoryFor(consumerTaskId)),
+        };
+      }
+
+      const bundle = input.factsBundleForTask?.(consumerTaskId);
+      if (!bundle) {
+        return { kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" };
+      }
+
+      return buildReadScopeFromFacts({
+        readOccurrenceId,
+        qualifiedName,
+        relationRecords: bundle.relationNodes,
+        relationEdgeRecords: bundle.relationEdges,
+        partitionFields,
+      });
+    },
+  };
+}
+
 export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots): {
   readonly index: ReturnType<typeof loadUnionContinuationCandidateSource>;
   readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
+  readonly producerIndex: TableProducerIndex | null;
+  readonly continuationPorts: ContinuationPorts;
   readonly projectionForTask: (taskId: string) => TaskLocalProjection;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
   readonly runImpactQuery: (
@@ -69,6 +195,9 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   const scheduleRelationLookup = createHoraeScheduleRelationLookupFromCache(
     roots.scheduleCacheRoot,
   );
+  const producerIndex = roots.producerIndexPath
+    ? loadTableProducerIndex(roots.producerIndexPath)
+    : null;
   const projectionCache = new Map<string, TaskLocalProjection>();
   const bundleCache = new Map<string, ReturnType<typeof loadCurrentTaskBundle>>();
 
@@ -97,6 +226,22 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
     return { relationNodes, relationEdges };
   };
 
+  const taskCategoryCache = new Map<string, string | null>();
+  const taskCategoryFor = (taskId: string): string | null => {
+    const cached = taskCategoryCache.get(taskId);
+    if (cached !== undefined) return cached;
+    const category = lookupTaskCategory(roots.dataRoot, taskId);
+    taskCategoryCache.set(taskId, category);
+    return category;
+  };
+
+  const continuationPorts = createContinuationPorts({
+    scheduleRelationLookup,
+    producerIndex,
+    factsBundleForTask,
+    taskCategoryFor,
+  });
+
   function runImpactQuery(
     anchor: FieldImpactAnchor,
     options?: Pick<ImpactQueryInput, "maxDepth" | "budget" | "expandCandidates">,
@@ -107,6 +252,7 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
       projectionForTask,
       factsBundleForTask,
       scheduleRelationLookup,
+      continuationPorts,
       ...options,
     });
   }
@@ -114,6 +260,8 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   return {
     index,
     scheduleRelationLookup,
+    producerIndex,
+    continuationPorts,
     projectionForTask,
     factsBundleForTask,
     runImpactQuery,

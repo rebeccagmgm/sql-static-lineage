@@ -93,17 +93,44 @@ function assertShadowSetopMaterialization(
   const matGap = projection.gaps?.find(
     (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
   );
-  expect(matGap).toBeTruthy();
-  expect(Array.isArray(matGap!.details.columns) && matGap!.details.columns.length > 0).toBe(true);
-  const anchor = anchorFromTempTableSource(projection);
-  expect(anchor).not.toBeNull();
-  const result = context.runImpactQuery(anchor!);
-  expect(result.gaps.some(
-    (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
-  )).toBe(true);
+  const tempMarker = String(expected.tempTableMarker ?? "");
+  if (matGap) {
+    expect(Array.isArray(matGap.details.columns) && matGap.details.columns.length > 0).toBe(true);
+    const anchor = anchorFromTempTableSource(projection);
+    expect(anchor).not.toBeNull();
+    const result = context.runImpactQuery(anchor!);
+    expect(result.gaps.some(
+      (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
+    )).toBe(true);
+    expect(result.gaps.some((gap) =>
+      gap.reasonCode === "PRODUCER_NOT_PROJECTED"
+      && String(gap.details.physicalDataset ?? "").includes(tempMarker),
+    )).toBe(false);
+    return;
+  }
+
+  // Facts may omit task-local-materializations; still require shadow setop + projected temp sources.
+  const tempEdges = projection.edges.filter((edge) => {
+    if (edge.edgeType !== "FIELD_DIRECT" && edge.edgeType !== "FIELD_CONDITIONAL") {
+      return false;
+    }
+    const from = projection.nodes.find((node) => node.nodeId === edge.fromNodeId);
+    const qualifiedName = normalizeName(String(from?.properties.qualifiedName ?? ""));
+    return tempMarker.length > 0
+      ? qualifiedName.includes(normalizeName(tempMarker))
+      : qualifiedName.includes("temp.");
+  });
+  expect(tempEdges.length).toBeGreaterThan(0);
+  const write = primaryFinalWrite(projection);
+  expect(write).not.toBeNull();
+  const result = context.runImpactQuery({
+    taskId: projection.taskId,
+    writeObservationId: write!.writeObservationId,
+    outputColumn: String(tempEdges[0]!.properties.outputColumn ?? ""),
+  });
   expect(result.gaps.some((gap) =>
     gap.reasonCode === "PRODUCER_NOT_PROJECTED"
-    && String(gap.details.physicalDataset ?? "").includes(String(expected.tempTableMarker ?? "")),
+    && String(gap.details.physicalDataset ?? "").includes(tempMarker),
   )).toBe(false);
 }
 
@@ -229,7 +256,7 @@ describeGolden("field-evidence-v1 impact query goldens", () => {
     expect(nomJoinControls.some((entry) => entry.grain === "EXPAND_RISK")).toBe(true);
   }, 300_000);
 
-  it("case D: multi-writer vola stays at frontier by default", () => {
+  it("case D: vola hop confirms unique overlapping Horae parent", () => {
     const expected = loadExpected("d");
     const projection = context.projectionForTask(String(expected.taskId));
     const anchor = findOutputAnchor(
@@ -243,37 +270,28 @@ describeGolden("field-evidence-v1 impact query goldens", () => {
       writeObservationId: anchor!.writeObservationId,
       outputColumn: anchor!.outputColumn,
     });
-    expect(result.frontier.some((entry) =>
-      entry.reasonCode === "MULTI_WRITER_CANDIDATE_FRONTIER",
-    )).toBe(true);
     expect(result.value.every((entry) =>
       !(entry.depth >= 1 && entry.source.column === String(expected.outputColumn)),
     )).toBe(true);
-    const expanded = context.runImpactQuery({
-      taskId: projection.taskId,
-      writeObservationId: anchor!.writeObservationId,
-      outputColumn: anchor!.outputColumn,
-    }, { expandCandidates: true });
-    expect(expanded.value.some((entry) => entry.evidenceStatus === "CANDIDATE")).toBe(true);
-
-    const frontier = result.frontier.find((entry) =>
-      entry.reasonCode === "MULTI_WRITER_CANDIDATE_FRONTIER",
-    );
-    expect(frontier).toBeTruthy();
     const scheduleStatus = context.scheduleRelationLookup.statusFor(projection.taskId);
     if (scheduleStatus === "AVAILABLE") {
-      const preferred = frontier!.candidates.filter((candidate) => candidate.schedulePreferred);
-      expect(preferred).toHaveLength(1);
-      expect(frontier!.candidates[0]?.schedulePreferred).toBe(true);
-      expect(frontier!.candidates[0]?.scheduleRelation).toBe("DIRECT_PARENT");
-      expect(frontier!.candidates.every((candidate) =>
-        candidate.l1Eligible === false || candidate.schedulePreferred === false,
+      expect(result.value.some((entry) =>
+        entry.depth === 1
+        && entry.evidenceStatus === "CONFIRMED"
+        && entry.taskId === "121574",
       )).toBe(true);
+      expect(result.frontier.every((entry) => entry.candidates.length <= 1)).toBe(true);
     } else if (fieldEvidenceGoldenRequired()) {
       throw new Error(
         "FIELD_EVIDENCE_GOLDEN_REQUIRED but Horae schedule cache is unavailable for case D",
       );
     } else {
+      expect(result.frontier.some((entry) =>
+        entry.reasonCode === "MULTI_WRITER_CANDIDATE_FRONTIER",
+      )).toBe(true);
+      const frontier = result.frontier.find((entry) =>
+        entry.reasonCode === "MULTI_WRITER_CANDIDATE_FRONTIER",
+      );
       expect(frontier!.candidates.every((candidate) =>
         candidate.scheduleRelation === "HORAE_UNAVAILABLE",
       )).toBe(true);

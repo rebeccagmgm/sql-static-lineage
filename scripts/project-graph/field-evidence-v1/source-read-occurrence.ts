@@ -131,11 +131,51 @@ function qualifierFromInput(inputField: JsonRecord): string | null {
   return text(inputField.qualifier) ?? text(inputField.alias);
 }
 
+/**
+ * Extract table/alias qualifiers that appear as `qualifier.column` in expression text.
+ * Ported from physical-field-expander expressionQualifiersForColumn — no task literals.
+ */
+export function expressionQualifiersForColumn(
+  expressionText: string | null | undefined,
+  column: string,
+): readonly string[] {
+  if (!expressionText?.trim() || !column.trim()) return [];
+  const escapedColumn = column.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `(?:^|[^\\w$])["\`\\[]?([A-Za-z_][\\w$]*)["\`\\]]?\\s*\\.\\s*["\`\\[]?${escapedColumn}["\`\\]]?(?![\\w$])`,
+    "gi",
+  );
+  const qualifiers = new Set<string>();
+  for (const match of expressionText.matchAll(pattern)) {
+    if (match[1]) qualifiers.add(normalizeName(match[1]));
+  }
+  return [...qualifiers].sort((left, right) => left.localeCompare(right));
+}
+
 function readOccurrenceIdForRelation(
   readOccurrenceByRelationId: ReadonlyMap<string, string>,
   relationId: string,
 ): string | null {
   return readOccurrenceByRelationId.get(relationId) ?? relationId;
+}
+
+/** Facts mark CTE-body scopes with `.(child)`; expressions outside that body must not bind its reads. */
+export function cteBodyScopePrefix(scopeId: string | null | undefined): string | null {
+  if (!scopeId) return null;
+  const marker = ".(child)";
+  const index = scopeId.indexOf(marker);
+  if (index < 0) return null;
+  return scopeId.slice(0, index + marker.length);
+}
+
+export function isReadVisibleFromExpressionScope(
+  expressionScopeId: string | null,
+  readScopeId: string | null,
+): boolean {
+  const expressionCte = cteBodyScopePrefix(expressionScopeId);
+  const readCte = cteBodyScopePrefix(readScopeId);
+  if (readCte && readCte !== expressionCte) return false;
+  return true;
 }
 
 function matchingReads(input: {
@@ -144,22 +184,42 @@ function matchingReads(input: {
   readonly sourceTable: string;
 }): readonly RelationRecord[] {
   const targetTable = tableKey(input.sourceTable);
-  return readRelationsInSubtree(input.index, input.leafRelationId).filter(
-    (relation) => relation.physicalDataset === targetTable,
-  );
+  const expressionScopeId = input.index.relations.get(input.leafRelationId)?.scopeId ?? null;
+  return readRelationsInSubtree(input.index, input.leafRelationId).filter((relation) => {
+    if (relation.physicalDataset !== targetTable) return false;
+    return isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId);
+  });
 }
 
-function narrowByQualifier(input: {
+function relationMatchesQualifier(
+  relation: RelationRecord,
+  qualifier: string,
+  bindingByReadRelation: ReadonlyMap<string, string>,
+): boolean {
+  const normalizedQualifier = normalizeName(qualifier);
+  const binding = bindingByReadRelation.get(relation.relationId);
+  if (binding !== undefined && normalizeName(binding) === normalizedQualifier) {
+    return true;
+  }
+  if (relation.scopeId) {
+    const scopeTail = relation.scopeId.split(".").at(-1);
+    if (scopeTail && normalizeName(scopeTail) === normalizedQualifier) return true;
+  }
+  const relationSegments = relation.relationId.toLowerCase().split(/[:.]/);
+  return relationSegments.includes(normalizedQualifier);
+}
+
+function narrowByQualifiers(input: {
   readonly matches: readonly RelationRecord[];
-  readonly qualifier: string | null;
+  readonly qualifiers: readonly string[];
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
 }): readonly RelationRecord[] {
-  if (!input.qualifier || input.matches.length <= 1) return input.matches;
-  const normalizedQualifier = normalizeName(input.qualifier);
-  const narrowed = input.matches.filter((relation) => {
-    const binding = input.bindingByReadRelation.get(relation.relationId);
-    return binding !== undefined && normalizeName(binding) === normalizedQualifier;
-  });
+  if (input.qualifiers.length === 0 || input.matches.length <= 1) return input.matches;
+  const narrowed = input.matches.filter((relation) =>
+    input.qualifiers.some((qualifier) =>
+      relationMatchesQualifier(relation, qualifier, input.bindingByReadRelation),
+    ),
+  );
   return narrowed.length > 0 ? narrowed : input.matches;
 }
 
@@ -169,6 +229,7 @@ export function resolveSourceReadOccurrence(input: {
   readonly sourceTable: string;
   readonly sourceColumn: string;
   readonly inputField: JsonRecord;
+  readonly expressionText?: string | null;
   readonly leafRelationId: string | null;
   readonly index: RelationTreeIndex;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
@@ -183,13 +244,26 @@ export function resolveSourceReadOccurrence(input: {
   if (!input.leafRelationId) {
     return unresolved({ ...base, reason: "MATERIALIZATION_LEAF_MISSING" });
   }
-  const matches = narrowByQualifier({
+
+  const inputQualifier = qualifierFromInput(input.inputField);
+  const textQualifiers = expressionQualifiersForColumn(
+    input.expressionText,
+    input.sourceColumn,
+  );
+  const qualifiers = [
+    ...new Set([
+      ...(inputQualifier ? [normalizeName(inputQualifier)] : []),
+      ...textQualifiers,
+    ]),
+  ];
+
+  const matches = narrowByQualifiers({
     matches: matchingReads({
       index: input.index,
       leafRelationId: input.leafRelationId,
       sourceTable: input.sourceTable,
     }),
-    qualifier: qualifierFromInput(input.inputField),
+    qualifiers,
     bindingByReadRelation: input.bindingByReadRelation,
   });
   if (matches.length === 1) {

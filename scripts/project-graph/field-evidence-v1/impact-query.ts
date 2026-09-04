@@ -30,6 +30,7 @@ import {
   enrichFrontierCandidates,
   type HoraeScheduleRelationLookup,
 } from "./schedule-preference.ts";
+import type { ContinuationPorts } from "./continuation/ports.ts";
 
 export interface ImpactQueryBudget {
   readonly maxEdges?: number;
@@ -48,6 +49,7 @@ export interface ImpactQueryInput {
   readonly budget?: ImpactQueryBudget;
   readonly expandCandidates?: boolean;
   readonly scheduleRelationLookup?: HoraeScheduleRelationLookup | null;
+  readonly continuationPorts?: ContinuationPorts | null;
 }
 
 interface TraversalState {
@@ -253,6 +255,17 @@ function traverseValueEdge(input: {
     index: query.index,
     producerIndexForTask: (producerTaskId) =>
       loadIndex(indexCache, query, producerTaskId),
+    continuationPorts: query.continuationPorts ?? {
+      scheduleLookup: query.scheduleRelationLookup ?? null,
+      producerIndex: null,
+      taskCategoryFor: () => null,
+      readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
+      tableIdentityFor: ({ qualifiedName }) => ({
+        platform: "unknown",
+        dataSource: "unknown",
+        qualifiedName: qualifiedName.trim().toLowerCase(),
+      }),
+    },
   });
 
   if (resolved.kind === "NO_INDEX_ENTRY") {
@@ -274,6 +287,12 @@ function traverseValueEdge(input: {
   }
 
   if (resolved.kind === "FRONTIER") {
+    for (const gap of resolved.gaps) {
+      pushGap(state, gap);
+    }
+    if (resolved.candidates.length === 0) {
+      return;
+    }
     if (state.frontierCount >= input.maxFrontier) {
       budgetExceeded(state, "maxFrontier", resolved.readOccurrenceId);
       return;

@@ -56,7 +56,7 @@
 | 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                    |
 | Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                         |
 | Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                    |
-| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-7；金样 A–E + `test:field-evidence`）               |
+| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-8；金样 A–E + `test:field-evidence` + `field-evidence:query`） |
 | OpenSpec change `field-evidence-schedule-preference`（Phase 2.5）         | **已完成**（frontier Horae 推荐排序；`FIELD_IMPACT_RESULT` 1.1.0）       |
 
 ### 立刻做什么（顺序）
@@ -295,12 +295,16 @@ fail-closed：`sourceReadOccurrenceStatus ≠ RESOLVED` → 必填 `sourceReadOc
 
 ```text
 for each FieldEdge (leaf expression E, input field (T, C)):
-  S := relation 子树(E.relation_id) 内所有 relation_type = read 且 physical table = T 的 relation
-  R := S 对应的 read_occurrence_id 集合
+  S0 := relation 子树(E.relation_id) 内所有 relation_type = read 且 physical table = T 的 relation
+  S  := 按 Facts scope_id 过滤：表达式不在某 CTE body（`.(child)` scope）内时，丢弃该 CTE body 内的读
+  R  := S 对应的 read_occurrence_id 集合
   |R| = 1  → RESOLVED
              sourceReadOccurrenceId = R[0]
              sourceRelationId       = S[0].relation_id          ← 物理 read relation，非 E.relation_id
-  |R| > 1  → 用 qualifier（别名）收窄：E 的输入引用带 qualifier 且唯一命中 → RESOLVED
+  |R| > 1  → 用 qualifier 收窄（优先级）：
+               1) input_fields.qualifier / alias
+               2) expression_text 中 `alias.column`（对齐 legacy field-lineage）
+               命中 binding / scope 末段 / relation path 段且唯一 → RESOLVED
              否则 AMBIGUOUS, sourceReadOccurrenceId = null, sourceRelationId = null
                reason  SELF_JOIN_NO_QUALIFIER   （同表多读、输入引用无别名）
                gap     FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS
@@ -311,7 +315,7 @@ for each FieldEdge (leaf expression E, input field (T, C)):
 
 `sourceReadOccurrenceReason` 只在非 RESOLVED 时必填，码表：`SETOP_BRANCH_UNRESOLVED | SELF_JOIN_NO_QUALIFIER | CTE_SCOPE_UNRESOLVED | MATERIALIZATION_LEAF_MISSING`（最后一条：折叠链末端缺 leaf 上下文，指向 FE-1′）。
 
-复用 `scripts/plans/read-occurrence-resolver.ts` 的 relation 树遍历与既有 `READ_OCCURRENCE_*` 原因码，不另写一套。**禁止**在 `|R| > 1` 时取第一个。**禁止**派生代码出现任务 id、表名、列名字面量（§5.5 有 lint 测试）。
+scope 过滤与 qualifier 提取对齐 legacy `physical-field-expander` / Plan `scope_id` 约定，**不**按任务/表特例。**禁止**在 `|R| > 1` 时取第一个。**禁止**派生代码出现任务 id、表名、列名字面量（§5.5 有 lint 测试）。
 
 Facts 层若将来在 `input_fields[]` 直接带 `source_relation_id`，FE-1 的子树搜索退化为查表——这是**独立的 Facts 增强 WP**，不在 Phase 1 内，Phase 1 不等它。
 
@@ -476,6 +480,21 @@ impactQuery({
 
 **禁止**：因 Horae 有边而改 `l1Eligible`、自动 depth+1、把 frontier 标成 CONFIRMED，或向 `TASK_LOCAL_PROJECTION` 写入 TASK→TASK 数据边。
 
+#### 6.2.2 Continuation rules pipeline（Phase 2.6）
+
+INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuationRules()`（`scripts/project-graph/field-evidence-v1/continuation/`）。
+
+| 阶段 | 规则 | 能力 | 行为 |
+| ---- | ---- | ---- | ---- |
+| PRUNE | `PRUNE_DISJOINT` | PRUNE_ONLY | 丢弃 INDEX `DISJOINT` |
+| REMATCH | `PARTITION_REMATCH` | MAY_MARK_ELIGIBLE | `matchProducersByReadScope` 重算 `partitionOverlap` |
+| REMATCH | `SCHEDULE_TIEBREAK` | PRUNE_ONLY | 同表且 ≥2 条 `PROVEN_OVERLAP`/`POSSIBLE_OVERLAP`、且恰好一个 Horae `DIRECT_PARENT` 时只留该父；UNKNOWN 不参与破平、不被丢弃。Horae UNAVAILABLE 或剩余 ≤1 则跳过。Horae 永不把 `continuationEligible` 置 true |
+| DECIDE | `reduce` | — | `pruneOn` 丢弃；`confirmOn` 且无 `SCHEDULE_PARENT_AMBIGUOUS` → `continuationEligible` |
+
+`resolveReadField`：管道后 `|candidates|===1 && continuationEligible && producer FieldEdge` → CONFIRMED，否则 FRONTIER。INDEX `l1Eligible` 仅作初始值；管道后的 `continuationEligible` 为准。Harness 从 `PRODUCER_INDEX_PATH`（或默认 sibling `producer-index.json`）加载 PI；缺失时 rematch 跳过并记 `PRODUCER_INDEX_UNAVAILABLE`。两段 qualifiedName 仅当消费任务 `taskCategory` 为 `sparkIndex` / `hiveTask` / `hiveTask-2.0` 时默认 `platform=hive`、`dataSource=gfhive`；`hive2*` 与 `*2hive` 不同此默认。`readScopeFor` 用 Facts 谓词 + `resolveReadPartitionScope`；`*2hive` 且 PI 无写分区时记 `SOURCE_ENDPOINT_BOUNDARY`（源库边界）；其它 scope 不可得记 `READ_SCOPE_UNAVAILABLE`（【缺证据】），不伪造 scope。
+
+未纳入本波：`DATE_PARTITION_DEFAULTED` 确认放宽、`overwrite-schedule` 规则。
+
 ### 6.3 scope 计算（第二正交轴，查询期）
 
 **关系树来源**：`FieldEdgeIndex` 构建时编入同任务 Facts 的 `relation-nodes.jsonl` + `relation-edges.jsonl`；查询期用 `relation-tree.ts` 的 `subtreeContains` 与 setop 分支枚举（`setopBranches` + `subtreeContains`，非 `nearestSetopAncestor` 单父链）判定分支/侧别。禁止按表名/后缀判 scope。
@@ -573,6 +592,7 @@ impactQuery({
 | `CONTROL_SIDE_UNRESOLVED`                 | Phase 1    | 自连接等无法判侧                                                                                           |
 | `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`  | Phase 1    | 任务内临时表字段链断；按 `(taskId, physicalDataset)` 聚合一条（§5.4）                                      |
 | `PRODUCER_NOT_PROJECTED`                  | Phase 2    | INDEX 无条目：终止表 / 未采集 / SCHEDULE_ONLY                                                              |
+| `SOURCE_ENDPOINT_BOUNDARY`                | Phase 2    | `*2hive` 读源库表且 PI 无 confirmed writer；平台边界，不再当 `READ_SCOPE_UNAVAILABLE`                      |
 | `PRODUCER_BINDING_NOT_FOUND`              | Phase 2    | writer 在并集内但该列无 RESOLVED binding                                                                   |
 | `MULTI_WRITER_CANDIDATE_FRONTIER`         | Phase 2    | 候选 > 1 或 `l1Eligible = false`，停止递归                                                                 |
 | `WRITER_PARTITION_UNKNOWN` 等             | INDEX 透传 | 不改写                                                                                                     |
@@ -610,13 +630,13 @@ impactQuery({
 - 列 2：`nom ← pdata_n.t03_otc_opt_comp_sub_trd_info.prin`（保留侧，b0 基表）→ 同一批键对该列 **`DATASET_SCOPED`**，`grain = EXPAND_RISK`
 - 不变量：同一 `relationId` 的控制条目在两个查询里 scope 不同；类型均为 CONTROL
 
-### Case D 多 writer 必须是 CANDIDATE
+### Case D vola 同表多 writer
 
-- 锚点：`176827.vola ← pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx.fx_vola`；该表批内 **7 个 writer**
+- 锚点：`176827.vola ← pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx.fx_vola`；INDEX 枚举同表多 writer
 - 不变量：
-  - 若 INDEX 该读次 `candidates.length > 1` 或 `l1Eligible = false` → `frontier[]` 有条目，`reasonCode = MULTI_WRITER_CANDIDATE_FRONTIER`，每个候选带 `partitionMatchStatus`
-  - `value[]` 中**不得**出现 depth ≥ 1 的该分支边（默认不递归）
-  - `expandCandidates = true` 时每个候选各计预算，结果标 `evidenceStatus = CANDIDATE`
+  - 分区无法证明重叠时保持 `MULTI_WRITER_CANDIDATE_FRONTIER`（Horae 只破平，不单独 CONFIRMED）
+  - 分区证明重叠且唯一 Horae `DIRECT_PARENT` 时，该读次可 CONFIRMED 到该父任务；`value[]` 中**不得**出现 depth ≥ 1 且 `source.column` 仍为消费列名的假递归
+  - `expandCandidates = true` 仅在仍有 frontier 候选时把候选标 `CANDIDATE`
 
 ### Case E 临时表断链具名
 
@@ -723,6 +743,7 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 | **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                             | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                |
 | **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence` | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed         |
 | **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`             | 输出 `confirmedTwoHopRatio / dominantGap / decision`                |
+| **FE-8** 单锚点查询 CLI | `npm run field-evidence:query -- --task-id <id> --column <col>` | stdout 输出校验过的 `FIELD_IMPACT_RESULT` 1.1.0 JSON；默认锚定任务 `finalWrites[0]` |
 
 Phase 2 的行为契约草稿即本文件 §6–§7；开 change 时以此为 spec 起点（首版 OpenSpec `specs/field-evidence-v1/spec.md` 已并入本文件，不再单独维护）。
 

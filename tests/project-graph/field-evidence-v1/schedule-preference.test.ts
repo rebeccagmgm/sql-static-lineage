@@ -25,6 +25,7 @@ describe("schedule-preference", () => {
   const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
     { consumerTaskId: "consumer-1", producerTaskId: "producer-b" },
     { consumerTaskId: "consumer-1", producerTaskId: "producer-c" },
+    { consumerTaskId: "consumer-1", producerTaskId: "producer-a" },
     { consumerTaskId: "consumer-2", producerTaskId: "producer-a" },
   ]);
 
