@@ -29,8 +29,9 @@ function ports(lookup: ContinuationPorts["scheduleLookup"]): ContinuationPorts {
   return {
     scheduleLookup: lookup,
     producerIndex: null,
+    taskCategoryFor: () => "sparkIndex",
     readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
-    tableIdentityFor: (qualifiedName) => ({
+    tableIdentityFor: ({ qualifiedName }) => ({
       platform: "warehouse",
       dataSource: "default",
       qualifiedName: qualifiedName.split(".").slice(-1)[0] ?? qualifiedName,
@@ -39,7 +40,7 @@ function ports(lookup: ContinuationPorts["scheduleLookup"]): ContinuationPorts {
 }
 
 describe("continuation pipeline", () => {
-  it("prunes DISJOINT and schedule whitelist to a single frontier candidate", () => {
+  it("does not use Horae to drop UNKNOWN writers after DISJOINT prune", () => {
     const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
       { consumerTaskId: "consumer-root", producerTaskId: "producer-preferred" },
     ]);
@@ -63,9 +64,40 @@ describe("continuation pipeline", () => {
       ports: ports(lookup),
     });
 
-    expect(result.candidates.map((candidate) => candidate.index.taskId)).toEqual(["producer-preferred"]);
-    expect(result.candidates[0]?.continuationEligible).toBe(false);
+    expect(result.candidates).toHaveLength(7);
+    expect(result.candidates.every((candidate) => candidate.continuationEligible === false)).toBe(true);
     expect(result.gaps.some((gap) => gap.reasonCode === "PRODUCER_INDEX_UNAVAILABLE")).toBe(true);
+  });
+
+  it("tie-breaks overlapping writers to the unique Horae parent after rematch skip", () => {
+    const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
+      { consumerTaskId: "consumer-root", producerTaskId: "producer-preferred" },
+    ]);
+    const result = applyContinuationRules({
+      pipeline: {
+        consumerTaskId: "consumer-root",
+        readOccurrenceId: "read:consumer-root:0",
+        column: "amount",
+        candidates: [
+          indexCandidate({
+            taskId: "producer-preferred",
+            partitionMatchStatus: "ASSUMED",
+          }),
+          indexCandidate({
+            taskId: "producer-other-a",
+            writeObservationId: "write-observation:producer-other-a:0",
+            partitionMatchStatus: "ASSUMED",
+          }),
+        ],
+      },
+      qualifiedName: "warehouse.example_table",
+      ports: ports(lookup),
+    });
+
+    expect(result.candidates.map((candidate) => candidate.index.taskId)).toEqual([
+      "producer-preferred",
+    ]);
+    expect(result.candidates[0]?.continuationEligible).toBe(false);
   });
 
   it("does not schedule-prune when Horae lookup is unavailable", () => {

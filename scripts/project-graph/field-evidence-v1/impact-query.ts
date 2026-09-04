@@ -258,8 +258,9 @@ function traverseValueEdge(input: {
     continuationPorts: query.continuationPorts ?? {
       scheduleLookup: query.scheduleRelationLookup ?? null,
       producerIndex: null,
+      taskCategoryFor: () => null,
       readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
-      tableIdentityFor: (qualifiedName) => ({
+      tableIdentityFor: ({ qualifiedName }) => ({
         platform: "unknown",
         dataSource: "unknown",
         qualifiedName: qualifiedName.trim().toLowerCase(),
@@ -286,14 +287,17 @@ function traverseValueEdge(input: {
   }
 
   if (resolved.kind === "FRONTIER") {
+    for (const gap of resolved.gaps) {
+      pushGap(state, gap);
+    }
+    if (resolved.candidates.length === 0) {
+      return;
+    }
     if (state.frontierCount >= input.maxFrontier) {
       budgetExceeded(state, "maxFrontier", resolved.readOccurrenceId);
       return;
     }
     state.frontierCount += 1;
-    for (const gap of resolved.gaps) {
-      pushGap(state, gap);
-    }
     const baseCandidates = resolved.candidates.map((candidate) => ({
       taskId: candidate.taskId,
       writeObservationId: candidate.writeObservationId,

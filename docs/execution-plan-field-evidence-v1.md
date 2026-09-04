@@ -483,11 +483,11 @@ INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuation
 | 阶段 | 规则 | 能力 | 行为 |
 | ---- | ---- | ---- | ---- |
 | PRUNE | `PRUNE_DISJOINT` | PRUNE_ONLY | 丢弃 INDEX `DISJOINT` |
-| PRUNE | `SCHEDULE_WHITELIST` | PRUNE_ONLY | Horae AVAILABLE 时丢弃跨任务且非 `DIRECT_PARENT` |
 | REMATCH | `PARTITION_REMATCH` | MAY_MARK_ELIGIBLE | `matchProducersByReadScope` 重算 `partitionOverlap` |
+| REMATCH | `SCHEDULE_TIEBREAK` | PRUNE_ONLY | 同表且 ≥2 条 `PROVEN_OVERLAP`/`POSSIBLE_OVERLAP`、且恰好一个 Horae `DIRECT_PARENT` 时只留该父；UNKNOWN 不参与破平、不被丢弃。Horae UNAVAILABLE 或剩余 ≤1 则跳过。Horae 永不把 `continuationEligible` 置 true |
 | DECIDE | `reduce` | — | `pruneOn` 丢弃；`confirmOn` 且无 `SCHEDULE_PARENT_AMBIGUOUS` → `continuationEligible` |
 
-`resolveReadField`：管道后 `|candidates|===1 && continuationEligible && producer FieldEdge` → CONFIRMED，否则 FRONTIER。INDEX `l1Eligible` 仅作初始值；管道后的 `continuationEligible` 为准。Harness 从 `PRODUCER_INDEX_PATH`（或默认 sibling `producer-index.json`）加载 PI；缺失时 rematch 跳过并记 `PRODUCER_INDEX_UNAVAILABLE`，调度 prune 仍可用。`readScopeFor` 用 Facts 谓词 + `resolveReadPartitionScope`；scope 不可得时记 `READ_SCOPE_UNAVAILABLE`（【缺证据】），不伪造 scope。
+`resolveReadField`：管道后 `|candidates|===1 && continuationEligible && producer FieldEdge` → CONFIRMED，否则 FRONTIER。INDEX `l1Eligible` 仅作初始值；管道后的 `continuationEligible` 为准。Harness 从 `PRODUCER_INDEX_PATH`（或默认 sibling `producer-index.json`）加载 PI；缺失时 rematch 跳过并记 `PRODUCER_INDEX_UNAVAILABLE`。两段 qualifiedName 仅当消费任务 `taskCategory` 为 `sparkIndex` / `hiveTask` / `hiveTask-2.0` 时默认 `platform=hive`、`dataSource=gfhive`；`hive2*` 与 `*2hive` 不同此默认。`readScopeFor` 用 Facts 谓词 + `resolveReadPartitionScope`；`*2hive` 且 PI 无写分区时记 `SOURCE_ENDPOINT_BOUNDARY`（源库边界）；其它 scope 不可得记 `READ_SCOPE_UNAVAILABLE`（【缺证据】），不伪造 scope。
 
 未纳入本波：`DATE_PARTITION_DEFAULTED` 确认放宽、`overwrite-schedule` 规则。
 
@@ -588,6 +588,7 @@ INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuation
 | `CONTROL_SIDE_UNRESOLVED`                 | Phase 1    | 自连接等无法判侧                                                                                           |
 | `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`  | Phase 1    | 任务内临时表字段链断；按 `(taskId, physicalDataset)` 聚合一条（§5.4）                                      |
 | `PRODUCER_NOT_PROJECTED`                  | Phase 2    | INDEX 无条目：终止表 / 未采集 / SCHEDULE_ONLY                                                              |
+| `SOURCE_ENDPOINT_BOUNDARY`                | Phase 2    | `*2hive` 读源库表且 PI 无 confirmed writer；平台边界，不再当 `READ_SCOPE_UNAVAILABLE`                      |
 | `PRODUCER_BINDING_NOT_FOUND`              | Phase 2    | writer 在并集内但该列无 RESOLVED binding                                                                   |
 | `MULTI_WRITER_CANDIDATE_FRONTIER`         | Phase 2    | 候选 > 1 或 `l1Eligible = false`，停止递归                                                                 |
 | `WRITER_PARTITION_UNKNOWN` 等             | INDEX 透传 | 不改写                                                                                                     |
@@ -625,13 +626,13 @@ INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuation
 - 列 2：`nom ← pdata_n.t03_otc_opt_comp_sub_trd_info.prin`（保留侧，b0 基表）→ 同一批键对该列 **`DATASET_SCOPED`**，`grain = EXPAND_RISK`
 - 不变量：同一 `relationId` 的控制条目在两个查询里 scope 不同；类型均为 CONTROL
 
-### Case D 多 writer 必须是 CANDIDATE
+### Case D vola 同表多 writer
 
-- 锚点：`176827.vola ← pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx.fx_vola`；该表批内 **7 个 writer**
+- 锚点：`176827.vola ← pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx.fx_vola`；INDEX 枚举同表多 writer
 - 不变量：
-  - 若 INDEX 该读次 `candidates.length > 1` 或 `l1Eligible = false` → `frontier[]` 有条目，`reasonCode = MULTI_WRITER_CANDIDATE_FRONTIER`，每个候选带 `partitionMatchStatus`
-  - `value[]` 中**不得**出现 depth ≥ 1 的该分支边（默认不递归）
-  - `expandCandidates = true` 时每个候选各计预算，结果标 `evidenceStatus = CANDIDATE`
+  - 分区无法证明重叠时保持 `MULTI_WRITER_CANDIDATE_FRONTIER`（Horae 只破平，不单独 CONFIRMED）
+  - 分区证明重叠且唯一 Horae `DIRECT_PARENT` 时，该读次可 CONFIRMED 到该父任务；`value[]` 中**不得**出现 depth ≥ 1 且 `source.column` 仍为消费列名的假递归
+  - `expandCandidates = true` 仅在仍有 frontier 候选时把候选标 `CANDIDATE`
 
 ### Case E 临时表断链具名
 

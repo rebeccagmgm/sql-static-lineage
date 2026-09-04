@@ -22,11 +22,12 @@ function continuationPorts(
     scheduleLookup: lookup,
     producerIndex: null,
     readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
-    tableIdentityFor: (qualifiedName) => ({
+    tableIdentityFor: ({ qualifiedName }) => ({
       platform: "warehouse",
       dataSource: "default",
       qualifiedName: qualifiedName.split(".").slice(-1)[0] ?? qualifiedName,
     }),
+    taskCategoryFor: () => "sparkIndex",
   };
 }
 
@@ -195,7 +196,7 @@ describe("resolveReadField", () => {
     expect(resolved.kind).toBe("FRONTIER");
   });
 
-  it("schedule-prunes to a single frontier candidate before continuationEligible check", () => {
+  it("does not schedule-prune UNKNOWN writers when a unique Horae parent exists", () => {
     const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
       { consumerTaskId, producerTaskId: "producer-b" },
     ]);
@@ -207,6 +208,38 @@ describe("resolveReadField", () => {
           writeObservationId: "write-observation:producer-b:0",
           l1Eligible: false,
           partitionMatchStatus: "UNKNOWN",
+        }),
+      ]),
+    ]));
+    const resolved = resolveReadField({
+      consumerTaskId,
+      readOccurrenceId,
+      column,
+      index: source,
+      producerIndexForTask: () => null,
+      continuationPorts: continuationPorts(lookup),
+    });
+    expect(resolved.kind).toBe("FRONTIER");
+    if (resolved.kind === "FRONTIER") {
+      expect(resolved.candidates.map((entry) => entry.taskId).sort()).toEqual([
+        "producer-a",
+        "producer-b",
+      ]);
+    }
+  });
+
+  it("schedule-tiebreaks overlapping writers to the unique Horae parent", () => {
+    const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
+      { consumerTaskId, producerTaskId: "producer-b" },
+    ]);
+    const source = createUnionContinuationCandidateSource(index([
+      entry(consumerTaskId, readOccurrenceId, [
+        candidate({ taskId: "producer-a", l1Eligible: false, partitionMatchStatus: "ASSUMED" }),
+        candidate({
+          taskId: "producer-b",
+          writeObservationId: "write-observation:producer-b:0",
+          l1Eligible: false,
+          partitionMatchStatus: "ASSUMED",
         }),
       ]),
     ]));

@@ -3,7 +3,7 @@ import type { ContinuationPolicy } from "./policy.ts";
 import { isRuleEnabled } from "./policy.ts";
 import { applyPartitionRematch } from "./rules/partition-rematch.ts";
 import { applyPruneDisjoint } from "./rules/prune-disjoint.ts";
-import { applyScheduleWhitelist } from "./rules/schedule-whitelist.ts";
+import { applyScheduleTiebreak } from "./rules/schedule-tiebreak.ts";
 import type { FieldImpactGap } from "../impact-result-contract.ts";
 import type { ContinuationCandidate, ContinuationStage } from "./types.ts";
 
@@ -14,8 +14,8 @@ export interface ContinuationRuleDescriptor {
 
 export const CONTINUATION_RULE_REGISTRY: readonly ContinuationRuleDescriptor[] = [
   { id: "PRUNE_DISJOINT", stage: "PRUNE" },
-  { id: "SCHEDULE_WHITELIST", stage: "PRUNE" },
   { id: "PARTITION_REMATCH", stage: "REMATCH" },
+  { id: "SCHEDULE_TIEBREAK", stage: "REMATCH" },
 ];
 
 export function rulesForStage(
@@ -47,15 +47,6 @@ export function applyRegistryRules(input: {
       candidates = applyPruneDisjoint(candidates);
       continue;
     }
-    if (rule.id === "SCHEDULE_WHITELIST") {
-      candidates = applyScheduleWhitelist({
-        consumerTaskId: input.consumerTaskId,
-        candidates,
-        ports: input.ports,
-        policy: input.policy,
-      });
-      continue;
-    }
     if (rule.id === "PARTITION_REMATCH") {
       const rematch = applyPartitionRematch({
         consumerTaskId: input.consumerTaskId,
@@ -67,6 +58,15 @@ export function applyRegistryRules(input: {
       });
       candidates = rematch.candidates;
       gaps.push(...rematch.gaps);
+      continue;
+    }
+    if (rule.id === "SCHEDULE_TIEBREAK") {
+      candidates = applyScheduleTiebreak({
+        consumerTaskId: input.consumerTaskId,
+        candidates,
+        ports: input.ports,
+        policy: input.policy,
+      });
     }
   }
   return { candidates, gaps };

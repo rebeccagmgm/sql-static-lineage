@@ -60,7 +60,10 @@ export function applyPartitionRematch(input: {
     return { candidates: input.candidates, gaps };
   }
 
-  const table = input.ports.tableIdentityFor(input.qualifiedName);
+  const table = input.ports.tableIdentityFor({
+    consumerTaskId: input.consumerTaskId,
+    qualifiedName: input.qualifiedName,
+  });
   const matches = matchProducersByReadScope(
     input.ports.producerIndex,
     table,

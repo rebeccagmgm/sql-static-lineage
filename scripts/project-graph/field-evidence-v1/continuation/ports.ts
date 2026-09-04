@@ -5,15 +5,22 @@ import type { HoraeScheduleRelationLookup } from "../schedule-preference.ts";
 
 export type ReadScopeLookupResult =
   | { readonly kind: "OK"; readonly scope: ReadPartitionScope }
-  | { readonly kind: "UNAVAILABLE"; readonly reasonCode: "READ_SCOPE_UNAVAILABLE" };
+  | {
+    readonly kind: "UNAVAILABLE";
+    readonly reasonCode: "READ_SCOPE_UNAVAILABLE" | "SOURCE_ENDPOINT_BOUNDARY";
+  };
 
 export interface ContinuationPorts {
   readonly scheduleLookup: HoraeScheduleRelationLookup | null;
   readonly producerIndex: TableProducerIndex | null;
+  readonly taskCategoryFor: (consumerTaskId: string) => string | null;
   readonly readScopeFor: (input: {
     readonly consumerTaskId: string;
     readonly readOccurrenceId: string;
     readonly qualifiedName: string;
   }) => ReadScopeLookupResult;
-  readonly tableIdentityFor: (qualifiedName: string) => ProducerTableIdentity;
+  readonly tableIdentityFor: (input: {
+    readonly consumerTaskId: string;
+    readonly qualifiedName: string;
+  }) => ProducerTableIdentity;
 }

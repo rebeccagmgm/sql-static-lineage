@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
@@ -18,6 +18,7 @@ import {
   buildReadScopeFromFacts,
   partitionFieldsFromWrites,
 } from "./continuation/read-scope-from-facts.ts";
+import { resolveProducerTableIdentity, unavailableReadScopeReason } from "./continuation/table-identity.ts";
 import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
 import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
 import {
@@ -78,21 +79,27 @@ export function fieldEvidenceGoldenRequired(): boolean {
   return process.env.FIELD_EVIDENCE_GOLDEN_REQUIRED === "1";
 }
 
-function parseQualifiedName(qualifiedName: string): ProducerTableIdentity {
-  const normalized = normalizeName(qualifiedName);
-  const parts = normalized.split(".");
-  if (parts.length >= 3) {
-    return {
-      platform: parts[0]!,
-      dataSource: parts[1]!,
-      qualifiedName: parts.slice(2).join("."),
-    };
+function lookupTaskCategory(dataRoot: string, taskId: string): string | null {
+  const tasksRoot = join(dataRoot, "tasks");
+  if (!existsSync(tasksRoot) || taskId.includes("/") || taskId.includes("\\")) {
+    return null;
   }
-  return {
-    platform: "unknown",
-    dataSource: "unknown",
-    qualifiedName: normalized,
-  };
+  const hits = readdirSync(tasksRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(tasksRoot, entry.name, taskId, "task.json"))
+    .filter((taskPath) => existsSync(taskPath));
+  if (hits.length !== 1) return null;
+  try {
+    const document = JSON.parse(readFileSync(hits[0]!, "utf8")) as {
+      readonly taskCategory?: unknown;
+    };
+    if (typeof document.taskCategory === "string" && document.taskCategory.trim()) {
+      return document.taskCategory.trim();
+    }
+  } catch {
+    return null;
+  }
+  return basename(dirname(dirname(hits[0]!)));
 }
 
 function sameProducerTable(
@@ -123,20 +130,37 @@ export function createContinuationPorts(input: {
   readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
   readonly producerIndex: TableProducerIndex | null;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
+  readonly taskCategoryFor: (taskId: string) => string | null;
 }): ContinuationPorts {
   const partitionFieldCache = new Map<string, readonly string[] | null>();
+
+  const tableIdentityFor: ContinuationPorts["tableIdentityFor"] = ({
+    consumerTaskId,
+    qualifiedName,
+  }) => resolveProducerTableIdentity({
+    qualifiedName,
+    taskCategory: input.taskCategoryFor(consumerTaskId),
+  });
 
   return {
     scheduleLookup: input.scheduleRelationLookup,
     producerIndex: input.producerIndex,
-    tableIdentityFor: (qualifiedName) => parseQualifiedName(qualifiedName),
+    taskCategoryFor: input.taskCategoryFor,
+    tableIdentityFor,
     readScopeFor: ({ consumerTaskId, readOccurrenceId, qualifiedName }) => {
-      const table = parseQualifiedName(qualifiedName);
+      const table = tableIdentityFor({ consumerTaskId, qualifiedName });
       const cacheKey = `${table.platform}\u0000${table.dataSource}\u0000${table.qualifiedName}`;
       let partitionFields = partitionFieldCache.get(cacheKey);
       if (partitionFields === undefined) {
         partitionFields = partitionFieldsForTable(input.producerIndex, table);
         partitionFieldCache.set(cacheKey, partitionFields);
+      }
+
+      if (partitionFields === null) {
+        return {
+          kind: "UNAVAILABLE",
+          reasonCode: unavailableReadScopeReason(input.taskCategoryFor(consumerTaskId)),
+        };
       }
 
       const bundle = input.factsBundleForTask?.(consumerTaskId);
@@ -202,10 +226,20 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
     return { relationNodes, relationEdges };
   };
 
+  const taskCategoryCache = new Map<string, string | null>();
+  const taskCategoryFor = (taskId: string): string | null => {
+    const cached = taskCategoryCache.get(taskId);
+    if (cached !== undefined) return cached;
+    const category = lookupTaskCategory(roots.dataRoot, taskId);
+    taskCategoryCache.set(taskId, category);
+    return category;
+  };
+
   const continuationPorts = createContinuationPorts({
     scheduleRelationLookup,
     producerIndex,
     factsBundleForTask,
+    taskCategoryFor,
   });
 
   function runImpactQuery(

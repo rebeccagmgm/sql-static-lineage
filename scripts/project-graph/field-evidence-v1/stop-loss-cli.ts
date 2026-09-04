@@ -1,4 +1,3 @@
-import { impactQuery } from "./impact-query.ts";
 import {
   createFieldEvidenceQueryContext,
   fieldEvidenceGoldenRequired,
@@ -114,17 +113,11 @@ export function runFieldEvidenceStopLoss(taskId: string): {
   let confirmedCount = 0;
 
   for (const outputColumn of GREEK_COLUMNS) {
-    const result = impactQuery({
-      anchor: {
-        taskId: projection.taskId,
-        writeObservationId: write.writeObservationId,
-        outputColumn,
-      },
-      index: context.index,
-      projectionForTask: context.projectionForTask,
-      factsBundleForTask: context.factsBundleForTask,
-      maxDepth: 3,
-    });
+    const result = context.runImpactQuery({
+      taskId: projection.taskId,
+      writeObservationId: write.writeObservationId,
+      outputColumn,
+    }, { maxDepth: 3 });
     const hasConfirmedDepthOne = result.value.some(
       (entry) => entry.depth === 1 && entry.evidenceStatus === "CONFIRMED",
     );

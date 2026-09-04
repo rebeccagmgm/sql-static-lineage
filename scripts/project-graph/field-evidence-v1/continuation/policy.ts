@@ -15,7 +15,7 @@ export const DEFAULT_CONTINUATION_POLICY: ContinuationPolicy = {
   schemaVersion: CONTINUATION_POLICY_SCHEMA_VERSION,
   enabledRuleIds: [
     "PRUNE_DISJOINT",
-    "SCHEDULE_WHITELIST",
+    "SCHEDULE_TIEBREAK",
     "PARTITION_REMATCH",
   ],
   horaeUnavailable: "FAIL_CLOSED_NO_PRUNE",

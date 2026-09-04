@@ -103,6 +103,7 @@ describe("partition-rematch rule", () => {
         producerIndex,
         readScopeFor: () => ({ kind: "OK", scope: readScope }),
         tableIdentityFor: () => table,
+        taskCategoryFor: () => "sparkIndex",
       },
     });
 
@@ -121,15 +122,41 @@ describe("partition-rematch rule", () => {
         scheduleLookup: null,
         producerIndex: null,
         readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
-        tableIdentityFor: (qualifiedName) => ({
+        tableIdentityFor: ({ qualifiedName }) => ({
           platform: "pdata",
           dataSource: "default",
           qualifiedName,
         }),
+        taskCategoryFor: () => "sparkIndex",
       },
     });
 
     expect(result.candidates).toHaveLength(1);
     expect(result.gaps.some((gap) => gap.reasonCode === "PRODUCER_INDEX_UNAVAILABLE")).toBe(true);
+  });
+
+  it("surfaces SOURCE_ENDPOINT_BOUNDARY instead of inventing a hive read scope", () => {
+    const result = applyPartitionRematch({
+      consumerTaskId: "consumer-1",
+      readOccurrenceId: "read:consumer-1:0",
+      column: "amount",
+      qualifiedName: "source_schema.example_table",
+      candidates: [continuationCandidateFromIndex(indexCandidate())],
+      ports: {
+        scheduleLookup: null,
+        producerIndex: minimalProducerIndex(),
+        readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "SOURCE_ENDPOINT_BOUNDARY" }),
+        tableIdentityFor: ({ qualifiedName }) => ({
+          platform: "unknown",
+          dataSource: "unknown",
+          qualifiedName,
+        }),
+        taskCategoryFor: () => "oracle2hive",
+      },
+    });
+
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.partitionOverlap).toBe("UNKNOWN");
+    expect(result.gaps.map((gap) => gap.reasonCode)).toEqual(["SOURCE_ENDPOINT_BOUNDARY"]);
   });
 });
