@@ -33,12 +33,12 @@
 
 图的基本机器单位不是「任务」或「表」，而是：
 
-| 概念 | 节点 / 标识 | 含义 |
-| --- | --- | --- |
-| **写观察** | `TARGET_WRITE` + `writeObservationId` | 本任务 SQL 能证明的一次写入（含分区、多写观察） |
-| **读次** | `READ_OCCURRENCE` + `read_occurrence_id` | 本任务 SQL 中**一次**对物理表的读取（谓词、JOIN 侧别各异） |
-| **物理表** | `PHYSICAL_DATASET` | 全局身份；跨任务拼接的锚点 |
-| **任务** | `TASK` | **归因**（谁跑的 SQL），不是跨任务数据边的端点 |
+| 概念       | 节点 / 标识                              | 含义                                                       |
+| ---------- | ---------------------------------------- | ---------------------------------------------------------- |
+| **写观察** | `TARGET_WRITE` + `writeObservationId`    | 本任务 SQL 能证明的一次写入（含分区、多写观察）            |
+| **读次**   | `READ_OCCURRENCE` + `read_occurrence_id` | 本任务 SQL 中**一次**对物理表的读取（谓词、JOIN 侧别各异） |
+| **物理表** | `PHYSICAL_DATASET`                       | 全局身份；跨任务拼接的锚点                                 |
+| **任务**   | `TASK`                                   | **归因**（谁跑的 SQL），不是跨任务数据边的端点             |
 
 跨任务接续的正确问题形式：
 
@@ -54,9 +54,9 @@
 
 ## 两条产品线（共用 Facts，分叉消费）
 
-| 产品线 | 问法 | 生产单位 | 状态 |
-| --- | --- | --- | --- |
-| **A. 资产地图** | 这批任务一起长什么样？上游是谁？ | 任务局部投影 → 并集 → 查询期 walk | **主链**；金样 V0 先行 |
+| 产品线              | 问法                                | 生产单位                            | 状态                                           |
+| ------------------- | ----------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| **A. 资产地图**     | 这批任务一起长什么样？上游是谁？    | 任务局部投影 → 并集 → 查询期 walk   | **主链**；金样 V0 先行                         |
 | **B. 单表重跑溯源** | 这张表要重跑，最小/保守上游任务集？ | root → 反向闭包 → per-root artifact | **已有** consumer；WP-10 扩并集闭包 **已暂停** |
 
 A 与 B **共用** Input Pack / Machine Facts，**不共用**遍历方式：A 在查询期按图 walk；B 在闭包 consumer 内按 root 反向播种。  
@@ -281,13 +281,14 @@ Neo4j 索引全部保持不变；两种 mode 不混入同一份快照。节点�
 
 ### 实现状态（2026-09-03）
 
-| 能力 | 位置 | 状态 |
-| --- | --- | --- |
-| WP-3 投影生产 | sql-static-lineage `project-task-local` | **已验收** 1.2.0 |
-| `loadTaskLocalUnionSources` + `mergeTaskLocalUnion` | data-graph `task-local-union-*` | **库完成**，TU-7 金样绿 |
-| `traceUnionContinuationV2` + `UNION_CONTINUATION_INDEX` | data-graph 同上 | **CLI 完成** |
-| `TASK_LOCAL_UNION` → `project-topology-cli` / 地图 / Neo4j | data-graph 主管线 | **未接**；金样不阻塞 |
-| 调查页消费 | `UNION_CONTINUATION_INDEX` + 批 manifest/纸条；HTML 可选 | 见金样执行方案 §2 |
+| 能力                                                       | 位置                                                     | 状态                                                                                                                         |
+| ---------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| WP-3 投影生产                                              | sql-static-lineage `project-task-local`                  | **已验收** 1.2.0                                                                                                             |
+| WP-11 字段证据链 V1 Phase 1                                | `openspec/changes/field-evidence-v1`                     | **已拆解**（契约 1.3.0 + 读次/setop/物化/subtype/侧别）；Phase 2 Impact Query 见 `execution-plan-field-evidence-v1.md` §11.2 |
+| `loadTaskLocalUnionSources` + `mergeTaskLocalUnion`        | data-graph `task-local-union-*`                          | **库完成**，TU-7 金样绿                                                                                                      |
+| `traceUnionContinuationV2` + `UNION_CONTINUATION_INDEX`    | data-graph 同上                                          | **CLI 完成**                                                                                                                 |
+| `TASK_LOCAL_UNION` → `project-topology-cli` / 地图 / Neo4j | data-graph 主管线                                        | **未接**；金样不阻塞                                                                                                         |
+| 调查页消费                                                 | `UNION_CONTINUATION_INDEX` + 批 manifest/纸条；HTML 可选 | 见金样执行方案 §2                                                                                                            |
 
 金样链不必等主管线接入：并集 merge 与 INDEX 在专用 CLI 内完成即可支撑调查页 V0。
 

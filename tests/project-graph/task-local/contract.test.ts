@@ -8,6 +8,7 @@ import {
 } from "../../../scripts/project-graph/task-local/contract.ts";
 import {
   fieldEvidencePhysicalFieldNodeId,
+  fieldDirectEdgeSemanticKey,
   physicalDatasetNodeId,
   readOccurrenceNodeId,
   targetWriteNodeId,
@@ -95,6 +96,72 @@ function minimalProjected(overrides: Partial<TaskLocalProjection> = {}): TaskLoc
     ...overrides,
   };
   return canonicalizeTaskLocalProjection(base);
+}
+
+function fieldEvidenceProjectionEdges(overrides: {
+  readonly fieldProperties: Readonly<Record<string, unknown>>;
+}): TaskLocalProjection["edges"] {
+  const expressionId = "expr:0";
+  return [
+    {
+      edgeId: taskLocalEdgeId({
+        edgeType: "WRITES",
+        fromNodeId: TASK_NODE,
+        toNodeId: TARGET_WRITE_NODE,
+      }),
+      edgeType: "WRITES" as const,
+      fromNodeId: TASK_NODE,
+      toNodeId: TARGET_WRITE_NODE,
+      properties: {},
+    },
+    {
+      edgeId: taskLocalEdgeId({
+        edgeType: "FIELD_DIRECT",
+        fromNodeId: FIELD_NODE,
+        toNodeId: TARGET_WRITE_NODE,
+        semanticKey: fieldDirectEdgeSemanticKey({
+          outputColumn: "inr_ord_id",
+          sourceColumn: "inr_ord_id",
+          sourceTable: "pdata_n.t98_sb_otc_opt_comp_info",
+          sourceReadOccurrenceId:
+            overrides.fieldProperties.sourceReadOccurrenceId === undefined
+              ? "occ:0"
+              : (overrides.fieldProperties.sourceReadOccurrenceId as string | null),
+          expressionId,
+        }),
+      }),
+      edgeType: "FIELD_DIRECT" as const,
+      fromNodeId: FIELD_NODE,
+      toNodeId: TARGET_WRITE_NODE,
+      properties: overrides.fieldProperties,
+    },
+  ];
+}
+
+function minimalFieldEvidenceProjected(input: {
+  readonly fieldProperties: Readonly<Record<string, unknown>>;
+  readonly gaps?: TaskLocalProjection["gaps"];
+}): TaskLocalProjection {
+  return canonicalizeTaskLocalProjection({
+    schemaVersion: "1.3.0",
+    artifactType: "TASK_LOCAL_PROJECTION",
+    generatedAt: "2026-09-02T00:00:00.000Z",
+    taskId: TASK_ID,
+    coverageStatus: "PROJECTED",
+    failureReasonCode: null,
+    gaps: input.gaps ?? [],
+    nodes: [
+      { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+      {
+        nodeId: DATASET_NODE,
+        nodeType: "PHYSICAL_DATASET",
+        properties: { platform: "hive", qualifiedName: "dm_rsk_n.otc_opt_greek_val_det_h" },
+      },
+      { nodeId: TARGET_WRITE_NODE, nodeType: "TARGET_WRITE", properties: {} },
+      { nodeId: FIELD_NODE, nodeType: "PHYSICAL_FIELD", properties: { column: "inr_ord_id" } },
+    ],
+    edges: fieldEvidenceProjectionEdges({ fieldProperties: input.fieldProperties }),
+  });
 }
 
 function withContentHash(projection: Omit<TaskLocalProjection, "contentHash"> & { contentHash?: string }): TaskLocalProjection {
@@ -325,5 +392,168 @@ describe("task-local projection contract", () => {
         ],
       }),
     ).toThrow(/TASK_LOCAL_PROJECTION_(CROSS_TASK_DATA_EDGE|SCHEDULE_REFERENCE_ON_DATA_EDGE)/);
+  });
+
+  it("rejects 1.2.0 READS edges missing readOccurrenceId even when current schema constant is 1.2.0", () => {
+    const occurrenceNode = readOccurrenceNodeId({
+      consumerTaskId: TASK_ID,
+      occurrenceId: "occ:0",
+      readRelationId: "rel:0",
+    });
+    const projection = withContentHash({
+      schemaVersion: "1.2.0",
+      artifactType: "TASK_LOCAL_PROJECTION",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+      taskId: TASK_ID,
+      coverageStatus: "PROJECTED",
+      failureReasonCode: null,
+      nodes: [
+        { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+        { nodeId: occurrenceNode, nodeType: "READ_OCCURRENCE", properties: {} },
+        { nodeId: DATASET_NODE, nodeType: "PHYSICAL_DATASET", properties: {} },
+      ],
+      edges: [
+        {
+          edgeId: taskLocalEdgeId({ edgeType: "READS", fromNodeId: TASK_NODE, toNodeId: occurrenceNode }),
+          edgeType: "READS",
+          fromNodeId: TASK_NODE,
+          toNodeId: occurrenceNode,
+          properties: {},
+        },
+        {
+          edgeId: taskLocalEdgeId({ edgeType: "READS", fromNodeId: occurrenceNode, toNodeId: DATASET_NODE }),
+          edgeType: "READS",
+          fromNodeId: occurrenceNode,
+          toNodeId: DATASET_NODE,
+          properties: {},
+        },
+      ],
+    });
+    expect(() => validateTaskLocalProjection(projection)).toThrow(
+      "TASK_LOCAL_PROJECTION_READS_READ_OCCURRENCE_ID_MISSING",
+    );
+  });
+
+  it("accepts a minimal 1.3.0 projected artifact with field-evidence properties", () => {
+    const expressionId = "expr:gamma";
+    const fieldEdgeId = taskLocalEdgeId({
+      edgeType: "FIELD_DIRECT",
+      fromNodeId: FIELD_NODE,
+      toNodeId: TARGET_WRITE_NODE,
+      semanticKey: fieldDirectEdgeSemanticKey({
+        outputColumn: "inr_ord_id",
+        sourceColumn: "inr_ord_id",
+        sourceTable: "pdata_n.t98_sb_otc_opt_comp_info",
+        sourceReadOccurrenceId: "occ:resolved",
+        expressionId,
+      }),
+    });
+    const projection = canonicalizeTaskLocalProjection({
+      schemaVersion: "1.3.0",
+      artifactType: "TASK_LOCAL_PROJECTION",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+      taskId: TASK_ID,
+      coverageStatus: "PROJECTED",
+      failureReasonCode: null,
+      gaps: [],
+      nodes: [
+        { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+        {
+          nodeId: DATASET_NODE,
+          nodeType: "PHYSICAL_DATASET",
+          properties: { platform: "hive", qualifiedName: "dm_rsk_n.otc_opt_greek_val_det_h" },
+        },
+        { nodeId: TARGET_WRITE_NODE, nodeType: "TARGET_WRITE", properties: {} },
+        { nodeId: FIELD_NODE, nodeType: "PHYSICAL_FIELD", properties: { column: "inr_ord_id" } },
+      ],
+      edges: [
+        {
+          edgeId: taskLocalEdgeId({
+            edgeType: "WRITES",
+            fromNodeId: TASK_NODE,
+            toNodeId: TARGET_WRITE_NODE,
+          }),
+          edgeType: "WRITES",
+          fromNodeId: TASK_NODE,
+          toNodeId: TARGET_WRITE_NODE,
+          properties: {},
+        },
+        {
+          edgeId: fieldEdgeId,
+          edgeType: "FIELD_DIRECT",
+          fromNodeId: FIELD_NODE,
+          toNodeId: TARGET_WRITE_NODE,
+          properties: {
+            subtype: "IDENTITY",
+            sourceReadOccurrenceId: "occ:resolved",
+            sourceReadOccurrenceStatus: "RESOLVED",
+            sourceRelationId: "rel:read:0",
+            expressionId,
+          },
+        },
+      ],
+    });
+    expect(projection.schemaVersion).toBe("1.3.0");
+    expect(projection.gaps).toEqual([]);
+  });
+
+  it("rejects 1.3.0 field edges missing sourceReadOccurrenceStatus", () => {
+    expect(() =>
+      minimalFieldEvidenceProjected({
+        fieldProperties: {
+          subtype: "IDENTITY",
+          sourceReadOccurrenceId: "occ:0",
+          sourceRelationId: "rel:0",
+          expressionId: "expr:0",
+        },
+      }),
+    ).toThrow("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_STATUS_MISSING");
+  });
+
+  it("rejects 1.3.0 UNKNOWN subtype without subtypeReason", () => {
+    expect(() =>
+      minimalFieldEvidenceProjected({
+        fieldProperties: {
+          subtype: "UNKNOWN",
+          sourceReadOccurrenceId: null,
+          sourceReadOccurrenceStatus: "AMBIGUOUS",
+          sourceReadOccurrenceReason: "SELF_JOIN_NO_QUALIFIER",
+          sourceRelationId: null,
+          expressionId: "expr:0",
+        },
+      }),
+    ).toThrow("TASK_LOCAL_PROJECTION_FIELD_EDGE_SUBTYPE_REASON_MISSING");
+  });
+
+  it("rejects 1.3.0 artifacts missing gaps", () => {
+    expect(() =>
+      canonicalizeTaskLocalProjection({
+        schemaVersion: "1.3.0",
+        artifactType: "TASK_LOCAL_PROJECTION",
+        generatedAt: "2026-09-02T00:00:00.000Z",
+        taskId: TASK_ID,
+        coverageStatus: "PROJECTED",
+        failureReasonCode: null,
+        nodes: [
+          { nodeId: TASK_NODE, nodeType: "TASK", properties: {} },
+          {
+            nodeId: DATASET_NODE,
+            nodeType: "PHYSICAL_DATASET",
+            properties: { platform: "hive", qualifiedName: "dm_rsk_n.otc_opt_greek_val_det_h" },
+          },
+          { nodeId: TARGET_WRITE_NODE, nodeType: "TARGET_WRITE", properties: {} },
+          { nodeId: FIELD_NODE, nodeType: "PHYSICAL_FIELD", properties: { column: "inr_ord_id" } },
+        ],
+        edges: fieldEvidenceProjectionEdges({
+          fieldProperties: {
+            subtype: "IDENTITY",
+            sourceReadOccurrenceId: "occ:0",
+            sourceReadOccurrenceStatus: "RESOLVED",
+            sourceRelationId: "rel:0",
+            expressionId: "expr:0",
+          },
+        }),
+      }),
+    ).toThrow("TASK_LOCAL_PROJECTION_GAPS_MISSING");
   });
 });

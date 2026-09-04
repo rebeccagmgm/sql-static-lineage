@@ -5,13 +5,13 @@
 
 细则按 WP 拆分，不要在本文件重复实现细节：
 
-| 文档 | 内容 |
-| --- | --- |
-| `execution-plan-task-local-projection.md` | WP-3 纸条 TL-0…TL-8 |
-| `execution-plan-task-local-union.md` | WP-5 并集 + WP-8 接续（data-graph） |
-| `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4 |
-| `graph-accuracy-architecture.md` | WP-6…WP-12 准确性冻结 |
-| `graph-user-narrative.md` | L0–L3 对用户陈述 |
+| 文档                                        | 内容                                |
+| ------------------------------------------- | ----------------------------------- |
+| `execution-plan-task-local-projection.md`   | WP-3 纸条 TL-0…TL-8                 |
+| `execution-plan-task-local-union.md`        | WP-5 并集 + WP-8 接续（data-graph） |
+| `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4         |
+| `graph-accuracy-architecture.md`            | WP-6…WP-12 准确性冻结               |
+| `graph-user-narrative.md`                   | L0–L3 对用户陈述                    |
 
 每个工作包（WP）按 1:1 可转成一个 OpenSpec change。领取时 `openspec new change "<wp-name>"`。
 
@@ -35,12 +35,12 @@
 
 **金样调查页：DM_RSK_N 四锚点 · 向上穿透 · 一张并集图**
 
-| 锚点 | taskId | 目标表 |
-| --- | --- | --- |
-| A | 181058 | `dm_rsk_n.otc_opt_inr_comp_pal_sum` |
-| B | 176827 | `dm_rsk_n.otc_opt_greek_val_det_h` |
-| C | 209119 | `dm_rsk_n.otc_opt_sub_trd_info` |
-| D | 155015 | `dm_rsk_n.v_risk_audit_log` |
+| 锚点 | taskId | 目标表                              |
+| ---- | ------ | ----------------------------------- |
+| A    | 181058 | `dm_rsk_n.otc_opt_inr_comp_pal_sum` |
+| B    | 176827 | `dm_rsk_n.otc_opt_greek_val_det_h`  |
+| C    | 209119 | `dm_rsk_n.otc_opt_sub_trd_info`     |
+| D    | 155015 | `dm_rsk_n.v_risk_audit_log`         |
 
 **方案**：四锚点 `--expand-upstream` 定批 → WP-3 纸条 → WP-8.1 INDEX → gaps + L0–L3（JSON 主交付，HTML 可选）。
 
@@ -60,14 +60,14 @@
 
 产品上的「三层」= **Facts → 投影/接续 → 呈现**（见架构文档「端到端数据流」）。
 
-| 层 | 职责 | 主要 WP | 仓库 | 状态 |
-| --- | --- | --- | --- | --- |
-| ① 事实 | Input Pack、Machine Facts、写观察/读次证据 | WP-6 | sql-static-lineage | **已合入** |
-| ②a 纸条 | 每任务 `TASK_LOCAL_PROJECTION` 1.2.0 | WP-3、WP-7 | sql-static-lineage | **已验收** |
-| ②b 并集 | N 份纸条 merge 为 `TASK_LOCAL_UNION` | WP-5 | data-graph | **库完成**；主 CLI 未接 |
-| ②c 接续 | 读次×写观察 + `partitionMatchStatus` | WP-8、WP-8.1 | data-graph | **CLI 完成** |
-| ③ 呈现 | 可消费 JSON + L0–L3 | GC、WP-12 | sql-static-lineage | INDEX/gaps **P0**；HTML 可选 |
-| — | 单表重跑闭包 | WP-10 等 | sql-static-lineage | **暂停** / 维护 |
+| 层      | 职责                                       | 主要 WP      | 仓库               | 状态                         |
+| ------- | ------------------------------------------ | ------------ | ------------------ | ---------------------------- |
+| ① 事实  | Input Pack、Machine Facts、写观察/读次证据 | WP-6         | sql-static-lineage | **已合入**                   |
+| ②a 纸条 | 每任务 `TASK_LOCAL_PROJECTION` 1.2.0       | WP-3、WP-7   | sql-static-lineage | **已验收**                   |
+| ②b 并集 | N 份纸条 merge 为 `TASK_LOCAL_UNION`       | WP-5         | data-graph         | **库完成**；主 CLI 未接      |
+| ②c 接续 | 读次×写观察 + `partitionMatchStatus`       | WP-8、WP-8.1 | data-graph         | **CLI 完成**                 |
+| ③ 呈现  | 可消费 JSON + L0–L3                        | GC、WP-12    | sql-static-lineage | INDEX/gaps **P0**；HTML 可选 |
+| —       | 单表重跑闭包                               | WP-10 等     | sql-static-lineage | **暂停** / 维护              |
 
 **金样锚点** = 四写任务（181058 / 176827 / 209119 / 155015）+ **`--expand-upstream` 穿透闭包**；不是四张表、也不是 `DM_RSK_N` topic 全扫。表级 spine 见金样执行方案 §3.1。
 
@@ -77,26 +77,26 @@
 
 ### 地图主链（WP-1～WP-5 + GC）
 
-| WP | 名称 | 状态 | 说明 |
-| --- | --- | --- | --- |
-| WP-1 | 影响通道分离 | **已合入** | field-lineage 体积与假阳性 |
-| WP-2 | 声明口径采集 | 未做 | 非 P0 阻塞 |
-| WP-3 | 任务局部投影 | **已验收** | schema **1.2.0**；三金样 TL-6/7 |
-| WP-4 | 加工/通道识别 | 未做 | 非 P0 阻塞 |
-| WP-5 | 并集 source | **库完成** | 见 union 执行方案；主管线未接 |
-| GC | 金样调查页 | **进行中** | **四锚点一张图**；见 gold-case 执行方案 |
+| WP   | 名称          | 状态       | 说明                                    |
+| ---- | ------------- | ---------- | --------------------------------------- |
+| WP-1 | 影响通道分离  | **已合入** | field-lineage 体积与假阳性              |
+| WP-2 | 声明口径采集  | 未做       | 非 P0 阻塞                              |
+| WP-3 | 任务局部投影  | **已验收** | schema **1.2.0**；三金样 TL-6/7         |
+| WP-4 | 加工/通道识别 | 未做       | 非 P0 阻塞                              |
+| WP-5 | 并集 source   | **库完成** | 见 union 执行方案；主管线未接           |
+| GC   | 金样调查页    | **进行中** | **四锚点一张图**；见 gold-case 执行方案 |
 
 ### 准确性链（WP-6～WP-12，见 graph-accuracy-architecture）
 
-| WP | 状态 | 与 P0 关系 |
-| --- | --- | --- |
-| WP-6 Pack 声明写观察 | **已合入** | 事实基础 |
-| WP-7 身份/读次/1.2.0 | **已合入** | 纸条契约 |
-| WP-8 接续 v2 + INDEX | **CLI 完成** | 调查页接续层 |
-| WP-9 传输图 | 独立 | 非阻塞 |
-| WP-10 closure-on-union | **暂停** | experimental |
-| WP-11 列路径/算子 | **冻结** | 金样列讲透后再开 |
-| WP-12 L0–L3 envelope | 与 GC 同步 | 调查页文案 |
+| WP                     | 状态               | 与 P0 关系                                                                                                                                           |
+| ---------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WP-6 Pack 声明写观察   | **已合入**         | 事实基础                                                                                                                                             |
+| WP-7 身份/读次/1.2.0   | **已合入**         | 纸条契约                                                                                                                                             |
+| WP-8 接续 v2 + INDEX   | **CLI 完成**       | 调查页接续层                                                                                                                                         |
+| WP-9 传输图            | 独立               | 非阻塞                                                                                                                                               |
+| WP-10 closure-on-union | **暂停**           | experimental                                                                                                                                         |
+| WP-11 字段证据链 V1    | **Phase 1 已拆解** | 纯 Phase 1 → `openspec/changes/field-evidence-v1`；Phase 2 Impact Query 待 baseline 达标后另开 change；见 `execution-plan-field-evidence-v1.md` §5.5 |
+| WP-12 L0–L3 envelope   | 与 GC 同步         | 调查页文案                                                                                                                                           |
 
 ### 历史 P0：重跑收缩
 
@@ -143,13 +143,13 @@
 
 ## 工作包总览
 
-| WP   | 名称                             | 仓库               | 前置                             | 可并行                          |
-| ---- | -------------------------------- | ------------------ | -------------------------------- | ------------------------------- |
-| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **已合入 `cdc187a`**           | 已完成                          |
-| WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种） | 可先做；不要当成「WP-1 已开工」 |
-| WP-3 | `task-local-graph-projection`    | sql-static-lineage | **已验收** schema **1.2.0**（含 WP-3.1 / WP-7） | 已完成                    |
-| WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                             | 可与 WP-5 并行                  |
-| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结（**1.2.0**）       | **库完成**；主拓扑 CLI 未接；金样调查见 `execution-plan-gold-case-investigation.md` |
+| WP   | 名称                             | 仓库               | 前置                                            | 可并行                                                                              |
+| ---- | -------------------------------- | ------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| WP-1 | `separate-field-impact-channels` | sql-static-lineage | **已合入 `cdc187a`**                            | 已完成                                                                              |
+| WP-2 | `harvest-declared-semantics`     | sql-static-lineage | 无（地图侧采集，不依赖闭包播种）                | 可先做；不要当成「WP-1 已开工」                                                     |
+| WP-3 | `task-local-graph-projection`    | sql-static-lineage | **已验收** schema **1.2.0**（含 WP-3.1 / WP-7） | 已完成                                                                              |
+| WP-4 | `task-processing-kind`           | sql-static-lineage | WP-1                                            | 可与 WP-5 并行                                                                      |
+| WP-5 | `task-local-union-source`        | data-graph         | WP-3 契约冻结（**1.2.0**）                      | **库完成**；主拓扑 CLI 未接；金样调查见 `execution-plan-gold-case-investigation.md` |
 
 ```text
 WP-1 影响通道分离 ──┬─> WP-3 任务局部投影（已验收 1.2.0）──> WP-5 并集（库完成）──> WP-8 接续 INDEX
@@ -414,12 +414,12 @@ UNKNOWN        SQL 缺失或证据不足
 
 **M0（GC-0）**：四锚点向上穿透 → INDEX + gaps + L0–L3 可程序消费。**当前 P0。**
 
-| 子阶段 | 内容 | 状态 |
-| --- | --- | --- |
-| M0.1 | `--expand-upstream` CLI（GC-1） | **完成** |
-| M0.2 | 真数据跑穿透批 + INDEX（GC-0 A1–A3） | **未做** |
-| M0.3 | gaps.jsonl + L0–L3（GC-3） | **未做** |
-| M0.4 | golden / 一键脚本（GC-4 / GC-2） | **未做** |
+| 子阶段 | 内容                                 | 状态     |
+| ------ | ------------------------------------ | -------- |
+| M0.1   | `--expand-upstream` CLI（GC-1）      | **完成** |
+| M0.2   | 真数据跑穿透批 + INDEX（GC-0 A1–A3） | **未做** |
+| M0.3   | gaps.jsonl + L0–L3（GC-3）           | **未做** |
+| M0.4   | golden / 一键脚本（GC-4 / GC-2）     | **未做** |
 
 **M1（WP-1 + WP-2）**：影响分类正确、产物体积可用、口径层可查（155015 等）。
 

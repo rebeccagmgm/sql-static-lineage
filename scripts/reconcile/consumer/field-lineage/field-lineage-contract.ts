@@ -78,6 +78,20 @@ export type DatasetControlGrainReason =
 	| "GRAIN_FILTER_MAY_DROP_ROWS"
 	| "GRAIN_WINDOW_CARDINALITY_UNPROVEN";
 
+export type DatasetControlJoinType =
+	| "INNER"
+	| "LEFT"
+	| "RIGHT"
+	| "FULL"
+	| "CROSS"
+	| "N/A";
+
+export type DatasetControlSide =
+	| "LEFT"
+	| "RIGHT"
+	| "BOTH"
+	| "N/A";
+
 export interface DatasetControlAnnotation {
 	readonly controlId: string;
 	readonly taskId: string;
@@ -93,6 +107,10 @@ export interface DatasetControlAnnotation {
 	readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
 	readonly reasonCode: string | null;
 	readonly evidenceRefs: readonly string[];
+	readonly joinType?: DatasetControlJoinType;
+	readonly leftRelationId?: string | null;
+	readonly rightRelationId?: string | null;
+	readonly controlSide?: DatasetControlSide;
 }
 
 export interface FieldConditionalAnnotation {

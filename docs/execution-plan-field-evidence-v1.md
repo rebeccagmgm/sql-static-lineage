@@ -16,6 +16,13 @@
 
 **把已经存在于任务局部投影里的字段事实（9,070 条值边、2,204 条控制边）从「静态解析结果」提升为「可跨任务、可解释、可诚实标注不确定性的证据链」，并用四锚点真数据验证一次 Impact Query——不新增节点类型、不物化任何闭包、不做算子全矩阵。**
 
+### 修订记录
+
+| 日期       | 修订                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-04 | 首版：Phase 1–3 一体方案，OpenSpec change `field-evidence-v1` 含 44 任务                                                                                                                                                                                                                                                                                                                    |
+| 2026-09-04 | **深扫修订**（扫 186 投影 + 344 Facts 任务后）：① OpenSpec change 裁为**纯 Phase 1**；② FE-1 物化折叠 leaf + setop 下沉；③ `sourceRelationId` = 物理 read relation；④ 路径 subtype；⑤ relation 子树侧别；⑥ 临时表 gap 按表聚合；⑦ READS 校验 `≥ 1.2.0`；⑧ baseline 三组 cohort：**锚点展开批 186 / shadow evaluation slice 158 / all 344**（非 gold/holdout 标注集）。见 §2.5–2.6、§5、§5.5 |
+
 ---
 
 ## 0. 一页摘要
@@ -39,26 +46,29 @@
 
 ### 当前阶段（2026-09-04）
 
-| 项                           | 状态                                          |
-| ---------------------------- | --------------------------------------------- |
-| 字段事实存在性（真数据实测） | **已确认**（§2）                              |
-| 两跳数据可达性（四锚点）     | **已确认** 66/67、121/122、45/52、14/14（§2） |
-| 契约 1.3.0                   | **未做**（FE-0）                              |
-| Phase 1 三项派生             | **未做**（FE-1…FE-3）                         |
-| Impact Query                 | **未做**（FE-4…FE-5）                         |
-| 五个真数据验收 case          | **未冻结**（FE-6）                            |
+| 项                                                                        | 状态                                                                    |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 字段事实存在性（真数据实测）                                              | **已确认**（§2.1）                                                      |
+| 两跳数据可达性（四锚点）                                                  | **已确认** 66/67、121/122、45/52、14/14（§2.2）                         |
+| 简单子树读次算法实测                                                      | **已测** 63.29%（5,740/9,070）；181058 仅 11.56% ← 折叠丢上下文（§2.5） |
+| SQL 结构全库分布（防过拟合）                                              | **已测** setop 40% / 同表多读 47% / LEFT 49% / 物化 10%（§2.6）         |
+| OpenSpec change 裁为纯 Phase 1                                            | **待改**（§11）                                                         |
+| 契约 1.3.0                                                                | **未做**（FE-0）                                                        |
+| Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **未做**（FE-1…FE-3）                                                   |
+| Phase 1 baseline（三组 cohort）                                           | **未做**（§5.5）                                                        |
+| Impact Query / 金样 / 止损                                                | **Phase 2 change**，Phase 1 baseline 达标后再开                         |
 
 ### 立刻做什么（顺序）
 
 ```text
-① FE-0  契约 1.3.0 一次升版（三项属性同进，缓存全失效只发生一次）
-② FE-1  sourceReadOccurrence 派生 + AMBIGUOUS fail-closed
-③ FE-2  subtype 三分类 + 分布留档
-④ FE-3  DATASET_CONTROL joinType / controlSide
-⑤ FE-4  跨任务 resolve（只读 INDEX）
-⑥ FE-5  Impact Query：scope 计算 + 预算 + 输出契约
-⑦ FE-6  五 case 金样冻结
-⑧ 止损判定（§9）→ 决定 Phase 3 或回修 WP-8
+① 改 OpenSpec change 为纯 Phase 1（删 FE-4…FE-8 任务，钉死 §5 定义）
+② FE-0  契约 1.3.0 一次升版；1.2.0 READS 校验不放松
+③ FE-1  expandMaterializedField 带回 leaf expression/read relation；setop 按 ordinal 下沉；AMBIGUOUS 分原因码
+④ FE-2  subtype 按物化路径组合
+⑤ FE-3  joinType / controlSide 用 relation id 子树
+⑥ FE-1′ 临时表 gap 按表聚合
+⑦ 四项检查 + phase1-baseline.json（anchorExpansionBatch 186 / shadowEvaluationSlice 158 / all 344）
+⑧ 按 §5.5 判据决定是否开 Phase 2 change
 ```
 
 ---
@@ -105,7 +115,7 @@
 | ------ | -------- | ----------------------- | -------------------------------------------------------------------------------- |
 | 176827 | 67       | 66                      | `pdata_n.ref_cd_cvt_map` 未投影（终止表）                                        |
 | 209119 | 122      | 121                     | 同上                                                                             |
-| 181058 | 52       | 45                      | 7 个卡在 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp`（writer 在批内、无列 binding） |
+| 181058 | 52       | 45                      | 7 个卡在 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp`（writer 在批内；Facts 有物化桥，1.2.0 投影未用全/字段链在 temp 仍断） |
 | 155015 | 14       | 14                      | —                                                                                |
 
 结论：**数据层面多跳骨架已在**。缺的不是事实，是粒度、语义、侧别与查询契约。
@@ -130,6 +140,40 @@ DATASET_CONTROL
 ### 2.4 一个被当前形状抹平的结构：UNION 分支
 
 176827 是 `setop.b0 UNION setop.b1`：b0 为 OTC 期权支（经 `pdata_nds.pos_eod_position_view` 等 LEFT JOIN 链），b1 为 `t98_sb_tit_day_hold_indx` 支（INNER JOIN）。输出列 `gamma` 的 7 个来源同时含 b0 的 `pos_eod_position_view.gamma` 与 b1 的 `t98_sb_tit_day_hold_indx.gamma`——当前按 `outputColumn` 合并，分支信息丢失。补 `sourceRelationId` 后可区分，且为 `SCOPE_DISJOINT` 提供**可证明**的判据（§6.3）。
+
+### 2.5 简单子树算法的实测（写代码前先扫，决定 FE-1 形态）
+
+对 186 个投影，用「`expression.relation_id` 子树内 `relation_type = read` 且物理表同名」这条最朴素规则跑一遍读次派生：
+
+| 指标                    | 数值                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| RESOLVED                | **5,740 / 9,070 = 63.29%**                                                           |
+| AMBIGUOUS               | 2,209（同表多读次无法归属）                                                          |
+| UNRESOLVED              | 1,121（子树内无该表读）                                                              |
+| 四锚点各自 RESOLVED     | 155015 100% · 176827 57.78% · **181058 11.56%** · 209119 92.13%                      |
+| 181058 的 450 条值边    | **354 条经物化折叠**——折叠后 `expression.relation_id` 指向临时表写语句，丢了原上下文 |
+| 176827 setop 顶层表达式 | 57 列都挂在 `setop` relation 上，两支同表读被视为多读次                              |
+| 181058 临时表读边       | 42 条值边、6 个写观察、7 列                                                          |
+| JOIN 控制边             | 355（LEFT 271 / INNER 50 / FULL 34）；按物理表后缀判侧时 76 条两侧皆不匹配           |
+
+三条结论直接改写 §5：
+
+1. **物化折叠必须带回 leaf 上下文**（leaf expression、leaf read relation、路径是否经聚合），否则 181058 一类多语句任务永远单位数。
+2. **setop 顶层不能按输出列合并**：要按 ordinal 下沉到每一支的 `select` 表达式，逐支产 RESOLVED 边。
+3. **侧别不能靠表名后缀**：要用 `left / right` relation id 的子树成员关系。
+
+### 2.6 全库结构分布（344 Facts 任务，防过拟合）
+
+| SQL 结构                 | 任务数 / 344 | 说明                                                         |
+| ------------------------ | ------------ | ------------------------------------------------------------ |
+| UNION / setop            | 137（40%）   | 最大 32 支；`setop` 是全库结构，不是 176827 特例             |
+| 同表多读次（自连接等）   | 162（47%）   | 最多 64 次读                                                 |
+| LEFT / RIGHT / FULL JOIN | 169（49%）   | 侧别问题是全库问题                                           |
+| 任务内物化               | 35（10%）    | 最多 8 条；181058 属于这 10%，比例小但**没它 181058 单位数** |
+| CTE                      | 53（15%）    |                                                              |
+| Window                   | 37（11%）    |                                                              |
+
+四锚点展开批（186）之外还有 **158 个任务构成 shadow evaluation slice**（344 − 186）：派生规则设计时未针对它们调参，baseline 必须同时在两组上跑，检查规则是否只服务于锚点形态——**这不是独立人工标注集，只是结构性泛化 sanity check**（§5.5）。
 
 ---
 
@@ -170,14 +214,14 @@ ReadField     := (readOccurrenceId, column)
 
 ### 4.1 `FIELD_DIRECT` / `FIELD_CONDITIONAL` 新增属性
 
-| 属性                         | 类型                                                   | 说明                                                                             |
-| ---------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `sourceReadOccurrenceId`     | `string \| null`                                       | 该输入字段来自本任务哪一次物理读；派生失败为 `null`                              |
-| `sourceReadOccurrenceStatus` | `RESOLVED \| AMBIGUOUS \| UNRESOLVED`                  | `AMBIGUOUS`：同表多读次且无法唯一归属（自连接、分区 UNION）                      |
-| `sourceRelationId`           | `string`                                               | 表达式所在 relation（`expression.relation_id`），用于分支/作用域判定             |
-| `expressionId`               | `string`                                               | 回溯 `field-expression-nodes` 的证据锚点                                         |
-| `subtype`                    | `IDENTITY \| TRANSFORMATION \| AGGREGATION \| UNKNOWN` | 类型已在 `TaskLocalDirectSubtype`，1.3.0 起要求非 `UNKNOWN` 或附 `subtypeReason` |
-| `subtypeReason`              | `string?`                                              | 仅 `UNKNOWN` 时必填（§5.2 码表）                                                 |
+| 属性                         | 类型                                                   | 说明                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceReadOccurrenceId`     | `string \| null`                                       | 该输入字段来自本任务哪一次物理读；派生失败为 `null`                                                                                |
+| `sourceReadOccurrenceStatus` | `RESOLVED \| AMBIGUOUS \| UNRESOLVED`                  | `AMBIGUOUS`：同表多读次且无法唯一归属（自连接、分区 UNION）                                                                        |
+| `sourceRelationId`           | `string \| null`                                       | **匹配到的物理 read relation id**（不是 `expression.relation_id`）；由它沿祖先链可判 setop 分支 / join 侧；未 RESOLVED 时为 `null` |
+| `expressionId`               | `string`                                               | 回溯 `field-expression-nodes` 的证据锚点                                                                                           |
+| `subtype`                    | `IDENTITY \| TRANSFORMATION \| AGGREGATION \| UNKNOWN` | 类型已在 `TaskLocalDirectSubtype`，1.3.0 起要求非 `UNKNOWN` 或附 `subtypeReason`                                                   |
+| `subtypeReason`              | `string?`                                              | 仅 `UNKNOWN` 时必填（§5.2 码表）                                                                                                   |
 
 `FIELD_CONDITIONAL` 的 `subtype` 保持 `CONDITIONAL`，其余新属性同样必填。
 
@@ -200,10 +244,27 @@ ReadField     := (readOccurrenceId, column)
 3. `subtype = JOIN` 且 `joinType = N/A` → 失败
 4. 仍然拒绝：跨任务边、`affectedRootFields`、`rowsetControls`、任何 `控制列 → 输出列` 的字段级边
 5. 1.2.0 投影继续可读（legacy），但 Impact Query 对 1.2.0 输入直接返回 `CONTRACT_TOO_OLD` gap，不降级猜测
+6. **1.2.0 的 READS 边校验保持原样**：当前 `contract.ts` 用「`schemaVersion === TASK_LOCAL_PROJECTION_SCHEMA_VERSION`」判断是否要求 `readOccurrenceId`；升到 1.3.0 后必须改为 **`≥ 1.2.0`**，否则 1.2.0 投影会静默放松。需一条回归测试锁住。
 
 ### 4.5 成本声明
 
 `projectionContentHash` 变化 → 已缓存投影**全部失效一次**。186 任务分钟级；全库 13.7k 任务小时级。这是排期项，不是技术风险；**所以只允许升一次版**。
+
+### 4.6 FE-0 实施策略（契约先行，常量 bump 跟投影）
+
+FE-0 **只落地契约层**，不扩到派生逻辑：
+
+| 项                                          | FE-0             | FE-1 同 PR（投影发射） |
+| ------------------------------------------- | ---------------- | ---------------------- |
+| `contract.ts` 支持 1.3.0 类型与校验         | ✓                | —                      |
+| `TASK_LOCAL_PROJECTION_SCHEMA_VERSION` 常量 | FE-0 暂留 `1.2.0`；**FE-1 同 PR bump 到 `1.3.0`**（已合入） | bump 到 `1.3.0`        |
+| `project-task-local.ts` 发射 1.3.0          | ✗                | ✓                      |
+| `fieldDirectEdgeSemanticKey` helper         | ✓                | 调用方写入 semanticKey |
+| `gate-b-union` 等 consumer 接受 1.3.0       | ✗（登记）        | 1.3.0 投影上线前另改   |
+
+校验分支：`schemaVersion >= 1.2.0` → READS 两跳 + `readOccurrenceId`；`schemaVersion === 1.3.0` → 字段边新属性、`gaps[]`、控制侧别。1.1.0 / 1.2.0 继续可读，不补 1.3.0 字段。
+
+fail-closed：`sourceReadOccurrenceStatus ≠ RESOLVED` → 必填 `sourceReadOccurrenceReason`；`subtype = UNKNOWN` → 必填 `subtypeReason`；每条 `gaps[]` 条目必填 `gapId + reasonCode + details`。
 
 ---
 
@@ -211,19 +272,47 @@ ReadField     := (readOccurrenceId, column)
 
 ### 5.1 FE-1 `sourceReadOccurrenceId` 派生
 
-原料：`field-expression-nodes.input_fields[].(table, column)`、`expression.relation_id`、`relation-nodes` / `relation-edges`（relation 树）、`dataset-io.read_occurrences[]`。
+原料：`field-expression-nodes.input_fields[].(table, column)`、`expression.relation_id`、`relation-nodes` / `relation-edges`（relation 树）、`dataset-io.read_occurrences[]`（`relation_id → read_occurrence_id`）。
+
+**两个前置改动**（§2.5 结论 1、2），没有它们朴素算法只到 63%：
 
 ```text
-for each FieldEdge (expression E, input field (T, C)):
-  S := relation 子树(E.relation_id) 内所有 relation_type = read 且 physical table = T 的 relation
-  R := S 对应的 read_occurrence_id 集合
-  |R| = 1  → RESOLVED, sourceReadOccurrenceId = R[0]
-  |R| > 1  → 尝试用 qualifier（别名）收窄：若 E 的输入引用带 qualifier 且唯一命中 → RESOLVED
-             否则 AMBIGUOUS, sourceReadOccurrenceId = null, gap FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS
-  |R| = 0  → UNRESOLVED（CTE 作用域映射失败等），gap FIELD_SOURCE_READ_OCCURRENCE_UNRESOLVED
+(a) 物化折叠带回 leaf 上下文
+    project-task-local.ts 的 expandMaterializedField(...) 现在只返回 (table, column)；
+    改为返回 { table, column, leafExpressionId, leafRelationId, pathHadAggregation }
+    —— leafRelationId 是折叠链末端（真正读物理表的那条语句）的 expression.relation_id。
+    读次派生一律用 leafRelationId，不用被折叠掉的顶层 relation_id。
+
+(b) setop 按 ordinal 下沉
+    若 E.relation_id 指向 relation_type = setop：
+      对每一支 b_k，取 b_k 内 select list 第 ordinal(E) 位的表达式 E_k（按 output_column ordinal 对齐）
+      对每个 E_k 独立执行下面的派生，各产一条边（sourceRelationId 因此天然区分分支）
+    下沉找不到 E_k（列数不齐 / 分支非 select）→ AMBIGUOUS，reason SETOP_BRANCH_UNRESOLVED
 ```
 
-复用 `scripts/plans/read-occurrence-resolver.ts` 的 relation 树遍历与既有 `READ_OCCURRENCE_*` 原因码，不另写一套。**禁止**在 `|R| > 1` 时取第一个。
+核心派生：
+
+```text
+for each FieldEdge (leaf expression E, input field (T, C)):
+  S := relation 子树(E.relation_id) 内所有 relation_type = read 且 physical table = T 的 relation
+  R := S 对应的 read_occurrence_id 集合
+  |R| = 1  → RESOLVED
+             sourceReadOccurrenceId = R[0]
+             sourceRelationId       = S[0].relation_id          ← 物理 read relation，非 E.relation_id
+  |R| > 1  → 用 qualifier（别名）收窄：E 的输入引用带 qualifier 且唯一命中 → RESOLVED
+             否则 AMBIGUOUS, sourceReadOccurrenceId = null, sourceRelationId = null
+               reason  SELF_JOIN_NO_QUALIFIER   （同表多读、输入引用无别名）
+               gap     FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS
+  |R| = 0  → UNRESOLVED
+               reason  CTE_SCOPE_UNRESOLVED     （子树内无该表读，通常是 CTE/派生表作用域映射失败）
+               gap     FIELD_SOURCE_READ_OCCURRENCE_UNRESOLVED
+```
+
+`sourceReadOccurrenceReason` 只在非 RESOLVED 时必填，码表：`SETOP_BRANCH_UNRESOLVED | SELF_JOIN_NO_QUALIFIER | CTE_SCOPE_UNRESOLVED | MATERIALIZATION_LEAF_MISSING`（最后一条：折叠链末端缺 leaf 上下文，指向 FE-1′）。
+
+复用 `scripts/plans/read-occurrence-resolver.ts` 的 relation 树遍历与既有 `READ_OCCURRENCE_*` 原因码，不另写一套。**禁止**在 `|R| > 1` 时取第一个。**禁止**派生代码出现任务 id、表名、列名字面量（§5.5 有 lint 测试）。
+
+Facts 层若将来在 `input_fields[]` 直接带 `source_relation_id`，FE-1 的子树搜索退化为查表——这是**独立的 Facts 增强 WP**，不在 Phase 1 内，Phase 1 不等它。
 
 ### 5.2 FE-2 `subtype` 三分类（硬规则）
 
@@ -243,6 +332,17 @@ for each FieldEdge (expression E, input field (T, C)):
 | `WINDOW_CONTEXT_ONLY`           | 输入列仅出现在 `PARTITION BY / ORDER BY`，**不进值流**（此时应无 FIELD_DIRECT 边；若已有，标此码并在 FE-2 修掉） |
 | `INPUT_DEPENDENCY_NOT_PHYSICAL` | `input_dependency_status ≠ PHYSICAL`                                                                             |
 
+**物化路径组合**（§2.5 结论 1 的 subtype 侧）：经折叠的边不看单个表达式，看整条路径：
+
+```text
+subtype(path) :=
+  路径上任一跳含聚合（pathHadAggregation）      → AGGREGATION
+  否则路径上任一跳非裸列引用                    → TRANSFORMATION
+  否则（每一跳都是裸列 / 别名）                 → IDENTITY
+```
+
+例：临时表 `t.amt := sum(x.amt)`，最终 `select t.amt` → `AGGREGATION`，不是 `IDENTITY`。路径上任一跳 `UNKNOWN` → 整条 `UNKNOWN`，`subtypeReason` 取该跳原因。
+
 两条边界：
 
 - **CONSTANT 不生源边**：`select 'Y' as flag` 无输入字段，不产生 `FIELD_DIRECT`；若历史投影有，1.3.0 删除。
@@ -252,31 +352,69 @@ for each FieldEdge (expression E, input field (T, C)):
 
 ### 5.3 FE-3 `DATASET_CONTROL` 补 `joinType / controlSide`
 
-原料：`relation-nodes` 中 `relation_type = join` 的 `join_type`、`left`、`right`、`condition_columns[].qualifier / physical`。
+原料：`relation-nodes` 中 `relation_type = join` 的 `join_type`、`left`、`right`；`dataset-io.read_occurrences[].relation_id`；控制列本身的 read relation（经 `condition_columns[].qualifier` 或 `dataset-controls.ts` 已有的列→读次映射）。
 
 ```text
 for each DATASET_CONTROL(subtype = JOIN, relationId = J):
   joinType := upper(J.relation.join_type)
+  Rc := 控制列所属的物理 read relation id（不是表名）
   controlSide :=
-    控制列的物理表只出现在 J.left 子树   → LEFT
-    只出现在 J.right 子树               → RIGHT
-    两侧都出现（自连接）且 qualifier 可判 → 按 qualifier
-    否则                                → BOTH, gap CONTROL_SIDE_UNRESOLVED
+    Rc ∈ subtree(J.left)  且 Rc ∉ subtree(J.right) → LEFT
+    Rc ∈ subtree(J.right) 且 Rc ∉ subtree(J.left)  → RIGHT
+    Rc 无法唯一定位（自连接无别名 / 列→读次映射失败）→ BOTH, gap CONTROL_SIDE_UNRESOLVED
 for FILTER / GROUP_BY: joinType = N/A, controlSide = N/A
 ```
+
+**禁止按物理表名后缀判侧**：§2.5 实测 355 条 JOIN 控制边里 76 条用表名两侧都不匹配（同表两侧、别名、CTE），只有 relation id 子树成员关系可靠。`dataset-controls.ts` 的 `DatasetControlAnnotation` 因此要多带 `joinType / leftRelationId / rightRelationId / controlSide`。
 
 `grain` 规则不变（`PRESERVE / REDUCE / EXPAND_RISK`）。
 
 ### 5.4 临时表断链具名
 
-181058 读 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp`（7 个字段），writer 在批内但无列 binding——多语句任务内物化未被字段边串起。Phase 1 **不修**，只让它可见：
+181058 读 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp`，实测 **42 条值边、6 个写观察、7 列**——writer 在批内；Facts 侧 `task-local-materializations` 有 RESOLVED 桥，但 1.2.0 投影折叠/字段链未串全，7 列 metadata 在 temp 上仍表现为未折叠读。Phase 1 **不修**，只让它可见（`TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`）。
+
+因为一张临时表对应多条读、多个写观察，gap **按 `(taskId, physicalDataset)` 聚合**，一个投影内每张临时表只产一条：
 
 ```text
 gap TASK_LOCAL_MATERIALIZATION_FIELD_BREAK
-  details { taskId, readOccurrenceId, physicalDataset, columns[], materializationRecords: 0 | n }
+  details {
+    taskId, physicalDataset,
+    columns[]              // 去重、排序
+    affectedEdgeCount      // 42
+    writeObservationIds[]  // 6 个，排序
+    materializationRecords // task-local-materializations 里该表条目数，0 表示桥接缺失
+  }
 ```
 
-出现在该任务的 `localClosure` gap 列表与 Impact Query 输出的 `gaps[]`。修复归 WP-4/后续，不在本文件排期。
+不放 `readOccurrenceId`（一对多，放了就得多条或任选一条）。出现在该任务的 `localClosure` gap 列表；Phase 2 Impact Query 原样透传到 `gaps[]`。修复归 WP-4/后续，不在本文件排期。
+
+### 5.5 Phase 1 完成判据与 baseline 口径（可量化，不可放宽）
+
+**分母固定**：`resolvedDirectRatio := RESOLVED 的 FIELD_DIRECT / 全部发出的 FIELD_DIRECT`。`FIELD_CONDITIONAL` 单独统计 `resolvedConditionalRatio`，不并入。
+
+**三组 cohort 同时跑**（`artifacts/field-evidence-v1/phase1-baseline.json`）：
+
+| cohort key              | 任务 | 含义                                                                |
+| ----------------------- | ---- | ------------------------------------------------------------------- |
+| `anchorExpansionBatch`  | 186  | 四锚点上游展开批；规则设计时深挖过的 design corpus                  |
+| `shadowEvaluationSlice` | 158  | 344 − 186；派生代码未针对它调参；结构性泛化检查，**非标注 holdout** |
+| `all`                   | 344  | Facts 全库                                                          |
+
+每组产出：`resolvedDirectRatio`、`resolvedConditionalRatio`、`subtypeDistribution`、`ambiguousReasonCodes{}`、`unresolvedReasonCodes{}`、`joinSideDistribution`、`materializationBreakCount`、四锚点各自比例。
+
+**完成判据**（全部满足才开 Phase 2 change）：
+
+1. `anchorExpansionBatch.resolvedDirectRatio` 与 `shadowEvaluationSlice.resolvedDirectRatio` **同向上升**，且 shadow 提升幅度不低于 anchor 提升幅度的一半——否则疑似锚点特判，回修规则而不是开 Phase 2
+2. 181058 的 RESOLVED 比例脱离单位数（11.56% → 至少与 anchor 批均值同量级）
+3. 100% 的 `AMBIGUOUS / UNRESOLVED` 边有对应 gap；100% 的 `UNKNOWN` 有 `subtypeReason`
+4. 176827 的全部 `DATASET_CONTROL` JOIN 边有 `joinType`（Facts 约 **16 个 join relation**；投影上 JOIN control 边更多，因按控制列展开）；`controlSide === BOTH` 的均有 `CONTROL_SIDE_UNRESOLVED` gap
+5. 不写死目标比例（不承诺 80%）；把「简单子树 63.29%」作为对照线留档
+
+**防过拟合硬约束**：
+
+- 派生代码（`project-task-local.ts` 与新增模块）中**不得**出现任何任务 id、表名、列名字面量；加一条 lint 测试扫源码
+- 金样断言写**不变量**（有 RESOLVED 就有非空 `sourceRelationId`；AMBIGUOUS 必有 gap；setop 各支各有边），不写具体边数
+- 176827 / 181058 之外再从 shadow evaluation slice 随机抽 2 个含 setop 与物化的任务进 Phase 2 不变量金样（任务 id 只出现在 fixture 路径，不出现在代码）
 
 ---
 
@@ -407,19 +545,19 @@ impactQuery({
 
 ### 6.5 gap 码表（本 WP 新增；INDEX 既有码原样透传）
 
-| 码                                        | 层         | 含义                                          |
-| ----------------------------------------- | ---------- | --------------------------------------------- |
-| `FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS`  | Phase 1    | 同表多读次无法唯一归属                        |
-| `FIELD_SOURCE_READ_OCCURRENCE_UNRESOLVED` | Phase 1    | relation 树内找不到该表的读                   |
-| `FIELD_SUBTYPE_UNKNOWN`                   | Phase 1    | 附 `subtypeReason`                            |
-| `CONTROL_SIDE_UNRESOLVED`                 | Phase 1    | 自连接等无法判侧                              |
-| `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`  | Phase 1    | 任务内临时表字段链断                          |
-| `PRODUCER_NOT_PROJECTED`                  | Phase 2    | INDEX 无条目：终止表 / 未采集 / SCHEDULE_ONLY |
-| `PRODUCER_BINDING_NOT_FOUND`              | Phase 2    | writer 在并集内但该列无 RESOLVED binding      |
-| `MULTI_WRITER_CANDIDATE_FRONTIER`         | Phase 2    | 候选 > 1 或 `l1Eligible = false`，停止递归    |
-| `WRITER_PARTITION_UNKNOWN` 等             | INDEX 透传 | 不改写                                        |
-| `TRAVERSAL_BUDGET_EXCEEDED`               | Phase 2    | 深度/边数/frontier 超限                       |
-| `CONTRACT_TOO_OLD`                        | Phase 2    | 输入投影 < 1.3.0                              |
+| 码                                        | 层         | 含义                                                                                                       |
+| ----------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `FIELD_SOURCE_READ_OCCURRENCE_AMBIGUOUS`  | Phase 1    | 同表多读次无法唯一归属；`details.reasonCode ∈ { SETOP_BRANCH_UNRESOLVED, SELF_JOIN_NO_QUALIFIER }`         |
+| `FIELD_SOURCE_READ_OCCURRENCE_UNRESOLVED` | Phase 1    | relation 树内找不到该表的读；`details.reasonCode ∈ { CTE_SCOPE_UNRESOLVED, MATERIALIZATION_LEAF_MISSING }` |
+| `FIELD_SUBTYPE_UNKNOWN`                   | Phase 1    | 附 `subtypeReason`                                                                                         |
+| `CONTROL_SIDE_UNRESOLVED`                 | Phase 1    | 自连接等无法判侧                                                                                           |
+| `TASK_LOCAL_MATERIALIZATION_FIELD_BREAK`  | Phase 1    | 任务内临时表字段链断；按 `(taskId, physicalDataset)` 聚合一条（§5.4）                                      |
+| `PRODUCER_NOT_PROJECTED`                  | Phase 2    | INDEX 无条目：终止表 / 未采集 / SCHEDULE_ONLY                                                              |
+| `PRODUCER_BINDING_NOT_FOUND`              | Phase 2    | writer 在并集内但该列无 RESOLVED binding                                                                   |
+| `MULTI_WRITER_CANDIDATE_FRONTIER`         | Phase 2    | 候选 > 1 或 `l1Eligible = false`，停止递归                                                                 |
+| `WRITER_PARTITION_UNKNOWN` 等             | INDEX 透传 | 不改写                                                                                                     |
+| `TRAVERSAL_BUDGET_EXCEEDED`               | Phase 2    | 深度/边数/frontier 超限                                                                                    |
+| `CONTRACT_TOO_OLD`                        | Phase 2    | 输入投影 < 1.3.0                                                                                           |
 
 ---
 
@@ -541,21 +679,40 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 
 ---
 
-## 11. 工作包
+## 11. 工作包（拆成两个 OpenSpec change）
 
-| 包                      | 内容                                                                                                                                                     | 完成定义                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **FE-0** 契约 1.3.0     | `contract.ts` 新属性、校验规则、legacy 读取；`ids.ts` 边 id 语义键含 `sourceReadOccurrenceId`（AMBIGUOUS 时用 `null` 占位，保证同一表达式两条边不撞 id） | 契约测试绿；1.2.0 投影可读；1.3.0 缺属性拒绝                        |
-| **FE-1** 读次派生       | §5.1 算法，复用 `read-occurrence-resolver`                                                                                                               | 四锚点 `RESOLVED` 比例留档；`AMBIGUOUS` 有 gap；无「取第一个」      |
-| **FE-2** subtype 三分类 | §5.2 规则 + 码表；删 CONSTANT 源边；window 上下文列不进值流                                                                                              | `field-subtype-distribution.json` 留档；`UNKNOWN` 全部带 reason     |
-| **FE-3** 控制侧别       | §5.3；`joinType / controlSide / left / rightRelationId`                                                                                                  | 176827 16 个 join 全部有 `joinType`；`BOTH` 有 gap                  |
-| **FE-4** 跨任务 resolve | 只读 INDEX 的 `resolveReadField()`；`FieldEdgeIndex` 接口                                                                                                | 单元测试覆盖：唯一 + l1Eligible / 多候选 / 无条目 / 无 binding 四态 |
-| **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                                                                                                                           | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                |
-| **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence`                                                                                               | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed         |
-| **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`                                                                                                           | 输出 `confirmedTwoHopRatio / dominantGap / decision`                |
-| **FE-8** 文档回写       | 在 `execution-plan-asset-graph.md` WP-11 行、`domain-asset-graph-architecture.md` WP 状态表**各改一行**指向本文件                                        | 仅状态行，不改正文                                                  |
+### 11.1 Change `field-evidence-v1`（纯 Phase 1，当前）
 
-领取顺序：FE-0 → FE-1 → FE-2 → FE-3（可并行 FE-1/2/3 的派生逻辑，但**同一 PR 合入**以满足一次升版）→ FE-4 → FE-5 → FE-6 → FE-7 → 按 §9 决定。
+| 包                       | 内容                                                                                                                                                               | 完成定义                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| **FE-0** 契约 1.3.0      | `contract.ts` 新属性 + 校验；1.2.0 READS 校验改 `≥ 1.2.0`（§4.4 第 6 条）；`ids.ts` 语义键含 `sourceReadOccurrenceId + expressionId`（非 RESOLVED 用 `null` 占位） | 契约测试绿；1.2.0 投影可读**且 READS 仍要求 `readOccurrenceId`**；1.3.0 缺属性拒绝                |
+| **FE-1** 读次派生        | §5.1 三步：`expandMaterializedField` 带回 leaf 上下文 → setop 按 ordinal 下沉 → 子树匹配；四个 reasonCode                                                          | 非 RESOLVED 100% 有 gap；无「取第一个」；`sourceRelationId` 为物理 read relation                  |
+| **FE-2** subtype 三分类  | §5.2 规则 + 码表 + **物化路径组合**；删 CONSTANT 源边；window 上下文列不进值流                                                                                     | `UNKNOWN` 100% 带 reason；折叠边经聚合者不得为 `IDENTITY`                                         |
+| **FE-3** 控制侧别        | §5.3 relation id 子树判侧；`dataset-controls.ts` 注解加 `joinType / leftRelationId / rightRelationId / controlSide`                                                | 176827 16 个 join 全部有 `joinType`；`BOTH` 100% 有 gap；**不按表名后缀判**                       |
+| **FE-1′** 临时表 gap     | §5.4 按 `(taskId, physicalDataset)` 聚合                                                                                                                           | 181058 恰好一条，`columns.length = 7`，`affectedEdgeCount = 42`，`writeObservationIds.length = 6` |
+| **FE-B** baseline + 检查 | §5.5 三 cohort `phase1-baseline.json`；四项不变量检查；源码 lint（无任务 id / 表名 / 列名字面量）                                                                  | 满足 §5.5 五条完成判据；lint 绿                                                                   |
+| **FE-D** 文档回写        | 在 `execution-plan-asset-graph.md` WP-11 行、`domain-asset-graph-architecture.md` WP 状态表**各改一行**指向本文件                                                  | 仅状态行，不改正文                                                                                |
+
+领取顺序：FE-0 → FE-1 → FE-2 → FE-3 → FE-1′（派生逻辑可并行，但**同一 PR 合入**以满足一次升版）→ FE-B → 按 §5.5 决定是否开 11.2。
+
+### 11.2 Change `field-evidence-v1-impact-query`（Phase 2，待 11.1 达标后开）
+
+| 包                      | 内容                                                       | 完成定义                                                            |
+| ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| **FE-4** 跨任务 resolve | 只读 INDEX 的 `resolveReadField()`；`FieldEdgeIndex` 接口  | 单元测试覆盖：唯一 + l1Eligible / 多候选 / 无条目 / 无 binding 四态 |
+| **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                             | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                |
+| **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence` | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed         |
+| **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`             | 输出 `confirmedTwoHopRatio / dominantGap / decision`                |
+
+Phase 2 的行为契约草稿即本文件 §6–§7；开 change 时以此为 spec 起点（首版 OpenSpec `specs/field-evidence-v1/spec.md` 已并入本文件，不再单独维护）。
+
+### 11.3 登记、不排期
+
+| 项                                        | 归属            | 说明                                     |
+| ----------------------------------------- | --------------- | ---------------------------------------- |
+| Facts `input_fields[].source_relation_id` | 发布器侧独立 WP | 有了它 FE-1 ③ 退化为查表；Phase 1 不等它 |
+| 临时表断链修复                            | WP-4 / 后续     | Phase 1 只具名                           |
+| 并集分片 + 反向索引                       | 全库前必做      | §8.2                                     |
 
 ---
 
@@ -572,7 +729,12 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 9. 契约只升一次版（1.3.0）；三项属性同 PR。
 10. 不改 WP-8 INDEX 契约；INDEX 的 reasonCode 原样透传。
 11. 不改 SQLLens / Plan Facts / Machine Facts 发布器；不动 legacy `field-lineage` 消费者。
-12. §9 止损条件不可删、不可放宽。
+12. §9 止损条件不可删、不可放宽；§5.5 Phase 1 完成判据同样不可放宽。
+13. `sourceRelationId` 是**物理 read relation id**，不是 `expression.relation_id`；未 RESOLVED 时为 `null`。
+14. 控制侧别只能由 relation id 子树成员关系判定；**禁止按表名 / 后缀判侧**。
+15. 派生代码不得含任务 id、表名、列名字面量（lint 锁住）；金样断言只写不变量，不写具体边数。
+16. baseline 必须同时给出 `anchorExpansionBatch` / `shadowEvaluationSlice` / `all` 三组；只在展开批上变好不算变好。
+17. 升版 1.3.0 时，1.2.0 的 READS 校验不得放松（`≥ 1.2.0`，非 `=== 当前版本`）。
 
 ---
 
@@ -585,10 +747,16 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 - 并集分片与反向索引的存储实现（记录为全库前必做，非本 WP）
 - 临时表断链修复（只具名，不修）
 - WP-10 legacy 闭包 KPI 对比
+- Facts 层 `input_fields[].source_relation_id` 增强（登记为发布器侧独立 WP，Phase 1 不等它）
+- 为某个锚点单独写特判（任何以任务 id / 表名为条件的分支都是过拟合）
 
 ---
 
 ## 14. 何时算解决
+
+**Phase 1（change `field-evidence-v1`）解决**：§5.5 五条完成判据全部满足，`phase1-baseline.json` 三组 cohort 留档，`shadowEvaluationSlice` 与 `anchorExpansionBatch` 同向改善。
+
+**整个 WP-11 解决**：
 
 1. 1.3.0 投影在四锚点穿透批上重投成功，`RESOLVED` 读次比例与 subtype 分布已留档
 2. 五个 case 的 `FIELD_IMPACT_RESULT` 与 `expected.json` 一致，且 Case A 的 `SCOPE_DISJOINT`、Case C 的同 join 双 scope、Case D 的 frontier 三个「诚实性」断言绿

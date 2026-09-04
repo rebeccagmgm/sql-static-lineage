@@ -394,7 +394,7 @@ describeGolden("TL-6 golden samples (existing Facts)", () => {
 
   it("WP-7: real Facts keep occurrence identity, local materializations and closure summaries", () => {
     const p103928 = projectGolden("103928");
-    expect(p103928.schemaVersion).toBe("1.2.0");
+    expect(p103928.schemaVersion).toBe("1.3.0");
     const p103928Occurrences = p103928.nodes.filter(
       (node) => node.nodeType === "READ_OCCURRENCE",
     );

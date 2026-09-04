@@ -35,6 +35,7 @@ import {
 } from "./coverage.ts";
 import {
   canonicalizeTaskLocalProjection,
+  TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
   type TaskLocalEdge,
   type TaskLocalFailureReasonCode,
   type TaskLocalFieldPathSummary,
@@ -42,8 +43,21 @@ import {
   type TaskLocalFinalWriteSummary,
   type TaskLocalNode,
   type TaskLocalProjection,
+  type TaskLocalProjectionGap,
 } from "./contract.ts";
 import {
+  buildFieldEvidenceIndexes,
+  controlSideGap,
+  emitFieldEvidenceForInput,
+  inputFieldRecordForSource,
+  isConstantExpression,
+  materializationBreakGap,
+  type ExpandedMaterializedField,
+} from "../field-evidence-v1/field-evidence-emission.ts";
+import { classifyExpressionSubtype } from "../field-evidence-v1/subtype-classifier.ts";
+import {
+  fieldConditionalEdgeSemanticKey,
+  fieldDirectEdgeSemanticKey,
   fieldEvidencePhysicalFieldNodeId,
   physicalDatasetNodeId,
   readOccurrenceNodeId,
@@ -708,16 +722,40 @@ function projectTaskLocalFromFacts(input: {
     }
   }
 
-  type ExpandedSource = {
-    readonly field: PhysicalFieldIdentity;
-    readonly materializationBridgeIds: readonly string[];
+  const fieldEvidenceIndexes = buildFieldEvidenceIndexes({
+    taskId,
+    expressions: records(load.records["field-expression-nodes.jsonl"]),
+    relationNodes: records(load.records["relation-nodes.jsonl"]),
+    relationEdges: records(load.records["relation-edges.jsonl"]),
+    datasetIoReads: records(load.records["dataset-io.jsonl"]).filter(
+      (row) => text(row.task_id) === taskId,
+    ),
+  });
+  const gaps: TaskLocalProjectionGap[] = [];
+  const gapIds = new Set<string>();
+  const pushGap = (gap: TaskLocalProjectionGap): void => {
+    if (gapIds.has(gap.gapId)) return;
+    gapIds.add(gap.gapId);
+    gaps.push(gap);
   };
-  const expandedMaterializationMemo = new Map<string, ExpandedSource[]>();
+  const writtenDatasets = new Set(
+    writeRecords.map((write) => normalizeName(String(write.physical_dataset ?? ""))),
+  );
+  const materializationBreakTracker = new Map<string, {
+    columns: Set<string>;
+    affectedEdgeCount: number;
+    writeObservationIds: Set<string>;
+    materializationRecords: number;
+  }>();
+  const materializationBreakKeys = new Set<string>();
+
+  const expandedMaterializationMemo = new Map<string, ExpandedMaterializedField[]>();
   const expandMaterializedField = (
     source: PhysicalFieldIdentity,
     visited: ReadonlySet<string> = new Set(),
     context: MaterializationContext = { statementId: null, expressionId: null },
-  ): ExpandedSource[] => {
+    subtypeHops: readonly ReturnType<typeof classifyExpressionSubtype>[] = [],
+  ): ExpandedMaterializedField[] => {
     const fieldKey = materializationKey(source.qualifiedName, source.column);
     const memoKey = `${fieldKey}\u0000${materializationContextKey(context)}`;
     if (visited.size === 0) {
@@ -735,7 +773,14 @@ function projectTaskLocalFromFacts(input: {
         && text(materialization.output_binding_id),
     );
     if (candidates.length !== 1 || resolved.length !== 1 || !primaryTarget || visited.has(fieldKey)) {
-      const result = [{ field: source, materializationBridgeIds: [] }];
+      const result: ExpandedMaterializedField[] = [{
+        field: source,
+        materializationBridgeIds: [],
+        leafExpressionId: context.expressionId,
+        leafRelationId: null,
+        pathHadAggregation: subtypeHops.some((hop) => hop.pathHadAggregation),
+        subtypeHops,
+      }];
       if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
@@ -743,10 +788,23 @@ function projectTaskLocalFromFacts(input: {
     const binding = bindingById.get(text(materialization.output_binding_id)!);
     const expression = binding ? expressionFor(load, binding) : null;
     if (!expression) {
-      const result = [{ field: source, materializationBridgeIds: [] }];
+      const result: ExpandedMaterializedField[] = [{
+        field: source,
+        materializationBridgeIds: [],
+        leafExpressionId: context.expressionId,
+        leafRelationId: null,
+        pathHadAggregation: subtypeHops.some((hop) => hop.pathHadAggregation),
+        subtypeHops,
+      }];
       if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
+    const hop = classifyExpressionSubtype(
+      expression,
+      fieldEvidenceIndexes.relationTree.relations.get(
+        text(expression.relation_id) ?? "",
+      )?.relationType ?? null,
+    );
     const underlying = taskLocalSourceFieldsForExpression(
       expression,
       catalog,
@@ -756,7 +814,14 @@ function projectTaskLocalFromFacts(input: {
       defaultSchema,
     );
     if (underlying.fields.length === 0) {
-      const result = [{ field: source, materializationBridgeIds: [] }];
+      const result: ExpandedMaterializedField[] = [{
+        field: source,
+        materializationBridgeIds: [],
+        leafExpressionId: text(expression.expression_id),
+        leafRelationId: text(expression.relation_id),
+        pathHadAggregation: [...subtypeHops, hop].some((item) => item.pathHadAggregation),
+        subtypeHops: [...subtypeHops, hop],
+      }];
       if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
@@ -764,12 +829,21 @@ function projectTaskLocalFromFacts(input: {
     nextVisited.add(fieldKey);
     const nestedContext = materializationContextForExpression(expression);
     const result = underlying.fields.flatMap((field) =>
-      expandMaterializedField(field, nextVisited, nestedContext).map((expanded) => ({
+      expandMaterializedField(
+        field,
+        nextVisited,
+        nestedContext,
+        [...subtypeHops, hop],
+      ).map((expanded) => ({
         field: expanded.field,
         materializationBridgeIds: [
           text(materialization.bridge_id) ?? "",
           ...expanded.materializationBridgeIds,
         ].filter(Boolean),
+        leafExpressionId: expanded.leafExpressionId ?? text(expression.expression_id),
+        leafRelationId: expanded.leafRelationId ?? text(expression.relation_id),
+        pathHadAggregation: expanded.pathHadAggregation,
+        subtypeHops: expanded.subtypeHops,
       })),
     );
     if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
@@ -786,7 +860,7 @@ function projectTaskLocalFromFacts(input: {
     const outputColumn = normalizeName(String(binding.target_field ?? ""));
     if (!outputColumn) continue;
     const expression = expressionFor(load, binding);
-    if (!expression) continue;
+    if (!expression || isConstantExpression(expression)) continue;
     const statementId = text(expression.statement_id);
     if (statementId) statementIds.add(statementId);
     const sources = taskLocalSourceFieldsForExpression(
@@ -798,46 +872,107 @@ function projectTaskLocalFromFacts(input: {
       defaultSchema,
     );
     const materializationContext = materializationContextForExpression(expression);
-    for (const source of sources.fields.flatMap((field) =>
-      expandMaterializedField(field, new Set(), materializationContext),
-    )) {
-      const fromNodeId = ensureFieldNode(nodes, source.field, catalog);
-      const bridgeIds = [...new Set(source.materializationBridgeIds)].sort(compareText);
-      pushEdge({
-        edgeId: taskLocalEdgeId({
+    for (const rawSource of sources.fields) {
+      const isTempBreakSource =
+        writtenDatasets.has(normalizeName(rawSource.qualifiedName))
+        && isTempLikeTableName(rawSource.qualifiedName);
+      for (const source of expandMaterializedField(
+        rawSource,
+        new Set(),
+        materializationContext,
+      )) {
+      const inputField = inputFieldRecordForSource(expression, source.field);
+      const emissions = emitFieldEvidenceForInput({
+        taskId,
+        expression,
+        sourceField: source.field,
+        inputField,
+        expanded: source,
+        indexes: fieldEvidenceIndexes,
+      });
+      for (const emission of emissions) {
+        const context = emission.expressionContexts[0];
+        if (!context) continue;
+        if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
+        const fromNodeId = ensureFieldNode(nodes, source.field, catalog);
+        const bridgeIds = [...new Set(source.materializationBridgeIds)].sort(compareText);
+        const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus
+          === "RESOLVED"
+          ? emission.sourceResolution.sourceReadOccurrenceId
+          : null;
+        pushEdge({
+          edgeId: taskLocalEdgeId({
+            edgeType: "FIELD_DIRECT",
+            fromNodeId,
+            toNodeId: targetWriteNode,
+            semanticKey: fieldDirectEdgeSemanticKey({
+              outputColumn,
+              sourceColumn: source.field.column,
+              sourceTable: source.field.qualifiedName,
+              sourceReadOccurrenceId,
+              expressionId: context.expressionId,
+            }),
+          }),
           edgeType: "FIELD_DIRECT",
           fromNodeId,
           toNodeId: targetWriteNode,
-          semanticKey: {
+          properties: {
+            subtype: emission.subtype,
+            ...(emission.subtypeReason ? { subtypeReason: emission.subtypeReason } : {}),
             outputColumn,
-            sourceColumn: source.field.column,
-            sourceTable: source.field.qualifiedName,
+            bindingId: text(binding.binding_id),
+            expressionId: context.expressionId,
+            sourceReadOccurrenceId,
+            sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
+            ...(emission.sourceResolution.sourceReadOccurrenceReason
+              ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
+              : {}),
+            sourceRelationId: emission.sourceResolution.sourceRelationId,
+            ...(bridgeIds.length > 0
+              ? { materializationBridgeIds: bridgeIds, materializationFolded: true }
+              : {}),
           },
-        }),
-        edgeType: "FIELD_DIRECT",
-        fromNodeId,
-        toNodeId: targetWriteNode,
-        properties: {
-          subtype: "UNKNOWN",
-          outputColumn,
-          bindingId: text(binding.binding_id),
-          ...(bridgeIds.length > 0
-            ? { materializationBridgeIds: bridgeIds, materializationFolded: true }
-            : {}),
-        },
-      });
-      if (bridgeIds.length > 0) {
-        const pathKey = `${fromNodeId}|${targetWriteNode}|${outputColumn}`;
-        if (!localFieldPathKeys.has(pathKey)) {
-          localFieldPathKeys.add(pathKey);
-          localFieldPaths.push({
-            sourceFieldNodeId: fromNodeId,
-            targetWriteNodeId: targetWriteNode,
-            outputColumn,
-            materializationBridgeIds: bridgeIds,
-          });
+        });
+        const sourceStillTemp =
+          isTempBreakSource
+          && bridgeIds.length === 0
+          && writtenDatasets.has(normalizeName(source.field.qualifiedName))
+          && isTempLikeTableName(source.field.qualifiedName);
+        if (sourceStillTemp) {
+          const breakKey = `${writeObservationId}|${outputColumn}|${rawSource.column}`;
+          if (!materializationBreakKeys.has(breakKey)) {
+            materializationBreakKeys.add(breakKey);
+            const sourceDataset = normalizeName(rawSource.qualifiedName);
+            const tracker = materializationBreakTracker.get(sourceDataset) ?? {
+              columns: new Set<string>(),
+              affectedEdgeCount: 0,
+              writeObservationIds: new Set<string>(),
+              materializationRecords: materializationRecordsForDataset(
+                materializationRecords,
+                sourceDataset,
+                sourceDataset,
+              ).length,
+            };
+            tracker.columns.add(rawSource.column);
+            tracker.affectedEdgeCount += 1;
+            tracker.writeObservationIds.add(writeObservationId);
+            materializationBreakTracker.set(sourceDataset, tracker);
+          }
+        }
+        if (bridgeIds.length > 0) {
+          const pathKey = `${fromNodeId}|${targetWriteNode}|${outputColumn}`;
+          if (!localFieldPathKeys.has(pathKey)) {
+            localFieldPathKeys.add(pathKey);
+            localFieldPaths.push({
+              sourceFieldNodeId: fromNodeId,
+              targetWriteNodeId: targetWriteNode,
+              outputColumn,
+              materializationBridgeIds: bridgeIds,
+            });
+          }
         }
       }
+    }
     }
     for (const conditional of fieldConditionalsForExpression(
       load,
@@ -850,24 +985,74 @@ function projectTaskLocalFromFacts(input: {
       evidenceStatus,
     )) {
       for (const source of conditional.fields) {
-        const fromNodeId = ensureFieldNode(nodes, source, catalog);
-        pushEdge({
-          edgeId: taskLocalEdgeId({
+        const inputField = inputFieldRecordForSource(expression, source);
+        const emissions = emitFieldEvidenceForInput({
+          taskId,
+          expression,
+          sourceField: source,
+          inputField,
+          expanded: {
+            field: source,
+            materializationBridgeIds: [],
+            leafExpressionId: text(expression.expression_id),
+            leafRelationId: text(expression.relation_id),
+            pathHadAggregation: false,
+            subtypeHops: [],
+          },
+          indexes: fieldEvidenceIndexes,
+        });
+        for (const emission of emissions) {
+          const context = emission.expressionContexts[0];
+          if (!context) continue;
+          if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
+          const fromNodeId = ensureFieldNode(nodes, source, catalog);
+          const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus
+            === "RESOLVED"
+            ? emission.sourceResolution.sourceReadOccurrenceId
+            : null;
+          pushEdge({
+            edgeId: taskLocalEdgeId({
+              edgeType: "FIELD_CONDITIONAL",
+              fromNodeId,
+              toNodeId: targetWriteNode,
+              semanticKey: fieldConditionalEdgeSemanticKey({
+                outputColumn,
+                sourceColumn: source.column,
+                sourceTable: source.qualifiedName,
+                sourceReadOccurrenceId,
+                expressionId: context.expressionId,
+                conditionalId: conditional.conditionalId,
+              }),
+            }),
             edgeType: "FIELD_CONDITIONAL",
             fromNodeId,
             toNodeId: targetWriteNode,
-            semanticKey: { outputColumn, sourceColumn: source.column, conditionalId: conditional.conditionalId },
-          }),
-          edgeType: "FIELD_CONDITIONAL",
-          fromNodeId,
-          toNodeId: targetWriteNode,
-          properties: {
-            subtype: "CONDITIONAL",
-            outputColumn,
-          },
-        });
+            properties: {
+              subtype: "CONDITIONAL",
+              outputColumn,
+              expressionId: context.expressionId,
+              sourceReadOccurrenceId,
+              sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
+              ...(emission.sourceResolution.sourceReadOccurrenceReason
+                ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
+                : {}),
+              sourceRelationId: emission.sourceResolution.sourceRelationId,
+            },
+          });
+        }
       }
     }
+  }
+
+  for (const [physicalDataset, tracker] of materializationBreakTracker) {
+    pushGap(materializationBreakGap({
+      taskId,
+      physicalDataset,
+      columns: [...tracker.columns],
+      affectedEdgeCount: tracker.affectedEdgeCount,
+      writeObservationIds: [...tracker.writeObservationIds],
+      materializationRecords: tracker.materializationRecords,
+    }));
   }
 
   for (const statementId of writeObservationByStatement.keys()) {
@@ -892,6 +1077,13 @@ function projectTaskLocalFromFacts(input: {
         ? targetWriteNodes.get(writeObservationId)
         : undefined;
       if (!targetWriteNode) continue;
+      if (control.controlSide === "BOTH") {
+        pushGap(controlSideGap({
+          taskId,
+          relationId: control.relationId ?? "unresolved",
+          controlId: control.controlId,
+        }));
+      }
       const fromNodeId = ensureFieldNode(nodes, control.field, catalog);
       pushEdge({
         edgeId: taskLocalEdgeId({
@@ -910,13 +1102,17 @@ function projectTaskLocalFromFacts(input: {
           relationId: control.relationId,
           statementId: control.statementId,
           writeObservationId,
+          joinType: control.joinType ?? "N/A",
+          controlSide: control.controlSide ?? "N/A",
+          ...(control.leftRelationId ? { leftRelationId: control.leftRelationId } : {}),
+          ...(control.rightRelationId ? { rightRelationId: control.rightRelationId } : {}),
         },
       });
     }
   }
 
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.2.0",
+    schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt,
     taskId,
@@ -924,6 +1120,7 @@ function projectTaskLocalFromFacts(input: {
     failureReasonCode: null,
     nodes: [...nodes.values()],
     edges,
+    gaps,
     localClosure: {
       finalWrites: [...finalWriteSummaries].sort((left, right) =>
         compareText(left.writeObservationId, right.writeObservationId),

@@ -96,3 +96,37 @@ export function taskLocalEdgeId(input: {
 }): string {
   return stableId("edge", input);
 }
+
+export function fieldDirectEdgeSemanticKey(input: {
+  readonly outputColumn: string;
+  readonly sourceColumn: string;
+  readonly sourceTable: string;
+  readonly sourceReadOccurrenceId: string | null;
+  readonly expressionId: string;
+}): Readonly<Record<string, string | null>> {
+  return {
+    outputColumn: input.outputColumn,
+    sourceColumn: input.sourceColumn,
+    sourceTable: input.sourceTable,
+    sourceReadOccurrenceId: input.sourceReadOccurrenceId,
+    expressionId: input.expressionId,
+  };
+}
+
+export function fieldConditionalEdgeSemanticKey(input: {
+  readonly outputColumn: string;
+  readonly sourceColumn: string;
+  readonly sourceTable: string;
+  readonly sourceReadOccurrenceId: string | null;
+  readonly expressionId: string;
+  readonly conditionalId: string;
+}): Readonly<Record<string, string | null>> {
+  return {
+    outputColumn: input.outputColumn,
+    sourceColumn: input.sourceColumn,
+    sourceTable: input.sourceTable,
+    sourceReadOccurrenceId: input.sourceReadOccurrenceId,
+    expressionId: input.expressionId,
+    conditionalId: input.conditionalId,
+  };
+}

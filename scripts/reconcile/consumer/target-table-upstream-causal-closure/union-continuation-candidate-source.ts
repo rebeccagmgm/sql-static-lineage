@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { canonicalJson, sha256 } from "../../../machine-facts/machine-facts-contract.ts";
+import { taskLocalSchemaVersionAtLeast } from "../../../project-graph/task-local/contract.ts";
 
 export const UNION_CONTINUATION_INDEX_SCHEMA_VERSION = "1.0.0" as const;
 export const UNION_CONTINUATION_INDEX_ARTIFACT_TYPE = "UNION_CONTINUATION_INDEX" as const;
@@ -233,7 +234,7 @@ function parseIndex(value: unknown): UnionContinuationIndex {
   const inputSource = record(source.input, "input");
   const projectionValues = array(inputSource.taskProjections, "input.taskProjections");
   const taskProjections = projectionValues.map((item, index) => parseTaskProjection(item, `input.taskProjections[${index}]`));
-  if (taskProjections.some((projection) => projection.schemaVersion !== "1.2.0")) {
+  if (taskProjections.some((projection) => !taskLocalSchemaVersionAtLeast(projection.schemaVersion as "1.1.0" | "1.2.0" | "1.3.0", "1.2.0"))) {
     throw new Error("UNION_CONTINUATION_INDEX_INPUT_SCHEMA_INVALID");
   }
   const taskIds = new Set<string>();

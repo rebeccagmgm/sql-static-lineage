@@ -1,10 +1,32 @@
 import { canonicalJson, sha256 } from "../../machine-facts/machine-facts-contract.ts";
 
-export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.2.0" as const;
+export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.3.0" as const;
+export const TASK_LOCAL_PROJECTION_FIELD_EVIDENCE_SCHEMA_VERSION = "1.3.0" as const;
 export const TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION = "1.1.0" as const;
+export const TASK_LOCAL_PROJECTION_READ_OCCURRENCE_SCHEMA_VERSION = "1.2.0" as const;
+
+const TASK_LOCAL_PROJECTION_SCHEMA_VERSION_ORDER = [
+  TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION,
+  TASK_LOCAL_PROJECTION_READ_OCCURRENCE_SCHEMA_VERSION,
+  TASK_LOCAL_PROJECTION_FIELD_EVIDENCE_SCHEMA_VERSION,
+] as const;
+
 export type TaskLocalProjectionSchemaVersion =
   | typeof TASK_LOCAL_PROJECTION_SCHEMA_VERSION
+  | typeof TASK_LOCAL_PROJECTION_READ_OCCURRENCE_SCHEMA_VERSION
+  | typeof TASK_LOCAL_PROJECTION_FIELD_EVIDENCE_SCHEMA_VERSION
   | typeof TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION;
+
+export function taskLocalSchemaVersionAtLeast(
+  version: TaskLocalProjectionSchemaVersion,
+  minimum: TaskLocalProjectionSchemaVersion,
+): boolean {
+  return (
+    TASK_LOCAL_PROJECTION_SCHEMA_VERSION_ORDER.indexOf(version)
+    >= TASK_LOCAL_PROJECTION_SCHEMA_VERSION_ORDER.indexOf(minimum)
+  );
+}
+
 export const TASK_LOCAL_PROJECTION_ARTIFACT_TYPE = "TASK_LOCAL_PROJECTION" as const;
 
 export type TaskLocalCoverageStatus =
@@ -19,6 +41,43 @@ export type TaskLocalFailureReasonCode =
   | "NO_RESOLVED_WRITE"
   | "SCHEMA_UNRESOLVED"
   | "PROJECTION_FAILED";
+
+export type TaskLocalSourceReadOccurrenceStatus =
+  | "RESOLVED"
+  | "AMBIGUOUS"
+  | "UNRESOLVED";
+
+export type TaskLocalSourceReadOccurrenceReason =
+  | "SETOP_BRANCH_UNRESOLVED"
+  | "SELF_JOIN_NO_QUALIFIER"
+  | "CTE_SCOPE_UNRESOLVED"
+  | "MATERIALIZATION_LEAF_MISSING";
+
+export type TaskLocalSubtypeReason =
+  | "EXPRESSION_TEXT_UNPARSEABLE"
+  | "MIXED_ROLE_COLUMN"
+  | "WINDOW_CONTEXT_ONLY"
+  | "INPUT_DEPENDENCY_NOT_PHYSICAL";
+
+export type TaskLocalJoinType =
+  | "INNER"
+  | "LEFT"
+  | "RIGHT"
+  | "FULL"
+  | "CROSS"
+  | "N/A";
+
+export type TaskLocalControlSide =
+  | "LEFT"
+  | "RIGHT"
+  | "BOTH"
+  | "N/A";
+
+export interface TaskLocalProjectionGap {
+  readonly gapId: string;
+  readonly reasonCode: string;
+  readonly details: Readonly<Record<string, unknown>>;
+}
 
 export interface TaskLocalBatchSummary {
   readonly total: number;
@@ -138,6 +197,7 @@ export interface TaskLocalProjection {
   readonly nodes: readonly TaskLocalNode[];
   readonly edges: readonly TaskLocalEdge[];
   readonly localClosure?: TaskLocalClosureSummary;
+  readonly gaps?: readonly TaskLocalProjectionGap[];
 }
 
 const DATA_EDGE_TYPES = new Set<TaskLocalEdgeType>([
@@ -148,8 +208,17 @@ const DATA_EDGE_TYPES = new Set<TaskLocalEdgeType>([
   "DATASET_CONTROL",
 ]);
 
+const FIELD_VALUE_EDGE_TYPES = new Set<TaskLocalEdgeType>([
+  "FIELD_DIRECT",
+  "FIELD_CONDITIONAL",
+]);
+
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function hasOwn(value: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
 }
 
 function taskIdFromNodeId(nodeId: string): string | null {
@@ -162,6 +231,128 @@ function assertNoLegacyControlFields(value: Record<string, unknown>, label: stri
   }
   if ("rowsetControls" in value) {
     throw new Error(`${label}_ROWSET_CONTROLS_FORBIDDEN`);
+  }
+}
+
+function validateFieldEvidenceFieldEdge(
+  edge: TaskLocalEdge,
+  nodeById: ReadonlyMap<string, TaskLocalNode>,
+): void {
+  const properties = edge.properties;
+  if (!hasOwn(properties, "sourceReadOccurrenceStatus")) {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_STATUS_MISSING");
+  }
+  if (!hasOwn(properties, "sourceReadOccurrenceId")) {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_ID_MISSING");
+  }
+  if (!hasOwn(properties, "sourceRelationId")) {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_RELATION_ID_MISSING");
+  }
+  if (!text(properties.expressionId)) {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_EXPRESSION_ID_MISSING");
+  }
+
+  const status = properties.sourceReadOccurrenceStatus;
+  if (
+    status !== "RESOLVED"
+    && status !== "AMBIGUOUS"
+    && status !== "UNRESOLVED"
+  ) {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_STATUS_INVALID");
+  }
+
+  if (status !== "RESOLVED") {
+    if (!text(properties.sourceReadOccurrenceReason)) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_REASON_MISSING");
+    }
+    if (properties.sourceReadOccurrenceId !== null) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_ID_MUST_BE_NULL");
+    }
+    if (properties.sourceRelationId !== null) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_RELATION_ID_MUST_BE_NULL");
+    }
+  } else {
+    if (!text(properties.sourceReadOccurrenceId)) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_READ_ID_REQUIRED");
+    }
+    if (!text(properties.sourceRelationId)) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SOURCE_RELATION_ID_REQUIRED");
+    }
+  }
+
+  const subtype = properties.subtype;
+  if (edge.edgeType === "FIELD_DIRECT") {
+    if (
+      subtype !== "UNKNOWN"
+      && subtype !== "IDENTITY"
+      && subtype !== "TRANSFORMATION"
+      && subtype !== "AGGREGATION"
+    ) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SUBTYPE_INVALID");
+    }
+    if (subtype === "UNKNOWN" && !text(properties.subtypeReason)) {
+      throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_SUBTYPE_REASON_MISSING");
+    }
+  } else if (subtype !== "CONDITIONAL") {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_CONDITIONAL_SUBTYPE_INVALID");
+  }
+
+  const toType = nodeById.get(edge.toNodeId)?.nodeType;
+  if (toType !== "TARGET_WRITE") {
+    throw new Error("TASK_LOCAL_PROJECTION_FIELD_EDGE_TARGET_INVALID");
+  }
+}
+
+function validateFieldEvidenceControlEdge(edge: TaskLocalEdge): void {
+  const properties = edge.properties;
+  const subtype = properties.subtype;
+  const joinType = properties.joinType;
+  const controlSide = properties.controlSide;
+
+  if (subtype === "JOIN") {
+    if (joinType === "N/A" || joinType === undefined || joinType === null) {
+      throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_JOIN_TYPE_MISSING");
+    }
+    if (controlSide === "N/A" || controlSide === undefined || controlSide === null) {
+      throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_SIDE_MISSING");
+    }
+    if (!text(properties.leftRelationId) || !text(properties.rightRelationId)) {
+      throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_JOIN_RELATIONS_MISSING");
+    }
+    return;
+  }
+
+  if (joinType !== "N/A") {
+    throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_JOIN_TYPE_MUST_BE_NA");
+  }
+  if (controlSide !== "N/A") {
+    throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_SIDE_MUST_BE_NA");
+  }
+}
+
+function validateFieldEvidenceGaps(gaps: readonly TaskLocalProjectionGap[] | undefined): void {
+  if (!Array.isArray(gaps)) {
+    throw new Error("TASK_LOCAL_PROJECTION_GAPS_MISSING");
+  }
+  const gapIds = new Set<string>();
+  for (const gap of gaps) {
+    if (!text(gap.gapId)) {
+      throw new Error("TASK_LOCAL_PROJECTION_GAP_ID_MISSING");
+    }
+    if (gapIds.has(gap.gapId)) {
+      throw new Error("TASK_LOCAL_PROJECTION_GAP_DUPLICATE");
+    }
+    gapIds.add(gap.gapId);
+    if (!text(gap.reasonCode)) {
+      throw new Error("TASK_LOCAL_PROJECTION_GAP_REASON_CODE_MISSING");
+    }
+    if (
+      typeof gap.details !== "object"
+      || gap.details === null
+      || Array.isArray(gap.details)
+    ) {
+      throw new Error("TASK_LOCAL_PROJECTION_GAP_DETAILS_INVALID");
+    }
   }
 }
 
@@ -191,15 +382,23 @@ function scheduleReferenceTaskIds(properties: Readonly<Record<string, unknown>>)
 
 export function validateTaskLocalProjection(projection: TaskLocalProjection): void {
   if (
-    ![
-      TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
-      TASK_LOCAL_PROJECTION_LEGACY_SCHEMA_VERSION,
-    ].includes(projection.schemaVersion)
+    !TASK_LOCAL_PROJECTION_SCHEMA_VERSION_ORDER.includes(projection.schemaVersion)
     || projection.artifactType !== TASK_LOCAL_PROJECTION_ARTIFACT_TYPE
   ) {
     throw new Error("TASK_LOCAL_PROJECTION_CONTRACT_INVALID");
   }
   if (!text(projection.taskId)) throw new Error("TASK_LOCAL_PROJECTION_TASK_ID_INVALID");
+
+  const isFieldEvidenceSchema = projection.schemaVersion
+    === TASK_LOCAL_PROJECTION_FIELD_EVIDENCE_SCHEMA_VERSION;
+  const requiresReadOccurrenceShape = taskLocalSchemaVersionAtLeast(
+    projection.schemaVersion,
+    TASK_LOCAL_PROJECTION_READ_OCCURRENCE_SCHEMA_VERSION,
+  );
+
+  if (isFieldEvidenceSchema) {
+    validateFieldEvidenceGaps(projection.gaps);
+  }
 
   const nodeIds = new Set<string>();
   let taskNodeCount = 0;
@@ -246,8 +445,14 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
       if (toType !== "TARGET_WRITE") {
         throw new Error("TASK_LOCAL_PROJECTION_DATASET_CONTROL_TARGET_INVALID");
       }
+      if (isFieldEvidenceSchema) {
+        validateFieldEvidenceControlEdge(edge);
+      }
     }
-    if (projection.schemaVersion === TASK_LOCAL_PROJECTION_SCHEMA_VERSION && edge.edgeType === "READS") {
+    if (FIELD_VALUE_EDGE_TYPES.has(edge.edgeType) && isFieldEvidenceSchema) {
+      validateFieldEvidenceFieldEdge(edge, nodeById);
+    }
+    if (requiresReadOccurrenceShape && edge.edgeType === "READS") {
       const fromType = nodeById.get(edge.fromNodeId)?.nodeType;
       const toType = nodeById.get(edge.toNodeId)?.nodeType;
       if (
@@ -256,6 +461,9 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
         || (fromType !== "TASK" && fromType !== "READ_OCCURRENCE")
       ) {
         throw new Error("TASK_LOCAL_PROJECTION_READ_OCCURRENCE_EDGE_INVALID");
+      }
+      if (!text(edge.properties.readOccurrenceId)) {
+        throw new Error("TASK_LOCAL_PROJECTION_READS_READ_OCCURRENCE_ID_MISSING");
       }
     }
   }
@@ -304,6 +512,7 @@ export function canonicalizeTaskLocalProjection(
     nodes: [...input.nodes].sort((left, right) => left.nodeId.localeCompare(right.nodeId)),
     edges: [...input.edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId)),
     ...(input.localClosure ? { localClosure: input.localClosure } : {}),
+    ...(input.gaps ? { gaps: [...input.gaps].sort((left, right) => left.gapId.localeCompare(right.gapId)) } : {}),
   };
   const contentHash = text(input.contentHash) ?? taskLocalProjectionContentHash({
     ...body,

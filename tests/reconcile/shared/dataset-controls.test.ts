@@ -30,7 +30,7 @@ describe("shared dataset controls", () => {
     });
   });
 
-  it("maps JOIN relations using join grain rules", () => {
+  it("maps JOIN relations using join grain rules and exposes join side metadata", () => {
     expect(
       datasetControlMapping({
         relation_type: "join",

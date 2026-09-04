@@ -166,7 +166,7 @@ sql-static-lineage（生产侧）
   scripts/machine-facts/    L1  Machine Facts 发布
   scripts/project-graph/
     task-local/             L2  TASK_LOCAL_PROJECTION 生产 + 批 + 缓存 + 锚点穿透
-    field-evidence-v1/      L4  Impact Query、resolve、scope、FieldEdgeIndex（WP-11，待实施）
+    field-evidence-v1/      L2  Phase 1 派生（读次/setop/物化/subtype/侧别）；L4 Impact Query 见 Phase 2 change
   scripts/gold-case/        L5  gaps / trace report
   scripts/reconcile/
     shared/dataset-controls L2  控制边来源（共用）
@@ -185,24 +185,23 @@ scripts/data-graph（消费侧，独立仓）
 
 ## 8. 状态与演进
 
-| 工作包                                 | 层                 | 状态                                                             |
-| -------------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| WP-3 纸条 1.2.0                        | L2                 | 已验收                                                           |
-| WP-5 并集 merge                        | L3                 | 库完成                                                           |
-| WP-8 / 8.1 INDEX                       | L3                 | CLI 完成；分区匹配精度是当前主瓶颈（锚点 `l1Eligible` 22%～50%） |
-| GC-0 四锚点穿透                        | L2–L3              | 真数据跑通（186 任务、535 INDEX 条目）                           |
-| GC-3 gaps / L0–L3                      | L5                 | 首版产出                                                         |
-| WP-11 字段证据链 V1                    | L2 契约 1.3.0 + L4 | **已拆解**为 `openspec/changes/field-evidence-v1`（44 任务）     |
-| WP-10 闭包接并集                       | L4                 | 暂停                                                             |
-| data-graph 主管线接 `TASK_LOCAL_UNION` | L4                 | 未做，非 P0                                                      |
+| 工作包                                 | 层            | 状态                                                                                              |
+| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| WP-3 纸条 1.2.0                        | L2            | 已验收                                                                                            |
+| WP-5 并集 merge                        | L3            | 库完成                                                                                            |
+| WP-8 / 8.1 INDEX                       | L3            | CLI 完成；分区匹配精度是当前主瓶颈（锚点 `l1Eligible` 22%～50%）                                  |
+| GC-0 四锚点穿透                        | L2–L3         | 真数据跑通（186 任务、535 INDEX 条目）                                                            |
+| GC-3 gaps / L0–L3                      | L5            | 首版产出                                                                                          |
+| WP-11 字段证据链 V1 Phase 1            | L2 契约 1.3.0 | **已拆解**为 `openspec/changes/field-evidence-v1`（纯 Phase 1）；Phase 2 Impact Query 另开 change |
+| WP-10 闭包接并集                       | L4            | 暂停                                                                                              |
+| data-graph 主管线接 `TASK_LOCAL_UNION` | L4            | 未做，非 P0                                                                                       |
 
-**下一步唯一动作**：实施 `field-evidence-v1` 任务组 1–6（契约升版 + 三项派生 + 重投），再跑任务组 7–10，由止损脚本决定：
+**下一步唯一动作**：实施 `field-evidence-v1`（契约 1.3.0 + FE-1 三步派生 + subtype 路径组合 + relation 子树侧别 + baseline），按 `execution-plan-field-evidence-v1.md` §5.5 判据通过后，再开 Phase 2 change（Impact Query + 金样 + 止损）：
 
 ```text
-confirmedTwoHopRatio ≥ 0.5                     → Phase 3（验证 CONTROL 消费价值）
-< 0.5 且主因 WRITER_PARTITION_UNKNOWN          → 冻结字段概念工作，回修 WP-8
-< 0.5 且主因 PRODUCER_NOT_PROJECTED            → 补采 Input Pack
-< 0.5 且主因 Phase 1 派生码                    → 修派生，不加概念
+Phase 1 完成（gold/holdout 同向改善 + 181058 脱离单位数）  → 开 field-evidence-v1-impact-query
+holdout 不跟 gold 同向                                      → 修派生规则，不开 Phase 2
+Phase 2 后 confirmedTwoHopRatio < 0.5 且主因分区/多 writer   → 回修 WP-8
 ```
 
 ---

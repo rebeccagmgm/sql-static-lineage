@@ -1,6 +1,7 @@
 import type { CurrentBundleLoad } from "../../query/current-task-bundle.ts";
 import {
   canonicalizeTaskLocalProjection,
+  TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
   type TaskLocalFailureReasonCode,
   type TaskLocalProjection,
 } from "./contract.ts";
@@ -42,7 +43,7 @@ export function buildScheduleOnlyProjection(input: {
   readonly schedule: TaskScheduleContext;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.2.0",
+    schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
@@ -54,6 +55,7 @@ export function buildScheduleOnlyProjection(input: {
       properties: taskNodeProperties({ schedule: input.schedule }),
     }],
     edges: [],
+    gaps: [],
   });
 }
 
@@ -64,7 +66,7 @@ export function buildCollectionFailedProjection(input: {
   readonly taskProperties?: Readonly<Record<string, unknown>>;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
-    schemaVersion: "1.2.0",
+    schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
@@ -76,5 +78,6 @@ export function buildCollectionFailedProjection(input: {
       properties: input.taskProperties ?? {},
     }],
     edges: [],
+    gaps: [],
   });
 }

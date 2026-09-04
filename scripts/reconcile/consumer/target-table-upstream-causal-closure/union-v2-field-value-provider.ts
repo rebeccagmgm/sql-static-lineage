@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import {
+  taskLocalSchemaVersionAtLeast,
   validateTaskLocalProjection,
   type TaskLocalProjection,
 } from "../../../project-graph/task-local/contract.ts";
@@ -120,12 +121,12 @@ function localFactsProof(
     }
     projection = rawProjection as unknown as TaskLocalProjection;
     if (
-      projection.schemaVersion !== "1.2.0" ||
-      projection.artifactType !== "TASK_LOCAL_PROJECTION" ||
-      projection.coverageStatus !== "PROJECTED" ||
-      projection.taskId !== branch.producerTaskId ||
-      projection.contentHash !== projectionRef.contentHash ||
-      !projection.localClosure
+      !taskLocalSchemaVersionAtLeast(projection.schemaVersion, "1.2.0")
+      || projection.artifactType !== "TASK_LOCAL_PROJECTION"
+      || projection.coverageStatus !== "PROJECTED"
+      || projection.taskId !== branch.producerTaskId
+      || projection.contentHash !== projectionRef.contentHash
+      || !projection.localClosure
     ) {
       cache.set(cacheKey, null);
       return null;
