@@ -5,10 +5,9 @@ import { fileURLToPath } from "node:url";
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
 import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import {
-  loadTableProducerIndex,
-  type ProducerTableIdentity,
-  type TableProducerIndex,
-} from "../../reconcile/producer/producer-index.ts";
+	openWriterCatalog,
+	writerCatalogPort,
+} from "../../query/writer-catalog.ts";
 import { loadCurrentTaskBundle } from "../../query/current-task-bundle.ts";
 import { loadUnionContinuationCandidateSource } from "../../reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { projectTaskLocal } from "../task-local/project-task-local.ts";
@@ -16,9 +15,8 @@ import type { TaskLocalProjection } from "../task-local/contract.ts";
 import type { ContinuationPorts } from "./continuation/ports.ts";
 import {
   buildReadScopeFromFacts,
-  partitionFieldsFromWrites,
 } from "./continuation/read-scope-from-facts.ts";
-import { resolveProducerTableIdentity, unavailableReadScopeReason } from "./continuation/table-identity.ts";
+import { resolveProducerTableIdentity } from "./continuation/table-identity.ts";
 import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
 import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
 import {
@@ -33,13 +31,13 @@ export interface FieldEvidenceQueryRoots {
   readonly factsRoot: string;
   readonly indexPath: string;
   readonly scheduleCacheRoot: string;
-  readonly producerIndexPath: string | null;
+  readonly writerCatalogPath: string | null;
 }
 
-function defaultProducerIndexPath(): string {
+function defaultWriterCatalogPathFromEnv(): string {
   return resolve(
-    process.env.PRODUCER_INDEX_PATH?.trim()
-    || join(REPO_ROOT, "../sql-static-lineage-data.producer-index/producer-index.json"),
+    process.env.WRITER_CATALOG_PATH?.trim()
+    || join(REPO_ROOT, "../sql-static-lineage-data.writer-catalog/writer-catalog.sqlite"),
   );
 }
 
@@ -67,12 +65,12 @@ export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
     || DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   );
 
-  const producerIndexCandidate = defaultProducerIndexPath();
-  const producerIndexPath = existsSync(producerIndexCandidate)
-    ? producerIndexCandidate
+  const writerCatalogCandidate = defaultWriterCatalogPathFromEnv();
+  const writerCatalogPath = existsSync(writerCatalogCandidate)
+    ? writerCatalogCandidate
     : null;
 
-  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot, producerIndexPath };
+  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot, writerCatalogPath };
 }
 
 export function fieldEvidenceGoldenRequired(): boolean {
@@ -102,37 +100,15 @@ function lookupTaskCategory(dataRoot: string, taskId: string): string | null {
   return basename(dirname(dirname(hits[0]!)));
 }
 
-function sameProducerTable(
-  edgeTable: ProducerTableIdentity,
-  table: ProducerTableIdentity,
-): boolean {
-  const edgeName = normalizeName(edgeTable.qualifiedName);
-  const wantedName = normalizeName(table.qualifiedName);
-  if (edgeName === wantedName) return true;
-  if (wantedName.endsWith(`.${edgeName}`) || edgeName.endsWith(`.${wantedName}`)) {
-    return true;
-  }
-  return false;
-}
-
-function partitionFieldsForTable(
-  producerIndex: TableProducerIndex | null,
-  table: ProducerTableIdentity,
-): readonly string[] | null {
-  if (!producerIndex) return null;
-  const writes = producerIndex.confirmedProducerEdges
-    .filter((edge) => sameProducerTable(edge.table, table))
-    .flatMap((edge) => edge.writes);
-  return partitionFieldsFromWrites(writes);
-}
-
 export function createContinuationPorts(input: {
   readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
-  readonly producerIndex: TableProducerIndex | null;
+  readonly writerCatalogPath: string | null;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
   readonly taskCategoryFor: (taskId: string) => string | null;
 }): ContinuationPorts {
-  const partitionFieldCache = new Map<string, readonly string[] | null>();
+  const writerCatalog = input.writerCatalogPath
+    ? writerCatalogPort(openWriterCatalog(input.writerCatalogPath))
+    : null;
 
   const tableIdentityFor: ContinuationPorts["tableIdentityFor"] = ({
     consumerTaskId,
@@ -144,25 +120,10 @@ export function createContinuationPorts(input: {
 
   return {
     scheduleLookup: input.scheduleRelationLookup,
-    producerIndex: input.producerIndex,
+    writerCatalog,
     taskCategoryFor: input.taskCategoryFor,
     tableIdentityFor,
     readScopeFor: ({ consumerTaskId, readOccurrenceId, qualifiedName }) => {
-      const table = tableIdentityFor({ consumerTaskId, qualifiedName });
-      const cacheKey = `${table.platform}\u0000${table.dataSource}\u0000${table.qualifiedName}`;
-      let partitionFields = partitionFieldCache.get(cacheKey);
-      if (partitionFields === undefined) {
-        partitionFields = partitionFieldsForTable(input.producerIndex, table);
-        partitionFieldCache.set(cacheKey, partitionFields);
-      }
-
-      if (partitionFields === null) {
-        return {
-          kind: "UNAVAILABLE",
-          reasonCode: unavailableReadScopeReason(input.taskCategoryFor(consumerTaskId)),
-        };
-      }
-
       const bundle = input.factsBundleForTask?.(consumerTaskId);
       if (!bundle) {
         return { kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" };
@@ -173,7 +134,7 @@ export function createContinuationPorts(input: {
         qualifiedName,
         relationRecords: bundle.relationNodes,
         relationEdgeRecords: bundle.relationEdges,
-        partitionFields,
+        partitionFields: [],
       });
     },
   };
@@ -182,7 +143,7 @@ export function createContinuationPorts(input: {
 export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots): {
   readonly index: ReturnType<typeof loadUnionContinuationCandidateSource>;
   readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
-  readonly producerIndex: TableProducerIndex | null;
+  readonly writerCatalogPath: string | null;
   readonly continuationPorts: ContinuationPorts;
   readonly projectionForTask: (taskId: string) => TaskLocalProjection;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
@@ -195,9 +156,7 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   const scheduleRelationLookup = createHoraeScheduleRelationLookupFromCache(
     roots.scheduleCacheRoot,
   );
-  const producerIndex = roots.producerIndexPath
-    ? loadTableProducerIndex(roots.producerIndexPath)
-    : null;
+  const writerCatalogPath = roots.writerCatalogPath;
   const projectionCache = new Map<string, TaskLocalProjection>();
   const bundleCache = new Map<string, ReturnType<typeof loadCurrentTaskBundle>>();
 
@@ -237,7 +196,7 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
 
   const continuationPorts = createContinuationPorts({
     scheduleRelationLookup,
-    producerIndex,
+    writerCatalogPath,
     factsBundleForTask,
     taskCategoryFor,
   });
@@ -260,7 +219,7 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   return {
     index,
     scheduleRelationLookup,
-    producerIndex,
+    writerCatalogPath,
     continuationPorts,
     projectionForTask,
     factsBundleForTask,

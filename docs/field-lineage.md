@@ -35,7 +35,11 @@ SQL slot 准备规则：
 3. statement 身份使用 Task ID、原 slot 名和 slot 内 ordinal。
 4. 没有 `query` 时，只允许唯一一个结构上产生字段的 slot；多个候选或没有候选时返回 `SQL_SLOT_SELECTION_AMBIGUOUS`。
 
-SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在 Pack 目标唯一、目标 Schema 可用、查询 producer 唯一、非分区目标列与输出 ordinal 完整对应，并且分区处理可证明时，才使用 `PACK_DECLARED_QUERY_OUTPUT`。该写观察和绑定同时保留 `provenance=PLATFORM_TARGET` 与原始 Pack SQL 的 `source_sql_sha256`；既有 Facts 中的 `PLATFORM_TARGET_QUERY_OUTPUT` 仅作为兼容读取别名。同一 Input Pack 中语义等价的重复查询输出候选会在派生分析视图中去重；原始 SQL slot 仍按原字节保留，真正不同的候选仍 fail-closed。
+SQL 中的 INSERT/CTAS 使用 `SQL_EXPLICIT_WRITE`。纯查询任务只有在 Pack 目标唯一、目标 Schema 可用、查询 producer 唯一、输出 ordinal 连续，并且分区处理可证明时，才使用 `PACK_DECLARED_QUERY_OUTPUT`。旧 SparkIndex Pack 若省略 `targetEvidenceKind`，Machine Facts 仅在任务类别明确为 `sparkIndex` 且结构化物理目标能唯一命中 Table Pack 时使用 `SPARKINDEX_TASK_TARGET` 兼容解析；它不等同于 `DIRECT_PLATFORM_TARGET`。
+
+SparkIndex 无 INSERT 的分区输出按平台的 full-width positional 契约处理：去重后的 Table Pack 全表字段必须以 `partitionFields` 作为同序后缀，SELECT 输出数必须等于全表字段数，末尾 K 个输出才绑定 K 个动态分区字段。SELECT 只包含非分区列时，只有明确的静态分区 SQL 证据才会把分区列移出 SELECT ordinal；仅凭 `task.partition` 常量不推断为静态。`partition_binding_status=COMPLETE` 只在最终字段绑定全部生成后写入 `dataset-io`，动态列和静态列分别记录在 `dynamic_partition_columns`、`static_partition_columns`。宽度、顺序或证据不一致时保留明确 gap。
+
+该写观察和绑定同时保留 `provenance=PLATFORM_TARGET` 与原始 Pack SQL 的 `source_sql_sha256`；既有 Facts 中的 `PLATFORM_TARGET_QUERY_OUTPUT` 仅作为兼容读取别名。同一 Input Pack 中语义等价的重复查询输出候选会在派生分析视图中去重；平台输出只从 Pack 指定的 query slot 选择，prepare 中的显式写保留为独立写观察，不能跨 slot 抑制 query 输出。原始 SQL slot 仍按原字节保留，真正不同的候选仍 fail-closed。
 
 ## 第二步：生成字段 multi-hop
 

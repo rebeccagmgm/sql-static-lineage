@@ -15,6 +15,8 @@ export interface ProjectTaskLocalCliOptions {
   readonly topic?: string;
   readonly taskIds: readonly string[];
   readonly expandUpstream: boolean;
+  readonly writerCatalogPath?: string;
+  /** @deprecated use writerCatalogPath */
   readonly producerIndexRoot?: string;
   readonly maxUpstreamDepth?: number;
   readonly alsoTaskIds: readonly string[];
@@ -47,6 +49,7 @@ export function parseProjectTaskLocalCli(
   const taskIds = csvOption(args, "--task-ids");
   const alsoTaskIds = csvOption(args, "--also-task-ids");
   const expandUpstream = args.includes("--expand-upstream");
+  const writerCatalogPath = option(args, "--writer-catalog");
   const producerIndexRoot = option(args, "--producer-index-root");
   const maxUpstreamDepthRaw = option(args, "--max-upstream-depth");
   const maxUpstreamDepth = maxUpstreamDepthRaw
@@ -60,7 +63,7 @@ export function parseProjectTaskLocalCli(
   }
   if (!dataRoot || !factsRoot || !scheduleCacheRoot || !outputRoot) {
     throw new Error(
-      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--expand-upstream] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
+      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--expand-upstream] [--writer-catalog <sqlite>] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
     );
   }
   if (taskIds.length === 0 && !topic && alsoTaskIds.length === 0) {
@@ -82,6 +85,7 @@ export function parseProjectTaskLocalCli(
     topic,
     taskIds,
     expandUpstream,
+    writerCatalogPath: writerCatalogPath ? resolve(writerCatalogPath) : undefined,
     producerIndexRoot,
     maxUpstreamDepth,
     alsoTaskIds,
@@ -107,6 +111,7 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
         upstreamExpansion = expandAnchorUpstreamTaskIds({
           dataRoot: options.dataRoot,
           anchorTaskIds: selection.anchorTaskIds,
+          writerCatalogPath: options.writerCatalogPath,
           producerIndexRoot: options.producerIndexRoot,
           maxDepth: options.maxUpstreamDepth,
         });

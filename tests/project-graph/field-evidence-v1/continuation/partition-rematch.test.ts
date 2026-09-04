@@ -1,10 +1,10 @@
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
 import { describe, expect, it } from "vitest";
 
-import {
-  type ProducerWriteObservation,
-  type TableProducerIndex,
-} from "../../../../scripts/reconcile/producer/producer-index.ts";
-import { matchProducersByReadScope } from "../../../../scripts/query/producer-index-query.ts";
+import { openWriterCatalog, writerCatalogPort } from "../../../../scripts/query/writer-catalog.ts";
 import { applyPartitionRematch } from "../../../../scripts/project-graph/field-evidence-v1/continuation/rules/partition-rematch.ts";
 import { continuationCandidateFromIndex } from "../../../../scripts/project-graph/field-evidence-v1/continuation/types.ts";
 import type { UnionContinuationIndexCandidate } from "../../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
@@ -27,47 +27,10 @@ function indexCandidate(
   };
 }
 
-function minimalProducerIndex(): TableProducerIndex {
-  const write: ProducerWriteObservation = {
-    observationKind: "SQL_EXPLICIT_WRITE",
-    declaredWriteMode: null,
-    sqlWriteKind: "INSERT_OVERWRITE",
-    partition: [{
-      field: "busi_date",
-      expression: "${busi_date}",
-      observedValue: null,
-      valueStatus: "RUNTIME_EXPRESSION",
-    }],
-    partitionStatus: "COMPLETE",
-    operationClass: "PLATFORM_TRANSFER",
-    dataPathRole: "PRODUCER",
-    evidence: [],
-  };
-  return {
-    schemaVersion: "1.0.0",
-    artifactType: "TABLE_PRODUCER_INDEX",
-    generatedAt: "2026-09-04T00:00:00.000Z",
-    contentHash: "test-hash",
-    inputFingerprint: "test-fingerprint",
-    confirmedProducerEdges: [{
-      taskId: "producer-a",
-      taskCategory: "sparkIndex",
-      taskContentHash: "task-hash",
-      table: {
-        platform: "pdata",
-        dataSource: "default",
-        qualifiedName: "example_table",
-        identityStatus: "RESOLVED",
-      },
-      writes: [write],
-    }],
-    nonConfirmedRelations: [],
-  } as unknown as TableProducerIndex;
-}
-
 describe("partition-rematch rule", () => {
-  it("marks runtime template equal overlap as PROVEN_OVERLAP via matchProducersByReadScope", () => {
-    const producerIndex = minimalProducerIndex();
+  it("keeps candidates unchanged when writer catalog has no partition evidence", () => {
+    const catalogPath = mkdtempSync(join(tmpdir(), "writer-catalog-rematch-"));
+    const catalog = writerCatalogPort(openWriterCatalog(join(catalogPath, "catalog.sqlite")));
     const table = {
       platform: "pdata",
       dataSource: "default",
@@ -89,8 +52,6 @@ describe("partition-rematch rule", () => {
       reasonCodes: [],
       evidence: [],
     };
-    const matches = matchProducersByReadScope(producerIndex, table, readScope);
-    expect(matches[0]?.status).toBe("PROVEN_OVERLAP");
 
     const result = applyPartitionRematch({
       consumerTaskId: "consumer-1",
@@ -100,7 +61,7 @@ describe("partition-rematch rule", () => {
       candidates: [continuationCandidateFromIndex(indexCandidate())],
       ports: {
         scheduleLookup: null,
-        producerIndex,
+        writerCatalog: catalog,
         readScopeFor: () => ({ kind: "OK", scope: readScope }),
         tableIdentityFor: () => table,
         taskCategoryFor: () => "sparkIndex",
@@ -108,10 +69,10 @@ describe("partition-rematch rule", () => {
     });
 
     expect(result.gaps).toEqual([]);
-    expect(result.candidates[0]?.partitionOverlap).toBe("PROVEN_OVERLAP");
+    expect(result.candidates[0]?.partitionOverlap).toBe("UNKNOWN");
   });
 
-  it("skips rematch without crashing when producer index is missing", () => {
+  it("skips rematch without crashing when writer catalog is missing", () => {
     const result = applyPartitionRematch({
       consumerTaskId: "consumer-1",
       readOccurrenceId: "read:consumer-1:0",
@@ -120,7 +81,7 @@ describe("partition-rematch rule", () => {
       candidates: [continuationCandidateFromIndex(indexCandidate())],
       ports: {
         scheduleLookup: null,
-        producerIndex: null,
+        writerCatalog: null,
         readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
         tableIdentityFor: ({ qualifiedName }) => ({
           platform: "pdata",
@@ -132,10 +93,12 @@ describe("partition-rematch rule", () => {
     });
 
     expect(result.candidates).toHaveLength(1);
-    expect(result.gaps.some((gap) => gap.reasonCode === "PRODUCER_INDEX_UNAVAILABLE")).toBe(true);
+    expect(result.gaps.some((gap) => gap.reasonCode === "WRITER_CATALOG_UNAVAILABLE")).toBe(true);
   });
 
   it("surfaces SOURCE_ENDPOINT_BOUNDARY instead of inventing a hive read scope", () => {
+    const catalogPath = mkdtempSync(join(tmpdir(), "writer-catalog-rematch-"));
+    const catalog = writerCatalogPort(openWriterCatalog(join(catalogPath, "catalog.sqlite")));
     const result = applyPartitionRematch({
       consumerTaskId: "consumer-1",
       readOccurrenceId: "read:consumer-1:0",
@@ -144,7 +107,7 @@ describe("partition-rematch rule", () => {
       candidates: [continuationCandidateFromIndex(indexCandidate())],
       ports: {
         scheduleLookup: null,
-        producerIndex: minimalProducerIndex(),
+        writerCatalog: catalog,
         readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "SOURCE_ENDPOINT_BOUNDARY" }),
         tableIdentityFor: ({ qualifiedName }) => ({
           platform: "unknown",

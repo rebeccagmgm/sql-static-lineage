@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
 import { writeTableInput, writeTaskInput } from "../scripts/input/shared/input-pack.ts";
+import { runInputPackMachineFacts } from "../scripts/machine-facts/input-pack-machine-facts.ts";
+import { defaultWriterCatalogPath } from "../scripts/query/writer-catalog.ts";
 import { inputPackTaskBatches } from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import {
   runInputPackClosure,
@@ -14,6 +16,23 @@ const FIXED_NOW = "2026-08-27T00:00:00.000Z";
 
 function root(): string {
   return mkdtempSync(join(tmpdir(), "sql-lineage-input-pack-closure-"));
+}
+
+function writerCatalogPathFor(dataRoot: string): string {
+  return defaultWriterCatalogPath(dataRoot);
+}
+
+function indexWritersFromFacts(
+  dataRoot: string,
+  factsRoot: string,
+  taskIds: readonly string[],
+): void {
+  runInputPackMachineFacts({
+    dataRoot,
+    outputRoot: factsRoot,
+    taskIds,
+    writerCatalogPath: writerCatalogPathFor(dataRoot),
+  });
 }
 
 function writeTable(rootPath: string, qualifiedName: string): void {
@@ -66,8 +85,9 @@ describe("input pack closure", () => {
     expect(batches.flat()).toHaveLength(1201);
   });
 
-  it("discovers and collects a producer when the table is missing from the local index", () => {
+  it("discovers and collects a producer when the table is missing from the local catalog", () => {
     const dataRoot = root();
+    const factsRoot = join(dirname(dataRoot), `${dataRoot.split(/[\\/]/).at(-1)}-facts`);
     writeTable(dataRoot, "odata.source_table");
     writeTask(dataRoot, "A", "SELECT id FROM odata.source_table");
     const collected: string[] = [];
@@ -76,7 +96,7 @@ describe("input pack closure", () => {
     const result = runInputPackClosure({
       taskId: "A",
       dataRoot,
-      producerIndexRoot: join(dirname(dataRoot), `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`),
+      writerCatalogPath: writerCatalogPathFor(dataRoot),
       maxDepth: 3,
       maxTasks: 20,
       maxRounds: 4,
@@ -92,6 +112,7 @@ describe("input pack closure", () => {
         collected.push(...taskIds);
         expect(taskIds).toEqual(["B"]);
         writeTask(dataRoot, "B", "INSERT OVERWRITE TABLE odata.source_table SELECT 1 AS id", "odata.source_table");
+        indexWritersFromFacts(dataRoot, factsRoot, ["B"]);
       },
     });
 
@@ -122,10 +143,7 @@ describe("input pack closure", () => {
     const result = runInputPackClosure({
       taskId: "A",
       dataRoot,
-      producerIndexRoot: join(
-        dirname(dataRoot),
-        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`,
-      ),
+      writerCatalogPath: writerCatalogPathFor(dataRoot),
       maxDepth: 3,
       maxTasks: 20,
       maxRounds: 4,
@@ -192,13 +210,12 @@ function terminalConfig() {
 describe("shared project Input Pack closure", () => {
   it("evaluates a shared Task's SQL reads once while retaining both root memberships", () => {
     const dataRoot = sharedInputPack();
+    const factsRoot = join(dirname(dataRoot), `${dataRoot.split(/[\\/]/).at(-1)}-facts`);
+    indexWritersFromFacts(dataRoot, factsRoot, ["root-a", "root-b", "shared-producer"]);
     const result = runProjectInputPackClosure({
       rootTaskIds: ["root-a", "root-b"],
       dataRoot,
-      producerIndexRoot: join(
-        dirname(dataRoot),
-        `${dataRoot.split(/[\\/]/).at(-1)}-producer-index`,
-      ),
+      writerCatalogPath: writerCatalogPathFor(dataRoot),
       maxDepth: 5,
       maxTasksPerRoot: 20,
       maxUnionTasks: 30,

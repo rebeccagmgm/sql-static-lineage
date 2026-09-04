@@ -4,6 +4,7 @@ import { join, relative, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { canonicalJson, datasetId, fieldId, sha256, safeSegment, stripVolatile } from "../scripts/machine-facts/machine-facts-contract.ts";
+import { gzipCanonicalBytes, gzipJsonlPath, inspectJsonlStore, readJsonlRecords, readJsonlText } from "../scripts/machine-facts/jsonl-store.ts";
 import { inputDependencyStatus, mergeSchemaEvidence, processProfile, rebuildIndex, relationNeedsMissingSchema } from "../scripts/machine-facts/machine-facts.ts";
 
 const workspace = resolve(import.meta.dirname, "..");
@@ -71,7 +72,8 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const schemaRefs = readFileSync(join(bundle, "schema-refs.jsonl"), "utf8")
+		expect(inspectJsonlStore(join(bundle, "schema-refs.jsonl")).status).toBe("GZIP");
+		const schemaRefs = readJsonlText(join(bundle, "schema-refs.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -86,9 +88,9 @@ describe("machine facts contract", () => {
 		expect(first.tasks).toHaveLength(1);
 		expect(first.tasks[0]?.status).toBe("CREATED");
 		expect(first.index.count).toBe(1);
-		const relation = readFileSync(join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle", "relation-nodes.jsonl"), "utf8");
+		const relation = readJsonlText(join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle", "relation-nodes.jsonl"));
 		expect(relation).not.toContain("statement:sql:");
-		const schemaRefs = readFileSync(join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle", "schema-refs.jsonl"), "utf8")
+		const schemaRefs = readJsonlText(join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle", "schema-refs.jsonl"))
 			.trim().split(/\r?\n/).map((line) => JSON.parse(line));
 		const sourceRef = schemaRefs.find((record: { qualified_name?: string }) => record.qualified_name === "demo.source");
 		expect(sourceRef).toMatchObject({ required_for_star: true, ddl_sha256: "ddl-source", source: "SZDATA_TABLE_DDL", metadata_qualified_name: "DEMO.SOURCE", partition_columns: ["dt"] });
@@ -110,7 +112,7 @@ describe("machine facts contract", () => {
 		const f = fixture();
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -145,13 +147,13 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+		const statements = readJsonlText(join(bundle, "statements.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const expressions = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+		const expressions = readJsonlText(join(bundle, "field-expression-nodes.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const writes = readFileSync(join(bundle, "dataset-io.jsonl"), "utf8")
+		const writes = readJsonlText(join(bundle, "dataset-io.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line))
 			.filter((record) => record.direction === "WRITE" && record.field_producing === true);
 
@@ -209,7 +211,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const jsonl = (name: string): any[] => readJsonlRecords(join(bundle, name));
 		const statements = jsonl("statements.jsonl");
 		const writes = jsonl("dataset-io.jsonl").filter((record) => record.direction === "WRITE" && record.field_producing === true);
 		const bindings = jsonl("output-field-bindings.jsonl");
@@ -231,7 +233,8 @@ describe("machine facts contract", () => {
 		expect(bindings.find((binding) => binding.target_field === "out_col")).toMatchObject({
 			write_observation_id: writes[0].write_observation_id,
 			expression_id: expressions.find((expression) => expression.output_name === "out_col").expression_id,
-			static_partition_columns: ["busi_date"],
+			static_partition_columns: [],
+			dynamic_partition_columns: ["busi_date"],
 		});
 		expect(bindings.find((binding) => binding.target_field === "busi_date")).toMatchObject({
 			write_observation_id: writes[0].write_observation_id,
@@ -257,7 +260,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const jsonl = (name: string): any[] => readJsonlRecords(join(bundle, name));
 		const write = jsonl("dataset-io.jsonl").find((record) => record.direction === "WRITE" && record.field_producing === true);
 		const binding = jsonl("output-field-bindings.jsonl")[0];
 
@@ -282,11 +285,11 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const fields = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+		const fields = readJsonlText(join(bundle, "field-expression-nodes.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 		const writeStatementId = "task:test-task:statement:0";
 		const producerOrdinals = fields
@@ -325,8 +328,8 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8").trim();
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl")).trim();
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 		const gap = unknowns.find(
 			(item) => item.statement_id === "task:test-task:statement:0" && item.gap_domain === "OUTPUT_BINDING",
@@ -359,11 +362,11 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+		const statements = readJsonlText(join(bundle, "statements.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const fields = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+		const fields = readJsonlText(join(bundle, "field-expression-nodes.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 		const ctasExpression = fields.find((field) => field.statement_id === "task:test-task:statement:0");
 		const independentExpression = fields.find((field) => field.statement_id === "task:test-task:statement:1");
@@ -396,12 +399,12 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
 			.map((line) => JSON.parse(line));
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -433,8 +436,8 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const bindingText = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8").trim();
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const bindingText = readJsonlText(join(bundle, "output-field-bindings.jsonl")).trim();
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -470,7 +473,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const bindings = readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8")
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -504,8 +507,8 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		expect(readFileSync(join(bundle, "output-field-bindings.jsonl"), "utf8").trim()).toBe("");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		expect(readJsonlText(join(bundle, "output-field-bindings.jsonl")).trim()).toBe("");
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -531,7 +534,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const statements = join(taskRoot, "bundle", "statements.jsonl");
-		writeFileSync(statements, `${readFileSync(statements, "utf8")}corrupt\n`, "utf8");
+		writeFileSync(gzipJsonlPath(statements), gzipCanonicalBytes(`${readJsonlText(statements)}corrupt\n`));
 		const result = rebuildIndex(join(f.root, "machine-facts"));
 		expect(result.count).toBe(0);
 		expect(result.failures.join(" ")).toContain("hash mismatch");
@@ -632,12 +635,12 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
 			.map((line) => JSON.parse(line));
-		const expressions = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+		const expressions = readJsonlText(join(bundle, "field-expression-nodes.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -680,7 +683,7 @@ describe("machine facts contract", () => {
 		writeFileSync(f.sql, "INSERT OVERWRITE TABLE demo.target SELECT s.id FROM demo.source s JOIN demo.missing m ON s.id = m.id;\n", "utf8");
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -693,7 +696,7 @@ describe("machine facts contract", () => {
 		writeFileSync(f.sql, "CREATE TABLE demo.target AS SELECT A.*, B.* FROM (SELECT id FROM demo.source) A FULL OUTER JOIN (SELECT id FROM demo.missing) B ON A.id = B.id;", "utf8");
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 
 		expect(unknowns.filter((item) => item.reason_code === "SCHEMA_BINDING_NOT_EVALUABLE" && item.message.includes("followColumn 无来源"))).toHaveLength(0);
@@ -706,7 +709,7 @@ describe("machine facts contract", () => {
 		writeFileSync(f.sql, "CREATE TABLE demo.target AS SELECT A.id FROM (SELECT id FROM demo.source) A;", "utf8");
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 
 		expect(unknowns.filter((item) => item.reason_code === "PHYSICAL_FIELD_UNRESOLVED")).toHaveLength(0);
@@ -718,9 +721,9 @@ describe("machine facts contract", () => {
 		writeFileSync(f.sql, "CREATE TABLE demo.target (id STRING);", "utf8");
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+		const statements = readJsonlText(join(bundle, "statements.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 
 		expect(statements).toHaveLength(1);
@@ -734,9 +737,9 @@ describe("machine facts contract", () => {
 		writeFileSync(f.sql, "DROP TABLE IF EXISTS demo.scratch;", "utf8");
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+		const statements = readJsonlText(join(bundle, "statements.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 
 		expect(statements).toHaveLength(0);
@@ -752,12 +755,12 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const expressions = readFileSync(join(bundle, "field-expression-nodes.jsonl"), "utf8")
+		const expressions = readJsonlText(join(bundle, "field-expression-nodes.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
 			.map((line) => JSON.parse(line));
-		const lineage = readFileSync(join(bundle, "column-lineage-edges.jsonl"), "utf8")
+		const lineage = readJsonlText(join(bundle, "column-lineage-edges.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
@@ -765,7 +768,7 @@ describe("machine facts contract", () => {
 		expect(expressions.some((item) => item.input_dependency_status === "SQL_CANDIDATE")).toBe(true);
 		expect(expressions.some((item) => item.candidate_input_fields?.some((field: { binding_status?: string }) => field.binding_status === "UNVERIFIED_SCHEMA"))).toBe(true);
 		expect(lineage.some((item) => item.resolution_status === "UNVERIFIED_SCHEMA" && item.method === "SQL_SINGLE_SOURCE_BINDING")).toBe(true);
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 		expect(unknowns.some((item) => item.reason_code === "SCHEMA_BINDING_NOT_EVALUABLE")).toBe(false);
 	});
@@ -780,7 +783,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 		expect(unknowns.some((item) => item.outcome_class === "NOT_EVALUABLE" && item.reason_code === "SCHEMA_BINDING_NOT_EVALUABLE")).toBe(true);
 	});
@@ -795,11 +798,11 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const statements = readFileSync(join(bundle, "statements.jsonl"), "utf8")
+		const statements = readJsonlText(join(bundle, "statements.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const relations = readFileSync(join(bundle, "relation-nodes.jsonl"), "utf8")
+		const relations = readJsonlText(join(bundle, "relation-nodes.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-		const unknowns = readFileSync(join(bundle, "unknowns.jsonl"), "utf8")
+		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 
 		const nonEmptyStatements = statements.filter((item) => String(item.raw_sql).trim().length > 0);
@@ -833,7 +836,7 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		const jsonl = (name: string) => readFileSync(join(bundle, name), "utf8").trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+		const jsonl = (name: string): any[] => readJsonlRecords(join(bundle, name));
 		const expressions = jsonl("field-expression-nodes.jsonl");
 		const relations = jsonl("relation-nodes.jsonl");
 		const reads = jsonl("dataset-io.jsonl").filter((record) => record.direction === "READ");

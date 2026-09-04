@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { runInputPackMachineFacts } from "../../../scripts/machine-facts/input-pack-machine-facts.ts";
 import { canonicalJson, sha256 } from "../../../scripts/machine-facts/machine-facts-contract.ts";
+import { hashJsonlStore, readJsonlRecords, writeCanonicalJsonl } from "../../../scripts/machine-facts/jsonl-store.ts";
 import {
   writeTableInput,
   writeTaskInput,
@@ -82,14 +83,19 @@ function refreshAttestation(factsRoot: string, taskId: string): void {
   };
   manifest.outputs = manifest.outputs.map((output) => {
     const path = String(output.path);
-    const bytes = readFileSync(join(bundle, path));
-    const text = bytes.toString("utf8").trim();
+    const logical = join(bundle, path);
+    if (path.endsWith(".jsonl")) {
+      const rows = readJsonlRecords(logical);
+      return {
+        ...output,
+        content_sha256: hashJsonlStore(logical),
+        row_count: rows.length,
+      };
+    }
+    const bytes = readFileSync(logical);
     return {
       ...output,
       content_sha256: sha256(bytes),
-      ...(path.endsWith(".jsonl")
-        ? { row_count: text ? text.split(/\r?\n/).length : 0 }
-        : {}),
     };
   });
   writeFileSync(manifestPath, canonicalJson(manifest), "utf8");
@@ -124,17 +130,10 @@ function stripWriteRecords(factsRoot: string, taskId: string): void {
     "bundle",
     "dataset-io.jsonl",
   );
-  const kept = readFileSync(datasetIoPath, "utf8")
-    .trim()
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>)
-    .filter((record) => String(record.direction ?? "").toUpperCase() !== "WRITE");
-  writeFileSync(
-    datasetIoPath,
-    kept.length > 0 ? `${kept.map((record) => canonicalJson(record)).join("\n")}\n` : "",
-    "utf8",
+  const kept = readJsonlRecords(datasetIoPath).filter(
+    (record) => String(record.direction ?? "").toUpperCase() !== "WRITE",
   );
+  writeCanonicalJsonl(datasetIoPath, kept);
   refreshAttestation(factsRoot, taskId);
 }
 

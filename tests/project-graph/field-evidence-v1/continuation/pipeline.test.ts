@@ -28,7 +28,7 @@ function indexCandidate(
 function ports(lookup: ContinuationPorts["scheduleLookup"]): ContinuationPorts {
   return {
     scheduleLookup: lookup,
-    producerIndex: null,
+    writerCatalog: null,
     taskCategoryFor: () => "sparkIndex",
     readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
     tableIdentityFor: ({ qualifiedName }) => ({
@@ -66,7 +66,7 @@ describe("continuation pipeline", () => {
 
     expect(result.candidates).toHaveLength(7);
     expect(result.candidates.every((candidate) => candidate.continuationEligible === false)).toBe(true);
-    expect(result.gaps.some((gap) => gap.reasonCode === "PRODUCER_INDEX_UNAVAILABLE")).toBe(true);
+    expect(result.gaps.some((gap) => gap.reasonCode === "WRITER_CATALOG_UNAVAILABLE")).toBe(true);
   });
 
   it("tie-breaks overlapping writers to the unique Horae parent after rematch skip", () => {

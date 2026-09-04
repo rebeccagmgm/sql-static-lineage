@@ -530,12 +530,10 @@ function matchConstraint(
   );
 }
 
-export function matchProducersByReadScope(
-  index: TableProducerIndex,
-  table: ProducerTableIdentity,
+export function matchProducersByReadScopeFromEdges(
+  edges: readonly ConfirmedProducerEdge[],
   readScope: ReadPartitionScope,
 ): readonly ProducerPartitionMatch[] {
-  const edges = lookupConfirmedProducers(index, table);
   return edges
     .map((edge) => {
       const producerWrites = edge.writes.filter(
@@ -610,6 +608,17 @@ export function matchProducersByReadScope(
       };
     })
     .sort((left, right) => left.taskId.localeCompare(right.taskId));
+}
+
+export function matchProducersByReadScope(
+  index: TableProducerIndex,
+  table: ProducerTableIdentity,
+  readScope: ReadPartitionScope,
+): readonly ProducerPartitionMatch[] {
+  return matchProducersByReadScopeFromEdges(
+    lookupConfirmedProducers(index, table),
+    readScope,
+  );
 }
 
 export function lookupProducersByTablePartition(

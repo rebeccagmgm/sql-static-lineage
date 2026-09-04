@@ -118,6 +118,31 @@ export function relationTypeForExpression(
   return indexes.relationTree.relations.get(relationId)?.relationType ?? null;
 }
 
+/**
+ * After setop ordinal sink, only keep sources that the *branch* expression
+ * actually lists. Top-level project/setop expressions often union inputs from
+ * every branch; pairing those foreign sources with a branch leaf yields false
+ * CTE_SCOPE_UNRESOLVED edges.
+ */
+export function expressionAcceptsSourceField(
+  expression: JsonRecord,
+  sourceField: PhysicalFieldIdentity,
+): boolean {
+  const inputFields = Array.isArray(expression.input_fields) ? expression.input_fields : [];
+  if (inputFields.length === 0) return false;
+  const targetTable = normalizeName(sourceField.qualifiedName);
+  const targetColumn = normalizeName(sourceField.column);
+  return inputFields.some((raw) => {
+    const input = record(raw);
+    if (!input) return false;
+    const column = normalizeName(String(input.column ?? input.name ?? ""));
+    if (column !== targetColumn) return false;
+    const table = normalizeName(String(input.table ?? input.physical_dataset ?? ""));
+    if (!table) return true;
+    return table === targetTable;
+  });
+}
+
 export function emitFieldEvidenceForInput(input: {
   readonly taskId: string;
   readonly expression: JsonRecord;
@@ -133,16 +158,25 @@ export function emitFieldEvidenceForInput(input: {
   });
   const outputs: EmittedFieldEvidence[] = [];
   for (const context of expressionContexts) {
+    if (!expressionAcceptsSourceField(context.expression, input.sourceField)) {
+      continue;
+    }
     const leafRelationId = leafRelationIdForExpression(
       context.expression,
-      input.expanded.leafRelationId,
+      // Prefer the sunk branch relation; parent materialization leaf may sit
+      // above the setop and would re-open sibling-branch reads.
+      text(context.expression.relation_id) ?? input.expanded.leafRelationId,
+    );
+    const branchInputField = inputFieldRecordForSource(
+      context.expression,
+      input.sourceField,
     );
     const sourceResolution = resolveSourceReadOccurrence({
       taskId: input.taskId,
       expressionId: context.expressionId,
       sourceTable: input.sourceField.qualifiedName,
       sourceColumn: input.sourceField.column,
-      inputField: input.inputField,
+      inputField: branchInputField,
       expressionText: text(context.expression.expression_text),
       leafRelationId,
       index: input.indexes.relationTree,

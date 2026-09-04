@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { jsonlStoreExists } from "../../../scripts/machine-facts/jsonl-store.ts";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -26,7 +27,7 @@ export function fieldEvidenceGoldenRoots(): { dataRoot: string; factsRoot: strin
     "bundle",
     "dataset-io.jsonl",
   );
-  if (!existsSync(required)) return null;
+  if (!jsonlStoreExists(required)) return null;
   return { dataRoot, factsRoot };
 }
 

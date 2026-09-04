@@ -10,6 +10,7 @@
 | `execution-plan-task-local-projection.md`   | WP-3 纸条 TL-0…TL-8                 |
 | `execution-plan-task-local-union.md`        | WP-5 并集 + WP-8 接续（data-graph） |
 | `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4         |
+| `execution-plan-writer-catalog.md`          | 表→writer 的 SQLite 目录（替 JSON PI） |
 | `graph-accuracy-architecture.md`            | WP-6…WP-12 准确性冻结               |
 | `graph-user-narrative.md`                   | L0–L3 对用户陈述                    |
 
@@ -84,7 +85,7 @@
 | WP-3 | 任务局部投影  | **已验收** | schema **1.2.0**；三金样 TL-6/7         |
 | WP-4 | 加工/通道识别 | 未做       | 非 P0 阻塞                              |
 | WP-5 | 并集 source   | **库完成** | 见 union 执行方案；主管线未接           |
-| GC   | 金样调查页    | **进行中** | **四锚点一张图**；见 gold-case 执行方案 |
+| GC   | 金样调查页    | **进行中** | **四锚点一张图**；见 gold-case 执行方案；**表级精度验收**见 `execution-plan-table-lineage-acceptance.md` |
 
 ### 准确性链（WP-6～WP-12，见 graph-accuracy-architecture）
 
@@ -333,7 +334,7 @@ OpenSpec：`openspec/changes/archive/2026-09-02-task-local-graph-projection/`、
 
 **契约**：`TASK_LOCAL_PROJECTION` **1.2.0**（`READ_OCCURRENCE` 两跳 READS、`localClosure`）。
 
-一句话：每个任务只投影自己的 READ/WRITE/值边/控制边；任务之间靠物理表身份在查询期用 producer-index 拼接。
+一句话：每个任务只投影自己的 READ/WRITE/值边/控制边；任务之间靠物理表身份在查询期用 writer catalog（Facts 派生的 SQLite 倒排；见 `execution-plan-writer-catalog.md`）拼接。
 调度邻居只落在 TASK 的 `scheduleReference`（`SCHEDULE_REFERENCE_ONLY`），**不是数据血缘**。
 不要把上游 taskId 写进数据边，也不要把「从 176827 递归走到四张拉链 ref」当完成定义——那是 105387 自己的 `DATASET_CONTROL`，外加查询期拼接。
 

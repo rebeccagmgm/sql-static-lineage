@@ -6,6 +6,7 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import {
   dirname,
   extname,
@@ -53,13 +54,20 @@ import {
   type TableProducerIndex,
 } from "../../producer/producer-index.ts";
 import {
-  lookupConfirmedProducers,
-  matchProducersByReadScope,
-  lookupNonConfirmedRelations,
-  lookupProducerWritesByTask,
   type ProducerPartitionMatch,
   type ProducerPartitionMatchStatus,
 } from "../../../query/producer-index-query.ts";
+import {
+  isLegacyProducerIndexPath,
+  lookupConfirmedProducersFor,
+  lookupNonConfirmedRelationsFor,
+  lookupProducerWritesByTaskFor,
+  matchProducersByReadScopeFor,
+  resolveWriterLookup,
+  writerLookupMeta,
+  type WriterLookup,
+} from "../../../query/table-writer-lookup.ts";
+import type { WriterCatalogHandle } from "../../../query/writer-catalog.ts";
 import {
   resolveReadPartitionScope,
   type ReadPartitionScope,
@@ -479,6 +487,7 @@ export type OpenCliRunner = (args: readonly string[]) => unknown;
 export interface ReconcileOneHopOptions {
   readonly dataRoot: string;
   readonly producerIndex?: TableProducerIndex;
+  readonly writerCatalog?: WriterCatalogHandle;
   readonly verifyInputFingerprint?: boolean;
   /**
    * Offline Horae relation rows supplied by a caller which already owns the
@@ -1449,14 +1458,14 @@ function writesFromPack(
   return { confirmedWrites: mergeWrites(confirmedWrites), unconfirmedTargets };
 }
 
-function writesFromProducerIndex(
+function writesFromLookup(
   taskId: string,
-  index: TableProducerIndex,
+  lookup: WriterLookup,
 ): {
   confirmedWrites: ConfirmedWriteObservation[];
   unconfirmedTargets: UnconfirmedTargetObservation[];
 } {
-  const indexedWrites = lookupProducerWritesByTask(index, taskId);
+  const indexedWrites = lookupProducerWritesByTaskFor(lookup, taskId);
   const confirmedWrites = indexedWrites.confirmedWrites
     .map((edge) => {
       const representative = edge.writes.find(
@@ -1985,33 +1994,36 @@ function reconcileOneHopInternal(
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0)
     throw new Error("INVALID_TASK_SOURCE_TIMEOUT");
 
-  const producerIndex = options.producerIndex ?? null;
+  const lookup = resolveWriterLookup({
+    writerCatalog: options.writerCatalog,
+    producerIndex: options.producerIndex,
+  });
   if (options.trustedInputFingerprint !== undefined) {
     if (options.verifyInputFingerprint !== true || !/^[a-f0-9]{64}$/i.test(options.trustedInputFingerprint)) throw new Error("TRUSTED_INPUT_FINGERPRINT_INVALID");
-    if (producerIndex && producerIndex.inputFingerprint !== options.trustedInputFingerprint) throw new Error("TRUSTED_INPUT_FINGERPRINT_MISMATCH");
+    if (lookup?.kind === "legacyIndex" && lookup.index.inputFingerprint !== options.trustedInputFingerprint) throw new Error("TRUSTED_INPUT_FINGERPRINT_MISMATCH");
   }
   let producerIndexStatus: ProducerIndexConsumptionStatus = "NOT_REQUESTED";
-  if (producerIndex) {
-    if (!preparedContext.validatedProducerIndexes.has(producerIndex)) {
+  let lookupMeta = lookup ? writerLookupMeta(lookup) : null;
+  if (lookup?.kind === "legacyIndex") {
+    if (!preparedContext.validatedProducerIndexes.has(lookup.index)) {
       try {
-        validateTableProducerIndex(producerIndex);
+        validateTableProducerIndex(lookup.index);
       } catch (error) {
         throw new Error(`PRODUCER_INDEX_INVALID:${safeMessage(error)}`);
       }
-      preparedContext.validatedProducerIndexes.add(producerIndex);
+      preparedContext.validatedProducerIndexes.add(lookup.index);
     }
     if (
       options.verifyInputFingerprint === true &&
       (preparedContext.inputFingerprint === null ||
-        preparedContext.inputFingerprint !== producerIndex.inputFingerprint)
+        preparedContext.inputFingerprint !== lookup.index.inputFingerprint)
     )
       throw new Error(
         "PRODUCER_INDEX_INPUT_FINGERPRINT_MISMATCH: producer index does not match dataRoot",
       );
-    producerIndexStatus =
-      producerIndex.buildStatus === "PARTIAL"
-        ? "VALID_PARTIAL"
-        : "VALID_SUCCESS";
+    producerIndexStatus = lookupMeta!.status;
+  } else if (lookup?.kind === "catalog") {
+    producerIndexStatus = lookupMeta!.status;
   }
 
   const currentPack = loadTaskPack(dataRoot, taskId);
@@ -2150,10 +2162,10 @@ function reconcileOneHopInternal(
   let liveTaskSourceFailures = 0;
   for (const scheduleParent of orderedScheduleParents) {
     const pack = loadTaskPack(dataRoot, scheduleParent.taskId);
-    const fromPack = producerIndex
-      ? writesFromProducerIndex(scheduleParent.taskId, producerIndex)
+    const fromPack = lookup
+      ? writesFromLookup(scheduleParent.taskId, lookup)
       : writesFromPack(pack, catalog);
-    const shouldUseLive = pack.status !== "AVAILABLE" && !producerIndex;
+    const shouldUseLive = pack.status !== "AVAILABLE" && !lookup;
     if (shouldUseLive) liveTaskSourceAttempts += 1;
     const live = !shouldUseLive
       ? {
@@ -2255,7 +2267,7 @@ function reconcileOneHopInternal(
   const relatedNonConfirmedRelations: NonConfirmedRelation[] = [];
   const partitionMatchesByEdge = new Map<string, ProducerPartitionMatch>();
   const readOccurrenceMatchGroups: ReadOccurrenceMatchGroup[] = [];
-  if (producerIndex) {
+  if (lookup) {
     const seenEdges = new Set<string>();
     const seenRelations = new Set<string>();
     for (const read of directReads) {
@@ -2263,8 +2275,8 @@ function reconcileOneHopInternal(
       const identity = producerIdentity(read.table);
       if (!identity) continue;
       for (const occurrence of read.readPartitionScopes) {
-        const occurrenceMatches = matchProducersByReadScope(
-          producerIndex,
+        const occurrenceMatches = matchProducersByReadScopeFor(
+          lookup,
           identity,
           occurrence.scope,
         );
@@ -2281,7 +2293,7 @@ function reconcileOneHopInternal(
           );
         }
       }
-      for (const edge of lookupConfirmedProducers(producerIndex, identity)) {
+      for (const edge of lookupConfirmedProducersFor(lookup, identity)) {
         const key = `${tableIdentityKey(edge.table)}\u0000${edge.taskId}`;
         if (seenEdges.has(key)) continue;
         const producerWrites = edge.writes.filter(
@@ -2306,8 +2318,8 @@ function reconcileOneHopInternal(
           writes: producerWrites,
         });
       }
-      for (const relation of lookupNonConfirmedRelations(
-        producerIndex,
+      for (const relation of lookupNonConfirmedRelationsFor(
+        lookup,
         identity,
       )) {
         const key = JSON.stringify(relation);
@@ -2542,7 +2554,7 @@ function reconcileOneHopInternal(
       .filter((key): key is string => key !== null),
   );
   const nonConfirmedTableKeys = new Set(
-    (producerIndex
+    (lookup
       ? relatedNonConfirmedRelations.map((item) =>
           tableIdentityKey(item.tableRef),
         )
@@ -2574,27 +2586,27 @@ function reconcileOneHopInternal(
       .filter((key): key is string => key !== null),
   );
 
-  const producerWriteObservationCount = producerIndex
+  const producerWriteObservationCount = lookup
     ? confirmedProducers.reduce((sum, item) => sum + item.writes.length, 0)
     : parents.reduce((sum, parent) => sum + parent.confirmedWrites.length, 0);
-  const producerEdgeObservationCount = producerIndex
+  const producerEdgeObservationCount = lookup
     ? confirmedProducers.length
     : parents.reduce((sum, parent) => sum + parent.confirmedWrites.length, 0);
-  const nonConfirmedObservationCount = producerIndex
+  const nonConfirmedObservationCount = lookup
     ? relatedNonConfirmedRelations.length
     : reconciliation.filter((item) => item.status === "UNRESOLVED").length;
-  const directionConfirmedCount = producerIndex
+  const directionConfirmedCount = lookup
     ? producerWriteObservationCount +
       relatedNonConfirmedRelations.filter(
         (item) => item.directionStatus === "WRITE_CONFIRMED",
       ).length
     : producerWriteObservationCount;
-  const directionUnknownCount = producerIndex
+  const directionUnknownCount = lookup
     ? relatedNonConfirmedRelations.filter(
         (item) => item.directionStatus === "UNKNOWN",
       ).length
     : nonConfirmedObservationCount;
-  const identityResolvedCount = producerIndex
+  const identityResolvedCount = lookup
     ? producerWriteObservationCount +
       relatedNonConfirmedRelations.filter(
         (item) => tableIdentityKey(item.tableRef) !== null,
@@ -2743,11 +2755,17 @@ function reconcileOneHopInternal(
     },
     producerIndex: {
       status: producerIndexStatus,
-      contentHash: producerIndex?.contentHash ?? null,
-      inputFingerprint: producerIndex?.inputFingerprint ?? null,
+      contentHash: lookupMeta?.contentHash ?? null,
+      inputFingerprint:
+        lookup?.kind === "legacyIndex"
+          ? lookup.index.inputFingerprint
+          : (options.trustedInputFingerprint ??
+            preparedContext.inputFingerprint ??
+            lookupMeta?.contentHash ??
+            null),
     },
     dataPath: {
-      source: producerIndex
+      source: lookup
         ? "PRODUCER_INDEX"
         : "LEGACY_SCHEDULE_RECONCILIATION",
       confirmedProducers,
@@ -2756,7 +2774,7 @@ function reconcileOneHopInternal(
     },
     coverage,
     nextScheduleTaskIds: uniqueSorted([...scheduleParents.keys()]),
-    nextDataTaskIds: producerIndex
+    nextDataTaskIds: lookup
       ? uniqueSorted(confirmedProducers.map((item) => item.taskId))
       : uniqueSorted(
           reconciliation
@@ -2804,6 +2822,7 @@ export function reconcileOneHop(
     trustedInputFingerprint: options.trustedInputFingerprint,
     includeFingerprint:
       options.producerIndex !== undefined &&
+      options.writerCatalog === undefined &&
       options.verifyInputFingerprint === true &&
       options.trustedInputFingerprint === undefined,
   });
@@ -2908,6 +2927,7 @@ export function reconcileOneHopBatch(
     trustedInputFingerprint: options.trustedInputFingerprint,
     includeFingerprint:
       options.producerIndex !== undefined &&
+      options.writerCatalog === undefined &&
       options.verifyInputFingerprint === true &&
       options.trustedInputFingerprint === undefined,
   });
@@ -2952,17 +2972,34 @@ function main(): void {
     option(args, "--terminal-table-config") ??
     DEFAULT_TERMINAL_TABLE_CONFIG_PATH;
   const producerIndexPath = producerIndexPathFromArgs(args);
+  const writerCatalogPath = option(args, "--writer-catalog");
   const verifyInputFingerprint = args.includes("--verify-input-fingerprint");
   if (!taskId || !dataRoot)
     throw new Error(
-      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--producer-index <index.json>] [--terminal-table-config <path>] [--verify-input-fingerprint] [--output <json>] [--summary-output <summary.json>]",
+      "usage: npm run reconcile-one-hop -- --task-id <id> --data-root <input-pack-root> [--writer-catalog <catalog.sqlite>] [--producer-index <index.json>] [--terminal-table-config <path>] [--verify-input-fingerprint] [--output <json>] [--summary-output <summary.json>]",
     );
-  const producerIndex = producerIndexPath
-    ? loadTableProducerIndex(producerIndexPath)
+  const catalogApi = createRequire(import.meta.url)(
+    "../../../query/writer-catalog.ts",
+  ) as typeof import("../../../query/writer-catalog.ts");
+  const catalogPath =
+    writerCatalogPath ??
+    (producerIndexPath && !isLegacyProducerIndexPath(producerIndexPath)
+      ? producerIndexPath
+      : undefined) ??
+    (existsSync(catalogApi.defaultWriterCatalogPath(dataRoot))
+      ? catalogApi.defaultWriterCatalogPath(dataRoot)
+      : undefined);
+  const producerIndex =
+    producerIndexPath && isLegacyProducerIndexPath(producerIndexPath)
+      ? loadTableProducerIndex(producerIndexPath)
+      : undefined;
+  const writerCatalog = catalogPath
+    ? catalogApi.openWriterCatalog(catalogPath)
     : undefined;
   const result = reconcileOneHop(taskId, {
     dataRoot,
     producerIndex,
+    writerCatalog,
     verifyInputFingerprint,
     terminalTableConfig: loadTerminalTableConfig(
       resolve(terminalTableConfigPath),

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readJsonlRecords } from "../machine-facts/jsonl-store.ts";
 import {
   validateFieldLineageArtifact,
   type FieldLineageArtifact,
@@ -320,27 +321,6 @@ interface CodeRelationCandidate {
   readonly sourceSpan: { readonly start: number; readonly end: number } | null;
   readonly sourceText: string;
   readonly distance: number;
-}
-
-function readJsonlRecords(path: string): readonly JsonRecord[] {
-  if (!existsSync(path)) return [];
-  try {
-    const source = readFileSync(path, "utf8").trim();
-    if (!source) return [];
-    return source
-      .split(/\r?\n/)
-      .map((line) => {
-        try {
-          const value: unknown = JSON.parse(line);
-          return isRecord(value) ? value : undefined;
-        } catch {
-          return undefined;
-        }
-      })
-      .filter((value): value is JsonRecord => value !== undefined);
-  } catch {
-    return [];
-  }
 }
 
 function recordString(record: JsonRecord, key: string): string | null {

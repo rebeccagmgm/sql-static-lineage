@@ -1,9 +1,7 @@
-import { matchProducersByReadScope } from "../../../../query/producer-index-query.ts";
 import { stableId } from "../../../task-local/ids.ts";
 import type { FieldImpactGap } from "../../impact-result-contract.ts";
 import type { ContinuationPorts } from "../ports.ts";
 import type { ContinuationCandidate } from "../types.ts";
-import { withContinuationCandidate } from "../types.ts";
 
 export const PARTITION_REMATCH_RULE_ID = "PARTITION_REMATCH" as const;
 
@@ -19,15 +17,15 @@ export function applyPartitionRematch(input: {
   readonly gaps: readonly FieldImpactGap[];
 } {
   const gaps: FieldImpactGap[] = [];
-  if (!input.ports.producerIndex) {
+  if (!input.ports.writerCatalog) {
     gaps.push({
       gapId: stableId("gap", {
-        reasonCode: "PRODUCER_INDEX_UNAVAILABLE",
+        reasonCode: "WRITER_CATALOG_UNAVAILABLE",
         consumerTaskId: input.consumerTaskId,
         readOccurrenceId: input.readOccurrenceId,
         column: input.column,
       }),
-      reasonCode: "PRODUCER_INDEX_UNAVAILABLE",
+      reasonCode: "WRITER_CATALOG_UNAVAILABLE",
       details: {
         consumerTaskId: input.consumerTaskId,
         readOccurrenceId: input.readOccurrenceId,
@@ -60,25 +58,6 @@ export function applyPartitionRematch(input: {
     return { candidates: input.candidates, gaps };
   }
 
-  const table = input.ports.tableIdentityFor({
-    consumerTaskId: input.consumerTaskId,
-    qualifiedName: input.qualifiedName,
-  });
-  const matches = matchProducersByReadScope(
-    input.ports.producerIndex,
-    table,
-    readScopeResult.scope,
-  );
-  const matchByTaskId = new Map(matches.map((match) => [match.taskId, match]));
-
-  const candidates = input.candidates.map((candidate) => {
-    const match = matchByTaskId.get(candidate.index.taskId);
-    if (!match) return candidate;
-    return withContinuationCandidate(candidate, {
-      partitionOverlap: match.status,
-      ruleId: PARTITION_REMATCH_RULE_ID,
-    });
-  });
-
-  return { candidates, gaps };
+  // Writer catalog v1 does not carry partition evidence; keep candidates unchanged.
+  return { candidates: input.candidates, gaps };
 }

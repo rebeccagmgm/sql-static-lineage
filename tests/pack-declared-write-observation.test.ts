@@ -4,7 +4,6 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -13,9 +12,10 @@ import { describe, expect, it } from "vitest";
 
 import { runInputPackMachineFacts } from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import { validateBundle } from "../scripts/machine-facts/machine-facts.ts";
+import { readJsonlRecords, writeCanonicalJsonl } from "../scripts/machine-facts/jsonl-store.ts";
 import { createSyntheticFieldLineageInputPack } from "./fixtures/field-lineage/cases.ts";
 
-const TASK_IDS = ["132028", "155939", "176827"] as const;
+const TASK_IDS = ["100050", "132028", "176827"] as const;
 
 function sha256File(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -39,12 +39,7 @@ function realDataRoot(): string | null {
 }
 
 function jsonl(path: string): Record<string, unknown>[] {
-  const text = readFileSync(path, "utf8").trim();
-  return text
-    ? text
-        .split(/\r?\n/)
-        .map((line) => JSON.parse(line) as Record<string, unknown>)
-    : [];
+  return readJsonlRecords(path);
 }
 
 function bundle(outputRoot: string, taskId: string): string {
@@ -93,23 +88,25 @@ describe("WP-6 Pack-declared write observation", () => {
         dataRoot,
         taskIds: TASK_IDS,
         outputRoot: firstRoot,
+        noWriterCatalog: true,
       });
       const second = runInputPackMachineFacts({
         dataRoot,
         taskIds: TASK_IDS,
         outputRoot: secondRoot,
+        noWriterCatalog: true,
       });
 
       expect(first.tasks.map((task) => [task.task_id, task.state])).toEqual([
+        ["100050", "FAILED"],
         ["132028", "SUCCESS"],
-        ["155939", "FAILED"],
         ["176827", "SUCCESS"],
       ]);
       expect(second.tasks.map((task) => [task.task_id, task.state])).toEqual(
         first.tasks.map((task) => [task.task_id, task.state]),
       );
       expect(
-        first.tasks.find((task) => task.task_id === "155939")?.failures?.[0]
+        first.tasks.find((task) => task.task_id === "100050")?.failures?.[0]
           ?.message,
       ).toMatch(/TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED/);
 
@@ -196,6 +193,7 @@ describe("WP-6 Pack-declared write observation", () => {
         dataRoot,
         taskIds: ["300"],
         outputRoot,
+        noWriterCatalog: true,
       });
       const bundleRoot = bundle(outputRoot, "300");
       const writePath = join(bundleRoot, "dataset-io.jsonl");
@@ -211,16 +209,8 @@ describe("WP-6 Pack-declared write observation", () => {
           ? { ...binding, source_sql_sha256: tamperedHash }
           : binding,
       );
-      writeFileSync(
-        writePath,
-        `${writes.map((write) => JSON.stringify(write)).join("\n")}\n`,
-        "utf8",
-      );
-      writeFileSync(
-        bindingPath,
-        `${bindings.map((binding) => JSON.stringify(binding)).join("\n")}\n`,
-        "utf8",
-      );
+      writeCanonicalJsonl(writePath, writes);
+      writeCanonicalJsonl(bindingPath, bindings);
       const errors = validateBundle(bundleRoot);
       expect(errors).toEqual(
         expect.arrayContaining([
@@ -229,6 +219,39 @@ describe("WP-6 Pack-declared write observation", () => {
           ),
           expect.stringContaining(
             "pack-declared binding source SQL hash mismatch",
+          ),
+        ]),
+      );
+    } finally {
+      rmSync(dataRoot, { recursive: true, force: true });
+      rmSync(outputRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an inconsistent Pack-declared partition binding status", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "wp6-status-data-"));
+    const outputRoot = mkdtempSync(join(tmpdir(), "wp6-status-facts-"));
+    try {
+      createSyntheticFieldLineageInputPack(dataRoot);
+      runInputPackMachineFacts({
+        dataRoot,
+        taskIds: ["300"],
+        outputRoot,
+        noWriterCatalog: true,
+      });
+      const bundleRoot = bundle(outputRoot, "300");
+      const writePath = join(bundleRoot, "dataset-io.jsonl");
+      const writes = jsonl(writePath).map((write) =>
+        write.write_kind === "PACK_DECLARED_QUERY_OUTPUT"
+          ? { ...write, partition_binding_status: "COMPLETE" }
+          : write,
+      );
+      writeCanonicalJsonl(writePath, writes);
+
+      expect(validateBundle(bundleRoot)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining(
+            "non-partitioned pack-declared write has inconsistent status",
           ),
         ]),
       );

@@ -348,7 +348,7 @@ artifacts/gold-case-dm-rsk-n/
 | --- | --- | --- |
 | WP-3 `TASK_LOCAL_PROJECTION` 1.2.0 | sql-static-lineage | **已验收** |
 | TL-6 golden（105387/119044/176827） | sql-static-lineage | **有** |
-| TL-6 golden（209119/155015） | sql-static-lineage | **待 GC-4** |
+| TL-6 golden（209119/155015） | sql-static-lineage | **待 GC-4**；表级清单见 `execution-plan-table-lineage-acceptance.md` |
 | `--task-ids` + `--expand-upstream` | sql-static-lineage | **已实现（GC-1）** |
 | WP-5 `mergeTaskLocalUnion` | data-graph | **库完成** |
 | WP-8.1 `union-continuation-index` CLI | data-graph | **完成** |

@@ -64,10 +64,13 @@ import {
 } from "../reconcile/consumer/multi-hop/terminal-table-config.ts";
 import { queryProducerTaskIds } from "../reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
 import {
-  defaultMutableProducerIndexRoot,
-  loadOrRebuildTableProducerIndex,
-  loadTableProducerIndex,
+  fingerprintTableProducerInputs,
 } from "../reconcile/producer/producer-index.ts";
+import {
+  openWriterCatalog,
+  resolveWriterCatalogPath,
+  type WriterCatalogHandle,
+} from "../query/writer-catalog.ts";
 import {
   validateTaskDocument,
   type TaskDocument,
@@ -115,10 +118,9 @@ export interface InputPackClosureArtifact {
   };
   readonly status: "COMPLETE" | "PARTIAL";
   readonly issues: readonly string[];
-  readonly producerSnapshot: {
+  readonly writerCatalogSnapshot: {
+    readonly catalogPath: string;
     readonly inputFingerprint: string;
-    readonly indexPath: string | null;
-    readonly manifestPath: string | null;
   };
   readonly boundaries: {
     readonly directIndirectClassification: "IN_MULTI_HOP_ARTIFACT";
@@ -527,6 +529,7 @@ export interface LineageAllOptions {
   readonly maxTasks?: number;
   readonly maxEdges?: number;
   readonly maxRounds?: number;
+  readonly writerCatalogPath?: string;
   readonly force?: boolean;
   readonly dependencies?: Partial<LineageAllDependencies>;
 }
@@ -546,8 +549,7 @@ export interface LineageAllDependencies {
     options: ReconcileOneHopOptions,
   ) => readonly OneHopReconciliationResult[];
   readonly multiHop: typeof reconcileMultiHop;
-  readonly producerIndex: typeof loadOrRebuildTableProducerIndex;
-  readonly loadProducerIndex: typeof loadTableProducerIndex;
+  readonly openWriterCatalog: (path: string) => WriterCatalogHandle;
   readonly collectTaskPacks: (
     dataRoot: string,
     taskIds: readonly string[],
@@ -588,8 +590,7 @@ function dependencies(
     fieldLineage: reconcileFieldLineage,
     oneHopBatch: reconcileOneHopBatch,
     multiHop: reconcileMultiHop,
-    producerIndex: loadOrRebuildTableProducerIndex,
-    loadProducerIndex: loadTableProducerIndex,
+    openWriterCatalog,
     collectTaskPacks: runCollector,
     fieldProducerDiscovery: defaultFieldProducerDiscovery,
     // Dependency-injected test pipelines must not reach OpenCLI implicitly;
@@ -659,6 +660,7 @@ export function parseLineageAllArgs(
         "--max-edges",
         "--max-rounds",
         "--force",
+        "--writer-catalog",
       ].includes(item) &&
       !(index > 0 && args[index - 1] === "--task-ids"),
   );
@@ -684,6 +686,7 @@ export function parseLineageAllArgs(
     maxEdges: integer(args, "--max-edges", DEFAULT_MAX_EDGES),
     maxRounds: integer(args, "--max-rounds", DEFAULT_MAX_ROUNDS),
     force: args.includes("--force"),
+    writerCatalogPath: value(args, "--writer-catalog"),
   };
 }
 
@@ -995,9 +998,6 @@ async function runTask(
     withFields: options.withFields === true,
   });
   try {
-    const producerIndexRoot = defaultMutableProducerIndexRoot(
-      resolve(options.dataRoot),
-    );
     const factsRoot = resolve(
       options.factsRoot ?? join(options.dataRoot, "field-facts"),
     );
@@ -1016,8 +1016,7 @@ async function runTask(
     let finalFormalMultiHop: ReturnType<typeof reconcileMultiHop> | null = null;
     let finalFieldArtifact: FieldLineageArtifact | null = null;
     let finalTrustedInputFingerprint: string | null = null;
-    let finalProducerIndexPath: string | null = null;
-    let finalProducerManifestPath: string | null = null;
+    let finalWriterCatalogPath: string | null = null;
     let taskNodeIds: string[] | null = null;
     const multiHopPath = join(stagedDir, "multi-hop.json");
     const oneHopPath = join(stagedDir, "one-hop.json");
@@ -1025,17 +1024,17 @@ async function runTask(
     let tableHtmlRendered = false;
 
     while (true) {
-      let producer: ReturnType<typeof loadOrRebuildTableProducerIndex>["index"];
+      const catalogPath = resolveWriterCatalogPath(resolve(options.dataRoot), {
+        writerCatalogPath: options.writerCatalogPath,
+      });
+      const writerCatalog = deps.openWriterCatalog(catalogPath);
+      finalWriterCatalogPath = catalogPath;
       let trustedInputFingerprint: string;
       if (taskNodeIds === null) {
-        // The initial closure follows confirmed local Producer Index edges
-        // only. Missing table producers are discovered later from the actual
-        // field path, so auxiliary joins cannot inflate a field run into a
-        // full-table task closure.
         const autofill = deps.autofill({
           taskId,
           dataRoot: resolve(options.dataRoot),
-          producerIndexRoot,
+          writerCatalogPath: catalogPath,
           maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
           maxTasks: options.maxTasks ?? DEFAULT_MAX_TASKS,
           maxRounds: options.maxRounds ?? DEFAULT_MAX_ROUNDS,
@@ -1056,30 +1055,15 @@ async function runTask(
           collected: autofill.collectedTaskIds.length,
           rounds: autofill.rounds,
         });
-        // Closure owns the fixed-path index. Reuse it rather than rebuilding.
-        const snapshot = autofill.producerSnapshot;
-        producer = snapshot
-          ? deps.loadProducerIndex(snapshot.indexPath)
-          : deps.producerIndex(resolve(options.dataRoot), producerIndexRoot)
-              .index;
-        trustedInputFingerprint =
-          snapshot?.inputFingerprint ?? producer.inputFingerprint;
-        finalProducerIndexPath = snapshot?.indexPath ?? null;
-        finalProducerManifestPath = snapshot?.manifestPath ?? null;
+        trustedInputFingerprint = fingerprintTableProducerInputs(
+          resolve(options.dataRoot),
+        );
+        finalTrustedInputFingerprint = trustedInputFingerprint;
         taskNodeIds = [...new Set(autofill.taskIds)];
       } else {
-        // A field-driven collection adds only the producer task(s) observed on
-        // the missing field path. Rebuild the fixed-path index against the
-        // expanded pack and keep the existing task frontier.
-        const refreshed = deps.producerIndex(
-          resolve(options.dataRoot),
-          producerIndexRoot,
-          { forceRebuild: true },
-        );
-        producer = refreshed.index;
-        trustedInputFingerprint = producer.inputFingerprint;
-        finalProducerIndexPath = refreshed.indexPath ?? null;
-        finalProducerManifestPath = refreshed.manifestPath ?? null;
+        trustedInputFingerprint =
+          finalTrustedInputFingerprint ??
+          fingerprintTableProducerInputs(resolve(options.dataRoot));
       }
       const facts = deps.machineFacts({
         dataRoot: resolve(options.dataRoot),
@@ -1113,7 +1097,7 @@ async function runTask(
           throw new Error(`SCHEDULE_PREFETCH_MISSING:${nodeId}`);
       const oneHopResults = deps.oneHopBatch(taskNodeIds, {
         dataRoot: resolve(options.dataRoot),
-        producerIndex: producer,
+        writerCatalog,
         verifyInputFingerprint: false,
         trustedInputFingerprint,
         scheduleEvidenceByTaskId,
@@ -1138,7 +1122,7 @@ async function runTask(
         throw new Error(`ROOT_ONE_HOP_SNAPSHOT_MISSING:${taskId}`);
       const formalMultiHop = deps.multiHop(taskId, {
         dataRoot: resolve(options.dataRoot),
-        producerIndex: producer,
+        writerCatalog,
         maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
         maxTasks: options.maxTasks ?? DEFAULT_MAX_TASKS,
         maxEdges: options.maxEdges ?? DEFAULT_MAX_EDGES,
@@ -1281,10 +1265,9 @@ async function runTask(
       },
       status: initialClosure?.status ?? "COMPLETE",
       issues: initialClosure?.issues ?? [],
-      producerSnapshot: {
+      writerCatalogSnapshot: {
+        catalogPath: finalWriterCatalogPath ?? "",
         inputFingerprint: finalTrustedInputFingerprint ?? "",
-        indexPath: finalProducerIndexPath,
-        manifestPath: finalProducerManifestPath,
       },
       boundaries: {
         directIndirectClassification: "IN_MULTI_HOP_ARTIFACT",

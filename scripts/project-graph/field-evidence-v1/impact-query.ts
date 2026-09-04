@@ -257,7 +257,7 @@ function traverseValueEdge(input: {
       loadIndex(indexCache, query, producerTaskId),
     continuationPorts: query.continuationPorts ?? {
       scheduleLookup: query.scheduleRelationLookup ?? null,
-      producerIndex: null,
+      writerCatalog: null,
       taskCategoryFor: () => null,
       readScopeFor: () => ({ kind: "UNAVAILABLE", reasonCode: "READ_SCOPE_UNAVAILABLE" }),
       tableIdentityFor: ({ qualifiedName }) => ({

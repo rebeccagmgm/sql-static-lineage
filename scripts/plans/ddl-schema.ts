@@ -217,6 +217,16 @@ function columnNames(columns: readonly DdlColumn[]): string[] {
 	return names;
 }
 
+function uniqueColumns(columns: readonly DdlColumn[]): DdlColumn[] {
+	const seen = new Set<string>();
+	return columns.filter((column) => {
+		const key = column.name.toLowerCase();
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+}
+
 function topLevelKeywordIndex(text: string, keyword: string, start = 0): number {
 	let parentheses = 0;
 	const lower = text.toLowerCase();
@@ -342,11 +352,12 @@ export function parseDdlSchema(ddl: string): ParsedDdlSchema {
 	}
 
 	const allColumns = [...columns, ...partitionColumns];
+	const foldedColumns = uniqueColumns(allColumns);
 	const warnings: string[] = [];
 	if (allColumns.length === 0) warnings.push("no column definitions found");
-	if (columnNames(allColumns).length !== allColumns.length) warnings.push("duplicate column names were folded");
+	if (foldedColumns.length !== allColumns.length) warnings.push("duplicate column names were folded");
 	return {
-		columns: allColumns,
+		columns: foldedColumns,
 		partition_columns: columnNames(partitionColumns),
 		warnings,
 	};

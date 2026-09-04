@@ -277,6 +277,77 @@ describe("source-read-occurrence", () => {
       "expr:b1",
     ]);
   });
+
+  it("recursively expands nested setop branches to leaf projects", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:outer.setop",
+        relation_type: "setop",
+        relation: {
+          type: "setop",
+          branches: ["rel:inner.setop", "rel:b2.project"],
+        },
+      },
+      {
+        relation_id: "rel:inner.setop",
+        relation_type: "setop",
+        relation: {
+          type: "setop",
+          branches: ["rel:b0.project", "rel:b1.project"],
+        },
+      },
+      { relation_id: "rel:b0.project", relation_type: "project", relation: { type: "project" } },
+      { relation_id: "rel:b1.project", relation_type: "project", relation: { type: "project" } },
+      { relation_id: "rel:b2.project", relation_type: "project", relation: { type: "project" } },
+    ];
+    const expressions = [
+      {
+        expression_id: "expr:outer",
+        relation_id: "rel:outer.setop",
+        ordinal: 0,
+        expression_text: "UNION_OUTPUT(id)",
+        input_fields: [{ table: "demo.t", column: "id" }],
+      },
+      {
+        expression_id: "expr:inner",
+        relation_id: "rel:inner.setop",
+        ordinal: 0,
+        expression_text: "UNION_OUTPUT(id)",
+        input_fields: [{ table: "demo.t", column: "id" }],
+      },
+      {
+        expression_id: "expr:b0",
+        relation_id: "rel:b0.project",
+        ordinal: 0,
+        expression_text: "id",
+        input_fields: [{ table: "demo.t", column: "id" }],
+      },
+      {
+        expression_id: "expr:b1",
+        relation_id: "rel:b1.project",
+        ordinal: 0,
+        expression_text: "id1 AS id",
+        input_fields: [{ table: "demo.t", column: "id" }],
+      },
+      {
+        expression_id: "expr:b2",
+        relation_id: "rel:b2.project",
+        ordinal: 0,
+        expression_text: "id2 AS id",
+        input_fields: [{ table: "demo.t", column: "id" }],
+      },
+    ];
+    const contexts = expandSetopBranchExpressions({
+      expression: expressions[0]!,
+      expressionsByRelation: expressionsByRelationAndOrdinal(expressions),
+      index: withIncomingRelations(buildRelationTreeIndex(relationNodes), []),
+    });
+    expect(contexts.map((context) => context.expressionId).sort()).toEqual([
+      "expr:b0",
+      "expr:b1",
+      "expr:b2",
+    ]);
+  });
 });
 
 describe("relation-tree", () => {

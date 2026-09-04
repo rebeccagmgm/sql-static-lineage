@@ -61,14 +61,14 @@ Facts 344 vs Pack 14,113；hiveTask-2.0 38% 无 SQL；hive2* 60% 无 query；Hiv
 | 形态 | 判定 | 写观察来源 | 分区值来源 | 列绑定 |
 |------|------|-----------|-----------|--------|
 | A `SQL_EXPLICIT_WRITE` | SQL 有 INSERT/CTAS（hiveTask*、部分 hive2*） | 每条 INSERT 一个 `write_observation_id`（Facts 已有） | `PARTITION(...)` 字面量/模板 → 可判；动态 → `DYNAMIC`，仅当 SELECT 对应列是常量表达式时可证出 | Facts `output-field-bindings` |
-| B `PACK_DECLARED_QUERY_OUTPUT` | 运行契约为“query 输出写入 Pack target”（sparkIndex 等），SQL 无 INSERT | 由已确认的 pack `target`、`partition` 与**唯一** query producer 构造（现有 `PLATFORM_TARGET_QUERY_OUTPUT`，`machine-facts.ts` 平台目标分支）；目标/查询边界/Schema/分区证据不足 → fail closed（`output-field-bindings.ts` 已有 `PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE` / `PARTITION_NOT_PROVABLE`） | pack `partition`（字面量 / `${…}` 模板） | 同一 `output-field-bindings` 路径 |
+| B `PACK_DECLARED_QUERY_OUTPUT` | 运行契约为“query 输出写入 Pack target”（sparkIndex 等），SQL 无 INSERT | 由唯一物理 pack `target`、完整 `partition` 与指定 query slot 的**唯一** producer 构造；旧 SparkIndex Pack 缺 `targetEvidenceKind` 时保留 `SPARKINDEX_TASK_TARGET` 解析方法。prepare 显式写不跨 slot 抑制 query 输出；目标/查询边界/Schema/分区证据不足 → fail closed | pack `partition`（字面量 / `${…}` 模板） | 分区目标默认按去重全表 positional 绑定：`partitionFields` 必须是全表同序后缀，SELECT 必须 full-width，末尾 K 列绑定动态分区；静态分区必须有明确静态 SQL 证据 |
 | C `TRANSFER` | 传输类，无 INSERT、无列映射 | 一个写观察 = pack `target`；读次 = `FROM` 表（不是 `source` 数据源 id） | pack `partition` 或无 | 仅当 target Table Pack 有 DDL 且 SELECT 列表可对齐 → 列边 `CONFIRMED`；`SELECT *` 或无 DDL → 表级 + gap |
 
 **关于“合成 INSERT”**：不写入架构。当前语料与代码都支持结构化的 B 路径；只有在用当前版本重新生成一批 sparkIndex Facts 后、证明结构化路径仍无法完成关键绑定时，才单独开 synthetic-SQL spike。
 即便那时需要 wrapper，也只能是独立 `derivedSql`（带 provenance 与原 SQL hash），不得覆盖原 SQL / 原 span，不得冒充 `SQL_EXPLICIT_WRITE`。
 
 共享不变量 1 增补（总地图同步）：
-> 对运行契约明确为“query 输出写入 Pack target”的任务，Facts 生产侧允许从已确认的 Pack target、partition 和唯一 query producer 构造 `PACK_DECLARED_QUERY_OUTPUT` 写观察；不得修改或伪装原始 SQL，必须保留 provenance、原 SQL hash，并在目标、查询边界、Schema 或分区证据不足时 fail closed。
+> 对运行契约明确为“query 输出写入 Pack target”的任务，Facts 生产侧允许从唯一物理 Pack target、完整 partition 和指定 query slot 的唯一 producer 构造 `PACK_DECLARED_QUERY_OUTPUT` 写观察；不得修改或伪装原始 SQL，必须保留 target 解析方法、provenance、原 SQL hash，并在目标、查询边界、Schema、full-width positional 或分区证据不足时 fail closed。
 
 ---
 

@@ -213,20 +213,18 @@ describe("lineage:all", () => {
     expect(parsed.maxEdges).toBe(10000);
   });
 
-  it("reuses closure producer snapshot and passes trusted fingerprint downstream", async () => {
+  it("reuses a writer catalog and passes trusted fingerprint downstream", async () => {
     const root = mkdtempSync(join(tmpdir(), "lineage-snapshot-"));
     mkdirSync(join(root, "tasks"), { recursive: true }); mkdirSync(join(root, "tables"), { recursive: true });
-    const fingerprint = "a".repeat(64); let rebuilds = 0; let loaded = 0; let oneTrusted = ""; let multiTrusted = "";
-    const fakeIndex: any = { inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] };
+    let catalogs = 0; let oneTrusted = ""; let multiTrusted = ""; let sawCatalog = false;
     const result = await runLineageAll({ dataRoot: root, taskIds: ["snap"], dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
-      autofill: () => ({ taskIds: ["snap"], discoveredTaskIds: ["snap"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", reused: true } }),
-      producerIndex: () => { rebuilds += 1; return { index: fakeIndex, inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", rebuilt: false } as any; },
-      loadProducerIndex: () => { loaded += 1; return fakeIndex; },
-      machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (_ids, opts) => { oneTrusted = opts.trustedInputFingerprint ?? ""; return [fakeOneHop("snap")]; }, multiHop: (_id, opts) => { multiTrusted = opts.trustedInputFingerprint ?? ""; return fakeMultiHop("snap"); },
+      autofill: () => ({ taskIds: ["snap"], discoveredTaskIds: ["snap"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], writerCatalogSnapshot: { catalogPath: "catalog.sqlite" } }),
+      openWriterCatalog: () => { catalogs += 1; return { path: "catalog.sqlite" } as any; },
+      machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (_ids, opts) => { oneTrusted = opts.trustedInputFingerprint ?? ""; sawCatalog = opts.writerCatalog !== undefined; return [fakeOneHop("snap")]; }, multiHop: (_id, opts) => { multiTrusted = opts.trustedInputFingerprint ?? ""; return fakeMultiHop("snap"); },
       visualizeMultiHop: ({ outputPath }) => { mkdirSync(join(outputPath!, ".."), { recursive: true }); writeFileSync(outputPath!, "<html/>\n"); return outputPath!; },
     } });
-    expect(result.status).toBe("SUCCESS"); expect(rebuilds).toBe(0); expect(loaded).toBe(1); expect(oneTrusted).toBe(fingerprint); expect(multiTrusted).toBe(fingerprint);
+    expect(result.status).toBe("SUCCESS"); expect(catalogs).toBeGreaterThan(0); expect(sawCatalog).toBe(true); expect(oneTrusted).toHaveLength(64); expect(multiTrusted).toBe(oneTrusted);
   });
 
   it("publishes even when the live Input Pack has drifted from the loaded index fingerprint", async () => {
@@ -234,20 +232,16 @@ describe("lineage:all", () => {
     mkdirSync(join(root, "tasks"), { recursive: true });
     mkdirSync(join(root, "tables"), { recursive: true });
     const artifactRoot = join(root, "artifacts");
-    const fingerprintA = "a".repeat(64);
-    let rebuilds = 0;
     const result = await runLineageAll({ dataRoot: root, artifactRoot, taskIds: ["guard"], dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
-      autofill: () => ({ taskIds: ["guard"], discoveredTaskIds: ["guard"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprintA, indexPath: "snapshot", manifestPath: "manifest", reused: true } }),
-      producerIndex: () => { rebuilds += 1; throw new Error("PRODUCER_INDEX_REBUILD_UNEXPECTED"); },
-      loadProducerIndex: () => ({ inputFingerprint: fingerprintA, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] } as any),
+      autofill: () => ({ taskIds: ["guard"], discoveredTaskIds: ["guard"], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [] }),
+      openWriterCatalog: () => ({ path: "catalog.sqlite" } as any),
       machineFacts: () => ({ tasks: [] }) as any,
       oneHopBatch: () => [fakeOneHop("guard")],
       multiHop: () => fakeMultiHop("guard"),
       visualizeMultiHop: ({ outputPath }) => { mkdirSync(join(outputPath!, ".."), { recursive: true }); writeFileSync(outputPath!, "<html/>\n"); return outputPath!; },
     } });
     expect(result.tasks[0]?.status).toBe("SUCCESS");
-    expect(rebuilds).toBe(0);
     expect(existsSync(formalArtifactPaths(artifactRoot, "guard").oneHop)).toBe(true);
   });
 
@@ -256,13 +250,12 @@ describe("lineage:all", () => {
     mkdirSync(join(root, "tasks", "hiveTask-2.0", "root"), { recursive: true });
     mkdirSync(join(root, "tables"), { recursive: true });
     writeFileSync(join(root, "tasks", "hiveTask-2.0", "root", "task.json"), JSON.stringify(createTaskDocument({ taskId: "root", taskCategory: "hiveTask-2.0", target: { platform: "hive", dataSource: "gfhive", qualifiedName: "mart.root" } })));
-    const fingerprint = "c".repeat(64); let autofillCalls = 0; let fieldRound = 0; const collected: string[] = []; const rendered: string[] = [];
+    let autofillCalls = 0; let fieldRound = 0; const collected: string[] = []; const rendered: string[] = [];
     const missingField = { bindingId: null, expressionId: null, taskId: "root", field: { platform: "hive", dataSource: "gfhive", stableTableId: "mart.missing", qualifiedName: "mart.missing", column: "value", identityStatus: "SCHEMA_BACKED" } };
     const result = await runLineageAll({ dataRoot: root, taskIds: ["root"], withFields: true, dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
-      autofill: () => { autofillCalls += 1; return ({ taskIds: ["root"], discoveredTaskIds: [], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [], producerSnapshot: { inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", reused: true } }); },
-      loadProducerIndex: () => ({ inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] } as any),
-      producerIndex: () => ({ index: { inputFingerprint: fingerprint, buildStatus: "SUCCESS", confirmedProducerEdges: [], issues: [] }, inputFingerprint: fingerprint, indexPath: "snapshot", manifestPath: "manifest", rebuilt: true } as any),
+      autofill: () => { autofillCalls += 1; return ({ taskIds: ["root"], discoveredTaskIds: [], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [] }); },
+      openWriterCatalog: () => ({ path: "catalog.sqlite" } as any),
       machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (ids) => ids.map((id) => fakeOneHop(id)),
       multiHop: (id, opts) => ({ ...fakeMultiHop(id), producerBridges: [], taskNodes: [{ taskId: id, marker: (opts.oneHopSnapshots?.size ?? 0) > 1 ? "final" : "first" }] } as any),
       fieldLineage: () => fieldRound++ === 0 ? ({ nodes: [missingField] } as any) : ({ nodes: [] } as any),
@@ -386,16 +379,7 @@ describe("lineage:all", () => {
           events.push("machine-facts");
           return { tasks: [] } as any;
         },
-        producerIndex: () => {
-          events.push("producer-index");
-          return {
-            index: { inputFingerprint: "d".repeat(64) } as any,
-            inputFingerprint: "d".repeat(64),
-            indexPath: "idx",
-            manifestPath: "man",
-            rebuilt: true,
-          } as any;
-        },
+        openWriterCatalog: () => ({ path: "catalog.sqlite" } as any),
         oneHopBatch: (taskIds, options) => {
           oneHopConfig = options.terminalTableConfig;
           events.push(`one-hop:${taskIds.join(",")}`);
@@ -434,7 +418,6 @@ describe("lineage:all", () => {
       });
     expect(events).toEqual([
       "input-pack-autofill:1000:5000",
-      "producer-index",
       "machine-facts",
       "one-hop:181058",
       "multi-hop:181058:181058:1000:10000",
