@@ -56,7 +56,8 @@
 | 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                    |
 | Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                         |
 | Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                    |
-| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **进行中**（FE-4…FE-7；金样 A–E + `test:field-evidence`）               |
+| OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-7；金样 A–E + `test:field-evidence`）               |
+| OpenSpec change `field-evidence-schedule-preference`（Phase 2.5）         | **已完成**（frontier Horae 推荐排序；`FIELD_IMPACT_RESULT` 1.1.0）       |
 
 ### 立刻做什么（顺序）
 
@@ -461,6 +462,19 @@ impactQuery({
 ```
 
 `needed(hop) = 值列 ∪ 控制列` 的口径沿用架构文档「重跑溯源」节：`FIELD_SCOPED` 的控制列进入递归，`DATASET_SCOPED` 的控制列**只记录、不递归**（其值链属重跑三档的「行决定」消费者，不属本查询）。
+
+#### 6.2.1 调度推荐 vs CONFIRMED 接续（Phase 2.5）
+
+多 writer 时 `frontier[].candidates[]` 可附带 Horae depth-1 推荐字段（`scheduleRelation` / `schedulePreferred`），数据源与 one-hop / multi-hop 相同：`schedule-evidence/tasks/<taskId>/horae-relation-up-depth-1.json` 或 artifact `scheduleEdges`。
+
+| 项 | 调度推荐 | CONFIRMED 接续 |
+| -- | -------- | -------------- |
+| 触发 | INDEX 多候选或 `l1Eligible=false` → frontier | INDEX 唯一候选且 `l1Eligible=true` + producer binding |
+| Horae 作用 | 排序与 UI 标记（★） | **不参与** |
+| `evidenceStatus` | 仍为 `CANDIDATE`（默认不递归） | `CONFIRMED` |
+| 多 Horae 父 | 全部 `schedulePreferred=false` + gap `SCHEDULE_PARENT_AMBIGUOUS` | — |
+
+**禁止**：因 Horae 有边而改 `l1Eligible`、自动 depth+1、把 frontier 标成 CONFIRMED，或向 `TASK_LOCAL_PROJECTION` 写入 TASK→TASK 数据边。
 
 ### 6.3 scope 计算（第二正交轴，查询期）
 

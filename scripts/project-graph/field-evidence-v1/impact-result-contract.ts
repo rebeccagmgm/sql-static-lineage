@@ -1,6 +1,6 @@
 import { canonicalJson, sha256 } from "../../machine-facts/machine-facts-contract.ts";
 
-export const FIELD_IMPACT_RESULT_SCHEMA_VERSION = "1.0.0" as const;
+export const FIELD_IMPACT_RESULT_SCHEMA_VERSION = "1.1.0" as const;
 export const FIELD_IMPACT_RESULT_ARTIFACT_TYPE = "FIELD_IMPACT_RESULT" as const;
 
 export type FieldImpactEvidenceStatus = "CONFIRMED" | "CANDIDATE";
@@ -48,12 +48,19 @@ export interface FieldImpactControlEntry {
   readonly outputColumn: string;
 }
 
+export type FieldImpactScheduleRelation =
+  | "DIRECT_PARENT"
+  | "NOT_IN_HORAE_UPSTREAM"
+  | "HORAE_UNAVAILABLE";
+
 export interface FieldImpactFrontierCandidate {
   readonly taskId: string;
   readonly writeObservationId: string;
   readonly partitionMatchStatus: string;
   readonly reasonCode?: string;
   readonly l1Eligible: boolean;
+  readonly schedulePreferred: boolean;
+  readonly scheduleRelation: FieldImpactScheduleRelation;
 }
 
 export interface FieldImpactFrontierEntry {

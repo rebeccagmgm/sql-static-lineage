@@ -3,12 +3,17 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
+import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { loadCurrentTaskBundle } from "../../query/current-task-bundle.ts";
 import { loadUnionContinuationCandidateSource } from "../../reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { projectTaskLocal } from "../task-local/project-task-local.ts";
 import type { TaskLocalProjection } from "../task-local/contract.ts";
 import { impactQuery, type ImpactQueryInput } from "./impact-query.ts";
 import type { FieldImpactAnchor, FieldImpactResult } from "./impact-result-contract.ts";
+import {
+  createHoraeScheduleRelationLookupFromCache,
+  type HoraeScheduleRelationLookup,
+} from "./schedule-preference.ts";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -16,6 +21,7 @@ export interface FieldEvidenceQueryRoots {
   readonly dataRoot: string;
   readonly factsRoot: string;
   readonly indexPath: string;
+  readonly scheduleCacheRoot: string;
 }
 
 export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
@@ -37,7 +43,12 @@ export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
   );
   if (!existsSync(indexPath)) return null;
 
-  return { dataRoot, factsRoot, indexPath };
+  const scheduleCacheRoot = resolve(
+    process.env.FIELD_EVIDENCE_SCHEDULE_CACHE_ROOT?.trim()
+    || DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+  );
+
+  return { dataRoot, factsRoot, indexPath, scheduleCacheRoot };
 }
 
 export function fieldEvidenceGoldenRequired(): boolean {
@@ -46,6 +57,7 @@ export function fieldEvidenceGoldenRequired(): boolean {
 
 export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots): {
   readonly index: ReturnType<typeof loadUnionContinuationCandidateSource>;
+  readonly scheduleRelationLookup: HoraeScheduleRelationLookup;
   readonly projectionForTask: (taskId: string) => TaskLocalProjection;
   readonly factsBundleForTask: ImpactQueryInput["factsBundleForTask"];
   readonly runImpactQuery: (
@@ -54,6 +66,9 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
   ) => FieldImpactResult;
 } {
   const index = loadUnionContinuationCandidateSource(roots.indexPath);
+  const scheduleRelationLookup = createHoraeScheduleRelationLookupFromCache(
+    roots.scheduleCacheRoot,
+  );
   const projectionCache = new Map<string, TaskLocalProjection>();
   const bundleCache = new Map<string, ReturnType<typeof loadCurrentTaskBundle>>();
 
@@ -91,11 +106,18 @@ export function createFieldEvidenceQueryContext(roots: FieldEvidenceQueryRoots):
       index,
       projectionForTask,
       factsBundleForTask,
+      scheduleRelationLookup,
       ...options,
     });
   }
 
-  return { index, projectionForTask, factsBundleForTask, runImpactQuery };
+  return {
+    index,
+    scheduleRelationLookup,
+    projectionForTask,
+    factsBundleForTask,
+    runImpactQuery,
+  };
 }
 
 export function primaryFinalWrite(projection: TaskLocalProjection): {
