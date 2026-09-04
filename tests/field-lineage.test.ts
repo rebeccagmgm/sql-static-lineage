@@ -9,6 +9,7 @@ import {
   runInputPackMachineFacts,
   type PhysicalTableCatalog,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
+import { readJsonlRecords } from "../scripts/machine-facts/jsonl-store.ts";
 import {
   writeTableInput,
   writeTaskInput,
@@ -802,7 +803,7 @@ describe("field multi-hop lineage", () => {
       taskIds: ["100", "201", "202"],
       outputRoot: f.factsRoot,
     });
-    const relationNodes = readFileSync(
+    const relationNodes = readJsonlRecords(
       join(
         f.factsRoot,
         "registry",
@@ -811,12 +812,7 @@ describe("field multi-hop lineage", () => {
         "bundle",
         "relation-nodes.jsonl",
       ),
-      "utf8",
-    )
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => JSON.parse(line));
+    );
     const readRelation = (scope: "c" | "k") => {
       const relation = relationNodes.find(
         (candidate: { relation_id?: string; relation_type?: string }) =>
@@ -962,7 +958,7 @@ describe("field multi-hop lineage", () => {
       taskIds: ["100", "201", "202"],
       outputRoot: f.factsRoot,
     });
-    const relationNodes = readFileSync(
+    const relationNodes = readJsonlRecords(
       join(
         f.factsRoot,
         "registry",
@@ -971,12 +967,7 @@ describe("field multi-hop lineage", () => {
         "bundle",
         "relation-nodes.jsonl",
       ),
-      "utf8",
-    )
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => JSON.parse(line));
+    );
     const readRelation = (scope: "init" | "em") => {
       const relation = relationNodes.find(
         (candidate: { relation_id?: string; relation_type?: string }) =>
@@ -1488,20 +1479,10 @@ describe("field multi-hop lineage", () => {
 
   it("stitches Task-local INSERT OVERWRITE materialization before consulting table additional producers", () => {
     const f = fixture();
-    writeTableInput(f.dataRoot, {
-      platform: "hive",
-      dataSource: "warehouse",
-      qualifiedName: "demo.local_stage",
-      objectType: "hive_table",
-      partitionFields: [],
-      ddl: "CREATE TABLE demo.local_stage (stage_a STRING, stage_b STRING);",
-      evidenceProvider: "synthetic:test",
-      collectedAt: "2026-01-01T00:00:00.000Z",
-    });
     writeTaskInput(f.dataRoot, {
       taskId: "1200",
       taskCategory: "sparkIndex",
-      taskName: "demo.local.materialization",
+      taskName: "demo.local_materialization",
       target: {
         platform: "hive",
         dataSource: "warehouse",
@@ -1510,9 +1491,14 @@ describe("field multi-hop lineage", () => {
       targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
       partition: null,
       sql: {
+        create: {
+          content:
+            "CREATE TABLE local_stage (stage_a STRING, stage_b STRING);",
+          evidenceProvider: "synthetic:test",
+        },
         query: {
           content:
-            "INSERT OVERWRITE TABLE demo.local_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; SELECT stage_a AS out_a, stage_b AS out_b FROM demo.local_stage;",
+            "INSERT OVERWRITE TABLE local_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; SELECT stage_a AS out_a, stage_b AS out_b FROM local_stage;",
           evidenceProvider: "synthetic:test",
         },
       },
@@ -1680,7 +1666,7 @@ describe("field multi-hop lineage", () => {
     expect(
       artifact.nodes.some(
         (node) =>
-          node.field.qualifiedName === "otc_div_temp" &&
+          node.field.qualifiedName === "pdata_n.otc_div_temp" &&
           node.field.column === "allo_prop_3" &&
           node.bindingId === "output-binding:100:task:100:slot:query:statement:0:0" &&
           node.expressionText?.includes("s.src_a AS allo_prop_3"),

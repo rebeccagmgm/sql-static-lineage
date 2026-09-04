@@ -222,7 +222,7 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
     });
   }
   const ctasPattern =
-    /\bCREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"A-Za-z0-9_.-]+)\s+AS\s+(?=SELECT\b|WITH\b)/gi;
+    /\bCREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"A-Za-z0-9_.-]+)\s+AS\s+(?=SELECT\b|WITH\b)/gi;
   for (const match of maskedSql.matchAll(ctasPattern)) {
     const start = match.index ?? 0;
     const statementEnd = maskedSql.indexOf(";", start + match[0].length);

@@ -19,6 +19,16 @@ describe("DDL schema reader", () => {
 		expect(result.warnings).toEqual([]);
 	});
 
+	it("reads columns from a Task-local temporary table DDL", () => {
+		const result = parseDdlSchema(
+			"CREATE TEMPORARY TABLE demo.stage (stage_a STRING, stage_b BIGINT)",
+		);
+
+		expect(result.columns.map((column) => column.name)).toEqual(["stage_a", "stage_b"]);
+		expect(result.partition_columns).toEqual([]);
+		expect(result.warnings).toEqual([]);
+	});
+
 	it("folds a partition column repeated in the ordinary DDL column list", () => {
 		const result = parseDdlSchema(
 			"create table demo.orders (id bigint, busi_date string) partitioned by (busi_date string) stored as orc",

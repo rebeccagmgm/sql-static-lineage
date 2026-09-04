@@ -230,6 +230,11 @@ function parseCreate(statement: StatementRecord): ParsedCreate | null {
 	if (index < 0) return null;
 	index += 1;
 	if (word(tokens[index], "or") && word(tokens[index + 1], "replace")) index += 2;
+	while (
+		word(tokens[index], "external") ||
+		word(tokens[index], "temporary") ||
+		word(tokens[index], "temp")
+	) index += 1;
 	if (!word(tokens[index], "table")) return null;
 	index += 1;
 	if (word(tokens[index], "if") && word(tokens[index + 1], "not") && word(tokens[index + 2], "exists")) index += 3;

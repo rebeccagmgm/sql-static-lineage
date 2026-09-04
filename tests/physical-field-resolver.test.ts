@@ -157,6 +157,38 @@ describe("physical field resolver", () => {
     });
   });
 
+  it("resolves a task-local CREATE DDL only from the same Task schema evidence", () => {
+    const result = resolvePhysicalInputField(
+      {
+        catalog: catalog([]),
+        taskId: "100",
+        defaultSchema: {
+          schema: "pdata_n",
+          evidenceSources: ["TASK_NAME"],
+        },
+        fallbackTable,
+        schemaRefs: [
+          {
+            qualified_name: "pdata_n.stage_mid",
+            physical_columns: ["id", "amount"],
+            source: "input-pack-task-local-ddl:100:create",
+          },
+        ],
+      },
+      { table: "stage_mid", column: "amount" },
+    );
+
+    expect(result).toMatchObject({
+      status: "RESOLVED",
+      field: {
+        stableTableId: "task-local:100:pdata_n.stage_mid",
+        qualifiedName: "pdata_n.stage_mid",
+        column: "amount",
+        identityStatus: "TASK_LOCAL_SCHEMA_BACKED",
+      },
+    });
+  });
+
   it("does not collapse duplicate task-local schema evidence into a false identity", () => {
     const schemaRef = {
       qualified_name: "pdata_n.stage_mid",

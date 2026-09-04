@@ -153,4 +153,85 @@ describe("field-evidence emission branch scoping", () => {
     ]);
     expect(holdOnBranches[0]?.sourceResolution.sourceReadOccurrenceStatus).toBe("RESOLVED");
   });
+
+  it("uses the materialization leaf expression to verify a folded source", () => {
+    const expressions = [
+      {
+        expression_id: "expr:final",
+        relation_id: "rel:final.project",
+        ordinal: 0,
+        expression_text: "stage.stage_a",
+        input_fields: [{ table: "demo.stage", column: "stage_a" }],
+      },
+      {
+        expression_id: "expr:stage-write",
+        relation_id: "rel:stage.project",
+        ordinal: 0,
+        expression_text: "m.mid_a",
+        input_fields: [{ table: "demo.mid", column: "mid_a" }],
+      },
+    ];
+    const indexes = buildFieldEvidenceIndexes({
+      taskId: "t1",
+      expressions,
+      relationNodes: [
+        {
+          relation_id: "rel:final.project",
+          relation_type: "project",
+          relation: { type: "project" },
+        },
+        {
+          relation_id: "rel:stage.project",
+          relation_type: "project",
+          relation: { type: "project" },
+        },
+        {
+          relation_id: "rel:stage.read.mid",
+          relation_type: "read",
+          relation: { type: "read", table: "demo.mid", binding: "m" },
+        },
+      ],
+      relationEdges: [
+        {
+          from_relation_id: "rel:stage.read.mid",
+          to_relation_id: "rel:stage.project",
+        },
+      ],
+      datasetIoReads: [
+        {
+          direction: "READ",
+          read_occurrences: [
+            {
+              relation_id: "rel:stage.read.mid",
+              occurrence_id: "occ:mid",
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = emitFieldEvidenceForInput({
+      taskId: "t1",
+      expression: expressions[0]!,
+      sourceField: field("demo.mid", "mid_a"),
+      inputField: { table: "demo.mid", column: "mid_a" },
+      expanded: {
+        field: field("demo.mid", "mid_a"),
+        materializationBridgeIds: ["bridge:stage-a"],
+        leafExpressionId: "expr:stage-write",
+        leafRelationId: "rel:stage.project",
+        pathHadAggregation: false,
+        subtypeHops: [],
+      },
+      indexes,
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.expressionContexts[0]?.expressionId).toBe("expr:final");
+    expect(result[0]?.sourceResolution).toMatchObject({
+      sourceReadOccurrenceStatus: "RESOLVED",
+      sourceReadOccurrenceId: "occ:mid",
+      sourceRelationId: "rel:stage.read.mid",
+    });
+  });
 });

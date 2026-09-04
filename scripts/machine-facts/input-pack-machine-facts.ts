@@ -54,6 +54,11 @@ import {
 	openWriterCatalog,
 	syncWriterCatalogAfterMachineFacts,
 } from "../query/writer-catalog.ts";
+import {
+	inferTaskDefaultSchema,
+	qualifyBareTableName,
+	type TaskDefaultSchema,
+} from "../reconcile/shared/task-default-schema.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -231,7 +236,7 @@ function fieldProducingSql(sql: string): boolean {
 	return (
 		/^\s*(?:select|with)\b/i.test(normalized) ||
 		/\binsert\s+(?:overwrite|into)\b[\s\S]*\bselect\b/i.test(normalized) ||
-		/\bcreate\s+(?:or\s+replace\s+)?table\b[\s\S]*\bas\s+(?:select|with)\b/i.test(normalized)
+		/\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\b[\s\S]*\bas\s+(?:select|with)\b/i.test(normalized)
 	);
 }
 
@@ -572,11 +577,13 @@ function sqlWritePartitionEvidence(
 	catalog: PhysicalTableCatalog,
 	sources: readonly SelectedLineageSql[],
 	evidence: TaskPartitionEvidence,
+	defaultSchema: TaskDefaultSchema | null,
 ): readonly SqlWritePartitionEvidence[] {
 	return evidence.targets
 		.filter((target) => target.writes.length > 0)
 		.flatMap((target) => {
-			const tableEntry = uniquePhysicalTableForReference(catalog, target.target);
+			const qualifiedTarget = qualifyBareTableName(target.target, defaultSchema);
+			const tableEntry = uniquePhysicalTableForReference(catalog, qualifiedTarget);
 			return target.writes.map((write) => {
 				const source = write.sqlSlot === null
 					? undefined
@@ -598,7 +605,7 @@ function sqlWritePartitionEvidence(
 						: []),
 				];
 				return {
-					target: normalizeName(target.target),
+					target: qualifiedTarget,
 					...(write.sqlSlot === null ? {} : { sql_slot: write.sqlSlot }),
 					statement_ordinal: write.statementOrdinal === null ? undefined : write.statementOrdinal - 1,
 					...(sqlWrite === undefined
@@ -658,11 +665,29 @@ function addSchemaMapping(mapping: SchemaMapping, qualifiedName: string, columns
 }
 
 function taskLocalWriteTarget(sql: string): string | null {
-	const create = /\bcreate\s+table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)[\s\S]*?\bas\s+(?:select|with)\b/i.exec(sql);
+	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)[\s\S]*?\bas\s+(?:select|with)\b/i.exec(sql);
 	const insert = /\binsert\s+(?:overwrite|into)\s+(?:table\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
 	const raw = create?.[1] ?? insert?.[1];
 	if (!raw) return null;
 	return normalizeName(raw.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", ""));
+}
+
+function taskLocalCreateSchema(sql: string): {
+	readonly target: string;
+	readonly columns: readonly string[];
+	readonly partitionColumns: ReadonlySet<string>;
+} | null {
+	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
+	const rawTarget = create?.[1];
+	if (!rawTarget) return null;
+	const parsed = parseDdlSchema(sql);
+	const columns = parsed.columns.map((column) => normalizeName(column.name)).filter(Boolean);
+	if (columns.length === 0 || new Set(columns).size !== columns.length) return null;
+	return {
+		target: normalizeName(rawTarget.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", "")),
+		columns,
+		partitionColumns: new Set(parsed.partition_columns.map(normalizeName)),
+	};
 }
 
 function hasUniquePhysicalTable(
@@ -671,6 +696,7 @@ function hasUniquePhysicalTable(
 ): boolean {
 	const normalized = normalizeName(target);
 	if ((catalog.byQualifiedName.get(normalized) ?? []).length === 1) return true;
+	if (normalized.includes(".")) return false;
 	const tail = normalized.split(".").at(-1) ?? normalized;
 	return catalog.entries.filter(
 		(entry) =>
@@ -686,6 +712,7 @@ function uniquePhysicalTableForReference(
 	const normalized = normalizeName(target);
 	const exact = catalog.byQualifiedName.get(normalized) ?? [];
 	if (exact.length === 1) return exact[0];
+	if (normalized.includes(".")) return undefined;
 	const tail = normalized.split(".").at(-1) ?? normalized;
 	const matches = catalog.entries.filter(
 		(entry) =>
@@ -699,6 +726,7 @@ function taskSchemaEntries(
 	catalog: PhysicalTableCatalog,
 	target: PhysicalTableCatalogEntry,
 	sources: readonly SelectedLineageSql[],
+	defaultSchema: TaskDefaultSchema | null,
 	dialect: "databricks" | "duckdb",
 ): readonly PhysicalTableCatalogEntry[] {
 	const references = new Set<string>([target.qualifiedName]);
@@ -721,13 +749,14 @@ function taskSchemaEntries(
 	}
 	const selected = new Set<PhysicalTableCatalogEntry>([target]);
 	for (const reference of references) {
-		const normalized = normalizeName(reference);
+		const normalized = qualifyBareTableName(reference, defaultSchema);
 		const exact = catalog.byQualifiedName.get(normalized) ?? [];
 		if (exact.length > 0) {
 			for (const entry of exact) selected.add(entry);
 			continue;
 		}
-		const tail = normalized.split(".").at(-1) ?? normalized;
+		if (normalized.includes(".")) continue;
+		const tail = normalized;
 		const suffixMatches = catalog.byNameTail.get(tail) ?? [];
 		if (suffixMatches.length === 1) selected.add(suffixMatches[0]!);
 	}
@@ -739,17 +768,57 @@ function deriveTaskLocalSchemas(
 	schemaEntries: readonly PhysicalTableCatalogEntry[],
 	sources: readonly SelectedLineageSql[],
 	taskId: string,
+	defaultSchema: TaskDefaultSchema | null,
 	dialect: "databricks" | "duckdb",
 ): JsonRecord[] {
 	const mapping: SchemaMapping = {};
 	for (const entry of schemaEntries) addSchemaMapping(mapping, entry.qualifiedName, entry.columns);
-	const records: JsonRecord[] = [];
-	for (const source of sources) {
+	const records = new Map<string, JsonRecord>();
+	const localTargetsByTail = new Map<string, Set<string>>();
+	const addTaskLocalMapping = (target: string, columns: readonly string[]): void => {
+		addSchemaMapping(mapping, target, columns);
+		const tail = target.split(".").at(-1) ?? target;
+		const targets = localTargetsByTail.get(tail) ?? new Set<string>();
+		targets.add(target);
+		localTargetsByTail.set(tail, targets);
+		if (targets.size === 1) addSchemaMapping(mapping, tail, columns);
+		else delete mapping[tail];
+	};
+	const rank = new Map(["create", "prepare", "query"].map((slot, index) => [slot, index]));
+	const orderedSources = [...sources].sort((left, right) => {
+		return (rank.get(left.slot) ?? 100) - (rank.get(right.slot) ?? 100) || compareText(left.slot, right.slot);
+	});
+	for (const source of orderedSources) {
 		const split = SqlSession.create(source.analysisContent, dialect, { schema: new Schema(mapping) });
 		for (const cell of split.doc.statements) {
 			const rawSql = source.analysisContent.slice(cell.span.start, cell.span.end);
-			const target = taskLocalWriteTarget(rawSql);
-			if (!target || hasUniquePhysicalTable(catalog, target)) continue;
+			const createSchema = taskLocalCreateSchema(rawSql);
+			const createTarget = createSchema
+				? qualifyBareTableName(createSchema.target, defaultSchema)
+				: null;
+			if (createSchema && createTarget && !hasUniquePhysicalTable(catalog, createTarget)) {
+				addTaskLocalMapping(createTarget, createSchema.columns);
+				records.set(createTarget, {
+					qualified_name: createTarget,
+					guid: null,
+					status: "SUCCESS",
+					source: `input-pack-task-local-ddl:${taskId}:${source.slot}`,
+					metadata_qualified_name: createTarget,
+					ddl_sha256: sha256(Buffer.from(rawSql, "utf8")),
+					table_status: "TASK_LOCAL",
+					required_for_star: true,
+					columns: createSchema.columns.map((name) => ({
+						name,
+						partition: createSchema.partitionColumns.has(name),
+					})),
+					aliases: [],
+				});
+			}
+			const rawTarget = taskLocalWriteTarget(rawSql);
+			const target = rawTarget
+				? qualifyBareTableName(rawTarget, defaultSchema)
+				: null;
+			if (!target || hasUniquePhysicalTable(catalog, target) || records.has(target)) continue;
 			const session = SqlSession.create(rawSql, dialect, { schema: new Schema(mapping) });
 			const statement = session.doc.statements[0];
 			if (!statement) continue;
@@ -764,9 +833,9 @@ function deriveTaskLocalSchemas(
 				? roots[0]!.output_columns.map((column) => normalizeName(String(column))).filter((column) => column && column !== "*")
 				: [];
 			if (rootColumns.length === 0 || new Set(rootColumns).size !== rootColumns.length) continue;
-			addSchemaMapping(mapping, target, rootColumns);
+			addTaskLocalMapping(target, rootColumns);
 			if ((catalog.byQualifiedName.get(target) ?? []).length === 1) continue;
-			records.push({
+			records.set(target, {
 				qualified_name: target,
 				guid: null,
 				status: "SUCCESS",
@@ -780,7 +849,26 @@ function deriveTaskLocalSchemas(
 			});
 		}
 	}
-	return records;
+	const tailCounts = new Map<string, number>();
+	for (const entry of schemaEntries) {
+		const tail = normalizeName(entry.qualifiedName.split(".").at(-1) ?? entry.qualifiedName);
+		tailCounts.set(tail, (tailCounts.get(tail) ?? 0) + 1);
+	}
+	for (const target of records.keys()) {
+		const tail = target.split(".").at(-1) ?? target;
+		tailCounts.set(tail, (tailCounts.get(tail) ?? 0) + 1);
+	}
+	return [...records.entries()]
+		.sort(([left], [right]) => compareText(left, right))
+		.map(([target, record]) => {
+			const tail = target.split(".").at(-1) ?? target;
+			const targetSchema = target.split(".").slice(0, -1).join(".");
+			const defaultSchemaMatch = defaultSchema?.schema === targetSchema;
+			return {
+				...record,
+				aliases: defaultSchemaMatch || tailCounts.get(tail) === 1 ? [tail] : [],
+			};
+		});
 }
 
 function combinedLineageSql(
@@ -855,14 +943,28 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	if (!target) throw new Error(`TARGET_TABLE_PACK_MISSING:${physicalTableKey(targetRef)}`);
 	const logicalSourceId = `${normalizeToken(target.platform)}-${normalizeToken(target.dataSource)}`;
 	const dialect = taskSqlDialect(String(task.taskCategory));
-	const schemaEntries = taskSchemaEntries(catalog, target, combined.sources, dialect);
+	const defaultSchema = inferTaskDefaultSchema(task);
+	const schemaEntries = taskSchemaEntries(
+		catalog,
+		target,
+		combined.sources,
+		defaultSchema,
+		dialect,
+	);
 	if (target.columns.length === 0) throw new Error(`TARGET_SCHEMA_NOT_PROVABLE:${target.qualifiedName}`);
 	const baseBundle = schemaBundle(catalog, logicalSourceId, schemaEntries);
 	const bundle = {
 		...baseBundle,
 		records: [
 			...((baseBundle.records as JsonRecord[]) ?? []),
-			...deriveTaskLocalSchemas(catalog, schemaEntries, combined.sources, options.taskId, dialect),
+			...deriveTaskLocalSchemas(
+				catalog,
+				schemaEntries,
+				selected.sources,
+				options.taskId,
+				defaultSchema,
+				dialect,
+			),
 		],
 	};
 	const bundleHash = sha256(canonicalJson(bundle));
@@ -924,10 +1026,12 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		catalog,
 		selected.sources,
 		detailedPartition,
+		defaultSchema,
 	);
 	const profileTask: GenericTaskProfile = {
 		task_id: options.taskId,
 		sql_snapshot: combined.sql.path,
+		...(defaultSchema ? { default_schema: defaultSchema.schema } : {}),
 		writes: target.qualifiedName,
 		...(combined.sources.length === 1 ? { sql_slot: combined.sources[0]!.slot } : { sql_segments: combined.segments }),
 		input_pack_provenance: provenance,

@@ -916,11 +916,15 @@ JOIN (SELECT id FROM src.shared_history WHERE src_tbl = 'BOOK') k
       SELECT 'x\\' INSERT INTO fake.escaped_literal SELECT 1';
       /* INSERT INTO fake.block_comment SELECT 1; */
       CREATE TABLE mart.real_ctas AS SELECT 1 AS id;
+      CREATE TEMPORARY TABLE stage.local_ctas AS SELECT 2 AS id;
     `;
 
     expect(
       extractSqlWrites(sql).map((item) => [item.writeKind, item.qualifiedName]),
-    ).toEqual([["CTAS", "mart.real_ctas"]]);
+    ).toEqual([
+      ["CTAS", "mart.real_ctas"],
+      ["CTAS", "stage.local_ctas"],
+    ]);
   });
 
   it("rejects an explicit producer-index flag without a path", () => {

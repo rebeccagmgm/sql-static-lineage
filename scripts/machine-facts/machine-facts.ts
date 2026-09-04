@@ -179,7 +179,7 @@ function sameTableReference(left: string, right: string): boolean {
 
 function classifyStatement(text: string): string {
 	const normalized = text.trimStart().toUpperCase();
-	if (normalized.startsWith("CREATE TABLE")) return "CREATE_TABLE";
+	if (/^CREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\b/.test(normalized)) return "CREATE_TABLE";
 	const extractedWrite = extractSqlWrites(text)[0];
 	if (extractedWrite?.writeKind === "INSERT_OVERWRITE") return "INSERT_OVERWRITE";
 	if (extractedWrite?.writeKind === "INSERT_INTO") return "INSERT_INTO";
@@ -191,7 +191,7 @@ function classifyStatement(text: string): string {
 
 function parseSqlWrite(text: string): string | null {
 	const match = text.match(
-		/^\s*(?:CREATE\s+(?:OR\s+REPLACE\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?|INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
+		/^\s*(?:CREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?|INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
 	);
 	if (match?.[1]) return normalizeName(match[1]);
 	// Use the comment/string-aware extractor for DML that is preceded by a CTE.
@@ -210,6 +210,8 @@ function resolveDeclaredWriteTarget(task: GenericTaskProfile, target: string): s
 	if (normalizedTarget.split(".").length === 1) {
 		const sameTail = declared.filter((candidate) => sameTableReference(candidate, normalizedTarget));
 		if (sameTail.length === 1) return sameTail[0]!;
+		const defaultSchema = normalizeName(task.default_schema ?? "");
+		if (defaultSchema) return `${defaultSchema}.${normalizedTarget}`;
 	}
 	return normalizedTarget;
 }
@@ -1612,6 +1614,7 @@ function buildTaskBundle(
 	const taskLocalMaterializations = deriveTaskLocalMaterializations(
 		task.task_id,
 		logicalSourceId,
+		task.default_schema,
 		statements,
 		datasetIo,
 		expressions,
@@ -1978,11 +1981,19 @@ function parseArgs(args: string[]): { profile: string; output: string; sourceId?
 function deriveTaskLocalMaterializations(
 	taskId: string,
 	logicalSourceId: string,
+	taskDefaultSchema: string | undefined,
 	statements: readonly StatementRecord[],
 	datasetIo: readonly DatasetIoRecord[],
 	expressions: readonly FieldExpressionRecord[],
 	outputBindings: readonly OutputFieldBindingRecord[],
 ): TaskLocalMaterializationRecord[] {
+	const defaultSchema = normalizeName(taskDefaultSchema ?? "");
+	const qualifyTaskTable = (value: unknown): string => {
+		const normalized = normalizeName(String(value ?? ""));
+		return normalized && defaultSchema && !normalized.includes(".")
+			? `${defaultSchema}.${normalized}`
+			: normalized;
+	};
 	const statementIndexes = new Map(statements.map((statement) => [statement.statement_id, statement.statement_index]));
 	const writes = datasetIo.filter((record) => record.direction === "WRITE" && typeof record.write_observation_id === "string");
 	const writeByObservation = new Map(writes.map((write) => [String(write.write_observation_id), write]));
@@ -1997,7 +2008,7 @@ function deriveTaskLocalMaterializations(
 		const fields = fieldsByStatement.get(expression.statement_id) ?? new Map();
 		for (const raw of expression.input_fields) {
 			const input = typeof raw === "object" && raw !== null ? raw as JsonRecord : null;
-			const table = normalizeName(String(input?.table ?? ""));
+			const table = qualifyTaskTable(input?.table);
 			const column = normalizeName(String(input?.column ?? ""));
 			if (!table || !column) continue;
 			const key = `${table}\u0000${column}`;
@@ -2012,7 +2023,7 @@ function deriveTaskLocalMaterializations(
 	for (const read of reads) {
 		const readStatementId = String(read.statement_id ?? "");
 		const readStatementIndex = statementIndexes.get(readStatementId);
-		const physicalDataset = normalizeName(String(read.physical_dataset ?? ""));
+		const physicalDataset = qualifyTaskTable(read.physical_dataset);
 		if (!readStatementId || readStatementIndex === undefined || !physicalDataset) continue;
 		const fields = [...(fieldsByStatement.get(readStatementId)?.values() ?? [])]
 			.filter((field) => field.table === physicalDataset)
@@ -2022,14 +2033,14 @@ function deriveTaskLocalMaterializations(
 			.filter((write) => {
 				const writeStatementId = String(write.write_statement_id ?? write.statement_id ?? "");
 				const writeStatementIndex = statementIndexes.get(writeStatementId);
-				return normalizeName(String(write.physical_dataset ?? "")) === physicalDataset && writeStatementIndex !== undefined && writeStatementIndex < readStatementIndex;
+				return qualifyTaskTable(write.physical_dataset) === physicalDataset && writeStatementIndex !== undefined && writeStatementIndex < readStatementIndex;
 			})
 			.sort((left, right) => (statementIndexes.get(String(left.write_statement_id ?? left.statement_id ?? "")) ?? 0) - (statementIndexes.get(String(right.write_statement_id ?? right.statement_id ?? "")) ?? 0) || compareText(String(left.write_observation_id), String(right.write_observation_id)));
 		if (priorWrites.length === 0) continue;
 		for (const field of fields) {
 			const candidates = priorWrites.flatMap((write) =>
 				(bindingsByObservation.get(String(write.write_observation_id)) ?? []).filter((binding) =>
-					normalizeName(binding.target_dataset) === physicalDataset && normalizeName(binding.target_field) === field.column,
+					qualifyTaskTable(binding.target_dataset) === physicalDataset && normalizeName(binding.target_field) === field.column,
 				),
 			);
 			const bridgeId = `task-local-materialization:${taskId}:${readStatementId}:${physicalDataset}:${field.column}`;

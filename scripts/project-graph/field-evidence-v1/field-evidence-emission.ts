@@ -46,6 +46,7 @@ export interface FieldEvidenceEmissionInput {
 
 export interface FieldEvidenceIndexes {
   readonly relationTree: RelationTreeIndex;
+  readonly expressionsById: ReadonlyMap<string, JsonRecord>;
   readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
@@ -104,6 +105,11 @@ export function buildFieldEvidenceIndexes(
   }
   return {
     relationTree,
+    expressionsById: new Map(
+      input.expressions
+        .map((expression) => [text(expression.expression_id), expression] as const)
+        .filter((entry): entry is readonly [string, JsonRecord] => entry[0] !== null),
+    ),
     expressionsByRelation: expressionsByRelationAndOrdinal(input.expressions),
     readOccurrenceByRelationId,
     bindingByReadRelation,
@@ -157,27 +163,45 @@ export function emitFieldEvidenceForInput(input: {
     index: input.indexes.relationTree,
   });
   const outputs: EmittedFieldEvidence[] = [];
+  const materializationLeafExpression = input.expanded.materializationBridgeIds.length > 0
+    && input.expanded.leafExpressionId
+    ? input.indexes.expressionsById.get(input.expanded.leafExpressionId) ?? null
+    : null;
   for (const context of expressionContexts) {
-    if (!expressionAcceptsSourceField(context.expression, input.sourceField)) {
+    const directSource = expressionAcceptsSourceField(
+      context.expression,
+      input.sourceField,
+    );
+    const sourceExpression = directSource
+      ? context.expression
+      : materializationLeafExpression;
+    if (
+      !sourceExpression
+      || !expressionAcceptsSourceField(sourceExpression, input.sourceField)
+    ) {
       continue;
     }
     const leafRelationId = leafRelationIdForExpression(
-      context.expression,
-      // Prefer the sunk branch relation; parent materialization leaf may sit
-      // above the setop and would re-open sibling-branch reads.
-      text(context.expression.relation_id) ?? input.expanded.leafRelationId,
+      sourceExpression,
+      directSource
+        // Prefer the sunk branch relation; parent materialization leaf may sit
+        // above the setop and would re-open sibling-branch reads.
+        ? text(context.expression.relation_id) ?? input.expanded.leafRelationId
+        : input.expanded.leafRelationId ?? text(sourceExpression.relation_id),
     );
     const branchInputField = inputFieldRecordForSource(
-      context.expression,
+      sourceExpression,
       input.sourceField,
     );
     const sourceResolution = resolveSourceReadOccurrence({
       taskId: input.taskId,
-      expressionId: context.expressionId,
+      expressionId: directSource
+        ? context.expressionId
+        : input.expanded.leafExpressionId ?? context.expressionId,
       sourceTable: input.sourceField.qualifiedName,
       sourceColumn: input.sourceField.column,
       inputField: branchInputField,
-      expressionText: text(context.expression.expression_text),
+      expressionText: text(sourceExpression.expression_text),
       leafRelationId,
       index: input.indexes.relationTree,
       readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,

@@ -327,7 +327,7 @@ function parseSelectOutputColumns(sql: string): DdlColumn[] {
 }
 
 export function parseDdlSchema(ddl: string): ParsedDdlSchema {
-	const create = /\bcreate\s+(?:external\s+)?table\b/i.exec(ddl);
+	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\b/i.exec(ddl);
 	if (!create) {
 		// SZData can return a view's defining SELECT through the table-ddl
 		// endpoint. Its output columns are still valid schema evidence for

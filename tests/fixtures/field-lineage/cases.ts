@@ -5,6 +5,7 @@ import {
   writeTableInput,
   writeTaskInput,
 } from "../../../scripts/input/shared/input-pack.ts";
+import { readJsonlRecords } from "../../../scripts/machine-facts/jsonl-store.ts";
 
 export function createSyntheticFieldLineageInputPack(
   dataRoot: string,
@@ -349,10 +350,7 @@ export function syntheticTableLineageWithFacts(
       "bundle",
       "relation-nodes.jsonl",
     );
-    const records = readFileSync(path, "utf8")
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const records = readJsonlRecords(path);
     relationNodesByTask.set(taskId, records);
   }
 

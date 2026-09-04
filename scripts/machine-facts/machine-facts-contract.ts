@@ -288,6 +288,7 @@ export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | Datase
 export interface GenericTaskProfile {
 	readonly task_id: string;
 	readonly sql_snapshot: string;
+	readonly default_schema?: string;
 	readonly writes?: string | readonly string[];
 	readonly sql_slot?: string;
 	readonly sql_segments?: readonly { readonly slot: string; readonly start: number; readonly end: number }[];

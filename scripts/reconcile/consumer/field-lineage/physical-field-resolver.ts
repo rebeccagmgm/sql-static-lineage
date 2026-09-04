@@ -63,6 +63,7 @@ function isTaskLocalSchemaSource(source: unknown, taskId: string): boolean {
 	const value = String(source ?? "");
 	return (
 		value.startsWith(`input-pack-task-local-ctas:${taskId}:`) ||
+		value.startsWith(`input-pack-task-local-ddl:${taskId}:`) ||
 		value.startsWith(`input-pack-task-local-write:${taskId}:`)
 	);
 }

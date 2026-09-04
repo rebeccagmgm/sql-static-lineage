@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
   writeTableInput,
   writeTaskInput,
 } from "../../../../scripts/input/shared/input-pack.ts";
+import { readJsonlRecords } from "../../../../scripts/machine-facts/jsonl-store.ts";
 
 const COLLECTED_AT = "2026-01-01T00:00:00.000Z";
 
@@ -311,7 +312,7 @@ export function readRelationOccurrenceForTask(
   readonly statementIndex: number;
   readonly relationPath: readonly string[];
 } {
-  const relationNodes = readFileSync(
+  const relationNodes = readJsonlRecords(
     join(
       factsRoot,
       "registry",
@@ -320,12 +321,7 @@ export function readRelationOccurrenceForTask(
       "bundle",
       "relation-nodes.jsonl",
     ),
-    "utf8",
-  )
-    .trim()
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as { relation_id?: string; relation_type?: string });
+  ) as Array<{ relation_id?: string; relation_type?: string }>;
   const relation = relationNodes.find(
     (candidate) =>
       candidate.relation_type === "read" &&

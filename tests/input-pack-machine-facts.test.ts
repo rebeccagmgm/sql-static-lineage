@@ -15,6 +15,7 @@ import {
   writeTableInput,
   writeTaskInput,
 } from "../scripts/input/shared/input-pack.ts";
+import { projectTaskLocal } from "../scripts/project-graph/task-local/project-task-local.ts";
 import { createSyntheticFieldLineageInputPack } from "./fixtures/field-lineage/cases.ts";
 
 function fixture() {
@@ -141,6 +142,128 @@ describe("Input Pack-driven Machine Facts", () => {
       bridges.filter((bridge) => bridge.status === "RESOLVED"),
     ).toHaveLength(2);
   });
+
+  it.each(["sparkIndex", "hiveTask-2.0"])(
+    "uses an internal CREATE DDL as Task-local schema for later %s SQL",
+    (taskCategory) => {
+      const f = fixture();
+      const taskId = taskCategory === "sparkIndex" ? "1201" : "1202";
+      writeTableInput(f.dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "archive.local_stage_from_ddl",
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: "CREATE TABLE archive.local_stage_from_ddl (wrong_col STRING);",
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+      writeTaskInput(f.dataRoot, {
+        taskId,
+        taskCategory,
+        taskName: `demo.internal_ddl_${taskCategory.replaceAll(".", "_")}`,
+        target: {
+          platform: "hive",
+          dataSource: "warehouse",
+          qualifiedName: "demo.root",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: null,
+        sql: {
+          create: {
+            content:
+              `${taskCategory === "sparkIndex" ? "CREATE TABLE" : "CREATE TEMPORARY TABLE"} local_stage_from_ddl (stage_a STRING, stage_b STRING);`,
+            evidenceProvider: "synthetic:test",
+          },
+          query: {
+            content:
+              "INSERT OVERWRITE TABLE local_stage_from_ddl SELECT m.mid_a, m.filter_key FROM demo.mid m; SELECT * FROM local_stage_from_ddl;",
+            evidenceProvider: "synthetic:test",
+          },
+        },
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+
+      const result = runInputPackMachineFacts({
+        dataRoot: f.dataRoot,
+        taskIds: [taskId],
+        outputRoot: f.factsRoot,
+      });
+      expect(result.tasks[0]?.state).toBe("SUCCESS");
+      const bundle = join(
+        f.factsRoot,
+        "registry",
+        "tasks",
+        taskId,
+        "bundle",
+      );
+      const localSchema = jsonl(join(bundle, "schema-refs.jsonl")).find(
+        (record) =>
+          record.qualified_name === "demo.local_stage_from_ddl" &&
+          record.table_status === "TASK_LOCAL",
+      );
+      expect(localSchema).toMatchObject({
+        physical_columns: ["stage_a", "stage_b"],
+        required_for_star: true,
+      });
+      expect(
+        jsonl(join(bundle, "schema-refs.jsonl")).some(
+          (record) =>
+            record.qualified_name === "archive.local_stage_from_ddl",
+        ),
+      ).toBe(false);
+
+      const localBindings = jsonl(
+        join(bundle, "output-field-bindings.jsonl"),
+      ).filter(
+        (binding) =>
+          binding.target_dataset === "demo.local_stage_from_ddl",
+      );
+      expect(localBindings.map((binding) => binding.target_field)).toEqual([
+        "stage_a",
+        "stage_b",
+      ]);
+      expect(
+        localBindings.flatMap((binding) => binding.evidence_refs as string[]),
+      ).not.toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("archive.local_stage_from_ddl"),
+        ]),
+      );
+
+      const bridges = jsonl(
+        join(bundle, "task-local-materializations.jsonl"),
+      ).filter(
+        (bridge) =>
+          bridge.physical_dataset === "demo.local_stage_from_ddl",
+      );
+      expect(bridges).toHaveLength(2);
+      expect(bridges.every((bridge) => bridge.status === "RESOLVED")).toBe(
+        true,
+      );
+
+      const projection = projectTaskLocal({
+        dataRoot: f.dataRoot,
+        factsRoot: f.factsRoot,
+        taskId,
+        generatedAt: "2026-01-01T00:00:00.000Z",
+      });
+      expect(projection.coverageStatus).toBe("PROJECTED");
+      expect(
+        projection.edges.some(
+          (edge) =>
+            edge.edgeType === "FIELD_DIRECT" &&
+            edge.properties.materializationFolded === true &&
+            Array.isArray(edge.properties.materializationBridgeIds) &&
+            edge.properties.materializationBridgeIds.length === 1,
+        ),
+      ).toBe(true);
+      expect(
+        projection.nodes.filter((node) => node.nodeType === "TASK"),
+      ).toHaveLength(1);
+    },
+  );
 
   it("selects query, preserves provenance, and binds platform query output", () => {
     const f = fixture();
