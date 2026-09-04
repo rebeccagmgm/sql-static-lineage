@@ -472,6 +472,13 @@ repair runner 每次只处理一个有界 workset；成功写入的 evidence 才
 - `runScript` / `sparkScript` 的 SQL 只能来自 Horae log 中可定位的实例。实例缺失时记录 `HORAE_LOG_INSTANCE_MISSING`，不回退到不等价的 schedule SQL。
 - Table resolution 先用已有 Pack，再用 Hive/RDBMS 本地 jsonl；在线 fallback 必须 exact-match qualified name、platform、dataSource，并且只能有一个可对账候选。多个 GUID、多个 datasource、404/not found、403、429、timeout、malformed response 都不写 evidence。
 - Horae datasource 映射只作为 endpoint hint。映射冲突时保留未知；唯一 hint 也不能覆盖 SQL/目录的多实例冲突。`*2hive` 的 source 标签不转成物理表，hive2* 的 target server hint 只在 SQL 精确写目标与 datasource 同时成立时使用。Oracle / Postgre / OceanBase 用 `gf*_${service}#${service}`；MySQL / StarRocks / GoldenDB 用无 `#` 的 `gf*_${service}`，并在 core 中按 exact → 唯一前缀 → 唯一家族行消歧。
+- **多实例消歧通用约定（区分不出唯一物理库时）**：
+  1. 先在已有 SUCCESS `tables/` Pack 上按 atlas `dataSource` **计数**（同一逻辑服务族，如 `#jgjdb` / `#winddb`）。
+  2. **选出现次数最多的实例**作为 preferred atlas 常量写入代码（并在文档点名）；并列多数或样本过少则不要猜，保持 `RDBMS_CORE_AMBIGUOUS`。
+  3. 这是显式产品选择，不是 MCP/`table-search` 的唯一证明；以后若要以别的实例为准，改常量并 force 受影响任务。
+- **已落地的特殊 prefer**（均遵循上款统计→多数）：
+  1. **万得 / UIP `winddb`**：tag 为 `oracle_wande_*` / `oracle_uip_winddb*`（或 host `10.2.89.132`）→ `gforacle_oracle_uip_winddb#winddb`（`ORACLE_UIP_WINDDB_ATLAS_DATASOURCE`）。
+  2. **金管家 `jgjdb`（2026-09-04）**：Horae Oracle service=`jgjdb` 时，服务形态是 `gforacle_jgjdb#jgjdb`，core 常有 `jgjdb1`/`jgjdb2`/uat。统计当时 SUCCESS Pack：`gforacle_jgjdb1#jgjdb`=191、`jgjdb2`=0 → preferred 固定 **`gforacle_jgjdb1#jgjdb`**（`ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE`）。
 - 任务 SQL 的 query fallback 只能从同任务的 `hive-task.sql` query 槽补 specialized route 的空 query；create 槽永远不提升为 Table Pack 的 `ddl.sql`。
 
 ### 9.3 本轮执行结果

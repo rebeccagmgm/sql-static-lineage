@@ -368,6 +368,72 @@ describe("RDBMS disambiguation via horae-datasource", () => {
     );
   });
 
+  it("prefers gforacle_jgjdb1#jgjdb when #jgjdb has multiple numbered prod instances", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-jgjdb-multi-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdb1#jgjdb",
+          name: "TRYXX",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdb2#jgjdb",
+          name: "TRYXX",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdbuat#jgjdbuat",
+          name: "TRYXX",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdb1#jgjdb",
+          ddl: "CREATE TABLE CRMII.TRYXX (ID NUMBER)",
+        },
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdb2#jgjdb",
+          ddl: "CREATE TABLE CRMII.TRYXX (ID NUMBER)",
+        },
+        {
+          qualifiedname: "CRMII.TRYXX@gforacle_jgjdbuat#jgjdbuat",
+          ddl: "CREATE TABLE CRMII.TRYXX (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_jgj_69.202",
+            {
+              serverTag: "oracle_jgj_69.202",
+              serverType: "oracle",
+              service: "jgjdb",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "143",
+        taskCategory: "oracle2hive",
+        source: "oracle_jgj_69.202",
+        target: undefined,
+        sql: { query: "SELECT 1 FROM CRMII.TRYXX" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]?.dataSource?.toLowerCase()).toBe(
+      "gforacle_jgjdb1#jgjdb",
+    );
+  });
+
   it("prefers gforacle_oracle_uip_winddb#winddb for oracle_wande when #winddb is multi", () => {
     const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-wind-"));
     const catalog = loadOfflineTableCatalog({
