@@ -342,6 +342,30 @@ function explicitPartitionBindingProvenBySchema(
 	return nonPartitionColumns(schemaRef).length + parsedInsert.dynamicPartitionColumns.length === expressionCount;
 }
 
+function implicitDynamicPartitionColumns(
+	schemaRef: SchemaReferenceRecord | null,
+	parsedInsert: ParsedInsert,
+	expressionCount: number,
+): string[] {
+	if (
+		!schemaRef ||
+		parsedInsert.targetColumns.length > 0 ||
+		parsedInsert.staticPartitionColumns.length > 0 ||
+		parsedInsert.dynamicPartitionColumns.length > 0
+	) return [];
+	const fullSchemaColumns = uniqueNormalizedColumns(schemaRef.physical_columns);
+	const schemaPartitionColumns = uniqueNormalizedColumns(schemaRef.partition_columns);
+	if (
+		schemaPartitionColumns.length === 0 ||
+		fullSchemaColumns.length !== expressionCount ||
+		!sameColumns(
+			fullSchemaColumns.slice(fullSchemaColumns.length - schemaPartitionColumns.length),
+			schemaPartitionColumns,
+		)
+	) return [];
+	return schemaPartitionColumns;
+}
+
 function gap(
 	input: OutputBindingInput,
 	write: WriteOutputContext,
@@ -625,6 +649,13 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 				continue;
 			}
 			provenDynamicColumns = dynamicColumns;
+		}
+		if (isInsert && provenDynamicColumns.length === 0) {
+			provenDynamicColumns = implicitDynamicPartitionColumns(
+				schemaRef,
+				parsedInsert!,
+				expressions.length,
+			);
 		}
 		if (expressions.length === 0 || expressions.some((expression, ordinal) => expression.ordinal !== ordinal)) {
 			const reason = write.producerEnumerationStatus === "NOT_EVALUABLE" ? "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE" : isCtas ? "PRODUCER_OUTPUT_ENUMERATION_NOT_EVALUABLE" : "OUTPUT_BINDING_NOT_PROVABLE";

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
-export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.8";
+export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.9";
 
 /** Canonical evidence kind for a Pack-declared query output write. */
 export const PACK_DECLARED_QUERY_OUTPUT = "PACK_DECLARED_QUERY_OUTPUT" as const;
@@ -157,6 +157,7 @@ export interface TaskLocalMaterializationRecord {
 	readonly read_statement_index: number;
 	readonly output_binding_id: string | null;
 	readonly output_binding_ids?: readonly string[];
+	readonly producer_kind?: "OUTPUT_BINDING" | "STATIC_PARTITION_ASSIGNMENT";
 	readonly read_expression_ids: readonly string[];
 	readonly status: "RESOLVED" | "AMBIGUOUS" | "UNRESOLVED";
 	readonly provenance: "SAME_TASK_SQL_WRITE_READ";

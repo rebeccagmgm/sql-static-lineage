@@ -29,6 +29,27 @@ describe("DDL schema reader", () => {
 		expect(result.warnings).toEqual([]);
 	});
 
+	it("keeps real columns that follow commented-out DDL definitions", () => {
+		const result = parseDdlSchema(`
+			CREATE TABLE demo.review (
+				week_end string,
+				-- rn int,
+				sort_no int,
+				second_totalnum int,
+				-- sms_pass int,
+				-- sms_totalnum int,
+				phone_pass int
+			)
+		`);
+
+		expect(result.columns.map((column) => column.name)).toEqual([
+			"week_end",
+			"sort_no",
+			"second_totalnum",
+			"phone_pass",
+		]);
+	});
+
 	it("folds a partition column repeated in the ordinary DDL column list", () => {
 		const result = parseDdlSchema(
 			"create table demo.orders (id bigint, busi_date string) partitioned by (busi_date string) stored as orc",

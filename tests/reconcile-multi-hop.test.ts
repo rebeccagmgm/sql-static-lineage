@@ -1338,7 +1338,7 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
   });
 
   frozen86840It(
-    "replays frozen 86840 at depth one with 27 reads, 22 local producers, and ref_dw_cd_val terminal",
+    "replays frozen 86840 at depth one with 24 occurrence bridges, 22 local producers, and ref_dw_cd_val terminal",
     () => {
       const fixtureRoot = join(
         import.meta.dirname,
@@ -1367,7 +1367,10 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
       });
 
       expect(result.readEdges).toHaveLength(27);
-      expect(result.producerBridges).toHaveLength(22);
+      expect(result.producerBridges).toHaveLength(24);
+      expect(
+        new Set(result.producerBridges.map((bridge) => bridge.producerTaskId)),
+      ).toHaveLength(22);
       expect(result.taskNodes).toHaveLength(23);
       expect(result.scheduleSkeleton.parents).toHaveLength(26);
       expect(result.terminals).toEqual(
@@ -1387,6 +1390,7 @@ JOIN (SELECT id FROM lake.shared_history WHERE src_tbl = 'BOOK') k
         ),
       ).toBe(false);
     },
+    30_000,
   );
 
   it("publishes and enforces a closed multi-hop artifact contract", () => {

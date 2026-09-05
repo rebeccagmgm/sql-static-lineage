@@ -1553,6 +1553,75 @@ describe("field multi-hop lineage", () => {
     expect(validateFieldLineageArtifact(artifact)).toEqual([]);
   });
 
+  it("terminates Task-local static partition fields without a fake physical source", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1207",
+      taskCategory: "sparkIndex",
+      taskName: "demo.local_static_partition",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        create: {
+          content:
+            "CREATE TABLE partition_stage (c STRING) PARTITIONED BY (p STRING);",
+          evidenceProvider: "synthetic:test",
+        },
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE partition_stage PARTITION (p='X') " +
+            "SELECT e.src_a AS c FROM demo.extra e; " +
+            "SELECT p AS out_a, c AS out_b FROM partition_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1207"],
+      outputRoot: f.factsRoot,
+    });
+
+    const artifact = reconcileFieldLineage({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      tableLineage: {
+        ...syntheticTableLineage(),
+        rootTaskId: "1207",
+        taskNodes: [
+          {
+            taskId: "1207",
+            upstreamDecision: { primary: [], additional: [], unknown: [] },
+          },
+        ],
+        producerBridges: [],
+      },
+      rootTaskId: "1207",
+      rootTable: "demo.root",
+      rootFields: ["out_a"],
+      factsPolicy: "allow-legacy-partial",
+      maxDepth: 8,
+      maxStates: 100,
+      maxPaths: 100,
+    });
+    expect(
+      artifact.nodes.some(
+        (node) =>
+          node.field.qualifiedName === "demo.partition_stage" &&
+          node.field.column === "p",
+      ),
+    ).toBe(false);
+    expect(artifact.gaps).toHaveLength(0);
+    expect(validateFieldLineageArtifact(artifact)).toEqual([]);
+  });
+
   it("bridges a bare-name Task-local materialization and keeps it attached to its preceding write", () => {
     const parent = mkdtempSync(join(tmpdir(), "field-lineage-task-local-schema-"));
     const dataRoot = join(parent, "data");

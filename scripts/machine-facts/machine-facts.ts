@@ -1581,10 +1581,6 @@ function buildTaskBundle(
 	for (const [index, record] of datasetIo.entries()) {
 		if (typeof record.write_observation_id !== "string" || record.field_producing !== true) continue;
 		const writeContext = writeContextByObservation.get(record.write_observation_id);
-		if (
-			record.write_kind !== PACK_DECLARED_QUERY_OUTPUT &&
-			writeContext?.partitionStatus === undefined
-		) continue;
 		const producerCount = Array.isArray(record.producer_ordinals) ? record.producer_ordinals.length : 0;
 		const writeBindings = outputBindings.filter(
 			(binding) => binding.write_observation_id === record.write_observation_id,
@@ -1592,8 +1588,22 @@ function buildTaskBundle(
 		const fullyBound = producerCount > 0 && writeBindings.length === producerCount;
 		const boundStaticColumns = [...new Set(writeBindings.flatMap((binding) => binding.static_partition_columns).map(normalizeName))];
 		const boundDynamicColumns = [...new Set(writeBindings.flatMap((binding) => binding.dynamic_partition_columns ?? []).map(normalizeName))];
-		const partitionStatus = record.partition_status ?? writeContext?.partitionStatus;
-		const partitionColumns = (record.partition_columns ?? writeContext?.partitionColumns ?? []).map(normalizeName);
+		if (
+			record.write_kind !== PACK_DECLARED_QUERY_OUTPUT &&
+			writeContext?.partitionStatus === undefined &&
+			boundStaticColumns.length === 0 &&
+			boundDynamicColumns.length === 0
+		) continue;
+		let partitionStatus =
+			record.partition_status ??
+			writeContext?.partitionStatus ??
+			(boundStaticColumns.length > 0 || boundDynamicColumns.length > 0 ? "COMPLETE" : undefined);
+		const declaredPartitionColumns = (
+			record.partition_columns ?? writeContext?.partitionColumns ?? []
+		).map(normalizeName);
+		const partitionColumns = declaredPartitionColumns.length > 0
+			? declaredPartitionColumns
+			: [...boundStaticColumns, ...boundDynamicColumns];
 		let partitionMode = record.partition_mode ?? writeContext?.partitionMode;
 		let staticPartitionColumns = record.static_partition_columns;
 		let dynamicPartitionColumns = record.dynamic_partition_columns;
@@ -1621,6 +1631,12 @@ function buildTaskBundle(
 			partitionColumns.length > 0 &&
 			classifiedColumns.size === partitionColumns.length &&
 			partitionColumns.every((column) => classifiedColumns.has(column));
+		if (
+			partitionStatus !== "CONFLICT" &&
+			!assignmentConflict &&
+			fullyBound &&
+			partitionColumnsFullyClassified
+		) partitionStatus = "COMPLETE";
 		let partitionBindingStatus: DatasetIoRecord["partition_binding_status"];
 		if (partitionStatus === "CONFLICT" || assignmentConflict) partitionBindingStatus = "CONFLICT";
 		else if (partitionMode === "NONE" && partitionStatus === "NOT_PARTITIONED") {
@@ -2118,6 +2134,57 @@ function deriveTaskLocalMaterializations(
 						write_statement_index: writeStatementIndex,
 						read_statement_index: readStatementIndex,
 						output_binding_id: binding.binding_id,
+						read_expression_ids: [...field.expressionIds].sort(compareText),
+						status: "RESOLVED",
+						provenance: "SAME_TASK_SQL_WRITE_READ",
+						evidence_refs: evidenceRefs,
+					});
+					continue;
+				}
+			}
+			if (effectiveWrites.length === 1 && candidates.length === 0) {
+				const write = effectiveWrites[0]!;
+				const writeStatementId = String(write.write_statement_id ?? write.statement_id ?? "");
+				const writeStatementIndex = statementIndexes.get(writeStatementId);
+				const classifiedStaticPartitionColumns = new Set(
+					(write.static_partition_columns ?? []).map((column) => normalizeName(column)),
+				);
+				const staticPartitionProvenByWrite =
+					write.partition_binding_status === "COMPLETE" &&
+					(write.partition_mode === "STATIC" || write.partition_mode === "MIXED") &&
+					classifiedStaticPartitionColumns.has(field.column);
+				const writeBindings = bindingsByObservation.get(String(write.write_observation_id)) ?? [];
+				const producerOrdinals = Array.isArray(write.producer_ordinals)
+					? write.producer_ordinals
+					: [];
+				const schemaPartitionColumns = matchingSchemas.length === 1
+					? new Set(matchingSchemas[0]!.partition_columns.map(normalizeName))
+					: new Set<string>();
+				const staticPartitionProvenByBindings =
+					producerOrdinals.length > 0 &&
+					writeBindings.length === producerOrdinals.length &&
+					writeBindings.every(
+						(binding) =>
+							binding.binding_status === "RESOLVED" &&
+							binding.static_partition_columns.map(normalizeName).includes(field.column),
+					) &&
+					schemaPartitionColumns.has(field.column);
+				const staticPartitionProducerProven =
+					staticPartitionProvenByWrite || staticPartitionProvenByBindings;
+				if (writeStatementIndex !== undefined && staticPartitionProducerProven) {
+					records.push({
+						bridge_id: bridgeId,
+						task_id: taskId,
+						logical_source_id: logicalSourceId,
+						physical_dataset: physicalDataset,
+						column: field.column,
+						write_observation_id: String(write.write_observation_id),
+						write_statement_id: writeStatementId,
+						read_statement_id: readStatementId,
+						write_statement_index: writeStatementIndex,
+						read_statement_index: readStatementIndex,
+						output_binding_id: null,
+						producer_kind: "STATIC_PARTITION_ASSIGNMENT",
 						read_expression_ids: [...field.expressionIds].sort(compareText),
 						status: "RESOLVED",
 						provenance: "SAME_TASK_SQL_WRITE_READ",

@@ -710,6 +710,7 @@ function taskLocalCreateSchema(sql: string): {
 	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
 	const rawTarget = create?.[1];
 	if (!rawTarget) return null;
+	if (/\bas\s+(?:select|with)\b/i.test(sql)) return null;
 	const parsed = parseDdlSchema(sql);
 	const columns = parsed.columns.map((column) => normalizeName(column.name)).filter(Boolean);
 	if (columns.length === 0 || new Set(columns).size !== columns.length) return null;
@@ -718,6 +719,17 @@ function taskLocalCreateSchema(sql: string): {
 		columns,
 		partitionColumns: new Set(parsed.partition_columns.map(normalizeName)),
 	};
+}
+
+function taskLocalCreateLike(sql: string): {
+	readonly target: string;
+	readonly source: string;
+} | null {
+	const match = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)\s+like\s+([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
+	if (!match?.[1] || !match[2]) return null;
+	const normalizeTable = (value: string): string =>
+		normalizeName(value.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", ""));
+	return { target: normalizeTable(match[1]), source: normalizeTable(match[2]) };
 }
 
 function uniquePhysicalTableForReference(
@@ -809,6 +821,39 @@ function deriveTaskLocalSchemas(
 		const split = SqlSession.create(source.analysisContent, dialect, { schema: new Schema(mapping) });
 		for (const cell of split.doc.statements) {
 			const rawSql = source.analysisContent.slice(cell.span.start, cell.span.end);
+			const createLike = taskLocalCreateLike(rawSql);
+			if (createLike) {
+				const createTarget = qualifyBareTableName(createLike.target, defaultSchema);
+				const likeSource = qualifyBareTableName(createLike.source, defaultSchema);
+				const inherited = uniquePhysicalTableForReference(catalog, likeSource);
+				if (
+					createTarget !== normalizedDeclaredTarget &&
+					inherited &&
+					inherited.columns.length > 0
+				) {
+					const partitionColumns = new Set(
+						(inherited.partitionFields ?? []).map(normalizeName),
+					);
+					addTaskLocalMapping(createTarget, inherited.columns);
+					records.set(createTarget, {
+						qualified_name: createTarget,
+						guid: null,
+						status: "SUCCESS",
+						source: `input-pack-task-local-like:${taskId}:${source.slot}`,
+						metadata_qualified_name: createTarget,
+						ddl_sha256: sha256(Buffer.from(rawSql, "utf8")),
+						table_status: "TASK_LOCAL",
+						required_for_star: true,
+						columns: inherited.columns.map((name) => ({
+							name,
+							partition: partitionColumns.has(normalizeName(name)),
+						})),
+						aliases: [],
+						like_source: inherited.qualifiedName,
+					});
+					continue;
+				}
+			}
 			const createSchema = taskLocalCreateSchema(rawSql);
 			const createTarget = createSchema
 				? qualifyBareTableName(createSchema.target, defaultSchema)

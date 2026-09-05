@@ -406,6 +406,39 @@ function taskLocalMaterializationBindingIds(
   ].sort(compareText);
 }
 
+function isResolvedTaskLocalStaticPartition(
+  load: CurrentBundleLoad,
+  taskId: string,
+  field: PhysicalFieldIdentity,
+  expressionId: string,
+): boolean {
+  const matchingField = (load.records["task-local-materializations.jsonl"] ?? [])
+    .filter(
+      (record) =>
+        record.task_id === taskId &&
+        normalizeName(String(record.physical_dataset ?? "")) ===
+          normalizeName(field.qualifiedName) &&
+        normalizeName(String(record.column ?? "")) === field.column,
+    );
+  const contextual = matchingField.filter(
+    (record) =>
+      Array.isArray(record.read_expression_ids) &&
+      record.read_expression_ids.some((value: unknown) => String(value) === expressionId),
+  );
+  const candidates = contextual.length > 0
+    ? contextual
+    : matchingField.every(
+        (record) =>
+          !Array.isArray(record.read_expression_ids) ||
+          record.read_expression_ids.length === 0,
+      )
+      ? matchingField
+      : [];
+  return candidates.length === 1 &&
+    candidates[0]?.status === "RESOLVED" &&
+    candidates[0]?.producer_kind === "STATIC_PARTITION_ASSIGNMENT";
+}
+
 const bundleIndexesCache = new WeakMap<object, BundleIndexes>();
 
 function bundleIndexesFor(load: CurrentBundleLoad): BundleIndexes {
@@ -1288,6 +1321,14 @@ export function reconcileFieldLineage(
       });
     }
     for (const rawSource of sources.fields) {
+      if (
+        isResolvedTaskLocalStaticPartition(
+          load,
+          current.taskId,
+          rawSource,
+          String(expression.expression_id ?? ""),
+        )
+      ) continue;
       const taskLocalBindings =
         physicalTableKey(rawSource) !== physicalTableKey(pack.target)
           ? targetBindings(load, rawSource.qualifiedName, rawSource)

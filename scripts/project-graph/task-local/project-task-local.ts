@@ -359,6 +359,10 @@ function materializationOutputBindingIds(materialization: JsonRecord): string[] 
   return [...new Set(values)].sort(compareText);
 }
 
+function isStaticPartitionMaterialization(materialization: JsonRecord): boolean {
+  return text(materialization.producer_kind) === "STATIC_PARTITION_ASSIGNMENT";
+}
+
 function isFinalWrite(
   physicalDataset: string,
   targetQualifiedName: string | null,
@@ -782,7 +786,10 @@ function projectTaskLocalFromFacts(input: {
     const resolved = candidates.filter(
       (materialization) =>
         String(materialization.status ?? "").toUpperCase() === "RESOLVED"
-        && materializationOutputBindingIds(materialization).length > 0,
+        && (
+          materializationOutputBindingIds(materialization).length > 0
+          || isStaticPartitionMaterialization(materialization)
+        ),
     );
     if (
       candidates.length !== 1
@@ -802,6 +809,10 @@ function projectTaskLocalFromFacts(input: {
       return result;
     }
     const materialization = resolved[0]!;
+    if (isStaticPartitionMaterialization(materialization)) {
+      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, []);
+      return [];
+    }
     const bindingIds = materializationOutputBindingIds(materialization);
     const producerExpressions = bindingIds.flatMap((bindingId) => {
       const binding = bindingById.get(bindingId);

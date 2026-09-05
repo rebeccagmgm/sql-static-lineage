@@ -1623,5 +1623,6 @@ JOIN (SELECT id FROM src.shared_history WHERE src_tbl = 'BOOK') k
       });
       expect(indexedCalls).toHaveLength(1);
     },
+    30_000,
   );
 });

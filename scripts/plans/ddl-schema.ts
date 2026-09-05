@@ -192,10 +192,29 @@ function ignoredTableDefinition(name: Identifier): boolean {
 	]).has(name.name.toUpperCase());
 }
 
+function stripLeadingComments(text: string): string {
+	let index = 0;
+	while (index < text.length) {
+		while (/\s/.test(text[index] ?? "")) index += 1;
+		if (text[index] === "-" && text[index + 1] === "-") {
+			const newline = text.indexOf("\n", index + 2);
+			index = newline < 0 ? text.length : newline + 1;
+			continue;
+		}
+		if (text[index] === "/" && text[index + 1] === "*") {
+			const close = text.indexOf("*/", index + 2);
+			index = close < 0 ? text.length : close + 2;
+			continue;
+		}
+		break;
+	}
+	return text.slice(index);
+}
+
 function parseDefinitions(body: string): DdlColumn[] {
 	const columns: DdlColumn[] = [];
 	for (const definition of splitTopLevel(body)) {
-		const trimmed = definition.trim();
+		const trimmed = stripLeadingComments(definition).trim();
 		if (!trimmed) continue;
 		const identifier = readIdentifier(trimmed, 0);
 		if (!identifier || ignoredTableDefinition(identifier)) continue;
