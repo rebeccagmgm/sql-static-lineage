@@ -122,6 +122,10 @@ export interface TaskEvidence {
   readonly scheduleCycle?: string | null;
   /** Direct Horae task-status code/label, when available. */
   readonly scheduleStatus?: string | null;
+  /** Direct one-hop Horae upstream task IDs; schedule reference only. */
+  readonly upstreamTaskIds?: readonly string[];
+  /** Direct one-hop Horae downstream task IDs; schedule reference only. */
+  readonly downstreamTaskIds?: readonly string[];
   /** Direct platform endpoint config; table endpoints may include dataSource. */
   readonly source?: JsonValue | null;
   /** Direct platform endpoint config; table endpoints may include dataSource. */
@@ -640,6 +644,51 @@ function validateTaskSchedulerEvidence(
   );
 }
 
+const SAFE_SCHEDULE_NEIGHBOR_TASK_ID =
+  /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
+
+function canonicalizeScheduleNeighborTaskIds(
+  value: readonly string[],
+  field: string,
+  selfTaskId?: string,
+): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const raw of value) {
+    if (typeof raw !== "string" || raw.trim() === "")
+      fail(`task.${field} entries must be non-empty strings`);
+    const taskId = raw.trim();
+    if (!SAFE_SCHEDULE_NEIGHBOR_TASK_ID.test(taskId))
+      fail(`task.${field} has an invalid taskId`);
+    if (selfTaskId !== undefined && taskId === selfTaskId) continue;
+    if (seen.has(taskId)) continue;
+    seen.add(taskId);
+    ids.push(taskId);
+  }
+  return ids.sort((left, right) =>
+    left.localeCompare(right, "en-US", { numeric: true }),
+  );
+}
+
+function validateScheduleNeighborTaskIds(
+  value: unknown,
+  field: "upstreamTaskIds" | "downstreamTaskIds",
+  selfTaskId: string,
+): asserts value is readonly string[] {
+  if (!Array.isArray(value)) fail(`task.${field} must be an array`);
+  const canonical = canonicalizeScheduleNeighborTaskIds(
+    value as readonly string[],
+    field,
+    selfTaskId,
+  );
+  if (value.length !== canonical.length)
+    fail(`task.${field} must be unique and must not include the task itself`);
+  for (let index = 0; index < canonical.length; index += 1) {
+    if (value[index] !== canonical[index])
+      fail(`task.${field} must be sorted uniquely`);
+  }
+}
+
 function isStructuredTaskPartitionEvidence(
   value: unknown,
 ): value is TaskPartitionEvidence {
@@ -756,6 +805,20 @@ function buildTaskDocument(evidence: TaskEvidence): {
   })) {
     if (value !== undefined) document[key] = value as JsonValue;
   }
+  if (evidence.upstreamTaskIds !== undefined) {
+    document.upstreamTaskIds = canonicalizeScheduleNeighborTaskIds(
+      evidence.upstreamTaskIds,
+      "upstreamTaskIds",
+      taskId,
+    );
+  }
+  if (evidence.downstreamTaskIds !== undefined) {
+    document.downstreamTaskIds = canonicalizeScheduleNeighborTaskIds(
+      evidence.downstreamTaskIds,
+      "downstreamTaskIds",
+      taskId,
+    );
+  }
   validateJson(document, "task");
   if (document.source !== undefined && document.source !== null)
     validateNoPlaceholders(document.source, "task.source");
@@ -782,6 +845,18 @@ function buildTaskDocument(evidence: TaskEvidence): {
     validateTaskSchedulerEvidence(document.schedulerEvidence);
   if (document.codeEvidence !== undefined)
     validateTaskCodeEvidence(document.codeEvidence);
+  if (document.upstreamTaskIds !== undefined)
+    validateScheduleNeighborTaskIds(
+      document.upstreamTaskIds,
+      "upstreamTaskIds",
+      taskId,
+    );
+  if (document.downstreamTaskIds !== undefined)
+    validateScheduleNeighborTaskIds(
+      document.downstreamTaskIds,
+      "downstreamTaskIds",
+      taskId,
+    );
   const sql: { slot: SqlSlot; content: string; evidenceProvider: string }[] =
     [];
   for (const slot of SQL_SLOTS) {
@@ -833,6 +908,8 @@ export function validateTaskDocument(
     "topicName",
     "scheduleCycle",
     "scheduleStatus",
+    "upstreamTaskIds",
+    "downstreamTaskIds",
     "source",
     "target",
     "targetEvidenceKind",
@@ -851,6 +928,18 @@ export function validateTaskDocument(
     fail("unsupported task schemaVersion");
   safeSegment(String(document.taskId), "taskId");
   safeSegment(String(document.taskCategory), "taskCategory");
+  if (document.upstreamTaskIds !== undefined)
+    validateScheduleNeighborTaskIds(
+      document.upstreamTaskIds,
+      "upstreamTaskIds",
+      String(document.taskId),
+    );
+  if (document.downstreamTaskIds !== undefined)
+    validateScheduleNeighborTaskIds(
+      document.downstreamTaskIds,
+      "downstreamTaskIds",
+      String(document.taskId),
+    );
   if (!Array.isArray(document.sqlFiles)) fail("task.sqlFiles must be an array");
   const seen = new Set<string>();
   for (const item of document.sqlFiles) {
