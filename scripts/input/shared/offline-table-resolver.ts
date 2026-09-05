@@ -19,7 +19,14 @@ import {
 } from "./jsonl-offset-index.ts";
 import { uniqueTaskSqlCreateStatement } from "./sparkindex-table-evidence.ts";
 import { extractSqlWriteTableNames } from "./sql-target-evidence.ts";
-import { extractSqlReadTableNames } from "./sql-table-references.ts";
+import {
+  columnNamesFromCreateTable,
+  extractSqlReadTableNames,
+  isSoleStarSelectQuery,
+  queryOutputColumnNames,
+  queryProjectionColumnNames,
+  uniqueQueryFromQualifiedName,
+} from "./sql-table-references.ts";
 import {
   isDatabaseSourceToHiveTask,
   partitionFieldsFromDdl,
@@ -49,6 +56,18 @@ const SQL_SLOTS: readonly SqlSlot[] = [
   "finish",
 ];
 const HIVE_DATA_SOURCE = "gfhive";
+export const SPLICED_FROM_QUERY_PROJECTION =
+  "input-pack:spliced-from-query-projection";
+export const SPLICED_FROM_TASK_SQL = "input-pack:spliced-from-task-sql";
+export const SPLICED_FROM_HIVE_TARGET_CREATE =
+  "input-pack:spliced-from-hive-target-create";
+export const SPLICED_FROM_SOURCE_DDL = "input-pack:spliced-from-source-ddl";
+
+export function isSplicedTableEvidenceProvider(
+  provider: string | undefined,
+): boolean {
+  return provider?.startsWith("input-pack:spliced-") === true;
+}
 
 type JsonRecord = Record<string, unknown>;
 
@@ -299,15 +318,35 @@ function rdbmsKeys(record: JsonRecord): readonly string[] | undefined {
   return [`${qn}@${parsed.dataSource.toLowerCase()}`, qn];
 }
 
+function sameRdbmsPhysicalInstance(
+  left: JsonRecord,
+  right: JsonRecord,
+): boolean {
+  const leftParsed = parsePhysicalTableName(left.qualifiedname);
+  const rightParsed = parsePhysicalTableName(right.qualifiedname);
+  if (
+    leftParsed === undefined ||
+    rightParsed === undefined ||
+    leftParsed.qualifiedName.toLowerCase() !==
+      rightParsed.qualifiedName.toLowerCase()
+  )
+    return false;
+  const leftInstance = nonEmptyString(left.instanceid)?.toLowerCase();
+  const rightInstance = nonEmptyString(right.instanceid)?.toLowerCase();
+  return leftInstance !== undefined && leftInstance === rightInstance;
+}
+
 function optionalIndex(
   path: string | undefined,
   keyOf: (record: JsonRecord) => string | readonly string[] | undefined,
   indexDir?: string,
+  sameRecord?: (left: JsonRecord, right: JsonRecord) => boolean,
 ): JsonlOffsetIndex | undefined {
   if (path === undefined || !existsSync(path)) return undefined;
   assertJsonlCatalogPath(path);
   return loadJsonlOffsetIndex(path, {
     keyOf,
+    sameRecord,
     persistPath:
       indexDir === undefined
         ? undefined
@@ -335,7 +374,12 @@ export function loadOfflineTableCatalog(
           options.scheduleEvidenceCacheRoot ??
             DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
         ));
-  const rdbmsCore = optionalIndex(rdbmsCorePath, rdbmsKeys, options.indexDir);
+  const rdbmsCore = optionalIndex(
+    rdbmsCorePath,
+    rdbmsKeys,
+    options.indexDir,
+    sameRdbmsPhysicalInstance,
+  );
   return {
     hiveMetadata: optionalIndex(
       hiveMetadataPath,
@@ -344,7 +388,12 @@ export function loadOfflineTableCatalog(
     ),
     hiveDdl: optionalIndex(hiveDdlPath, hiveDdlKeys, options.indexDir),
     rdbmsCore,
-    rdbmsDdl: optionalIndex(rdbmsDdlPath, rdbmsKeys, options.indexDir),
+    rdbmsDdl: optionalIndex(
+      rdbmsDdlPath,
+      rdbmsKeys,
+      options.indexDir,
+      sameRdbmsPhysicalInstance,
+    ),
     horaeDatasource,
     rdbmsQnServiceIndex:
       rdbmsCore === undefined
@@ -625,6 +674,20 @@ function uniqueLocalPack(
   return unique.size === 1 ? [...unique.values()][0] : undefined;
 }
 
+function splitLocalPacks(packs: readonly LocalTablePack[] | undefined): {
+  readonly authoritative: readonly LocalTablePack[];
+  readonly spliced: readonly LocalTablePack[];
+} {
+  const authoritative: LocalTablePack[] = [];
+  const spliced: LocalTablePack[] = [];
+  for (const pack of packs ?? []) {
+    if (isSplicedTableEvidenceProvider(pack.evidence.evidenceProvider))
+      spliced.push(pack);
+    else authoritative.push(pack);
+  }
+  return { authoritative, spliced };
+}
+
 function stringArray(value: unknown): readonly string[] | undefined {
   if (Array.isArray(value)) {
     const values = value
@@ -882,6 +945,238 @@ function lookupFirst(
   return ambiguous ? { status: "AMBIGUOUS" } : { status: "MISS" };
 }
 
+function synthesizeHiveDdl(
+  qualifiedName: string,
+  columns: readonly string[],
+): string {
+  const body = columns.map((column) => `  ${column} STRING`).join(",\n");
+  return `CREATE TABLE ${qualifiedName.toLowerCase()} (\n${body}\n)`;
+}
+
+function synthesizeRdbmsDdl(
+  qualifiedName: string,
+  columns: readonly string[],
+  platform: string,
+): string {
+  const type = platform === "oracle" ? "VARCHAR2(4000)" : "VARCHAR(4000)";
+  const body = columns.map((column) => `  ${column} ${type}`).join(",\n");
+  return `CREATE TABLE ${qualifiedName} (\n${body}\n)`;
+}
+
+function hiveFromQueryProjection(
+  candidate: OfflineTableCandidate,
+  columns: readonly string[],
+  collectedAt: string,
+): TableEvidence | undefined {
+  if (columns.length === 0) return undefined;
+  const evidence = hiveFromTaskCreate(
+    candidate,
+    synthesizeHiveDdl(candidate.qualifiedName, columns),
+    collectedAt,
+  );
+  if (evidence === undefined) return undefined;
+  return {
+    ...evidence,
+    evidenceProvider: SPLICED_FROM_QUERY_PROJECTION,
+  };
+}
+
+function rdbmsFromTaskSql(
+  candidate: OfflineTableCandidate,
+  dataSource: string,
+  columns: readonly string[],
+  evidenceProvider: string,
+  collectedAt: string,
+): TableEvidence | undefined {
+  const platform = platformFromDataSource(dataSource);
+  if (platform === undefined || platform === "hive" || columns.length === 0)
+    return undefined;
+  const parts = candidate.qualifiedName.split(".");
+  return {
+    platform,
+    dataSource,
+    qualifiedName: candidate.qualifiedName,
+    schema: parts.length > 1 ? parts.slice(0, -1).join(".") : undefined,
+    name: parts.at(-1),
+    objectType: "gf_rdbms_table",
+    partitionFields: [],
+    ddl: synthesizeRdbmsDdl(candidate.qualifiedName, columns, platform),
+    evidenceProvider,
+    collectedAt,
+  };
+}
+
+function sameQualifiedName(left: string | undefined, right: string): boolean {
+  return left?.toLowerCase() === right.toLowerCase();
+}
+
+function splicedRdbmsDdlForCandidate(
+  candidate: OfflineTableCandidate,
+  sql: Partial<Record<SqlSlot, string>>,
+  taskTarget: unknown,
+  dataSourceHint?: string,
+): { readonly ddl: string; readonly evidenceProvider: string } | undefined {
+  let columns = queryProjectionColumnNames(
+    sql.query ?? "",
+    candidate.qualifiedName,
+  );
+  let provider = SPLICED_FROM_TASK_SQL;
+  if (columns.length === 0) {
+    const soleSource = uniqueQueryFromQualifiedName(sql.query ?? "");
+    const target = parsePhysicalTableName(taskTarget);
+    if (
+      target !== undefined &&
+      soleSource !== undefined &&
+      sameQualifiedName(soleSource, candidate.qualifiedName)
+    ) {
+      const created = uniqueTaskSqlCreateStatement(sql, target.qualifiedName);
+      if (!created.conflict && created.ddl !== undefined) {
+        columns = [...columnNamesFromCreateTable(created.ddl)];
+        provider = SPLICED_FROM_HIVE_TARGET_CREATE;
+      }
+    }
+  }
+  if (columns.length === 0) return undefined;
+  const platform = platformFromDataSource(
+    candidate.dataSource ?? dataSourceHint ?? "",
+  );
+  if (platform === undefined || platform === "hive") return undefined;
+  return {
+    ddl: synthesizeRdbmsDdl(candidate.qualifiedName, columns, platform),
+    evidenceProvider: provider,
+  };
+}
+
+function usableSourceDdlColumns(
+  evidence: TableEvidence | undefined,
+): readonly string[] | undefined {
+  if (evidence === undefined) return undefined;
+  if (evidence.platform === "hive") return undefined;
+  if (isSplicedTableEvidenceProvider(evidence.evidenceProvider))
+    return undefined;
+  const columns = columnNamesFromCreateTable(evidence.ddl);
+  return columns.length > 0 ? columns : undefined;
+}
+
+function sourceDdlColumns(
+  sourceQualifiedName: string,
+  catalog: OfflineTableCatalog,
+  localPacks: OfflineTablePackLookup,
+  resolvedThisPass: readonly TableEvidence[],
+  preferredRdbmsDataSource?: string,
+): readonly string[] | undefined {
+  const qn = sourceQualifiedName.toLowerCase();
+  const fromResolved = resolvedThisPass.find(
+    (item) => item.qualifiedName.toLowerCase() === qn,
+  );
+  const resolvedColumns = usableSourceDdlColumns(fromResolved);
+  if (resolvedColumns !== undefined) return resolvedColumns;
+
+  const localKeys = rdbmsLookupKeys(
+    { qualifiedName: sourceQualifiedName },
+    preferredRdbmsDataSource,
+    catalog.rdbmsQnServiceIndex,
+    catalog.rdbmsQnAtlasKeys,
+  );
+  for (const key of localKeys) {
+    const { authoritative } = splitLocalPacks(localPacks.get(key));
+    const columns = usableSourceDdlColumns(uniqueLocalPack(authoritative)?.evidence);
+    if (columns !== undefined) return columns;
+  }
+
+  if (catalog.rdbmsCore === undefined) return undefined;
+  const coreLookup = lookupFirst(catalog.rdbmsCore, localKeys);
+  if (coreLookup.status !== "HIT") return undefined;
+  const ddlLookup = lookupFirst(catalog.rdbmsDdl, localKeys);
+  if (ddlLookup.status !== "HIT") return undefined;
+  const ddl = nonEmptyString(ddlLookup.record.ddl);
+  if (ddl === undefined) return undefined;
+  const columns = columnNamesFromCreateTable(ddl);
+  return columns.length > 0 ? columns : undefined;
+}
+
+function hiveFromSourceDdl(
+  candidate: OfflineTableCandidate,
+  sql: Partial<Record<SqlSlot, string>>,
+  catalog: OfflineTableCatalog,
+  localPacks: OfflineTablePackLookup,
+  resolvedThisPass: readonly TableEvidence[],
+  preferredRdbmsDataSource: string | undefined,
+  taskCategory: string | null | undefined,
+  taskTarget: unknown,
+  collectedAt: string,
+  hiveMetadataRecord?: JsonRecord,
+): TableEvidence | undefined {
+  if (!isDatabaseSourceToHiveTask(taskCategory)) return undefined;
+  const target = parsePhysicalTableName(taskTarget);
+  if (!sameQualifiedName(target?.qualifiedName, candidate.qualifiedName))
+    return undefined;
+  if (candidateLooksRelational(candidate)) return undefined;
+  const query = sql.query ?? "";
+  if (!isSoleStarSelectQuery(query)) return undefined;
+  const soleSource = uniqueQueryFromQualifiedName(query);
+  if (soleSource === undefined) return undefined;
+  const columns = sourceDdlColumns(
+    soleSource,
+    catalog,
+    localPacks,
+    resolvedThisPass,
+    preferredRdbmsDataSource,
+  );
+  if (columns === undefined) return undefined;
+  const ddl = synthesizeHiveDdl(candidate.qualifiedName, columns);
+  if (hiveMetadataRecord !== undefined) {
+    return hiveFromMetadata(
+      hiveMetadataRecord,
+      ddl,
+      SPLICED_FROM_SOURCE_DDL,
+      collectedAt,
+    );
+  }
+  const evidence = hiveFromTaskCreate(candidate, ddl, collectedAt);
+  if (evidence === undefined) return undefined;
+  return {
+    ...evidence,
+    evidenceProvider: SPLICED_FROM_SOURCE_DDL,
+  };
+}
+
+function spliceFromTaskEvidence(
+  candidate: OfflineTableCandidate,
+  sql: Partial<Record<SqlSlot, string>>,
+  collectedAt: string,
+  preferredRdbmsDataSource: string | undefined,
+  taskCategory: string | null | undefined,
+  taskTarget: unknown,
+): TableEvidence | undefined {
+  if (!isDatabaseSourceToHiveTask(taskCategory)) return undefined;
+  const target = parsePhysicalTableName(taskTarget);
+  const isHiveTarget = sameQualifiedName(
+    target?.qualifiedName,
+    candidate.qualifiedName,
+  );
+  if (isHiveTarget && !candidateLooksRelational(candidate)) {
+    const columns = queryOutputColumnNames(sql.query ?? "");
+    return hiveFromQueryProjection(candidate, columns, collectedAt);
+  }
+  if (isHiveTarget || preferredRdbmsDataSource === undefined) return undefined;
+  const splicedDdl = splicedRdbmsDdlForCandidate(
+    candidate,
+    sql,
+    taskTarget,
+    preferredRdbmsDataSource,
+  );
+  if (splicedDdl === undefined) return undefined;
+  const columns = columnNamesFromCreateTable(splicedDdl.ddl);
+  return rdbmsFromTaskSql(
+    candidate,
+    preferredRdbmsDataSource,
+    columns,
+    splicedDdl.evidenceProvider,
+    collectedAt,
+  );
+}
+
 function resolveOne(
   candidate: OfflineTableCandidate,
   localPacks: OfflineTablePackLookup,
@@ -889,14 +1184,19 @@ function resolveOne(
   sql: Partial<Record<SqlSlot, string>>,
   collectedAt: string,
   preferredRdbmsDataSource?: string,
+  taskCategory?: string | null,
+  taskTarget?: unknown,
+  resolvedThisPass: readonly TableEvidence[] = [],
 ):
   | { readonly evidence: TableEvidence }
   | { readonly reason: string } {
+  let splicedLocal: LocalTablePack | undefined;
   for (const key of candidateKeys(candidate)) {
-    const pack = uniqueLocalPack(localPacks.get(key));
+    const { authoritative, spliced } = splitLocalPacks(localPacks.get(key));
+    const pack = uniqueLocalPack(authoritative);
     if (pack !== undefined) return { evidence: pack.evidence };
-    if ((localPacks.get(key)?.length ?? 0) > 1)
-      return { reason: "LOCAL_TABLE_PACK_CONFLICT" };
+    if (authoritative.length > 1) return { reason: "LOCAL_TABLE_PACK_CONFLICT" };
+    splicedLocal ??= uniqueLocalPack(spliced);
   }
 
   const hiveDdl = lookupFirst(catalog.hiveDdl, candidateKeys(candidate));
@@ -941,6 +1241,30 @@ function resolveOne(
       if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
       return { evidence };
     }
+    const splicedColumns = queryOutputColumnNames(sql.query ?? "");
+    if (splicedColumns.length > 0) {
+      const evidence = hiveFromMetadata(
+        hiveIdentity.record,
+        synthesizeHiveDdl(candidate.qualifiedName, splicedColumns),
+        SPLICED_FROM_QUERY_PROJECTION,
+        collectedAt,
+      );
+      if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
+      return { evidence };
+    }
+    const fromSource = hiveFromSourceDdl(
+      candidate,
+      sql,
+      catalog,
+      localPacks,
+      resolvedThisPass,
+      preferredRdbmsDataSource,
+      taskCategory,
+      taskTarget,
+      collectedAt,
+      hiveIdentity.record,
+    );
+    if (fromSource !== undefined) return { evidence: fromSource };
     return { reason: "HIVE_DDL_MISS" };
   }
 
@@ -968,7 +1292,27 @@ function resolveOne(
       const ddlLookup = lookupFirst(catalog.rdbmsDdl, keys);
       if (ddlLookup.status === "AMBIGUOUS")
         return { reason: "RDBMS_DDL_AMBIGUOUS" };
-      if (ddlLookup.status === "MISS") return { reason: "RDBMS_DDL_MISS" };
+      if (ddlLookup.status === "MISS") {
+        const splicedDdl = splicedRdbmsDdlForCandidate(
+          candidate,
+          sql,
+          taskTarget,
+          parsePhysicalTableName(coreLookup.record.qualifiedname)?.dataSource ??
+            preferredRdbmsDataSource,
+        );
+        if (splicedDdl !== undefined) {
+          const evidence = rdbmsFromCore(
+            coreLookup.record,
+            splicedDdl.ddl,
+            splicedDdl.evidenceProvider,
+            collectedAt,
+          );
+          if (evidence === undefined)
+            return { reason: "RDBMS_PLATFORM_UNMAPPED" };
+          return { evidence };
+        }
+        return { reason: "RDBMS_DDL_MISS" };
+      }
       const ddl = nonEmptyString(ddlLookup.record.ddl);
       if (ddl === undefined) return { reason: "RDBMS_DDL_MISSING" };
       const evidence = rdbmsFromCore(
@@ -984,6 +1328,28 @@ function resolveOne(
     }
   }
 
+  const spliced = spliceFromTaskEvidence(
+    candidate,
+    sql,
+    collectedAt,
+    preferredRdbmsDataSource,
+    taskCategory,
+    taskTarget,
+  );
+  if (spliced !== undefined) return { evidence: spliced };
+  const fromSource = hiveFromSourceDdl(
+    candidate,
+    sql,
+    catalog,
+    localPacks,
+    resolvedThisPass,
+    preferredRdbmsDataSource,
+    taskCategory,
+    taskTarget,
+    collectedAt,
+  );
+  if (fromSource !== undefined) return { evidence: fromSource };
+  if (splicedLocal !== undefined) return { evidence: splicedLocal.evidence };
   return { reason: "TABLE_JSONL_MISS" };
 }
 
@@ -1024,6 +1390,9 @@ export function resolveOfflineTables(
       sql,
       collectedAt,
       preferredRdbmsDataSource,
+      taskEvidence.taskCategory,
+      taskEvidence.target,
+      resolved,
     );
     if ("evidence" in result) resolved.push(result.evidence);
     else

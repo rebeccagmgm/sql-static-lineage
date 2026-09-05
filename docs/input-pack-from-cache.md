@@ -297,6 +297,8 @@ DDL 里都有，guid 与已落 `table.json` 的 `5a571b33-…` 一致。
         ▼
 ① 已有 tables/<platform>/<qn>__<ds>/
    唯一命中 → 复用
+   例外：evidenceProvider 以 `input-pack:spliced-` 开头的 stub 不是权威命中，
+   继续查 jsonl / 日志 CREATE / 任务 CREATE。后到的真实证据覆盖拼接 stub。
         │
         ▼
 ② Hive 候选（ds=gfhive，或名字像 db.table）
@@ -308,15 +310,29 @@ DDL 里都有，guid 与已落 `table.json` 的 `5a571b33-…` 一致。
         ├─ DDL MISS + 元数据唯一 ACTIVE + 任务 SQL 有唯一 CREATE
         │    → ddl.sql=CREATE
         │           evidenceProvider=input-pack:task-sql-create
-        └─ 都没有 → PARTIAL
+        └─ 都没有 → ③ 或 ④
         │
         ▼
 ③ RDBMS 候选
    按 lower(db.table@dataSource) 查核心，再查关系 DDL
         ├─ 两份都 HIT → 完整 Table Pack
         │           evidenceProvider=local:rdbms-core-jsonl,local:rdbms-ddl-jsonl
-        └─ 核心或 DDL 缺 / 同名不同内容 → PARTIAL
+        └─ 核心或 DDL 缺 / 同名不同内容 → ④ 或 PARTIAL
            不打 table-ddl，不用任务 CREATE 冒充 Oracle/MySQL DDL
+        │
+        ▼
+④ *2hive 最后手段（仅当 ②③ 都 MISS）
+   Hive 目标：query SELECT 输出列合成 CREATE … STRING
+           evidenceProvider=input-pack:spliced-from-query-projection
+   Hive 目标且 query 是唯一 FROM 的精确 SELECT *、源表本轮已有真实 RDBMS DDL：
+           用源列名合成 CREATE … STRING（不发明列、不拷 JOIN）
+           evidenceProvider=input-pack:spliced-from-source-ddl
+   RDBMS 源：唯一 horae-datasource / preferredRdbmsDataSource + 该表 FROM/JOIN 投影
+           evidenceProvider=input-pack:spliced-from-task-sql
+   无列时才用 Hive 目标 CREATE 列名作更弱提示
+           evidenceProvider=input-pack:spliced-from-hive-target-create
+   无 hint、编号兄弟 AMB、非 sole SELECT * / 空 SQL → 仍 PARTIAL
+   不编造 Atlas guid，不把 datasource 标签当成表
 ```
 
 ### 4.3 拼接规则
