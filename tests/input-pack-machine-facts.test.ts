@@ -332,6 +332,64 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(jsonl(join(bundle, "unknowns.jsonl"))).toHaveLength(0);
   });
 
+  it("still treats a leading-comment SparkIndex query as the pack-declared write body", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1154",
+      taskCategory: "sparkIndex",
+      taskName: "demo.leading.comment.query",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.partitioned",
+      },
+      partition: { p: "*" },
+      sql: {
+        query: {
+          content:
+            "-- 投产日表数据集\n/* 需求说明 */\nSELECT s.value_col AS value_col, s.p FROM demo.partition_source s;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.partition_source",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.partition_source (value_col STRING, p STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1154"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(f.factsRoot, "registry", "tasks", "1154", "bundle");
+    expect(
+      jsonl(join(bundle, "dataset-io.jsonl")).find(
+        (record) => record.write_kind === "PACK_DECLARED_QUERY_OUTPUT",
+      ),
+    ).toMatchObject({
+      physical_dataset: "demo.partitioned",
+      field_producing: true,
+    });
+    expect(
+      jsonl(join(bundle, "statements.jsonl")).map((statement) => statement.statement_type),
+    ).toEqual(["SELECT"]);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) => unknown.reason_code === "PLATFORM_TARGET_QUERY_BOUNDARY_NOT_PROVABLE",
+      ),
+    ).toBe(false);
+  });
+
   it("does not reinterpret a short SparkIndex SELECT as a static partition write", () => {
     const f = fixture();
     writeTaskInput(f.dataRoot, {

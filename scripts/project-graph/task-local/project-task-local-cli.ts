@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { canonicalJson } from "../../machine-facts/machine-facts-contract.ts";
@@ -36,6 +36,15 @@ function csvOption(args: readonly string[], name: string): string[] {
     .filter(Boolean);
 }
 
+function taskIdsFileOption(args: readonly string[]): string[] {
+  const path = option(args, "--task-ids-file");
+  if (!path) return [];
+  return readFileSync(resolve(path), "utf8")
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 export function parseProjectTaskLocalCli(
   args: readonly string[],
 ): ProjectTaskLocalCliOptions {
@@ -46,7 +55,10 @@ export function parseProjectTaskLocalCli(
     ?? option(args, "--schedule-evidence-cache-root");
   const outputRoot = option(args, "--output-root");
   const topic = option(args, "--topic");
-  const taskIds = csvOption(args, "--task-ids");
+  const taskIds = [...new Set([
+    ...csvOption(args, "--task-ids"),
+    ...taskIdsFileOption(args),
+  ])];
   const alsoTaskIds = csvOption(args, "--also-task-ids");
   const expandUpstream = args.includes("--expand-upstream");
   const writerCatalogPath = option(args, "--writer-catalog");
@@ -63,12 +75,12 @@ export function parseProjectTaskLocalCli(
   }
   if (!dataRoot || !factsRoot || !scheduleCacheRoot || !outputRoot) {
     throw new Error(
-      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--expand-upstream] [--writer-catalog <sqlite>] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
+      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--task-ids-file <path>] [--expand-upstream] [--writer-catalog <sqlite>] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
     );
   }
   if (taskIds.length === 0 && !topic && alsoTaskIds.length === 0) {
     throw new Error(
-      "TASK_LOCAL_BATCH_SELECTOR_REQUIRED: pass --task-ids and/or --topic and/or --also-task-ids",
+      "TASK_LOCAL_BATCH_SELECTOR_REQUIRED: pass --task-ids and/or --task-ids-file and/or --topic and/or --also-task-ids",
     );
   }
   if (expandUpstream && taskIds.length === 0) {

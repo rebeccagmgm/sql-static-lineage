@@ -64,6 +64,7 @@ export function buildCollectionFailedProjection(input: {
   readonly generatedAt: string;
   readonly failureReasonCode: TaskLocalFailureReasonCode;
   readonly taskProperties?: Readonly<Record<string, unknown>>;
+  readonly failureMessage?: string;
 }): TaskLocalProjection {
   return canonicalizeTaskLocalProjection({
     schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
@@ -78,6 +79,12 @@ export function buildCollectionFailedProjection(input: {
       properties: input.taskProperties ?? {},
     }],
     edges: [],
-    gaps: [],
+    gaps: input.failureMessage
+      ? [{
+          gapId: `projection-failed:${input.taskId}`,
+          reasonCode: input.failureReasonCode,
+          details: { message: input.failureMessage },
+        }]
+      : [],
   });
 }

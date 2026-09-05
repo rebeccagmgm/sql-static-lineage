@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -92,6 +92,21 @@ describe("task-local batch CLI (TL-5)", () => {
     expect(options.taskIds).toEqual(["181058", "176827"]);
     expect(options.expandUpstream).toBe(true);
     expect(options.maxUpstreamDepth).toBe(12);
+  });
+
+  it("parses --task-ids-file and merges with --task-ids", () => {
+    const parent = mkdtempSync(join(tmpdir(), "task-local-cli-ids-file-"));
+    const idsPath = join(parent, "ids.txt");
+    writeFileSync(idsPath, "176827\n\n155\n181058\n", "utf8");
+    const options = parseProjectTaskLocalCli([
+      "--data-root", "D:/data",
+      "--facts-root", "D:/facts",
+      "--schedule-cache", "D:/cache",
+      "--output-root", "D:/out",
+      "--task-ids", "181058,209119",
+      "--task-ids-file", idsPath,
+    ]);
+    expect(options.taskIds).toEqual(["181058", "209119", "176827", "155"]);
   });
 
   it("parses CLI flags and rejects prepare-facts", () => {
