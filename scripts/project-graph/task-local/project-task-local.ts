@@ -1221,6 +1221,7 @@ export function projectTaskLocal(options: ProjectTaskLocalOptions): TaskLocalPro
       taskId,
       generatedAt,
       failureReasonCode,
+      failureMessage: error instanceof Error ? error.message : String(error),
     });
   }
 }

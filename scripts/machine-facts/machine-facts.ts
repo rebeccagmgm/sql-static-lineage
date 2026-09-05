@@ -177,8 +177,31 @@ function sameTableReference(left: string, right: string): boolean {
 		normalizedLeft.split(".").at(-1) === normalizedRight.split(".").at(-1);
 }
 
+function skipLeadingSqlTrivia(text: string): string {
+	let index = 0;
+	while (index < text.length) {
+		const char = text[index]!;
+		if (/\s/.test(char)) {
+			index += 1;
+			continue;
+		}
+		if (text.startsWith("--", index)) {
+			const newline = text.indexOf("\n", index);
+			index = newline < 0 ? text.length : newline + 1;
+			continue;
+		}
+		if (text.startsWith("/*", index)) {
+			const end = text.indexOf("*/", index + 2);
+			index = end < 0 ? text.length : end + 2;
+			continue;
+		}
+		break;
+	}
+	return text.slice(index);
+}
+
 function classifyStatement(text: string): string {
-	const normalized = text.trimStart().toUpperCase();
+	const normalized = skipLeadingSqlTrivia(text).toUpperCase();
 	if (/^CREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\b/.test(normalized)) return "CREATE_TABLE";
 	const extractedWrite = extractSqlWrites(text)[0];
 	if (extractedWrite?.writeKind === "INSERT_OVERWRITE") return "INSERT_OVERWRITE";
