@@ -47,4 +47,4 @@ v2 trace 和 envelope 写出，不改变接续匹配语义；CLI 不负责 SQL/F
 
 ## Rollback
 
-停止调用 v2 入口即可回到既有 `traceUnionUpstream`。不修改 legacy 投影、旧快照或现有 v1 测试输入。
+2026-09-05 收敛更新：无实际调用者的 `traceUnionUpstream` 已退役，不能再通过切换入口回到 v1。历史 1.1.0 投影的加载、合并及已有快照保持兼容；v2 仍只接受 1.2.0 证据。需要恢复旧算法时应使用退役前的 Git 版本。

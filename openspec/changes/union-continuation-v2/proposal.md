@@ -13,10 +13,10 @@ WP-7 在 `sql-static-lineage` 已产出 `TASK_LOCAL_PROJECTION` 1.2.0。data-gra
 - 提供 `union-continuation-v2` batch CLI；它只编排既有 loader/merge/v2 trace/envelope，不改接续核语义。
 - `scheduleReference` / `SCHEDULE_DEPENDS_ON` 不进入任何接续档位。
 
-旧 1.1.0 仍由已有 union loader 为历史 v1 路径兼容读取；v2 接续入口明确拒绝旧投影作为证据。
+旧 1.1.0 仍由已有 union loader 兼容读取与合并；v2 接续入口明确拒绝旧投影作为证据。
 
 ## Impact
 
 - 代码：`src/project-graph/topology/task-local-union/` 的 v2 接续、1.2.0 closure 保留和 producer-index 写观察读取。
 - 测试：用 119044 当前 1.2.0 形状的两个真实读次覆盖 `SRC_TBL` 分区裁剪、L2 边界和无调度污染；补 105387 `#3/#6` 多写对齐断言、当前索引 20 个同表多写抽检、`ASSUMED` L1 禁入和 L0-L3 envelope。
-- legacy `traceUnionUpstream`、旧投影和既有快照 ID 不改变。
+- 2026-09-05 收敛更新：无实际调用者的 legacy `traceUnionUpstream` 已退役；旧投影和既有快照 ID 不改变，共用 `ProducerIndexWriter` 类型移至现有 producer-index 模块。

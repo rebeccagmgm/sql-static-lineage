@@ -1,6 +1,6 @@
 import { compareText } from "../../contracts/project-topology-contract.ts";
 import type { TaskLocalProjectionClosure } from "./task-local-union-contract.ts";
-import type { ProducerIndexWriter } from "./task-local-union-continuation.ts";
+import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
 import {
   normalizeName,
   type TaskLocalUnionMergeResult,

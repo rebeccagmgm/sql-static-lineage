@@ -6,7 +6,7 @@ import type {
   UnionContinuationCandidate,
   UnionContinuationGap,
 } from "./task-local-union-continuation-v2.ts";
-import type { ProducerIndexWriter } from "./task-local-union-continuation.ts";
+import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
 import { traceUnionTaskContinuationV2 } from "./task-local-union-continuation-v2.ts";
 import type {
   TaskLocalUnionBatchManifestRef,

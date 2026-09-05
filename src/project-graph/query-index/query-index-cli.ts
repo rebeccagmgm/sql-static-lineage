@@ -2,34 +2,23 @@ import { existsSync, statSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 
 import { projectKeySegment } from "../contracts/project-topology-contract.ts";
-import type {
-  FieldEvidenceEdgeType,
-  FieldEvidenceNodeType,
-} from "../field-evidence/field-evidence-contract.ts";
-import type {
-  ProjectTopologyEdgeType,
-  ProjectTopologyNodeType,
-  ProjectTopologyRelationLayer,
-} from "../contracts/project-topology-contract.ts";
 import {
-  explainIndexedFieldEvidenceRecord,
-  getIndexedFieldEvidence,
-  traceIndexedFieldValuePath,
-} from "./indexed-field-evidence-query.ts";
+  loadIndexedProjectTopology,
+  loadIndexedFieldEvidence,
+  loadIndexedTargetCausalOverlay,
+} from "./query-index-query-source.ts";
+import type { QueryIndexStore } from "./query-index-store.ts";
+import { runProjectionQuery } from "../query/run-projection-query.ts";
 import {
-  explainIndexedTopologyEdge,
-  getIndexedProjectTopology,
-  traceIndexedProjectUpstream,
-} from "./indexed-project-topology-query.ts";
-import {
-  explainIndexedTargetCausalAssessment,
-  getIndexedTargetCausalOverlay,
-  getIndexedTargetCausalTaskRollup,
-} from "./indexed-target-causal-overlay-query.ts";
-import type {
-  RelationStatus,
-  ImpactChannel,
-} from "../../contracts/canonical-artifacts.ts";
+  QUERY_OPTIONS,
+  QUERY_OPTIONS_BY_NAME,
+  collectOptions,
+  validateQueryOptions,
+  requiredOne,
+  optionalOne,
+  integerOption,
+  type QueryName,
+} from "../query/query-cli-options.ts";
 import {
   openNeo4jQueryIndexDriver,
   resolveNeo4jQueryIndexConnection,
@@ -39,17 +28,6 @@ import { Neo4jQueryIndexStore } from "./neo4j-query-index-store.ts";
 import { buildQueryIndex } from "./query-index-builder.ts";
 import { runRequiredQueryIndexParity } from "./query-index-parity.ts";
 import { loadQueryIndexSource } from "./query-index-source.ts";
-
-type QueryName =
-  | "get_project_topology"
-  | "trace_project_upstream"
-  | "explain_topology_edge"
-  | "get_field_evidence"
-  | "trace_field_value_path"
-  | "explain_field_evidence_record"
-  | "get_target_causal_overlay"
-  | "get_target_causal_task_rollup"
-  | "explain_target_causal_assessment";
 
 interface SourceOptions {
   readonly topologyDirectory: string;
@@ -96,34 +74,6 @@ const COMMON_OPTIONS = new Set([
   "--target-alias",
 ]);
 
-const QUERY_OPTIONS = new Set([
-  "--project-key",
-  "--expected-descriptor-hash",
-  "--query",
-  "--field-snapshot",
-  "--causal-snapshot",
-  "--node-type",
-  "--edge-type",
-  "--offset",
-  "--limit",
-  "--start-node-id",
-  "--relation-layer",
-  "--max-hops",
-  "--max-nodes",
-  "--max-edges",
-  "--max-paths",
-  "--edge-id",
-  "--root-field",
-  "--start-state-id",
-  "--record-id",
-  "--max-attachments",
-  "--relation-status",
-  "--channel",
-  "--task-id",
-  "--assessment-id",
-  "--max-assessments",
-]);
-
 export function parseQueryIndexCli(
   args: readonly string[],
 ): QueryIndexCliOptions {
@@ -146,7 +96,14 @@ export function parseQueryIndexCli(
   }
   if (command === "status") allowed.add("--project-key");
   if (command === "query")
-    for (const option of QUERY_OPTIONS) allowed.add(option);
+    for (const option of [
+      ...QUERY_OPTIONS,
+      "--project-key",
+      "--expected-descriptor-hash",
+      "--field-snapshot",
+      "--causal-snapshot",
+    ])
+      allowed.add(option);
   const values = collectOptions(args.slice(1), allowed);
   const connection = connectionOptions(values);
   if (command === "build") {
@@ -176,6 +133,8 @@ export function parseQueryIndexCli(
   if (!/^[0-9a-f]{64}$/u.test(descriptorHash))
     throw new Error("QUERY_INDEX_EXPECTED_DESCRIPTOR_HASH_INVALID");
   validateQueryOptions(query, values);
+  if (query.includes("field")) requiredOne(values, "--field-snapshot");
+  if (query.includes("causal")) requiredOne(values, "--causal-snapshot");
   return {
     command: "query",
     connection,
@@ -279,8 +238,8 @@ export async function runQueryIndexCli(
   }
 }
 
-async function runIndexedQuery(
-  store: Neo4jQueryIndexStore,
+export async function runIndexedQuery(
+  store: QueryIndexStore,
   options: Extract<QueryIndexCliOptions, { readonly command: "query" }>,
 ): Promise<unknown> {
   const expected = {
@@ -288,134 +247,28 @@ async function runIndexedQuery(
     projectKey: options.projectKey,
     expectedSourceDescriptorHash: options.expectedSourceDescriptorHash,
   };
-  const one = (name: string) => optionalOne(options.values, name);
-  const many = (name: string) => options.values.get(name);
-  const integer = (
-    name: string,
-    minimum: number,
-    maximum = Number.MAX_SAFE_INTEGER,
-  ) => optionalInteger(options.values, name, minimum, maximum);
-  switch (options.query) {
-    case "get_project_topology":
-      return getIndexedProjectTopology(expected, {
-        nodeTypes: many("--node-type") as
-          readonly ProjectTopologyNodeType[] | undefined,
-        edgeTypes: many("--edge-type") as
-          readonly ProjectTopologyEdgeType[] | undefined,
-        offset: integer("--offset", 0),
-        limit: integer("--limit", 1, 5_000),
-      });
-    case "trace_project_upstream":
-      return traceIndexedProjectUpstream(expected, {
-        startNodeId: requiredOne(options.values, "--start-node-id"),
-        relationLayers: many("--relation-layer") as
-          readonly ProjectTopologyRelationLayer[] | undefined,
-        maxHops: integer("--max-hops", 0, 100),
-        maxNodes: integer("--max-nodes", 1, 100_000),
-        maxEdges: integer("--max-edges", 1, 250_000),
-        maxPaths: integer("--max-paths", 1, 1_000_000),
-      });
-    case "explain_topology_edge":
-      return explainIndexedTopologyEdge(
-        expected,
-        requiredOne(options.values, "--edge-id"),
-      );
-    case "get_field_evidence":
-      return getIndexedFieldEvidence(fieldExpected(expected, options), {
-        nodeTypes: many("--node-type") as
-          readonly FieldEvidenceNodeType[] | undefined,
-        edgeTypes: many("--edge-type") as
-          readonly FieldEvidenceEdgeType[] | undefined,
-        offset: integer("--offset", 0),
-        limit: integer("--limit", 1),
-      });
-    case "trace_field_value_path":
-      return traceIndexedFieldValuePath(fieldExpected(expected, options), {
-        rootField: one("--root-field"),
-        startStateId: one("--start-state-id"),
-        maxHops: integer("--max-hops", 1),
-        maxNodes: integer("--max-nodes", 1),
-        maxEdges: integer("--max-edges", 1),
-        maxPaths: integer("--max-paths", 1),
-      });
-    case "explain_field_evidence_record":
-      return explainIndexedFieldEvidenceRecord(
-        fieldExpected(expected, options),
-        requiredOne(options.values, "--record-id"),
-        { maxAttachments: integer("--max-attachments", 1) },
-      );
-    case "get_target_causal_overlay":
-      return getIndexedTargetCausalOverlay(causalExpected(expected, options), {
-        relationStatuses: many("--relation-status") as
-          readonly RelationStatus[] | undefined,
-        channels: many("--channel") as readonly ImpactChannel[] | undefined,
-        taskIds: many("--task-id"),
-        offset: integer("--offset", 0),
-        limit: integer("--limit", 1),
-      });
-    case "get_target_causal_task_rollup":
-      return getIndexedTargetCausalTaskRollup(
-        causalExpected(expected, options),
-        requiredOne(options.values, "--task-id"),
-        { maxAssessments: integer("--max-assessments", 1) },
-      );
-    case "explain_target_causal_assessment":
-      return explainIndexedTargetCausalAssessment(
-        causalExpected(expected, options),
-        requiredOne(options.values, "--assessment-id"),
-        { maxAttachments: integer("--max-attachments", 1) },
-      );
-  }
-}
-
-function fieldExpected(
-  expected: {
-    readonly store: Neo4jQueryIndexStore;
-    readonly projectKey: string;
-    readonly expectedSourceDescriptorHash: string;
-  },
-  options: Extract<QueryIndexCliOptions, { readonly command: "query" }>,
-) {
-  if (!options.fieldEvidenceSnapshotId)
-    throw new Error("QUERY_INDEX_FIELD_SNAPSHOT_REQUIRED");
-  return {
-    ...expected,
-    fieldEvidenceSnapshotId: options.fieldEvidenceSnapshotId,
-  };
-}
-
-function causalExpected(
-  expected: {
-    readonly store: Neo4jQueryIndexStore;
-    readonly projectKey: string;
-    readonly expectedSourceDescriptorHash: string;
-  },
-  options: Extract<QueryIndexCliOptions, { readonly command: "query" }>,
-) {
-  if (!options.targetCausalOverlaySnapshotId)
-    throw new Error("QUERY_INDEX_CAUSAL_SNAPSHOT_REQUIRED");
-  return {
-    ...expected,
-    targetCausalOverlaySnapshotId: options.targetCausalOverlaySnapshotId,
-  };
-}
-
-function collectOptions(
-  args: readonly string[],
-  allowed: ReadonlySet<string>,
-): ReadonlyMap<string, readonly string[]> {
-  const values = new Map<string, string[]>();
-  for (let index = 0; index < args.length; index += 1) {
-    const option = args[index]!;
-    if (!allowed.has(option))
-      throw new Error(`QUERY_INDEX_OPTION_UNKNOWN:${option}`);
-    const value = args[index + 1];
-    if (!value || value.startsWith("--"))
-      throw new Error(`QUERY_INDEX_OPTION_VALUE_MISSING:${option}`);
-    index += 1;
-    values.set(option, [...(values.get(option) ?? []), value]);
-  }
-  return values;
+  return runProjectionQuery(
+    {
+      topology: () => loadIndexedProjectTopology(expected),
+      field: () =>
+        loadIndexedFieldEvidence({
+          ...expected,
+          fieldEvidenceSnapshotId: requiredOne(
+            options.values,
+            "--field-snapshot",
+          ),
+        }),
+      causal: () =>
+        loadIndexedTargetCausalOverlay({
+          ...expected,
+          targetCausalOverlaySnapshotId: requiredOne(
+            options.values,
+            "--causal-snapshot",
+          ),
+        }),
+    },
+    options,
+  );
 }
 
 function connectionOptions(
@@ -480,177 +333,6 @@ function validateAuditOutputRoot(path: string): void {
     throw new Error("QUERY_INDEX_AUDIT_ROOT_PARENT_INVALID");
 }
 
-function validateQueryOptions(
-  query: QueryName,
-  values: ReadonlyMap<string, readonly string[]>,
-): void {
-  const allowedValues: Readonly<Record<string, readonly string[]>> = {
-    "--node-type": [
-      "PROJECT_SNAPSHOT",
-      "TASK",
-      "PHYSICAL_DATASET",
-      "BOUNDARY",
-      "PROJECT_SNAPSHOT_REF",
-      "TASK_REF",
-      "PHYSICAL_FIELD",
-      "TARGET_WRITE",
-      "FIELD_BINDING_STATE",
-      "EXPRESSION",
-      "READ_OCCURRENCE",
-      "WRITE_OBSERVATION",
-      "ROWSET_CONTROL",
-      "CANDIDATE",
-      "GAP",
-    ],
-    "--edge-type": [
-      "HAS_ENTRY_TASK",
-      "ROOT_REACHES_TASK",
-      "READS",
-      "WRITES",
-      "PRODUCER_BRIDGE",
-      "SCHEDULE_DEPENDS_ON",
-      "HAS_BOUNDARY",
-      "PROJECT_HAS_FIELD_EVIDENCE",
-      "TASK_HAS_TARGET_WRITE",
-      "WRITE_TARGETS_DATASET",
-      "TARGET_WRITE_HAS_OUTPUT",
-      "TASK_HAS_STATE",
-      "STATE_IDENTIFIES_FIELD",
-      "DATASET_HAS_FIELD",
-      "STATE_COMPUTED_BY",
-      "VALUE_FLOW",
-      "VALUE_FLOW_READS_AT",
-      "VALUE_FLOW_WRITTEN_BY",
-      "CONTROL_ANNOTATES_STATE",
-      "EVIDENCE_SCOPED_TO_TASK",
-      "EVIDENCE_SCOPED_TO_FIELD",
-      "EVIDENCE_SCOPED_TO_STATE",
-    ],
-    "--relation-layer": [
-      "PROJECT",
-      "PROJECTION_SCOPE",
-      "DATA_PRODUCTION",
-      "SCHEDULE",
-      "BOUNDARY",
-    ],
-    "--relation-status": [
-      "CONFIRMED_RELATED",
-      "CONDITIONAL_RELATED",
-      "PROVEN_UNRELATED",
-      "UNKNOWN",
-    ],
-    "--channel": [
-      "FIELD_VALUE",
-      "EXPRESSION_CONTROL",
-      "ROW_MEMBERSHIP",
-      "MULTIPLICITY",
-      "GROUPING",
-      "SET_MEMBERSHIP",
-      "ORDER_SELECTION",
-      "WINDOW_EFFECT",
-      "RELATION_EXISTENCE",
-    ],
-  };
-  for (const [option, allowed] of Object.entries(allowedValues))
-    for (const value of values.get(option) ?? [])
-      if (!allowed.includes(value))
-        throw new Error(`QUERY_INDEX_OPTION_VALUE_INVALID:${option}`);
-  const requiredByQuery: Partial<Record<QueryName, readonly string[]>> = {
-    trace_project_upstream: ["--start-node-id"],
-    explain_topology_edge: ["--edge-id"],
-    get_field_evidence: ["--field-snapshot"],
-    trace_field_value_path: ["--field-snapshot"],
-    explain_field_evidence_record: ["--field-snapshot", "--record-id"],
-    get_target_causal_overlay: ["--causal-snapshot"],
-    get_target_causal_task_rollup: ["--causal-snapshot", "--task-id"],
-    explain_target_causal_assessment: ["--causal-snapshot", "--assessment-id"],
-  };
-  for (const option of requiredByQuery[query] ?? [])
-    requiredOne(values, option);
-  if (
-    query === "trace_field_value_path" &&
-    (optionalOne(values, "--root-field") === undefined) ===
-      (optionalOne(values, "--start-state-id") === undefined)
-  )
-    throw new Error("QUERY_INDEX_FIELD_TRACE_START_REQUIRED_EXACTLY_ONE");
-  for (const [option, minimum, maximum] of [
-    ["--offset", 0, Number.MAX_SAFE_INTEGER],
-    [
-      "--limit",
-      1,
-      query === "get_project_topology" ? 5_000 : Number.MAX_SAFE_INTEGER,
-    ],
-    [
-      "--max-hops",
-      query === "trace_project_upstream" ? 0 : 1,
-      query === "trace_project_upstream" ? 100 : Number.MAX_SAFE_INTEGER,
-    ],
-    [
-      "--max-nodes",
-      1,
-      query === "trace_project_upstream" ? 100_000 : Number.MAX_SAFE_INTEGER,
-    ],
-    [
-      "--max-edges",
-      1,
-      query === "trace_project_upstream" ? 250_000 : Number.MAX_SAFE_INTEGER,
-    ],
-    [
-      "--max-paths",
-      1,
-      query === "trace_project_upstream" ? 1_000_000 : Number.MAX_SAFE_INTEGER,
-    ],
-    ["--max-attachments", 1, Number.MAX_SAFE_INTEGER],
-    ["--max-assessments", 1, Number.MAX_SAFE_INTEGER],
-  ] as const)
-    optionalInteger(values, option, minimum, maximum);
-}
-
-function requiredOne(
-  values: ReadonlyMap<string, readonly string[]>,
-  option: string,
-): string {
-  const value = optionalOne(values, option);
-  if (value === undefined)
-    throw new Error(`QUERY_INDEX_OPTION_REQUIRED:${option}`);
-  return value;
-}
-
-function optionalOne(
-  values: ReadonlyMap<string, readonly string[]>,
-  option: string,
-): string | undefined {
-  const found = values.get(option);
-  if (found === undefined) return undefined;
-  if (found.length !== 1)
-    throw new Error(`QUERY_INDEX_OPTION_DUPLICATE:${option}`);
-  return found[0];
-}
-
-function integerOption(
-  values: ReadonlyMap<string, readonly string[]>,
-  option: string,
-  fallback: number,
-  minimum: number,
-  maximum: number,
-): number {
-  return optionalInteger(values, option, minimum, maximum) ?? fallback;
-}
-
-function optionalInteger(
-  values: ReadonlyMap<string, readonly string[]>,
-  option: string,
-  minimum: number,
-  maximum: number,
-): number | undefined {
-  const value = optionalOne(values, option);
-  if (value === undefined) return undefined;
-  const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum)
-    throw new Error(`QUERY_INDEX_OPTION_INTEGER_INVALID:${option}`);
-  return parsed;
-}
-
 function absolutePath(value: string, label: string): string {
   if (!isAbsolute(value))
     throw new Error(`QUERY_INDEX_${label}_PATH_NOT_ABSOLUTE`);
@@ -660,18 +342,6 @@ function absolutePath(value: string, label: string): string {
 function writeJson(write: (text: string) => void, value: unknown): void {
   write(`${JSON.stringify(value)}\n`);
 }
-
-const QUERY_OPTIONS_BY_NAME = new Set<QueryName>([
-  "get_project_topology",
-  "trace_project_upstream",
-  "explain_topology_edge",
-  "get_field_evidence",
-  "trace_field_value_path",
-  "explain_field_evidence_record",
-  "get_target_causal_overlay",
-  "get_target_causal_task_rollup",
-  "explain_target_causal_assessment",
-]);
 
 export function usage(): string {
   return [

@@ -1,10 +1,24 @@
 import { readFileSync } from "node:fs";
 
-import { normalizeName } from "./task-local-union-merge.ts";
-import type { ProducerIndexWriter } from "./task-local-union-continuation.ts";
 import type { TaskLocalUnionProducerIndexRef } from "./task-local-union-contract.ts";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
+
+export interface ProducerIndexWriter {
+  readonly taskId: string;
+  /** Stable write-observation identity when the producer index carries it. */
+  readonly writeObservationId?: string;
+  readonly datasetNodeId?: string;
+  readonly qualifiedName?: string;
+  readonly partition?: readonly {
+    readonly column: string;
+    readonly values: readonly string[];
+    readonly partitionStatus?: string;
+    readonly valueStatus?: string;
+    readonly observedValue?: string | null;
+    readonly expression?: string;
+  }[];
+}
 
 export interface LoadedProducerIndex {
   readonly identity: TaskLocalUnionProducerIndexRef;
@@ -74,18 +88,6 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
     identity: { contentHash, inputFingerprint },
     writers,
   };
-}
-
-export function writersForQualifiedName(
-  writers: readonly ProducerIndexWriter[],
-  qualifiedName: string,
-): ProducerIndexWriter[] {
-  const key = normalizeName(qualifiedName);
-  return writers.filter(
-    (writer) =>
-      writer.qualifiedName !== undefined &&
-      normalizeName(writer.qualifiedName) === key,
-  );
 }
 
 function parsePartition(

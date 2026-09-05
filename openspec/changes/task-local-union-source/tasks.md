@@ -25,6 +25,8 @@
 
 ## 5. TU-4 Continuation kernel
 
+> 2026-09-05 收敛更新：以下勾选记录历史交付。v1 内核及其专属测试已退役；接续使用 v2。历史投影兼容与数据集身份合并测试保留。
+
 - [x] 5.1 In-union WRITES continuation (§5.1) with fixtures first
 - [x] 5.2 Producer-index boundary + derived bridge kill-switch (§5.2)
 - [x] 5.3 Partition pruning table (§5.4); assert scheduleReference never enters prune inputs
@@ -32,7 +34,7 @@
 
 ## 6. TU-5 Schedule display edges (optional)
 
-- [x] 6.1 Optional `SCHEDULE_DEPENDS_ON` export from scheduleReference; TU-4 results invariant under toggle
+- [x] 6.1 Optional `SCHEDULE_DEPENDS_ON` export from scheduleReference; source union remains unchanged by export (2026-09-05: replace the retired TU-4 invocation with a direct immutability check)
 
 ## 7. TU-6 / TU-7 / TU-8
 

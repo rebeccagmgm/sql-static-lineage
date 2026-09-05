@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { expectQueryCliParity } from "./fixtures/query-cli-parity.ts";
 
 import { getIndexedFieldEvidence } from "../src/project-graph/query-index/indexed-field-evidence-query.ts";
 import { getIndexedProjectTopology } from "../src/project-graph/query-index/indexed-project-topology-query.ts";
@@ -110,6 +111,7 @@ describe("real published artifact closed loop", () => {
         expect(topology.result.nodes.length).toBeLessThanOrEqual(1);
         expect(field.result.nodes.length).toBeLessThanOrEqual(1);
         expect(causal.result.assessments.length).toBeLessThanOrEqual(1);
+        await expectQueryCliParity(source, store);
       } finally {
         rmSync(auditRoot, { recursive: true, force: true });
         await store.close();

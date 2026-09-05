@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { physicalDatasetNodeId } from "../src/project-graph/contracts/project-topology-contract.ts";
-import { traceUnionUpstream } from "../src/project-graph/topology/task-local-union/task-local-union-continuation.ts";
 import { mergeLoadedTasksForTest } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
 import { exportScheduleDependsOnEdges } from "../src/project-graph/topology/task-local-union/task-local-union-schedule-edges.ts";
 import type { LoadedTaskLocalUnionTask } from "../src/project-graph/topology/task-local-union/task-local-union-source.ts";
@@ -179,22 +178,12 @@ describe("exportScheduleDependsOnEdges (TU-5)", () => {
     ).toBe(true);
   });
 
-  it("TU-4 continuation is invariant under schedule display export", () => {
+  it("schedule display export preserves the source union without adding data edges", () => {
     const merge = fixtureMerge();
-    const before = traceUnionUpstream({
-      merge,
-      datasetNodeId: datasetId,
-      enableDerivedProducerBridge: false,
-    });
+    const before = structuredClone(merge);
     const exported = exportScheduleDependsOnEdges({ merge });
     expect(exported.derivedEdges.length).toBeGreaterThan(0);
-    const after = traceUnionUpstream({
-      merge,
-      datasetNodeId: datasetId,
-      enableDerivedProducerBridge: false,
-    });
-    expect(after).toEqual(before);
-    expect(after.inUnionWriterTaskIds).toEqual(["119044"]);
+    expect(merge).toEqual(before);
     // Schedule edges are not mixed into merge.edges.
     expect(merge.edges.every((edge) => edge.derived === false)).toBe(true);
     expect(

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 
 import { describe, expect, it } from "vitest";
 
-import type { ProducerIndexWriter } from "../src/project-graph/topology/task-local-union/task-local-union-continuation.ts";
+import type { ProducerIndexWriter } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import { mergeLoadedTasksForTest } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
 import { loadProducerIndex } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import {

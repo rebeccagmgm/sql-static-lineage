@@ -46,19 +46,6 @@ export const QUERY_INDEX_SCHEMA_STATEMENTS = Object.freeze([
   "CREATE INDEX sl_query_index_node_lookup IF NOT EXISTS FOR (n:SLIndexedNode) ON (n.indexBuildId, n.projectionKind, n.projectionSnapshotId, n.canonicalNodeId)",
 ] as const);
 
-export interface BoundedTopologyPathQuery {
-  readonly indexBuildId: string;
-  readonly projectionSnapshotId: string;
-  readonly startNodeId: string;
-  readonly maxHops: number;
-  readonly limit: number;
-}
-
-export interface BoundedTopologyPath {
-  readonly nodeIds: readonly string[];
-  readonly edgeIds: readonly string[];
-}
-
 export class Neo4jQueryIndexStore implements QueryIndexStore {
   constructor(
     private readonly driver: Driver,
@@ -332,51 +319,6 @@ export class Neo4jQueryIndexStore implements QueryIndexStore {
     });
   }
 
-  /**
-   * Execute one graph-native, bounded topology traversal. The query returns
-   * only path identifiers and never reconstructs the full projection in JS.
-   */
-  async traceProjectUpstreamGraphNative(
-    input: BoundedTopologyPathQuery,
-  ): Promise<readonly BoundedTopologyPath[]> {
-    const maxHops = boundedInteger(input.maxHops, "maxHops", 1, 32);
-    const limit = boundedInteger(input.limit, "limit", 1, 1_000);
-    return this.read(
-      "TRACE_PROJECT_UPSTREAM_GRAPH_NATIVE",
-      async (transaction) => {
-        const result = await transaction.run(
-          `MATCH p=(start:SLIndexedNode)-[:SL_INDEX_EDGE*1..${maxHops}]->(upstream:SLIndexedNode)
-         WHERE start.indexBuildId = $indexBuildId
-           AND upstream.indexBuildId = $indexBuildId
-           AND start.projectionKind = 'PROJECT_TOPOLOGY'
-           AND upstream.projectionKind = 'PROJECT_TOPOLOGY'
-           AND start.projectionSnapshotId = $projectionSnapshotId
-           AND upstream.projectionSnapshotId = $projectionSnapshotId
-           AND start.canonicalNodeId = $startNodeId
-           AND ALL(r IN relationships(p) WHERE
-             r.indexBuildId = $indexBuildId
-             AND r.projectionKind = 'PROJECT_TOPOLOGY'
-             AND r.projectionSnapshotId = $projectionSnapshotId
-             AND r.edgeType IN ['PRODUCER_BRIDGE', 'SCHEDULE_DEPENDS_ON'])
-         RETURN [n IN nodes(p) | n.canonicalNodeId] AS nodeIds,
-                [r IN relationships(p) | r.canonicalEdgeId] AS edgeIds
-         ORDER BY length(p), nodeIds
-         LIMIT toInteger($limit)`,
-          {
-            indexBuildId: input.indexBuildId,
-            projectionSnapshotId: input.projectionSnapshotId,
-            startNodeId: input.startNodeId,
-            limit,
-          },
-        );
-        return result.records.map((record) => ({
-          nodeIds: stringArray(record.get("nodeIds")),
-          edgeIds: stringArray(record.get("edgeIds")),
-        }));
-      },
-    );
-  }
-
   async recordValidation(
     indexBuildId: string,
     state: Exclude<QueryIndexGateState, "PENDING">,
@@ -577,23 +519,6 @@ export class Neo4jQueryIndexStore implements QueryIndexStore {
       await session.close().catch(() => undefined);
     }
   }
-}
-
-function boundedInteger(
-  value: number,
-  label: string,
-  minimum: number,
-  maximum: number,
-): number {
-  if (!Number.isSafeInteger(value) || value < minimum || value > maximum)
-    throw new Error(`QUERY_INDEX_${label.toUpperCase()}_INVALID`);
-  return value;
-}
-
-function stringArray(value: unknown): readonly string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string"))
-    throw new Error("QUERY_INDEX_GRAPH_NATIVE_RESULT_INVALID");
-  return value;
 }
 
 function assertStagedBuildInput(input: QueryIndexStagedBuildInput): void {

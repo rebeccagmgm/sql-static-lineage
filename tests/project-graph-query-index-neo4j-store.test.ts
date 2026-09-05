@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  Neo4jQueryIndexStore,
   QUERY_INDEX_LABELS,
   QUERY_INDEX_RELATIONSHIP_TYPES,
   QUERY_INDEX_SCHEMA_STATEMENTS,
@@ -60,50 +59,5 @@ describe("query-index Neo4j namespace", () => {
       source.match(/SKIP toInteger\(\$offset\) LIMIT toInteger\(\$limit\)/gu),
     ).toHaveLength(2);
     expect(source).toContain("session.executeWrite(work)");
-  });
-
-  it("exposes a bounded graph-native upstream path query", async () => {
-    const calls: {
-      readonly statement: string;
-      readonly parameters: unknown;
-    }[] = [];
-    const transaction = {
-      run: async (statement: string, parameters: unknown) => {
-        calls.push({ statement, parameters });
-        return {
-          records: [
-            {
-              get: (key: string) =>
-                key === "nodeIds"
-                  ? ["task:root", "task:producer"]
-                  : ["edge:bridge"],
-            },
-          ],
-        };
-      },
-    };
-    const driver = {
-      session: () => ({
-        executeRead: async (
-          work: (value: typeof transaction) => Promise<unknown>,
-        ) => work(transaction),
-        close: async () => undefined,
-      }),
-    } as never;
-    const store = new Neo4jQueryIndexStore(driver, "neo4j");
-    const paths = await store.traceProjectUpstreamGraphNative({
-      indexBuildId: "build-1",
-      projectionSnapshotId: "snapshot-1",
-      startNodeId: "task:root",
-      maxHops: 3,
-      limit: 2,
-    });
-    expect(paths).toEqual([
-      { nodeIds: ["task:root", "task:producer"], edgeIds: ["edge:bridge"] },
-    ]);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]!.statement).toContain("ALL(r IN relationships(p)");
-    expect(calls[0]!.statement).toContain("LIMIT toInteger($limit)");
-    expect(calls[0]!.statement).not.toContain("RETURN n");
   });
 });

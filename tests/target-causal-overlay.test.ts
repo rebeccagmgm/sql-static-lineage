@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { expectQueryCliParity } from "./fixtures/query-cli-parity.ts";
 
 import { canonicalJson } from "../src/contracts/runtime.ts";
 import { buildFieldEvidenceProjection } from "../src/project-graph/field-evidence/field-evidence-projector.ts";
@@ -508,6 +509,7 @@ describe("target causal overlay query-index projection", () => {
       runParity: async () => runRequiredQueryIndexParity({ source, store }),
     });
     expect(built.audit.parityReport.status).toBe("PASSED");
+    await expectQueryCliParity(source, store);
     expect(built.audit.parityReport.cases).toHaveLength(21);
     expect(
       built.audit.parityReport.cases.filter(({ caseId }) =>

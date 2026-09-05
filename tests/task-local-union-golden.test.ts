@@ -4,12 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { traceUnionUpstream } from "../src/project-graph/topology/task-local-union/task-local-union-continuation.ts";
 import { mergeTaskLocalUnion } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
-import {
-  loadProducerIndex,
-  writersForQualifiedName,
-} from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import { loadTaskLocalUnionSources } from "../src/project-graph/topology/task-local-union/task-local-union-source.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -77,14 +72,13 @@ function datasetNodeIdByQualifiedName(
   return matches[0]!.nodeId;
 }
 
-describeGolden("TU-7 golden union chain (105387→119044→176827)", () => {
+describeGolden("TU-7 historical union projection compatibility", () => {
   const loaded = loadTaskLocalUnionSources({
     manifestPath: paths!.manifestPath,
     projectGraphRoot: paths!.projectGraphRoot,
     producerIndexPath: paths!.producerIndexPath,
   });
   const merge = mergeTaskLocalUnion(loaded);
-  const producer = loadProducerIndex(paths!.producerIndexPath);
 
   it("projects all three goldens and keeps one PHYSICAL_DATASET per shared table", () => {
     expect(loaded.tasks.map((task) => task.taskSource.taskId)).toEqual([
@@ -125,71 +119,6 @@ describeGolden("TU-7 golden union chain (105387→119044→176827)", () => {
       return from?.nodeType === "TASK" && to?.nodeType === "TASK";
     });
     expect(taskTask).toEqual([]);
-  });
-
-  it("§5.1: 176827 READ t98 → in-union writer 119044 without producer-index", () => {
-    const datasetNodeId = datasetNodeIdByQualifiedName(
-      merge.nodes,
-      "pdata_n.t98_sb_otc_opt_comp_info",
-    );
-    const result = traceUnionUpstream({
-      merge,
-      datasetNodeId,
-      enableDerivedProducerBridge: false,
-    });
-    expect(result.inUnionWriterTaskIds).toContain("119044");
-    expect(result.derivedEdges).toEqual([]);
-  });
-
-  it("§5.1: 119044 READ t03_agt → in-union writer 105387", () => {
-    const datasetNodeId = datasetNodeIdByQualifiedName(
-      merge.nodes,
-      "pdata_n.t03_agt_stati_info_h",
-    );
-    const result = traceUnionUpstream({
-      merge,
-      datasetNodeId,
-      enableDerivedProducerBridge: false,
-    });
-    expect(result.inUnionWriterTaskIds).toContain("105387");
-  });
-
-  it("§5.2: t03_otc_opt_comp_info has no in-union writer; producer-index boundary", () => {
-    const datasetNodeId = datasetNodeIdByQualifiedName(
-      merge.nodes,
-      "pdata_n.t03_otc_opt_comp_info",
-    );
-    const indexWriters = writersForQualifiedName(
-      producer.writers,
-      "pdata_n.t03_otc_opt_comp_info",
-    );
-    expect(indexWriters.map((writer) => writer.taskId).sort()).toEqual([
-      "103943",
-      "209862",
-    ]);
-    const result = traceUnionUpstream({
-      merge,
-      datasetNodeId,
-      producerIndexWriters: indexWriters,
-      enableDerivedProducerBridge: true,
-    });
-    expect(result.inUnionWriterTaskIds).toEqual([]);
-    expect(result.producerIndexBoundaryTaskIds).toEqual(["103943", "209862"]);
-    expect(result.gaps.map((gap) => gap.reasonCode)).toContain(
-      "WRITER_NOT_IN_UNION",
-    );
-    expect(
-      result.derivedEdges.every((edge) => edge.edgeType === "PRODUCER_BRIDGE"),
-    ).toBe(true);
-
-    const disabled = traceUnionUpstream({
-      merge,
-      datasetNodeId,
-      producerIndexWriters: indexWriters,
-      enableDerivedProducerBridge: false,
-    });
-    expect(disabled.derivedEdges).toEqual([]);
-    expect(disabled.producerIndexBoundaryTaskIds).toEqual(["103943", "209862"]);
   });
 
   it("105387 DATASET_CONTROL refs stay off 176827 READS", () => {
@@ -237,7 +166,7 @@ describeGolden("TU-7 golden union chain (105387→119044→176827)", () => {
     }
   });
 
-  it("119044 zipper READs are NON_LITERAL_PRESENT (no false unique writer prune)", () => {
+  it("119044 historical reads retain NON_LITERAL_PRESENT", () => {
     const task119044 = loaded.tasks.find(
       (task) => task.taskSource.taskId === "119044",
     )!;
@@ -262,15 +191,5 @@ describeGolden("TU-7 golden union chain (105387→119044→176827)", () => {
           edge.properties.partitionPredicateStatus === "NON_LITERAL_PRESENT",
       ),
     ).toBe(true);
-
-    const result = traceUnionUpstream({
-      merge,
-      datasetNodeId,
-      readPartition: { partitionPredicateStatus: "NON_LITERAL_PRESENT" },
-    });
-    expect(result.gaps.map((gap) => gap.reasonCode)).toContain(
-      "READ_PREDICATE_NON_LITERAL",
-    );
-    expect(result.inUnionWriterTaskIds).toContain("105387");
   });
 });
