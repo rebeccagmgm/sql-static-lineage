@@ -492,7 +492,7 @@ describe("machine facts contract", () => {
 		]);
 	});
 
-	it("keeps dynamic partition output mapping unresolved", () => {
+	it("binds dynamic partition output when the target schema proves the tail column", () => {
 		const f = fixture();
 		const schemaPath = join(f.root, "schema.json");
 		const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
@@ -507,17 +507,26 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
-		expect(readJsonlText(join(bundle, "output-field-bindings.jsonl")).trim()).toBe("");
+		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
+			.trim()
+			.split(/\r?\n/)
+			.filter(Boolean)
+			.map((line) => JSON.parse(line));
+		expect(bindings.map((binding) => ({
+			target: binding.target_field,
+			sourceOrdinal: binding.source_ordinal,
+			dynamicPartitions: binding.dynamic_partition_columns,
+		}))).toEqual([
+			{ target: "id", sourceOrdinal: 0, dynamicPartitions: ["dt"] },
+			{ target: "dt", sourceOrdinal: 1, dynamicPartitions: ["dt"] },
+		]);
 		const unknowns = readJsonlText(join(bundle, "unknowns.jsonl"))
 			.trim()
 			.split(/\r?\n/)
 			.filter(Boolean)
 			.map((line) => JSON.parse(line));
-		expect(unknowns).toContainEqual(
-			expect.objectContaining({
-				outcome_class: "NOT_EVALUABLE",
-				reason_code: "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
-			}),
+		expect(unknowns).not.toContainEqual(
+			expect.objectContaining({ reason_code: "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE" }),
 		);
 	});
 

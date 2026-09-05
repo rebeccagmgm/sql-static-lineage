@@ -143,6 +143,248 @@ describe("Input Pack-driven Machine Facts", () => {
     ).toHaveLength(2);
   });
 
+  it("treats an inline CREATE as schema evidence instead of a competing field producer", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1206",
+      taskCategory: "sparkIndex",
+      taskName: "demo.inline_create_materialization",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "CREATE TABLE inline_stage (stage_a STRING, stage_b STRING); " +
+            "INSERT OVERWRITE TABLE inline_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; " +
+            "SELECT stage_a AS out_a, stage_b AS out_b FROM inline_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1206"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(f.factsRoot, "registry", "tasks", "1206", "bundle");
+    const bridges = jsonl(
+      join(bundle, "task-local-materializations.jsonl"),
+    ).filter((bridge) => bridge.physical_dataset === "demo.inline_stage");
+    expect(bridges).toHaveLength(2);
+    expect(bridges.every((bridge) => bridge.status === "RESOLVED")).toBe(true);
+    expect(
+      jsonl(join(bundle, "output-field-bindings.jsonl")).filter(
+        (binding) => binding.target_dataset === "demo.root",
+      ).map((binding) => binding.target_field),
+    ).toEqual(["out_a", "out_b"]);
+    const projection = projectTaskLocal({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      taskId: "1206",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(
+      projection.edges.some(
+        (edge) =>
+          edge.edgeType === "FIELD_DIRECT" &&
+          edge.properties.materializationFolded === true,
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps non-partitioned overwrite and append writes as confirmed contributors", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1208",
+      taskCategory: "sparkIndex",
+      taskName: "demo.multiple_local_writes",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "CREATE TABLE multi_stage (stage_a STRING, stage_b STRING); " +
+            "INSERT OVERWRITE TABLE multi_stage SELECT src_a AS stage_a, filter_key AS stage_b FROM demo.extra; " +
+            "INSERT INTO TABLE multi_stage " +
+            "SELECT stage_a, stage_b FROM multi_stage UNION ALL " +
+            "SELECT mid_a AS stage_a, filter_key AS stage_b FROM demo.mid; " +
+            "SELECT stage_a AS out_a, stage_b AS out_b FROM multi_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1208"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(f.factsRoot, "registry", "tasks", "1208", "bundle");
+    const bridges = jsonl(
+      join(bundle, "task-local-materializations.jsonl"),
+    ).filter((bridge) => bridge.physical_dataset === "demo.multi_stage");
+    expect(bridges).toHaveLength(4);
+    expect(bridges.every((bridge) => bridge.status === "RESOLVED")).toBe(true);
+    const accumulatedBridges = bridges.filter(
+      (bridge) => Array.isArray(bridge.write_observation_ids),
+    );
+    expect(accumulatedBridges).toHaveLength(2);
+    expect(
+      accumulatedBridges.every(
+        (bridge) =>
+          Array.isArray(bridge.write_observation_ids) &&
+          bridge.write_observation_ids.length === 2 &&
+          Array.isArray(bridge.output_binding_ids) &&
+          bridge.output_binding_ids.length === 2,
+      ),
+    ).toBe(true);
+    const projection = projectTaskLocal({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      taskId: "1208",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const localFieldNodeIds = new Set(
+      projection.nodes
+        .filter(
+          (node) =>
+            node.nodeType === "PHYSICAL_FIELD" &&
+            node.properties.qualifiedName === "demo.multi_stage",
+        )
+        .map((node) => node.nodeId),
+    );
+    expect(
+      projection.edges.some(
+        (edge) => edge.properties.materializationFolded === true,
+      ),
+    ).toBe(true);
+    expect(
+      projection.edges.some(
+        (edge) =>
+          edge.edgeType === "FIELD_DIRECT" &&
+          localFieldNodeIds.has(edge.fromNodeId),
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps repeated partitioned overwrites ambiguous without partition matching", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1209",
+      taskCategory: "sparkIndex",
+      taskName: "demo.partitioned_local_writes",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "CREATE TABLE partition_stage (stage_a STRING) PARTITIONED BY (p STRING); " +
+            "INSERT OVERWRITE TABLE partition_stage PARTITION(p) SELECT src_a AS stage_a, 'A' AS p FROM demo.extra; " +
+            "INSERT OVERWRITE TABLE partition_stage PARTITION(p) SELECT mid_a AS stage_a, 'B' AS p FROM demo.mid; " +
+            "SELECT stage_a AS out_a, stage_a AS out_b FROM partition_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1209"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bridges = jsonl(
+      join(
+        f.factsRoot,
+        "registry",
+        "tasks",
+        "1209",
+        "bundle",
+        "task-local-materializations.jsonl",
+      ),
+    ).filter(
+      (bridge) => bridge.physical_dataset === "demo.partition_stage",
+    );
+    expect(bridges).toHaveLength(1);
+    expect(bridges[0]?.status).toBe("AMBIGUOUS");
+  });
+
+  it("binds the final SELECT output of a WITH INSERT instead of the CTE root", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1207",
+      taskCategory: "sparkIndex",
+      taskName: "demo.with_insert_materialization",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "CREATE TABLE with_insert_stage (stage_a STRING, stage_b STRING); " +
+            "WITH staged AS (SELECT src_a AS a, filter_key AS b, src_a AS ignored FROM demo.extra) " +
+            "INSERT OVERWRITE TABLE with_insert_stage SELECT a AS stage_a, b AS stage_b FROM staged; " +
+            "SELECT stage_a AS out_a, stage_b AS out_b FROM with_insert_stage;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1207"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(f.factsRoot, "registry", "tasks", "1207", "bundle");
+    const localBindings = jsonl(
+      join(bundle, "output-field-bindings.jsonl"),
+    ).filter(
+      (binding) => binding.target_dataset === "demo.with_insert_stage",
+    );
+    expect(localBindings.map((binding) => binding.target_field)).toEqual([
+      "stage_a",
+      "stage_b",
+    ]);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) =>
+          unknown.reason_code === "OUTPUT_BINDING_NOT_PROVABLE" &&
+          unknown.subject === "demo.with_insert_stage",
+      ),
+    ).toBe(false);
+  });
+
   it.each(["sparkIndex", "hiveTask", "hiveTask-2.0"])(
     "uses an internal CREATE DDL as Task-local schema for later %s SQL",
     (taskCategory) => {
@@ -1350,6 +1592,93 @@ describe("Input Pack-driven Machine Facts", () => {
         (unknown) => unknown.reason_code === "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
       ),
     ).toBe(false);
+  });
+
+  it("binds a task-local dynamic-partition backup from a schema-expanded star", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "task-local-dynamic-star",
+      taskCategory: "sparkIndex",
+      taskName: "demo.task_local_dynamic_star",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content: "SELECT src_a AS out_a, src_a AS out_b FROM demo.extra",
+          evidenceProvider: "synthetic:test",
+        },
+        finish: {
+          content:
+            "CREATE TABLE demo.task_local_temp (value_col STRING) PARTITIONED BY (p STRING); " +
+            "INSERT OVERWRITE TABLE demo.task_local_temp PARTITION(p) SELECT src_a, 'A' AS p FROM demo.extra; " +
+            "CREATE TABLE demo.task_local_backup (value_col STRING) PARTITIONED BY (p STRING); " +
+            "INSERT OVERWRITE TABLE demo.task_local_backup PARTITION(p) SELECT * FROM demo.task_local_temp;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["task-local-dynamic-star"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(
+      f.factsRoot,
+      "registry",
+      "tasks",
+      "task-local-dynamic-star",
+      "bundle",
+    );
+    const backupBindings = jsonl(
+      join(bundle, "output-field-bindings.jsonl"),
+    ).filter(
+      (binding) => binding.target_dataset === "demo.task_local_backup",
+    );
+    expect(backupBindings.map((binding) => binding.target_field)).toEqual([
+      "value_col",
+      "p",
+    ]);
+    expect(
+      backupBindings.every(
+        (binding) =>
+          Array.isArray(binding.dynamic_partition_columns) &&
+          binding.dynamic_partition_columns.length === 1 &&
+          binding.dynamic_partition_columns[0] === "p",
+      ),
+    ).toBe(true);
+    expect(
+      jsonl(join(bundle, "unknowns.jsonl")).some(
+        (unknown) =>
+          unknown.write_observation_id &&
+          unknown.reason_code === "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE" &&
+          unknown.subject === "demo.task_local_backup",
+      ),
+    ).toBe(false);
+    const projection = projectTaskLocal({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      taskId: "task-local-dynamic-star",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(
+      projection.gaps?.some(
+        (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
+      ),
+    ).toBe(false);
+    expect(
+      projection.edges.some(
+        (edge) => edge.properties.materializationFolded === true,
+      ),
+    ).toBe(true);
   });
 
   it("matches partition evidence by source span after non-write statements", () => {

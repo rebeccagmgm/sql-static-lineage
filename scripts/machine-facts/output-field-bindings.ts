@@ -320,6 +320,28 @@ function prefixColumns(prefix: readonly string[], full: readonly string[]): bool
 	return prefix.length < full.length && prefix.every((column, index) => normalizeName(column) === normalizeName(full[index] ?? ""));
 }
 
+function explicitPartitionBindingProvenBySchema(
+	schemaRef: SchemaReferenceRecord | null,
+	parsedInsert: ParsedInsert,
+	expressionCount: number,
+): boolean {
+	if (!schemaRef || parsedInsert.dynamicPartitionColumns.length === 0) return false;
+	const fullSchemaColumns = uniqueNormalizedColumns(schemaRef.physical_columns);
+	const schemaPartitionColumns = uniqueNormalizedColumns(schemaRef.partition_columns);
+	const sqlPartitionColumns = [
+		...parsedInsert.staticPartitionColumns.map(normalizeName),
+		...parsedInsert.dynamicPartitionColumns.map(normalizeName),
+	];
+	if (
+		!sameColumns(schemaPartitionColumns, sqlPartitionColumns) ||
+		!sameColumns(
+			fullSchemaColumns.slice(fullSchemaColumns.length - schemaPartitionColumns.length),
+			schemaPartitionColumns,
+		)
+	) return false;
+	return nonPartitionColumns(schemaRef).length + parsedInsert.dynamicPartitionColumns.length === expressionCount;
+}
+
 function gap(
 	input: OutputBindingInput,
 	write: WriteOutputContext,
@@ -581,17 +603,22 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 		if (isInsert && parsedInsert!.dynamicPartitionColumns.length > 0) {
 			const dynamicColumns = parsedInsert!.dynamicPartitionColumns.map(normalizeName);
 			const provenColumns = (write.partitionColumns ?? []).map(normalizeName);
-			const partitionProven =
+			const partitionProvenByInputPack =
 				write.partitionStatus === "COMPLETE" &&
 				dynamicColumns.length === provenColumns.length &&
 				dynamicColumns.every((column, index) => column === provenColumns[index]);
-			if (!partitionProven || expressions.length <= dynamicColumns.length) {
+			const partitionProvenBySchema = explicitPartitionBindingProvenBySchema(
+				schemaRef,
+				parsedInsert!,
+				expressions.length,
+			);
+			if ((!partitionProvenByInputPack && !partitionProvenBySchema) || expressions.length <= dynamicColumns.length) {
 				unknowns.push(gap(
 					input,
 					write,
 					"NOT_EVALUABLE",
 					"DYNAMIC_PARTITION_BINDING_NOT_PROVABLE",
-					`dynamic partition columns require complete Input Pack ordinal evidence: ${dynamicColumns.join(", ")}`,
+					`dynamic partition columns require complete Input Pack or target schema ordinal evidence: ${dynamicColumns.join(", ")}`,
 					parsedInsert!.target,
 					{ uncovered_ordinals: uncovered, input_pack_partition_status: write.partitionStatus ?? "UNKNOWN" },
 				));

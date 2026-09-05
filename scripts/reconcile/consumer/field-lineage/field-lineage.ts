@@ -389,11 +389,19 @@ function taskLocalMaterializationBindingIds(
             record.status === "RESOLVED" &&
             normalizeName(String(record.physical_dataset ?? "")) ===
               normalizeName(field.qualifiedName) &&
-            normalizeName(String(record.column ?? "")) === field.column &&
-            typeof record.output_binding_id === "string" &&
-            record.output_binding_id.length > 0,
+            normalizeName(String(record.column ?? "")) === field.column,
         )
-        .map((record) => String(record.output_binding_id)),
+        .flatMap((record) => [
+          ...(typeof record.output_binding_id === "string" && record.output_binding_id.length > 0
+            ? [record.output_binding_id]
+            : []),
+          ...(Array.isArray(record.output_binding_ids)
+            ? record.output_binding_ids.filter(
+                (value: unknown): value is string =>
+                  typeof value === "string" && value.length > 0,
+              )
+            : []),
+        ]),
     ),
   ].sort(compareText);
 }

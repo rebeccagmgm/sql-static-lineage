@@ -148,11 +148,15 @@ export interface TaskLocalMaterializationRecord {
 	readonly physical_dataset: string;
 	readonly column: string;
 	readonly write_observation_id: string | null;
+	readonly write_observation_ids?: readonly string[];
 	readonly write_statement_id: string | null;
+	readonly write_statement_ids?: readonly string[];
 	readonly read_statement_id: string;
 	readonly write_statement_index: number;
+	readonly write_statement_indexes?: readonly number[];
 	readonly read_statement_index: number;
 	readonly output_binding_id: string | null;
+	readonly output_binding_ids?: readonly string[];
 	readonly read_expression_ids: readonly string[];
 	readonly status: "RESOLVED" | "AMBIGUOUS" | "UNRESOLVED";
 	readonly provenance: "SAME_TASK_SQL_WRITE_READ";

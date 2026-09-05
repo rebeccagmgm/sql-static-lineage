@@ -123,29 +123,44 @@ export function sanitizeSqlForParser(sql: string): ParserSqlInput {
 }
 
 export function maskWithInsertTargetForParser(sql: string): string {
-	if (!/^\s*WITH\b/i.test(sql)) return sql;
 	const masked = sql.replace(/'(?:''|[^'])*'|"(?:""|[^"])*"|`(?:``|[^`])*`|--[^\r\n]*|\/\*[\s\S]*?\*\//g, (value) =>
 		" ".repeat(value.length),
 	);
-	const write = masked.match(
-		/\b(?:INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
-	);
-	if (!write || write.index === undefined) return sql;
-	let end = write.index + write[0].length;
-	const partition = masked.slice(end).match(/^\s*PARTITION\s*\(/i);
-	if (partition) {
-		const opening = end + partition[0].lastIndexOf("(");
-		let depth = 0;
-		for (let index = opening; index < sql.length; index += 1) {
-			if (sql[index] === "(") depth += 1;
-			else if (sql[index] === ")") {
-				depth -= 1;
-				if (depth === 0) {
-					end = index + 1;
-					break;
+	const ranges: Array<{ start: number; end: number }> = [];
+	let statementStart = 0;
+	for (let statementEnd = 0; statementEnd <= masked.length; statementEnd += 1) {
+		if (statementEnd < masked.length && masked[statementEnd] !== ";") continue;
+		const statement = masked.slice(statementStart, statementEnd);
+		if (/^\s*WITH\b/i.test(statement)) {
+			const write = statement.match(
+				/\b(?:INSERT\s+(?:OVERWRITE|INTO)\s+(?:TABLE\s+)?|MERGE\s+INTO\s+)([A-Za-z0-9_`".\-]+)/i,
+			);
+			if (write?.index !== undefined) {
+				const start = statementStart + write.index;
+				let end = start + write[0].length;
+				const partition = masked.slice(end, statementEnd).match(/^\s*PARTITION\s*\(/i);
+				if (partition) {
+					const opening = end + partition[0].lastIndexOf("(");
+					let depth = 0;
+					for (let index = opening; index < statementEnd; index += 1) {
+						if (masked[index] === "(") depth += 1;
+						else if (masked[index] === ")") {
+							depth -= 1;
+							if (depth === 0) {
+								end = index + 1;
+								break;
+							}
+						}
+					}
 				}
+				ranges.push({ start, end });
 			}
 		}
+		statementStart = statementEnd + 1;
 	}
-	return `${sql.slice(0, write.index)}${" ".repeat(end - write.index)}${sql.slice(end)}`;
+	return ranges.reduceRight(
+		(current, range) =>
+			`${current.slice(0, range.start)}${" ".repeat(range.end - range.start)}${current.slice(range.end)}`,
+		sql,
+	);
 }

@@ -1647,6 +1647,7 @@ function buildTaskBundle(
 		datasetIo,
 		expressions,
 		outputBindings,
+		schemaRefs,
 	);
 	const dedupedUnknowns = new Set<string>();
 	const retainedUnknowns = unknowns.filter((item) => {
@@ -2014,6 +2015,7 @@ function deriveTaskLocalMaterializations(
 	datasetIo: readonly DatasetIoRecord[],
 	expressions: readonly FieldExpressionRecord[],
 	outputBindings: readonly OutputFieldBindingRecord[],
+	schemaRefs: readonly SchemaReferenceRecord[],
 ): TaskLocalMaterializationRecord[] {
 	const defaultSchema = normalizeName(taskDefaultSchema ?? "");
 	const qualifyTaskTable = (value: unknown): string => {
@@ -2023,7 +2025,11 @@ function deriveTaskLocalMaterializations(
 			: normalized;
 	};
 	const statementIndexes = new Map(statements.map((statement) => [statement.statement_id, statement.statement_index]));
-	const writes = datasetIo.filter((record) => record.direction === "WRITE" && typeof record.write_observation_id === "string");
+	const writes = datasetIo.filter((record) =>
+		record.direction === "WRITE" &&
+		record.field_producing === true &&
+		typeof record.write_observation_id === "string"
+	);
 	const writeByObservation = new Map(writes.map((write) => [String(write.write_observation_id), write]));
 	const bindingsByObservation = new Map<string, OutputFieldBindingRecord[]>();
 	for (const binding of outputBindings) {
@@ -2065,15 +2071,36 @@ function deriveTaskLocalMaterializations(
 			})
 			.sort((left, right) => (statementIndexes.get(String(left.write_statement_id ?? left.statement_id ?? "")) ?? 0) - (statementIndexes.get(String(right.write_statement_id ?? right.statement_id ?? "")) ?? 0) || compareText(String(left.write_observation_id), String(right.write_observation_id)));
 		if (priorWrites.length === 0) continue;
+		const matchingSchemas = schemaRefs.filter((schemaRef) =>
+			schemaRef.status === "SUCCESS" &&
+			qualifyTaskTable(schemaRef.qualified_name) === physicalDataset
+		);
+		const nonPartitioned =
+			matchingSchemas.length === 1 &&
+			matchingSchemas[0]!.partition_columns.length === 0;
+		let lastOverwrite = -1;
+		if (nonPartitioned) {
+			for (const [index, write] of priorWrites.entries()) {
+				if (String(write.write_kind).toUpperCase() === "INSERT_OVERWRITE") lastOverwrite = index;
+			}
+		}
+		const effectiveWrites = lastOverwrite >= 0
+			? priorWrites.slice(lastOverwrite)
+			: priorWrites;
+		const accumulatedWritesProven =
+			effectiveWrites.length > 1 &&
+			String(effectiveWrites[0]!.write_kind).toUpperCase() === "INSERT_OVERWRITE" &&
+			effectiveWrites.slice(1).every((write) => String(write.write_kind).toUpperCase() === "INSERT_INTO");
 		for (const field of fields) {
-			const candidates = priorWrites.flatMap((write) =>
+			const candidatesByWrite = effectiveWrites.map((write) =>
 				(bindingsByObservation.get(String(write.write_observation_id)) ?? []).filter((binding) =>
 					qualifyTaskTable(binding.target_dataset) === physicalDataset && normalizeName(binding.target_field) === field.column,
 				),
 			);
+			const candidates = candidatesByWrite.flat();
 			const bridgeId = `task-local-materialization:${taskId}:${readStatementId}:${physicalDataset}:${field.column}`;
 			const evidenceRefs = ["statements.jsonl", "dataset-io.jsonl", "field-expression-nodes.jsonl", "output-field-bindings.jsonl"] as const;
-			if (priorWrites.length === 1 && candidates.length === 1) {
+			if (effectiveWrites.length === 1 && candidates.length === 1) {
 				const binding = candidates[0]!;
 				const write = writeByObservation.get(binding.write_observation_id);
 				const writeStatementId = String(write?.write_statement_id ?? write?.statement_id ?? binding.write_statement_id);
@@ -2099,6 +2126,40 @@ function deriveTaskLocalMaterializations(
 					continue;
 				}
 			}
+			if (accumulatedWritesProven && candidatesByWrite.every((values) => values.length === 1)) {
+				const bindings = candidatesByWrite.map((values) => values[0]!);
+				const contributingWrites = bindings.map((binding) => writeByObservation.get(binding.write_observation_id));
+				if (contributingWrites.every((write): write is DatasetIoRecord => write !== undefined)) {
+					const writeStatementIds = contributingWrites.map((write) =>
+						String(write.write_statement_id ?? write.statement_id),
+					);
+					const writeStatementIndexes = writeStatementIds.map((statementId) => statementIndexes.get(statementId));
+					if (writeStatementIndexes.every((index): index is number => index !== undefined)) {
+						records.push({
+							bridge_id: bridgeId,
+							task_id: taskId,
+							logical_source_id: logicalSourceId,
+							physical_dataset: physicalDataset,
+							column: field.column,
+							write_observation_id: null,
+							write_observation_ids: bindings.map((binding) => binding.write_observation_id),
+							write_statement_id: null,
+							write_statement_ids: writeStatementIds,
+							read_statement_id: readStatementId,
+							write_statement_index: -1,
+							write_statement_indexes: writeStatementIndexes,
+							read_statement_index: readStatementIndex,
+							output_binding_id: null,
+							output_binding_ids: bindings.map((binding) => binding.binding_id),
+							read_expression_ids: [...field.expressionIds].sort(compareText),
+							status: "RESOLVED",
+							provenance: "SAME_TASK_SQL_WRITE_READ",
+							evidence_refs: evidenceRefs,
+						});
+						continue;
+					}
+				}
+			}
 			records.push({
 				bridge_id: bridgeId,
 				task_id: taskId,
@@ -2108,13 +2169,13 @@ function deriveTaskLocalMaterializations(
 				write_observation_id: null,
 				write_statement_id: null,
 				read_statement_id: readStatementId,
-				write_statement_index: priorWrites.length === 1
-					? statementIndexes.get(String(priorWrites[0]!.write_statement_id ?? priorWrites[0]!.statement_id ?? "")) ?? -1
+				write_statement_index: effectiveWrites.length === 1
+					? statementIndexes.get(String(effectiveWrites[0]!.write_statement_id ?? effectiveWrites[0]!.statement_id ?? "")) ?? -1
 					: -1,
 				read_statement_index: readStatementIndex,
 				output_binding_id: null,
 				read_expression_ids: [...field.expressionIds].sort(compareText),
-				status: candidates.length > 1 || priorWrites.length > 1 ? "AMBIGUOUS" : "UNRESOLVED",
+				status: candidates.length > 1 || effectiveWrites.length > 1 ? "AMBIGUOUS" : "UNRESOLVED",
 				provenance: "SAME_TASK_SQL_WRITE_READ",
 				evidence_refs: evidenceRefs,
 			});

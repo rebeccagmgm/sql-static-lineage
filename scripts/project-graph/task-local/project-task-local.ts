@@ -349,6 +349,16 @@ export function materializationRecordsForField(
   return all.every((materialization) => !materializationRecordHasContext(materialization)) ? all : [];
 }
 
+function materializationOutputBindingIds(materialization: JsonRecord): string[] {
+  const values = [
+    text(materialization.output_binding_id),
+    ...(Array.isArray(materialization.output_binding_ids)
+      ? materialization.output_binding_ids.map((value: unknown) => text(value))
+      : []),
+  ].filter((value): value is string => value !== null);
+  return [...new Set(values)].sort(compareText);
+}
+
 function isFinalWrite(
   physicalDataset: string,
   targetQualifiedName: string | null,
@@ -757,7 +767,9 @@ function projectTaskLocalFromFacts(input: {
     subtypeHops: readonly ReturnType<typeof classifyExpressionSubtype>[] = [],
   ): ExpandedMaterializedField[] => {
     const fieldKey = materializationKey(source.qualifiedName, source.column);
-    const memoKey = `${fieldKey}\u0000${materializationContextKey(context)}`;
+    const contextKey = materializationContextKey(context);
+    const traversalKey = `${fieldKey}\u0000${context.statementId ?? ""}`;
+    const memoKey = `${fieldKey}\u0000${contextKey}`;
     if (visited.size === 0) {
       const cached = expandedMaterializationMemo.get(memoKey);
       if (cached) return cached;
@@ -770,9 +782,14 @@ function projectTaskLocalFromFacts(input: {
     const resolved = candidates.filter(
       (materialization) =>
         String(materialization.status ?? "").toUpperCase() === "RESOLVED"
-        && text(materialization.output_binding_id),
+        && materializationOutputBindingIds(materialization).length > 0,
     );
-    if (candidates.length !== 1 || resolved.length !== 1 || !primaryTarget || visited.has(fieldKey)) {
+    if (
+      candidates.length !== 1
+      || resolved.length !== 1
+      || !primaryTarget
+      || visited.has(traversalKey)
+    ) {
       const result: ExpandedMaterializedField[] = [{
         field: source,
         materializationBridgeIds: [],
@@ -785,9 +802,13 @@ function projectTaskLocalFromFacts(input: {
       return result;
     }
     const materialization = resolved[0]!;
-    const binding = bindingById.get(text(materialization.output_binding_id)!);
-    const expression = binding ? expressionFor(load, binding) : null;
-    if (!expression) {
+    const bindingIds = materializationOutputBindingIds(materialization);
+    const producerExpressions = bindingIds.flatMap((bindingId) => {
+      const binding = bindingById.get(bindingId);
+      const expression = binding ? expressionFor(load, binding) : null;
+      return expression ? [expression] : [];
+    });
+    if (producerExpressions.length !== bindingIds.length) {
       const result: ExpandedMaterializedField[] = [{
         field: source,
         materializationBridgeIds: [],
@@ -799,53 +820,66 @@ function projectTaskLocalFromFacts(input: {
       if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
-    const hop = classifyExpressionSubtype(
-      expression,
-      fieldEvidenceIndexes.relationTree.relations.get(
-        text(expression.relation_id) ?? "",
-      )?.relationType ?? null,
-    );
-    const underlying = taskLocalSourceFieldsForExpression(
-      expression,
-      catalog,
-      load,
-      taskId,
-      primaryTarget,
-      defaultSchema,
-    );
-    if (underlying.fields.length === 0) {
-      const result: ExpandedMaterializedField[] = [{
-        field: source,
-        materializationBridgeIds: [],
-        leafExpressionId: text(expression.expression_id),
-        leafRelationId: text(expression.relation_id),
-        pathHadAggregation: [...subtypeHops, hop].some((item) => item.pathHadAggregation),
-        subtypeHops: [...subtypeHops, hop],
-      }];
-      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
-      return result;
-    }
     const nextVisited = new Set(visited);
-    nextVisited.add(fieldKey);
-    const nestedContext = materializationContextForExpression(expression);
-    const result = underlying.fields.flatMap((field) =>
-      expandMaterializedField(
-        field,
-        nextVisited,
-        nestedContext,
-        [...subtypeHops, hop],
-      ).map((expanded) => ({
-        field: expanded.field,
-        materializationBridgeIds: [
-          text(materialization.bridge_id) ?? "",
-          ...expanded.materializationBridgeIds,
-        ].filter(Boolean),
-        leafExpressionId: expanded.leafExpressionId ?? text(expression.expression_id),
-        leafRelationId: expanded.leafRelationId ?? text(expression.relation_id),
-        pathHadAggregation: expanded.pathHadAggregation,
-        subtypeHops: expanded.subtypeHops,
-      })),
-    );
+    nextVisited.add(traversalKey);
+    const result = producerExpressions.flatMap((expression) => {
+      const hop = classifyExpressionSubtype(
+        expression,
+        fieldEvidenceIndexes.relationTree.relations.get(
+          text(expression.relation_id) ?? "",
+        )?.relationType ?? null,
+      );
+      const underlying = taskLocalSourceFieldsForExpression(
+        expression,
+        catalog,
+        load,
+        taskId,
+        primaryTarget,
+        defaultSchema,
+      );
+      if (underlying.fields.length === 0) {
+        const dependencyStatus = String(
+          expression.input_dependency_status ?? "",
+        ).toUpperCase();
+        if (
+          underlying.unresolved.length === 0
+          && (dependencyStatus === "NO_PHYSICAL_INPUT"
+            || dependencyStatus === "DERIVED_OUTPUT")
+        ) {
+          // A resolved materialization can legitimately terminate at a literal
+          // or another derived value. It has no physical field edge to fold and
+          // is not a broken task-local bridge.
+          return [];
+        }
+        return [{
+          field: source,
+          materializationBridgeIds: [],
+          leafExpressionId: text(expression.expression_id),
+          leafRelationId: text(expression.relation_id),
+          pathHadAggregation: [...subtypeHops, hop].some((item) => item.pathHadAggregation),
+          subtypeHops: [...subtypeHops, hop],
+        }];
+      }
+      const nestedContext = materializationContextForExpression(expression);
+      return underlying.fields.flatMap((field) =>
+        expandMaterializedField(
+          field,
+          nextVisited,
+          nestedContext,
+          [...subtypeHops, hop],
+        ).map((expanded) => ({
+          field: expanded.field,
+          materializationBridgeIds: [
+            text(materialization.bridge_id) ?? "",
+            ...expanded.materializationBridgeIds,
+          ].filter(Boolean),
+          leafExpressionId: expanded.leafExpressionId ?? text(expression.expression_id),
+          leafRelationId: expanded.leafRelationId ?? text(expression.relation_id),
+          pathHadAggregation: expanded.pathHadAggregation,
+          subtypeHops: expanded.subtypeHops,
+        })),
+      );
+    });
     if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
     return result;
   };
