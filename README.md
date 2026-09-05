@@ -23,7 +23,7 @@
 - [Table producer 反向索引](docs/producer-index.md)
 - [表级多跳数据路径](docs/reconcile-multi-hop.md)
 - [Input Pack 驱动的跨 Task 字段血缘](docs/field-lineage.md)
-- 图谱消费、离线视图、query index 与目标因果 overlay：`E:\02_area\股衍数据-数据cookbook\scripts\data-graph\README.md`
+- [图谱消费、离线视图、query index 与目标因果 overlay](packages/data-graph/README.md)
 
 ## 最小运行入口
 
@@ -48,9 +48,21 @@ npm run reconcile-field-lineage -- --data-root <input-pack-root> --facts-root <f
 该命令先输出压缩后的 `viz-model-181058.json`，再渲染离线 HTML；同一物理表的多个
 Task 会合并到表节点中，并在详情里保留各 Task 的分区证据。
 
-图谱消费、离线视图、query index 与目标因果 overlay 已迁移到独立的
-`E:\02_area\股衍数据-数据cookbook\scripts\data-graph`。本仓库只负责生成和发布
-one-hop、multi-hop、field-lineage 及 target-table causal closure Artifact；图层不回写事实。
+图谱消费、离线视图、query index 与目标因果 overlay 在同仓独立包
+`packages/data-graph` 中维护。生产端生成和发布 one-hop、multi-hop、field-lineage
+及 target-table causal closure Artifact；图包只消费已发布产物，不回写事实。
+
+从仓库根目录使用图包：
+
+```text
+npm --prefix packages/data-graph ci --ignore-scripts
+npm --prefix packages/data-graph run typecheck
+npm --prefix packages/data-graph run build
+npm --prefix packages/data-graph test
+```
+
+图包保留独立的依赖锁、源码和测试。Input Pack、Facts、缓存及图产物继续通过显式路径传入，
+无需迁入包内；本次目录迁移不改变输入契约或查询语义。
 
 `inspect` 只读 Current Index 选中的 Bundle，并输出 `task-inspection.json` 与 `index.html`。它不扫描任务目录、不重新解析 SQL、不使用 Profile 猜测字段。
 
@@ -64,7 +76,7 @@ scripts/input/               external Task/Table input collection, contracts and
 scripts/query/               validated Current Bundle loader and Reader
 scripts/reconcile/           producer index, one-hop reconciliation, bounded table multi-hop
 scripts/reconcile/consumer/field-lineage/  bounded cross-Task VALUE_FLOW and ROWSET_CONTROL projection
-Artifact boundary          published canonical one-hop/multi-hop/field-lineage/target-causal artifacts; graph projections live in standalone data-graph
+packages/data-graph/         independent consumer package for graph projections and queries; no facts write-back
 schemas/                     current baseline schemas; Contract 2.0 remains pending
 tests/                       focused regression tests; no generated corpus
 tests/gold/                  Contract 2.0 的 86840 acceptance entry; evidence is intentionally absent

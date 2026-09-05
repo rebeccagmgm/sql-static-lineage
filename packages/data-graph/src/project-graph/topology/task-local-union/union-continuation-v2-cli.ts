@@ -259,7 +259,7 @@ function requiredOne(
 function usage(): string {
   return [
     "usage: union-continuation-v2 --batch-dir <batch-dir> [--batch-manifest <batch-manifest.json>] --producer-index <producer-index.json> --consumer-task-id <taskId> [--consumer-task-id <taskId>] --output-dir <dir> [--read-occurrence-id <readOccurrenceId>]",
-    "example: npm run union-continuation-v2 -- --batch-dir tmp/wp8-real-v2-119044 --producer-index ../../sql-static-lineage-data.producer-index/producer-index.json --consumer-task-id 119044 --output-dir tmp/wp8-continuation-evidence",
+    "example: npm --prefix packages/data-graph run union-continuation-v2 -- --batch-dir <published-task-local-batch-dir> --producer-index <producer-index.json> --consumer-task-id 119044 --output-dir tmp/wp8-continuation-evidence",
   ].join("\n");
 }
 

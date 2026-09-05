@@ -12,7 +12,7 @@ const REPO_ROOT = resolve(HERE, "..");
 const DEFAULT_GOLDEN_ROOT = join(REPO_ROOT, "tmp", "task-local-union-golden");
 const DEFAULT_PRODUCER_INDEX = resolve(
   REPO_ROOT,
-  "../../sql-static-lineage-data.producer-index/producer-index.json",
+  "../../../sql-static-lineage-data.producer-index/producer-index.json",
 );
 
 function goldenPaths(): {
@@ -50,7 +50,12 @@ if (requireGolden && !paths) {
     "TASK_LOCAL_UNION_GOLDEN_REQUIRED is set but golden envelopes / producer-index are missing.",
   );
 }
-const describeGolden = paths ? describe : describe.skip;
+// Vitest still evaluates a skipped suite's callback. Avoid loading absent
+// optional artifacts before the suite is skipped.
+const describeGolden = (name: string, body: () => void): void => {
+  if (paths) describe(name, body);
+  else describe.skip(name, () => {});
+};
 
 function datasetNodeIdByQualifiedName(
   nodes: readonly {

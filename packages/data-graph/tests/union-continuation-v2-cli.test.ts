@@ -225,7 +225,7 @@ describe("union-continuation-v2 CLI (WP-8)", () => {
       "--batch-dir",
       "tmp/wp8-real-v2-119044",
       "--producer-index",
-      "../../sql-static-lineage-data.producer-index/producer-index.json",
+      "<producer-index.json>",
       "--output-dir",
       "tmp/wp8-continuation-evidence",
     ]);
