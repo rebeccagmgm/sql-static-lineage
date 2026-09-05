@@ -15,27 +15,17 @@ lineage artifacts, rewrite Native decisions, or generate `PROVEN_UNRELATED`.
 - **Unfinished scope:** 5.1–5.4, 6.2, 6.4 and 8–12 remain incomplete. The
   v18 result does not justify checking any of them.
 
-## v18 provenance
+## v18 provenance (historical)
 
-The current v18 files and hashes are:
+The local v18 staging files were intentionally removed during repository
+cleanup. The outcome recorded below is therefore a historical experiment
+summary, not a currently inspectable local evidence artifact. It used the
+`PLAN_FACTS_REL_V1` request stream for task `209119` (graph version `1`) and
+Calcite `1.42.0` through `calcite-rel-bridge/0.1.0;calcite/1.42.0;protocol/1`.
 
-| Staging file | Bytes | SHA-256 |
-| --- | ---: | --- |
-| `staging/calcite-differential/209119-plan-facts-core-join-v18.gate.log` | 465 | `A88D442BADBA4D3472E54F4F6D5C21161181C916276E985AAD46AA047C4DFC19` |
-| `staging/calcite-differential/209119-plan-facts-core-join-v18.requests.jsonl` | 30,550,300 | `F3FC21BCF71943E3B1EA57B95E1CDDF6C5D75DB7325094735584105A0E010C2E` |
-| `staging/calcite-differential/209119-plan-facts-core-join-v18.json` | 33,646,355 | `BAF3727C4FF256D40CE3EACA4FC34082BFD53DE02B17FB22FE31D9309588DC06` |
-
-The request stream is `PLAN_FACTS_REL_V1`, for task `209119`, with graph
-version `1`. The first request records fingerprint
-`9108cb46c86724fd55f1e1bf0e017cbc2c528bc46ce7c922f8284d12472cc2dc` and
-statement `task:209119:slot:query:statement:0`. The bridge report records
-Calcite `1.42.0` and build fingerprint
-`calcite-rel-bridge/0.1.0;calcite/1.42.0;protocol/1`.
-
-The repository does not contain the original v18 shell command or a complete
-source-manifest snapshot. Therefore these staging files are auditable
-evidence, but v18 invocation replayability and full input provenance remain an
-explicit open boundary; no command is reconstructed or treated as fact here.
+The original v18 shell command and complete source-manifest snapshot were not
+committed. Invocation replayability and full input provenance remain open
+boundaries; no command is reconstructed or treated as fact here.
 
 ## v18 result
 
@@ -129,7 +119,10 @@ The Plan Facts observations comprise expression lineage, predicates, unique keys
 
 ## Safety check
 
-The independent reports are `staging/calcite-differential/209119-plan-facts-core-join-v4.json` and `staging/calcite-differential/209119-causal-evidence-v4.json`. The explicit Native overlay is `staging/calcite-differential/209119-contr-status-calcite-v4.json`. None is a canonical published artifact; the differential runner cannot write causal decisions or `PROVEN_UNRELATED`.
+The independent v4 reports and explicit Native overlay were local staging
+outputs and were removed during repository cleanup. None was a canonical
+published artifact; the differential runner cannot write causal decisions or
+`PROVEN_UNRELATED`.
 
 All four published 209119 acceptance hashes remained equal to `baseline-evidence.md` after the run:
 
