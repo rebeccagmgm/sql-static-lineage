@@ -12,15 +12,29 @@ The primary workflow is published artifacts -> file queries -> the offline
 investigation view. Neo4j is an optional query-index backend; file queries and
 the view do not require an index build, database connection, or database credentials.
 
+This independent package was imported from `data-graph` mainline commit
+`04a37cc`. It consumes only explicitly supplied published artifacts; it has no
+source-repository path dependency and does not include producer data, caches,
+or dependencies.
+
 ## Commands
 
 ```text
-npm install
-npm run typecheck
-npm run build
-npm test
-npm run format:check
+npm --prefix packages/data-graph ci --ignore-scripts
+npm --prefix packages/data-graph run typecheck
+npm --prefix packages/data-graph run build
+npm --prefix packages/data-graph test
+npm --prefix packages/data-graph run format:check
 ```
+
+Migration verification (2026-09-05): typecheck, build, both continuation CLI
+help entries, and package tests passed (119 tests; 3 optional-artifact tests
+skipped). Tests used `--maxWorkers=2 --no-file-parallelism`. Changed-file
+formatting passed; the full-package formatter still reports 84 inherited
+files, which this migration intentionally leaves unchanged. One additional
+real-artifact run returned no final test result and is not recorded as passed;
+no matching test process remained when checked. This is a package relocation
+verification, not acceptance of new producer contracts or graph coverage.
 
 The package scripts invoke these entrypoints:
 
@@ -42,7 +56,7 @@ projections. The command indexes every `PROJECTED` task by default; pass
 fails the whole run before output is written.
 
 ```text
-npm run union-continuation-index -- --batch-dir tmp/wp8-real-v2-119044 --producer-index ../../sql-static-lineage-data.producer-index/producer-index.json --consumer-task-id 119044 --output-dir tmp/wp8-continuation-index
+npm --prefix packages/data-graph run union-continuation-index -- --batch-dir <published-task-local-batch-dir> --producer-index <producer-index.json> --consumer-task-id 119044 --output-dir tmp/wp8-continuation-index
 ```
 
 Query a published projection directly. `--directory` selects the topology,
@@ -51,11 +65,11 @@ The loader checks the existing publication manifest and hashes. No separate
 project key, descriptor hash, or snapshot identifier needs to be supplied.
 
 ```text
-npm run query -- --directory <snapshot-dir> --query get_project_topology --limit 20
-npm run query -- --directory <snapshot-dir> --query trace_project_upstream --start-node-id <node-id> --max-hops 3
-npm run query -- --directory <field-dir> --query trace_field_value_path --root-field <field-name> --max-hops 3
-npm run query -- --directory <overlay-dir> --query get_target_causal_overlay --relation-status UNKNOWN --limit 20
-npm run query -- --help
+npm --prefix packages/data-graph run query -- --directory <snapshot-dir> --query get_project_topology --limit 20
+npm --prefix packages/data-graph run query -- --directory <snapshot-dir> --query trace_project_upstream --start-node-id <node-id> --max-hops 3
+npm --prefix packages/data-graph run query -- --directory <field-dir> --query trace_field_value_path --root-field <field-name> --max-hops 3
+npm --prefix packages/data-graph run query -- --directory <overlay-dir> --query get_target_causal_overlay --relation-status UNKNOWN --limit 20
+npm --prefix packages/data-graph run query -- --help
 ```
 
 All nine query names listed by help use the same options and projection query
@@ -71,8 +85,8 @@ Use the existing optional index commands only when a Neo4j-backed copy is
 needed. For example:
 
 ```text
-npm run target-causal-overlay -- publish --topology <snapshot-dir> --field <field-dir> --causal <closure.json> --output-root <dir>
-npm run query-index:build -- --topology <snapshot-dir> --field <field-dir> --causal-overlay <overlay-dir> --audit-root <dir> <connection>
+npm --prefix packages/data-graph run target-causal-overlay -- publish --topology <snapshot-dir> --field <field-dir> --causal <closure.json> --output-root <dir>
+npm --prefix packages/data-graph run query-index:build -- --topology <snapshot-dir> --field <field-dir> --causal-overlay <overlay-dir> --audit-root <dir> <connection>
 ```
 
 All input paths are passed explicitly; no producer source path or shared
@@ -85,7 +99,7 @@ run the existing closed-loop test from this directory:
 
 ```powershell
 $env:DATA_GRAPH_ACCEPTANCE_ROOT = 'E:\02_area\股衍数据-数据cookbook\sql-static-lineage-cache\project-topology-phase1\projects\joint-176827-181058-209119-acceptance'
-npm run test:real-artifact
+npm --prefix packages/data-graph run test:real-artifact
 ```
 
 The test consumes the published topology snapshot

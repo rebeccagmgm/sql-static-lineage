@@ -220,7 +220,7 @@ function requiredOne(
 function usage(): string {
   return [
     "usage: union-continuation-index --batch-dir <batch-dir> [--batch-manifest <batch-manifest.json>] --producer-index <producer-index.json> --output-dir <dir> [--consumer-task-id <taskId>]",
-    "example: npm run union-continuation-index -- --batch-dir tmp/wp8-real-v2-119044 --producer-index ../../sql-static-lineage-data.producer-index/producer-index.json --consumer-task-id 119044 --output-dir tmp/wp8-continuation-index",
+    "example: npm --prefix packages/data-graph run union-continuation-index -- --batch-dir <published-task-local-batch-dir> --producer-index <producer-index.json> --consumer-task-id 119044 --output-dir tmp/wp8-continuation-index",
     "default: index every PROJECTED task in the batch; every PROJECTED projection must be schema 1.2.0",
   ].join("\n");
 }

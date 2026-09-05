@@ -29,7 +29,7 @@ const CURRENT_119044_ENVELOPE = resolve(
   "tmp/wp8-real-v2-119044/tasks/119044/task-local-projection.json",
 );
 const CURRENT_PRODUCER_INDEX = resolve(
-  "../../sql-static-lineage-data.producer-index/producer-index.json",
+  "../../../sql-static-lineage-data.producer-index/producer-index.json",
 );
 
 const TABLE_ID =
