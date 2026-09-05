@@ -75,4 +75,39 @@ describe("jsonl offset index", () => {
     const index = buildJsonlOffsetIndex(path, nameKey);
     expect(lookupJsonlByKey(index, "missing").status).toBe("MISS");
   });
+
+  it("keeps a colliding key unique when sameRecord says the rows are the same physical object", () => {
+    const path = writeJsonl([
+      {
+        key: "xir_md.tbnd@gforacle_xir3#xir",
+        instanceid: "xir3@gforacle",
+        guid: "a",
+      },
+      {
+        key: "xir_md.tbnd@gforacle_xir3#xir",
+        instanceid: "xir3@gforacle",
+        guid: "b",
+      },
+    ]);
+    const index = buildJsonlOffsetIndex(path, nameKey, {
+      sameRecord: (left, right) =>
+        String(left.instanceid).toLowerCase() ===
+        String(right.instanceid).toLowerCase(),
+    });
+    const hit = lookupJsonlByKey(index, "xir_md.tbnd@gforacle_xir3#xir");
+    expect(hit.status).toBe("HIT");
+  });
+
+  it("stays ambiguous when sameRecord is false", () => {
+    const path = writeJsonl([
+      { key: "kdbase.t_sjzd", instanceid: "jjr1@gforacle", guid: "a" },
+      { key: "kdbase.t_sjzd", instanceid: "jjr2@gforacle", guid: "b" },
+    ]);
+    const index = buildJsonlOffsetIndex(path, nameKey, {
+      sameRecord: (left, right) =>
+        String(left.instanceid).toLowerCase() ===
+        String(right.instanceid).toLowerCase(),
+    });
+    expect(lookupJsonlByKey(index, "kdbase.t_sjzd").status).toBe("AMBIGUOUS");
+  });
 });

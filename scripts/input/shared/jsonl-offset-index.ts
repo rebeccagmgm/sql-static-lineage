@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { basename, dirname } from "node:path";
 
-export const JSONL_OFFSET_INDEX_SCHEMA_VERSION = "1.0.0" as const;
+export const JSONL_OFFSET_INDEX_SCHEMA_VERSION = "1.1.0" as const;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -45,6 +45,11 @@ function asRecord(value: unknown): JsonRecord | undefined {
 export type JsonlRecordKeyFn = (
   record: JsonRecord,
 ) => string | readonly string[] | undefined;
+
+export type JsonlSameRecordFn = (
+  left: JsonRecord,
+  right: JsonRecord,
+) => boolean;
 
 function forEachJsonlLine(
   path: string,
@@ -151,11 +156,13 @@ function sameContent(
 export function buildJsonlOffsetIndex(
   jsonlPath: string,
   keyOf: JsonlRecordKeyFn,
+  options?: { readonly sameRecord?: JsonlSameRecordFn },
 ): JsonlOffsetIndex {
   assertJsonlCatalogPath(jsonlPath);
   const stat = statSync(jsonlPath);
   if (!stat.isFile()) throw new Error(`JSONL_NOT_A_FILE:${jsonlPath}`);
   const keyOffsets = new Map<string, KeyOffset>();
+  const sameRecord = options?.sameRecord;
   forEachJsonlLine(jsonlPath, (offset, line) => {
     if (line.trim() === "") return;
     let parsed: unknown;
@@ -178,6 +185,10 @@ export function buildJsonlOffsetIndex(
       }
       if (existing === "AMBIGUOUS" || existing === offset) continue;
       if (sameContent(jsonlPath, existing, record)) continue;
+      if (sameRecord !== undefined) {
+        const left = readRecordAt(jsonlPath, existing);
+        if (left !== undefined && sameRecord(left, record)) continue;
+      }
       keyOffsets.set(key, "AMBIGUOUS");
     }
   });
@@ -272,6 +283,7 @@ export function loadJsonlOffsetIndex(
   options: {
     readonly persistPath?: string;
     readonly keyOf: JsonlRecordKeyFn;
+    readonly sameRecord?: JsonlSameRecordFn;
   },
 ): JsonlOffsetIndex {
   assertJsonlCatalogPath(jsonlPath);
@@ -282,7 +294,9 @@ export function loadJsonlOffsetIndex(
     );
     if (persisted !== undefined) return persisted;
   }
-  const index = buildJsonlOffsetIndex(jsonlPath, options.keyOf);
+  const index = buildJsonlOffsetIndex(jsonlPath, options.keyOf, {
+    sameRecord: options.sameRecord,
+  });
   if (options.persistPath !== undefined) {
     try {
       persistJsonlOffsetIndex(index, options.persistPath);

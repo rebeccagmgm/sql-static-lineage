@@ -434,6 +434,67 @@ describe("RDBMS disambiguation via horae-datasource", () => {
     );
   });
 
+  it("collapses case-fold Atlas duplicates that share instanceid", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-casefold-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "XIR_MD.TBND@gforacle_xir3#Xir",
+          instanceid: "xir3@gforacle",
+          guid: "guid-upper",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "XIR_MD.TBND@gforacle_xir3#xir",
+          instanceid: "xir3@gforacle",
+          guid: "guid-lower",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "XIR_MD.TBND@gforacle_xir3#Xir",
+          instanceid: "xir3@gforacle",
+          ddl: "CREATE TABLE XIR_MD.TBND (ID NUMBER)",
+        },
+        {
+          qualifiedname: "XIR_MD.TBND@gforacle_xir3#xir",
+          instanceid: "xir3@gforacle",
+          ddl: "CREATE TABLE XIR_MD.TBND (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_xir_xir",
+            {
+              serverTag: "oracle_xir_xir",
+              serverType: "oracle",
+              service: "Xir",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "1176",
+        taskCategory: "oracle2hive",
+        source: "oracle_xir_xir",
+        target: undefined,
+        sql: { query: "SELECT 1 FROM XIR_MD.TBND" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]?.dataSource?.toLowerCase()).toBe(
+      "gforacle_xir3#xir",
+    );
+  });
+
   it("prefers gforacle_oracle_uip_winddb#winddb for oracle_wande when #winddb is multi", () => {
     const dir = mkdtempSync(join(tmpdir(), "offline-rdbms-wind-"));
     const catalog = loadOfflineTableCatalog({
@@ -974,5 +1035,741 @@ describe("offline table resolver", () => {
     expect(target?.description).toBe("财务预算调整申请事件");
     expect(target?.partitionFields).toEqual(["src_tbl", "busi_date"]);
     expect(target?.guid).toBeUndefined();
+  });
+});
+
+describe("task-evidence splice fallback", () => {
+  function emptyCatalog(dir: string) {
+    return loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: null,
+    });
+  }
+
+  it("splices a Hive target from the query SELECT when metadata and ddl miss", () => {
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "255",
+        taskCategory: "oracle2hive",
+        topicName: "ODATA_MSG",
+        source: "oracle_wande_89.132",
+        target: "odata_msg.wfd_w_tb_object_3511",
+        sql: {
+          query:
+            "SELECT OBJECT_ID, S_INFO_WINDCODE FROM WIND.TB_OBJECT_3511",
+        },
+      }),
+      emptyCatalog(mkdtempSync(join(tmpdir(), "offline-splice-hive-"))),
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "odata_msg.wfd_w_tb_object_3511",
+    );
+    expect(hive?.platform).toBe("hive");
+    expect(hive?.dataSource).toBe("gfhive");
+    expect(hive?.guid).toBeUndefined();
+    expect(hive?.evidenceProvider).toBe(
+      "input-pack:spliced-from-query-projection",
+    );
+    expect(hive?.ddl).toMatch(/CREATE\s+TABLE/i);
+    expect(hive?.ddl).toMatch(/OBJECT_ID/i);
+    expect(hive?.ddl).toMatch(/S_INFO_WINDCODE/i);
+  });
+
+  it("splices an RDBMS source from horae hint plus SQL when core misses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-rdbms-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_mms.mms_k_t_ygzcy@gfhive",
+          querytext:
+            "CREATE TABLE odata_mms.mms_k_t_ygzcy (yg_id string, yg_name string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_yxgl_jjir_gc",
+            {
+              serverTag: "oracle_yxgl_jjir_gc",
+              serverType: "oracle",
+              service: "yxgl_jjir_gc",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "557",
+        taskCategory: "oracle2hive",
+        topicName: "ODATA_MMS",
+        source: "oracle_yxgl_jjir_gc",
+        target: "odata_mms.mms_k_t_ygzcy",
+        sql: {
+          query: "SELECT YG_ID, YG_NAME FROM KDBASE.T_YGZCY",
+        },
+      }),
+      catalog,
+    );
+    expect(
+      resolved.unavailable.filter((item) =>
+        item.qualifiedName.toLowerCase().includes("t_ygzcy"),
+      ),
+    ).toEqual([]);
+    const oracle = resolved.resolved.find(
+      (item) => item.qualifiedName.toLowerCase() === "kdbase.t_ygzcy",
+    );
+    expect(oracle?.platform).toBe("oracle");
+    expect(oracle?.dataSource?.toLowerCase()).toBe(
+      "gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+    );
+    expect(oracle?.guid).toBeUndefined();
+    expect(oracle?.evidenceProvider).toBe("input-pack:spliced-from-task-sql");
+    expect(oracle?.ddl).toMatch(/YG_ID/i);
+    expect(oracle?.ddl).toMatch(/YG_NAME/i);
+    expect(oracle?.ddl).not.toMatch(/mms_k_t_ygzcy/i);
+  });
+
+  it("lets real jsonl and task CREATE win over an existing spliced local pack", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "pack-splice-stale-"));
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "odata_msg.wfd_w_tb_object_3511",
+      objectType: "hive_table",
+      ddl: "CREATE TABLE odata_msg.wfd_w_tb_object_3511 (stub string)",
+      evidenceProvider: "input-pack:spliced-from-query-projection",
+    });
+    writeTableInput(dataRoot, {
+      platform: "oracle",
+      dataSource: "gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+      qualifiedName: "KDBASE.T_YGZCY",
+      objectType: "gf_rdbms_table",
+      ddl: "CREATE TABLE KDBASE.T_YGZCY (stub VARCHAR2(4000))",
+      evidenceProvider: "input-pack:spliced-from-task-sql",
+    });
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-override-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_msg.wfd_w_tb_object_3511@gfhive",
+          querytext:
+            "CREATE TABLE odata_msg.wfd_w_tb_object_3511 (object_id string, s_info_windcode string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+          ddl: "CREATE TABLE KDBASE.T_YGZCY (YG_ID NUMBER, YG_NAME VARCHAR2(64))",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_yxgl_jjir_gc",
+            {
+              serverTag: "oracle_yxgl_jjir_gc",
+              serverType: "oracle",
+              service: "yxgl_jjir_gc",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      dataRoot,
+      task({
+        taskId: "557",
+        taskCategory: "oracle2hive",
+        source: "oracle_yxgl_jjir_gc",
+        target: "odata_msg.wfd_w_tb_object_3511",
+        sql: {
+          create:
+            "CREATE TABLE odata_msg.wfd_w_tb_object_3511 (object_id string)",
+          query: "SELECT YG_ID, YG_NAME FROM KDBASE.T_YGZCY",
+        },
+      }),
+      catalog,
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "odata_msg.wfd_w_tb_object_3511",
+    );
+    const oracle = resolved.resolved.find(
+      (item) => item.qualifiedName.toLowerCase() === "kdbase.t_ygzcy",
+    );
+    expect(hive?.evidenceProvider).toBe("local:hive-ddl-jsonl");
+    expect(hive?.ddl).toContain("s_info_windcode");
+    expect(oracle?.evidenceProvider).toContain("local:rdbms-core-jsonl");
+    expect(oracle?.ddl).toContain("YG_ID NUMBER");
+  });
+
+  it("keeps numbered siblings and missing hints as MISS or AMB", () => {
+    const ambDir = mkdtempSync(join(tmpdir(), "offline-splice-amb-"));
+    const ambCatalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(ambDir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(ambDir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(ambDir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_jjir1#jjir",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_jjir2#jjir",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(ambDir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_jjir1#jjir",
+          ddl: "CREATE TABLE KDBASE.T_YGZCY (ID NUMBER)",
+        },
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_jjir2#jjir",
+          ddl: "CREATE TABLE KDBASE.T_YGZCY (ID NUMBER)",
+        },
+      ]),
+      horaeDatasource: null,
+    });
+    const ambiguous = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_yxgl_jjir_gc",
+        target: undefined,
+        sql: { query: "SELECT ID FROM KDBASE.T_YGZCY" },
+      }),
+      ambCatalog,
+    );
+    expect(ambiguous.unavailable).toContainEqual({
+      qualifiedName: "KDBASE.T_YGZCY",
+      reason: "RDBMS_CORE_AMBIGUOUS",
+    });
+
+    const noHint = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_unknown_no_hint",
+        target: undefined,
+        sql: { query: "SELECT ID FROM KDBASE.T_YGZCY" },
+      }),
+      emptyCatalog(mkdtempSync(join(tmpdir(), "offline-splice-nohint-"))),
+    );
+    expect(noHint.unavailable).toContainEqual({
+      qualifiedName: "KDBASE.T_YGZCY",
+      reason: "TABLE_JSONL_MISS",
+    });
+    expect(
+      noHint.resolved.some(
+        (item) => item.qualifiedName.toLowerCase() === "kdbase.t_ygzcy",
+      ),
+    ).toBe(false);
+  });
+
+  it("splices Hive DDL onto metadata when catalog identity hits but ddl misses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-meta-ddl-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", [
+        {
+          qualifiedname_clean: "odata_msg.wfd_w_tb_object_3511",
+          datasource: "gfhive",
+          status: "ACTIVE",
+          type_name: "hive_table",
+          comment: "wind object",
+        },
+      ]),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: null,
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        target: "odata_msg.wfd_w_tb_object_3511",
+        sql: {
+          query: "SELECT OBJECT_ID, S_INFO_WINDCODE FROM WIND.TB_OBJECT_3511",
+        },
+      }),
+      catalog,
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "odata_msg.wfd_w_tb_object_3511",
+    );
+    expect(hive?.description).toBe("wind object");
+    expect(hive?.evidenceProvider).toBe(
+      "input-pack:spliced-from-query-projection",
+    );
+    expect(hive?.ddl).toMatch(/OBJECT_ID/i);
+  });
+
+  it("splices RDBMS DDL onto core identity when ddl jsonl misses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-core-ddl-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_mms.mms_k_t_ygzcy@gfhive",
+          querytext: "CREATE TABLE odata_mms.mms_k_t_ygzcy (yg_id string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "KDBASE.T_YGZCY@gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+          type_name: "gf_rdbms_table",
+          comment: "员工",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_yxgl_jjir_gc",
+            {
+              serverTag: "oracle_yxgl_jjir_gc",
+              serverType: "oracle",
+              service: "yxgl_jjir_gc",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_yxgl_jjir_gc",
+        target: "odata_mms.mms_k_t_ygzcy",
+        sql: { query: "SELECT YG_ID, YG_NAME FROM KDBASE.T_YGZCY" },
+      }),
+      catalog,
+    );
+    const oracle = resolved.resolved.find(
+      (item) => item.qualifiedName.toLowerCase() === "kdbase.t_ygzcy",
+    );
+    expect(oracle?.description).toBe("员工");
+    expect(oracle?.dataSource?.toLowerCase()).toBe(
+      "gforacle_yxgl_jjir_gc#yxgl_jjir_gc",
+    );
+    expect(oracle?.evidenceProvider).toBe("input-pack:spliced-from-task-sql");
+    expect(oracle?.ddl).toMatch(/YG_ID/i);
+  });
+
+  it("does not copy Hive target CREATE columns onto a joined RDBMS table", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-join-hint-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "odata_n_erp.g_gl_balances_update@gfhive",
+          querytext:
+            "CREATE TABLE odata_n_erp.g_gl_balances_update (ledger_id string, period_name string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_erp_proddb",
+            {
+              serverTag: "oracle_erp_proddb",
+              serverType: "oracle",
+              service: "proddb",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_erp_proddb",
+        target: "odata_n_erp.g_gl_balances_update",
+        sql: {
+          create:
+            "CREATE TABLE odata_n_erp.g_gl_balances_update (ledger_id string, period_name string)",
+          query:
+            "SELECT a.ledger_id FROM GL.gl_balances a JOIN apps.GL_PERIODS p ON a.period_name=p.period_name",
+        },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toContainEqual({
+      qualifiedName: "apps.GL_PERIODS",
+      reason: "TABLE_JSONL_MISS",
+    });
+  });
+
+  it("splices a Hive target from sole SELECT * plus resolved source DDL", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-source-ddl-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          ddl: "CREATE TABLE SRC_GFJGJ.GO_ORDER_SYNC (ORDER_ID NUMBER, CUST_NO VARCHAR2(32), SYNC_TIME DATE)",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_jgjdb1",
+            {
+              serverTag: "oracle_jgjdb1",
+              serverType: "oracle",
+              service: "jgjdb1",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "14578",
+        taskCategory: "oracle2hive",
+        source: "oracle_jgjdb1",
+        target: "gf_jgj_crm.go_order_sync",
+        sql: { query: "select * from src_gfjgj.go_order_sync" },
+      }),
+      catalog,
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "gf_jgj_crm.go_order_sync",
+    );
+    expect(hive?.platform).toBe("hive");
+    expect(hive?.evidenceProvider).toBe("input-pack:spliced-from-source-ddl");
+    expect(hive?.ddl).toMatch(/ORDER_ID/i);
+    expect(hive?.ddl).toMatch(/CUST_NO/i);
+    expect(hive?.ddl).toMatch(/SYNC_TIME/i);
+    expect(hive?.ddl).toMatch(/STRING/i);
+    expect(
+      resolved.unavailable.some(
+        (item) =>
+          item.qualifiedName.toLowerCase() === "gf_jgj_crm.go_order_sync",
+      ),
+    ).toBe(false);
+  });
+
+  it("does not splice Hive target columns from source DDL when the query joins two tables", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-source-join-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          type_name: "gf_rdbms_table",
+        },
+        {
+          qualifiedname: "SRC_GFJGJ.GO_CUST@gforacle_jgjdb1#jgjdb1",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          ddl: "CREATE TABLE SRC_GFJGJ.GO_ORDER_SYNC (ORDER_ID NUMBER, CUST_NO VARCHAR2(32))",
+        },
+        {
+          qualifiedname: "SRC_GFJGJ.GO_CUST@gforacle_jgjdb1#jgjdb1",
+          ddl: "CREATE TABLE SRC_GFJGJ.GO_CUST (CUST_NO VARCHAR2(32), CUST_NAME VARCHAR2(64))",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_jgjdb1",
+            {
+              serverTag: "oracle_jgjdb1",
+              serverType: "oracle",
+              service: "jgjdb1",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_jgjdb1",
+        target: "gf_jgj_crm.go_order_sync",
+        sql: {
+          query:
+            "SELECT * FROM src_gfjgj.go_order_sync a JOIN src_gfjgj.go_cust b ON a.cust_no = b.cust_no",
+        },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toContainEqual({
+      qualifiedName: "gf_jgj_crm.go_order_sync",
+      reason: "TABLE_JSONL_MISS",
+    });
+    expect(
+      resolved.resolved.some(
+        (item) =>
+          item.qualifiedName.toLowerCase() === "gf_jgj_crm.go_order_sync",
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps an explicit SELECT list on query-projection splice instead of source *", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-splice-source-proj-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "WIND.TB_OBJECT_3511@gforacle_wande#wande",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "WIND.TB_OBJECT_3511@gforacle_wande#wande",
+          ddl: "CREATE TABLE WIND.TB_OBJECT_3511 (OBJECT_ID NUMBER, S_INFO_WINDCODE VARCHAR2(32), EXTRA_COL VARCHAR2(8))",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_wande",
+            {
+              serverTag: "oracle_wande",
+              serverType: "oracle",
+              service: "wande",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_wande",
+        target: "odata_msg.wfd_w_tb_object_3511",
+        sql: {
+          query:
+            "SELECT OBJECT_ID, S_INFO_WINDCODE FROM WIND.TB_OBJECT_3511",
+        },
+      }),
+      catalog,
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "odata_msg.wfd_w_tb_object_3511",
+    );
+    expect(hive?.evidenceProvider).toBe(
+      "input-pack:spliced-from-query-projection",
+    );
+    expect(hive?.ddl).toMatch(/OBJECT_ID/i);
+    expect(hive?.ddl).toMatch(/S_INFO_WINDCODE/i);
+    expect(hive?.ddl).not.toMatch(/EXTRA_COL/i);
+  });
+
+  it("lets later hive CREATE or jsonl beat a spliced-from-source-ddl local pack", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "pack-source-ddl-stale-"));
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "gf_jgj_crm.go_order_sync",
+      objectType: "hive_table",
+      ddl: "CREATE TABLE gf_jgj_crm.go_order_sync (\n  ORDER_ID STRING,\n  CUST_NO STRING\n)",
+      evidenceProvider: "input-pack:spliced-from-source-ddl",
+    });
+    const dir = mkdtempSync(join(tmpdir(), "offline-source-ddl-override-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "gf_jgj_crm.go_order_sync@gfhive",
+          querytext:
+            "CREATE TABLE gf_jgj_crm.go_order_sync (order_id string, cust_no string, sync_time string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          type_name: "gf_rdbms_table",
+        },
+      ]),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", [
+        {
+          qualifiedname: "SRC_GFJGJ.GO_ORDER_SYNC@gforacle_jgjdb1#jgjdb1",
+          ddl: "CREATE TABLE SRC_GFJGJ.GO_ORDER_SYNC (ORDER_ID NUMBER, CUST_NO VARCHAR2(32))",
+        },
+      ]),
+      horaeDatasource: {
+        byServerTag: new Map([
+          [
+            "oracle_jgjdb1",
+            {
+              serverTag: "oracle_jgjdb1",
+              serverType: "oracle",
+              service: "jgjdb1",
+            },
+          ],
+        ]),
+      },
+    });
+    const resolved = resolveOfflineTables(
+      dataRoot,
+      task({
+        taskId: "14578",
+        taskCategory: "oracle2hive",
+        source: "oracle_jgjdb1",
+        target: "gf_jgj_crm.go_order_sync",
+        sql: { query: "select * from src_gfjgj.go_order_sync" },
+      }),
+      catalog,
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "gf_jgj_crm.go_order_sync",
+    );
+    expect(hive?.evidenceProvider).toBe("local:hive-ddl-jsonl");
+    expect(hive?.ddl).toContain("sync_time");
+  });
+
+  it("splices a postgres2hive Hive target from sole SELECT * plus source pack DDL", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "pack-pg-source-ddl-"));
+    writeTableInput(dataRoot, {
+      platform: "postgre",
+      dataSource: "gfpostgre_risk#risk",
+      qualifiedName: "public.offline_prod_share_his",
+      objectType: "gf_rdbms_table",
+      ddl: "CREATE TABLE public.offline_prod_share_his (prod_id VARCHAR(32), share_qty NUMERIC, busi_date DATE)",
+      evidenceProvider: "local:rdbms-core-jsonl,local:rdbms-ddl-jsonl",
+    });
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "gfhive",
+      qualifiedName: "odata_n_prd.p_offline_prod_share_his",
+      objectType: "hive_table",
+      ddl: "CREATE TABLE odata_n_prd.p_offline_prod_share_his (other_id STRING, other_name STRING)",
+      evidenceProvider: "local:hive-ddl-jsonl",
+    });
+    const resolved = resolveOfflineTables(
+      dataRoot,
+      task({
+        taskId: "26171",
+        taskCategory: "postgre2hive",
+        source: "postgres_fxjs_85.234",
+        target: "dm_prd.offline_prod_share_his",
+        sql: { query: "select * from public.offline_prod_share_his" },
+      }),
+      emptyCatalog(mkdtempSync(join(tmpdir(), "offline-pg-source-ddl-"))),
+    );
+    const hive = resolved.resolved.find(
+      (item) =>
+        item.qualifiedName.toLowerCase() === "dm_prd.offline_prod_share_his",
+    );
+    expect(hive?.platform).toBe("hive");
+    expect(hive?.evidenceProvider).toBe("input-pack:spliced-from-source-ddl");
+    expect(hive?.ddl).toMatch(/prod_id/i);
+    expect(hive?.ddl).toMatch(/share_qty/i);
+    expect(hive?.ddl).toMatch(/busi_date/i);
+    expect(hive?.ddl).not.toMatch(/other_id/i);
+    expect(hive?.ddl).not.toMatch(/p_offline_prod_share_his/i);
+  });
+
+  it("does not splice datasource labels as tables", () => {
+    const horaeDatasource = {
+      byServerTag: new Map([
+        [
+          "oracle_rbjygl_85.236",
+          {
+            serverTag: "oracle_rbjygl_85.236",
+            serverType: "oracle",
+            service: "jyglrac",
+          },
+        ],
+      ]),
+    };
+    const names = extractOfflineTableCandidates(
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_rbjygl_85.236",
+        target: "odata_ygt.nygt_t_coverstockjour",
+        sql: {
+          query:
+            "SELECT COVER_ID FROM HS_OPT.COVERSTOCKJOUR WHERE INIT_DATE = '${YYYY-MM-DD}'",
+        },
+      }),
+      horaeDatasource,
+    ).map((item) => item.qualifiedName.toLowerCase());
+    expect(names).not.toContain("oracle_rbjygl_85.236");
+
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskCategory: "oracle2hive",
+        source: "oracle_rbjygl_85.236",
+        target: "odata_ygt.nygt_t_coverstockjour",
+        sql: {
+          query: "SELECT COVER_ID FROM HS_OPT.COVERSTOCKJOUR",
+        },
+      }),
+      loadOfflineTableCatalog({
+        hiveMetadataPath: writeJsonl(
+          mkdtempSync(join(tmpdir(), "offline-splice-label-")),
+          "hive-meta.jsonl",
+          [],
+        ),
+        hiveDdlPath: writeJsonl(
+          mkdtempSync(join(tmpdir(), "offline-splice-label-ddl-")),
+          "hive-ddl.jsonl",
+          [],
+        ),
+        rdbmsCorePath: writeJsonl(
+          mkdtempSync(join(tmpdir(), "offline-splice-label-core-")),
+          "rdbms-core.jsonl",
+          [],
+        ),
+        rdbmsDdlPath: writeJsonl(
+          mkdtempSync(join(tmpdir(), "offline-splice-label-rdbms-ddl-")),
+          "rdbms-ddl.jsonl",
+          [],
+        ),
+        horaeDatasource,
+      }),
+    );
+    expect(
+      resolved.resolved.map((item) => item.qualifiedName.toLowerCase()),
+    ).not.toContain("oracle_rbjygl_85.236");
+    expect(
+      resolved.unavailable.map((item) => item.qualifiedName.toLowerCase()),
+    ).not.toContain("oracle_rbjygl_85.236");
   });
 });
