@@ -37,6 +37,7 @@ export const CONTROLLED_TASK_ENDPOINT_PLATFORMS: Readonly<
   dolphindb2hive: { source: "dolphindb", target: "hive" },
   oracle2mysql: { source: "oracle", target: "mysql" },
   hive2mysql: { source: "hive", target: "mysql" },
+  hive2postgre: { source: "hive", target: "postgre" },
   hive2oracle: { source: "hive", target: "oracle" },
   hive2td: { source: "hive", target: "td" },
   hive2sqlserver: { source: "hive", target: "sqlserver" },

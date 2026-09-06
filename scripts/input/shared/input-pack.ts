@@ -122,9 +122,15 @@ export interface TaskEvidence {
   readonly scheduleCycle?: string | null;
   /** Direct Horae task-status code/label, when available. */
   readonly scheduleStatus?: string | null;
-  /** Direct one-hop Horae upstream task IDs; schedule reference only. */
+  /**
+   * Direct one-hop Horae upstream task IDs (schedule neighbors).
+   * Present only when up-relation evidence is proven; empty means no upstream.
+   */
   readonly upstreamTaskIds?: readonly string[];
-  /** Direct one-hop Horae downstream task IDs; schedule reference only. */
+  /**
+   * Direct one-hop Horae downstream task IDs (schedule neighbors).
+   * Present only when down-relation evidence is proven; empty means no downstream.
+   */
   readonly downstreamTaskIds?: readonly string[];
   /** Direct platform endpoint config; table endpoints may include dataSource. */
   readonly source?: JsonValue | null;

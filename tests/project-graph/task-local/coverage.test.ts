@@ -151,7 +151,7 @@ describe("task-local coverage states", () => {
     writeHoraeRelationCache(
       "888001",
       "2026-09-02T00:00:00.000Z",
-      [{ task_id: "119044", task_name: "upstream.task" }],
+      [{ task_id: "119044", targetTable: "pdata_n.upstream_table" }],
       cacheRoot,
       "up",
     );
@@ -159,9 +159,15 @@ describe("task-local coverage states", () => {
     const schedule = readTaskScheduleContext("888001", cacheRoot);
     expect(schedule?.scheduleUpstreamTaskIds).toEqual(["119044"]);
     expect(schedule?.scheduleDownstreamTaskIds).toEqual([]);
+    expect(schedule?.upstreamTableReferences).toEqual([
+      { taskId: "119044", qualifiedName: "pdata_n.upstream_table" },
+    ]);
     expect(schedule?.scheduleReference).toMatchObject({
       role: "SCHEDULE_REFERENCE_ONLY",
       upstreamTaskIds: ["119044"],
+      upstreamTableReferences: [
+        { taskId: "119044", qualifiedName: "pdata_n.upstream_table" },
+      ],
       downstreamTaskIds: [],
       source: "schedule-evidence-cache",
     });
@@ -175,6 +181,7 @@ describe("task-local coverage states", () => {
     });
     expect(projection.coverageStatus).toBe("SCHEDULE_ONLY");
     expect(projection.failureReasonCode).toBeNull();
+    expect(projection.coverageDisposition).toBe("MATERIAL_GAP");
     expect(projection.edges).toHaveLength(0);
     expect(projection.nodes).toHaveLength(1);
     expect(projection.nodes[0]?.properties.scheduleReference).toMatchObject({
@@ -287,6 +294,15 @@ describe("task-local coverage states", () => {
       scheduleOnly: 1,
       collectionFailed: 1,
       byFailureReason: { FACTS_UNAVAILABLE: 1 },
+      coverageDisposition: {
+        dataLineage: 1,
+        expectedScheduleReference: 0,
+        materialGap: 2,
+        scheduleOnlyExpected: 0,
+        scheduleOnlyGap: 1,
+        collectionFailedExpected: 0,
+        collectionFailedGap: 1,
+      },
     });
     expect(summarizeTaskLocalBatch(batch.projections)).toEqual(batch.summary);
 
@@ -295,5 +311,37 @@ describe("task-local coverage states", () => {
     expect(byTaskId.get("888002")?.coverageStatus).toBe("SCHEDULE_ONLY");
     expect(byTaskId.get("777002")?.coverageStatus).toBe("COLLECTION_FAILED");
     expect(byTaskId.get("777002")?.failureReasonCode).toBe("FACTS_UNAVAILABLE");
+  });
+
+  it("marks qualityTask schedule-only tasks as expected schedule reference", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "task-local-quality-schedule-"));
+    writeHoraeTaskTypeCache(
+      "900001",
+      "2026-09-02T00:00:00.000Z",
+      { taskName: "qc.sample", topicName: "DM_OTC_N", taskType: "67" },
+      cacheRoot,
+    );
+    writeHoraeRelationCache(
+      "900001",
+      "2026-09-02T00:00:00.000Z",
+      [{ task_id: "900000", task_name: "upstream.qc" }],
+      cacheRoot,
+      "up",
+    );
+
+    const projection = projectTaskLocal({
+      dataRoot: mkdtempSync(join(tmpdir(), "task-local-quality-data-")),
+      factsRoot: mkdtempSync(join(tmpdir(), "task-local-quality-facts-")),
+      scheduleCacheRoot: cacheRoot,
+      taskId: "900001",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(projection.coverageStatus).toBe("SCHEDULE_ONLY");
+    expect(projection.taskCategory).toBe("qualityTask");
+    expect(projection.coverageDisposition).toBe("EXPECTED_SCHEDULE_REFERENCE");
+    expect(projection.nodes[0]?.properties.coverageExpectation).toBe(
+      "SCHEDULE_REFERENCE_ONLY",
+    );
   });
 });

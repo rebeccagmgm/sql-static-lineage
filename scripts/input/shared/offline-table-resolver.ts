@@ -1353,6 +1353,35 @@ function resolveOne(
   return { reason: "TABLE_JSONL_MISS" };
 }
 
+export function resolveStandaloneOfflineTable(
+  qualifiedName: string,
+  catalog: OfflineTableCatalog,
+  packStore: OfflineTablePackLookup,
+  collectedAt: string,
+  options: {
+    readonly dataSource?: string;
+    readonly resolvedThisPass?: readonly TableEvidence[];
+  } = {},
+): { readonly evidence: TableEvidence } | { readonly reason: string } {
+  const parsed = parsePhysicalTableName(qualifiedName);
+  if (parsed === undefined) return { reason: "QUALIFIED_NAME_INVALID" };
+  const resolvedCandidate: OfflineTableCandidate =
+    options.dataSource !== undefined && parsed.dataSource === undefined
+      ? { qualifiedName: parsed.qualifiedName, dataSource: options.dataSource }
+      : parsed;
+  return resolveOne(
+    resolvedCandidate,
+    packStore,
+    catalog,
+    {},
+    collectedAt,
+    undefined,
+    undefined,
+    undefined,
+    options.resolvedThisPass ?? [],
+  );
+}
+
 export function resolveOfflineTables(
   dataRoot: string,
   taskEvidence: TaskEvidence,

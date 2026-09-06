@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { HoraeSerialGate } from "../scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts";
@@ -9,12 +9,17 @@ import {
   extractHiveTaskSqlFromScript,
   readHiveTaskSqlCache,
   resolveLocalHiveTaskScriptPath,
+  resolveExistingLocalHiveTaskScriptPath,
+  listLocalHiveTaskScriptPathCandidates,
+  normalizeHiveTaskScriptPath,
+  isLegacyGfFdmHiveTaskScriptPath,
   sqlHasStructuralTemplateVars,
   writeHiveTaskSqlCache,
 } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { extractSqlWriteTableNames } from "../scripts/input/shared/sql-target-evidence.ts";
 import {
   fillHiveTaskSqlCache,
+  evidenceFromTaskCodeResponse,
   hiveTaskIdsFromHoraeTypeCache,
 } from "../scripts/input/mainline/fill-hive-task-sql-cache.ts";
 import {
@@ -78,6 +83,126 @@ describe("hiveTask SQL cache fill", () => {
     );
   });
 
+  it("normalizes bare GF_FDM script paths before resolving local checkout", () => {
+    expect(
+      normalizeHiveTaskScriptPath(
+        "GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ).toBe("BigData-GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py");
+    expect(
+      isLegacyGfFdmHiveTaskScriptPath(
+        "GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ).toBe(true);
+    expect(
+      resolveLocalHiveTaskScriptPath(
+        "E:/code-BigData",
+        "GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ).toBe(
+      join(
+        "E:/code-BigData",
+        "GF_FDM",
+        "fdm_asset",
+        "pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    );
+    expect(
+      listLocalHiveTaskScriptPathCandidates(
+        "E:/code-BigData",
+        "GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ).toEqual([
+      join(
+        "E:/code-BigData",
+        "GF_FDM",
+        "fdm_asset",
+        "pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+      join(
+        "E:/code-BigData",
+        "GF_FDM_N",
+        "fdm_asset",
+        "pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ]);
+  });
+
+  it("resolves legacy GF_FDM scripts at the same relative path in GF_FDM_N", () => {
+    const codeRoot = mkdtempSync(join(tmpdir(), "hive-task-gf-fdm-alias-"));
+    const scriptName = "pdata.asset_nts_xy_vw_sagf_xs_s.py";
+    const aliasedPath = join(codeRoot, "GF_FDM_N", "fdm_asset", scriptName);
+    mkdirSync(dirname(aliasedPath), { recursive: true });
+    writeFileSync(aliasedPath, SAMPLE_SCRIPT, "utf8");
+
+    expect(
+      resolveExistingLocalHiveTaskScriptPath(
+        codeRoot,
+        "GF_FDM/fdm_asset/pdata.asset_nts_xy_vw_sagf_xs_s.py",
+      ),
+    ).toBe(aliasedPath);
+
+    rmSync(codeRoot, { recursive: true, force: true });
+  });
+
+  it.each([
+    ["GF_FDM", "other/demo.py"],
+    ["GF_FDM_N", "other/demo.py"],
+    ["GF_FDM", "fdm_asset/demo.sql"],
+    ["GF_FDM_N", "fdm_asset/demo.sql"],
+  ])("does not substitute a missing script with %s/%s", (repo, relativePath) => {
+    const codeRoot = mkdtempSync(join(tmpdir(), "hive-task-exact-path-"));
+    try {
+      const unrelatedPath = join(codeRoot, repo, relativePath);
+      mkdirSync(dirname(unrelatedPath), { recursive: true });
+      writeFileSync(unrelatedPath, SAMPLE_SCRIPT, "utf8");
+
+      expect(
+        resolveExistingLocalHiveTaskScriptPath(
+          codeRoot,
+          "GF_FDM/fdm_asset/demo.py",
+        ),
+      ).toBeNull();
+    } finally {
+      rmSync(codeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("extracts hiveTask SQL from task-code sparse checkout content", () => {
+    expect(
+      evidenceFromTaskCodeResponse(
+        [
+          {
+            codeCachePath: "E:/cache/repo::ORG/demo.py",
+            preview: "",
+          },
+        ],
+        "BigData-GF_FDM/fdm_asset/demo.py",
+        "pdata",
+      ),
+    ).toBeNull();
+
+    const codeRoot = mkdtempSync(join(tmpdir(), "hive-task-task-code-"));
+    const cacheDir = join(codeRoot, "repo");
+    const scriptPath = join(cacheDir, "ORG", "demo.py");
+    mkdirSync(dirname(scriptPath), { recursive: true });
+    writeFileSync(scriptPath, SAMPLE_SCRIPT, "utf8");
+
+    const evidence = evidenceFromTaskCodeResponse(
+      [
+        {
+          codeCachePath: `${cacheDir}::ORG/demo.py`,
+        },
+      ],
+      "BigData-GF_FDM/fdm_asset/demo.py",
+      "pdata",
+    );
+    expect(evidence?.source).toBe("LOCAL_CODE");
+    expect(evidence?.querySql).toContain("INSERT overwrite TABLE t02_idx_mkt_quot_s");
+
+    rmSync(codeRoot, { recursive: true, force: true });
+  });
+
   it("extracts create/query SQL and keeps HiveTask date variables", () => {
     expect(extractHiveTaskSqlFromScript(SAMPLE_SCRIPT)).toEqual({
       createSql:
@@ -85,6 +210,38 @@ describe("hiveTask SQL cache fill", () => {
       querySql:
         "INSERT overwrite TABLE t02_idx_mkt_quot_s\nSELECT\n'${data_day_str}' as busi_date\nfrom odata_n_uip.w_aindexindustrieseodcitics a;",
     });
+  });
+
+  it("joins non-diagnostic hive -e blocks and drops progress log INSERTs", () => {
+    const sampleLog = `[2026-08-28 00:53:42]-[INFO] hive -e"
+[2026-08-28 00:53:42]-[INFO] use pdata;
+[2026-08-28 00:53:42]-[INFO] insert into table pdata.cust_nts_load_log_s partition(BUSI_DATE)
+[2026-08-28 00:53:42]-[INFO] select 1 from default.dual;
+[2026-08-28 00:53:42]-[INFO] "
+[2026-08-28 00:54:38]-[INFO] hive -e"
+[2026-08-28 00:54:38]-[INFO] use pdata;
+[2026-08-28 00:54:38]-[INFO] insert overwrite table PDATA.ASSET_NTS_XY_VW_SAGF_XS
+[2026-08-28 00:54:38]-[INFO] select xs.GFZQDM from ODATA_XY.XY_S_VW_SAGF_XS xs;
+[2026-08-28 00:54:38]-[INFO] "
+[2026-08-28 00:55:12]-[INFO] hive -e"
+[2026-08-28 00:55:12]-[INFO] use pdata;
+[2026-08-28 00:55:12]-[INFO] insert overwrite table PDATA.ASSET_NTS_XY_VW_SAGF_XS_S partition(BUSI_DATE)
+[2026-08-28 00:55:12]-[INFO] select t1.CLEAR_DATE from PDATA.ASSET_NTS_XY_VW_SAGF_XS t1;
+[2026-08-28 00:55:12]-[INFO] "
+`;
+    const extracted = extractHiveTaskSqlFromHoraeLog(sampleLog, {
+      taskName: "pdata.asset_nts_xy_vw_sagf_xs_s",
+      hiveDb: "pdata",
+    });
+    expect(extracted.createSql).toBeNull();
+    expect(extracted.querySql).toMatch(
+      /INSERT\s+OVERWRITE\s+TABLE\s+PDATA\.ASSET_NTS_XY_VW_SAGF_XS\b/i,
+    );
+    expect(extracted.querySql).toMatch(
+      /INSERT\s+OVERWRITE\s+TABLE\s+PDATA\.ASSET_NTS_XY_VW_SAGF_XS_S/i,
+    );
+    expect(extracted.querySql).toMatch(/ODATA_XY\.XY_S_VW_SAGF_XS/i);
+    expect(extracted.querySql).not.toMatch(/cust_nts_load_log_s/i);
   });
 
   it("extracts CREATE and INSERT from differently named sql variables passed to exec_sql", () => {
@@ -568,7 +725,7 @@ SELECT A.ID FROM \${src_table} A;`,
     }
   });
 
-  it("writes local SQL first and treats empty MCP as unavailable without stopping", async () => {
+  it("writes local SQL first and does not materialize an empty SQL cache", async () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-empty-"));
     const codeRoot = join(cacheRoot, "code");
     try {
@@ -626,12 +783,52 @@ SELECT A.ID FROM \${src_table} A;`,
         sqlStatus: "AVAILABLE",
       });
       expect(readHiveTaskSqlCache("358", cacheRoot)).toMatchObject({
-        status: "HIT",
-        source: "HORAE_LOG",
-        sqlStatus: "UNAVAILABLE",
+        status: "MISS",
       });
       expect(readHiveTaskSqlCache("129", cacheRoot)).toMatchObject({
         status: "MISS",
+      });
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("uses the first day of the month for monthly Horae log fallback", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-monthly-log-"));
+    try {
+      writeType(cacheRoot, "5432", {
+        taskType: "hiveTask",
+        cycle: "每月",
+        scriptPath:
+          "BigData-brk_dataanalysis/dm_da/dm_da.star_org_cust_level_mon.py",
+        hiveDb: "dm_da",
+      });
+      const logDates: string[] = [];
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "missing-code"),
+        dataDate: "2026-08-27",
+        minIntervalMs: 0,
+        mcpRunner: () => [{ createSql: null, querySql: null }],
+        logRunner: (_taskId, dataDate) => {
+          logDates.push(dataDate);
+          return `[2026-09-01 06:01:00]-[INFO] hive -e"
+[2026-09-01 06:01:00]-[INFO] CREATE TABLE IF NOT EXISTS STAR_ORG_CUST_LEVEL_MON(id STRING);
+[2026-09-01 06:01:00]-[INFO] INSERT OVERWRITE TABLE STAR_ORG_CUST_LEVEL_MON SELECT id FROM SOURCE_TABLE;
+[2026-09-01 06:01:01]-[INFO] "`;
+        },
+      });
+
+      expect(logDates).toEqual(["2026-08-01"]);
+      expect(summary).toMatchObject({
+        mcpEmpty: 1,
+        logCached: 1,
+        logEmpty: 0,
+      });
+      expect(readHiveTaskSqlCache("5432", cacheRoot)).toMatchObject({
+        status: "HIT",
+        source: "HORAE_LOG",
+        sqlStatus: "AVAILABLE",
       });
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
@@ -794,6 +991,70 @@ SELECT A.ID FROM \${src_table} A;`,
       expect(readHiveTaskSqlCache("14806", cacheRoot)).toMatchObject({
         status: "MISS",
       });
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("horae-log-only re-extracts from cached script-log without MCP", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-log-only-"));
+    try {
+      writeHoraeTaskTypeCache(
+        "1017",
+        "2026-09-05T00:00:00.000Z",
+        {
+          id: "1017",
+          taskType: "hiveTask",
+          name: "pdata.asset_nts_xy_vw_sagf_xs_s",
+          hiveDb: "pdata",
+        },
+        cacheRoot,
+      );
+      writeHiveTaskSqlCache(
+        "1017",
+        "2026-09-05T00:00:00.000Z",
+        {
+          source: "HORAE_LOG",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-GF_FDM/demo.py",
+          hiveDb: "pdata",
+          createSql: null,
+          querySql: "insert overwrite table PDATA.ASSET_NTS_XY_VW_SAGF_XS_S select 1",
+        },
+        cacheRoot,
+      );
+      const logPath = join(
+        cacheRoot,
+        "schedule-evidence/script-log/1017_20260827.log",
+      );
+      mkdirSync(dirname(logPath), { recursive: true });
+      writeFileSync(
+        logPath,
+        `[2026-08-28 00:53:42]-[INFO] hive -e"
+[2026-08-28 00:53:42]-[INFO] insert into table pdata.cust_nts_load_log_s select 1;
+[2026-08-28 00:53:42]-[INFO] "
+[2026-08-28 00:54:38]-[INFO] hive -e"
+[2026-08-28 00:54:38]-[INFO] insert overwrite table PDATA.ASSET_NTS_XY_VW_SAGF_XS select xs.GFZQDM from ODATA_XY.XY_S_VW_SAGF_XS xs;
+[2026-08-28 00:54:38]-[INFO] "
+[2026-08-28 00:55:12]-[INFO] hive -e"
+[2026-08-28 00:55:12]-[INFO] insert overwrite table PDATA.ASSET_NTS_XY_VW_SAGF_XS_S select t1.CLEAR_DATE from PDATA.ASSET_NTS_XY_VW_SAGF_XS t1;
+[2026-08-28 00:55:12]-[INFO] "
+`,
+        "utf8",
+      );
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        taskIds: ["1017"],
+        dataDate: "2026-08-27",
+        horaeLogOnly: true,
+        minIntervalMs: 0,
+      });
+      expect(summary).toMatchObject({ logCached: 1, mcpCached: 0 });
+      const cached = readHiveTaskSqlCache("1017", cacheRoot);
+      if (cached.status !== "HIT") throw new Error("Expected cached SQL for task 1017");
+      expect(String(cached.querySql)).toMatch(/ODATA_XY\.XY_S_VW_SAGF_XS/i);
+      expect(String(cached.querySql)).toMatch(/ASSET_NTS_XY_VW_SAGF_XS_S/i);
+      expect(String(cached.querySql)).not.toMatch(/cust_nts_load_log_s/i);
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

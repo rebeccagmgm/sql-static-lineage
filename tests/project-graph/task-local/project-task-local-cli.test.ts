@@ -54,6 +54,45 @@ function seedScheduleCache(cacheRoot: string): void {
 }
 
 describe("task-local batch CLI (TL-5)", () => {
+  it("defaults to shared data paths while keeping graph output separate", () => {
+    const options = parseProjectTaskLocalCli(["--task-ids", "176827"]);
+    expect(options.factsRoot.endsWith("field-facts")).toBe(true);
+    expect(options.projectionRoot?.endsWith("task-projections")).toBe(true);
+    expect(options.outputRoot).not.toBe(options.projectionRoot);
+  });
+
+  it("reuses a shared projection across two graph output directories", () => {
+    const parent = mkdtempSync(join(tmpdir(), "task-local-shared-"));
+    const cacheRoot = join(parent, "cache");
+    seedScheduleCache(cacheRoot);
+    const options = {
+      dataRoot: join(parent, "data"),
+      factsRoot: join(parent, "facts"),
+      scheduleCacheRoot: cacheRoot,
+      projectionRoot: join(parent, "shared"),
+      taskIds: ["176827"],
+      alsoTaskIds: [],
+      expandUpstream: false,
+      prepareFacts: false,
+    };
+    const first = runProjectTaskLocalCli({ ...options, outputRoot: join(parent, "graph-a") });
+    const second = runProjectTaskLocalCli({ ...options, outputRoot: join(parent, "graph-b") });
+    expect(first.cache).toEqual({ hits: 0, misses: 1 });
+    expect(second.cache).toEqual({ hits: 1, misses: 0 });
+    const a = JSON.parse(readFileSync(first.batchManifestPath, "utf8"));
+    const b = JSON.parse(readFileSync(second.batchManifestPath, "utf8"));
+    expect(a.tasks[0].path).toBe(b.tasks[0].path);
+    expect(a.tasks[0].path).toContain(options.projectionRoot);
+    expect(existsSync(join(parent, "graph-b", "tasks"))).toBe(false);
+
+    writeHoraeRelationCache("176827", "2026-09-05T00:00:00.000Z", [{ task_id: "105387" }], cacheRoot, "up");
+    const changed = runProjectTaskLocalCli({ ...options, outputRoot: join(parent, "graph-c") });
+    expect(changed.cache).toEqual({ hits: 0, misses: 1 });
+    const fresh = JSON.parse(readFileSync(join(options.projectionRoot, "tasks", "176827", "task-local-projection.json"), "utf8"));
+    const task = fresh.projection.nodes.find((node: { nodeType: string }) => node.nodeType === "TASK");
+    expect(task.properties.scheduleReference.upstreamTaskIds).toEqual(["105387"]);
+  });
+
   it("selects topic tasks and always includes also-task-ids", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "task-local-cli-select-"));
     seedScheduleCache(cacheRoot);

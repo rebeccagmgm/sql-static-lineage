@@ -1,3 +1,4 @@
+import { resolveWorkspacePaths } from "../config/workspace-paths.ts";
 import {
 	existsSync,
 	lstatSync,
@@ -26,14 +27,16 @@ import {
 } from "../input/shared/input-pack.ts";
 import { buildTaskPartitionEvidence } from "../input/shared/task-partition-evidence.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
-import { parseDdlSchema } from "../plans/ddl-schema.ts";
+import { createTableLikeSource, parseDdlSchema } from "../plans/ddl-schema.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
 import { normalizeRepeatedSqlForAnalysis } from "../input/shared/sql-analysis-normalization.ts";
 import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
+import { controlledTaskEndpointPlatform } from "../input/shared/task-endpoints.ts";
 import {
 	canonicalJson,
 	normalizeName,
+	safeSegment,
 	sha256,
 	type GenericAnalysisProfile,
 	type GenericTaskProfile,
@@ -86,6 +89,13 @@ export interface PhysicalTableCatalog {
 
 export interface PhysicalTableCatalogOptions {
 	readonly lazyDdl?: boolean;
+	readonly references?: PhysicalTableCatalogReferences;
+}
+
+export interface PhysicalTableCatalogReferences {
+	readonly physicalKeys?: readonly string[];
+	readonly qualifiedNames?: readonly string[];
+	readonly nameTails?: readonly string[];
 }
 
 export interface SelectedLineageSql {
@@ -192,7 +202,15 @@ function discoverNamedFiles(root: string, name: string): string[] {
 	if (!existsSync(root)) return [];
 	const result: string[] = [];
 	const visit = (directory: string): void => {
-		for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => compareText(left.name, right.name))) {
+		let entries;
+		try {
+			entries = readdirSync(directory, { withFileTypes: true });
+		} catch (error) {
+			// Parent listing can race with deletes / missing dirs on large trees.
+			if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return;
+			throw error;
+		}
+		for (const entry of entries.sort((left, right) => compareText(left.name, right.name))) {
 			const path = join(directory, entry.name);
 			if (entry.isSymbolicLink()) continue;
 			if (entry.isDirectory()) visit(path);
@@ -203,15 +221,130 @@ function discoverNamedFiles(root: string, name: string): string[] {
 	return result.sort(compareText);
 }
 
+const taskInputPackIndexCache = new Map<string, ReadonlyMap<string, readonly string[]>>();
+
 export function indexTaskInputPacks(dataRootInput: string): ReadonlyMap<string, readonly string[]> {
+	const dataRoot = resolve(dataRootInput);
+	const cached = taskInputPackIndexCache.get(dataRoot);
+	if (cached) return cached;
 	const grouped = new Map<string, string[]>();
-	for (const taskPath of discoverNamedFiles(join(resolve(dataRootInput), "tasks"), "task.json")) {
+	for (const taskPath of discoverNamedFiles(join(dataRoot, "tasks"), "task.json")) {
 		const taskId = basename(dirname(taskPath));
 		const paths = grouped.get(taskId) ?? [];
 		paths.push(taskPath);
 		grouped.set(taskId, paths);
 	}
-	return new Map([...grouped.entries()].map(([taskId, paths]) => [taskId, [...paths].sort(compareText)]));
+	const indexed = new Map(
+		[...grouped.entries()].map(([taskId, paths]) => [taskId, [...paths].sort(compareText)] as const),
+	);
+	taskInputPackIndexCache.set(dataRoot, indexed);
+	return indexed;
+}
+
+export function locateTaskInputPacks(
+	dataRootInput: string,
+	taskIds: readonly string[],
+): ReadonlyMap<string, readonly string[]> {
+	const dataRoot = resolve(dataRootInput);
+	const requested = [...new Set(taskIds.map((taskId) => taskId.trim()).filter(Boolean))].sort(compareText);
+	const grouped = new Map<string, string[]>();
+	for (const taskId of requested) grouped.set(taskId, []);
+	const tasksRoot = join(dataRoot, "tasks");
+	if (!existsSync(tasksRoot)) return grouped;
+	const categories = readdirSync(tasksRoot, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+		.map((entry) => entry.name)
+		.sort(compareText);
+	for (const category of categories) {
+		for (const taskId of requested) {
+			const taskPath = join(tasksRoot, category, taskId, "task.json");
+			if (existsSync(taskPath)) grouped.get(taskId)?.push(taskPath);
+		}
+	}
+	return new Map(
+		[...grouped.entries()].map(([taskId, paths]) => [taskId, [...paths].sort(compareText)] as const),
+	);
+}
+
+function collectTableReferencesFromSql(
+	references: PhysicalTableCatalogReferences,
+	qualifiedName: string,
+): void {
+	const normalized = normalizeName(qualifiedName);
+	if (!normalized) return;
+	(references.qualifiedNames as string[]).push(normalized);
+	(references.nameTails as string[]).push(normalized.split(".").at(-1) ?? normalized);
+}
+
+function collectTableReferencesFromEndpoint(
+	references: PhysicalTableCatalogReferences,
+	endpoint: unknown,
+): void {
+	const record = asRecord(endpoint);
+	const platform = nonEmpty(record?.platform);
+	const dataSource = nonEmpty(record?.dataSource);
+	const qualifiedName = nonEmpty(record?.qualifiedName);
+	if (platform && dataSource && qualifiedName) {
+		const normalizedQualified = normalizeName(qualifiedName);
+		(references.physicalKeys as string[]).push(
+			physicalTableKey({ platform, dataSource, qualifiedName: normalizedQualified }),
+		);
+		collectTableReferencesFromSql(references, normalizedQualified);
+		return;
+	}
+	if (typeof endpoint === "string" && endpoint.trim()) collectTableReferencesFromSql(references, endpoint);
+}
+
+export function collectTaskTableReferences(
+	dataRootInput: string,
+	taskPaths: readonly string[],
+): PhysicalTableCatalogReferences {
+	const dataRoot = resolve(dataRootInput);
+	const references: PhysicalTableCatalogReferences = {
+		physicalKeys: [],
+		qualifiedNames: [],
+		nameTails: [],
+	};
+	for (const taskPath of taskPaths) {
+		try {
+			const taskRaw: unknown = JSON.parse(readFileSync(taskPath, "utf8"));
+			validateTaskDocument(taskRaw);
+			const task = taskRaw as TaskDocument & JsonRecord;
+			collectTableReferencesFromEndpoint(references, task.source);
+			collectTableReferencesFromEndpoint(references, task.target);
+			try {
+				const selected = selectLineageSql(dataRoot, taskPath, task);
+				for (const source of selected.sources) {
+					for (const name of extractSqlReadTableNames(source.analysisContent))
+						collectTableReferencesFromSql(references, name);
+					for (const write of extractSqlWrites(source.content))
+						collectTableReferencesFromSql(references, write.qualifiedName);
+					try {
+						const session = SqlSession.create(source.analysisContent, taskSqlDialect(String(task.taskCategory)));
+						for (const [statementIndex, cell] of session.doc.statements.entries()) {
+							const plan = buildPlanFacts(cell, source.analysisContent, {
+								statement_index: statementIndex,
+								dialect: taskSqlDialect(String(task.taskCategory)),
+								include_expression_dependencies: false,
+							});
+							for (const name of plan.physical_inputs) collectTableReferencesFromSql(references, name);
+						}
+					} catch {
+						// Keep conservative text references when a source cannot be parsed.
+					}
+				}
+			} catch {
+				// Keep direct endpoint references even when SQL selection later fails.
+			}
+		} catch {
+			// Preparation will fail later with the authoritative error.
+		}
+	}
+	return {
+		physicalKeys: [...new Set(references.physicalKeys ?? [])].sort(compareText),
+		qualifiedNames: [...new Set(references.qualifiedNames ?? [])].sort(compareText),
+		nameTails: [...new Set(references.nameTails ?? [])].sort(compareText),
+	};
 }
 
 function verifiedFile(path: string, expectedHash: string, reason: string): Buffer {
@@ -222,13 +355,73 @@ function verifiedFile(path: string, expectedHash: string, reason: string): Buffe
 	return bytes;
 }
 
-function targetRecord(task: TaskDocument & JsonRecord): { platform: string; dataSource: string; qualifiedName: string } {
+function samePlatformToken(left: string, right: string): boolean {
+	const a = normalizeToken(left);
+	const b = normalizeToken(right);
+	return a === b || ((a === "postgre" || a === "postgres") && (b === "postgre" || b === "postgres"));
+}
+
+function logicalSourceIdFor(platform: string, dataSource: string): string {
+	const raw = `${normalizeToken(platform)}-${normalizeToken(dataSource)}`;
+	const sanitized = raw.replace(/[^a-z0-9_.-]+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+	if (!sanitized) throw new Error(`LOGICAL_SOURCE_ID_UNSAFE:${raw}`);
+	return safeSegment(sanitized, "logical_source_id");
+}
+
+function resolveNamedTarget(
+	task: TaskDocument & JsonRecord,
+	catalog: PhysicalTableCatalog,
+	name: string,
+): { platform: string; dataSource: string; qualifiedName: string } {
+	const qualified = normalizeName(name);
+	const tail = normalizeName(name.split(".").at(-1) ?? name);
+	const byQualified = catalog.byQualifiedName.get(qualified) ?? [];
+	const byTail = catalog.byNameTail.get(tail) ?? [];
+	const seen = new Map<string, PhysicalTableCatalogEntry>();
+	for (const entry of [...byQualified, ...byTail]) {
+		seen.set(physicalTableKey(entry), entry);
+	}
+	let candidates = [...seen.values()];
+	const wantPlatform = controlledTaskEndpointPlatform(String(task.taskCategory ?? ""), "target");
+	if (wantPlatform) {
+		const filtered = candidates.filter((entry) => samePlatformToken(entry.platform, wantPlatform));
+		if (filtered.length > 0) candidates = filtered;
+	}
+	const sourceName = nonEmpty(asRecord(task.source)?.qualifiedName);
+	if (sourceName) {
+		const notSource = candidates.filter(
+			(entry) => normalizeName(entry.qualifiedName) !== normalizeName(sourceName),
+		);
+		if (notSource.length > 0) candidates = notSource;
+	}
+	if (candidates.length === 1) {
+		const entry = candidates[0]!;
+		return {
+			platform: entry.platform,
+			dataSource: entry.dataSource,
+			qualifiedName: entry.qualifiedName,
+		};
+	}
+	if (candidates.length === 0) {
+		throw new Error(`TARGET_TABLE_PACK_MISSING:${task.taskId}:${name}`);
+	}
+	throw new Error(`TASK_TARGET_AMBIGUOUS:${task.taskId}:${name}`);
+}
+
+function targetRecord(
+	task: TaskDocument & JsonRecord,
+	catalog: PhysicalTableCatalog,
+): { platform: string; dataSource: string; qualifiedName: string } {
 	const target = asRecord(task.target);
 	const platform = nonEmpty(target?.platform);
 	const dataSource = nonEmpty(target?.dataSource);
 	const qualifiedName = nonEmpty(target?.qualifiedName);
-	if (!platform || !dataSource || !qualifiedName) throw new Error(`TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:${task.taskId}`);
-	return { platform, dataSource, qualifiedName: normalizeName(qualifiedName) };
+	if (platform && dataSource && qualifiedName) {
+		return { platform, dataSource, qualifiedName: normalizeName(qualifiedName) };
+	}
+	const name = typeof task.target === "string" ? task.target.trim() : qualifiedName;
+	if (!name) throw new Error(`TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:${task.taskId}`);
+	return resolveNamedTarget(task, catalog, name);
 }
 
 function fieldProducingSql(sql: string): boolean {
@@ -280,6 +473,62 @@ export function selectLineageSql(
 	return { selected: candidates[0]!, sources: loaded, hashes };
 }
 
+function qualifyCreateTableLikeSource(targetQualifiedName: string, likeSource: string): string {
+	const source = normalizeName(likeSource);
+	if (source.includes(".")) return source;
+	const schema = targetQualifiedName.split(".").slice(0, -1).join(".");
+	return schema ? `${schema}.${source}` : source;
+}
+
+function pickCreateTableLikeSource(
+	target: PhysicalTableCatalogEntry,
+	sourceQualifiedName: string,
+	grouped: Map<string, PhysicalTableCatalogEntry[]>,
+): PhysicalTableCatalogEntry | undefined {
+	const candidates = grouped.get(normalizeName(sourceQualifiedName)) ?? [];
+	const samePhysical = candidates.filter(
+		(candidate) =>
+			normalizeToken(candidate.platform) === normalizeToken(target.platform) &&
+			normalizeToken(candidate.dataSource) === normalizeToken(target.dataSource),
+	);
+	const pool = samePhysical.length > 0 ? samePhysical : candidates;
+	return pool.length === 1 ? pool[0] : undefined;
+}
+
+function createLikeColumnResolver(
+	columnAssigners: Map<PhysicalTableCatalogEntry, (columns: readonly string[]) => void>,
+	grouped: Map<string, PhysicalTableCatalogEntry[]>,
+	issues: string[],
+): (entry: PhysicalTableCatalogEntry) => readonly string[] {
+	const visiting = new Set<string>();
+	const resolve = (entry: PhysicalTableCatalogEntry, depth: number): readonly string[] => {
+		if (depth > 3) return [];
+		const key = physicalTableKey(entry);
+		if (visiting.has(key)) return [];
+		visiting.add(key);
+		try {
+			const like = createTableLikeSource(readFileSync(entry.ddlPath, "utf8"));
+			if (!like) return [];
+			const source = pickCreateTableLikeSource(
+				entry,
+				qualifyCreateTableLikeSource(entry.qualifiedName, like),
+				grouped,
+			);
+			if (!source || source === entry) {
+				issues.push(`CREATE_TABLE_LIKE_SOURCE_UNRESOLVED:${entry.qualifiedName}:${like}`);
+				return [];
+			}
+			const columns = source.columns;
+			if (columns.length > 0) columnAssigners.get(entry)?.(columns);
+			else issues.push(`CREATE_TABLE_LIKE_SOURCE_EMPTY:${entry.qualifiedName}:${source.qualifiedName}`);
+			return columns;
+		} finally {
+			visiting.delete(key);
+		}
+	};
+	return (entry) => resolve(entry, 0);
+}
+
 export function loadPhysicalTableCatalog(
 	dataRootInput: string,
 	options: PhysicalTableCatalogOptions = {},
@@ -287,7 +536,53 @@ export function loadPhysicalTableCatalog(
 	const dataRoot = resolve(dataRootInput);
 	const entries: PhysicalTableCatalogEntry[] = [];
 	const issues: string[] = [];
-	for (const tablePath of discoverNamedFiles(join(dataRoot, "tables"), "table.json")) {
+	const columnAssigners = new Map<PhysicalTableCatalogEntry, (columns: readonly string[]) => void>();
+	let likeResolve: (entry: PhysicalTableCatalogEntry) => readonly string[] = () => [];
+	const referenceFilter = options.references;
+	const requestedPhysicalKeys = new Set((referenceFilter?.physicalKeys ?? []).map((key) => normalizeToken(key)));
+	const requestedQualifiedNames = new Set((referenceFilter?.qualifiedNames ?? []).map((name) => normalizeName(name)));
+	const requestedNameTails = new Set((referenceFilter?.nameTails ?? []).map((name) => normalizeName(name)));
+	const shouldIncludeTable = (
+		platform: string,
+		directoryName: string,
+	): boolean => {
+		if (
+			referenceFilter === undefined ||
+			(requestedPhysicalKeys.size === 0 &&
+				requestedQualifiedNames.size === 0 &&
+				requestedNameTails.size === 0)
+		) {
+			return true;
+		}
+		const separator = directoryName.lastIndexOf("__");
+		if (separator <= 0 || separator >= directoryName.length - 2) return false;
+		const qualifiedName = normalizeName(directoryName.slice(0, separator));
+		const dataSource = directoryName.slice(separator + 2);
+		if (requestedQualifiedNames.has(qualifiedName)) return true;
+		const tail = normalizeName(qualifiedName.split(".").at(-1) ?? qualifiedName);
+		if (requestedNameTails.has(tail)) return true;
+		return requestedPhysicalKeys.has(
+			normalizeToken(physicalTableKey({ platform, dataSource, qualifiedName })),
+		);
+	};
+	const tablePaths =
+		referenceFilter === undefined
+			? discoverNamedFiles(join(dataRoot, "tables"), "table.json")
+			: readdirSync(join(dataRoot, "tables"), { withFileTypes: true })
+				.filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+				.map((entry) => entry.name)
+				.sort(compareText)
+				.flatMap((platform) =>
+					readdirSync(join(dataRoot, "tables", platform), { withFileTypes: true })
+						.filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+						.map((entry) => entry.name)
+						.sort(compareText)
+						.filter((directoryName) => shouldIncludeTable(platform, directoryName))
+						.map((directoryName) =>
+							join(dataRoot, "tables", platform, directoryName, "table.json"),
+						),
+				);
+	for (const tablePath of tablePaths) {
 		try {
 			const raw: unknown = JSON.parse(readFileSync(tablePath, "utf8"));
 			validateTableDocument(raw);
@@ -307,7 +602,9 @@ export function loadPhysicalTableCatalog(
 					const ddl = verifiedFile(ddlPath, ddlHash, "DDL").toString("utf8");
 					const parsed = parseDdlSchema(ddl);
 					const columns = parsed.columns.map((column) => normalizeName(column.name));
-					if (columns.length === 0) throw new Error(`DDL_COLUMNS_UNAVAILABLE:${parsed.warnings.join(",")}`);
+					if (columns.length === 0 && !createTableLikeSource(ddl)) {
+						throw new Error(`DDL_COLUMNS_UNAVAILABLE:${parsed.warnings.join(",")}`);
+					}
 					loadedColumns = columns;
 				} catch (error) {
 					if (!options.lazyDdl) throw error;
@@ -317,8 +614,10 @@ export function loadPhysicalTableCatalog(
 				return loadedColumns;
 			};
 			const columns = options.lazyDdl ? undefined : getColumns();
-			if (!options.lazyDdl && columns?.length === 0) throw new Error(`DDL_COLUMNS_UNAVAILABLE:${ddlPath}`);
-			entries.push({
+			if (!options.lazyDdl && columns?.length === 0 && !createTableLikeSource(verifiedFile(ddlPath, ddlHash, "DDL").toString("utf8"))) {
+				throw new Error(`DDL_COLUMNS_UNAVAILABLE:${ddlPath}`);
+			}
+			const entry: PhysicalTableCatalogEntry = {
 				platform: String(document.platform),
 				dataSource: String(document.dataSource),
 				stableTableId: String(document.stableTableId),
@@ -328,13 +627,20 @@ export function loadPhysicalTableCatalog(
 					? document.partitionFields.map((field) => normalizeName(String(field)))
 					: null,
 				get columns() {
-					return columns ?? getColumns();
+					const current = loadedColumns ?? columns ?? getColumns();
+					if (current.length > 0) return current;
+					return likeResolve(entry);
 				},
 				tablePath,
 				ddlPath,
 				tableContentHash: String(document.contentHash),
 				ddlSha256: ddlHash,
+			};
+			columnAssigners.set(entry, (resolved) => {
+				loadedColumns = resolved;
+				attemptedColumns = true;
 			});
+			entries.push(entry);
 		} catch (error) {
 			issues.push(`${relativeLocator(dataRoot, tablePath)}:${error instanceof Error ? error.message : String(error)}`);
 		}
@@ -359,6 +665,7 @@ export function loadPhysicalTableCatalog(
 		if (byPhysicalKey.has(key)) issues.push(`DUPLICATE_PHYSICAL_TABLE:${key}`);
 		else byPhysicalKey.set(key, entry);
 	}
+	likeResolve = createLikeColumnResolver(columnAssigners, grouped, issues);
 	return {
 		entries,
 		issues: issues.sort(compareText),
@@ -1010,10 +1317,10 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	const selected = selectLineageSql(dataRoot, taskPath, task);
 	const combined = combinedLineageSql(selected.sources, selected.selected);
 	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
-	const targetRef = targetRecord(task);
+	const targetRef = targetRecord(task, catalog);
 	const target = catalog.byPhysicalKey.get(physicalTableKey(targetRef));
 	if (!target) throw new Error(`TARGET_TABLE_PACK_MISSING:${physicalTableKey(targetRef)}`);
-	const logicalSourceId = `${normalizeToken(target.platform)}-${normalizeToken(target.dataSource)}`;
+	const logicalSourceId = logicalSourceIdFor(target.platform, target.dataSource);
 	const dialect = taskSqlDialect(String(task.taskCategory));
 	const defaultSchema = inferTaskDefaultSchema(task);
 	const schemaEntries = taskSchemaEntries(
@@ -1172,8 +1479,15 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 	if (options.taskIds.length === 0) throw new Error("TASK_ID_REQUIRED");
 	const outputRoot = resolve(options.outputRoot);
 	mkdirSync(outputRoot, { recursive: true });
-	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(options.dataRoot, { lazyDdl: true });
-	const taskPathIndex = options.taskPathIndex ?? indexTaskInputPacks(options.dataRoot);
+	const requestedTaskIds = [...new Set(options.taskIds)].sort(compareText);
+	const taskPathIndex = options.taskPathIndex ?? locateTaskInputPacks(options.dataRoot, requestedTaskIds);
+	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(options.dataRoot, {
+		lazyDdl: true,
+		references: collectTaskTableReferences(
+			options.dataRoot,
+			requestedTaskIds.flatMap((taskId) => taskPathIndex.get(taskId) ?? []),
+		),
+	});
 	const ddlCache = new Map<string, string>();
 	const tasks: TaskRunResult[] = [];
 	const preparedByTaskId = new Map<string, {
@@ -1185,7 +1499,7 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 	const writerCatalogPath = writerCatalogEnabled
 		? resolve(options.writerCatalogPath ?? defaultWriterCatalogPath(options.dataRoot))
 		: null;
-	for (const taskId of [...new Set(options.taskIds)].sort(compareText)) {
+	for (const taskId of requestedTaskIds) {
 		const taskPaths = taskPathIndex.get(taskId) ?? [];
 		try {
 			if (taskPaths.length === 0) throw new Error(`TASK_INPUT_PACK_MISSING:${taskId}`);
@@ -1265,27 +1579,34 @@ function option(args: readonly string[], name: string): string | undefined {
 	return index >= 0 ? args[index + 1] : undefined;
 }
 
-function parseCli(args: readonly string[]): RunInputPackMachineFactsOptions {
-	const dataRoot = option(args, "--data-root");
-	const outputRoot = option(args, "--output");
+export function parseInputPackMachineFactsCli(args: readonly string[]): RunInputPackMachineFactsOptions {
+	const paths = resolveWorkspacePaths({
+		configPath: option(args, "--config"),
+		profile: option(args, "--profile"),
+		overrides: {
+			inputPackRoot: option(args, "--data-root") ?? option(args, "--input-pack-root"),
+			factsRoot: option(args, "--output"),
+			writerCatalogPath: option(args, "--writer-catalog"),
+		},
+	});
+	const dataRoot = paths.inputPackRoot;
+	const outputRoot = paths.factsRoot;
 	const taskIds = args
 		.flatMap((value, index) => (value === "--task-id" && args[index + 1] ? args[index + 1]!.split(",") : []))
 		.map((value) => value.trim())
 		.filter(Boolean);
 	if (!dataRoot || !outputRoot || taskIds.length === 0)
-		throw new Error("usage: input-pack-machine-facts --data-root <path> --task-id <id[,id]> --output <path> [--writer-catalog <sqlite>] [--no-writer-catalog]");
+		throw new Error("usage: input-pack-machine-facts --task-id <id[,id]> [--config <json>] [--data-root <packs>] [--output <facts>] [--writer-catalog <sqlite>] [--no-writer-catalog]");
 	return {
 		dataRoot,
 		outputRoot,
 		taskIds,
-		...(option(args, "--writer-catalog") === undefined
-			? {}
-			: { writerCatalogPath: resolve(option(args, "--writer-catalog")!) }),
+		writerCatalogPath: paths.writerCatalogPath,
 		...(args.includes("--no-writer-catalog") ? { noWriterCatalog: true } : {}),
 	};
 }
 
 if (process.argv[1] && basename(process.argv[1]).startsWith("input-pack-machine-facts")) {
-	const result = runInputPackMachineFacts(parseCli(process.argv.slice(2)));
+	const result = runInputPackMachineFacts(parseInputPackMachineFactsCli(process.argv.slice(2)));
 	process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

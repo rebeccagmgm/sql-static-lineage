@@ -18,6 +18,10 @@ import {
   type TaskIdOrder,
 } from "./fill-horae-relation-cache.ts";
 import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  excludeManualTaskIds,
+  readManualTaskIds,
+} from "../shared/manual-task-exclusion.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_ERRORS = 3;
@@ -33,6 +37,7 @@ export interface FillSzdataScheduleDetailOptions {
   readonly runner?: ScheduleDetailRunner;
   readonly gate?: ScheduleDetailSerialGate;
   readonly now?: () => Date;
+  readonly manualTaskIds?: ReadonlySet<string>;
 }
 
 export interface SzdataScheduleDetailFillError {
@@ -63,7 +68,11 @@ export function taskIdsFromScheduleEvidenceCache(cacheRoot: string): string[] {
   return sortTaskIds(taskIds);
 }
 
-function positiveInteger(value: number | undefined, fallback: number, code: string): number {
+function positiveInteger(
+  value: number | undefined,
+  fallback: number,
+  code: string,
+): number {
   const effective = value ?? fallback;
   if (!Number.isSafeInteger(effective) || effective < 1) throw new Error(code);
   return effective;
@@ -101,7 +110,8 @@ function selectedTaskIds(
 ): string[] {
   const selected = [...taskIds];
   if (limit === undefined) return selected;
-  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("LIMIT_INVALID");
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw new Error("LIMIT_INVALID");
   return selected.slice(0, limit);
 }
 
@@ -132,7 +142,10 @@ export async function fillSzdataScheduleDetailCache(
   const taskIds = selectedTaskIds(
     fromStartTaskId(
       sortTaskIds(
-        options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+        excludeManualTaskIds(
+          options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+          options.manualTaskIds ?? readManualTaskIds(cacheRoot),
+        ),
         order,
       ),
       options.startTaskId,
@@ -140,8 +153,7 @@ export async function fillSzdataScheduleDetailCache(
     ),
     options.limit,
   );
-  const gate =
-    options.gate ?? new ScheduleDetailSerialGate({ minIntervalMs });
+  const gate = options.gate ?? new ScheduleDetailSerialGate({ minIntervalMs });
   const runner = options.runner ?? runSzdataScheduleDetail;
   const now = options.now ?? (() => new Date());
   let skipped = 0;
@@ -209,22 +221,26 @@ function parseIntegerOption(
   const raw = option(name);
   if (raw === undefined) return fallback;
   const value = Number(raw);
-  if (
-    !Number.isSafeInteger(value) ||
-    (allowZero ? value < 0 : value < 1)
-  )
-    throw new Error(`${name.slice(2).toUpperCase().replaceAll("-", "_")}_INVALID`);
+  if (!Number.isSafeInteger(value) || (allowZero ? value < 0 : value < 1))
+    throw new Error(
+      `${name.slice(2).toUpperCase().replaceAll("-", "_")}_INVALID`,
+    );
   return value;
 }
 
 async function main(): Promise<void> {
   const taskIdsFile = option("--task-ids-file");
   const order = parseTaskIdOrder(option("--order"));
+  const cacheRoot = option("--cache-root");
   const summary = await fillSzdataScheduleDetailCache({
-    cacheRoot: option("--cache-root"),
+    cacheRoot,
     order,
     startTaskId: option("--start-task-id"),
     taskIds: taskIdsFile ? taskIdsFromFile(taskIdsFile, order) : undefined,
+    manualTaskIds: readManualTaskIds(
+      cacheRoot ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+      option("--manual-task-ids-file") ?? undefined,
+    ),
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, false),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),

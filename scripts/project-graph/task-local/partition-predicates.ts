@@ -1,4 +1,8 @@
 import type { JsonRecord } from "../../query/current-task-bundle.ts";
+import {
+  canonicalPartitionValue,
+  isRuntimeTemplateExpression,
+} from "./partition-canonical.ts";
 
 export interface PartitionPredicate {
   readonly column: string;
@@ -65,6 +69,12 @@ function literalValue(operand: JsonRecord): string | null {
   return expression ? stripQuotes(expression) : null;
 }
 
+function comparablePartitionLiteral(operand: JsonRecord): string | null {
+  const value = literalValue(operand);
+  if (!value) return null;
+  return value;
+}
+
 function columnName(operand: JsonRecord): string | null {
   if (text(operand.kind)?.toUpperCase() !== "COLUMN") return null;
   const column = record(operand.column);
@@ -77,7 +87,7 @@ function atomIsLiteralEqOrIn(node: JsonRecord): boolean {
   const operands = records(node.operands);
   if (operands.length < 2) return false;
   if (!columnName(operands[0]!)) return false;
-  return operands.slice(1).every((operand) => literalValue(operand) !== null);
+  return operands.slice(1).every((operand) => comparablePartitionLiteral(operand) !== null);
 }
 
 function walkPredicateAtoms(
@@ -104,7 +114,12 @@ function collectLiteralPredicates(
     const operands = records(atom.operands);
     const column = columnName(operands[0]!);
     if (!column) return;
-    const values = operands.slice(1).map((operand) => literalValue(operand)!);
+    const values = operands.slice(1).map((operand) => {
+      const raw = comparablePartitionLiteral(operand)!;
+      return isRuntimeTemplateExpression(raw)
+        ? canonicalPartitionValue(column, raw)
+        : raw;
+    });
     const key = column.toLowerCase();
     const existing = into.get(key) ?? { column, values: new Set<string>() };
     for (const value of values) existing.values.add(value);
@@ -157,8 +172,8 @@ function mergePredicates(
 }
 
 /**
- * Map read relation id → literal FILTER predicates + status for filters that
- * directly wrap that read (RELATION_INPUT from read → filter).
+ * Map read relation id → literal FILTER predicates from downstream filters on
+ * the read's plan subtree (read → … → filter).
  */
 export function partitionPredicatesByReadOccurrence(input: {
   readonly taskId: string;
@@ -175,27 +190,61 @@ export function partitionPredicatesByReadOccurrence(input: {
     filters.set(id, classifyFilterTree(relation.predicate_tree));
   }
 
-  const byOccurrence = new Map<string, {
-    predicates: PartitionPredicate[];
-    hasFilter: boolean;
-    hasNonLiteralAtom: boolean;
-  }>();
+  const downstream = new Map<string, string[]>();
   for (const edge of input.relationEdgeRecords) {
     if (text(edge.task_id) !== null && text(edge.task_id) !== input.taskId) continue;
     const from = text(edge.from_relation_id);
     const to = text(edge.to_relation_id);
     if (!from || !to) continue;
-    const classified = filters.get(to);
-    if (!classified) continue;
-    const existing = byOccurrence.get(from) ?? {
-      predicates: [],
+    const next = downstream.get(from) ?? [];
+    next.push(to);
+    downstream.set(from, next);
+  }
+
+  const filtersAboveRead = new Map<string, ReturnType<typeof classifyFilterTree>>();
+  for (const startId of [...downstream.keys()]) {
+    const merged = {
+      predicates: [] as PartitionPredicate[],
       hasFilter: false,
       hasNonLiteralAtom: false,
     };
-    byOccurrence.set(from, {
-      predicates: mergePredicates(existing.predicates, classified.predicates),
-      hasFilter: true,
-      hasNonLiteralAtom: existing.hasNonLiteralAtom || classified.hasNonLiteralAtom,
+    const visited = new Set<string>();
+    const queue = [startId];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const classified = filters.get(current);
+      if (classified) {
+        merged.hasFilter = true;
+        merged.hasNonLiteralAtom =
+          merged.hasNonLiteralAtom || classified.hasNonLiteralAtom;
+        merged.predicates = mergePredicates(
+          merged.predicates,
+          classified.predicates,
+        );
+      }
+      for (const next of downstream.get(current) ?? []) queue.push(next);
+    }
+    if (merged.hasFilter) {
+      filtersAboveRead.set(startId, {
+        predicates: merged.predicates,
+        hasAtom: merged.hasFilter,
+        hasNonLiteralAtom: merged.hasNonLiteralAtom,
+      });
+    }
+  }
+
+  const byOccurrence = new Map<string, {
+    predicates: PartitionPredicate[];
+    hasFilter: boolean;
+    hasNonLiteralAtom: boolean;
+  }>();
+  for (const [occurrenceId, classified] of filtersAboveRead) {
+    byOccurrence.set(occurrenceId, {
+      predicates: classified.predicates,
+      hasFilter: classified.hasAtom,
+      hasNonLiteralAtom: classified.hasNonLiteralAtom,
     });
   }
 

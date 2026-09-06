@@ -76,6 +76,7 @@ export function joinGrain(joinType: string): {
   grainReason: NonNullable<DatasetControlAnnotation["grainReason"]>;
 } {
   const kind = joinType.toUpperCase();
+  if (kind.includes("SEMI") || kind.includes("ANTI")) return {grain: "REDUCE", grainReason: "GRAIN_FILTER_MAY_DROP_ROWS"};
   if (
     kind.includes("LEFT")
     || kind.includes("RIGHT")

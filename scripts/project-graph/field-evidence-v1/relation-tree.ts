@@ -136,6 +136,8 @@ export function nearestSetopAncestor(
 
 export function normalizeJoinType(joinType: string | null): TaskLocalJoinType {
   const kind = (joinType ?? "").trim().toUpperCase();
+  if (kind.includes("SEMI")) return "SEMI";
+  if (kind.includes("ANTI")) return "ANTI";
   if (kind.includes("INNER")) return "INNER";
   if (kind.includes("LEFT")) return "LEFT";
   if (kind.includes("RIGHT")) return "RIGHT";

@@ -18,6 +18,10 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeTaskTypeCache,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  excludeManualTaskIds,
+  readManualTaskIds,
+} from "../shared/manual-task-exclusion.ts";
 
 /** Task types whose SQL evidence is extracted from Horae execution logs. */
 export const SCRIPT_SQL_FROM_LOG_TASK_TYPES = new Set([
@@ -49,6 +53,7 @@ export interface FillRunScriptSqlCacheOptions {
   readonly now?: () => Date;
   /** Retry only an existing UNAVAILABLE cache; AVAILABLE evidence is immutable. */
   readonly force?: boolean;
+  readonly manualTaskIds?: ReadonlySet<string>;
 }
 
 export interface FillRunScriptSqlCacheSummary {
@@ -110,7 +115,8 @@ function selectedTaskIds(
   limit: number | undefined,
 ): string[] {
   if (limit === undefined) return [...taskIds];
-  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("LIMIT_INVALID");
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw new Error("LIMIT_INVALID");
   return taskIds.slice(0, limit);
 }
 
@@ -217,7 +223,10 @@ export async function fillRunScriptSqlCache(
   );
   const taskIds = selectedTaskIds(
     fromStartTaskId(
-      options.taskIds ?? runScriptIdsFromHoraeTypeCache(cacheRoot),
+      excludeManualTaskIds(
+        options.taskIds ?? runScriptIdsFromHoraeTypeCache(cacheRoot),
+        options.manualTaskIds ?? readManualTaskIds(cacheRoot),
+      ),
       options.startTaskId,
     ),
     options.limit,
@@ -364,6 +373,10 @@ async function main(): Promise<void> {
   const startTaskId = option("--start-task-id");
   const taskIdsFile = option("--task-ids-file");
   const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile) : undefined;
+  const manualTaskIds = readManualTaskIds(
+    cacheRoot,
+    option("--manual-task-ids-file") ?? undefined,
+  );
   process.stderr.write(
     `[run-script-sql-cache] start ${JSON.stringify({
       cacheRoot,
@@ -378,6 +391,7 @@ async function main(): Promise<void> {
     dataDate,
     startTaskId,
     taskIds,
+    manualTaskIds,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors: parseIntegerOption("--max-errors", undefined, true),
     minIntervalMs: parseIntegerOption("--interval-ms", undefined, true),

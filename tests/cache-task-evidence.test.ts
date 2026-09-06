@@ -11,6 +11,7 @@ import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata
 import { createTaskDocument } from "../scripts/input/shared/input-pack.ts";
 import {
   resolveScheduleEvidenceCacheRoot,
+  writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
 } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
@@ -449,6 +450,92 @@ SELECT A.ID FROM ODATA_N_HBM.H_CUX_ADJ_BUDGET_ADJUST A;`,
     expect(result.kind).toBe("MANUAL_OR_FROZEN");
     if (result.kind !== "MANUAL_OR_FROZEN") return;
     expect(result.scheduleCycle).toBe("手工");
+  });
+
+  it("returns MANUAL_OR_FROZEN when task id is in manual-task-ids.txt", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
+    const scheduleRoot = resolveScheduleEvidenceCacheRoot(cacheRoot);
+    writeHoraeTaskTypeCache(
+      "100376",
+      observedAt,
+      {
+        id: "100376",
+        taskType: "hiveTask-2.0",
+        cycle: "每日",
+        name: "daily but manual-listed",
+      },
+      cacheRoot,
+    );
+    writeFileSync(join(scheduleRoot, "manual-task-ids.txt"), "100376\n", "utf8");
+    writeFileSync(
+      join(scheduleRoot, "manual-task-ids.txt.meta.json"),
+      JSON.stringify({ status: "COMPLETED" }),
+      "utf8",
+    );
+
+    const result = assembleCacheTaskEvidence("100376", cacheRoot);
+    expect(result.kind).toBe("MANUAL_OR_FROZEN");
+    if (result.kind !== "MANUAL_OR_FROZEN") return;
+    expect(result.scheduleCycle).toBe("每日");
+  });
+
+  it("attaches proven one-hop schedule neighbor ids from relation cache", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "cache-task-"));
+    writeHoraeTaskTypeCache(
+      "144127",
+      observedAt,
+      {
+        id: "144127",
+        taskType: "sparkIndex",
+        name: "demo",
+        cycle: "每日",
+      },
+      cacheRoot,
+    );
+    writeSzdataScheduleDetailCache(
+      "144127",
+      observedAt,
+      {
+        taskId: "144127",
+        taskType: "64",
+        taskName: "demo",
+        status: "Y",
+        targetTable: "dm.demo",
+        prepareSql:
+          "CREATE TABLE dm.demo (a int) PARTITIONED BY (busi_date string)",
+        querySql:
+          "INSERT OVERWRITE TABLE dm.demo PARTITION (busi_date='${YYYY-MM-DD}') SELECT 1",
+      },
+      cacheRoot,
+    );
+    writeHoraeRelationCache(
+      "144127",
+      observedAt,
+      [{ task_id: "100", taskId: "100" }, { task_id: "200" }],
+      cacheRoot,
+      "up",
+    );
+    writeHoraeRelationCache(
+      "144127",
+      observedAt,
+      [],
+      cacheRoot,
+      "down",
+    );
+    const result = assembleCacheTaskEvidence("144127", cacheRoot);
+    expect(result.kind).toBe("EVIDENCE");
+    if (result.kind !== "EVIDENCE") return;
+    expect(result.evidence.upstreamTaskIds).toEqual(["100", "200"]);
+    expect(result.evidence.downstreamTaskIds).toEqual([]);
+    expect(result.cacheArtifacts).toEqual(
+      expect.arrayContaining([
+        "horae-relation-up-depth-1.json",
+        "horae-relation-down-depth-1.json",
+      ]),
+    );
+    const document = createTaskDocument(result.evidence);
+    expect(document.upstreamTaskIds).toEqual(["100", "200"]);
+    expect(document.downstreamTaskIds).toEqual([]);
   });
 
   it("materializes metadata-only no-sql categories when scheduler identity exists", () => {

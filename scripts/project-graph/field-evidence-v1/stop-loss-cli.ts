@@ -91,7 +91,8 @@ export function runFieldEvidenceStopLoss(taskId: string): {
     readonly dominantGap: string | null;
   }[];
 } {
-  const roots = fieldEvidenceQueryRoots();
+  // This acceptance command evaluates the fixed Greek column set.
+  const roots = fieldEvidenceQueryRoots({ profile: "greek-legacy" });
   if (!roots) {
     if (fieldEvidenceGoldenRequired()) {
       throw new Error("FIELD_EVIDENCE_GOLDEN_DATA_MISSING");

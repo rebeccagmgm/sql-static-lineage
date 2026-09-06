@@ -48,6 +48,7 @@ export interface FieldEvidenceIndexes {
   readonly relationTree: RelationTreeIndex;
   readonly expressionsById: ReadonlyMap<string, JsonRecord>;
   readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+  readonly relationExpressionsByRelationId: ReadonlyMap<string, readonly JsonRecord[]>;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
 }
@@ -83,11 +84,17 @@ export function buildFieldEvidenceIndexes(
   );
   const readOccurrenceByRelationId = new Map<string, string>();
   const bindingByReadRelation = new Map<string, string>();
+  const relationExpressionsByRelationId = new Map<string, readonly JsonRecord[]>();
   for (const relation of input.relationNodes) {
     const relationId = text(relation.relation_id);
     if (!relationId) continue;
+    const body = relationBody(relation);
+    const rawExpressions = Array.isArray(body.expressions)
+      ? body.expressions.map(record).filter((item): item is JsonRecord => item !== null)
+      : [];
+    if (rawExpressions.length > 0) relationExpressionsByRelationId.set(relationId, rawExpressions);
     if (String(relation.relation_type ?? "").toLowerCase() === "read") {
-      const binding = text(relationBody(relation).binding);
+      const binding = text(body.binding);
       if (binding) bindingByReadRelation.set(relationId, binding);
     }
   }
@@ -111,6 +118,7 @@ export function buildFieldEvidenceIndexes(
         .filter((entry): entry is readonly [string, JsonRecord] => entry[0] !== null),
     ),
     expressionsByRelation: expressionsByRelationAndOrdinal(input.expressions),
+    relationExpressionsByRelationId,
     readOccurrenceByRelationId,
     bindingByReadRelation,
   };
@@ -147,6 +155,45 @@ export function expressionAcceptsSourceField(
     if (!table) return true;
     return table === targetTable;
   });
+}
+
+function relationQualifierForSourceField(input: {
+  readonly expression: JsonRecord;
+  readonly sourceField: PhysicalFieldIdentity;
+  readonly indexes: FieldEvidenceIndexes;
+}): string | null {
+  const relationId = text(input.expression.relation_id);
+  const outputName = text(input.expression.output_name);
+  if (!relationId || !outputName) return null;
+  const rawExpressions = input.indexes.relationExpressionsByRelationId.get(relationId) ?? [];
+  const matchingExpressions = rawExpressions.filter((candidate) =>
+    normalizeName(String(candidate.output ?? "")) === normalizeName(outputName),
+  );
+  if (matchingExpressions.length !== 1) return null;
+  const qualifiers = new Set<string>();
+  const targetTable = normalizeName(input.sourceField.qualifiedName);
+  const targetColumn = normalizeName(input.sourceField.column);
+  const inputColumns = Array.isArray(matchingExpressions[0]!.input_columns)
+    ? matchingExpressions[0]!.input_columns
+    : [];
+  let matchedSource = false;
+  for (const rawInput of inputColumns) {
+    const inputColumn = record(rawInput);
+    if (!inputColumn) continue;
+    const physical = Array.isArray(inputColumn.physical) ? inputColumn.physical : [];
+    const matchesSource = physical.some((rawPhysical) => {
+      const physical = record(rawPhysical);
+      return physical !== null
+        && normalizeName(String(physical.table ?? "")) === targetTable
+        && normalizeName(String(physical.column ?? "")) === targetColumn;
+    });
+    if (!matchesSource) continue;
+    matchedSource = true;
+    const qualifier = text(inputColumn.qualifier);
+    if (!qualifier) return null;
+    qualifiers.add(normalizeName(qualifier));
+  }
+  return matchedSource && qualifiers.size === 1 ? [...qualifiers][0]! : null;
 }
 
 export function emitFieldEvidenceForInput(input: {
@@ -193,6 +240,11 @@ export function emitFieldEvidenceForInput(input: {
       sourceExpression,
       input.sourceField,
     );
+    const relationQualifier = relationQualifierForSourceField({
+      expression: context.expression,
+      sourceField: input.sourceField,
+      indexes: input.indexes,
+    });
     const sourceResolution = resolveSourceReadOccurrence({
       taskId: input.taskId,
       expressionId: directSource
@@ -200,8 +252,10 @@ export function emitFieldEvidenceForInput(input: {
         : input.expanded.leafExpressionId ?? context.expressionId,
       sourceTable: input.sourceField.qualifiedName,
       sourceColumn: input.sourceField.column,
-      inputField: branchInputField,
-      expressionText: text(sourceExpression.expression_text),
+      inputField: relationQualifier
+        ? { ...branchInputField, qualifier: relationQualifier }
+        : branchInputField,
+      expressionText: text(context.expression.expression_text),
       leafRelationId,
       index: input.indexes.relationTree,
       readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,

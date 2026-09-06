@@ -59,8 +59,11 @@ schedule-evidence/tasks/<taskId>/
   同一套 writeTaskInput + writeTableInput
 ```
 
-`horae-relation-*-depth-1.json` **不参与** Task/Table Pack 身份。它是任务对任务
-的调度边，不能当成表 GUID、也不能替代 `szdata table` 的任务关系。
+`horae-relation-*-depth-1.json` **不参与** Table Pack 身份，也不替代表 GUID /
+`szdata table` 任务关系。from-cache 组装 Task Pack 时，若对应方向的 relation
+cache 为 HIT，则把去重排序后的邻居 taskId 写入 `task.json` 的
+`upstreamTaskIds` / `downstreamTaskIds`（调度配置的一部分；空数组表示已证实无邻居，
+MISS/INVALID 则省略该字段）。
 
 ---
 
@@ -141,8 +144,9 @@ target：
 
 落盘校验要求 `SQL_EXACT_TABLE_TARGET` 必须带
 `sql-mcp:explicit-table-target` + `opencli:szdata.table`。缓存路径不能伪造
-这两条，所以 hiveTask 的物理 target 对象会写出来，但 **不写**
-`targetEvidenceKind: SQL_EXACT_TABLE_TARGET`。
+这两条，因此所有任务类别从缓存 SQL 推导目标时，均 **不写**
+`targetEvidenceKind: SQL_EXACT_TABLE_TARGET`。既有 SQL 和表解析能证明的物理
+target 仍可落盘；缓存中的直接平台目标仍保留 `DIRECT_PLATFORM_TARGET`。
 ```
 
 `hive-task.sql` 头必须能被现有 `readHiveTaskSqlCache` 读成 HIT，
@@ -485,6 +489,9 @@ repair runner 每次只处理一个有界 workset；成功写入的 evidence 才
 
 - `fill-hive-task-sql-cache`、`fill-run-script-sql-cache`、`fill-hive-ddl-from-log` 的 `--force` 只重试已经存在且 `UNAVAILABLE` 的缓存；AVAILABLE 内容和 provider 保留不动。
 - `hiveTask` / `hiveTask-2.0`：本地代码优先；若 SQL 仍含结构性 `${…}`（如 `${DB_TEMP}`，不含 `data_day*` 等日期变量），再试 MCP（`szdata task-sql`）——只要返回非空 SQL 即写入 `SQL_MCP`；MCP 为空则拉 Horae log 的 `hive -e` 展开体写入 `HORAE_LOG`。
+- 本地脚本仅按明确路径查找；已有仓库别名映射保留相同相对路径。路径缺失时不按同名或去扩展名搜索替代脚本，交由后续证据来源补齐。
+- `szdata task-sql` 默认不保存原始响应；只有显式传入 `--save-to <dir>` 才写本地缓存，避免批量 fallback 在当前目录生成大量 `.evidence-cache` 文件。
+- Horae log 统一复用 `<cache-root>/schedule-evidence/script-log`；月度任务把 `--data-date` 归一为当月 1 日（例如 `2026-08-27` 查询 `2026-08-01` 实例）。实例缺失或日志中无 SQL 时只记错误，不再新建 `sqlStatus: UNAVAILABLE` 的空 `hive-task.sql`。
 - `runScript` / `sparkScript` 的 SQL 只能来自 Horae log 中可定位的实例。实例缺失时记录 `HORAE_LOG_INSTANCE_MISSING`，不回退到不等价的 schedule SQL。
 - Table resolution 先用已有 Pack，再用 Hive/RDBMS 本地 jsonl；在线 fallback 必须 exact-match qualified name、platform、dataSource，并且只能有一个可对账候选。多个 GUID、多个 datasource、404/not found、403、429、timeout、malformed response 都不写 evidence。
 - Horae datasource 映射只作为 endpoint hint。映射冲突时保留未知；唯一 hint 也不能覆盖 SQL/目录的多实例冲突。`*2hive` 的 source 标签不转成物理表，hive2* 的 target server hint 只在 SQL 精确写目标与 datasource 同时成立时使用。Oracle / Postgre / OceanBase 用 `gf*_${service}#${service}`；MySQL / StarRocks / GoldenDB 用无 `#` 的 `gf*_${service}`，并在 core 中按 exact → 唯一前缀 → 唯一家族行消歧。
@@ -497,7 +504,14 @@ repair runner 每次只处理一个有界 workset；成功写入的 evidence 才
   2. **金管家 `jgjdb`（2026-09-04）**：Horae Oracle service=`jgjdb` 时，服务形态是 `gforacle_jgjdb#jgjdb`，core 常有 `jgjdb1`/`jgjdb2`/uat。统计当时 SUCCESS Pack：`gforacle_jgjdb1#jgjdb`=191、`jgjdb2`=0 → preferred 固定 **`gforacle_jgjdb1#jgjdb`**（`ORACLE_JGJDB_PREFERRED_ATLAS_DATASOURCE`）。
 - 任务 SQL 的 query fallback 只能从同任务的 `hive-task.sql` query 槽补 specialized route 的空 query；create 槽永远不提升为 Table Pack 的 `ddl.sql`。
 
-### 9.3 本轮执行结果
+### 9.3 SQLite evidence 同步与备份
+
+`schedule-evidence/tasks/<taskId>` 下的非 relation JSON/SQL 可同步到
+`schedule-evidence/tasks-sqlite/schedule-evidence.sqlite`。备份、日常同步、
+`up/down` 直写例外、恢复限制和 SQLite 主读迁移边界统一见
+[Schedule Evidence SQLite 运维手册](schedule-evidence-sqlite.md)。
+
+### 9.4 本轮执行结果
 
 2026-09-03 的稳定基线为 `SUCCESS 5472 / PARTIAL 5938 / FAILED 238`，最终稳定 inventory 为 `SUCCESS 5615 / PARTIAL 5795 / FAILED 238`。实际可复用的证据已经重跑并落盘；失败和未知仍保留原 warning 及 manifest failure class。详见 [`input-pack-from-cache-partial-analysis.md`](E:/02_area/股衍数据-数据cookbook/sql-static-lineage/docs/input-pack-from-cache-partial-analysis.md) §10，以及最终 inventory：
 

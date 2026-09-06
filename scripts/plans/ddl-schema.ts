@@ -382,6 +382,20 @@ export function parseDdlSchema(ddl: string): ParsedDdlSchema {
 	};
 }
 
+function stripIdent(value: string): string {
+	return value.replace(/[`"]/g, "").replace(/\s+/g, "");
+}
+
+/** Source table of `CREATE TABLE … LIKE source`. Column-less LIKE is not schema. */
+export function createTableLikeSource(ddl: string): string | undefined {
+	const match =
+		/\bcreate\s+(?:or\s+replace\s+)?(?:external\s+)?table\s+(?:if\s+not\s+exists\s+)?(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?\s+like\s+((?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*)(?:\s*\.\s*(?:`[^`]+`|"[^"]+"|[A-Za-z_][A-Za-z0-9_$#-]*))?)/i.exec(
+			ddl,
+		);
+	const source = match?.[1]?.trim();
+	return source ? stripIdent(source) : undefined;
+}
+
 function tableJsonFiles(root: string): string[] {
 	const output: string[] = [];
 	const visit = (directory: string): void => {

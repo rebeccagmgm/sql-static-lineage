@@ -6,7 +6,8 @@
       "qualifiedNameExact": [
         "temp_n.client_label",
         "pdata_n.ref_cd_cvt_map",
-        "pdata_n.ref_cd_cvt_map_temp"
+        "pdata_n.ref_cd_cvt_map_temp",
+        "pdata_n.ref_dw_cd_val"
       ],
       "qualifiedNameTerms": [
         "tag_def",

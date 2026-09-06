@@ -1,17 +1,20 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { resolveWorkspacePaths } from "../../config/workspace-paths.ts";
 
 import { canonicalJson } from "../../machine-facts/machine-facts-contract.ts";
 import { expandAnchorUpstreamTaskIds } from "./anchor-upstream-expansion.ts";
 import { selectTaskLocalBatchTaskIds } from "./batch-selection.ts";
 import { projectTaskLocalBatch } from "./project-task-local-batch.ts";
-import { taskLocalProjectionPath } from "./projection-cache.ts";
+import { taskLocalProjectionVersionPath } from "./projection-cache.ts";
 
 export interface ProjectTaskLocalCliOptions {
   readonly dataRoot: string;
   readonly factsRoot: string;
   readonly scheduleCacheRoot: string;
   readonly outputRoot: string;
+  /** Shared cache root. Omitted only by legacy programmatic callers. */
+  readonly projectionRoot?: string;
   readonly topic?: string;
   readonly taskIds: readonly string[];
   readonly expandUpstream: boolean;
@@ -48,12 +51,23 @@ function taskIdsFileOption(args: readonly string[]): string[] {
 export function parseProjectTaskLocalCli(
   args: readonly string[],
 ): ProjectTaskLocalCliOptions {
-  const dataRoot = option(args, "--data-root");
-  const factsRoot = option(args, "--facts-root");
-  const scheduleCacheRoot = option(args, "--schedule-cache")
-    ?? option(args, "--schedule-cache-root")
-    ?? option(args, "--schedule-evidence-cache-root");
-  const outputRoot = option(args, "--output-root");
+  const paths = resolveWorkspacePaths({
+    configPath: option(args, "--config"),
+    profile: option(args, "--profile"),
+    overrides: {
+      inputPackRoot: option(args, "--data-root") ?? option(args, "--input-pack-root"),
+      factsRoot: option(args, "--facts-root"),
+      projectionRoot: option(args, "--projection-root"),
+      writerCatalogPath: option(args, "--writer-catalog"),
+      evidenceRoot: option(args, "--schedule-cache")
+        ?? option(args, "--schedule-cache-root")
+        ?? option(args, "--schedule-evidence-cache-root"),
+    },
+  });
+  const dataRoot = paths.inputPackRoot;
+  const factsRoot = paths.factsRoot;
+  const scheduleCacheRoot = paths.evidenceRoot;
+  const outputRoot = option(args, "--output-root") ?? paths.graphOutputRoot;
   const topic = option(args, "--topic");
   const taskIds = [...new Set([
     ...csvOption(args, "--task-ids"),
@@ -61,7 +75,7 @@ export function parseProjectTaskLocalCli(
   ])];
   const alsoTaskIds = csvOption(args, "--also-task-ids");
   const expandUpstream = args.includes("--expand-upstream");
-  const writerCatalogPath = option(args, "--writer-catalog");
+  const writerCatalogPath = paths.writerCatalogPath;
   const producerIndexRoot = option(args, "--producer-index-root");
   const maxUpstreamDepthRaw = option(args, "--max-upstream-depth");
   const maxUpstreamDepth = maxUpstreamDepthRaw
@@ -72,11 +86,6 @@ export function parseProjectTaskLocalCli(
     && (!Number.isSafeInteger(maxUpstreamDepth) || maxUpstreamDepth < 1)
   ) {
     throw new Error("MAX_UPSTREAM_DEPTH_INVALID");
-  }
-  if (!dataRoot || !factsRoot || !scheduleCacheRoot || !outputRoot) {
-    throw new Error(
-      "usage: project-task-local --data-root <path> --facts-root <path> --schedule-cache <path> --output-root <path> [--task-ids 181058,176827] [--task-ids-file <path>] [--expand-upstream] [--writer-catalog <sqlite>] [--topic DM_RSK_N] [--also-task-ids 105387,119044] [--no-prepare-facts]",
-    );
   }
   if (taskIds.length === 0 && !topic && alsoTaskIds.length === 0) {
     throw new Error(
@@ -94,6 +103,7 @@ export function parseProjectTaskLocalCli(
     factsRoot: resolve(factsRoot),
     scheduleCacheRoot: resolve(scheduleCacheRoot),
     outputRoot: resolve(outputRoot),
+    projectionRoot: paths.projectionRoot,
     topic,
     taskIds,
     expandUpstream,
@@ -138,12 +148,13 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
   }
 
   mkdirSync(options.outputRoot, { recursive: true });
+  const projectionRoot = options.projectionRoot ?? options.outputRoot;
   const batch = projectTaskLocalBatch({
     dataRoot: options.dataRoot,
     factsRoot: options.factsRoot,
     scheduleCacheRoot: options.scheduleCacheRoot,
     taskIds: batchTaskIds,
-    outputRoot: options.outputRoot,
+    outputRoot: projectionRoot,
     generatedAt: options.generatedAt,
   });
 
@@ -177,7 +188,7 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
       contentHash: result.projection.contentHash,
       cacheHit: result.cacheHit,
       cacheKey: result.cacheKey,
-      path: taskLocalProjectionPath(options.outputRoot, result.taskId),
+      path: taskLocalProjectionVersionPath(projectionRoot, result.taskId, result.cacheKey),
     })),
   };
   const batchManifestPath = join(options.outputRoot, "batch-manifest.json");

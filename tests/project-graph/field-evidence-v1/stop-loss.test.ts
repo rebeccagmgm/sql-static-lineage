@@ -6,7 +6,7 @@ import {
   fieldEvidenceQueryRoots,
 } from "../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
 
-const roots = fieldEvidenceQueryRoots();
+const roots = fieldEvidenceQueryRoots({ profile: "greek-legacy" });
 if (!roots && fieldEvidenceGoldenRequired()) {
   throw new Error("FIELD_EVIDENCE_GOLDEN_REQUIRED but field-facts or INDEX path is missing");
 }

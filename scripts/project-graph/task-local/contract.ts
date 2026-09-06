@@ -1,3 +1,7 @@
+import {
+  summarizeCoverageDispositions,
+  resolveCoverageDisposition,
+} from "./coverage-disposition.ts";
 import { canonicalJson, sha256 } from "../../machine-facts/machine-facts-contract.ts";
 
 export const TASK_LOCAL_PROJECTION_SCHEMA_VERSION = "1.3.0" as const;
@@ -60,6 +64,8 @@ export type TaskLocalSubtypeReason =
   | "INPUT_DEPENDENCY_NOT_PHYSICAL";
 
 export type TaskLocalJoinType =
+  | "SEMI"
+  | "ANTI"
   | "INNER"
   | "LEFT"
   | "RIGHT"
@@ -85,7 +91,11 @@ export interface TaskLocalBatchSummary {
   readonly scheduleOnly: number;
   readonly collectionFailed: number;
   readonly byFailureReason: Readonly<Partial<Record<TaskLocalFailureReasonCode, number>>>;
+  readonly coverageDisposition?: import("./coverage-disposition.ts").CoverageDispositionSummary;
 }
+
+export type CoverageDisposition =
+  import("./coverage-disposition.ts").CoverageDisposition;
 
 export function summarizeTaskLocalBatch(
   projections: readonly TaskLocalProjection[],
@@ -109,6 +119,7 @@ export function summarizeTaskLocalBatch(
     scheduleOnly,
     collectionFailed,
     byFailureReason,
+    coverageDisposition: summarizeCoverageDispositions(projections),
   };
 }
 
@@ -191,7 +202,9 @@ export interface TaskLocalProjection {
   readonly artifactType: typeof TASK_LOCAL_PROJECTION_ARTIFACT_TYPE;
   readonly generatedAt: string;
   readonly taskId: string;
+  readonly taskCategory: string | null;
   readonly coverageStatus: TaskLocalCoverageStatus;
+  readonly coverageDisposition: CoverageDisposition;
   readonly failureReasonCode: string | null;
   readonly contentHash: string;
   readonly nodes: readonly TaskLocalNode[];
@@ -474,6 +487,13 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
   if (projection.coverageStatus === "COLLECTION_FAILED" && !text(projection.failureReasonCode)) {
     throw new Error("TASK_LOCAL_PROJECTION_FAILURE_REASON_REQUIRED");
   }
+  const expectedDisposition = resolveCoverageDisposition({
+    taskCategory: projection.taskCategory,
+    coverageStatus: projection.coverageStatus,
+  });
+  if (projection.coverageDisposition !== expectedDisposition) {
+    throw new Error("TASK_LOCAL_PROJECTION_COVERAGE_DISPOSITION_INVALID");
+  }
 
   if (projection.localClosure) {
     for (const write of projection.localClosure.finalWrites) {
@@ -500,14 +520,25 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
 }
 
 export function canonicalizeTaskLocalProjection(
-  input: Omit<TaskLocalProjection, "contentHash"> & { readonly contentHash?: string },
+  input: Omit<TaskLocalProjection, "contentHash" | "taskCategory" | "coverageDisposition"> & {
+    readonly contentHash?: string;
+    readonly taskCategory?: string | null;
+    readonly coverageDisposition?: CoverageDisposition;
+  },
 ): TaskLocalProjection {
   const body = {
     schemaVersion: input.schemaVersion,
     artifactType: TASK_LOCAL_PROJECTION_ARTIFACT_TYPE,
     generatedAt: input.generatedAt,
     taskId: input.taskId,
+    taskCategory: input.taskCategory ?? null,
     coverageStatus: input.coverageStatus,
+    coverageDisposition:
+      input.coverageDisposition
+      ?? resolveCoverageDisposition({
+        taskCategory: input.taskCategory ?? null,
+        coverageStatus: input.coverageStatus,
+      }),
     failureReasonCode: input.failureReasonCode,
     nodes: [...input.nodes].sort((left, right) => left.nodeId.localeCompare(right.nodeId)),
     edges: [...input.edges].sort((left, right) => left.edgeId.localeCompare(right.edgeId)),

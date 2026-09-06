@@ -13,7 +13,10 @@ import { resolveReadField } from "../../../scripts/project-graph/field-evidence-
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
 } from "../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
-import type { TaskLocalProjection } from "../../../scripts/project-graph/task-local/contract.ts";
+import {
+  canonicalizeTaskLocalProjection,
+  type TaskLocalProjection,
+} from "../../../scripts/project-graph/task-local/contract.ts";
 
 function continuationPorts(
   lookup: ContinuationPorts["scheduleLookup"],
@@ -95,16 +98,16 @@ function projectionWithBinding(input: {
 }): TaskLocalProjection {
   const targetWriteNodeId = `target-write:${input.taskId}:0`;
   const fieldNodeId = "physical-field:amount";
-  return {
+  return canonicalizeTaskLocalProjection({
     schemaVersion: "1.3.0",
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: "2026-09-04T00:00:00.000Z",
     taskId: input.taskId,
     coverageStatus: "PROJECTED",
     failureReasonCode: null,
-    contentHash: "projection-hash",
     nodes: [
       { nodeId: `task:${input.taskId}`, nodeType: "TASK", properties: {} },
+      { nodeId: "dataset:target", nodeType: "PHYSICAL_DATASET", properties: {} },
       {
         nodeId: fieldNodeId,
         nodeType: "PHYSICAL_FIELD",
@@ -144,7 +147,7 @@ function projectionWithBinding(input: {
       localFieldPaths: [],
     },
     gaps: [],
-  };
+  });
 }
 
 describe("resolveReadField", () => {
@@ -228,7 +231,7 @@ describe("resolveReadField", () => {
     }
   });
 
-  it("schedule-tiebreaks overlapping writers to the unique Horae parent", () => {
+  it("keeps overlapping writers despite a unique Horae parent", () => {
     const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
       { consumerTaskId, producerTaskId: "producer-b" },
     ]);
@@ -253,7 +256,7 @@ describe("resolveReadField", () => {
     });
     expect(resolved.kind).toBe("FRONTIER");
     if (resolved.kind === "FRONTIER") {
-      expect(resolved.candidates.map((entry) => entry.taskId)).toEqual(["producer-b"]);
+      expect(resolved.candidates.map((entry) => entry.taskId)).toEqual(["producer-a", "producer-b"]);
     }
   });
 

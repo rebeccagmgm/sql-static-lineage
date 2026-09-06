@@ -1005,6 +1005,12 @@ describe("Input Pack V1", () => {
     expect(controlledTaskEndpointDataSource("hive2oracle", "target")).toBe(
       undefined,
     );
+    expect(controlledTaskEndpointPlatform("hive2postgre", "source")).toBe(
+      "hive",
+    );
+    expect(controlledTaskEndpointPlatform("hive2postgre", "target")).toBe(
+      "postgre",
+    );
     expect(controlledTaskEndpointDataSource("hive2starrocks", "source")).toBe(
       "gfhive",
     );

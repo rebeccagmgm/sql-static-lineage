@@ -5,8 +5,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  collectTaskTableReferences,
   indexTaskInputPacks,
   loadPhysicalTableCatalog,
+  locateTaskInputPacks,
   prepareInputPackTask,
   runInputPackMachineFacts,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
@@ -743,7 +745,6 @@ describe("Input Pack-driven Machine Facts", () => {
       evidenceProvider: "synthetic:test",
       collectedAt: "2026-01-01T00:00:00.000Z",
     });
-
     const result = runInputPackMachineFacts({
       dataRoot: f.dataRoot,
       taskIds: ["1204"],
@@ -945,6 +946,61 @@ describe("Input Pack-driven Machine Facts", () => {
         (gap) => gap.reasonCode === "TASK_LOCAL_MATERIALIZATION_FIELD_BREAK",
       ),
     ).toBe(false);
+  });
+
+  it("does not count a schema-only CREATE TABLE as a data prior write", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.create_then_write",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.create_then_write (stage_a STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "1201",
+      taskCategory: "sparkIndex",
+      taskName: "demo.schema_then_materialize",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.root",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "CREATE TABLE IF NOT EXISTS demo.create_then_write (stage_a STRING); INSERT OVERWRITE TABLE demo.create_then_write SELECT src_a AS stage_a FROM demo.extra; SELECT stage_a AS out_a FROM demo.create_then_write;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1201"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bridges = jsonl(
+      join(f.factsRoot, "registry", "tasks", "1201", "bundle", "task-local-materializations.jsonl"),
+    );
+    expect(bridges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          physical_dataset: "demo.create_then_write",
+          column: "stage_a",
+          status: "RESOLVED",
+          write_observation_id: "write-observation:1201:1",
+        }),
+      ]),
+    );
+    expect(bridges.filter((bridge) => bridge.status === "AMBIGUOUS")).toHaveLength(0);
   });
 
   it("selects query, preserves provenance, and binds platform query output", () => {
@@ -1727,6 +1783,43 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(indexedTaskIds).toEqual(["100"]);
   });
 
+  it("can resolve a bounded task set and load only referenced tables", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.unrelated_bad_ddl",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.unrelated_bad_ddl (",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const taskPathIndex = locateTaskInputPacks(f.dataRoot, ["100"]);
+    expect(taskPathIndex.get("100")).toHaveLength(1);
+    const references = collectTaskTableReferences(
+      f.dataRoot,
+      taskPathIndex.get("100") ?? [],
+    );
+    expect(references.qualifiedNames).toEqual(["demo.root", "mid"]);
+    expect(references.nameTails).toEqual(["mid", "root"]);
+    const catalog = loadPhysicalTableCatalog(f.dataRoot, {
+      lazyDdl: true,
+      references,
+    });
+    expect(catalog.byQualifiedName.get("demo.mid")).toHaveLength(1);
+    expect(catalog.byQualifiedName.get("demo.root")).toHaveLength(1);
+    expect(catalog.byQualifiedName.get("demo.unrelated_bad_ddl")).toBeUndefined();
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["100"],
+      outputRoot: f.factsRoot,
+      tableCatalog: catalog,
+      taskPathIndex,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+  });
+
   it("replays deterministically from the same Input Pack snapshot", () => {
     const f = fixture();
     const first = runInputPackMachineFacts({
@@ -1757,7 +1850,7 @@ describe("Input Pack-driven Machine Facts", () => {
           "utf8",
         ),
       ).method.adapter.version,
-    ).toBe("1.3.9");
+    ).toBe("1.3.10");
   });
 
   it("builds a task-scoped schema bundle from physical SQL references", () => {
@@ -1802,6 +1895,80 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(catalog.issues).toHaveLength(0);
     expect(catalog.byQualifiedName.get("demo.unrelated_bad_ddl")?.[0]?.columns).toEqual([]);
     expect(catalog.issues).toHaveLength(1);
+  });
+
+  it("follows CREATE TABLE LIKE to the catalog source columns", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.base_account",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "create table demo.base_account (acct_id string, bal decimal(18,2))",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.mirror_account",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "create table demo.mirror_account like demo.base_account",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.same_schema_mirror",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "create table demo.same_schema_mirror like base_account",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const catalog = loadPhysicalTableCatalog(f.dataRoot);
+    expect(catalog.byQualifiedName.get("demo.mirror_account")?.[0]?.columns).toEqual([
+      "acct_id",
+      "bal",
+    ]);
+    expect(catalog.byQualifiedName.get("demo.same_schema_mirror")?.[0]?.columns).toEqual([
+      "acct_id",
+      "bal",
+    ]);
+  });
+
+  it("follows CREATE TABLE LIKE from a lazy catalog on first column read", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.base_account",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "create table demo.base_account (acct_id string, bal decimal(18,2))",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.mirror_account",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "create table demo.mirror_account like demo.base_account",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const catalog = loadPhysicalTableCatalog(f.dataRoot, { lazyDdl: true });
+    expect(catalog.issues).toHaveLength(0);
+    expect(catalog.byQualifiedName.get("demo.mirror_account")?.[0]?.columns).toEqual([
+      "acct_id",
+      "bal",
+    ]);
+    expect(catalog.issues).toHaveLength(0);
   });
 
   it("binds UNION output through a dynamic partition only when Input Pack proves it", () => {
@@ -2221,5 +2388,104 @@ describe("Input Pack-driven Machine Facts", () => {
       "task:boundary:slot:query:statement:1",
       "task:boundary:slot:finish:statement:0",
     ]);
+  });
+
+  it("sanitizes hive2 dataSource characters that are illegal in logical_source_id", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "postgre",
+      dataSource: "gfpostgre_risk1#risk",
+      qualifiedName: "public.cal_rm_transferreport",
+      objectType: "gf_rdbms_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE public.cal_rm_transferreport (out_a STRING, out_b STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "20924",
+      taskCategory: "hive2postgre",
+      taskName: "risk.cal_rm_transferreport",
+      target: {
+        platform: "postgre",
+        dataSource: "gfpostgre_risk1#risk",
+        qualifiedName: "public.cal_rm_transferreport",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const prepared = prepareInputPackTask({
+      dataRoot: f.dataRoot,
+      taskId: "20924",
+    });
+    expect(prepared.logicalSourceId).toBe("postgre-gfpostgre_risk1-risk");
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["20924"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+  });
+
+  it("resolves a hive2 bare string target against the destination Table Pack", () => {
+    const f = fixture();
+    writeTableInput(f.dataRoot, {
+      platform: "postgre",
+      dataSource: "gfpostgre_risk1",
+      qualifiedName: "public.cal_f_bundlreport_equity",
+      objectType: "gf_rdbms_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE public.cal_f_bundlreport_equity (out_a STRING, out_b STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "10580",
+      taskCategory: "hive2postgre",
+      taskName: "risk.cal_f_bundlreport_equity",
+      source: {
+        platform: "hive",
+        qualifiedName: "odata_n_tit.d_v_risk_rm_bundlereport_tit",
+        dataSource: "gfhive",
+      },
+      target: "cal_f_bundlreport_equity",
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const prepared = prepareInputPackTask({
+      dataRoot: f.dataRoot,
+      taskId: "10580",
+    });
+    expect(prepared.target).toMatchObject({
+      platform: "postgre",
+      dataSource: "gfpostgre_risk1",
+      qualifiedName: "public.cal_f_bundlreport_equity",
+    });
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["10580"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
   });
 });

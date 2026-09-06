@@ -69,7 +69,7 @@ describe("continuation pipeline", () => {
     expect(result.gaps.some((gap) => gap.reasonCode === "WRITER_CATALOG_UNAVAILABLE")).toBe(true);
   });
 
-  it("tie-breaks overlapping writers to the unique Horae parent after rematch skip", () => {
+  it("keeps overlapping writers when Horae has a unique parent", () => {
     const lookup = createHoraeScheduleRelationLookupFromScheduleEdges([
       { consumerTaskId: "consumer-root", producerTaskId: "producer-preferred" },
     ]);
@@ -96,6 +96,7 @@ describe("continuation pipeline", () => {
 
     expect(result.candidates.map((candidate) => candidate.index.taskId)).toEqual([
       "producer-preferred",
+      "producer-other-a",
     ]);
     expect(result.candidates[0]?.continuationEligible).toBe(false);
   });
@@ -193,8 +194,8 @@ describe("continuation pipeline", () => {
         readOccurrenceId: "read:consumer-1:0",
         column: "amount",
         candidates: [
-          indexCandidate({ taskId: "producer-b", partitionMatchStatus: "CONFIRMED", l1Eligible: true }),
-          indexCandidate({ taskId: "producer-c", writeObservationId: "write-observation:producer-c:0", partitionMatchStatus: "CONFIRMED", l1Eligible: true }),
+          indexCandidate({ taskId: "producer-b", partitionMatchStatus: "CONFIRMED", evidenceLayer: "L1", l1Eligible: true }),
+          indexCandidate({ taskId: "producer-c", writeObservationId: "write-observation:producer-c:0", partitionMatchStatus: "CONFIRMED", evidenceLayer: "L1", l1Eligible: true }),
           indexCandidate({ taskId: "producer-d", writeObservationId: "write-observation:producer-d:0" }),
         ],
       },
@@ -204,6 +205,25 @@ describe("continuation pipeline", () => {
 
     expect(result.scheduleParentAmbiguous).toBe(true);
     expect(result.gaps.some((gap) => gap.reasonCode === "SCHEDULE_PARENT_AMBIGUOUS")).toBe(true);
-    expect(result.candidates.every((candidate) => candidate.continuationEligible === false)).toBe(true);
+    expect(result.candidates.map((candidate) => candidate.continuationEligible)).toEqual([true, true, false]);
+  });
+
+  it.each([
+    { l1Eligible: false, evidenceLayer: "L1" as const },
+    { l1Eligible: true, evidenceLayer: "L2" as const },
+    { l1Eligible: true, evidenceLayer: "L1" as const, source: "PRODUCER_INDEX_ONLY" as const },
+    { l1Eligible: true, evidenceLayer: "L1" as const, targetWriteNodeId: null },
+  ])("does not regrant L1 when an INDEX prerequisite is missing: %j", (override) => {
+    const result = applyContinuationRules({
+      pipeline: {
+        consumerTaskId: "consumer-1",
+        readOccurrenceId: "read:consumer-1:0",
+        column: "amount",
+        candidates: [indexCandidate({ partitionMatchStatus: "CONFIRMED", ...override })],
+      },
+      qualifiedName: "warehouse.example_table",
+      ports: ports(null),
+    });
+    expect(result.candidates[0]?.continuationEligible).toBe(false);
   });
 });

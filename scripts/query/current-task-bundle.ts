@@ -136,6 +136,8 @@ type CurrentBundleReadContext = {
 };
 
 export interface CurrentTaskBundleReaderOptions {
+	/** Batch publishers reuse the index but release each task's records after use. */
+	readonly cacheLoads?: boolean;
 	readonly requestedFiles?: readonly string[];
 	readonly validateOutputHashes?: "all" | "requested";
 }
@@ -530,7 +532,7 @@ export function createCurrentTaskBundleReader(
 			const cached = context.loads.get(taskId);
 			if (cached) return cached;
 			const loaded = loadCurrentTaskBundleWithContext(factsRoot, taskId, context);
-			context.loads.set(taskId, loaded);
+			if (options.cacheLoads !== false) context.loads.set(taskId, loaded);
 			return loaded;
 		},
 	};

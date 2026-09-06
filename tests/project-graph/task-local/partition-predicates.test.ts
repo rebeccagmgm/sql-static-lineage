@@ -121,6 +121,41 @@ describe("partitionPredicatesByReadOccurrence", () => {
     });
   });
 
+  it("extracts template EQ predicates as canonical partition literals", () => {
+    const byOccurrence = partitionPredicatesByReadOccurrence({
+      taskId: "162610",
+      relationRecords: [
+        {
+          task_id: "162610",
+          relation_id: "filter:1",
+          relation_type: "filter",
+          relation: {
+            type: "filter",
+            predicate_tree: {
+              kind: "ATOM",
+              operator: "EQ",
+              operands: [
+                { kind: "COLUMN", column: { name: "busi_date" } },
+                {
+                  kind: "LITERAL",
+                  expression: "'${data_day_str}'",
+                  observedValue: "${data_day_str}",
+                },
+              ],
+            },
+          },
+        },
+      ],
+      relationEdgeRecords: [
+        { task_id: "162610", from_relation_id: "read:1", to_relation_id: "filter:1" },
+      ],
+    });
+    expect(byOccurrence.get("read:1")).toEqual({
+      status: "LITERAL",
+      predicates: [{ column: "busi_date", values: ["${YYYY-MM-DD}"] }],
+    });
+  });
+
   it("marks NON_LITERAL_PRESENT when filter atoms are not all literal EQ/IN", () => {
     const byOccurrence = partitionPredicatesByReadOccurrence({
       taskId: "1",

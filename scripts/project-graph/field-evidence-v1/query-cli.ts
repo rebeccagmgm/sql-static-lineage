@@ -29,6 +29,8 @@ function parsePositiveInt(value: string | undefined, optionName: string): number
 }
 
 export interface FieldEvidenceQueryInput {
+  readonly configPath?: string;
+  readonly profile?: string;
   readonly taskId: string;
   readonly outputColumn: string;
   readonly writeObservationId?: string;
@@ -39,7 +41,7 @@ export interface FieldEvidenceQueryInput {
 }
 
 export function runFieldEvidenceQuery(input: FieldEvidenceQueryInput): FieldImpactResult {
-  const roots = fieldEvidenceQueryRoots();
+  const roots = fieldEvidenceQueryRoots({ configPath: input.configPath, profile: input.profile });
   if (!roots) {
     if (fieldEvidenceGoldenRequired()) {
       throw new Error("FIELD_EVIDENCE_GOLDEN_DATA_MISSING");
@@ -86,6 +88,8 @@ export function main(argv = process.argv.slice(2)): void {
   }
 
   const result = runFieldEvidenceQuery({
+    configPath: option(argv, "--config"),
+    profile: option(argv, "--profile"),
     taskId,
     outputColumn,
     writeObservationId: option(argv, "--write-observation-id"),
