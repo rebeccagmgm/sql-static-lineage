@@ -61,7 +61,7 @@ describe("create table like chain", () => {
       ddls.get(name.toLowerCase()),
     );
     expect(chain.sources).toEqual(["dm_index_n.base", "dm_index_n.stage"]);
-    expect(chain.stoppedReason).toBeUndefined();
+    expect(chain.stoppedReason).toBe("SOURCE_ROOT");
   });
 
   it("stops on cycles and depth limits", () => {
@@ -74,6 +74,7 @@ describe("create table like chain", () => {
     expect(cycle.stoppedReason).toBe("CYCLE");
 
     const depthDdls = new Map<string, string>([
+      ["t0", "CREATE TABLE t0 LIKE t1"],
       ["t1", "CREATE TABLE t1 LIKE t2"],
       ["t2", "CREATE TABLE t2 LIKE t3"],
       ["t3", "CREATE TABLE t3 LIKE t4"],
@@ -84,7 +85,7 @@ describe("create table like chain", () => {
       (name) => depthDdls.get(name),
       2,
     );
-    expect(depth.sources).toEqual(["t1", "t2"]);
+    expect(depth.sources).toEqual(["t2", "t1"]);
     expect(depth.stoppedReason).toBe("MAX_DEPTH");
   });
 });

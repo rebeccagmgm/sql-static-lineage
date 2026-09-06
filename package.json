@@ -103,6 +103,7 @@
     "input-pack:repair-partials": "tsx scripts/input/mainline/repair-input-pack-partials.ts",
     "input-pack:repair-like-sources": "tsx scripts/input/mainline/repair-create-table-like-sources.ts",
     "input-pack:repair-sparkindex-like-chain": "tsx scripts/input/mainline/run-sparkindex-like-source-repair.ts",
+    "input-pack:repair-sparkindex-schedule-packs": "tsx scripts/input/mainline/run-sparkindex-schedule-pack-repair.ts",
     "input-pack:heal-rdbms-duplicates": "tsx scripts/input/mainline/heal-rdbms-core-duplicates-from-snapshot.ts",
     "input-pack:from-cache:diff": "tsx scripts/input/mainline/diff-input-pack-from-cache.ts",
     "input-pack:patch-priority-evidence": "tsx scripts/input/mainline/patch-priority-evidence-cache.ts",
