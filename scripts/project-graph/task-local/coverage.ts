@@ -1,4 +1,6 @@
 import type { CurrentBundleLoad } from "../../query/current-task-bundle.ts";
+import type { CoverageDisposition } from "./coverage-disposition.ts";
+import { resolveCoverageDisposition } from "./coverage-disposition.ts";
 import {
   canonicalizeTaskLocalProjection,
   TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
@@ -41,18 +43,39 @@ export function buildScheduleOnlyProjection(input: {
   readonly taskId: string;
   readonly generatedAt: string;
   readonly schedule: TaskScheduleContext;
+  readonly taskCategory?: string | null;
 }): TaskLocalProjection {
+  const taskCategory = input.taskCategory ?? null;
   return canonicalizeTaskLocalProjection({
     schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
+    taskCategory,
     coverageStatus: "SCHEDULE_ONLY",
+    coverageDisposition: resolveCoverageDisposition({
+      taskCategory,
+      coverageStatus: "SCHEDULE_ONLY",
+    }),
     failureReasonCode: null,
     nodes: [{
       nodeId: taskNodeId(input.taskId),
       nodeType: "TASK",
-      properties: taskNodeProperties({ schedule: input.schedule }),
+      properties: {
+        ...taskNodeProperties({ schedule: input.schedule }),
+        ...(taskCategory ? { taskCategory } : {}),
+        coverageDisposition: resolveCoverageDisposition({
+          taskCategory,
+          coverageStatus: "SCHEDULE_ONLY",
+        }),
+        coverageExpectation:
+          resolveCoverageDisposition({
+            taskCategory,
+            coverageStatus: "SCHEDULE_ONLY",
+          }) === "EXPECTED_SCHEDULE_REFERENCE"
+            ? "SCHEDULE_REFERENCE_ONLY"
+            : "MATERIAL_GAP",
+      },
     }],
     edges: [],
     gaps: [],
@@ -63,20 +86,36 @@ export function buildCollectionFailedProjection(input: {
   readonly taskId: string;
   readonly generatedAt: string;
   readonly failureReasonCode: TaskLocalFailureReasonCode;
+  readonly taskCategory?: string | null;
   readonly taskProperties?: Readonly<Record<string, unknown>>;
   readonly failureMessage?: string;
 }): TaskLocalProjection {
+  const taskCategory = input.taskCategory ?? null;
+  const coverageDisposition = resolveCoverageDisposition({
+    taskCategory,
+    coverageStatus: "COLLECTION_FAILED",
+  });
   return canonicalizeTaskLocalProjection({
     schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt: input.generatedAt,
     taskId: input.taskId,
+    taskCategory,
     coverageStatus: "COLLECTION_FAILED",
+    coverageDisposition,
     failureReasonCode: input.failureReasonCode,
     nodes: [{
       nodeId: taskNodeId(input.taskId),
       nodeType: "TASK",
-      properties: input.taskProperties ?? {},
+      properties: {
+        ...(input.taskProperties ?? {}),
+        ...(taskCategory ? { taskCategory } : {}),
+        coverageDisposition,
+        coverageExpectation:
+          coverageDisposition === "EXPECTED_SCHEDULE_REFERENCE"
+            ? "SCHEDULE_REFERENCE_ONLY"
+            : "MATERIAL_GAP",
+      },
     }],
     edges: [],
     gaps: input.failureMessage

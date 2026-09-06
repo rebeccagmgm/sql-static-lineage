@@ -8,6 +8,7 @@ import { stableId } from "../task-local/ids.ts";
 import {
   nearestSetopAncestor,
   readRelationsInSubtree,
+  relationSubtree,
   type RelationRecord,
   type RelationTreeIndex,
 } from "./relation-tree.ts";
@@ -334,7 +335,44 @@ export function expandSetopBranchExpressions(input: {
   }
 
   const setopAncestor = nearestSetopAncestor(input.index, relationId);
-  if (!setopAncestor || setopAncestor.setopBranches.length === 0) {
+  if (setopAncestor?.setopBranches.length) {
+    const branchContexts = expandSetopBranches({
+      setopRelation: setopAncestor,
+      ordinal,
+      expressionsByRelation: input.expressionsByRelation,
+      index: input.index,
+    });
+    return branchContexts.length > 0
+      ? branchContexts
+      : [{
+        expressionId,
+        expression: input.expression,
+        relationId,
+        ordinal,
+      }];
+  }
+
+  // A projection can consume a derived setop through a join. Its ordinal is
+  // local to the outer projection, so locate the qualified setop and sink by
+  // its named output rather than accidentally treating sibling branches as a
+  // self-join of the same physical source.
+  const outputName = text(input.expression.output_name);
+  const qualifiers = outputName
+    ? expressionQualifiersForColumn(text(input.expression.expression_text), outputName)
+    : [];
+  const qualifiedSetop = setopForQualifiedOutput({
+    index: input.index,
+    relationId,
+    qualifiers,
+  });
+  const setopOrdinal = qualifiedSetop && outputName
+    ? uniqueOutputOrdinalInFirstBranch({
+      setopRelation: qualifiedSetop,
+      outputName,
+      expressionsByRelation: input.expressionsByRelation,
+    })
+    : null;
+  if (!qualifiedSetop || setopOrdinal === null || qualifiedSetop.setopBranches.length === 0) {
     return [{
       expressionId,
       expression: input.expression,
@@ -343,8 +381,8 @@ export function expandSetopBranchExpressions(input: {
     }];
   }
   const branchContexts = expandSetopBranches({
-    setopRelation: setopAncestor,
-    ordinal,
+    setopRelation: qualifiedSetop,
+    ordinal: setopOrdinal,
     expressionsByRelation: input.expressionsByRelation,
     index: input.index,
   });
@@ -356,6 +394,40 @@ export function expandSetopBranchExpressions(input: {
       relationId,
       ordinal,
     }];
+}
+
+function setopForQualifiedOutput(input: {
+  readonly index: RelationTreeIndex;
+  readonly relationId: string;
+  readonly qualifiers: readonly string[];
+}): RelationRecord | null {
+  if (input.qualifiers.length === 0) return null;
+  const candidates = [...relationSubtree(input.index, input.relationId)]
+    .map((relationId) => input.index.relations.get(relationId))
+    .filter((relation): relation is RelationRecord =>
+      relation?.relationType === "setop"
+      && relation.scopeId !== null
+      && input.qualifiers.some((qualifier) =>
+        normalizeName(relation.scopeId!.split(".").at(-1) ?? "")
+          === normalizeName(qualifier)
+      )
+    );
+  return candidates.length === 1 ? candidates[0]! : null;
+}
+
+function uniqueOutputOrdinalInFirstBranch(input: {
+  readonly setopRelation: RelationRecord;
+  readonly outputName: string;
+  readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+}): number | null {
+  const firstBranch = input.setopRelation.setopBranches[0];
+  if (!firstBranch) return null;
+  const matches = [...(input.expressionsByRelation.get(firstBranch)?.values() ?? [])]
+    .filter((expression) =>
+      normalizeName(String(expression.output_name ?? ""))
+        === normalizeName(input.outputName)
+    );
+  return matches.length === 1 ? numberValue(matches[0]?.ordinal) : null;
 }
 
 function expandSetopBranches(input: {

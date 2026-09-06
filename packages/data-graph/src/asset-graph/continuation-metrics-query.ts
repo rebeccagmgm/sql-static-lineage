@@ -1,0 +1,161 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import {
+  assertUnionContinuationIndex,
+  type UnionContinuationIndex,
+} from "../project-graph/topology/task-local-union/union-continuation-index.ts";
+import {
+  calculateContinuationMetrics,
+  classifyContinuationGaps,
+  isPolicyTerminalRead,
+  withoutPolicyContinuationGaps,
+} from "./continuation-metrics.ts";
+import {
+  assertTerminalPolicySnapshot,
+  type TerminalPolicySnapshot,
+} from "./terminal-policy.ts";
+
+export const CONTINUATION_GAP_LAYERS = [
+  "boundary",
+  "actionable",
+  "material",
+  "unclassified",
+] as const;
+export type ContinuationGapLayer = (typeof CONTINUATION_GAP_LAYERS)[number];
+
+/** Read one immutable published snapshot. Never prepare or contact Neo4j. */
+export function readPublishedContinuationMetrics(input: {
+  graphOutputRoot: string;
+  gapLayer?: string;
+  offset?: number;
+  limit?: number;
+  terminalRole?: string;
+}) {
+  const offset = input.offset ?? 0;
+  const limit = input.limit ?? 25;
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 1_000_000)
+    throw new Error("INVALID_ARGUMENT:--offset");
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+    throw new Error("INVALID_ARGUMENT:--limit");
+  if (
+    input.gapLayer &&
+    !CONTINUATION_GAP_LAYERS.some((layer) => layer === input.gapLayer)
+  )
+    throw new Error("INVALID_ARGUMENT:--gap-layer");
+  if (input.gapLayer && input.terminalRole)
+    throw new Error("INVALID_ARGUMENT:--gap-layer_and_--terminal-role");
+  if (input.terminalRole && input.terminalRole !== "REFERENCE_CONFIG")
+    throw new Error("INVALID_ARGUMENT:--terminal-role");
+  const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
+  const current = read(join(input.graphOutputRoot, "current.json"));
+  const publication = read(current.publicationPath);
+  if (publication.version !== current.version)
+    throw new Error("CONTINUATION_PUBLICATION_VERSION_MISMATCH");
+  const index = read(
+    join(dirname(current.publicationPath), "union-continuation-index.json"),
+  ) as UnionContinuationIndex;
+  assertUnionContinuationIndex(index);
+  const pinnedIndexHash = publication.continuationIndexContentHash;
+  if (pinnedIndexHash !== undefined && pinnedIndexHash !== index.contentHash)
+    throw new Error("CONTINUATION_PUBLICATION_INDEX_MISMATCH");
+  const confirmed = publication.confirmedFieldContinuations;
+  const candidate = publication.candidateFieldContinuations;
+  const hasEdgeCounts =
+    Number.isSafeInteger(confirmed) &&
+    confirmed >= 0 &&
+    Number.isSafeInteger(candidate) &&
+    candidate >= 0;
+  const terminalPolicyHash = publication.terminalPolicyContentHash;
+  const policyTerminals: TerminalPolicySnapshot["reads"] = terminalPolicyHash
+    ? (() => {
+        const snapshot = read(
+          join(dirname(current.publicationPath), "terminal-policy.json"),
+        ) as TerminalPolicySnapshot;
+        assertTerminalPolicySnapshot(snapshot, index.contentHash, terminalPolicyHash);
+        return snapshot.reads;
+      })()
+    : [];
+  const metrics = calculateContinuationMetrics({
+    index,
+    policyTerminals,
+    continuationEdgeMetrics: hasEdgeCounts
+      ? {
+          totalContinuationEdges: confirmed + candidate,
+          confirmedContinuationEdges: confirmed,
+        }
+      : undefined,
+  });
+  const rows = input.gapLayer
+    ? index.entries.flatMap((entry) => {
+        const policyEntry = isPolicyTerminalRead(entry, policyTerminals)
+          ? withoutPolicyContinuationGaps(entry)
+          : entry;
+        const gaps = classifyContinuationGaps(policyEntry).filter(
+          (gap) => gap.group === input.gapLayer,
+        );
+        return gaps.length
+          ? [
+              {
+                consumerTaskId: entry.consumerTaskId,
+                readOccurrenceId: entry.readOccurrenceId,
+                qualifiedName: entry.qualifiedName,
+                reasonCodes: [
+                  ...new Set(gaps.map((gap) => gap.reasonCode)),
+                ].sort(),
+              },
+            ]
+          : [];
+      })
+    : [];
+  rows.sort(
+    (a, b) =>
+      a.consumerTaskId.localeCompare(b.consumerTaskId) ||
+      a.readOccurrenceId.localeCompare(b.readOccurrenceId),
+  );
+  const policyRows = policyTerminals
+    .filter((terminal) => terminal.role === input.terminalRole)
+    .map((terminal) => ({
+      consumerTaskId: terminal.consumerTaskId,
+      readOccurrenceId: terminal.readOccurrenceId,
+      qualifiedName: terminal.qualifiedName,
+      classification: "POLICY_TERMINAL" as const,
+      role: terminal.role,
+      ruleRef: terminal.ruleRef,
+    }));
+  return {
+    snapshotKind: "PUBLISHED_INDEX" as const,
+    publicationVersion: publication.version as string,
+    compilerVersion: publication.compilerVersion as string,
+    indexContentHash: index.contentHash,
+    indexBinding:
+      pinnedIndexHash === undefined
+        ? ("LEGACY_PUBLICATION_DIRECTORY" as const)
+        : ("PUBLICATION_CONTENT_HASH" as const),
+    taskCount: publication.taskCount as number,
+    metrics,
+    ...(input.gapLayer
+      ? {
+          gapLayer: input.gapLayer,
+          items: rows.slice(offset, offset + limit),
+          pagination: {
+            offset,
+            limit,
+            total: rows.length,
+            nextOffset: offset + limit < rows.length ? offset + limit : null,
+          },
+        }
+      : {}),
+    ...(input.terminalRole
+      ? {
+          terminalRole: input.terminalRole,
+          items: policyRows.slice(offset, offset + limit),
+          pagination: {
+            offset,
+            limit,
+            total: policyRows.length,
+            nextOffset: offset + limit < policyRows.length ? offset + limit : null,
+          },
+        }
+      : {}),
+  };
+}

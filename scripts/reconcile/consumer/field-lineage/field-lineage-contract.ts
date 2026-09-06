@@ -79,6 +79,8 @@ export type DatasetControlGrainReason =
 	| "GRAIN_WINDOW_CARDINALITY_UNPROVEN";
 
 export type DatasetControlJoinType =
+  | "SEMI"
+  | "ANTI"
 	| "INNER"
 	| "LEFT"
 	| "RIGHT"

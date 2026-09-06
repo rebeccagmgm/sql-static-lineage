@@ -17,13 +17,19 @@ import {
 import { parseRunScriptSqlCache } from "../mainline/run-script-sql-cache.ts";
 import { parseHiveDdlFromLogCache } from "../mainline/hive-ddl-from-log-cache.ts";
 import { readSzdataScheduleDetailCache } from "../mainline/szdata-schedule-detail-cache.ts";
-import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  readHoraeRelationCache,
+  readHoraeTaskTypeCache,
+  resolveScheduleEvidenceCacheRoot,
+  type HoraeRelationDirection,
+} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import {
   loadHoraeDatasourceIndex,
   preferredRdbmsDataSourceFromTaskSource,
   type HoraeDatasourceIndex,
 } from "./horae-datasource-cache.ts";
 import { isNoSqlTaskCategory } from "../../reconcile/shared/lineage-scope.ts";
+import { readManualTaskIds } from "./manual-task-exclusion.ts";
 import { findSqlFinalTargetEvidence } from "./sql-target-evidence.ts";
 import taskTypeCodeMap from "./task-type-map.json" with { type: "json" };
 
@@ -341,13 +347,10 @@ function sqlExactTarget(
 
 function targetKind(
   target: JsonValue | null | undefined,
-  sql: Partial<Record<SqlSlot, SqlSlotEvidence>>,
-  taskName: string | undefined,
 ): TaskEvidence["targetEvidenceKind"] {
   if (target !== undefined && target !== null) return "DIRECT_PLATFORM_TARGET";
-  return sqlExactTarget(sql, taskName) === undefined
-    ? undefined
-    : "SQL_EXACT_TABLE_TARGET";
+  // Cached SQL does not provide the online provenance required by this token.
+  return undefined;
 }
 
 function fillCreateFromPrepare(evidence: TaskEvidence): TaskEvidence {
@@ -512,7 +515,7 @@ function assembleRunScript(
     source: null,
     target: null,
     sql: compactSql(sql),
-    targetEvidenceKind: targetKind(null, sql, identity.taskName ?? undefined),
+    targetEvidenceKind: targetKind(null),
   };
 }
 
@@ -594,7 +597,7 @@ function assembleToHive(
             evidenceProvider: CACHE_EVIDENCE_HORAE_TASK_TYPE,
           },
     sql,
-    targetEvidenceKind: targetKind(target, sql, identity.taskName ?? undefined),
+    targetEvidenceKind: targetKind(target),
   };
 }
 
@@ -650,7 +653,7 @@ function assembleHive2(
             evidenceProvider: CACHE_EVIDENCE_HORAE_TASK_TYPE,
           },
     sql,
-    targetEvidenceKind: targetKind(target, sql, identity.taskName ?? undefined),
+    targetEvidenceKind: targetKind(target),
   };
 }
 
@@ -682,7 +685,7 @@ function assembleGeneric(
     writeMode:
       firstString(schedule, ["insertMode"]) ?? firstString(sync, ["loadMode"]),
     sql,
-    targetEvidenceKind: targetKind(target, sql, identity.taskName ?? undefined),
+    targetEvidenceKind: targetKind(target),
   };
 }
 
@@ -699,6 +702,74 @@ function hasSchedulerIdentity(
     (taskName !== undefined && taskName !== "") ||
     (topicName !== undefined && topicName !== "")
   );
+}
+
+function scheduleNeighborTaskIdsFromCache(
+  taskId: string,
+  cacheRoot: string,
+  direction: HoraeRelationDirection,
+  artifacts: string[],
+): readonly string[] | undefined {
+  const read = readHoraeRelationCache(taskId, cacheRoot, direction);
+  if (read.status !== "HIT") return undefined;
+  artifacts.push(
+    direction === "up"
+      ? "horae-relation-up-depth-1.json"
+      : "horae-relation-down-depth-1.json",
+  );
+  const ids = new Set<string>();
+  for (const row of read.rows) {
+    const neighbor =
+      typeof row.task_id === "string"
+        ? row.task_id.trim()
+        : typeof row.taskId === "string"
+          ? row.taskId.trim()
+          : "";
+    if (!neighbor || neighbor === taskId) continue;
+    ids.add(neighbor);
+  }
+  return [...ids].sort((left, right) =>
+    left.localeCompare(right, "en-US", { numeric: true }),
+  );
+}
+
+function withScheduleNeighborTaskIds(
+  taskId: string,
+  evidence: TaskEvidence,
+  cacheRoot: string,
+  artifacts: string[],
+): TaskEvidence {
+  const upstreamTaskIds = scheduleNeighborTaskIdsFromCache(
+    taskId,
+    cacheRoot,
+    "up",
+    artifacts,
+  );
+  const downstreamTaskIds = scheduleNeighborTaskIdsFromCache(
+    taskId,
+    cacheRoot,
+    "down",
+    artifacts,
+  );
+  if (upstreamTaskIds === undefined && downstreamTaskIds === undefined)
+    return evidence;
+  return {
+    ...evidence,
+    ...(upstreamTaskIds !== undefined ? { upstreamTaskIds } : {}),
+    ...(downstreamTaskIds !== undefined ? { downstreamTaskIds } : {}),
+  };
+}
+
+const manualTaskIdsByCacheRoot = new Map<string, ReadonlySet<string>>();
+
+function manualTaskIdsFor(cacheRoot: string): ReadonlySet<string> {
+  const key = resolveScheduleEvidenceCacheRoot(cacheRoot);
+  let cached = manualTaskIdsByCacheRoot.get(key);
+  if (cached === undefined) {
+    cached = readManualTaskIds(cacheRoot);
+    manualTaskIdsByCacheRoot.set(key, cached);
+  }
+  return cached;
 }
 
 export function assembleCacheTaskEvidence(
@@ -727,7 +798,11 @@ export function assembleCacheTaskEvidence(
   const status =
     firstString(schedule, ["status", "scheduleStatus"]) ??
     firstString(horae, ["status", "scheduleStatus", "taskStatus"]);
-  if (isManualScheduleCycle(cycle) || isFrozenScheduleStatus(status))
+  if (
+    isManualScheduleCycle(cycle) ||
+    isFrozenScheduleStatus(status) ||
+    manualTaskIdsFor(cacheRoot).has(taskId)
+  )
     return {
       kind: "MANUAL_OR_FROZEN",
       scheduleCycle: cycle,
@@ -786,6 +861,7 @@ export function assembleCacheTaskEvidence(
   else evidence = assembleGeneric(taskId, category, horae, schedule);
 
   evidence = withTaskSqlQueryFallback(taskId, evidence, cacheRoot, artifacts);
+  evidence = withScheduleNeighborTaskIds(taskId, evidence, cacheRoot, artifacts);
 
   const slots = sqlSlotCount(evidence);
   if (

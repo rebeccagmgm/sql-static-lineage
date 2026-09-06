@@ -4,19 +4,22 @@ import {
   type TaskLocalProjection,
 } from "./contract.ts";
 import { projectTaskLocal, type ProjectTaskLocalOptions } from "./project-task-local.ts";
+import { createCurrentTaskBundleReader, type CurrentTaskBundleReader } from "../../query/current-task-bundle.ts";
 import {
   storeTaskLocalProjectionCache,
   tryReadCachedTaskLocalProjection,
   type TaskLocalCacheKeyParts,
+  ensureTaskLocalProjectionVersion,
 } from "./projection-cache.ts";
 
 export interface ProjectTaskLocalBatchOptions {
+  readonly bundleReader?: CurrentTaskBundleReader;
   readonly factsRoot: string;
   readonly dataRoot: string;
   readonly taskIds: readonly string[];
   readonly scheduleCacheRoot?: string;
   readonly generatedAt?: string;
-  /** When set, enable content-hash cache under this project-graph output root. */
+  /** When set, enable content-hash cache under this shared projection root. */
   readonly outputRoot?: string;
 }
 
@@ -45,16 +48,21 @@ export function projectTaskLocalBatch(
   const results: TaskLocalBatchTaskResult[] = [];
   let hits = 0;
   let misses = 0;
+  const reader = options.bundleReader ?? createCurrentTaskBundleReader(options.factsRoot, { cacheLoads: false });
 
   for (const taskId of options.taskIds) {
+    const currentBundle = reader.load(taskId);
     if (options.outputRoot) {
       const cached = tryReadCachedTaskLocalProjection({
+        currentBundle,
         outputRoot: options.outputRoot,
         taskId,
         dataRoot: options.dataRoot,
         factsRoot: options.factsRoot,
+        scheduleCacheRoot: options.scheduleCacheRoot,
       });
       if (cached.hit && cached.envelope) {
+        ensureTaskLocalProjectionVersion(options.outputRoot, cached.envelope);
         hits += 1;
         results.push({
           taskId,
@@ -66,6 +74,7 @@ export function projectTaskLocalBatch(
         continue;
       }
       const projection = projectTaskLocal({
+        currentBundle,
         factsRoot: options.factsRoot,
         dataRoot: options.dataRoot,
         taskId,
@@ -89,6 +98,7 @@ export function projectTaskLocalBatch(
     }
 
     const projection = projectTaskLocal({
+      currentBundle,
       factsRoot: options.factsRoot,
       dataRoot: options.dataRoot,
       taskId,

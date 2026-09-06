@@ -8,9 +8,10 @@ import type {
 } from "./task-local-union-continuation-v2.ts";
 import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
 import { traceUnionTaskContinuationV2 } from "./task-local-union-continuation-v2.ts";
-import type {
-  TaskLocalUnionBatchManifestRef,
-  TaskLocalUnionProducerIndexRef,
+import {
+  isUnionContinuationV2ProjectionSchema,
+  type TaskLocalUnionBatchManifestRef,
+  type TaskLocalUnionProducerIndexRef,
 } from "./task-local-union-contract.ts";
 import type { TaskLocalUnionMergeResult } from "./task-local-union-merge.ts";
 import type { LoadedTaskLocalUnionSources } from "./task-local-union-source.ts";
@@ -136,7 +137,7 @@ export function buildUnionContinuationIndex(
 export function assertV2IndexInputs(merge: TaskLocalUnionMergeResult): void {
   const invalid = merge.taskEvidence
     .filter((evidence) => evidence.coverageStatus === "PROJECTED")
-    .filter((evidence) => evidence.projectionSchemaVersion !== "1.2.0")
+    .filter((evidence) => !isUnionContinuationV2ProjectionSchema(evidence.projectionSchemaVersion))
     .map((evidence) => evidence.taskId)
     .sort(compareText);
   if (invalid.length > 0) {
@@ -153,8 +154,8 @@ export function assertV2LoadedInputs(
     .filter((task) => task.taskSource.coverageStatus === "PROJECTED")
     .filter(
       (task) =>
-        task.projection.schemaVersion !== "1.2.0" ||
-        task.envelope.cacheKeyParts.schemaVersion !== "1.2.0",
+        !isUnionContinuationV2ProjectionSchema(task.projection.schemaVersion) ||
+        !isUnionContinuationV2ProjectionSchema(task.envelope.cacheKeyParts.schemaVersion),
     )
     .map((task) => task.taskSource.taskId)
     .sort(compareText);
@@ -218,7 +219,7 @@ export function assertUnionContinuationIndex(
 }
 
 function assertV2IndexInputRefs(input: UnionContinuationIndexInput): void {
-  if (input.taskProjections.some((task) => task.schemaVersion !== "1.2.0"))
+  if (input.taskProjections.some((task) => !isUnionContinuationV2ProjectionSchema(task.schemaVersion)))
     throw new Error("UNION_CONTINUATION_INDEX_INPUT_SCHEMA_INVALID");
   const taskIds = new Set<string>();
   for (const task of input.taskProjections) {

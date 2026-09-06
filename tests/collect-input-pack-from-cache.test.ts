@@ -78,6 +78,29 @@ function collect(
 }
 
 describe("collect input pack from cache", () => {
+  it("materializes cached SQL writes without claiming online target evidence", () => {
+    const roots = fixtureRoots();
+    const querySql =
+      "insert into odata_n_uip.q_md_institution partition(busi_date='2026-09-02') select 'one'";
+    writeHoraeTaskTypeCache(
+      "7009",
+      observedAt,
+      { id: "7009", taskType: "exeSql", name: "cached SQL task", querySql },
+      roots.cacheRoot,
+    );
+
+    const [summary] = collect(roots, ["7009"]);
+    expect(summary?.collectionStatus).toBe("SUCCESS");
+    const directory = join(roots.dataRoot, "tasks", "exeSql", "7009");
+    const task = JSON.parse(readFileSync(join(directory, "task.json"), "utf8"));
+    expect(task.targetEvidenceKind).toBeUndefined();
+    expect(task.evidenceProvider).toContain("local:schedule-evidence");
+    expect(task.evidenceProvider).not.toContain("sql-mcp:explicit-table-target");
+    expect(task.evidenceProvider).not.toContain("opencli:szdata.table");
+    expect(task.target.qualifiedName).toBe("odata_n_uip.q_md_institution");
+    expect(readFileSync(join(directory, "sql", "query.sql"), "utf8").trim()).toBe(querySql);
+  });
+
   it("writes mysql2hive task and hive table from name-matched ddl", () => {
     const roots = fixtureRoots();
     writeHoraeTaskTypeCache(

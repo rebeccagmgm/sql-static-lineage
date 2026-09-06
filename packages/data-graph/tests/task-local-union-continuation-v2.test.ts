@@ -9,6 +9,7 @@ import type { ProducerIndexWriter } from "../src/project-graph/topology/task-loc
 import { mergeLoadedTasksForTest } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
 import { loadProducerIndex } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import {
+  partitionMatchStatus,
   traceUnionContinuationV2,
   traceUnionTaskContinuationV2,
 } from "../src/project-graph/topology/task-local-union/task-local-union-continuation-v2.ts";
@@ -312,7 +313,7 @@ describe("union-continuation-v2 (WP-8)", () => {
     ]);
     expect(k.tiers.writeObservation.uniqueWriteObservationId).toBeNull();
     expect(k.tiers.writeObservation.candidates[0]).toMatchObject({
-      partitionMatchStatus: "UNKNOWN",
+      partitionMatchStatus: "CONFIRMED",
       evidenceLayer: "L2",
       l1Eligible: false,
     });
@@ -334,7 +335,62 @@ describe("union-continuation-v2 (WP-8)", () => {
     );
   });
 
-  it("keeps ASSUMED partition matches out of L1", () => {
+  it("traces a duplicated localClosure.externalRead occurrence once", () => {
+    const merge = real119044Merge();
+    const consumer = merge.taskEvidence.find((item) => item.taskId === "119044");
+    const reads = consumer?.localClosure?.externalReads ?? [];
+    const first = reads[0];
+    if (!consumer || !first) {
+      throw new Error("expected 119044 externalReads");
+    }
+    const duplicated = mergeLoadedTasksForTest([
+      loadedTask({
+        taskId: "119044",
+        nodes: merge.nodes.filter((node) =>
+          ["TASK", "READ_OCCURRENCE"].includes(String(node.nodeType)),
+        ).map(node => ({...node})),
+        localClosure: {
+          finalWrites: [],
+          externalReads: [first, first, ...reads.slice(1)],
+        },
+      }),
+      loadedTask({
+        taskId: "105387",
+        nodes: [{ nodeId: "task:105387", nodeType: "TASK", properties: {} }],
+        localClosure: {
+          finalWrites: [
+            {
+              writeObservationId: WRITE_105387_3,
+              targetWriteNodeId: "target-write:105387:3",
+              datasetNodeId: TABLE_ID,
+              qualifiedName: TABLE,
+            },
+            {
+              writeObservationId: WRITE_105387_6,
+              targetWriteNodeId: "target-write:105387:6",
+              datasetNodeId: TABLE_ID,
+              qualifiedName: TABLE,
+            },
+          ],
+          externalReads: [],
+        },
+      }),
+    ]);
+
+    const result = traceUnionTaskContinuationV2({
+      merge: duplicated,
+      consumerTaskId: "119044",
+      producerIndexWriters: producers,
+    });
+
+    expect(
+      result.readOccurrences.map(
+        (item) => item.readOccurrence.readOccurrenceId,
+      ),
+    ).toEqual([READ_C, READ_K]);
+  });
+
+  it("confirms template-family partition matches as L1", () => {
     const readId =
       "task:200000:statement:0:relation:root.read.t03_agt_stati_info_h";
     const readNodeId = "read-occurrence:200000:0";
@@ -401,10 +457,80 @@ describe("union-continuation-v2 (WP-8)", () => {
       ],
     });
     expect(result.tiers.writeObservation.candidates[0]).toMatchObject({
-      partitionMatchStatus: "ASSUMED",
-      evidenceLayer: "L2",
-      l1Eligible: false,
+      partitionMatchStatus: "CONFIRMED",
+      evidenceLayer: "L1",
+      l1Eligible: true,
     });
+  });
+
+  it("confirms data_day_str reads against YYYY-MM-DD writers", () => {
+    expect(
+      partitionMatchStatus(
+        {
+          readOccurrenceId: "read:1",
+          readOccurrenceNodeId: "node:1",
+          datasetNodeId: TABLE_ID,
+          qualifiedName: "pdata_n.t98_otc_deri_comp_sale_info",
+          identityStatus: "CONFIRMED",
+          partitionPredicateStatus: "LITERAL",
+          partitionPredicates: [
+            { column: "busi_date", values: ["${YYYY-MM-DD}"] },
+          ],
+        },
+        {
+          taskId: "86840",
+          writeObservationId: "write-observation:86840:0",
+          targetWriteNodeId: "target-write:86840:0",
+          datasetNodeId: TABLE_ID,
+          qualifiedName: "pdata_n.t98_otc_deri_comp_sale_info",
+          source: "IN_UNION_FINAL_WRITE",
+          partition: [
+            {
+              column: "busi_date",
+              values: ["${YYYY-MM-DD}"],
+              valueStatus: "RUNTIME_EXPRESSION",
+              expression: "${YYYY-MM-DD}",
+            },
+          ],
+          partitionStatus: "STATIC",
+        },
+      ),
+    ).toBe("CONFIRMED");
+  });
+
+  it("ignores unconstrained writer partition columns such as grp_id", () => {
+    const read = {
+      readOccurrenceId: "read:1",
+      readOccurrenceNodeId: "node:1",
+      datasetNodeId: TABLE_ID,
+      qualifiedName: "pdata_n.t98_otc_deri_comp_sale_info",
+      identityStatus: "CONFIRMED",
+      partitionPredicateStatus: "LITERAL" as const,
+      partitionPredicates: [{ column: "busi_date", values: ["${YYYY-MM-DD}"] }],
+    };
+    const writeBase = {
+      datasetNodeId: TABLE_ID,
+      qualifiedName: "pdata_n.t98_otc_deri_comp_sale_info",
+      source: "IN_UNION_FINAL_WRITE" as const,
+      partitionStatus: "STATIC" as const,
+    };
+    expect(
+      partitionMatchStatus(read, {
+        ...writeBase,
+        taskId: "86840",
+        writeObservationId: "write-observation:86840:0",
+        targetWriteNodeId: "target-write:86840:0",
+        partition: [
+          { column: "grp_id", values: ["01"] },
+          {
+            column: "busi_date",
+            values: ["${YYYY-MM-DD}"],
+            valueStatus: "RUNTIME_EXPRESSION",
+            expression: "${YYYY-MM-DD}",
+          },
+        ],
+      }),
+    ).toBe("CONFIRMED");
   });
 
   it("allows L1 only for a confirmed in-union literal match", () => {
@@ -468,6 +594,76 @@ describe("union-continuation-v2 (WP-8)", () => {
       evidenceLayer: "L1",
       l1Eligible: true,
     });
+  });
+
+  it("uses an exact upstream Horae relation table to recover a real final write", () => {
+    const readId = "task:400010:statement:0:relation:root.read.t03_agt_stati_info_h";
+    const readNodeId = "read-occurrence:400010:0";
+    const merge = mergeLoadedTasksForTest([
+      loadedTask({
+        taskId: "400010",
+        nodes: [
+          {
+            nodeId: "task:400010",
+            nodeType: "TASK",
+            properties: {
+              scheduleReference: {
+                upstreamTableReferences: [
+                  { taskId: "400011", qualifiedName: TABLE },
+                ],
+              },
+            },
+          },
+          readNode(readId, readNodeId, "ODATA_N_TIT.D_TRD_OTC_TRADE", "09", "LITERAL"),
+        ],
+        localClosure: {
+          finalWrites: [],
+          externalReads: [{
+            readOccurrenceId: readId,
+            readOccurrenceNodeId: readNodeId,
+            datasetNodeId: TABLE_ID,
+            qualifiedName: TABLE,
+            identityStatus: "CONFIRMED",
+          }],
+        },
+      }),
+      loadedTask({
+        taskId: "400011",
+        nodes: [{ nodeId: "task:400011", nodeType: "TASK", properties: {} }],
+        localClosure: {
+          // Different node identity makes ordinary physical matching fail.
+          finalWrites: [{
+            writeObservationId: "write-observation:400011:0",
+            targetWriteNodeId: "target-write:400011:0",
+            datasetNodeId: "dataset:writer-identity-drift",
+            qualifiedName: TABLE,
+          }],
+          externalReads: [],
+        },
+      }),
+    ]);
+    const result = traceUnionContinuationV2({
+      merge,
+      readOccurrenceId: readId,
+      producerIndexWriters: [
+        producerWriter(
+          "400011",
+          "write-observation:400011:0",
+          "ODATA_N_TIT.D_TRD_OTC_TRADE",
+        ),
+      ],
+    });
+    expect(result.tiers.writeObservation.candidates).toEqual([
+      expect.objectContaining({
+        partitionMatchStatus: "CONFIRMED",
+        evidenceLayer: "L1",
+        l1Eligible: true,
+        writeObservation: expect.objectContaining({
+          source: "SCHEDULE_RELATION_TABLE",
+          taskId: "400011",
+        }),
+      }),
+    ]);
   });
 
   it("wraps a v2 result in a replayable L0-L3 evidence envelope", () => {

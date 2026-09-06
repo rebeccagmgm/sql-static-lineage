@@ -12,6 +12,10 @@ import {
   writeHoraeTaskTypeCache,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 import { taskIdsFromFile } from "./fill-horae-relation-cache.ts";
+import {
+  excludeManualTaskIds,
+  readManualTaskIds,
+} from "../shared/manual-task-exclusion.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_ERRORS = 3;
@@ -24,6 +28,7 @@ export interface FillHoraeTaskDetailCacheOptions {
   readonly minIntervalMs?: number;
   /** When true, rewrite HIT caches instead of skipping them. */
   readonly force?: boolean;
+  readonly manualTaskIds?: ReadonlySet<string>;
   readonly gate?: HoraeSerialGate;
   readonly runner?: (taskId: string) => unknown;
   readonly now?: () => Date;
@@ -75,7 +80,10 @@ function positiveInteger(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
-function nonNegativeInteger(value: string | undefined, fallback: number): number {
+function nonNegativeInteger(
+  value: string | undefined,
+  fallback: number,
+): number {
   if (value === undefined) return fallback;
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < 0)
@@ -106,7 +114,10 @@ export async function fillHoraeTaskDetailCache(
   const minIntervalMs = options.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS;
   if (!Number.isSafeInteger(minIntervalMs) || minIntervalMs < 0)
     throw new Error("HORAE_DETAIL_MIN_INTERVAL_INVALID");
-  const taskIds = options.taskIds ?? taskIdsFromCache(cacheRoot);
+  const taskIds = excludeManualTaskIds(
+    options.taskIds ?? taskIdsFromCache(cacheRoot),
+    options.manualTaskIds ?? readManualTaskIds(cacheRoot),
+  );
   const force = options.force === true;
   const gate = options.gate ?? new HoraeSerialGate({ minIntervalMs });
   const runner = options.runner ?? runHoraeDetail;
@@ -127,12 +138,7 @@ export async function fillHoraeTaskDetailCache(
       gate.beforeCall();
       const response = await Promise.resolve(runner(taskId));
       const detail = detailOfHorae(response, taskId);
-      writeHoraeTaskTypeCache(
-        taskId,
-        now().toISOString(),
-        detail,
-        cacheRoot,
-      );
+      writeHoraeTaskTypeCache(taskId, now().toISOString(), detail, cacheRoot);
       cached += 1;
     } catch (error) {
       errors += 1;
@@ -192,6 +198,10 @@ async function main(): Promise<void> {
   );
   const force = process.argv.includes("--force");
   const taskIdsFile = option("--task-ids-file");
+  const manualTaskIds = readManualTaskIds(
+    cacheRoot,
+    option("--manual-task-ids-file") ?? undefined,
+  );
   const taskIds = boundedTaskIds(
     taskIdsFile ? taskIdsFromFile(taskIdsFile) : taskIdsFromCache(cacheRoot),
   );
@@ -211,9 +221,10 @@ async function main(): Promise<void> {
     maxErrors,
     minIntervalMs,
     force,
+    manualTaskIds,
   });
   process.stdout.write(`${JSON.stringify(summary)}\n`);
-  if (summary.errors > 0) process.exitCode = 1;
+  if (summary.stopped) process.exitCode = 1;
 }
 
 if (process.argv[1]?.endsWith("fill-horae-task-detail-cache.ts")) {

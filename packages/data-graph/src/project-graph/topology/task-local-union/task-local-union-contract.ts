@@ -14,6 +14,13 @@ import {
 export const TASK_LOCAL_UNION_SUPPORTED_PROJECTION_SCHEMAS = [
   "1.1.0",
   "1.2.0",
+  "1.3.0",
+] as const;
+
+/** Read-occurrence projections that WP-8 continuation can index. 1.3.0 is a field-evidence superset of 1.2.0. */
+export const UNION_CONTINUATION_V2_PROJECTION_SCHEMAS = [
+  "1.2.0",
+  "1.3.0",
 ] as const;
 
 export type TaskLocalUnionSupportedProjectionSchema =
@@ -127,6 +134,14 @@ export function isSupportedTaskLocalProjectionSchema(
   return (
     TASK_LOCAL_UNION_SUPPORTED_PROJECTION_SCHEMAS as readonly string[]
   ).includes(schemaVersion);
+}
+
+export function isUnionContinuationV2ProjectionSchema(
+  schemaVersion: string,
+): boolean {
+  return (UNION_CONTINUATION_V2_PROJECTION_SCHEMAS as readonly string[]).includes(
+    schemaVersion,
+  );
 }
 
 /**

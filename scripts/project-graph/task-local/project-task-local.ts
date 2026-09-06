@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 import {
   indexTaskInputPacks,
@@ -74,9 +74,10 @@ import {
   partitionPredicatesByReadOccurrence,
   readPartitionPredicatesForOccurrence,
 } from "./partition-predicates.ts";
-import { readTaskScheduleContext, type TaskScheduleContext } from "./schedule-context.ts";
+import { readTaskScheduleContext, readTaskCategoryFromScheduleCache, type TaskScheduleContext } from "./schedule-context.ts";
 
 export interface ProjectTaskLocalOptions {
+  readonly currentBundle?: CurrentBundleLoad;
   readonly factsRoot: string;
   readonly dataRoot: string;
   readonly taskId: string;
@@ -107,6 +108,21 @@ function record(value: unknown): JsonRecord | null {
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function uniqueByKey<T>(
+  items: readonly T[],
+  keyOf: (item: T) => string,
+): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const item of items) {
+    const key = keyOf(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+  return unique;
 }
 
 export interface TaskLocalReadOccurrenceIdentity {
@@ -404,6 +420,26 @@ function expressionFor(load: CurrentBundleLoad, binding: JsonRecord): JsonRecord
   ) ?? null;
 }
 
+function readPackTaskCategory(dataRoot: string, taskId: string): string | null {
+  const path = join(dataRoot, "tasks", taskId, "task.json");
+  if (!existsSync(path)) return null;
+  const doc = JSON.parse(readFileSync(path, "utf8")) as { taskCategory?: unknown };
+  return typeof doc.taskCategory === "string" ? doc.taskCategory : null;
+}
+
+function resolveProjectionTaskCategory(input: {
+  readonly taskId: string;
+  readonly dataRoot: string;
+  readonly scheduleCacheRoot?: string;
+  readonly packCategory?: string | null;
+}): string | null {
+  return (
+    input.packCategory
+    ?? readTaskCategoryFromScheduleCache(input.taskId, input.scheduleCacheRoot)
+    ?? null
+  );
+}
+
 function projectTaskLocalFromFacts(input: {
   readonly taskId: string;
   readonly generatedAt: string;
@@ -411,8 +447,9 @@ function projectTaskLocalFromFacts(input: {
   readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY";
   readonly dataRoot: string;
   readonly schedule: TaskScheduleContext | null;
+  readonly taskCategory: string | null;
 }): TaskLocalProjection {
-  const { taskId, generatedAt, load, evidenceStatus, dataRoot, schedule } = input;
+  const { taskId, generatedAt, load, evidenceStatus, dataRoot, schedule, taskCategory } = input;
   const catalog = physicalCatalogCache.get(dataRoot)
     ?? (() => {
       const next = loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
@@ -420,6 +457,7 @@ function projectTaskLocalFromFacts(input: {
       return next;
     })();
   const pack = loadTaskPack(dataRoot, catalog, taskId);
+  const resolvedTaskCategory = taskCategory ?? pack?.document.taskCategory ?? null;
   const fallbackTable = pack?.target ?? { platform: "hive", dataSource: "unknown" };
   const defaultSchema = pack ? inferTaskDefaultSchema(pack.document) : null;
   const nodes = new Map<string, TaskLocalNode>();
@@ -452,6 +490,7 @@ function projectTaskLocalFromFacts(input: {
       taskId,
       generatedAt,
       failureReasonCode: "NO_RESOLVED_WRITE",
+      taskCategory: resolvedTaskCategory,
       taskProperties: taskNodeProperties({
         packTaskName: pack?.document.taskName ?? null,
         schedule,
@@ -471,6 +510,7 @@ function projectTaskLocalFromFacts(input: {
       taskId,
       generatedAt,
       failureReasonCode: "SCHEMA_UNRESOLVED",
+      taskCategory: resolvedTaskCategory,
       taskProperties: taskNodeProperties({
         packTaskName: pack?.document.taskName ?? null,
         schedule,
@@ -1116,17 +1156,25 @@ function projectTaskLocalFromFacts(input: {
     artifactType: "TASK_LOCAL_PROJECTION",
     generatedAt,
     taskId,
+    taskCategory: resolvedTaskCategory,
     coverageStatus: "PROJECTED",
+    coverageDisposition: "DATA_LINEAGE",
     failureReasonCode: null,
     nodes: [...nodes.values()],
     edges,
     gaps,
     localClosure: {
-      finalWrites: [...finalWriteSummaries].sort((left, right) =>
-        compareText(left.writeObservationId, right.writeObservationId),
+      finalWrites: uniqueByKey(
+        [...finalWriteSummaries].sort((left, right) =>
+          compareText(left.writeObservationId, right.writeObservationId),
+        ),
+        (write) => write.writeObservationId,
       ),
-      externalReads: [...externalReadSummaries].sort((left, right) =>
-        compareText(left.readOccurrenceId, right.readOccurrenceId),
+      externalReads: uniqueByKey(
+        [...externalReadSummaries].sort((left, right) =>
+          compareText(left.readOccurrenceId, right.readOccurrenceId),
+        ),
+        (read) => read.readOccurrenceId,
       ),
       localFieldPaths: [...localFieldPaths].sort((left, right) =>
         compareText(
@@ -1144,17 +1192,25 @@ export function projectTaskLocal(options: ProjectTaskLocalOptions): TaskLocalPro
   const dataRoot = resolve(options.dataRoot);
   const generatedAt = options.generatedAt ?? new Date().toISOString();
   const schedule = readTaskScheduleContext(taskId, options.scheduleCacheRoot);
-  const load = loadCurrentTaskBundle(factsRoot, taskId);
+  const load = options.currentBundle ?? loadCurrentTaskBundle(factsRoot, taskId);
   const evidenceStatus = factsEvidenceStatus(load);
+  const packCategory = readPackTaskCategory(dataRoot, taskId);
+  const taskCategory = resolveProjectionTaskCategory({
+    taskId,
+    dataRoot,
+    scheduleCacheRoot: options.scheduleCacheRoot,
+    packCategory,
+  });
 
   if (!evidenceStatus) {
     if (schedule) {
-      return buildScheduleOnlyProjection({ taskId, generatedAt, schedule });
+      return buildScheduleOnlyProjection({ taskId, generatedAt, schedule, taskCategory });
     }
     return buildCollectionFailedProjection({
       taskId,
       generatedAt,
       failureReasonCode: failureReasonFromLoad(load),
+      taskCategory,
     });
   }
 
@@ -1166,6 +1222,7 @@ export function projectTaskLocal(options: ProjectTaskLocalOptions): TaskLocalPro
       evidenceStatus,
       dataRoot,
       schedule,
+      taskCategory,
     });
   } catch (error) {
     const failureReasonCode: TaskLocalFailureReasonCode =
@@ -1176,6 +1233,7 @@ export function projectTaskLocal(options: ProjectTaskLocalOptions): TaskLocalPro
       taskId,
       generatedAt,
       failureReasonCode,
+      taskCategory,
       failureMessage: error instanceof Error ? error.message : String(error),
     });
   }

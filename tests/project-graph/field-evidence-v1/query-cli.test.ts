@@ -7,7 +7,7 @@ import {
 import { runFieldEvidenceQuery } from "../../../scripts/project-graph/field-evidence-v1/query-cli.ts";
 import { validateFieldImpactResult } from "../../../scripts/project-graph/field-evidence-v1/impact-result-contract.ts";
 
-const roots = fieldEvidenceQueryRoots();
+const roots = fieldEvidenceQueryRoots({ profile: "greek-legacy" });
 if (!roots && fieldEvidenceGoldenRequired()) {
   throw new Error("FIELD_EVIDENCE_GOLDEN_REQUIRED but field-facts or INDEX path is missing");
 }
@@ -17,7 +17,7 @@ describeGolden("field-evidence query cli", () => {
   it("returns valid FIELD_IMPACT_RESULT for a Greek anchor column", () => {
     const taskId = process.env.FIELD_EVIDENCE_QUERY_TASK_ID?.trim() ?? "176827";
     const outputColumn = process.env.FIELD_EVIDENCE_QUERY_COLUMN?.trim() ?? "gamma";
-    const result = runFieldEvidenceQuery({ taskId, outputColumn });
+    const result = runFieldEvidenceQuery({ taskId, outputColumn, profile: "greek-legacy" });
 
     expect(result.artifactType).toBe("FIELD_IMPACT_RESULT");
     expect(result.schemaVersion).toBe("1.1.0");

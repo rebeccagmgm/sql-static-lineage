@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { HoraeSerialGate } from "../scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts";
 import {
+  expandHoraeRelationClosure,
   fillHoraeRelationCache,
   neighborTaskIdsFromRelationCache,
   parseTaskIdOrder,
@@ -18,7 +19,10 @@ import {
   writeHoraeRelationCache,
 } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
 
-function makeTaskDirectories(cacheRoot: string, taskIds: readonly string[]): void {
+function makeTaskDirectories(
+  cacheRoot: string,
+  taskIds: readonly string[],
+): void {
   const tasksRoot = join(resolveScheduleEvidenceCacheRoot(cacheRoot), "tasks");
   for (const taskId of taskIds) {
     mkdirSync(join(tasksRoot, taskId), { recursive: true });
@@ -97,8 +101,52 @@ describe("fillHoraeRelationCache", () => {
       expect(summary.errors).toBe(2);
       expect(summary.stopped).toBe(true);
       expect(summary.failedTaskIds).toEqual(["1", "2"]);
-      expect(readHoraeRelationCache("1", cacheRoot, "down").status).toBe("MISS");
-      expect(readHoraeRelationCache("3", cacheRoot, "down").status).toBe("MISS");
+      expect(readHoraeRelationCache("1", cacheRoot, "down").status).toBe(
+        "MISS",
+      );
+      expect(readHoraeRelationCache("3", cacheRoot, "down").status).toBe(
+        "MISS",
+      );
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("skips task ids from the shared manual-task list", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-relation-manual-"));
+    try {
+      makeTaskDirectories(cacheRoot, ["1", "2"]);
+      writeFileSync(
+        join(
+          resolveScheduleEvidenceCacheRoot(cacheRoot),
+          "manual-task-ids.txt",
+        ),
+        "1\n",
+        "utf8",
+      );
+      writeFileSync(
+        join(
+          resolveScheduleEvidenceCacheRoot(cacheRoot),
+          "manual-task-ids.txt.meta.json",
+        ),
+        JSON.stringify({ status: "COMPLETED" }),
+        "utf8",
+      );
+      const started: string[] = [];
+      const summary = await fillHoraeRelationCache({
+        cacheRoot,
+        direction: "up",
+        maxErrors: 1,
+        minIntervalMs: 0,
+        gate: new HoraeSerialGate({ minIntervalMs: 0 }),
+        runner: (taskId) => {
+          started.push(taskId);
+          return [];
+        },
+      });
+
+      expect(summary.total).toBe(1);
+      expect(started).toEqual(["2"]);
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }
@@ -130,11 +178,7 @@ describe("fillHoraeRelationCache", () => {
         order: "desc",
       });
       expect(starts).toEqual(["10", "2"]);
-      expect(sortTaskIds(["10", "2", "30"], "desc")).toEqual([
-        "30",
-        "10",
-        "2",
-      ]);
+      expect(sortTaskIds(["10", "2", "30"], "desc")).toEqual(["30", "10", "2"]);
       expect(parseTaskIdOrder("desc")).toBe("desc");
       expect(parseTaskIdOrder(undefined)).toBe("asc");
     } finally {
@@ -196,6 +240,45 @@ describe("fillHoraeRelationCache", () => {
       });
       expect(readHoraeRelationCache("501", cacheRoot, "up").status).toBe("HIT");
       expect(readHoraeRelationCache("502", cacheRoot, "up").status).toBe("HIT");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("BFS-closes over cached up and down relations and records missing hops", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "horae-relation-closure-"));
+    try {
+      makeTaskDirectories(cacheRoot, ["1", "2", "3"]);
+      writeHoraeRelationCache(
+        "1",
+        "2026-08-31T00:00:00.000Z",
+        [{ task_id: "2" }],
+        cacheRoot,
+        "up",
+      );
+      writeHoraeRelationCache(
+        "1",
+        "2026-08-31T00:00:00.000Z",
+        [],
+        cacheRoot,
+        "down",
+      );
+      writeHoraeRelationCache(
+        "2",
+        "2026-08-31T00:00:00.000Z",
+        [{ task_id: "3" }],
+        cacheRoot,
+        "up",
+      );
+      const result = expandHoraeRelationClosure({
+        cacheRoot,
+        seedTaskIds: ["1"],
+      });
+      expect(result.seed).toBe(1);
+      expect(result.hops).toBe(2);
+      expect(result.closure).toEqual(["1", "2", "3"]);
+      expect(result.missingUp).toEqual(["3"]);
+      expect(result.missingDown).toEqual(["2", "3"]);
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

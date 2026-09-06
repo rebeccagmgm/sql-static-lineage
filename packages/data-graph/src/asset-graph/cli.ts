@@ -1,0 +1,303 @@
+import { openAssetGraph } from "./config.ts";
+import { AssetGraphStore } from "./store.ts";
+import { publishAssetGraph } from "./publish.ts";
+import { startAssetGraphServer, taskDetail } from "./service.ts";
+import { processingDetail, CLI_HELP } from "./agent-api.ts";
+import { resolveWorkspacePaths } from "../../../../scripts/config/workspace-paths.ts";
+import { readPublishedContinuationMetrics } from "./continuation-metrics-query.ts";
+const allowed = new Set([
+  "--config",
+  "--text",
+  "--task-id",
+  "--task-ids",
+  "--table",
+  "--column",
+  "--write-id",
+  "--node-id",
+  "--relation-id",
+  "--layer",
+  "--direction",
+  "--depth",
+  "--limit",
+  "--offset",
+  "--slot",
+  "--line-start",
+  "--line-count",
+  "--port",
+  "--confirmed-only",
+  "--sql",
+  "--gap-layer",
+  "--terminal-role",
+]);
+export function parseAgentArgs(args: readonly string[]) {
+  const command = args[0] ?? "help",
+    values: Record<string, string | boolean> = {};
+  for (let i = 1; i < args.length; i++) {
+    const key = args[i]!;
+    if (!allowed.has(key)) throw new Error("INVALID_ARGUMENT:" + key);
+    if (key === "--confirmed-only" || key === "--sql") {
+      values[key] = true;
+      continue;
+    }
+    const value = args[++i];
+    if (!value || value.startsWith("--"))
+      throw new Error("ARGUMENT_VALUE_REQUIRED:" + key);
+    values[key] = value;
+  }
+  const option = (key: string) =>
+    typeof values[key] === "string" ? String(values[key]) : undefined;
+  const integer = (key: string, defaultValue: number, max: number, min = 0) => {
+    const raw = option(key),
+      n = raw === undefined ? defaultValue : Number(raw);
+    if (!Number.isSafeInteger(n) || n < min || n > max)
+      throw new Error("INVALID_ARGUMENT:" + key);
+    return n;
+  };
+  return {
+    command,
+    option,
+    integer,
+    flag: (key: string) => values[key] === true,
+  };
+}
+export async function assetGraphMain(args = process.argv.slice(2)) {
+  const started = Date.now();
+  let command = args[0] ?? "help";
+  try {
+    const a = parseAgentArgs(args);
+    command = a.command;
+    const { option, integer, flag } = a,
+      config = option("--config");
+    if (command === "help" || command === "--help") {
+      console.log(JSON.stringify({ ok: true, ...CLI_HELP }));
+      return;
+    }
+    if (command === "metrics") {
+      const paths = resolveWorkspacePaths({ configPath: config });
+      console.log(JSON.stringify({
+        schemaVersion: "1.0.0",
+        ok: true,
+        command,
+        data: readPublishedContinuationMetrics({
+          graphOutputRoot: paths.graphOutputRoot,
+          gapLayer: option("--gap-layer"),
+          terminalRole: option("--terminal-role"),
+          offset: integer("--offset", 0, 1_000_000),
+          limit: integer("--limit", 25, 100, 1),
+        }),
+      }));
+      return;
+    }
+    if (
+      ![
+        "publish",
+        "serve",
+        "status",
+        "search",
+        "fields",
+        "trace",
+        "detail",
+        "processing",
+        "compare",
+      ].includes(command)
+    )
+      throw new Error("INVALID_COMMAND");
+    if (command === "publish") {
+      console.log(
+        JSON.stringify({
+          schemaVersion: "1.0.0",
+          ok: true,
+          command,
+          data: await publishAssetGraph(config),
+        }),
+      );
+      return;
+    }
+    if (command === "serve") {
+      const port = integer("--port", 8791, 65535, 1024),
+        server = await startAssetGraphServer(config, port);
+      console.log(
+        JSON.stringify({ ok: true, url: `http://127.0.0.1:${port}` }),
+      );
+      process.once("SIGINT", () => void server.close());
+      return;
+    }
+    const c = await openAssetGraph(config),
+      store = new AssetGraphStore(c.driver, c.database, c.graphId);
+    try {
+      const state = await store.ready();
+      let data: unknown;
+      const offset = integer("--offset", 0, 1000000),
+        limit = integer(
+          "--limit",
+          command === "fields" ? 100 : command === "trace" ? 150 : 25,
+          command === "trace" || command === "fields" ? 1000 : 100,
+          1,
+        );
+      const requireTask = () => {
+        const id = option("--task-id");
+        if (!id) throw new Error("ARGUMENT_VALUE_REQUIRED:--task-id");
+        return id;
+      };
+      if (command === "status") {
+        data = {
+          state: state.state,
+          publishedAt: String(state.publishedAt),
+          ...JSON.parse(state.report),
+        };
+      } else if (command === "search") {
+        const rows = await store.search(
+          option("--text") ?? "",
+          limit + 1,
+          offset,
+        );
+        data = {
+          items: rows.slice(0, limit),
+          pagination: {
+            offset,
+            limit,
+            nextOffset: rows.length > limit ? offset + limit : null,
+          },
+        };
+      } else if (command === "fields") {
+        if (!option("--task-id") && !option("--table"))
+          throw new Error("ARGUMENT_VALUE_REQUIRED:--task-id_or_--table");
+        const rows = await store.fields({
+          taskId: option("--task-id"),
+          table: option("--table"),
+          limit: limit + 1,
+          offset,
+        });
+        data = {
+          items: rows.slice(0, limit),
+          pagination: {
+            offset,
+            limit,
+            nextOffset: rows.length > limit ? offset + limit : null,
+          },
+        };
+      } else if (command === "detail") {
+        const d = await taskDetail(
+          store,
+          requireTask(),
+          option("--column"),
+          option("--write-id"),
+        );
+        data = {
+          ...d,
+          bindings: d.bindings.slice(offset, offset + limit),
+          controls: d.controls.slice(offset, offset + limit),
+          pagination: {
+            offset,
+            limit,
+            bindingTotal: d.bindings.length,
+            controlTotal: d.controls.length,
+            nextOffset:
+              offset + limit < Math.max(d.bindings.length, d.controls.length)
+                ? offset + limit
+                : null,
+          },
+        };
+      } else if (command === "processing") {
+        data = await processingDetail(store, {
+          taskId: requireTask(),
+          text: option("--text"),
+          relationId: option("--relation-id"),
+          limit,
+          offset,
+          sql: flag("--sql"),
+          slot: option("--slot"),
+          lineStart: integer("--line-start", 1, 1000000, 1),
+          lineCount: integer("--line-count", 80, 300, 1),
+        });
+      } else if (command === "compare") {
+        const ids = [
+          ...new Set((option("--task-ids") ?? "").split(",").filter(Boolean)),
+        ];
+        if (!ids.length || ids.length > 10 || !option("--column"))
+          throw new Error("ARGUMENT_VALUE_REQUIRED:--task-ids_and_--column");
+        data = {
+          column: option("--column"),
+          tasks: await Promise.all(
+            ids.map(async (id) => {
+              const d = await taskDetail(store, id, option("--column"));
+              return {
+                taskId: id,
+                taskName: d.taskName,
+                coverage: d.coverage,
+                bindings: d.bindings,
+                controlCount: d.controls.length,
+              };
+            }),
+          ),
+        };
+      } else {
+        const layer = option("--layer") ?? "field",
+          direction = option("--direction") ?? "up";
+        if (
+          !["table", "field", "schedule"].includes(layer) ||
+          !["up", "down"].includes(direction)
+        )
+          throw new Error("INVALID_ARGUMENT:layer_or_direction");
+        if (!option("--node-id") && !option("--task-id") && !option("--table"))
+          throw new Error("ARGUMENT_VALUE_REQUIRED:anchor");
+        if (layer === "field" && !option("--node-id") && !option("--column"))
+          throw new Error("ARGUMENT_VALUE_REQUIRED:--column");
+        data = await store.traverse({
+          taskId: option("--task-id"),
+          column: option("--column"),
+          table: option("--table"),
+          nodeId: option("--node-id"),
+          writeId: option("--write-id"),
+          layer: layer as "table" | "field" | "schedule",
+          direction: direction as "up" | "down",
+          depth: integer("--depth", 4, 12),
+          limit,
+          includeCandidates: !flag("--confirmed-only"),
+        });
+      }
+      console.log(
+        JSON.stringify({
+          schemaVersion: "1.0.0",
+          ok: true,
+          command,
+          graph: { id: c.graphId, version: state.version },
+          data,
+          meta: {
+            backend: "neo4j",
+            elapsedMs: Date.now() - started,
+            projectionGenerations: 0,
+          },
+        }),
+      );
+    } finally {
+      await c.driver.close();
+    }
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "QUERY_FAILED",
+      argument = /^(INVALID_|ARGUMENT_)/.test(raw);
+    const driverCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    const code = /ServiceUnavailable|SessionExpired/.test(driverCode)
+      ? "NEO4J_UNAVAILABLE"
+      : /Security/.test(driverCode)
+        ? "NEO4J_AUTH_FAILED"
+        : /^[A-Z0-9_:a-z-]+$/.test(raw)
+          ? raw
+          : "ASSET_GRAPH_QUERY_FAILED";
+    console.log(
+      JSON.stringify({
+        schemaVersion: "1.0.0",
+        ok: false,
+        command,
+        error: { code },
+        meta: { elapsedMs: Date.now() - started },
+      }),
+    );
+    process.exitCode = argument ? 2 : 1;
+  }
+}
+if (process.argv[1]?.replaceAll("\\", "/").endsWith("/asset-graph/cli.ts"))
+  await assetGraphMain();

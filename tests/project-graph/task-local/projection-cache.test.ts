@@ -16,6 +16,7 @@ import {
   projectionBytesEqualIgnoringGeneratedAt,
   resolveTaskLocalCacheKeyParts,
   taskLocalCacheKey,
+  taskLocalProjectionVersionPath,
 } from "../../../scripts/project-graph/task-local/projection-cache.ts";
 
 function writeDemoTables(dataRoot: string): void {
@@ -86,6 +87,18 @@ function mutatePackContentHash(dataRoot: string, taskId: string): string {
 }
 
 describe("task-local projection cache (TL-4)", () => {
+  it("keeps a published version readable after the current task changes", () => {
+    const { dataRoot, factsRoot } = setupProjectedTasks(["300099"]);
+    const outputRoot = mkdtempSync(join(tmpdir(), "task-local-immutable-"));
+    const first = projectTaskLocalBatch({ dataRoot, factsRoot, outputRoot, taskIds: ["300099"] });
+    const version = taskLocalProjectionVersionPath(outputRoot, "300099", first.results[0]!.cacheKey);
+    const original = readFileSync(version, "utf8");
+    mutatePackContentHash(dataRoot, "300099");
+    const second = projectTaskLocalBatch({ dataRoot, factsRoot, outputRoot, taskIds: ["300099"] });
+    expect(second.results[0]!.cacheKey).not.toBe(first.results[0]!.cacheKey);
+    expect(readFileSync(version, "utf8")).toBe(original);
+    expect(JSON.parse(original).projection.contentHash).toBe(first.projections[0]!.contentHash);
+  });
   it("hits every unchanged task on the second batch", () => {
     const { dataRoot, factsRoot } = setupProjectedTasks(["105387"]);
     const outputRoot = mkdtempSync(join(tmpdir(), "task-local-cache-out-"));

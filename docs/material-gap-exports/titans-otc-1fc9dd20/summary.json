@@ -1,0 +1,73 @@
+{
+  "graphVersion": "1fc9dd200607c1e33549148bb5285435218fcd1bf7c84826813f63feb2f4766f",
+  "manifestPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\artifacts\\graphs\\titans-otc\\batches\\a06b7330690c4e1c8689fa2b65c81c0117a255afc0520491b8e0e2fbbe72abcf\\batch-manifest.json",
+  "exportedAt": "2026-09-06T04:04:38.763Z",
+  "totalMaterialGap": 510,
+  "byCategory": {
+    "hive2postgre": 46,
+    "hiveTask-2.0": 36,
+    "oracle2hive": 5,
+    "runScript": 4,
+    "hiveTask": 8,
+    "runScript-2.0": 4,
+    "hive2oracle": 30,
+    "oracle2oracle": 1,
+    "hive2mysql": 42,
+    "sparkIndex": 53,
+    "RdpTask": 2,
+    "HttpTask": 1,
+    "MISSING_PACK": 129,
+    "kyuubiTask": 4,
+    "sparkScript": 2,
+    "hive2starrocks": 143
+  },
+  "bySubReason": {
+    "MISSING_PACK": 203,
+    "SCHEMA_UNRESOLVED": 15,
+    "NEED_FACTS_AND_TARGET_SCHEMA": 92,
+    "PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY": 50,
+    "NEED_MACHINE_FACTS": 150
+  },
+  "focusCategories": {
+    "hive2starrocks": {
+      "total": 143,
+      "bySubReason": {
+        "NEED_FACTS_AND_TARGET_SCHEMA": 4,
+        "MISSING_PACK": 2,
+        "NEED_MACHINE_FACTS": 98,
+        "PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY": 39
+      }
+    },
+    "MISSING_PACK": {
+      "total": 129,
+      "bySubReason": {
+        "MISSING_PACK": 129
+      }
+    },
+    "sparkIndex": {
+      "total": 53,
+      "bySubReason": {
+        "NEED_MACHINE_FACTS": 29,
+        "MISSING_PACK": 24
+      }
+    },
+    "hive2postgre": {
+      "total": 46,
+      "bySubReason": {
+        "MISSING_PACK": 15,
+        "SCHEMA_UNRESOLVED": 6,
+        "NEED_FACTS_AND_TARGET_SCHEMA": 24,
+        "NEED_MACHINE_FACTS": 1
+      }
+    },
+    "hive2mysql": {
+      "total": 42,
+      "bySubReason": {
+        "NEED_FACTS_AND_TARGET_SCHEMA": 30,
+        "SCHEMA_UNRESOLVED": 3,
+        "MISSING_PACK": 4,
+        "NEED_MACHINE_FACTS": 5
+      }
+    }
+  }
+}

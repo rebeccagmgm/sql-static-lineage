@@ -16,10 +16,7 @@ import {
   type TaskDocument,
   type TaskEvidence,
 } from "../shared/input-pack.ts";
-import {
-  assembleCacheTaskEvidence,
-  sqlSlotCount,
-} from "../shared/cache-task-evidence.ts";
+import { assembleCacheTaskEvidence, sqlSlotCount } from "../shared/cache-task-evidence.ts";
 import {
   loadOfflineTableCatalog,
   openOfflineTablePackStore,

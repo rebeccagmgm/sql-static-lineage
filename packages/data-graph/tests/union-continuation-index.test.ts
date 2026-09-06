@@ -43,7 +43,7 @@ function sha(value: string): string {
 
 function envelope(input: {
   readonly taskId: string;
-  readonly schemaVersion?: "1.1.0" | "1.2.0";
+  readonly schemaVersion?: "1.1.0" | "1.2.0" | "1.3.0";
   readonly coverageStatus?: "PROJECTED" | "SCHEDULE_ONLY" | "COLLECTION_FAILED";
   readonly nodes: readonly Record<string, unknown>[];
   readonly localClosure?: TaskLocalProjectionClosure;
@@ -80,13 +80,18 @@ function envelope(input: {
 function writeFixture(
   input: {
     readonly badProjectedSchema?: boolean;
+    readonly projectedSchema?: "1.2.0" | "1.3.0";
     readonly ambiguousProducerIndex?: boolean;
+    readonly duplicateExternalRead?: boolean;
   } = {},
 ): { readonly root: string; readonly producerIndexPath: string } {
   const root = mkdtempSync(join(tmpdir(), "data-graph-wp81-index-"));
+  const projectedSchema = input.badProjectedSchema
+    ? "1.1.0"
+    : (input.projectedSchema ?? "1.2.0");
   const consumer = envelope({
     taskId: "119044",
-    schemaVersion: input.badProjectedSchema ? "1.1.0" : "1.2.0",
+    schemaVersion: projectedSchema,
     nodes: [
       { nodeId: "task:119044", nodeType: "TASK", properties: {} },
       {
@@ -124,6 +129,17 @@ function writeFixture(
           qualifiedName: TABLE,
           identityStatus: "CONFIRMED",
         },
+        ...(input.duplicateExternalRead
+          ? [
+              {
+                readOccurrenceId: READ_A,
+                readOccurrenceNodeId: READ_A_NODE,
+                datasetNodeId: TABLE_ID,
+                qualifiedName: TABLE,
+                identityStatus: "CONFIRMED",
+              },
+            ]
+          : []),
         {
           readOccurrenceId: READ_B,
           readOccurrenceNodeId: READ_B_NODE,
@@ -136,6 +152,7 @@ function writeFixture(
   });
   const writer = envelope({
     taskId: "105387",
+    schemaVersion: projectedSchema === "1.1.0" ? "1.2.0" : projectedSchema,
     nodes: [{ nodeId: "task:105387", nodeType: "TASK", properties: {} }],
     localClosure: {
       finalWrites: [
@@ -331,6 +348,60 @@ describe("UNION_CONTINUATION_INDEX (WP-8.1)", () => {
       readOccurrenceCount: 2,
     });
     assertUnionContinuationIndexManifest(manifest);
+  });
+
+  it("indexes a duplicated localClosure.externalRead occurrence once", () => {
+    const fixture = writeFixture({ duplicateExternalRead: true });
+    const outputDir = join(fixture.root, "index");
+    const stdout: string[] = [];
+    runUnionContinuationIndexCli(
+      [
+        "--batch-dir",
+        fixture.root,
+        "--producer-index",
+        fixture.producerIndexPath,
+        "--output-dir",
+        outputDir,
+      ],
+      {
+        now: () => "2026-09-03T00:00:00.000Z",
+        write: (value) => stdout.push(value),
+      },
+    );
+
+    const result = JSON.parse(stdout[0]!) as {
+      index: string;
+    };
+    const index = JSON.parse(
+      readFileSync(result.index, "utf8"),
+    ) as UnionContinuationIndex;
+    assertUnionContinuationIndex(index);
+    expect(index.entries.map((entry) => entry.readOccurrenceId)).toEqual([
+      READ_A,
+      READ_B,
+    ]);
+  });
+
+  it("accepts a 1.3.0 projected input as a v2-capable field-evidence superset", () => {
+    const fixture = writeFixture({ projectedSchema: "1.3.0" });
+    const outputDir = join(fixture.root, "index-1.3.0");
+    const stdout: string[] = [];
+    runUnionContinuationIndexCli(
+      [
+        "--batch-dir",
+        fixture.root,
+        "--producer-index",
+        fixture.producerIndexPath,
+        "--output-dir",
+        outputDir,
+      ],
+      { write: (value) => stdout.push(value) },
+    );
+    const result = JSON.parse(stdout[0]!) as { index: string };
+    const index = JSON.parse(readFileSync(result.index, "utf8")) as {
+      input: { taskProjections: Array<{ schemaVersion: string }> };
+    };
+    expect(index.input.taskProjections.every((task) => task.schemaVersion === "1.3.0")).toBe(true);
   });
 
   it("rejects a non-1.2.0 projected input before creating output", () => {

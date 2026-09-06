@@ -28,6 +28,10 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeTaskTypeCache,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  excludeManualTaskIds,
+  readManualTaskIds,
+} from "../shared/manual-task-exclusion.ts";
 
 /** Sync-to-Hive types that emit `Process hive ddl:` in Horae AnyLoader logs. */
 export const HIVE_DDL_FROM_LOG_TASK_TYPES = new Set([
@@ -61,6 +65,7 @@ export interface FillHiveDdlFromLogCacheOptions {
   readonly maxErrors?: number;
   readonly minIntervalMs?: number;
   readonly force?: boolean;
+  readonly manualTaskIds?: ReadonlySet<string>;
   readonly logRunner?: HiveDdlLogRunner;
   readonly gate?: HoraeSerialGate;
   readonly now?: () => Date;
@@ -119,7 +124,8 @@ function selectedTaskIds(
   limit: number | undefined,
 ): string[] {
   if (limit === undefined) return [...taskIds];
-  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("LIMIT_INVALID");
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw new Error("LIMIT_INVALID");
   return taskIds.slice(0, limit);
 }
 
@@ -131,9 +137,7 @@ function shouldStop(errors: number, maxErrors: number): boolean {
   return maxErrors > 0 && errors >= maxErrors;
 }
 
-function defaultLogRunner(
-  cacheRoot: string,
-): HiveDdlLogRunner {
+function defaultLogRunner(cacheRoot: string): HiveDdlLogRunner {
   return (taskId, dataDate) => {
     const logPath = runScriptLogCachePath(taskId, dataDate, cacheRoot);
     if (existsSync(logPath)) return readFileSync(logPath, "utf8");
@@ -158,16 +162,20 @@ export async function fillHiveDdlFromLogCache(
     DEFAULT_MIN_INTERVAL_MS,
     "MIN_INTERVAL_MS_INVALID",
   );
-  const gate =
-    options.gate ?? new HoraeSerialGate({ minIntervalMs });
+  const gate = options.gate ?? new HoraeSerialGate({ minIntervalMs });
   const now = options.now ?? (() => new Date());
   const logRunner = options.logRunner ?? defaultLogRunner(cacheRoot);
   const force = options.force === true;
 
-  const baseIds =
-    options.taskIds ?? toHiveSyncIdsFromHoraeTypeCache(cacheRoot);
+  const baseIds = options.taskIds ?? toHiveSyncIdsFromHoraeTypeCache(cacheRoot);
   const taskIds = selectedTaskIds(
-    fromStartTaskId(baseIds, options.startTaskId),
+    fromStartTaskId(
+      excludeManualTaskIds(
+        baseIds,
+        options.manualTaskIds ?? readManualTaskIds(cacheRoot),
+      ),
+      options.startTaskId,
+    ),
     options.limit,
   );
 
@@ -242,7 +250,8 @@ export async function fillHiveDdlFromLogCache(
           },
           cacheRoot,
           {
-            overwrite: parseHiveDdlFromLogCache(taskId, cacheRoot).status === "HIT",
+            overwrite:
+              parseHiveDdlFromLogCache(taskId, cacheRoot).status === "HIT",
           },
         );
         empty += 1;
@@ -317,6 +326,10 @@ async function main(): Promise<void> {
   const dataDate = option("--data-date") ?? DEFAULT_RUN_SCRIPT_LOG_DATE;
   const startTaskId = option("--start-task-id");
   const taskIdsFile = option("--task-ids-file");
+  const manualTaskIds = readManualTaskIds(
+    cacheRoot,
+    option("--manual-task-ids-file") ?? undefined,
+  );
   const summariesPath = option("--from-summaries");
   const bucket = (option("--bucket") ??
     "ONLY_HIVE_TARGET_GAP") as PartialGapBucket;
@@ -349,6 +362,7 @@ async function main(): Promise<void> {
   const summary = await fillHiveDdlFromLogCache({
     cacheRoot,
     taskIds,
+    manualTaskIds,
     startTaskId,
     limit: taskIds === undefined ? limit : undefined,
     dataDate,

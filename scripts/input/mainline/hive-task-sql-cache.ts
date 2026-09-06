@@ -135,14 +135,52 @@ function hiveTaskSqlLegacyCachePath(
   );
 }
 
-export function resolveLocalHiveTaskScriptPath(
-  codeRoot: string,
+/** Legacy Horae repos folded into a successor BigData checkout. */
+export const HIVE_TASK_LEGACY_REPO_ALIASES: Readonly<
+  Record<string, readonly string[]>
+> = {
+  GF_FDM: ["GF_FDM_N"],
+};
+
+export function normalizeHiveTaskScriptPath(
   scriptPath: string | null | undefined,
 ): string | null {
   const raw = String(scriptPath ?? "")
     .trim()
     .replace(/\\/g, "/")
     .replace(/^\/+/, "");
+  if (!raw) return null;
+  if (/^BigData-/i.test(raw)) return raw;
+  if (raw.startsWith("BigData/")) {
+    const parts = raw.split("/").filter(Boolean);
+    if (parts.length >= 3 && parts[0] === "BigData") {
+      return `BigData-${parts[1]}/${parts.slice(2).join("/")}`;
+    }
+  }
+  const parts = raw.split("/").filter(Boolean);
+  if (parts.length < 2) return raw;
+  const prefix = parts[0]!;
+  if (prefix.includes("-")) return raw;
+  return `BigData-${prefix}/${parts.slice(1).join("/")}`;
+}
+
+export function isLegacyGfFdmHiveTaskScriptPath(
+  scriptPath: string | null | undefined,
+): boolean {
+  const normalized = normalizeHiveTaskScriptPath(scriptPath);
+  if (!normalized) return false;
+  return /^BigData-GF_FDM\//iu.test(normalized);
+}
+
+type ParsedHiveTaskScriptLocation = {
+  repo: string;
+  rest: string[];
+};
+
+function parseHiveTaskScriptLocation(
+  scriptPath: string | null | undefined,
+): ParsedHiveTaskScriptLocation | null {
+  const raw = normalizeHiveTaskScriptPath(scriptPath);
   if (!raw) return null;
   const parts = raw.split("/").filter(Boolean);
   if (parts.length < 2) return null;
@@ -160,7 +198,45 @@ export function resolveLocalHiveTaskScriptPath(
   }
   if (repo === "" || rest.length === 0) return null;
   if (rest.some((part) => part === "." || part === "..")) return null;
-  return join(codeRoot, repo, ...rest);
+  return { repo, rest };
+}
+
+function hiveTaskReposToTry(repo: string): readonly string[] {
+  const aliases = HIVE_TASK_LEGACY_REPO_ALIASES[repo] ?? [];
+  return [repo, ...aliases.filter((alias) => alias !== repo)];
+}
+
+/** Only explicit repository paths and aliases with the same relative path. */
+export function listLocalHiveTaskScriptPathCandidates(
+  codeRoot: string,
+  scriptPath: string | null | undefined,
+): readonly string[] {
+  const parsed = parseHiveTaskScriptLocation(scriptPath);
+  if (!parsed) return [];
+
+  return [...new Set(hiveTaskReposToTry(parsed.repo).map((repo) =>
+    join(codeRoot, repo, ...parsed.rest),
+  ))];
+}
+
+export function resolveLocalHiveTaskScriptPath(
+  codeRoot: string,
+  scriptPath: string | null | undefined,
+): string | null {
+  return listLocalHiveTaskScriptPathCandidates(codeRoot, scriptPath)[0] ?? null;
+}
+
+export function resolveExistingLocalHiveTaskScriptPath(
+  codeRoot: string,
+  scriptPath: string | null | undefined,
+): string | null {
+  for (const candidate of listLocalHiveTaskScriptPathCandidates(
+    codeRoot,
+    scriptPath,
+  )) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
 }
 
 function skipWhitespace(source: string, index: number): number {
@@ -533,16 +609,173 @@ export function extractHiveEBodiesFromHoraeLog(
   return bodies;
 }
 
+export type HoraeLogSqlExtractionHints = {
+  readonly taskName?: string | null;
+  readonly hiveDb?: string | null;
+};
+
+const HORAE_LOG_DIAGNOSTIC_WRITE =
+  /\bINSERT\s+(?:OVERWRITE\s+)?(?:INTO\s+)?TABLE\s+[\w.]*(?:LOAD_LOG|_LOG_S)\b/iu;
+
+function normalizeHoraeLogTableToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/gu, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+function taskNameTableTokens(taskName: string | null | undefined): readonly string[] {
+  const firstLine = String(taskName ?? "")
+    .split(/\r?\n/u)[0]
+    ?.trim();
+  if (!firstLine) return [];
+  const parts = firstLine.split(".").filter(Boolean);
+  const tokens = new Set<string>();
+  tokens.add(normalizeHoraeLogTableToken(firstLine.replace(/\./g, "_")));
+  if (parts.length > 0) {
+    tokens.add(normalizeHoraeLogTableToken(parts[parts.length - 1]!));
+  }
+  if (parts.length > 1) {
+    tokens.add(normalizeHoraeLogTableToken(parts.slice(1).join("_")));
+  }
+  return [...tokens].filter((token) => token.length > 0);
+}
+
+function writeTablesFromSql(sql: string | null | undefined): readonly string[] {
+  if (!sql) return [];
+  const tables: string[] = [];
+  for (const match of sql.matchAll(
+    /\bINSERT\s+(?:OVERWRITE\s+)?(?:INTO\s+)?TABLE\s+([\w.]+)/giu,
+  )) {
+    const qualified = match[1]?.trim();
+    if (!qualified) continue;
+    const leaf = qualified.split(".").pop() ?? qualified;
+    const token = normalizeHoraeLogTableToken(leaf);
+    if (token) tables.push(token);
+  }
+  return tables;
+}
+
+function scoreHoraeLogBody(
+  slots: { readonly createSql: string | null; readonly querySql: string | null },
+  hints: HoraeLogSqlExtractionHints,
+): number {
+  const sql = [slots.createSql, slots.querySql].filter(Boolean).join("\n");
+  if (sql.trim() === "") return Number.NEGATIVE_INFINITY;
+
+  let score = 0;
+  if (slots.createSql !== null) score += 10;
+  if (slots.querySql !== null) score += 20;
+  if (/\bINSERT\s+OVERWRITE\b/iu.test(sql)) score += 5;
+  if (HORAE_LOG_DIAGNOSTIC_WRITE.test(sql)) score -= 100;
+
+  const taskTokens = taskNameTableTokens(hints.taskName);
+  const writeTables = writeTablesFromSql(slots.querySql ?? sql);
+  for (const table of writeTables) {
+    for (const token of taskTokens) {
+      if (table === token || table.endsWith(`_${token}`) || token.endsWith(`_${table}`)) {
+        score += 100;
+      }
+    }
+  }
+
+  const hiveDb = normalizeHoraeLogTableToken(String(hints.hiveDb ?? ""));
+  if (hiveDb && writeTables.some((table) => sql.toLowerCase().includes(`${hiveDb}.${table}`))) {
+    score += 5;
+  }
+
+  return score;
+}
+
+function isDiagnosticHoraeLogBody(body: string): boolean {
+  const slots = splitCombinedHiveTaskSql(body);
+  const sql = [slots.createSql, slots.querySql].filter(Boolean).join("\n");
+  if (sql.trim() === "") return true;
+  const writeTables = writeTablesFromSql(slots.querySql ?? sql);
+  if (writeTables.length === 0) return false;
+  return writeTables.every(
+    (table) => /load_log|_log_s$/iu.test(table) || HORAE_LOG_DIAGNOSTIC_WRITE.test(sql),
+  );
+}
+
+function horaeLogBodyHasStatement(body: string): boolean {
+  const slots = splitCombinedHiveTaskSql(body);
+  const sql = [slots.createSql, slots.querySql].filter(Boolean).join("\n");
+  return /\b(CREATE|INSERT|MERGE|UPDATE|DELETE)\b/iu.test(sql);
+}
+
+function selectBestHoraeLogBody(
+  bodies: readonly string[],
+  hints: HoraeLogSqlExtractionHints,
+): { readonly createSql: string | null; readonly querySql: string | null } {
+  const ranked = bodies
+    .map((body) => {
+      const slots = splitCombinedHiveTaskSql(body);
+      return { body, slots, score: scoreHoraeLogBody(slots, hints) };
+    })
+    .sort((left, right) => right.score - left.score);
+
+  const best = ranked[0];
+  if (best && best.score > Number.NEGATIVE_INFINITY) {
+    if (best.slots.createSql !== null || best.slots.querySql !== null) {
+      return best.slots;
+    }
+  }
+
+  const createSql =
+    ranked.find((entry) => entry.slots.createSql !== null)?.slots.createSql ?? null;
+  const querySql =
+    ranked.find(
+      (entry) =>
+        entry.slots.querySql !== null &&
+        !HORAE_LOG_DIAGNOSTIC_WRITE.test(entry.slots.querySql),
+    )?.slots.querySql ?? null;
+  return mergeHiveTaskSqlSlots(createSql, querySql);
+}
+
+function selectHiveTaskSqlFromHoraeLogBodies(
+  bodies: readonly string[],
+  hints: HoraeLogSqlExtractionHints = {},
+): { readonly createSql: string | null; readonly querySql: string | null } {
+  if (bodies.length === 0) return { createSql: null, querySql: null };
+  if (bodies.length === 1) return splitCombinedHiveTaskSql(bodies[0]!);
+
+  const create: string[] = [];
+  const query: string[] = [];
+  for (const body of bodies) {
+    if (isDiagnosticHoraeLogBody(body) || !horaeLogBodyHasStatement(body)) continue;
+    const slots = splitCombinedHiveTaskSql(body);
+    if (slots.createSql !== null) create.push(slots.createSql);
+    if (slots.querySql !== null) query.push(slots.querySql);
+  }
+  if (create.length > 0 || query.length > 0) {
+    return {
+      createSql: create.length === 0 ? null : create.join("\n\n"),
+      querySql: query.length === 0 ? null : query.join("\n\n"),
+    };
+  }
+
+  return selectBestHoraeLogBody(bodies, hints);
+}
+
 /**
  * Build create/query slots from expanded hive -e blocks in a Horae log.
+ * Non-diagnostic blocks are kept in log order (whole-script semantics, like
+ * multiple exec_sql calls). Progress LOAD_LOG / *_LOG_S blocks are dropped.
  */
-export function extractHiveTaskSqlFromHoraeLog(logText: string): {
+export function extractHiveTaskSqlFromHoraeLog(
+  logText: string,
+  hints: HoraeLogSqlExtractionHints = {},
+): {
   readonly createSql: string | null;
   readonly querySql: string | null;
 } {
-  const bodies = extractHiveEBodiesFromHoraeLog(logText);
-  if (bodies.length === 0) return { createSql: null, querySql: null };
-  return splitCombinedHiveTaskSql(bodies.join("\n;\n"));
+  return selectHiveTaskSqlFromHoraeLogBodies(
+    extractHiveEBodiesFromHoraeLog(logText),
+    hints,
+  );
 }
 
 function normalizeSqlText(sql: string): string {

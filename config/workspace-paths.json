@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataRoot": "../../sql-static-lineage-data",
+  "evidenceRoot": "../../sql-static-lineage-cache",
+  "inputPackRoot": ".",
+  "factsRoot": "field-facts",
+  "projectionRoot": "task-projections",
+  "graphRoot": "artifacts/graphs",
+  "writerCatalogPath": "../sql-static-lineage-data.writer-catalog/writer-catalog.sqlite",
+  "activeProfile": "titans-otc",
+  "profiles": {
+    "titans-otc": {
+      "batch": "titans-otc"
+    },
+    "greek-legacy": {
+      "batch": "greek-legacy",
+      "continuationIndexPath": "../sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-continuation-index-full-recovered-v2/union-continuation-index.json"
+    }
+  },
+  "neo4j": {
+    "uri": "bolt://localhost:7687",
+    "username": "neo4j",
+    "database": "neo4j",
+    "passwordFileEnv": "NEO4J_PASSWORD_FILE",
+    "graphId": "titans-otc"
+  }
+}

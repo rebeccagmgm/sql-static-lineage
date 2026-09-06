@@ -1,9 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, join } from "node:path";
 
 import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
-import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { resolveWorkspacePaths, type WorkspacePathOptions } from "../../config/workspace-paths.ts";
 import {
 	openWriterCatalog,
 	writerCatalogPort,
@@ -24,8 +23,6 @@ import {
   type HoraeScheduleRelationLookup,
 } from "./schedule-preference.ts";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-
 export interface FieldEvidenceQueryRoots {
   readonly dataRoot: string;
   readonly factsRoot: string;
@@ -34,38 +31,19 @@ export interface FieldEvidenceQueryRoots {
   readonly writerCatalogPath: string | null;
 }
 
-function defaultWriterCatalogPathFromEnv(): string {
-  return resolve(
-    process.env.WRITER_CATALOG_PATH?.trim()
-    || join(REPO_ROOT, "../sql-static-lineage-data.writer-catalog/writer-catalog.sqlite"),
-  );
-}
-
-export function fieldEvidenceQueryRoots(): FieldEvidenceQueryRoots | null {
-  const dataRoot = resolve(
-    process.env.TASK_LOCAL_GOLDEN_DATA_ROOT?.trim() || join(REPO_ROOT, "../sql-static-lineage-data"),
-  );
-  const factsRoot = resolve(
-    process.env.TASK_LOCAL_GOLDEN_FACTS_ROOT?.trim() || join(dataRoot, "field-facts"),
-  );
+export function fieldEvidenceQueryRoots(options: WorkspacePathOptions = {}): FieldEvidenceQueryRoots | null {
+  const paths = resolveWorkspacePaths(options);
+  const dataRoot = paths.inputPackRoot;
+  const factsRoot = paths.factsRoot;
   const required = join(factsRoot, "registry", "tasks");
   if (!existsSync(required)) return null;
 
-  const indexPath = resolve(
-    process.env.FIELD_EVIDENCE_INDEX_PATH?.trim()
-    || join(
-      REPO_ROOT,
-      "../sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-continuation-index-full-recovered-v2/union-continuation-index.json",
-    ),
-  );
+  const indexPath = paths.continuationIndexPath;
   if (!existsSync(indexPath)) return null;
 
-  const scheduleCacheRoot = resolve(
-    process.env.FIELD_EVIDENCE_SCHEDULE_CACHE_ROOT?.trim()
-    || DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
-  );
+  const scheduleCacheRoot = paths.evidenceRoot;
 
-  const writerCatalogCandidate = defaultWriterCatalogPathFromEnv();
+  const writerCatalogCandidate = paths.writerCatalogPath;
   const writerCatalogPath = existsSync(writerCatalogCandidate)
     ? writerCatalogCandidate
     : null;

@@ -151,6 +151,25 @@ describe("Input Pack V1", () => {
     validateTaskDocument(document);
   });
 
+  it("stores one-hop Horae schedule neighbor task ids as task configuration", () => {
+    const document = createTaskDocument({
+      taskId: "144127",
+      taskCategory: "sparkIndex",
+      upstreamTaskIds: ["200", "100", "100"],
+      downstreamTaskIds: [],
+      evidenceProvider: "fixture:task",
+    });
+    expect(document.upstreamTaskIds).toEqual(["100", "200"]);
+    expect(document.downstreamTaskIds).toEqual([]);
+    validateTaskDocument(document);
+    expect(() =>
+      validateTaskDocument({
+        ...document,
+        upstreamTaskIds: ["200", "100"],
+      }),
+    ).toThrow(/upstreamTaskIds must be sorted/);
+  });
+
   it("does not classify a normal task as frozen when the search filter is loose", () => {
     expect(
       isExcludedHoraeSearchRecord(
@@ -985,6 +1004,12 @@ describe("Input Pack V1", () => {
     );
     expect(controlledTaskEndpointDataSource("hive2oracle", "target")).toBe(
       undefined,
+    );
+    expect(controlledTaskEndpointPlatform("hive2postgre", "source")).toBe(
+      "hive",
+    );
+    expect(controlledTaskEndpointPlatform("hive2postgre", "target")).toBe(
+      "postgre",
     );
     expect(controlledTaskEndpointDataSource("hive2starrocks", "source")).toBe(
       "gfhive",

@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+import { backup, DatabaseSync } from "node:sqlite";
 import {
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
 } from "node:fs";
-import { basename, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
@@ -19,6 +19,8 @@ const IMPORTABLE_EXTENSIONS = new Set([".json", ".sql"]);
 export interface ImportScheduleEvidenceOptions {
   readonly cacheRoot?: string;
   readonly databasePath?: string;
+  /** Relation evidence is SQLite-native and excluded unless explicitly requested. */
+  readonly includeRelations?: boolean;
 }
 
 export interface ImportScheduleEvidenceResult {
@@ -29,6 +31,12 @@ export interface ImportScheduleEvidenceResult {
   readonly updated: number;
   readonly unchanged: number;
   readonly invalid: number;
+  readonly skippedRelationFiles: number;
+}
+
+export interface BackupScheduleEvidenceSqliteOptions {
+  readonly databasePath: string;
+  readonly backupPath: string;
 }
 
 interface EvidenceRow {
@@ -114,6 +122,29 @@ function readEvidenceRow(taskId: string, fileName: string, taskPath: string): Ev
   };
 }
 
+function isHoraeRelationEvidenceFile(fileName: string): boolean {
+  return /^horae-relation-(?:up|down)-depth-\d+\.json$/u.test(fileName);
+}
+
+export async function backupScheduleEvidenceSqlite(
+  options: BackupScheduleEvidenceSqliteOptions,
+): Promise<string> {
+  const databasePath = resolve(options.databasePath);
+  const backupPath = resolve(options.backupPath);
+  if (!existsSync(databasePath))
+    throw new Error(`SQLITE_DATABASE_MISSING:${databasePath}`);
+  if (databasePath === backupPath) throw new Error("SQLITE_BACKUP_PATH_SAME_AS_SOURCE");
+  if (existsSync(backupPath)) throw new Error(`SQLITE_BACKUP_PATH_EXISTS:${backupPath}`);
+  mkdirSync(dirname(backupPath), { recursive: true });
+  const database = new DatabaseSync(databasePath);
+  try {
+    await backup(database, backupPath);
+  } finally {
+    database.close();
+  }
+  return backupPath;
+}
+
 function initializeDatabase(databasePath: string): DatabaseSync {
   mkdirSync(resolve(databasePath, ".."), { recursive: true });
   const database = new DatabaseSync(databasePath);
@@ -190,6 +221,8 @@ export function importScheduleEvidenceToSqlite(
   let updated = 0;
   let unchanged = 0;
   let invalid = 0;
+  let skippedRelationFiles = 0;
+  const includeRelations = options.includeRelations === true;
   const importedAt = new Date().toISOString();
 
   database.exec("BEGIN");
@@ -205,6 +238,10 @@ export function importScheduleEvidenceToSqlite(
           continue;
         }
         filesSeen++;
+        if (!includeRelations && isHoraeRelationEvidenceFile(fileEntry.name)) {
+          skippedRelationFiles++;
+          continue;
+        }
         try {
           const row = readEvidenceRow(taskId, fileEntry.name, taskPath);
           if (row === null) {
@@ -256,6 +293,7 @@ export function importScheduleEvidenceToSqlite(
     updated,
     unchanged,
     invalid,
+    skippedRelationFiles,
   };
 }
 
@@ -265,9 +303,37 @@ function option(args: readonly string[], name: string): string | undefined {
 }
 
 if (process.argv[1]?.endsWith("import-schedule-evidence-sqlite.ts")) {
-  const result = importScheduleEvidenceToSqlite({
-    cacheRoot: option(process.argv.slice(2), "--cache-root"),
-    databasePath: option(process.argv.slice(2), "--database-path"),
-  });
-  console.log(JSON.stringify(result));
+  try {
+    const args = process.argv.slice(2);
+    const cacheRoot = option(args, "--cache-root");
+    const databasePath = option(args, "--database-path");
+    const backupPath = option(args, "--backup-path");
+    const scheduleEvidenceRoot = resolveScheduleEvidenceCacheRoot(
+      cacheRoot ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
+    );
+    const resolvedDatabasePath = resolve(
+      databasePath ??
+        join(
+          scheduleEvidenceRoot,
+          "tasks-sqlite",
+          "schedule-evidence.sqlite",
+        ),
+    );
+    const backupPathResult =
+      backupPath === undefined
+        ? null
+        : await backupScheduleEvidenceSqlite({
+            databasePath: resolvedDatabasePath,
+            backupPath,
+          });
+    const result = importScheduleEvidenceToSqlite({
+      cacheRoot,
+      databasePath: resolvedDatabasePath,
+      includeRelations: args.includes("--include-relations"),
+    });
+    console.log(JSON.stringify({ backupPath: backupPathResult, ...result }));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
 }

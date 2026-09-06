@@ -48,7 +48,15 @@ export function reduceContinuationCandidates(input: {
     const overlapEligible = input.policy.confirmOn.includes(
       candidate.partitionOverlap,
     );
-    const eligible = !scheduleParentAmbiguous && overlapEligible;
+    // Field evidence may narrow INDEX eligibility, never grant it again from
+    // overlap alone. Schedule ambiguity is reported separately from evidence.
+    const eligible = overlapEligible
+      && candidate.partitionOverlap === "PROVEN_OVERLAP"
+      && candidate.index.partitionMatchStatus === "CONFIRMED"
+      && candidate.index.l1Eligible === true
+      && candidate.index.evidenceLayer === "L1"
+      && candidate.index.source === "IN_UNION_FINAL_WRITE"
+      && candidate.index.targetWriteNodeId !== null;
     return withContinuationCandidate(candidate, {
       continuationEligible: eligible,
       ruleId: "CONTINUATION_REDUCE",

@@ -2032,6 +2032,12 @@ function deriveTaskLocalMaterializations(
 	}
 	const records: TaskLocalMaterializationRecord[] = [];
 	const reads = datasetIo.filter((record) => record.direction === "READ");
+	const isSchemaOnlyCreateTable = (write: DatasetIoRecord): boolean =>
+		String(write.write_kind ?? "").toUpperCase() === "CREATE_TABLE"
+			&& write.field_producing === false
+			&& String(write.producer_enumeration_status ?? "").toUpperCase() === "NOT_APPLICABLE"
+			&& (write.query_producer_statement_id ?? null) === null
+			&& (bindingsByObservation.get(String(write.write_observation_id))?.length ?? 0) === 0;
 	for (const read of reads) {
 		const readStatementId = String(read.statement_id ?? "");
 		const readStatementIndex = statementIndexes.get(readStatementId);
@@ -2043,6 +2049,7 @@ function deriveTaskLocalMaterializations(
 		if (fields.length === 0) continue;
 		const priorWrites = writes
 			.filter((write) => {
+				if (isSchemaOnlyCreateTable(write)) return false;
 				const writeStatementId = String(write.write_statement_id ?? write.statement_id ?? "");
 				const writeStatementIndex = statementIndexes.get(writeStatementId);
 				return normalizeName(String(write.physical_dataset ?? "")) === physicalDataset && writeStatementIndex !== undefined && writeStatementIndex < readStatementIndex;

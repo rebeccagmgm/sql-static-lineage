@@ -1,0 +1,511 @@
+taskId,taskCategory,taskName,coverageStatus,failureReasonCode,factsState,hasPack,hasQuerySql,targetKind,subReason,recommendedAction
+2522,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+10580,hive2postgre,"risk.cal_f_bundlreport_equity",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+31943,hiveTask-2.0,"spdata.pty_name_h",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+34901,oracle2hive,"odata_n_tit.o_pos_otc_position_daily",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+35045,runScript,"kafka_sender.start_TRANS_INS_WIND_CUR_TENOR_service",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+37015,hiveTask-2.0,"spdata.acct_tit_book",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37016,hiveTask-2.0,"spdata.evt_tit_otc_opt_trd",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37017,hiveTask-2.0,"spdata.agt_stat_h",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37018,hiveTask-2.0,"spdata.agt_otc_opt_subor_attr_h",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37020,hiveTask-2.0,"spdata.org_user_role_rela_h",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37021,hiveTask-2.0,"spdata.sum_agt_otc_opt_day_idx",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37022,hiveTask-2.0,"spdata.prd_tit_mkt_quote_info",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37458,hiveTask,"gf_tit.tit_e_TRANS_INSTRUMENT_TAG",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+37460,runScript-2.0,"kafka_sender.start_EOD_INSTRUMENT_TAG_service",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+40858,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+43814,hive2oracle,"crmii.wt_qywx_weekly_report",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+52249,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+60008,hive2postgre,"gfstest.gf_edc_crd_product_details_etf",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+60050,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+63680,oracle2hive,"odata_n_tit.o_pos_otc_position_daily",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+73055,hive2oracle,"src_gfjgj.wt_qywx_cust_tag_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+73353,hiveTask-2.0,"p_chs08_cvt_aml_cstunit",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+73354,hiveTask-2.0,"p_chs08_cvt_aml_productacc",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+76003,runScript-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+76489,hiveTask-2.0,"p_aml_query_cst_unit",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+77385,hive2postgre,"gfstest.gf_edc_crd_prd_code_name",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+77827,hiveTask-2.0,"p_aml_innerclientid",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+81102,hive2oracle,"gfjgj.gfopenaccount_elig_info_match_abnormal",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+87956,runScript-2.0,"dm_index_n.wt_gks_restore_vld_dev_record_sy",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+88005,hive2postgre,"gf_app.gks_tel_revst_evt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+88029,oracle2oracle,"gfzqcc.gfopenaccount_elig_info_match_abnormal",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+89328,runScript-2.0,"dm_index_n.wt_bse_mts_target_client",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+91434,hive2oracle,"gf_otc.trd_transfer_report",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+91741,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+92676,hive2mysql,"Equity.otc_options_contract_info",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+92678,hive2mysql,"Equity.otc_options_plreport_contract",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+92680,hive2mysql,"Equity.otc_options_autocall_obs_info",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+92682,hive2mysql,"Equity.otc_options_event_info",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+92684,hive2mysql,"Equity.otc_options_transfer_info",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+93550,hive2oracle,"网上开户审核奖励 KDHIVE.DM_ECOM_OPENACCOUNT_REWARD",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+95819,hiveTask-2.0,"p_aml_blacklist",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+96471,hive2oracle,"titans_etl.nds_oversea_listed_opt_quot",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+97915,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+101522,hive2postgre,"a_epa.T_EMP_INCM_MON",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+101526,hive2postgre,"a_epa.T_INS_INCM_STAT_MON",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+103240,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+103241,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+104297,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+104565,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+104586,hive2oracle,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+104938,hive2oracle,"SRC_GFJGJ.CUST_DETAIL_INFO_MON",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+106176,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+106177,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+106178,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+110566,hive2postgre,"a_epa.wt_tcust_marg_comp_stat_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+110678,hive2postgre,"a_epa.wt_tcust_opt_comp_stat_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+110694,hive2postgre,"a_epa.wt_tcust_pd_comp_stat_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+110880,hive2postgre,"a_epa.wt_tcust_mon_data",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+110892,hive2postgre,"a_epa.wt_tincm_comp_stat_anal_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+119130,oracle2hive,"odata_n_tit.d_risk_limit_index_info_f",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+127822,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+128551,hive2postgre,"gf_edc.otc_cust_type_anlz_qtr_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+128598,hive2postgre,"gf_edc.otc_european_vanilla_anlz_week_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+128714,hive2postgre,"gf_edc.otc_autocall_anlz_week_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+129022,hive2postgre,"gf_edc.otc_cust_trd_anlz_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+129078,oracle2hive,"odata_n_tit.d_risk_quick_check_log_f",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+131072,hive2postgre,"gf_edc.otc_autocall_anlz_mon_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+134035,hive2mysql,"dm_ctms.tidb_ctms_sys_user_roles",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+134752,hive2oracle,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+136594,sparkIndex,"dm_crd_n.wt_crd_newin_cust_rank_s",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+137742,hive2postgre,"gf_app.wt_oact_appr_income_details",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+138504,hive2mysql,"Equity.swap_contract",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+138512,hive2mysql,"Equity.swap_lifecycle",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+138519,hive2mysql,"Equity.swap_leg",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+138522,hive2mysql,"Equity.swap_underlying",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+138527,hive2mysql,"Equity.swap_profit",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+138529,hive2mysql,"Equity.swap_transfer",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+139096,hive2mysql,"bd_dm_otc.opt_cumulator_schd",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+139953,RdpTask,"STOP_bd_ctms_sys_user_roles",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+139957,RdpTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+140660,hive2postgre,"gf_edc.micro_strg_backup",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+140732,hive2postgre,"gf_edc.k_cos_cuacct",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+143666,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+143996,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+143997,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+144222,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+144231,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+144417,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+144553,hiveTask-2.0,"dm_mast_n.news_fxr_cfets_quot_grp01",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+144554,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+144757,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+146451,hive2mysql,"bd_dm_otc.otc_comp_dura_chg_evt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+146711,hive2oracle,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+147871,HttpTask,"httptask.wt_gks_weekly_report_lwy",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+147885,hive2mysql,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+149961,hiveTask-2.0,"pdata_nds.d_ref_ctpty_auth_busi_f.py",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+150140,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+150174,hive2mysql,"goats.ctpty_infos",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+150336,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+150507,sparkIndex,"dm_co_n.wt_digi_screen_org_oth_index_mon_s",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+150768,hiveTask-2.0,"PDATA_NDS.TRD_OTC_CONTR_PROPS",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+151145,sparkIndex,"dm_rsk_n.comp_marg_acct_info",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+152249,hive2oracle,"gf_otc.ref_instrument_pd",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+152252,hive2oracle,"gf_otc.ref_otc_option_deal_pd",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+155696,hive2mysql,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+157554,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+157665,hive2mysql,"tidb_tidbt2_wm.push_crd_newin_cust_rank",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+157808,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+158048,hive2mysql,"bd_dm_otc.otc_sales_para_detail",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+158050,hive2mysql,"bd_dm_otc.otc_sales_daily_report",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+158052,hive2mysql,"bd_dm_otc.otc_inr_sale_daily_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+158053,hive2mysql,"bd_dm_otc.otc_inr_sale_para",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+158273,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+158480,sparkIndex,"dm_index_n.index_grp1_IncomeMomIncrsRate_FullCali_AstPkgRela_Qtr",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+159455,sparkIndex,"dm_co_n.dm_co_algo_jg_type_stati",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+159821,sparkIndex,"dm_co_n.dm_co_algo_sf_type_stati",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+160518,sparkIndex,"dm_co_n.dm_co_algo_org_hier_stati",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+160786,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+161845,sparkIndex,"dm_index_n.index_grp3_cust_org_emp_asset_bef_year_gr_mth",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+161848,sparkIndex,"dm_index_n.index_grp3_cust_org_emp_asset_aft_year_gr_mth",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+164815,hive2postgre,"gf_edc.wt_dm_co_blk_trd_cms_details_day",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+165402,hiveTask-2.0,"p_aml_datacheck",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+165792,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+167435,hive2mysql,"gf_otc.option_parameter_view_pb",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+167438,hive2mysql,"gf_otc.option_subject_view_pb",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+169648,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+169650,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+169662,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+174058,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+174119,hive2postgre,"a_epa.taum_cust_fort_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+174165,hive2postgre,"a_epa.taum_cust_stat_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+174788,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+174871,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+174873,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+174875,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+176278,hive2postgre,"a_epa.taum_cust_rela_comm_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+176288,hive2postgre,"a_epa.taum_cust_rela_csfc_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+176290,hive2postgre,"a_epa.taum_cust_rela_fort_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+176292,hive2postgre,"a_epa.taum_cust_rela_opt_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+176826,hive2postgre,"a_epa.taum_cust_stat_rela_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+177015,hive2postgre,"a_epa.taum_cust_rela_oth_incm_mon",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+177768,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+177769,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+177770,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+177771,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+178933,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+179236,kyuubiTask,"features.indv_cust_businessoffice_staff_label_mon.grp3_cust_org_emp_std_ast_bef_covt_mth_apd_tag074443733_test",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+179301,kyuubiTask,"features.indv_cust_businessoffice_staff_label_mon.grp3_cust_org_emp_std_ast_aft_covt_mth_apd",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+180425,hive2mysql,"gfedw.fin_gf_fi_quot_stock",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+180433,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+180442,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+180457,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181005,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181929,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181930,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181931,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181932,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181933,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181934,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+181935,runScript,"kafka_sender.start_TRANS_CSO_HA_ZQYE_SYNC_service",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+181937,runScript,"kafka_sender.start_TRANS_CSO_SZ_SJSDZ_SYNC_service",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+181938,runScript,"kafka_sender.start_TRANS_SMT_ATP_T_REPORT_SYNC_service",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+183059,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+183194,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+183405,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+185524,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+185955,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+186921,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+186922,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+186923,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+186924,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+189181,sparkIndex,"dm_index_n.index_grp1_Income_Exam_PqtrAstEndAstPkgRela_Mth_RetAndOrgCntr",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+191011,hiveTask-2.0,"pdata_news_test.t02_scr_base_info_test_lbj_TIT_test_lbj",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+191673,sparkIndex,"temp.index_grp2_std_ast_bef_covt_mth_apd_tdy",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+191689,sparkIndex,"temp.index_grp2_std_ast_aft_covt_mth_apd_tdy",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+191959,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+192001,kyuubiTask,"features.staff_label_mon.grp1_IncmCoPctIncrsRate_AstPkgRela_Qtr",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+192007,kyuubiTask,"features.staff_label_mon.grp1_StdAstUnitAstIncomeMomIncrsRate_CovtPst_AstPkgRela_Qtr",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+194620,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+194624,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+194656,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+194952,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196662,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196665,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196666,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196672,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196857,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+196973,hiveTask-2.0,"pdata_news_test.t02_scr_base_info_no_rplc_test_TIT_test_lbj",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+198986,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+199199,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+199838,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+199855,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+200760,hive2oracle,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+201718,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+201899,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+202124,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+202946,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+202961,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+203181,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+203622,hive2postgre,"gf_exp.Co_Emp_SeqABC_Est_Scor",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+203670,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+203966,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+204961,hive2mysql,"mysql_gfedw.fixed_income_advance_payments",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+204964,hive2oracle,"oracle_gfedw.fixed_income_advance_payments",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+204973,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+205767,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+205988,hive2oracle,"crmii.smart_call_index_list",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+206200,sparkIndex,"dm_index_n.index_grp1_conv_bond_enabl_model_origin",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+206201,sparkIndex,"dm_index_n.index_grp1_conv_bond_enabl_model_percent",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+206251,hive2oracle,"kgrp.R_OTC_A1020_T_tit",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+206507,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+206522,hive2oracle,"kgrp.R_OTC_A1020_T_ks",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+206823,sparkScript,"dm_engin_n.conv_bond_enabl_processing_official",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+206826,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+206827,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+206877,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+207029,sparkScript,"dm_engin_n.conv_bond_enabl_model_python_official",SCHEDULE_ONLY,,STALE,true,false,none,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+207299,hive2mysql,"Equity.swap_value",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+207352,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+207376,hive2starrocks,"features.client_label_latest.grp1_cust_premdlrnscor_covt_bond_open",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+207377,hive2starrocks,"features.client_label_latest.grp1_cust_premdlinitscor_covt_bond_open",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+207895,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208006,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208007,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208010,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208012,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208140,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208345,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+208346,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+209326,hive2oracle,"kgrp.R_OTC_A1020_T_prd",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+209739,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+209766,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+210231,hive2mysql,"gf_otc.trd_option_event_tdsql",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+210811,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+211155,hive2starrocks,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+212523,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+212537,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+213177,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+213178,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+213180,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+213182,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+213185,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+214362,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+214751,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+215115,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+216869,hive2mysql,"gfedw.civ_otc_fin_option_trade_rec",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+217186,oracle2hive,"odata_n_tit.d_ref_strategy_index_f",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+218608,hive2mysql,"h2tidb_ficc_trs_position_h2200",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+218610,hive2mysql,"h2tidb_ficc_trs_position_h2300",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+218612,hive2mysql,"h2tidb_ficc_hedging_position_tit_h2200",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+218613,hive2mysql,"h2tidb_ficc_hedging_position_tit_h2300",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+219012,hiveTask-2.0,"pdata_news_n.t02_idx_strg_matn_tit_TIT_ref_strategy_index_grp01",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+219073,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+219074,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+219203,hive2mysql,"mysql.gfzqcc.gfopenaccount_elig_info_match_abnormal",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+219204,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+219441,hive2mysql,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220296,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220300,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220339,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220353,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220377,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220487,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220496,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220558,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220573,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220690,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220725,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220755,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220811,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220819,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+220867,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+221385,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+221560,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+221785,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+222749,hive2mysql,"bd_dm_otc.otc_hk_sale_daily_rpt",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+222751,hive2mysql,"bd_dm_otc.otc_hk_sale_para",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223260,hive2oracle,"KGRP.IDX_USE_SITU_REP_MTH_uat",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223262,hive2oracle,"KGRP.IDX_USE_SITU_QUAT_uat",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223544,hive2oracle,"KGRP.TBL_TITLE_MTH_uat",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223546,hive2oracle,"KGRP.TBL_TITLE_QUAT_uat",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223571,hive2mysql,"h2tidb_ficc_trs_position_h1730",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223574,hive2mysql,"h2tidb_ficc_hedging_position_tit_h1730",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+223599,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+224120,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+224286,hive2postgre,"crm.smart_call_index_list",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+225125,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+225183,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+225243,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+225255,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+225672,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+225928,hive2oracle,"kgrp.R_OTC_A1020_T_cb",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+226062,hive2oracle,"KGRP.TBL_TITLE_QUAT",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+226063,hive2oracle,"KGRP.TBL_TITLE_MTH",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+226064,hive2oracle,"KGRP.IDX_USE_SITU_QUAT",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+226065,hive2oracle,"KGRP.IDX_USE_SITU_REP_MTH",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+226592,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226624,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226625,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226628,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226635,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226645,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226647,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226651,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+226795,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227066,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227069,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227071,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227126,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227129,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227231,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227445,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227447,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+227474,hive2mysql,"hive2mysql.wt_qywx_weekly_report",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+228182,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+228660,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+228662,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+228835,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+228838,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+229463,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+230204,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+230246,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+230266,hive2mysql,"gf_otc.bi_otc_cust_index",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+230944,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+231252,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+231867,MISSING_PACK,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+232507,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+233237,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+233311,hive2oracle,"h2o.capital_daily_actual_balance_h16",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+233312,hive2oracle,"h2o.capital_daily_actual_balance_h17",COLLECTION_FAILED,SCHEMA_UNRESOLVED,LEGACY_NOT_L1,true,true,bare_string,SCHEMA_UNRESOLVED,supplement target table DDL/schema in RDBMS pack
+233793,hive2starrocks,"推数日志表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+234185,hive2starrocks,"推数日志表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+234457,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+234628,hive2starrocks,"SR推数",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+234631,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+234637,hive2starrocks,"SR推数",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+234682,hive2starrocks,"SR推数\n234457",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+234717,hive2starrocks,"SR推数",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+235809,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+236475,hive2starrocks,"推数日志表-236470",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+236476,hive2starrocks,"推数日志表-236469",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+236490,hive2mysql,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+236649,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+237421,sparkIndex,"客户 AUM 可选指标得分  AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237459,sparkIndex,"粤东分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237468,sparkIndex,"佛山分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237470,sparkIndex,"粤西分公司  AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237471,sparkIndex,"东莞分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237474,sparkIndex,"福建分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237478,sparkIndex,"辽宁分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237480,sparkIndex,"江苏分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237481,sparkIndex,"寺右新营业部 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237483,sparkIndex,"珠海分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237485,sparkIndex,"山东分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237486,sparkIndex,"成都分公司 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237505,sparkIndex,"季度关注客户名单 AUM 资产包评价管理实施方案 index表",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237634,hive2starrocks,"SR推数-237630",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237743,hive2starrocks,"推数日志表-237645",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237746,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+237748,hive2starrocks,"推数日志表-237626",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237750,hive2starrocks,"推数日志表-237609",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237751,hive2starrocks,"推数日志表-237600",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237752,hive2starrocks,"推数日志表-237596",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237753,hive2starrocks,"推数日志表-237593",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237762,hive2starrocks,"推数日志表-237582",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237780,hive2starrocks,"推数日志表-237564",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237806,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+237807,sparkIndex,"半年度重点督导名单  AUM 资产包评价管理实施方案",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+237808,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+237893,hive2oracle,"SIEBEL.ECRM_XJ_OTC_SYNERGY_DATA",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+237978,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+239327,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+239363,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+239528,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+239731,hive2postgre,"SIEBEL.ECRM_XJ_OTC_SYNERGY_DATA_TD",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+239991,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+241462,hive2starrocks,"features.client_label_latest.tag_indv_cust_old_notpi_cust",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+241466,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+242309,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+242634,hive2starrocks,"推数日志表-242633",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+242957,hive2starrocks,"推数日志表-242955",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+243023,hive2starrocks,"243021",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+243024,hive2starrocks,"h2sr_liq_clearing_trans_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+243166,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+243229,sparkIndex,"dm_otc_test.index_grp1_OtcDeri_CutpEnty_BusiType_Trd_Cnt_Lytd_Tdy",SCHEDULE_ONLY,,STALE,true,true,structured,NEED_MACHINE_FACTS,machine-facts
+243796,hive2starrocks,"h2sr_d_pos_eod_calc_metrics_p_h13",SCHEDULE_ONLY,,STALE,true,true,bare_string,NEED_FACTS_AND_TARGET_SCHEMA,machine-facts + supplement RDBMS/StarRocks target schema
+243843,hive2starrocks,"推数日志表-243841",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+243845,hive2starrocks,"推数日志表-243844",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244172,hive2starrocks,"推数日志表-244171",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244207,hive2starrocks,"推数日志表-244205",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244345,hiveTask,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+244366,hive2starrocks,"推数日志表-243796",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244367,hive2starrocks,"SR直推-134557",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244373,hive2starrocks,"推数日志表-243833",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244386,hive2starrocks,"推数日志表-244016",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244388,hive2starrocks,"推数日志表-244102",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244390,hive2starrocks,"推数日志表-244112",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244394,hive2starrocks,"推数日志表-244138",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244398,hive2starrocks,"SR直推-175112",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244406,hive2starrocks,"SR直推-172367",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244409,hive2starrocks,"SR直推-134167",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244412,hive2starrocks,"SR直推-134533",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244416,hive2starrocks,"SR直推-134530",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244418,hive2starrocks,"SR推数-172257",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244420,hive2starrocks,"SR直推-134157",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244430,hive2starrocks,"SR推数-174026    无主键，KEY_MRG_ACCT_ID",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244438,hive2starrocks,"SR直推-134148",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244446,hive2starrocks,"SR直推-134549",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244454,hive2starrocks,"SR直推-183294",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244497,hiveTask-2.0,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+244555,hive2starrocks,"h2sr_prd_product_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244560,hive2starrocks,"h2sr_ref_counter_party_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244561,hive2starrocks,"h2sr_ref_option_deal_barrier_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244562,hive2starrocks,"h2sr_ref_option_deal_cr_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244563,hive2starrocks,"h2sr_ref_sbl_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244564,hive2starrocks,"h2sr_ref_sbl_leg_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244565,hive2starrocks,"h2sr_ref_book_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244567,hive2starrocks,"h2sr_bk_book_mapping_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244568,hive2starrocks,"h2sr_ref_main_contract_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244569,hive2starrocks,"h2sr_ref_op_deal_float_back_fee_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244671,hive2starrocks,"SR推数-172288",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244677,hive2starrocks,"SR推数-172371",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244682,hive2starrocks,"SR直推-183259",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244694,hive2starrocks,"SR直推-174022",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244700,hive2starrocks,"SR直推-134561",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244702,hive2starrocks,"SR直推-134540",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244721,hive2starrocks,"推数日志表-244410",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244726,hive2starrocks,"h2sr_margin_acct_bundle_mapping_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244727,hive2starrocks,"h2sr_margin_acct_current_balance_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244729,hive2starrocks,"h2sr_margin_account_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244730,hive2starrocks,"h2sr_pos_trs_leg_current_pos_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244774,hive2starrocks,"SR推数-134545",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244777,hive2starrocks,"h2sr_trd_otc_trade_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244783,hive2starrocks,"推数日志表-244781",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244786,hive2starrocks,"SR推数-174032",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244789,hive2starrocks,"h2sr_margin_account_ledger_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244810,hive2starrocks,"推数日志表-244793",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244816,hive2starrocks,"推数日志表-244813",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244821,hive2starrocks,"h2sr_otc_prd_product_asset_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244822,hive2starrocks,"h2sr_capital_acct_current_balance_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244824,hive2starrocks,"h2sr_ref_option_deal_barrier_line_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244825,hive2starrocks,"h2sr_trd_option_event_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+244853,hive2starrocks,"176941",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244864,hive2starrocks,"推数日志表-244858",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244969,hive2starrocks,"推数日志表-244968",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+244975,hive2starrocks,"推数日志表-244974",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245001,hive2starrocks,"推数日志表-244995",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245004,hive2starrocks,"推数日志表-245003",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245024,hive2starrocks,"推数日志表-245023",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245041,hive2starrocks,"推数日志表-245038",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245046,hive2starrocks,"推数日志表-245045",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245059,hive2starrocks,"推数日志表-245058",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245071,hive2starrocks,"推数日志表-245069",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245093,hive2starrocks,"推数日志表-245092",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245209,hive2starrocks,"推数日志表-245208",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245224,hive2starrocks,"推数日志表-245223",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245237,hive2starrocks,"推数日志表-245236",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245318,hive2starrocks,"推数日志表-245310",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245319,hive2starrocks,"推数日志表-245315",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245320,hive2starrocks,"SR(HK)推数-134538",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245322,hive2starrocks,"h2sr_trd_option_deal_settlement_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245475,hive2starrocks,"h2sr_ref_option_deal_quote_reset",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245488,hive2starrocks,"h2sr_ref_option_quote_reset_p",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245501,hive2starrocks,"172318",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245524,hive2starrocks,"推数日志表-245521",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245598,hive2starrocks,"245529",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245599,hive2starrocks,"h2sr_liq_clearing_trans_h13_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245666,hive2starrocks,"推数日志表-245664",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245761,hive2starrocks,"SR(HK)推数-245702",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245766,hive2starrocks,"SR推数-166021",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245768,hive2starrocks,"推数日志表-245767",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245769,hive2starrocks,"h2sr_pos_bucket_vega_metrics_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245770,hive2starrocks,"h2sr_ref_option_vanillaoption_h13_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245773,hive2starrocks,"SR直推-134549",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245774,hive2starrocks,"h2sr_d_ref_counter_party_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245781,hive2starrocks,"SR推数-160530",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245782,hive2starrocks,"h2sr_d_ref_future_properties_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245785,hive2starrocks,"SR推数-134143",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245787,hive2starrocks,"h2sr_d_ref_op_deal_autocall_kidate_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245821,hive2starrocks,"SR推数-245817",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245822,hive2starrocks,"h2sr_f_ref_op_deal_lizard_obsdate_p_h1300_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245837,hive2starrocks,"推数日志表-245832",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245838,hive2starrocks,"SR推数-134148",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245840,hive2starrocks,"h2sr_d_ref_option_deal_barrier_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245843,MISSING_PACK,"",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+245848,hive2starrocks,"推数日志表-245847",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245852,hive2starrocks,"SR推数-134157",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245855,hive2starrocks,"h2sr_d_ref_option_deal_cr_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245890,hive2starrocks,"推数日志表-245886",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245895,hive2starrocks,"SR推数-134477",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245900,hive2starrocks,"h2sr_d_ref_option_deal_pr_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245909,hive2starrocks,"推数日志表-245906",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245912,hive2starrocks,"SR直推-160522",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245914,hive2starrocks,"h2sr_ref_ins_option_info_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245939,hive2starrocks,"推数日志表-245938",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245942,hive2starrocks,"SR推数-134146",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245944,hive2starrocks,"h2sr_d_ref_op_deal_autocall_kodate_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+245945,hive2starrocks,"SR(HK)推数-245941",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+245946,hive2starrocks,"h2sr.trd_deal_h13_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+246090,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+246164,hive2starrocks,"推数日志表-246163",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+246165,hive2starrocks,"SR推数-166644",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+246166,hive2starrocks,"h2sr_d_otchk_fx_forward_comp_info_log",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,structured,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+246174,hive2starrocks,"172276",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+246224,hive2starrocks,"h2sr_ref_listed_option_props",COLLECTION_FAILED,FACTS_UNAVAILABLE,STALE,true,false,bare_string,PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY,collect query SQL from szdata OR accept schedule-only
+246250,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+246308,hive2starrocks,"176930",SCHEDULE_ONLY,,STALE,true,true,none,NEED_MACHINE_FACTS,machine-facts
+246559,sparkIndex,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+247276,hive2postgre,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache
+247372,hive2starrocks,"",SCHEDULE_ONLY,,STALE,false,false,none,MISSING_PACK,collect-input-pack-from-cache

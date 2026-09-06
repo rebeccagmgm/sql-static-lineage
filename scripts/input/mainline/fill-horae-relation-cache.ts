@@ -2,9 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import {
-  HoraeSerialGate,
-} from "./collect-one-task-input-pack-sparkindex.ts";
+import { HoraeSerialGate } from "./collect-one-task-input-pack-sparkindex.ts";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeRelationCache,
@@ -12,6 +10,10 @@ import {
   writeHoraeRelationCache,
   type HoraeRelationDirection,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import {
+  excludeManualTaskIds,
+  readManualTaskIds,
+} from "../shared/manual-task-exclusion.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_ERRORS = 3;
@@ -55,6 +57,7 @@ export interface FillHoraeRelationCacheOptions {
   readonly runner?: HoraeRelationRunner;
   readonly gate?: HoraeSerialGate;
   readonly now?: () => Date;
+  readonly manualTaskIds?: ReadonlySet<string>;
 }
 
 export interface HoraeRelationFillError {
@@ -101,7 +104,8 @@ export function taskIdsFromFile(
   for (const rawLine of readFileSync(path, "utf8").split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
-    if (!SAFE_TASK_ID.test(line)) throw new Error(`TASK_IDS_FILE_INVALID:${line}`);
+    if (!SAFE_TASK_ID.test(line))
+      throw new Error(`TASK_IDS_FILE_INVALID:${line}`);
     if (seen.has(line)) continue;
     seen.add(line);
     taskIds.push(line);
@@ -142,6 +146,124 @@ export function neighborTaskIdsFromRelationCache(
   return [...neighbors].sort((left, right) =>
     left.localeCompare(right, "en-US", { numeric: true }),
   );
+}
+
+export interface HoraeRelationClosure {
+  readonly seed: number;
+  readonly hops: number;
+  readonly closure: readonly string[];
+  readonly missingUp: readonly string[];
+  readonly missingDown: readonly string[];
+}
+
+export function neighborIdFromRelationRow(
+  row: Record<string, unknown>,
+): string | undefined {
+  const neighbor =
+    typeof row.task_id === "string"
+      ? row.task_id.trim()
+      : typeof row.taskId === "string"
+        ? row.taskId.trim()
+        : "";
+  return SAFE_TASK_ID.test(neighbor) ? neighbor : undefined;
+}
+
+export interface HoraeRelationHopLookup {
+  readonly hasEvidence: (
+    taskId: string,
+    direction: HoraeRelationDirection,
+  ) => boolean;
+  readonly neighbors: (
+    taskId: string,
+    direction: HoraeRelationDirection,
+  ) => readonly string[];
+}
+
+/**
+ * BFS over one-hop up/down relations. Missing evidence is recorded, not guessed.
+ */
+export function expandHoraeRelationClosureFromLookup(options: {
+  readonly seedTaskIds: readonly string[];
+  readonly lookup: HoraeRelationHopLookup;
+  readonly directions?: readonly HoraeRelationDirection[];
+}): HoraeRelationClosure {
+  const directions = options.directions ?? ["up", "down"];
+  const seen = new Set<string>();
+  const queue: string[] = [];
+  for (const raw of options.seedTaskIds) {
+    const taskId = raw.trim();
+    if (!SAFE_TASK_ID.test(taskId) || seen.has(taskId)) continue;
+    seen.add(taskId);
+    queue.push(taskId);
+  }
+  const missingUp = new Set<string>();
+  const missingDown = new Set<string>();
+  const seed = seen.size;
+  let hops = 0;
+  let layerSize = queue.length;
+  let index = 0;
+  while (index < queue.length) {
+    if (layerSize === 0) {
+      layerSize = queue.length - index;
+      if (layerSize === 0) break;
+      hops += 1;
+    }
+    const taskId = queue[index]!;
+    index += 1;
+    layerSize -= 1;
+    for (const direction of directions) {
+      if (!options.lookup.hasEvidence(taskId, direction)) {
+        if (direction === "up") missingUp.add(taskId);
+        else missingDown.add(taskId);
+        continue;
+      }
+      for (const neighbor of options.lookup.neighbors(taskId, direction)) {
+        if (neighbor === taskId || seen.has(neighbor)) continue;
+        seen.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  return {
+    seed,
+    hops,
+    closure: sortTaskIds([...seen]),
+    missingUp: sortTaskIds([...missingUp]),
+    missingDown: sortTaskIds([...missingDown]),
+  };
+}
+
+/**
+ * File-cache BFS. Prefer expandHoraeRelationClosureFromSqlite for inventory work.
+ */
+export function expandHoraeRelationClosure(options: {
+  readonly cacheRoot: string;
+  readonly seedTaskIds: readonly string[];
+  readonly directions?: readonly HoraeRelationDirection[];
+}): HoraeRelationClosure {
+  return expandHoraeRelationClosureFromLookup({
+    seedTaskIds: options.seedTaskIds,
+    directions: options.directions,
+    lookup: {
+      hasEvidence: (taskId, direction) =>
+        readHoraeRelationCache(taskId, options.cacheRoot, direction).status ===
+        "HIT",
+      neighbors: (taskId, direction) => {
+        const cached = readHoraeRelationCache(
+          taskId,
+          options.cacheRoot,
+          direction,
+        );
+        if (cached.status !== "HIT") return [];
+        const ids: string[] = [];
+        for (const row of cached.rows) {
+          const neighbor = neighborIdFromRelationRow(row);
+          if (neighbor !== undefined) ids.push(neighbor);
+        }
+        return ids;
+      },
+    },
+  });
 }
 
 export function horaeRelationCommandArguments(
@@ -191,6 +313,7 @@ export function runHoraeRelation(
       : DEFAULT_HORAE_TIMEOUT_MS;
   const output = execFileSync(executable, executableArgs, {
     encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
     windowsHide: true,
     maxBuffer: 32 * 1024 * 1024,
     env: {
@@ -256,9 +379,7 @@ function nonNegativeInteger(
   return effective;
 }
 
-function parseDirection(
-  value: string | undefined,
-): HoraeRelationDirection {
+function parseDirection(value: string | undefined): HoraeRelationDirection {
   if (value === undefined) return DEFAULT_DIRECTION;
   if (value === "up" || value === "down") return value;
   throw new Error("DIRECTION_INVALID");
@@ -285,7 +406,8 @@ function selectedTaskIds(
   limit: number | undefined,
 ): string[] {
   if (limit === undefined) return [...taskIds];
-  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("LIMIT_INVALID");
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw new Error("LIMIT_INVALID");
   return taskIds.slice(0, limit);
 }
 
@@ -316,7 +438,10 @@ export async function fillHoraeRelationCache(
   const taskIds = selectedTaskIds(
     fromStartTaskId(
       sortTaskIds(
-        options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+        excludeManualTaskIds(
+          options.taskIds ?? taskIdsFromScheduleEvidenceCache(cacheRoot),
+          options.manualTaskIds ?? readManualTaskIds(cacheRoot),
+        ),
         order,
       ),
       options.startTaskId,
@@ -324,8 +449,7 @@ export async function fillHoraeRelationCache(
     ),
     options.limit,
   );
-  const gate =
-    options.gate ?? new HoraeSerialGate({ minIntervalMs });
+  const gate = options.gate ?? new HoraeSerialGate({ minIntervalMs });
   const runner = options.runner ?? runHoraeRelation;
   const now = options.now ?? (() => new Date());
   let skipped = 0;
@@ -402,7 +526,8 @@ function parseIntegerOption(
 }
 
 async function main(): Promise<void> {
-  const cacheRoot = option("--cache-root") ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
+  const cacheRoot =
+    option("--cache-root") ?? DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT;
   const direction = parseDirection(option("--direction"));
   const order = parseTaskIdOrder(option("--order"));
   const startTaskId = option("--start-task-id");
@@ -410,6 +535,10 @@ async function main(): Promise<void> {
   const minIntervalMs = parseIntegerOption("--interval-ms", undefined, true);
   const taskIdsFile = option("--task-ids-file");
   const taskIds = taskIdsFile ? taskIdsFromFile(taskIdsFile, order) : undefined;
+  const manualTaskIds = readManualTaskIds(
+    cacheRoot,
+    option("--manual-task-ids-file") ?? undefined,
+  );
   process.stderr.write(
     `[horae-relation-cache] start ${JSON.stringify({
       cacheRoot,
@@ -428,6 +557,7 @@ async function main(): Promise<void> {
     order,
     startTaskId,
     taskIds,
+    manualTaskIds,
     limit: parseIntegerOption("--limit", undefined, false),
     maxErrors,
     minIntervalMs,

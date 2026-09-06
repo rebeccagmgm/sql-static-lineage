@@ -85,6 +85,7 @@ export function indexCandidateFromContinuation(
   return {
     ...candidate.index,
     partitionMatchStatus: overlapToIndexPartition(candidate.partitionOverlap),
+    evidenceLayer: candidate.continuationEligible ? "L1" : "L2",
     l1Eligible: candidate.continuationEligible,
   };
 }

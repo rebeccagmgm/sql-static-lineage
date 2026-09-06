@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+	createTableLikeSource,
 	loadSchemaFromTablesRoot,
 	parseDdlSchema,
 } from "../scripts/plans/ddl-schema.ts";
@@ -43,6 +44,23 @@ describe("DDL schema reader", () => {
 
 		expect(result.columns).toEqual([]);
 		expect(result.warnings).toContain("table column list not found");
+	});
+
+	it("extracts the CREATE TABLE LIKE source name", () => {
+		expect(createTableLikeSource("CREATE TABLE demo.orders LIKE demo.base")).toBe(
+			"demo.base",
+		);
+		expect(
+			createTableLikeSource(
+				"create table if not exists dm_crd_n.wt_x like dm_crd_test.wt_x",
+			),
+		).toBe("dm_crd_test.wt_x");
+		expect(createTableLikeSource("create table m_acct_p like d_acct_p")).toBe(
+			"d_acct_p",
+		);
+		expect(createTableLikeSource("CREATE TABLE demo.orders (id string)")).toBe(
+			undefined,
+		);
 	});
 
 	it("derives output columns from a view defining SELECT", () => {

@@ -28,12 +28,9 @@ tmp-inspect-*.ts
 # Input pipeline scratch
 /scripts/input/tmp/
 
-# Local inspection artifacts (checked-in baselines live under field-evidence-v1/)
-/artifacts/demo/
-/artifacts/gold-case-dm-rsk-n/project-graph/
-/artifacts/gold-case-dm-rsk-n/_mem-probe/
-/artifacts/gold-case-dm-rsk-n/gold-case-gaps.jsonl
-/artifacts/gold-case-dm-rsk-n/gold-case-trace-report.json
+# Local inspection / query scratch (do not commit)
+/artifacts/
+/studies/
 
 # Editor / IDE local settings
 .vscode/

@@ -164,9 +164,14 @@ function minimalFieldEvidenceProjected(input: {
   });
 }
 
-function withContentHash(projection: Omit<TaskLocalProjection, "contentHash"> & { contentHash?: string }): TaskLocalProjection {
-  const contentHash = taskLocalProjectionContentHash({ ...projection, contentHash: "" } as TaskLocalProjection);
-  return { ...projection, contentHash } as TaskLocalProjection;
+function withContentHash(
+  projection: Omit<TaskLocalProjection, "contentHash" | "taskCategory" | "coverageDisposition"> & {
+    contentHash?: string;
+    taskCategory?: string | null;
+    coverageDisposition?: TaskLocalProjection["coverageDisposition"];
+  },
+): TaskLocalProjection {
+  return canonicalizeTaskLocalProjection(projection);
 }
 
 describe("task-local projection contract", () => {

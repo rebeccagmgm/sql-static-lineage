@@ -152,19 +152,34 @@ function endpointName(value: JsonValue | undefined): string | undefined {
     : undefined;
 }
 
-function tableCatalog(dataRoot: string): Map<string, TableEvidence> {
+interface TableCatalog {
+  /**
+   * Keeps the original catalog iteration order for ambiguous qualified names.
+   * `tablesForTask` deliberately retains the prior first-match behavior.
+   */
+  readonly byQualifiedName: ReadonlyMap<string, readonly TableEvidence[]>;
+}
+
+function tableCatalog(dataRoot: string): TableCatalog {
   const catalog = new Map<string, TableEvidence>();
   for (const path of walkNamedFiles(join(dataRoot, "tables"), "table.json")) {
     const table = readTablePack(path);
     if (table !== undefined) catalog.set(tableKey(table), table);
   }
-  return catalog;
+  const byQualifiedName = new Map<string, TableEvidence[]>();
+  for (const table of catalog.values()) {
+    const name = normalized(table.qualifiedName);
+    const matches = byQualifiedName.get(name);
+    if (matches === undefined) byQualifiedName.set(name, [table]);
+    else matches.push(table);
+  }
+  return { byQualifiedName };
 }
 
 function tablesForTask(
   document: TaskDocument,
   sql: Partial<Record<SqlSlot, string>>,
-  catalog: ReadonlyMap<string, TableEvidence>,
+  catalog: TableCatalog,
 ): TableEvidence[] {
   const target = endpointName(document.target as JsonValue | undefined);
   const names = new Set<string>(target === undefined ? [] : [target]);
@@ -188,9 +203,8 @@ function tablesForTask(
       : undefined;
   const result: TableEvidence[] = [];
   for (const name of names) {
-    const exact = [...catalog.values()].find(
+    const exact = catalog.byQualifiedName.get(normalized(name))?.find(
       (table) =>
-        normalized(table.qualifiedName) === normalized(name) &&
         (taskDataSource === undefined ||
           normalized(table.dataSource) === normalized(taskDataSource)) &&
         (taskPlatform === undefined ||

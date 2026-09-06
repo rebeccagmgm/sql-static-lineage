@@ -1,0 +1,43 @@
+import { describe, it, expect } from "vitest";
+import { parseAgentArgs } from "../src/asset-graph/cli.ts";
+describe("agent CLI argument contract", () => {
+  it("accepts an exact processing relation and requires its value", () => {
+    const a = parseAgentArgs([
+      "processing",
+      "--task-id",
+      "220650",
+      "--relation-id",
+      "relation:aggregate",
+    ]);
+    expect(a.option("--relation-id")).toBe("relation:aggregate");
+    expect(() => parseAgentArgs(["processing", "--relation-id"])).toThrow(
+      "ARGUMENT_VALUE_REQUIRED",
+    );
+  });
+  it("rejects misspelled options instead of broadening a query", () => {
+    expect(() => parseAgentArgs(["trace", "--task-idsx", "86842"])).toThrow(
+      "INVALID_ARGUMENT",
+    );
+  });
+  it("rejects missing values and unbounded traversal requests", () => {
+    expect(() => parseAgentArgs(["trace", "--column"])).toThrow(
+      "ARGUMENT_VALUE_REQUIRED",
+    );
+    const a = parseAgentArgs(["trace", "--depth", "100"]);
+    expect(() => a.integer("--depth", 4, 12)).toThrow("INVALID_ARGUMENT");
+  });
+  it("preserves explicit field scope and candidate policy", () => {
+    const a = parseAgentArgs([
+      "trace",
+      "--task-id",
+      "86842",
+      "--column",
+      "init_nom_prin",
+      "--write-id",
+      "write-observation:86842:8",
+      "--confirmed-only",
+    ]);
+    expect(a.option("--write-id")).toBe("write-observation:86842:8");
+    expect(a.flag("--confirmed-only")).toBe(true);
+  });
+});

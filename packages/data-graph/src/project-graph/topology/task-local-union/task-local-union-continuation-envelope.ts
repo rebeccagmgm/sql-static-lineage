@@ -1,7 +1,8 @@
 import { canonicalJson, sha256 } from "../../../contracts/runtime.ts";
-import type {
-  TaskLocalUnionBatchManifestRef,
-  TaskLocalUnionProducerIndexRef,
+import {
+  isUnionContinuationV2ProjectionSchema,
+  type TaskLocalUnionBatchManifestRef,
+  type TaskLocalUnionProducerIndexRef,
 } from "./task-local-union-contract.ts";
 import { compareText } from "../../contracts/project-topology-contract.ts";
 import type {
@@ -26,7 +27,7 @@ export interface UnionContinuationEvidenceEnvelope {
     readonly sourceMode: "TASK_LOCAL_UNION";
     readonly consumerTaskId: string;
     readonly readOccurrenceId: string;
-    readonly projectionSchemaVersion: "1.2.0";
+    readonly projectionSchemaVersion: "1.2.0" | "1.3.0";
     readonly taskProjections: readonly UnionContinuationTaskProjectionRef[];
     readonly producerIndex: TaskLocalUnionProducerIndexRef;
     readonly batchManifest: TaskLocalUnionBatchManifestRef;
@@ -85,7 +86,7 @@ export function buildUnionContinuationEvidenceEnvelope(
   const consumer = options.merge.taskEvidence.find(
     (evidence) => evidence.taskId === consumerTaskId,
   );
-  if (!consumer || consumer.projectionSchemaVersion !== "1.2.0") {
+  if (!consumer || !isUnionContinuationV2ProjectionSchema(consumer.projectionSchemaVersion)) {
     throw new Error(
       `UNION_CONTINUATION_ENVELOPE_CONSUMER_UNSUPPORTED:${consumerTaskId}`,
     );
@@ -106,7 +107,7 @@ export function buildUnionContinuationEvidenceEnvelope(
       sourceMode: "TASK_LOCAL_UNION",
       consumerTaskId,
       readOccurrenceId: options.result.readOccurrence.readOccurrenceId,
-      projectionSchemaVersion: "1.2.0",
+      projectionSchemaVersion: consumer.projectionSchemaVersion === "1.3.0" ? "1.3.0" : "1.2.0",
       taskProjections: options.merge.taskEvidence
         .map(taskProjectionRef)
         .sort((left, right) => compareText(left.taskId, right.taskId)),
