@@ -13,6 +13,12 @@
     "databricks"
   ],
   "scripts": {
+    "inventory-map:build": "node scripts/inventory-map/build.mjs",
+    "inventory-map:analysis-build": "node scripts/inventory-map/analysis-index.mjs",
+    "inventory-map:serve": "node scripts/inventory-map/server.mjs",
+    "inventory-map:query": "node scripts/inventory-map/cli.mjs",
+    "pretest:inventory-map": "npm run prepare:deps",
+    "test:inventory-map": "node --test scripts/inventory-map/build.test.mjs scripts/inventory-map/query.test.mjs scripts/inventory-map/analysis-index.test.mjs scripts/inventory-map/analysis-evidence.test.mjs scripts/inventory-map/analysis-query.test.mjs",
     "pretest:knowledge": "npm run prepare:deps",
     "test:knowledge": "vitest run tests/knowledge",
     "knowledge:query": "node scripts/knowledge/query.mjs",
@@ -133,6 +139,8 @@
     "input-pack:list-missing-evidence-sqlite": "tsx scripts/input/mainline/list-missing-evidence-sqlite.ts",
     "input-pack:fill-sparkindex-schedule-detail-cache": "tsx scripts/input/mainline/fill-sparkindex-schedule-detail-cache.ts",
     "input-pack:fill-missing": "tsx scripts/input/mainline/fill-missing-task-input-packs.ts",
+    "input-pack:fill-schedule-evidence-gap": "tsx scripts/input/mainline/run-schedule-evidence-pack-gap-fill.ts",
+    "machine-facts:fill-gap": "tsx scripts/machine-facts/run-field-facts-gap-fill.ts",
     "input-pack:rebuild-partitions": "tsx scripts/input/partition/rebuild-task-partition-evidence.ts",
     "input-pack:repair-stored": "tsx scripts/input/repair/repair-stored-input-packs.ts",
     "repair:missing-table-packs": "tsx scripts/input/repair/repair-missing-table-packs.ts",
