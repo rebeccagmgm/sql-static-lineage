@@ -40,7 +40,7 @@ import {
   terminalPolicyConfigHash,
   buildTerminalPolicySnapshot,
 } from "./terminal-policy.ts";
-export const ASSET_COMPILER_VERSION = "1.0.7";
+export const ASSET_COMPILER_VERSION = "1.0.8";
 export interface PublishedTask {
   taskId: string;
   path: string;
@@ -107,6 +107,9 @@ export function taskWriters(
       datasetNodeId: w.datasetNodeId,
       qualifiedName: w.qualifiedName,
       partition: parts,
+      ...(w.outputQualification === undefined
+        ? {}
+        : { outputQualification: w.outputQualification }),
     };
   });
 }
@@ -388,14 +391,21 @@ export async function publishAssetGraph(configPath?: string) {
             kind,
             layer: "field",
             owner: `__continue__${taskId}`,
-            status: c.partitionMatchStatus,
+            status:
+              c.outputQualification === "SQL_UNCONSUMED"
+                ? "CANDIDATE"
+                : c.partitionMatchStatus,
             detail: JSON.stringify({
               consumerTaskId: taskId,
               producerTaskId: c.taskId,
               readOccurrenceId: read.occurrence,
               writeObservationId: c.writeObservationId,
               partition: c.partition,
+              partitionMatchStatus: c.partitionMatchStatus,
               l1Eligible: c.l1Eligible,
+              ...(c.outputQualification === undefined
+                ? {}
+                : { outputQualification: c.outputQualification }),
             }),
           });
           if (c.l1Eligible) continuationCount++;

@@ -196,6 +196,37 @@ describe("closure-on-union C0/C1", () => {
     expect(source.candidatesForRead("other-task", "read-c")).toEqual([]);
   });
 
+  it.each(["PLATFORM_TARGET", "SQL_UNCONSUMED", undefined] as const)("retains %s output qualification without changing the index hash", (qualification) => {
+    const write = {
+      ...candidate(),
+      ...(qualification === undefined ? {} : { outputQualification: qualification }),
+      l1Eligible: qualification !== "SQL_UNCONSUMED",
+      evidenceLayer: qualification === "SQL_UNCONSUMED" ? "L2" as const : "L1" as const,
+    };
+    const value = index([entry("read-qualified", [write])]);
+    const source = createUnionContinuationCandidateSource(value);
+    expect(source.index.contentHash).toBe(value.contentHash);
+    expect(source.candidatesForRead("119044", "read-qualified")).toEqual([write]);
+  });
+
+  it.each([null, "CONFIRMED", "", 1])("rejects invalid explicit output qualification %s in the closure consumer", (qualification) => {
+    const value = index([entry("read-qualified", [candidate()])]);
+    const invalid = {
+      ...value,
+      entries: value.entries.map((item) => ({
+        ...item,
+        candidates: item.candidates.map((write) => ({ ...write, outputQualification: qualification })),
+      })),
+    };
+    expect(() => createUnionContinuationCandidateSource(invalid)).toThrow(/UNION_CONTINUATION_INDEX_FIELD_INVALID:.*\.outputQualification/);
+  });
+
+  it.each([true, false])("rejects a SQL-only output marked L1 with l1Eligible=%s", (l1Eligible) => {
+    const write = { ...candidate(), outputQualification: "SQL_UNCONSUMED" as const, l1Eligible };
+    const value = index([entry("read-qualified", [write])]);
+    expect(() => createUnionContinuationCandidateSource(value)).toThrow("UNION_CONTINUATION_INDEX_L1_ELIGIBILITY_INVALID");
+  });
+
   it("attaches exact scopes, prunes DISJOINT, counts one ambiguous read, and removes schedule-only branches", () => {
     const readId = "task:119044:statement:0:relation:root.c.read.t03_agt_stati_info_h";
     const continuation = createUnionContinuationCandidateSource(index([

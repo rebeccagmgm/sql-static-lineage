@@ -4,6 +4,7 @@ import {
   canonicalizeTaskLocalProjection,
   taskLocalProjectionContentHash,
   validateTaskLocalProjection,
+  type TaskLocalFinalWriteSummary,
   type TaskLocalProjection,
 } from "../../../scripts/project-graph/task-local/contract.ts";
 import {
@@ -179,6 +180,44 @@ describe("task-local projection contract", () => {
     const projection = minimalProjected();
     expect(() => validateTaskLocalProjection(projection)).not.toThrow();
     expect(projection.contentHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  describe("output qualification", () => {
+    function withQualification(outputQualification: unknown): TaskLocalProjection {
+      return minimalProjected({
+        localClosure: {
+          finalWrites: [{
+            writeObservationId: "write-observation:176827:platform-target:0",
+            targetWriteNodeId: TARGET_WRITE_NODE,
+            datasetNodeId: DATASET_NODE,
+            qualifiedName: "dm_rsk_n.otc_opt_greek_val_det_h",
+            ...(outputQualification === undefined ? {} : { outputQualification }),
+          } as TaskLocalFinalWriteSummary],
+          externalReads: [],
+          localFieldPaths: [],
+        },
+      });
+    }
+
+    it.each([undefined, "PLATFORM_TARGET", "SQL_UNCONSUMED"])(
+      "preserves the supported or legacy qualification %s",
+      (qualification) => {
+        const projection = withQualification(qualification);
+        expect(() => validateTaskLocalProjection(projection)).not.toThrow();
+        expect(projection.localClosure?.finalWrites[0].outputQualification).toBe(qualification);
+      },
+    );
+
+    it.each([null, "UNKNOWN", 42])("rejects an invalid qualification %s", (qualification) => {
+      expect(() => withQualification(qualification)).toThrow(
+        "TASK_LOCAL_PROJECTION_OUTPUT_QUALIFICATION_INVALID",
+      );
+    });
+
+    it("includes qualification changes in the projection content hash", () => {
+      expect(withQualification("PLATFORM_TARGET").contentHash)
+        .not.toBe(withQualification("SQL_UNCONSUMED").contentHash);
+    });
   });
 
   it("accepts 1.2.0 occurrence nodes and the two-hop READS shape", () => {

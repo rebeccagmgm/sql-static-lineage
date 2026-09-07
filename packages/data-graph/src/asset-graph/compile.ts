@@ -125,10 +125,21 @@ export function compileTask(
       readOccurrenceId: read.readOccurrenceId,
       ...terminalReads.get(read.readOccurrenceId),
     });
-  for (const write of p.localClosure?.finalWrites ?? [])
+  for (const write of p.localClosure?.finalWrites ?? []) {
+    const outputQualification = write.outputQualification;
     edge(taskNode, write.datasetNodeId, "WRITES_TABLE", "table", {
       writeObservationId: write.writeObservationId,
+      ...(outputQualification
+        ? {
+            outputQualification,
+            status:
+              outputQualification === "PLATFORM_TARGET"
+                ? "CONFIRMED"
+                : "CANDIDATE",
+          }
+        : {}),
     });
+  }
   const writePort = (target: string, column: string) => {
     const props = originals.get(target)?.properties ?? {};
     const id = portId("write-field", target, column);

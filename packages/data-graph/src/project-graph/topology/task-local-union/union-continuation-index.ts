@@ -10,6 +10,7 @@ import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
 import { traceUnionTaskContinuationV2 } from "./task-local-union-continuation-v2.ts";
 import {
   isUnionContinuationV2ProjectionSchema,
+  parseTaskLocalOutputQualification,
   type TaskLocalUnionBatchManifestRef,
   type TaskLocalUnionProducerIndexRef,
 } from "./task-local-union-contract.ts";
@@ -33,6 +34,7 @@ export interface UnionContinuationIndexCandidate {
   readonly datasetNodeId: string | null;
   readonly qualifiedName: string;
   readonly source: UnionContinuationCandidate["writeObservation"]["source"];
+  readonly outputQualification?: UnionContinuationCandidate["writeObservation"]["outputQualification"];
   readonly partitionMatchStatus: UnionContinuationCandidate["partitionMatchStatus"];
   readonly partition: readonly ProducerPartition[];
   readonly evidenceLayer: UnionContinuationCandidate["evidenceLayer"];
@@ -197,6 +199,13 @@ export function assertUnionContinuationIndex(
           `UNION_CONTINUATION_INDEX_CANDIDATE_DUPLICATE:${candidateKey}`,
         );
       candidateKeys.add(candidateKey);
+      parseTaskLocalOutputQualification(candidate.outputQualification);
+      if (
+        candidate.outputQualification === "SQL_UNCONSUMED" &&
+        (candidate.l1Eligible || candidate.evidenceLayer === "L1")
+      ) {
+        throw new Error("UNION_CONTINUATION_INDEX_L1_ELIGIBILITY_INVALID");
+      }
       if (
         candidate.source === "PRODUCER_INDEX_ONLY" ||
         candidate.partitionMatchStatus !== "CONFIRMED" ||
@@ -286,6 +295,9 @@ function indexCandidate(
     datasetNodeId: write.datasetNodeId,
     qualifiedName: write.qualifiedName,
     source: write.source,
+    ...(write.outputQualification === undefined
+      ? {}
+      : { outputQualification: write.outputQualification }),
     partitionMatchStatus: candidate.partitionMatchStatus,
     partition: write.partition,
     evidenceLayer: candidate.evidenceLayer,

@@ -174,6 +174,8 @@ export interface TaskLocalFinalWriteSummary {
   readonly targetWriteNodeId: string;
   readonly datasetNodeId: string;
   readonly qualifiedName: string;
+  /** Publication qualification; SQL_UNCONSUMED remains a candidate, not an L1 producer. */
+  readonly outputQualification?: "PLATFORM_TARGET" | "SQL_UNCONSUMED";
 }
 
 export interface TaskLocalExternalReadSummary {
@@ -497,6 +499,13 @@ export function validateTaskLocalProjection(projection: TaskLocalProjection): vo
 
   if (projection.localClosure) {
     for (const write of projection.localClosure.finalWrites) {
+      if (
+        write.outputQualification !== undefined
+        && write.outputQualification !== "PLATFORM_TARGET"
+        && write.outputQualification !== "SQL_UNCONSUMED"
+      ) {
+        throw new Error("TASK_LOCAL_PROJECTION_OUTPUT_QUALIFICATION_INVALID");
+      }
       if (!nodeIds.has(write.targetWriteNodeId) || !nodeIds.has(write.datasetNodeId)) {
         throw new Error("TASK_LOCAL_PROJECTION_CLOSURE_REFERENCE_MISSING");
       }

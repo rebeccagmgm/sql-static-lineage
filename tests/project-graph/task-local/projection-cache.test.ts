@@ -11,10 +11,12 @@ import {
   writeTaskInput,
 } from "../../../scripts/input/shared/input-pack.ts";
 import { projectTaskLocalBatch } from "../../../scripts/project-graph/task-local/project-task-local-batch.ts";
+import { canonicalizeTaskLocalProjection, taskLocalProjectionContentHash } from "../../../scripts/project-graph/task-local/contract.ts";
 import {
   packContentHashForTask,
   projectionBytesEqualIgnoringGeneratedAt,
   resolveTaskLocalCacheKeyParts,
+  storeTaskLocalProjectionCache,
   taskLocalCacheKey,
   taskLocalProjectionVersionPath,
 } from "../../../scripts/project-graph/task-local/projection-cache.ts";
@@ -37,7 +39,7 @@ function writeDemoTables(dataRoot: string): void {
   }
 }
 
-function writeDemoTask(dataRoot: string, taskId: string): void {
+function writeDemoTask(dataRoot: string, taskId: string, extraSql = ""): void {
   writeTaskInput(dataRoot, {
     taskId,
     taskCategory: "sparkIndex",
@@ -52,7 +54,7 @@ function writeDemoTask(dataRoot: string, taskId: string): void {
     sql: {
       query: {
         content:
-          "INSERT OVERWRITE TABLE demo.stati SELECT t.internal_trade_id AS internal_trade_id, t.v AS stati_cont_desc FROM demo.trades t",
+          `INSERT OVERWRITE TABLE demo.stati SELECT t.internal_trade_id AS internal_trade_id, t.v AS stati_cont_desc FROM demo.trades t; ${extraSql}`,
         evidenceProvider: "synthetic:test",
       },
     },
@@ -87,6 +89,54 @@ function mutatePackContentHash(dataRoot: string, taskId: string): string {
 }
 
 describe("task-local projection cache (TL-4)", () => {
+  it("invalidates primary-only generator 1.3.8 output and reuses the rebuilt multi-output projection", () => {
+    const taskId = "300098";
+    const { dataRoot, factsRoot } = setupProjectedTasks([taskId]);
+    writeDemoTask(dataRoot, taskId,
+      "INSERT OVERWRITE TABLE demo.trades SELECT internal_trade_id, stati_cont_desc AS v FROM demo.stati;");
+    expect(runInputPackMachineFacts({ dataRoot, taskIds: [taskId], outputRoot: factsRoot }).tasks[0]?.state)
+      .toBe("SUCCESS");
+    const current = projectTaskLocalBatch({ dataRoot, factsRoot, taskIds: [taskId] }).projections[0]!;
+    expect(current.localClosure).toBeDefined();
+    const currentClosure = current.localClosure!;
+    expect(currentClosure.finalWrites.map((write) => write.qualifiedName).sort())
+      .toEqual(["demo.stati", "demo.trades"]);
+    const legacyInput = {
+      ...current,
+      localClosure: {
+        ...currentClosure,
+        finalWrites: currentClosure.finalWrites
+          .filter((write) => write.qualifiedName === "demo.stati")
+          .map(({ outputQualification: _qualification, ...write }) => write),
+      },
+    };
+    const legacy = canonicalizeTaskLocalProjection({
+      ...legacyInput,
+      contentHash: taskLocalProjectionContentHash(legacyInput),
+    });
+    const outputRoot = mkdtempSync(join(tmpdir(), "task-local-generator-upgrade-"));
+    const legacyEnvelope = storeTaskLocalProjectionCache({
+      outputRoot,
+      cacheKeyParts: {
+        ...resolveTaskLocalCacheKeyParts({ taskId, dataRoot, factsRoot }),
+        generatorVersion: "1.3.8",
+      },
+      projection: legacy,
+    });
+    const legacyVersion = taskLocalProjectionVersionPath(outputRoot, taskId, legacyEnvelope.cacheKey);
+    const legacyBytes = readFileSync(legacyVersion, "utf8");
+
+    const rebuilt = projectTaskLocalBatch({ dataRoot, factsRoot, taskIds: [taskId], outputRoot });
+    expect(rebuilt.cache).toEqual({ hits: 0, misses: 1 });
+    expect(rebuilt.results[0]!.cacheKey).not.toBe(legacyEnvelope.cacheKey);
+    expect(rebuilt.projections[0]!.localClosure?.finalWrites).toEqual(currentClosure.finalWrites);
+    expect(readFileSync(legacyVersion, "utf8")).toBe(legacyBytes);
+
+    const hot = projectTaskLocalBatch({ dataRoot, factsRoot, taskIds: [taskId], outputRoot });
+    expect(hot.cache).toEqual({ hits: 1, misses: 0 });
+    expect(hot.projections[0]!.contentHash).toBe(rebuilt.projections[0]!.contentHash);
+  });
+
   it("keeps a published version readable after the current task changes", () => {
     const { dataRoot, factsRoot } = setupProjectedTasks(["300099"]);
     const outputRoot = mkdtempSync(join(tmpdir(), "task-local-immutable-"));

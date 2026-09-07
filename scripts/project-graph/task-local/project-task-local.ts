@@ -379,15 +379,46 @@ function isStaticPartitionMaterialization(materialization: JsonRecord): boolean 
   return text(materialization.producer_kind) === "STATIC_PARTITION_ASSIGNMENT";
 }
 
-function isFinalWrite(
+function hasPossibleLaterTaskRead(
+  writeIdentity: TaskLocalTableIdentity,
+  writeStatementIndex: number | undefined,
+  reads: readonly {
+    readonly identity: TaskLocalTableIdentity;
+    readonly statementIndex: number | undefined;
+  }[],
+): boolean {
+  if (writeStatementIndex === undefined) return true;
+  const writeDatasetNodeId = physicalDatasetNodeId(writeIdentity);
+  return reads.some(({ identity, statementIndex }) => {
+    if (statementIndex !== undefined && statementIndex <= writeStatementIndex) return false;
+    if (identity.identityStatus === "CONFIRMED") {
+      return physicalDatasetNodeId(identity) === writeDatasetNodeId;
+    }
+    if (!identity.originalName || identity.qualifiedName === writeIdentity.qualifiedName) return true;
+    // An unqualified, unresolved read is only a possible consumer. Block the
+    // SQL_UNCONSUMED claim; do not bind it to this write or promote its identity.
+    return !identity.qualifiedName.includes(".")
+      && identity.qualifiedName === writeIdentity.qualifiedName.split(".").at(-1);
+  });
+}
+
+function finalWriteQualification(
   physicalDataset: string,
   targetQualifiedName: string | null,
   writeKind: string | null,
-): boolean {
-  if (writeKind?.toUpperCase() === "CREATE_TABLE") return false;
+  hasPossibleLaterRead: boolean,
+  hasConfirmedIdentity: boolean,
+): "PLATFORM_TARGET" | "SQL_UNCONSUMED" | null {
+  if (writeKind?.toUpperCase() === "CREATE_TABLE") return null;
   const normalized = normalizeName(physicalDataset);
-  if (targetQualifiedName) return normalized === normalizeName(targetQualifiedName);
-  return !isTempLikeTableName(normalized);
+  if (targetQualifiedName && normalized === normalizeName(targetQualifiedName)) {
+    return "PLATFORM_TARGET";
+  }
+  // A non-target write is eligible only when this Task never reads it later.
+  // That separates observable SQL outputs from the Task's own materializations
+  // without claiming that a name alone proves a temporary table.
+  if (hasPossibleLaterRead || !hasConfirmedIdentity || isTempLikeTableName(normalized)) return null;
+  return "SQL_UNCONSUMED";
 }
 
 function taskLocalSourceFieldsForExpression(
@@ -572,6 +603,29 @@ function projectTaskLocalFromFacts(input: {
   const targetWriteNodes = new Map<string, string>();
   const finalWriteSummaries: TaskLocalFinalWriteSummary[] = [];
   const finalDatasetNames = new Set<string>();
+  const statementIndexById = new Map(
+    records(load.records["statements.jsonl"])
+      .filter((statement) => text(statement.task_id) === taskId)
+      .map((statement) => [text(statement.statement_id), statement.statement_index] as const)
+      .filter((entry): entry is readonly [string, number] =>
+        entry[0] !== null
+        && typeof entry[1] === "number"
+        && Number.isSafeInteger(entry[1])
+        && entry[1] >= 0,
+      ),
+  );
+  const taskReads = records(load.records["dataset-io.jsonl"])
+    .filter((read) => text(read.task_id) === taskId && String(read.direction ?? "").toUpperCase() === "READ")
+    .map((read) => ({
+      read,
+      statementIndex: statementIndexById.get(text(read.statement_id) ?? ""),
+      identity: resolveTaskLocalTableIdentity({
+        catalog,
+        rawName: String(read.physical_dataset ?? ""),
+        defaultSchema,
+        fallback: fallbackTable,
+      }),
+    }));
   for (const write of writeRecords) {
     const writeObservationId = text(write.write_observation_id)!;
     const baseIdentity = resolveTaskLocalTableIdentity({
@@ -633,19 +687,30 @@ function projectTaskLocalFromFacts(input: {
       toNodeId: datasetNodeId,
       properties: { writeObservationId },
     });
-    if (
-      isFinalWrite(
-        identity.qualifiedName,
-        pack?.target?.qualifiedName ?? null,
-        text(write.write_kind),
-      )
-    ) {
-      finalDatasetNames.add(identity.qualifiedName);
+    const writeStatementId = text(write.write_statement_id) ?? text(write.statement_id);
+    const writeStatementIndex = writeStatementId === null
+      ? undefined
+      : statementIndexById.get(writeStatementId);
+    const outputQualification = finalWriteQualification(
+      identity.qualifiedName,
+      pack?.target?.qualifiedName ?? null,
+      text(write.write_kind),
+      hasPossibleLaterTaskRead(identity, writeStatementIndex, taskReads),
+      identity.identityStatus === "CONFIRMED",
+    );
+    if (outputQualification !== null) {
+      // SELF_READ retains its pre-existing platform-target meaning. An
+      // SQL_UNCONSUMED output can have an earlier read of the same table, which
+      // is not evidence that the read consumed this Task's later write.
+      if (outputQualification === "PLATFORM_TARGET") {
+        finalDatasetNames.add(identity.qualifiedName);
+      }
       finalWriteSummaries.push({
         writeObservationId,
         targetWriteNodeId: writeNodeId,
         datasetNodeId,
         qualifiedName: identity.qualifiedName,
+        outputQualification,
       });
     }
   }
@@ -657,14 +722,7 @@ function projectTaskLocalFromFacts(input: {
     relationEdgeRecords: records(load.records["relation-edges.jsonl"]),
   });
   const externalReadSummaries: TaskLocalExternalReadSummary[] = [];
-  for (const read of records(load.records["dataset-io.jsonl"])) {
-    if (text(read.task_id) !== taskId || String(read.direction ?? "").toUpperCase() !== "READ") continue;
-    const baseIdentity = resolveTaskLocalTableIdentity({
-      catalog,
-      rawName: String(read.physical_dataset ?? ""),
-      defaultSchema,
-      fallback: fallbackTable,
-    });
+  for (const { read, identity: baseIdentity } of taskReads) {
     const rawReadDataset = normalizeName(String(read.physical_dataset ?? ""));
     const datasetMaterializations = materializationRecordsForDataset(
       materializationRecords,

@@ -13,6 +13,7 @@ import {
   runInputPackMachineFacts,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import { readJsonlRecords } from "../scripts/machine-facts/jsonl-store.ts";
+import { MACHINE_FACTS_ADAPTER_VERSION } from "../scripts/machine-facts/machine-facts-contract.ts";
 import {
   writeTableInput,
   writeTaskInput,
@@ -284,6 +285,156 @@ describe("Input Pack-driven Machine Facts", () => {
           localFieldNodeIds.has(edge.fromNodeId),
       ),
     ).toBe(false);
+  });
+
+  it.each(["demo.mid", "mid"])("isolates output sources across overwrites when reading %s", (readDataset) => {
+    const f = fixture();
+    for (const qualifiedName of ["demo.mid", "demo.result_a", "demo.result_b"]) {
+      writeTableInput(f.dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName,
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: `CREATE TABLE ${qualifiedName} (amount STRING);`,
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    }
+    writeTableInput(f.dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse",
+      qualifiedName: "demo.other",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.other (src_b STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    writeTaskInput(f.dataRoot, {
+      taskId: "1212",
+      taskCategory: "sparkIndex",
+      taskName: "demo.multiple_external_outputs",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.result_a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.mid SELECT src_a AS amount FROM demo.extra; " +
+            `INSERT OVERWRITE TABLE demo.result_a SELECT amount FROM ${readDataset}; ` +
+            "INSERT OVERWRITE TABLE demo.mid SELECT src_b AS amount FROM demo.other; " +
+            `INSERT OVERWRITE TABLE demo.result_b SELECT amount FROM ${readDataset};`,
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1212"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    const bundle = join(f.factsRoot, "registry", "tasks", "1212", "bundle");
+    expect(jsonl(join(bundle, "dataset-io.jsonl")).filter(
+      (row) => row.direction === "READ" && row.physical_dataset === readDataset,
+    )).toHaveLength(2);
+    expect(jsonl(join(bundle, "task-local-materializations.jsonl")).map((bridge) => ({
+      status: bridge.status,
+      readStatementId: bridge.read_statement_id,
+      writeStatementId: bridge.write_statement_id,
+    }))).toEqual([
+      {
+        status: "RESOLVED",
+        readStatementId: "task:1212:slot:query:statement:1",
+        writeStatementId: "task:1212:slot:query:statement:0",
+      },
+      {
+        status: "RESOLVED",
+        readStatementId: "task:1212:slot:query:statement:3",
+        writeStatementId: "task:1212:slot:query:statement:2",
+      },
+    ]);
+
+    const projection = projectTaskLocal({
+      dataRoot: f.dataRoot,
+      factsRoot: f.factsRoot,
+      taskId: "1212",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(projection.localClosure?.finalWrites.map((write) => ({
+      qualifiedName: write.qualifiedName,
+      outputQualification: write.outputQualification,
+    }))).toEqual([
+      { qualifiedName: "demo.result_a", outputQualification: "PLATFORM_TARGET" },
+      { qualifiedName: "demo.result_b", outputQualification: "SQL_UNCONSUMED" },
+    ]);
+    const nodesById = new Map(projection.nodes.map((node) => [node.nodeId, node]));
+    expect(projection.localClosure?.localFieldPaths.map((path) => ({
+      outputTable: nodesById.get(path.targetWriteNodeId)?.properties.qualifiedName,
+      outputColumn: path.outputColumn,
+      sourceTable: nodesById.get(path.sourceFieldNodeId)?.properties.qualifiedName,
+      sourceColumn: nodesById.get(path.sourceFieldNodeId)?.properties.column,
+    })).sort((left, right) => String(left.outputTable).localeCompare(String(right.outputTable)))).toEqual([
+      { outputTable: "demo.result_a", outputColumn: "amount", sourceTable: "demo.extra", sourceColumn: "src_a" },
+      { outputTable: "demo.result_b", outputColumn: "amount", sourceTable: "demo.other", sourceColumn: "src_b" },
+    ]);
+  });
+
+  it("fails closed when one parsed statement contains multiple INSERT targets", () => {
+    const f = fixture();
+    for (const qualifiedName of ["demo.result_a", "demo.result_b"]) {
+      writeTableInput(f.dataRoot, {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName,
+        objectType: "hive_table",
+        partitionFields: [],
+        ddl: `CREATE TABLE ${qualifiedName} (amount STRING);`,
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    }
+    writeTaskInput(f.dataRoot, {
+      taskId: "1213",
+      taskCategory: "hiveTask",
+      taskName: "demo.hive_multi_insert",
+      target: {
+        platform: "hive",
+        dataSource: "warehouse",
+        qualifiedName: "demo.result_a",
+      },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: {
+        query: {
+          content:
+            "FROM demo.source " +
+            "INSERT OVERWRITE TABLE demo.result_a SELECT amount " +
+            "INSERT OVERWRITE TABLE demo.result_b SELECT amount;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1213"],
+      outputRoot: f.factsRoot,
+    });
+    expect(result.tasks[0]).toMatchObject({
+      state: "FAILED",
+      failures: [expect.objectContaining({ message: expect.stringContaining("MULTI_WRITE_STATEMENT_UNSUPPORTED") })],
+    });
   });
 
   it("keeps repeated partitioned overwrites ambiguous without partition matching", () => {
@@ -1850,7 +2001,7 @@ describe("Input Pack-driven Machine Facts", () => {
           "utf8",
         ),
       ).method.adapter.version,
-    ).toBe("1.3.10");
+    ).toBe(MACHINE_FACTS_ADAPTER_VERSION);
   });
 
   it("builds a task-scoped schema bundle from physical SQL references", () => {

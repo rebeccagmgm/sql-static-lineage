@@ -24,6 +24,7 @@ export interface UnionContinuationIndexCandidate {
   readonly datasetNodeId: string | null;
   readonly qualifiedName: string;
   readonly source: ContinuationSource;
+  readonly outputQualification?: "PLATFORM_TARGET" | "SQL_UNCONSUMED";
   readonly partitionMatchStatus: ContinuationPartitionMatchStatus;
   readonly partition: readonly Readonly<Record<string, unknown>>[];
   readonly evidenceLayer: ContinuationEvidenceLayer;
@@ -94,6 +95,7 @@ const CONTINUATION_SOURCES = new Set<ContinuationSource>([
   "PRODUCER_INDEX_ONLY",
 ]);
 const EVIDENCE_LAYERS = new Set<ContinuationEvidenceLayer>(["L1", "L2"]);
+const OUTPUT_QUALIFICATIONS = new Set(["PLATFORM_TARGET", "SQL_UNCONSUMED"] as const);
 const PARTITION_PREDICATE_STATUSES = new Set<ContinuationPartitionPredicateStatus>([
   "NONE",
   "LITERAL",
@@ -180,6 +182,9 @@ function parseCandidate(value: unknown, path: string): UnionContinuationIndexCan
     datasetNodeId: nullableText(source.datasetNodeId, `${path}.datasetNodeId`),
     qualifiedName: text(source.qualifiedName, `${path}.qualifiedName`),
     source: enumValue(source.source, CONTINUATION_SOURCES, `${path}.source`),
+    ...(source.outputQualification === undefined ? {} : {
+      outputQualification: enumValue(source.outputQualification, OUTPUT_QUALIFICATIONS, `${path}.outputQualification`),
+    }),
     partitionMatchStatus: enumValue(source.partitionMatchStatus, PARTITION_MATCH_STATUSES, `${path}.partitionMatchStatus`),
     partition: recordArray(source.partition, `${path}.partition`),
     evidenceLayer: enumValue(source.evidenceLayer, EVIDENCE_LAYERS, `${path}.evidenceLayer`),
@@ -211,6 +216,12 @@ function parseEntry(value: unknown, path: string): UnionContinuationIndexEntry {
     gaps: array(source.gaps, `${path}.gaps`).map((item, index) => parseGap(item, `${path}.gaps[${index}]`)),
   };
   for (const candidate of entry.candidates) {
+    if (
+      candidate.outputQualification === "SQL_UNCONSUMED"
+      && (candidate.l1Eligible || candidate.evidenceLayer === "L1")
+    ) {
+      throw new Error(`UNION_CONTINUATION_INDEX_L1_ELIGIBILITY_INVALID:${candidate.writeObservationId}`);
+    }
     if (candidate.partitionMatchStatus === "DISJOINT" && !entry.prunedWriteObservationIds.includes(candidate.writeObservationId)) {
       throw new Error(`UNION_CONTINUATION_INDEX_PRUNED_CANDIDATE_MISSING:${candidate.writeObservationId}`);
     }

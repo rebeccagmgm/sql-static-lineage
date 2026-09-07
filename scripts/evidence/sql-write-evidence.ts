@@ -134,21 +134,28 @@ function balancedParenthesized(
 }
 
 function maskSqlCommentsAndStrings(sql: string): string {
-  const masked = [...sql];
-  let state: "CODE" | "SINGLE_QUOTE" | "LINE_COMMENT" | "BLOCK_COMMENT" =
-    "CODE";
+  // SQL spans and String#slice use UTF-16 offsets, not Unicode code points.
+  const masked = sql.split("");
+  let state: "CODE" | "LINE_COMMENT" | "BLOCK_COMMENT" = "CODE";
+  let quote: "'" | '"' | "`" | null = null;
   for (let index = 0; index < sql.length; index += 1) {
     const character = sql[index]!;
     const next = sql[index + 1];
-    if (state === "SINGLE_QUOTE") {
-      if (character !== "\n" && character !== "\r") masked[index] = " ";
+    if (quote) {
+      // Keep quoted identifiers matchable while hiding keywords and separators.
+      // The original target name is recovered from the same source offsets.
+      const replacement = quote === "'" ? " " : "_";
+      if (character !== "\n" && character !== "\r") masked[index] = replacement;
       if (character === "\\" && index + 1 < sql.length) {
-        if (next !== "\n" && next !== "\r") masked[index + 1] = " ";
+        if (next !== "\n" && next !== "\r") masked[index + 1] = replacement;
         index += 1;
-      } else if (character === "'" && next === "'") {
-        masked[index + 1] = " ";
+      } else if (character === quote && next === quote) {
+        masked[index + 1] = replacement;
         index += 1;
-      } else if (character === "'") state = "CODE";
+      } else if (character === quote) {
+        masked[index] = quote === "'" ? " " : quote;
+        quote = null;
+      }
       continue;
     }
     if (state === "LINE_COMMENT") {
@@ -165,9 +172,9 @@ function maskSqlCommentsAndStrings(sql: string): string {
       } else if (character !== "\n" && character !== "\r") masked[index] = " ";
       continue;
     }
-    if (character === "'") {
-      masked[index] = " ";
-      state = "SINGLE_QUOTE";
+    if (character === "'" || character === '"' || character === "`") {
+      masked[index] = character === "'" ? " " : character;
+      quote = character;
     } else if (character === "-" && next === "-") {
       masked[index] = " ";
       masked[index + 1] = " ";
@@ -190,14 +197,14 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
   const writes: SqlWrite[] = [];
   for (const match of maskedSql.matchAll(pattern)) {
     const start = match.index ?? 0;
-    const qualifiedName = normalizeTable(match[3]!);
+    const afterTarget = start + match[0].length;
+    const qualifiedName = normalizeTable(sql.slice(start + match[1]!.length, afterTarget));
     const matchedText = match[1]!.toUpperCase();
     const writeKind = matchedText.startsWith("MERGE")
       ? "MERGE_INTO"
       : match[2]!.toUpperCase() === "OVERWRITE"
         ? "INSERT_OVERWRITE"
         : "INSERT_INTO";
-    const afterTarget = start + match[0].length;
     const tail = maskedSql.slice(afterTarget);
     const partitionMatch = tail.match(/^\s*PARTITION\s*\(/i);
     const openingIndex = partitionMatch
@@ -222,12 +229,13 @@ export function extractSqlWrites(sql: string): SqlWrite[] {
     });
   }
   const ctasPattern =
-    /\bCREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"A-Za-z0-9_.-]+)\s+AS\s+(?=SELECT\b|WITH\b)/gi;
+    /\b(CREATE\s+(?:(?:OR\s+REPLACE|EXTERNAL|TEMPORARY|TEMP)\s+)*TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)([`"A-Za-z0-9_.-]+)\s+AS\s+(?=SELECT\b|WITH\b)/gi;
   for (const match of maskedSql.matchAll(ctasPattern)) {
     const start = match.index ?? 0;
+    const targetStart = start + match[1]!.length;
     const statementEnd = maskedSql.indexOf(";", start + match[0].length);
     writes.push({
-      qualifiedName: normalizeTable(match[1]!),
+      qualifiedName: normalizeTable(sql.slice(targetStart, targetStart + match[2]!.length)),
       writeKind: "CTAS",
       statementSpan: {
         start,

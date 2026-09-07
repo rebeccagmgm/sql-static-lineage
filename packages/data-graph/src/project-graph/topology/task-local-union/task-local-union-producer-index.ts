@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 
-import type { TaskLocalUnionProducerIndexRef } from "./task-local-union-contract.ts";
+import {
+  parseTaskLocalOutputQualification,
+  type TaskLocalFinalWrite,
+  type TaskLocalUnionProducerIndexRef,
+} from "./task-local-union-contract.ts";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
 
@@ -10,6 +14,7 @@ export interface ProducerIndexWriter {
   readonly writeObservationId?: string;
   readonly datasetNodeId?: string;
   readonly qualifiedName?: string;
+  readonly outputQualification?: TaskLocalFinalWrite["outputQualification"];
   readonly partition?: readonly {
     readonly column: string;
     readonly values: readonly string[];
@@ -55,11 +60,17 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
         ? (record.table as Record<string, unknown>)
         : null;
     const qualifiedName = table ? text(table.qualifiedName) : null;
+    const edgeQualification = parseTaskLocalOutputQualification(
+      record.outputQualification,
+    );
     const writes = Array.isArray(record.writes) ? record.writes : [];
     if (writes.length === 0) {
       writers.push({
         taskId,
         qualifiedName: qualifiedName ?? undefined,
+        ...(edgeQualification === undefined
+          ? {}
+          : { outputQualification: edgeQualification }),
       });
       continue;
     }
@@ -71,6 +82,15 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
         return;
       }
       const writeRecord = write as Record<string, unknown>;
+      const writeQualification = parseTaskLocalOutputQualification(
+        writeRecord.outputQualification,
+      );
+      // An explicit candidate cannot be upgraded by broader task/table evidence.
+      const outputQualification =
+        edgeQualification === "SQL_UNCONSUMED" ||
+        writeQualification === "SQL_UNCONSUMED"
+          ? "SQL_UNCONSUMED"
+          : writeQualification ?? edgeQualification;
       writers.push({
         taskId,
         writeObservationId:
@@ -80,6 +100,7 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
           text(record.write_observation_id) ??
           `write-observation:${taskId}:${index}`,
         qualifiedName: qualifiedName ?? undefined,
+        ...(outputQualification === undefined ? {} : { outputQualification }),
         partition: parsePartition(writeRecord),
       });
     });

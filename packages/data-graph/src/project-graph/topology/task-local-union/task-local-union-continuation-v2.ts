@@ -59,6 +59,7 @@ export interface UnionContinuationWriteObservation {
     | "IN_UNION_FINAL_WRITE"
     | "PRODUCER_INDEX_ONLY"
     | "SCHEDULE_RELATION_TABLE";
+  readonly outputQualification?: TaskLocalProjectionClosure["finalWrites"][number]["outputQualification"];
   readonly partition: readonly ProducerPartition[];
   readonly partitionStatus: string | null;
 }
@@ -470,6 +471,10 @@ function collectWriteObservations(
       datasetNodeId: item.write.datasetNodeId,
       qualifiedName: item.write.qualifiedName,
       source: "IN_UNION_FINAL_WRITE",
+      ...outputQualificationProperties(
+        item.write.outputQualification,
+        producer?.outputQualification,
+      ),
       partition: producer?.partition ?? [],
       partitionStatus: producer ? partitionStatusOf(producer) : "UNKNOWN",
     };
@@ -509,6 +514,10 @@ function collectWriteObservations(
             datasetNodeId: write.datasetNodeId,
             qualifiedName: write.qualifiedName,
             source: "SCHEDULE_RELATION_TABLE",
+            ...outputQualificationProperties(
+              write.outputQualification,
+              producer?.outputQualification,
+            ),
             partition: producer?.partition ?? [],
             partitionStatus: producer ? partitionStatusOf(producer) : "UNKNOWN",
           },
@@ -539,6 +548,7 @@ function collectWriteObservations(
         datasetNodeId: writer.datasetNodeId ?? null,
         qualifiedName: writer.qualifiedName ?? read.qualifiedName,
         source: "PRODUCER_INDEX_ONLY",
+        ...outputQualificationProperties(writer.outputQualification),
         partition: writer.partition ?? [],
         partitionStatus: partitionStatusOf(writer),
       },
@@ -742,11 +752,22 @@ function isL1Eligible(
   status: PartitionMatchStatus,
 ): boolean {
   return (
+    write.outputQualification !== "SQL_UNCONSUMED" &&
     read.identityStatus === "CONFIRMED" &&
     (write.source === "IN_UNION_FINAL_WRITE" ||
       write.source === "SCHEDULE_RELATION_TABLE") &&
     status === "CONFIRMED"
   );
+}
+
+function outputQualificationProperties(
+  ...qualifications: readonly UnionContinuationWriteObservation["outputQualification"][]
+): Pick<UnionContinuationWriteObservation, "outputQualification"> {
+  // Preserve the candidate boundary even when another matching source is legacy.
+  const outputQualification = qualifications.includes("SQL_UNCONSUMED")
+    ? "SQL_UNCONSUMED"
+    : qualifications.find((qualification) => qualification !== undefined);
+  return outputQualification === undefined ? {} : { outputQualification };
 }
 
 function sameDataset(

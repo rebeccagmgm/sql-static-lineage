@@ -3,9 +3,10 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { canonicalJson, datasetId, fieldId, sha256, safeSegment, stripVolatile } from "../scripts/machine-facts/machine-facts-contract.ts";
+import { extractSqlWrites } from "../scripts/evidence/sql-write-evidence.ts";
+import { MACHINE_FACTS_ADAPTER_VERSION, canonicalJson, datasetId, fieldId, sha256, safeSegment, stripVolatile } from "../scripts/machine-facts/machine-facts-contract.ts";
 import { gzipCanonicalBytes, gzipJsonlPath, inspectJsonlStore, readJsonlRecords, readJsonlText } from "../scripts/machine-facts/jsonl-store.ts";
-import { inputDependencyStatus, mergeSchemaEvidence, processProfile, rebuildIndex, relationNeedsMissingSchema } from "../scripts/machine-facts/machine-facts.ts";
+import { inputDependencyStatus, mergeSchemaEvidence, processProfile, rebuildIndex, relationNeedsMissingSchema, validateBundle } from "../scripts/machine-facts/machine-facts.ts";
 
 const workspace = resolve(import.meta.dirname, "..");
 const roots: string[] = [];
@@ -106,6 +107,119 @@ describe("machine facts contract", () => {
 		const secondManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 		expect(secondManifest.inputs.sql_sha256).not.toBe(firstManifest.inputs.sql_sha256);
 		expect(rebuildIndex(join(f.root, "machine-facts")).count).toBe(1);
+	});
+
+	it("rebuilds a valid pre-multi-write-guard cache once and then reuses the new adapter output", () => {
+		const f = fixture();
+		expect(processProfile(f.profile, f.output, "test-source").tasks[0]?.status).toBe("CREATED");
+		const taskRoot = join(f.root, "machine-facts", "registry", "tasks", "test-task");
+		const bundle = join(taskRoot, "bundle");
+		const manifestPath = join(bundle, "manifest.json");
+		const statusPath = join(taskRoot, "analysis-status.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+		const status = JSON.parse(readFileSync(statusPath, "utf8"));
+		// Reproduce the previous adapter's exact configuration fingerprint without
+		// corrupting its supported SQL, stored records, or integrity evidence.
+		const legacyConfigHash = sha256(canonicalJson({
+			contract_version: manifest.schema_version,
+			adapter_version: "1.3.10",
+			plan_adapter_version: manifest.method.plan_adapter.version,
+			logical_source_id: "test-source",
+			dialect: manifest.method.dialect,
+			declared_outputs: ["demo.target"],
+			sql_slot: null,
+			input_pack_provenance: null,
+			platform_target_query_output: null,
+			write_partition_evidence: null,
+			sql_write_partition_evidence: null,
+			include_expression_dependencies: true,
+		}));
+		manifest.method.adapter.version = "1.3.10";
+		manifest.inputs.analysis_config_sha256 = legacyConfigHash;
+		status.requested.analysis_config_sha256 = legacyConfigHash;
+		status.current_manifest_sha256 = sha256(canonicalJson(manifest));
+		writeFileSync(manifestPath, canonicalJson(manifest), "utf8");
+		writeFileSync(statusPath, canonicalJson(status), "utf8");
+		expect(validateBundle(bundle)).toEqual([]);
+		expect(rebuildIndex(join(f.root, "machine-facts")).count).toBe(1);
+
+		const upgraded = processProfile(f.profile, f.output, "test-source");
+		expect(upgraded.tasks[0]?.status).toBe("REPLACED");
+		const upgradedManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+		expect(upgradedManifest.method.adapter.version).toBe(MACHINE_FACTS_ADAPTER_VERSION);
+		expect(upgradedManifest.inputs.analysis_config_sha256).not.toBe(legacyConfigHash);
+		expect(upgradedManifest.inputs.sql_sha256).toBe(manifest.inputs.sql_sha256);
+		expect(upgradedManifest.inputs.schema_bundle_sha256).toBe(manifest.inputs.schema_bundle_sha256);
+		const hot = processProfile(f.profile, f.output, "test-source");
+		expect(hot.tasks[0]?.status).toBe("REUSED");
+		expect(hot.tasks[0]?.manifest_sha256).toBe(upgraded.tasks[0]?.manifest_sha256);
+	});
+
+	it.each([
+		'"INSERT INTO demo.fake"',
+		String.raw`"text \" INSERT INTO demo.fake"`,
+		'"text "" INSERT INTO demo.fake"',
+		'`INSERT INTO demo.fake`',
+		'`text `` INSERT INTO demo.fake`',
+	])("does not enumerate write keywords inside quoted content %s", (quoted) => {
+		const sql = `INSERT OVERWRITE TABLE demo.target SELECT ${quoted} AS id FROM demo.source;`;
+		expect(extractSqlWrites(sql)).toEqual([
+			expect.objectContaining({
+				qualifiedName: "demo.target",
+				writeKind: "INSERT_OVERWRITE",
+				statementSpan: { start: 0, end: sql.length - 1 },
+			}),
+		]);
+	});
+
+	it.each(['"Demo"."Target"', '`Demo`.`Target`'])
+		("preserves quoted targets, partitions and UTF-16 offsets for %s", (target) => {
+			const prefix = 'SELECT "😀 -- /* INSERT INTO demo.fake; */";\n/* INSERT INTO demo.comment; */\n';
+			const insert = `INSERT OVERWRITE TABLE ${target} PARTITION (\`dt\` = "INSERT INTO demo.literal; x,y)") SELECT id FROM demo.source`;
+			const create = `CREATE TABLE ${target} AS SELECT "CREATE TABLE demo.fake AS SELECT 1;" AS id`;
+			const merge = `MERGE INTO ${target} USING demo.source ON 1 = 1 WHEN MATCHED THEN DELETE`;
+			const sql = `${prefix}${insert};\n-- INSERT INTO demo.comment\n${create};\n${merge};`;
+			const writes = extractSqlWrites(sql);
+			expect(writes.map((write) => [write.qualifiedName, write.writeKind, write.statementOrdinal]))
+				.toEqual([
+					["demo.target", "INSERT_OVERWRITE", 1],
+					["demo.target", "CTAS", 2],
+					["demo.target", "MERGE_INTO", 3],
+				]);
+			expect(writes.map((write) => sql.slice(write.statementSpan.start, write.statementSpan.end)))
+				.toEqual([insert, create, merge]);
+			expect(writes[0]).toMatchObject({
+				partitionMode: "STATIC",
+				partitionFields: ["dt"],
+				partition: [{
+					field: "dt",
+					expression: '"INSERT INTO demo.literal; x,y)"',
+					valueStatus: "OBSERVED_RENDERED_VALUE",
+					observedValue: "INSERT INTO demo.literal; x,y)",
+				}],
+			});
+		});
+
+	it("builds Machine Facts when a double-quoted string contains INSERT text", () => {
+		const f = fixture();
+		writeFileSync(f.sql,
+			'INSERT OVERWRITE TABLE demo.target SELECT "INSERT INTO demo.fake" AS id FROM demo.source;\n', "utf8");
+		const result = processProfile(f.profile, f.output, "test-source");
+		expect(result.tasks[0]).toMatchObject({ state: "SUCCESS", status: "CREATED", failures: [] });
+		const io = readJsonlRecords(join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle", "dataset-io.jsonl"));
+		expect(io.filter((row) => row.direction === "WRITE" && row.field_producing === true).map((row) => row.physical_dataset))
+			.toEqual(["demo.target"]);
+	});
+
+	it("still rejects two real INSERT branches in a single Machine Facts statement", () => {
+		const f = fixture();
+		writeFileSync(f.sql,
+			'FROM demo.source INSERT OVERWRITE TABLE demo.target SELECT id INSERT INTO demo.target SELECT id;\n', "utf8");
+		const result = processProfile(f.profile, f.output, "test-source");
+		expect(result.tasks[0]).toMatchObject({
+			state: "FAILED",
+			failures: [expect.objectContaining({ message: expect.stringContaining("MULTI_WRITE_STATEMENT_UNSUPPORTED") })],
+		});
 	});
 
 	it("binds root SELECT expressions to an explicit INSERT target by target schema order", () => {

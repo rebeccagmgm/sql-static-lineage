@@ -57,6 +57,60 @@ describe("published asset field graph", () => {
     expect(new Set([...a.reads, ...b.reads].map((r) => r.id)).size).toBe(4);
   });
 
+  it("keeps SQL-unconsumed secondary outputs visible but candidate-qualified", () => {
+    const p = projection("outputs");
+    const enriched = {
+      ...p,
+      nodes: [
+        ...p.nodes,
+        {
+          nodeId: "dataset:primary",
+          nodeType: "PHYSICAL_DATASET",
+          properties: { qualifiedName: "demo.result_a" },
+        },
+        {
+          nodeId: "dataset:secondary",
+          nodeType: "PHYSICAL_DATASET",
+          properties: { qualifiedName: "demo.result_b" },
+        },
+      ],
+      localClosure: {
+        ...p.localClosure,
+        finalWrites: [
+          {
+            writeObservationId: "outputs:a",
+            targetWriteNodeId: "write:outputs:a",
+            datasetNodeId: "dataset:primary",
+            qualifiedName: "demo.result_a",
+            outputQualification: "PLATFORM_TARGET",
+          },
+          {
+            writeObservationId: "outputs:b",
+            targetWriteNodeId: "write:outputs:b",
+            datasetNodeId: "dataset:secondary",
+            qualifiedName: "demo.result_b",
+            outputQualification: "SQL_UNCONSUMED",
+          },
+        ],
+      },
+    } as unknown as TaskLocalProjection;
+
+    const writes = compileTask(enriched).edges.filter(
+      (edge) => edge.kind === "WRITES_TABLE",
+    );
+    expect(writes).toHaveLength(2);
+    expect(writes.map((edge) => ({ status: edge.status, detail: JSON.parse(edge.detail) }))).toEqual([
+      expect.objectContaining({
+        status: "CONFIRMED",
+        detail: expect.objectContaining({ outputQualification: "PLATFORM_TARGET" }),
+      }),
+      expect.objectContaining({
+        status: "CANDIDATE",
+        detail: expect.objectContaining({ outputQualification: "SQL_UNCONSUMED" }),
+      }),
+    ]);
+  });
+
   it("marks reference reads as policy terminals while retaining local value and table evidence", () => {
     const p = projection("1");
     const read = {

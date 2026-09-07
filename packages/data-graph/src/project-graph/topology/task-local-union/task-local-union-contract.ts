@@ -98,6 +98,7 @@ export interface TaskLocalFinalWrite {
   readonly targetWriteNodeId: string;
   readonly datasetNodeId: string;
   readonly qualifiedName: string;
+  readonly outputQualification?: "PLATFORM_TARGET" | "SQL_UNCONSUMED";
 }
 
 export interface TaskLocalExternalRead {
@@ -404,11 +405,15 @@ function parseLocalClosure(
   }
   const finalWrites = record.finalWrites.map((item) => {
     const write = objectRecord(item);
+    const outputQualification = parseTaskLocalOutputQualification(
+      write.outputQualification,
+    );
     return {
       writeObservationId: requiredText(write.writeObservationId),
       targetWriteNodeId: requiredText(write.targetWriteNodeId),
       datasetNodeId: requiredText(write.datasetNodeId),
       qualifiedName: requiredText(write.qualifiedName),
+      ...(outputQualification === undefined ? {} : { outputQualification }),
     } satisfies TaskLocalFinalWrite;
   });
   const externalReads = record.externalReads.map((item) => {
@@ -434,6 +439,19 @@ function parseLocalClosure(
       ? { localFieldPaths: record.localFieldPaths }
       : {}),
   };
+}
+
+/** Missing qualification is a legacy projection; explicit invalid values fail closed. */
+export function parseTaskLocalOutputQualification(
+  value: unknown,
+): TaskLocalFinalWrite["outputQualification"] {
+  if (
+    value === undefined ||
+    value === "PLATFORM_TARGET" ||
+    value === "SQL_UNCONSUMED"
+  )
+    return value;
+  throw new Error("TASK_LOCAL_PROJECTION_OUTPUT_QUALIFICATION_INVALID");
 }
 
 function objectRecord(value: unknown): Record<string, unknown> {

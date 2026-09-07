@@ -1379,6 +1379,14 @@ function buildTaskBundle(
 		const statementId = statementSlot
 			? `task:${task.task_id}:slot:${statementSlot}:statement:${localOrdinal}`
 			: `task:${task.task_id}:statement:${statementIndex}`;
+		const statementWrites = extractSqlWrites(rawSql);
+		if (statementWrites.length > 1) {
+			throw new Error(
+				`MULTI_WRITE_STATEMENT_UNSUPPORTED:${task.task_id}:${statementId}:${statementWrites
+					.map((write) => write.qualifiedName)
+					.join(",")}`,
+			);
+		}
 		const parsedWrite = parseSqlWrite(rawSql);
 		const extractedWrite = parsedWrite === null
 			? undefined

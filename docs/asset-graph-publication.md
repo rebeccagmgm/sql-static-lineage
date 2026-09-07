@@ -9,6 +9,40 @@ The graph is `UPDATING` until all local owners and affected continuation owners
 are written. A successful run changes it to `READY`; a repeated publish of the
 same prepared manifest returns `UNCHANGED`.
 
+## Multi-write output qualification
+
+Task-local `finalWrites` distinguishes the configured main target from other
+SQL output candidates through the optional `outputQualification` field:
+
+- `PLATFORM_TARGET`: the write matches the configured target. Its table-write
+  edge is `CONFIRMED`; cross-task L1 eligibility still requires the existing
+  identity and partition checks.
+- `SQL_UNCONSUMED`: a non-primary write with confirmed physical identity and
+  no detected later task-local read, subject to the temporary-name guard. Its
+  table-write edge and cross-task continuation remain candidates, not L1
+  evidence. A confirmed partition match does not change this qualification.
+- Missing qualification: legacy projections keep their previous behavior.
+  Explicit invalid values are rejected rather than silently treated as legacy.
+
+Later task-local consumption is an intermediate-role signal, not proof that a
+table can never be consumed externally. This conservative classification does
+not establish a complete output inventory or a temporary table's lifecycle.
+
+Read and write classification uses the same resolved physical identity; an
+unqualified table name must not make an intermediate write look unconsumed.
+Repeated writes retain separate write observations and field-source paths.
+
+Multiple SQL statements are supported. A single statement with multiple write
+branches fails explicitly with `MULTI_WRITE_STATEMENT_UNSUPPORTED`; SQL keywords
+inside quoted values, quoted identifiers, or comments are not write branches.
+
+After upgrading, regenerate affected Facts and prepare a new projection
+manifest before publication. Versioned cache fingerprints invalidate the old
+Facts/projection/compiler results; rerunning `graph:publish` against an old
+prepared manifest alone does not regenerate its SQL evidence or output list.
+
+## Retention
+
 Task-local projection versions are not deleted during preparation or cache
 writes. After `READY`, cleanup keeps cache keys named by every readable
 `current.json` and `prepared.json` manifest below the shared graph root. It
