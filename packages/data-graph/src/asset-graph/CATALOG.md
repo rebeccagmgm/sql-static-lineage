@@ -21,6 +21,12 @@ flowchart LR
 `COLUMN` 按已确认的 **平台、数据源、限定表名、列名** 标识。同一资产在不同任务中
 得到相同目录 ID；读写字段继续按各自读次和写观察区分。
 
+自连接的同一物理字段可对应多个读取字段。例如 `a.amount + b.amount AS total`，
+当结构化字段引用分别确认两个别名的读取位置时，会生成两个 `READ_FIELD`，
+各以 `VALUE` 指向同一个 `WRITE_FIELD(total)`。同一别名重复引用仍共用读取字段；
+无法唯一定位的引用继续保留未解析状态。此修复需要重新生成 Facts、任务局部投影及图；
+仅重新编译旧 Facts 无法恢复已丢失的别名。依赖适配器版本为 `0.5.1`，投影生成器版本为 `1.3.8`。
+
 原有 `PHYSICAL_FIELD` 是输入 Facts 的字段身份，保持原 ID，通过
 `IDENTIFIES_COLUMN` 关联目录字段。当前任务投影的表节点没有 `stableTableId`，
 因此目录不伪造一个 Facts 输出字段 ID；`COLUMN` 有独立的 `DATASET_COLUMN` 身份范围。

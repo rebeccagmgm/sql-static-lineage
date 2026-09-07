@@ -231,6 +231,8 @@ export function resolveSourceReadOccurrence(input: {
   readonly sourceColumn: string;
   readonly inputField: JsonRecord;
   readonly expressionText?: string | null;
+  /** A single structured reference, already separated from its sibling inputs. */
+  readonly referenceQualifier?: string;
   readonly leafRelationId: string | null;
   readonly index: RelationTreeIndex;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
@@ -258,15 +260,21 @@ export function resolveSourceReadOccurrence(input: {
     ]),
   ];
 
-  const matches = narrowByQualifiers({
-    matches: matchingReads({
-      index: input.index,
-      leafRelationId: input.leafRelationId,
-      sourceTable: input.sourceTable,
-    }),
-    qualifiers,
-    bindingByReadRelation: input.bindingByReadRelation,
+  const candidates = matchingReads({
+    index: input.index,
+    leafRelationId: input.leafRelationId,
+    sourceTable: input.sourceTable,
   });
+  const referenceQualifier = input.referenceQualifier;
+  const matches = referenceQualifier
+    ? candidates.filter((relation) => relationMatchesQualifier(
+      relation, referenceQualifier, input.bindingByReadRelation,
+    ))
+    : narrowByQualifiers({
+      matches: candidates,
+      qualifiers,
+      bindingByReadRelation: input.bindingByReadRelation,
+    });
   if (matches.length === 1) {
     const relation = matches[0]!;
     const occurrenceId = readOccurrenceIdForRelation(

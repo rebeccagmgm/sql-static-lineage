@@ -89,8 +89,9 @@ export function buildFieldEvidenceIndexes(
     const relationId = text(relation.relation_id);
     if (!relationId) continue;
     const body = relationBody(relation);
-    const rawExpressions = Array.isArray(body.expressions)
-      ? body.expressions.map(record).filter((item): item is JsonRecord => item !== null)
+    const expressionRecords = body.expressions ?? body.measures;
+    const rawExpressions = Array.isArray(expressionRecords)
+      ? expressionRecords.map(record).filter((item): item is JsonRecord => item !== null)
       : [];
     if (rawExpressions.length > 0) relationExpressionsByRelationId.set(relationId, rawExpressions);
     if (String(relation.relation_type ?? "").toLowerCase() === "read") {
@@ -157,11 +158,11 @@ export function expressionAcceptsSourceField(
   });
 }
 
-function relationQualifierForSourceField(input: {
+function relationQualifiersForSourceField(input: {
   readonly expression: JsonRecord;
   readonly sourceField: PhysicalFieldIdentity;
   readonly indexes: FieldEvidenceIndexes;
-}): string | null {
+}): readonly string[] | null {
   const relationId = text(input.expression.relation_id);
   const outputName = text(input.expression.output_name);
   if (!relationId || !outputName) return null;
@@ -193,7 +194,7 @@ function relationQualifierForSourceField(input: {
     if (!qualifier) return null;
     qualifiers.add(normalizeName(qualifier));
   }
-  return matchedSource && qualifiers.size === 1 ? [...qualifiers][0]! : null;
+  return matchedSource && qualifiers.size > 0 ? [...qualifiers].sort() : null;
 }
 
 export function emitFieldEvidenceForInput(input: {
@@ -240,42 +241,48 @@ export function emitFieldEvidenceForInput(input: {
       sourceExpression,
       input.sourceField,
     );
-    const relationQualifier = relationQualifierForSourceField({
-      expression: context.expression,
+    const relationQualifiers = relationQualifiersForSourceField({
+      expression: sourceExpression,
       sourceField: input.sourceField,
       indexes: input.indexes,
     });
-    const sourceResolution = resolveSourceReadOccurrence({
-      taskId: input.taskId,
-      expressionId: directSource
-        ? context.expressionId
-        : input.expanded.leafExpressionId ?? context.expressionId,
-      sourceTable: input.sourceField.qualifiedName,
-      sourceColumn: input.sourceField.column,
-      inputField: relationQualifier
-        ? { ...branchInputField, qualifier: relationQualifier }
-        : branchInputField,
-      expressionText: text(context.expression.expression_text),
-      leafRelationId,
-      index: input.indexes.relationTree,
-      readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
-      bindingByReadRelation: input.indexes.bindingByReadRelation,
-    });
-    const expressionSubtype = classifyExpressionSubtype(
-      context.expression,
-      relationTypeForExpression(input.indexes, context.relationId),
-    );
-    const composed = composePathSubtype([
-      ...input.expanded.subtypeHops,
-      expressionSubtype,
-    ]);
-    outputs.push({
-      expressionContexts: [context],
-      sourceResolution,
-      subtype: composed.subtype,
-      subtypeReason: composed.subtypeReason,
-      leafRelationId,
-    });
+    // Split only structured physical references, never the set of possible reads.
+    for (const relationQualifier of relationQualifiers ?? [null]) {
+      const sourceResolution = resolveSourceReadOccurrence({
+        taskId: input.taskId,
+        expressionId: directSource
+          ? context.expressionId
+          : input.expanded.leafExpressionId ?? context.expressionId,
+        sourceTable: input.sourceField.qualifiedName,
+        sourceColumn: input.sourceField.column,
+        inputField: relationQualifier
+          ? { ...branchInputField, qualifier: relationQualifier }
+          : branchInputField,
+        expressionText: text(context.expression.expression_text),
+        ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
+          ? { referenceQualifier: relationQualifier }
+          : {}),
+        leafRelationId,
+        index: input.indexes.relationTree,
+        readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
+        bindingByReadRelation: input.indexes.bindingByReadRelation,
+      });
+      const expressionSubtype = classifyExpressionSubtype(
+        context.expression,
+        relationTypeForExpression(input.indexes, context.relationId),
+      );
+      const composed = composePathSubtype([
+        ...input.expanded.subtypeHops,
+        expressionSubtype,
+      ]);
+      outputs.push({
+        expressionContexts: [context],
+        sourceResolution,
+        subtype: composed.subtype,
+        subtypeReason: composed.subtypeReason,
+        leafRelationId,
+      });
+    }
   }
   return outputs;
 }

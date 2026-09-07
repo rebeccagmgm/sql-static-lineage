@@ -38,7 +38,7 @@ describe("source-read-occurrence", () => {
       buildRelationTreeIndex(relationNodes),
       relationEdges,
     );
-    const resolution = resolveSourceReadOccurrence({
+    const input = {
       taskId: "task-1",
       expressionId: "expr:0",
       sourceTable: "demo.source",
@@ -48,11 +48,16 @@ describe("source-read-occurrence", () => {
       index,
       readOccurrenceByRelationId: new Map([["rel:read:0", "occ:0"]]),
       bindingByReadRelation: new Map([["rel:read:0", "s"]]),
-    });
+    };
+    const resolution = resolveSourceReadOccurrence(input);
     expect(resolution.sourceReadOccurrenceStatus).toBe("RESOLVED");
     expect(resolution.sourceReadOccurrenceId).toBe("occ:0");
     expect(resolution.sourceRelationId).toBe("rel:read:0");
     expect(resolution.gap).toBeNull();
+    expect(resolveSourceReadOccurrence({
+      ...input,
+      referenceQualifier: "missing_alias",
+    }).sourceReadOccurrenceStatus).toBe("UNRESOLVED");
   });
 
   it("marks self-join reads without qualifier as ambiguous", () => {

@@ -127,6 +127,9 @@ function containsExpressionSubquery(e: Expr | null | undefined): boolean {
   }
 }
 
+// In-memory provenance only; these supplemental origins carry no syntactic alias.
+const nativeOriginRefs = new WeakSet<ColumnRef>();
+
 /**
  * Keep the adapter's syntactic references, but add the physical origins already
  * proven by sql-static-lineage's native expression lineage walk.  The latter is
@@ -149,12 +152,14 @@ function inputColumnsFor(
     for (const origin of originsOfExpr(e, scope, schema as SchemaProvider)) {
       const table = origin.table.join(".");
       if (!schemaContainsField(schema, table, origin.column, dialect)) continue;
-      out.push({
+      const ref: ColumnRef = {
         name: displayName(origin.column, dialect),
         clause,
         physical: [{ table, column: displayName(origin.column, dialect) }],
         resolution: "PHYSICAL",
-      });
+      };
+      nativeOriginRefs.add(ref);
+      out.push(ref);
     }
   } catch (error) {
     // Keep the existing syntactic path as a fallback, but never hide the
@@ -518,18 +523,28 @@ function dedupePhysicalInputColumns(
   preserveOccurrenceQualifier = false,
 ): ColumnRef[] {
   const seen = new Set<string>();
+  const seenPhysical = new Set<string>();
   return refs.flatMap((ref) => {
     if (ref.resolution !== "PHYSICAL" || !ref.physical?.length) return [ref];
     const qualifier = preserveOccurrenceQualifier
       ? (ref.qualifier?.toLowerCase() ?? "")
       : "";
     const physical = ref.physical.filter((item) => {
+      const physicalKey = `${item.table}.${item.column}`.toLowerCase();
+      // Native origins supplement syntactic refs but have no read qualifier.
+      // Do not reintroduce an unqualified copy of an already witnessed input.
+      if (
+        preserveOccurrenceQualifier
+        && nativeOriginRefs.has(ref)
+        && seenPhysical.has(physicalKey)
+      ) return false;
       // A physical field can occur through two aliases of the same table.
       // Keep those READ-occurrence bindings distinct; only duplicate evidence
       // for the same syntactic qualifier is removed.
       const key = `${qualifier}\u0000${item.table}.${item.column}`.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
+      seenPhysical.add(physicalKey);
       return true;
     });
     return physical.length > 0 ? [{ ...ref, physical }] : [];
@@ -1465,7 +1480,7 @@ function nativeHopProjection(
 const CONTRACT_VERSION = "1.4.0";
 const ADAPTER_VERSION = "0.5.0";
 const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.4.0";
-export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.5.0";
+export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.5.1";
 
 export function buildPlanFacts(
   cell: { scopes: ScopeTree; span: { start: number } },
@@ -2809,6 +2824,7 @@ export function buildPlanFacts(
         if (measure.input_columns)
           measure.input_columns = dedupePhysicalInputColumns(
             measure.input_columns,
+            true,
           );
         for (const role of measure.expression_roles ?? [])
           role.input_columns = dedupePhysicalInputColumns(role.input_columns);
@@ -2818,6 +2834,7 @@ export function buildPlanFacts(
         if (expression.input_columns)
           expression.input_columns = dedupePhysicalInputColumns(
             expression.input_columns,
+            true,
           );
         for (const binding of expression.window_spec?.input_bindings ?? [])
           binding.input_columns = dedupePhysicalInputColumns(

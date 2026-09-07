@@ -76,7 +76,7 @@ function resolveFastDerivedFixture(
       subtypeHops: [],
     },
     indexes,
-  })[0]!.sourceResolution;
+  }).map((emission) => emission.sourceResolution);
 }
 
 describe("field-evidence emission branch scoping", () => {
@@ -493,8 +493,8 @@ describe("field-evidence emission branch scoping", () => {
     expect(emit(expressions[1]!)[0]?.sourceResolution.sourceReadOccurrenceId).toBe("occ:np");
   });
 
-  it("keeps FAST np plus dy physical inputs ambiguous", () => {
-    const resolution = resolveFastDerivedFixture([
+  it("splits FAST np plus dy physical inputs into their proven reads", () => {
+    const resolutions = resolveFastDerivedFixture([
       {
         output: "Dyna_Nom_Prin",
         expr_text: "coalesce(np.amount + dy.amount, '0') as Dyna_Nom_Prin",
@@ -504,12 +504,12 @@ describe("field-evidence emission branch scoping", () => {
         ],
       },
     ]);
-    expect(resolution.sourceReadOccurrenceStatus).toBe("AMBIGUOUS");
-    expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
+    expect(resolutions.map((resolution) => resolution.sourceReadOccurrenceStatus)).toEqual(["RESOLVED", "RESOLVED"]);
+    expect(resolutions.map((resolution) => resolution.sourceReadOccurrenceId).sort()).toEqual(["occ:dy", "occ:np"]);
   });
 
   it("keeps a qualified plus unqualified physical input ambiguous", () => {
-    const resolution = resolveFastDerivedFixture([
+    const [resolution] = resolveFastDerivedFixture([
       {
         output: "Dyna_Nom_Prin",
         expr_text: "coalesce(np.amount + amount, '0') as Dyna_Nom_Prin",
@@ -579,7 +579,7 @@ describe("field-evidence emission branch scoping", () => {
   });
 
   it("keeps duplicate raw output expressions ambiguous", () => {
-    const resolution = resolveFastDerivedFixture([
+    const [resolution] = resolveFastDerivedFixture([
       {
         output: "Dyna_Nom_Prin",
         expr_text: "np.amount as Dyna_Nom_Prin",
