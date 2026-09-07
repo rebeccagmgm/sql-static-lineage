@@ -361,6 +361,78 @@ describe("buildWritePartitionParts", () => {
     ]);
   });
 
+  it("retains a write-bound Pack template when Facts partition binding is unknown", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "odata_n_tit.d_ref_instrument",
+      statementSql: "select 1",
+      packPartition: { busi_date: "${YYYY-MM-DD}" },
+      packTarget: { qualifiedName: "odata_n_tit.d_ref_instrument" },
+      targetWriteCount: 1,
+      writeObservationId: "platform-target:0",
+      factsWrite: {
+        write_observation_id: "platform-target:0",
+        physical_dataset: "odata_n_tit.d_ref_instrument",
+        partition_mode: "UNKNOWN",
+        partition_status: "COMPLETE",
+        partition_binding_status: "UNKNOWN",
+        partition_columns: ["busi_date"],
+        partition_assignments: [],
+      },
+    });
+    expect(parts).toEqual([
+      expect.objectContaining({
+        column: "busi_date",
+        values: ["${YYYY-MM-DD}"],
+        valueStatus: "RUNTIME_EXPRESSION",
+        observedValue: "${YYYY-MM-DD}",
+        partitionStatus: "STATIC",
+      }),
+    ]);
+  });
+
+  it("does not bypass a conflicting Facts partition status with a Pack", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "odata_n_tit.d_ref_instrument",
+      statementSql: "select 1",
+      packPartition: { busi_date: "${YYYY-MM-DD}" },
+      packTarget: { qualifiedName: "odata_n_tit.d_ref_instrument" },
+      targetWriteCount: 1,
+      writeObservationId: "platform-target:0",
+      factsWrite: {
+        write_observation_id: "platform-target:0",
+        physical_dataset: "odata_n_tit.d_ref_instrument",
+        partition_mode: "UNKNOWN",
+        partition_status: "CONFLICT",
+        partition_columns: ["busi_date"],
+        partition_assignments: [{ field: "busi_date", status: "UNKNOWN" }],
+      },
+    });
+    expect(parts).toEqual([
+      expect.objectContaining({ column: "busi_date", values: [], partitionStatus: "UNKNOWN" }),
+    ]);
+  });
+
+  it("does not retain a Pack partition for an unknown multi-write target", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "odata_n_tit.d_ref_instrument",
+      statementSql: "select 1",
+      packPartition: { busi_date: "${YYYY-MM-DD}" },
+      packTarget: { qualifiedName: "odata_n_tit.d_ref_instrument" },
+      targetWriteCount: 2,
+      writeObservationId: "platform-target:0",
+      factsWrite: {
+        write_observation_id: "platform-target:0",
+        physical_dataset: "odata_n_tit.d_ref_instrument",
+        partition_mode: "UNKNOWN",
+        partition_columns: ["busi_date"],
+        partition_assignments: [{ field: "busi_date", status: "UNKNOWN" }],
+      },
+    });
+    expect(parts).toEqual([
+      expect.objectContaining({ column: "busi_date", values: [], partitionStatus: "UNKNOWN" }),
+    ]);
+  });
+
   it("does not apply a task Pack without the write-bound Facts target evidence", () => {
     const parts = buildWritePartitionParts({
       qualifiedName: "dm.target",

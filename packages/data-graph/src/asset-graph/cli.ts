@@ -5,6 +5,7 @@ import { startAssetGraphServer, taskDetail } from "./service.ts";
 import { processingDetail, CLI_HELP } from "./agent-api.ts";
 import { resolveWorkspacePaths } from "../../../../scripts/config/workspace-paths.ts";
 import { readPublishedContinuationMetrics } from "./continuation-metrics-query.ts";
+import { readPublishedContinuationCandidates } from "./continuation-candidates-query.ts";
 const allowed = new Set([
   "--config",
   "--text",
@@ -27,7 +28,11 @@ const allowed = new Set([
   "--confirmed-only",
   "--sql",
   "--gap-layer",
+  "--reason-code",
   "--terminal-role",
+  "--read-occurrence-id",
+  "--consumer-task-id",
+  "--publication-version",
 ]);
 export function parseAgentArgs(args: readonly string[]) {
   const command = args[0] ?? "help",
@@ -81,7 +86,29 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
         data: readPublishedContinuationMetrics({
           graphOutputRoot: paths.graphOutputRoot,
           gapLayer: option("--gap-layer"),
+          reasonCode: option("--reason-code"),
+          publicationVersion: option("--publication-version"),
           terminalRole: option("--terminal-role"),
+          offset: integer("--offset", 0, 1_000_000),
+          limit: integer("--limit", 25, 100, 1),
+        }),
+      }));
+      return;
+    }
+    if (command === "query-read-candidates") {
+      const readOccurrenceId = option("--read-occurrence-id");
+      if (!readOccurrenceId)
+        throw new Error("ARGUMENT_VALUE_REQUIRED:--read-occurrence-id");
+      const paths = resolveWorkspacePaths({ configPath: config });
+      console.log(JSON.stringify({
+        schemaVersion: "1.0.0",
+        ok: true,
+        command,
+        data: readPublishedContinuationCandidates({
+          graphOutputRoot: paths.graphOutputRoot,
+          readOccurrenceId,
+          consumerTaskId: option("--consumer-task-id"),
+          publicationVersion: option("--publication-version"),
           offset: integer("--offset", 0, 1_000_000),
           limit: integer("--limit", 25, 100, 1),
         }),

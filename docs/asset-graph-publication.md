@@ -57,3 +57,23 @@ instance setting and is intentionally not changed by this command. For the
 bytes to 10 / 2,248,579,770 bytes. The configured retention remains `2 days
 2G`; the proposed `1 days 1G` setting has not been authorized because it would
 apply to the instance's other databases as well.
+
+## Published continuation evidence queries
+
+These commands are read-only and resolve `current.json` to that publication's
+immutable `union-continuation-index.json`; they do not prepare, publish, write
+evidence, or connect to Neo4j.
+
+```powershell
+npm run graph:query -- metrics --gap-layer actionable --reason-code WRITER_PARTITION_UNKNOWN --limit 2 --offset 0
+npm run graph:query -- query-read-candidates --read-occurrence-id '<read-occurrence-id>' --publication-version '<publication-version>' --limit 2 --offset 0
+```
+
+The reason-code option only filters the paged `metrics.items`; global metrics
+always describe the complete frozen INDEX. Candidate queries expose the INDEX's
+recorded matching status and read/write partition evidence without inferring
+an L1 result. The INDEX contains only the read partition predicate status, so
+the query does not reopen a newer projection to fetch predicate literals.
+Reuse the returned `publicationVersion` on later pages; a changed current
+publication fails instead of silently switching snapshots. If the same read
+occurrence ID exists under multiple consumers, pass `--consumer-task-id`.

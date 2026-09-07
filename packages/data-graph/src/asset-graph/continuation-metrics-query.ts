@@ -27,6 +27,8 @@ export type ContinuationGapLayer = (typeof CONTINUATION_GAP_LAYERS)[number];
 export function readPublishedContinuationMetrics(input: {
   graphOutputRoot: string;
   gapLayer?: string;
+  reasonCode?: string;
+  publicationVersion?: string;
   offset?: number;
   limit?: number;
   terminalRole?: string;
@@ -42,46 +44,39 @@ export function readPublishedContinuationMetrics(input: {
     !CONTINUATION_GAP_LAYERS.some((layer) => layer === input.gapLayer)
   )
     throw new Error("INVALID_ARGUMENT:--gap-layer");
+  if (input.reasonCode !== undefined && input.reasonCode.trim().length === 0)
+    throw new Error("INVALID_ARGUMENT:--reason-code");
   if (input.gapLayer && input.terminalRole)
     throw new Error("INVALID_ARGUMENT:--gap-layer_and_--terminal-role");
   if (input.terminalRole && input.terminalRole !== "REFERENCE_CONFIG")
     throw new Error("INVALID_ARGUMENT:--terminal-role");
-  const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
-  const current = read(join(input.graphOutputRoot, "current.json"));
-  const publication = read(current.publicationPath);
-  if (publication.version !== current.version)
-    throw new Error("CONTINUATION_PUBLICATION_VERSION_MISMATCH");
-  const index = read(
-    join(dirname(current.publicationPath), "union-continuation-index.json"),
-  ) as UnionContinuationIndex;
-  assertUnionContinuationIndex(index);
-  const pinnedIndexHash = publication.continuationIndexContentHash;
-  if (pinnedIndexHash !== undefined && pinnedIndexHash !== index.contentHash)
-    throw new Error("CONTINUATION_PUBLICATION_INDEX_MISMATCH");
+  const { publication, index, pinnedIndexHash, policyTerminals } =
+    loadPublishedContinuationIndex({
+      graphOutputRoot: input.graphOutputRoot,
+      publicationVersion: input.publicationVersion,
+    });
   const confirmed = publication.confirmedFieldContinuations;
   const candidate = publication.candidateFieldContinuations;
-  const hasEdgeCounts =
+  const confirmedCount =
+    typeof confirmed === "number" &&
     Number.isSafeInteger(confirmed) &&
-    confirmed >= 0 &&
+    confirmed >= 0
+      ? confirmed
+      : null;
+  const candidateCount =
+    typeof candidate === "number" &&
     Number.isSafeInteger(candidate) &&
-    candidate >= 0;
-  const terminalPolicyHash = publication.terminalPolicyContentHash;
-  const policyTerminals: TerminalPolicySnapshot["reads"] = terminalPolicyHash
-    ? (() => {
-        const snapshot = read(
-          join(dirname(current.publicationPath), "terminal-policy.json"),
-        ) as TerminalPolicySnapshot;
-        assertTerminalPolicySnapshot(snapshot, index.contentHash, terminalPolicyHash);
-        return snapshot.reads;
-      })()
-    : [];
+    candidate >= 0
+      ? candidate
+      : null;
+  const hasEdgeCounts = confirmedCount !== null && candidateCount !== null;
   const metrics = calculateContinuationMetrics({
     index,
     policyTerminals,
     continuationEdgeMetrics: hasEdgeCounts
       ? {
-          totalContinuationEdges: confirmed + candidate,
-          confirmedContinuationEdges: confirmed,
+          totalContinuationEdges: confirmedCount + candidateCount,
+          confirmedContinuationEdges: confirmedCount,
         }
       : undefined,
   });
@@ -91,7 +86,9 @@ export function readPublishedContinuationMetrics(input: {
           ? withoutPolicyContinuationGaps(entry)
           : entry;
         const gaps = classifyContinuationGaps(policyEntry).filter(
-          (gap) => gap.group === input.gapLayer,
+          (gap) =>
+            gap.group === input.gapLayer &&
+            (input.reasonCode === undefined || gap.reasonCode === input.reasonCode),
         );
         return gaps.length
           ? [
@@ -157,5 +154,57 @@ export function readPublishedContinuationMetrics(input: {
           },
         }
       : {}),
+  };
+}
+
+/** Read the immutable INDEX located by one published snapshot. */
+export function loadPublishedContinuationIndex(input: {
+  graphOutputRoot: string;
+  publicationVersion?: string;
+}): {
+  publication: Record<string, unknown>;
+  publicationPath: string;
+  index: UnionContinuationIndex;
+  pinnedIndexHash: unknown;
+  policyTerminals: TerminalPolicySnapshot["reads"];
+} {
+  const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
+  const current = read(join(input.graphOutputRoot, "current.json"));
+  const publicationPath = String(current.publicationPath);
+  const publication = read(publicationPath) as Record<string, unknown>;
+  if (publication.version !== current.version)
+    throw new Error("CONTINUATION_PUBLICATION_VERSION_MISMATCH");
+  if (
+    input.publicationVersion !== undefined &&
+    input.publicationVersion !== publication.version
+  )
+    throw new Error("CONTINUATION_PUBLICATION_VERSION_CHANGED");
+  const index = read(
+    join(dirname(publicationPath), "union-continuation-index.json"),
+  ) as UnionContinuationIndex;
+  assertUnionContinuationIndex(index);
+  const pinnedIndexHash = publication.continuationIndexContentHash;
+  if (pinnedIndexHash !== undefined && pinnedIndexHash !== index.contentHash)
+    throw new Error("CONTINUATION_PUBLICATION_INDEX_MISMATCH");
+  const terminalPolicyHash = publication.terminalPolicyContentHash;
+  const policyTerminals: TerminalPolicySnapshot["reads"] = terminalPolicyHash
+    ? (() => {
+        const snapshot = read(
+          join(dirname(publicationPath), "terminal-policy.json"),
+        ) as TerminalPolicySnapshot;
+        assertTerminalPolicySnapshot(
+          snapshot,
+          index.contentHash,
+          String(terminalPolicyHash),
+        );
+        return snapshot.reads;
+      })()
+    : [];
+  return {
+    publication,
+    publicationPath,
+    index,
+    pinnedIndexHash,
+    policyTerminals,
   };
 }

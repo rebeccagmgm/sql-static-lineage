@@ -40,4 +40,20 @@ describe("agent CLI argument contract", () => {
     expect(a.option("--write-id")).toBe("write-observation:86842:8");
     expect(a.flag("--confirmed-only")).toBe(true);
   });
+  it("accepts bounded published read-candidate query options", () => {
+    const a = parseAgentArgs([
+      "query-read-candidates",
+      "--read-occurrence-id",
+      "read-occurrence:119044:0",
+      "--consumer-task-id",
+      "119044",
+      "--publication-version",
+      "f88164",
+      "--limit",
+      "25",
+    ]);
+    expect(a.option("--read-occurrence-id")).toBe("read-occurrence:119044:0");
+    expect(a.option("--publication-version")).toBe("f88164");
+    expect(a.integer("--limit", 25, 100, 1)).toBe(25);
+  });
 });

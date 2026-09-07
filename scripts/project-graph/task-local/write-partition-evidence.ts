@@ -19,6 +19,7 @@ export interface WritePartitionFacts {
   readonly write_observation_id?: unknown;
   readonly physical_dataset?: unknown;
   readonly partition_mode?: unknown;
+  readonly partition_status?: unknown;
   readonly partition_binding_status?: unknown;
   readonly partition_columns?: unknown;
   readonly partition_assignments?: unknown;
@@ -369,15 +370,28 @@ function factColumns(facts: WritePartitionFacts): string[] {
   return [...new Set([...fromAssignments, ...fromColumns].map((column) => column.toLowerCase()))];
 }
 
-function factsConflictOrUnknown(facts: WritePartitionFacts): boolean {
+function factsHaveConflict(facts: WritePartitionFacts): boolean {
+  if (text(facts.partition_status)?.toUpperCase() === "CONFLICT") return true;
   const bindingStatus = text(facts.partition_binding_status)?.toUpperCase();
-  if (bindingStatus === "CONFLICT" || bindingStatus === "UNKNOWN") return true;
+  if (bindingStatus === "CONFLICT") return true;
   return Array.isArray(facts.partition_assignments) && facts.partition_assignments.some(
     (assignment) => {
       if (!assignment || typeof assignment !== "object" || Array.isArray(assignment))
         return true;
       const status = text((assignment as Record<string, unknown>).status)?.toUpperCase();
-      return status === "CONFLICT" || status === "UNKNOWN";
+      return status === "CONFLICT";
+    },
+  );
+}
+
+function factsHaveUnknownBinding(facts: WritePartitionFacts): boolean {
+  const bindingStatus = text(facts.partition_binding_status)?.toUpperCase();
+  if (bindingStatus === "UNKNOWN") return true;
+  return Array.isArray(facts.partition_assignments) && facts.partition_assignments.some(
+    (assignment) => {
+      if (!assignment || typeof assignment !== "object" || Array.isArray(assignment))
+        return true;
+      return text((assignment as Record<string, unknown>).status)?.toUpperCase() === "UNKNOWN";
     },
   );
 }
@@ -419,6 +433,14 @@ function sameColumns(left: readonly WritePartitionPart[], right: readonly string
   return actual.size === right.length && right.every((column) => actual.has(column));
 }
 
+function hasExactNonEmptyFactColumns(
+  parts: readonly WritePartitionPart[],
+  facts: WritePartitionFacts,
+): boolean {
+  const columns = factColumns(facts);
+  return columns.length > 0 && parts.length === columns.length && sameColumns(parts, columns);
+}
+
 /** Resolve write-side partition parts using only evidence bound to this write observation. */
 export function buildWritePartitionParts(input: {
   readonly qualifiedName: string;
@@ -451,8 +473,13 @@ export function buildWritePartitionParts(input: {
       ? partsFromPackPartition(input.packPartition)
       : [];
 
-  if (boundFacts && (mode === "UNKNOWN" || factsConflictOrUnknown(facts!)))
+  if (boundFacts && factsHaveConflict(facts!))
     return unknownParts(facts);
+  if (boundFacts && mode === "UNKNOWN") {
+    if (canUsePack && hasExactNonEmptyFactColumns(packParts, facts!)) return packParts;
+    return unknownParts(facts);
+  }
+  if (boundFacts && factsHaveUnknownBinding(facts!)) return unknownParts(facts);
   if (boundFacts && mode === "DYNAMIC") {
     const assignments = Array.isArray(facts!.partition_assignments) ? facts!.partition_assignments : [];
     const parts = assignments.flatMap((assignment) => {
