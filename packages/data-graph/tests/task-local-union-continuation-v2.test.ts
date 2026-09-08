@@ -498,6 +498,43 @@ describe("union-continuation-v2 (WP-8)", () => {
     ).toBe("CONFIRMED");
   });
 
+  it("keeps intraday batch labels distinct when matching partitions", () => {
+    const read = {
+      readOccurrenceId: "read:1",
+      readOccurrenceNodeId: "node:1",
+      datasetNodeId: TABLE_ID,
+      qualifiedName: "odata_n_tit.d_ref_counterparty_p",
+      identityStatus: "CONFIRMED" as const,
+      partitionPredicateStatus: "LITERAL" as const,
+      partitionPredicates: [{ column: "busi_date", values: ["h15"] }],
+    };
+    const writeBase = {
+      datasetNodeId: TABLE_ID,
+      qualifiedName: "odata_n_tit.d_ref_counterparty_p",
+      source: "IN_UNION_FINAL_WRITE" as const,
+      partitionStatus: "STATIC" as const,
+    };
+
+    expect(
+      partitionMatchStatus(read, {
+        ...writeBase,
+        taskId: "160827",
+        writeObservationId: "write-observation:160827:0",
+        targetWriteNodeId: "target-write:160827:0",
+        partition: [{ column: "busi_date", values: ["h15"] }],
+      }),
+    ).toBe("CONFIRMED");
+    expect(
+      partitionMatchStatus(read, {
+        ...writeBase,
+        taskId: "160828",
+        writeObservationId: "write-observation:160828:0",
+        targetWriteNodeId: "target-write:160828:0",
+        partition: [{ column: "busi_date", values: ["h1930"] }],
+      }),
+    ).toBe("DISJOINT");
+  });
+
   it("ignores unconstrained writer partition columns such as grp_id", () => {
     const read = {
       readOccurrenceId: "read:1",
