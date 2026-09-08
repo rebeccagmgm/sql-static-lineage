@@ -34,3 +34,4 @@ tmp-inspect-*.ts
 
 # Editor / IDE local settings
 .vscode/
+/docs/.obsidian/
