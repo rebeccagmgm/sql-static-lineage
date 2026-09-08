@@ -1923,6 +1923,10 @@ describe("Input Pack-driven Machine Facts", () => {
     });
     expect(second.tasks[0]?.state).toBe("FAILED");
     expect(second.index.count).toBe(1);
+		expect(second.timings).toMatchObject({
+			index_requested_mode: "incremental",
+			index_mode: "incremental",
+		});
     const indexedTaskIds = readFileSync(
       join(f.factsRoot, "indexes", "task-fact-index.jsonl"),
       "utf8",
@@ -1933,6 +1937,33 @@ describe("Input Pack-driven Machine Facts", () => {
       .map((line) => JSON.parse(line).task_id);
     expect(indexedTaskIds).toEqual(["100"]);
   });
+
+	it("uses auto mode by default and reports its full-rebuild fallback once", () => {
+		const f = fixture();
+		const first = runInputPackMachineFacts({
+			dataRoot: f.dataRoot,
+			taskIds: ["100"],
+			outputRoot: f.factsRoot,
+		});
+		expect(first.timings).toMatchObject({
+			index_requested_mode: "auto",
+			index_mode: "full",
+			index_verification_scope: "FULL",
+			index_fallback_reason: "INDEX_MISSING",
+		});
+
+		const second = runInputPackMachineFacts({
+			dataRoot: f.dataRoot,
+			taskIds: ["100"],
+			outputRoot: f.factsRoot,
+		});
+		expect(second.tasks[0]?.status).toBe("REUSED");
+		expect(second.timings).toMatchObject({
+			index_requested_mode: "auto",
+			index_mode: "incremental",
+			index_verification_scope: "STRUCTURAL_ONLY",
+		});
+	});
 
   it("can resolve a bounded task set and load only referenced tables", () => {
     const f = fixture();

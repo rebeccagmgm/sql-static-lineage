@@ -164,7 +164,6 @@ export function runFieldLineageCli(options: CliOptions): ReturnType<typeof recon
 	if (options.prepareFacts) {
 		const available = new Set(taskPathIndex!.keys());
 		const attempted = new Set<string>();
-		let factsIndexInitialized = false;
 		const prepare = (taskIds: readonly string[]): void => {
 			const pending = [...new Set(taskIds)]
 				.filter((taskId) => available.has(taskId) && !attempted.has(taskId))
@@ -180,9 +179,8 @@ export function runFieldLineageCli(options: CliOptions): ReturnType<typeof recon
 					outputRoot: options.factsRoot,
 					tableCatalog,
 					taskPathIndex,
-					indexMode: factsIndexInitialized ? "incremental" : "full",
+					indexMode: "auto",
 				});
-				factsIndexInitialized = true;
 				timings.machine_facts_index_ms += result.timings.index_ms;
 				const rootFailure = result.tasks.find((task) => task.task_id === options.taskId && task.state === "FAILED");
 				if (rootFailure) throw new Error(rootFailure.failures.map((failure) => failure.message).join("; "));

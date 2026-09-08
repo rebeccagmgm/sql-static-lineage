@@ -1,5 +1,6 @@
-import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync, existsSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
+import { resolveWorkspacePaths } from "../config/workspace-paths.ts";
 
 import { Schema, SqlSession, type SchemaMapping } from "sqllens";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
@@ -16,6 +17,7 @@ import {
 	writeCanonicalJsonl,
 } from "./machine-facts-runtime.ts";
 import { hashJsonlStore, inspectJsonlStore, jsonlStoreExists, readJsonlRecords } from "./jsonl-store.ts";
+import { loadMachineFactsIndex } from "./machine-facts-index-reader.ts";
 import {
 	MACHINE_FACTS_ADAPTER_VERSION,
 	MACHINE_FACTS_CONTRACT_VERSION,
@@ -115,8 +117,24 @@ export interface ProfileRunResult {
 	index: { path: string; count: number; failures: string[] };
 }
 
+/**
+ * `auto` is the operational default: preserve a structurally readable index
+ * and update the Tasks in the current batch. Full reconstruction is reserved
+ * for recovery and explicit integrity sweeps.
+ */
+export type MachineFactsIndexMode = "auto" | "full" | "incremental";
+
 export interface IncrementalIndexOptions {
 	readonly taskResults: readonly TaskRunResult[];
+}
+
+export interface MachineFactsIndexRefreshResult {
+	readonly index: ProfileRunResult["index"];
+	readonly requestedMode: MachineFactsIndexMode;
+	readonly appliedMode: "full" | "incremental";
+	/** Full validates every bundle; incremental validates the index rows it reuses. */
+	readonly verificationScope: "FULL" | "STRUCTURAL_ONLY";
+	readonly fallbackReason?: "INDEX_MISSING" | "INDEX_UNREADABLE" | "INDEX_INVALID";
 }
 
 const REQUIRED_DATASETS = [
@@ -1893,7 +1911,53 @@ function taskFactIndexRecord(
 	};
 }
 
-export function rebuildIndex(root: string): ProfileRunResult["index"] {
+function indexLockPath(root: string): string {
+	return join(root, "indexes", "task-fact-index.lock");
+}
+
+/**
+ * The Facts bundles have their own recovery protocol. The shared index needs
+ * a separate, short-lived single-writer guard so simultaneous refreshes cannot
+ * lose each other's rows. A leftover lock is deliberately fail-closed: it
+ * indicates an interrupted writer and must be inspected before removal.
+ */
+function acquireIndexWriteLock(root: string): () => void {
+	const lockPath = indexLockPath(root);
+	mkdirSync(dirname(lockPath), { recursive: true });
+	let descriptor: number | undefined;
+	try {
+		descriptor = openSync(lockPath, "wx");
+		writeFileSync(descriptor, `${JSON.stringify({ pid: process.pid, created_at: new Date().toISOString() })}\n`, "utf8");
+	} catch (error) {
+		if (descriptor !== undefined) {
+			closeSync(descriptor);
+			if (existsSync(lockPath)) unlinkSync(lockPath);
+		}
+		if ((error as NodeJS.ErrnoException).code === "EEXIST")
+			throw new Error(`MACHINE_FACTS_INDEX_LOCKED:${lockPath}`);
+		throw error;
+	}
+	return () => {
+		closeSync(descriptor!);
+		if (existsSync(lockPath)) unlinkSync(lockPath);
+	};
+}
+
+function writeIndexAtomically(path: string, records: readonly JsonRecord[]): void {
+	const temp = `${path}.tmp`;
+	writeFileSync(temp, canonicalJsonl(records), "utf8");
+	try {
+		// rename replaces an existing file on the supported local filesystems.
+		// That keeps readers on either the previous complete index or the new one;
+		// a temp file is never observed as the canonical path.
+		renameSync(temp, path);
+	} catch (error) {
+		if (existsSync(temp)) rmSync(temp, { force: true });
+		throw error;
+	}
+}
+
+function rebuildIndexUnlocked(root: string): ProfileRunResult["index"] {
 	const indexDir = join(root, "indexes");
 	mkdirSync(indexDir, { recursive: true });
 	const records: JsonRecord[] = [];
@@ -1944,8 +2008,18 @@ export function rebuildIndex(root: string): ProfileRunResult["index"] {
 		}
 	}
 	const path = join(indexDir, "task-fact-index.jsonl");
-	writeFileSync(path, canonicalJsonl(stableRecords(records, (record) => String(record.task_id))), "utf8");
+	writeIndexAtomically(path, stableRecords(records, (record) => String(record.task_id)));
 	return { path, count: records.length, failures };
+}
+
+export function rebuildIndex(rootInput: string): ProfileRunResult["index"] {
+	const root = resolve(rootInput);
+	const release = acquireIndexWriteLock(root);
+	try {
+		return rebuildIndexUnlocked(root);
+	} finally {
+		release();
+	}
 }
 
 /**
@@ -1956,38 +2030,46 @@ export function rebuildIndex(root: string): ProfileRunResult["index"] {
 export function updateIndexIncrementally(
 	rootInput: string,
 	options: IncrementalIndexOptions,
-): ProfileRunResult["index"] {
+): MachineFactsIndexRefreshResult {
 	const root = resolve(rootInput);
+	const release = acquireIndexWriteLock(root);
+	try {
+		return updateIndexIncrementallyUnlocked(root, options);
+	} finally {
+		release();
+	}
+}
+
+function updateIndexIncrementallyUnlocked(
+	root: string,
+	options: IncrementalIndexOptions,
+): MachineFactsIndexRefreshResult {
 	const indexDir = join(root, "indexes");
 	const path = join(indexDir, "task-fact-index.jsonl");
-	if (!existsSync(path)) return rebuildIndex(root);
-	let existing: JsonRecord[];
+	let records: Map<string, TaskFactIndexRecord>;
 	try {
-		const text = readFileSync(path, "utf8").trim();
-		existing = text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
-	} catch {
-		return rebuildIndex(root);
-	}
-	const records = new Map<string, TaskFactIndexRecord>();
-	for (const row of existing) {
-		if (
-			typeof row.task_id !== "string" ||
-			typeof row.logical_source_id !== "string" ||
-			typeof row.sql_sha256 !== "string" ||
-			typeof row.manifest_sha256 !== "string" ||
-			typeof row.bundle_path !== "string" ||
-			row.status !== "SUCCESS" ||
-			records.has(row.task_id)
-		)
-			return rebuildIndex(root);
-		records.set(row.task_id, row as TaskFactIndexRecord);
+		records = new Map(loadMachineFactsIndex(root).byTaskId);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "";
+		const fallbackReason = message.startsWith("MACHINE_FACTS_INDEX_MISSING:")
+			? "INDEX_MISSING"
+			: message.startsWith("MACHINE_FACTS_INDEX_INVALID_ROW:") || message.startsWith("MACHINE_FACTS_INDEX_DUPLICATE_TASK:")
+				? "INDEX_INVALID"
+				: "INDEX_UNREADABLE";
+		return {
+			index: rebuildIndexUnlocked(root),
+			requestedMode: "incremental",
+			appliedMode: "full",
+			verificationScope: "FULL",
+			fallbackReason,
+		};
 	}
 
 	const indexSchemaResult = readTaskFactIndexSchema();
 	const failures = indexSchemaResult.failure ? [indexSchemaResult.failure] : [];
 	for (const result of options.taskResults) {
-		records.delete(result.task_id);
 		if (result.state !== "SUCCESS") {
+			records.delete(result.task_id);
 			if (result.failures.length > 0) failures.push(`${result.task_id}: ${result.failures.map((failure) => failure.message).join("; ")}`);
 			continue;
 		}
@@ -2010,11 +2092,39 @@ export function updateIndexIncrementally(
 		records.set(result.task_id, candidate.record);
 	}
 	mkdirSync(indexDir, { recursive: true });
-	writeFileSync(path, canonicalJsonl(stableRecords([...records.values()], (record) => String(record.task_id))), "utf8");
-	return { path, count: records.size, failures };
+	writeIndexAtomically(path, stableRecords([...records.values()], (record) => String(record.task_id)));
+	return {
+		index: { path, count: records.size, failures },
+		requestedMode: "incremental",
+		appliedMode: "incremental",
+		verificationScope: "STRUCTURAL_ONLY",
+	};
 }
 
-export function processProfile(profilePath: string, outputRoot: string, sourceIdOverride?: string): ProfileRunResult {
+/** The only policy boundary for operational Facts index refreshes. */
+export function refreshMachineFactsIndex(
+	rootInput: string,
+	options: IncrementalIndexOptions & { readonly mode?: MachineFactsIndexMode },
+): MachineFactsIndexRefreshResult {
+	const requestedMode = options.mode ?? "auto";
+	if (requestedMode === "full") {
+		return {
+			index: rebuildIndex(rootInput),
+			requestedMode,
+			appliedMode: "full",
+			verificationScope: "FULL",
+		};
+	}
+	const refreshed = updateIndexIncrementally(rootInput, options);
+	return { ...refreshed, requestedMode };
+}
+
+export function processProfile(
+	profilePath: string,
+	outputRoot: string,
+	sourceIdOverride?: string,
+	indexMode: MachineFactsIndexMode = "auto",
+): ProfileRunResult {
 	const profile = json<GenericAnalysisProfile>(resolve(workspace, profilePath));
 	if (!profile.dialect || !Array.isArray(profile.tasks) || profile.tasks.length === 0) throw new Error("profile must contain dialect and tasks");
 	if (!sourceIdOverride && !profile.logical_source_id) throw new Error("logical_source_id is required");
@@ -2039,18 +2149,29 @@ export function processProfile(profilePath: string, outputRoot: string, sourceId
 		snapshot(root, "schema", taskHash, taskBytes);
 		return runTask(task, profile, logicalSourceId, root, taskBundle, taskHash);
 	});
-	return { output_root: root, tasks, index: rebuildIndex(root) };
+	return {
+		output_root: root,
+		tasks,
+		index: refreshMachineFactsIndex(root, { taskResults: tasks, mode: indexMode }).index,
+	};
 }
 
-function parseArgs(args: string[]): { profile: string; output: string; sourceId?: string } {
+function parseIndexMode(value: string | undefined): MachineFactsIndexMode {
+	if (!value) return "auto";
+	if (value === "auto" || value === "full" || value === "incremental") return value;
+	throw new Error(`INVALID_INDEX_MODE:${value}`);
+}
+
+function parseArgs(args: string[]): { profile: string; output: string; sourceId?: string; indexMode: MachineFactsIndexMode } {
 	const value = (name: string, fallback: string): string => {
 		const index = args.indexOf(name);
 		return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 	};
 	return {
 		profile: value("--profile", "cases/indicator-journey-rgstcomp-mthend/processing-graph-profile.json"),
-		output: value("--output", "machine-facts"),
+		output: resolveWorkspacePaths({ configPath: value("--config", "") || undefined, overrides: { factsRoot: value("--output", "") || undefined } }).factsRoot,
 		sourceId: args.includes("--source-id") ? value("--source-id", "") : undefined,
+		indexMode: parseIndexMode(args.includes("--index-mode") ? value("--index-mode", "") : undefined),
 	};
 }
 
@@ -2292,7 +2413,7 @@ function deriveTaskLocalMaterializations(
 if (process.argv[1] && basename(process.argv[1]).startsWith("machine-facts")) {
 	const args = parseArgs(process.argv.slice(2));
 	const run = async (): Promise<void> => {
-		const result = processProfile(args.profile, args.output, args.sourceId);
+		const result = processProfile(args.profile, args.output, args.sourceId, args.indexMode);
 		console.log(JSON.stringify({ output: result.output_root, tasks: result.tasks, index: result.index }, null, 2));
 	};
 	await run();

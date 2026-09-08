@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
 import { canonicalJson, sha256 } from "../machine-facts/machine-facts-contract.ts";
+import { loadMachineFactsIndex } from "../machine-facts/machine-facts-index-reader.ts";
 import {
 	hashJsonlStore,
 	inspectJsonlStore,
@@ -123,7 +124,7 @@ function evidenceRef(factsRoot: string, path: string, lineNumber?: number): stri
 }
 
 type IndexSnapshot = {
-	readonly rows: JsonRecord[] | null;
+	readonly byTaskId: ReadonlyMap<string, JsonRecord> | null;
 	readonly indexSha256?: string;
 	readonly error?: string;
 };
@@ -148,12 +149,10 @@ export interface CurrentTaskBundleReader {
 
 function readIndexSnapshot(indexPath: string): IndexSnapshot {
 	try {
-		const bytes = readFileSync(indexPath);
-		const text = bytes.toString("utf8").trim();
-		const rows = text ? text.split(/\r?\n/).map((line) => JSON.parse(line) as JsonRecord) : [];
-		return { rows, indexSha256: sha256(bytes) };
+		const snapshot = loadMachineFactsIndex(resolve(indexPath, "..", ".."));
+		return { byTaskId: snapshot.byTaskId, indexSha256: snapshot.sha256 };
 	} catch (error) {
-		return { rows: null, error: `CURRENT_INDEX_INVALID:${error instanceof Error ? error.message : String(error)}` };
+		return { byTaskId: null, error: `CURRENT_INDEX_INVALID:${error instanceof Error ? error.message : String(error)}` };
 	}
 }
 
@@ -200,17 +199,10 @@ function loadCurrentTaskBundleWithContext(
 
 	const snapshot = context?.index ?? readIndexSnapshot(indexPath);
 	if (context && context.index === undefined) context.index = snapshot;
-	if (snapshot.rows === null) return issueResult(factsRoot, taskId, indexPath, [snapshot.error ?? "CURRENT_INDEX_INVALID"]);
-	const rows = snapshot.rows;
-	const matchingRows = rows.filter((row) => row.task_id === taskId);
-	const indexRow = matchingRows[0];
+	if (snapshot.byTaskId === null) return issueResult(factsRoot, taskId, indexPath, [snapshot.error ?? "CURRENT_INDEX_INVALID"]);
+	const indexRow = snapshot.byTaskId.get(taskId);
 	const indexSha256 = snapshot.indexSha256;
 	if (!indexRow) return issueResult(factsRoot, taskId, indexPath, ["TASK_NOT_INDEXED"], "STALE", { indexSha256 });
-	if (matchingRows.length !== 1)
-		return issueResult(factsRoot, taskId, indexPath, ["DUPLICATE_CURRENT_INDEX_ROWS"], "INVALID", {
-			indexRow,
-			indexSha256,
-		});
 	if (indexRow.status !== "SUCCESS")
 		return issueResult(factsRoot, taskId, indexPath, ["INDEX_ROW_NOT_SUCCESS"], "STALE", { indexRow, indexSha256 });
 	const expectedBundle = join(factsRoot, "registry", "tasks", taskId, "bundle");

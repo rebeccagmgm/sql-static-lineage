@@ -41,6 +41,7 @@ describe("workspace path configuration", () => {
     ]);
     expect(facts.dataRoot).toBe(join(root, "data"));
     expect(facts.outputRoot).toBe(join(root, "data", "field-facts"));
+		expect(facts.indexMode).toBe("auto");
     const paths = resolveWorkspacePaths({ configPath, env: {} });
     mkdirSync(join(paths.factsRoot, "registry", "tasks"), { recursive: true });
     mkdirSync(paths.graphOutputRoot, { recursive: true });
@@ -50,6 +51,16 @@ describe("workspace path configuration", () => {
     expect(query?.factsRoot).toBe(facts.outputRoot);
     expect(query?.indexPath).toBe(paths.continuationIndexPath);
   });
+
+	it("accepts only explicit supported Facts index modes", () => {
+		const { configPath } = configFixture();
+		expect(parseInputPackMachineFactsCli([
+			"--config", configPath, "--task-id", "101", "--index-mode", "full",
+		]).indexMode).toBe("full");
+		expect(() => parseInputPackMachineFactsCli([
+			"--config", configPath, "--task-id", "101", "--index-mode", "fast",
+		])).toThrow("INVALID_INDEX_MODE:fast");
+	});
 
   it("resolves roots from the config file and child paths from data, independently of cwd", () => {
     const { root, configPath } = configFixture();

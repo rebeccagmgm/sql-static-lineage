@@ -11,12 +11,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { defaultTaskStatusFile, loadTaskStatus } from "../input/mainline/task-status.ts";
+import { loadMachineFactsIndex } from "./machine-facts-index-reader.ts";
+import { resolveWorkspacePaths } from "../config/workspace-paths.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const defaultDataRoot =
-  "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data";
-const defaultFactsRoot = join(defaultDataRoot, "field-facts");
-const defaultWorkDir = join(defaultDataRoot, "tmp/field-facts-gap-fill");
 
 export type FactsGapInventory = {
   readonly successPackCount: number;
@@ -40,20 +38,7 @@ function log(message: string, logPath: string): void {
 }
 
 function readIndexedTaskIds(factsRoot: string): Set<string> {
-  const indexPath = join(factsRoot, "indexes", "task-fact-index.jsonl");
-  const ids = new Set<string>();
-  if (!existsSync(indexPath)) return ids;
-  for (const line of readFileSync(indexPath, "utf8").split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    try {
-      const row = JSON.parse(line) as { task_id?: string; status?: string };
-      if (row.status === "SUCCESS" && typeof row.task_id === "string")
-        ids.add(row.task_id);
-    } catch {
-      continue;
-    }
-  }
-  return ids;
+  return new Set(loadMachineFactsIndex(factsRoot, { allowMissing: true }).byTaskId.keys());
 }
 
 function countManifests(factsRoot: string): number {
@@ -68,9 +53,9 @@ function countManifests(factsRoot: string): number {
   return count;
 }
 
-function readRebuildProgress(): { success: number | null; frozen: number | null } {
+function readRebuildProgress(dataRoot: string): { success: number | null; frozen: number | null } {
   const rebuildDir = join(
-    defaultDataRoot,
+    dataRoot,
     "tmp/machine-facts-rebuild-20260906-v1",
   );
   const progressPath = join(rebuildDir, "progress.json");
@@ -109,7 +94,7 @@ export function computeFactsGap(options: {
     .sort((left, right) => left.localeCompare(right));
   const indexed = readIndexedTaskIds(options.factsRoot);
   const missingTaskIds = successPackIds.filter((taskId) => !indexed.has(taskId));
-  const rebuild = readRebuildProgress();
+  const rebuild = readRebuildProgress(options.dataRoot);
   return {
     inventory: {
       successPackCount: successPackIds.length,
@@ -200,9 +185,10 @@ function parseMachineFactsCounts(stdout: string): Record<string, number> {
 }
 
 function main(): void {
-  const dataRoot = option("--data-root") ?? defaultDataRoot;
-  const factsRoot = option("--facts-root") ?? defaultFactsRoot;
-  const workDir = option("--work-dir") ?? defaultWorkDir;
+  const paths = resolveWorkspacePaths({ configPath: option("--config"), overrides: { dataRoot: option("--data-root"), factsRoot: option("--facts-root") } });
+  const dataRoot = paths.inputPackRoot;
+  const factsRoot = paths.factsRoot;
+  const workDir = option("--work-dir") ?? join(paths.dataRoot, "tmp/field-facts-gap-fill");
   const statusFile = option("--status-file");
   const inventoryOnly = process.argv.includes("--inventory-only");
   const runBatches = process.argv.includes("--run-batches");

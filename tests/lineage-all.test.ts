@@ -250,13 +250,16 @@ describe("lineage:all", () => {
     mkdirSync(join(root, "tasks", "hiveTask-2.0", "root"), { recursive: true });
     mkdirSync(join(root, "tables"), { recursive: true });
     writeFileSync(join(root, "tasks", "hiveTask-2.0", "root", "task.json"), JSON.stringify(createTaskDocument({ taskId: "root", taskCategory: "hiveTask-2.0", target: { platform: "hive", dataSource: "gfhive", qualifiedName: "mart.root" } })));
-    let autofillCalls = 0; let fieldRound = 0; const collected: string[] = []; const rendered: string[] = [];
+    let autofillCalls = 0; let fieldRound = 0; const collected: string[] = []; const rendered: string[] = []; const factsBatches: { taskIds: string[]; indexMode: string }[] = [];
     const missingField = { bindingId: null, expressionId: null, taskId: "root", field: { platform: "hive", dataSource: "gfhive", stableTableId: "mart.missing", qualifiedName: "mart.missing", column: "value", identityStatus: "SCHEMA_BACKED" } };
     const result = await runLineageAll({ dataRoot: root, taskIds: ["root"], withFields: true, dependencies: {
       schedulePrefetch: async (ids) => new Map(ids.map((id) => [id, { rows: [], provider: "opencli:horae.relation" as const, locator: "test", observedAt: "now" }])),
       autofill: () => { autofillCalls += 1; return ({ taskIds: ["root"], discoveredTaskIds: [], collectedTaskIds: [], rounds: 1, status: "COMPLETE", issues: [] }); },
       openWriterCatalog: () => ({ path: "catalog.sqlite" } as any),
-      machineFacts: () => ({ tasks: [] }) as any, oneHopBatch: (ids) => ids.map((id) => fakeOneHop(id)),
+      machineFacts: ({ taskIds, indexMode }) => {
+        factsBatches.push({ taskIds: [...taskIds], indexMode: indexMode ?? "" });
+        return { tasks: taskIds.map((task_id) => ({ task_id, state: "SUCCESS", status: "REUSED" })) } as any;
+      }, oneHopBatch: (ids) => ids.map((id) => fakeOneHop(id)),
       multiHop: (id, opts) => ({ ...fakeMultiHop(id), producerBridges: [], taskNodes: [{ taskId: id, marker: (opts.oneHopSnapshots?.size ?? 0) > 1 ? "final" : "first" }] } as any),
       fieldLineage: () => fieldRound++ === 0 ? ({ nodes: [missingField] } as any) : ({ nodes: [] } as any),
       fieldProducerDiscovery: () => ["producer-new"], collectTaskPacks: (dataRoot, ids) => {
@@ -277,6 +280,10 @@ describe("lineage:all", () => {
     expect(closure.taskIds).toEqual(["root", "producer-new"]);
     expect(closure.fieldDrivenProducerTables).toEqual(["mart.missing"]);
     expect(closure.fieldDrivenCollectedTaskIds).toEqual(["producer-new"]);
+    expect(factsBatches).toEqual([
+      { taskIds: ["root"], indexMode: "auto" },
+      { taskIds: ["producer-new"], indexMode: "auto" },
+    ]);
   });
 
   it("publishes the fixed task directory and removes stale optional files", () => {

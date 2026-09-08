@@ -46,9 +46,9 @@ import {
 	type SqlWritePartitionEvidence,
 } from "./machine-facts-contract.ts";
 import {
-	rebuildIndex,
+	refreshMachineFactsIndex,
 	runTask,
-	updateIndexIncrementally,
+	type MachineFactsIndexMode,
 	type ProfileRunResult,
 	type TaskRunResult,
 } from "./machine-facts.ts";
@@ -143,7 +143,8 @@ export interface RunInputPackMachineFactsOptions {
 	readonly outputRoot: string;
 	readonly tableCatalog?: PhysicalTableCatalog;
 	readonly taskPathIndex?: ReadonlyMap<string, readonly string[]>;
-	readonly indexMode?: "full" | "incremental";
+	/** Defaults to auto: incrementally refresh a healthy index, otherwise rebuild once. */
+	readonly indexMode?: MachineFactsIndexMode;
 	readonly beforeFinalVerification?: (taskId: string) => void;
 	/** SQLite writer catalog path; defaults to sibling of data root. Pass null to disable. */
 	readonly writerCatalogPath?: string | null;
@@ -157,6 +158,9 @@ export interface InputPackMachineFactsRunResult {
 	readonly timings: {
 		readonly index_ms: number;
 		readonly index_mode: "full" | "incremental";
+		readonly index_requested_mode: MachineFactsIndexMode;
+		readonly index_verification_scope: "FULL" | "STRUCTURAL_ONLY";
+		readonly index_fallback_reason?: "INDEX_MISSING" | "INDEX_UNREADABLE" | "INDEX_INVALID";
 	};
 	readonly prepared: readonly {
 		readonly taskId: string;
@@ -1560,16 +1564,23 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 			});
 		}
 	}
-	const indexMode = options.indexMode ?? "full";
+	const indexMode = options.indexMode ?? "auto";
 	const indexStarted = performance.now();
-	const index = indexMode === "incremental"
-		? updateIndexIncrementally(outputRoot, { taskResults: tasks })
-		: rebuildIndex(outputRoot);
+	const indexRefresh = refreshMachineFactsIndex(outputRoot, {
+		taskResults: tasks,
+		mode: indexMode,
+	});
 	return {
 		output_root: outputRoot,
 		tasks,
-		index,
-		timings: { index_ms: performance.now() - indexStarted, index_mode: indexMode },
+		index: indexRefresh.index,
+		timings: {
+			index_ms: performance.now() - indexStarted,
+			index_mode: indexRefresh.appliedMode,
+			index_requested_mode: indexRefresh.requestedMode,
+			index_verification_scope: indexRefresh.verificationScope,
+			...(indexRefresh.fallbackReason ? { index_fallback_reason: indexRefresh.fallbackReason } : {}),
+		},
 		prepared: preparedSummary,
 	};
 }
@@ -1577,6 +1588,12 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 function option(args: readonly string[], name: string): string | undefined {
 	const index = args.indexOf(name);
 	return index >= 0 ? args[index + 1] : undefined;
+}
+
+function parseIndexMode(value: string | undefined): MachineFactsIndexMode {
+	if (!value) return "auto";
+	if (value === "auto" || value === "full" || value === "incremental") return value;
+	throw new Error(`INVALID_INDEX_MODE:${value}`);
 }
 
 export function parseInputPackMachineFactsCli(args: readonly string[]): RunInputPackMachineFactsOptions {
@@ -1596,11 +1613,12 @@ export function parseInputPackMachineFactsCli(args: readonly string[]): RunInput
 		.map((value) => value.trim())
 		.filter(Boolean);
 	if (!dataRoot || !outputRoot || taskIds.length === 0)
-		throw new Error("usage: input-pack-machine-facts --task-id <id[,id]> [--config <json>] [--data-root <packs>] [--output <facts>] [--writer-catalog <sqlite>] [--no-writer-catalog]");
+		throw new Error("usage: input-pack-machine-facts --task-id <id[,id]> [--config <json>] [--data-root <packs>] [--output <facts>] [--index-mode <auto|incremental|full>] [--writer-catalog <sqlite>] [--no-writer-catalog]");
 	return {
 		dataRoot,
 		outputRoot,
 		taskIds,
+		indexMode: parseIndexMode(option(args, "--index-mode")),
 		writerCatalogPath: paths.writerCatalogPath,
 		...(args.includes("--no-writer-catalog") ? { noWriterCatalog: true } : {}),
 	};

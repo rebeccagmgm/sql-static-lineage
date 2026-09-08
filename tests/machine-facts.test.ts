@@ -4,9 +4,10 @@ import { join, relative, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { extractSqlWrites } from "../scripts/evidence/sql-write-evidence.ts";
+import { loadMachineFactsIndex } from "../scripts/machine-facts/machine-facts-index-reader.ts";
 import { MACHINE_FACTS_ADAPTER_VERSION, canonicalJson, datasetId, fieldId, sha256, safeSegment, stripVolatile } from "../scripts/machine-facts/machine-facts-contract.ts";
 import { gzipCanonicalBytes, gzipJsonlPath, inspectJsonlStore, readJsonlRecords, readJsonlText } from "../scripts/machine-facts/jsonl-store.ts";
-import { inputDependencyStatus, mergeSchemaEvidence, processProfile, rebuildIndex, relationNeedsMissingSchema, validateBundle } from "../scripts/machine-facts/machine-facts.ts";
+import { inputDependencyStatus, mergeSchemaEvidence, processProfile, rebuildIndex, relationNeedsMissingSchema, updateIndexIncrementally, validateBundle } from "../scripts/machine-facts/machine-facts.ts";
 
 const workspace = resolve(import.meta.dirname, "..");
 const roots: string[] = [];
@@ -107,6 +108,44 @@ describe("machine facts contract", () => {
 		const secondManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 		expect(secondManifest.inputs.sql_sha256).not.toBe(firstManifest.inputs.sql_sha256);
 		expect(rebuildIndex(join(f.root, "machine-facts")).count).toBe(1);
+	});
+
+	it.each([
+		["null", "null\n", "INVALID_ROW", "INDEX_INVALID"],
+		["invalid JSON", "{broken\n", "INVALID_JSON", "INDEX_UNREADABLE"],
+		["invalid row", "{}\n", "INVALID_ROW", "INDEX_INVALID"],
+		["duplicate task", null, "DUPLICATE_TASK", "INDEX_INVALID"],
+	] as const)("rebuilds an index containing %s using the shared reader rules", (_name, content, readerError, fallbackReason) => {
+		const f = fixture();
+		const initial = processProfile(f.profile, f.output, "test-source");
+		const root = join(f.root, "machine-facts");
+		const original = readFileSync(initial.index.path, "utf8");
+		writeFileSync(initial.index.path, content ?? `${original.trim()}\n${original.trim()}\n`, "utf8");
+		expect(() => loadMachineFactsIndex(root)).toThrow(`MACHINE_FACTS_INDEX_${readerError}:`);
+		const result = updateIndexIncrementally(root, { taskResults: [] });
+		expect(result).toMatchObject({ appliedMode: "full", verificationScope: "FULL", fallbackReason });
+		expect(result.index).toMatchObject({ count: 1, failures: [] });
+		expect(readFileSync(initial.index.path, "utf8")).toBe(original);
+		expect(loadMachineFactsIndex(root).byTaskId.size).toBe(1);
+		// The fallback must release its write lock and leave a reusable index.
+		expect(updateIndexIncrementally(root, { taskResults: [] }).appliedMode).toBe("incremental");
+	});
+
+	it("keeps the current index row when a stale runner reports another manifest", () => {
+		const f = fixture();
+		const initial = processProfile(f.profile, f.output, "test-source");
+		const task = initial.tasks[0]!;
+		const result = updateIndexIncrementally(join(f.root, "machine-facts"), {
+			taskResults: [{ ...task, manifest_sha256: "stale-manifest", failures: [] }],
+		});
+		expect(result.appliedMode).toBe("incremental");
+		expect(result.index.count).toBe(1);
+		expect(result.index.failures.join(" ")).toContain("result/manifest hash mismatch");
+		// The mutable index remains plain JSONL; only immutable bundle artifacts use gzip.
+		const rows = readFileSync(join(f.root, "machine-facts", "indexes", "task-fact-index.jsonl"), "utf8")
+			.trim().split(/\r?\n/).map((line) => JSON.parse(line));
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ task_id: "test-task", manifest_sha256: task.manifest_sha256 });
 	});
 
 	it("rebuilds a valid pre-multi-write-guard cache once and then reuses the new adapter output", () => {

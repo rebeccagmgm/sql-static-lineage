@@ -1018,6 +1018,7 @@ async function runTask(
     let finalTrustedInputFingerprint: string | null = null;
     let finalWriterCatalogPath: string | null = null;
     let taskNodeIds: string[] | null = null;
+    const factsPreparedTaskIds = new Set<string>();
     const multiHopPath = join(stagedDir, "multi-hop.json");
     const oneHopPath = join(stagedDir, "one-hop.json");
     const tableHtml = join(stagedDir, "views", "table-lineage.html");
@@ -1065,23 +1066,31 @@ async function runTask(
           finalTrustedInputFingerprint ??
           fingerprintTableProducerInputs(resolve(options.dataRoot));
       }
-      const facts = deps.machineFacts({
-        dataRoot: resolve(options.dataRoot),
-        taskIds: taskNodeIds,
-        outputRoot: factsRoot,
-        indexMode: "incremental",
-      });
-      progress("machine_facts_complete", {
-        taskId,
-        taskCount: taskNodeIds.length,
-      });
-      const failedFacts = facts.tasks.filter(
-        (fact) => fact.status === "FAILED" || fact.state === "FAILED",
+      const factsTaskIds = taskNodeIds.filter(
+        (candidate) => !factsPreparedTaskIds.has(candidate),
       );
-      if (failedFacts.length > 0)
-        throw new Error(
-          `MACHINE_FACTS_FAILED:${failedFacts.map((fact) => fact.task_id).join(",")}`,
+      if (factsTaskIds.length > 0) {
+        const facts = deps.machineFacts({
+          dataRoot: resolve(options.dataRoot),
+          taskIds: factsTaskIds,
+          outputRoot: factsRoot,
+          indexMode: "auto",
+        });
+        progress("machine_facts_complete", {
+          taskId,
+          taskCount: factsTaskIds.length,
+        });
+        const failedFacts = facts.tasks.filter(
+          (fact) => fact.status === "FAILED" || fact.state === "FAILED",
         );
+        if (failedFacts.length > 0)
+          throw new Error(
+            `MACHINE_FACTS_FAILED:${failedFacts.map((fact) => fact.task_id).join(",")}`,
+          );
+        for (const fact of facts.tasks) {
+          if (fact.state === "SUCCESS") factsPreparedTaskIds.add(fact.task_id);
+        }
+      }
       const rawOneHopSnapshots = new Map<string, OneHopReconciliationResult>();
       progress("schedule_prefetch_start", {
         taskId,
