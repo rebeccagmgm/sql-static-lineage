@@ -16,6 +16,23 @@ describe("partition-canonical", () => {
     expect(canonicalPartitionValue("busi_date", "${YYYY-MM-DD}")).toBe(
       "${YYYY-MM-DD}",
     );
+    expect(canonicalPartitionValue("busi_date", "${start_day}")).toBe(
+      "${YYYY-MM-DD}",
+    );
+    expect(canonicalPartitionValue("busi_date", "${end_day}")).toBe(
+      "${YYYY-MM-DD}",
+    );
+  });
+
+  it("normalizes month and quarter time templates across spellings", () => {
+    expect(canonicalPartitionValue("busi_month", "${2026-08}")).toBe(
+      "${YYYYMM}",
+    );
+    expect(canonicalPartitionValue("busi_month", "${yyyy-MM}")).toBe(
+      "${YYYYMM}",
+    );
+    expect(canonicalPartitionValue("busi_quarter", "${Q}")).toBe("${QQ}");
+    expect(canonicalPartitionValue("busi_quarter", "${QQ}")).toBe("${QQ}");
   });
 
   it("canonicalizes ISO literals on temporal columns", () => {
@@ -52,5 +69,15 @@ describe("partition-canonical", () => {
     expect(
       partitionCanonicalValuesOverlap("grp_id", ["01"], ["02"]),
     ).toBe(false);
+    expect(
+      partitionCanonicalValuesOverlap(
+        "busi_month",
+        ["${2026-08}"],
+        ["${yyyy-MM}"],
+      ),
+    ).toBe(true);
+    expect(
+      partitionCanonicalValuesOverlap("busi_quarter", ["${Q}"], ["${QQ}"]),
+    ).toBe(true);
   });
 });

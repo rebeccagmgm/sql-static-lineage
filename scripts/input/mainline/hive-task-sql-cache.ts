@@ -17,6 +17,7 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
 } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { isTemporalSqlTemplateVariable } from "../shared/temporal-template.ts";
 
 export const HIVE_TASK_SQL_CACHE_SCHEMA_VERSION = "1.0.0" as const;
 export const HIVE_TASK_SQL_CACHE_ARTIFACT_TYPE = "HIVE_TASK_SQL_EVIDENCE" as const;
@@ -24,10 +25,6 @@ export const HIVE_TASK_SQL_CACHE_FILE_NAME = "hive-task.sql" as const;
 export const HIVE_TASK_SQL_LEGACY_CACHE_FILE_NAME = "hive-task-sql.json" as const;
 export const HIVE_TASK_SQL_SOURCES = ["LOCAL_CODE", "SQL_MCP", "HORAE_LOG"] as const;
 export type HiveTaskSqlSource = (typeof HIVE_TASK_SQL_SOURCES)[number];
-
-/** Template vars that are OK to keep unresolved in offline packs. */
-const DATE_LIKE_TEMPLATE_VAR =
-  /^(?:data_day|data_today|data_date|busi_date|run_date|etl_date|filename|data_time|data_upt|sysdate)/iu;
 
 const LINE_PREFIX = /^\[[0-9]{4}-[0-9]{2}-[0-9]{2} [^\]]+\]-\[INFO\] /;
 const INNER_LOG_PREFIX =
@@ -545,7 +542,7 @@ export function listSqlTemplateVariables(
   const names: string[] = [];
   for (const part of sqlParts) {
     if (typeof part !== "string" || part === "") continue;
-    for (const match of part.matchAll(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g)) {
+    for (const match of part.matchAll(/\$\{([^{}\r\n]+)\}/g)) {
       const name = match[1]!;
       if (seen.has(name)) continue;
       seen.add(name);
@@ -556,7 +553,7 @@ export function listSqlTemplateVariables(
 }
 
 export function isDateLikeSqlTemplateVariable(name: string): boolean {
-  return DATE_LIKE_TEMPLATE_VAR.test(name.trim());
+  return isTemporalSqlTemplateVariable(name);
 }
 
 /**

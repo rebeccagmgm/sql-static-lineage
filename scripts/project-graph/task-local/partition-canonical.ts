@@ -1,3 +1,5 @@
+import { canonicalTemporalTemplate } from "../../input/shared/temporal-template.ts";
+
 /**
  * Canonical partition values for cross-task continuation matching.
  * Aligns Input Pack temporal templates with read predicates and write partitions.
@@ -10,10 +12,14 @@ export function isTemporalPartitionColumn(column: string): boolean {
     normalized === "data_date" ||
     normalized === "busi_mon" ||
     normalized === "busi_year" ||
+    normalized === "quarter" ||
+    normalized === "qtr" ||
     normalized.endsWith("_date") ||
     normalized.endsWith("_mon") ||
     normalized.endsWith("_month") ||
-    normalized.endsWith("_year")
+    normalized.endsWith("_year") ||
+    normalized.endsWith("_quarter") ||
+    normalized.endsWith("_qtr")
   );
 }
 
@@ -32,21 +38,8 @@ function stripQuotes(value: string): string {
   return trimmed;
 }
 
-function normalizeTemplateInner(raw: string): string {
-  return raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
 function temporalTemplateFromInner(inner: string): string | undefined {
-  const normalized = normalizeTemplateInner(inner);
-  if (normalized === "datadaystr" || normalized === "yyyymmdd" || normalized === "yyyy-mm-dd" || (normalized.startsWith("yyyy") && normalized.includes("mm") && normalized.includes("dd"))) return "${YYYY-MM-DD}";
-  const monthMatch = inner.match(/^(yyyy(?:-MM)?|YYYY(?:-MM)?)(,[-+]?\d+[mMdDyY])?$/u);
-  if (monthMatch?.[1] !== undefined) {
-    const format = monthMatch[1].toLowerCase() === "yyyy-mm" ? "YYYY-MM" : "YYYYMM";
-    return `\${${format}${monthMatch[2] ?? ""}}`;
-  }
-  if (normalized === "yyyymm" || normalized === "yyyyMM".toLowerCase()) return "${YYYYMM}";
-  if (normalized === "yyyy") return "${YYYY}";
-  return undefined;
+  return canonicalTemporalTemplate(inner);
 }
 
 /** Canonicalize one partition value for equality checks. */
@@ -56,7 +49,11 @@ export function canonicalPartitionValue(
 ): string {
   const value = stripQuotes(raw);
   if (!value) return value;
-  if (/^\d{4}-\d{2}-\d{2}$/u.test(value) && isTemporalPartitionColumn(column)) return "${YYYY-MM-DD}";
+  if (isTemporalPartitionColumn(column)) {
+    if (/^\d{4}-\d{2}-\d{2}$/u.test(value)) return "${YYYY-MM-DD}";
+    if (/^\d{4}-\d{2}$|^\d{6}$/u.test(value)) return "${YYYYMM}";
+    if (/^\d{4}$/u.test(value)) return "${YYYY}";
+  }
   const template = value.match(/^\$\{([^}]+)\}$/u);
   if (template) {
     if (isTemporalPartitionColumn(column)) {
