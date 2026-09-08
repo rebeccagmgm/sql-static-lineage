@@ -5,11 +5,24 @@ export type RelationRecord = Readonly<{
   readonly relationId: string;
   readonly relationType: string;
   readonly physicalDataset: string | null;
+  /** Relation that supplies a logical CTE/read alias, when Facts expose one. */
+  readonly sourceRelationId: string | null;
+  /** Proven physical inputs of a named output from this relation. */
+  readonly outputInputColumns: readonly RelationOutputInputColumn[];
+  readonly outputColumns: readonly string[];
   readonly joinType: string | null;
   readonly leftRelationId: string | null;
   readonly rightRelationId: string | null;
   readonly setopBranches: readonly string[];
   readonly scopeId: string | null;
+}>;
+
+export type RelationOutputInputColumn = Readonly<{
+  readonly outputName: string;
+  readonly inputName: string;
+  readonly physicalDataset: string;
+  readonly physicalColumn: string;
+  readonly qualifier: string | null;
 }>;
 
 export interface RelationTreeIndex {
@@ -31,6 +44,37 @@ function relationBody(relation: Record<string, unknown>): Record<string, unknown
   return record(relation.relation) ?? relation;
 }
 
+function outputInputColumns(body: Record<string, unknown>): readonly RelationOutputInputColumn[] {
+  const expressions = Array.isArray(body.expressions) ? body.expressions : [];
+  const columns: RelationOutputInputColumn[] = [];
+  for (const rawExpression of expressions) {
+    const expression = record(rawExpression);
+    const outputName = text(expression?.output);
+    if (!expression || !outputName) continue;
+    const inputs = Array.isArray(expression.input_columns) ? expression.input_columns : [];
+    for (const rawInput of inputs) {
+      const input = record(rawInput);
+      const inputName = text(input?.name);
+      const physical = Array.isArray(input?.physical) ? input.physical : [];
+      if (!input || !inputName) continue;
+      for (const rawPhysical of physical) {
+        const item = record(rawPhysical);
+        const physicalDataset = text(item?.table);
+        const physicalColumn = text(item?.column);
+        if (!item || !physicalDataset || !physicalColumn) continue;
+        columns.push({
+          outputName: normalizeName(outputName),
+          inputName: normalizeName(inputName),
+          physicalDataset: normalizeName(physicalDataset),
+          physicalColumn: normalizeName(physicalColumn),
+          qualifier: text(input.qualifier) ? normalizeName(text(input.qualifier)!) : null,
+        });
+      }
+    }
+  }
+  return columns;
+}
+
 export function buildRelationTreeIndex(
   relationNodes: readonly Record<string, unknown>[],
 ): RelationTreeIndex {
@@ -50,10 +94,16 @@ export function buildRelationTreeIndex(
     const branches = Array.isArray(body.branches)
       ? body.branches.map((value) => String(value)).filter(Boolean)
       : [];
+    const outputColumns = Array.isArray(body.output_columns)
+      ? body.output_columns.map((value) => text(value)).filter((value): value is string => value !== null)
+      : [];
     relations.set(relationId, {
       relationId,
       relationType,
       physicalDataset: physicalDataset ? normalizeName(physicalDataset) : null,
+      sourceRelationId: text(body.source) ?? text(row.source),
+      outputInputColumns: outputInputColumns(body),
+      outputColumns: outputColumns.map(normalizeName),
       joinType: text(body.join_type),
       leftRelationId: text(body.left),
       rightRelationId: text(body.right),

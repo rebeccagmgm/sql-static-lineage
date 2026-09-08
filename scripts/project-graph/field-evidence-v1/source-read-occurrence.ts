@@ -28,10 +28,21 @@ export interface FieldExpressionContext {
   readonly expression: JsonRecord;
   readonly relationId: string | null;
   readonly ordinal: number | null;
+  readonly originExpressionId?: string;
+  readonly routeRelationPath?: readonly string[];
+  /** Expressions traversed while routing a named output to this context. */
+  readonly routeExpressionHops?: readonly JsonRecord[];
+  readonly routePathHadAggregation?: boolean;
 }
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function record(value: unknown): JsonRecord | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as JsonRecord
+    : null;
 }
 
 function numberValue(value: unknown): number | null {
@@ -183,13 +194,95 @@ function matchingReads(input: {
   readonly index: RelationTreeIndex;
   readonly leafRelationId: string;
   readonly sourceTable: string;
+  readonly sourceColumn: string;
+  /** Logical CTE output read by this exact branch expression. */
+  readonly cteOutputColumn: string | null;
+  /** Optional logical relation qualifier from that same structured input. */
+  readonly cteRelationQualifier: string | null;
+  readonly bindingByReadRelation: ReadonlyMap<string, string>;
 }): readonly RelationRecord[] {
   const targetTable = tableKey(input.sourceTable);
+  const targetColumn = normalizeName(input.sourceColumn);
   const expressionScopeId = input.index.relations.get(input.leafRelationId)?.scopeId ?? null;
-  return readRelationsInSubtree(input.index, input.leafRelationId).filter((relation) => {
-    if (relation.physicalDataset !== targetTable) return false;
-    return isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId);
-  });
+  const matches = new Map<string, RelationRecord>();
+  const reads = readRelationsInSubtree(input.index, input.leafRelationId);
+  // A CTE bridge is sound only when this branch has one immediate input
+  // relation.  Counting just source-backed reads silently ignores a physical
+  // sibling in the same join, which makes an unqualified CTE reference look
+  // unique when it is not.
+  const directInputReads = reads.filter((relation) =>
+    isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId),
+  );
+  const referencedInputReads = input.cteRelationQualifier
+    ? directInputReads.filter((relation) => relationMatchesQualifier(
+      relation, input.cteRelationQualifier!, input.bindingByReadRelation,
+    ))
+    : directInputReads;
+  // Unqualified inputs can cross a CTE only if the entire immediate logical
+  // input domain is singular.  A matching CTE body must not hide a sibling
+  // derived/CTE relation that could also supply the column.
+  const hasUniqueDirectInput = referencedInputReads.length === 1;
+  const cteBridges: Array<{
+    readonly cteRead: RelationRecord;
+    readonly cteBody: RelationRecord;
+    readonly qualifier: string | null;
+  }> = [];
+  for (const relation of reads) {
+    if (relation.physicalDataset === targetTable) {
+      if (isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) {
+        matches.set(relation.relationId, relation);
+      }
+      continue;
+    }
+
+    // A CTE reference may cross its body only after three Facts agree: this
+    // branch reads a named logical output, the body emits that output, and that
+    // output lists this physical field.  A CTE source pointer or table match
+    // alone is insufficient evidence.
+    if (
+        !hasUniqueDirectInput
+      || !relation.sourceRelationId
+      || !input.cteOutputColumn
+        || relation.relationId !== referencedInputReads[0]!.relationId
+    ) continue;
+    if (!isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) continue;
+    const cteBody = input.index.relations.get(relation.sourceRelationId);
+    if (!cteBody) continue;
+    const witnesses = cteBody.outputInputColumns.filter((column) =>
+      column.outputName === normalizeName(input.cteOutputColumn!)
+      && column.physicalDataset === targetTable
+      && column.physicalColumn === targetColumn,
+    );
+    if (witnesses.length !== 1) continue;
+    cteBridges.push({ cteRead: relation, cteBody, qualifier: witnesses[0]!.qualifier });
+  }
+
+  // A branch can only cross one logical CTE read for one unqualified input.
+  // If Facts expose two viable reads, they have not established which relation
+  // supplied the column; do not collapse their common physical dependency.
+  if (cteBridges.length !== 1) {
+    return [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId));
+  }
+  const bridge = cteBridges[0]!;
+  const bodyScope = bridge.cteBody.scopeId;
+  for (const sourceRead of readRelationsInSubtree(input.index, bridge.cteBody.relationId)) {
+    const suffix = bodyScope && sourceRead.scopeId?.startsWith(`${bodyScope}.`)
+      ? sourceRead.scopeId.slice(bodyScope.length)
+      : sourceRead.scopeId === bodyScope ? "" : null;
+    // Do not recursively traverse a nested CTE body.  That needs another
+    // explicit output-to-input bridge and is deliberately left unresolved.
+    const isDirectBodyRead = suffix !== null && !suffix.includes(".(child)");
+    if (
+      isDirectBodyRead
+      && sourceRead.physicalDataset === targetTable
+      && (!bridge.qualifier || relationMatchesQualifier(
+        sourceRead, bridge.qualifier, input.bindingByReadRelation,
+      ))
+    ) {
+      matches.set(sourceRead.relationId, sourceRead);
+    }
+  }
+  return [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId));
 }
 
 function relationMatchesQualifier(
@@ -208,6 +301,201 @@ function relationMatchesQualifier(
   }
   const relationSegments = relation.relationId.toLowerCase().split(/[:.]/);
   return relationSegments.includes(normalizedQualifier);
+}
+
+function outputExpression(
+  relationId: string,
+  outputName: string,
+  expressions: ReadonlyMap<string, readonly JsonRecord[]>,
+): JsonRecord | null {
+  const matches = (expressions.get(relationId) ?? []).filter((expression) =>
+    normalizeName(String(expression.output ?? "")) === normalizeName(outputName),
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+function physicalInput(input: JsonRecord, sourceTable: string, sourceColumn: string): boolean {
+  return (Array.isArray(input.physical) ? input.physical : []).some((raw) => {
+    const field = record(raw);
+    return field !== null
+      && normalizeName(String(field.table ?? "")) === normalizeName(sourceTable)
+      && normalizeName(String(field.column ?? "")) === normalizeName(sourceColumn);
+  });
+}
+
+/**
+ * Route a physical input through named derived outputs only.  This is a
+ * bounded fallback for an outer projection which current setop sinking cannot
+ * reach through intervening joins/filters/aggregates.  It never guesses an
+ * unqualified join side: every selected producer must be unique in Facts.
+ */
+export function routeNamedOutputContexts(input: {
+  readonly expression: JsonRecord;
+  readonly sourceTable: string;
+  readonly sourceColumn: string;
+  readonly relationExpressionsByRelationId: ReadonlyMap<string, readonly JsonRecord[]>;
+  readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+  readonly index: RelationTreeIndex;
+}): readonly FieldExpressionContext[] {
+  let current = input.expression;
+  const originExpressionId = text(current.expression_id);
+  const path: string[] = [];
+  const routeExpressionHops: JsonRecord[] = [];
+  let routePathHadAggregation = false;
+  const visited = new Set<string>();
+  for (let depth = 0; depth < 16; depth += 1) {
+    const relationId = text(current.relation_id);
+    const outputName = text(current.output_name);
+    if (!relationId || !outputName || visited.has(relationId)) return [];
+    visited.add(relationId);
+    path.push(relationId);
+    const raw = outputExpression(relationId, outputName, input.relationExpressionsByRelationId);
+    if (!raw) return [];
+    // `current` is the field-expression record and has the expression text,
+    // physical dependency status, and relation id required for classification.
+    // The relation-body expression below is only a routing witness.
+    routeExpressionHops.push(current);
+    const matchingInputs = (Array.isArray(raw.input_columns) ? raw.input_columns : [])
+      .map(record)
+      .filter((item): item is JsonRecord => item !== null && physicalInput(
+        item, input.sourceTable, input.sourceColumn,
+      ));
+    if (matchingInputs.length !== 1) return [];
+    const namedInput = matchingInputs[0]!;
+    const inputName = text(namedInput.name);
+    if (!inputName) return [];
+    const qualifier = text(namedInput.qualifier);
+    if (qualifier) {
+      const currentScope = input.index.relations.get(relationId)?.scopeId;
+      if (!currentScope) return [];
+      // Relation scopes are lexical: root -> root.index -> root.index.x.
+      // Exact equality prevents a same-named nested alias from shadowing this
+      // output while still allowing an outer root scope.
+      const expectedScope = `${currentScope}.${normalizeName(qualifier)}`;
+      const candidates = [...relationSubtree(input.index, relationId)]
+        .map((id) => input.index.relations.get(id))
+        .filter((relation): relation is RelationRecord => relation !== undefined)
+        .filter((relation) =>
+          normalizeName(relation.scopeId ?? "") === expectedScope
+          && outputExpression(relation.relationId, inputName, input.relationExpressionsByRelationId) !== null,
+        );
+      if (candidates.length !== 1) return [];
+      const next = outputExpression(
+        candidates[0]!.relationId, inputName, input.relationExpressionsByRelationId,
+      );
+      const nextExpression = next && [...(input.expressionsByRelation.get(candidates[0]!.relationId)?.values() ?? [])]
+        .filter((item) => normalizeName(String(item.output_name ?? "")) === normalizeName(inputName));
+      if (!nextExpression || nextExpression.length !== 1) return [];
+      current = nextExpression[0]!;
+      continue;
+    }
+    let sourceId = input.index.relations.get(relationId)?.sourceRelationId ?? null;
+    while (sourceId && !visited.has(sourceId)) {
+      const source = input.index.relations.get(sourceId);
+      if (!source) return [];
+      path.push(sourceId);
+      if (source.relationType === "setop") {
+        const setopOrdinals = source.outputColumns
+          .map((column, ordinal) => normalizeName(column) === normalizeName(inputName)
+            ? ordinal
+            : null)
+          .filter((ordinal): ordinal is number => ordinal !== null);
+        if (setopOrdinals.length !== 1) return [];
+        const setopOrdinal = setopOrdinals[0]!;
+        if (!hasCompleteSetopBranchEvidence({
+          setopRelation: source,
+          ordinal: setopOrdinal,
+          expressionsByRelation: input.expressionsByRelation,
+          index: input.index,
+        })) return [];
+        const contexts = expandSetopBranches({
+          setopRelation: source,
+          ordinal: setopOrdinal,
+          expressionsByRelation: input.expressionsByRelation,
+          index: input.index,
+        });
+        return contexts.map((context) => ({
+          ...context,
+          originExpressionId: originExpressionId ?? undefined,
+          routeRelationPath: [...path, context.relationId ?? ""].filter(Boolean),
+          routeExpressionHops: [...routeExpressionHops, context.expression],
+          routePathHadAggregation,
+        })).filter((context) => expressionAcceptsPhysicalSource(
+          context.expression, input.sourceTable, input.sourceColumn,
+        ));
+      }
+      // The only non-setop hop observed for this repair is the aggregate that
+      // directly supplies the setop output.  Do not treat arbitrary source
+      // pointers (and their possible renames) as transparent projections.
+      if (source.relationType !== "aggregate") return [];
+      routePathHadAggregation = true;
+      visited.add(sourceId);
+      sourceId = source.sourceRelationId;
+    }
+    return [];
+  }
+  return [];
+}
+
+/**
+ * Router fallback is stricter than the established setop expander.  A missing
+ * branch expression or dependency record is unknown, not evidence that the
+ * physical field is absent from that branch.  A present `input_fields: []`
+ * (or explicit NO_PHYSICAL_INPUT) is the only safe non-dependency.
+ */
+function hasCompleteSetopBranchEvidence(input: {
+  readonly setopRelation: RelationRecord;
+  readonly ordinal: number;
+  readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+  readonly index: RelationTreeIndex;
+  readonly seenSetops?: ReadonlySet<string>;
+}): boolean {
+  const seen = new Set(input.seenSetops ?? []);
+  if (seen.has(input.setopRelation.relationId)) return false;
+  seen.add(input.setopRelation.relationId);
+  if (input.setopRelation.setopBranches.length === 0) return false;
+  return input.setopRelation.setopBranches.every((branchRelationId) => {
+    const branchRelation = input.index.relations.get(branchRelationId);
+    if (!branchRelation) return false;
+    if (branchRelation.relationType === "setop") {
+      return hasCompleteSetopBranchEvidence({
+        setopRelation: branchRelation,
+        ordinal: input.ordinal,
+        expressionsByRelation: input.expressionsByRelation,
+        index: input.index,
+        seenSetops: seen,
+      });
+    }
+    const expression = input.expressionsByRelation.get(branchRelationId)?.get(input.ordinal);
+    if (!expression) return false;
+    const dependencyStatus = text(expression.input_dependency_status);
+    const unresolvedInputs = expression.unresolved_input_columns;
+    if (
+      (Array.isArray(unresolvedInputs) && unresolvedInputs.length > 0)
+      || dependencyStatus === "PARTIAL"
+      || dependencyStatus === "UNRESOLVED"
+      || dependencyStatus === "SQL_CANDIDATE"
+    ) return false;
+    const inputFields = expression.input_fields;
+    if (!Array.isArray(inputFields)) return false;
+    // A legacy non-empty list is sufficient evidence for the old producer.
+    // An empty list is evidence of no dependency only when the producer says
+    // so explicitly; otherwise it is an omitted/incomplete dependency record.
+    return inputFields.length > 0 || dependencyStatus === "NO_PHYSICAL_INPUT";
+  });
+}
+
+function expressionAcceptsPhysicalSource(
+  expression: JsonRecord,
+  sourceTable: string,
+  sourceColumn: string,
+): boolean {
+  return (Array.isArray(expression.input_fields) ? expression.input_fields : []).some((raw) => {
+    const field = record(raw);
+    return field !== null
+      && normalizeName(String(field.table ?? "")) === normalizeName(sourceTable)
+      && normalizeName(String(field.column ?? "")) === normalizeName(sourceColumn);
+  });
 }
 
 function narrowByQualifiers(input: {
@@ -233,6 +521,9 @@ export function resolveSourceReadOccurrence(input: {
   readonly expressionText?: string | null;
   /** A single structured reference, already separated from its sibling inputs. */
   readonly referenceQualifier?: string;
+  /** Named CTE output from the branch relation's structured input_columns. */
+  readonly cteOutputColumn?: string | null;
+  readonly cteRelationQualifier?: string | null;
   readonly leafRelationId: string | null;
   readonly index: RelationTreeIndex;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
@@ -264,6 +555,10 @@ export function resolveSourceReadOccurrence(input: {
     index: input.index,
     leafRelationId: input.leafRelationId,
     sourceTable: input.sourceTable,
+    sourceColumn: input.sourceColumn,
+    cteOutputColumn: input.cteOutputColumn ?? null,
+    cteRelationQualifier: input.cteRelationQualifier ?? null,
+    bindingByReadRelation: input.bindingByReadRelation,
   });
   const referenceQualifier = input.referenceQualifier;
   const matches = referenceQualifier

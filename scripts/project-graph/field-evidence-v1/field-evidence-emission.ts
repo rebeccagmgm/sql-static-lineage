@@ -20,6 +20,7 @@ import {
   expandSetopBranchExpressions,
   expressionsByRelationAndOrdinal,
   leafRelationIdForExpression,
+  routeNamedOutputContexts,
   resolveSourceReadOccurrence,
   type FieldExpressionContext,
   type SourceReadOccurrenceResolution,
@@ -197,6 +198,49 @@ function relationQualifiersForSourceField(input: {
   return matchedSource && qualifiers.size > 0 ? [...qualifiers].sort() : null;
 }
 
+function cteInputReferenceForSourceField(input: {
+  readonly expression: JsonRecord;
+  readonly sourceField: PhysicalFieldIdentity;
+  readonly indexes: FieldEvidenceIndexes;
+}): Readonly<{ outputColumn: string; relationQualifier: string | null }> | null {
+  const relationId = text(input.expression.relation_id);
+  const outputName = text(input.expression.output_name);
+  if (!relationId || !outputName) return null;
+  const expressions = input.indexes.relationExpressionsByRelationId.get(relationId) ?? [];
+  const matching = expressions.filter((candidate) =>
+    normalizeName(String(candidate.output ?? "")) === normalizeName(outputName),
+  );
+  if (matching.length !== 1) return null;
+  const table = normalizeName(input.sourceField.qualifiedName);
+  const column = normalizeName(input.sourceField.column);
+  const references = new Map<string, Set<string | null>>();
+  for (const rawInput of Array.isArray(matching[0]!.input_columns)
+    ? matching[0]!.input_columns
+    : []) {
+    const item = record(rawInput);
+    const physical = Array.isArray(item?.physical) ? item.physical : [];
+    if (physical.some((raw) => {
+      const field = record(raw);
+      return field !== null
+        && normalizeName(String(field.table ?? "")) === table
+        && normalizeName(String(field.column ?? "")) === column;
+    })) {
+      const name = text(item?.name);
+      if (name) {
+        const normalizedName = normalizeName(name);
+        const qualifiers = references.get(normalizedName) ?? new Set<string | null>();
+        qualifiers.add(text(item?.qualifier) ? normalizeName(text(item?.qualifier)!) : null);
+        references.set(normalizedName, qualifiers);
+      }
+    }
+  }
+  if (references.size !== 1) return null;
+  const [outputColumn, qualifiers] = [...references.entries()][0]!;
+  return qualifiers.size === 1
+    ? { outputColumn, relationQualifier: [...qualifiers][0]! }
+    : null;
+}
+
 export function emitFieldEvidenceForInput(input: {
   readonly taskId: string;
   readonly expression: JsonRecord;
@@ -205,11 +249,16 @@ export function emitFieldEvidenceForInput(input: {
   readonly expanded: ExpandedMaterializedField;
   readonly indexes: FieldEvidenceIndexes;
 }): readonly EmittedFieldEvidence[] {
-  const expressionContexts = expandSetopBranchExpressions({
+  const expandedContexts = expandSetopBranchExpressions({
     expression: input.expression,
     expressionsByRelation: input.indexes.expressionsByRelation,
     index: input.indexes.relationTree,
   });
+  // Preserve the established resolver and its contexts first.  Named-output
+  // routing is deliberately a CTE-scope fallback: applying it before this
+  // point changes successful and ambiguous results, and leaks the route leaf
+  // into the downstream expression identity.
+  const expressionContexts = expandedContexts;
   const outputs: EmittedFieldEvidence[] = [];
   const materializationLeafExpression = input.expanded.materializationBridgeIds.length > 0
     && input.expanded.leafExpressionId
@@ -284,7 +333,125 @@ export function emitFieldEvidenceForInput(input: {
       });
     }
   }
-  return outputs;
+
+  const isOuterOnlyContext = expressionContexts.length === 1
+    && expressionContexts[0]?.expressionId === text(input.expression.expression_id);
+  const needsCteScopeFallback = outputs.some((output) =>
+    output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED"
+    && output.sourceResolution.sourceReadOccurrenceReason === "CTE_SCOPE_UNRESOLVED",
+  );
+  if (!isOuterOnlyContext || !needsCteScopeFallback) return outputs;
+
+  const routedContexts = routeNamedOutputContexts({
+    expression: input.expression,
+    sourceTable: input.sourceField.qualifiedName,
+    sourceColumn: input.sourceField.column,
+    relationExpressionsByRelationId: input.indexes.relationExpressionsByRelationId,
+    expressionsByRelation: input.indexes.expressionsByRelation,
+    index: input.indexes.relationTree,
+  });
+  if (routedContexts.length === 0) return outputs;
+
+  const outerContext = expressionContexts[0]!;
+  const routedOutputs: EmittedFieldEvidence[] = [];
+  for (const routed of routedContexts) {
+    if (!expressionAcceptsSourceField(routed.expression, input.sourceField)) continue;
+    const routeLeafRelationId = leafRelationIdForExpression(
+      routed.expression,
+      text(routed.expression.relation_id) ?? input.expanded.leafRelationId,
+    );
+    const branchInputField = inputFieldRecordForSource(routed.expression, input.sourceField);
+    const relationQualifiers = relationQualifiersForSourceField({
+      expression: routed.expression,
+      sourceField: input.sourceField,
+      indexes: input.indexes,
+    });
+    const cteInputReference = cteInputReferenceForSourceField({
+      expression: routed.expression,
+      sourceField: input.sourceField,
+      indexes: input.indexes,
+    });
+    for (const relationQualifier of relationQualifiers ?? [null]) {
+      const sourceResolution = resolveSourceReadOccurrence({
+        taskId: input.taskId,
+        expressionId: routed.expressionId,
+        sourceTable: input.sourceField.qualifiedName,
+        sourceColumn: input.sourceField.column,
+        inputField: relationQualifier
+          ? { ...branchInputField, qualifier: relationQualifier }
+          : branchInputField,
+        expressionText: text(routed.expression.expression_text),
+        ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
+          ? { referenceQualifier: relationQualifier }
+          : {}),
+        cteOutputColumn: cteInputReference?.outputColumn ?? null,
+        cteRelationQualifier: cteInputReference?.relationQualifier ?? null,
+        leafRelationId: routeLeafRelationId,
+        index: input.indexes.relationTree,
+        readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
+        bindingByReadRelation: input.indexes.bindingByReadRelation,
+      });
+      const routeHops = routed.routeExpressionHops ?? [routed.expression];
+      const composed = composePathSubtype([
+        ...input.expanded.subtypeHops,
+        ...routeHops.map((expression) => classifyExpressionSubtype(
+          expression,
+          relationTypeForExpression(input.indexes, text(expression.relation_id)),
+        )),
+        ...(routed.routePathHadAggregation ? [{
+          subtype: "AGGREGATION" as const,
+          subtypeReason: null,
+          pathHadAggregation: true,
+        }] : []),
+      ]);
+      routedOutputs.push({
+        // The route only proves the source-read identity.  Consumers use this
+        // context as the target edge identity, so it must remain the outer
+        // expression that initiated the route.
+        expressionContexts: [outerContext],
+        sourceResolution,
+        subtype: composed.subtype,
+        subtypeReason: composed.subtypeReason,
+        leafRelationId: routeLeafRelationId,
+      });
+    }
+  }
+  if (routedOutputs.length === 0) return outputs;
+  // A route represents one logical output through every required setop branch.
+  // If any branch lacks a confirmed occurrence, retaining only its resolved
+  // siblings would falsely present the outer dependency as complete.
+  if (routedOutputs.some((output) =>
+    output.sourceResolution.sourceReadOccurrenceStatus !== "RESOLVED",
+  )) return outputs;
+
+  // Multiple branches can prove the same physical read.  Emit it once and
+  // compose their evidence so consumer map insertion cannot depend on output
+  // order or overwrite a stronger subtype.
+  const byReadIdentity = new Map<string, EmittedFieldEvidence[]>();
+  for (const output of routedOutputs) {
+    const key = `${output.sourceResolution.sourceReadOccurrenceId!}\u0000${output.sourceResolution.sourceRelationId!}`;
+    const values = byReadIdentity.get(key) ?? [];
+    values.push(output);
+    byReadIdentity.set(key, values);
+  }
+  const mergedRoutedOutputs = [...byReadIdentity.values()].map((values) => {
+    const first = values[0]!;
+    const composed = composePathSubtype(values.map((value) => ({
+      subtype: value.subtype,
+      subtypeReason: value.subtypeReason,
+      pathHadAggregation: value.subtype === "AGGREGATION",
+    })));
+    return {
+      ...first,
+      subtype: composed.subtype,
+      subtypeReason: composed.subtypeReason,
+    };
+  });
+  const withoutCteScopeFallback = outputs.filter((output) => !(
+    output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED"
+    && output.sourceResolution.sourceReadOccurrenceReason === "CTE_SCOPE_UNRESOLVED"
+  ));
+  return [...withoutCteScopeFallback, ...mergedRoutedOutputs];
 }
 
 export function materializationBreakGap(input: {

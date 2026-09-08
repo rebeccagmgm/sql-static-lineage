@@ -599,4 +599,98 @@ describe("field-evidence emission branch scoping", () => {
     expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
   });
 
+  it("falls back through a complete routed setop while preserving outer identity and aggregation", () => {
+    const outer = {
+      expression_id: "expr:outer", relation_id: "rel:root.project", ordinal: 0,
+      output_name: "final_amount", expression_text: "x.dyna",
+      input_fields: [{ table: "demo.source", column: "amount" }],
+      input_dependency_status: "PHYSICAL",
+    };
+    const branch = (id: string, relationId: string) => ({
+      expression_id: id, relation_id: relationId, ordinal: 1, output_name: "dyna",
+      expression_text: "a.amount", input_fields: [{ table: "demo.source", column: "amount" }],
+      input_dependency_status: "PHYSICAL",
+    });
+    const branch0 = branch("expr:b0", "rel:setop.b0");
+    const branch1 = branch("expr:b1", "rel:setop.b1");
+    const expressions = [outer, {
+      expression_id: "expr:x", relation_id: "rel:root.x.project", ordinal: 0,
+      output_name: "dyna", expression_text: "dyna",
+      input_fields: [{ table: "demo.source", column: "amount" }], input_dependency_status: "PHYSICAL",
+    }, branch0, branch1];
+    const relationNodes = [
+      { relation_id: "rel:root.project", relation_type: "project", relation: {
+        type: "project", scope_id: "root", expressions: [{ output: "final_amount", input_columns: [{ name: "dyna", qualifier: "x", physical: [{ table: "demo.source", column: "amount" }] }] }],
+      } },
+      { relation_id: "rel:root.x.project", relation_type: "project", relation: {
+        type: "project", scope_id: "root.x", source: "rel:aggregate", expressions: [{ output: "dyna", input_columns: [{ name: "dyna", physical: [{ table: "demo.source", column: "amount" }] }] }],
+      } },
+      { relation_id: "rel:aggregate", relation_type: "aggregate", relation: { type: "aggregate", source: "rel:setop" } },
+      { relation_id: "rel:setop", relation_type: "setop", relation: { type: "setop", output_columns: ["other", "dyna"], branches: ["rel:setop.b0", "rel:setop.b1"] } },
+      { relation_id: "rel:setop.b0", relation_type: "project", relation: { type: "project", scope_id: "root.x.b0" } },
+      { relation_id: "rel:setop.b1", relation_type: "project", relation: { type: "project", scope_id: "root.x.b1" } },
+      { relation_id: "rel:shared.read", relation_type: "read", relation: { type: "read", table: "demo.source", binding: "a", scope_id: "root.x.source" } },
+    ];
+    const indexes = buildFieldEvidenceIndexes({
+      taskId: "route", expressions, relationNodes,
+      relationEdges: [
+        { from_relation_id: "rel:root.x.project", to_relation_id: "rel:root.project" },
+        { from_relation_id: "rel:shared.read", to_relation_id: "rel:setop.b0" },
+        { from_relation_id: "rel:shared.read", to_relation_id: "rel:setop.b1" },
+      ],
+      datasetIoReads: [{ direction: "READ", read_occurrences: [{ relation_id: "rel:shared.read", occurrence_id: "occ:shared" }] }],
+    });
+    const result = emitFieldEvidenceForInput({
+      taskId: "route", expression: outer, sourceField: field("demo.source", "amount"),
+      inputField: { table: "demo.source", column: "amount" },
+      expanded: { field: field("demo.source", "amount"), materializationBridgeIds: [], leafExpressionId: "expr:outer", leafRelationId: "rel:root.project", pathHadAggregation: false, subtypeHops: [] },
+      indexes,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.expressionContexts[0]?.expressionId).toBe("expr:outer");
+    expect(result[0]?.sourceResolution.sourceReadOccurrenceId).toBe("occ:shared");
+    expect(result[0]?.subtype).toBe("AGGREGATION");
+  });
+
+  it("keeps the old unresolved result when routed setop evidence misses a branch", () => {
+    const expression = {
+      expression_id: "expr:outer", relation_id: "rel:root.project", ordinal: 0,
+      output_name: "final", expression_text: "x.amount",
+      input_fields: [{ table: "demo.source", column: "amount" }], input_dependency_status: "PHYSICAL",
+    };
+    const indexes = buildFieldEvidenceIndexes({
+      taskId: "missing", expressions: [expression, {
+        expression_id: "expr:branch", relation_id: "rel:setop.b0", ordinal: 1,
+        output_name: "amount", expression_text: "a.amount",
+        input_fields: [{ table: "demo.source", column: "amount" }], input_dependency_status: "PHYSICAL",
+      }],
+      relationNodes: [
+        { relation_id: "rel:root.project", relation_type: "project", relation: { type: "project", scope_id: "root", expressions: [{ output: "final", input_columns: [{ name: "amount", qualifier: "x", physical: [{ table: "demo.source", column: "amount" }] }] }] } },
+        { relation_id: "rel:root.x.project", relation_type: "project", relation: { type: "project", scope_id: "root.x", source: "rel:aggregate", expressions: [{ output: "amount", input_columns: [{ name: "amount", physical: [{ table: "demo.source", column: "amount" }] }] }] } },
+        { relation_id: "rel:aggregate", relation_type: "aggregate", relation: { type: "aggregate", source: "rel:setop" } },
+        { relation_id: "rel:setop", relation_type: "setop", relation: { type: "setop", output_columns: ["amount"], branches: ["rel:setop.b0", "rel:setop.b1"] } },
+        { relation_id: "rel:setop.b0", relation_type: "project", relation: { type: "project" } },
+        { relation_id: "rel:setop.b1", relation_type: "project", relation: { type: "project" } },
+      ],
+      relationEdges: [{ from_relation_id: "rel:root.x.project", to_relation_id: "rel:root.project" }], datasetIoReads: [],
+    });
+    const [result] = emitFieldEvidenceForInput({
+      taskId: "missing", expression, sourceField: field("demo.source", "amount"), inputField: { table: "demo.source", column: "amount" },
+      expanded: { field: field("demo.source", "amount"), materializationBridgeIds: [], leafExpressionId: "expr:outer", leafRelationId: "rel:root.project", pathHadAggregation: false, subtypeHops: [] }, indexes,
+    });
+    expect(result?.sourceResolution).toMatchObject({ sourceReadOccurrenceStatus: "UNRESOLVED", sourceReadOccurrenceReason: "CTE_SCOPE_UNRESOLVED" });
+  });
+
+  it("does not route an already resolved direct read", () => {
+    const expression = { expression_id: "expr:direct", relation_id: "rel:direct.project", ordinal: 0, output_name: "amount", expression_text: "a.amount", input_fields: [{ table: "demo.source", column: "amount" }] };
+    const indexes = buildFieldEvidenceIndexes({ taskId: "direct", expressions: [expression], relationNodes: [
+      { relation_id: "rel:direct.project", relation_type: "project", relation: { type: "project", scope_id: "root" } },
+      { relation_id: "rel:direct.read", relation_type: "read", relation: { type: "read", table: "demo.source", binding: "a", scope_id: "root.a" } },
+    ], relationEdges: [{ from_relation_id: "rel:direct.read", to_relation_id: "rel:direct.project" }], datasetIoReads: [{ direction: "READ", read_occurrences: [{ relation_id: "rel:direct.read", occurrence_id: "occ:direct" }] }] });
+    const result = emitFieldEvidenceForInput({ taskId: "direct", expression, sourceField: field("demo.source", "amount"), inputField: { table: "demo.source", column: "amount" }, expanded: { field: field("demo.source", "amount"), materializationBridgeIds: [], leafExpressionId: "expr:direct", leafRelationId: "rel:direct.project", pathHadAggregation: false, subtypeHops: [] }, indexes });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.expressionContexts[0]?.expressionId).toBe("expr:direct");
+    expect(result[0]?.sourceResolution.sourceReadOccurrenceId).toBe("occ:direct");
+  });
+
 });
