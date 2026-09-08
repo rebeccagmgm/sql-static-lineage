@@ -3,6 +3,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { resolveWorkspacePaths } from "../config/workspace-paths.ts";
 
 import { Schema, SqlSession, type SchemaMapping } from "sqllens";
+import { describeStandardizedSql } from "../input/shared/standardized-sql.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { buildPlanFacts, EXPRESSION_DEPENDENCY_ADAPTER_VERSION } from "../plans/plan-adapter.ts";
 import type { PlanFacts } from "../plans/plan-contract.ts";
@@ -634,6 +635,7 @@ function contextHash(task: GenericTaskProfile, profile: GenericAnalysisProfile, 
 		declared_outputs: normalizeWrites(task),
 		sql_slot: task.sql_slot ?? null,
 		input_pack_provenance: task.input_pack_provenance ?? null,
+		...(task.standardized_input ? { standardized_input: task.standardized_input } : {}),
 		platform_target_query_output: task.platform_target_query_output ?? null,
 		write_partition_evidence: task.write_partition_evidence ?? null,
 		sql_write_partition_evidence: task.sql_write_partition_evidence ?? null,
@@ -1397,6 +1399,18 @@ function buildTaskBundle(
 		const statementId = statementSlot
 			? `task:${task.task_id}:slot:${statementSlot}:statement:${localOrdinal}`
 			: `task:${task.task_id}:statement:${statementIndex}`;
+		const configuration = task.standardized_input?.configurations.find(item => item.ordinal === statementIndex);
+		if (configuration) {
+			const verified = profile.dialect === "databricks" ? describeStandardizedSql(rawSql, "databricks")[0]?.configuration : null;
+			if (!verified || verified.key !== configuration.key || verified.value !== configuration.value) throw new Error("STANDARDIZED_CONFIGURATION_INVALID");
+			if (cell.errors > 0 || configuration.start !== span.start || configuration.end !== span.end ||
+				sha256(rawSql.replace(/\r\n?/g, "\n").trim()) !== configuration.statementSha256) throw new Error("STANDARDIZED_STATEMENT_MISMATCH");
+			statements.push({ statement_id: statementId, task_id: task.task_id, statement_index: statementIndex,
+				statement_type: "SET_CONFIGURATION", span, raw_sql: rawSql, parse_status: "SUCCESS", diagnostic: cell.diagnostics,
+				field_analysis: "NOT_APPLICABLE", configuration: { key: configuration.key, value: configuration.value },
+				standardized_input_sha256: task.standardized_input!.artifactSha256 });
+			continue;
+		}
 		const statementWrites = extractSqlWrites(rawSql);
 		if (statementWrites.length > 1) {
 			throw new Error(

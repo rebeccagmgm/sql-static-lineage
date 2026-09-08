@@ -30,6 +30,7 @@ import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { createTableLikeSource, parseDdlSchema } from "../plans/ddl-schema.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
+import { loadStandardizedInput } from "../input/shared/standardized-sql.ts";
 import { normalizeRepeatedSqlForAnalysis } from "../input/shared/sql-analysis-normalization.ts";
 import { extractSqlReadTableNames } from "../input/shared/sql-table-references.ts";
 import { controlledTaskEndpointPlatform } from "../input/shared/task-endpoints.ts";
@@ -110,6 +111,7 @@ export interface SelectedLineageSql {
 }
 
 export interface PreparedInputPackTask {
+	readonly standardizedArtifact?: { readonly bytes: string; readonly sha256: string };
 	readonly taskId: string;
 	readonly taskName: string | null;
 	readonly taskCategory: string;
@@ -129,6 +131,7 @@ export interface PreparedInputPackTask {
 }
 
 export interface PrepareInputPackTaskOptions {
+  readonly standardizedInput?: boolean;
 	readonly dataRoot: string;
 	readonly taskId: string;
 	readonly taskPath?: string;
@@ -138,6 +141,7 @@ export interface PrepareInputPackTaskOptions {
 }
 
 export interface RunInputPackMachineFactsOptions {
+  readonly standardizedInput?: boolean;
 	readonly dataRoot: string;
 	readonly taskIds: readonly string[];
 	readonly outputRoot: string;
@@ -1421,7 +1425,10 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		defaultSchema,
 		taskLocalNames,
 	);
+	const standardized = options.standardizedInput ? loadStandardizedInput(taskPath, task, dialect, combined.sql.content) : undefined;
+	if (standardized) inputHashes.set(standardized.manifestPath, standardized.profile.artifactSha256);
 	const profileTask: GenericTaskProfile = {
+		...(standardized ? { standardized_input: standardized.profile } : {}),
 		task_id: options.taskId,
 		sql_snapshot: combined.sql.path,
 		...(defaultSchema ? { default_schema: defaultSchema.schema } : {}),
@@ -1453,6 +1460,7 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		schemaBundle: bundle,
 		schemaBundleHash: bundleHash,
 		profileTask,
+		...(standardized ? { standardizedArtifact: { bytes: standardized.bytes, sha256: standardized.profile.artifactSha256 } } : {}),
 		provenance,
 		inputHashes,
 	};
@@ -1471,6 +1479,13 @@ function frozenSqlPath(outputRoot: string, prepared: PreparedInputPackTask): str
 function freezeRawSqlSources(outputRoot: string, prepared: PreparedInputPackTask): void {
 	const directory = join(outputRoot, "input-pack-sources", prepared.taskId);
 	mkdirSync(directory, { recursive: true });
+	if (prepared.standardizedArtifact) {
+		const artifact = prepared.standardizedArtifact;
+		const path = join(directory, `standardized-${artifact.sha256}.json`);
+		if (existsSync(path)) {
+			if (sha256File(path) !== artifact.sha256) throw new Error("STANDARDIZED_ARTIFACT_HASH_COLLISION");
+		} else writeFileSync(path, artifact.bytes, "utf8");
+	}
 	for (const source of prepared.sqlSources) {
 		const path = join(directory, `${source.slot}-${source.sha256}.sql`);
 		if (existsSync(path)) {
@@ -1509,6 +1524,7 @@ export function runInputPackMachineFacts(options: RunInputPackMachineFactsOption
 			if (taskPaths.length === 0) throw new Error(`TASK_INPUT_PACK_MISSING:${taskId}`);
 			if (taskPaths.length !== 1) throw new Error(`TASK_INPUT_PACK_AMBIGUOUS:${taskId}`);
 			const prepared = prepareInputPackTask({
+				standardizedInput: options.standardizedInput,
 				dataRoot: options.dataRoot,
 				taskId,
 				taskPath: taskPaths[0],
@@ -1621,6 +1637,7 @@ export function parseInputPackMachineFactsCli(args: readonly string[]): RunInput
 		indexMode: parseIndexMode(option(args, "--index-mode")),
 		writerCatalogPath: paths.writerCatalogPath,
 		...(args.includes("--no-writer-catalog") ? { noWriterCatalog: true } : {}),
+		...(args.includes("--standardized-input") ? { standardizedInput: true } : {}),
 	};
 }
 

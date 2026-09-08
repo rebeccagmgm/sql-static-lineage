@@ -291,6 +291,7 @@ export interface TaskFactIndexRecord { readonly task_id: string; readonly logica
 export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | DatasetIoRecord | TaskLocalMaterializationRecord | RelationNodeRecord | RelationEdgeRecord | FieldExpressionRecord | ColumnLineageRecord | LineageHopRootRecord | LineageHopNodeRecord | LineageHopEdgeRecord | OutputFieldBindingRecord | UnknownOutcomeRecord | SourceArtifactRecord | TaskFactIndexRecord;
 
 export interface GenericTaskProfile {
+  readonly standardized_input?: import("../input/shared/standardized-sql.ts").StandardizedInput;
 	readonly task_id: string;
 	readonly sql_snapshot: string;
 	readonly default_schema?: string;
