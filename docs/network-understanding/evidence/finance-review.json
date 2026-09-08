@@ -1,0 +1,2233 @@
+{
+  "processId": "finance-and-valuation",
+  "chapter": "chapters/07-finance-and-valuation.md",
+  "scopeTaskIds": [
+    "118174",
+    "134640",
+    "171179",
+    "173137",
+    "173282",
+    "173559",
+    "173563",
+    "180425",
+    "198806",
+    "198831",
+    "198929",
+    "199720",
+    "199723",
+    "199729",
+    "199734",
+    "199736",
+    "199740",
+    "199845",
+    "199871",
+    "199872",
+    "200199",
+    "200256",
+    "201133",
+    "201181",
+    "202510",
+    "202957",
+    "203056",
+    "211987",
+    "216868",
+    "216869",
+    "220143",
+    "220336",
+    "220348",
+    "220372",
+    "220461",
+    "220477",
+    "220553",
+    "220561",
+    "220685",
+    "220723",
+    "220751",
+    "220803",
+    "220813",
+    "220853",
+    "225436",
+    "226067",
+    "226123",
+    "226134",
+    "226709",
+    "228801"
+  ],
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "scopeDefinition": "全部45个catalog finalWrites命中dm_fin_n的任务；另含3个确认catalog读取分发与2个直接邻居且SQL明确读取本范围的分发。无SQL邻居仅列边界。",
+  "statusDefinition": {
+    "EXPLAINED": "正文解释了本任务在家族中的用途、实际主要规则及所见差异，不代表SQL或业务验收正确。",
+    "LOCATED": "已核读和说明所属过程，但保留影响实质解释的未决项。",
+    "UNRESOLVED": "只有调度或缺失证据，不能建立数据消费解释。"
+  },
+  "counts": {
+    "core": 45,
+    "additionalSqlConsumers": 5,
+    "total": 50,
+    "explained": 48,
+    "located": 2
+  },
+  "tasks": [
+    {
+      "taskId": "118174",
+      "family": "finance-pnl",
+      "reviewStatus": "LOCATED",
+      "sectionAnchor": "finance-pnl",
+      "summary": "常规、项目型、金仕达存续与到期及对冲七支；位置错序阻碍完整字段解释。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/118174/versions/c8b4e734d772ac25cb9d5542752868040be3d4e7dae593484dd0399c3c97b73b.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 824,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "9d3387f008bc6848d196b13e2a90f3e105ec7164e85e54612061d24f7fe83c18"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "ef941cd8e2c28f53c9712bf2e3e0cc409067759b89817d03b4ef483be770d049"
+        }
+      ],
+      "gaps": [
+        "项目型到期分支第3-5位置与首支状态/账簿/客户顺序不同，不能完整确认输出字段含义。",
+        "部分原币/结算币及腿方向投影顺序、项目型本币总收益表达式存在差异；未替SQL纠正。",
+        "REF_MAIN_CONTRACT源对象元数据为DELETED；未核实当前可用性。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.v_fin_trs_plreport",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.v_fin_trs_plreport"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": [
+        {
+          "qualifiedName": "pdata_nds.ref_main_contract",
+          "status": "DELETED",
+          "collectedAt": "2026-08-22T04:39:18.655Z",
+          "metadataPath": "../sql-static-lineage-data/tables/hive/pdata_nds.ref_main_contract__gfhive/table.json"
+        }
+      ]
+    },
+    {
+      "taskId": "134640",
+      "family": "finance-base",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-base",
+      "summary": "CSS结算事项投影；限定当日，排除协议修饰符缺失的已编号协议。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/134640/versions/2cb849173f1ba19be961fb8cb3daf3e254435038353be0622db2e1b2578088dd.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 24,
+          "endLine": 51,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "45865f1a3d195d3f0e46ced47f489df9f8c2d5bf77a0a1a90f6904768e897490"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "b95e009bbb8a7502cb1af02b0c9787f5a7160350774415f4967caabe81aef381"
+        }
+      ],
+      "gaps": [
+        "T03_DERI_COMP_SETT_INFO源对象元数据为DELETED；未核实当前可用性。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.wt_t05_otc_settle_jour_civ",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.wt_t05_otc_settle_jour_civ"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": [
+        {
+          "qualifiedName": "pdata_n.t03_deri_comp_sett_info",
+          "status": "DELETED",
+          "collectedAt": "2026-08-22T03:03:38.521Z",
+          "metadataPath": "../sql-static-lineage-data/tables/hive/pdata_n.t03_deri_comp_sett_info__gfhive/table.json"
+        }
+      ]
+    },
+    {
+      "taskId": "171179",
+      "family": "finance-events",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-events",
+      "summary": "期权五类事件；互换直接与映射账簿期初结算；金仕达及北上DMA事件。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/171179/versions/52b3592241d4376de5cba7958db9429eba1376e61958aae49f5fa43ce76c1402.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 15,
+          "endLine": 531,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "4bdbcfc1cff9edc8de3f89a398b7ed454e4e8b0b988eb70f25b1fd2e9c7f7e30"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "8a868db55408434785b6fbbcc9ff4ed26e5ce7788bc522e74d3f476b6742455d"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.adm_trd_otc_comp_day",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.adm_trd_otc_comp_day"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "173137",
+      "family": "finance-base",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-base",
+      "summary": "TIT组合履保结果到账户映射、累计追加提取；并列金仕达履保及保证金。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173137/versions/713624970a02eb7015cfd19618574740967539ea74282b6a4740ba21808cd2ec.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 23,
+          "endLine": 143,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "032ce2ab399a57d0447adf6bb0b461033183904054b8c0823f3eaff9df8947ae"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "550ef6d42dd17114e1de044794f78dffa9a44d276ea17408aa9bf3c08422c495"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.adm_ast_otc_marg_day",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.adm_ast_otc_marg_day"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "173282",
+      "family": "finance-base",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-base",
+      "summary": "TIT自然日前值与金仕达交易日前值分别计算余额差，客户筛选不同。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173282/versions/717e4c82699e93581abe3e2e01eae49b0f71e061eb619a8d247b5d91cee7deb4.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 17,
+          "endLine": 95,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "b1525f5da5080711db75f872becbae5a72ddd332c0e0da3ef1b2ca835952cd3c"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "e471618b01dd82d2af7c5e95345df49cde39cb021d1496a2a8a9131af7253be2"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.adm_ast_otc_ast_acct_chg_day",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.adm_ast_otc_ast_acct_chg_day"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "173559",
+      "family": "finance-base",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-base",
+      "summary": "直接报送账簿、持仓映射账簿及金仕达三支互换基本信息。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173559/versions/0cdf060be6c4559132f37e540bdbb66fd9f78eaee9d126312d0df2858ef1966e.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 13,
+          "endLine": 121,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "60166dbe85a536ebc5128144d51a775b020861e3ab0939a78e44d6507a6cede9"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "a6827f36c79c91a3883699626b0c2930dead1fa8338e1027dec456741cdc65dd"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.otc_v_fin_trs",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.otc_v_fin_trs"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "173563",
+      "family": "finance-base",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-base",
+      "summary": "当日报送财务期权及标的类型，排除内部、指定状态和对手。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173563/versions/85fa5d39bbc13a68c6fd0680f090c6c0968b231b32e865d91a26cc3f84269dce.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 19,
+          "endLine": 48,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "791b87c0d005d3b6bf5ff0fd84dc8b84f99a34db32385a8c3cd7e5a6ecf25e9d"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "853bf316beffe931ae16e9d64104ed632990458f385cc40efa419978ba1bacce"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.adm_info_otc_opt",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.adm_info_otc_opt"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "180425",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "按行情开始日取当日，SQL明确但图采集失败。",
+      "scopeBasis": "DIRECT_SCHEDULE_NEIGHBOR_WITH_EXPLICIT_SQL_READ_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/180425/versions/959409be87568be25142b74a046f77c9f45a17d2fe4f2426778fb3981ebb14d2.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 39,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "7ee3ad7ad8f315132ce3e9e60189346a40396f8769f9c62a4c3a34b7b77c8fad"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 1,
+          "sha256": "9eebfb2250f87b15fa8809bc61f2f8d0b2755aa52ff43d3a47e5306793e4846e"
+        }
+      ],
+      "gaps": [
+        "COLLECTION_FAILED；SQL可读，但发布图无确认读写边。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "COLLECTION_FAILED",
+      "declaredTarget": "gfedw.fin_gf_fi_quot_stock",
+      "finalWrites": [],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "198806",
+      "family": "finance-domestic",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-domestic",
+      "summary": "期初、保证金、期中、期末；账户映射、事件数量及当日口径。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/198806/versions/1de0c6c58f34d0e3fa358ab0506890bdae1309ceaf1100bdc8699257a5faeb68.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 123,
+          "endLine": 410,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "7ecf77415ca7a1ea5dcdc3ac3deeadea291876aee557bf756eae15a3890cb44e"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_trd_otc_trs_deli_dtl_day",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_trs_deli_dtl_day"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "198831",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日TIT互换交割读取、同范围清理目标。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/198831/versions/05da0f88a6ca4d1d969dc1a407d45f17f711971607919208faa7c069ba4734a8.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 122,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "9c5622f30c26c6a5f5c18bdff8efe502a85e56b677292901cdb2b0da0fae9036"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 3,
+          "sha256": "53457aa7821b329ff7ca3d9b4d65acb0fdc2359c98c72cc87125182bf0b78e7e"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_trd_otc_trs_deli_dtl_day",
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_trs_deli_dtl_day"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "198929",
+      "family": "finance-domestic",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-domestic",
+      "summary": "普通期初、AIRBAG差额、保证金、期中费用、期末五类处理。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/198929/versions/609ff30c7b2e143e93105d1ec1f83b3f95aba954b81cd0ab86c8a6715f6d5ef9.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 533,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "f719e6073aea5121f05fdee4054422aea58f7afdd57423f0083cd58a6ed67cfd"
+        }
+      ],
+      "gaps": [
+        "AIRBAG差额依赖前5日最近镜像，缺值回退0不等于真实无历史金额。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_trd_otc_opt_deli_dtl_day",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_opt_deli_dtl_day"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199720",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日账户映射投影，包含用途币种余额及自定义空字段。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199720/versions/be42479f2011552318799a8edd1ea696ad581628a627388f7815598ab24bf6c8.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 23,
+          "endLine": 47,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "9239172a1b09d2354646cdd2f25a49dd793769f4144662737328e53d4fb7d9a3"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_capital_acct_mapping",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_capital_acct_mapping"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199723",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日账户映射读取、同范围清理目标，目标命名差异待确认。",
+      "scopeBasis": "CONFIRMED_CATALOG_READ_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199723/versions/211709eaa427c93bdfda7446dc9307af779fe480a15e4c241e5e3229283b19de.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 23,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "3671feb7ae0f0db9d8c5403b0da09ee25bb9f1886cacb65efa20e6fb651d9f53"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "a697ade8fc180b4ec7cb8fbfee221beb2aa401efe80019433add978500d93d17"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.src_otc_capital_acct_mapping",
+      "finalWrites": [
+        "gfval.src_otc_capital_acct_mapping"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199729",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日期权合约经济要素投影。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199729/versions/6e54bf781f68a34d6edc54ca06f2230e211c7d8f713c5c68c63b5db1abff9634.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 27,
+          "endLine": 55,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "8e717377b5c8575e4927d287d8b7aac06cd117f0cc84effccb1ad1dbc026c051"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_fin_option_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_fin_option_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199734",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日期权合约读取、同范围清理目标，目标命名差异待确认。",
+      "scopeBasis": "CONFIRMED_CATALOG_READ_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199734/versions/5a49272383e862a201fbd9bb66f22b61d57bc144be40633ce5588ce677ea3581.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 28,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "bf0cb0e410660d2d5aa526ff943b995c2cfa3bbbe98a45042be395241683c40d"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 1,
+          "sha256": "62406e6b9188853f42f0ce2b36648e17d0c337b762f3ca146d5c407c00a9d5a2"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.src_otc_fin_option_info",
+      "finalWrites": [
+        "gfval.src_otc_fin_option_info"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199736",
+      "family": "finance-pnl",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-pnl",
+      "summary": "近十交易日阈值日终指标接当日费用和报送维表；结算币换算与回退。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199736/versions/5c896f769db142b0c673f4f0b4f8cdbf97c1b24b71af868a3504ca677b037aa4.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 21,
+          "endLine": 74,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "1a26fb2102ffa2ce6ed470ca4b2112e3e3f173a1cc8f720126bfd4ed16a34bc5"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_option_premium_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_option_premium_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199740",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "十交易日阈值费用读取，将买卖方向送入def1，同范围清理目标。",
+      "scopeBasis": "CONFIRMED_CATALOG_READ_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199740/versions/18ed7733c1d9281e1ce2c588db2001bfce74bda509ded410dc5db1233c03a87e.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 31,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "5c357e7038761c057a656b6e6e04cab0b8fe543da2232f06783bd1b27cca018a"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 1,
+          "sha256": "df3ab9144fd521fd20110ae5a283f7849d8096c071a8368fd4f250c3218ad2d1"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.src_fin_option_premium_info",
+      "finalWrites": [
+        "gfval.src_fin_option_premium_info"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199845",
+      "family": "finance-pnl",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-pnl",
+      "summary": "当日快照保留估值日、三腿收益、动态名义本金，表描述与SQL冲突。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199845/versions/4bb08d4a698b6f0faade1b7cce7c5743831f02cd062849fd327a422f2c2af8ae.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 30,
+          "endLine": 61,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "c6eac67a262ce38a82dfd68173a87bcaa90844be3fa0313cce75de22d66811eb"
+        }
+      ],
+      "gaps": [
+        "表元数据描述为股票行情，SQL实际为互换估值/收益投影。",
+        "未证明与118174输出是同一已贯通链。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_trs_plreport",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_trs_plreport"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199871",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "XIR票据理论价格比值；香港AMCNote动态本金减结构收益后除发行量。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199871/versions/6aef2d2a79f5cfdb960e2676b8f351cbe491fbae90b3b54a698ea2ed7f6a02e7.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 290,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "5df35f5187808b886a26f3d044f13331e7d758693d5086eeae229969511dfc71"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_market_prices_spt_cp_t",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_market_prices_spt_cp_t"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "199872",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日XIR/TIT票据行情读取和清理。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199872/versions/c3aae921c63e9b6d62c0824f54470f96c440d2e7bc91452e7c20560495b32635.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 68,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "e488a36abb5e86554be5038d48a9cd8e55572b50ee19c955233a7aacb6fe2798"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "dad511adbdc2850b8730528b61d56f17b535a404fd0c6b9501ecfb893275c4f3"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_market_prices_spt_cp_t",
+      "finalWrites": [
+        "dm_fin_n.civ_market_prices_spt_cp_t"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "200199",
+      "family": "finance-hongkong",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-hongkong",
+      "summary": "香港互换十日窗口，期初、相邻计提差、结算和资金变化。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/200199/versions/ac14aa50c534e8937067f3c4dc24975fd9cbfe9f02515edbb3327fdee97ed22e.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 123,
+          "endLine": 415,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "ed54b18eb512d271563d86055eb278cc6a3554934aeab2006a0bfe64d18bdc08"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_trd_otc_trs_deli_dtl_day_hk",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_trs_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "200256",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "香港互换十日读取和清理。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/200256/versions/8065f9b57caed32124b089e1205172cb7ef88b957eb103de5e61024fd9b47056.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 121,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "c70b070ababc579ee98820874460ddbde03f7145460e59707f91f38332d7940e"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "169be1c4451703efe04938090f7c2b18177f0d81ed15d2e57d3ce9f15f05118a"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_trd_otc_trs_deli_dtl_day_hk",
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_trs_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "201133",
+      "family": "finance-hongkong",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-hongkong",
+      "summary": "TIT场外、HKGT场内、HCR经纪开仓到期平仓；数量乘数及前持仓。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/201133/versions/e7f45e44ae7b37b2c28664938044361cacb32963df6f7cfe4dee23d9a82f26bc.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 128,
+          "endLine": 627,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "c975f26f76d9085be40150f2de15136ea6ba9fad6f2a2753e0c46d2806beb023"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_trd_otc_opt_deli_dtl_day_hk",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_opt_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "201181",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "香港期权七日读取和清理。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/201181/versions/b546cc902285035da9857a9ae1ddafe653f37bce96c345d7a33ccd0620d79729.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 4,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "0ff7e38ccda3742d3ca54570d284e149c477bc6ac3ede8291e7289070c57170e"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "e884a27b071d408a8d44a98913ead6b3d8a81fb019eda72ae0e69553a178dfd6"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_trd_otc_opt_deli_dtl_day_hk",
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_opt_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "202510",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "香港票据发行及利息计提；最终结算金额填空。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202510/versions/361c0b47f677583bf3460dc9d98b7b351ba1d3a0308a3d6eb50906408c06aa32.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 103,
+          "endLine": 283,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "113045968046ed1b16ac4620e33b4b430ab44ec9069c351a7c5ae110a9d08b0e"
+        }
+      ],
+      "gaps": [
+        "中间clear_balance未输出到最终Clr_Amt，最终该位置为空。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_trd_bill_deli_dtl_day_hk",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_trd_bill_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "202957",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "产品经济要素投影与日期格式转换，无当日query过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202957/versions/992c0825368cc5030eec5ffdf30d509e941b5afb6bb42e1f80c8be8cb4416fc3.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 36,
+          "endLine": 73,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "08f9cfe75bf9e6c6004352b3fd3a6c602d4424a1af11d331dfef7fa3a3e2af5a"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_t02_tit_prd_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_t02_tit_prd_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "203056",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "香港票据三日读取和清理。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/203056/versions/3230bad10cf9d485f435325bd429a68a6af93b2f11700da824eeaee1a70760b7.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 104,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "dbb31941fae62d6e668e546b72326cdc406191e6d6e4b27787622f0650f8bc84"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "f8b2611f99bec0e2b03bee1b4b4c5defad310d7cc8eef4fd9e55a27b8eb7f71b"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_trd_bill_deli_dtl_day_hk",
+      "finalWrites": [
+        "dm_fin_n.civ_trd_bill_deli_dtl_day_hk"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "211987",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "市场交易方式四分支及限售股估值第五分支，单位转换和有效期缺口。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/211987/versions/f07e8838fd233094e42ae2952bec4ab18236edc42d38189e3d2bfbedf141a442.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 681,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "553406f1f03f2e2a4a9dba2282cd02773eb396dbb3f7598197e3c49ae9bab7cb"
+        }
+      ],
+      "gaps": [
+        "交易方式中间有效期缺口未被最早日期之前补录分支覆盖。",
+        "限售股估值写入部分收盘/市值位置，不等于交易所普通行情指标。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.fin_gf_fi_quot_stock",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.fin_gf_fi_quot_stock"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "216868",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日期权事件视图投影，区分事件日与快照日。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/216868/versions/df333aed29406e183d3cab9f77a7c5e2ba6a54345d83a8eb1bc13f424229d382.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 14,
+          "endLine": 29,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "ff186618b5e7548e81d43acaf40c7ea258ba469a8c88699ed7b0ae60e553907f"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_fin_option_trade_rec",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_fin_option_trade_rec"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "216869",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "按业务日取当日期权事件，SQL明确但图采集失败。",
+      "scopeBasis": "DIRECT_SCHEDULE_NEIGHBOR_WITH_EXPLICIT_SQL_READ_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/216869/versions/ab162b0a49d0a64ae01275ca6e3636f1e50f3a9504478445a5d376e739f713e9.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 1,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "0626c8ad4de49588841a495c78ff2b27a4ec1f46ab3a724ed73b51bd86a567fe"
+        }
+      ],
+      "gaps": [
+        "COLLECTION_FAILED；SQL可读，但发布图无确认读写边；未收录truncate槽位。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "COLLECTION_FAILED",
+      "declaredTarget": "gfedw.src_otc_fin_option_trade_rec",
+      "finalWrites": [],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220143",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "宽子交易基本信息投影，保留条款串、名义本金、数量及币种，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220143/versions/d6dcbc5f7f61cba2ad797a89e2c49071a556196d43eb8c4e5112302f6b46b111.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 141,
+          "endLine": 284,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "a01a91d82f5ba016868e844b8f5d19c1eae38b8db182215dc1b9ef056a6e7296"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_base_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_base_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220336",
+      "family": "finance-option-inputs",
+      "reviewStatus": "LOCATED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "期权主合同经济要素投影；三位年日期模板解释未验证。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220336/versions/17f783d968023db44e69c42771700459d46357bc4753b4977337e5d789577b68.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 119,
+          "endLine": 241,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "a004f4fe48bf496e1353d8b19c73701ffa94543eec8950d0a95f1a7e9e7a95d7"
+        }
+      ],
+      "gaps": [
+        "query第240行使用${yyy-MM-dd}，运行时参数解释未验证。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220348",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "结构层定价日期、精度、跨币种、收益条款投影，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220348/versions/b35311fa20f0fc16549dcc92d0733cae505e1acee8bd02b30ebf7961a8bb1eac.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 70,
+          "endLine": 143,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "220f9c56b12e8c65a07ee53fdaff4678f1380c1711fb5fb53cc881e9ef444b0b"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_stru_elmn_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_stru_elmn_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220372",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "合约序号障碍价格投影，只按来源、写运行日。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220372/versions/e85f0f4d5726e5b4652cf0eeae364a70c9063d3ce0a9925fb9c5cec2f8d07f81.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 16,
+          "endLine": 32,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "c3368ce2c97bffe135d9004e1a8c6e548f1cfd4072a4f56137a194d890354e59"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_barr_pric_adtnl_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_barr_pric_adtnl_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220461",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "合约序号障碍线及有效期投影，只按来源、写运行日。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220461/versions/e08bd15543406d116797e0e0f4fd826a7ee08f9a0c50957c91f1011ec1a8c38e.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 20,
+          "endLine": 39,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "3fbc897971db01434d8b9bfeb0f906eb972ccf2823d3a1fdbc6357cc4181bd56"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_barr_line_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_barr_line_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220477",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "合约序号年化票息投影，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220477/versions/6d18f3a10934ebcdfde5789be98f15509ec4b3362e593fad29ca42931801d1cc.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 18,
+          "endLine": 36,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "b47dd9d7122610abeebc77da026adb5b0eff42e50e9d852e2cbe399f1f082417"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_coup_rate",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_coup_rate"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220553",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "合约产品观察日RESET协商价，只按来源、写运行日。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220553/versions/8279b87a85d24d26bc0a8703b84de3336ecf53909b9e679a02c247016535e4fd.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 16,
+          "endLine": 31,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "24661ebb298c8418338559492b81c788ad34fa2f950cb75357cdc3c1b0bafcd0"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_conf_pric",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_conf_pric"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220561",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "合约序号执行价及百分比投影，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220561/versions/01d178343ece0500690659ed2789036171e058acae9e954f90016f1d37dfb023.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 19,
+          "endLine": 38,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "b6ec2c5d80d4060587b9dbd2f5022d0b09088f6b4c087a22b5c8db0121bbbe68"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_exer_pric",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_exer_pric"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220685",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "子交易独立产品、本金币种、数量、条款及日期投影，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220685/versions/a0eab690ff8fc87dc7008b7e70fd6536e85d74f66c24912c727087c345125aa9.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 84,
+          "endLine": 170,
+          "readMode": "SOURCE_BRANCHES_FILTERS_JOINS_AND_NONCONSTANT_PROJECTIONS_REVIEWED; repetitive empty or direct projections suppressed in reads",
+          "sha256": "3fd478a1d2338af8c42b2e08d3d7744a2473e2d09eb04b034617500b5fb34360"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220723",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "自动赎回特定条款投影，当日来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220723/versions/1205be963e351a48fcb076ece1f1624f57969a090a2b2f3f6a5fb1ea3d55d834.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 43,
+          "endLine": 86,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "52d04a8d17a47c21072eb0bab0e3528f87d44be883d8017d79c20c008d52b4aa"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_auto_redp_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_auto_redp_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220751",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "观察日属性投影，query无日期或来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220751/versions/518762787257f3c46cb2e600fdf54a5b04b2877b9ad0a43b2c6dcee084fab014.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 28,
+          "endLine": 54,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "94d358de35b30cdf1ad42ac6e0f5e1d2b5635a1a6cf1433f3cd877ee3468e30d"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "2266428dfc30fc44878f4e3fde62b761904e691ea9d4ec6b9f2080d689046fe2"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_obsv_date_attr_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_obsv_date_attr_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220803",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "子交易障碍线及有效期投影，只按来源过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220803/versions/17b2ce3bbf91ac1bbdddeeceb0bf7f1b5e60092578c7b553c8e9d9a7e5f77a7c.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 23,
+          "endLine": 46,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "1b9dc50d3c06157ca4f0b3ef3645a477846de18d17505acc2712e91654a6d11f"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "f12510a2dfebcf7d33ca00ac69d0b612d370ac3ba1155d070ed8a0e7e5de57f5"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_barr_line_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_barr_line_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220813",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "子交易区间边界和累积票息投影，只按来源、写运行日。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220813/versions/f434f57e763610b83349e81cf3dd18b5e9e46528b59bbc651cbad53a01e4d162.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 19,
+          "endLine": 37,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "a4105d395b6dccd8e95d22bbe2d705ea8fa37cd110e6807f6d1dc8cd20ab6aa3"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "e03c7186e2450ef7ac4416b6de52762d637c1da2a531be1b13ec6b1b32ff7a2d"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_otc_opt_comp_sub_trd_scop_attr_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_otc_opt_comp_sub_trd_scop_attr_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "220853",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "期权源行情直接投影，保留元、手、万元单位。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220853/versions/e56ad74d726e9187f849d72ebb9f301f62b54a9ae4534dbf3eee945f6a456cf8.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 28,
+          "endLine": 58,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "e06462004daaa34df159e0cf74169f7aed5a59939cca7572653e18a8791bbbad"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "1e5bd4f0e78776b864075557eef98b26e8664bbe788dcf0dd23d9fbf8d00a69b"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_opt_mkt_quot",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_opt_mkt_quot"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "225436",
+      "family": "finance-consumers",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-consumers",
+      "summary": "当日TIT前缀期权读取和清理，未涵盖生成阶段全部近三日事件。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225436/versions/780633dcb8da6bd2d0d5d238de28e22aee9528442adc30565d5469588b3fc447.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 4,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "ba744551c108451b2968fa4974c78e273def2b2d11d911afe9e158987ea3234d"
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "5b6ede463c17dcb69837b972641d29026fb0974fe913fb1c7713169fa904d974"
+        }
+      ],
+      "gaps": [
+        "声明目标/清理目标与finalWrites命名不同，不能认定实际物理落地。"
+      ],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": "gfedw.civ_trd_otc_opt_deli_dtl_day",
+      "finalWrites": [
+        "dm_fin_n.civ_trd_otc_opt_deli_dtl_day"
+      ],
+      "targetNamingMismatch": true,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "226067",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "环境-曲面-标的-权利选择关系，来源分组01，无当日过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226067/versions/ac7904c8a4bf64dc28d14ec438f734cd06ae4a5e6930b40803f96c67cb536338.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 20,
+          "endLine": 42,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "f36af98bc56860a30f0877ba0d5e2ffcb448a6c3e6fc31a2ac6d84d89c76c7ca"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "2c2774ebf912415cc00c81c9202b91e4796b2233c58c2786066419245020b0e1"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_prcg_vol_curv_surf",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_prcg_vol_curv_surf"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "226123",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "曲面定义及港股标识补零，来源分组01/02，无当日过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226123/versions/3208194f8ea6f15cde5cf62144d025249c4c8690a649d8cc732948f292a00d8b.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 34,
+          "endLine": 72,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "bf060a438de1db7a21e1bf52256538112d943b9ebef60c290ab795dd33a37aa6"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "da46c3406bb873c506bb6fba30cc646289634041b84e98b0eb5b833202325659"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_vol_curv_surf",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_vol_curv_surf"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "226134",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "曲面日期、期限、执行价的实例，当日曲面日期过滤。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226134/versions/bea2195ae76ae4ba9681dc789f080fd289369ed0a1aacc950d21e030c9f9c267.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 19,
+          "endLine": 41,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "53b4263acbfe92bbd62df98008c762dc8962db3676ad3dd676a7f6d8cd788320"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "9a180e7c8c8b34cf1974d6bce7249f68eae80ee3983cb890849f4baa7b30c994"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_vola_instc",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_vola_instc"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "226709",
+      "family": "finance-option-inputs",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-option-inputs",
+      "summary": "定价环境与分红曲线/币种/交易类型配置，来源分组02。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226709/versions/a9e5377c32ce58328ca7b4e07601d1d6f98ea308da183c985a2e57875797ceac.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 21,
+          "endLine": 44,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "6ba658ed9d1172b0434741a696afe83d0991b63ab5c0810e980008acf5422b75"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "d5b1516cb096ed6511dcc03297f8118da32308afdc6c4b7ec460b9670121be16"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_fin_prcg_env_curv",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_fin_prcg_env_curv"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    },
+    {
+      "taskId": "228801",
+      "family": "finance-notes-market",
+      "reviewStatus": "EXPLAINED",
+      "sectionAnchor": "finance-notes-market",
+      "summary": "限售股折价和模型输入输出投影，未在本任务重新计算模型。",
+      "scopeBasis": "CATALOG_FINAL_WRITE_DM_FIN_N",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/228801/versions/d37a8c648f7befd3a9af9376338e1abb51628a438d3ec350b6e1cb39eee61063.evidence-v3.json",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 30,
+          "endLine": 62,
+          "readMode": "SEMANTIC_QUERY_BODY_REVIEWED",
+          "sha256": "598c212852b849f85ba1a31ada2dcc9048441d04537abf0b569d27ea3a620c8d"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "readMode": "DDL_OBJECT_AND_FIELD_OR_PARTITION_MEANING",
+          "sha256": "8d9dc67c41100a2f2c5b9bff5300aad302f4dafbbd310ab90068a860b4b98633"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "未用生产运行、实际分区或业务端读取证明交付。",
+        "未确认财务制度、映射唯一性及业务正确性。"
+      ],
+      "coverageStatus": "PROJECTED",
+      "declaredTarget": {
+        "platform": "hive",
+        "qualifiedName": "dm_fin_n.civ_stk_rstk_disc_info",
+        "dataSource": "gfhive"
+      },
+      "finalWrites": [
+        "dm_fin_n.civ_stk_rstk_disc_info"
+      ],
+      "targetNamingMismatch": false,
+      "deletedSourceObjects": []
+    }
+  ],
+  "boundaryTasks": [
+    {
+      "taskId": "134752",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/134752/versions/0d7d6dc0199d5e1104b7a28533e23060143524074ad7c1db5abd40f2afed72bb.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "208140",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208140/versions/5f525cdae17fd510d108d18a02966d6466afff01f5f20c75e67311f488c16f9e.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "214134",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214134/versions/729bb365b55025bbc9ba0a4065a59e266fcc20f9b6b9aad0224f9582796bf426.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225672",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225672/versions/2707a2e6d28ec6f2c20bc05946c6d091a93bc4b64b38819d1228d7db94871abe.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "199855",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199855/versions/d575ce4032331103d624225b6656d558c59cfd14a966a4639a498d71ca07eff1.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "214118",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214118/versions/6e04a3af0c402144dbdbe2b1c2a1e35c5301244e176ee598456c1f30dd86fe26.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225255",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225255/versions/54a096dd3fe56f3ae6ad4342758c5934a7c180159fd74d749b97989b72740c81.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225625",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225625/versions/2e515455d7ce2132b8eddb1b522b02d497afe570dc05c66396f6c97796d3ba95.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225623",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225623/versions/0afb7f968d02bd66922fa2245f1eb2c6c3aad26939c16292360fc6ab98f720ac.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "202946",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202946/versions/fe43b3763ddf645726f64c61cd7708b980b443ef3a49c2022b121a84b4595705.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225628",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225628/versions/0387737f1f8b9a91608fc845f5e2b2d90a27b806d98753bc991f0fa832e28731.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220154",
+      "reviewStatus": "LOCATED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220154/versions/9b5d0e96fa96934f00f755e594d290940a8075b5d97758dd65bb235b83cb1b6b.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": true,
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 141,
+          "endLine": 143
+        },
+        {
+          "slot": "truncate",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "reason": "实际读取dm_fin_test，不能用该邻居证明dm_fin_n分发。"
+    },
+    {
+      "taskId": "220339",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220339/versions/0a3f010df9af918088cfb6749480739443926ea76e5e2f258d9a1952f82e8f41.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220353",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220353/versions/17cd9f3bca0d6f33e23b0906c92326e3b822802496323e8f5fdb275efb89155e.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220377",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220377/versions/4ccdbddc7d8bceb13c12a9031712383e0310b33ba038a8f07a57d493353eee58.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220487",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220487/versions/11ab3c62501e8292a00648b5dfdefcf20b76dc2fa8a1bb757f19cdef2c463b84.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220496",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220496/versions/1743b27e6ac7301d8867164514f4bdca4cef175b48c5fecf3ed8e4355c1ec934.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220558",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220558/versions/65acb0fed3836d583f73b2e97e624ba21114990e0ecdac6c018eae1a675af04e.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220573",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220573/versions/654112c509a98496bfb23e40443a67e5e5d755a770c99844e404c053235c494b.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220690",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220690/versions/139d9a7572e412ae6c6fc7fabcd44ad96f634e3eb20292cd7a74769128b64f8f.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220725",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220725/versions/321c4f6252999a21e095e638aad329dbdf95301ebab564a750613a4104584010.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220755",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220755/versions/80909aa8faddbd40b2bf612edd1f36bb178b4be0bd5ce8789857ac94350760ae.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220811",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220811/versions/58429c11463e37e47833bb5bb82006d90da24f46efa13fb0942d49d2f653c9fa.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220819",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220819/versions/80b598df49128c7d71eb24f67362a211abffc55f0006d43c1271155c8ad274d9.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "220867",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/220867/versions/d8d4872fd2545f05771390f3cc1f30263359d112fa871cc3ab266f0fe2f49e29.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "225621",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225621/versions/3b2e70f911b597e697efb8b79e97018cc3f0ed725c7a0d8a60d6841a6e2d09ed.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "226625",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226625/versions/a579a4ab60b6745fbfb6e12a8671ab397da206d2545c2697fbc993ca48af6a80.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "226647",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226647/versions/ab7326650cfebd72e0d9888a36bf263459102c246dc953d55dbb97d003d2bc74.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    },
+    {
+      "taskId": "226651",
+      "reviewStatus": "UNRESOLVED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/226651/versions/ef5f88b14ec08cfe0bd35166e543644827cbf3bcea89e6b83662247cef021c72.evidence-v3.json",
+      "relationRole": "SCHEDULE_REFERENCE_ONLY",
+      "hasSql": false,
+      "reviewedSql": [],
+      "reason": "只有调度邻居，未读取到可确认本章输出消费行为的SQL；不计已解释数据链。"
+    }
+  ]
+}

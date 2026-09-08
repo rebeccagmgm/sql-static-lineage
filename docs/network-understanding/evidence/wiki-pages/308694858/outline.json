@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "level": 5,
+    "heading": "**1、**数据来源",
+    "line": 0
+  },
+  {
+    "id": "2",
+    "level": 5,
+    "heading": "2、柜台表与交易所文件证券类型映射",
+    "line": 6
+  },
+  {
+    "id": "3",
+    "level": 5,
+    "heading": "3、柜台表：",
+    "line": 10
+  },
+  {
+    "id": "4",
+    "level": 5,
+    "heading": "4、DSP 表:odata\\_n\\_rcc.u\\_etfcode、odata\\_n\\_rcc.u\\_etfcomponent、odata\\_n\\_rcc.u\\_stkcode、odata\\_n\\_rcc.a\\_realdsfmxinfo",
+    "line": 18
+  },
+  {
+    "id": "5",
+    "level": 5,
+    "heading": "5、TITANS ETL 表",
+    "line": 44
+  },
+  {
+    "id": "6",
+    "level": 5,
+    "heading": "6、TITANS ETF 基础信息表 + 历史表",
+    "line": 74
+  }
+]

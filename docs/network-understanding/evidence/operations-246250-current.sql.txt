@@ -1,0 +1,51 @@
+CREATE TABLE IF NOT EXISTS  dm_otc_n.trans_t_report_etf_component( 
+	 id string COMMENT '上游t_report_etf_component表主键' , unq_key string COMMENT '唯一标识，market_id、side、exec_id、agw_seq_id' , agw_seq_id string COMMENT '内部订单编号' , fund_account_id string COMMENT '资金账户ID' , cl_ord_no string COMMENT '客户订单编号' , security_id string COMMENT '基金代码' , market_id string COMMENT '基金代码所属市场' , qty string COMMENT '成交数量或资金比例因子' , amt string COMMENT '现金替代金额，成交金额' , price string COMMENT '成交价格' , etf_trade_report_type string COMMENT 'ETF成交回报类型' , create_time string COMMENT '创建时间' , create_user string COMMENT '创建者' , update_time string COMMENT '更新时间' , update_user string COMMENT '更新者' , cust_id string COMMENT '客户号' , exec_id string COMMENT '成交编号' ) COMMENT 'ATP-etf申赎成分股成交表' PARTITIONED BY ( busi_date string COMMENT '数据日期' ) STORED AS ORC;
+
+SELECT id,
+	unq_key,
+	agw_seq_id,
+	fund_account_id,
+	cl_ord_no,
+	security_id,
+	market_id,
+	qty,
+	amt,
+	price,
+	etf_trade_report_type,
+	create_time,
+	create_user,
+	update_time,
+	update_user,
+	cust_id,
+	exec_id,
+	busi_date FROM (
+	 select
+    t1.id                     -- 上游t_report_etf_component表主键
+    ,t1.unq_key               -- 唯一标识，market_id、side、exec_id、agw_seq_id
+    ,t1.agw_seq_id            -- 内部订单编号
+    ,t1.fund_account_id       -- 资金账户ID
+    ,t1.cl_ord_no             -- 客户订单编号
+    ,t1.security_id           -- 基金代码
+    ,t1.market_id             -- 基金代码所属市场
+    ,t1.qty                   -- 成交数量或资金比例因子
+    ,t1.amt                   -- 现金替代金额，成交金额
+    ,t1.price                 -- 成交价格
+    ,t1.etf_trade_report_type -- ETF成交回报类型
+    ,t1.create_time           -- 创建时间
+    ,t1.create_user           -- 创建者
+    ,t1.update_time           -- 更新时间
+    ,t1.update_user           -- 更新者
+    ,t1.cust_id               -- 客户号
+    ,t1.exec_id               -- 成交编号
+    ,'${yyyy-MM-dd}' as busi_date -- 数据日期
+from odata_n_sso.t_t_report_etf_component t1
+where t1.busi_date = '${yyyy-MM-dd}'
+-- 账户限制：资金账号命中QFII股卡清单
+and t1.fund_account_id in(
+    select Agt_Id -- 协议编号=资金账户
+    from pdata_n.t03_agt_inr_list_det
+    where src_tbl = 'ODATA_N_TIT.T_REF_QFII_PRODUCT_INFO'
+    and busi_date = '${yyyy-MM-dd}'
+    and (Agt_Modifr like '10101-1-%' or Agt_Modifr like '10101-2-%') -- 沪市1/深市2
+) 
+	) castTable

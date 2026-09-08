@@ -1,0 +1,4726 @@
+{
+  "documentType": "READ_ONLY_ANALYSIS_SUMMARY",
+  "analysisDate": "2026-09-08",
+  "graph": {
+    "state": "READY",
+    "version": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3"
+  },
+  "graphId": "titans-otc",
+  "scope": {
+    "publishedTasks": 3615,
+    "retainedTables": 2654,
+    "retainedTablePairs": 5084,
+    "excludedConfig": {
+      "version": "1.0.0",
+      "stopRoles": [
+        "REFERENCE_CONFIG"
+      ],
+      "roles": {
+        "REFERENCE_CONFIG": {
+          "qualifiedNameExact": [
+            "temp_n.client_label",
+            "pdata_n.ref_cd_cvt_map",
+            "pdata_n.ref_cd_cvt_map_temp",
+            "pdata_n.ref_dw_cd_val",
+            "ods_gf1.hq_data_push_log"
+          ],
+          "qualifiedNameTerms": [
+            "tag_def",
+            "label_def",
+            "grp_def",
+            "metric_def",
+            "indicator_def",
+            "_config",
+            "_cfg",
+            "_param",
+            "_dict"
+          ]
+        }
+      }
+    },
+    "temporaryExcludedTables": [
+      "pdata_n.t98_org_emp_base_info",
+      "pdata_n.t98_org_brch_div_info",
+      "pdata_news_n.t02_tit_scr_base_info",
+      "pdata_news_n.t02_scr_base_info"
+    ],
+    "tablePairDefinition": "distinct external read dataset to final write dataset per task; no self pairs; physical identities preserved; task-level association, not per-output causality"
+  },
+  "sourceArtifacts": [
+    {
+      "name": "data-graph-discovery-20260908.json",
+      "bytes": 1341290,
+      "sha256": "42b812e9f2719b5839863fd47c77b8b559f3ddc8ed895b99fbff39c7bd4c79e3",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    },
+    {
+      "name": "data-graph-clusters-20260908.json",
+      "bytes": 1508673,
+      "sha256": "28a47499712dea3735b3df4b351a8568759b74097b10b3899b859781ad5cf157",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    },
+    {
+      "name": "data-graph-field-global-20260908.json",
+      "bytes": 19212307,
+      "sha256": "ee4256cb9306e2f34fd3a1fe8312c71c10245b64a822d8e89175c73c7f87907d",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    },
+    {
+      "name": "data-graph-field-cluster-20260908.json",
+      "bytes": 10019,
+      "sha256": "f72a6b9548d768e8b74a6d254100f9034a2eb8a5e2c626b7dce11ef082fbb7ff",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    },
+    {
+      "name": "data-graph-strong-field-groups-20260908.json",
+      "bytes": 8617,
+      "sha256": "466fa5add671152bc5902288201174f80f2f78086e25f074d222bb3fa4bef65d",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    },
+    {
+      "name": "data-graph-control-global-20260908.json",
+      "bytes": 2954126,
+      "sha256": "41684c3ffafa098a29a18ee236187ea025d0f264ce902b869baacab596e7f696",
+      "retention": "Original temporary query result; this document preserves only selected aggregates, not the complete graph or every row."
+    }
+  ],
+  "tableAnalysis": {
+    "status": {
+      "state": "READY",
+      "version": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3"
+    },
+    "taskCount": 3615,
+    "readMs": 176,
+    "totalMs": 425,
+    "stronglyConnected": [],
+    "betweennessTop": [
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_info",
+        "degree": [
+          31,
+          44
+        ],
+        "betweenness": 13931,
+        "up": 60,
+        "down": 262
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "degree": [
+          28,
+          46
+        ],
+        "betweenness": 10529,
+        "up": 107,
+        "down": 151
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd",
+        "degree": [
+          17,
+          10
+        ],
+        "betweenness": 8729,
+        "up": 91,
+        "down": 170
+      },
+      {
+        "table": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+        "degree": [
+          3,
+          4
+        ],
+        "betweenness": 8362,
+        "up": 74,
+        "down": 171
+      },
+      {
+        "table": "dm_index_n.index_grp3_compscal_otcderi_cs_yearapd",
+        "degree": [
+          3,
+          7
+        ],
+        "betweenness": 4272,
+        "up": 74,
+        "down": 59
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_year_apd",
+        "degree": [
+          5,
+          24
+        ],
+        "betweenness": 3687,
+        "up": 110,
+        "down": 42
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "degree": [
+          9,
+          98
+        ],
+        "betweenness": 2238,
+        "up": 18,
+        "down": 212
+      },
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+        "degree": [
+          8,
+          18
+        ],
+        "betweenness": 1980,
+        "up": 65,
+        "down": 228
+      },
+      {
+        "table": "pdata_n.t98_otc_comp_mng_rela_info",
+        "degree": [
+          10,
+          23
+        ],
+        "betweenness": 1783,
+        "up": 68,
+        "down": 211
+      },
+      {
+        "table": "dm_index_n.wide_idx_cust_aum_tot_score",
+        "degree": [
+          15,
+          14
+        ],
+        "betweenness": 1767,
+        "up": 127,
+        "down": 14
+      },
+      {
+        "table": "dm_otc_n.otc_rev_daily_rpt",
+        "degree": [
+          16,
+          11
+        ],
+        "betweenness": 1690,
+        "up": 104,
+        "down": 20
+      },
+      {
+        "table": "dm_index_n.index_grp2_cust_stdast_covtpst_examapp_mth",
+        "degree": [
+          1,
+          7
+        ],
+        "betweenness": 1668,
+        "up": 108,
+        "down": 27
+      },
+      {
+        "table": "dm_index_n.index_grp1_cust_stdast_aft_stagger_qtrapd_all",
+        "degree": [
+          2,
+          7
+        ],
+        "betweenness": 1597,
+        "up": 108,
+        "down": 33
+      },
+      {
+        "table": "pdata_n.t98_sb_otc_swap_comp_info",
+        "degree": [
+          9,
+          31
+        ],
+        "betweenness": 1469,
+        "up": 51,
+        "down": 49
+      },
+      {
+        "table": "pdata_n.t98_sb_otc_opt_comp_info",
+        "degree": [
+          13,
+          28
+        ],
+        "betweenness": 1208,
+        "up": 56,
+        "down": 42
+      },
+      {
+        "table": "dm_index_n.index_grp2_cust_org_stdast_aft_stagger_year_apd_all",
+        "degree": [
+          1,
+          7
+        ],
+        "betweenness": 999,
+        "up": 111,
+        "down": 12
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "degree": [
+          2,
+          155
+        ],
+        "betweenness": 954,
+        "up": 4,
+        "down": 300
+      },
+      {
+        "table": "pdata_n.t98_cust_indv_cust_base_info",
+        "degree": [
+          10,
+          37
+        ],
+        "betweenness": 950,
+        "up": 17,
+        "down": 57
+      },
+      {
+        "table": "dm_index_n.index_grp2_apdstdast_examcoefcovtpst_mth",
+        "degree": [
+          1,
+          3
+        ],
+        "betweenness": 932,
+        "up": 109,
+        "down": 20
+      },
+      {
+        "table": "pdata_n.t03_agt_stati_info_h",
+        "degree": [
+          11,
+          36
+        ],
+        "betweenness": 866,
+        "up": 22,
+        "down": 118
+      },
+      {
+        "table": "pdata_n.t03_otc_opt_comp_info",
+        "degree": [
+          6,
+          34
+        ],
+        "betweenness": 781,
+        "up": 12,
+        "down": 84
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_bef_covt_year_apd",
+        "degree": [
+          5,
+          10
+        ],
+        "betweenness": 681,
+        "up": 94,
+        "down": 13
+      },
+      {
+        "table": "dm_index_n.index_grp1_apdstdast_examcoefcovtpst_astlt10ttsd_mth",
+        "degree": [
+          5,
+          5
+        ],
+        "betweenness": 654,
+        "up": 112,
+        "down": 19
+      },
+      {
+        "table": "pdata_n.t03_agt",
+        "degree": [
+          9,
+          18
+        ],
+        "betweenness": 623,
+        "up": 17,
+        "down": 93
+      }
+    ],
+    "lowDegreeBridges": [
+      {
+        "table": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+        "degree": [
+          3,
+          4
+        ],
+        "betweenness": 8362,
+        "up": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+          "pdata_n.t98_otc_comp_mng_rela_info"
+        ],
+        "down": [
+          "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd",
+          "dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd",
+          "dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd",
+          "dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd"
+        ],
+        "producers": [
+          "159763"
+        ],
+        "consumers": [
+          "148368",
+          "160773",
+          "160780",
+          "165154"
+        ]
+      },
+      {
+        "table": "dm_index_n.index_grp2_apdstdast_examcoefcovtpst_mth",
+        "degree": [
+          1,
+          3
+        ],
+        "betweenness": 932,
+        "up": [
+          "dm_index_n.index_grp2_cust_stdast_covtpst_examapp_mth"
+        ],
+        "down": [
+          "dm_om_n.wt_cust_asset_inc_detail",
+          "dm_index_n.index_grp1_qtravg_apdstdast_examcoefcovtpst_mth",
+          "dm_index_n.index_grp1_apdstdast_examcoefcovtpst_astlt10ttsd_mth"
+        ],
+        "producers": [
+          "230006"
+        ],
+        "consumers": [
+          "190435",
+          "224741",
+          "230016",
+          "235142"
+        ]
+      },
+      {
+        "table": "dm_index_n.index_avg_dyna_nom_prin_year",
+        "degree": [
+          3,
+          3
+        ],
+        "betweenness": 444,
+        "up": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+          "pdata_n.t98_otc_comp_mng_rela_info"
+        ],
+        "down": [
+          "dm_co_test.co_emp_seqab_projset",
+          "dm_co_test.co_seqabc_examset",
+          "dm_om_n.emp_comph_kpi_exam_mon"
+        ],
+        "producers": [
+          "93338"
+        ],
+        "consumers": [
+          "203384",
+          "212945",
+          "244873"
+        ]
+      },
+      {
+        "table": "dm_index_n.index_grp1_org_std_ast_aft_covt_year_apd",
+        "degree": [
+          1,
+          4
+        ],
+        "betweenness": 410,
+        "up": [
+          "dm_index_n.index_grp2_std_ast_aft_covt_year_apd"
+        ],
+        "down": [
+          "dm_om_n.wt_org_year_apd_ast_covt_tbl_mth",
+          "dm_om_n.wt_emp_year_apd_ast_covt_tbl_gather_mth",
+          "dm_index_n.index_grp1_org_stdast_muyield_oactrela_mth_all",
+          "dm_om_n.wt_brch_year_apd_ast_covt_tbl"
+        ],
+        "producers": [
+          "149092"
+        ],
+        "consumers": [
+          "149841",
+          "152592",
+          "202279",
+          "231821"
+        ]
+      },
+      {
+        "table": "dm_index_n.index_grp1_stdast_covtfrnt_astpkgrela_mthapd",
+        "degree": [
+          2,
+          5
+        ],
+        "betweenness": 400,
+        "up": [
+          "pdata_n.t01_pty_emp_rela_adtnl_info",
+          "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd"
+        ],
+        "down": [
+          "dm_index_n.index_grp1_stdast_covtfrnt_astpkgrela_yearapd",
+          "dm_om_n.wt_emp_mth_apd_ast_covt_tbl_mth",
+          "dm_om_n.wt_emp_mth_apd_ast_covt_tbl_gather_mth",
+          "dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_qtr",
+          "dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_mth"
+        ],
+        "producers": [
+          "148806"
+        ],
+        "consumers": [
+          "149236",
+          "152234",
+          "152613",
+          "170725",
+          "170941"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_trd_otc_contr_props",
+        "degree": [
+          1,
+          5
+        ],
+        "betweenness": 396,
+        "up": [
+          "titans_dm.trd_otc_contr_props"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t03_otc_swap_comp_info",
+          "pdata_n.t03_otc_opt_comp_info",
+          "pdata_n.t98_otc_comp_mng_rela_info",
+          "pdata_n.t03_agt_stati_info_h"
+        ],
+        "producers": [
+          "91256",
+          "163131"
+        ],
+        "consumers": [
+          "86840",
+          "86841",
+          "103941",
+          "103943",
+          "105072",
+          "105074",
+          "105743",
+          "144296",
+          "209862",
+          "210925",
+          "220650"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_option_deal_pr",
+        "degree": [
+          1,
+          2
+        ],
+        "betweenness": 337,
+        "up": [
+          "titans_dm.ref_option_deal_pr"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t03_otc_opt_comp_info"
+        ],
+        "producers": [
+          "102845",
+          "126185"
+        ],
+        "consumers": [
+          "86840",
+          "103943",
+          "105074",
+          "209862"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_book_pb",
+        "degree": [
+          1,
+          3
+        ],
+        "betweenness": 317,
+        "up": [
+          "odata_n_tit.d_ref_book_p"
+        ],
+        "down": [
+          "pdata_n.t03_agt_name_h",
+          "pdata_n.t03_otc_deri_book_adtnl_info",
+          "pdata_nds.ref_book"
+        ],
+        "producers": [
+          "144142",
+          "146686"
+        ],
+        "consumers": [
+          "144290",
+          "144293",
+          "160815"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_ctpty_mapping",
+        "degree": [
+          1,
+          4
+        ],
+        "betweenness": 304,
+        "up": [
+          "titans_dm.ref_ctpty_mapping"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t01_pty_rela_h",
+          "dm_otc_n.goat_ref_counter_party",
+          "pdata_n.t01_same_pty_rela_adtnl_info"
+        ],
+        "producers": [
+          "78327",
+          "78346"
+        ],
+        "consumers": [
+          "86840",
+          "86841",
+          "104301",
+          "105079",
+          "150022",
+          "150759",
+          "220650"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_rmb_midrate",
+        "degree": [
+          1,
+          2
+        ],
+        "betweenness": 301,
+        "up": [
+          "titans_dm.ref_rmb_midrate"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_news_n.t02_fxr_cfets_quot"
+        ],
+        "producers": [
+          "78564",
+          "105009"
+        ],
+        "consumers": [
+          "86840",
+          "105616",
+          "105863"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_option_deal_structure",
+        "degree": [
+          1,
+          4
+        ],
+        "betweenness": 295,
+        "up": [
+          "titans_dm.ref_option_deal_structure"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t98_otc_opt_comp_sub_trd_base_info",
+          "pdata_n.t03_otc_opt_comp_stru_elmn_info",
+          "dm_hk_n.ref_otc_trd_option_deal_structure"
+        ],
+        "producers": [
+          "78463",
+          "78471"
+        ],
+        "consumers": [
+          "86840",
+          "107281",
+          "107481",
+          "108951",
+          "108952",
+          "219391"
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_pos_trs_leg_his_pos",
+        "degree": [
+          1,
+          5
+        ],
+        "betweenness": 294,
+        "up": [
+          "titans_dm.pos_trs_leg_his_pos"
+        ],
+        "down": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "pdata_n.t03_otc_swap_comp_hold_info",
+          "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+          "pdata_nds.pos_trs_leg_his_pos",
+          "dm_fii_n.dtl_tnr_scal_sale_income_day"
+        ],
+        "producers": [
+          "78592",
+          "79130"
+        ],
+        "consumers": [
+          "86841",
+          "105392",
+          "106083",
+          "107491",
+          "119640",
+          "222726"
+        ]
+      }
+    ],
+    "highReachLowFanout": [
+      {
+        "table": "titans_dm.ref_book",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 632
+      },
+      {
+        "table": "titans_dm.trd_otc_trade",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 623
+      },
+      {
+        "table": "titans_dm.ref_otc_option_deal",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 594
+      },
+      {
+        "table": "titans_dm.ref_trs",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 585
+      },
+      {
+        "table": "titans_dm.ref_fast_trs",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 538
+      },
+      {
+        "table": "titans_dm.trd_otc_contr_props",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 400
+      },
+      {
+        "table": "titans_dm.ks_trade_comfirm_info",
+        "degree": [
+          0,
+          1
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 353
+      },
+      {
+        "table": "titans_dm.ref_option_deal_pr",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 341
+      },
+      {
+        "table": "titans_dm.ref_option_deal_structure",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 339
+      },
+      {
+        "table": "odata_n_tit.d_ref_option_deal_pr",
+        "degree": [
+          1,
+          2
+        ],
+        "betweenness": 337,
+        "up": 1,
+        "down": 338
+      },
+      {
+        "table": "titans_dm.ref_trs_leg",
+        "degree": [
+          0,
+          2
+        ],
+        "betweenness": 0,
+        "up": 0,
+        "down": 336
+      },
+      {
+        "table": "odata_n_tit.d_ref_book_pb",
+        "degree": [
+          1,
+          3
+        ],
+        "betweenness": 317,
+        "up": 2,
+        "down": 321
+      }
+    ]
+  },
+  "tableCoreAnalysis": {
+    "provenance": "Recorded from independent in-memory graph calculation in this analysis session; no source SQL scan.",
+    "nodes": 1365,
+    "edges": 3911,
+    "components": [
+      1333,
+      7,
+      5,
+      5,
+      4,
+      4,
+      4,
+      3
+    ],
+    "articulationsInInducedCore": 19,
+    "bridgesInInducedCore": 5,
+    "biconnectedBlocks": 28,
+    "largestBlockSizes": [
+      1258,
+      23,
+      11,
+      7
+    ],
+    "peeledNodes": 1289,
+    "peeledForestEdges": 330,
+    "peeledTrees": 959,
+    "attachedTrees": 843,
+    "independentTrees": 116,
+    "peeledRoles": {
+      "sources": 749,
+      "sinks": 355,
+      "linear": 138,
+      "splits": 20,
+      "merges": 6,
+      "multiInMultiOut": 2,
+      "isolated": 19
+    },
+    "notes": [
+      "Six focal tables are all in the largest 2-core and largest biconnected block; none is an articulation in the induced core.",
+      "The 23-table block is an AML candidate; the 11-table block is an AUM score candidate connected through wide_idx_cust_aum_tot_score.",
+      "Undirected structural cores do not measure business value."
+    ]
+  },
+  "labelPropagation": {
+    "method": "Asynchronous weighted label propagation; ties keep current label when tied, otherwise seeded random; up to 100 rounds.",
+    "seeds": [
+      1,
+      7,
+      19,
+      43,
+      97
+    ],
+    "weights": {
+      "unweighted": "1",
+      "reuseDownweighted": "1/sqrt(directed_source_outdegree)"
+    },
+    "results": [
+      {
+        "mode": "unweighted",
+        "seed": 1,
+        "clusters": 456,
+        "multiNode": 437,
+        "atLeast5": 74,
+        "topSizes": [
+          566,
+          112,
+          108,
+          70,
+          61,
+          44,
+          37,
+          32,
+          32,
+          31
+        ],
+        "converged": true,
+        "iterations": 8,
+        "modularity": 0.609
+      },
+      {
+        "mode": "unweighted",
+        "seed": 7,
+        "clusters": 430,
+        "multiNode": 411,
+        "atLeast5": 84,
+        "topSizes": [
+          578,
+          108,
+          75,
+          68,
+          50,
+          41,
+          33,
+          33,
+          31,
+          27
+        ],
+        "converged": true,
+        "iterations": 9,
+        "modularity": 0.609
+      },
+      {
+        "mode": "unweighted",
+        "seed": 19,
+        "clusters": 446,
+        "multiNode": 427,
+        "atLeast5": 85,
+        "topSizes": [
+          545,
+          107,
+          64,
+          56,
+          44,
+          44,
+          44,
+          39,
+          32,
+          30
+        ],
+        "converged": true,
+        "iterations": 8,
+        "modularity": 0.609
+      },
+      {
+        "mode": "unweighted",
+        "seed": 43,
+        "clusters": 431,
+        "multiNode": 412,
+        "atLeast5": 79,
+        "topSizes": [
+          612,
+          105,
+          79,
+          47,
+          43,
+          40,
+          39,
+          39,
+          38,
+          37
+        ],
+        "converged": true,
+        "iterations": 8,
+        "modularity": 0.617
+      },
+      {
+        "mode": "unweighted",
+        "seed": 97,
+        "clusters": 430,
+        "multiNode": 411,
+        "atLeast5": 78,
+        "topSizes": [
+          677,
+          240,
+          107,
+          47,
+          32,
+          32,
+          29,
+          28,
+          26,
+          25
+        ],
+        "converged": true,
+        "iterations": 9,
+        "modularity": 0.61
+      },
+      {
+        "mode": "reuseDownweighted",
+        "seed": 1,
+        "clusters": 638,
+        "multiNode": 619,
+        "atLeast5": 112,
+        "topSizes": [
+          107,
+          65,
+          46,
+          43,
+          39,
+          31,
+          31,
+          30,
+          27,
+          26
+        ],
+        "converged": true,
+        "iterations": 8,
+        "modularity": 0.683
+      },
+      {
+        "mode": "reuseDownweighted",
+        "seed": 7,
+        "clusters": 565,
+        "multiNode": 546,
+        "atLeast5": 107,
+        "topSizes": [
+          289,
+          107,
+          43,
+          41,
+          35,
+          31,
+          31,
+          29,
+          27,
+          26
+        ],
+        "converged": true,
+        "iterations": 17,
+        "modularity": 0.71
+      },
+      {
+        "mode": "reuseDownweighted",
+        "seed": 19,
+        "clusters": 643,
+        "multiNode": 624,
+        "atLeast5": 114,
+        "topSizes": [
+          108,
+          65,
+          43,
+          35,
+          31,
+          28,
+          28,
+          27,
+          22,
+          22
+        ],
+        "converged": true,
+        "iterations": 7,
+        "modularity": 0.676
+      },
+      {
+        "mode": "reuseDownweighted",
+        "seed": 43,
+        "clusters": 649,
+        "multiNode": 630,
+        "atLeast5": 124,
+        "topSizes": [
+          107,
+          44,
+          44,
+          40,
+          37,
+          31,
+          29,
+          26,
+          23,
+          23
+        ],
+        "converged": true,
+        "iterations": 6,
+        "modularity": 0.671
+      },
+      {
+        "mode": "reuseDownweighted",
+        "seed": 97,
+        "clusters": 575,
+        "multiNode": 556,
+        "atLeast5": 105,
+        "topSizes": [
+          291,
+          105,
+          48,
+          44,
+          39,
+          36,
+          31,
+          27,
+          27,
+          26
+        ],
+        "converged": true,
+        "iterations": 19,
+        "modularity": 0.71
+      }
+    ],
+    "sensitivity": [
+      {
+        "mode": "unweighted",
+        "ariMin": 0.5771039211666789,
+        "ariMean": 0.6882081198975112
+      },
+      {
+        "mode": "reuseDownweighted",
+        "ariMin": 0.36422032235087315,
+        "ariMean": 0.5565773692642793
+      }
+    ],
+    "anchorProfiles": [
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 12,
+            "schemas": [
+              [
+                "pdata_n",
+                4
+              ],
+              [
+                "dm_rsk_n",
+                3
+              ],
+              [
+                "dm_fin_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 5,
+            "schemas": [
+              [
+                "pdata_n",
+                2
+              ],
+              [
+                "dm_fii_n",
+                1
+              ],
+              [
+                "odata_n_tit",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 5,
+            "schemas": [
+              [
+                "pdata_n",
+                2
+              ],
+              [
+                "dm_fii_n",
+                1
+              ],
+              [
+                "odata_n_tit",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          }
+        ]
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 11,
+            "schemas": [
+              [
+                "odata_n_tit",
+                7
+              ],
+              [
+                "pdata_n",
+                3
+              ],
+              [
+                "titans_dm",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 15,
+            "schemas": [
+              [
+                "odata_n_tit",
+                7
+              ],
+              [
+                "dm_hk_n",
+                3
+              ],
+              [
+                "pdata_n",
+                3
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 7,
+            "schemas": [
+              [
+                "dm_hk_n",
+                3
+              ],
+              [
+                "pdata_n",
+                2
+              ],
+              [
+                "odata_n_tit",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          }
+        ]
+      },
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_info",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 70,
+            "schemas": [
+              [
+                "dm_index_n",
+                18
+              ],
+              [
+                "dm_otc_n",
+                14
+              ],
+              [
+                "pdata_n",
+                10
+              ]
+            ],
+            "otherAnchors": [
+              "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 68,
+            "schemas": [
+              [
+                "dm_otc_n",
+                13
+              ],
+              [
+                "dm_index_n",
+                12
+              ],
+              [
+                "pdata_n",
+                10
+              ]
+            ],
+            "otherAnchors": [
+              "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 44,
+            "schemas": [
+              [
+                "dm_index_n",
+                13
+              ],
+              [
+                "odata_n_ois",
+                11
+              ],
+              [
+                "dm_otc_n",
+                10
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 39,
+            "schemas": [
+              [
+                "dm_index_n",
+                12
+              ],
+              [
+                "dm_otc_n",
+                9
+              ],
+              [
+                "odata_n_ois",
+                5
+              ]
+            ],
+            "otherAnchors": [
+              "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 3,
+            "schemas": [
+              [
+                "odata_n_ois",
+                2
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 5,
+            "schemas": [
+              [
+                "odata_n_ois",
+                2
+              ],
+              [
+                "pdata_n",
+                1
+              ],
+              [
+                "odata_n_tit",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 5,
+            "schemas": [
+              [
+                "pdata_n",
+                2
+              ],
+              [
+                "odata_n_tit",
+                1
+              ],
+              [
+                "titans_dm",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          }
+        ]
+      },
+      {
+        "table": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 70,
+            "schemas": [
+              [
+                "dm_index_n",
+                18
+              ],
+              [
+                "dm_otc_n",
+                14
+              ],
+              [
+                "pdata_n",
+                10
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t98_otc_deri_comp_sale_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 68,
+            "schemas": [
+              [
+                "dm_otc_n",
+                13
+              ],
+              [
+                "dm_index_n",
+                12
+              ],
+              [
+                "pdata_n",
+                10
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t98_otc_deri_comp_sale_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 22,
+            "schemas": [
+              [
+                "dm_index_n",
+                17
+              ],
+              [
+                "pdata_nds",
+                2
+              ],
+              [
+                "dm_om_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 39,
+            "schemas": [
+              [
+                "dm_index_n",
+                12
+              ],
+              [
+                "dm_otc_n",
+                9
+              ],
+              [
+                "odata_n_ois",
+                5
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t98_otc_deri_comp_sale_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 240,
+            "schemas": [
+              [
+                "dm_index_n",
+                151
+              ],
+              [
+                "dm_om_n",
+                34
+              ],
+              [
+                "pdata_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 16,
+            "schemas": [
+              [
+                "dm_index_n",
+                12
+              ],
+              [
+                "temp",
+                2
+              ],
+              [
+                "dm_om_n",
+                2
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 12,
+            "schemas": [
+              [
+                "dm_index_n",
+                10
+              ],
+              [
+                "dm_om_n",
+                1
+              ],
+              [
+                "temp",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 11,
+            "schemas": [
+              [
+                "dm_index_n",
+                9
+              ],
+              [
+                "temp",
+                1
+              ],
+              [
+                "pdata_nds",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 11,
+            "schemas": [
+              [
+                "dm_index_n",
+                9
+              ],
+              [
+                "dm_om_n",
+                1
+              ],
+              [
+                "temp",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 11,
+            "schemas": [
+              [
+                "dm_index_n",
+                9
+              ],
+              [
+                "dm_om_n",
+                1
+              ],
+              [
+                "temp",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          }
+        ]
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 32,
+            "schemas": [
+              [
+                "dm_index_n",
+                22
+              ],
+              [
+                "temp",
+                4
+              ],
+              [
+                "dm_om_n",
+                2
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 22,
+            "schemas": [
+              [
+                "dm_index_n",
+                17
+              ],
+              [
+                "temp",
+                3
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 64,
+            "schemas": [
+              [
+                "dm_index_n",
+                46
+              ],
+              [
+                "dm_om_n",
+                9
+              ],
+              [
+                "a_epa",
+                4
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 40,
+            "schemas": [
+              [
+                "dm_index_n",
+                24
+              ],
+              [
+                "pdata_n",
+                3
+              ],
+              [
+                "dm_om_n",
+                3
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 240,
+            "schemas": [
+              [
+                "dm_index_n",
+                151
+              ],
+              [
+                "dm_om_n",
+                34
+              ],
+              [
+                "pdata_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 12,
+            "schemas": [
+              [
+                "dm_index_n",
+                8
+              ],
+              [
+                "temp",
+                3
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 12,
+            "schemas": [
+              [
+                "dm_index_n",
+                8
+              ],
+              [
+                "temp",
+                3
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 14,
+            "schemas": [
+              [
+                "dm_index_n",
+                10
+              ],
+              [
+                "temp",
+                3
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 13,
+            "schemas": [
+              [
+                "dm_index_n",
+                10
+              ],
+              [
+                "temp",
+                3
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 11,
+            "schemas": [
+              [
+                "dm_index_n",
+                8
+              ],
+              [
+                "temp",
+                3
+              ]
+            ],
+            "otherAnchors": []
+          }
+        ]
+      },
+      {
+        "table": "dm_otc_n.otc_rev_daily_rpt",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 8,
+            "schemas": [
+              [
+                "odata_n_lss",
+                3
+              ],
+              [
+                "dm_otc_test",
+                1
+              ],
+              [
+                "odata_n_ois",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 9,
+            "schemas": [
+              [
+                "odata_n_lss",
+                3
+              ],
+              [
+                "pdata_n",
+                2
+              ],
+              [
+                "dm_otc_test",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 8,
+            "schemas": [
+              [
+                "odata_n_lss",
+                3
+              ],
+              [
+                "dm_otc_test",
+                1
+              ],
+              [
+                "odata_n_ois",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 7,
+            "schemas": [
+              [
+                "odata_n_lss",
+                3
+              ],
+              [
+                "dm_otc_test",
+                1
+              ],
+              [
+                "odata_n_ois",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 7,
+            "schemas": [
+              [
+                "odata_n_lss",
+                3
+              ],
+              [
+                "dm_otc_test",
+                1
+              ],
+              [
+                "odata_n_ois",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          }
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 12,
+            "schemas": [
+              [
+                "dm_rsk_n",
+                5
+              ],
+              [
+                "pdata_n",
+                3
+              ],
+              [
+                "dm_hk_n",
+                2
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 17,
+            "schemas": [
+              [
+                "dm_rsk_n",
+                5
+              ],
+              [
+                "pdata_n",
+                4
+              ],
+              [
+                "dm_hk_n",
+                3
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 9,
+            "schemas": [
+              [
+                "dm_rsk_n",
+                4
+              ],
+              [
+                "pdata_n",
+                3
+              ],
+              [
+                "dm_hk_n",
+                2
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_hk_n.trd_otc_trade",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          }
+        ]
+      },
+      {
+        "table": "dm_hk_n.trd_otc_trade",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 3,
+            "schemas": [
+              [
+                "dm_hk_n",
+                1
+              ],
+              [
+                "odata_n_tit",
+                1
+              ],
+              [
+                "titans_dm",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 6,
+            "schemas": [
+              [
+                "dm_hk_n",
+                2
+              ],
+              [
+                "odata_n_tit",
+                2
+              ],
+              [
+                "titans_dm",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 6,
+            "schemas": [
+              [
+                "dm_hk_n",
+                2
+              ],
+              [
+                "odata_n_tit",
+                2
+              ],
+              [
+                "titans_dm",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "pdata_n.t03_otc_opt_comp_stru_elmn_info"
+            ]
+          }
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_opt_comp_stru_elmn_info",
+        "runs": [
+          {
+            "mode": "unweighted",
+            "seed": 1,
+            "size": 566,
+            "schemas": [
+              [
+                "dm_hk_n",
+                110
+              ],
+              [
+                "pdata_n",
+                108
+              ],
+              [
+                "odata_n_tit",
+                80
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 7,
+            "size": 578,
+            "schemas": [
+              [
+                "pdata_n",
+                121
+              ],
+              [
+                "dm_hk_n",
+                109
+              ],
+              [
+                "odata_n_tit",
+                78
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 19,
+            "size": 545,
+            "schemas": [
+              [
+                "pdata_n",
+                109
+              ],
+              [
+                "dm_hk_n",
+                106
+              ],
+              [
+                "odata_n_tit",
+                68
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 43,
+            "size": 612,
+            "schemas": [
+              [
+                "dm_hk_n",
+                119
+              ],
+              [
+                "pdata_n",
+                116
+              ],
+              [
+                "odata_n_tit",
+                89
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "unweighted",
+            "seed": 97,
+            "size": 677,
+            "schemas": [
+              [
+                "pdata_n",
+                122
+              ],
+              [
+                "dm_hk_n",
+                118
+              ],
+              [
+                "odata_n_tit",
+                90
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 1,
+            "size": 6,
+            "schemas": [
+              [
+                "odata_n_tit",
+                3
+              ],
+              [
+                "dm_fin_n",
+                1
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 7,
+            "size": 289,
+            "schemas": [
+              [
+                "pdata_n",
+                83
+              ],
+              [
+                "odata_n_tit",
+                51
+              ],
+              [
+                "dm_hk_n",
+                24
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 19,
+            "size": 6,
+            "schemas": [
+              [
+                "odata_n_tit",
+                3
+              ],
+              [
+                "dm_fin_n",
+                1
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 43,
+            "size": 6,
+            "schemas": [
+              [
+                "odata_n_tit",
+                3
+              ],
+              [
+                "dm_fin_n",
+                1
+              ],
+              [
+                "pdata_n",
+                1
+              ]
+            ],
+            "otherAnchors": []
+          },
+          {
+            "mode": "reuseDownweighted",
+            "seed": 97,
+            "size": 291,
+            "schemas": [
+              [
+                "pdata_n",
+                86
+              ],
+              [
+                "odata_n_tit",
+                53
+              ],
+              [
+                "dm_hk_n",
+                26
+              ]
+            ],
+            "otherAnchors": [
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "pdata_n.t03_agt_rela_h",
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+              "dm_hk_n.trd_otc_trade"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "fieldAnalysis": {
+    "rawCounts": {
+      "edges": 84868,
+      "sourceNodes": 54327,
+      "targetNodes": 72598,
+      "sourceIdentityExact": 54327,
+      "sourceIdentityMissing": 0,
+      "sourceIdentityAmbiguous": 0,
+      "targetIdentityExact": 70557,
+      "targetIdentityMissing": 2041,
+      "targetIdentityAmbiguous": 0,
+      "unmappedEdges": 0,
+      "sourceKinds": {
+        "READ_FIELD": 68520,
+        "PHYSICAL_FIELD": 16348
+      },
+      "kinds": {
+        "VALUE": 82918,
+        "CONDITION": 1950
+      }
+    },
+    "rawScope": "All published VALUE and CONDITION edges; source identity from platform+dataSource+qualifiedName; target identity via task+writeObservationId WRITES_TABLE",
+    "allExactPairKinds": 4514,
+    "afterExclusionsPairKinds": 3895,
+    "baselineReconciliation": {
+      "basePairs": 5084,
+      "filteredPairKinds": 3814,
+      "matchedPairs": 3661,
+      "matchedPairKinds": 3798,
+      "VALUEpairs": 3659,
+      "unmatchedPairKinds": 16,
+      "unmatchedExamples": [
+        {
+          "s": "dm_rsk_n.otc_trs_risk_plreport_temp",
+          "t": "dm_rsk_n.otc_trs_risk_plreport",
+          "kind": "CONDITION",
+          "tasks": [
+            "160791",
+            "160792",
+            "160794",
+            "160795",
+            "188424",
+            "188429"
+          ]
+        },
+        {
+          "s": "temp.t03_agt_mid_tit293",
+          "t": "pdata_n.t03_agt",
+          "kind": "VALUE",
+          "tasks": [
+            "211541"
+          ]
+        },
+        {
+          "s": "dm_index_n.wide_idx_cust_aum_tot_score",
+          "t": "dm_index_n.wide_idx_taum_cust_eval_qtr_fol",
+          "kind": "VALUE",
+          "tasks": [
+            "237505"
+          ]
+        },
+        {
+          "s": "dm_index_n.wide_idx_cust_aum_tot_score_7007",
+          "t": "dm_index_n.wide_idx_taum_cust_eval_qtr_fol",
+          "kind": "VALUE",
+          "tasks": [
+            "237505"
+          ]
+        },
+        {
+          "s": "dm_index_n.wide_idx_cust_aum_tot_score_7023",
+          "t": "dm_index_n.wide_idx_taum_cust_eval_qtr_fol",
+          "kind": "VALUE",
+          "tasks": [
+            "237505"
+          ]
+        }
+      ],
+      "top": [
+        {
+          "table": "odata_n_tit.d_trd_otc_trade",
+          "column": "key_otc_trade_id",
+          "kind": "VALUE",
+          "tasks": 48,
+          "tables": 25,
+          "fields": 27
+        },
+        {
+          "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+          "column": "index_val",
+          "kind": "VALUE",
+          "tasks": 46,
+          "tables": 46,
+          "fields": 75
+        },
+        {
+          "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+          "column": "bel_dept",
+          "kind": "VALUE",
+          "tasks": 44,
+          "tables": 30,
+          "fields": 30
+        },
+        {
+          "table": "pdata_n.t03_agt_stati_info_h",
+          "column": "stati_cont_desc",
+          "kind": "VALUE",
+          "tasks": 40,
+          "tables": 28,
+          "fields": 34
+        },
+        {
+          "table": "pdata_n.t01_pty_name",
+          "column": "shor_name_ch",
+          "kind": "VALUE",
+          "tasks": 37,
+          "tables": 32,
+          "fields": 44
+        },
+        {
+          "table": "pdata_news_n.t02_fxr_cfets_quot",
+          "column": "mid_price",
+          "kind": "VALUE",
+          "tasks": 32,
+          "tables": 25,
+          "fields": 80
+        },
+        {
+          "table": "pdata_n.t03_agt_name_h",
+          "column": "agt_full_name",
+          "kind": "VALUE",
+          "tasks": 32,
+          "tables": 24,
+          "fields": 26
+        },
+        {
+          "table": "pdata_n.t01_pty_name",
+          "column": "full_name_ch",
+          "kind": "VALUE",
+          "tasks": 31,
+          "tables": 24,
+          "fields": 28
+        },
+        {
+          "table": "pdata_n.t03_agt_rela_h",
+          "column": "rela_agt_id",
+          "kind": "VALUE",
+          "tasks": 27,
+          "tables": 19,
+          "fields": 24
+        },
+        {
+          "table": "pdata_news_n.t02_fin_fctr_def",
+          "column": "fctr_id",
+          "kind": "VALUE",
+          "tasks": 27,
+          "tables": 8,
+          "fields": 14
+        },
+        {
+          "table": "pdata_news_n.t02_fin_fctr_def",
+          "column": "fctr_curv_ch_name",
+          "kind": "VALUE",
+          "tasks": 26,
+          "tables": 7,
+          "fields": 7
+        },
+        {
+          "table": "pdata_news_n.tyzx_exch_quot_h_fk",
+          "column": "pric_clos",
+          "kind": "VALUE",
+          "tasks": 25,
+          "tables": 14,
+          "fields": 28
+        },
+        {
+          "table": "dm_index_n.index_grp2_std_ast_aft_covt_year_apd",
+          "column": "index_val",
+          "kind": "VALUE",
+          "tasks": 24,
+          "tables": 24,
+          "fields": 103
+        },
+        {
+          "table": "pdata_news_n.t02_pub_covt_const",
+          "column": "src_const_cd",
+          "kind": "VALUE",
+          "tasks": 23,
+          "tables": 19,
+          "fields": 28
+        },
+        {
+          "table": "pdata_n.t98_otc_deri_comp_sale_info",
+          "column": "cutp_pty_id",
+          "kind": "VALUE",
+          "tasks": 21,
+          "tables": 18,
+          "fields": 24
+        }
+      ],
+      "thresholds": [
+        {
+          "threshold": 0.3,
+          "edges": 1329,
+          "nodes": 1529,
+          "groups": 308,
+          "topSizes": [
+            193,
+            29,
+            19,
+            19,
+            18,
+            18,
+            15,
+            15
+          ],
+          "examples": [
+            [
+              "odata_n_tit.d_mkt_ins_daily_info",
+              "pdata_news_n.tyzx_exch_quot_h_fk",
+              "odata_n_tit.d_mkt_ins_daily_info_p",
+              "pdata_news_n.tyzx_exch_quot_h",
+              "dm_rsk_n.curv_delay_abn_hand_info",
+              "dm_rsk_n.curv_jump_abn_hand_info",
+              "dm_rsk_n.pric_fctr_mkt_quot_day",
+              "dm_hk_n.mkt_ins_daily_info",
+              "dm_rsk_n.stk_spi_mkt_quot_day",
+              "dm_rsk_n.trd_opt_mkt_quot_day",
+              "dm_rsk_n.futr_mkt_quot",
+              "dm_rsk_n.tbine_mkt_quot",
+              "dm_rsk_n.cbbc_mkt_quot",
+              "dm_rsk_n.fnd_mkt_quot_day",
+              "titans_dm.mkt_ins_daily_info",
+              "pdata_news_n.t02_fin_mkt_quot_fctr_rslt",
+              "pdata_news_n.t02_prd_unit_nav_s_tit",
+              "odata_n_tit.d_mkt_risk_daily_info",
+              "titans_dm.mkt_risk_daily_info"
+            ],
+            [
+              "titans_dm.trd_option_event",
+              "odata_n_tit.d_trd_option_event",
+              "pdata_n.t05_otc_comp_dura_chg_evt",
+              "dm_otc_n.trd_option_event",
+              "dm_otc_n.otc_comp_dura_chg_evt",
+              "dm_hk_n.trd_option_event",
+              "odata_n_tit.d_trd_fast_trs_event",
+              "dm_hk_n.trd_trs_event",
+              "dm_fii_n.dtl_otc_swap_dura_evt_undrl_dim_day",
+              "dm_otc_n.d_v_equity_trs_lifecycle",
+              "gf_otc.trd_option_event",
+              "ods_titans.trd_option_event",
+              "titans_dm.trd_fast_trs_event",
+              "dm_hk_n.info_trd_fast_trs_event_day",
+              "pdata_n.t05_otc_swap_comp_hold_chg_det",
+              "odata_n_tit.d_trd_fast_trs_event_p",
+              "ods_titans.trd_fast_trs_event",
+              "dm_hk_n.trd_trs_event_struc_detail",
+              "dm_hk_n.info_trd_fast_trs_event"
+            ],
+            [
+              "titans_dm.ref_fx_forward",
+              "odata_n_tit.d_ref_fx_forward",
+              "odata_n_tit.d_ref_fx_forward_p",
+              "dm_hk_n.info_ref_fx_forward",
+              "pdata_n.t03_otc_fx_fwd_comp_info",
+              "dm_hk_n.ref_fx_forward",
+              "dm_hk_n.d_otchk_fx_forward_comp_info_p",
+              "ods_titans.ref_fx_forward",
+              "dm_rsk_n.otchk_fx_forward_comp_info",
+              "dm_hk_n.otchk_fx_forward_comp_info",
+              "ods_titans.otchk_fx_forward_comp_info",
+              "odata_n_tit.d_ref_fx_forward_structure_p",
+              "pdata_n.t03_otc_fx_fwd_comp_stru_elmn_info",
+              "titans_dm.ref_fx_forward_structure",
+              "dm_hk_n.ref_fx_forward_structure",
+              "odata_n_tit.d_ref_fx_forward_structure",
+              "ods_titans.ref_fx_forward_structure",
+              "dm_hk_n.info_ref_fx_forward_structure"
+            ],
+            [
+              "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd",
+              "dm_index_n.index_grp2_cust_org_stdast_bef_stagger_mth_10fix_all",
+              "dm_index_n.index_grp2_cust_org_asset_std_mthaccum_all",
+              "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+              "dm_index_n.index_grp2_apdtnramt_2026yearaumexamcali_mthapd",
+              "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+              "dm_index_n.index_grp1_org_std_ast_bef_covt_mth_apd",
+              "dm_index_n.index_grp1_stdast_covtfrnt_astpkgrela_delcorp_delrepocust_mthapd",
+              "dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd",
+              "dm_index_n.index_grp2_cust_org_stdast_aft_stagger_mth_10fix_all",
+              "dm_index_n.index_grp2_cust_org_stdast_aft_stagger_qtrapd_all",
+              "dm_index_n.index_grp1_org_std_ast_aft_covt_mth_apd",
+              "dm_index_n.index_grp2_cust_stdast_covtpst_examapp_mth",
+              "dm_index_n.index_grp1_cust_stdast_aft_stagger_qtrapd_all",
+              "dm_index_n.index_grp3_apdtnramt_2026yearaumexamcali_mthapd",
+              "dm_index_n.index_grp2_cust_org_stdastincrsval_aft_qtrapd_pqtrapd_mth_all",
+              "dm_index_n.index_grp2_apdstdast_examcoefcovtpst_mth",
+              "dm_index_n.index_grp1_cust_stdastincrsval_aft_qtrapd_pqtrapd_mth_all"
+            ]
+          ]
+        },
+        {
+          "threshold": 0.5,
+          "edges": 1095,
+          "nodes": 1390,
+          "groups": 357,
+          "topSizes": [
+            42,
+            34,
+            23,
+            18,
+            17,
+            15,
+            15,
+            13
+          ],
+          "examples": [
+            [
+              "titans_dm.pos_trs_leg_valuation",
+              "odata_n_tit.d_pos_trs_leg_valuation",
+              "odata_n_tit.d_pos_trs_leg_valuation_p",
+              "pdata_n.t98_otc_swap_comp_leg_valu_info",
+              "pdata_nds.pos_trs_leg_valuation",
+              "odata_n_tit.d_pos_trs_leg_valuation_pb",
+              "dm_hk_n.pos_trs_leg_valuation_new",
+              "dm_hk_n.pos_trs_leg_valuation",
+              "odata_n_tit.d_pos_fast_trs_leg_valuation",
+              "pdata_n.t98_otc_swap_comp_valu_sum",
+              "ods_titans.pos_trs_leg_valuation",
+              "titans_dm.pos_fast_trs_leg_valuation",
+              "dm_hk_n.info_otc_swap_comp_valu_info_n_cross_dma_swap",
+              "pdata_nds.pos_fast_trs_leg_valuation",
+              "dm_hk_n.fin_valu_otc_trs",
+              "odata_n_tit.d_pos_fast_trs_leg_valuation_p",
+              "odata_n_tit.d_pos_fast_trs_leg_valuation_pb",
+              "dm_hk_n.d_pos_fast_trs_leg_valuation_p"
+            ],
+            [
+              "pdata_n.t98_otc_deri_comp_sale_info",
+              "dm_otc_test.otc_sale_daily_rpt_adj",
+              "dm_otc_n.otc_rev_daily_rpt",
+              "dm_otc_n.otc_sale_daily_rpt",
+              "dm_otc_n.wt_otc_trade_dtl",
+              "dm_otc_n.otc_inr_sale_daily_rpt",
+              "pdata_n.t98_otc_trd_comp_info",
+              "dm_otc_n.opt_cumulator_schd",
+              "dm_otc_n.otc_opt_knock_evt",
+              "dm_otc_n.bi_otc_busi_stat",
+              "dm_otc_n.bi_otc_swap_trd_stat",
+              "dm_otc_n.bi_otc_underlying_analysis",
+              "dm_otc_n.bi_otc_year_revenue",
+              "dm_otc_n.bi_otc_hold_pnl",
+              "dm_otc_n.bi_otc_amount_change",
+              "dm_otc_n.bi_otc_cust_tag",
+              "gf_edc.wt_otc_trade_dtl"
+            ],
+            [
+              "titans_dm.trd_transfer",
+              "odata_n_tit.d_trd_transfer_p",
+              "odata_n_tit.d_trd_transfer",
+              "odata_n_tit.d_trd_transfer_pb",
+              "dm_hk_n.trd_transfer_new",
+              "pdata_n.t05_otc_recv_pymt_evt",
+              "pdata_nds.trd_transfer",
+              "pdata_nds.trd_transfer_pb",
+              "ods_titans.trd_transfer",
+              "dm_otc_n.trd_transfer_report_td",
+              "dm_hk_n.trd_transfer",
+              "dm_hk_n.evt_trd_transfer",
+              "dm_otc_n.otc_recv_pymt_evt_info",
+              "dm_rsk_n.opt_sub_trd_recv_pymt_evt",
+              "dm_otc_n.trd_transfer"
+            ],
+            [
+              "titans_dm.ref_op_deal_autocall_kodate",
+              "odata_n_tit.d_ref_op_deal_autocall_kodate",
+              "odata_n_tit.d_ref_op_deal_autocall_kodate_p",
+              "pdata_n.t03_otc_opt_comp_obsv_date_coup_info",
+              "dm_hk_n.d_ref_op_deal_autocall_kodate_p",
+              "dm_hk_n.ref_op_deal_autocall_kodate",
+              "dm_hk_n.ref_op_deal_lizard_obsdate_day",
+              "dm_otc_n.opt_comp_obsv_info",
+              "dm_hk_n.ref_op_deal_autocall_kidate",
+              "ods_titans.ref_op_deal_autocall_kodate",
+              "ods_titans.ref_op_deal_autocall_kidate",
+              "dm_hk_n.d_ref_op_deal_autocall_kidate_p",
+              "odata_n_tit.d_ref_op_deal_autocall_kidate_p",
+              "titans_dm.ref_op_deal_autocall_kidate",
+              "odata_n_tit.d_ref_op_deal_autocall_kidate"
+            ]
+          ]
+        },
+        {
+          "threshold": 0.7,
+          "edges": 934,
+          "nodes": 1248,
+          "groups": 362,
+          "topSizes": [
+            23,
+            15,
+            14,
+            13,
+            12,
+            12,
+            11,
+            10
+          ],
+          "examples": [
+            [
+              "titans_dm.pos_position_daily",
+              "odata_n_tit.d_pos_position_daily",
+              "odata_n_tit.d_pos_position_daily_p",
+              "pdata_nds.pos_position_daily",
+              "pdata_n.t98_otc_book_hold_sum",
+              "odata_n_tit.d_pos_position_daily_pb",
+              "dm_hk_n.pos_position_daily_new",
+              "dm_hk_n.pos_position_daily",
+              "pdata_n.t98_otc_opt_comp_sub_trd_pal_sum",
+              "dm_fii_n.wide_idx_swap_hedge_pnl_pos",
+              "dm_otc_n.d_v_equity_trs_plreport",
+              "ods_titans.pos_position_daily",
+              "dm_otc_n.v_equity_plreport_contract_temp",
+              "dm_otc_n.v_equity_plreport_contract",
+              "bd_dm_fii_uat.wide_idx_swap_hedge_pnl_pos"
+            ],
+            [
+              "titans_dm.ref_op_deal_autocall_kodate",
+              "odata_n_tit.d_ref_op_deal_autocall_kodate",
+              "odata_n_tit.d_ref_op_deal_autocall_kodate_p",
+              "dm_hk_n.d_ref_op_deal_autocall_kodate_p",
+              "ods_titans.ref_op_deal_autocall_kodate",
+              "dm_hk_n.ref_op_deal_autocall_kodate",
+              "pdata_n.t03_otc_opt_comp_obsv_date_coup_info",
+              "dm_hk_n.ref_op_deal_lizard_obsdate_day",
+              "dm_hk_n.ref_op_deal_autocall_kidate",
+              "ods_titans.ref_op_deal_autocall_kidate",
+              "dm_hk_n.d_ref_op_deal_autocall_kidate_p",
+              "odata_n_tit.d_ref_op_deal_autocall_kidate_p",
+              "titans_dm.ref_op_deal_autocall_kidate",
+              "odata_n_tit.d_ref_op_deal_autocall_kidate"
+            ],
+            [
+              "titans_dm.trd_transfer",
+              "odata_n_tit.d_trd_transfer_p",
+              "odata_n_tit.d_trd_transfer",
+              "odata_n_tit.d_trd_transfer_pb",
+              "dm_hk_n.trd_transfer_new",
+              "pdata_n.t05_otc_recv_pymt_evt",
+              "pdata_nds.trd_transfer",
+              "pdata_nds.trd_transfer_pb",
+              "ods_titans.trd_transfer",
+              "dm_otc_n.trd_transfer_report_td",
+              "dm_hk_n.trd_transfer",
+              "dm_hk_n.evt_trd_transfer",
+              "dm_otc_n.trd_transfer"
+            ],
+            [
+              "odata_n_tit.d_ref_book_p",
+              "odata_n_tit.d_ref_book_pb",
+              "titans_dm.ref_book",
+              "dm_hk_n.info_ref_book",
+              "pdata_nds.ref_book",
+              "pdata_n.t03_otc_deri_book_adtnl_info",
+              "odata_n_tit.d_ref_book",
+              "ods_titans.ref_book",
+              "dm_fii_n.det_titans_book_acct_lvl_info",
+              "dm_hk_n.ref_book",
+              "dm_fii_n.titans_book_acct_lvl_info",
+              "stars_refdata.titans_book_acct_lvl_info"
+            ]
+          ]
+        }
+      ]
+    },
+    "matchedValueWidths": {
+      "pairs": 3659,
+      "one": 1308,
+      "upToTwo": 1817,
+      "atMostTenPercent": 1167
+    },
+    "hotspots": [
+      {
+        "sourceTable": "odata_n_tit.d_trd_otc_trade",
+        "column": "key_otc_trade_id",
+        "kind": "VALUE",
+        "tasks": 48,
+        "outputTables": 25,
+        "outputFields": 27
+      },
+      {
+        "sourceTable": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "index_val",
+        "kind": "VALUE",
+        "tasks": 46,
+        "outputTables": 46,
+        "outputFields": 75
+      },
+      {
+        "sourceTable": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "column": "bel_dept",
+        "kind": "VALUE",
+        "tasks": 44,
+        "outputTables": 30,
+        "outputFields": 30
+      },
+      {
+        "sourceTable": "pdata_n.t03_agt_stati_info_h",
+        "column": "stati_cont_desc",
+        "kind": "VALUE",
+        "tasks": 40,
+        "outputTables": 28,
+        "outputFields": 34
+      },
+      {
+        "sourceTable": "pdata_n.t01_pty_name",
+        "column": "shor_name_ch",
+        "kind": "VALUE",
+        "tasks": 37,
+        "outputTables": 32,
+        "outputFields": 44
+      },
+      {
+        "sourceTable": "pdata_news_n.t02_fxr_cfets_quot",
+        "column": "mid_price",
+        "kind": "VALUE",
+        "tasks": 32,
+        "outputTables": 25,
+        "outputFields": 80
+      },
+      {
+        "sourceTable": "pdata_n.t03_agt_name_h",
+        "column": "agt_full_name",
+        "kind": "VALUE",
+        "tasks": 32,
+        "outputTables": 24,
+        "outputFields": 26
+      },
+      {
+        "sourceTable": "pdata_n.t01_pty_name",
+        "column": "full_name_ch",
+        "kind": "VALUE",
+        "tasks": 31,
+        "outputTables": 24,
+        "outputFields": 28
+      },
+      {
+        "sourceTable": "pdata_n.t03_agt_rela_h",
+        "column": "rela_agt_id",
+        "kind": "VALUE",
+        "tasks": 27,
+        "outputTables": 19,
+        "outputFields": 24
+      },
+      {
+        "sourceTable": "pdata_news_n.t02_fin_fctr_def",
+        "column": "fctr_id",
+        "kind": "VALUE",
+        "tasks": 27,
+        "outputTables": 8,
+        "outputFields": 14
+      },
+      {
+        "sourceTable": "pdata_news_n.t02_fin_fctr_def",
+        "column": "fctr_curv_ch_name",
+        "kind": "VALUE",
+        "tasks": 26,
+        "outputTables": 7,
+        "outputFields": 7
+      },
+      {
+        "sourceTable": "pdata_news_n.tyzx_exch_quot_h_fk",
+        "column": "pric_clos",
+        "kind": "VALUE",
+        "tasks": 25,
+        "outputTables": 14,
+        "outputFields": 28
+      },
+      {
+        "sourceTable": "dm_index_n.index_grp2_std_ast_aft_covt_year_apd",
+        "column": "index_val",
+        "kind": "VALUE",
+        "tasks": 24,
+        "outputTables": 24,
+        "outputFields": 103
+      },
+      {
+        "sourceTable": "pdata_news_n.t02_pub_covt_const",
+        "column": "src_const_cd",
+        "kind": "VALUE",
+        "tasks": 23,
+        "outputTables": 19,
+        "outputFields": 28
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "cutp_pty_id",
+        "kind": "VALUE",
+        "tasks": 21,
+        "outputTables": 18,
+        "outputFields": 24
+      },
+      {
+        "sourceTable": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "busi_mon",
+        "kind": "VALUE",
+        "tasks": 21,
+        "outputTables": 21,
+        "outputFields": 21
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "src_contr_type",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 17,
+        "outputFields": 73
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "agt_id",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 17,
+        "outputFields": 48
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "init_nom_prin",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 17,
+        "outputFields": 48
+      },
+      {
+        "sourceTable": "pdata_n.t99_trd_cal_ref",
+        "column": "trd_date",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 7,
+        "outputFields": 35
+      },
+      {
+        "sourceTable": "pdata_n.t98_brok_indv_cust_base_info",
+        "column": "bel_inr_org_id",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 19,
+        "outputFields": 29
+      },
+      {
+        "sourceTable": "pdata_n.t98_sb_otc_swap_comp_info",
+        "column": "sett_crrc_cd",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 19,
+        "outputFields": 26
+      },
+      {
+        "sourceTable": "pdata_news_n.tyzx_exch_quot_h_fk",
+        "column": "trd_dt",
+        "kind": "VALUE",
+        "tasks": 20,
+        "outputTables": 11,
+        "outputFields": 21
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+        "column": "dyna_nom_prin",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 16,
+        "outputFields": 66
+      },
+      {
+        "sourceTable": "pdata_n.t98_brok_corp_cust_base_info",
+        "column": "bel_inr_org_id",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 18,
+        "outputFields": 28
+      },
+      {
+        "sourceTable": "pdata_n.t98_cust_indv_cust_base_info",
+        "column": "cust_name_ch",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 19,
+        "outputFields": 19
+      },
+      {
+        "sourceTable": "pdata_n.t01_pty_cutp",
+        "column": "cutp_legal_enty",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 15,
+        "outputFields": 18
+      },
+      {
+        "sourceTable": "pdata_n.t03_agt_clas_h",
+        "column": "agt_clas_cd",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 13,
+        "outputFields": 16
+      },
+      {
+        "sourceTable": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "cutp_pty_shor_name",
+        "kind": "VALUE",
+        "tasks": 19,
+        "outputTables": 16,
+        "outputFields": 16
+      },
+      {
+        "sourceTable": "odata_n_tit.d_trd_otc_trade",
+        "column": "key_otc_trade_id",
+        "kind": "CONDITION",
+        "tasks": 19,
+        "outputTables": 7,
+        "outputFields": 7
+      }
+    ],
+    "denominator": "Distinct columns of all graph-mapped final WRITE_FIELD nodes for the same physical target table, unioned across writes/producers. Not DDL width or per-write coverage.",
+    "caveat": "VALUE/CONDITION are observed input footprints and do not establish a confirmed cross-task continuation path."
+  },
+  "controlAnalysis": {
+    "counts": {
+      "allEdges": 48717,
+      "unmappedSource": 2,
+      "unmappedTarget": 2453,
+      "excluded": 7720,
+      "selfEdges": 810,
+      "notBaseline": 606,
+      "retained": 37126,
+      "subtypes": {
+        "FILTER": 16602,
+        "JOIN": 13499,
+        "GROUP_BY": 7025
+      }
+    },
+    "scope": "DATASET_CONTROL only; final writes; configured plus four exclusions; no self pairs; match global externalRead x finalWrite baseline",
+    "hotspots": [
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "column": "book_agt_id",
+        "subtypes": {
+          "JOIN": 165,
+          "FILTER": 2,
+          "GROUP_BY": 2
+        },
+        "edgeCount": 216,
+        "taskCount": 165,
+        "outputTableCount": 150
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 162,
+          "JOIN": 3
+        },
+        "edgeCount": 200,
+        "taskCount": 165,
+        "outputTableCount": 150
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "column": "src_tbl",
+        "subtypes": {
+          "FILTER": 162,
+          "JOIN": 2
+        },
+        "edgeCount": 196,
+        "taskCount": 164,
+        "outputTableCount": 150
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "column": "agt_id",
+        "subtypes": {
+          "JOIN": 107,
+          "FILTER": 2
+        },
+        "edgeCount": 168,
+        "taskCount": 107,
+        "outputTableCount": 94
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "column": "src_tbl",
+        "subtypes": {
+          "FILTER": 95,
+          "JOIN": 11
+        },
+        "edgeCount": 148,
+        "taskCount": 106,
+        "outputTableCount": 94
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "column": "strt_date",
+        "subtypes": {
+          "FILTER": 93,
+          "JOIN": 12
+        },
+        "edgeCount": 147,
+        "taskCount": 105,
+        "outputTableCount": 92
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "column": "end_date",
+        "subtypes": {
+          "FILTER": 93,
+          "JOIN": 12
+        },
+        "edgeCount": 150,
+        "taskCount": 105,
+        "outputTableCount": 92
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "column": "rela_agt_id",
+        "subtypes": {
+          "JOIN": 102,
+          "FILTER": 4,
+          "GROUP_BY": 1
+        },
+        "edgeCount": 160,
+        "taskCount": 103,
+        "outputTableCount": 90
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_book_adtnl_info",
+        "column": "bel_co",
+        "subtypes": {
+          "FILTER": 100,
+          "JOIN": 1
+        },
+        "edgeCount": 105,
+        "taskCount": 101,
+        "outputTableCount": 101
+      },
+      {
+        "table": "pdata_n.t03_agt_stati_info_h",
+        "column": "agt_id",
+        "subtypes": {
+          "JOIN": 52,
+          "FILTER": 5,
+          "GROUP_BY": 2
+        },
+        "edgeCount": 261,
+        "taskCount": 52,
+        "outputTableCount": 36
+      },
+      {
+        "table": "pdata_n.t01_pty_name",
+        "column": "pty_id",
+        "subtypes": {
+          "JOIN": 51,
+          "FILTER": 1
+        },
+        "edgeCount": 115,
+        "taskCount": 51,
+        "outputTableCount": 42
+      },
+      {
+        "table": "pdata_n.t01_pty_name",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 48,
+          "JOIN": 5
+        },
+        "edgeCount": 87,
+        "taskCount": 51,
+        "outputTableCount": 42
+      },
+      {
+        "table": "pdata_n.t03_agt_stati_info_h",
+        "column": "src_tbl",
+        "subtypes": {
+          "FILTER": 50,
+          "JOIN": 1
+        },
+        "edgeCount": 95,
+        "taskCount": 51,
+        "outputTableCount": 36
+      },
+      {
+        "table": "pdata_n.t03_agt_stati_info_h",
+        "column": "strt_date",
+        "subtypes": {
+          "FILTER": 50,
+          "JOIN": 1
+        },
+        "edgeCount": 96,
+        "taskCount": 51,
+        "outputTableCount": 35
+      },
+      {
+        "table": "pdata_n.t03_agt_stati_info_h",
+        "column": "end_date",
+        "subtypes": {
+          "FILTER": 50,
+          "JOIN": 1
+        },
+        "edgeCount": 100,
+        "taskCount": 51,
+        "outputTableCount": 35
+      },
+      {
+        "table": "pdata_n.t98_brok_indv_cust_base_info",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 49,
+          "JOIN": 3,
+          "GROUP_BY": 9
+        },
+        "edgeCount": 87,
+        "taskCount": 49,
+        "outputTableCount": 48
+      },
+      {
+        "table": "pdata_n.t98_brok_indv_cust_base_info",
+        "column": "pty_id",
+        "subtypes": {
+          "JOIN": 49,
+          "FILTER": 16,
+          "GROUP_BY": 13
+        },
+        "edgeCount": 179,
+        "taskCount": 49,
+        "outputTableCount": 48
+      },
+      {
+        "table": "pdata_n.t98_brok_corp_cust_base_info",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 47,
+          "JOIN": 3,
+          "GROUP_BY": 9
+        },
+        "edgeCount": 88,
+        "taskCount": 47,
+        "outputTableCount": 46
+      },
+      {
+        "table": "pdata_n.t98_brok_corp_cust_base_info",
+        "column": "pty_id",
+        "subtypes": {
+          "JOIN": 47,
+          "FILTER": 17,
+          "GROUP_BY": 14
+        },
+        "edgeCount": 183,
+        "taskCount": 47,
+        "outputTableCount": 46
+      },
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_info",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 45,
+          "GROUP_BY": 1,
+          "JOIN": 2
+        },
+        "edgeCount": 63,
+        "taskCount": 47,
+        "outputTableCount": 44
+      },
+      {
+        "table": "pdata_n.t01_pty_name",
+        "column": "src_tbl",
+        "subtypes": {
+          "FILTER": 45,
+          "JOIN": 2
+        },
+        "edgeCount": 78,
+        "taskCount": 47,
+        "outputTableCount": 39
+      },
+      {
+        "table": "odata_n_tit.d_trd_otc_trade",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 46,
+          "JOIN": 1
+        },
+        "edgeCount": 50,
+        "taskCount": 47,
+        "outputTableCount": 26
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "busi_mon",
+        "subtypes": {
+          "FILTER": 39,
+          "GROUP_BY": 21,
+          "JOIN": 13
+        },
+        "edgeCount": 126,
+        "taskCount": 46,
+        "outputTableCount": 46
+      },
+      {
+        "table": "pdata_n.t03_otc_opt_comp_sub_trd_info",
+        "column": "src_tbl",
+        "subtypes": {
+          "FILTER": 46
+        },
+        "edgeCount": 46,
+        "taskCount": 46,
+        "outputTableCount": 39
+      },
+      {
+        "table": "pdata_n.t03_otc_opt_comp_sub_trd_info",
+        "column": "busi_date",
+        "subtypes": {
+          "FILTER": 46
+        },
+        "edgeCount": 46,
+        "taskCount": 46,
+        "outputTableCount": 39
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "grp_id1",
+        "subtypes": {
+          "GROUP_BY": 25,
+          "JOIN": 45
+        },
+        "edgeCount": 111,
+        "taskCount": 45,
+        "outputTableCount": 45
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "index_val",
+        "subtypes": {
+          "GROUP_BY": 44
+        },
+        "edgeCount": 100,
+        "taskCount": 44,
+        "outputTableCount": 44
+      },
+      {
+        "table": "dm_index_n.index_grp2_std_ast_aft_covt_mth_apd",
+        "column": "tag_id",
+        "subtypes": {
+          "GROUP_BY": 13,
+          "FILTER": 34
+        },
+        "edgeCount": 81,
+        "taskCount": 43,
+        "outputTableCount": 43
+      },
+      {
+        "table": "pdata_news_n.t02_pub_covt_const",
+        "column": "const_type_cd",
+        "subtypes": {
+          "FILTER": 39,
+          "JOIN": 1
+        },
+        "edgeCount": 54,
+        "taskCount": 40,
+        "outputTableCount": 31
+      },
+      {
+        "table": "pdata_news_n.t02_pub_covt_const",
+        "column": "src_id",
+        "subtypes": {
+          "FILTER": 39,
+          "JOIN": 1
+        },
+        "edgeCount": 54,
+        "taskCount": 40,
+        "outputTableCount": 31
+      }
+    ],
+    "caveat": "This snapshot has FILTER/JOIN/GROUP_BY DATASET_CONTROL; no WINDOW subtype was recorded. Zero recorded WINDOW does not prove absence of SQL windows."
+  },
+  "strongFieldGroups": {
+    "narrow": {
+      "pairs": 3659,
+      "one": 1308,
+      "upToTwo": 1817,
+      "atMostTenPercent": 1167
+    },
+    "selected": [
+      {
+        "anchor": "pdata_n.t98_otc_deri_comp_sale_info",
+        "size": 17,
+        "members": [
+          "pdata_n.t98_otc_deri_comp_sale_info",
+          "dm_otc_test.otc_sale_daily_rpt_adj",
+          "dm_otc_n.otc_rev_daily_rpt",
+          "dm_otc_n.otc_sale_daily_rpt",
+          "dm_otc_n.wt_otc_trade_dtl",
+          "dm_otc_n.otc_inr_sale_daily_rpt",
+          "pdata_n.t98_otc_trd_comp_info",
+          "dm_otc_n.opt_cumulator_schd",
+          "dm_otc_n.otc_opt_knock_evt",
+          "dm_otc_n.bi_otc_busi_stat",
+          "dm_otc_n.bi_otc_swap_trd_stat",
+          "dm_otc_n.bi_otc_underlying_analysis",
+          "dm_otc_n.bi_otc_year_revenue",
+          "dm_otc_n.bi_otc_hold_pnl",
+          "dm_otc_n.bi_otc_amount_change",
+          "dm_otc_n.bi_otc_cust_tag",
+          "gf_edc.wt_otc_trade_dtl"
+        ],
+        "strongEdges": [
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_test.otc_sale_daily_rpt_adj",
+            "fields": 47,
+            "total": 93,
+            "sourceFields": 31
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.otc_rev_daily_rpt",
+            "fields": 40,
+            "total": 72,
+            "sourceFields": 36
+          },
+          {
+            "source": "dm_otc_n.wt_otc_trade_dtl",
+            "target": "gf_edc.wt_otc_trade_dtl",
+            "fields": 69,
+            "total": 69,
+            "sourceFields": 69
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.otc_sale_daily_rpt",
+            "fields": 47,
+            "total": 92,
+            "sourceFields": 31
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.wt_otc_trade_dtl",
+            "fields": 43,
+            "total": 69,
+            "sourceFields": 41
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.otc_inr_sale_daily_rpt",
+            "fields": 38,
+            "total": 52,
+            "sourceFields": 30
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "pdata_n.t98_otc_trd_comp_info",
+            "fields": 13,
+            "total": 14,
+            "sourceFields": 12
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.opt_cumulator_schd",
+            "fields": 11,
+            "total": 20,
+            "sourceFields": 11
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_busi_stat",
+            "fields": 11,
+            "total": 12,
+            "sourceFields": 11
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_swap_trd_stat",
+            "fields": 10,
+            "total": 12,
+            "sourceFields": 6
+          },
+          {
+            "source": "pdata_n.t98_otc_deri_comp_sale_info",
+            "target": "dm_otc_n.otc_opt_knock_evt",
+            "fields": 10,
+            "total": 20,
+            "sourceFields": 10
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_underlying_analysis",
+            "fields": 7,
+            "total": 8,
+            "sourceFields": 7
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_year_revenue",
+            "fields": 6,
+            "total": 7,
+            "sourceFields": 6
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_hold_pnl",
+            "fields": 6,
+            "total": 8,
+            "sourceFields": 5
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_amount_change",
+            "fields": 5,
+            "total": 5,
+            "sourceFields": 5
+          },
+          {
+            "source": "dm_otc_n.otc_rev_daily_rpt",
+            "target": "dm_otc_n.bi_otc_cust_tag",
+            "fields": 3,
+            "total": 4,
+            "sourceFields": 3
+          }
+        ]
+      },
+      {
+        "anchor": "pdata_n.t98_otc_swap_comp_leg_valu_info",
+        "size": 18,
+        "members": [
+          "titans_dm.pos_trs_leg_valuation",
+          "odata_n_tit.d_pos_trs_leg_valuation",
+          "odata_n_tit.d_pos_trs_leg_valuation_p",
+          "pdata_n.t98_otc_swap_comp_leg_valu_info",
+          "pdata_nds.pos_trs_leg_valuation",
+          "odata_n_tit.d_pos_trs_leg_valuation_pb",
+          "dm_hk_n.pos_trs_leg_valuation_new",
+          "dm_hk_n.pos_trs_leg_valuation",
+          "odata_n_tit.d_pos_fast_trs_leg_valuation",
+          "pdata_n.t98_otc_swap_comp_valu_sum",
+          "ods_titans.pos_trs_leg_valuation",
+          "titans_dm.pos_fast_trs_leg_valuation",
+          "dm_hk_n.info_otc_swap_comp_valu_info_n_cross_dma_swap",
+          "pdata_nds.pos_fast_trs_leg_valuation",
+          "dm_hk_n.fin_valu_otc_trs",
+          "odata_n_tit.d_pos_fast_trs_leg_valuation_p",
+          "odata_n_tit.d_pos_fast_trs_leg_valuation_pb",
+          "dm_hk_n.d_pos_fast_trs_leg_valuation_p"
+        ],
+        "strongEdges": [
+          {
+            "source": "titans_dm.pos_trs_leg_valuation",
+            "target": "odata_n_tit.d_pos_trs_leg_valuation",
+            "fields": 90,
+            "total": 91,
+            "sourceFields": 90
+          },
+          {
+            "source": "titans_dm.pos_trs_leg_valuation",
+            "target": "odata_n_tit.d_pos_trs_leg_valuation_p",
+            "fields": 90,
+            "total": 91,
+            "sourceFields": 90
+          },
+          {
+            "source": "odata_n_tit.d_pos_trs_leg_valuation",
+            "target": "pdata_n.t98_otc_swap_comp_leg_valu_info",
+            "fields": 81,
+            "total": 125,
+            "sourceFields": 80
+          },
+          {
+            "source": "titans_dm.pos_fast_trs_leg_valuation",
+            "target": "odata_n_tit.d_pos_fast_trs_leg_valuation",
+            "fields": 75,
+            "total": 76,
+            "sourceFields": 75
+          },
+          {
+            "source": "odata_n_tit.d_pos_trs_leg_valuation_p",
+            "target": "odata_n_tit.d_pos_trs_leg_valuation_pb",
+            "fields": 92,
+            "total": 93,
+            "sourceFields": 92
+          },
+          {
+            "source": "odata_n_tit.d_pos_trs_leg_valuation_p",
+            "target": "dm_hk_n.pos_trs_leg_valuation_new",
+            "fields": 90,
+            "total": 92,
+            "sourceFields": 90
+          },
+          {
+            "source": "odata_n_tit.d_pos_trs_leg_valuation",
+            "target": "pdata_nds.pos_trs_leg_valuation",
+            "fields": 80,
+            "total": 80,
+            "sourceFields": 80
+          },
+          {
+            "source": "odata_n_tit.d_pos_trs_leg_valuation_pb",
+            "target": "pdata_nds.pos_trs_leg_valuation",
+            "fields": 80,
+            "total": 80,
+            "sourceFields": 80
+          },
+          {
+            "source": "dm_hk_n.pos_trs_leg_valuation_new",
+            "target": "ods_titans.pos_trs_leg_valuation",
+            "fields": 78,
+            "total": 79,
+            "sourceFields": 78
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation_p",
+            "target": "odata_n_tit.d_pos_fast_trs_leg_valuation_pb",
+            "fields": 77,
+            "total": 78,
+            "sourceFields": 77
+          },
+          {
+            "source": "titans_dm.pos_fast_trs_leg_valuation",
+            "target": "odata_n_tit.d_pos_fast_trs_leg_valuation_p",
+            "fields": 75,
+            "total": 76,
+            "sourceFields": 75
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation",
+            "target": "dm_hk_n.info_otc_swap_comp_valu_info_n_cross_dma_swap",
+            "fields": 75,
+            "total": 79,
+            "sourceFields": 75
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation_p",
+            "target": "dm_hk_n.d_pos_fast_trs_leg_valuation_p",
+            "fields": 75,
+            "total": 79,
+            "sourceFields": 75
+          },
+          {
+            "source": "pdata_n.t98_otc_swap_comp_leg_valu_info",
+            "target": "dm_hk_n.pos_trs_leg_valuation",
+            "fields": 74,
+            "total": 78,
+            "sourceFields": 74
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation",
+            "target": "pdata_nds.pos_fast_trs_leg_valuation",
+            "fields": 68,
+            "total": 68,
+            "sourceFields": 68
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation_pb",
+            "target": "pdata_nds.pos_fast_trs_leg_valuation",
+            "fields": 68,
+            "total": 68,
+            "sourceFields": 68
+          },
+          {
+            "source": "odata_n_tit.d_pos_fast_trs_leg_valuation",
+            "target": "pdata_n.t98_otc_swap_comp_leg_valu_info",
+            "fields": 63,
+            "total": 125,
+            "sourceFields": 61
+          },
+          {
+            "source": "pdata_n.t98_otc_swap_comp_leg_valu_info",
+            "target": "pdata_n.t98_otc_swap_comp_valu_sum",
+            "fields": 13,
+            "total": 20,
+            "sourceFields": 7
+          },
+          {
+            "source": "pdata_n.t98_otc_swap_comp_valu_sum",
+            "target": "dm_hk_n.fin_valu_otc_trs",
+            "fields": 12,
+            "total": 15,
+            "sourceFields": 12
+          }
+        ]
+      },
+      {
+        "anchor": "pdata_n.t05_otc_recv_pymt_evt",
+        "size": 15,
+        "members": [
+          "titans_dm.trd_transfer",
+          "odata_n_tit.d_trd_transfer_p",
+          "odata_n_tit.d_trd_transfer",
+          "odata_n_tit.d_trd_transfer_pb",
+          "dm_hk_n.trd_transfer_new",
+          "pdata_n.t05_otc_recv_pymt_evt",
+          "pdata_nds.trd_transfer",
+          "pdata_nds.trd_transfer_pb",
+          "ods_titans.trd_transfer",
+          "dm_otc_n.trd_transfer_report_td",
+          "dm_hk_n.trd_transfer",
+          "dm_hk_n.evt_trd_transfer",
+          "dm_otc_n.otc_recv_pymt_evt_info",
+          "dm_rsk_n.opt_sub_trd_recv_pymt_evt",
+          "dm_otc_n.trd_transfer"
+        ],
+        "strongEdges": [
+          {
+            "source": "titans_dm.trd_transfer",
+            "target": "odata_n_tit.d_trd_transfer_p",
+            "fields": 50,
+            "total": 51,
+            "sourceFields": 50
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer_p",
+            "target": "odata_n_tit.d_trd_transfer_pb",
+            "fields": 52,
+            "total": 53,
+            "sourceFields": 52
+          },
+          {
+            "source": "titans_dm.trd_transfer",
+            "target": "odata_n_tit.d_trd_transfer",
+            "fields": 50,
+            "total": 52,
+            "sourceFields": 50
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer",
+            "target": "pdata_n.t05_otc_recv_pymt_evt",
+            "fields": 47,
+            "total": 56,
+            "sourceFields": 45
+          },
+          {
+            "source": "dm_hk_n.trd_transfer_new",
+            "target": "ods_titans.trd_transfer",
+            "fields": 51,
+            "total": 51,
+            "sourceFields": 51
+          },
+          {
+            "source": "dm_hk_n.evt_trd_transfer",
+            "target": "ods_titans.trd_transfer",
+            "fields": 51,
+            "total": 51,
+            "sourceFields": 51
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer_p",
+            "target": "dm_hk_n.trd_transfer_new",
+            "fields": 50,
+            "total": 52,
+            "sourceFields": 50
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer_pb",
+            "target": "pdata_nds.trd_transfer_pb",
+            "fields": 48,
+            "total": 48,
+            "sourceFields": 48
+          },
+          {
+            "source": "pdata_nds.trd_transfer_pb",
+            "target": "dm_otc_n.trd_transfer",
+            "fields": 48,
+            "total": 48,
+            "sourceFields": 48
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer",
+            "target": "pdata_nds.trd_transfer",
+            "fields": 47,
+            "total": 47,
+            "sourceFields": 47
+          },
+          {
+            "source": "odata_n_tit.d_trd_transfer_pb",
+            "target": "pdata_nds.trd_transfer",
+            "fields": 47,
+            "total": 47,
+            "sourceFields": 47
+          },
+          {
+            "source": "pdata_n.t05_otc_recv_pymt_evt",
+            "target": "dm_otc_n.trd_transfer_report_td",
+            "fields": 45,
+            "total": 45,
+            "sourceFields": 45
+          },
+          {
+            "source": "pdata_n.t05_otc_recv_pymt_evt",
+            "target": "dm_hk_n.trd_transfer",
+            "fields": 45,
+            "total": 46,
+            "sourceFields": 45
+          },
+          {
+            "source": "pdata_n.t05_otc_recv_pymt_evt",
+            "target": "dm_hk_n.evt_trd_transfer",
+            "fields": 45,
+            "total": 52,
+            "sourceFields": 45
+          },
+          {
+            "source": "pdata_n.t05_otc_recv_pymt_evt",
+            "target": "dm_otc_n.otc_recv_pymt_evt_info",
+            "fields": 17,
+            "total": 26,
+            "sourceFields": 16
+          },
+          {
+            "source": "pdata_n.t05_otc_recv_pymt_evt",
+            "target": "dm_rsk_n.opt_sub_trd_recv_pymt_evt",
+            "fields": 9,
+            "total": 18,
+            "sourceFields": 9
+          }
+        ]
+      }
+    ],
+    "threshold": 0.5,
+    "minSourceFields": 3
+  }
+}

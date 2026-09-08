@@ -1,0 +1,472 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "treasury-management",
+  "chapter": "topics/treasury-management.md",
+  "scopeTaskIds": [
+    "114802",
+    "134690",
+    "144442",
+    "162676",
+    "163099",
+    "163640",
+    "167808",
+    "203181",
+    "207458",
+    "207753",
+    "214154",
+    "214155",
+    "215700",
+    "217643"
+  ],
+  "definition": "All 14 DM_FMS_N baseline tasks: six processing families, six exports, two explicit current Pack completion-log scripts. SQL semantics only, no execution or other business group completeness claim.",
+  "tasks": [
+    {
+      "taskId": "114802",
+      "taskName": "GFEDW.T98_FMS_AST_TRD_EQUI_DERI",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/114802/versions/126cd886ffda40ecbe9d271441fd69ae70d1ecc8bee29d7bfd36eb71fc96366d.evidence-v3.json",
+      "evidenceFileSha256": "b5d068e23970747187ab5ed7d49a64a0acb9fbc3961b4cf947b5bc3cabba5f91",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "a75aa52eacb24fc8c2c53db4ad76829d44b7f480efbe43128c22cea4dfe7bf10",
+          "startLine": 1,
+          "endLine": 98
+        },
+        {
+          "slot": "truncate",
+          "sha256": "395afcf9d4db1ba72e43d82829c77632d203f92a27fbb0de6567fc2ccfc50773",
+          "startLine": 1,
+          "endLine": 3
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "134690",
+      "taskName": "DM_FMS_N.T98_FMS_AST_TRD_EQUI_DERI_GRP03",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-asset-overview",
+      "family": "treasury-asset-overview",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "资产类别特殊CASE与来源业务值不一致；统一接口多列为空；销售及配置连接唯一性未证实。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/134690/versions/322c8e3a8052d5b5d72fd823db3aacbb2be0aa6fb2b78ca1c19314a7df308fa0.evidence-v3.json",
+      "evidenceFileSha256": "e8956d2d48508261997fd58e2a6ebb6ec17acd195d228966cefcc292da62a285",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "870e94c7e958fb90747fdc2da2dcd029467563a4918bea9bde6f684572dadd14",
+          "startLine": 1,
+          "endLine": 262
+        },
+        {
+          "slot": "prepare",
+          "sha256": "4b90e3663184767478e074459d7f097fa7391849b30d48021884fe779341a745",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "144442",
+      "taskName": "资金部权衍数据推送后执行",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144442/versions/698f859a5c4239b48f852cefbc8a8a29bbba255aadf753882f6c0f3a8fb78030.evidence-v3.json",
+      "evidenceFileSha256": "c59cd5a84a4433223e2919772efcbe88a7b9fb3f4b05a8c3e89126e5487f1b99",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/144442/sql/query.sql",
+          "sha256": "3c49f54b348e3571e4a684962e3701902b785354c16a39366a8932c28a08f208",
+          "startLine": 1,
+          "endLine": 20,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/144442/task.json",
+          "packMetadataSha256": "9f2ecff91915b0fb06f29cf47e60c6c9ddfe792f3d2b882386e5f9410489691f",
+          "packCollectedAt": "2026-09-07T07:16:11.047Z"
+        }
+      ]
+    },
+    {
+      "taskId": "162676",
+      "taskName": "dm_fms_n.gfhk_repo_comp_detail_tit",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-hk-repo",
+      "family": "treasury-hk-repo",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "自然日一期、Haircut比值与重复利率列按实际表达式解释；多腿/标的字符串结果唯一性未知。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/162676/versions/30078b539b143cebf1fb45f6f98cc6773867456f982d5286121281d6110b9aab.evidence-v3.json",
+      "evidenceFileSha256": "69979baea88863139d29e6c1d9b670607dafe5a13972bb64dd86f329ffe25016",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "8244dd91999084c3b4f240aefab9916c08ff1d276f459bfaf91fee3b127fa096",
+          "startLine": 1,
+          "endLine": 254
+        },
+        {
+          "slot": "prepare",
+          "sha256": "f8868a312ccf1b0c52a85a0e68a6a116cfabf7321a542544e350f503a56c956d",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "163099",
+      "taskName": "gfedw.gfhk_repo_comp_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/163099/versions/5abdc5b65207b45091978a7051b260c1f4b502797c926d4e4000e9285a97abae.evidence-v3.json",
+      "evidenceFileSha256": "72d3ef873669247c9dac4fbef4ff7a02b14407b8420cd267e67c0499bab8b5f0",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "52be7fa63b803d77d5161b3f113156ee7b91a4538f6816488abe6a66426a5544",
+          "startLine": 1,
+          "endLine": 35
+        },
+        {
+          "slot": "truncate",
+          "sha256": "9aa0a9e29b6c962bb9c79b6598952d088620040447f246904ad8c83dd90cd962",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "finish",
+          "sha256": "3ac23f87babf386d69fddf227ccfb232bcbe0fe91e5b0d73146bd8e9df28b57f",
+          "startLine": 1,
+          "endLine": 18
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "163640",
+      "taskName": "dm_fms_n.gfhk_fnd_note_detail_grp03",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-hk-notes",
+      "family": "treasury-hk-notes",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "库存/折价等固定值；发行部门先去下划线后判断旧字符串；产品多客户或多腿可能重复金额。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/163640/versions/cb10eac43754103c5c6fa5ec67fd0b06b61b8132e28c652874d9dbb55c27740f.evidence-v3.json",
+      "evidenceFileSha256": "1310be30ef4ec6c8a7881af945d620c90baf6cc3f6018049f0ad5fe00725056d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "c86a7454150d5f8c0cf154d688204e16360739f46f4beff50a61ffbffdd94260",
+          "startLine": 1,
+          "endLine": 194
+        },
+        {
+          "slot": "prepare",
+          "sha256": "3960ea13bb24dd9b9bedef4835832b4c50e92e182c344e108e5175f916b16629",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "167808",
+      "taskName": "gfedw.gfhk_fnd_note_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "源只取参数日但前置清理删除目标全表，导出不含grp_id。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/167808/versions/e86fc4ee8a3e88d7063adb3093b5b88eaa43d7efc6073a8872e16090871b5e56.evidence-v3.json",
+      "evidenceFileSha256": "a1d841959d971e01de956ff136d8fb4b679c7ef31517035a3c781754cce96690",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "1ce295a75d07e37d60943ed1851ea278c8cf4764f9b21c5a316be6ec338fd3f3",
+          "startLine": 1,
+          "endLine": 46
+        },
+        {
+          "slot": "truncate",
+          "sha256": "4515ad116313f5a80afbbd2a2f3abea306b714616ea3cf87c91f2f8483b215f0",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "finish",
+          "sha256": "79cf8b43e5d062299f259ae6e8ccaf787f64823b3e823e232dde1bfccb7ad930",
+          "startLine": 1,
+          "endLine": 18
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "203181",
+      "taskName": "资金部权衍数据推送后执行--O32数据源",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/203181/versions/b39af93a6858ffddf37bc5538b63b16da5e4d6bb0d1f2ceb8030ef25cb5b2e10.evidence-v3.json",
+      "evidenceFileSha256": "5c84a2560e0dce07069a3e0810dd137223ea2fda37c95be22d90d84ce3336a31",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/203181/sql/query.sql",
+          "sha256": "dda13fd8cd2ec7b00aebcf0a546b0a0574c974bebf05018cc9ed2b68628e344d",
+          "startLine": 1,
+          "endLine": 20,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/203181/task.json",
+          "packMetadataSha256": "be59f032af41468a4f30dd1ae871516c3326cccaf7103c18eaf8e183fc827d22",
+          "packCollectedAt": "2026-09-07T08:46:12.463Z"
+        }
+      ]
+    },
+    {
+      "taskId": "207458",
+      "taskName": "dm_fms_n.tit_option_trd_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-option-detail",
+      "family": "treasury-option-detail",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "履保取运行时昨天；事件状态未过滤；结构关联可能放大累计，需源唯一性证据。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207458/versions/1c265869555432e4e4fa5d2b4d4eb33155d85d200d7cf1483a689b412d2c918c.evidence-v3.json",
+      "evidenceFileSha256": "232c55be0169f9d57f86c55fda89da00eac02bd2817c8e470029b2388f755698",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "913989ad52f3c869331bfee4bdae0db481a71b7975cf3b002b30e443b7538536",
+          "startLine": 1,
+          "endLine": 349
+        },
+        {
+          "slot": "prepare",
+          "sha256": "23fd31f783a224dc81d6fb2a04e733bcf7d82ae630754ded29dc2fff5930cca3",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207753",
+      "taskName": "dm_fms_n.tit_trs_trd_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-swap-detail",
+      "family": "treasury-swap-detail",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "履保取运行时昨天；结构/计息腿/持仓等关系可能扩行；配对关系有效期与其他关系不同。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207753/versions/58dcb86dfd4691efe47180252fa4fa0be526b8b5684064b596eb287448a15622.evidence-v3.json",
+      "evidenceFileSha256": "c2a8776440551a7a0ec1d9b34ec31f01d93d757b34d27cef5f46dc7d9717cfb6",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "ed38c8d97e6c12461d46562c14dd0c327c3aa2821536cfa29d871d037742eafd",
+          "startLine": 1,
+          "endLine": 555
+        },
+        {
+          "slot": "prepare",
+          "sha256": "d9dcb4633526ef1fc3a644eae182a11b0e5cb98b03596f4cc339eb1f5be098ea",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "214154",
+      "taskName": "gfedw.tit_trs_trd_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214154/versions/795706647dc369a97abb0eb76f9272b72253807837eb8ab76eda10331b6ab662.evidence-v3.json",
+      "evidenceFileSha256": "30d245fc66e6f9fe11834145fcd0337f69ab4464733aab09bd395e01e15ad611",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "3805adfead5c2b66397d494a72edd0b1f0fd357d428ee22c4ac7052f8ccbd16a",
+          "startLine": 1,
+          "endLine": 58
+        },
+        {
+          "slot": "truncate",
+          "sha256": "e11267c21d26b1b1157f28c9a7fdb90e34c9490fcac17ef52cb2cc518b8faf9d",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "finish",
+          "sha256": "2f420aa268bd539c0b299b3db6dd88847fe32395286c40edafb711b77c3a57b5",
+          "startLine": 1,
+          "endLine": 18
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "214155",
+      "taskName": "gfedw.tit_option_trd_detail",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214155/versions/199bfc30355feb3e8f06f416ac708e2700a91cfac5af046b663b6a6703715009.evidence-v3.json",
+      "evidenceFileSha256": "7f251bfe4d63821921f479e247549d2d8b9f9c1e8e2259a021675e5182d7324d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "ab813a0603d688bfda1eeee899e633f894e977e5d857349f64543985f286ccc7",
+          "startLine": 1,
+          "endLine": 37
+        },
+        {
+          "slot": "truncate",
+          "sha256": "72a2d74934c98ab03b179184967c38572bccacd9939644c01b4ef9114d463443",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "finish",
+          "sha256": "5ffc662be14431ceea3abe2fb9905a6d830d11936bc8d75517a9fd7e9cb7c10e",
+          "startLine": 1,
+          "endLine": 18
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "215700",
+      "taskName": "dm_fms_n.adm_v_risk_daily_bundle_margin",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-bundle-margin",
+      "family": "treasury-bundle-margin",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释该专业消费结果的输入、对象粒度、日期、公式、映射与边界。",
+      "gaps": [
+        "余额汇率缺失回退1；是否计算过滤被注释；重复接口别名不可加总，组合参数唯一性未证实。",
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/215700/versions/f59fae2734eae165fb2754be021ac88427d30f8d5a2f0c804e9472f0968238dd.evidence-v3.json",
+      "evidenceFileSha256": "8d1fc3b53a95e710e2b26a7e81cff214744b4a171b0e924f16f2b4c73b971bc2",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "68d81b794bae1e7ae12e6e4185f421930a9ce4e77bed6967738eade0ffd772e4",
+          "startLine": 1,
+          "endLine": 477
+        },
+        {
+          "slot": "prepare",
+          "sha256": "fc0a9af0c1c552ea57e9a22de93710dca2f2c2e17db011f3cf0eaf573838790d",
+          "startLine": 1,
+          "endLine": 2
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "217643",
+      "taskName": "gfedw.adm_v_risk_daily_bundle_margin",
+      "chapter": "topics/treasury-management.md",
+      "sectionAnchor": "treasury-export-and-receipts",
+      "family": "treasury-export-and-receipts",
+      "reviewStatus": "TRANSFER_VERIFIED",
+      "summary": "已解释导出/删除或回执的实际范围、字段与日期差异。",
+      "gaps": [
+        "静态SQL不证明任务运行、传输到达或实际业务消费。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/217643/versions/5599b2f89d6a8e006ffbc73ceb9fb9dc2c44e9259497b2b6fcfbac4f685d0f58.evidence-v3.json",
+      "evidenceFileSha256": "862576e7c1953a61d7f67eddebb2a8b865880bac5b3b052a822b767c76dd0c74",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "920a3c107947072eaa1edc848731545c72c925a1c71579fd82508ff43b1f0fb3",
+          "startLine": 1,
+          "endLine": 58
+        },
+        {
+          "slot": "truncate",
+          "sha256": "6bb84ff759732c785fb8eeaf84510698643cb6fc2bd46e8507951f6af5629667",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "finish",
+          "sha256": "c4031a56f1322abff0fb67a3d94853af601cf2af505e01545f417a877d78f5bc",
+          "startLine": 1,
+          "endLine": 18
+        }
+      ],
+      "supplementalSql": []
+    }
+  ]
+}

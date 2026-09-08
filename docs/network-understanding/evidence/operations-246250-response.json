@@ -1,0 +1,19 @@
+[
+  {
+    "taskId": "246250",
+    "section": "all",
+    "statementCount": 2,
+    "createStatementCount": 1,
+    "queryStatementCount": 1,
+    "contains": [],
+    "hitCount": 0,
+    "hits": [],
+    "evidence_level": "extracted_sql_summary",
+    "limitations": [
+      "This is SQL extracted from Data Portal schedule MCP metadata.",
+      "It is not Horae runtime log evidence and does not prove an instance succeeded."
+    ],
+    "sqlCachePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\network-understanding\\evidence\\operations-246250-current.sql.txt",
+    "sqlBytes": 2684
+  }
+]

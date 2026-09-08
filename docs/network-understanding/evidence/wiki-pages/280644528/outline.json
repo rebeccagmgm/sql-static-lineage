@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1",
+    "level": 1,
+    "heading": "背景",
+    "line": 0
+  },
+  {
+    "id": "2",
+    "level": 1,
+    "heading": "本方案目标",
+    "line": 6
+  },
+  {
+    "id": "3",
+    "level": 1,
+    "heading": "系统架构",
+    "line": 15
+  },
+  {
+    "id": "4",
+    "level": 1,
+    "heading": "最小关键功能集（产品层面）",
+    "line": 20
+  },
+  {
+    "id": "5",
+    "level": 1,
+    "heading": "升级T1技术方案（开发层面）",
+    "line": 41
+  },
+  {
+    "id": "5.1",
+    "level": 2,
+    "heading": "最小关键功能集的接口",
+    "line": 43
+  },
+  {
+    "id": "5.2",
+    "level": 2,
+    "heading": "消除依赖T2的改造方案",
+    "line": 63
+  },
+  {
+    "id": "6",
+    "level": 1,
+    "heading": "系统测试保障（测试层面）",
+    "line": 68
+  },
+  {
+    "id": "6.1",
+    "level": 2,
+    "heading": "回归测试",
+    "line": 70
+  },
+  {
+    "id": "6.2",
+    "level": 2,
+    "heading": "周末通关测试",
+    "line": 81
+  },
+  {
+    "id": "7",
+    "level": 1,
+    "heading": "运维部署保障（运维层面）",
+    "line": 86
+  },
+  {
+    "id": "8",
+    "level": 1,
+    "heading": "发版流程规范",
+    "line": 102
+  }
+]

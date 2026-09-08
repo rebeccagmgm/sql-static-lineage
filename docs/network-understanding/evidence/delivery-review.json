@@ -1,0 +1,4471 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "delivery-and-controls",
+  "chapter": "chapters/15-delivery-and-controls.md",
+  "definition": "All baseline exeSql and explicit script/mail/control task types are located. SQL excerpts actually read are recorded separately for fixed publication and current explicit Input Pack. Procedure-call-only and missing-body statuses do not claim business internals. Three employee-index tasks are assigned to the performance topic without claiming a reading here.",
+  "scopeTaskIds": [
+    "11175",
+    "13378",
+    "20056",
+    "35045",
+    "37460",
+    "43993",
+    "43995",
+    "43996",
+    "44496",
+    "45199",
+    "45828",
+    "46366",
+    "50615",
+    "51905",
+    "73878",
+    "76003",
+    "80234",
+    "87053",
+    "87956",
+    "88905",
+    "89328",
+    "102309",
+    "102310",
+    "102313",
+    "104440",
+    "109767",
+    "109768",
+    "110492",
+    "113380",
+    "134808",
+    "138259",
+    "139809",
+    "139813",
+    "139814",
+    "139953",
+    "139957",
+    "140202",
+    "144029",
+    "144442",
+    "144742",
+    "144743",
+    "145185",
+    "147871",
+    "149269",
+    "149527",
+    "152833",
+    "156254",
+    "159116",
+    "160288",
+    "160292",
+    "161746",
+    "161747",
+    "161758",
+    "162563",
+    "163208",
+    "164991",
+    "166545",
+    "170568",
+    "172920",
+    "175178",
+    "181935",
+    "181937",
+    "181938",
+    "185524",
+    "190543",
+    "190593",
+    "191236",
+    "192158",
+    "192716",
+    "194623",
+    "194624",
+    "194653",
+    "194654",
+    "194656",
+    "196204",
+    "196206",
+    "196209",
+    "196213",
+    "196214",
+    "198986",
+    "199168",
+    "202682",
+    "202686",
+    "202700",
+    "202704",
+    "202705",
+    "202707",
+    "202709",
+    "203181",
+    "203966",
+    "205110",
+    "205112",
+    "205114",
+    "205120",
+    "205121",
+    "205143",
+    "205145",
+    "205173",
+    "205181",
+    "205182",
+    "205541",
+    "205543",
+    "205726",
+    "205727",
+    "205758",
+    "205767",
+    "205772",
+    "205940",
+    "205942",
+    "205956",
+    "205957",
+    "205960",
+    "205962",
+    "205964",
+    "205972",
+    "206823",
+    "206827",
+    "207029",
+    "208479",
+    "209144",
+    "209145",
+    "209504",
+    "210689",
+    "211268",
+    "211424",
+    "212278",
+    "214118",
+    "214126",
+    "214134",
+    "223756",
+    "223985",
+    "224938",
+    "225247",
+    "225621",
+    "225623",
+    "225625",
+    "225628",
+    "227142",
+    "227450",
+    "229291",
+    "229403",
+    "229409",
+    "229413",
+    "229419",
+    "229424",
+    "229435",
+    "229437",
+    "229439",
+    "229441",
+    "229444",
+    "229476",
+    "229477",
+    "229488",
+    "229489",
+    "229490",
+    "229491",
+    "229509",
+    "229511",
+    "229512",
+    "229549",
+    "229550",
+    "229559",
+    "229561",
+    "229562",
+    "229575",
+    "229576",
+    "229606",
+    "229612",
+    "229636",
+    "229637",
+    "234640",
+    "234824",
+    "234826",
+    "235569",
+    "241339",
+    "243618",
+    "243754"
+  ],
+  "tasks": [
+    {
+      "taskId": "11175",
+      "taskName": "gf_update_his_position",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/11175/versions/7d675dd57ff864c48326af517c7c530791068a9c11c115a8ba28fc9bf7b975df.evidence-v3.json",
+      "evidenceFileSha256": "497879ef2a121b87e5b3d1a10f3d605bc2fdb75614635c4154cdb03589e81948",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "88d84d6ed0dcd00acead49e95149bc7edd2ec92088b89f343309f0fde36d8f1b",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "13378",
+      "taskName": "gf_crm.pro_rzrq_schedule_sp",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_JGJ_DIY",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/13378/versions/8675d28577a4afb0c2544208cf7a406b3da7ea4849bbca1a6a6869475088f4ae.evidence-v3.json",
+      "evidenceFileSha256": "884396f62153e7a803114885d3d70c771eb710db94dc3683675c738f728f6164",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "ef6e4c846e7d1f66dacd53eb0cdcd19c43b8b27dc6dee1239e2ea47b34a316e1",
+          "startLine": 1,
+          "endLine": 3
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "20056",
+      "taskName": "risk.etl_log_otc_option_tbl_list",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/20056/versions/672cd490312d699329781bd57a7c600bcb8065097a4a2ebf18866be9664a0cfa.evidence-v3.json",
+      "evidenceFileSha256": "96ebdca24b04590e5e2d1f5668319fc1d27a9deb58215118412d2d8a9ee0cea0",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "35045",
+      "taskName": "kafka_sender.start_TRANS_INS_WIND_CUR_TENOR_service",
+      "taskCategory": "runScript",
+      "topicName": "GF_TIT",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/35045/versions/2501f920313508caed63b80ae7027cd817cd895d7b319bbb9d9e0a8a3521112e.evidence-v3.json",
+      "evidenceFileSha256": "d9e039b08d9bfe8e25ac2c90483f02a343f66551e5e78e9b6c37cf47834f57bd",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "37460",
+      "taskName": "kafka_sender.start_EOD_INSTRUMENT_TAG_service",
+      "taskCategory": "runScript-2.0",
+      "topicName": "GF_TIT",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37460/versions/b5f63181deb3575792d80cabcf5cf042d7cad1d2aed3fa4c24cae1a26f4e016f.evidence-v3.json",
+      "evidenceFileSha256": "f489df6250293aeee99f8bb92935390630a66a854effefb1ccff6ccc5ac96afd",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "43993",
+      "taskName": "gf_project_stage_to_base1",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/43993/versions/543213238454f08b190b31c65bea3d18ae49ceab8a749c01b4caf6884cb5ca1f.evidence-v3.json",
+      "evidenceFileSha256": "cef8f7505ee253cf48dc1e354be5df93f5196b7e6542c568fc9a0e3c1beb8536",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "c38dd119cba53260c973a304864e70bdb0f696c0ed542093b7546b10fd16c1eb",
+          "startLine": 1,
+          "endLine": 5
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "43995",
+      "taskName": "gf_account_tx_to_base",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/43995/versions/1557f18514dd08b215fd5cfe7c8f82b47d68a49cb305580b7e026659dd53ac9a.evidence-v3.json",
+      "evidenceFileSha256": "cd84a4e967b86ab4fe0390f0849be815dbc6c67765ade6655da112d26c886b12",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "9e12ee1f6391168d4d00f47218d00334136031ed64b6d3a1d8416d6c2fdc92f7",
+          "startLine": 1,
+          "endLine": 5
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "43996",
+      "taskName": "gf_prod_stage_to_base",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/43996/versions/8ee61373ea3547e64ac7016e6b818cd7d61aef7db3320603f2ca46c3d9d74837.evidence-v3.json",
+      "evidenceFileSha256": "cd8dbdcfd6c1745a3514b153f30b3d4e5053cb7728c73380725c0dab3a2c11a3",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "e2a97661b947b0980163565b95c0442fe31ea642731f3d78a94e56e8b22bcfa9",
+          "startLine": 1,
+          "endLine": 5
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "44496",
+      "taskName": "risk.etl_log_d_risk_eod_report_metric_value",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/44496/versions/d6043c31116268e363e1a5dffc89c3a3c8abff206e824908d931e05850830f2b.evidence-v3.json",
+      "evidenceFileSha256": "8b312d41468ad7069b5bf526031c4b91932417dcf8d0dd15c450c0560ed92644",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "45199",
+      "taskName": "GF_SYNC_PROJ_AFTER0709",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "topics/delivery-postprocessing.md",
+      "sectionAnchor": "crm-project-relationships",
+      "family": "crm-project-relationships",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "目标端关系、属性或奖励加工的来源、匹配、更新范围与例外见独立业务页。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/45199/versions/90f750849317afa9d38616e6b63409016ab44dc507fe9e1404b5a6094f6394aa.evidence-v3.json",
+      "evidenceFileSha256": "c3d404d9a2f9dd1da95297bc0d7f8d40d77bc36020089365580642d75af216df",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "89246eff23adad380710f920ac24659fd1fdc292106f23badac91a5fbfae1304",
+          "startLine": 1,
+          "endLine": 211
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "45828",
+      "taskName": "GF_CLEAR_BUSI_RELATE_726",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/45828/versions/aac047119a23a168680fd6f675c73f4a9916508777677ac92e25f657e0c5b1c7.evidence-v3.json",
+      "evidenceFileSha256": "2ff369bb3605da25c22d7974608aad41b335fdb1ce34fde808338a7797c27e89",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "16452155f59a982aa2aa4fe8f523ccb4358ec9652596bd4ffe76b2e1a4daee83",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "46366",
+      "taskName": "risk.etl_log_d_v_risk_cross_border_trs",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/46366/versions/e0eec27c82931f8b455c465adff9e5d13d4f4d3610ef2f7cea6299d9b1c59ea0.evidence-v3.json",
+      "evidenceFileSha256": "e0b518b07d33824d6f024420624069f981ea32a1ffa92d2a9be39f56bfd48303",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "50615",
+      "taskName": "[内部地址已省略]\nkdhive.DM_ECOM_OPENACCOUNT_REWARD",
+      "taskCategory": "exeSql",
+      "topicName": "GF_RDMP",
+      "chapter": "topics/delivery-postprocessing.md",
+      "sectionAnchor": "online-account-reward-posting",
+      "family": "online-account-reward-posting",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "目标端关系、属性或奖励加工的来源、匹配、更新范围与例外见独立业务页。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/50615/versions/3b6e112d7b94d0025bc42dc26413e49896b90c8934614939144428b76579973c.evidence-v3.json",
+      "evidenceFileSha256": "59901f11b24f23f4b847c9b0c4fec73ae51ea1fa66893054c1d3c039e634c5d2",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/50615/sql/query.sql",
+          "sha256": "6f9c26f03b45003fb7b26ea2da3ef7f5db197218cecbdc209a93da68e3dc6c95",
+          "startLine": 1,
+          "endLine": 46,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/50615/task.json",
+          "packMetadataSha256": "e13fa481301302b878767f20b08798f4d5c1a83b264c48dfb33c31df9838221e",
+          "packCollectedAt": "2026-09-07T09:17:51.884Z"
+        }
+      ]
+    },
+    {
+      "taskId": "51905",
+      "taskName": "risk.etl_log_d_v_risk_plreport_tit",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/51905/versions/e119ee54c4b908cb0ba8d505ef31e45ad110d74a8c70b856926c4cec7ae67876.evidence-v3.json",
+      "evidenceFileSha256": "a80cbdbc82ee40cc47360b139f688fff13ade1ac749d62f82f49673bf09d31e3",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "73878",
+      "taskName": "GF_UPDATE_SHARE_DATA_TYPE",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/73878/versions/87a02661354884f259aa203cad091793b27394e30801518656c2b18b7f7d0e50.evidence-v3.json",
+      "evidenceFileSha256": "df300ca796733413a34a85649cf26ff9528e0eebff4a769f60b4628ee8861e34",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "39c9d987b4e22bcfffab5d289a69ca39e88e077a5d3f9b6cdb400f23f5a5a0de",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "76003",
+      "taskName": "grp_tag_client_gender",
+      "taskCategory": "runScript-2.0",
+      "topicName": "BD_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/76003/versions/384c09e14dd8b8601e09853b152ba367082a6aefcc2e89b00a6381f4399064a4.evidence-v3.json",
+      "evidenceFileSha256": "c6103b862ef0830137dd87b493f6fbff45f034ed97fa1574e62d380fc50fd804",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "80234",
+      "taskName": "risk.etl_log_d_risk_pressure_test_loss_detail",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/80234/versions/ee27593009b82f18f8be35eb7cd8188c7e169b2ff129e58d5d34383126f9ae53.evidence-v3.json",
+      "evidenceFileSha256": "3093b3a864e33efdd8b4e13d914dc4a98b9d054bd1266120d04792ad196593ce",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "87053",
+      "taskName": "risk.etl_log_d_v_margin_param_for_risk_f",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/87053/versions/0e0c4d1fce67f4d1e2e9fbd0b243e54cc5a12900c8bf44cb4e8ba18f61039eb9.evidence-v3.json",
+      "evidenceFileSha256": "b48b2498d3a676e290de775aed46e52cf298896988d4761ed46c5ff240a6c74b",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "87956",
+      "taskName": "dm_index_n.wt_gks_restore_vld_dev_record_sy",
+      "taskCategory": "runScript-2.0",
+      "topicName": "DM_INDEX_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/87956/versions/8723ebcb406e777e2a6d157212c5c12095c1c9f1256f08641a6c9bb58a796955.evidence-v3.json",
+      "evidenceFileSha256": "a7a6574b1aa799a254d096436bb010ec2b6f7d0cf8812314126f97472939c5d2",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "88905",
+      "taskName": "risk.etl_d_v_risk_counter_party_tit",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/88905/versions/d82365bf27ed732e000276755c02c0c3e9eeef424b83f556b0b3512a6ef0e683.evidence-v3.json",
+      "evidenceFileSha256": "da86c6b4c78b422cfb55d6495f40db08d70ea4d4f4fee17fc12148b8d2c326b9",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "89328",
+      "taskName": "dm_index_n.wt_bse_mts_target_client",
+      "taskCategory": "runScript-2.0",
+      "topicName": "DM_INDEX_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/89328/versions/93842bbd99ae42bfdf0d7e1b322f353a6aecd21abd40da8359a0990e58e16329.evidence-v3.json",
+      "evidenceFileSha256": "b456156f4d07fd1bbdcc57cd9ef30e2277c11cd27f4f7ecc69bc7768814f9df5",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "102309",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_basket_info",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/102309/versions/e5e9151deeecc052ac25593fcbf9741a31aca9a991ccc9a53cb785e862df01bf.evidence-v3.json",
+      "evidenceFileSha256": "0f451ce143bb2c02fc61d5b778eddbd44223f5ee8125c675434403c9d1b55fc5",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "102310",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_cross_metric",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/102310/versions/da5436419c4f481b32b5dc0679d4df68d56a6bdc2ab4c00efe23cf551cc62c64.evidence-v3.json",
+      "evidenceFileSha256": "810df76330a2336ea9bd50f304f6321d2d9d7e487297e137be72c0a42569f74b",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "102313",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_part_metric",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/102313/versions/13a558697d199be954b3b267f227f1504a6e14627188042bca822c071ec304d3.evidence-v3.json",
+      "evidenceFileSha256": "ef4972ca20345e3b137b2fb9b945cd408b1457c34d25fda0a1e17ff18f1e9267",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "104440",
+      "taskName": "集市批量_业务_TRS前置依赖数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/104440/versions/1a89952909830e112198a45d9d7655f4de9c12c0f92167260364e6d9356dd8ee.evidence-v3.json",
+      "evidenceFileSha256": "5437de391db0d9a913950961a11a93dfdf2bdf0cb0aa785b44fbb017be0e90ac",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/104440/sql/query.sql",
+          "sha256": "b68d3a5978369ee27e48a8973fcbadf14b298c143b7492a7af568f9b5d043f60",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/104440/task.json",
+          "packMetadataSha256": "d0e88a5b8932e7bf5ff9b2f98b2e1d5edd6bc5bd5fe08dc4154db86020ea8ddb",
+          "packCollectedAt": "2026-09-07T06:59:20.412Z"
+        }
+      ]
+    },
+    {
+      "taskId": "109767",
+      "taskName": "odata_n_tit.d_v_risk_margin_acct_info 的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/109767/versions/a51394209260de6e5741b857f491e54d3362ddab9a389653f24d9654f30c54c1.evidence-v3.json",
+      "evidenceFileSha256": "584307196dba263a9b09a4ea8fc3142454786d416471fd4c2be544e0f2bc97b0",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/109767/sql/query.sql",
+          "sha256": "c20db8340a524921f1d8d09ab44f4fdc846e91394995444e3c56c09939b84c31",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/109767/task.json",
+          "packMetadataSha256": "0e858d0a4debc1b536eb1f292fbf6ea635878e1c2c9c1a0fc86084e619c683e4",
+          "packCollectedAt": "2026-09-07T07:01:26.781Z"
+        }
+      ]
+    },
+    {
+      "taskId": "109768",
+      "taskName": "odata_n_tit.d_v_risk_contr_capital_mapping 的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/109768/versions/401affe5d25f80c7b9ae69f710fc7096c999d88e01e5a41cf25e301be72904cf.evidence-v3.json",
+      "evidenceFileSha256": "0bf371e4c477ced056a896706ff45605e50b02ea6e25e8b2eec66f3119e3a384",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/109768/sql/query.sql",
+          "sha256": "6501f33df70393033b8be86bdfc2469b4a22abfb8d789b391df07d04db71afbd",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/109768/task.json",
+          "packMetadataSha256": "05073472795bbc0d3970e5c048a83043c2e42e122824059cf93c3551d0035bfa",
+          "packCollectedAt": "2026-09-07T07:01:26.802Z"
+        }
+      ]
+    },
+    {
+      "taskId": "110492",
+      "taskName": "odata_n_tit.d_v_risk_qis的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/110492/versions/7dd3e87123e6a0b5fd8370e4bf2687d3fd97b03e840649065fe695cf730e70f9.evidence-v3.json",
+      "evidenceFileSha256": "cb0ba6878cadeb419653900aaeace4cb9efbe657847faa623851ab3799b7138d",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/110492/sql/query.sql",
+          "sha256": "584baf897561e2dd202c1b331943f28ce7f85779deef21bbd19777b4a09f4c6b",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/110492/task.json",
+          "packMetadataSha256": "cc9ae478ee52161a2037538e4c3fa4f1f555f2ca9ecec1a9e91d7e23c96d9d57",
+          "packCollectedAt": "2026-09-07T07:02:12.123Z"
+        }
+      ]
+    },
+    {
+      "taskId": "113380",
+      "taskName": "odata_n_tit.d_pricing_bucket_metric_f 的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/113380/versions/5ebb656d32ce94599b1cc1854d253ca9350cafa26911bcbbfb5b77734c2584fa.evidence-v3.json",
+      "evidenceFileSha256": "27f17d9b573884d7f4a9b46093bf02b3a567d9fdbea47eccb9d9e2851711468e",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/113380/sql/query.sql",
+          "sha256": "7cfd8cb4035d02e600007850ef0ea2d73edcede443e0e471b8962b610c3c4d92",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/113380/task.json",
+          "packMetadataSha256": "e984138983a2afc05dcfe9e35d3b890841f6675489d662860368c01a2c47701c",
+          "packCollectedAt": "2026-09-07T07:03:12.425Z"
+        }
+      ]
+    },
+    {
+      "taskId": "134808",
+      "taskName": "GF_COOPERATION_DYN_INFO",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/134808/versions/fa34a118172f4d10ca83bed24a4ff8cddb95c00e0a1c8e1a5a7989842bf0a93a.evidence-v3.json",
+      "evidenceFileSha256": "e9d396393f2ed3eb3a91a6a904818920b01103410f9dd25cbdffa37c458ff904",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "30a6b14e2414a83ac7f544a5d620645d71d8bc572430232de46a26c82a7720d5",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "138259",
+      "taskName": "odata_n_tit.d_v_risk_cross_border_trs的数据推数完成插入ETL_LOG表格--check",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/138259/versions/7c451896f827066db1437bfc7e721cf930f80ef6f88db389aed7ed8df96014c9.evidence-v3.json",
+      "evidenceFileSha256": "7f5d1f19ed29629691abc40f9d7989154919224c684aa25388ad4694d84f2c67",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/138259/sql/query.sql",
+          "sha256": "8d0034b9a03ddc7597ce197afbbb2d390da217f78d75cbbcacae351729ae33b8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/138259/task.json",
+          "packMetadataSha256": "15b7221b78b51ec4b22a3613bb163f0ec3f61aecd54e2dc3154a6e4f6516d7d6",
+          "packCollectedAt": "2026-09-07T07:11:31.056Z"
+        }
+      ]
+    },
+    {
+      "taskId": "139809",
+      "taskName": "PWC 员工所属部门变更核对，邮件发送。",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_CTMS_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139809/versions/b2b35037cb0b58c944facd186e8929210704fb0d46d14362507f624d039befc2.evidence-v3.json",
+      "evidenceFileSha256": "2f644537a1320f91ad6094a2fbd2ad1557fd1a16a6146b40a86a4c1e40d3af20",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139813",
+      "taskName": "PWC人员状态，邮件发送",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_CTMS_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139813/versions/d522714eb3741bf94763e9c2e481c2a7607565f38f025bf956a17a0159f933b7.evidence-v3.json",
+      "evidenceFileSha256": "1c6c1dcfad4c36a9b5904e337f036a548b1f5ed3c926c8634c66a746e177c535",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139814",
+      "taskName": "PWC人员状态，邮件发送。",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_CTMS_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139814/versions/83b24a909965331bae3019e9f06c7aca4f74324ca01b0e8de0a6851b94345c26.evidence-v3.json",
+      "evidenceFileSha256": "f91a42657c8c43e31452889e4919695f4483ff635f4d69eed81e7296f09292c1",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139953",
+      "taskName": "STOP_bd_ctms_sys_user_roles",
+      "taskCategory": "RdpTask",
+      "topicName": "EasyStream_TASK",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139953/versions/9a923a81ee3b5bc667ba5313083f97afc63d8ff7d5707e750742cda914ec4536.evidence-v3.json",
+      "evidenceFileSha256": "39382d8924fa2b08a67ad2b2b21ae412dc2ebf8c0395cc3769ae363a564196a5",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139957",
+      "taskName": "启动Easystream bd_ctms项目实时鉴权任务（nbop、一柜通、资管O32）",
+      "taskCategory": "RdpTask",
+      "topicName": "EasyStream_TASK",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139957/versions/7f9357e5bc8b4beb4dbb04522e2c3e3fc60b154e8086285c39385f16824cef0d.evidence-v3.json",
+      "evidenceFileSha256": "47158f17695771e25e7b292d1f70768e630399e485c3b9bc5a47cace332e7ca9",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "140202",
+      "taskName": "crmii.trzrq_qzkhxx_m_new",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_JGJ_DIY",
+      "chapter": "topics/delivery-postprocessing.md",
+      "sectionAnchor": "credit-prospect-enrichment",
+      "family": "credit-prospect-enrichment",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "目标端关系、属性或奖励加工的来源、匹配、更新范围与例外见独立业务页。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/140202/versions/a977f1baabbac59012302443d1add8d48b8f5558c5722c2e4057e4c4ef2c83c7.evidence-v3.json",
+      "evidenceFileSha256": "5b58390cc4fdef2ea966bcf238c180b3743e4a587e99668c75f96902fe2b5472",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "2de5516dc7ef2ea44b88f973d8ff9241740885cd5c0915c5f66a541de2782825",
+          "startLine": 1,
+          "endLine": 89
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "144029",
+      "taskName": "dm_tit.ref_book推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144029/versions/a0d52791afd539e1c9d3f6e6f8878ea9a23ab13e0ef8c0d50f098c36b6cb5423.evidence-v3.json",
+      "evidenceFileSha256": "79b48460675776880946f98988625be793bc26838d201a6b3ce84b00344a3bba",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/144029/sql/query.sql",
+          "sha256": "f415e530ec5a5eb58283578c1dde25c31266728703c5109f2345d09d31fcf8cf",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/144029/task.json",
+          "packMetadataSha256": "374fcb7cad66232dc45bd1bd53398bb4baee0c7b01ea41ffd38a9f8921ba1019",
+          "packCollectedAt": "2026-09-07T07:16:07.116Z"
+        }
+      ]
+    },
+    {
+      "taskId": "144442",
+      "taskName": "资金部权衍数据推送后执行",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FMS_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "counted-delivery-log",
+      "family": "counted-delivery-log",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "对参数日指定grp范围计数后写回执；回执标签、真实计数表及排除范围分开说明。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144442/versions/698f859a5c4239b48f852cefbc8a8a29bbba255aadf753882f6c0f3a8fb78030.evidence-v3.json",
+      "evidenceFileSha256": "c59cd5a84a4433223e2919772efcbe88a7b9fb3f4b05a8c3e89126e5487f1b99",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/144442/sql/query.sql",
+          "sha256": "3c49f54b348e3571e4a684962e3701902b785354c16a39366a8932c28a08f208",
+          "startLine": 1,
+          "endLine": 20,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/144442/task.json",
+          "packMetadataSha256": "9f2ecff91915b0fb06f29cf47e60c6c9ddfe792f3d2b882386e5f9410489691f",
+          "packCollectedAt": "2026-09-07T07:16:11.047Z"
+        }
+      ]
+    },
+    {
+      "taskId": "144742",
+      "taskName": "t98_otc_swap_comp_pal_sum的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144742/versions/61818696539f479bace6b18b2b2961eef31ec29ef3a9475ffc4b85d606e286a3.evidence-v3.json",
+      "evidenceFileSha256": "0a31b7cb013d2693d90424efaec9d29f4b985da65db8aecf8d2fe8a607ff8099",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/144742/sql/query.sql",
+          "sha256": "626f732c3fd1305e893244f4cb51005cee0238f17ea8c286388488b191016cd8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/144742/task.json",
+          "packMetadataSha256": "3b3615066d0641415bb323c583b5c07375a937e67bd6fec3396af340ec49bccf",
+          "packCollectedAt": "2026-09-07T07:16:14.851Z"
+        }
+      ]
+    },
+    {
+      "taskId": "144743",
+      "taskName": "t98_otc_swap_comp_trd_undrl_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144743/versions/225b5afab3e15bf384696b43f8edbc32b33dc08320c130d3cc4eed38ffcc7408.evidence-v3.json",
+      "evidenceFileSha256": "fc0a3bd0bfeb9b986ed5830e1f917e544458650ca792b81ef66b789ad932ee31",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/144743/sql/query.sql",
+          "sha256": "753c59feb532b2e1dc4d6a0c7bfa6655ceea3df6a15afdcf264a512f9b226555",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/144743/task.json",
+          "packMetadataSha256": "f86ea48f7120ca7388faac65a09cdf46128c85969f7e2a2eb690224efc83207b",
+          "packCollectedAt": "2026-09-07T07:16:14.878Z"
+        }
+      ]
+    },
+    {
+      "taskId": "145185",
+      "taskName": "邮件测试任务",
+      "taskCategory": "hiveEmail",
+      "topicName": "BD_S_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/145185/versions/8c6642c9f3b723754d18539b0f75a787289ac3a7f643cf57c69e6c7891bbce65.evidence-v3.json",
+      "evidenceFileSha256": "95f6a8b8550141b90fa195f595a5565d1eab818d9b8dbbece7a0a515afcab4b6",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "147871",
+      "taskName": "httptask.wt_gks_weekly_report_lwy",
+      "taskCategory": "HttpTask",
+      "topicName": "DM_ECOM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/147871/versions/d27ac2e02ba5f7d04fd398ce658683046a62864afcc96dd09e3366c6893a028f.evidence-v3.json",
+      "evidenceFileSha256": "bde7cbbdee5cfa09eb05b43efc7b5170360debeff7ad1fbff944f8053c986d58",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "149269",
+      "taskName": "敲入敲出障碍价格分布图依赖衡泰源表，推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/149269/versions/114099f003efebd8970652858156b7e66bbcc5814b62ac327ee6ddefc5378140.evidence-v3.json",
+      "evidenceFileSha256": "95ab2d0424b8fa7efd0d24658f453eace64498d3c83d7e190501953e839199ba",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/149269/sql/query.sql",
+          "sha256": "c91b29f876c07d89a43db256c44b4d316eef824c6a907a916a7211cef252ead8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/149269/task.json",
+          "packMetadataSha256": "ce4baf3e40ccd68b3d4687396231bd2529608ebe987060d9a0e008a8867f3fd4",
+          "packCollectedAt": "2026-09-07T07:21:34.513Z"
+        }
+      ]
+    },
+    {
+      "taskId": "149527",
+      "taskName": "check.aum_emp_indi_data_isready",
+      "taskCategory": "checkHdfsFlag",
+      "topicName": "DM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/149527/versions/0e7210d4bb009d3bd8637ff885d0987f543646ad90f29ed2971fa6f6138869fd.evidence-v3.json",
+      "evidenceFileSha256": "b8b7b869e061b0fbbc8815230736e1e4ef09fb5868098265bc59deb2fc5e8266",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "152833",
+      "taskName": "gf_otc.sync_titans_data",
+      "taskCategory": "exeSql",
+      "topicName": "DM_OTC_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/152833/versions/0545c014cbefdb87672a365d3de024339714dc484853f697580580c9e6d0d111.evidence-v3.json",
+      "evidenceFileSha256": "24dfcf9a28553d670ff2598bf0066cc26f3db07eb47cde0325a3480d1b0381fe",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "b91d85dc2fbdada97bdb0dea8428f72775c3cc3ca3d8a0b8d70f7952d5cd57d9",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "156254",
+      "taskName": "aum机构指标_机构标准资产指标更新   ---241115机构创收指标推数切源，113111换为177585",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "delivery-postprocessing",
+      "family": "delivery-postprocessing",
+      "reviewStatus": "LOCATED",
+      "summary": "机构员工指标后处理，转入考核主题作业务核读。",
+      "gaps": [
+        "本交付控制页面未宣称核读这项业务计算。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/156254/versions/61ce1ee2f31104683b527a98374dcd3acc98abc0a2f415b79cf0bc2f0af35f19.evidence-v3.json",
+      "evidenceFileSha256": "2a3e4069874a73d1966b95b695a6e9c9f5c328758429d1758abd8bc0294378ee",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "159116",
+      "taskName": "odata_n_tit.otc_o_option_parameter的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/159116/versions/a9bc7e781a2f91f65540585aface5246c23703a9597fdd2fb5c5ba957f36d6b0.evidence-v3.json",
+      "evidenceFileSha256": "acd748a45cc838af9d192d3d3fc8583215c298f6b67606a825306feef4f05000",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/159116/sql/query.sql",
+          "sha256": "ef75eabf5b9a911a2a0ba5ad08f9d29c01d8548880d67b05c5797b84239074d9",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/159116/task.json",
+          "packMetadataSha256": "6869672bc1a02b27885458d8d75265c4dd7d1e7e52328be00bfaa8d357f0b1de",
+          "packCollectedAt": "2026-09-07T10:09:50.824Z"
+        }
+      ]
+    },
+    {
+      "taskId": "160288",
+      "taskName": "odata_n_tit.d_v_risk_plreport_i 接入",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/160288/versions/399aa3fbaaecce259bdc2ef6feb2bd5ae38c9a696ae857f1da5bd1512e5789b0.evidence-v3.json",
+      "evidenceFileSha256": "c1264521b1dc1c3d1c76cac0a33acf87bf61935a60f47c405eada229661eb880",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/160288/sql/query.sql",
+          "sha256": "d858243530885666164a019efbd055c3b8eec522dcd3f5b42c5ef73fa7f1c8ae",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/160288/task.json",
+          "packMetadataSha256": "0fb69aa4f98c51d7099a23826331ce8941c07615b924e71d77306ac675df5223",
+          "packCollectedAt": "2026-09-07T10:09:51.002Z"
+        }
+      ]
+    },
+    {
+      "taskId": "160292",
+      "taskName": "odata_n_tit.otc_o_margin_account 接入",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/160292/versions/956a2a89dad8e486e734d72a442c10e93828dc45de4ad18c08a891866f257000.evidence-v3.json",
+      "evidenceFileSha256": "82fa347b1f17642cae1162fc3a185c66f55f171f72f686671e4072cba76b7ff7",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/160292/sql/query.sql",
+          "sha256": "14c9b3db9e7de2db394bbd093625c2f639524d923453a7dea54bcb124e081e02",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/160292/task.json",
+          "packMetadataSha256": "471dc1e42d2b6effff19fdc4758fd088688c9ca563b4e77d326ff90ac591fe55",
+          "packCollectedAt": "2026-09-07T10:09:51.082Z"
+        }
+      ]
+    },
+    {
+      "taskId": "161746",
+      "taskName": "t98_otc_deri_undrl_trd_lmt_idx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/161746/versions/abf5040364a340e0644b1209d3f51f7fa7a3636a9b7f261f1988e3b60a254c29.evidence-v3.json",
+      "evidenceFileSha256": "b4e173a2d7fb14cc498939e489e4e662c1f49bb3432e58c2a2bf1fdbf62c428f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/161746/sql/query.sql",
+          "sha256": "21042015e23d65b8be71a621fcdc5831ff74a5509cf04a58f6a32f6b5782041a",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/161746/task.json",
+          "packMetadataSha256": "ff1d10ffb08fa030859ae87c202a57600963535532da0f67ea5a7dcab9cde64e",
+          "packCollectedAt": "2026-09-07T07:29:40.474Z"
+        }
+      ]
+    },
+    {
+      "taskId": "161747",
+      "taskName": "t03_otc_opt_comp_stres的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/161747/versions/b643e480c7ae2fdaa0945ceed3b15c3a021d5562bff9b21641041cb584f8f150.evidence-v3.json",
+      "evidenceFileSha256": "b9ac77a7a078cf22eb6d68d31c609dec29105bde6405b04bde029f9a913386da",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/161747/sql/query.sql",
+          "sha256": "7eeba29d030d2dd97d559054142ea128b008f056f240a7630477d7644bd20700",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/161747/task.json",
+          "packMetadataSha256": "393f5e92cc4e9ee60a46c3a67f2e3583a644e4f36e8d2570d816808a2fe14037",
+          "packCollectedAt": "2026-09-07T07:29:40.495Z"
+        }
+      ]
+    },
+    {
+      "taskId": "161758",
+      "taskName": "t03_agt_stati_info_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/161758/versions/4a4000f2ca0882dbbe9518577fff451be6800c2eb8de24043fc5ccf0c67225fd.evidence-v3.json",
+      "evidenceFileSha256": "fecbac4a2f438699033553866cc17a872a012e5bfb9d1727e6ad2abae0ad027e",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/161758/sql/query.sql",
+          "sha256": "f289a36e32ed1e5ea5f4b660bfaa5557f36a5dcc4b9d000a906ccb5f970649cd",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/161758/task.json",
+          "packMetadataSha256": "14eb102e5115718377a78f0692ea424bb2cb843f61fd9f48caab18572ce8f39a",
+          "packCollectedAt": "2026-09-07T07:29:40.553Z"
+        }
+      ]
+    },
+    {
+      "taskId": "162563",
+      "taskName": "dm_rsk_n.otc_trs_risk_plreport的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/162563/versions/fe1fdd9fc650d6aafa86c53c6ef0ced07cffd8584f90ec3de4232f4ad17e1fb0.evidence-v3.json",
+      "evidenceFileSha256": "4ba770057c1babca3223b8398e603cf0985add39dc0e4a56ddfd58d2834ae1df",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/162563/sql/query.sql",
+          "sha256": "6f1b4984745f480092516f3cc9390692a8d864537a01158ea9a8bb680966c824",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/162563/task.json",
+          "packMetadataSha256": "cc40125131ef9436f37f547f0b55cee4b0173942fc18fcaf91af17ec55ed3ba5",
+          "packCollectedAt": "2026-09-07T07:31:08.283Z"
+        }
+      ]
+    },
+    {
+      "taskId": "163208",
+      "taskName": "gf_cooperation_overview_info",
+      "taskCategory": "exeSql",
+      "topicName": "EXP_CRM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "CALL_BOUNDARY_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。",
+        "只有过程入口；过程体、内部读写与业务规则缺失。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/163208/versions/d7d47b85d68cbb1fc9832f843903b1d768687dbd09595c1f1ff1d63407b6e8e2.evidence-v3.json",
+      "evidenceFileSha256": "ac819dcc4c43110f230c47028e300fa44c6577ea66bc16458ae8c1cae55f5410",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "4f895a8bf5a337daed406d736a94987044ae5f0832aad4f60c80ee2aa9d108f8",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "164991",
+      "taskName": "a_epa.temp_indi_data_hcl",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "delivery-postprocessing",
+      "family": "delivery-postprocessing",
+      "reviewStatus": "LOCATED",
+      "summary": "机构员工指标后处理，转入考核主题作业务核读。",
+      "gaps": [
+        "本交付控制页面未宣称核读这项业务计算。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/164991/versions/af2b0829b0727d860bd151ba906e629d6fcb52f93c1f20a606b0b0da8e2ecfbf.evidence-v3.json",
+      "evidenceFileSha256": "30d923b36974d9d70f0c4354ce1a481047a09fba5f8bd658b627a5e810a21fe2",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "166545",
+      "taskName": "业务管理岗指标后处理",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "delivery-postprocessing",
+      "family": "delivery-postprocessing",
+      "reviewStatus": "LOCATED",
+      "summary": "机构员工指标后处理，转入考核主题作业务核读。",
+      "gaps": [
+        "本交付控制页面未宣称核读这项业务计算。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/166545/versions/a52579b2beece95633e04a5b1ab39c9e7dfba6cb4fca6233700d1eeb913744bc.evidence-v3.json",
+      "evidenceFileSha256": "a9ffe46d556c203884e57b10486ce85497b3785d13c830d8d02a52653ac44f7f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "170568",
+      "taskName": "PDATA_N.T98_SB_TIT_DAY_HOLD_INDX_TIT209的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/170568/versions/c9eb714efa402500727387c8426c709207fd9e3c1c44d61026e3d4d57f7ba8a0.evidence-v3.json",
+      "evidenceFileSha256": "3f747058720fac20e1233613676402ee3e14cdbc1da8cf2b35819489e7cb16d3",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/170568/sql/query.sql",
+          "sha256": "6f0ee28f39976b120c72c5e684eede3702e4d00a8603776ed9b15e68691e66c3",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/170568/task.json",
+          "packMetadataSha256": "c42257fa2cbaf4d6b9c117738bc13740f22076e383a4d7a2cc6bb7336a4ea595",
+          "packCollectedAt": "2026-09-07T10:09:51.581Z"
+        }
+      ]
+    },
+    {
+      "taskId": "172920",
+      "taskName": "check_aum_emp_glpj",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/172920/versions/c004f40a3725330ceff30924c9acc7bd07df7c5c0157114af169d405a6c97b37.evidence-v3.json",
+      "evidenceFileSha256": "f87ff71cabdef2815779a3b4b1aa8c7731c2c7d10f10b6a28d2d0034b394655e",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "08f3e9054646e6762702f6b6d25221311b696ad49748e1551c6e21ed7fa040cb",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "175178",
+      "taskName": "odata_n_tit.d_v_risk_trs_contract_param 风控视图-TRS合约参数表的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/175178/versions/bdae03d9ab6d08347a4d931e28863ec6ecb1ed20b2f092770cb5a797808300e5.evidence-v3.json",
+      "evidenceFileSha256": "d6b0e2b0109a7d8c159e844665f5690a5ad2933c19f8849cfd75cb12d61f0f26",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/175178/sql/query.sql",
+          "sha256": "1fd207a35bcc641d8b3ce1b16ca103ad376e8ad45f19ec064ba30698afccda94",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/175178/task.json",
+          "packMetadataSha256": "ede17151d45961612a3a73889f68b078a1b8c672347ac0981cc34d3e79bb76bb",
+          "packCollectedAt": "2026-09-07T10:09:53.069Z"
+        }
+      ]
+    },
+    {
+      "taskId": "181935",
+      "taskName": "kafka_sender.start_TRANS_CSO_HA_ZQYE_SYNC_service",
+      "taskCategory": "runScript",
+      "topicName": "GF_TIT",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/181935/versions/01ef39b24f204116115f85739834760532910280a8a2c78c2d89bd90d72a3da5.evidence-v3.json",
+      "evidenceFileSha256": "d6df4cf71519b9522267b8f34a11a2fe705c81ba8af68a951de52c070f80d4e7",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "181937",
+      "taskName": "kafka_sender.start_TRANS_CSO_SZ_SJSDZ_SYNC_service",
+      "taskCategory": "runScript",
+      "topicName": "GF_TIT",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/181937/versions/82e684e651daf6c933707b8606e531227ffbb433c180401a96084ec0696d4cb0.evidence-v3.json",
+      "evidenceFileSha256": "183eb6c25e9097c9966a5dc2a590cc17ca6b67f1ba31b45db012ab1f5ed2eb71",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "181938",
+      "taskName": "kafka_sender.start_TRANS_SMT_ATP_T_REPORT_SYNC_service",
+      "taskCategory": "runScript",
+      "topicName": "GF_TIT",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/181938/versions/1d90993ef429cdd6c28cc99e14cff4f15d170548f7ac149d569c801458bdf61d.evidence-v3.json",
+      "evidenceFileSha256": "8f23691346ef8ff2c9a88e882d668415809241c4d1018d654f30162b78e1f037",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "185524",
+      "taskName": "关于大数据平台报表《可转债程序化交易提醒》新增双十提醒的需求\n[内部地址已省略]",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_OPT_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/185524/versions/a807cd5b55eb1e046bb8a9ca53fc1c7fb952268b164690a26b17f2788dd9185d.evidence-v3.json",
+      "evidenceFileSha256": "ba77a0b3f47ee2c124bbebf4498fe6096a544fdff93df6d78682be29e51a8a3f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "190543",
+      "taskName": "风控系统融资负债任务依赖的数据推书完成插入ETL_LOG表格(trd_rsk_hk_liab_basic_day",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/190543/versions/f3703b5943fea9ca0d856de85bb60ce6f887f5d821aa2cf0b69ec257b923d4ec.evidence-v3.json",
+      "evidenceFileSha256": "c98201508226b70bff5ac43f7160960baa3172cd7422e07307df94cb38c29cfd",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/190543/sql/query.sql",
+          "sha256": "ad710990df3d0210dabd12a403dc59cf9350440545a5ab1b3f7fff524e931f27",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/190543/task.json",
+          "packMetadataSha256": "b9989502e222d563603076c37c0dd28450183611340942b10df72686b0c6dbf9",
+          "packCollectedAt": "2026-09-07T10:09:53.465Z"
+        }
+      ]
+    },
+    {
+      "taskId": "190593",
+      "taskName": "dm_rsk_n.otc_deri_sett_abn_montr_indx(grp02-grp08)的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/190593/versions/13dce8f6fa4ad10d1a17a0b34e3352fed6ee2ce7b91903a6cd7e69aedbd58bf3.evidence-v3.json",
+      "evidenceFileSha256": "11242740d7e1b7237cb10903805dcc4d14570d1ef5cb0a04f64aa1a51b240ac9",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/190593/sql/query.sql",
+          "sha256": "8202495d4a9f214af9a6227dc2c724b180495edbcf84a032a94287264aa6502a",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/190593/task.json",
+          "packMetadataSha256": "d9656df00e12a6e1fd6120d6c52999168585a7bd701e9625edd2dc0b3380b9ac",
+          "packCollectedAt": "2026-09-07T10:09:53.517Z"
+        }
+      ]
+    },
+    {
+      "taskId": "191236",
+      "taskName": "check_aum_supv_mage",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/191236/versions/e010c5ed2ecc2d299fbdad8669bfb28f7a1cd392c14f8f18266a16f73064fe96.evidence-v3.json",
+      "evidenceFileSha256": "c507f8c25fd5e46284eeb791d90feb4d76c6c80af2ad8f66b053225b09a1ad4d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "08f3e9054646e6762702f6b6d25221311b696ad49748e1551c6e21ed7fa040cb",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "192158",
+      "taskName": "dm_rsk_n.pric_fctr_mkt_quot_day的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/192158/versions/e78d2d6b7a5e08a66342df8988f70f8a3fe9729fcc8c7e40883ecb831b20e1fa.evidence-v3.json",
+      "evidenceFileSha256": "fc46c14f489316a3d637502a1c77cecab030baf7ce0ed38f0be39446ed26dcfc",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/192158/sql/query.sql",
+          "sha256": "15def31d02742e37455de0185102745ac1578ae32b812dc662fac11b32834020",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/192158/task.json",
+          "packMetadataSha256": "ad060717b703123e88684f2596a9ff5b185bd1c7e20ebf8c0eb9d405e151fabc",
+          "packCollectedAt": "2026-09-07T08:16:48.252Z"
+        }
+      ]
+    },
+    {
+      "taskId": "192716",
+      "taskName": "check.aum_incm_isready",
+      "taskCategory": "checkHdfsFlag",
+      "topicName": "DM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/192716/versions/30dbde0d7f6abc6f1d67e8e6699f5b1e1f9d5a60bb7403a8a50c329acfab3c8c.evidence-v3.json",
+      "evidenceFileSha256": "9078c233464a18a88498c896b0297bf6f6ff3c6b26b49dae2d93fb113264f752",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "194623",
+      "taskName": "dm_rsk_n.curv_lack_abn_hand_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/194623/versions/6566d653a7e51858c0ce8597682113db5a6f880c501196e97ff0786346a167e0.evidence-v3.json",
+      "evidenceFileSha256": "0bd347630effa34944cfe3b1a28e9303ccc19e0e47985ba0056f22923c202134",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/194623/sql/query.sql",
+          "sha256": "1a04fce33beb38ac26d738fa7c3e14cb0d91be51d23bedca96247be0d501d4fc",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/194623/task.json",
+          "packMetadataSha256": "f88838c4fa504adc79865872303ecde7fc62fb230077e4aae87d305a297c7c0a",
+          "packCollectedAt": "2026-09-07T08:22:52.996Z"
+        }
+      ]
+    },
+    {
+      "taskId": "194624",
+      "taskName": "dm_rsk_n.curv_lack_abn_hand_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/194624/versions/d1d4b54eed90622a61c514c7d027fa7a32bf324cdbb0519b9692352bcd8e20e6.evidence-v3.json",
+      "evidenceFileSha256": "f5a5fdd233982c64a68cb3bb82a9e2c51fc49007e0b367bf39639e4cce18d783",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/194624/sql/query.sql",
+          "sha256": "884ed11aa3d9a819b0529b7584f4ce8690801c68da0c954c2a501e613ff51f3e",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/194624/task.json",
+          "packMetadataSha256": "711fd2c88d42d6204fcb9e943cac3f6eb226aaaa058be12ee31016a42ad3a1d8",
+          "packCollectedAt": "2026-09-07T08:22:53.018Z"
+        }
+      ]
+    },
+    {
+      "taskId": "194653",
+      "taskName": "dm_rsk_n.curv_delay_abn_hand_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/194653/versions/ec84e25e97f3ef80a17472be64592c3cf52fe0b7ab6f34024c4e3fc44170fd36.evidence-v3.json",
+      "evidenceFileSha256": "cbdda3d8d3ed795f05d631f64dc260a162f8092541d67a16a5ca885815cc4669",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/194653/sql/query.sql",
+          "sha256": "6b133d7295d94ae028a911f6cba16b792ed67ac97bda7d87c80fb7a2908a7037",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/194653/task.json",
+          "packMetadataSha256": "f0652abb27f5be04c29580c25cd7e682779b3bf1bebd59d66047c0e571c54152",
+          "packCollectedAt": "2026-09-07T08:22:53.283Z"
+        }
+      ]
+    },
+    {
+      "taskId": "194654",
+      "taskName": "dm_rsk_n.curv_delay_abn_hand_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/194654/versions/2e260c3d775627172a54bcdc8b12090a584ef0858436e8deb659f4bcd38ba253.evidence-v3.json",
+      "evidenceFileSha256": "46cfd390db1841126e25ca95586f751faf945f1247f44e7e1a4451ec88f738d8",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/194654/sql/query.sql",
+          "sha256": "a25636527d56e3cb134935374df107f91aad304e5c8412d13d48cdfd123983e5",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/194654/task.json",
+          "packMetadataSha256": "403b81961357b806e7b2abf5b3d2d77f011128ac5f68b6200730784d03426cf6",
+          "packCollectedAt": "2026-09-07T08:22:53.306Z"
+        }
+      ]
+    },
+    {
+      "taskId": "194656",
+      "taskName": "dm_rsk_n.curv_jump_abn_hand_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/194656/versions/9bbd359d45a2bac9f6ccc2f2416a99055cb7df64f5be99adb30199de6ad4f57b.evidence-v3.json",
+      "evidenceFileSha256": "449a80c107bbc1afa277347269ed2e354b9e6e14cb46cb8dc78a3d17a82819ff",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/194656/sql/query.sql",
+          "sha256": "6f914d1e0e6c246850e1900245da52bd816018ad709370240ab483a7536e09bc",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/194656/task.json",
+          "packMetadataSha256": "87a408c65dd5d2b887cc827a07f2eb634b63aa0a626f15364631c84ec56f229f",
+          "packCollectedAt": "2026-09-07T08:22:53.389Z"
+        }
+      ]
+    },
+    {
+      "taskId": "196204",
+      "taskName": "t98_otc_opt_comp_sub_trd_term_prcg_indx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/196204/versions/c65ce5efc4f9377bf42def324b147071a03363453aa40d748d1bc6e679f67cb4.evidence-v3.json",
+      "evidenceFileSha256": "55c944a3e059bc918470726505b3b71b40caf372564328005a0aab0a7cb39c7b",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/196204/sql/query.sql",
+          "sha256": "daf7817eed1c9e3f344e9b111ec368c8f5079081897db35186dd708cc819e6fb",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/196204/task.json",
+          "packMetadataSha256": "7cc6125455022a54e985d19a41a6342ef50a694d44b2b63b4123f03bfc035423",
+          "packCollectedAt": "2026-09-07T08:26:35.778Z"
+        }
+      ]
+    },
+    {
+      "taskId": "196206",
+      "taskName": "t98_sb_tit_day_hold_indx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/196206/versions/d71f6033d3c615092dfad539b7fd55c6f5c03bbc317d556cd788d7f69de3af7a.evidence-v3.json",
+      "evidenceFileSha256": "f9c47999a9e1c174aa2950168558201eca94b72992c67d42b2052743e5e1b1d8",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/196206/sql/query.sql",
+          "sha256": "ed9fd21380286aa9cd4ff8d78c0060d43654977704027e247df028eafe26e61c",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/196206/task.json",
+          "packMetadataSha256": "87bfa3901690d2121c4df961a40c9922d0a395e5ed8a33920aecc30c54bfb76b",
+          "packCollectedAt": "2026-09-07T08:26:35.824Z"
+        }
+      ]
+    },
+    {
+      "taskId": "196209",
+      "taskName": "t03_otc_opt_comp_sub_trd_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/196209/versions/68685f6caf4b4c6a1c656c40a9da60c3cef741bbfea127822b8ebb053fb0629c.evidence-v3.json",
+      "evidenceFileSha256": "12bf3c1ee2944516ae27f6ce0a9409e990fd345e5fb9be803468852ea9725c0c",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/196209/sql/query.sql",
+          "sha256": "f9f5ffb65c6e9d3bc8945a032116a43532a5d4648067fe34de4e8f2d8972b430",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/196209/task.json",
+          "packMetadataSha256": "9086a177f9a0b9fb59ca6540d443adc62be181897a0bfc398ca5ccc501721766",
+          "packCollectedAt": "2026-09-07T08:26:35.880Z"
+        }
+      ]
+    },
+    {
+      "taskId": "196213",
+      "taskName": "AGT_RELA_H_TIT165的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/196213/versions/a89880671a5db7a22d5574eb973fb37d76fb7087d7d5cb5ac9d25ab709ef43b3.evidence-v3.json",
+      "evidenceFileSha256": "2c9e4e32236ad80d7b45b81868f7fe683065d0465de6624acdb2c0d9bf27c37f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/196213/sql/query.sql",
+          "sha256": "c30749a44c62714577ff6c07bb2e93d63754af992a6001abfc7e9938c1fc6138",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/196213/task.json",
+          "packMetadataSha256": "c99842cb448b3a02dde8e44aa24fb623748367b294b7ac2236bb65e4229e2114",
+          "packCollectedAt": "2026-09-07T08:26:35.962Z"
+        }
+      ]
+    },
+    {
+      "taskId": "196214",
+      "taskName": "t03_agt_prd_rela_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "DM_RM",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/196214/versions/340db0456e6c17672a9bac7d79756dfb1aae0956b88d377bd256d827a32bf325.evidence-v3.json",
+      "evidenceFileSha256": "b7c4a36aa1e1798bd1509e4327373efba6e502c2623b50b506d2607e06a0fd39",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/196214/sql/query.sql",
+          "sha256": "45fb8d3e357d10b7bd509c2c04fb1e9b367639fc5b23061c2d4af5f9c17ca076",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/196214/task.json",
+          "packMetadataSha256": "f1f43735e2ff5a99d6222aa1f771666ffe851875cbae7b1f12d55c715460de4c",
+          "packCollectedAt": "2026-09-07T08:26:35.981Z"
+        }
+      ]
+    },
+    {
+      "taskId": "198986",
+      "taskName": "协会字段更新",
+      "taskCategory": "exeSql",
+      "topicName": "EM_CTMS_N",
+      "chapter": "topics/delivery-postprocessing.md",
+      "sectionAnchor": "project-type-backfill",
+      "family": "project-type-backfill",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "目标端关系、属性或奖励加工的来源、匹配、更新范围与例外见独立业务页。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/198986/versions/6aea31b9f9c095cec6358c96719d29654dce90ccb8f17eb2e415fb0b05bccfd7.evidence-v3.json",
+      "evidenceFileSha256": "f890c050434baf5945a086d4c5a013dc3e5b0214223cec89b4f5433aa0e5591c",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/198986/sql/query.sql",
+          "sha256": "9d19628a8ad442ee4acefca5fdf34f89b4d2386d92befca0b0613e2c61afc2b7",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/198986/task.json",
+          "packMetadataSha256": "f58a644ba1b0071020ba38c0e260de79d9922337a243be5eb94095097472e347",
+          "packCollectedAt": "2026-09-07T08:39:34.735Z"
+        }
+      ]
+    },
+    {
+      "taskId": "199168",
+      "taskName": "pdata_n.t98_otc_opt_comp_sub_trd_base_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/199168/versions/238b429eba8599a08fbc6fde60a81394ed67324dbfea0ae27a0718a234837ab5.evidence-v3.json",
+      "evidenceFileSha256": "dc5be320b45670f3ee3a98b1d01d2b2fc72b0490ce71a18c3e37d41ddaabd6e0",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/199168/sql/query.sql",
+          "sha256": "bc6c37cf59c39c387dffdc23f03bc37f40f7fdb93af268a5c5f33a2d7e5dde07",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/199168/task.json",
+          "packMetadataSha256": "643fe7d3d1022be52af3b31be68ac1892c0e5d911d273e52a212ea8584ae2ef4",
+          "packCollectedAt": "2026-09-07T08:39:37.681Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202682",
+      "taskName": "t03_otc_opt_comp_stru_elmn_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202682/versions/710a9c1d52b96f5c9f3939ba7de3e1701094d45e17f9bf3bde69263fc38074fc.evidence-v3.json",
+      "evidenceFileSha256": "c478065f0aa4f5b028e55f850c6c9a3cc9169612911b0d3b3ec0e54637032367",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202682/sql/query.sql",
+          "sha256": "e8bac7489bb137b7bf3d3eb5147a1c7f8bbf39572229501d40f39bd308feadb2",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202682/task.json",
+          "packMetadataSha256": "ba1555df3dc29be1378f2eed63c2342d0386923f9e545364ea95ba3c2c5b70db",
+          "packCollectedAt": "2026-09-07T08:44:45.884Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202686",
+      "taskName": "t03_otc_opt_comp_sett_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202686/versions/b9847d0e344364880bfd28358f0fec39c902fc1a2aa3343db2501fdc69a818b9.evidence-v3.json",
+      "evidenceFileSha256": "f6bf7e548fc8ab15e86df58b96e99cb32370f942da859894eaae4390d752a579",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202686/sql/query.sql",
+          "sha256": "ecffecfb91c50759375fe04d464f8221d0d8e6aae15b57f564fc547fa6707a63",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202686/task.json",
+          "packMetadataSha256": "08a0a23bcffe0e4e457b5c05853718373134b705bd0c917e0268f1203fccc55b",
+          "packCollectedAt": "2026-09-07T08:44:46.008Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202700",
+      "taskName": "DATA_N_TIT.D_MARGIN_ACCOUNT的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202700/versions/28f9df32bfb7dae8bd8b5e35dd4c0ed8fa3b60fbbecfa4d1da7eeec9ff31b92c.evidence-v3.json",
+      "evidenceFileSha256": "574a06f61fe7146c70af22199bcbf21484a3edc34cb965e677b3e0fc45d55c31",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202700/sql/query.sql",
+          "sha256": "f6ae7ec8259a7f7079ea07de47a62f3e849c2b98530c586b0321dd9af09148e2",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202700/task.json",
+          "packMetadataSha256": "9d24f354e933a0e943f27ce180b0fb7ed1791028c6acb188b9b09493f45c7006",
+          "packCollectedAt": "2026-09-07T08:44:46.165Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202704",
+      "taskName": "t02_opt_mutl_undrl_prcg_indx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202704/versions/b8bc599a1b4b8c39e3ebe3b6296311c49e4769eb835664652a18e6ccea6de582.evidence-v3.json",
+      "evidenceFileSha256": "7d9ef5a0e669185784eb73d5bc638ea72ce1186475274f69215d1647061b0317",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202704/sql/query.sql",
+          "sha256": "c057832a6af24fb3aed706f10a4279a1d6a9fbb25b0c63301244deac0c96f59e",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202704/task.json",
+          "packMetadataSha256": "c612493f2d7fe3b3534cc83b15c6ec7e4b28985a5d9149089ce6ae6b17236790",
+          "packCollectedAt": "2026-09-07T08:44:46.240Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202705",
+      "taskName": "t98_otc_opt_inr_comp_pal_sum的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202705/versions/c2e2cc65d77c458bcb1d36bc49ce67c8d9f3cb8c50b18ee8ba3ecf297cdb7f2f.evidence-v3.json",
+      "evidenceFileSha256": "8b1cb4ba7470531dd995ef66c836309f8f2a527bc1dbd3c27caa4497ef026c3f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202705/sql/query.sql",
+          "sha256": "314638afd17250837fb8df358b2d9bea33ddd3d757f9c01bfa78d3e48b11b366",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202705/task.json",
+          "packMetadataSha256": "525cdf4595973808d39d3ad6e193117cf2074098a689542cedc9a0aec5a0110a",
+          "packCollectedAt": "2026-09-07T08:44:46.268Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202707",
+      "taskName": "t98_otc_opt_comp_eday_prvs_fee的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202707/versions/66e751f765764aed0dbf6c3e7c7e0373b29ba2a246735f58324cd45a6c81a483.evidence-v3.json",
+      "evidenceFileSha256": "bfe68560a889b2986c576f294f2e005b923fc7851495f6fdf9e0cf04cfef39f5",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202707/sql/query.sql",
+          "sha256": "e71eb2ca13cd4675355917a63402f1a53174a05535dd5abce229ede07011f5b1",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202707/task.json",
+          "packMetadataSha256": "002969fb406898f36005e67faaead0aec9eeddc3469687760345bc3ed9cf891f",
+          "packCollectedAt": "2026-09-07T08:44:46.349Z"
+        }
+      ]
+    },
+    {
+      "taskId": "202709",
+      "taskName": "t98_sb_otc_opt_comp_prcg_indx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/202709/versions/16b61ef9cbf9bb052d2d4dcde4fa92bb3e09ce944576cf3b77f03e4043e1b0e1.evidence-v3.json",
+      "evidenceFileSha256": "ad373355b5a830d06df0b3a478d1224e5a566dd2de251c5c485e3d849e87911b",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/202709/sql/query.sql",
+          "sha256": "a5c928d71f4834116c709f958ed597be69b08c7bf5f52c0dadd08f34a85ec992",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/202709/task.json",
+          "packMetadataSha256": "73865fae4845619cce6d5da1dce3edfd6dd1d31091aa7d6308d570544d78d75b",
+          "packCollectedAt": "2026-09-07T08:44:46.424Z"
+        }
+      ]
+    },
+    {
+      "taskId": "203181",
+      "taskName": "资金部权衍数据推送后执行--O32数据源",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FMS_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "counted-delivery-log",
+      "family": "counted-delivery-log",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "对参数日指定grp范围计数后写回执；回执标签、真实计数表及排除范围分开说明。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/203181/versions/b39af93a6858ffddf37bc5538b63b16da5e4d6bb0d1f2ceb8030ef25cb5b2e10.evidence-v3.json",
+      "evidenceFileSha256": "5c84a2560e0dce07069a3e0810dd137223ea2fda37c95be22d90d84ce3336a31",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/203181/sql/query.sql",
+          "sha256": "dda13fd8cd2ec7b00aebcf0a546b0a0574c974bebf05018cc9ed2b68628e344d",
+          "startLine": 1,
+          "endLine": 20,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/203181/task.json",
+          "packMetadataSha256": "be59f032af41468a4f30dd1ae871516c3326cccaf7103c18eaf8e183fc827d22",
+          "packCollectedAt": "2026-09-07T08:46:12.463Z"
+        }
+      ]
+    },
+    {
+      "taskId": "203966",
+      "taskName": "每日同步互联网客户信息到客户拓展信息表tcust_ext\n154768,194977,194978",
+      "taskCategory": "exeSql",
+      "topicName": "EM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/203966/versions/07e05c9826779786d04be30824008d590d3a5cb650c02fcca0fc14a3fb647b69.evidence-v3.json",
+      "evidenceFileSha256": "06810a50a6163b93c75abbe610528ae24c9f9393cbb171b5d73705728ec8a57b",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/203966/sql/query.sql",
+          "sha256": "d4e4a201ff5077d3261caffa6d2abb2209f1ef146944bee79a87ff54592c7fc6",
+          "startLine": 1,
+          "endLine": 235,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/203966/task.json",
+          "packMetadataSha256": "2f8d616814bf4741989683c255e69bd450a1edf04704aae2386742c2900f5e0f",
+          "packCollectedAt": "2026-09-07T08:48:19.280Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205110",
+      "taskName": "pdata_n.t03_otc_comp_perf_marg_ref的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205110/versions/3804f81dc7ad4146905e027ec00c240dcc63c00a611c6ebbc0b1fe27ee48616c.evidence-v3.json",
+      "evidenceFileSha256": "b74c9b02224492cb363effc728c8fe971d1eec0bf840b126dee12f605f4f5e1e",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205110/sql/query.sql",
+          "sha256": "09ead3c1a61d2a7815388feccef95cdc9d94cab1c41bd4f61a3f4d63436f7a41",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205110/task.json",
+          "packMetadataSha256": "e5fac117b2d5b44a0f721510fd8e48755c2e2b61ce779210c4f629b6dada6d14",
+          "packCollectedAt": "2026-09-07T10:09:55.005Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205112",
+      "taskName": "pdata_n.t03_otc_opt_comp_sett_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205112/versions/a72e822e248e32b99a0b7586f4adf440ad4f6f9e29d14f9a5dfda7e2cf81afd8.evidence-v3.json",
+      "evidenceFileSha256": "073efa4361745ceb1308664edf2389f93c534f3a16440050fe95e02dad6544ca",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205112/sql/query.sql",
+          "sha256": "e0e77d770eb68c282d74409ac724375b8f593c4c235de1dea8dbfabc087962c8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205112/task.json",
+          "packMetadataSha256": "45100c40e004388335022b084965de6c6b5415c0eeec26a1f616560407948bd7",
+          "packCollectedAt": "2026-09-07T10:09:55.027Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205114",
+      "taskName": "pdata_n.t03_otc_opt_comp_stres的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205114/versions/5233bc8ce09f20c542afc507aab2a692939f46dab5992002bd750555a43deca2.evidence-v3.json",
+      "evidenceFileSha256": "fa8d78225c22fc7472ab3e7a27e19fdc31cc26929069c31a03eca3675dc3dc9b",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205114/sql/query.sql",
+          "sha256": "0bb16c2918945c9a0648b8b6c9c4a4b8af4d3774961259935e1d8a33e5ff4f14",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205114/task.json",
+          "packMetadataSha256": "48698a6803dfb92e2ce526309dd8c1f7ab8c581cd57706d186f14c22bd2a20b5",
+          "packCollectedAt": "2026-09-07T10:09:55.048Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205120",
+      "taskName": "pdata_n.t05_otc_comp_rgst_sac_evt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205120/versions/b8e4738e22fd94049dc2757a9cbb78a132d743230c2d9d226644c5aa5e536057.evidence-v3.json",
+      "evidenceFileSha256": "f86913fe438cc9ed08c65806f784eb6aacca035ab4ab12c29b3e3de9c575d7c1",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205120/sql/query.sql",
+          "sha256": "162a5f40a095f39ab495ed4b88ac3ba2d4efbd8c16aac506cee021661c9f4148",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205120/task.json",
+          "packMetadataSha256": "1639302e98a233c7bb0057960664a0ecbd99ca583b8beeeaa4932c101c4b88ff",
+          "packCollectedAt": "2026-09-07T10:09:55.068Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205121",
+      "taskName": "pdata_n.t05_otc_recv_pymt_evt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205121/versions/aaef130437cdcbefd29c5f281732193174960ede34eb63e00fe8fb617dac2365.evidence-v3.json",
+      "evidenceFileSha256": "378b1f12560663794b69539f3c1652fa40d7735c3c1d5bfe42ab5686e9051e86",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205121/sql/query.sql",
+          "sha256": "60b28ebc1a0a261310901884dbd9a48e9ea335309cbea6f5058654030041aa05",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205121/task.json",
+          "packMetadataSha256": "a88ee6b3904237ce2f333e3a6549d7a13d5c8895843c59282057b317e598ebb3",
+          "packCollectedAt": "2026-09-07T10:09:55.094Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205143",
+      "taskName": "pdata_n.t98_otc_deri_undrl_trd_lmt_idx的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205143/versions/f2eff4eb2b2f55a87855b5dfa92b6708c9a91f6d5666bdf4c5063bec7b575826.evidence-v3.json",
+      "evidenceFileSha256": "51a9ad437baed5ac37fa62c2be1cb55425866a5587b210dc0af5f59b41ae21e2",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205143/sql/query.sql",
+          "sha256": "26a643db7fbd1099919dbf9013412f3feefa9ed5ac546b7afa216ddabb12b559",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205143/task.json",
+          "packMetadataSha256": "9cc419bce96803aa637ddcd13bb45f2f2ce90d4301ff13afa7ad5f3865cb4c53",
+          "packCollectedAt": "2026-09-07T10:09:55.118Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205145",
+      "taskName": "pdata_n.t98_otc_opt_inr_comp_pal_sum的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205145/versions/17da31e760266b093a15ef9c40180665246ff135ecef8acac8290b8bf2c9b0c6.evidence-v3.json",
+      "evidenceFileSha256": "319cc3217b7fa7231ac62fdfba89cccb71f819c92124690d4700ae12ad5427f7",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205145/sql/query.sql",
+          "sha256": "09c024c81bf48bf3766ddd9b1c8b5a83a4acab7d14797aecd94c05518aff0cf8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205145/task.json",
+          "packMetadataSha256": "865fab5b3bd64e188cd913e191ab37ff5967d1bce3de0bee5a8f771cf255ee07",
+          "packCollectedAt": "2026-09-07T10:09:55.139Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205173",
+      "taskName": "pdata_n.t03_otc_comp_perf_marg_ref的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205173/versions/c5cb977bb506c3fc0b627627cd517de87bd88d73e730c79c23e6221899b598b6.evidence-v3.json",
+      "evidenceFileSha256": "a7064301760a8287979f73150d927a9566b384beaeecc7760bc7da37bef49f90",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205173/sql/query.sql",
+          "sha256": "4d77e635557f7368eda1c6ad13e098de242ab30217256d4f3f7a1acc5507cda1",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205173/task.json",
+          "packMetadataSha256": "73e62e6fda5e6b50091ad060e7c54e43d4d3c99f22990c9d83ac573802ab0136",
+          "packCollectedAt": "2026-09-07T10:09:55.167Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205181",
+      "taskName": "pdata_n.t05_otc_comp_rgst_sac_evt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205181/versions/6fd6009b3c8616033f99ed8decfe0890833fc1ea1ec2412279bffbc303ef3a85.evidence-v3.json",
+      "evidenceFileSha256": "96bca43c8753fd8e5495bdf2c70bf84f6061e8cc1f26659a5e488e784d0bd052",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205181/sql/query.sql",
+          "sha256": "cc20ae8ae1dcccd136246626989bafa6e61a2e05bce4cc72467bfb78eb32dea6",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205181/task.json",
+          "packMetadataSha256": "2c7f399b37973b7c13b6483e77ee8378501f79700ba19583962664ac0c0b1602",
+          "packCollectedAt": "2026-09-07T10:09:55.194Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205182",
+      "taskName": "pdata_n.t05_otc_recv_pymt_evt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205182/versions/f6f751ad91d628c91ba51fae6674953db9d441ba512820930290ff4a4371e43d.evidence-v3.json",
+      "evidenceFileSha256": "cea72fcec11927bbcb13bcad28db6d359d3fba61e663fede7da347a644327afe",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205182/sql/query.sql",
+          "sha256": "50e4517c113f5114223d5d20f20a07b9f5e010606b096e5db95c53d56fc675f1",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205182/task.json",
+          "packMetadataSha256": "75d88a2595e17975f4dd834cec6793f123890b84672de143116a17ed485ba8f3",
+          "packCollectedAt": "2026-09-07T10:09:55.219Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205541",
+      "taskName": "pdata_n.t03_agt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205541/versions/3e58e73e7dc446ddf676fb827315c265b7158093caf68ddfe340dc812710c1ce.evidence-v3.json",
+      "evidenceFileSha256": "25070ade6bda1eeb4418c1751f2535190610d1fe7c5a11780b8332f4e4c59dc6",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205541/sql/query.sql",
+          "sha256": "98d38aadac2baec1b5561745bb38e09d217da7728062c18b049887f0245d63d6",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205541/task.json",
+          "packMetadataSha256": "68c2e32108902b2404fd372c525e37ce5fe6356615c34c8c0d797030c5e9d830",
+          "packCollectedAt": "2026-09-07T10:09:55.244Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205543",
+      "taskName": "pdata_n.t03_agt的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205543/versions/15635a66e1e2649ad0a0bdf9d5232dd06933339abd5907ae6746d79d0736298a.evidence-v3.json",
+      "evidenceFileSha256": "e72961e3c882518afe614a0eabe271e6beab28ed5f0fd94a9afd4031cbe8a771",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205543/sql/query.sql",
+          "sha256": "927d1129b6d641ac2c8ca4029d3750fb6d7af2d8c701c51c7ef6cee18e1d5686",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205543/task.json",
+          "packMetadataSha256": "56da9651826ba20f2f432751dda1e5854d308517a6b312c05adf7384fc5f254d",
+          "packCollectedAt": "2026-09-07T10:09:55.266Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205726",
+      "taskName": "pdata_n.t03_agt_rela_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205726/versions/c3ac8aca4f104399c4aa0cf840ab20d0b2ba6303f89bbcbf2ab73ed723590c03.evidence-v3.json",
+      "evidenceFileSha256": "51d719a0b3fa3750de567e66ed63dd80c14ed4f1d6feea04a595a2acdb19e522",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205726/sql/query.sql",
+          "sha256": "39d582f7ff251f2ae16c9c41130f18832dae5f2b19ccf092379891f00503f349",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205726/task.json",
+          "packMetadataSha256": "664f01e3e85c5d0de7fea36eef5f0ec1e8138e55c464951d52662327414d1ff3",
+          "packCollectedAt": "2026-09-07T10:09:55.285Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205727",
+      "taskName": "pdata_n.t03_agt_rela_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205727/versions/5a7b1b70b12eeeb68403fa96584d268dd6fdad5cb879e738b61cb626b17764e3.evidence-v3.json",
+      "evidenceFileSha256": "d03c9a2befb125c4eabc27b16706c5820ea1277ebbd67def7a04f0f544cb0b41",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205727/sql/query.sql",
+          "sha256": "eb46aa446e7cf0b5343b4aa60351715c6807fc6910df35e08c7f0518a494fc8d",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205727/task.json",
+          "packMetadataSha256": "9a8ac6e733da6367c9e4a5617c8a935f048f2a47787cbe25e72a01e08fcc4908",
+          "packCollectedAt": "2026-09-07T10:09:55.304Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205758",
+      "taskName": "pdata_n.t01_pty_stati_info_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205758/versions/273f2d60e1ec2b24ec70cfcc4e50e90763335d0b2a40b77708f51d86a287cf92.evidence-v3.json",
+      "evidenceFileSha256": "168f7fadd796581954f63e674e0b88f339af79b952eb24bc1869af06dffe0732",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205758/sql/query.sql",
+          "sha256": "17ac6878fcf603869c6f06af11a93177a8acb7e4893fc855239d5d61d7f57746",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205758/task.json",
+          "packMetadataSha256": "9352182623c66a6b302e4f18761b3457b7b76fdab31c52c6859153b5d7308218",
+          "packCollectedAt": "2026-09-07T10:09:55.331Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205767",
+      "taskName": "检查表数据量\n说明：脚本执行的是【hive表名】+【hive分区】拼接后的SQL，SQL结果是1，则任务成功，否则失败",
+      "taskCategory": "checkHdfsFlag",
+      "topicName": "DM_OM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205767/versions/68fa414378ea6d0bef43989d2ca9a22c063335725f402cae22f0db58fe6e7e4b.evidence-v3.json",
+      "evidenceFileSha256": "ab460991ee717875d007a94d2316372224c7b7c9854b9b1be49687f63427f860",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "205772",
+      "taskName": "pdata_n.t01_pty_cutp的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205772/versions/569103c041897cd06d6e705898d9efcc3dd0dbdeee2c8efb5868ce33cf318fe0.evidence-v3.json",
+      "evidenceFileSha256": "d8d7031d095115aaa1f851565ed5da3255f5cf2372530750121638ce33a5feab",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205772/sql/query.sql",
+          "sha256": "baff1e5b80d2f231da3a2601b19749c56132a6a221d82760c4a052b909739e74",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205772/task.json",
+          "packMetadataSha256": "8bf6f2c0a8e14116b69a9fac2af4f58c94523e7fa07dd1ac419d4972ff0faba2",
+          "packCollectedAt": "2026-09-07T10:09:55.377Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205940",
+      "taskName": "pdata_n.t03_ast_crrc_acct_bal的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205940/versions/7ba3b3709fc896debbfb696557436cfb0066c490c1618d2cb81dc78964cc986b.evidence-v3.json",
+      "evidenceFileSha256": "a1df0f0497650cc85ed89196fe3caa2dcebeba34b4c2644d0b4d838a4bd956bc",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205940/sql/query.sql",
+          "sha256": "1b5cbc71763209da58d7dc2e6db811f79be0136546ff327661c6ebff89de53ff",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205940/task.json",
+          "packMetadataSha256": "653c440b3a79da8ce67f6291aacbdd737e70ac9aec36ba7b82b6b6a360e01669",
+          "packCollectedAt": "2026-09-07T10:09:55.406Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205942",
+      "taskName": "pdata_n.t03_otc_opt_comp_obsv_date_coup_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205942/versions/7c295ead510fb376ff06951f824fea63e5eda44ce9e4f6a149da738c382cf1d0.evidence-v3.json",
+      "evidenceFileSha256": "3ffa883d6c141b2ffa559f58fba6822454a7a9922c358858bcee852273fdfe4d",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205942/sql/query.sql",
+          "sha256": "2f02e2766daefc2a49709481909d2a5739410d7e8b93c02b48a8801ba6de2d7a",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205942/task.json",
+          "packMetadataSha256": "f945d16aeb9d7b7dd4015d65332e3f4d3825fcfaf58e79acef71459374afccb7",
+          "packCollectedAt": "2026-09-07T10:09:55.431Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205956",
+      "taskName": "pdata_n.t98_otc_comp_ldg_det的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205956/versions/6bddd1dfea3165f40792274a2619fcd67006e927126eac63ec767cad7aa5116a.evidence-v3.json",
+      "evidenceFileSha256": "1b37e327338c70af5884fbfb1113a50ea2407af2f7d0742e12099ea6464049a0",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205956/sql/query.sql",
+          "sha256": "68215bedd505ba8e89392f1138513a57120c1f0b1ee962506b97f15b6ff20dbc",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205956/task.json",
+          "packMetadataSha256": "fe453ff9e93899b2865549756fc1538477e5c72fb1135930a9092d11ff37e2a7",
+          "packCollectedAt": "2026-09-07T10:09:55.457Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205957",
+      "taskName": "pdata_n.t98_otc_swap_comp_pal_sum的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205957/versions/a1fe93997cfb4f0fc6219c183fd51b786e54c89684f10167a65b55e55f245acb.evidence-v3.json",
+      "evidenceFileSha256": "9471f18ef27aabfe10064325f40584ebeed1f038f6b0b2cf14bec352173e131f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205957/sql/query.sql",
+          "sha256": "ced1ada9410eec12b80a9e48ab5f04cda9ab22844c60a3f2196379a88d117906",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205957/task.json",
+          "packMetadataSha256": "985078cf3d5ae7c5c4c55e3bef62416fbed6f5603a4551d52feba8862e591d15",
+          "packCollectedAt": "2026-09-07T10:09:55.479Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205960",
+      "taskName": "pdata_n.t01_pty_rela_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205960/versions/3461de1e4f357abf7f360c67a2135d062fafdca4eed2aa5c97787615af697d5b.evidence-v3.json",
+      "evidenceFileSha256": "656a079e38012243b1c51f74e400a0f6a826cd3b3d69799a9cd2255752ed189f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205960/sql/query.sql",
+          "sha256": "9d701015e60e3ef0f025a6f7eb4a9dc460b118a507ec11ffc3cf4c86b66cb78e",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205960/task.json",
+          "packMetadataSha256": "3a4b731188ca3d54709b51db0652cbeb4de6b47bd82975819ef967271b08bd4f",
+          "packCollectedAt": "2026-09-07T10:09:55.504Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205962",
+      "taskName": "pdata_n.t03_ast_crrc_acct_bal的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205962/versions/4cfe2dc8877e310651b11bd2054edaafd5c64fdd46d3b3653bed7d1b561033c8.evidence-v3.json",
+      "evidenceFileSha256": "cbc9bca816db574a20c457b7e69bfdc7be0399b50d7b4df70ce039487e0e6dc4",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205962/sql/query.sql",
+          "sha256": "a93f767e72062d575b45fe36e8b7d2834dbc9493ccf121be3095f0cd1f794b6d",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205962/task.json",
+          "packMetadataSha256": "f5f41b9154b19453a1aca3c395196649ee1bf3aba9fc61fc09ecd05072dae245",
+          "packCollectedAt": "2026-09-07T10:09:55.529Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205964",
+      "taskName": "pdata_n.t03_otc_opt_comp_obsv_date_coup_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205964/versions/1f7b91f42b20cc85b7a9ba9ef98ea3a51996e8bdb705c459d04c53cc3756c915.evidence-v3.json",
+      "evidenceFileSha256": "23d91cb7011e7c7e7c098eec26a8f1fd3a58d8a9fd4ed7976060325b847f64fb",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205964/sql/query.sql",
+          "sha256": "fc0a5196854891ac4b771b96ac2286d03b6c57e47e349f53b38a9064f3f339f9",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205964/task.json",
+          "packMetadataSha256": "425a99101e6e3232b36730f17eb151ebef4a83f626f2a6134a16fb63d518db44",
+          "packCollectedAt": "2026-09-07T10:09:55.553Z"
+        }
+      ]
+    },
+    {
+      "taskId": "205972",
+      "taskName": "pdata_n.t98_otc_comp_ldg_det的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/205972/versions/91549f79ccf665d370d7cdcc9340100a7b5a1dcbfdfdc394e92d53889ec68cdb.evidence-v3.json",
+      "evidenceFileSha256": "35bd40d9d0c259b863e7f54916a6ed90fefa74c2d4e593e1ea3f863044b32f82",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/205972/sql/query.sql",
+          "sha256": "8dd769bfdc73eba988b0a5839fe89b29cd924a65f3123de43782a83aec2bff68",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/205972/task.json",
+          "packMetadataSha256": "ba42a74b73a4c86b45cd4ff023eeea1d270d9bb25690eba0029c015759d72c95",
+          "packCollectedAt": "2026-09-07T10:09:55.578Z"
+        }
+      ]
+    },
+    {
+      "taskId": "206823",
+      "taskName": "dm_engin_n.conv_bond_enabl_processing_official",
+      "taskCategory": "sparkScript",
+      "topicName": "DM_ENGIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/206823/versions/a4b9f64f0ed0b4133f824bac5b07ba9c1eab07c895c3f7f50602cfbc2d8fa560.evidence-v3.json",
+      "evidenceFileSha256": "41c8d8460eeb251d4c35f7cefbfe0f776a382fdb1ac3bd15b58e207802df783e",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "206827",
+      "taskName": "前置依赖207029，后置依赖：-",
+      "taskCategory": "sparkScript",
+      "topicName": "DM_ENGIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/206827/versions/2c37754ad0eebeb27b298687066d49880254eeeb55156cf5394a4b1d1fb71047.evidence-v3.json",
+      "evidenceFileSha256": "52349e02808cbb234ae40070ecba0ca2e83c525e85fa26c6304946e01423e022",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207029",
+      "taskName": "dm_engin_n.conv_bond_enabl_model_python_official",
+      "taskCategory": "sparkScript",
+      "topicName": "DM_ENGIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207029/versions/91bdce1d1e609221011b78d3cc4694f2a79a9ac046f6ae91253c799c257c649e.evidence-v3.json",
+      "evidenceFileSha256": "ff1ae5d2ae53e337d840fc99862736fc40d1e8509e8d862fac8611a8fa1a2e64",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "208479",
+      "taskName": "risk.etl_log_dm_rsk_n_adm_v_risk_daily_bundle_margin_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208479/versions/681eaac22bddb207628f2bb1d647a4044e73694d210bf6ae4cc4b8f3218bdf42.evidence-v3.json",
+      "evidenceFileSha256": "0c96192e5831d377cc8934bd4166c793db5c6bf50fbaa8901303e74cc8089007",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "209144",
+      "taskName": "pdata_n.t03_agt_name_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/209144/versions/15374cb46c187a3155e2dc6cf531266d99b409c6f6d0c34fc94f11871a34b360.evidence-v3.json",
+      "evidenceFileSha256": "728b16897922017fde512c4e8f89f4e56220b02232d481acc1b14aa3fc899a32",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/209144/sql/query.sql",
+          "sha256": "8b4f4b84616c409688b70723b72b0af8ac1e83380a36e04695d4fa10e0df087c",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/209144/task.json",
+          "packMetadataSha256": "0ca202887d365243106a288ed64100035a6cdfb7a421fc401aaed71a2d78e5e1",
+          "packCollectedAt": "2026-09-07T10:09:58.796Z"
+        }
+      ]
+    },
+    {
+      "taskId": "209145",
+      "taskName": "pdata_n.t03_agt_pty_rela_h的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/209145/versions/7b22d98a822ded5c8dff0812452255bff60090a2e90b63e54a584ee5c4e64da1.evidence-v3.json",
+      "evidenceFileSha256": "9420d964f0c8973df7f6a87f8e0e89151caef715d4839f840f9c82fe5efe50a9",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/209145/sql/query.sql",
+          "sha256": "3b6ba6189efb750214875b925a6ac48f0fa7fffe569d1da13b6c2a1dd0f1fa04",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/209145/task.json",
+          "packMetadataSha256": "6ed92d0c9b00ea48ecf4227a99989c54025ee5db6969ef05cd951ca42ede9237",
+          "packCollectedAt": "2026-09-07T10:09:58.830Z"
+        }
+      ]
+    },
+    {
+      "taskId": "209504",
+      "taskName": "固收委衍生品部衡泰客户保证金日报A1020模块数据已拉取完毕！",
+      "taskCategory": "checkAlert",
+      "topicName": "BD_S_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/209504/versions/e327614ea01ba817dce1fe9685d43aeee6fa6f537492b5ebefb3f22723ca6334.evidence-v3.json",
+      "evidenceFileSha256": "7d60c1f8bd3c4392df39b1b7bb73d8385f1834acff9b4518e741c180d5345f08",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "54522a12baf6a4a1eef49684d193487d42467c216e4ccfc3ebebf640e6f65572",
+          "startLine": 1,
+          "endLine": 9
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "210689",
+      "taskName": "titans预付金数据报送日报_日报-邮件发送",
+      "taskCategory": "hiveEmail",
+      "topicName": "BD_S_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/210689/versions/78ea8f54ed334d0cb5adc2059215c2f29a06207928de942be264dbfffa556059.evidence-v3.json",
+      "evidenceFileSha256": "e018d0701b2fa4e88305771cedef6d1d6ab0d5ac9c898e10a808a3991c7eb258",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "211268",
+      "taskName": "pdata_news_n.t02_tit_scr_base_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/211268/versions/2b52d44ef1026241dcd4cc49859585db2f757e71a123fd4146678da196ff94f8.evidence-v3.json",
+      "evidenceFileSha256": "fb0b3d76249aed07cf160465aad7144e92acfaea0dd813ed3e589f1eec88b053",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/211268/sql/query.sql",
+          "sha256": "4aaa1749ba28dcd78fcd8ede69d58d57547c747a54000d14fcae3de6cbcdb67b",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/211268/task.json",
+          "packMetadataSha256": "9acd48b901dc260c7ca50022847ed917c050480d8487d8afda6da7648ecdb194",
+          "packCollectedAt": "2026-09-07T08:57:31.003Z"
+        }
+      ]
+    },
+    {
+      "taskId": "211424",
+      "taskName": "dm_rsk_n.otc_deri_sett_abn_montr_indx的grp01数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/211424/versions/5d7a4480e6973a8abc85901c627334a84025390c44ff05d3f74b84b9ab6d020b.evidence-v3.json",
+      "evidenceFileSha256": "8da842b07bf539c8528c9f35a0548476f1b8d9271f51cf09fed90b4f6ac167dc",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/211424/sql/query.sql",
+          "sha256": "16daea5e2cffccb2bd08b1f6282428e144297383962ebdc52b2b25cd7aa2adf5",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/211424/task.json",
+          "packMetadataSha256": "9aad38c83a0a6dfbe72784d45b9f944190bbbe6fa2b1bf129b6d7a34a7b9d4b6",
+          "packCollectedAt": "2026-09-07T08:57:31.289Z"
+        }
+      ]
+    },
+    {
+      "taskId": "212278",
+      "taskName": "hiveEmail.bene_owner_hold_prop_excd_pct3_day",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_OTC_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/212278/versions/2e04f5364e209133be1681be8bd9dd9099808e615e961f473e7d9daf0c03652f.evidence-v3.json",
+      "evidenceFileSha256": "28f410e903517955f1a58ea24e1f15d999a6eafd401481dc24b6ca6faa074343",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "214118",
+      "taskName": "财务金融工具核算系统行情推送打标213139",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214118/versions/6e04a3af0c402144dbdbe2b1c2a1e35c5301244e176ee598456c1f30dd86fe26.evidence-v3.json",
+      "evidenceFileSha256": "e16f2a474f2f101ea669a70cc5e1ce565dd974d83510509ca1f7ed6a86376505",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/214118/sql/query.sql",
+          "sha256": "8fdcc90c54be758cb2085ae7a4c0ec407d3bd9d4b66e7f606f001fba530fb9e8",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/214118/task.json",
+          "packMetadataSha256": "c114a63b1c72563028cc15aacb8489d0af9e5a32341a7645f8e32fb83ddb2c19",
+          "packCollectedAt": "2026-09-07T08:59:41.440Z"
+        }
+      ]
+    },
+    {
+      "taskId": "214126",
+      "taskName": "财务金融工具核算系统信息推送打标183925",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214126/versions/9c50f6f486a114a5586e12e6efcba0551f68a2e7d7c046cd02db5939fc928d2c.evidence-v3.json",
+      "evidenceFileSha256": "2cf1a367cd4fad1a23e8b5d96eeff54c31ed7ce5b3f4882fd0e85401d24b9433",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/214126/sql/query.sql",
+          "sha256": "dce2e9e0d394ba0f9455c5730f51c706a2b417a818cad2ac2ce7593e7dc4ffce",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/214126/task.json",
+          "packMetadataSha256": "6c0c9163dacb18f7e731b2e41a1e79ce2a44ecde991917eecc8d4ae43fd3b076",
+          "packCollectedAt": "2026-09-07T08:59:41.483Z"
+        }
+      ]
+    },
+    {
+      "taskId": "214134",
+      "taskName": "财务金融工具核算系统交易数据推送打标",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/214134/versions/729bb365b55025bbc9ba0a4065a59e266fcc20f9b6b9aad0224f9582796bf426.evidence-v3.json",
+      "evidenceFileSha256": "aff698f8670117871512fcd698e4f8641e8fac99c454f3b250cf91aba419a561",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/214134/sql/query.sql",
+          "sha256": "8c304452a3db9d412013c85e3bc5be7d9ac950aaeb21962e916013034e24531d",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/214134/task.json",
+          "packMetadataSha256": "918640c0f7aea2655914459a9fc1ff4f34dd63360983950d9347336394a2a968",
+          "packCollectedAt": "2026-09-07T08:59:41.499Z"
+        }
+      ]
+    },
+    {
+      "taskId": "223756",
+      "taskName": "dm_rsk_n.trd_otc_deri_fnd_acct_bal_day 的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/223756/versions/fa984981cfc3236e45b0db080a79789cfa351af4132a265fae2df7b2fdefde80.evidence-v3.json",
+      "evidenceFileSha256": "b3d4b008910f6f1b0880d24f42bb04a2303b0812896d111dcf1232dcb14c9f6d",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/223756/sql/query.sql",
+          "sha256": "c38ebf9d3e1244ee14820058dcadc7b7c434de085215cfb687f65db0d5d74ef3",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/223756/task.json",
+          "packMetadataSha256": "dcd0f87b9205073afdf6d0a5926c3ecef6b84294ee0361f51a4b72eb0f44e0e3",
+          "packCollectedAt": "2026-09-07T08:59:49.162Z"
+        }
+      ]
+    },
+    {
+      "taskId": "223985",
+      "taskName": "alert.TITANS_TRADEFLOW.TRANS_SMT_ATP_T_REPORT",
+      "taskCategory": "checkAlert",
+      "topicName": "DM_OTC_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "calls-and-checks",
+      "family": "calls-and-checks",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "说明实际过程调用、状态更新、存在性检查或常量查询边界。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/223985/versions/9c7a33bd65a69b2756d91e0ff9dd72afb8b13798b31626b7977d8c51fb350a87.evidence-v3.json",
+      "evidenceFileSha256": "403b65cc7c6403b813afa0c150c38da2bad1c1acddf363eaf11962e11772cbdb",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "7cb54edf7dc2690944fb28f6fb799443d21b887ac0bba90aaa5fb9ce7d2e4404",
+          "startLine": 1,
+          "endLine": 1
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "224938",
+      "taskName": "财务打标-场外互换信息",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/224938/versions/bc0a7738f78af6a8f052fb6359cf0fce58d6ce9141ae7c425a235b3377a8ef16.evidence-v3.json",
+      "evidenceFileSha256": "252027470f394653da97aa12570fa060001fece749b5d5b344606bee1e173412",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/224938/sql/query.sql",
+          "sha256": "d9b553f8314d47290d5c2cc4c69cb8ce57b259babed336b703317dec5e4ec5d9",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/224938/task.json",
+          "packMetadataSha256": "2d4af3eeee97609eac9d8ab8c224bab2a1da83749cb0dd31437175d2871f99ac",
+          "packCollectedAt": "2026-09-07T09:00:49.122Z"
+        }
+      ]
+    },
+    {
+      "taskId": "225247",
+      "taskName": "财务打标-期权行情",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225247/versions/dec377c14afe532242e2ccf773fc9bda82264872014152a667b1386b6d304a86.evidence-v3.json",
+      "evidenceFileSha256": "6620b4d9db09332ade93b97c0bba18b8c90801b3373635c1573f25567bc60cc2",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/225247/sql/query.sql",
+          "sha256": "0f124ccc1d8ebbe1877214c68c24098c2ccc95cf5b34cba425bd6ecfd6c940a7",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/225247/task.json",
+          "packMetadataSha256": "8fb26be11119046a83274110de5c04e182c9727947963f9dc43f8abfd8bacc90",
+          "packCollectedAt": "2026-09-07T09:00:50.673Z"
+        }
+      ]
+    },
+    {
+      "taskId": "225621",
+      "taskName": "财务打标-场外期权",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225621/versions/3b2e70f911b597e697efb8b79e97018cc3f0ed725c7a0d8a60d6841a6e2d09ed.evidence-v3.json",
+      "evidenceFileSha256": "8d0cde3708d68a13a69592734a81e391fc898c9d0da4d7fb09bd7bb388af41ae",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/225621/sql/query.sql",
+          "sha256": "da5d4a98c9812f57dfeda5ab9f871fe57899a5a0dd3eb21fea0864b2152ceafa",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/225621/task.json",
+          "packMetadataSha256": "e643f56c4988d605e9da8b1fe7875eb301f131f016e33c95a76de7e73f7b0e67",
+          "packCollectedAt": "2026-09-07T09:00:53.755Z"
+        }
+      ]
+    },
+    {
+      "taskId": "225623",
+      "taskName": "财务打标-场外期权-香港",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225623/versions/0afb7f968d02bd66922fa2245f1eb2c6c3aad26939c16292360fc6ab98f720ac.evidence-v3.json",
+      "evidenceFileSha256": "bf3ab282b67152eb43d2a862497bea51342be3c8bc8664269575ecf5af8a813e",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/225623/sql/query.sql",
+          "sha256": "6ddc4cea1eb7f337b7aa315712589280fcecf80d3aa6df36069febb6240b77ff",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/225623/task.json",
+          "packMetadataSha256": "d7b9e78f5e13fae9cb0ceecb7e7dfac30bb438ddb958c6c0a287575e63e7ca9c",
+          "packCollectedAt": "2026-09-07T09:00:53.773Z"
+        }
+      ]
+    },
+    {
+      "taskId": "225625",
+      "taskName": "财务打标-场外互换-香港",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225625/versions/2e515455d7ce2132b8eddb1b522b02d497afe570dc05c66396f6c97796d3ba95.evidence-v3.json",
+      "evidenceFileSha256": "c9787619e2a4e523a06ddf73ddfc4113f3c9b244861e5ed2d4f5897e84ff7b43",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/225625/sql/query.sql",
+          "sha256": "f3df583c9aff43003d0d22c73d6a93862142fda0e71b499e86f491c872fbc9e3",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/225625/task.json",
+          "packMetadataSha256": "005ceb7e252f82185df0567831e934def92a6b3f1dd6fdd3b34b044f21a77579",
+          "packCollectedAt": "2026-09-07T09:00:53.793Z"
+        }
+      ]
+    },
+    {
+      "taskId": "225628",
+      "taskName": "财务打标-票据交易流水信息-香港",
+      "taskCategory": "exeSql",
+      "topicName": "DM_FIN_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "finance-completion-markers",
+      "family": "finance-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "按接口类别或业务分组写入COMPLETED常量及标记时间；相关表名为登记字符串。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/225628/versions/0387737f1f8b9a91608fc845f5e2b2d90a27b806d98753bc991f0fa832e28731.evidence-v3.json",
+      "evidenceFileSha256": "0cf042f4c3c189313f723ad23f09aead3afd413e5e98aebe2c86f211ba5d1d1f",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/225628/sql/query.sql",
+          "sha256": "10fa0adff087fe566fd4e0baf42c80d360608166ed6c592bd7a7d00f25879576",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/225628/task.json",
+          "packMetadataSha256": "9e6f98797aade7227a60f8d1b1ee31f04d85320be519dbb4ae52bd24a2dc434c",
+          "packCollectedAt": "2026-09-07T09:00:53.814Z"
+        }
+      ]
+    },
+    {
+      "taskId": "227142",
+      "taskName": "pdata_news_n.t02_opt_ost_qtf_sstv_indx_tit_TIT_pos_qg_clearing_greeks的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/227142/versions/a382b15d360a70bba159f5a7f080dde699a9a23ca32da05102c08bbe43422dc8.evidence-v3.json",
+      "evidenceFileSha256": "f5d8621d2ca49786aa8489d6cc690569ba158322b91a78889f9b7183885c68c5",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/227142/sql/query.sql",
+          "sha256": "e31e582c1bb339045edcbdde24af6c81f49322a0b1c19b15b78cc682f892f7fb",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/227142/task.json",
+          "packMetadataSha256": "d6bd0b77e6e398501e15389b11d9b486b4732ed834609781c6a9ec698dca75cf",
+          "packCollectedAt": "2026-09-07T09:02:43.938Z"
+        }
+      ]
+    },
+    {
+      "taskId": "227450",
+      "taskName": "dm_rsk_n.otc_opt_sub_trd_info的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/227450/versions/b25f6eece61225db2c69ec9fca4173cd9b97c918f9f905c21cad9b459dcf7ddb.evidence-v3.json",
+      "evidenceFileSha256": "66ca8e5fe21272c0f52ca059df5f300b871c197a23626822675c8f50701eebd9",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/227450/sql/query.sql",
+          "sha256": "c904a83913c446396a4f0e7eb60d12d8284e6286ae85bab54443a3f904bf3a7c",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/227450/task.json",
+          "packMetadataSha256": "63b092a160a7addc8b76bb47a5c3fb0ad38bdd4381287242145eca60de46fd71",
+          "packCollectedAt": "2026-09-07T09:02:46.931Z"
+        }
+      ]
+    },
+    {
+      "taskId": "229291",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_counter_party_tit_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229291/versions/71d337901e219290563cc84f520cfbc8e4fd5d8829875c6012cda08c16cc1263.evidence-v3.json",
+      "evidenceFileSha256": "6d9be103406df949c078df9303c94bd3b942c5771b3f563f7c3f910854b9b7f5",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229403",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_qis_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229403/versions/4b5d1e10c61d5bfaca929d42b85f054f3f9531b62a1dd8169a4805c433e54a1e.evidence-v3.json",
+      "evidenceFileSha256": "c1e3e8139e5ac4a4537d03925898262c4d70c9a2dc8587167b989b2dfebbdcca",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229409",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_curve_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229409/versions/2e74c0cd9897efe3fbab3518c8a1d2e672f762535ea53351721f4d8c79edb033.evidence-v3.json",
+      "evidenceFileSha256": "f5ddc1999cf7c80effbd97e7adc6fbb4f2658b324aaa2e893a6a94c25bde034f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229413",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_plreport_tit_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229413/versions/bb660a7bcd8148d733d3611bc0a7b1f0c4b3aea391d2d904788572602f9d35bf.evidence-v3.json",
+      "evidenceFileSha256": "dfef2faa348bcccc4642de2595c0936f9cfc45a01913c5001c4057725b94ce78",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229419",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_margin_account_for_risk_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229419/versions/41c265b68dbdeff562bbb0cb8c18948693889ef977ae54b6386faa0510412537.evidence-v3.json",
+      "evidenceFileSha256": "f3682710123a5099f635463ff8099cb7d847d7a48763bade2d66199a199526b1",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229424",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_option_autocall_ki_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229424/versions/fa825a9c87b72ba660fa5cb431de2d9e53f85263e0c543f90e916c897cab05b7.evidence-v3.json",
+      "evidenceFileSha256": "baff4853f3b2680c4fbf0715e9316f4fff256c014f851d9d145c49e255389a9c",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229435",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_ins_option_info_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229435/versions/7027a79ca12caf337048fed4b889969fd6d8724a14bb8814bdfd2287819cc903.evidence-v3.json",
+      "evidenceFileSha256": "3b805ba680a92d78f542f15dc450c431bc900cb2d93c1f3931e64adcb571c515",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229437",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_cross_metric_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229437/versions/3f258a1269aa270b8418f243abc3179d5b90078cbecf091d299d3ec07400f6e0.evidence-v3.json",
+      "evidenceFileSha256": "cd50a99e1c561eeadcce6b71fbea0cef3fa526585409e376e88f3f082b8f735c",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229439",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_part_metric_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229439/versions/8b5646b72fc7ea8231b5b5cdbae1bee28585ae8142f5ad9a2430b16496be2b53.evidence-v3.json",
+      "evidenceFileSha256": "03cb7094c74bac8f912839d2b64c2a07bd122e00491117ba44a299184d953143",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229441",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_rm_bundlereport_tit_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229441/versions/aefa4a0c7adc0d903f25726ec35ee0f91791259118752400989ef62f4f119387.evidence-v3.json",
+      "evidenceFileSha256": "2ed11c9eca47fded20f1192246022275a2cecd61517aa97a56e1a4250e9f4aa7",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229444",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_op_deal_autocall_kodate_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229444/versions/da72ff693148c295fd2e7a9a2d9951f6763f437847fc8bd7fe5d6e64a891f4a4.evidence-v3.json",
+      "evidenceFileSha256": "3cebb8635062340dad143b7934bab83635229b7d753899757e50d8f405fb192d",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229476",
+      "taskName": "risk.etl_log_odata_n_tit_d_pos_eod_calc_metrics_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229476/versions/bb93ed15e3178bfb6208f1a1f0c33f34141a9cd8346684e3652f45f02b4a8b1b.evidence-v3.json",
+      "evidenceFileSha256": "df4aa51080cbd0bf58669db4fad807e5e6a0239c08ed09a15ca4f9b1f0080cab",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229477",
+      "taskName": "risk.etl_log_odata_n_tit_d_capital_acct_daily_balance_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229477/versions/df80d8a84c8641c84fd82651b3f8a2981663dcd26b31dad6c0d531c3f3e50d61.evidence-v3.json",
+      "evidenceFileSha256": "ba8e79f28de84c4b4179ea81d9cdf4868f375a46200898c5838645c4c7c26555",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229488",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_otc_option_deal_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229488/versions/d4a8d9f9e48383cc0d6d8ab87ea3cccc156e7c005ab85e7c2cd711e716a2d361.evidence-v3.json",
+      "evidenceFileSha256": "280b81d43270d6796d7255f68787795ce629174d81e528f6e9a56b9fb5203326",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229489",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_option_deal_structure_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229489/versions/059c465fd7c4c33200d21055270077e92ca2125283c89acb08d8d38fb00995a4.evidence-v3.json",
+      "evidenceFileSha256": "9a8aec40e523e134509f5a0292dc32e420b2e4e25367d112269c8d17b925a997",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229490",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_instrument_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229490/versions/2bd1b188c326d2a5139294d195c09d2f77689b2f84e657d9e46bfbc2cabda0a7.evidence-v3.json",
+      "evidenceFileSha256": "f1a69319b61cb47c0a5946653d322e9d0a8878c180d867245ad4d362dfab4c65",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229491",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_book_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229491/versions/34491b7a49de6929828d2eb291fbec9461e8f037b436d7bb054069e2a0388e76.evidence-v3.json",
+      "evidenceFileSha256": "026e1d035e242d9306c02efe87bf5fe89faffc0a71d708ea08c125d2d83f7df0",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229509",
+      "taskName": "risk.etl_log_odata_n_tit_otc_o_option_parameter_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229509/versions/e3d8a296f5491a1294d1a1261887d895e2c072fbe2d5126fb60730006d6859e2.evidence-v3.json",
+      "evidenceFileSha256": "2728793139ebafa0b182f8f923a91969c93c3ce42ea84ed90cfa9501d53f81e4",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229511",
+      "taskName": "risk.etl_log_odata_n_tit_d_trd_otc_trade_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229511/versions/ad210d5783529e131f9c0c612bedd02cbfba74f7acec21168af4bb5ad41800bc.evidence-v3.json",
+      "evidenceFileSha256": "8ac2c0f9b70038426929c2cc688dff6c63b9a7795064b5f4f543fd1d91dad757",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229512",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_plreport_contract_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229512/versions/5c2ae5470882325c6e34e60e311d9bb3e4a938a1504bdab075ae02ec59b89099.evidence-v3.json",
+      "evidenceFileSha256": "22a04747a29857c669349485d5ff2d1b9d4983247cf596b1b6f9990d4f2de021",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229549",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_instrument_code_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229549/versions/1f42211753c56b87547e437c51e7fd6997db1fbd0cfb8572a5c55ef91665ae30.evidence-v3.json",
+      "evidenceFileSha256": "c20ef792f29afa4f4aaa12a7bbc7d0bfb9befd106ea957397422aafcbea5c07f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229550",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_vol_surface_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229550/versions/7922da174da74c73cd8c0c911b63790ec915df1af6e3c93146e8d39367f87919.evidence-v3.json",
+      "evidenceFileSha256": "ae13f6e0af249be3a8df99cdc752cec616ea78616ddf976a3c843c03cb9fa374",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229559",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_otc_margin_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229559/versions/19a178068d13c592f47367ed1c36509f489f1e85d51ca9bec8d4a35938275268.evidence-v3.json",
+      "evidenceFileSha256": "3933e5edf11ee3857d2f505c453d21c33cc1e7122b395919b27eabf64cee1a86",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229561",
+      "taskName": "odata_otc.otc_o_otc_trs的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229561/versions/00a3fbe58ac422bb5c306dea3abadbad9587edf33387746f1b4b6966a212bddf.evidence-v3.json",
+      "evidenceFileSha256": "113e639c3831a6ed0c6151e3844908921c368fc8d7b88b880258a62880c98e34",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/229561/sql/query.sql",
+          "sha256": "bb2409c0f6392feb82debe28b3a282392a81820acb3edc5ef26d73c958510c9e",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/229561/task.json",
+          "packMetadataSha256": "cca3c921cfc95b1cc96ff99496ca8e664c15b80c8b6e13b9c5f20dec89e42c55",
+          "packCollectedAt": "2026-09-07T09:05:19.057Z"
+        }
+      ]
+    },
+    {
+      "taskId": "229562",
+      "taskName": "risk.etl_log_odata_n_tit_d_risk_eod_report_metric_value_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229562/versions/263221aa8ddd306148715047184deeae4821d05ce08cf62d663d82c289dd145a.evidence-v3.json",
+      "evidenceFileSha256": "a63fd74ce6411feb6f08b848e9fb2a79a8f11e5eeb76e04c96ad6bd3d6e02f1f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229575",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_correlation_daily_info_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229575/versions/ef050acd014b358e1081c212066a9d605554116a6e33badd75228545e6e23430.evidence-v3.json",
+      "evidenceFileSha256": "3ee0f2bee1da231488718d477c30393f32c03958834b8f70f0243e26f536de9a",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229576",
+      "taskName": "risk.etl_log_odata_n_tit_d_ref_wind_yield_curve_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229576/versions/7c5678c9b6db7023cf7b81a6b4505df50f9e8fe0527925b3bfa58fadc23bfeae.evidence-v3.json",
+      "evidenceFileSha256": "7b4caafdb438b7e0a164863c20b072dd73595016cac75bd724445489571fc777",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229606",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_margin_param_for_risk_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229606/versions/162275c71ea0a186c6bafdcc0cdee27acc228089abc67999777ce84d6bd22706.evidence-v3.json",
+      "evidenceFileSha256": "8eb8f7f6e8ce4a4dd4eaf1971397c8dca13724479622a0a4df58ac66437bfc4a",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229612",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_option_basket_info_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229612/versions/d85e3eb05b6d3d6f68422c41e642586e808a4656e3bd648ae7226e67305aa3eb.evidence-v3.json",
+      "evidenceFileSha256": "b00bc949ad7746a74365533e69cea7462de3ccfc48959c070e9e3fe8259b8d1f",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229636",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_margin_acct_info_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229636/versions/fba036f9044b5e8c386c14f303c64b07dbaf60cca910329d6ddab9d6d94f0c85.evidence-v3.json",
+      "evidenceFileSha256": "741e6b4e579db884a9974fc59614527c34ee5eb6a862814979d5f973453cf318",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "229637",
+      "taskName": "risk.etl_log_odata_n_tit_d_v_risk_contr_capital_mapping_kxc",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/229637/versions/aaa0b80a37f7f6d0415646389091a3806919d8a551f95d9dcc44ca63bc5efa41.evidence-v3.json",
+      "evidenceFileSha256": "7545edf867639663f757b8e876d906f0a5d3ca3f92108be306376c2aa6043f57",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "234640",
+      "taskName": "hiveEmail.otc_customer_margin_otc",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_CISP_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/234640/versions/72cd0abeba95a5960f1cef597e122b9e8b20479cc351d6f377fa42653e3004da.evidence-v3.json",
+      "evidenceFileSha256": "9623639594d897bf507a370c7eb69e1ca1e6e76b9599ea3109c26971c0e26540",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "234824",
+      "taskName": "hiveE.capital_daily_actual_balance_p_h1650",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_FII_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/234824/versions/9d29f845c71c332c3c95d7b598281cdb0ed1917144e2dc7a8bb07a28f5c6a5ba.evidence-v3.json",
+      "evidenceFileSha256": "f5ab7fa61855b9b4bd4dd3aae48b15aaca8161fbc9d5a2a3b31e1608b00e4021",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "234826",
+      "taskName": "hiveE.capital_daily_actual_balance_p_h1550",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_FII_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/234826/versions/44173c4f22f101aaaae863ec742166d874e9f220454c1819026199cd72511ab3.evidence-v3.json",
+      "evidenceFileSha256": "3cf563f0b41c46f21f6830bf45c6d563037b0c68fcee908640aaab68d13526e8",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "235569",
+      "taskName": "hiveEmail.otc_customer_margin_fii",
+      "taskCategory": "hiveEmail",
+      "topicName": "DM_CISP_TEST",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/235569/versions/4fb914c16ccbf7137a23bb0c55969a363e173e7c8411e64d8c344e90da864b69.evidence-v3.json",
+      "evidenceFileSha256": "6ce0638f55d0bc6c94342fac6c34ee52864a3435d380d83de3ba2523b11519a5",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "241339",
+      "taskName": "dm_rsk_n.marg_brch_cust_situ_mony的数据采集完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/241339/versions/9c59c591640a6adbe73f3134fd6d84fdc7f422b2bec1e66470612f6ae12ec542.evidence-v3.json",
+      "evidenceFileSha256": "d8d8eb4debe752e7d11506693b5bcaa82503a26d9ed14343b6a08b59e7011907",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/241339/sql/query.sql",
+          "sha256": "622b5265895ac7a225045eccb9d98b7168091401b33f70ae899b7235054b95a2",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/241339/task.json",
+          "packMetadataSha256": "e05a30454a37155e45bff093718c488a98ba19cbd349ec716c7147cf75dd2cff",
+          "packCollectedAt": "2026-09-07T10:10:12.644Z"
+        }
+      ]
+    },
+    {
+      "taskId": "243618",
+      "taskName": "PDATA_N.T01_PTY_RELA_H_TIT163的数据推数完成插入ETL_LOG表格",
+      "taskCategory": "exeSql",
+      "topicName": "EM_RSK_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "risk-completion-markers",
+      "family": "risk-completion-markers",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "插入参数日、声明编号与对象标签、当前时间、字面状态1；没有读取被标记对象或验证完成。",
+      "gaps": [
+        "静态SQL不证明实际运行、到达或业务验收。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/243618/versions/ef22424833ae6bfb013d729085fe2a85f4eabc69f435a11d7065dd9ea3405d3c.evidence-v3.json",
+      "evidenceFileSha256": "c5306573177333830454e8c56e288e5e4add73060383d7dc27afc7cc4126942b",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/exeSql/243618/sql/query.sql",
+          "sha256": "24965d05716080cbcdf763e46df2507841f4b446f36c08313ae5e8b2ace4eae9",
+          "startLine": 1,
+          "endLine": 1,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/exeSql/243618/task.json",
+          "packMetadataSha256": "0f5100fbc08169bd4a01db90f44b09c2e060c91bd651ec2b2cc7dadfac8f110b",
+          "packCollectedAt": "2026-09-07T10:10:13.131Z"
+        }
+      ]
+    },
+    {
+      "taskId": "243754",
+      "taskName": "106114_taskfrom_merge",
+      "taskCategory": "checkdbflag",
+      "topicName": "DM_SCRM_N",
+      "chapter": "chapters/15-delivery-and-controls.md",
+      "sectionAnchor": "script-mail-boundaries",
+      "family": "script-mail-boundaries",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。",
+      "gaps": [
+        "当前可核材料未提供处理正文、配置或过程实现。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/243754/versions/142c0750b29b98d38d151785c546e593e43eae7f68c98cd15ab17efaee7c6a6c.evidence-v3.json",
+      "evidenceFileSha256": "75a018f657ab5ab596f358d1eb7d58b0c642ad7f7ff32f8e81c43a92e1d400e3",
+      "reviewedSql": [],
+      "supplementalSql": []
+    }
+  ]
+}

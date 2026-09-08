@@ -1,0 +1,76 @@
+# 风险盈亏报表：多类明细怎样汇入结果、临时与备份对象
+
+**最后更新：2026-09-08。**
+
+`dm_rsk_n.otc_trs_risk_plreport` 整合合约、腿、持仓、估值、账簿与保证金信息，形成按来源分组的互换盈亏记录。它不是简单复制持仓表：普通互换、到期后延续、金仕达及 fast 分支各有金额和日期规则。此处重点解释整合及输出过程；源字段基本含义见[持仓、估值与盈亏](08-positions-valuation-pnl.md)。
+
+## 三张物理表对应三个加工阶段
+
+六个已核验任务的 `query` 本身都是查询，Input Pack 将输出声明为 `_temp`；`finish` 再显式写正式结果，部分任务继续写 `_bkup`。这三个写入不能混成“每个源都直接写三张表”。
+
+| 对象 | 已确认的作用与日期 |
+|---|---|
+| `otc_trs_risk_plreport_temp` | 承接主查询组装结果；分区是来源组 `grp_id` 与运行日 `busi_date`，记录内另存 `src_busi_date` |
+| `otc_trs_risk_plreport` | 从本次临时分区取近期记录，统一列名，将 `src_busi_date` 改作正式业务日分区 |
+| `otc_trs_risk_plreport_bkup` | 普通任务的后续语句复制正式表近期结果；所查 h15 任务没有这条复制语句 |
+
+```sql
+-- 159489，slot=finish，231–233 行
+src_busi_date as Busi_Date
+from dm_rsk_n.otc_trs_risk_plreport_temp
+where grp_id = '01' and busi_date = '${yyyy-MM-dd}'
+  and src_busi_date >= '${yyyy-MM-dd, -15d}';
+```
+
+随后 `finish` 351–354 行将正式表该组、业务日不早于运行日减 15 天的记录 `select *` 写入备份。SQL 说明这是近期复制，不能由 `_bkup` 名称推断它是不可变历史档案、可恢复快照，或已有完整保留策略。[R1](#证据索引)
+
+## 一行记录整合了什么
+
+普通组 01（159489）从交易及非取消互换合约出发，关联结构化腿，再将腿持仓按“腿编号＋源业务日”汇总。输出保留内部合约号、互换合约编号、估值日、账簿及标的展示信息。只有一个标的时展示证券名称与代码，多标的显示“一揽子股票”。
+
+这里不能直接声明“一个合约一天唯一一行”：同一合约可能匹配多腿、多条非结构化腿或其他多匹配记录，最终 SQL 没有统一按合约日期再次去重，DDL 也未声明唯一约束。金仕达分支还将统一互换合约编号写空，必须连同内部编号与来源组识别，不能只拿 `Swap_Comp_Agt_Id` 作通用主键。
+
+普通分支的持仓汇总本身已有具体算法：动态名义本金取 `SUM(INIT_PRICE * QUANTITY)`，结算口径取逐行四舍五入后乘初始汇率再求和；展示数量却取 `MAX(QUANTITY)`。因此，“持仓汇总”不代表每个数量字段都是求和。[R1：query 114–153、291–307](#证据索引)
+
+## 总收益、腿收益和其他收益怎样拼接
+
+普通分支将账簿日持仓按“交易产品＋账簿＋源业务日”匹配，取得总市值、总累计收益；结构化及非结构化腿估值按“腿＋账簿＋同日”分别连接，提供结构化、固定或浮动收益分项。其他已实现收益则用总已实现减去这两类腿的已实现收益，再按规定舍入。
+
+币种处理不是一个统一开关：人民币市值采用合约本币初始汇率，缺失时回退持仓初始汇率；人民币已实现、未实现及累计收益采用估值日中间价，标的币种为人民币时取 1。本年累计收益又以当前累计减去上年 12 月 31 日累计；普通分支的人民币计算把两项都按当前估值日汇率折算。源金额、年初基准和折算日期必须一起读，不能把人民币列理解为同一汇率口径。[R1：query 154–184、336–432](#证据索引)
+
+客户、账簿和保证金没有共同提供这些收益数值：客户表补名称，账簿补部门并以风险报送开关筛选普通结果，保证金表按组合与日期补余额。JOIN、过滤与金额值来源应分别记录；这些语句也没有证明“已实现收益”已经现金交收。
+
+## 日期和来源变体改变了报表含义
+
+| 分支 | 与普通组 01 不同的实现 |
+|---|---|
+| 159497／组 02 | 日历生成终止日之后的日期，持仓、估值及汇率则匹配终止日；输出日期可晚于取值日期，属于到期后延续表达，不能解读为每天重新估值 |
+| 159498／组 05 | 从 `KS_TRADE_COMFIRM_INFO` 与 `KS_TRS_EOD_POSTION` 出发，按确认记录与源业务日聚合；`UNION ALL` 区分存续期内外，两段都写组 05，汇率字段固定为 1 |
+| 188414／组 06 | fast 腿估值先按合约、账簿、日期求和；日持仓按合约、产品、账簿、日期汇总，名义本金另按合约、日期及币种对汇总，再接回主查询 |
+
+组 02 上述“终止日”在表达式中取实际结算日期，缺失时才回退合约到期日期；这两种源日期不能不加区分地称为同一业务事件。该分支也不是把终止日全部指标原样延续：当日损益置零，数量、原币与结算动态名义本金置零，本年指标在跨终止年度时另置零。取值日期冻结、日期序列延续和指标归零共同形成到期后的报告表达。[R2：query 176–186、214–240、315–317](#证据索引)
+
+fast 的结构化当日收益部分采用“当日累计减前一自然日累计”，本年收益扣减上年末累计。查询还将中间价固定为 1、本币固定为 `CNY`，若干原币列直接进入人民币／本币输出；源数据是否满足这一币种前提尚未核实，不能只根据列名认定完成了汇率折算。另一个金额语义差异是 `VAL.ACCU_TOTAL_STRUCTURE` 进入 `accu_realized_pnl_sl_base`，再写入 `Lcrrc_Stru_Leg_Accum_Rlz_Yield`：目标称累计已实现收益，源却是累计总结构化收益。现有证据只能确认该映射，需要进一步解释命名与源口径，尚不能判为代码缺陷。名义本金中间表按币种分组，接回时只用合约与日期，币种对是否唯一同样需要数据核验。[R4：query 348、finish 185；R2–R4](#证据索引)
+
+160795 与 159489、188424 与 188414 的 `query` SQL 哈希分别相同，实际读源均仍是 `PDATA_NDS` 对象；差异在于所查 h15 任务的 `finish` 不写备份。因此任务名中的 h15 不能直接证明换用了另一套物理源。底层对象如何映射到采集源、同组多任务实际执行顺序及覆盖关系，本章均未作推定。[R5、R6](#证据索引)
+
+## 当前证据的消费边界
+
+已确认的消费是“临时结果到正式结果，再到备份”的 SQL 路线；未核验最终报表页面、导出文件或真实使用者。图上高汇聚、零输出边不能证明业务闭环，也不能推翻 SQL 中可见的内部消费。
+
+字段因果应以 `bindings` 的 `statement_id、write_observation_id、target_dataset` 区分三次输出，再结合对应表达式；任务级输入输出组合只能作导航。未解析分支、`PARTIAL` 及 `DERIVED_OUTPUT` 保留边界，不能计作零贡献或补成逐字段确定来源。
+
+## 证据索引
+
+范围固定为图版本 `df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3`。六份 projection 的声明 `contentHash` 均与 batch manifest 一致，状态均为 `LEGACY_NOT_L1`。以下行号指 evidence 中对应 `sqlSources.slot` 的文本行号；`query` 与 `finish` 分别计数。
+
+| 编号／任务 | 精确证据及核验范围 |
+|---|---|
+| R1／159489 | [普通整合与三次输出](../../../sql-static-lineage-data/task-projections/tasks/159489/versions/4de7ba47e9b0797b5a9cc5b79ad4157c125651c801de6f5e27980cf13a39a873.evidence-v3.json)：query 114–235、291–305、336–441、476 行；finish 117–134、219–233、351–354 行；三个输出绑定分别指向临时、正式、备份 |
+| R2／159497 | [终止日后延续](../../../sql-static-lineage-data/task-projections/tasks/159497/versions/b2d05e202fb99bb36d062dce1d70ef5ddec4267f3be1e4e4c87f3d896d34d497.evidence-v3.json)：query 116、175、300–306、323、356、377、397、420 行，显示日期与取值日期的差别 |
+| R3／159498 | [金仕达来源变体](../../../sql-static-lineage-data/task-projections/tasks/159498/versions/b30726989b53645d5e59332157b8e1a2b937c58fde53b48a0531eb88aa5ae5c4.evidence-v3.json)：query 114–127、255–284、337、449–509 行，编号、汇率、聚合与两分支 |
+| R4／188414 | [fast 整合](../../../sql-static-lineage-data/task-projections/tasks/188414/versions/da6ceb0dad005e5cbe58639332bf0380367cbc39786e65eaec8269edddb34309.evidence-v3.json)：query 3–70、72–143、260–360、433–454 行；finish 231–233、351–354 行 |
+| R5／160795 | [普通 h15 路径](../../../sql-static-lineage-data/task-projections/tasks/160795/versions/3b47fe6db3620d4bd01d0066485949a875f975bdea0464cbc3423f84a76b1692.evidence-v3.json)：query 与 R1 相同；finish 117–233 行，仅临时到正式结果 |
+| R6／188424 | [fast h15 路径](../../../sql-static-lineage-data/task-projections/tasks/188424/versions/c78666e88002a7d3a361ce5bc48ecf55d2617ecd6c04e441deb03caee4780edb.evidence-v3.json)：query 与 R4 相同；finish 117–233 行，无备份写入 |
+
+DDL：[正式结果](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport__gfhive/ddl.sql)、[临时结果](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport_temp__gfhive/ddl.sql)、[备份对象](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport_bkup__gfhive/ddl.sql)。

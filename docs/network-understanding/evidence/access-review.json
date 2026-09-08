@@ -1,0 +1,456 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "access-and-shared-support",
+  "chapter": "chapters/13-access-and-shared-support.md",
+  "scopeTaskIds": [
+    "74272",
+    "134442",
+    "139809",
+    "139813",
+    "139814",
+    "207500",
+    "207507",
+    "207529",
+    "207571",
+    "207617",
+    "207618",
+    "208179",
+    "208180",
+    "208181",
+    "208345",
+    "208346",
+    "208717"
+  ],
+  "definition": "All 17 DM_CTMS_N tasks located. Fourteen actual SQL implementations read, including two current explicit Pack supplements. Three mail tasks remain missing-body boundaries. No runtime authorization or delivery is claimed.",
+  "tasks": [
+    {
+      "taskId": "74272",
+      "taskName": "gf_exp.ctms_pwc_psn_sys_user_roles",
+      "family": "access-export-precedence",
+      "sectionAnchor": "access-export-precedence",
+      "chapter": "topics/cross-system-user-roles.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "sys_num跨系统唯一性未证实，特殊分支仍使用旧ATP标签；实际传输目标需明确配置。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/74272/versions/6b81e5da29aff435fc135d7402bd5cfe966227d1abf45f8bb3971370ea806adc.evidence-v3.json",
+      "evidenceFileSha256": "09d62ae23eb45a3e913a8f39a699f4bf415a847564882c624426796119cea316",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 190,
+          "sha256": "a46aeefd5496939228cd057e4ec4a77734a396290fe4f02a771b6a72a7e22ab2"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "134442",
+      "taskName": "dm_ctms_n.ctms_pwc_psn_sys_user_roles",
+      "family": "cross-system-source-families",
+      "sectionAnchor": "cross-system-source-families",
+      "chapter": "topics/cross-system-user-roles.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "固定query删除临时表后再读写，当前Pack字节亦相同；平台执行顺序与运行交付尚未确认。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/134442/versions/019112bbdd72cbad054aada4e9e2d2fb99dd12d64c82b920f7b2c97c9986ed10.evidence-v3.json",
+      "evidenceFileSha256": "e292eee225d43b2a3f0e1f065a35922557bcac995902413cc3e44db9fd808aef",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "startLine": 1,
+          "endLine": 1526,
+          "sha256": "1ba37f4f6e47a3bd9c2527a52f6d2bf5153b06bbf9308da6d2e034132293456b"
+        },
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 270,
+          "sha256": "61af458c5814e7d8da449905155655b0a488ef0179df6c7f7e033fb53d8fca33"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139809",
+      "taskName": "PWC 员工所属部门变更核对，邮件发送。",
+      "family": "access-notifications-and-gaps",
+      "sectionAnchor": "access-notifications-and-gaps",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "只看到邮件任务名称，没有查询或邮件正文。",
+      "gaps": [
+        "邮件触发规则、内容与实际送达未知。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139809/versions/b2b35037cb0b58c944facd186e8929210704fb0d46d14362507f624d039befc2.evidence-v3.json",
+      "evidenceFileSha256": "2f644537a1320f91ad6094a2fbd2ad1557fd1a16a6146b40a86a4c1e40d3af20",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139813",
+      "taskName": "PWC人员状态，邮件发送",
+      "family": "access-notifications-and-gaps",
+      "sectionAnchor": "access-notifications-and-gaps",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "只看到邮件任务名称，没有查询或邮件正文。",
+      "gaps": [
+        "邮件触发规则、内容与实际送达未知。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139813/versions/d522714eb3741bf94763e9c2e481c2a7607565f38f025bf956a17a0159f933b7.evidence-v3.json",
+      "evidenceFileSha256": "1c6c1dcfad4c36a9b5904e337f036a548b1f5ed3c926c8634c66a746e177c535",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "139814",
+      "taskName": "PWC人员状态，邮件发送。",
+      "family": "access-notifications-and-gaps",
+      "sectionAnchor": "access-notifications-and-gaps",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "NO_SCRIPT_EVIDENCE",
+      "summary": "只看到邮件任务名称，没有查询或邮件正文。",
+      "gaps": [
+        "邮件触发规则、内容与实际送达未知。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/139814/versions/83b24a909965331bae3019e9f06c7aca4f74324ca01b0e8de0a6851b94345c26.evidence-v3.json",
+      "evidenceFileSha256": "f91a42657c8c43e31452889e4919695f4483ff635f4d69eed81e7296f09292c1",
+      "reviewedSql": [],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207500",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_role_list_rt",
+      "family": "tit-user-roles",
+      "sectionAnchor": "tit-user-roles",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207500/versions/cc3a62477a638b25b0a26ce3ee7990dc1a0891d2726e28e765adbdd83b4546e2.evidence-v3.json",
+      "evidenceFileSha256": "7419c67dc61fe999f681df889570ee471ed6bb1ff94e4bea37de7a95f99f8735",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 49,
+          "sha256": "b2d35797829935c30952989be08ecec44c00cf3b6cd8447ee98da3c576e86ab3"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "9175493c69f5c661c380fccdc47cc1da7256dd9972bdcc13210f0ec16a35bb57"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207507",
+      "taskName": "tidb_dm_ctms.tit_sys_user_role_list_rt",
+      "family": "tit-user-roles",
+      "sectionAnchor": "tit-user-roles",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207507/versions/26866dc76f6a5902b95452586fb526fd40eae1856aa8dd5e2070b17676ed8950.evidence-v3.json",
+      "evidenceFileSha256": "c45185c72fe3908d400e0d6038a97c0d9608ea33bc8092ee1cfc13ca236735a6",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "b233b9fb7f796a6e333991f5466fec32bd51efdf45a30a9352506a8da0a7babd"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207529",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_menu_rights_rt",
+      "family": "tit-menu-rights",
+      "sectionAnchor": "tit-menu-rights",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207529/versions/012b94307d2014ea920c8d012fba9ebd21582f59693e5950601b6f281d7e3585.evidence-v3.json",
+      "evidenceFileSha256": "1783e334e50b690cdb64b6dc067a2ab79cf6e5f68a1c09b7eba73e4ba8c50d8b",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 159,
+          "sha256": "440b02b32814ab8637becf4ea443374c4039d77a252e3f4bdbe5145636d430b4"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "426304c633f8968e39545d8d2de3c64b86755c8cc48e7a85ced861697bf2f84a"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207571",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_counterparty_rights_rt",
+      "family": "tit-counterparty-rights",
+      "sectionAnchor": "tit-counterparty-rights",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207571/versions/b5692d68babe246ea889eb1653dacb68a14757f9db322849ee3af129b1598f8d.evidence-v3.json",
+      "evidenceFileSha256": "94400f429c7fd7651ac65bcb00ad771f269e36e79801c06901bab924db47b777",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 67,
+          "sha256": "c50a7037e64bf2e62cfc4241c1a4ac0f1d85c0ffb6c204f812dad561f4cebe21"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "3762b9152ebd8fffd1e439e4f3ffe04a5d8014615ec86cb71ce1186e8f0287c9"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207617",
+      "taskName": "tidb_dm_ctms.tit_sys_user_menu_rights_rt",
+      "family": "tit-menu-rights",
+      "sectionAnchor": "tit-menu-rights",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207617/versions/0a51b2f508d5733613256387100c0bf1735aa1e4d3f1bc951904df42f13763af.evidence-v3.json",
+      "evidenceFileSha256": "42ce7dc8869c548d06fc5f02ac314c177e3c28367c99cdabda5c4a436ca073eb",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 16,
+          "sha256": "45c6bc13c854e491b140b587e6fd96a706d505f6ccd594e9052c8ae85c974ec6"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "207618",
+      "taskName": "tidb_dm_ctms.tit_sys_user_counterparty_rights_rt",
+      "family": "tit-counterparty-rights",
+      "sectionAnchor": "tit-counterparty-rights",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/207618/versions/26e89466692381bf2598e060165f656bac7485af8528b224d647a5a53d36fff0.evidence-v3.json",
+      "evidenceFileSha256": "772daa684a499420e85e710d18a4d9bcee58403504b6cbed13d9fb18a43846d6",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 7,
+          "sha256": "00477b16e71faf4048b2f9bb6712639b8f87cd6c453e33166ca2de287b69f601"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "208179",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_book_rights_rt",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208179/versions/d0d61ed08bf5da455fb164e0e69396c34b7349bb2c415acc254e9c00a78a8481.evidence-v3.json",
+      "evidenceFileSha256": "0cbdf765baeb771dfe3476d25c496a93876ed7bb91ed1dbecc3036613fe8c70b",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 61,
+          "sha256": "c1c106be78bd9fe850f7f43ae309d015709b40f2c15598012ff7aaecaf7c71be"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "2637a0bfb8791f1c9ab684eab4235d29d59cf1c06bae484ad726d2f76d466fc8"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "208180",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_pool_rights_rt",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208180/versions/6b45141906df610879c08a6c86b49def2b9a55538858266997428d25383baf44.evidence-v3.json",
+      "evidenceFileSha256": "6bea05f75aa3585a6751a8e4a3cbaee6bc1574b7e267947915d2d1a008bbeb21",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 48,
+          "sha256": "1bbc4d31139d4808dd6576fc39fef693c4d1acbf25011ac4252b51cfe247c005"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "05d9d9b7c6f178676f249c3e6b57f74e8c54c4db8f8166c6ec8cafc771883d85"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "208181",
+      "taskName": "dm_ctms_n.wt_tit_sys_user_pricing_rights_rt",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208181/versions/9bc49fdcf9c03497a7c44044ab9d9f4eb506f0530e5f9d15ac298cda9742bf98.evidence-v3.json",
+      "evidenceFileSha256": "af0daeb438a69cf14b9c342f817d28ea0c5c041eccf072ddd0df17ccd904d25d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 50,
+          "sha256": "cc0acd7b0b202787a34352aebcea217baae19999f135aebfb7ed8a1e9b3eb645"
+        },
+        {
+          "slot": "prepare",
+          "startLine": 1,
+          "endLine": 2,
+          "sha256": "0cc82856372ffe26e8b8e8211d8279600fb3396366e40c999faf8787b5c2332f"
+        }
+      ],
+      "supplementalSql": []
+    },
+    {
+      "taskId": "208345",
+      "taskName": "泰坦系统用户账簿权限 实时修数任务 ds_n_tidb_dm_ctms",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208345/versions/a890d8933e20066b5e0bd6fbe5f5cdbc6c128e24ce67070e3b53ed99153c8f1d.evidence-v3.json",
+      "evidenceFileSha256": "0448134f7e5751dec1eaa54f81176b58f65ac58e7e878c0c2303302b5ca8fa5d",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/hive2mysql/208345/sql/query.sql",
+          "sha256": "8eb497a900fb7008f1be2ad4c7910b0382f6e5495ce4cbbc6b6daa50d938bc1e",
+          "startLine": 1,
+          "endLine": 9,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/hive2mysql/208345/task.json",
+          "packMetadataSha256": "e5e7327e95d3a7b111a024d656a3694036642b4b6ea4ea4df2db070f44fe3810",
+          "packCollectedAt": "2026-09-07T10:09:58.715Z"
+        }
+      ]
+    },
+    {
+      "taskId": "208346",
+      "taskName": "泰坦系统用户标的池权限 实时修数任务 ds_n_tidb_dm_ctms",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208346/versions/72b5174243875e1a947fa20dfd00f3e296a4fe72536c312aaec8efc82469217d.evidence-v3.json",
+      "evidenceFileSha256": "ce2440134cabb89a7f82193d8c9d998190438df06a6542747bdc6f5ea1e7edbd",
+      "reviewedSql": [],
+      "supplementalSql": [
+        {
+          "slot": "query",
+          "path": "../sql-static-lineage-data/tasks/hive2mysql/208346/sql/query.sql",
+          "sha256": "45d8238bcbcde1210ecdf38a565ecbad6cb870343405cce7029c883799655c35",
+          "startLine": 1,
+          "endLine": 8,
+          "taskPackMetadataPath": "../sql-static-lineage-data/tasks/hive2mysql/208346/task.json",
+          "packMetadataSha256": "c1e3b988cbfdb774650371b129aa43f85855dd96f6946e90604507bb0cf5fb2d",
+          "packCollectedAt": "2026-09-07T10:09:58.750Z"
+        }
+      ]
+    },
+    {
+      "taskId": "208717",
+      "taskName": "tidb_dm_ctms.tit_sys_user_pricing_rights_rt",
+      "family": "tit-book-pool-pricing",
+      "sectionAnchor": "tit-book-pool-pricing",
+      "chapter": "chapters/13-access-and-shared-support.md",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已核读来源、身份映射、角色资源粒度、日期与导出差异；正文记录逐家族边界。",
+      "gaps": [
+        "实际源唯一性、运行与权限生效未用SQL结果或实机验证。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/208717/versions/38ea828c3bb8f29dec539ddf2be06c53b6e9b8eefbef64e965f311c7539646c6.evidence-v3.json",
+      "evidenceFileSha256": "a9191f57fafb34b5c3ff798eb55fba09fe2a239a3619fe8d9265f91d845271f9",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 8,
+          "sha256": "b767889f904043d263885d9c3307ceea8d5298e2161e90dbd8119e33ca4b0558"
+        }
+      ],
+      "supplementalSql": []
+    }
+  ]
+}

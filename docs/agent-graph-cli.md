@@ -83,6 +83,34 @@ compiler 1.0.5 使用既有 `config/multi-hop-terminal-table-rules.json`，把�
 
 Neo4j 查询成功返回 `schemaVersion: "1.0.0"`、`ok: true`、`command`、`graph.id/version`、`data`、`meta`。`meta.projectionGenerations` 为 0。`metrics` 使用上述本地快照合同。错误返回 `ok: false` 和 `error.code`；退出码 0 为成功、1 为查询/发布问题、2 为参数错误。
 
+## 计时 {#timing}
+
+`meta.elapsedMs` 从 `assetGraphMain()` 进入开始，到**查询结果 data 准备完成**时结算。它**不包含**：
+
+- 静态模块加载（import 依赖树）
+- 随后的 `JSON.stringify()` 与 `console.log()`
+- `finally` 中的 `driver.close()`
+
+因此它表示主函数路径（参数解析、打开连接、读取图状态、执行查询、组装 `data`）的耗时，不能写成 Neo4j 纯 Cypher 耗时，也不能与外层调用方的 wall clock 直接对比。
+
+命令分支内的动态 import 在计时范围内；改为懒加载后的值不能直接与原先静态加载版本的 `meta.elapsedMs` 比较。
+
+分层对照请在本机运行：
+
+```powershell
+npm run graph:benchmark
+```
+
+脚本同时报告同一次 CLI 调用的 `outerMs`、成功响应的 `mainMs`、退出码和状态；失败时 `mainMs` 留空，并以非零退出码结束。可加 `-- -Json` 输出 JSON。启动命令仅对本次 PowerShell 进程设置执行策略，不修改系统配置。
+
+脚本内的 `outerMs` 从 PowerShell 已开始执行后计时，不包含调用方在 shell 启动、profile 或工具排队上的可能延迟。若外层 wall 与 `outerMs` 相差很大，需要分别记录，不能未经对照归因到某一固定组件。
+
+## Agent 调用习惯
+
+- **减少重复工具往返**：合并多个已知、有界的查询（例如一次 `trace` 加一次 `processing`），而不是为同一任务连续 spawn 多次 CLI。
+- **单任务表达式核验**可以读固定版本的 `evidence-v3.json`；**跨任务 trace** 仍须走 CLI 或 `graph:serve`，因为涉及图版本、接续状态与遍历规则，不能仅用 evidence 替代。
+- **`graph:serve`** 复用 Neo4j driver；HTTP 路由为 `/api/status`、`/api/search`、`/api/fields`、`/api/task`、`/api/trace`。**没有** `/api/processing`；processing 仍用 CLI。
+
 `search`、`fields`、`detail`、`processing` 提供 `pagination.nextOffset`，非 null 时用同一查询条件继续翻页。`trace` 返回节点、边及显式 `depth`，并携带 `depthLimit`、`edgeLimit`、`stoppedBy`、`frontierNodeIds`。需要继续调查时，以返回的节点 ID 作为 `--node-id` 查询入口；达到边数上限时，可缩小到具体写入或增大 `--limit`。
 
 默认字段追溯最多 4 层、150 条边，硬上限 12 层、1,000 条边。搜索最多 100 项；加工表达式每页最多 100 项；SQL 每次最多 300 行。未知选项、缺值和越界参数会报错，不会悄悄改成全图查询。

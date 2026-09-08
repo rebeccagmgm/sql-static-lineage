@@ -1,0 +1,1 @@
+delete from gf_otc.bi_otc_cust_index where busi_date = to_date('${yyyy-MM-dd}','yyyy-MM-dd')

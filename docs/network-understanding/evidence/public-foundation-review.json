@@ -1,0 +1,2330 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "public-foundations",
+  "chapter": "topics/public-identity-and-history.md",
+  "scopeTaskIds": [
+    "31943",
+    "32003",
+    "32004",
+    "36705",
+    "36710",
+    "36711",
+    "37015",
+    "37016",
+    "37017",
+    "37018",
+    "37020",
+    "37021",
+    "37022",
+    "37058",
+    "37059",
+    "37060",
+    "37062",
+    "37063",
+    "37066",
+    "37069",
+    "128577",
+    "133052",
+    "133054",
+    "133055",
+    "142305",
+    "173967",
+    "173971",
+    "173973",
+    "177760",
+    "210337",
+    "212728",
+    "224028",
+    "242349",
+    "246739",
+    "37259"
+  ],
+  "definition": "20 FDM tasks, 14 EDW_COD tasks, and exact book consumer 37259. Scope is explicit identity, mapping, temporal-maintenance and parameter behavior described in two pages. Selected source spans preserve the evidence boundary; no full-field or runtime acceptance claim.",
+  "tasks": [
+    {
+      "taskId": "31943",
+      "taskName": "spdata.pty_name_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-party-details",
+      "family": "public-party-details",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/31943/versions/85a3132aab5beef7cc2bffe0d54ef93d61c7380d863893b0b65a8995c072e868.evidence-v3.json",
+      "evidenceFileSha256": "fd14c1693706eeecb25c2ce1261b719189b6878ce5334e6f6becd73d6b11f966",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "fbd0c85a25cac400c8c066449811818b9e98f3fd31d375495b6f6855a45fad0f",
+          "startLine": 1,
+          "endLine": 57
+        },
+        {
+          "slot": "query",
+          "sha256": "7ed97eab4b919fcecb78b518e3a7933eb2634246f5f2c235d47e81ad77439cb3",
+          "startLine": 1,
+          "endLine": 110
+        }
+      ]
+    },
+    {
+      "taskId": "32003",
+      "taskName": "spdata.pty_org",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-party-details",
+      "family": "public-party-details",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/32003/versions/ced0ec0ba6dc5528b9742e3180bff4b39e91528bec34d843ba26dde3a38943a7.evidence-v3.json",
+      "evidenceFileSha256": "d46be3113f573ed4a78ec49cd5a2dabb33d4c433409b081603203c24c8f46915",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "6b6cf967e26da38b0421693f034bc5a62800c6a05c047c6aa769cf07122525c0",
+          "startLine": 32,
+          "endLine": 32
+        },
+        {
+          "slot": "create",
+          "sha256": "6b6cf967e26da38b0421693f034bc5a62800c6a05c047c6aa769cf07122525c0",
+          "startLine": 41,
+          "endLine": 41
+        },
+        {
+          "slot": "create",
+          "sha256": "6b6cf967e26da38b0421693f034bc5a62800c6a05c047c6aa769cf07122525c0",
+          "startLine": 43,
+          "endLine": 69
+        },
+        {
+          "slot": "create",
+          "sha256": "6b6cf967e26da38b0421693f034bc5a62800c6a05c047c6aa769cf07122525c0",
+          "startLine": 73,
+          "endLine": 99
+        },
+        {
+          "slot": "query",
+          "sha256": "d00d4f08d9fa8e0a2b2f9a8d857d82dfb33a56b9d0ca710ee12c014c6b5224e6",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "d00d4f08d9fa8e0a2b2f9a8d857d82dfb33a56b9d0ca710ee12c014c6b5224e6",
+          "startLine": 16,
+          "endLine": 16
+        },
+        {
+          "slot": "query",
+          "sha256": "d00d4f08d9fa8e0a2b2f9a8d857d82dfb33a56b9d0ca710ee12c014c6b5224e6",
+          "startLine": 27,
+          "endLine": 28
+        },
+        {
+          "slot": "query",
+          "sha256": "d00d4f08d9fa8e0a2b2f9a8d857d82dfb33a56b9d0ca710ee12c014c6b5224e6",
+          "startLine": 35,
+          "endLine": 93
+        }
+      ]
+    },
+    {
+      "taskId": "32004",
+      "taskName": "spdata.pty_cutp_info",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-party-details",
+      "family": "public-party-details",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/32004/versions/e42a62e423eb4a3ac4539349e84d6b8a29150f5a04c6d26ab3b9827a1b9821d2.evidence-v3.json",
+      "evidenceFileSha256": "26bd94873e402b5008497d3322221001a77e6954c4ce47a0dbe9447d6f809698",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "f761c19b81a5fe0547a3db4308deb179d60aa86fc155301e076fe956283adeb2",
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "slot": "create",
+          "sha256": "f761c19b81a5fe0547a3db4308deb179d60aa86fc155301e076fe956283adeb2",
+          "startLine": 57,
+          "endLine": 57
+        },
+        {
+          "slot": "create",
+          "sha256": "f761c19b81a5fe0547a3db4308deb179d60aa86fc155301e076fe956283adeb2",
+          "startLine": 59,
+          "endLine": 98
+        },
+        {
+          "slot": "create",
+          "sha256": "f761c19b81a5fe0547a3db4308deb179d60aa86fc155301e076fe956283adeb2",
+          "startLine": 101,
+          "endLine": 141
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 7,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 10,
+          "endLine": 10
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 43,
+          "endLine": 44
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 51,
+          "endLine": 52
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 57,
+          "endLine": 57
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 60,
+          "endLine": 60
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 88,
+          "endLine": 88
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 92,
+          "endLine": 96
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 98,
+          "endLine": 99
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 103,
+          "endLine": 103
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 106,
+          "endLine": 106
+        },
+        {
+          "slot": "query",
+          "sha256": "87a6df5854c48c9bb61960b2aa67b43082d4e5042afd5d9d0c476709e0cab8aa",
+          "startLine": 139,
+          "endLine": 141
+        }
+      ]
+    },
+    {
+      "taskId": "36705",
+      "taskName": "spdata.acct",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-book-bridge",
+      "family": "public-book-bridge",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/36705/versions/8c38bc3427373c505077b903b3d72a936ec7d7c7b69fd54ed3ce32c7492dacd3.evidence-v3.json",
+      "evidenceFileSha256": "3af8bb8ee9b74172426e46cb0794df7a18442b3c6756274b3150cb7b32619c92",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "247827efd3ac80c3ef5bb81a749ccc48ebb54275b575fe3e64291e6716b5ff34",
+          "startLine": 23,
+          "endLine": 23
+        },
+        {
+          "slot": "create",
+          "sha256": "247827efd3ac80c3ef5bb81a749ccc48ebb54275b575fe3e64291e6716b5ff34",
+          "startLine": 32,
+          "endLine": 32
+        },
+        {
+          "slot": "create",
+          "sha256": "247827efd3ac80c3ef5bb81a749ccc48ebb54275b575fe3e64291e6716b5ff34",
+          "startLine": 34,
+          "endLine": 47
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 18,
+          "endLine": 19
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 27,
+          "endLine": 28
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 39,
+          "endLine": 39
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 44,
+          "endLine": 47
+        },
+        {
+          "slot": "query",
+          "sha256": "fdda5198bc7430c480a22100d0d29f6dca4a7397031b4fc18551bed095fb1565",
+          "startLine": 49,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "taskId": "36710",
+      "taskName": "spdata.prd_tit_idty_rela_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/36710/versions/61bdf87b7f6ca1b8f13a8f61e6a10231d82c03847403d523fbe53dd7af58cc48.evidence-v3.json",
+      "evidenceFileSha256": "e0d8dc2969a97e3971fc14075046b5cea3317e7f77583628ce2e75411f541b14",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "f6c967038a9ad59cd42ec907f316418251976698363063e59609fd531f90e60e",
+          "startLine": 19,
+          "endLine": 19
+        },
+        {
+          "slot": "create",
+          "sha256": "f6c967038a9ad59cd42ec907f316418251976698363063e59609fd531f90e60e",
+          "startLine": 28,
+          "endLine": 28
+        },
+        {
+          "slot": "create",
+          "sha256": "f6c967038a9ad59cd42ec907f316418251976698363063e59609fd531f90e60e",
+          "startLine": 30,
+          "endLine": 38
+        },
+        {
+          "slot": "create",
+          "sha256": "f6c967038a9ad59cd42ec907f316418251976698363063e59609fd531f90e60e",
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "slot": "create",
+          "sha256": "f6c967038a9ad59cd42ec907f316418251976698363063e59609fd531f90e60e",
+          "startLine": 52,
+          "endLine": 65
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 14,
+          "endLine": 16
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 18,
+          "endLine": 18
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 25,
+          "endLine": 25
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 30,
+          "endLine": 30
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 38,
+          "endLine": 39
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 51,
+          "endLine": 53
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 55,
+          "endLine": 55
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 67,
+          "endLine": 67
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 69,
+          "endLine": 69
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 76,
+          "endLine": 76
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 80,
+          "endLine": 81
+        },
+        {
+          "slot": "query",
+          "sha256": "335349f31dfa0d6690965ed88b1402bd87cc26b07b95031dd0b7364fc19a1039",
+          "startLine": 83,
+          "endLine": 95
+        }
+      ]
+    },
+    {
+      "taskId": "36711",
+      "taskName": "spdata.prd_tit_base_info",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/36711/versions/b976a480f1dc867f64ae19ece9a04e7dc76fdffa93dbf995e4d9c5bfee33e95b.evidence-v3.json",
+      "evidenceFileSha256": "80a7dc932dd558a3ba18bea4588a6fbd9ad1a0b972c1d7dceaf59a4aa7031bd3",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "29833b408308d02e8e0e780f2b103fbcae15b539efebb98c80e389fd7b01a30d",
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "slot": "create",
+          "sha256": "29833b408308d02e8e0e780f2b103fbcae15b539efebb98c80e389fd7b01a30d",
+          "startLine": 36,
+          "endLine": 36
+        },
+        {
+          "slot": "create",
+          "sha256": "29833b408308d02e8e0e780f2b103fbcae15b539efebb98c80e389fd7b01a30d",
+          "startLine": 38,
+          "endLine": 58
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 22,
+          "endLine": 22
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 29,
+          "endLine": 30
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 44,
+          "endLine": 44
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 50,
+          "endLine": 53
+        },
+        {
+          "slot": "query",
+          "sha256": "3e537376b356617cff26f805a5c7725102f51c0a157ecb4b22d38dfb2e1f00e8",
+          "startLine": 55,
+          "endLine": 77
+        }
+      ]
+    },
+    {
+      "taskId": "37015",
+      "taskName": "spdata.acct_tit_book",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-book-bridge",
+      "family": "public-book-bridge",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37015/versions/c9c080a28b2627c817b7ce2431835a6d3d3f4af6d6ba935b8ff8fb60e0d949ae.evidence-v3.json",
+      "evidenceFileSha256": "3c35004f98bbf2fd7052cf5dff6814a85df17c3bddb7cf5b006c610dbbbf4b4d",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "52e897573f3e80bff03c9891e0fe35166a469a3dcca05fed064e90108b79f8df",
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "slot": "create",
+          "sha256": "52e897573f3e80bff03c9891e0fe35166a469a3dcca05fed064e90108b79f8df",
+          "startLine": 10,
+          "endLine": 25
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 6,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 25,
+          "endLine": 26
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 34,
+          "endLine": 35
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 48,
+          "endLine": 48
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 53,
+          "endLine": 56
+        },
+        {
+          "slot": "query",
+          "sha256": "6deed6c56a03169fea08b36b7b45e56b9b6bdaebdce140879947b53df0d67839",
+          "startLine": 58,
+          "endLine": 78
+        }
+      ]
+    },
+    {
+      "taskId": "37016",
+      "taskName": "spdata.evt_tit_otc_opt_trd",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-daily-results",
+      "family": "public-daily-results",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37016/versions/36e2d03a065444f13a2003398eec37b8ce892f9a1987b7c826a18416a90a8f58.evidence-v3.json",
+      "evidenceFileSha256": "f89940b2df618bffc310e473f36c5471fb7fdf894e5af0bbd5efc83cfed968b7",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "0fc83497565ca777a545fcf3f01d76b1bce8c4894215d5d47706fed7f75afaf5",
+          "startLine": 6,
+          "endLine": 25
+        }
+      ]
+    },
+    {
+      "taskId": "37017",
+      "taskName": "spdata.agt_stat_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-history-semantics",
+      "family": "public-history-semantics",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37017/versions/55e67400a90c0aca23e449f57af799b6bf53550c43ed9fc144a16f2e00ae7eff.evidence-v3.json",
+      "evidenceFileSha256": "e48adb4b5a3c474248edbdeda14808bbd1cb52ab910315b69436c10bec4be236",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 10,
+          "endLine": 16
+        },
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 30,
+          "endLine": 33
+        },
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 35,
+          "endLine": 35
+        },
+        {
+          "slot": "create",
+          "sha256": "0e1880a23d1f5030f40e636bea54e1a4a7eec10026d4bfd54c2d4a33ba9aca6f",
+          "startLine": 37,
+          "endLine": 42
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 6,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 17,
+          "endLine": 19
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 21,
+          "endLine": 21
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 31,
+          "endLine": 32
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 40,
+          "endLine": 41
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 51,
+          "endLine": 53
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 55,
+          "endLine": 55
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 65,
+          "endLine": 65
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 67,
+          "endLine": 67
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 72,
+          "endLine": 72
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 76,
+          "endLine": 77
+        },
+        {
+          "slot": "query",
+          "sha256": "9b36569f7958abd64708060f7800666d37541ee2abc5c2d8cf902b563ffc9947",
+          "startLine": 79,
+          "endLine": 89
+        }
+      ]
+    },
+    {
+      "taskId": "37018",
+      "taskName": "spdata.agt_otc_opt_subor_attr_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-history-semantics",
+      "family": "public-history-semantics",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37018/versions/63e6ac3532b8675149f0790067709bb52ae868d7372d49f60af86e0a966659e0.evidence-v3.json",
+      "evidenceFileSha256": "ccc58dba43ccb0227268a34fe9b6e92594cef3278ba01304ed8666d6dfc3ef15",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 10,
+          "endLine": 17
+        },
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 31,
+          "endLine": 34
+        },
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 36,
+          "endLine": 36
+        },
+        {
+          "slot": "create",
+          "sha256": "cc0dc2f35bde85b04aeca53af5781fbd3943a83396b2721aa34fcbdd66334ff5",
+          "startLine": 38,
+          "endLine": 44
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 6,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 18,
+          "endLine": 20
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 22,
+          "endLine": 22
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 28,
+          "endLine": 28
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 33,
+          "endLine": 34
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 42,
+          "endLine": 43
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 54,
+          "endLine": 56
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 58,
+          "endLine": 58
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 69,
+          "endLine": 69
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 71,
+          "endLine": 71
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 77,
+          "endLine": 77
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 81,
+          "endLine": 82
+        },
+        {
+          "slot": "query",
+          "sha256": "38dd43f4874c5f418390c704a8d34849ce6b22b9c624f70baf1b6adafc7b5a41",
+          "startLine": 84,
+          "endLine": 95
+        }
+      ]
+    },
+    {
+      "taskId": "37020",
+      "taskName": "spdata.org_user_role_rela_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-user-and-source-labels",
+      "family": "public-user-and-source-labels",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37020/versions/4e44ac2c35ec87491cd82907f4b415b97f07f0e6af2cfaba907a3ee9462f2745.evidence-v3.json",
+      "evidenceFileSha256": "d13c0b31128fc0daae0788ba6d627ab1e4ea9248a724c175e54b929a1000762c",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "826f72293311e150ffa952b947787af599e714be0eb3e4ce38fedd469b1b2dd6",
+          "startLine": 8,
+          "endLine": 8
+        },
+        {
+          "slot": "create",
+          "sha256": "826f72293311e150ffa952b947787af599e714be0eb3e4ce38fedd469b1b2dd6",
+          "startLine": 10,
+          "endLine": 16
+        },
+        {
+          "slot": "create",
+          "sha256": "826f72293311e150ffa952b947787af599e714be0eb3e4ce38fedd469b1b2dd6",
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "slot": "create",
+          "sha256": "826f72293311e150ffa952b947787af599e714be0eb3e4ce38fedd469b1b2dd6",
+          "startLine": 30,
+          "endLine": 31
+        },
+        {
+          "slot": "create",
+          "sha256": "826f72293311e150ffa952b947787af599e714be0eb3e4ce38fedd469b1b2dd6",
+          "startLine": 33,
+          "endLine": 38
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 6,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 17,
+          "endLine": 19
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 21,
+          "endLine": 21
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 31,
+          "endLine": 32
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 40,
+          "endLine": 41
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 51,
+          "endLine": 53
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 55,
+          "endLine": 55
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 65,
+          "endLine": 65
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 67,
+          "endLine": 67
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 72,
+          "endLine": 72
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 76,
+          "endLine": 77
+        },
+        {
+          "slot": "query",
+          "sha256": "9d0d3b4b5defdec7a69fb744b93faa449c13c23c6a4b35e072d22233fbeeb7e6",
+          "startLine": 79,
+          "endLine": 89
+        }
+      ]
+    },
+    {
+      "taskId": "37021",
+      "taskName": "spdata.sum_agt_otc_opt_day_idx",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-daily-results",
+      "family": "public-daily-results",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37021/versions/9551b65fdc5a27b86573583498b0027fe98f0f84a63d4e59b299a66a0532e7bf.evidence-v3.json",
+      "evidenceFileSha256": "780ca4d5d0c33f6125d2bec7bdc283277b1e707786ff2c51cd4ac8d71fec327f",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "bb0186f5e9021b94c402e60444e7462705e4e7ed0c5c739422c9a86a1d2f52b1",
+          "startLine": 6,
+          "endLine": 41
+        }
+      ]
+    },
+    {
+      "taskId": "37022",
+      "taskName": "spdata.prd_tit_mkt_quote_info",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37022/versions/d875c91bda46db7b732ce211ba8f6d61802600d15b197b134e5af8e79147477e.evidence-v3.json",
+      "evidenceFileSha256": "12a5d2dd60f1deced33ff6cb5510b977b9fa08050bfc2b75e73935316b917b97",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "073204b2b759cea24a125e36e358a0199a91fd560946d9435d324ee84a2ba98c",
+          "startLine": 6,
+          "endLine": 32
+        }
+      ]
+    },
+    {
+      "taskId": "37058",
+      "taskName": "spdata.prd_tit_name_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37058/versions/ce330642d4f3debcc565e6db28059d155b71614f2322d536d4a3790287b45710.evidence-v3.json",
+      "evidenceFileSha256": "e1d115ba134de6870cdfe7445b5bb3c9f3f2ad8eb96b85b525bc7403465de749",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 21,
+          "endLine": 21
+        },
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 30,
+          "endLine": 30
+        },
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 32,
+          "endLine": 45
+        },
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 54,
+          "endLine": 54
+        },
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 58,
+          "endLine": 64
+        },
+        {
+          "slot": "create",
+          "sha256": "126d5655284e7e7d1867e084114de13d2786bff11b6740515b3a091e685eebf4",
+          "startLine": 66,
+          "endLine": 69
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 15,
+          "endLine": 17
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 19,
+          "endLine": 19
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 32,
+          "endLine": 33
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 40,
+          "endLine": 41
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 54,
+          "endLine": 55
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 57,
+          "endLine": 57
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 70,
+          "endLine": 70
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 72,
+          "endLine": 85
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 87,
+          "endLine": 87
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 95,
+          "endLine": 95
+        },
+        {
+          "slot": "query",
+          "sha256": "f8ab4cf8b07594257411b7217e81b6c7a3253863a9987ba485fcf0e157cba389",
+          "startLine": 99,
+          "endLine": 100
+        }
+      ]
+    },
+    {
+      "taskId": "37059",
+      "taskName": "spdata.prd_tit_imp_date_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37059/versions/561fcd499f95675eb64884b42aae3c995cb7c8c11f3c9646111663b04f6d7c9f.evidence-v3.json",
+      "evidenceFileSha256": "7e2191f7776c99f75a9f79f8be7025537b2741540716a808bdffe57f031a793d",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 20,
+          "endLine": 20
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 29,
+          "endLine": 29
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 31,
+          "endLine": 42
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 45,
+          "endLine": 56
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 66,
+          "endLine": 66
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 70,
+          "endLine": 74
+        },
+        {
+          "slot": "create",
+          "sha256": "f6f0b4b0efd6f7479a697b90abb2a1d982c22677237f9d75560a8f8a71ed776f",
+          "startLine": 76,
+          "endLine": 80
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 14,
+          "endLine": 16
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 18,
+          "endLine": 18
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 25,
+          "endLine": 25
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 30,
+          "endLine": 31
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 38,
+          "endLine": 39
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 51,
+          "endLine": 52
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 54,
+          "endLine": 54
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 66,
+          "endLine": 66
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 68,
+          "endLine": 80
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 82,
+          "endLine": 82
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 89,
+          "endLine": 89
+        },
+        {
+          "slot": "query",
+          "sha256": "826ba12e196d4d30006b34113ad44356affb185d388d22e3f5fe7ada2dc6162e",
+          "startLine": 93,
+          "endLine": 94
+        }
+      ]
+    },
+    {
+      "taskId": "37060",
+      "taskName": "spdata.prd_tit_futr_info",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-product-references",
+      "family": "public-product-references",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37060/versions/675c02c8e106a11d235863da3943ba2980b95aecae366299c786635513bb5441.evidence-v3.json",
+      "evidenceFileSha256": "9a56798dc046549021dda4f81e0e1ddac578353ff9219142fc3ba5cfc1fabd17",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "27130105dc45d69fb3e151072b489f912313cc316813b43ed34ef4ec9b93162b",
+          "startLine": 34,
+          "endLine": 34
+        },
+        {
+          "slot": "create",
+          "sha256": "27130105dc45d69fb3e151072b489f912313cc316813b43ed34ef4ec9b93162b",
+          "startLine": 43,
+          "endLine": 43
+        },
+        {
+          "slot": "create",
+          "sha256": "27130105dc45d69fb3e151072b489f912313cc316813b43ed34ef4ec9b93162b",
+          "startLine": 45,
+          "endLine": 71
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 28,
+          "endLine": 29
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 36,
+          "endLine": 37
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 57,
+          "endLine": 58
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 62,
+          "endLine": 66
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 68,
+          "endLine": 69
+        },
+        {
+          "slot": "query",
+          "sha256": "48bc312a773fc71ba94733bf113509a1fcddd8070949e7b16a85f084135f1d2f",
+          "startLine": 94,
+          "endLine": 96
+        }
+      ]
+    },
+    {
+      "taskId": "37062",
+      "taskName": "spdata.org_role",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-user-and-source-labels",
+      "family": "public-user-and-source-labels",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37062/versions/2abc1c98e7646f5a16ffc862cb5fe849f6ee54393ca9ef496067421570b06044.evidence-v3.json",
+      "evidenceFileSha256": "493544deb993730587d63af61fb4248c95a6c286aca07a6806ca5516166df705",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "69dcbd8e3853ab367ada811611b37a8e376f6445c238053bac6c282443048b29",
+          "startLine": 23,
+          "endLine": 23
+        },
+        {
+          "slot": "create",
+          "sha256": "69dcbd8e3853ab367ada811611b37a8e376f6445c238053bac6c282443048b29",
+          "startLine": 32,
+          "endLine": 32
+        },
+        {
+          "slot": "create",
+          "sha256": "69dcbd8e3853ab367ada811611b37a8e376f6445c238053bac6c282443048b29",
+          "startLine": 34,
+          "endLine": 47
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 16,
+          "endLine": 17
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 24,
+          "endLine": 25
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 31,
+          "endLine": 31
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 34,
+          "endLine": 34
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 38,
+          "endLine": 42
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 44,
+          "endLine": 45
+        },
+        {
+          "slot": "query",
+          "sha256": "689dfb39731d7daa285454c47300e3873f5161778b6cc3ee52fb1032f16ecc91",
+          "startLine": 58,
+          "endLine": 60
+        }
+      ]
+    },
+    {
+      "taskId": "37063",
+      "taskName": "spdata.org_tit_user_supp_info",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-user-and-source-labels",
+      "family": "public-user-and-source-labels",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37063/versions/c7fb4e45710d4c685f38d3faa14725ba145b1d4401f46166e9a1d56b65892c7b.evidence-v3.json",
+      "evidenceFileSha256": "12fe6885d888d0970716887da055dfedcdc4182d778992daae040dcb884c79dd",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "6b861e63d00b73cc3200546addc7b6f9fd9b29fa1a97e264f5732d70972d815d",
+          "startLine": 20,
+          "endLine": 20
+        },
+        {
+          "slot": "create",
+          "sha256": "6b861e63d00b73cc3200546addc7b6f9fd9b29fa1a97e264f5732d70972d815d",
+          "startLine": 29,
+          "endLine": 29
+        },
+        {
+          "slot": "create",
+          "sha256": "6b861e63d00b73cc3200546addc7b6f9fd9b29fa1a97e264f5732d70972d815d",
+          "startLine": 31,
+          "endLine": 42
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 14,
+          "endLine": 15
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 22,
+          "endLine": 23
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 30,
+          "endLine": 30
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 34,
+          "endLine": 38
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 40,
+          "endLine": 41
+        },
+        {
+          "slot": "query",
+          "sha256": "c7c5f77ae9c0bc46049f9b39ba0741bf93d676408a9b26a34db954279c23f568",
+          "startLine": 52,
+          "endLine": 54
+        }
+      ]
+    },
+    {
+      "taskId": "37066",
+      "taskName": "spdata.acct_name_h",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-book-bridge",
+      "family": "public-book-bridge",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37066/versions/b8849bd0360df2c03fcb8e52ecb7da9f95143ed161646619e6d9c243425629ad.evidence-v3.json",
+      "evidenceFileSha256": "abfe8edc64f1ef46c2a1543c2f90d44a84237a09cc4918f74a3258407fdb297d",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 22,
+          "endLine": 22
+        },
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 31,
+          "endLine": 31
+        },
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 33,
+          "endLine": 46
+        },
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 56,
+          "endLine": 56
+        },
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 60,
+          "endLine": 65
+        },
+        {
+          "slot": "create",
+          "sha256": "fe089e7fa1e317fc9580e2db7287cb38c127c59955ec6d5ed12b87b5cbd19d15",
+          "startLine": 67,
+          "endLine": 70
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 1,
+          "endLine": 2
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 16,
+          "endLine": 18
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 20,
+          "endLine": 20
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 29,
+          "endLine": 29
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 34,
+          "endLine": 35
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 42,
+          "endLine": 43
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 57,
+          "endLine": 58
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 60,
+          "endLine": 60
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 74,
+          "endLine": 74
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 76,
+          "endLine": 90
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 92,
+          "endLine": 92
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 101,
+          "endLine": 101
+        },
+        {
+          "slot": "query",
+          "sha256": "2820e48c6d9d9e966f590b9be3ff6d3299ca37bcee2bfb0c1c4e5bc1953b3af9",
+          "startLine": 105,
+          "endLine": 106
+        }
+      ]
+    },
+    {
+      "taskId": "37069",
+      "taskName": "spdata.sum_agt_otc_stres_opt_day_idx",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-daily-results",
+      "family": "public-daily-results",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37069/versions/98b8e72bf9dfbb6a32627ab12ac31f4eb07520994857b3105930e316c6c0bab2.evidence-v3.json",
+      "evidenceFileSha256": "efdec49cf417fa3af327d0cdc2d72c07de8a2406cf34302b304a18d8015fa3d5",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "0529bff902ab4c5c092f355d7fd9c38adb4962ae02ff6c56722d9dda27427208",
+          "startLine": 26,
+          "endLine": 26
+        },
+        {
+          "slot": "query",
+          "sha256": "678ee8490f8c73a09848d81e35092f91134384dce212cad8a033916916bd1e3e",
+          "startLine": 1,
+          "endLine": 21
+        }
+      ]
+    },
+    {
+      "taskId": "128577",
+      "taskName": "PDATA_N.T99_TIT_PROC_DEF_INFO_TIT234",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/128577/versions/0e774402a93320072aa5af23b376c079a250657cd9e114419c6b93352e6e92e2.evidence-v3.json",
+      "evidenceFileSha256": "a24cd97f9595f12971c191a068bb2378e261f51dd777db557b0bc6d7dda2e523",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "4f5e047ed740db33842d7c8f53bcfed2d705da641b1e4f7420485a6f71e4ed0c",
+          "startLine": 1,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "4f5e047ed740db33842d7c8f53bcfed2d705da641b1e4f7420485a6f71e4ed0c",
+          "startLine": 12,
+          "endLine": 13
+        }
+      ]
+    },
+    {
+      "taskId": "133052",
+      "taskName": "PDATA_N.T99_DERI_COMP_SPRD_COEF_REF_OIS010",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-contract-coefficients",
+      "family": "reference-contract-coefficients",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/133052/versions/1e6e46d43dfb1c27a75fe8c6c01e99c2109b226a2e6441c7adbf558fd6e4e86f.evidence-v3.json",
+      "evidenceFileSha256": "e4eedf3ff6b9811bf63b6e8f00a1fa0eab09cf561ff3e9b90fedccb3b707f504",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "e2dca612d544e97ed63c6b52911983582035218739b6774e8eff0a83b8e21c24",
+          "startLine": 1,
+          "endLine": 34
+        },
+        {
+          "slot": "query",
+          "sha256": "151e9ed59fecb88452d3f3660d64fb58feaeb0fdf4598fd89cde78962ba65265",
+          "startLine": 1,
+          "endLine": 72
+        }
+      ]
+    },
+    {
+      "taskId": "133054",
+      "taskName": "PDATA_N.T99_DERI_COMP_BASE_COEF_REF_OIS011",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-contract-coefficients",
+      "family": "reference-contract-coefficients",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/133054/versions/ed62bb5cb62c716c0d47dc9ac1be1d29e9f51fc3e48fe62cade0056202d719d0.evidence-v3.json",
+      "evidenceFileSha256": "eb999b3e1fab7bfc975e50fad805010bb90e2664d2f43b8953a5adaebc1d35a6",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "6d0ccc277080f875f2d70d4c5fcfc126250e63a49c6cb94e000b356bd1f010d8",
+          "startLine": 1,
+          "endLine": 28
+        },
+        {
+          "slot": "query",
+          "sha256": "6d0ccc277080f875f2d70d4c5fcfc126250e63a49c6cb94e000b356bd1f010d8",
+          "startLine": 33,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "taskId": "133055",
+      "taskName": "PDATA_N.T99_DERI_COMP_BASE_COEF_REF_OIS012",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-contract-coefficients",
+      "family": "reference-contract-coefficients",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/133055/versions/aca764adffee1344826f78bc125cc0d23fb4c2bfa62d74150900ff15681498de.evidence-v3.json",
+      "evidenceFileSha256": "879be981ad0262e5ed81aa65bf67909a678044f9beaaa48d51c2289ba1f4a446",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "cf742182cea1ef362e106a0e19dee30c7c5ba04f717d687d8c49b822d5ddf9ca",
+          "startLine": 1,
+          "endLine": 28
+        },
+        {
+          "slot": "query",
+          "sha256": "cf742182cea1ef362e106a0e19dee30c7c5ba04f717d687d8c49b822d5ddf9ca",
+          "startLine": 33,
+          "endLine": 42
+        }
+      ]
+    },
+    {
+      "taskId": "142305",
+      "taskName": "PDATA_N.REF_DW_CD_VAL_TIT092",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-dictionary",
+      "family": "reference-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/142305/versions/c4de7c099f765596ec3e54e87a2c1fb529d5e4bca7a3cd729ba3c5a25de038c8.evidence-v3.json",
+      "evidenceFileSha256": "5d25264c7a5ecba999188559264f58246a497cf2c43492073933b21b9d556452",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 3,
+          "endLine": 16
+        },
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 18,
+          "endLine": 25
+        },
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 27,
+          "endLine": 27
+        },
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 29,
+          "endLine": 49
+        },
+        {
+          "slot": "query",
+          "sha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "startLine": 51,
+          "endLine": 51
+        }
+      ]
+    },
+    {
+      "taskId": "173967",
+      "taskName": "PDATA_N.T99_IDX_DEF_INFO_TIT281",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173967/versions/cd4adcfdcd3d35fd889fa739d207882118979a09e3faebb7eb654a034e087fd3.evidence-v3.json",
+      "evidenceFileSha256": "c4e88b4347a2f270145b72f44df08f2d4fd02dcdf86458b52959c2ebe9d15229",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "51338c5a91c60d5647697d4bc29e1a7c59fd801fb610a0d02fe35667528d8166",
+          "startLine": 1,
+          "endLine": 21
+        },
+        {
+          "slot": "query",
+          "sha256": "51338c5a91c60d5647697d4bc29e1a7c59fd801fb610a0d02fe35667528d8166",
+          "startLine": 26,
+          "endLine": 41
+        }
+      ]
+    },
+    {
+      "taskId": "173971",
+      "taskName": "PDATA_N.T99_IDX_RELA_H_TIT281",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "LOCATED",
+      "summary": "父子指标关系映射已解释；发布query先删除再读取中间表，实际执行顺序未明。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。",
+        "create构造的中间表在query中先被删除再读取，未验证额外执行器步骤。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173971/versions/1b2d2aee35c4bbf8295d2f858b09e8c3c58adb80027e3f4339f9812ce48537b8.evidence-v3.json",
+      "evidenceFileSha256": "51db5854480fe01f67438378a2fcfcd3179809c067981ecdb1cdd7aa3da2f7c0",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "6e93bb9ec1b76888d9fa7f00303469f361a2d6a490f6dacd73cf8a8832c3e2ce",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "create",
+          "sha256": "6e93bb9ec1b76888d9fa7f00303469f361a2d6a490f6dacd73cf8a8832c3e2ce",
+          "startLine": 11,
+          "endLine": 11
+        },
+        {
+          "slot": "create",
+          "sha256": "6e93bb9ec1b76888d9fa7f00303469f361a2d6a490f6dacd73cf8a8832c3e2ce",
+          "startLine": 13,
+          "endLine": 13
+        },
+        {
+          "slot": "create",
+          "sha256": "6e93bb9ec1b76888d9fa7f00303469f361a2d6a490f6dacd73cf8a8832c3e2ce",
+          "startLine": 15,
+          "endLine": 26
+        },
+        {
+          "slot": "create",
+          "sha256": "6e93bb9ec1b76888d9fa7f00303469f361a2d6a490f6dacd73cf8a8832c3e2ce",
+          "startLine": 28,
+          "endLine": 47
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 1,
+          "endLine": 32
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 34,
+          "endLine": 34
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 36,
+          "endLine": 36
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 38,
+          "endLine": 61
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 65,
+          "endLine": 74
+        },
+        {
+          "slot": "query",
+          "sha256": "0a9d1074852a6d63ec4b811c5662ee598b42c43ee4e53e119f2b8d27fe38301f",
+          "startLine": 78,
+          "endLine": 93
+        }
+      ]
+    },
+    {
+      "taskId": "173973",
+      "taskName": "PDATA_N.T99_OTC_DERI_VALU_RPT_IDX_DEF_ADTNL_INFO_TIT281",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/173973/versions/c4e1171060db8d1be4d11529aff529a162c8163f847ea241fb928b79e9553876.evidence-v3.json",
+      "evidenceFileSha256": "665a16b4606dc5ae4f31a78c08e366e585125392c7e7459dc2b745e3f36b4bd2",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "8a928166914e1e749e4af28a8109c6fded0ad59f69728ce067abb44e84772a3b",
+          "startLine": 1,
+          "endLine": 11
+        },
+        {
+          "slot": "query",
+          "sha256": "8a928166914e1e749e4af28a8109c6fded0ad59f69728ce067abb44e84772a3b",
+          "startLine": 17,
+          "endLine": 27
+        }
+      ]
+    },
+    {
+      "taskId": "177760",
+      "taskName": "PDATA_N.T99_SYS_MENU_INFO_TIT288",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/177760/versions/69687f231bf7d437bb94fe8a5fb315a34fb326b1cecf72318e2f30a0e7ecacf8.evidence-v3.json",
+      "evidenceFileSha256": "186d17cadd2e9b6a2c175a77719e357aac8e70c16f43d42272370a00450be421",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "33ec7b97350711d1f0a49d2fc754be6a2c3e53e65ace934428583c179be89195",
+          "startLine": 1,
+          "endLine": 17
+        },
+        {
+          "slot": "query",
+          "sha256": "33ec7b97350711d1f0a49d2fc754be6a2c3e53e65ace934428583c179be89195",
+          "startLine": 23,
+          "endLine": 30
+        }
+      ]
+    },
+    {
+      "taskId": "210337",
+      "taskName": "PDATA_N.T99_TIT_PROC_DEF_INFO_TIT234_H15",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/210337/versions/fb07016c2921bf38ce119b4b7f469d87d16485c6d8bf2c69d2eb109a86c7e64d.evidence-v3.json",
+      "evidenceFileSha256": "a5fb0557bb8fb6df9f286364b59d9d988d82aa0866032144778d97fe82b7baad",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "5c16a8d567944361d8ee7d487cd485931ee00f166f929182a25612cabba09bc3",
+          "startLine": 1,
+          "endLine": 7
+        },
+        {
+          "slot": "query",
+          "sha256": "5c16a8d567944361d8ee7d487cd485931ee00f166f929182a25612cabba09bc3",
+          "startLine": 12,
+          "endLine": 13
+        }
+      ]
+    },
+    {
+      "taskId": "212728",
+      "taskName": "PDATA_N.REF_DW_CD_VAL_H--不要加此任务依赖",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-dictionary-history",
+      "family": "reference-dictionary-history",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/212728/versions/d15e23410c66737b829899bc3c99e3b6c86a56f877399554ed3710c48e733e63.evidence-v3.json",
+      "evidenceFileSha256": "488fd17a2da2fa63e66a63a772a0a2e55c08247e032278ba741a9e8c5ac1f434",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "5b2e528e8c79b1e25bad9b198c97ba3f4387dee0c4320c240a30792d6f536dd9",
+          "startLine": 21,
+          "endLine": 23
+        },
+        {
+          "slot": "create",
+          "sha256": "5b2e528e8c79b1e25bad9b198c97ba3f4387dee0c4320c240a30792d6f536dd9",
+          "startLine": 27,
+          "endLine": 43
+        },
+        {
+          "slot": "create",
+          "sha256": "5b2e528e8c79b1e25bad9b198c97ba3f4387dee0c4320c240a30792d6f536dd9",
+          "startLine": 45,
+          "endLine": 70
+        },
+        {
+          "slot": "create",
+          "sha256": "5b2e528e8c79b1e25bad9b198c97ba3f4387dee0c4320c240a30792d6f536dd9",
+          "startLine": 72,
+          "endLine": 72
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 18,
+          "endLine": 20
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 23,
+          "endLine": 23
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 39,
+          "endLine": 40
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 43,
+          "endLine": 43
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 60,
+          "endLine": 63
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 80,
+          "endLine": 81
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 98,
+          "endLine": 99
+        },
+        {
+          "slot": "query",
+          "sha256": "627856f5aee01e9382b6826bfb072a3d99dfceb87ac396135f41e9be55b0f39c",
+          "startLine": 116,
+          "endLine": 116
+        }
+      ]
+    },
+    {
+      "taskId": "224028",
+      "taskName": "PDATA_N.T99_DERI_COMP_SPRD_COEF_REF_OIS055",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-contract-coefficients",
+      "family": "reference-contract-coefficients",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/224028/versions/42b84ba2f67b22bdd1644d1afdfbec666038ebad30188255cadc5ca9bf2e0294.evidence-v3.json",
+      "evidenceFileSha256": "ccf68b5ac1e315203cb7981c0266ed3f8f92ad096475065ca4a77d7611175fed",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "47ac9014dd0250ddaf588dac56965adc093e5cdce429fe27adef60ec9266de80",
+          "startLine": 1,
+          "endLine": 30
+        },
+        {
+          "slot": "query",
+          "sha256": "47ac9014dd0250ddaf588dac56965adc093e5cdce429fe27adef60ec9266de80",
+          "startLine": 36,
+          "endLine": 49
+        }
+      ]
+    },
+    {
+      "taskId": "242349",
+      "taskName": "PDATA_N.T99_SYS_FUNC_MENU_MAP_TIT348",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-definitions-and-menus",
+      "family": "reference-definitions-and-menus",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/242349/versions/b356fee740cb400fd4cdc519d56b6cbd07503486eb7633876995d127ca623be8.evidence-v3.json",
+      "evidenceFileSha256": "5104abe80670ab5de12727461da8a89cde4caf2be3f7c91193540623f2af8b85",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "d2ced4ef901ba2e7606f10910a46c6479ecfb771b7fab79f1338c10d2484a589",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "query",
+          "sha256": "d2ced4ef901ba2e7606f10910a46c6479ecfb771b7fab79f1338c10d2484a589",
+          "startLine": 5,
+          "endLine": 9
+        },
+        {
+          "slot": "query",
+          "sha256": "d2ced4ef901ba2e7606f10910a46c6479ecfb771b7fab79f1338c10d2484a589",
+          "startLine": 15,
+          "endLine": 17
+        }
+      ]
+    },
+    {
+      "taskId": "246739",
+      "taskName": "PDATA_N.T99_DERI_COMP_SPRD_COEF_REF_OIS060",
+      "chapter": "topics/reference-codes-and-parameters.md",
+      "sectionAnchor": "reference-contract-coefficients",
+      "family": "reference-contract-coefficients",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/246739/versions/aba6129735b63febabe577dc0299df2ed7e447ce29d4dfd108fe138a78ad9f5f.evidence-v3.json",
+      "evidenceFileSha256": "92da00e7666773ad7236a00a2f131709214530cf29cc108c8402c027132ecf79",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 5,
+          "endLine": 26
+        },
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 32,
+          "endLine": 69
+        },
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 71,
+          "endLine": 82
+        },
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 84,
+          "endLine": 84
+        },
+        {
+          "slot": "query",
+          "sha256": "8c4757c05bc10b51371f9ca83811d1c4abbf640ec366012e42c05b164dc38afd",
+          "startLine": 86,
+          "endLine": 86
+        }
+      ]
+    },
+    {
+      "taskId": "37259",
+      "taskName": "dm_tit.ref_book",
+      "chapter": "topics/public-identity-and-history.md",
+      "sectionAnchor": "public-book-bridge",
+      "family": "public-book-bridge",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "已解释正文所列对象身份、来源映射、日期或参数合同，并列明实际消费及未验证边界。",
+      "gaps": [
+        "核读聚焦正文规则，未声明全部字段、目标唯一性及执行结果均已验收。",
+        "发布SQL的字面日期可能来自模板展开；不能仅据文本认定当前源码写死日期。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/37259/versions/9ac9d1ed69fc93610b7fa91487f91543ee20464198fbb350a818145f1056cfd7.evidence-v3.json",
+      "evidenceFileSha256": "7b77dfd725deac64fe3340003a1911807729a39c20ae8e26ec3d4f43220378c0",
+      "reviewedSql": [
+        {
+          "slot": "create",
+          "sha256": "27c189641b3edd54e00ce9435fb82130a2c93ab371127021e4978e6b85fa221c",
+          "startLine": 1,
+          "endLine": 21
+        },
+        {
+          "slot": "query",
+          "sha256": "ae1cf1c3b2316f3ef06faf8caaa217533bccf62688efc210da33c2d607290c0e",
+          "startLine": 1,
+          "endLine": 31
+        }
+      ]
+    }
+  ]
+}

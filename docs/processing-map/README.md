@@ -1,10 +1,16 @@
 # 股衍加工地图：当前进展与阅读入口
 
+**2026-09-07 当前接续入口：[PDATA 理解与推进指引](pdata-understanding-guide.md)。先把本批 PDATA 整体讲清楚，沿用现有交互，重点复核分类、结果粒度和复杂加工内部过程。** [打开当前 PDATA 加工图](../processing-map-pdata.html)。本页其余内容保留各阶段记录，当前工作顺序见指引。
+
+2026-09-07：已增加 [OData 业务对象与加工路线穿透页](../processing-map-odata.html)，总览点击 `odata_n_tit` 可进入。首屏按六组业务对象组织全部 411 张表，再进入完整相关表、任务与 SQL；加工方式作为辅助导航。该页使用本轮区域分析及本地 SQL 留存，具体范围与重建方式见 `scripts/processing-map/README.md`。
+
 路径更新：共享知识现位于 `config/workspace-paths.json` 的 `dataRoot/knowledge`，当前对应 `../sql-static-lineage-data/knowledge`。下文 `knowledge/...` 均相对于 dataRoot；读取脚本仍在代码仓库，命令保持不变。
 
 记录日期：2026-09-06。范围：本轮加工骨架调查、四产品本金样例及本地 HTML 阅读原型。
 
-后续接续先读[知识重建讨论要点与推进路径](knowledge-reconstruction-discussion.md)：集中记录问题、最新共识与完成边界，包括 AI 注释可使用、表与视图独立区分，以及公共业务内容偏少后应优先补什么。
+2026-09-07：下一批的[骨架复用与逐层分析实施方案](next-iteration/README.md)已单独编写，包含架构、详细实现、任务与验收，**尚未实施**。下文继续记录原页面的已实现状态；新方案不会自动替换原入口。
+
+背景讨论见[知识重建讨论要点与推进路径](knowledge-reconstruction-discussion.md)：记录 AI 注释可使用、表与视图独立区分及公共知识积累等共识；本轮优先级以 [PDATA 指引](pdata-understanding-guide.md)为准。
 
 **目前已经把全局区域、层内代表链、宽表解释和字段证据连接成一个可阅读的地图原型。** 用户已认可其作为理想数据地图的初步构想；这属于阅读方式的正向反馈，尚不等于全域业务知识或图架构已经完成验收。
 

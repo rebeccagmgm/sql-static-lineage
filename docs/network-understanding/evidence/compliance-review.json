@@ -1,0 +1,405 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "compliance-and-reporting",
+  "chapter": "chapters/12-compliance-and-reporting.md",
+  "scopeTaskIds": [
+    "176599",
+    "176600",
+    "176610",
+    "177390",
+    "178833",
+    "219085",
+    "76489",
+    "79144",
+    "244647"
+  ],
+  "definition": "Targeted business explanation of six DM_CMPL_N tasks and three AML tasks. Reviewed spans document stated findings, not exhaustive field approval. Other HG_APP/CISP/audit/custody processes remain outside this review.",
+  "tasks": [
+    {
+      "taskId": "176599",
+      "taskName": "dm_cmpl_n.aml_comp_trd_info_grp01",
+      "chapter": "topics/compliance-contract-events.md",
+      "sectionAnchor": "compliance-option-events",
+      "family": "compliance-option-events",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "单标的建立、部分终止、终止的名义本金、价格、日期与身份规则。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/176599/versions/27689bc28c86e0e25f7bac12eaf6d0359483f20b65fc16e861d1f31a9cf8c5a3.evidence-v3.json",
+      "evidenceFileSha256": "8f006f75eee1fa540e307f93009b49ffaa2cb6171aa3b055d7cdd08bde173bed",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "17c4e4edb0f1adb971b9b4ea0573c14c341098605d9f9ca2f73ef83958d4687b",
+          "startLine": 62,
+          "endLine": 237
+        },
+        {
+          "slot": "query",
+          "sha256": "17c4e4edb0f1adb971b9b4ea0573c14c341098605d9f9ca2f73ef83958d4687b",
+          "startLine": 239,
+          "endLine": 375
+        },
+        {
+          "slot": "query",
+          "sha256": "17c4e4edb0f1adb971b9b4ea0573c14c341098605d9f9ca2f73ef83958d4687b",
+          "startLine": 423,
+          "endLine": 434
+        },
+        {
+          "slot": "query",
+          "sha256": "17c4e4edb0f1adb971b9b4ea0573c14c341098605d9f9ca2f73ef83958d4687b",
+          "startLine": 475,
+          "endLine": 483
+        },
+        {
+          "slot": "query",
+          "sha256": "17c4e4edb0f1adb971b9b4ea0573c14c341098605d9f9ca2f73ef83958d4687b",
+          "startLine": 540,
+          "endLine": 566
+        }
+      ]
+    },
+    {
+      "taskId": "176600",
+      "taskName": "dm_cmpl_n.aml_comp_trd_info_grp02",
+      "chapter": "topics/compliance-contract-events.md",
+      "sectionAnchor": "compliance-basket-events",
+      "family": "compliance-basket-events",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "篮子成分分配、计数、汇率及终止价格的分支差异。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/176600/versions/fe7b348ec23d8372af7615aa2b13ed707de60eb025529b1a97d52656c3e0a94a.evidence-v3.json",
+      "evidenceFileSha256": "af685ec1f717a359880ee13390ae8471cdd68fdb6ccceebb741b088dd3ad9365",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "9468f7186d156894254d5a9cdcde730ee742e7ff1404e0848acbab091c76eea6",
+          "startLine": 1,
+          "endLine": 30
+        },
+        {
+          "slot": "query",
+          "sha256": "9468f7186d156894254d5a9cdcde730ee742e7ff1404e0848acbab091c76eea6",
+          "startLine": 146,
+          "endLine": 160
+        },
+        {
+          "slot": "query",
+          "sha256": "9468f7186d156894254d5a9cdcde730ee742e7ff1404e0848acbab091c76eea6",
+          "startLine": 333,
+          "endLine": 344
+        },
+        {
+          "slot": "query",
+          "sha256": "9468f7186d156894254d5a9cdcde730ee742e7ff1404e0848acbab091c76eea6",
+          "startLine": 523,
+          "endLine": 540
+        },
+        {
+          "slot": "query",
+          "sha256": "9468f7186d156894254d5a9cdcde730ee742e7ff1404e0848acbab091c76eea6",
+          "startLine": 659,
+          "endLine": 661
+        }
+      ]
+    },
+    {
+      "taskId": "176610",
+      "taskName": "dm_cmpl_n.aml_comp_trd_info_grp03",
+      "chapter": "topics/compliance-contract-events.md",
+      "sectionAnchor": "compliance-swap-events",
+      "family": "compliance-swap-events",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "互换事件、持仓日期选择与数量金额字段。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/176610/versions/774b4c599464e25a49f877ae8715f561da91cbfe75516f027a14a9610cefc593.evidence-v3.json",
+      "evidenceFileSha256": "9ffe9c3f8b1dd287af71a720c7db6945a8a2541e896097c8f18dddeebaafb804",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 1,
+          "endLine": 68
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 187,
+          "endLine": 201
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 246,
+          "endLine": 293
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 349,
+          "endLine": 351
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 426,
+          "endLine": 456
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 522,
+          "endLine": 524
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 603,
+          "endLine": 603
+        },
+        {
+          "slot": "query",
+          "sha256": "d53eac88facb0218f73657f4cb20b54d96618a6ba32de01e2576bcd7ce92d2a9",
+          "startLine": 634,
+          "endLine": 634
+        }
+      ]
+    },
+    {
+      "taskId": "177390",
+      "taskName": "dm_cmpl_n.unit_cust_info",
+      "chapter": "topics/compliance-customer-info.md",
+      "sectionAnchor": "compliance-customer-sources",
+      "family": "compliance-customer-sources",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "投行与股衍机构客户来源、证照与日期、跨境等标签。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/177390/versions/80d533967a4835e6a29be86537ac1b728df4eca096f65bc10034dffa06441c21.evidence-v3.json",
+      "evidenceFileSha256": "e8dace9f661f9b05327ce8965c868ec72dec2e8df3e98876fbe1eff392a94d44",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "abbda7e1dc6ae7e6db96047bc085334daf26acc0f9ef203c7df8c6fffd6bee2a",
+          "startLine": 75,
+          "endLine": 110
+        },
+        {
+          "slot": "query",
+          "sha256": "abbda7e1dc6ae7e6db96047bc085334daf26acc0f9ef203c7df8c6fffd6bee2a",
+          "startLine": 150,
+          "endLine": 188
+        },
+        {
+          "slot": "query",
+          "sha256": "abbda7e1dc6ae7e6db96047bc085334daf26acc0f9ef203c7df8c6fffd6bee2a",
+          "startLine": 337,
+          "endLine": 355
+        },
+        {
+          "slot": "query",
+          "sha256": "abbda7e1dc6ae7e6db96047bc085334daf26acc0f9ef203c7df8c6fffd6bee2a",
+          "startLine": 415,
+          "endLine": 444
+        },
+        {
+          "slot": "query",
+          "sha256": "abbda7e1dc6ae7e6db96047bc085334daf26acc0f9ef203c7df8c6fffd6bee2a",
+          "startLine": 510,
+          "endLine": 577
+        }
+      ]
+    },
+    {
+      "taskId": "178833",
+      "taskName": "dm_cmpl_n.pdt_cust_info_all",
+      "chapter": "topics/compliance-customer-info.md",
+      "sectionAnchor": "compliance-customer-identities",
+      "family": "compliance-customer-identities",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "产品客户、角色选择、ECR直接分支与关系有效期。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/178833/versions/22efd1f96b9790c3561fe15748a17cca8fd9abb51802a0f9a25ed495d8f42c8a.evidence-v3.json",
+      "evidenceFileSha256": "96338e6739d49b04adac64bf9dc7ed5b29fe04be347216cf19276e58f1cb2487",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "83aa52c557d40d215ca6cfe8c1fcf8597e25b9998bfe86a715637505f86541e7",
+          "startLine": 48,
+          "endLine": 84
+        },
+        {
+          "slot": "query",
+          "sha256": "83aa52c557d40d215ca6cfe8c1fcf8597e25b9998bfe86a715637505f86541e7",
+          "startLine": 123,
+          "endLine": 165
+        },
+        {
+          "slot": "query",
+          "sha256": "83aa52c557d40d215ca6cfe8c1fcf8597e25b9998bfe86a715637505f86541e7",
+          "startLine": 263,
+          "endLine": 269
+        },
+        {
+          "slot": "query",
+          "sha256": "83aa52c557d40d215ca6cfe8c1fcf8597e25b9998bfe86a715637505f86541e7",
+          "startLine": 273,
+          "endLine": 337
+        }
+      ]
+    },
+    {
+      "taskId": "219085",
+      "taskName": "dm_cmpl_n.unit_cust_info(固收、托管)",
+      "chapter": "topics/compliance-customer-info.md",
+      "sectionAnchor": "compliance-customer-identities",
+      "family": "compliance-customer-identities",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "固收与托管资料来源、身份映射和角色聚合差异。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/219085/versions/4eff0919f14ce6279c404c5d5930d53861a1899e882857faf657ae1d019db765.evidence-v3.json",
+      "evidenceFileSha256": "8df33319802da99a4d5b8f4d40e14936b8942015ec0598cb3ca98606ce892861",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 66,
+          "endLine": 89
+        },
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 135,
+          "endLine": 157
+        },
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 227,
+          "endLine": 245
+        },
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 371,
+          "endLine": 405
+        },
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 457,
+          "endLine": 511
+        },
+        {
+          "slot": "query",
+          "sha256": "b5f0704c73fb7a52e72d2a7380d1fd7702fb0d5aff98dfc700b8a90ed935ae47",
+          "startLine": 535,
+          "endLine": 594
+        }
+      ]
+    },
+    {
+      "taskId": "76489",
+      "taskName": "p_aml_query_cst_unit",
+      "chapter": "chapters/12-compliance-and-reporting.md",
+      "sectionAnchor": "aml-customer-enrichment",
+      "family": "aml-customer-enrichment",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "机构客户与营业部联合关联、固定日期资金和证照字段赋值。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。",
+        "字面日期是否来自模板展开尚未确认，不能直接认定源码日期写死。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/76489/versions/8d45ca76ec260a995049314340e77fddbff50e71dde9a1d1119ca4148e0bb5c9.evidence-v3.json",
+      "evidenceFileSha256": "eb3cc383e7ca01024736381d8d7961e0616d124e066710278a3e5667a7c787b6",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "19e886c9ef348e1af4d2d5033ee030f9fa86eee563f1f8062a7d2e8f50fa907b",
+          "startLine": 1,
+          "endLine": 41
+        }
+      ]
+    },
+    {
+      "taskId": "79144",
+      "taskName": "p_aml_client_calculate_mark",
+      "chapter": "chapters/12-compliance-and-reporting.md",
+      "sectionAnchor": "aml-review-workflow",
+      "family": "aml-review-workflow",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "客户状态到exec_ctr1的映射及其证据边界。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/79144/versions/cb34f23535cab27e8162ca8c7862a474afdf437203c860f76e949f1be1b8d0e1.evidence-v3.json",
+      "evidenceFileSha256": "77bd378b1b939a7143c0cc31087091e2a3b8f3a8a4a76ce3e977f18093f5accb",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "1f15d8da517d292d56f661cf6b7f42d9c7729f5e1eb5b39214dc035da8707aaf",
+          "startLine": 1,
+          "endLine": 15
+        }
+      ]
+    },
+    {
+      "taskId": "244647",
+      "taskName": "p_aml_fpdq_monitoring",
+      "chapter": "chapters/12-compliance-and-reporting.md",
+      "sectionAnchor": "aml-review-workflow",
+      "family": "aml-review-workflow",
+      "reviewStatus": "BUSINESS_SEMANTICS_EXPLAINED",
+      "summary": "复评候选的当前/历史合并、日期排除与发布文本的字面日期。",
+      "gaps": [
+        "仅验明正文明确描述的规则；未声明全任务每一字段与关联均已完成验收。",
+        "实际来源唯一性、运行配置、送达与业务接收未由静态SQL证明。",
+        "字面日期是否来自模板展开尚未确认，不能直接认定源码日期写死。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/244647/versions/ecc91c1c7a54c87b5e39348b29dc97a090d2525742a42117e55877ed1d981707.evidence-v3.json",
+      "evidenceFileSha256": "cac45d2950cbf6044158ca18f3be3c78bd3d621447809483ebc643be34aa6b19",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "772f49c26227a397ee1b5fcb1106c50388ab14209fcc293b811b814b11b674fe",
+          "startLine": 1,
+          "endLine": 59
+        },
+        {
+          "slot": "create",
+          "sha256": "5a79d0b0c5ca7b6b4ee5f2bafbd6d4623ccb6964d5b444c4d3864a81de9a0099",
+          "startLine": 1,
+          "endLine": 22
+        }
+      ]
+    }
+  ]
+}

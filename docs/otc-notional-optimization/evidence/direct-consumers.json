@@ -1,0 +1,1935 @@
+{
+  "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+  "scope": "Only externalReads/finalWrites of fixed manifest; direct read consumers, not runtime usage or confirmed cross-task partition lineage",
+  "tables": [
+    {
+      "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+      "platform": "hive",
+      "readerCount": 47,
+      "writerTaskIds": [
+        "86840",
+        "86841",
+        "86842",
+        "220650"
+      ],
+      "readers": [
+        {
+          "taskId": "93338",
+          "taskName": "dm_index_n.index_avg_dyna_nom_prin_year",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:93338:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:c9de2f0f3d1f4484643ee7e0bb27eac154cb03712c15fdf9b867c1502cf791dc",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_avg_dyna_nom_prin_year"
+          ]
+        },
+        {
+          "taskId": "103457",
+          "taskName": "dm_otc_n.wt_otc_trade_dtl",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:103457:statement:0:relation:root.casttable.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:7d56daec27e22e35c6557dcd07d2f39bb022ee35c269cc37ce4698ec76810bff",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.wt_otc_trade_dtl"
+          ]
+        },
+        {
+          "taskId": "105743",
+          "taskName": "PDATA_N.T98_OTC_COMP_MNG_RELA_INFO",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:105743:statement:17:relation:root.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:a8b5e3723927956ace3f70981f1fb93c192d5466722c41afc579fc6b5de907f8",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "pdata_n.t98_otc_comp_mng_rela_info"
+          ]
+        },
+        {
+          "taskId": "107491",
+          "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_ADTNL_DET",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:107491:statement:8:relation:root.info.opt.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:b3d2b909f7bff0e297626b874a1bc8456b323306096bd94c8b7ba07f85013898",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualificationStatus": "CONFIRMED(TASK_TARGET)",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+          ]
+        },
+        {
+          "taskId": "113993",
+          "taskName": "DM_OTC_N.OTC_INR_SALE_PARA",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:113993:statement:0:relation:root.casttable.info.contr_info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:ba01187847551822a083c444d9251f82afd984410ac0f50a1b860252a33ee296",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_inr_sale_para"
+          ]
+        },
+        {
+          "taskId": "114013",
+          "taskName": "DM_OTC_N.OTC_INR_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:114013:statement:0:relation:root.casttable.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:3dc35600817fd921e6eaa378401b2e5f941b0c58fe3ea926484c54543ec20aa4",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:114013:statement:0:relation:root.casttable.t.npv.x.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:8539d08a5d894915b58c5114dd06cf6bed236e82233bc29a6a990dc87b0a47a1",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:114013:statement:0:relation:root.casttable.t.npv.z.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:c17ccbf556c23c3fcf0c4fc6b00f03bed1b8b95cd988a2159c6c69012cc7bbaa",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_inr_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "118141",
+          "taskName": "DM_OTC_N.OTC_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:118141:statement:0:relation:root.casttable.x.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:75641d631fc1e911bc5074ee475d797b19235fdfeadf56ee8b6575fc26c1610a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "118143",
+          "taskName": "DM_OTC_N.OTC_SALE_PARA",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:118143:statement:0:relation:root.casttable.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:0816aaf26a3433be0a67c870cd2db70318d6862b3e0f86c5c75ea9e7f0b19e13",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_sale_para"
+          ]
+        },
+        {
+          "taskId": "123781",
+          "taskName": "PDATA_N.T98_OTC_TRD_COMP_INFO",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:123781:statement:0:relation:root.setop.b1.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:c5a2ac36cdfd8ebc71a99c80e14dcc105bdacc8cb76b96a1e04ebd2b4ef04bf5",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "pdata_n.t98_otc_trd_comp_info"
+          ]
+        },
+        {
+          "taskId": "134690",
+          "taskName": "DM_FMS_N.T98_FMS_AST_TRD_EQUI_DERI_GRP03",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:134690:statement:0:relation:root.casttable.trd.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:a61e5634739ecf7a8fb9b4f035e216d797034312a8349970fa215d88e58201b5",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_fms_n.t98_fms_ast_trd_equi_deri"
+          ]
+        },
+        {
+          "taskId": "144887",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Cs_YearAccum",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:144887:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:0860aa0ef9c932fa0a1b324dffad9fd8140a8722fcf5914df01e303a0b85b4a1",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderi_cs_yearaccum"
+          ]
+        },
+        {
+          "taskId": "146386",
+          "taskName": "dm_otc_n.otc_comp_dura_chg_evt",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:146386:statement:0:relation:root.casttable.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:6e5f73b9e44e456d89a2e4f6160bc4ca1302d2093c2188e940abccc57e37aab0",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_comp_dura_chg_evt"
+          ]
+        },
+        {
+          "taskId": "146516",
+          "taskName": "dm_otc_n.otc_opt_comp_info",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:146516:statement:0:relation:root.casttable.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:67363e22dd6dfa80df9667d214c145e73a17ff1f28f5540cd865aaa27c2b8f26",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_opt_comp_info"
+          ]
+        },
+        {
+          "taskId": "147921",
+          "taskName": "dm_index_n.index_grp2_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:147921:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:6d5d4ed7fd074358b51032a95ed94ee1098f5f101170310668a8d8cad37829fe",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "148124",
+          "taskName": "dm_index_n.index_grp2_CompScal_OtcDeri_Cs_MthApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:148124:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:04ce25e709c81883147bfa1b126654461ef77c29444a37d3d7f83cde6e393252",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_compscal_otcderi_cs_mthapd"
+          ]
+        },
+        {
+          "taskId": "154068",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Cs_Mth",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:154068:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:b64b6bb5507cc9d6bae39a1727ac502457c739ba38169c83810e8a6791dbeb2e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderi_cs_mth"
+          ]
+        },
+        {
+          "taskId": "155410",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Cs_Qtr",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:155410:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:8c9dadf3a31b3e0566f6d845716967d1de6c816c18793271016decc6361444c9",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderi_cs_qtr"
+          ]
+        },
+        {
+          "taskId": "156651",
+          "taskName": "dm_otc_n.opt_cumulator_schd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:156651:statement:0:relation:root.casttable.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:69f671829f9e860ab2542dc6f26192062c3792fabfbcb6168a6751e1f3d5640f",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.opt_cumulator_schd"
+          ]
+        },
+        {
+          "taskId": "159763",
+          "taskName": "dm_index_n.index_grp3_CompScal_OtcDeri_Cs_MthApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:159763:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:9e82edc84b220243d5d0def0beb75cffe4eaef3f2cf386808c6624f2436cff1d",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+          ]
+        },
+        {
+          "taskId": "159768",
+          "taskName": "dm_index_n.index_grp3_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:159768:statement:0:relation:root.(child).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:465d1c3cdf87ee38fea70a04564192b7edd10f3077f76e4c48fc9a731420dae9",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "162610",
+          "taskName": "dm_index_n.index_grp1_CompScal_OtcDeriRgstComp_MthEnd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:162610:statement:0:relation:root.index.setop.b0.a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:28229ec96dbce7df246d83b77726d3e422efde420f12ffecaa5397ff52c77ff0",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:162610:statement:0:relation:root.index.setop.b1.a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:3d83e27cca6957ca1e187a0e0426ea18a9269f89efed8c1baa96aa6cb98e6da5",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_compscal_otcderirgstcomp_mthend"
+          ]
+        },
+        {
+          "taskId": "162618",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeriRgstComp_Mth",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:162618:statement:0:relation:root.index.setop.b0.a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:1d8ed25629d6cc5de03dd0779cd3f0e507d0cc2c22319795147cf3ed55585bea",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:162618:statement:0:relation:root.index.setop.b1.a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:971186b85ada322e391a9e99e286de2efdf83ea38c67dd1b5bc75ab9d3167669",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderirgstcomp_mth"
+          ]
+        },
+        {
+          "taskId": "171347",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Year",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:171347:statement:0:relation:root.(child).read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:46bd277f0282817d46ab3c7d11b5c425d5c71757ee28b123a76be0f0d3c25ea9",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderi_year"
+          ]
+        },
+        {
+          "taskId": "171364",
+          "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Mth",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:171364:statement:0:relation:root.(child).read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:c870e0d13ab31fa73079bcf8da03dfd2bacfab86b0a459928200f46bdb209019",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_dealscal_otcderi_mth"
+          ]
+        },
+        {
+          "taskId": "171370",
+          "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Tdy",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:171370:statement:0:relation:root.(child).t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:b4d2dfedacb6282985425763179f8873e77e7d43776f594312387b4bb056dcb5",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_compscal_otcderi_tdy"
+          ]
+        },
+        {
+          "taskId": "189972",
+          "taskName": "dm_rd_n.rd_otc_sale_dtl",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:189972:statement:0:relation:root.(child).cd2.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:3c3a326b6bf7b7134e4ffbd46d20d1841f23e51dadd0cb81dc73f0c3cd92f560",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:189972:statement:0:relation:root.(child-1).a.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:b1859d2388f57fea78a0059d95dc95cc5503754dc0a21ae77bcd3b658813cf8d",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_rd_n.rd_otc_sale_dtl"
+          ]
+        },
+        {
+          "taskId": "201252",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_TrdDays_OtcDeri_Near1Mth_Tdy",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:201252:statement:0:relation:root.index.t1.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:08e8a43c493d53afb9b6957e1299afb72e634d4c035173a4214eb39e426d0c5c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_trddays_otcderi_near1mth_tdy"
+          ]
+        },
+        {
+          "taskId": "201318",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_CompScal_OtcDeri_Tdy",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:201318:statement:0:relation:root.(child).t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:a75980c8fed6f8ce4b8a73c946ae9ebfff3be5caffb56b3494e653c9d1386b8f",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_compscal_otcderi_tdy"
+          ]
+        },
+        {
+          "taskId": "201483",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_TrdScal_OtcDeri_Year",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:201483:statement:0:relation:root.(child).t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:a9cb69a1dc5f668e359023b449f5c76345a958e227dbd7f9654045ecccdeac4c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_trdscal_otcderi_year"
+          ]
+        },
+        {
+          "taskId": "203306",
+          "taskName": "dm_index_n.index_grp1_COMPANY_SaleRwd_OtcDeri_Qtr",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:203306:statement:0:relation:root.index.src.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:187f146c0009a161098022878e066241226b5cd3e7c8b2302792eced3b461997",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_company_salerwd_otcderi_qtr"
+          ]
+        },
+        {
+          "taskId": "203311",
+          "taskName": "dm_index_n.index_grp1_COMPANY_SaleIncome_OtcDeri_Qtr",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:203311:statement:0:relation:root.index.src.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:1a38f07bbbf7d7a537f7d6f8c655e77c9c864501b47878e92a6780d5a36e64ea",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_company_saleincome_otcderi_qtr"
+          ]
+        },
+        {
+          "taskId": "203879",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_CompScal_OtcDeri_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:203879:statement:0:relation:root.(child).t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:fda83c9bb4ddaaed33960016a51023be8cea8e5cb53b482a99ab621fd3c973fa",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_compscal_otcderi_yearapd"
+          ]
+        },
+        {
+          "taskId": "206208",
+          "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:206208:statement:0:relation:root.(child).t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:b5f946e10dc1f201f791689ac7883a66eacde0eb174a869984cbb88761c2be8e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "208230",
+          "taskName": "dm_otc_n.bene_owner_hold_prop_excd_pct3_day",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:208230:statement:0:relation:root.casttable.t1.comp.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:aa305c48a8dc3db51cc6c4e5d5eaf276789c9cf1859d34abe1b266d6fb771735",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.bene_owner_hold_prop_excd_pct3_day"
+          ]
+        },
+        {
+          "taskId": "208608",
+          "taskName": "dm_index_n.grp_tag_OTC_DERI_CUTP_ENTY_trd_freq_tagdim102616",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:208608:statement:0:relation:root.srctab.t0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:1db52a24a6f44aa32314b1fe866d93416b1f45eafaaf205f1ff47b481b2f6ec6",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.grp_tag_otc_deri_cutp_enty_trd_freq"
+          ]
+        },
+        {
+          "taskId": "220979",
+          "taskName": "DM_OTC_N.OTC_HK_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:220979:statement:0:relation:root.casttable.x.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:7ee28c98da698a80fa91a323e827bfcd3f7813861144e683e7ada84c2415fc16",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:220979:statement:0:relation:root.casttable.x.t.s_sp.x.b.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:509cd9e6432347d3347f1e11adc876c6460bfa0314edb057549f261e622fb283",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_hk_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "220981",
+          "taskName": "DM_OTC_N.OTC_HK_SALE_PARA",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:220981:statement:0:relation:root.casttable.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:7fe9f5380adbc5a6981385c1793fecd0ac3a7a4fb31cd9fd6c7f1ecfee6fe928",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_hk_sale_para"
+          ]
+        },
+        {
+          "taskId": "223867",
+          "taskName": "DM_OTC_N.OTC_REV_DAILY_RPT_grp03",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:223867:statement:0:relation:root.casttable.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:9a67942ef0a2fc9fb72d517f4b769fdfaad87573ec8775036cfc32dcb627ae20",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_rev_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "224351",
+          "taskName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:224351:statement:0:relation:root.(child).info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:0ffea84bed64dabda489763b73d91ef918a88dccf532a904fe0198004649b476",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_cust_daily_dyna_nom_prin"
+          ]
+        },
+        {
+          "taskId": "228241",
+          "taskName": "dm_otc_n.bi_otc_swap_trd_stat",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:228241:statement:0:relation:root.casttable.t3.t.read.s",
+              "readOccurrenceNodeId": "read-occurrence:4129e5c26aa86bc9ce50800a58cb90234b3330339859a261fd8c151f7cb9fb8c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.bi_otc_swap_trd_stat"
+          ]
+        },
+        {
+          "taskId": "229121",
+          "taskName": "dm_otc_n.bi_otc_cust_index",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:229121:statement:0:relation:root.casttable.fee.read.s",
+              "readOccurrenceNodeId": "read-occurrence:9e26335ebf3ac56d8619421313cbaf7901f707136e4ab9afadbc6b84ddcaeabf",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:229121:statement:0:relation:root.casttable.perf.read.s",
+              "readOccurrenceNodeId": "read-occurrence:24ad6d76dad64fba249a16ac4b92a99de99d870afee8ea69782f1178d68da82a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:229121:statement:0:relation:root.casttable.t2.t.read.s",
+              "readOccurrenceNodeId": "read-occurrence:b098c011128ef15a88c34ddb5eca658102fb3ee8919d8e174d69ec795ed3ebc0",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.bi_otc_cust_index"
+          ]
+        },
+        {
+          "taskId": "230202",
+          "taskName": "DM_OTC_N.OTC_REV_DAILY_RPT_grp01",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:230202:statement:0:relation:root.casttable.info.setop.b0.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:d046f283ba3aa210185f12b763e3440a6a6e4a4796613353a6333b95d9d01a22",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:230202:statement:0:relation:root.casttable.info.setop.b1.x.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:5d3a733948d98f113e07e418c8a0d342c5efa5476add7016a5ced7a6acf13a7e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:230202:statement:0:relation:root.casttable.info.setop.b1.z.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:44deaf0c37fac79d54b27134679218ac03606aca7eb875a0d370eacf5aa6c124",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_rev_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "231146",
+          "taskName": "dm_otc_n.bi_otc_cust_tag",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:231146:statement:0:relation:root.casttable.t0.setop.b0.setop.b1.s.t98_tag.read.t98",
+              "readOccurrenceNodeId": "read-occurrence:2a568d4a99e904d69e862e7646170ba14947c9106b515d1cf5dafe88f6c31f70",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.bi_otc_cust_tag"
+          ]
+        },
+        {
+          "taskId": "234584",
+          "taskName": "dm_otc_n.otc_opt_knock_evt",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:234584:statement:0:relation:root.casttable.t.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:0512c75632c1d3c8de1a74c8255c1f62391dd3a6943cf3a5803fcb3fa26906ac",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_opt_knock_evt"
+          ]
+        },
+        {
+          "taskId": "245631",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h16",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245631:statement:0:relation:root.(child-1).setop.b0.setop.b1.read.si",
+              "readOccurrenceNodeId": "read-occurrence:d0b6cc3cd90a45b575092e871a37271cbace2009456818f19ed559568257703a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245631:statement:0:relation:root.casttable.x.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:13efab7181bba69d8a958cc66a1fb7502c97e93aea0b5f5742aae1b5356e0e80",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        },
+        {
+          "taskId": "245660",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h00",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245660:statement:0:relation:root.(child-1).setop.b0.setop.b1.read.si",
+              "readOccurrenceNodeId": "read-occurrence:a022fb7cca7e6559b815244bfc68e9b01cca34479a2f06c4b8b3632a7dbb5bcd",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245660:statement:0:relation:root.casttable.x.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:f50450bc16b5fe58eff321082d739a8a5cdbe04cfe1d8ddba9eff4b09f463bfe",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        },
+        {
+          "taskId": "245696",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h12",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245696:statement:0:relation:root.(child-1).setop.b0.setop.b1.read.si",
+              "readOccurrenceNodeId": "read-occurrence:732935cb654192f4d658201884bd999bed613965085ee942432db8610b8dee5a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+              "readOccurrenceId": "task:245696:statement:0:relation:root.casttable.x.t.info.read.t98_otc_deri_comp_sale_info",
+              "readOccurrenceNodeId": "read-occurrence:fb32deaff33dc241a8de2ae922c7338d7e4baff3f9efb793ee8cfc55b3e64860",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        }
+      ]
+    },
+    {
+      "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "platform": "hive",
+      "readerCount": 21,
+      "writerTaskIds": [
+        "107491"
+      ],
+      "readers": [
+        {
+          "taskId": "93338",
+          "taskName": "dm_index_n.index_avg_dyna_nom_prin_year",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:93338:statement:0:relation:root.(child).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:09f2262151209072ed0c6b2fd200e2e025c25c11ee01e8b97f2cd68b7e205e7a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_avg_dyna_nom_prin_year"
+          ]
+        },
+        {
+          "taskId": "113993",
+          "taskName": "DM_OTC_N.OTC_INR_SALE_PARA",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:113993:statement:0:relation:root.casttable.dy.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:49979f9cb327e1bd1cd94a1bd085882852ed2ceb8e6cc25f122db1ff86e788c8",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_inr_sale_para"
+          ]
+        },
+        {
+          "taskId": "114013",
+          "taskName": "DM_OTC_N.OTC_INR_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:114013:statement:0:relation:root.casttable.t.dy.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:fc4473045cb9da5251ad7b5b56a2dbec683acd470f078e7e14d23e0be09eeaa1",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_inr_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "118141",
+          "taskName": "DM_OTC_N.OTC_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:118141:statement:0:relation:root.casttable.x.t.read.det",
+              "readOccurrenceNodeId": "read-occurrence:22d406b0641fd8f531eb50ddee56e832912ab63f909947f06d4e5429488e1abd",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "147921",
+          "taskName": "dm_index_n.index_grp2_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:147921:statement:0:relation:root.(child).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:2119cc6dcf072e82f8ba305d7220cfa149ba86228646aaa205b4b1b3d4dea6b3",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "148124",
+          "taskName": "dm_index_n.index_grp2_CompScal_OtcDeri_Cs_MthApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:148124:statement:0:relation:root.(child).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:f9c383963ed1b8a948c6fc9af690d97646193c62f248ff7229a375f0a40a4f6c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_compscal_otcderi_cs_mthapd"
+          ]
+        },
+        {
+          "taskId": "159763",
+          "taskName": "dm_index_n.index_grp3_CompScal_OtcDeri_Cs_MthApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:159763:statement:0:relation:root.(child).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:670c0022ca95fa8f6081e0a15e989fca09977e919ac3b3538c88d4ee3c3bf63a",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+          ]
+        },
+        {
+          "taskId": "159768",
+          "taskName": "dm_index_n.index_grp3_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:159768:statement:0:relation:root.(child).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:7828f87481deda28b86111f4863fdf0f06b4a8bef4314ad9afda8413a82f365b",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "171370",
+          "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Tdy",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:171370:statement:0:relation:root.(child).read.t1",
+              "readOccurrenceNodeId": "read-occurrence:f5d767cd08d1330193394e399ba44c9569dc96e93403a15526f5ef0021efcebb",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_compscal_otcderi_tdy"
+          ]
+        },
+        {
+          "taskId": "189972",
+          "taskName": "dm_rd_n.rd_otc_sale_dtl",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:189972:statement:0:relation:root.(child).read.cd1",
+              "readOccurrenceNodeId": "read-occurrence:22b2c19dabd66ab4997e9eae66363457bf01b98292cb6b419103758e2900cee7",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            },
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:189972:statement:0:relation:root.(child-1).b.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:97f0e6bf97e644e172c28b14bb10715b630f37af4b2e232ffc81df4671eda49e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_rd_n.rd_otc_sale_dtl"
+          ]
+        },
+        {
+          "taskId": "201318",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_CompScal_OtcDeri_Tdy",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:201318:statement:0:relation:root.(child).read.t1",
+              "readOccurrenceNodeId": "read-occurrence:98cdf8c5bc95fdaf45781577b5e3198229bd2d8de1ee1210a1d707ac108bfb71",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_compscal_otcderi_tdy"
+          ]
+        },
+        {
+          "taskId": "203879",
+          "taskName": "dm_index_n.index_grp1_CutpEnty_CompScal_OtcDeri_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:203879:statement:0:relation:root.(child).read.t1",
+              "readOccurrenceNodeId": "read-occurrence:bd7e2cde6c2534659abd200be4d747e808fc20ad12536fc647ff61b804519718",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_cutpenty_compscal_otcderi_yearapd"
+          ]
+        },
+        {
+          "taskId": "206208",
+          "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Cs_YearApd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:206208:statement:0:relation:root.(child).read.t1",
+              "readOccurrenceNodeId": "read-occurrence:48ef1b36df93973c217d254b8be564dd26efcfda4b1161df0c6966c055fc927c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp1_compscal_otcderi_cs_yearapd"
+          ]
+        },
+        {
+          "taskId": "208230",
+          "taskName": "dm_otc_n.bene_owner_hold_prop_excd_pct3_day",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:208230:statement:0:relation:root.casttable.t1.mval.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:5c0502d7dab7c2e142f1fd572d7b7121c6e5c5384fb2db0ba2d2e343e474e929",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.bene_owner_hold_prop_excd_pct3_day"
+          ]
+        },
+        {
+          "taskId": "220979",
+          "taskName": "DM_OTC_N.OTC_HK_SALE_DAILY_RPT",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:220979:statement:0:relation:root.casttable.x.t.det.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:62a25c19c154346ca858d4d3b6de4564c43061db758d1b836898a72ca054edc2",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_hk_sale_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "223867",
+          "taskName": "DM_OTC_N.OTC_REV_DAILY_RPT_grp03",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:223867:statement:0:relation:root.casttable.det.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:f37c1767ba98b6960b9c9889adb6e2b5aebcddf4716efc223e04237e64455bc2",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_rev_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "224351",
+          "taskName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:224351:statement:0:relation:root.(child).read.det",
+              "readOccurrenceNodeId": "read-occurrence:15975c69bea93cd6a63bd7d8de1e677a86a960df25b5267a135a0000b956c844",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_cust_daily_dyna_nom_prin"
+          ]
+        },
+        {
+          "taskId": "230202",
+          "taskName": "DM_OTC_N.OTC_REV_DAILY_RPT_grp01",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:230202:statement:0:relation:root.casttable.det.read.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceNodeId": "read-occurrence:42380584637a2dbdf0b777be652e9e71cf53a326ac88fe61b9d0ef5675ebff66",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_n.otc_rev_daily_rpt"
+          ]
+        },
+        {
+          "taskId": "245631",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h16",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:245631:statement:0:relation:root.casttable.x.t.read.det",
+              "readOccurrenceNodeId": "read-occurrence:d321741a9e0bf38829e1be833eda4c3d72bcaedbbe8a558149706620c017af6c",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        },
+        {
+          "taskId": "245660",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h00",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:245660:statement:0:relation:root.casttable.x.t.read.det",
+              "readOccurrenceNodeId": "read-occurrence:ddf757364cb75500278051037a6bb53ce5a84b166eb3c20e469299e8cd895c6e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        },
+        {
+          "taskId": "245696",
+          "taskName": "DM_OTC_TEST.OTC_SALE_DAILY_RPT_ADJ_h12",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+              "readOccurrenceId": "task:245696:statement:0:relation:root.casttable.x.t.read.det",
+              "readOccurrenceNodeId": "read-occurrence:4a4f433efe3950028cfb442027582d43fb6ade38c2db2b95a8303e515babab56",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_otc_test.otc_sale_daily_rpt_adj"
+          ]
+        }
+      ]
+    },
+    {
+      "datasetNodeId": "dataset:bf49bbead54e21848def76aa3b3a33741b1b203eccef14ba6a29b227d2f78d4f",
+      "qualifiedName": "dm_otc_n.otc_sale_daily_rpt",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "118141"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:caf9cea87b50cd501bad956af223e7dffd916ec548fdf108faf6c2b6f14cddbe",
+      "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+      "platform": "hive",
+      "readerCount": 4,
+      "writerTaskIds": [
+        "159763"
+      ],
+      "readers": [
+        {
+          "taskId": "148368",
+          "taskName": "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:caf9cea87b50cd501bad956af223e7dffd916ec548fdf108faf6c2b6f14cddbe",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceId": "task:148368:statement:0:relation:root.(child-2).a.setop.b0.setop.b0.setop.b0.setop.b1.read.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceNodeId": "read-occurrence:486a5cc30827a19323d2e3f04dadd56f35d3731fe61117e2f2d29279533e08c6",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd"
+          ]
+        },
+        {
+          "taskId": "160773",
+          "taskName": "dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:caf9cea87b50cd501bad956af223e7dffd916ec548fdf108faf6c2b6f14cddbe",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceId": "task:160773:statement:0:relation:root.(child).setop.b1.read.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceNodeId": "read-occurrence:7a4c49ffe7e30fa252261182b40c64c35d1403cfc08d613c53378e9183ef6b7e",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd"
+          ]
+        },
+        {
+          "taskId": "160780",
+          "taskName": "dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:caf9cea87b50cd501bad956af223e7dffd916ec548fdf108faf6c2b6f14cddbe",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceId": "task:160780:statement:0:relation:root.(child).setop.b1.read.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceNodeId": "read-occurrence:f37d97b5d0dd32f7b2c9ebf35c5a079ea233fdafadf908f79618e15d058567b7",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd"
+          ]
+        },
+        {
+          "taskId": "165154",
+          "taskName": "dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:caf9cea87b50cd501bad956af223e7dffd916ec548fdf108faf6c2b6f14cddbe",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceId": "task:165154:statement:0:relation:root.(child-2).a.setop.b0.setop.b0.read.index_grp3_compscal_otcderi_cs_mthapd",
+              "readOccurrenceNodeId": "read-occurrence:0c3ef9659647c1909bd0a5463db7518193bddd3b9c83893a435c5b5203d89dff",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd"
+              }
+            }
+          ],
+          "finalWrites": [
+            "dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd"
+          ]
+        }
+      ]
+    },
+    {
+      "datasetNodeId": "dataset:8249b52982219151edc37542a0e08f1b94d00ef653335deea47c931fa0f48a38",
+      "qualifiedName": "dm_otc_n.trd_deri_stru_type_mth",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "199706"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:0005f072eecc71393a9a4244d6f0c4c60695cd511ffae9136037214354db1ce9",
+      "qualifiedName": "dm_otc_n.trd_deri_type_mth",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "199727"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:ab1d251479b458c5dd76471159a885320e317149c86ec53918e975cde5a2ec21",
+      "qualifiedName": "dm_otc_n.adm_v_risk_daily_bundle_margin",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "200030"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:5c12eab320218b2152ef3c14b4f77ae7c159b138ef54b92f5faa2eed3ac0ec5f",
+      "qualifiedName": "dm_otc_n.otc_hk_sale_daily_rpt",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "220979"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:b8f7c1ce0ead105731a2ad3f85872627fb56262f1dbd82b5fdf5922145404446",
+      "qualifiedName": "dm_otc_n.otc_hk_sale_para",
+      "platform": "hive",
+      "readerCount": 0,
+      "writerTaskIds": [
+        "220981"
+      ],
+      "readers": []
+    },
+    {
+      "datasetNodeId": "dataset:983492f77f67cc86ff894096182c1a866075c7d7842e546b0432dc7e48671af3",
+      "qualifiedName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+      "platform": "hive",
+      "readerCount": 1,
+      "writerTaskIds": [
+        "224351"
+      ],
+      "readers": [
+        {
+          "taskId": "100170",
+          "taskName": "gf_edc.otc_contr_daily_dyna_nom_prin",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:983492f77f67cc86ff894096182c1a866075c7d7842e546b0432dc7e48671af3",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+              "readOccurrenceId": "task:100170:statement:0:relation:root.read.otc_cust_daily_dyna_nom_prin",
+              "readOccurrenceNodeId": "read-occurrence:d72d5804de794ef866ebc16677443158ae5d6848de718da87f798f46669665b9",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_otc_n.otc_cust_daily_dyna_nom_prin"
+              }
+            }
+          ],
+          "finalWrites": [
+            "gf_edc.otc_contr_daily_dyna_nom_prin"
+          ]
+        }
+      ]
+    },
+    {
+      "datasetNodeId": "dataset:57b20500d45166f2eebdb0574c183bc9372106f8e16f709d3c7b1158b8031677",
+      "qualifiedName": "dm_otc_n.bi_otc_cust_index",
+      "platform": "hive",
+      "readerCount": 1,
+      "writerTaskIds": [
+        "229121"
+      ],
+      "readers": [
+        {
+          "taskId": "230266",
+          "taskName": "gf_otc.bi_otc_cust_index",
+          "readOccurrences": [
+            {
+              "datasetNodeId": "dataset:57b20500d45166f2eebdb0574c183bc9372106f8e16f709d3c7b1158b8031677",
+              "identityStatus": "CONFIRMED",
+              "qualifiedName": "dm_otc_n.bi_otc_cust_index",
+              "readOccurrenceId": "task:230266:statement:0:relation:root.read.bi_otc_cust_index",
+              "readOccurrenceNodeId": "read-occurrence:c67aa2e3d88d5ff6c2224ee8949f9d21f6e8b8543ade665d146a4b13300fd207",
+              "dataset": {
+                "dataSource": "gfhive",
+                "identityStatus": "CONFIRMED",
+                "platform": "hive",
+                "qualifiedName": "dm_otc_n.bi_otc_cust_index"
+              }
+            }
+          ],
+          "finalWrites": [
+            "gf_otc.bi_otc_cust_index"
+          ]
+        }
+      ]
+    }
+  ]
+}

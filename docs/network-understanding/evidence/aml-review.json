@@ -1,0 +1,427 @@
+{
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "processId": "aml-customer-funds-and-controls",
+  "chapter": "chapters/12-compliance-and-reporting.md",
+  "scopeTaskIds": [
+    "73353",
+    "73354",
+    "77827",
+    "78396",
+    "78493",
+    "78554",
+    "79856",
+    "157884",
+    "157885",
+    "78394",
+    "79859",
+    "80597",
+    "80777",
+    "78326",
+    "165402"
+  ],
+  "definition": "在已有核读材料上收尾保存AML关键规则，不表示全部合规应用或任务全字段完成。",
+  "tasks": [
+    {
+      "taskId": "73353",
+      "taskName": "p_chs08_cvt_aml_cstunit",
+      "chapter": "topics/aml-customer-identity.md",
+      "sectionAnchor": "aml-client-integration",
+      "family": "aml-client-integration",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "机构资料直接接入、分来源码表、跨业务选择及客户号与营业部去重。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/73353/versions/5e80e1bdc63e3f43f854e051380d5193104e0e8a2e3761deb9170d09c67bfa55.evidence-v3.json",
+      "evidenceFileSha256": "69cd86878238f60068e9bc59381b8ce576785b5c991365ea018f81429c9c90ea",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "5514066bbe86ed0a9207b58b7f4a7d3b8f1dab0f52c7abda4ef3a3b7cb231c7e",
+          "startLine": 600,
+          "endLine": 756
+        },
+        {
+          "slot": "query",
+          "sha256": "5514066bbe86ed0a9207b58b7f4a7d3b8f1dab0f52c7abda4ef3a3b7cb231c7e",
+          "startLine": 850,
+          "endLine": 868
+        },
+        {
+          "slot": "query",
+          "sha256": "5514066bbe86ed0a9207b58b7f4a7d3b8f1dab0f52c7abda4ef3a3b7cb231c7e",
+          "startLine": 1340,
+          "endLine": 1358
+        }
+      ]
+    },
+    {
+      "taskId": "73354",
+      "taskName": "p_chs08_cvt_aml_productacc",
+      "chapter": "topics/aml-customer-identity.md",
+      "sectionAnchor": "aml-client-integration",
+      "family": "aml-client-integration",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "产品资料直接接入、管理人信息关联、日期与客户身份去重。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/73354/versions/49e13b5bfb89b8a3aa6e69c169c049f110e62302ed40882f25c1811162d9e4a4.evidence-v3.json",
+      "evidenceFileSha256": "91007ed7bf8812d503e295f704fc2c18cbcfcd76b4bee6a93961fb95b3eaf199",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "1c721eb437200ff53f1f86033a4eaff8c89c87212ea1f17511665f76fa4ee243",
+          "startLine": 498,
+          "endLine": 509
+        },
+        {
+          "slot": "query",
+          "sha256": "1c721eb437200ff53f1f86033a4eaff8c89c87212ea1f17511665f76fa4ee243",
+          "startLine": 575,
+          "endLine": 603
+        },
+        {
+          "slot": "query",
+          "sha256": "1c721eb437200ff53f1f86033a4eaff8c89c87212ea1f17511665f76fa4ee243",
+          "startLine": 1050,
+          "endLine": 1066
+        },
+        {
+          "slot": "query",
+          "sha256": "1c721eb437200ff53f1f86033a4eaff8c89c87212ea1f17511665f76fa4ee243",
+          "startLine": 717,
+          "endLine": 723
+        },
+        {
+          "slot": "query",
+          "sha256": "1c721eb437200ff53f1f86033a4eaff8c89c87212ea1f17511665f76fa4ee243",
+          "startLine": 884,
+          "endLine": 890
+        }
+      ]
+    },
+    {
+      "taskId": "77827",
+      "taskName": "p_aml_innerclientid",
+      "chapter": "topics/aml-customer-identity.md",
+      "sectionAnchor": "aml-inner-identity",
+      "family": "aml-inner-identity",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "身份选择、客户缺失状态与多账户标志；其余同步字段未逐项核读。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/77827/versions/5b2e132a55424d6d6e05cf0f17e4de46ba19497ada3d7be693f79fdb2f062391.evidence-v3.json",
+      "evidenceFileSha256": "f66593a4ff6579b1f82a2defb0018b3e525e6093cbd98b46614e6dfc27c7e8cc",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "87df4516efcadb87fba8d873aff138ed7158eb17a15daf47a6e8b5fbf24c5203",
+          "startLine": 1,
+          "endLine": 114
+        },
+        {
+          "slot": "create",
+          "sha256": "26100c568719b67d4f18349f9fd21fbbf1a94c3d2c1d1ab56dfccc1fddd07631",
+          "startLine": 1,
+          "endLine": 5
+        }
+      ]
+    },
+    {
+      "taskId": "78396",
+      "taskName": "p_aml_fund",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-assets",
+      "family": "aml-assets",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "代表客户选择、资产整数转换、缺失填零与币种占位。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/78396/versions/a000d1f5fb8a2ac92794caa1313ef2d4f5c359f44f4a56acf1645f2b6e2928d4.evidence-v3.json",
+      "evidenceFileSha256": "3f503b1627550eb65c4670d61d0cdbbbca06268712b0010bfee81b79f2af421c",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "80826354af2703ba1743b4933ff47794bfecdbb7f7174e101b172fd63a0a04a8",
+          "startLine": 1,
+          "endLine": 29
+        }
+      ]
+    },
+    {
+      "taskId": "78493",
+      "taskName": "p_aml_fundjour_month",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-monthly-flows",
+      "family": "aml-monthly-flows",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "资金月度31列、失败符号、未知标志及重复累积边界。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/78493/versions/5da91c69718788ce941ebc3be0ec663ab3fef691a0c3b47781fa9fae131222d8.evidence-v3.json",
+      "evidenceFileSha256": "d6d78a6f7ed25dd275a5d32728a5e51c383df7ba4db900ddd9ccd6bf3d8c9d7f",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "6357d68be2eb7972518a003d261b4652ee6a41f9603a825892e395ee60c9df12",
+          "startLine": 1,
+          "endLine": 135
+        }
+      ]
+    },
+    {
+      "taskId": "78554",
+      "taskName": "p_aml_deliver_month",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-monthly-flows",
+      "family": "aml-monthly-flows",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "交割月度31列、纳入标志、绝对金额与中间表清理边界。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/78554/versions/2e3d9cf2e9a9ad680da4cb342d05d3c893b7ecb8f4b939e193891c5ad540e456.evidence-v3.json",
+      "evidenceFileSha256": "8728cba54f6b94a1281e6b63989c2d562037db1cdde7867c16708d91e6611c1b",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "fbc9cfbdb0bafe00beb50479e62dfc01032bbdc602ec6b40ec283e15b8d4e6a4",
+          "startLine": 1,
+          "endLine": 146
+        }
+      ]
+    },
+    {
+      "taskId": "79856",
+      "taskName": "p_amlrc_baseinfo",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-rating-features",
+      "family": "aml-rating-features",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "评级基础2001、2002、3001至3005的对象、窗口与计算。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/79856/versions/96433a77387337a71ed472322162f105bc678ce0d1523069fbaf8c91c38372c2.evidence-v3.json",
+      "evidenceFileSha256": "c101b62517d84458b69207d7974e768b0e07413069e13408906d642f01860063",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "eb776d0350b9c289189ffd29f350fcffb14dad318338442ed7b8c6516878ec69",
+          "startLine": 1,
+          "endLine": 181
+        }
+      ]
+    },
+    {
+      "taskId": "157884",
+      "taskName": "aml_ds_81215",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-ficc-candidates",
+      "family": "aml-ficc-candidates",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "81215事件纳入、名称关联、五条门槛及代表客户选择。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/157884/versions/be477cecd842e29ac1473a44e22e3e93ee40d552925b9b1f0f68b68714a79c4a.evidence-v3.json",
+      "evidenceFileSha256": "c4d44942b1d31dc34dc268b7a49f2e70cdb75ffc4ed93bbeee025afdd0eba924",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "ee28a1bf3464188f03668bda54d6c2a4b6eda8118f659e7d5af093ce8de4dcaf",
+          "startLine": 1,
+          "endLine": 98
+        }
+      ]
+    },
+    {
+      "taskId": "157885",
+      "taskName": "aml_ds_81216",
+      "chapter": "topics/aml-funds-and-features.md",
+      "sectionAnchor": "aml-ficc-candidates",
+      "family": "aml-ficc-candidates",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "81216正向金额与严格门槛、含端点窗口、规则竞争去重。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/157885/versions/8e9a8db7097f0339fbf0560ac081f21202712e2e58fbde6c40451dd21d26de66.evidence-v3.json",
+      "evidenceFileSha256": "6a10cc3dbcf4798a03f42d648b4820b830cedbaa7676ef5e617f0c4d3d0a2f01",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "cf36cbb96345d8aef1224998f54d697f856f974bfb803d15ddac16bc4f6beaf2",
+          "startLine": 1,
+          "endLine": 135
+        }
+      ]
+    },
+    {
+      "taskId": "78394",
+      "taskName": "p_aml_specialclient",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-list-candidates",
+      "family": "aml-list-candidates",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "客户名单候选、管理人证件关联及覆盖文本疑点。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/78394/versions/8cf70733007da81dc261e52e4ccfd5a327fb018102cc1d72156564dcbdca8703.evidence-v3.json",
+      "evidenceFileSha256": "51f8af135e72cd8e4e8932a93b993e4ab845b293a30c0d8be747ac7c99489b0a",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "5b209855e7a13b6f65d32c49b9c5d057311aecac53600ca752473ef7c80a7756",
+          "startLine": 1,
+          "endLine": 76
+        }
+      ]
+    },
+    {
+      "taskId": "79859",
+      "taskName": "p_aml_special_clientinfo",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-list-candidates",
+      "family": "aml-list-candidates",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "特殊名单类别、身份长度、编号与追加清理边界。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/79859/versions/4eccda75d4113213408a55cced2b4149e5829e6a81e705e6530bbebd4aa5ae0e.evidence-v3.json",
+      "evidenceFileSha256": "48afa150bd51f4af146802db66a04a4170d3f06594016949a8ba625f6a525e46",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "31d34a5c293c400db05fc86622b93f2aee89a384013953efad7bfe0684325c70",
+          "startLine": 1,
+          "endLine": 30
+        }
+      ]
+    },
+    {
+      "taskId": "80597",
+      "taskName": "p_aml_revcustblack",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-cleanup",
+      "family": "aml-cleanup",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "名单关系的实际保留条件及来源范围。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/80597/versions/cabc9ac1f27ab88b72ccf87929156afd1392d46d2104a2a61930f79e1cdd9e70.evidence-v3.json",
+      "evidenceFileSha256": "c89131ad4452bf514b1c893ebc61906f4ca7415bc2f4c2485c77fb920345dea2",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "979066c526c05bf3ac2c158311d67dbf17af8a05ad04b0fba89e06974a5686c0",
+          "startLine": 1,
+          "endLine": 10
+        }
+      ]
+    },
+    {
+      "taskId": "80777",
+      "taskName": "p_aml_entrustaddr",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-cleanup",
+      "family": "aml-cleanup",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "设备数据保留日期、委托筛选及占位字段归一化。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/80777/versions/c6cc56072e25450b245e3a1e1c59842eb0afead7d738fb814e552bee084cfb80.evidence-v3.json",
+      "evidenceFileSha256": "7a17043809578f8c88dd333acabae45be41a9740c3fa74191877ffe9872cb83e",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "18486fe1e59eaa5787b47103c0a16977c1b00e84f64eaae50c836fc0837887b9",
+          "startLine": 1,
+          "endLine": 34
+        }
+      ]
+    },
+    {
+      "taskId": "78326",
+      "taskName": "p_aml_clientotheraddr",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-address",
+      "family": "aml-address",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "地址地区补充及发布文本中不成立的配置条件。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/78326/versions/86a070c0ef6fde2ae3b367e1f71a177866170f9cb932cb35cc2c5bc044954355.evidence-v3.json",
+      "evidenceFileSha256": "d3df40f398ad8467edec2d5e3b32b9e5f41e7db894a9d831f53913241bfb2e78",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "0e0ee622cdbeb63cc90d4f2f087747cde6606df16f649c964d2034e11760cdea",
+          "startLine": 1,
+          "endLine": 67
+        }
+      ]
+    },
+    {
+      "taskId": "165402",
+      "taskName": "p_aml_datacheck",
+      "chapter": "topics/aml-lists-and-controls.md",
+      "sectionAnchor": "aml-data-check",
+      "family": "aml-data-check",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "summary": "检查结果格式化、阈值与执行包装证据缺口。",
+      "gaps": [
+        "核读范围限于正文所列规则；未声明整项任务全字段、全部消费或运行结果均已验收。",
+        "字面日期与异常语句顺序仍需原始参数和执行包装证据，不能仅据发布文本认定当前运行故障。"
+      ],
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/165402/versions/fa3b8fcbffdf3cb1b05f87ebbe98318b388f1f028e13634c7a5839f9bb3a493b.evidence-v3.json",
+      "evidenceFileSha256": "7b6e322fab8e950b1d52b228568777cce699ec2f352eb3bcf36131c77ad7d8e0",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "sha256": "b5719966fcc252bde53c997b37fcb25a3235e71d5ede34d9e002242af7a831d8",
+          "startLine": 1,
+          "endLine": 102
+        },
+        {
+          "slot": "create",
+          "sha256": "1a05e43657bf87183cdd73ce2435c9caad6ac180d607369891779b39f17b4d3f",
+          "startLine": 1,
+          "endLine": 14
+        }
+      ]
+    }
+  ]
+}

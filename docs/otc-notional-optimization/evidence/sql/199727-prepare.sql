@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS  dm_otc_n.trd_deri_type_mth( 
+	 deri_type string COMMENT '衍生品类型' , add_nom_prin_mth string COMMENT '本月新增名义本金规模（亿元）' , add_nom_prin_pmth string COMMENT '上月新增名义本金规模（亿元）' , add_nom_prin_mth_rate string COMMENT '本月新增名义本金规模占比' , add_nom_prin_mom string COMMENT '新增名义本金环比' , add_nom_prin_mom_flag string COMMENT '新增名义本金环比升降标志' ) COMMENT '月度衍生品类型交易情况' PARTITIONED BY ( busi_mon string COMMENT '月份' ) STORED AS ORC

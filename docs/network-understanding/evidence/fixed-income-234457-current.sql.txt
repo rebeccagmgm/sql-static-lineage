@@ -1,0 +1,275 @@
+CREATE TABLE IF NOT EXISTS  dm_fii_n.dtl_otc_swap_dura_evt_dim_day( 
+	 lifecycle_event_id string COMMENT '存续期事件ID' , key_otc_trade_id string COMMENT '交易流水编号' , contract_code string COMMENT '内部合约编号' , confirmation_no string COMMENT '交易编号/统一合约编号' , master_agreement_no string COMMENT '主协议编号' , supplement_agreement_no string COMMENT '补充协议编号' , event_date string COMMENT '事件日期' , event_type_cd string COMMENT '事件类型代码' , event_type string COMMENT '事件类型' , event_pre_notional string COMMENT '事件前名义本金' , event_post_notional string COMMENT '事件后名义本金' , event_notional_chg string COMMENT '事件名义本金变化量' , event_ccy string COMMENT '事件币种' , payment_date string COMMENT '支付日期' , event_status_cd string COMMENT '事件状态代码' , event_status string COMMENT '事件状态' , origin_channel_cd string COMMENT '发起渠道代码' , origin_channel string COMMENT '发起渠道' , pay_direction_cd string COMMENT '支付方向代码' , pay_direction string COMMENT '支付方向' , fx_rate_base string COMMENT '汇率(本币)' , fx_rate_settle string COMMENT '汇率（结算币种）' , event_realized_pnl_chg string COMMENT '事件已实现损益变动' , event_amt_orig string COMMENT '事件发生金额(原币)' , event_amt_base string COMMENT '事件发生金额(本币)' , event_div_tax_amt_settle string COMMENT '事件分红税金额(结算币种)' , reset_rate string COMMENT '重置利率' , reset_rate_date string COMMENT '重置利率日期' , asset_settle_date string COMMENT '资产端结算日期' , fee_settle_date string COMMENT '费用端结算日期' , interest_accrual_date_deferral_days string COMMENT '计息日延期天数' , asset_settle_next_trade_date string COMMENT '资产端结算下一个交易日' , fee_settle_next_trd_dt_prev_nat_dt string COMMENT '费用端结算下一个交易日的上一个自然日' , data_time string COMMENT '数据时间' ) COMMENT '场外互换-互换存续期事件-事件维度' PARTITIONED BY ( busi_date string COMMENT '数据日期' ) STORED AS ORC;
+with main_trd_otc_trade as (     -- titans交易主表
+select 
+asi.agt_id,                    -- KEY_OTC_TRADE_ID
+asi.stati_cont_desc,           -- INTERNAL_TRADE_ID
+ar.rela_agt_id,                -- KEY_BOOK_ID
+apr.Src_Prd_Id,                -- KEY_INSTRUMENT_ID
+agc.Agt_Clas_Cd                -- BUSINESS_TYPE
+from (
+select agt_id,stati_cont_desc
+from pdata_n.t03_agt_stati_info_h asi -- 105387
+where src_tbl  = 'ODATA_N_TIT.D_TRD_OTC_TRADE'
+and strt_date<='${yyyy-MM-dd}' 
+and end_date>'${yyyy-MM-dd}' 
+) asi
+join 
+(
+select agt_id,rela_agt_id
+from pdata_n.t03_agt_rela_h            -- 105388
+where src_tbl  = 'ODATA_N_TIT.D_TRD_OTC_TRADE'
+and strt_date<='${yyyy-MM-dd}'
+ and end_date>'${yyyy-MM-dd}' 
+) ar
+on  asi.agt_id = ar.agt_id 
+join (
+select 
+Agt_Id,Src_Prd_Id
+from pdata_n.T03_AGT_PRD_RELA_H            -- 105386
+where SRC_TBL = 'ODATA_N_TIT.D_TRD_OTC_TRADE'
+and strt_date<='${yyyy-MM-dd}'
+ and end_date>'${yyyy-MM-dd}' 
+) apr
+on asi.Agt_Id = apr.Agt_Id
+join (
+select 
+Agt_Id,Agt_Clas_Cd
+from pdata_n.T03_AGT_CLAS_H                 -- 106661
+where SRC_TBL = 'ODATA_N_TIT.D_TRD_OTC_TRADE'
+and strt_date<='${yyyy-MM-dd}'
+ and end_date>'${yyyy-MM-dd}'
+) agc
+on asi.Agt_Id = agc.Agt_Id
+),
+ref_counterparty  as (
+select 
+REPLACE(a.Pty_Id, 'TIT060-', '') as pty_id
+,a.shor_name_ch    -- 中文简称  
+,b.cutp_legal_enty -- 交易对手法律主体
+,c.idty_info_cont  -- 鉴别信息内容
+,d.Stati_Subdv_Cd -- 统计细项代码
+from (
+select Pty_Id,Shor_Name_Ch -- 中文简称  
+from pdata_n.t01_pty_name                         -- 104299
+where SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' 
+and BUSI_DATE='${yyyy-MM-dd}'
+) a 
+join 
+(
+select Pty_Id,
+Cutp_Legal_Enty -- 交易对手法律主体
+from pdata_n.T01_PTY_CUTP                           -- 105379
+where SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' 
+and BUSI_DATE='${yyyy-MM-dd}'
+) b 
+on a.Pty_Id= b.Pty_Id
+join 
+
+(select Pty_Id,   -- 当事人编号
+Idty_Info_Cont   -- 鉴别信息内容
+from pdata_n.T01_PTY_IDTY_INFO  -- 219164
+where BUSI_DATE='${yyyy-MM-dd}' 
+and SRC_TBL='ODATA_N_TIT.D_REF_COUNTERPARTY') c
+on a.Pty_Id = c.Pty_Id
+join (
+select *
+from pdata_n.T01_PTY_STATI_INFO_H
+where SRC_TBL  = 'ODATA_N_TIT.D_REF_COUNTER_PARTY'
+and Pty_Stati_Info_Type_Cd = '75'
+) d
+on a.Pty_Id = d.Pty_Id
+), 
+agt_data as (
+
+select a.pty_id,
+b.Same_Pty_Id,
+c.Blt_Appt_Main_Agt_Id,
+c.Blt_Appt_Supp_Agt_Id
+from  ref_counterparty a
+left join (
+select *,replace(Pty_Id, 'TIT060-','') as rep_pty_id
+from pdata_n.t01_same_pty_rela_adtnl_info                     -- 150759 
+where SRC_TBL = 'ODATA_N_TIT.D_REF_CTPTY_MAPPING'
+) b
+on a.pty_id = b.rep_pty_id
+left join (
+select *
+from pdata_n.T01_OTC_DERI_CUST              -- 179726 
+where Src_Tbl = 'ODATA_N_OOM.F_OTC_DERIVATIVE_COUNTERPARTY'
+and Busi_Date = '${yyyy-MM-dd}'
+) c
+on c.Pty_Id = b.Same_Pty_Id
+where a.Stati_Subdv_Cd = '0'
+),
+
+agg_event_underlying as (
+select
+tte.Src_Id,
+sum(ttesd.Rlz_Chg_Delta)                         as event_realized_pnl_chg,
+sum(ttesd.Ocrrc_Occu_Amt)                        as event_amt_orig,
+sum(ttesd.Occu_Amt * ttesd.Rate)                 as event_amt_base,
+sum(ttesd.Divd_Tax_Rate * ttesd.Occu_Amt)        as event_div_tax_amt_settle
+from (
+select
+*
+from pdata_n.t05_otc_comp_dura_chg_evt -- 124565
+where SRC_TBL = 'ODATA_N_TIT.D_TRD_TRS_EVENT'
+) tte
+join (
+select *
+from pdata_n.t05_otc_swap_comp_hold_chg_det -- 124564
+where SRC_TBL='ODATA_N_TIT.D_TRD_TRS_EVENT_STRUC_DETAIL'
+) ttesd
+on tte.Src_Id = ttesd.Dura_Chg_Src_Id
+group by tte.Src_Id
+)
+
+SELECT lifecycle_event_id,
+	key_otc_trade_id,
+	contract_code,
+	confirmation_no,
+	master_agreement_no,
+	supplement_agreement_no,
+	event_date,
+	event_type_cd,
+	event_type,
+	event_pre_notional,
+	event_post_notional,
+	event_notional_chg,
+	event_ccy,
+	payment_date,
+	event_status_cd,
+	event_status,
+	origin_channel_cd,
+	origin_channel,
+	pay_direction_cd,
+	pay_direction,
+	fx_rate_base,
+	fx_rate_settle,
+	event_realized_pnl_chg,
+	event_amt_orig,
+	event_amt_base,
+	event_div_tax_amt_settle,
+	reset_rate,
+	reset_rate_date,
+	asset_settle_date,
+	fee_settle_date,
+	interest_accrual_date_deferral_days,
+	asset_settle_next_trade_date,
+	fee_settle_next_trd_dt_prev_nat_dt,
+	data_time,
+	busi_date FROM (
+	 
+
+
+select 
+tte.Src_Id                                                             as lifecycle_event_id            -- 存续期事件ID
+,tot.agt_id                                                            as key_otc_trade_id              -- 交易流水编号
+,tot.stati_cont_desc                                                   as contract_code                 -- 内部合约编号
+,rt.Ext_Comp_No                                                        as confirmation_no               -- 交易编号/统一合约编号
+,ad.Blt_Appt_Main_Agt_Id                                               as master_agreement_no           -- 主协议编号
+,ad.Blt_Appt_Supp_Agt_Id                                               as supplement_agreement_no       -- 补充协议编号
+,tte.Evt_Date                                                          as event_date                    -- 事件日期
+,tte.Evt_Type_Cd                                                       as event_type_cd                 -- 事件类型代码
+,etccv.dw_cd_val_desc                                                  as event_type                    -- 事件类型
+,tte.Adj_Frnt_Nom_Prin                                                 as event_pre_notional            -- 事件前名义本金
+,tte.Adj_Pst_Nom_Prin                                                  as event_post_notional           -- 事件后名义本金
+,tte.Nom_Prin_Chg_Delta                                                as event_notional_chg            -- 事件名义本金变化量
+,tte.Crrc_Cd                                                           as event_ccy                     -- 事件币种
+,tte.Pay_Date                                                          as payment_date                  -- 支付日期
+,nvl(B.SRC_CD_VAL, tte.Evt_Stat_Cd)                                    as event_status_cd               -- 事件状态代码
+,B.SRC_CD_DESC                                                         as event_status                  -- 事件状态
+,tte.Evt_Lnch_Type_Cd                                                  as origin_channel_cd             -- 发起渠道代码
+,eltccv.dw_cd_val_desc                                                 as origin_channel                -- 发起渠道
+,nvl(C.SRC_CD_VAL, tte.Net_Dir_Cd)                                     as pay_direction_cd              -- 支付方向代码
+,ndccv.dw_cd_val_desc                                                  as pay_direction                 -- 支付方向
+,tte.Rate                                                              as fx_rate_base                  -- 汇率(本币)
+,tte.Sett_Crrc_Rate                                                    as fx_rate_settle                -- 汇率（结算币种）
+,aeu.event_realized_pnl_chg                                            as event_realized_pnl_chg        -- 事件已实现损益变动
+,aeu.event_amt_orig                                                    as event_amt_orig                -- 事件发生金额(原币)
+,aeu.event_amt_base                                                    as event_amt_base                -- 事件发生金额(本币)
+,aeu.event_div_tax_amt_settle                                          as event_div_tax_amt_settle      -- 事件分红税金额(结算币种)
+,tte.Rset_Intrt                                                        as reset_rate                    -- 重置利率
+,tte.Intr_Leg_Actl_Vld_Date                                            as reset_rate_date               -- 重置利率日期
+,tte.Stru_Leg_Actl_Vld_Date  as asset_settle_date --资产端结算日期
+,tte.Intr_Leg_Actl_Vld_Date as fee_settle_date --费用端结算日期
+,tte.Inta_Date_Delay_Days as interest_accrual_date_deferral_days --计息日延期天数
+,case when tte.Stru_Leg_Actl_Vld_Date is null then '' else default.pretradedate(tte.Stru_Leg_Actl_Vld_Date,-1*nvl(cast(tte.Inta_Date_Delay_Days as int),0) ) end as asset_settle_next_trade_date --资产端结算下一个交易日
+,case when tte.Intr_Leg_Actl_Vld_Date is null then '' else date_sub(default.pretradedate(tte.Intr_Leg_Actl_Vld_Date,-1*nvl(cast(tte.Inta_Date_Delay_Days as int),0) ),1) end as fee_settle_next_trd_dt_prev_nat_dt --费用端结算下一个交易日的上一个自然日
+,from_unixtime(unix_timestamp(), 'yyyy-MM-dd HH:mm:ss')                as data_time                     -- 数据时间
+,'${yyyy-MM-dd}'                                                       as busi_date                     -- 数据日期
+from main_trd_otc_trade tot
+join (
+select *, substr(Cutp_Pty_Id, 8) as Pty_Id, substr(Sler_Cutp_Pty_Id, 8) as Sler_Pty_Id
+from pdata_n.t03_otc_swap_comp_info        -- 103941
+where SRC_TBL='ODATA_N_TIT.D_REF_TRS'
+and BUSI_DATE='${yyyy-MM-dd}'
+) rt 
+on rt.Swap_Comp_Agt_Id = tot.agt_id
+join (
+select *
+from pdata_n.t05_otc_comp_dura_chg_evt  -- 124565
+where SRC_TBL = 'ODATA_N_TIT.D_TRD_TRS_EVENT'
+) tte 
+on rt.Swap_Comp_Agt_Id = tte.Otc_Comp_Agt_Id
+left join ref_counterparty rcp 
+on rcp.Pty_Id = rt.Pty_Id
+left join agt_data ad
+on ad.pty_id = rcp.Pty_Id
+left join (
+select upper(dw_cd_val) as dw_cd_val, dw_cd_val_desc
+from pdata_n.ref_dw_cd_val b
+where src_tbl = 'MANU_MATN'
+and upper(dw_cd_eng_name)=upper('Evt_Type_Cd') --字段命名跟模型的一致
+) etccv
+on etccv.dw_cd_val = tte.Evt_Type_Cd
+LEFT JOIN (
+  SELECT SRC_CD_VAL,DW_CD_VAL,SRC_CD_DESC
+	FROM PDATA_N.REF_CD_CVT_MAP
+  WHERE TGT_TAB_NAME = 'T05_OTC_COMP_DURA_CHG_EVT'
+	 AND TGT_TAB_FLD  = 'Evt_Stat_Cd'
+	 AND SRC_TAB_NAME = 'TRD_TRS_EVENT'
+	 AND SRC_FLD_NAME = 'EVENT_STATUS'
+	 AND SRC_SYS_NAME='TIT') B
+ON      tte.Evt_Stat_Cd =B.DW_CD_VAL                  --EVENT_STATUS 转码
+left join (
+select dw_cd_val, dw_cd_val_desc
+from pdata_n.ref_dw_cd_val b
+where src_tbl = 'MANU_MATN'
+and upper(dw_cd_eng_name)=upper('Evt_Lnch_Type_Cd') --字段命名跟模型的一致
+) eltccv
+on eltccv.dw_cd_val = tte.Evt_Lnch_Type_Cd
+LEFT JOIN (
+  SELECT SRC_CD_VAL,DW_CD_VAL
+	FROM PDATA_N.REF_CD_CVT_MAP
+  WHERE TGT_TAB_NAME = 'T05_OTC_COMP_DURA_CHG_EVT'
+	 AND TGT_TAB_FLD  = 'Net_Dir_Cd'
+	 AND SRC_TAB_NAME = 'TRD_TRS_EVENT'
+	 AND SRC_FLD_NAME = 'PAY_DIRECTION'
+	 AND SRC_SYS_NAME='TIT') C
+ON      tte.Net_Dir_Cd =C.DW_CD_VAL                  --PAY_DIRECTION 转码
+left join (
+select dw_cd_val, dw_cd_val_desc
+from pdata_n.ref_dw_cd_val b
+where src_tbl = 'MANU_MATN'
+and upper(dw_cd_eng_name)=upper('Net_Dir_Cd') --字段命名跟模型的一致
+) ndccv
+on ndccv.dw_cd_val = tte.Net_Dir_Cd
+join agg_event_underlying aeu
+on tte.Src_Id = aeu.Src_Id 
+join (
+select * 
+from PDATA_N.T03_AGT_RELA_H      --105388    PDATA_N.T03_AGT_RELA_H
+where src_tbl = 'ODATA_N_TIT.D_TRD_OTC_TRADE'
+) tot2
+ON tot.agt_id  = tot2.Agt_Id
+JOIN (
+select * from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO     --105382    PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO
+where src_tbl = 'ODATA_N_TIT.D_REF_BOOK'
+and busi_date='${yyyy-MM-dd}'
+) bb 
+ON tot2.Rela_Agt_Id = bb.Book_Agt_Id
+
+WHERE bb.Bel_Dept = 'GFS_FICC' 
+	) castTable

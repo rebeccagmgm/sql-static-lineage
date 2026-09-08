@@ -1,0 +1,601 @@
+{
+  "processId": "quality-foundation",
+  "chapter": "topics/quality-and-evidence.md",
+  "baseline": {
+    "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+    "pointerPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/current.json",
+    "pointerFileSha256": "263e582218ec6402b1299e4e27d8afc3ebe0f989d947d17cb40b17c02dbd6c15",
+    "manifestPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/945d7d1e13928a269480cf6786450e5916e5255806b36dd16dcba3a1b19726d9/batch-manifest.json",
+    "manifestFileSha256": "e169a5ca0859282f70247b73c9def2f7205fcb17788504fc4bab8125d50fec10",
+    "publicationPath": "../sql-static-lineage-data/artifacts/graphs/titans-otc/published/df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3/publication.json",
+    "publicationFileSha256": "07461c6b4ec0ac9a19880b1ebda8d5d192c1204e990002854afd4f00aed92508",
+    "manifestGeneratedAt": "2026-09-07T06:05:52.799Z"
+  },
+  "scopeDefinition": "25 explicitly read qualityTask queries. The full 690 qualityTask scope remains to be completed separately; no template/name-based expansion.",
+  "scopeTaskIds": [
+    "49548",
+    "51088",
+    "53405",
+    "53767",
+    "55220",
+    "53409",
+    "53410",
+    "53411",
+    "53412",
+    "53413",
+    "53424",
+    "53425",
+    "53426",
+    "53445",
+    "53448",
+    "55221",
+    "55223",
+    "55224",
+    "154818",
+    "126848",
+    "198209",
+    "152678",
+    "144585",
+    "197640",
+    "223385"
+  ],
+  "tasks": [
+    {
+      "taskId": "49548",
+      "family": "quality-keys",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-keys",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/49548/versions/531bbd5f91a3981e5c6a609a4d0a504fab03c47cc9b63e27a403afefb9576a30.evidence-v3.json",
+      "evidenceFileSha256": "099a6a8e1aedbd424282d80d4bf1372f1bf98fc34e4a2cf62646a0adbaeff50a",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 5,
+          "sha256": "edadf4ae66904730a8c1e15afe2f9a45f74df2651656d9b87d7c475d76ebd1b6",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "51088",
+      "family": "quality-keys",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-keys",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/51088/versions/299b91ec539a8eaf8a6d3f89656eecfbd664fcf5a2edf2022f6700f0a6fcc863.evidence-v3.json",
+      "evidenceFileSha256": "41554089e900aa2ccf3adeb099dafaec104878dec18cd594cfc74072d7552290",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 5,
+          "sha256": "929f469f41b31c50744fac69d4ef3cd3b3891a25a2559314a45aecfcea8f50e3",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53405",
+      "family": "quality-keys",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-keys",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53405/versions/98f77aa2efd89b0d352f8cc1fb6b7633d01b2dcffd6f25a067dd3aa2bbf85737.evidence-v3.json",
+      "evidenceFileSha256": "8a4ae9eed6a4fc06efcb27d8b8389465fe486027efe9758b9b4daa0608fff6f2",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 6,
+          "sha256": "efb737b07af550f3ee166daea5f58f3d86fc35008d99fc2b1c7f07fb140ab6a0",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53767",
+      "family": "quality-keys",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-keys",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53767/versions/32ba85554ac5224bbf877fa220f8327b7c4f1dfc221ea0bbdd72fc692440ef9e.evidence-v3.json",
+      "evidenceFileSha256": "06cab8b8669e10dc0afd8aa65d150a57cfcfc3b47c2650924df8330000602c5d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 6,
+          "sha256": "074c308f9056b87446b9e26aa0d7d3e487cdc3058a86393dfbb816d63326d02b",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "55220",
+      "family": "quality-keys",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-keys",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/55220/versions/4aa780b5ee12d23f5fb23d2d01968e693eda1509382c96afebd96e71406d8f3f.evidence-v3.json",
+      "evidenceFileSha256": "78fd6d0e48bbb18d853cbf5c0974624460d1c81d198035864b437c706df5e47c",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 7,
+          "sha256": "45bf0cae6d4321fd21624c14e5a14df4b5c5aaa5fd246c9257344402bf42c612",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53409",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53409/versions/168de6b135e81c6984656f3029a63df5c3fe7545f0e639037eef11a9802c4cb6.evidence-v3.json",
+      "evidenceFileSha256": "941d7eac5ad8c3241d253ac3de0c198259e3f2921f35b5370ba2642593f18a1b",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "f743c9385e383832fea39a19d5d237d88956122764d47e488a55111061fe5706",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53410",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53410/versions/d845b0f604060f7beac53171371b22604240d572ef957567d5f13464bdb24405.evidence-v3.json",
+      "evidenceFileSha256": "ee50afa8291ff68a8c43d856e4c6e584cc73ff7eeca8ac91778e5058aa99709c",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "96d18584ba3dcef81422b2b87abf75e2ed80f61fdada5cf93287e70c03d8753b",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53411",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53411/versions/cda77a7feb650e8f5dafe109554bb74d5d450a2d4a57a030b752eee0d3728d13.evidence-v3.json",
+      "evidenceFileSha256": "59d65d5446a3709d823302fd495d89752b917d35562d2e39b46a748665b9cc29",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "3243ff51e20e93139bd5c307f6744173359f19aad7b92e9335f9906860559315",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53412",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53412/versions/67a2b2be5b8e210f8e93394d222f6c620fd1f46b10a3bfe5e5ea3b7dfe3eaba0.evidence-v3.json",
+      "evidenceFileSha256": "128b173d2fefa9f96e1edde1cd5cb4656fc2d22c4167f8a5177049b750f1b8dd",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "f5cce098f15bf28f860ddf38aa295e9c2ab4cc842b036e10401189d9cb2abe7c",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53413",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53413/versions/e5b202741b0fd98440e5edee274dd73c1733e03e03033bce945d11fcf4c6f840.evidence-v3.json",
+      "evidenceFileSha256": "cb092a3726784a0e265b0cbbc63ce7966355a79547b9e2e1d617269e63f2e50e",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "6f702f71ef3ecfb59e8da53f0492d39ba49ba68a29397f687a716a857a74bbdd",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53424",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53424/versions/a43a82ec696fc360ac1e704755e1111e3f65bddcb223f7876174495648dac127.evidence-v3.json",
+      "evidenceFileSha256": "7be225c8d641d03fcffdf5286349bd75cfe0b6585a8f55264c28e4cc62d2b1ac",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 10,
+          "sha256": "5a108380a835dcf45dd08e20575745d991c8f7372caac5d0fce18a07806ad794",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53425",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53425/versions/0418eaba98c0c0e360ed4a429e572a3f1098e6febc325ccac80f2c23a3975ee8.evidence-v3.json",
+      "evidenceFileSha256": "c550da1f2d4f0bab2ee9bd68d85c3d332ffe81e41fbc75e4f0398220f7bfbd30",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "6253ac22edd70c8e02319d4d5543e76f982a0fcfec522dd3d4b70bd188d97c39",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53426",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53426/versions/29a15450d4253e8e72bd884f21464635ec4ba460673d3f73d595bb0d0f10d7d8.evidence-v3.json",
+      "evidenceFileSha256": "39ec3d53f39d8505e8a9ca7d039df6f95a1093157f6fabe7577f11319c360cbd",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "7b896b5b2e4d8388f691ae92aa4de18c242479b618e80df1e72ba985ed25bfd1",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53445",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53445/versions/e7297d60a909eeb6a27b0bf51b15193b4c2e508cb738826e1d4dc5240d0cf506.evidence-v3.json",
+      "evidenceFileSha256": "24b5addb1ba69c1d2a31e535046d7b7b747ba2402326610563713e3dfae87a92",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "b9954e77a23b061dd27316af34a5b373ca45f0d77b39b62077a145437705254f",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "53448",
+      "family": "quality-dictionary",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-dictionary",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/53448/versions/d40f57a99224a65cf2b44eb1e49b259861b0035ab6178c0489dad035d1996acb.evidence-v3.json",
+      "evidenceFileSha256": "112a924614aa6cd3547c15298df070e118471dd5eb67900c660d200535b4f311",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 11,
+          "sha256": "c333e527ef8f2252fe546f2a33002c9a77c0f55b54e2615dde7fa1184ad10fc3",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "55221",
+      "family": "quality-history",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-history",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/55221/versions/fae58d69c7e9db43e54d77d8819a7b2a3c0673e5b8945b21d738484aecb2fb2c.evidence-v3.json",
+      "evidenceFileSha256": "362ebe7a82168a4172a3d8ca2a0e4a4a8a624e41c1fe06054b3542a94d3e1d3d",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 5,
+          "sha256": "ffd5b5c4417e2a265d7946275218ef6521680dbc7f62985931e232cf0ad25f7e",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "55223",
+      "family": "quality-history",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-history",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/55223/versions/2e612c00b1f47871465f5de3fddeb7c6944964140ece358194829fd9a195b72a.evidence-v3.json",
+      "evidenceFileSha256": "4c9b3a64d9cdfb579d65f856fee96bc31a6d4a69e9a2110e710ffd606c93b841",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "6f94516ad2ae651f0371affab53732170bf89af2d4bc4c65141ea9bcdd8c3af0",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "55224",
+      "family": "quality-history",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-history",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/55224/versions/fff04db3dde1515713d4a5118528b6718d75eeca16fa99a7d521c143f12f5348.evidence-v3.json",
+      "evidenceFileSha256": "956c2dc97a4c6ba63da1b5de902ced27223c0243cf4e568f926d8048427b4ea9",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 25,
+          "sha256": "32d43214fee9e76995ea085086b420559284c4c8d271e9b8cacaa9ac3dd2848f",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "154818",
+      "family": "quality-history",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-history",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/154818/versions/43cea39076f3cac3af22bd562498a83d7d6dd8ce4076d5d387c1993cafa91b28.evidence-v3.json",
+      "evidenceFileSha256": "b4210b60a08924076692f0e83e43cb1bf53f5a6f45ac3b44c021b42d98339c24",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 9,
+          "sha256": "e3ccdfe0ef07c205863b2befd728a17c33f95c815795b970577bcec5541ec332",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "126848",
+      "family": "quality-counts",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-counts",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/126848/versions/0558d3a1050717a06323d71e66442befd01f36db2c2cc817734ca27145bd7431.evidence-v3.json",
+      "evidenceFileSha256": "e2f10ae7b6d4d3bb6401e698935ced118195eb4e1fe17799160168661859ebd0",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 11,
+          "sha256": "baaff2ee64569df6f59814daba2686f754dcc41ea418b91c01d189e040f14e3d",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "198209",
+      "family": "quality-counts",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-counts",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/198209/versions/d265f53f0efd168c9fc10b62ffe74cec0ad3fc60e9336636305d704da87c29d8.evidence-v3.json",
+      "evidenceFileSha256": "2aa8c364eb87efab287ef3d8eb183a4c62606f086edd22177d081fc2483f4174",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 3,
+          "sha256": "3e733034b3cb2ebcbb0cde1184c3eab1cf666d5daddad15dd892d0f81ce64c02",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [
+        "查询无日期条件，不能从该SQL证明当日数据及时性。"
+      ],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "152678",
+      "family": "quality-business-rules",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-business-rules",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/152678/versions/951d173d307fb0e3641848249789eb47721b81415f09376f86fc8a4a7483b287.evidence-v3.json",
+      "evidenceFileSha256": "c396cf8a1c0e3182dc9be82b229ea0f018fee820d22d3b9e779f13800563c283",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 4,
+          "sha256": "1879e5b9fec88230c022a205d98b69ad42774f22a9927b13b635bc71e70acb21",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "144585",
+      "family": "quality-business-rules",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-business-rules",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/144585/versions/abfc53e30277aa5896bac76b13cf0e1495d1d151ac405c460ef64597132c6a23.evidence-v3.json",
+      "evidenceFileSha256": "6a8a742727d5aed8a8bdacd7e84541a29dd4a145bc76a8b2f460e2eccbcc0d71",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 25,
+          "sha256": "847d375fd3469590f780fa599b16bc0dafefa7b380e2e0352e34bbfd602f01ed",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "197640",
+      "family": "quality-business-rules",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-business-rules",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/197640/versions/0505b3cd1761bdd4b3f4a48576a9825411476b07491eea69364b8a963e508372.evidence-v3.json",
+      "evidenceFileSha256": "f8e3e404b10c66c48a5f145d60931c99c68ee58d95f9de11656db00e209d0a39",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 93,
+          "sha256": "681768a6f0ba632c7c69af31660395adcafa0393c6d0f675d2684395bce76127",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    },
+    {
+      "taskId": "223385",
+      "family": "quality-contradiction",
+      "chapter": "topics/quality-and-evidence.md",
+      "sectionAnchor": "quality-contradiction",
+      "reviewStatus": "FAMILY_RULES_EXPLAINED",
+      "evidencePath": "../sql-static-lineage-data/task-projections/tasks/223385/versions/ce1e448887508d25587539de25ebcd06236f180b27d0f996306c55532129a422.evidence-v3.json",
+      "evidenceFileSha256": "da4fd737fedba024b728f138be274eeda8ebcc78c243cf30c39c64789aef6bc2",
+      "reviewedSql": [
+        {
+          "slot": "query",
+          "startLine": 1,
+          "endLine": 44,
+          "sha256": "a4767fac343afa1276ed10a6a49be1011a9758e6e2aa409804a9a8bac4475d16",
+          "readMode": "SQL_QUERY_READ; literal escaped line separators expanded for display only"
+        }
+      ],
+      "gaps": [
+        "连接的日期相等条件与最终日期不等条件互斥；按通常SQL三值逻辑无法检出差异。"
+      ],
+      "remainingCommon": [
+        "本条为检查定义的静态解释，不是运行记录或业务正确性证明。"
+      ]
+    }
+  ],
+  "counts": {
+    "tasks": 25
+  }
+}

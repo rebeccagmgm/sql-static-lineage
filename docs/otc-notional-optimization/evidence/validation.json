@@ -1,0 +1,90 @@
+{
+  "validatedAt": "2026-09-07T23:49:48.816Z",
+  "publicationVersion": "df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3",
+  "sourceSnapshotStable": true,
+  "selectedTasks": 20,
+  "primaryTasks": 14,
+  "supplementaryTasks": 6,
+  "sqlSnapshotsVerified": 45,
+  "localLinksChecked": 40,
+  "brokenLinks": [],
+  "claimChecks": {
+    "hkClassification33LinesEqualIgnoringWhitespaceAndCase": true,
+    "within118141AccumulatedExpressionsEqual": true,
+    "within220979AccumulatedExpressionsEqual": true,
+    "monthlyDenominatorReadsCurrentAndPreviousMonth": true,
+    "monthlyDenominatorSumsAllFilteredValues": true,
+    "monthlyNumeratorSelectsCurrentDate": true
+  },
+  "knownEvidenceBoundaries": [
+    "All 14 primary published tasks are LEGACY_NOT_L1",
+    "Current 100170 registry Facts manifest does not match publication; fixed published SQL only used for its consumer claim",
+    "No runtime rows, external report usage, uniqueness, currency reconciliation or resource cost verified",
+    "NEO4J_UNAVAILABLE; fixed publication file evidence used"
+  ],
+  "objectiveCoverage": [
+    {
+      "requirement": "Representative contract/notional paths",
+      "evidence": "README R1-R7; source-index /scope; 14 primary tasks",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    },
+    {
+      "requirement": "Compare sources formulas filters grain time currency consumers",
+      "evidence": "README each R section; metric-placement asset matrix; direct-consumers and six SQL endpoints",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    },
+    {
+      "requirement": "Reuse consolidation and retain justified differences",
+      "evidence": "README R1-R7 choices and implementation conditions",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    },
+    {
+      "requirement": "Public facts metrics wide table and dm_otc_n placement",
+      "evidence": "metric-placement.md; README R4-R6 existing asset decisions",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    },
+    {
+      "requirement": "Every recommendation has path evidence differences placement impact benefit and unknowns",
+      "evidence": "README R1-R7 complete sections; independent review completed",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    },
+    {
+      "requirement": "Analysis and evidence only",
+      "evidence": "Only docs/otc-notional-optimization created by this task; source hashes retained",
+      "status": "SATISFIED_FOR_ANALYSIS_DELIVERABLE"
+    }
+  ],
+  "independentReview": {
+    "verdict": "APPROVE",
+    "scope": "Analysis recommendations only; not business correctness or implementation acceptance",
+    "mandatoryCorrections": 0,
+    "checks": [
+      "R1 denominator reasoning",
+      "R2 expression equality versus business correctness",
+      "R3 exact repeated HK classification and differing historical parameters",
+      "R4 no reversed dependency cycle",
+      "R5-R6 grain time attribution units and existing asset reuse",
+      "100170 Facts version isolation",
+      "Consumer counts and static-evidence limits"
+    ]
+  },
+  "errors": [],
+  "finalizedAt": "2026-09-07T23:52:56.532Z",
+  "artifacts": [
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\otc-notional-optimization\\README.md",
+      "sha256": "ae6feb6812287021e31b4d69c5849f02bf57f508fae817387c10351b38f68672",
+      "lines": 140
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\otc-notional-optimization\\metric-placement.md",
+      "sha256": "c6407b91327526d84f514a90894f37a6e3aaaa1ab85d4e1a60d4c9801764a311",
+      "lines": 55
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\otc-notional-optimization\\evidence.md",
+      "sha256": "daa2b821d67d4f307bc70d688e472a6371bf9c34a0af878c7d63b1203e56f545",
+      "lines": 65
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS  dm_otc_n.otc_cust_daily_dyna_nom_prin( 
+	 Div_Org_Id string COMMENT '分公司代码' , Div_Org_Name string COMMENT '分公司名称' , Intro_Inr_Org_Id string COMMENT '分支机构代码' , Intro_Inr_Org_Name string COMMENT '分支机构名称' , Cust_Mngr_Name string COMMENT '客户经理名称' , cust_mngr_emp_id string COMMENT '客户经理编号' , Cutp_Pty_Shor_Name string COMMENT '交易对手简称' , dyna_nom_prin string COMMENT '动态名义本金' , init_nom_prin string COMMENT '期初名义本金' , accrued_date string COMMENT '计提日期' ) COMMENT '场外衍生品客户每日规模明细表' PARTITIONED BY ( busi_date string COMMENT '业务日期' ) STORED AS ORC

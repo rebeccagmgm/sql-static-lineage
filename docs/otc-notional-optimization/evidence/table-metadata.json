@@ -1,0 +1,223 @@
+{
+  "capturedAt": "2026-09-07T23:42:00.880Z",
+  "note": "Metadata read at analysis time; not all collected with same task SQL batch",
+  "tables": [
+    {
+      "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_info",
+      "description": "T98_场外衍生品合约销售收入基本信息表",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\pdata_n.t98_otc_deri_comp_sale_info__gfhive\\table.json",
+      "tableFileSha256": "602c5c164c41fb2615ecafd2a9bec4eec5aeb6da9209a42d6c229b1000614f4a",
+      "collectedAt": "2026-08-29T11:37:58.946Z",
+      "partitionFields": [
+        "busi_date",
+        "grp_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\pdata_n.t98_otc_deri_comp_sale_info__gfhive\\ddl.sql",
+      "ddlSha256": "d268384a5d6796f40b2b3294aa7963a937822e1523199264984deafe35030223",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table t98_otc_deri_comp_sale_info(agt_id string comment '合约编号',busi_type string comment '业务类型',cutp_pty_id string comment '交易对手客户编号',cutp_pty_shor_name string comment '交易对手当事人简称',cutp_pty_full_name string comment '交易对手当事人名称',sign_prd_name string comment '代签产品名称',indt_cd string comment '行业代码',corp_qual string comment '企业资质',contr_type_cd string comment '合约类型代码',contr_type_desc string comment '合约类型描述',src_contr_type string comment '源合约类型',src_contr_type_desc string comment '源合约类型描述',src_sub_contr_type string comment '源合约子类型',src_sub_contr_type_desc string comment '源合约子类型描述',undrl_ins_id string comment '标的ID',undrl_wd_cd string comment '标的万得代码',undrl_name string comment '标的名称',undrl_type string comment '标的类型',undrl_type_desc string comment '标的类型描述',src_undrl_type string comment '源标的类型',src_undrl_type_desc string comment '源标的类型描述',res_flag string comment '限售标志',ipo_flag string comment 'IPO标志',buy_sell_dir_cd string comment '买卖方向代码',cny_ex_rate string comment '人民币汇率',init_nom_prin string comment '初始名义本金',dyna_nom_prin string comment '动态名义本金',absl_nom_prin string comment '绝对名义本金',strt_pric_date string comment '期初定价日',end_pric_date string comment '期末定价日',early_term_date string comment '提前终止日',earn_pymt_date string comment '收益兑付日',term_days string comment '期限天数',agt_stat_cd string comment '协议状态代码',inr_seri_no string comment '内部流水号',otc_seri_no string comment '场外合约流水号',bndl_id string comment '组合编号',rel_agt_id string comment '关联合约编号',init_marg_prop string comment '初始保证金比例',init_marg_bal string comment '初始保证金',ddct_ptrn string comment '抵扣模式',cms_rate string comment '佣金费率',fixed_rate string comment '固定腿利率',fee_rate string comment '实际费率',hedg_type_cd string comment '对冲类型代码',opt_fee string comment '期权费',opt_fee_paid_date string comment '期权费支付日期',ko_prtc_rate string comment '敲出参与率',ko_yield string comment '敲出收益率',net_coll string comment '交易净收取',coup_rate string comment '票息',min_obs_date string comment '最小观察日',max_obs_date string comment '最大观察日',up_prtc_rate string comment '向上参与率',down_prtc_rate string comment '向下参与率',ki_barr_pct string comment '敲入障碍价',ko_barr_pct string comment '敲出障碍价',strk_pct string comment '执行价',down_strk_pct string comment '下跌保护执行价格',up_strk_pct string comment '封顶价格',data_src_cd string comment '数据来源代码',task_name string comment '任务名',data_etl_date string comment '数据加载日期',data_upt_date string comment '数据更新日期',data_time string comment '数据时间',book_bel_dept string comment '账簿所属部门',bgng_npv string comment '期初NPV',src_agt_stat_cd string comment '源合约状态',undrl_long_name string comment '标的长名称',qual_revw_flag string comment '客户资质复核标志',ext_comp_no string comment '外部合约编号',key_cutp_id string comment 'Titans客户编号',undrl_curr string comment '标的币种',intr_marg string comment '利差',base_marg_rate string comment '基础保证金率',marg_agt_id string comment '保证金合约编号',opt_fee_rate string comment '期权费率',book_agt_id string comment '账簿协议编号',book_name string comment '账簿名称',cntr string comment '柜台',sler_cutp_pty_id string comment '销售方交易对手当事人编号',futr_type string comment '期货类型',agt_clas_cd string comment '协议分类代码',cros_crrc_type_cd string comment '跨币种类型代码',float_base_rate string comment '浮动基础利率',float_undrl_cd string comment '浮动腿标的代码',flot_intrt_ulmt string comment '浮动利率上限',comp_usag_cd string comment '合约用途代码',sett_crrc_cd string comment '结算币种代码',ex_rate_model string comment '汇率模式') partitioned by (busi_date string comment '业务日期',grp_id string comment '并行分组标识') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "description": "T98_场外衍生品合约销售收入附加明细",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\pdata_n.t98_otc_deri_comp_sale_adtnl_det__gfhive\\table.json",
+      "tableFileSha256": "ec059a622e7690754f354ed0c06329900e55c4f28b60e1e2716338ded617de3d",
+      "collectedAt": "2026-08-22T03:04:24.478Z",
+      "partitionFields": [
+        "busi_date",
+        "grp_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\pdata_n.t98_otc_deri_comp_sale_adtnl_det__gfhive\\ddl.sql",
+      "ddlSha256": "ea5e700af3de3895e476d0aba9fd602c08dde6aa6fe813c8970daeaffe55a2c1",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table t98_otc_deri_comp_sale_adtnl_det(agt_id string comment '合约编号',busi_type string comment '业务类型',cutp_pty_id string comment '交易对手客户编号',undrl_ins_id string comment '标的ID',undrl_wd_cd string comment '标的万得代码',undrl_name string comment '标的名称',strt_pric_date string comment '期初定价日',end_pric_date string comment '期末定价日',init_nom_prin string comment '初始名义本金',dyna_nom_prin string comment '动态名义本金',fee_rate string comment '费率',inta string comment '应计利息',fnd_cost string comment '用资成本',trd_cms string comment '交易佣金收入',trd_cms_cost string comment '交易佣金成本',marg_prop string comment '保证金比例',data_src_cd string comment '数据来源代码',task_name string comment '任务名',data_etl_date string comment '数据加载日期',data_upt_date string comment '数据更新日期',data_time string comment '数据时间') partitioned by (busi_date string comment '业务日期',grp_id string comment '并行分组标识') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.otc_sale_daily_rpt",
+      "description": "场外衍生品合约交叉销售收入日报",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_sale_daily_rpt__gfhive\\table.json",
+      "tableFileSha256": "550cad2543878c069c18e25b135d4be717d35b06abb1a3066a9e42bc8ec49336",
+      "collectedAt": "2026-08-23T01:52:19.277Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_sale_daily_rpt__gfhive\\ddl.sql",
+      "ddlSha256": "e1351a48806fd9f2953158dea50827fe4615107292a33569b0c25be496d1846d",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table otc_sale_daily_rpt(agt_id string comment '合约编号',busi_type string comment '业务类型',cutp_pty_id string comment '交易对手客户编号',cutp_pty_shor_name string comment '交易对手当事人简称',cutp_pty_full_name string comment '交易对手当事人名称',sign_prd_name string comment '代签产品名称',contr_type_cd string comment '合约类型代码',contr_type_desc string comment '合约类型描述',src_contr_type string comment '源合约类型',src_contr_type_desc string comment '源合约类型描述',src_sub_contr_type string comment '源合约子类型',src_sub_contr_type_desc string comment '源合约子类型描述',undrl_ins_id string comment '标的ID',undrl_wd_cd string comment '标的',undrl_name string comment '标的名称',undrl_type string comment '标的类型',src_undrl_type string comment '源标的类型',annu_sprd string comment '年化价差',absl_sprd string comment '绝对价差',annu_base string comment '年化销售费系数',absl_base string comment '绝对销售费系数',init_nom_prin string comment '初始名义本金',init_nom_prin_main string comment '主经办人初始名义本金',init_nom_prin_intro string comment '引入经办人初始名义本金',dyna_nom_prin string comment '动态名义本金',dyna_nom_prin_main string comment '主经办人动态名义本金',dyna_nom_prin_intro string comment '引入经办人动态名义本金',accum_dyna_nom_prin string comment '累计动态名义本金',absl_nom_prin string comment '绝对名义本金',absl_nom_prin_main string comment '主经办人绝对名义本金',absl_nom_prin_intro string comment '引入经办人绝对名义本金',accum_absl_nom_prin string comment '累计绝对名义本金',curr_prvs_sales_income string comment '当日计提销售收入',curr_prvs_sales_income_1 string comment '当日计提销售收入_1',curr_prvs_sales_income_2 string comment '当日计提销售收入_2',curr_prvs_sales_income_3 string comment '当日计提销售收入_3',strt_pric_date string comment '期初定价日',end_pric_date string comment '期末定价日',accrued_strt_date string comment '计提初始日',accrued_end_date string comment '计提结束日',earn_pymt_date string comment '收益兑付日',actl_days string comment '实际天数',is_preterm_flag string comment '是否提前终止标识',early_term_date string comment '提前终止日',agt_stat_cd string comment '协议状态代码',main_oper_user_id string comment '主经办人ID',main_oper_name string comment '主经办人姓名',main_oper_emp_id string comment '主经办人ERP编号',intro_oper_user_id string comment '引入经办人ID',intro_oper_name string comment '引入经办人姓名',intro_oper_emp_id string comment '引入经办人ERP编号',intro_inr_org_id_1 string comment '引入部门ID_1',intro_inr_org_name_1 string comment '引入部门名称_1',div_org_id_1 string comment '所属分公司ID_1',div_org_name_1 string comment '所属分公司名称_1',cust_mngr_user_id_1 string comment '客户经理ID_1',cust_mngr_name_1 string comment '客户经理姓名_1',cust_mngr_emp_id_1 string comment '客户经理ERP编号_1',allo_prop_1 string comment '分配比例_1',intro_inr_org_id_2 string comment '引入部门ID_2',intro_inr_org_name_2 string comment '引入部门名称_2',div_org_id_2 string comment '所属分公司ID_2',div_org_name_2 string comment '所属分公司名称_2',cust_mngr_user_id_2 string comment '客户经理ID_2',cust_mngr_name_2 string comment '客户经理姓名_2',cust_mngr_emp_id_2 string comment '客户经理ERP编号_2',allo_prop_2 string comment '分配比例_2',intro_inr_org_id_3 string comment '引入部门ID_3',intro_inr_org_name_3 string comment '引入部门名称_3',div_org_id_3 string comment '所属分公司ID_3',div_org_name_3 string comment '所属分公司名称_3',cust_mngr_user_id_3 string comment '客户经理ID_3',cust_mngr_name_3 string comment '客户经理姓名_3',cust_mngr_emp_id_3 string comment '客户经理ERP编号_3',allo_prop_3 string comment '分配比例_3',accrued_date string comment '计提日期',data_time string comment '数据时间',accum_prvs_sales_income string comment '累计计提销售收入',accum_prvs_sales_income_1 string comment '累计计提销售收入_1',accum_prvs_sales_income_2 string comment '累计计提销售收入_2',accum_prvs_sales_income_3 string comment '累计计提销售收入_3',adtnl_rwd string comment '额外奖励',fee_rate string comment '成交费率',fin_rati string comment '融资比例',intr_marg string comment '利差',res_flag string comment '限售标志',opt_fee_rate string comment '期权费率',ex_rate_model string comment '汇率模式',cust_mngr_is_actv_1 string comment '客户经理是否在职_1',cust_mngr_is_actv_2 string comment '客户经理是否在职_2',cust_mngr_is_actv_3 string comment '客户经理是否在职_3') partitioned by (busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+      "description": "客户*营业部*员工&客户*分公司本部*员工_合约规模_场外衍生品&交叉销售_当月日均_无备注信息",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_compscal_otcderi_cs_mthapd__gfhive\\table.json",
+      "tableFileSha256": "0f606a932c98c8db879beb73d2b46f9a3dc46436e3af268feec22697f6339914",
+      "collectedAt": "2026-08-23T01:46:20.442Z",
+      "partitionFields": [
+        "busi_mon",
+        "tag_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_compscal_otcderi_cs_mthapd__gfhive\\ddl.sql",
+      "ddlSha256": "7563515f2324eb37e5cb5c549de09ff17e825b99388302c9f9ac73d3f58fbc16",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table index_grp3_compscal_otcderi_cs_mthapd(grp_id1 string comment '组合ID1',grp_id2 string comment '组合ID2',grp_id3 string comment '组合ID3',index_val string comment '指标值',data_time string comment '数据时间',modify_operator string comment '修改人',modify_time string comment '修改时间',status string comment '状态 1：可用 0：已失效',index_id string comment '指标代码') partitioned by (busi_mon string comment '业务月份',tag_id string comment '标签ID') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.trd_deri_stru_type_mth",
+      "description": "月度衍生品结构类型交易情况",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.trd_deri_stru_type_mth__gfhive\\table.json",
+      "tableFileSha256": "00feef2515a052f1fd3d2209ad7bfe0a08999eedeb850d56b9d19308a6abcd64",
+      "collectedAt": "2026-08-30T07:12:32.221Z",
+      "partitionFields": [
+        "busi_mon"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.trd_deri_stru_type_mth__gfhive\\ddl.sql",
+      "ddlSha256": "fbd1189ff9a8bdee83ffff2f7c65a410e14ded9059c2a6b66c95802bce82ee53",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table trd_deri_stru_type_mth(deri_type string comment '衍生品类型',otc_deri_type string comment '合约类型',add_nom_prin_mth string comment '本月新增名义本金规模（亿元）',add_nom_prin_pmth string comment '上月新增名义本金规模（亿元）',add_nom_prin_mom string comment '新增名义本金环比',add_nom_prin_mom_flag string comment '新增名义本金环比升降标志',mom_abs_rank_no string comment '环比绝对值排序',add_nom_prin_year_rate string comment '今年新增名义本金占比',dura_nom_prin_mth_rate string comment '本月存续名义本金占比',rate_diff_abs_gt_pct5_flag string comment '占比差绝对值是否大于百分之五',rate_diff_abs_gt_pct2_flag string comment '占比差绝对值是否大于百分之二') partitioned by (busi_mon string comment '月份') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.trd_deri_type_mth",
+      "description": "月度衍生品类型交易情况",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.trd_deri_type_mth__gfhive\\table.json",
+      "tableFileSha256": "028057b4d21728d7aa28379a0e17563f0bc965b47b7e388a20b4e50f6edaebff",
+      "collectedAt": "2026-08-30T07:12:56.526Z",
+      "partitionFields": [
+        "busi_mon"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.trd_deri_type_mth__gfhive\\ddl.sql",
+      "ddlSha256": "0997067103ec5cadc48dc8fa4fc2a1b8e312473485dfa349cd05d8fdb511c289",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table trd_deri_type_mth(deri_type string comment '衍生品类型',add_nom_prin_mth string comment '本月新增名义本金规模（亿元）',add_nom_prin_pmth string comment '上月新增名义本金规模（亿元）',add_nom_prin_mth_rate string comment '本月新增名义本金规模占比',add_nom_prin_mom string comment '新增名义本金环比',add_nom_prin_mom_flag string comment '新增名义本金环比升降标志') partitioned by (busi_mon string comment '月份') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.adm_v_risk_daily_bundle_margin",
+      "description": "每日组合履保计算结果",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.adm_v_risk_daily_bundle_margin__gfhive\\table.json",
+      "tableFileSha256": "2163ea28f26f0bd6479d0b15dcfab203c99c183e978410471937cf288b0bf236",
+      "collectedAt": "2026-08-23T02:52:47.657Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.adm_v_risk_daily_bundle_margin__gfhive\\ddl.sql",
+      "ddlSha256": "00fcea894f262b2c754764b4aab1cc832a315420e9c22f1f9f040e86c1453971",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table adm_v_risk_daily_bundle_margin(src_busi_date string comment '日期\r',bundle_id string comment '组合编号\r',internal_trade_id string comment '合约编号\r',underlying_info string comment '标的证券\r',interotc_name string comment '标的类型\r',busi_type string comment '业务类型!\r',mtm_currency string comment '盯市币种\r',ctpty_short_name string comment '交易对手\r',dynamic_notional string comment '名义本金\r',mgr_balance string comment '批次保证金余额\r',current_balance string comment '实时保证金余额\r',mrg_withdrawed string comment '可提取保证金\r',mrg_rate string comment '履约保障比例(%)\r',mgr_status string comment '履保状态\r',mgr_remarginable string comment '需追加金额\r',initial_margin string comment '保证金初始线(%)\r',warning string comment '保证金预警线(%)\r',margin_call string comment '保证金追保线(%)\r',withdraw string comment '保证金提取线(%)\r',withdraw_floor string comment '保证金提取维持线(%)\r',margin_call_floor string comment '保证金追保维持线(%)\r',basic_margin_rate string comment '基础保证金率(%)\r',notional1 string comment '名义本金1\r',float_pnl string comment '收益\r',inner_value string comment '内在价值\r',mark_inner_value string comment '盯市价值\r',unpay_fee string comment '应付未付费用\r',fee string comment '费用\r',accrued_interest string comment '累计应计利息\r',notional_or_value string comment '分母的动态名义本金或市值\r',notional2 string comment '名义本金2\r',market_value string comment '浮动市值\r',updated_datetime string comment '最近一次计算时间\r',advance_amount string comment '垫资金额\r',add_remarginable string comment '合计应追加金额\r',advance_status string comment '垫资状态\r',support_margin string comment '履保类型\r',margin_greeks string comment '保证金敞口\r',custom_ratio string comment '客户系数\r',call_require string comment '履约保障要求\r',margin_require string comment '追保维持要求\r',withdraw_require string comment '提取维持要求\r',pv string comment ' pv\r',pv1 string comment ' pv1\r',pv2 string comment ' pv2\r',pv3 string comment ' pv3\r',pv4 string comment ' pv4\r',pv5 string comment ' pv5\r',pv6 string comment ' pv6\r',is_calc string comment ' 是否计算\r',trd_composition string comment ' 组合成分\r',department string comment ' 所属部门\r',ctpty_long_name string comment '交易对手长名',key_ctpty_id string comment '交易对手ID') partitioned by (busi_date string comment '日分区') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.otc_hk_sale_daily_rpt",
+      "description": "场外衍生品合约香港交叉销售收入日报",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_hk_sale_daily_rpt__gfhive\\table.json",
+      "tableFileSha256": "b765c4dcb856735e32129bb7cb0d4fd715514211c741110d4a0700e8fe1a2972",
+      "collectedAt": "2026-08-22T05:15:12.563Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_hk_sale_daily_rpt__gfhive\\ddl.sql",
+      "ddlSha256": "120ba9d1c5e8cb7ea884d4e315c0ea0c25d4e77cd05f57b3f914ce3e2b3ea014",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table otc_hk_sale_daily_rpt(agt_id string comment '合约编号',busi_type string comment '业务类型',cutp_pty_id string comment '交易对手客户编号',cutp_pty_shor_name string comment '交易对手当事人简称',cutp_pty_full_name string comment '交易对手当事人名称',sign_prd_name string comment '代签产品名称',contr_type_cd string comment '合约类型代码',contr_type_desc string comment '合约类型描述',src_contr_type string comment '源合约类型',src_contr_type_desc string comment '源合约类型描述',src_sub_contr_type string comment '源合约子类型',src_sub_contr_type_desc string comment '源合约子类型描述',undrl_wd_cd string comment 'WD标的代码',undrl_name string comment '标的名称',undrl_type string comment '标的类型',src_undrl_type string comment '源标的类型',annu_sprd string comment '年化价差',absl_sprd string comment '绝对价差',annu_base string comment '年化销售费系数',absl_base string comment '绝对销售费系数',cms_fee_rate string comment '交易佣金费率',init_nom_prin string comment '初始名义本金',init_nom_prin_main string comment '主经办人初始名义本金',init_nom_prin_intro string comment '引入经办人初始名义本金',dyna_nom_prin string comment '动态名义本金',dyna_nom_prin_main string comment '主经办人动态名义本金',dyna_nom_prin_intro string comment '引入经办人动态名义本金',accum_dyna_nom_prin string comment '累计动态名义本金',absl_nom_prin string comment '绝对名义本金',absl_nom_prin_main string comment '主经办人绝对名义本金',absl_nom_prin_intro string comment '引入经办人绝对名义本金',accum_absl_nom_prin string comment '累计绝对名义本金',strt_pric_date string comment '期初定价日',end_pric_date string comment '期末定价日',earn_pymt_date string comment '收益兑付日',is_preterm_flag string comment '是否提前终止标识',early_term_date string comment '提前终止日',agt_stat_cd string comment '协议状态代码',main_oper_user_id string comment '主经办人ID',main_oper_name string comment '主经办人姓名',main_oper_emp_id string comment '主经办人ERP编号',intro_oper_user_id string comment '引入经办人ID',intro_oper_name string comment '引入经办人姓名',intro_oper_emp_id string comment '引入经办人ERP编号',intro_inr_org_id_1 string comment '引入部门ID_1',intro_inr_org_name_1 string comment '引入部门名称_1',div_org_id_1 string comment '所属分公司ID_1',div_org_name_1 string comment '所属分公司名称_1',cust_mngr_user_id_1 string comment '客户经理ID_1',cust_mngr_name_1 string comment '客户经理姓名_1',cust_mngr_emp_id_1 string comment '客户经理ERP编号_1',allo_prop_1 string comment '分配比例_1',intro_inr_org_id_2 string comment '引入部门ID_2',intro_inr_org_name_2 string comment '引入部门名称_2',div_org_id_2 string comment '所属分公司ID_2',div_org_name_2 string comment '所属分公司名称_2',cust_mngr_user_id_2 string comment '客户经理ID_2',cust_mngr_name_2 string comment '客户经理姓名_2',cust_mngr_emp_id_2 string comment '客户经理ERP编号_2',allo_prop_2 string comment '分配比例_2',intro_inr_org_id_3 string comment '引入部门ID_3',intro_inr_org_name_3 string comment '引入部门名称_3',div_org_id_3 string comment '所属分公司ID_3',div_org_name_3 string comment '所属分公司名称_3',cust_mngr_user_id_3 string comment '客户经理ID_3',cust_mngr_name_3 string comment '客户经理姓名_3',cust_mngr_emp_id_3 string comment '客户经理ERP编号_3',allo_prop_3 string comment '分配比例_3',accrued_date string comment '计提日期',curr_prvs_sales_income string comment '当日计提销售收入',accum_prvs_sales_income string comment '累计计提销售收入',accum_prvs_sales_income_1 string comment '累计计提销售收入_1',accum_prvs_sales_income_2 string comment '累计计提销售收入_2',accum_prvs_sales_income_3 string comment '累计计提销售收入_3',adtnl_rwd string comment '额外奖励',fee_rate string comment '成交费率',fin_rati string comment '融资比例',intr_marg string comment '利差',res_flag string comment '限售标志',opt_fee_rate string comment '期权费率',data_time string comment '数据时间') partitioned by (busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.otc_hk_sale_para",
+      "description": "场外衍生品合约香港交叉销售收入参数",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_hk_sale_para__gfhive\\table.json",
+      "tableFileSha256": "fecf7293e89741cdd18ff302c729dd8f7cfc7000a9ac3ee7887e8504c24d6b80",
+      "collectedAt": "2026-08-23T01:48:55.105Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_hk_sale_para__gfhive\\ddl.sql",
+      "ddlSha256": "99426e74bb890ba6ed53cc9f61dd12b0a5f4e8724b786d9bfe51d22d33b31b2a",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table otc_hk_sale_para(agt_id string comment '合约编号',busi_type string comment '业务类型',cutp_pty_id string comment '交易对手客户编号',cutp_pty_shor_name string comment '交易对手当事人简称',cutp_pty_full_name string comment '交易对手当事人名称',sign_prd_name string comment '代签产品名称',contr_type_cd string comment '合约类型代码',contr_type_desc string comment '合约类型描述',src_contr_type string comment '源合约类型',src_contr_type_desc string comment '源合约类型描述',src_sub_contr_type string comment '源合约子类型',src_sub_contr_type_desc string comment '源合约子类型描述',undrl_wd_cd string comment 'WD标的代码',undrl_name string comment '标的名称',undrl_type string comment '标的类型',src_undrl_type string comment '源标的类型',annu_sprd string comment '年化价差',absl_sprd string comment '绝对价差',sprd_calc_cd string comment '价差计算方式代码',sprd_data string comment '价差系数数据',base_award_rate string comment '销售基础奖励系数',base_calc_cd string comment '销售基础奖励计算方式代码',cms_fee_rate string comment '交易佣金费率',cms_rate_calc_cd string comment '交易佣金费率计算方式代码',cms_data string comment '交易佣金费率数据',strt_pric_date string comment '期初定价日',end_pric_date string comment '期末定价日',earn_pymt_date string comment '收益兑付日',agt_stat_cd string comment '协议状态代码',main_oper_user_id string comment '主经办人USER_ID',main_oper_name string comment '主经办人姓名',main_oper_emp_id string comment '主经办人ERP编号',intro_oper_user_id string comment '引入经办人USER_ID',intro_oper_name string comment '引入经办人姓名',intro_oper_emp_id string comment '引入经办人ERP编号',intro_inr_org_id_1 string comment '引入部门ID_1',intro_inr_org_name_1 string comment '引入部门名称_1',cust_mngr_user_id_1 string comment '客户经理USER_ID_1',cust_mngr_name_1 string comment '客户经理姓名_1',cust_mngr_emp_id_1 string comment '客户经理ERP编号_1',allo_prop_1 string comment '分配比例_1',intro_inr_org_id_2 string comment '引入部门ID_2',intro_inr_org_name_2 string comment '引入部门名称_2',cust_mngr_user_id_2 string comment '客户经理USER_ID_2',cust_mngr_name_2 string comment '客户经理姓名_2',cust_mngr_emp_id_2 string comment '客户经理ERP编号_2',allo_prop_2 string comment '分配比例_2',intro_inr_org_id_3 string comment '引入部门ID_3',intro_inr_org_name_3 string comment '引入部门名称_3',cust_mngr_user_id_3 string comment '客户经理USER_ID_3',cust_mngr_name_3 string comment '客户经理姓名_2',cust_mngr_emp_id_3 string comment '客户经理ERP编号_3',allo_prop_3 string comment '分配比例_3',init_nom_prin string comment '期初名义本金',fee_rate string comment '成交费率',fin_rati string comment '融资比例',intr_marg string comment '利差',upt_prsn string comment '更新人',upt_time string comment '更新时间',data_time string comment '数据时间') partitioned by (busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+      "description": "场外衍生品客户每日规模明细表",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_cust_daily_dyna_nom_prin__gfhive\\table.json",
+      "tableFileSha256": "cf77db8f4b4ddf25fac49faea0a4778f9eb7a4a5967148cc6c40332059437106",
+      "collectedAt": "2026-08-23T01:48:24.837Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.otc_cust_daily_dyna_nom_prin__gfhive\\ddl.sql",
+      "ddlSha256": "524a1f8e8992c7604f270961b26e37ed8225f6a43d9728f9b16e2348703e99e1",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table otc_cust_daily_dyna_nom_prin(div_org_id string comment '分公司代码',div_org_name string comment '分公司名称',intro_inr_org_id string comment '分支机构代码',intro_inr_org_name string comment '分支机构名称',cust_mngr_name string comment '客户经理名称',cust_mngr_emp_id string comment '客户经理编号',cutp_pty_shor_name string comment '交易对手简称',dyna_nom_prin string comment '动态名义本金',init_nom_prin string comment '期初名义本金',accrued_date string comment '计提日期') partitioned by (busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_otc_n.bi_otc_cust_index",
+      "description": "OTC客户指标表",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.bi_otc_cust_index__gfhive\\table.json",
+      "tableFileSha256": "ca959d966a1e41ada390b536f0687a34177b8a3c1236b0fefb0325336b5a0e7b",
+      "collectedAt": "2026-08-23T00:37:08.605Z",
+      "partitionFields": [
+        "busi_date"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_otc_n.bi_otc_cust_index__gfhive\\ddl.sql",
+      "ddlSha256": "2a37c671c92e078dca8db6baafded0f70289a5b158b0be93b8e48794225f5e8b",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "create table bi_otc_cust_index(company_name string comment '公司名称',company_id string comment '公司ID/USCC',contact_sales string comment '对接销售',sales_login string comment '销售LOGIN',cust_hold_win_rate string comment '客户持仓总胜率',cust_win_rate string comment '客户胜率',margin_ratio string comment '履保比例',margin_call_line string comment '追保线',margin_grade string comment '履保分级',risk_test_data string comment '风险压测数据',outst_margin_amount string comment '存续履保交易规模(万元)',used_quota string comment '已用额度(万元)',approved_quota string comment '获批额度(万元)',approved_busi_type string comment '获批的业务类型',margin_call_rate string comment '及时追保完成率',cust_advance_info string comment '客户垫资情况(如有)',credit_measure string comment '增信措施(如有)',cust_satisfaction_score string comment '客户满意度总分',cust_satisfaction_feedback string comment '客户满意度改进意见',swap_turnover_rate string comment '互换业务本月换手率',swap_new_principal string comment '互换业务本月新增本金(万元)',swap_outst_month_end string comment '互换业务上月末存续(亿元)',swap_platform_fee string comment '互换业务平台费(万元)',swap_bond_interest string comment '互换业务券息(万元)',swap_commission string comment '互换业务佣金(万元)') partitioned by (busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+    },
+    {
+      "qualifiedName": "dm_index_n.index_grp2_std_ast_bef_covt_mth_apd",
+      "description": "客户*机构_标准资产_折算前&产品户比例切分&异地开户切分&剔除司法冻结户&剔除特定客户_当月日均&每日更新过去6个月数据_无备注信息",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp2_std_ast_bef_covt_mth_apd__gfhive\\table.json",
+      "tableFileSha256": "767e80f853dea662dea85bf8300d74fbe9204de8366c5ca6d9e91711f6402cd6",
+      "collectedAt": "2026-09-04T03:25:51.447Z",
+      "partitionFields": [
+        "busi_mon",
+        "tag_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp2_std_ast_bef_covt_mth_apd__gfhive\\ddl.sql",
+      "ddlSha256": "9bfa1f648322b8416b346303c9c30e1388407f5dd13c4b3e96817acc62e0d862",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "CREATE TABLE IF NOT EXISTS dm_index_n.index_grp2_std_ast_bef_covt_mth_apd( grp_id1 STRING COMMENT '组合ID1', grp_id2 STRING COMMENT '组合ID2',  index_val STRING COMMENT '指标值' , data_time STRING COMMENT '数据时间', modify_operator STRING COMMENT '修改人', modify_time STRING COMMENT '修改时间', status STRING COMMENT '状态 1：可用 0：已失效', index_id STRING COMMENT '指标代码' ) COMMENT '客户*机构_标准资产_折算前&产品户比例切分&异地开户切分&剔除司法冻结户&剔除特定客户_当月日均&每日更新过去6个月数据_无备注信息' PARTITIONED BY ( busi_mon STRING COMMENT '业务月份', tag_id STRING COMMENT '标签ID' ) STORED AS ORC;"
+    },
+    {
+      "qualifiedName": "dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd",
+      "description": "客户*机构*员工_标准资产_折算前_当月日均&每日更新过去6个月数据_无备注信息",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd__gfhive\\table.json",
+      "tableFileSha256": "de11a876eb9bea35b6fe76c58b0aff44ddfaf881f292743bfb9cd57bc87e3e42",
+      "collectedAt": "2026-09-04T05:40:06.285Z",
+      "partitionFields": [
+        "busi_mon",
+        "tag_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd__gfhive\\ddl.sql",
+      "ddlSha256": "7e43dff4e00cb3d3c5baf6676d0209b6a05d3af3c2987cedcf3c470c0be344c8",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "CREATE TABLE IF NOT EXISTS dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd( grp_id1 STRING COMMENT '组合ID1', grp_id2 STRING COMMENT '组合ID2', grp_id3 STRING COMMENT '组合ID3',  index_val STRING COMMENT '指标值' , data_time STRING COMMENT '数据时间', modify_operator STRING COMMENT '修改人', modify_time STRING COMMENT '修改时间', status STRING COMMENT '状态 1：可用 0：已失效', index_id STRING COMMENT '指标代码' ) COMMENT '客户*机构*员工_标准资产_折算前_当月日均&每日更新过去6个月数据_无备注信息' PARTITIONED BY ( busi_mon STRING COMMENT '业务月份', tag_id STRING COMMENT '标签ID' ) STORED AS ORC;"
+    },
+    {
+      "qualifiedName": "dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd",
+      "description": "客户*机构*员工_标准资产_折算后_当月日均&每日更新过去6个月数据",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd__gfhive\\table.json",
+      "tableFileSha256": "2f3d04e8e28357c469a455827a31c4a03df7d7462227b773f3c1c3d6cea1cb4a",
+      "collectedAt": "2026-09-04T05:40:06.352Z",
+      "partitionFields": [
+        "busi_mon",
+        "tag_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd__gfhive\\ddl.sql",
+      "ddlSha256": "8a22627a2a9ff7130e2d899c88d4b29b45b50051142815c509d5de7784c09f67",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "CREATE TABLE IF NOT EXISTS dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd( grp_id1 STRING COMMENT '组合ID1', grp_id2 STRING COMMENT '组合ID2', grp_id3 STRING COMMENT '组合ID3',  index_val STRING COMMENT '指标值' , data_time STRING COMMENT '数据时间', modify_operator STRING COMMENT '修改人', modify_time STRING COMMENT '修改时间', status STRING COMMENT '状态 1：可用 0：已失效', index_id STRING COMMENT '指标代码' ) COMMENT '客户*机构*员工_标准资产_折算后_当月日均&每日更新过去6个月数据' PARTITIONED BY ( busi_mon STRING COMMENT '业务月份', tag_id STRING COMMENT '标签ID' ) STORED AS ORC;"
+    },
+    {
+      "qualifiedName": "dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd",
+      "description": "客户&员工_标准资产_折算后&开发关系_当月日均&每日更新过去6个月数据_无备注信息",
+      "tablePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd__gfhive\\table.json",
+      "tableFileSha256": "7b2115eec475f64250501df524bae05f436ee02b5c15a9ec1e0317b098fd8828",
+      "collectedAt": "2026-09-04T05:40:40.029Z",
+      "partitionFields": [
+        "busi_mon",
+        "tag_id"
+      ],
+      "ddlPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\tables\\hive\\dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd__gfhive\\ddl.sql",
+      "ddlSha256": "acbc27d9c086a3edd25453bfc793dddddc31ade4a076693a9637360c377e0d6f",
+      "ddlMatchesDeclared": true,
+      "ddlContent": "CREATE TABLE IF NOT EXISTS dm_index_n.index_grp2_cust_emp_stdast_devrela_mthapd( grp_id1 STRING COMMENT '组合ID1', grp_id2 STRING COMMENT '组合ID2',  index_val STRING COMMENT '指标值' , data_time STRING COMMENT '数据时间', modify_operator STRING COMMENT '修改人', modify_time STRING COMMENT '修改时间', status STRING COMMENT '状态 1：可用 0：已失效', index_id STRING COMMENT '指标代码' ) COMMENT '客户&员工_标准资产_折算后&开发关系_当月日均&每日更新过去6个月数据_无备注信息' PARTITIONED BY ( busi_mon STRING COMMENT '业务月份', tag_id STRING COMMENT '标签ID' ) STORED AS ORC;"
+    }
+  ]
+}

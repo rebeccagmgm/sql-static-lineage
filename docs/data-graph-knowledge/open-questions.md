@@ -1,0 +1,41 @@
+# 已经缩小到具体证据的待确认问题
+
+这些问题不是已判定的加工缺陷。每项先记录已看见的实现，再说明缺什么证据、确认后会改变哪部分理解。它们不阻止读懂当前 SQL，但决定相关业务解释能否进一步成立。更广的未研究主题另见[覆盖与选题](coverage.md)。
+
+## 优先确认会改变对象或金额解释的问题
+
+| 问题 | 已确认的实现 | 还需要什么，影响哪部分理解 |
+| --- | --- | --- |
+| Q01：同名客户字段能否相互连接？ | 销售基础的 `Cutp_Pty_Id` 使用外部客户码；子交易宽表同名字段使用 TIT 当事人编号。两个相近源对手表也采用相同前缀与来源标签。[身份章](10-party-customer-identity.md) | 两套源 ID 的映射与有效期、实际连接键。否则不能按列名合并客户主题或跨表直接对账 |
+| Q02：资金账户身份为何采用不同修饰值？ | [105074](../../../sql-static-lineage-data/task-projections/tasks/105074/versions/5d1140e4415f810cd4465eb3f1b89d334d33a77f63976974ea136caef17aa0fa.evidence-v3.json) 将源 `KEY_CAPITAL_ACCT_ID` 写入 `Ast_Acct_Agt_Id` 时采用 10218；[105063](../../../sql-static-lineage-data/task-projections/tasks/105063/versions/9e98f78ed6d8ba76e7ffef3c715d028c55b7d7145b8acc18f9ffcc162cf6121c.evidence-v3.json) 将同名源字段写入关系 `Rela_Agt_Id` 时采用 10220 | 对应数据元素／编号规范及消费者的连接条件。先判断是不是不同身份表达，再讨论是否有问题 |
+| Q03：关系右端分类为什么使用左端类别？ | [219175](../../../sql-static-lineage-data/task-projections/tasks/219175/versions/30d5d93162897dfc9232b102db44478cd928fdc6879ccd28cb543c4d3eeaede8.evidence-v3.json) create 21、23 行，两侧分类表达式均使用左端 `B.CTPTY_TYPE`；同时 SQL 关联了右端对象 C | 关系字段定义及左右端样本。未核实前不能把右端分类当作已证明来自右端类别 |
+| Q04：调整后应收应付是否采用另一视角？ | [104934](../../../sql-static-lineage-data/task-projections/tasks/104934/versions/67040eec1090a912b4e6ea9e169927c81b04ec9fb1c933ce79dfeff3333997b5.evidence-v3.json) 的金额映射中，源应收进入调整后应付名、源应付进入调整后应收名。[现金章](09-cash-settlement-monitoring.md) | 源／目标字段的收付主体约定及对应凭据。当前保留原映射，不能凭中文名修正方向 |
+| Q05：几个“已实现／未实现”列到底代表哪种收益？ | [106590](../../../sql-static-lineage-data/task-projections/tasks/106590/versions/925dbec834cbbc8a47ddab67c1f738867f729cdcc1c74c5fb5691a91522a1535.evidence-v3.json) 的 `SETTLED_ACCU_RL_PNL` 进入含 `Unrlz` 的目标名；fast 报表 [188414](../../../sql-static-lineage-data/task-projections/tasks/188414/versions/da6ceb0dad005e5cbe58639332bf0380367cbc39786e65eaec8269edddb34309.evidence-v3.json) query 348、finish 185 把 `ACCU_TOTAL_STRUCTURE` 写入本币结构化腿累计已实现收益 | 源模型字段口径、目标数据元素与报表消费。不能只按目标名当作同一收益口径，更不能据此证明现金到账 |
+| Q06：模型保证金与账户余额如何对账？ | [200078](../../../sql-static-lineage-data/task-projections/tasks/200078/versions/f8035b40370ea23eb3360fa7dc7ac5b8ebdad7bbf07f4429f10f2d84c25164d0.evidence-v3.json) 同时承接组合模型日结果和按启用账户左连余额的折算汇总；不是在此重算风险模型。[保证金章](14-margin-risk-controls.md) | 上游模型输入／时点、账户余额时点、币种与调整项。两个字段不同不能直接归因于计算错误 |
+| Q07：固定汇率 1 和原币直接写本币的前提是什么？ | 已查 fast／金仕达风险报表存在固定汇率及直接映射；不同消费又分别选估值日或初始定价日汇率。[汇率](11-security-market-time.md)、[风险报表](16-risk-pnl-report.md) | 源金额币种约定、报价方向及覆盖币种。静态表达式已知，单位和适用范围仍须由源资料支持 |
+
+## 优先确认会改变归属、期间与考核解释的问题
+
+| 问题 | 已确认的实现 | 需要补充的证据 |
+| --- | --- | --- |
+| Q08：为什么当前归属可以作用于历史日规模？ | [105743](../../../sql-static-lineage-data/task-projections/tasks/105743/versions/9c728eb8cb3d3dff34755347b93b1a3e69aae4393bc2b6f11065ebd0f44f0152.evidence-v3.json) 与 [159763](../../../sql-static-lineage-data/task-projections/tasks/159763/versions/c87821fad514ef930309c036b4a8b04a78b1be5539385b41aa0ce1a3ddc81a31.evidence-v3.json) 的已查路线用当前管理关系连接展开后的历史计提日；归属还有顺序回退与例外筛选。[规模章](04-contract-to-cross-sale.md) | “按当前管理重述”还是“保留历史归属”的业务约定、具体生效方式 |
+| Q09：月度与年度 OTC 系数为什么两套实现？ | 月结果 [148763](../../../sql-static-lineage-data/task-projections/tasks/148763/versions/2942afc4ba95be6e33ea2c9835e34f6097f3a0bd7a0840ce0ebe0b02c94df7d2.evidence-v3.json) 左连当年配置；年度 [149048](../../../sql-static-lineage-data/task-projections/tasks/149048/versions/f3b36228e9dfcf43e0f6344177b1f77bbee975472bd9f924682d236764043ee5.evidence-v3.json) 的 OTC 分支另取年内日均，对两个标签使用固定系数 0.8、0.26。[标准资产](13-standard-assets.md) | 正式标签定义、适用年度制度、月配置值及变更历史；尚未证明两套口径等价 |
+| Q10：分母与分配是否满足预期？ | 月日均采用已过自然日；[230202](../../../sql-static-lineage-data/task-projections/tasks/230202/versions/054fea93fea9ed6256ee5087deea9b8e94b43aef5625415a20840276b3a06ae3.evidence-v3.json) 动态分配用绝对 Delta，静态分子的 `det` 本金与分母的 `info` 本金来源不同，且分母排除指定客户 | 日记录完整性、Delta 为零时的实际行为、连接唯一性、比例和与排除后集合。SQL 能说明公式，不能证明每次分配守恒 |
+| Q11：同一期间重算是否会使用不同时间的规则？ | 标准资产部分客户剔除依赖实际执行日的前一天，另有来源按任务日期取数；月底／年初又有补算窗口。[标准资产](13-standard-assets.md) | 重跑参数、规则快照和制度对追溯重述的要求。运行日与业务日不能混成一个日期 |
+| Q12：结构付款安排与实际终止日期的业务约定是什么？ | [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) 的 `Ko_Yield_Pay_Type_Cd='EXPIRY'` 选择到期日，否则按触发、触线等日期回退；结构未匹配也会进入 ELSE。[结构参数](17-option-structure.md) | 字段的正式业务定义、结构记录唯一性与缺失样本。实现可读，不能把推导日期直接当作到账或真实终止事件 |
+
+销售基础的第04来源为什么未进入本版所查交叉销售月日均，也是尚待解释的纳入差异：159763实际只选来源01、02、03。需要确认适用产品与考核制度，不能把未纳入自动判为遗漏。
+
+## 属于材料边界的问题，不靠猜测填补
+
+- **模板和别名。**[211472](../../../sql-static-lineage-data/task-projections/tasks/211472/versions/449ab14f2e9c586b3aee756e0838582c2bc73193c3a8fc860aefc415ab1e80fc.evidence-v3.json)、[211644](../../../sql-static-lineage-data/task-projections/tasks/211644/versions/9cde7321e318af11e4c9aa0acbb33d1fc4f91543846e6fc118aa5df878e0e4de.evidence-v3.json) 的 `${src_table}` 未唯一落实；[245498](../../../sql-static-lineage-data/task-projections/tasks/245498/versions/0aa542cb0acdfd5c514bbab97795abcb90659e903d3b55d54d505711aa9f1b09.evidence-v3.json) 的 `busi_date='h13'`、结构来源中的 `h15` 需要对应分区和参数约定。保留原 SQL，不把这些值替换成猜测的日期或表。
+- **字段绑定缺口。**[109369](../../../sql-static-lineage-data/task-projections/tasks/109369/versions/2d43d43e6d0b5b4e6c239112d435095693df3310e4c27644a22857fcef48bac0.evidence-v3.json)、[107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) 存在空输出绑定，其他任务有 `PARTIAL/DERIVED_OUTPUT`。正文可以结合 SQL 作有界解释，自动字段接续仍须保留缺口。三组字段统计见[字段主题](18-field-themes.md)。
+- **图写者与实际加工角色。**[198512](../../../sql-static-lineage-data/task-projections/tasks/198512/versions/340d561e68805a65d377845044de0dd81901a14c9a75fa4f1ba004b00fb4f940.evidence-v3.json) 是格式／导出相关处理，SQL 读取同一表但投影没有外部读；风险报表的临时到正式接续又出现在任务内部。应按输出与 SQL 阶段阅读，不能仅数图写者当业务生产路径数。
+- **运行与真正消费。**当前没有核验银行到账、最终风险页面或导出接收，也没有运行生产 SQL。源模型如何生成价格、Greeks、原始持仓和履保结果仍在可见仓库加工之前。需要对应源系统文档和实际消费证据，不能用静态 `SUCCESS/COMPLETE` 替代。
+
+## 怎样继续推进这些问题
+
+先由读者选择最影响当前业务理解的一个问题，再补最小证据：身份／字段规范、制度条款、具体运行参数或限定样本数据。涉及比例、唯一性、空值与时间一致性的检查，要在明确对象、期间和环境后开展。当前版只记录核验方向，没有新增平台查询或更改加工。
+
+确认结果应回写对应正文，同时注明是实现解释、制度依据还是实际数据验证；不要只把本页条目标成“已处理”。所有现有引用使用本版固定 evidence 路径，行号约定见[证据索引](evidence.md)。
+
