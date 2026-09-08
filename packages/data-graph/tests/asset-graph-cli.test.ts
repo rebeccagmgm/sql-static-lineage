@@ -1,5 +1,25 @@
-import { describe, it, expect } from "vitest";
-import { parseAgentArgs } from "../src/asset-graph/cli.ts";
+import { describe, it, expect, vi } from "vitest";
+import { parseAgentArgs, assetGraphMain } from "../src/asset-graph/cli.ts";
+
+// These factories fail even if a module is imported but none of its exports are used.
+vi.mock("../src/asset-graph/publish.ts", () => {
+  throw new Error("HELP_LOADED_PUBLISH");
+});
+vi.mock("../src/asset-graph/config.ts", () => {
+  throw new Error("HELP_LOADED_DATABASE");
+});
+vi.mock("../src/asset-graph/service.ts", () => {
+  throw new Error("HELP_LOADED_SERVICE");
+});
+vi.mock("../src/asset-graph/agent-api.ts", () => {
+  throw new Error("HELP_LOADED_PROCESSING");
+});
+vi.mock("../src/asset-graph/continuation-metrics-query.ts", () => {
+  throw new Error("HELP_LOADED_METRICS");
+});
+vi.mock("../src/asset-graph/continuation-candidates-query.ts", () => {
+  throw new Error("HELP_LOADED_CANDIDATES");
+});
 describe("agent CLI argument contract", () => {
   it("accepts an exact processing relation and requires its value", () => {
     const a = parseAgentArgs([
@@ -55,5 +75,21 @@ describe("agent CLI argument contract", () => {
     expect(a.option("--read-occurrence-id")).toBe("read-occurrence:119044:0");
     expect(a.option("--publication-version")).toBe("f88164");
     expect(a.integer("--limit", 25, 100, 1)).toBe(25);
+  });
+  it("returns help without loading the publish pipeline", async () => {
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((value) => {
+      logs.push(String(value));
+    });
+    try {
+      await assetGraphMain(["help"]);
+      expect(logs).toHaveLength(1);
+      const payload = JSON.parse(logs[0]!);
+      expect(payload.ok).toBe(true);
+      expect(payload.name).toBe("lineage-graph");
+      expect(payload.metaTiming?.elapsedMs).toContain("assetGraphMain()");
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

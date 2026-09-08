@@ -151,6 +151,7 @@
     "graph:prepare": "node --max-old-space-size=4096 --import tsx scripts/project-graph/asset-graph/prepare.ts",
     "graph:publish": "node --max-old-space-size=4096 --import tsx packages/data-graph/src/asset-graph/cli.ts publish",
     "graph:query": "tsx packages/data-graph/src/asset-graph/cli.ts",
+    "graph:benchmark": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-graph-cli-layers.ps1",
     "graph:serve": "tsx packages/data-graph/src/asset-graph/cli.ts serve",
     "test:asset-graph": "vitest run tests/reconcile/shared/dataset-controls.test.ts tests/project-graph/task-local/projection-cache.test.ts tests/config/workspace-paths.test.ts --no-file-parallelism",
     "graph:verify": "node scripts/project-graph/asset-graph/verify-cli.cjs"

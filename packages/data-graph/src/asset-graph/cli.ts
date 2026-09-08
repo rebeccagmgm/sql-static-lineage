@@ -1,11 +1,6 @@
-import { openAssetGraph } from "./config.ts";
-import { AssetGraphStore } from "./store.ts";
-import { publishAssetGraph } from "./publish.ts";
-import { startAssetGraphServer, taskDetail } from "./service.ts";
-import { processingDetail, CLI_HELP } from "./agent-api.ts";
+import { CLI_HELP } from "./cli-help.ts";
 import { resolveWorkspacePaths } from "../../../../scripts/config/workspace-paths.ts";
-import { readPublishedContinuationMetrics } from "./continuation-metrics-query.ts";
-import { readPublishedContinuationCandidates } from "./continuation-candidates-query.ts";
+
 const allowed = new Set([
   "--config",
   "--text",
@@ -34,6 +29,12 @@ const allowed = new Set([
   "--consumer-task-id",
   "--publication-version",
 ]);
+
+/** Milliseconds from assetGraphMain() entry until the response object is built. */
+function mainElapsedMs(started: number) {
+  return Date.now() - started;
+}
+
 export function parseAgentArgs(args: readonly string[]) {
   const command = args[0] ?? "help",
     values: Record<string, string | boolean> = {};
@@ -65,6 +66,7 @@ export function parseAgentArgs(args: readonly string[]) {
     flag: (key: string) => values[key] === true,
   };
 }
+
 export async function assetGraphMain(args = process.argv.slice(2)) {
   const started = Date.now();
   let command = args[0] ?? "help";
@@ -78,6 +80,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       return;
     }
     if (command === "metrics") {
+      const { readPublishedContinuationMetrics } = await import("./continuation-metrics-query.ts");
       const paths = resolveWorkspacePaths({ configPath: config });
       console.log(JSON.stringify({
         schemaVersion: "1.0.0",
@@ -99,6 +102,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       const readOccurrenceId = option("--read-occurrence-id");
       if (!readOccurrenceId)
         throw new Error("ARGUMENT_VALUE_REQUIRED:--read-occurrence-id");
+      const { readPublishedContinuationCandidates } = await import("./continuation-candidates-query.ts");
       const paths = resolveWorkspacePaths({ configPath: config });
       console.log(JSON.stringify({
         schemaVersion: "1.0.0",
@@ -130,6 +134,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
     )
       throw new Error("INVALID_COMMAND");
     if (command === "publish") {
+      const { publishAssetGraph } = await import("./publish.ts");
       console.log(
         JSON.stringify({
           schemaVersion: "1.0.0",
@@ -141,6 +146,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       return;
     }
     if (command === "serve") {
+      const { startAssetGraphServer } = await import("./service.ts");
       const port = integer("--port", 8791, 65535, 1024),
         server = await startAssetGraphServer(config, port);
       console.log(
@@ -149,6 +155,11 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       process.once("SIGINT", () => void server.close());
       return;
     }
+    const [{ openAssetGraph }, { AssetGraphStore }] =
+      await Promise.all([
+        import("./config.ts"),
+        import("./store.ts"),
+      ]);
     const c = await openAssetGraph(config),
       store = new AssetGraphStore(c.driver, c.database, c.graphId);
     try {
@@ -204,6 +215,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           },
         };
       } else if (command === "detail") {
+        const { taskDetail } = await import("./service.ts");
         const d = await taskDetail(
           store,
           requireTask(),
@@ -226,6 +238,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           },
         };
       } else if (command === "processing") {
+        const { processingDetail } = await import("./agent-api.ts");
         data = await processingDetail(store, {
           taskId: requireTask(),
           text: option("--text"),
@@ -238,6 +251,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           lineCount: integer("--line-count", 80, 300, 1),
         });
       } else if (command === "compare") {
+        const { taskDetail } = await import("./service.ts");
         const ids = [
           ...new Set((option("--task-ids") ?? "").split(",").filter(Boolean)),
         ];
@@ -283,6 +297,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           includeCandidates: !flag("--confirmed-only"),
         });
       }
+      const elapsedMs = mainElapsedMs(started);
       console.log(
         JSON.stringify({
           schemaVersion: "1.0.0",
@@ -292,7 +307,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           data,
           meta: {
             backend: "neo4j",
-            elapsedMs: Date.now() - started,
+            elapsedMs,
             projectionGenerations: 0,
           },
         }),
@@ -320,7 +335,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
         ok: false,
         command,
         error: { code },
-        meta: { elapsedMs: Date.now() - started },
+        meta: { elapsedMs: mainElapsedMs(started) },
       }),
     );
     process.exitCode = argument ? 2 : 1;
