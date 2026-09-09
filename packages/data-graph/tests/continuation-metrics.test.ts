@@ -7,7 +7,7 @@ import {
 import type {
   UnionContinuationIndex,
   UnionContinuationIndexEntry,
-} from "../src/project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../src/continuation/continuation-index.ts";
 
 function entry(
   id: string,

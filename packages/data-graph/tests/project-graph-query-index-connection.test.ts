@@ -8,7 +8,7 @@ import {
   boundedNeo4jConnectionError,
   openNeo4jQueryIndexDriver,
   resolveNeo4jQueryIndexConnection,
-} from "../src/project-graph/query-index/neo4j-query-index-connection.ts";
+} from "../src/neo4j/connection.ts";
 
 describe("query-index Neo4j connection boundary", () => {
   it("resolves secrets from an explicit environment variable without importing the driver", () => {

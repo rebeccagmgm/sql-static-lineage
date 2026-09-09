@@ -9,7 +9,7 @@ import {
   DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   type TerminalTableConfig,
 } from "../../../../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
-import type { UnionContinuationIndex } from "../project-graph/topology/task-local-union/union-continuation-index.ts";
+import type { UnionContinuationIndex } from "../continuation/continuation-index.ts";
 
 export interface PolicyTerminalRead {
   readonly consumerTaskId: string;

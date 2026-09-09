@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertUnionContinuationIndex,
   type UnionContinuationIndex,
-} from "../src/project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../src/continuation/continuation-index.ts";
 import {
   assertUnionContinuationIndexManifest,
   parseUnionContinuationIndexCli,
@@ -24,7 +24,7 @@ import {
 import type {
   TaskLocalProjectionClosure,
   TaskLocalProjectionEnvelope,
-} from "../src/project-graph/topology/task-local-union/task-local-union-contract.ts";
+} from "../src/continuation/task-local-projection.ts";
 
 const TABLE_ID = "dataset:fixture-t03-agt-stati-info-h";
 const TABLE = "pdata_n.t03_agt_stati_info_h";

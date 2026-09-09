@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 
 import { describe, expect, it } from "vitest";
 
-import type { ProducerIndexWriter } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
+import type { ProducerIndexWriter } from "../src/continuation/producer-writer.ts";
 import { mergeLoadedTasksForTest } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
 import { loadProducerIndex } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import {
   partitionMatchStatus,
   traceUnionContinuationV2,
   traceUnionTaskContinuationV2,
-} from "../src/project-graph/topology/task-local-union/task-local-union-continuation-v2.ts";
+} from "../src/continuation/continuation-v2.ts";
 import {
   assertUnionContinuationEvidenceEnvelope,
   buildUnionContinuationEvidenceEnvelope,
@@ -23,8 +23,8 @@ import type {
   TaskLocalProjectionClosure,
   TaskLocalProjectionEnvelope,
   TaskLocalUnionTaskSource,
-} from "../src/project-graph/topology/task-local-union/task-local-union-contract.ts";
-import { unpackTaskLocalProjectionEnvelope } from "../src/project-graph/topology/task-local-union/task-local-union-contract.ts";
+} from "../src/continuation/task-local-projection.ts";
+import { unpackTaskLocalProjectionEnvelope } from "../src/continuation/task-local-projection.ts";
 
 const CURRENT_119044_ENVELOPE = resolve(
   "tmp/wp8-real-v2-119044/tasks/119044/task-local-projection.json",

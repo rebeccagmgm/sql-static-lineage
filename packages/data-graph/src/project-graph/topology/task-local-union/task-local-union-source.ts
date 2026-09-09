@@ -11,7 +11,7 @@ import {
   type TaskLocalUnionProducerIndexRef,
   type TaskLocalUnionTaskSource,
   type UnpackedTaskLocalProjection,
-} from "./task-local-union-contract.ts";
+} from "../../../continuation/task-local-projection.ts";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
 

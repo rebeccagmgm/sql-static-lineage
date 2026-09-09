@@ -19,20 +19,20 @@ import {
   type AssetEdge,
   type FactRecord,
 } from "./compile.ts";
-import { unpackTaskLocalProjectionEnvelope } from "../project-graph/topology/task-local-union/task-local-union-contract.ts";
+import { unpackTaskLocalProjectionEnvelope } from "../continuation/task-local-projection.ts";
 import type { TaskLocalProjection } from "../../../../scripts/project-graph/task-local/contract.ts";
 import type {
   TaskLocalUnionMergeResult,
   TaskLocalUnionTaskEvidence,
   TaskLocalUnionNode,
-} from "../project-graph/topology/task-local-union/task-local-union-merge.ts";
+} from "../continuation/continuation-input.ts";
 import {
   buildUnionContinuationIndex,
   unionContinuationIndexContentHash,
   type UnionContinuationIndex,
   type UnionContinuationIndexEntry,
-} from "../project-graph/topology/task-local-union/union-continuation-index.ts";
-import type { ProducerIndexWriter } from "../project-graph/topology/task-local-union/task-local-union-producer-index.ts";
+} from "../continuation/continuation-index.ts";
+import type { ProducerIndexWriter } from "../continuation/producer-writer.ts";
 import { buildWritePartitionParts } from "../../../../scripts/project-graph/task-local/write-partition-evidence.ts";
 import { calculateContinuationMetrics } from "./continuation-metrics.ts";
 import {

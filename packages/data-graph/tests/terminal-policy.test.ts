@@ -5,7 +5,7 @@ import {
   terminalPolicyConfigHash,
   terminalNodeDetails,
 } from "../src/asset-graph/terminal-policy.ts";
-import type { UnionContinuationIndex } from "../src/project-graph/topology/task-local-union/union-continuation-index.ts";
+import type { UnionContinuationIndex } from "../src/continuation/continuation-index.ts";
 
 const config = {
   version: "1.0.0",

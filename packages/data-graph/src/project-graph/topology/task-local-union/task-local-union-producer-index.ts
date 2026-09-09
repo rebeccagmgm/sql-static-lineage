@@ -2,28 +2,13 @@ import { readFileSync } from "node:fs";
 
 import {
   parseTaskLocalOutputQualification,
-  type TaskLocalFinalWrite,
   type TaskLocalUnionProducerIndexRef,
-} from "./task-local-union-contract.ts";
+} from "../../../continuation/task-local-projection.ts";
+import type { ProducerIndexWriter } from "../../../continuation/producer-writer.ts";
+
+export type { ProducerIndexWriter } from "../../../continuation/producer-writer.ts";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
-
-export interface ProducerIndexWriter {
-  readonly taskId: string;
-  /** Stable write-observation identity when the producer index carries it. */
-  readonly writeObservationId?: string;
-  readonly datasetNodeId?: string;
-  readonly qualifiedName?: string;
-  readonly outputQualification?: TaskLocalFinalWrite["outputQualification"];
-  readonly partition?: readonly {
-    readonly column: string;
-    readonly values: readonly string[];
-    readonly partitionStatus?: string;
-    readonly valueStatus?: string;
-    readonly observedValue?: string | null;
-    readonly expression?: string;
-  }[];
-}
 
 export interface LoadedProducerIndex {
   readonly identity: TaskLocalUnionProducerIndexRef;
@@ -90,7 +75,7 @@ export function loadProducerIndex(path: string): LoadedProducerIndex {
         edgeQualification === "SQL_UNCONSUMED" ||
         writeQualification === "SQL_UNCONSUMED"
           ? "SQL_UNCONSUMED"
-          : writeQualification ?? edgeQualification;
+          : (writeQualification ?? edgeQualification);
       writers.push({
         taskId,
         writeObservationId:

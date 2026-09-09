@@ -371,7 +371,7 @@ WHERE status = '有效';
 
 这既说明当前实现不是纯表名连通，也说明不能把所有 `CONTINUES` 都口头概括为一套比源码更严格的证明条件。本轮未验证备用路径是否造成实际误连。
 
-依据：[原表关系构图](E:/02_area/股衍-知识图谱/docs/knowledge-graph/kg_probe/build_graph_facts.py)、[当前候选与分区判定](../packages/data-graph/src/project-graph/topology/task-local-union/task-local-union-continuation-v2.ts)、[当前接续发布](../packages/data-graph/src/asset-graph/publish.ts)。
+依据：[原表关系构图](E:/02_area/股衍-知识图谱/docs/knowledge-graph/kg_probe/build_graph_facts.py)、[当前候选与分区判定](../packages/data-graph/src/continuation/continuation-v2.ts)、[当前接续发布](../packages/data-graph/src/asset-graph/publish.ts)。
 
 ### 10.5 CTE、UNION、星号、中间表：两边均有能力，但机制不同
 
@@ -534,6 +534,6 @@ SELECT 'A' AS product_type, current_timestamp AS created_at;
 - [当前跨任务字段接续发布](../packages/data-graph/src/asset-graph/publish.ts)
 - [当前读次与分支解析](../scripts/project-graph/field-evidence-v1/source-read-occurrence.ts)
 - [当前字段证据生成](../scripts/project-graph/field-evidence-v1/field-evidence-emission.ts)
-- [当前接续判定内核](../packages/data-graph/src/project-graph/topology/task-local-union/task-local-union-continuation-v2.ts)
+- [当前接续判定内核](../packages/data-graph/src/continuation/continuation-v2.ts)
 
 文档描述的是本轮核对时的设计与实现结构；后续代码或发布合同变动时，应以对应版本重新核对。

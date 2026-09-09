@@ -11,7 +11,7 @@ import {
 import {
   unionContinuationIndexContentHash,
   type UnionContinuationIndexEntry,
-} from "../src/project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../src/continuation/continuation-index.ts";
 
 function snapshot() {
   const root = mkdtempSync(join(tmpdir(), "continuation-metrics-"));

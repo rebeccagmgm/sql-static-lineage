@@ -1,4 +1,7 @@
+import { compareText, sortedUnique } from "../../contracts/ordering.ts";
 import { canonicalJson, safeSegment, sha256 } from "../../contracts/runtime.ts";
+
+export { compareText, sortedUnique } from "../../contracts/ordering.ts";
 
 export const PROJECT_TOPOLOGY_SCHEMA_VERSION = "1.0.0" as const;
 export const PROJECT_TOPOLOGY_PROJECTION_VERSION = "1.0.0" as const;
@@ -152,14 +155,6 @@ export interface ProjectTopologyQueryEnvelope<T> {
   readonly result: T;
   readonly warnings: readonly string[];
   readonly limits: Readonly<Record<string, number>>;
-}
-
-export function sortedUnique(values: readonly string[]): string[] {
-  return [...new Set(values)].sort(compareText);
-}
-
-export function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 export function projectKeySegment(projectKey: string): string {

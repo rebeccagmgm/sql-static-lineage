@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import {
   assertUnionContinuationIndex,
   type UnionContinuationIndex,
-} from "../project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../continuation/continuation-index.ts";
 import {
   calculateContinuationMetrics,
   classifyContinuationGaps,

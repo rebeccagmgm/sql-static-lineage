@@ -1,21 +1,23 @@
-import { canonicalJson, sha256 } from "../../../contracts/runtime.ts";
-import { compareText } from "../../contracts/project-topology-contract.ts";
+import { canonicalJson, sha256 } from "../contracts/runtime.ts";
+import { compareText } from "../contracts/ordering.ts";
 import type {
   ProducerPartition,
   TraceUnionContinuationV2Result,
   UnionContinuationCandidate,
   UnionContinuationGap,
-} from "./task-local-union-continuation-v2.ts";
-import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
-import { traceUnionTaskContinuationV2 } from "./task-local-union-continuation-v2.ts";
+} from "./continuation-v2.ts";
+import type { ProducerIndexWriter } from "./producer-writer.ts";
+import { traceUnionTaskContinuationV2 } from "./continuation-v2.ts";
 import {
   isUnionContinuationV2ProjectionSchema,
   parseTaskLocalOutputQualification,
   type TaskLocalUnionBatchManifestRef,
   type TaskLocalUnionProducerIndexRef,
-} from "./task-local-union-contract.ts";
-import type { TaskLocalUnionMergeResult } from "./task-local-union-merge.ts";
-import type { LoadedTaskLocalUnionSources } from "./task-local-union-source.ts";
+} from "./task-local-projection.ts";
+import type {
+  LoadedTaskLocalUnionSources,
+  TaskLocalUnionMergeResult,
+} from "./continuation-input.ts";
 
 export const UNION_CONTINUATION_INDEX_SCHEMA_VERSION = "1.0.0" as const;
 export const UNION_CONTINUATION_INDEX_ARTIFACT_TYPE =
@@ -139,7 +141,12 @@ export function buildUnionContinuationIndex(
 export function assertV2IndexInputs(merge: TaskLocalUnionMergeResult): void {
   const invalid = merge.taskEvidence
     .filter((evidence) => evidence.coverageStatus === "PROJECTED")
-    .filter((evidence) => !isUnionContinuationV2ProjectionSchema(evidence.projectionSchemaVersion))
+    .filter(
+      (evidence) =>
+        !isUnionContinuationV2ProjectionSchema(
+          evidence.projectionSchemaVersion,
+        ),
+    )
     .map((evidence) => evidence.taskId)
     .sort(compareText);
   if (invalid.length > 0) {
@@ -157,7 +164,9 @@ export function assertV2LoadedInputs(
     .filter(
       (task) =>
         !isUnionContinuationV2ProjectionSchema(task.projection.schemaVersion) ||
-        !isUnionContinuationV2ProjectionSchema(task.envelope.cacheKeyParts.schemaVersion),
+        !isUnionContinuationV2ProjectionSchema(
+          task.envelope.cacheKeyParts.schemaVersion,
+        ),
     )
     .map((task) => task.taskSource.taskId)
     .sort(compareText);
@@ -228,7 +237,11 @@ export function assertUnionContinuationIndex(
 }
 
 function assertV2IndexInputRefs(input: UnionContinuationIndexInput): void {
-  if (input.taskProjections.some((task) => !isUnionContinuationV2ProjectionSchema(task.schemaVersion)))
+  if (
+    input.taskProjections.some(
+      (task) => !isUnionContinuationV2ProjectionSchema(task.schemaVersion),
+    )
+  )
     throw new Error("UNION_CONTINUATION_INDEX_INPUT_SCHEMA_INVALID");
   const taskIds = new Set<string>();
   for (const task of input.taskProjections) {

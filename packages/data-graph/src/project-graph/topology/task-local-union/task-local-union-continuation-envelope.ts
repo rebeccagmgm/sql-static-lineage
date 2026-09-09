@@ -3,17 +3,17 @@ import {
   isUnionContinuationV2ProjectionSchema,
   type TaskLocalUnionBatchManifestRef,
   type TaskLocalUnionProducerIndexRef,
-} from "./task-local-union-contract.ts";
-import { compareText } from "../../contracts/project-topology-contract.ts";
+} from "../../../continuation/task-local-projection.ts";
+import { compareText } from "../../../contracts/ordering.ts";
 import type {
   TaskLocalUnionMergeResult,
   TaskLocalUnionTaskEvidence,
-} from "./task-local-union-merge.ts";
+} from "../../../continuation/continuation-input.ts";
 import type {
   TraceUnionContinuationV2Result,
   UnionContinuationCandidate,
   UnionContinuationGap,
-} from "./task-local-union-continuation-v2.ts";
+} from "../../../continuation/continuation-v2.ts";
 
 export const UNION_CONTINUATION_EVIDENCE_SCHEMA_VERSION = "1.0.0" as const;
 export const UNION_CONTINUATION_EVIDENCE_ARTIFACT_TYPE =

@@ -1,7 +1,7 @@
 import type {
   UnionContinuationIndex,
   UnionContinuationIndexEntry,
-} from "../project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../continuation/continuation-index.ts";
 import type { PolicyTerminalRead } from "./terminal-policy.ts";
 
 export type ContinuationReadClassification =

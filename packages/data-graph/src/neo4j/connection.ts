@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 
 import type { Driver } from "neo4j-driver";
 
+/** Shared bounded connection boundary for data-graph Neo4j consumers. */
+
 export type Neo4jPasswordSource =
   | {
       readonly kind: "ENVIRONMENT";

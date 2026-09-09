@@ -10,7 +10,7 @@ import {
 import {
   traceUnionTaskContinuationV2,
   type TraceUnionTaskContinuationV2Result,
-} from "./task-local-union-continuation-v2.ts";
+} from "../../../continuation/continuation-v2.ts";
 import { mergeTaskLocalUnion } from "./task-local-union-merge.ts";
 import { loadProducerIndex } from "./task-local-union-producer-index.ts";
 import { loadTaskLocalUnionSources } from "./task-local-union-source.ts";

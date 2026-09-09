@@ -7,7 +7,7 @@ import {
   assertV2LoadedInputs,
   buildUnionContinuationIndex,
   type UnionContinuationIndex,
-} from "./union-continuation-index.ts";
+} from "../../../continuation/continuation-index.ts";
 import { mergeTaskLocalUnion } from "./task-local-union-merge.ts";
 import { loadProducerIndex } from "./task-local-union-producer-index.ts";
 import { loadTaskLocalUnionSources } from "./task-local-union-source.ts";

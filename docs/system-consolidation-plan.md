@@ -1,8 +1,8 @@
 # 整套系统统一与精简方案
 
-日期：2026-09-09。状态：**第 1 阶段已完成；2A 与字段归属检查点 2B 均已完成并通过独立验收；未进入 continuation、产品删除或生产发布**。
+日期：2026-09-09。状态：**第 1 阶段已完成；2A、字段归属检查点 2B、continuation/连接归属检查点 2C 均已完成并通过独立验收；未进入 multi-hop 配置迁移、产品删除或生产发布**。
 
-本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；2A 仅迁移调度证据缓存模块及 import；2B 仅迁移字段解释共享内核与 task-local 投影 helper 的归属。两个检查点都没有改变图语义，也没有生成或发布生产投影；2B 只在仓库外临时目录生成了验证样例。
+本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；2A 仅迁移调度证据缓存模块及 import；2B 仅迁移字段解释共享内核与 task-local 投影 helper 的归属；2C 仅迁移 continuation/index 与 Neo4j 连接实现的归属。三个检查点都没有改变图语义，也没有生成或发布生产投影；2B、2C 只在仓库外临时目录生成了验证样例。
 
 ## 1. 本阶段结论
 
@@ -231,7 +231,7 @@ scripts/visualize/horae-relation-tree-explorer.ts
 
 ## 7. 第 2 阶段可执行范围
 
-第 2 阶段只执行 **2A：调度证据缓存归属迁移**，现已完成并通过独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不删除 one-hop 产品、不改缓存合同、不生成或发布 data-graph。随后单独执行的 2B 是 §8.1 第 3 阶段的字段归属检查点；continuation 仍未开始。
+第 2 阶段首先执行 **2A：调度证据缓存归属迁移**，现已完成并通过独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不删除 one-hop 产品、不改缓存合同、不生成或发布 data-graph。随后单独执行的 2B 与 2C 分别是 §8.1 第 3 阶段的字段归属、continuation/连接归属检查点，两者也已通过独立验收；2C 的实施与验收见 §7.8。multi-hop 配置迁移、旧产品退出和生产发布尚未开始。
 
 ### 7.1 范围内基线，不要求整理全仓
 
@@ -339,6 +339,20 @@ tests/schedule-detail-cache.test.ts
 - 成本判断：实现量仍落在原字段部分 1–1.5 工程日预估内，主要成本来自脏工作树保护和构造有效非空等价对照，而不是搬文件本身。continuation、旧产品能力裁决和删除成本不因本检查点自动下降；整体 8–13 工程日粗估暂不调整。
 - 独立验收结论：**2B 仅就字段归属迁移通过**。独立复跑合计 98 passed / 1 个同基线既有失败：字段内核 46 passed / 1 failed、task-local 6 passed、legacy field-lineage 31 passed、额外边界 15 passed；typecheck 仍仅有既有 TS7016，不能据此宣称全仓门禁全绿。验收同时核对了四个 helper 与 resolver 正文等价、55 模块运行时依赖无旧 field consumer 可达/缺失/循环、开工源码与 baseline 镜像一致，以及 25,124 字节非空投影的前后 hash 一致。
 - 验收中完成三项边界修正：通用 identity/key、控制注解合同和 resolver 最终归 `scripts/reconcile/shared/`，没有挂到单个 task-local 消费者；最初 `COLLECTION_FAILED / FACTS_UNAVAILABLE` 的空样例被判为无效证据并替换为强制 `PROJECTED` 的非空 105387/71698 对照；`sourceFieldsForExpression()` 一度新增的 `readonly` 返回类型已恢复迁移前可变性。最终 post 镜像与源码差异仅为格式及该类型修正，没有逻辑漂移。
+
+### 7.8 continuation/连接归属检查点 2C 实施与独立验收记录（2026-09-09）
+
+- 本检查点只迁正式 asset-graph 实际复用的 continuation/index 与 Neo4j 连接边界，不迁 multi-hop terminal/source boundary 配置，不删除旧 topology/query-index/standalone CLI 产品。开工 HEAD 为 `94769ab3338695e3263acc0510934bd254cd8fb9`；没有提交、推送、重建或发布生产图。仓库外审查目录为 `C:\Users\13246\AppData\Local\Temp\sql-static-lineage-phase2c-baseline-20260909-133428`，初始实现清单 39 个路径、32 个已存在文件、9 个范围内脏项，保存了逐文件原文、SHA-256、Git 状态、21,108 字节工作树 patch 和空 index patch。最终完整引用检查另发现 `docs/knowledge-graph-comparison.md` 两处链接仍指向已删除的 continuation-v2 旧位置；该文件开工时无修改（以 HEAD blob 为基线），仅把两处链接改到新内核，因此最终涉及 40 个物理路径。
+- `task-local-union-continuation-v2.ts` 与 `union-continuation-index.ts` 的唯一实现分别迁到 `packages/data-graph/src/continuation/continuation-v2.ts`、`continuation-index.ts`，原算法位置删除且不留转发壳。为避免连带搬入整个 topology/merge/CLI 产品，只抽取 `task-local-projection.ts`、`continuation-input.ts`、`producer-writer.ts` 和 `contracts/ordering.ts` 四个最小共享边界；旧 snapshot contract、merge/source/producer loader、evidence envelope 和两个 standalone CLI 保持产品归属并反向消费新内核。
+- `neo4j-query-index-connection.ts` 原样迁到 `packages/data-graph/src/neo4j/connection.ts`；保留既有导出名、环境变量/文件密码解析、URI/database/alias 校验、bounded error、动态 driver import 和 driver 关闭责任。asset-graph config 与旧 query-index store/CLI 共同改用该模块，旧 query-index 的 store、schema、build/status/query/parity 和 CLI 均未删除。
+- 固定源码依赖扫描中，asset-graph 对旧 topology/query-index 产品的 12 条直接依赖降为 0；新 continuation/neo4j 内核不存在回指旧产品、缺失相对 import 或新增源码依赖环。包含类型 import 的源码扫描前后都存在同一条既有 `source-endpoint-boundary.ts ↔ continuation-metrics.ts` 环，本检查点没有扩大或处理它；这不等于运行时环。独立验收使用 esbuild 擦除类型 import 后，从 asset-graph/continuation/neo4j 递归跟踪 49 个运行时模块，旧 topology/query-index 产品可达路径、缺失引用和运行时循环均为 0。旧 `union-continuation-index-cli.ts` 及测试仍保留是有意的 standalone 文件产品入口，不代表算法存在第二份实现。
+- 非空行为对照在迁移前临时镜像和迁移后源码上运行同一固定输入：一个读次对应同表四个独立 write observation，分别得到 `CONFIRMED / ASSUMED / DISJOINT / UNKNOWN`，只有 CONFIRMED 进入 L1；另一个读次只关联 `SCHEDULE_ONLY` 任务，即使 producer 输入含该任务也保持 0 candidate 和 `NO_KNOWN_WRITE_OBSERVATION`。前后包含完整 index 与 summary 的对照文件均为 7,004 字节，SHA-256 均为 `b63db69be5448a01a7758544054b3d6d1a80a89af05b7c66f8700078e86ced1a`，其中 index content hash 均为 `71c44fd85ea8c3c1db00d88735cd4ec460757051b058653e37bed2bf89436bf4`；未忽略节点、候选、写次、状态、gap、身份或分区证据。
+- 自检时，迁移前镜像与迁移后相同 12 个 package 测试均为 88 passed / 2 skipped；另补跑 query-index connection/CLI/Neo4j store/availability 4 files / 14 passed，以及根级 3 files / 22 passed。独立验收合并去重后复跑 package 15 files 得到 97 passed / 2 skipped，根级 3 files 得到 22 passed，即独立合计 119 passed / 2 skipped；不能把自检中存在重复的 88 与 14 简单相加作为唯一测试数。直接使用根 `npm test -- <files>` 会先追加固定 39 文件并误收集快照副本，产生 fill-cache/task-inspection 等无关既有失败，因此不作为本检查点目标结果。
+- `npm run typecheck` 仍只报开工前已有的 `tests/run-src-table-template-rebuild.test.ts:3` TS7016。data-graph package typecheck 前后均报相同 3 个既有错误：`asset-graph-catalog.test.ts:216` 缺 `taskCategory/coverageDisposition`，`asset-graph-overview.test.ts:116/119` 对空 tuple 取第 0 项。package build 前后均因当前 `tsconfig.build.json` 的 `rootDir=src` 与既有跨包 `scripts/**` import 冲突而报 TS6059；本检查点没有削弱断言或修复这些范围外门禁。
+- 当前剩余依赖是明确排除项：asset-graph compile/terminal/source boundary/publication snapshots 仍消费 multi-hop terminal/source 配置，continuation 仍复用 task-local partition canonical；旧 standalone CLI 仍消费旧 source/merge/producer loader，但算法和投影合同只消费新正式内核。2C 只证明指定归属迁移完成，不能据此删除旧 topology、query-index 或 multi-hop 产品。
+- 实施期间 HEAD 保持 `94769ab3338695e3263acc0510934bd254cd8fb9`、暂存区始终为空。范围外出现 3 项并发漂移：`book-consumption-pilot/README.md` 修改、同目录新增中文说明文件、以及新增 `analysis/swap-comp-pilot/`；均未回退或纳入 2C。一次 package build 在失败前生成的 12 个开工时不存在的 `.js/.d.ts` 已按精确路径清除，开工前已有的其他旁路文件未动。
+- 独立验收结论：**2C 仅就 continuation/index 与 Neo4j 连接归属迁移通过**，未发现需要返工的产品代码缺陷。32 个基线文件 hash、源码镜像和 9 个既有改动文件的反向路径归一化均吻合；独立产物为同一证据目录下的 `review-protected.json`、`review-before.json`、`review-after.json`。验收没有启动服务、重跑有副作用的 package build 或发布生产图，因此不构成在线旅程、完整门禁或整套图统一验收。
+- 成本判断：实现仍落在 continuation 0.5–1 日加连接器约 0.25 日的原估算内；主要额外成本来自 9 个范围内既有/并发修改、前后镜像和测试目录污染。整体 8–13 工程日估算暂不下调；旧产品退出、外部 query-index owner、standalone 文件生命周期和 multi-hop 配置迁移仍需后续独立决策门。
 
 ## 8. 最小有效收敛方案
 

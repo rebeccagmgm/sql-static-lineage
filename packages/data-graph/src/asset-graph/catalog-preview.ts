@@ -5,7 +5,7 @@ import {
   validateTaskLocalProjection,
   type TaskLocalProjection,
 } from "../../../../scripts/project-graph/task-local/contract.ts";
-import { unpackTaskLocalProjectionEnvelope } from "../project-graph/topology/task-local-union/task-local-union-contract.ts";
+import { unpackTaskLocalProjectionEnvelope } from "../continuation/task-local-projection.ts";
 import {
   ASSET_CATALOG_COMPILER_VERSION,
   compileCatalogTask,

@@ -1,4 +1,4 @@
-import type { UnionContinuationIndexEntry } from "../project-graph/topology/task-local-union/union-continuation-index.ts";
+import type { UnionContinuationIndexEntry } from "../continuation/continuation-index.ts";
 import { loadPublishedContinuationIndex } from "./continuation-metrics-query.ts";
 
 /** Read candidates already frozen in the current published INDEX. */

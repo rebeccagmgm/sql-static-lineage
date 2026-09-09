@@ -23,7 +23,7 @@ import {
   openNeo4jQueryIndexDriver,
   resolveNeo4jQueryIndexConnection,
   type Neo4jQueryIndexConnectionInput,
-} from "./neo4j-query-index-connection.ts";
+} from "../../neo4j/connection.ts";
 import { Neo4jQueryIndexStore } from "./neo4j-query-index-store.ts";
 import { buildQueryIndex } from "./query-index-builder.ts";
 import { runRequiredQueryIndexParity } from "./query-index-parity.ts";

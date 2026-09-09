@@ -6,84 +6,26 @@ import type {
   LoadedTaskLocalUnionSources,
   LoadedTaskLocalUnionTask,
 } from "./task-local-union-source.ts";
-import type {
-  TaskLocalProjectionClosure,
-  TaskLocalUnionBatchManifestRef,
-  TaskLocalUnionProducerIndexRef,
-} from "./task-local-union-contract.ts";
+import {
+  normalizeName,
+  type TaskLocalUnionEdge,
+  type TaskLocalUnionGap,
+  type TaskLocalUnionMergeReport,
+  type TaskLocalUnionMergeResult,
+  type TaskLocalUnionNode,
+  type TaskLocalUnionTaskEvidence,
+} from "../../../continuation/continuation-input.ts";
 
-export type TaskLocalUnionGapCode =
-  "DATASET_IDENTITY_DIVERGENT" | "UNION_EDGE_CONFLICT";
-
-export interface TaskLocalUnionGap {
-  readonly gapId: string;
-  readonly reasonCode: TaskLocalUnionGapCode;
-  readonly message: string;
-  readonly details: Readonly<Record<string, unknown>>;
-}
-
-export interface TaskLocalUnionNode {
-  readonly nodeId: string;
-  readonly nodeType: string;
-  readonly properties: Readonly<Record<string, unknown>>;
-  readonly sourceTaskIds: readonly string[];
-}
-
-export interface TaskLocalUnionEdge {
-  readonly edgeId: string;
-  readonly edgeType: string;
-  readonly fromNodeId: string;
-  readonly toNodeId: string;
-  readonly properties: Readonly<Record<string, unknown>>;
-  readonly sourceTaskIds: readonly string[];
-  readonly derived: false;
-}
-
-export interface TaskLocalUnionMergeReport {
-  readonly taskCount: number;
-  readonly projectedCount: number;
-  readonly boundaryOnlyCount: number;
-  readonly nodeCounts: {
-    readonly input: number;
-    readonly output: number;
-    readonly deduped: number;
-  };
-  readonly edgeCounts: {
-    readonly input: number;
-    readonly output: number;
-    readonly deduped: number;
-  };
-  readonly gaps: readonly TaskLocalUnionGap[];
-}
-
-export interface TaskLocalUnionMergeResult {
-  readonly sourceMode: "TASK_LOCAL_UNION";
-  readonly nodes: readonly TaskLocalUnionNode[];
-  readonly edges: readonly TaskLocalUnionEdge[];
-  readonly report: TaskLocalUnionMergeReport;
-  /** WP-7 summaries retained for read-occurrence/write-observation tracing. */
-  readonly taskEvidence: readonly TaskLocalUnionTaskEvidence[];
-  readonly producerIndex: TaskLocalUnionProducerIndexRef;
-  readonly batchManifestRef: TaskLocalUnionBatchManifestRef;
-}
-
-export interface TaskLocalUnionTaskEvidence {
-  readonly taskId: string;
-  readonly contentHash: string;
-  readonly packContentHash: string;
-  readonly factsManifestSha256: string;
-  readonly projectionSchemaVersion: string;
-  readonly coverageStatus: string;
-  readonly localClosure: TaskLocalProjectionClosure | null;
-}
-
-/** Match WP-3 / machine-facts name normalization for identity divergence checks. */
-export function normalizeName(value: string): string {
-  return value
-    .replace(/[`"\[\]]/g, "")
-    .replace(/\s+/g, "")
-    .toLowerCase();
-}
+export {
+  normalizeName,
+  type TaskLocalUnionEdge,
+  type TaskLocalUnionGap,
+  type TaskLocalUnionGapCode,
+  type TaskLocalUnionMergeReport,
+  type TaskLocalUnionMergeResult,
+  type TaskLocalUnionNode,
+  type TaskLocalUnionTaskEvidence,
+} from "../../../continuation/continuation-input.ts";
 
 export function mergeTaskLocalUnion(
   loaded: LoadedTaskLocalUnionSources,

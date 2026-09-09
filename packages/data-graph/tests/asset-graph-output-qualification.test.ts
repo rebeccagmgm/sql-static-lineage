@@ -10,8 +10,8 @@ import { taskWriters, type Evidence } from "../src/asset-graph/publish.ts";
 import {
   unpackTaskLocalProjectionEnvelope,
   type TaskLocalProjectionEnvelope,
-} from "../src/project-graph/topology/task-local-union/task-local-union-contract.ts";
-import { traceUnionContinuationV2 } from "../src/project-graph/topology/task-local-union/task-local-union-continuation-v2.ts";
+} from "../src/continuation/task-local-projection.ts";
+import { traceUnionContinuationV2 } from "../src/continuation/continuation-v2.ts";
 import { mergeLoadedTasksForTest } from "../src/project-graph/topology/task-local-union/task-local-union-merge.ts";
 import { loadProducerIndex } from "../src/project-graph/topology/task-local-union/task-local-union-producer-index.ts";
 import {
@@ -19,7 +19,7 @@ import {
   buildUnionContinuationIndex,
   unionContinuationIndexContentHash,
   type UnionContinuationIndex,
-} from "../src/project-graph/topology/task-local-union/union-continuation-index.ts";
+} from "../src/continuation/continuation-index.ts";
 
 type Qualification = "PLATFORM_TARGET" | "SQL_UNCONSUMED" | undefined;
 const TABLE = "demo.result";

@@ -12,7 +12,7 @@ import {
   type QueryIndexNodeRecordKey,
   type QueryIndexProjectionRecordKey,
 } from "./query-index-contract.ts";
-import { boundedNeo4jConnectionError } from "./neo4j-query-index-connection.ts";
+import { boundedNeo4jConnectionError } from "../../neo4j/connection.ts";
 import type {
   QueryIndexActivationResult,
   QueryIndexBuildMetadata,

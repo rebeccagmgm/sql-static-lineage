@@ -1,23 +1,23 @@
 import {
   compareText,
   sortedUnique,
-} from "../../contracts/project-topology-contract.ts";
+} from "../contracts/ordering.ts";
 import {
   isUnionContinuationV2ProjectionSchema,
   type TaskLocalProjectionClosure,
-} from "./task-local-union-contract.ts";
-import type { ProducerIndexWriter } from "./task-local-union-producer-index.ts";
+} from "./task-local-projection.ts";
+import type { ProducerIndexWriter } from "./producer-writer.ts";
 import {
   normalizeName,
   type TaskLocalUnionMergeResult,
   type TaskLocalUnionTaskEvidence,
-} from "./task-local-union-merge.ts";
+} from "./continuation-input.ts";
 import {
   canonicalPartitionValue,
   isTemporalPartitionColumn,
   partitionCanonicalValuesOverlap,
   writePartitionRawValues,
-} from "../../../../../../scripts/project-graph/task-local/partition-canonical.ts";
+} from "../../../../scripts/project-graph/task-local/partition-canonical.ts";
 
 export type PartitionMatchStatus =
   "CONFIRMED" | "ASSUMED" | "UNKNOWN" | "DISJOINT";
@@ -32,7 +32,8 @@ export type UnionContinuationGapCode =
   | "WRITE_OBSERVATION_ALIGNMENT_AMBIGUOUS"
   | "PARTITION_NON_LITERAL"
   | "WRITER_PARTITION_UNKNOWN"
-  | "PARTITION_NO_MATCH";
+  | "PARTITION_NO_MATCH"
+  | "SOURCE_ENDPOINT_BOUNDARY";
 
 export interface UnionContinuationReadOccurrence {
   readonly readOccurrenceId: string;

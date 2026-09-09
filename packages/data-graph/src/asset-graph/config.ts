@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolveWorkspacePaths } from "../../../../scripts/config/workspace-paths.ts";
-import { openNeo4jQueryIndexDriver } from "../project-graph/query-index/neo4j-query-index-connection.ts";
+import { openNeo4jQueryIndexDriver } from "../neo4j/connection.ts";
 
 export function assetGraphConfig(configPath?: string) {
   const paths = resolveWorkspacePaths({ configPath });
