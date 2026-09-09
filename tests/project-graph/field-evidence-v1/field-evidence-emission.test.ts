@@ -523,6 +523,22 @@ describe("field-evidence emission branch scoping", () => {
     expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
   });
 
+  it("keeps duplicate raw candidates for one structured operand ambiguous", () => {
+    const [resolution] = resolveFastDerivedFixture([
+      {
+        output: "Dyna_Nom_Prin",
+        expr_text: "np.amount as Dyna_Nom_Prin",
+        input_columns: [
+          { name: "amount", physical: [{ table: "demo.fast_pos", column: "dynamic_notional" }], qualifier: "np" },
+          { name: "amount", physical: [{ table: "demo.fast_pos", column: "dynamic_notional" }], qualifier: "np" },
+        ],
+        structured_expression: { kind: "COLUMN", name: "amount", qualifier: "np" },
+      },
+    ]);
+    expect(resolution.sourceReadOccurrenceStatus).toBe("AMBIGUOUS");
+    expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
+  });
+
   it("uses the materialization leaf expression to verify a folded source", () => {
     const expressions = [
       {
@@ -693,7 +709,7 @@ describe("field-evidence emission branch scoping", () => {
     expect(result[0]?.sourceResolution.sourceReadOccurrenceId).toBe("occ:direct");
   });
 
-+  it("keeps two explicit derived and CTE routes to one physical read distinct", () => {
+  it("keeps two explicit derived and CTE routes to one physical read distinct", () => {
     const task = "route";
     const statement = "statement:0";
     const physical = { table: "demo.source", column: "amount" };

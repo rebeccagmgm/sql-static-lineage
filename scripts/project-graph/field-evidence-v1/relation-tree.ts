@@ -233,6 +233,8 @@ export function resolveScopeBinding(
   index: RelationTreeIndex,
   input: Readonly<{
     ownerRelationId?: string;
+    taskId?: string;
+    statementId?: string;
     scopeId?: string;
     binding?: string;
     sourceKind?: string;
@@ -240,6 +242,10 @@ export function resolveScopeBinding(
 ): ScopeBindingResolution {
   const matches = index.scopeBindings.filter((candidate) =>
     (input.ownerRelationId === undefined || candidate.relationId === input.ownerRelationId)
+    && (input.taskId === undefined
+      || index.relations.get(candidate.relationId ?? "")?.taskId === input.taskId)
+    && (input.statementId === undefined
+      || index.relations.get(candidate.relationId ?? "")?.statementId === input.statementId)
     && (input.scopeId === undefined || candidate.scopeId === input.scopeId)
     && (input.binding === undefined || normalizeName(candidate.binding ?? "") === normalizeName(input.binding))
     && (input.sourceKind === undefined || candidate.sourceKind === input.sourceKind),

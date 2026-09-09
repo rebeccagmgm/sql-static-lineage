@@ -392,7 +392,7 @@ for (const taskId of taskIds) {
     );
     if (
       !projectionReadable ||
-      generatorVersion !== "1.3.11" ||
+      generatorVersion !== "1.3.12" ||
       projectionFactsHash !== factsManifestSha256
     ) {
       decision = "PROJECTION_ONLY";

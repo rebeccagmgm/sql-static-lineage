@@ -12,12 +12,12 @@ import { compileTask } from "../../../packages/data-graph/src/asset-graph/compil
 
 describe("self-join SQL to compiled read fields", () => {
   it.each([
-    ["a.amount + b.amount", 2],
-    ["a.amount + a.amount", 1],
-    ["sum(a.amount + b.amount)", 2],
+    ["a.amount + b.amount", 2, 2],
+    ["a.amount + a.amount", 2, 1],
+    ["sum(a.amount + b.amount)", 2, 2],
   ])(
     "preserves read roles for %s",
-    (expression, count) => {
+    (expression, edgeCount, occurrenceCount) => {
       const parent = mkdtempSync(join(tmpdir(), "self-join-read-fields-"));
       const dataRoot = join(parent, "data");
       const factsRoot = join(parent, "facts");
@@ -74,18 +74,23 @@ describe("self-join SQL to compiled read fields", () => {
       );
       expect(
         direct.map((edge) => edge.properties.sourceReadOccurrenceStatus),
-      ).toEqual(Array(count).fill("RESOLVED"));
+      ).toEqual(Array(edgeCount).fill("RESOLVED"));
       expect(
         new Set(direct.map((edge) => edge.properties.sourceReadOccurrenceId))
           .size,
-      ).toBe(count);
+      ).toBe(occurrenceCount);
+      if (edgeCount > occurrenceCount) {
+        expect(new Set(direct.map((edge) =>
+          JSON.stringify(edge.properties.logicalInputPath),
+        )).size).toBe(edgeCount);
+      }
       const graph = compileTask(projection);
       const reads = graph.nodes.filter(
         (node) => node.kind === "READ_FIELD" && node.column === "amount",
       );
-      expect(reads).toHaveLength(count);
+      expect(reads).toHaveLength(occurrenceCount);
       const values = graph.edges.filter((edge) => edge.kind === "VALUE");
-      expect(values).toHaveLength(count);
+      expect(values).toHaveLength(edgeCount);
       expect(new Set(values.map((edge) => edge.from))).toEqual(
         new Set(reads.map((node) => node.id)),
       );

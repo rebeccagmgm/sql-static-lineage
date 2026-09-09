@@ -24,6 +24,8 @@ export interface SourceReadOccurrenceResolution {
   readonly scopeBindingStatus: "NOT_REQUIRED" | "EXPLICIT" | "LEGACY_INFERRED";
   /** Explicit logical-source route used to reach this physical occurrence. */
   readonly scopeBindingPath?: readonly string[];
+  /** Structured operand identity retained across named-output routing. */
+  readonly logicalInputPath?: readonly string[];
   readonly gap: TaskLocalProjectionGap | null;
 }
 
@@ -34,6 +36,8 @@ export interface FieldExpressionContext {
   readonly ordinal: number | null;
   readonly originExpressionId?: string;
   readonly routeRelationPath?: readonly string[];
+  /** Structured operand paths used at each named-output hop. */
+  readonly routeLogicalInputPath?: readonly string[];
   /** Expressions traversed while routing a named output to this context. */
   readonly routeExpressionHops?: readonly JsonRecord[];
   readonly routePathHadAggregation?: boolean;
@@ -138,6 +142,7 @@ function resolved(
   sourceRelationId: string,
   scopeBindingStatus: SourceReadOccurrenceResolution["scopeBindingStatus"] = "NOT_REQUIRED",
   scopeBindingPath?: readonly string[],
+  logicalInputPath?: readonly string[],
 ): SourceReadOccurrenceResolution {
   return {
     sourceReadOccurrenceId,
@@ -147,6 +152,9 @@ function resolved(
     scopeBindingStatus,
     ...(scopeBindingPath && scopeBindingPath.length > 0
       ? { scopeBindingPath: [...scopeBindingPath] }
+      : {}),
+    ...(logicalInputPath && logicalInputPath.length > 0
+      ? { logicalInputPath: [...logicalInputPath] }
       : {}),
     gap: null,
   };
@@ -208,16 +216,16 @@ function readVisibleFromExpression(input: {
   readonly expressionRelationId: string;
   readonly read: RelationRecord;
 }): boolean {
-  const expressionScopeId = input.index.relations.get(input.expressionRelationId)?.scopeId ?? null;
-  if (!isReadVisibleFromExpressionScope(expressionScopeId, input.read.scopeId)) return false;
-  if (input.index.scopeBindingMode === "LEGACY") return true;
-  for (const binding of input.index.scopeBindings) {
-    if (
-      binding.status !== "RESOLVED"
-      || binding.sourceKind !== "cte"
-      || !binding.targetRelationId
-    ) continue;
-    const targetSubtree = relationSubtree(input.index, binding.targetRelationId);
+  if (input.index.scopeBindingMode === "LEGACY") {
+    const expressionScopeId = input.index.relations.get(input.expressionRelationId)?.scopeId
+      ?? null;
+    return isReadVisibleFromExpressionScope(expressionScopeId, input.read.scopeId);
+  }
+  // Explicit Facts define CTE visibility by relation endpoints. Scope ids are
+  // opaque identifiers here and must not be interpreted as names or paths.
+  for (const cteRead of input.index.relations.values()) {
+    if (!cteRead.isCte || !cteRead.sourceRelationId) continue;
+    const targetSubtree = relationSubtree(input.index, cteRead.sourceRelationId);
     if (
       targetSubtree.has(input.read.relationId)
       && !targetSubtree.has(input.expressionRelationId)
@@ -264,7 +272,10 @@ function matchingReads(input: {
   }));
   const referencedInputReads = input.cteRelationQualifier
     ? directInputReads.filter((relation) => relationMatchesQualifier(
-      relation, input.cteRelationQualifier!, input.bindingByReadRelation,
+      relation,
+      input.cteRelationQualifier!,
+      input.bindingByReadRelation,
+      input.index.scopeBindingMode,
     ))
     : directInputReads;
   // Unqualified inputs can cross a CTE only if the entire immediate logical
@@ -346,13 +357,38 @@ function matchingReads(input: {
     };
   }
   const bridge = cteBridges[0]!;
+  const explicitQualifiedSource = bridge.bindingStatus === "EXPLICIT" && bridge.qualifier
+    ? resolveScopeBinding(input.index, {
+        taskId: bridge.cteBody.taskId ?? undefined,
+        statementId: bridge.cteBody.statementId ?? undefined,
+        scopeId: bridge.cteBody.scopeId ?? undefined,
+        binding: bridge.qualifier,
+      })
+    : null;
+  const explicitQualifiedDomain = explicitQualifiedSource?.status === "RESOLVED"
+    && explicitQualifiedSource.binding.targetRelationId
+    ? relationSubtree(
+        input.index,
+        explicitQualifiedSource.binding.targetRelationId,
+      )
+    : null;
   for (const sourceRead of readRelationsInSubtree(input.index, bridge.cteBody.relationId)) {
     const isDirectBodyRead = bridge.bindingStatus === "EXPLICIT"
-      ? readVisibleFromExpression({
-          index: input.index,
-          expressionRelationId: bridge.cteBody.relationId,
-          read: sourceRead,
-        })
+      ? bridge.qualifier
+        ? explicitQualifiedSource?.status === "RESOLVED"
+          ? explicitQualifiedDomain?.has(sourceRead.relationId) === true
+          : explicitQualifiedSource?.status === "ABSENT"
+            && relationMatchesQualifier(
+              sourceRead,
+              bridge.qualifier,
+              input.bindingByReadRelation,
+              input.index.scopeBindingMode,
+            )
+        : readVisibleFromExpression({
+            index: input.index,
+            expressionRelationId: bridge.cteBody.relationId,
+            read: sourceRead,
+          })
       : (() => {
           const bodyScope = bridge.cteBody.scopeId;
           const suffix = bodyScope && sourceRead.scopeId?.startsWith(`${bodyScope}.`)
@@ -363,8 +399,14 @@ function matchingReads(input: {
     if (
       isDirectBodyRead
       && sourceRead.physicalDataset === targetTable
-      && (!bridge.qualifier || relationMatchesQualifier(
-        sourceRead, bridge.qualifier, input.bindingByReadRelation,
+      && (
+        bridge.bindingStatus === "EXPLICIT"
+        || !bridge.qualifier
+        || relationMatchesQualifier(
+        sourceRead,
+        bridge.qualifier,
+        input.bindingByReadRelation,
+        input.index.scopeBindingMode,
       ))
     ) {
       matches.set(sourceRead.relationId, sourceRead);
@@ -381,6 +423,7 @@ function relationMatchesQualifier(
   relation: RelationRecord,
   qualifier: string,
   bindingByReadRelation: ReadonlyMap<string, string>,
+  scopeBindingMode: RelationTreeIndex["scopeBindingMode"],
 ): boolean {
   const normalizedQualifier = normalizeName(qualifier);
   const binding = bindingByReadRelation.get(relation.relationId);
@@ -388,6 +431,9 @@ function relationMatchesQualifier(
     return true;
   }
   if (relation.binding === normalizedQualifier) return true;
+  // Once Facts declare scope bindings, scope/relation ids are opaque
+  // identifiers.  Their spelling is not evidence that a read owns an alias.
+  if (scopeBindingMode !== "LEGACY") return false;
   if (relation.scopeId) {
     const scopeTail = relation.scopeId.split(".").at(-1);
     if (scopeTail && normalizeName(scopeTail) === normalizedQualifier) return true;
@@ -416,13 +462,159 @@ function physicalInput(input: JsonRecord, sourceTable: string, sourceColumn: str
   });
 }
 
+export type LogicalInputReference = Readonly<{
+  input: JsonRecord;
+  path: string | null;
+  selectionKey: string;
+}>;
+
+type StructuredColumnReference = Readonly<{
+  name: string;
+  qualifier: string | null;
+  path: string;
+}>;
+
+function structuredColumnReferences(
+  value: unknown,
+  path = "root",
+): readonly StructuredColumnReference[] {
+  const expression = record(value);
+  if (!expression) return [];
+  const kind = normalizeName(text(expression.kind) ?? "");
+  if (kind === "column") {
+    const name = text(expression.name);
+    return name
+      ? [{ name: normalizeName(name), qualifier: text(expression.qualifier), path }]
+      : [];
+  }
+  if (kind === "binary") {
+    return [
+      ...structuredColumnReferences(expression.left, `${path}.left`),
+      ...structuredColumnReferences(expression.right, `${path}.right`),
+    ];
+  }
+  if (kind === "unary") {
+    return structuredColumnReferences(expression.operand, `${path}.operand`);
+  }
+  if (kind === "cast") {
+    return structuredColumnReferences(expression.expr, `${path}.expr`);
+  }
+  if (kind === "function") {
+    return (Array.isArray(expression.args) ? expression.args : []).flatMap(
+      (argument, ordinal) =>
+        structuredColumnReferences(argument, `${path}.args[${ordinal}]`),
+    );
+  }
+  if (kind === "predicate") {
+    return [
+      ...structuredColumnReferences(expression.operand, `${path}.operand`),
+      ...(Array.isArray(expression.args) ? expression.args : []).flatMap(
+        (argument, ordinal) =>
+          structuredColumnReferences(argument, `${path}.args[${ordinal}]`),
+      ),
+    ];
+  }
+  if (kind === "case") {
+    const whens = (Array.isArray(expression.whens) ? expression.whens : [])
+      .flatMap((rawWhen, ordinal) => {
+        const branch = record(rawWhen);
+        return branch
+          ? [
+              ...structuredColumnReferences(
+                branch.when,
+                `${path}.whens[${ordinal}].when`,
+              ),
+              ...structuredColumnReferences(
+                branch.then,
+                `${path}.whens[${ordinal}].then`,
+              ),
+            ]
+          : [];
+      });
+    return [
+      ...whens,
+      ...structuredColumnReferences(expression.elseExpr, `${path}.elseExpr`),
+    ];
+  }
+  return [];
+}
+
+export function logicalInputReferences(
+  expression: JsonRecord,
+): readonly LogicalInputReference[] {
+  const inputs = (Array.isArray(expression.input_columns)
+    ? expression.input_columns
+    : [])
+    .map(record)
+    .filter((item): item is JsonRecord => item !== null);
+  const structured = structuredColumnReferences(expression.structured_expression);
+  if (structured.length === 0) {
+    // Keep single-input legacy compatibility, but never turn input_columns
+    // ordering into explicit operand identity.
+    return inputs.length === 1
+      ? [{ input: inputs[0]!, path: null, selectionKey: "single-input" }]
+      : [];
+  }
+  return structured.flatMap((reference) => {
+    const matches = inputs
+      .map((input, ordinal) => ({ input, ordinal }))
+      .filter(({ input }) =>
+        normalizeName(text(input.name) ?? "") === reference.name
+        && (
+          reference.qualifier === null
+          || normalizeName(text(input.qualifier) ?? "")
+            === normalizeName(reference.qualifier)
+        )
+      );
+    return matches.map(({ input, ordinal }) => ({
+      input,
+      path: reference.path,
+      selectionKey: `${reference.path}\u0000${ordinal}`,
+    }));
+  });
+}
+
+function qualifiedUnstructuredInputReference(
+  expression: JsonRecord,
+  qualifier: string,
+  sourceTable: string,
+  sourceColumn: string,
+): LogicalInputReference | null {
+  if (structuredColumnReferences(expression.structured_expression).length > 0) {
+    return null;
+  }
+  const normalizedQualifier = normalizeName(qualifier);
+  const matches = (Array.isArray(expression.input_columns)
+    ? expression.input_columns
+    : [])
+    .map(record)
+    .filter((item): item is JsonRecord =>
+      item !== null
+      && normalizeName(text(item.qualifier) ?? "") === normalizedQualifier
+      && physicalInput(item, sourceTable, sourceColumn)
+    );
+  if (matches.length === 0) return null;
+  const inputNames = new Set(
+    matches.map((item) => normalizeName(text(item.name) ?? "")),
+  );
+  if (inputNames.size !== 1 || inputNames.has("")) return null;
+  // A qualifier establishes the read instance, but old Facts do not establish
+  // which repeated operand position used it. Collapse that repetition and do
+  // not synthesize a logical path from array order.
+  return {
+    input: matches[0]!,
+    path: null,
+    selectionKey: "qualified:" + normalizedQualifier,
+  };
+}
+
 /**
  * Route a physical input through named derived outputs only.  This is a
  * bounded fallback for an outer projection which current setop sinking cannot
  * reach through intervening joins/filters/aggregates.  It never guesses an
  * unqualified join side: every selected producer must be unique in Facts.
  */
-export function routeNamedOutputContexts(input: {
+type NamedOutputRouteInput = Readonly<{
   readonly expression: JsonRecord;
   readonly sourceTable: string;
   readonly sourceColumn: string;
@@ -437,15 +629,36 @@ export function routeNamedOutputContexts(input: {
   readonly index: RelationTreeIndex;
   /** Select one structured reference when the outer expression reads the same physical field twice. */
   readonly referenceQualifier?: string;
-}): readonly FieldExpressionContext[] {
-  let current = input.expression;
-  const originExpressionId = text(current.expression_id);
-  const path: string[] = [];
-  const routeExpressionHops: JsonRecord[] = [];
-  let routePathHadAggregation = false;
+}>;
+
+type NamedOutputRouteState = Readonly<{
+  current: JsonRecord;
+  originExpressionId: string | null;
+  path: readonly string[];
+  logicalInputPath: readonly string[];
+  expressionHops: readonly JsonRecord[];
+  pathHadAggregation: boolean;
+  scopeBindingStatus: FieldExpressionContext["scopeBindingStatus"];
+  visited: ReadonlySet<string>;
+  depth: number;
+  selectedInputKey?: string;
+}>;
+
+function routeNamedOutputContextsInternal(
+  input: NamedOutputRouteInput,
+  initialState?: NamedOutputRouteState,
+): readonly FieldExpressionContext[] {
+  let current = initialState?.current ?? input.expression;
+  const originExpressionId = initialState?.originExpressionId
+    ?? text(current.expression_id);
+  const path: string[] = [...(initialState?.path ?? [])];
+  const logicalInputPath: string[] = [...(initialState?.logicalInputPath ?? [])];
+  const routeExpressionHops: JsonRecord[] = [...(initialState?.expressionHops ?? [])];
+  let routePathHadAggregation = initialState?.pathHadAggregation ?? false;
   let routeScopeBindingStatus: FieldExpressionContext["scopeBindingStatus"] =
-    "NOT_REQUIRED";
-  const visited = new Set<string>();
+    initialState?.scopeBindingStatus ?? "NOT_REQUIRED";
+  const visited = new Set(initialState?.visited ?? []);
+  let selectedInputKey = initialState?.selectedInputKey;
   const terminalExplicitContext = (): readonly FieldExpressionContext[] => {
     if (
       routeScopeBindingStatus !== "EXPLICIT" ||
@@ -467,16 +680,28 @@ export function routeNamedOutputContexts(input: {
         ordinal: numberValue(current.ordinal),
         originExpressionId: originExpressionId ?? undefined,
         routeRelationPath: [...path],
+        routeLogicalInputPath: [...logicalInputPath],
         routeExpressionHops: [...routeExpressionHops],
         routePathHadAggregation,
         scopeBindingStatus: "EXPLICIT",
       },
     ];
   };
-  for (let depth = 0; depth < 16; depth += 1) {
+  for (let depth = initialState?.depth ?? 0; depth < 16; depth += 1) {
     const relationId = text(current.relation_id);
     const outputName = text(current.output_name);
     if (!relationId || !outputName || visited.has(relationId)) return [];
+    const stateBeforeCurrent: NamedOutputRouteState = {
+      current,
+      originExpressionId,
+      path: [...path],
+      logicalInputPath: [...logicalInputPath],
+      expressionHops: [...routeExpressionHops],
+      pathHadAggregation: routePathHadAggregation,
+      scopeBindingStatus: routeScopeBindingStatus,
+      visited: new Set(visited),
+      depth,
+    };
     visited.add(relationId);
     path.push(relationId);
     const raw = outputExpression(
@@ -489,31 +714,92 @@ export function routeNamedOutputContexts(input: {
     // physical dependency status, and relation id required for classification.
     // The relation-body expression below is only a routing witness.
     routeExpressionHops.push(current);
-    const matchingInputs = (
-      Array.isArray(raw.input_columns) ? raw.input_columns : []
-    )
-      .map(record)
-      .filter(
-        (item): item is JsonRecord =>
-          item !== null &&
-          physicalInput(item, input.sourceTable, input.sourceColumn),
+    let matchingInputs = logicalInputReferences(raw)
+      .filter(({ input: logicalInput }) =>
+        physicalInput(logicalInput, input.sourceTable, input.sourceColumn),
       )
       .filter(
-        (item) =>
+        ({ input: logicalInput }) =>
           depth !== 0 ||
           input.referenceQualifier === undefined ||
-          normalizeName(text(item.qualifier) ?? "") ===
-            normalizeName(input.referenceQualifier),
+          normalizeName(text(logicalInput.qualifier) ?? "") ===
+          normalizeName(input.referenceQualifier),
       );
-    if (matchingInputs.length !== 1) return [];
-    const namedInput = matchingInputs[0]!;
+    if (
+      matchingInputs.length === 0
+      && depth === 0
+      && input.referenceQualifier !== undefined
+    ) {
+      const qualified = qualifiedUnstructuredInputReference(
+        raw,
+        input.referenceQualifier,
+        input.sourceTable,
+        input.sourceColumn,
+      );
+      matchingInputs = qualified ? [qualified] : [];
+    }
+    if (selectedInputKey !== undefined) {
+      matchingInputs = matchingInputs.filter(
+        (logicalInput) => logicalInput.selectionKey === selectedInputKey,
+      );
+      selectedInputKey = undefined;
+    }
+    if (matchingInputs.length === 0) return [];
+    if (new Set(matchingInputs.map(({ path }) => path)).size !== matchingInputs.length) {
+      // More than one candidate for the same logical operand is ambiguous.
+      // Branching is only valid across distinct structured operand paths.
+      return [];
+    }
+    if (matchingInputs.length > 1) {
+      const branches = matchingInputs.map((logicalInput) =>
+        routeNamedOutputContextsInternal(input, {
+          ...stateBeforeCurrent,
+          selectedInputKey: logicalInput.selectionKey,
+        }),
+      );
+      if (branches.some((branch) => branch.length === 0)) return [];
+      const unique = new Map<string, FieldExpressionContext>();
+      for (const context of branches.flat()) {
+        const key = JSON.stringify({
+          expressionId: context.expressionId,
+          relationPath: context.routeRelationPath ?? [],
+          logicalInputPath: context.routeLogicalInputPath ?? [],
+        });
+        unique.set(key, context);
+      }
+      return [...unique.values()];
+    }
+    const logicalInput = matchingInputs[0]!;
+    if (logicalInput.path) {
+      logicalInputPath.push(`${relationId}:${logicalInput.path}`);
+    }
+    const namedInput = logicalInput.input;
     const inputName = text(namedInput.name);
     if (!inputName) return [];
     const qualifier = text(namedInput.qualifier);
     if (qualifier) {
+      const directPhysicalReads = readRelationsInSubtree(input.index, relationId)
+        .filter((relation) =>
+          relation.physicalDataset === tableKey(input.sourceTable)
+          && readVisibleFromExpression({
+            index: input.index,
+            expressionRelationId: relationId,
+            read: relation,
+          })
+          && relationMatchesQualifier(
+            relation,
+            qualifier,
+            new Map<string, string>(),
+            input.index.scopeBindingMode,
+          )
+        );
+      if (directPhysicalReads.length > 0) return terminalExplicitContext();
       const currentScope = input.index.relations.get(relationId)?.scopeId;
+      const currentRelation = input.index.relations.get(relationId);
       if (!currentScope) return [];
       const explicitBinding = resolveScopeBinding(input.index, {
+        taskId: currentRelation?.taskId ?? undefined,
+        statementId: currentRelation?.statementId ?? undefined,
         scopeId: currentScope,
         binding: qualifier,
       });
@@ -619,6 +905,7 @@ export function routeNamedOutputContexts(input: {
             routeRelationPath: [...path, context.relationId ?? ""].filter(
               Boolean,
             ),
+            routeLogicalInputPath: [...logicalInputPath],
             routeExpressionHops: [...routeExpressionHops, context.expression],
             routePathHadAggregation,
             scopeBindingStatus: routeScopeBindingStatus,
@@ -642,6 +929,12 @@ export function routeNamedOutputContexts(input: {
     return terminalExplicitContext();
   }
   return [];
+}
+
+export function routeNamedOutputContexts(
+  input: NamedOutputRouteInput,
+): readonly FieldExpressionContext[] {
+  return routeNamedOutputContextsInternal(input);
 }
 
 /**
@@ -709,11 +1002,48 @@ function narrowByQualifiers(input: {
   readonly matches: readonly RelationRecord[];
   readonly qualifiers: readonly string[];
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
+  readonly index: RelationTreeIndex;
+  readonly leafRelationId: string;
 }): readonly RelationRecord[] {
-  if (input.qualifiers.length === 0 || input.matches.length <= 1) return input.matches;
+  if (input.qualifiers.length === 0) return input.matches;
+  if (input.index.scopeBindingMode !== "LEGACY") {
+    const leafRelation = input.index.relations.get(input.leafRelationId);
+    if (!leafRelation) return [];
+    const domains = input.qualifiers.map((qualifier) => {
+      const binding = resolveScopeBinding(input.index, {
+        taskId: leafRelation.taskId ?? undefined,
+        statementId: leafRelation.statementId ?? undefined,
+        scopeId: leafRelation.scopeId ?? undefined,
+        binding: qualifier,
+      });
+      return binding.status === "RESOLVED" && binding.binding.targetRelationId
+        ? relationSubtree(input.index, binding.binding.targetRelationId)
+        : binding.status === "ABSENT"
+          ? null
+          : false;
+    });
+    return input.matches.filter((relation) =>
+      input.qualifiers.some((qualifier, ordinal) => {
+        const domain = domains[ordinal];
+        return domain instanceof Set
+          ? domain.has(relation.relationId)
+          : domain === null && relationMatchesQualifier(
+            relation,
+            qualifier,
+            input.bindingByReadRelation,
+            input.index.scopeBindingMode,
+          );
+      })
+    );
+  }
   const narrowed = input.matches.filter((relation) =>
     input.qualifiers.some((qualifier) =>
-      relationMatchesQualifier(relation, qualifier, input.bindingByReadRelation),
+      relationMatchesQualifier(
+        relation,
+        qualifier,
+        input.bindingByReadRelation,
+        input.index.scopeBindingMode,
+      ),
     ),
   );
   return narrowed.length > 0 ? narrowed : input.matches;
@@ -737,6 +1067,8 @@ export function resolveSourceReadOccurrence(input: {
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
   readonly scopeBindingStatus?: SourceReadOccurrenceResolution["scopeBindingStatus"];
   readonly scopeBindingPath?: readonly string[];
+  readonly logicalInputPath?: readonly string[];
+  readonly logicalInputAmbiguous?: boolean;
 }): SourceReadOccurrenceResolution {
   const base = {
     taskId: input.taskId,
@@ -744,6 +1076,9 @@ export function resolveSourceReadOccurrence(input: {
     sourceTable: input.sourceTable,
     sourceColumn: input.sourceColumn,
   };
+  if (input.logicalInputAmbiguous) {
+    return ambiguous({ ...base, reason: "SELF_JOIN_NO_QUALIFIER" });
+  }
   if (!input.leafRelationId) {
     return unresolved({ ...base, reason: "MATERIALIZATION_LEAF_MISSING" });
   }
@@ -770,14 +1105,44 @@ export function resolveSourceReadOccurrence(input: {
     bindingByReadRelation: input.bindingByReadRelation,
   });
   const referenceQualifier = input.referenceQualifier;
+  const leafRelation = input.index.relations.get(input.leafRelationId);
+  const explicitReferenceBinding = referenceQualifier
+    && input.index.scopeBindingMode !== "LEGACY"
+    && leafRelation
+    ? resolveScopeBinding(input.index, {
+        taskId: leafRelation.taskId ?? undefined,
+        statementId: leafRelation.statementId ?? undefined,
+        scopeId: leafRelation.scopeId ?? undefined,
+        binding: referenceQualifier,
+      })
+    : null;
+  const explicitReferenceDomain = explicitReferenceBinding?.status === "RESOLVED"
+    && explicitReferenceBinding.binding.targetRelationId
+    ? relationSubtree(
+        input.index,
+        explicitReferenceBinding.binding.targetRelationId,
+      )
+    : null;
   const matches = referenceQualifier
-    ? candidates.relations.filter((relation) => relationMatchesQualifier(
-      relation, referenceQualifier, input.bindingByReadRelation,
-    ))
+    ? explicitReferenceDomain
+      ? candidates.relations.filter((relation) =>
+          explicitReferenceDomain.has(relation.relationId)
+        )
+      : explicitReferenceBinding
+        && explicitReferenceBinding.status !== "ABSENT"
+        ? []
+        : candidates.relations.filter((relation) => relationMatchesQualifier(
+            relation,
+            referenceQualifier,
+            input.bindingByReadRelation,
+            input.index.scopeBindingMode,
+          ))
     : narrowByQualifiers({
       matches: candidates.relations,
       qualifiers,
       bindingByReadRelation: input.bindingByReadRelation,
+      index: input.index,
+      leafRelationId: input.leafRelationId,
     });
   if (matches.length === 1) {
     const relation = matches[0]!;
@@ -795,6 +1160,7 @@ export function resolveSourceReadOccurrence(input: {
         ?? candidates.scopeBindingStatusByRelationId.get(relation.relationId)
         ?? "NOT_REQUIRED",
       input.scopeBindingStatus === "EXPLICIT" ? input.scopeBindingPath : undefined,
+      input.logicalInputPath,
     );
   }
   if (matches.length > 1) {

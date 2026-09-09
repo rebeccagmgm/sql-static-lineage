@@ -20,6 +20,7 @@ import {
   expandSetopBranchExpressions,
   expressionsByRelationAndOrdinal,
   leafRelationIdForExpression,
+  logicalInputReferences,
   routeNamedOutputContexts,
   resolveSourceReadOccurrence,
   type FieldExpressionContext,
@@ -198,6 +199,70 @@ function relationQualifiersForSourceField(input: {
   return matchedSource && qualifiers.size > 0 ? [...qualifiers].sort() : null;
 }
 
+function relationLogicalReferencesForSourceField(input: {
+  readonly expression: JsonRecord;
+  readonly sourceField: PhysicalFieldIdentity;
+  readonly indexes: FieldEvidenceIndexes;
+}): readonly Readonly<{ qualifier: string; path: string | null }>[] | null {
+  const relationId = text(input.expression.relation_id);
+  const outputName = text(input.expression.output_name);
+  if (!relationId || !outputName) return null;
+  const rawExpressions = input.indexes.relationExpressionsByRelationId.get(relationId) ?? [];
+  const matchingExpressions = rawExpressions.filter((candidate) =>
+    normalizeName(String(candidate.output ?? "")) === normalizeName(outputName),
+  );
+  if (matchingExpressions.length !== 1) return null;
+  const targetTable = normalizeName(input.sourceField.qualifiedName);
+  const targetColumn = normalizeName(input.sourceField.column);
+  const rawExpression = matchingExpressions[0]!;
+  const structuredReferences = logicalInputReferences(rawExpression);
+  const sourceInputs = (Array.isArray(rawExpression.input_columns)
+    ? rawExpression.input_columns
+    : [])
+    .map(record)
+    .filter((item): item is JsonRecord => item !== null)
+    .filter((inputColumn) => {
+      const physical = Array.isArray(inputColumn.physical) ? inputColumn.physical : [];
+      return physical.some((rawPhysical) => {
+        const field = record(rawPhysical);
+        return field !== null
+          && normalizeName(String(field.table ?? "")) === targetTable
+          && normalizeName(String(field.column ?? "")) === targetColumn;
+      });
+    });
+  const references = (structuredReferences.length > 0
+    ? structuredReferences.filter(({ input: inputColumn }) =>
+        sourceInputs.includes(inputColumn)
+      )
+    : sourceInputs.map((inputColumn) => ({
+        input: inputColumn,
+        path: null,
+        selectionKey: "qualified-input",
+      })))
+    .map(({ input: inputColumn, path }) => ({
+      qualifier: text(inputColumn.qualifier),
+      path,
+    }));
+  if (references.length === 0 || references.some(({ qualifier }) => !qualifier)) {
+    return null;
+  }
+  if (
+    structuredReferences.length > 0
+    && new Set(references.map(({ path }) => path)).size !== references.length
+  ) {
+    return [];
+  }
+  const unique = new Map<string, { qualifier: string; path: string | null }>();
+  for (const { qualifier, path } of references) {
+    const normalizedQualifier = normalizeName(qualifier!);
+    unique.set(normalizedQualifier + "\u0000" + (path ?? ""), {
+      qualifier: normalizedQualifier,
+      path,
+    });
+  }
+  return [...unique.values()];
+}
+
 function cteInputReferenceForSourceField(input: {
   readonly expression: JsonRecord;
   readonly sourceField: PhysicalFieldIdentity;
@@ -290,13 +355,16 @@ export function emitFieldEvidenceForInput(input: {
       sourceExpression,
       input.sourceField,
     );
-    const relationQualifiers = relationQualifiersForSourceField({
+    const logicalReferences = relationLogicalReferencesForSourceField({
       expression: sourceExpression,
       sourceField: input.sourceField,
       indexes: input.indexes,
     });
     // Split only structured physical references, never the set of possible reads.
-    for (const relationQualifier of relationQualifiers ?? [null]) {
+    for (const logicalReference of logicalReferences && logicalReferences.length > 0
+      ? logicalReferences
+      : [{ qualifier: null, path: null }]) {
+      const relationQualifier = logicalReference.qualifier;
       const sourceResolution = resolveSourceReadOccurrence({
         taskId: input.taskId,
         expressionId: directSource
@@ -308,9 +376,17 @@ export function emitFieldEvidenceForInput(input: {
           ? { ...branchInputField, qualifier: relationQualifier }
           : branchInputField,
         expressionText: text(context.expression.expression_text),
-        ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
+        ...(logicalReferences && relationQualifier
           ? { referenceQualifier: relationQualifier }
           : {}),
+        ...(logicalReferences && logicalReferences.length > 1 && logicalReference.path
+          ? {
+              logicalInputPath: [
+                `${text(sourceExpression.relation_id) ?? "unknown"}:${logicalReference.path}`,
+              ],
+            }
+          : {}),
+        logicalInputAmbiguous: logicalReferences?.length === 0,
         leafRelationId,
         index: input.indexes.relationTree,
         readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
@@ -416,6 +492,7 @@ export function emitFieldEvidenceForInput(input: {
           bindingByReadRelation: input.indexes.bindingByReadRelation,
           scopeBindingStatus: routed.scopeBindingStatus,
           scopeBindingPath: routed.routeRelationPath,
+          logicalInputPath: routed.routeLogicalInputPath,
         });
         const routeHops = routed.routeExpressionHops ?? [routed.expression];
         const composed = composePathSubtype([
@@ -468,6 +545,7 @@ export function emitFieldEvidenceForInput(input: {
         output.sourceResolution.sourceReadOccurrenceId!,
         output.sourceResolution.sourceRelationId!,
         ...(output.sourceResolution.scopeBindingPath ?? []),
+        ...(output.sourceResolution.logicalInputPath ?? []),
       ].join("\u0000");
       const values = byReadIdentity.get(key) ?? [];
       values.push(output);

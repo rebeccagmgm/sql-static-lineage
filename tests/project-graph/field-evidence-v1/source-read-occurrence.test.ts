@@ -62,6 +62,43 @@ describe("source-read-occurrence", () => {
     }).sourceReadOccurrenceStatus).toBe("UNRESOLVED");
   });
 
+  it("does not infer an explicit qualifier from scope or relation id spelling", () => {
+    const index = withIncomingRelations(
+      buildRelationTreeIndex([
+        {
+          relation_id: "rel:read:q",
+          relation_type: "read",
+          relation: {
+            table: "demo.source",
+            type: "read",
+            scope_id: "opaque.q",
+            scope_bindings: [],
+          },
+        },
+        {
+          relation_id: "rel:project",
+          relation_type: "project",
+          relation: { type: "project", scope_id: "opaque", scope_bindings: [] },
+        },
+      ]),
+      [{ from_relation_id: "rel:read:q", to_relation_id: "rel:project" }],
+    );
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-explicit",
+      expressionId: "expr:explicit",
+      sourceTable: "demo.source",
+      sourceColumn: "id",
+      inputField: { table: "demo.source", column: "id", qualifier: "q" },
+      referenceQualifier: "q",
+      leafRelationId: "rel:project",
+      index,
+      readOccurrenceByRelationId: new Map([["rel:read:q", "occ:q"]]),
+      bindingByReadRelation: new Map(),
+    });
+    expect(index.scopeBindingMode).toBe("EXPLICIT");
+    expect(resolution.sourceReadOccurrenceStatus).toBe("UNRESOLVED");
+  });
+
   it("marks self-join reads without qualifier as ambiguous", () => {
     const relationNodes = [
       {
@@ -250,6 +287,86 @@ describe("source-read-occurrence", () => {
     expect(resolution.sourceReadOccurrenceId).toBe("occ:source");
     expect(resolution.sourceRelationId).toBe("rel:root.(child).source.read");
     expect(resolution.scopeBindingStatus).toBe("EXPLICIT");
+  });
+
+  it("does not bypass an invalid CTE-body qualifier binding with a read alias", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:body.source.read",
+        relation_type: "read",
+        relation: {
+          table: "demo.source",
+          type: "read",
+          binding: "source",
+          scope_id: "opaque:body.source",
+          scope_bindings: [{
+            scope_id: "opaque:body",
+            relation_id: "rel:body.source.read",
+            binding: "source",
+            source_kind: "subquery",
+            target_scope_id: "opaque:missing",
+            target_relation_id: "rel:body.source.read",
+          }],
+        },
+      },
+      {
+        relation_id: "rel:body.project",
+        relation_type: "project",
+        relation: {
+          type: "project",
+          scope_id: "opaque:body",
+          scope_bindings: [],
+          expressions: [{
+            output: "amount",
+            input_columns: [{
+              name: "amount",
+              qualifier: "source",
+              physical: [{ table: "demo.source", column: "amount" }],
+            }],
+          }],
+        },
+      },
+      {
+        relation_id: "rel:outer.cte.read",
+        relation_type: "read",
+        relation: {
+          table: "cte",
+          type: "read",
+          binding: "cte",
+          is_cte: true,
+          scope_id: "opaque:outer",
+          source: "rel:body.project",
+          scope_bindings: [{
+            scope_id: "opaque:outer",
+            relation_id: "rel:outer.cte.read",
+            binding: "cte",
+            source_kind: "cte",
+            target_scope_id: "opaque:body",
+            target_relation_id: "rel:body.project",
+          }],
+        },
+      },
+    ];
+    const index = withIncomingRelations(
+      buildRelationTreeIndex(relationNodes),
+      [
+        { from_relation_id: "rel:body.source.read", to_relation_id: "rel:body.project" },
+        { from_relation_id: "rel:body.project", to_relation_id: "rel:outer.cte.read" },
+      ],
+    );
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-cte-invalid-body",
+      expressionId: "expr:invalid-body",
+      sourceTable: "demo.source",
+      sourceColumn: "amount",
+      inputField: { table: "demo.source", column: "amount" },
+      cteOutputColumn: "amount",
+      leafRelationId: "rel:outer.cte.read",
+      index,
+      readOccurrenceByRelationId: new Map([["rel:body.source.read", "occ:source"]]),
+      bindingByReadRelation: new Map(),
+    });
+    expect(resolution.sourceReadOccurrenceStatus).toBe("UNRESOLVED");
   });
 
   it("fails closed when a CTE reference has no body source bridge", () => {
@@ -777,6 +894,45 @@ describe("source-read-occurrence", () => {
 });
 
 describe("relation-tree", () => {
+  it("resolves repeated scope aliases within their task and statement", () => {
+    const project = (statementId: string, relationId: string) => ({
+      task_id: "task-1",
+      statement_id: statementId,
+      relation_id: relationId,
+      relation_type: "project",
+      relation: {
+        type: "project",
+        scope_id: "root.pri",
+        scope_bindings: [{
+          scope_id: "root",
+          relation_id: relationId,
+          binding: "pri",
+          source_kind: "subquery",
+          target_scope_id: "root.pri",
+          target_relation_id: relationId,
+        }],
+      },
+    });
+    const index = buildRelationTreeIndex([
+      project("statement:0", "rel:statement:0:pri"),
+      project("statement:1", "rel:statement:1:pri"),
+    ]);
+
+    expect(resolveScopeBinding(index, {
+      taskId: "task-1",
+      statementId: "statement:0",
+      scopeId: "root",
+      binding: "pri",
+    })).toMatchObject({
+      status: "RESOLVED",
+      binding: { targetRelationId: "rel:statement:0:pri" },
+    });
+    expect(resolveScopeBinding(index, {
+      scopeId: "root",
+      binding: "pri",
+    }).status).toBe("AMBIGUOUS");
+  });
+
   it("rejects malformed, duplicated, cross-statement and cyclic explicit bindings", () => {
     const nodes = (mode: string) => {
       const binding = {
