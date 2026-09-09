@@ -153,6 +153,9 @@
     "graph:query": "tsx packages/data-graph/src/asset-graph/cli.ts",
     "graph:benchmark": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-graph-cli-layers.ps1",
     "graph:serve": "tsx packages/data-graph/src/asset-graph/cli.ts serve",
+    "graph:ui": "npm --prefix packages/data-graph-ui run dev",
+    "graph:ui:build": "npm --prefix packages/data-graph-ui run build",
+    "graph:ui:test": "npm --prefix packages/data-graph-ui test",
     "test:asset-graph": "vitest run tests/reconcile/shared/dataset-controls.test.ts tests/project-graph/task-local/projection-cache.test.ts tests/config/workspace-paths.test.ts --no-file-parallelism",
     "graph:verify": "node scripts/project-graph/asset-graph/verify-cli.cjs"
   },

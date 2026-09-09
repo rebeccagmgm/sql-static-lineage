@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { openAssetGraph } from "./config.ts";
 import { AssetGraphStore } from "./store.ts";
+import {
+  getAssetGraphOverview,
+  listAssetGraphRegionDatasets,
+} from "./overview.ts";
 import { readJson, type PreparedManifest, type Evidence } from "./publish.ts";
 import type { FactRecord } from "./compile.ts";
 export async function taskDetail(
@@ -101,7 +105,9 @@ export async function startAssetGraphServer(
       const raw = q.get(key);
       const n = raw === null ? defaultValue : Number(raw);
       if (!Number.isSafeInteger(n) || n < 0)
-        throw new Error("INVALID_QUERY_LIMIT");
+        throw new Error(
+          key === "offset" ? "INVALID_QUERY_OFFSET" : "INVALID_QUERY_LIMIT",
+        );
       return n;
     };
     try {
@@ -115,12 +121,29 @@ export async function startAssetGraphServer(
         const s = await store.ready();
         value = { state: s.state, version: s.version, ...JSON.parse(s.report) };
       } else if (url.pathname === "/api/search")
-        value = await store.search(q.get("q") ?? "", num("limit", 30));
+        value = await store.search(
+          q.get("q") ?? "",
+          num("limit", 30),
+          num("offset", 0),
+        );
       else if (url.pathname === "/api/fields")
         value = await store.fields({
           taskId: q.get("taskId") ?? undefined,
           table: q.get("table") ?? undefined,
+          nodeId: q.get("nodeId") ?? undefined,
           limit: num("limit", 300),
+          offset: num("offset", 0),
+        });
+      else if (url.pathname === "/api/overview")
+        value = await getAssetGraphOverview(store, {
+          regionLimit: num("regionLimit", 100),
+          flowLimit: num("flowLimit", 150),
+        });
+      else if (url.pathname === "/api/regions")
+        value = await listAssetGraphRegionDatasets(store, {
+          schema: q.get("schema") ?? "",
+          limit: num("limit", 50),
+          offset: num("offset", 0),
         });
       else if (url.pathname === "/api/task")
         value = await taskDetail(
@@ -134,6 +157,12 @@ export async function startAssetGraphServer(
         const layer = q.get("layer") ?? "table";
         if (!["table", "field", "schedule"].includes(layer))
           throw new Error("INVALID_GRAPH_LAYER");
+        const direction = q.get("direction") ?? "up";
+        if (!["up", "down"].includes(direction))
+          throw new Error("INVALID_GRAPH_DIRECTION");
+        const depthUnit = q.get("depthUnit") ?? "edge";
+        if (!["edge", "table-hop"].includes(depthUnit))
+          throw new Error("INVALID_DEPTH_UNIT");
         value = await store.traverse({
           taskId: q.get("taskId") ?? undefined,
           nodeId: q.get("nodeId") ?? undefined,
@@ -141,7 +170,8 @@ export async function startAssetGraphServer(
           table: q.get("table") ?? undefined,
           writeId: q.get("writeId") ?? undefined,
           layer: layer as "table" | "field" | "schedule",
-          direction: q.get("direction") === "down" ? "down" : "up",
+          direction: direction as "up" | "down",
+          depthUnit: depthUnit as "edge" | "table-hop",
           depth: num("depth", 4),
           limit: num("limit", 150),
           includeCandidates: q.get("candidates") !== "0",

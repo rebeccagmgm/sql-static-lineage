@@ -173,15 +173,34 @@ export class AssetGraphStore {
   async fields(input: {
     taskId?: string;
     table?: string;
+    nodeId?: string;
     limit?: number;
     offset?: number;
   }) {
     await this.ready();
-    const filter = input.taskId ? "n.taskId=$value" : "n.table=$value";
+    const selectors = [input.taskId, input.table, input.nodeId].filter(
+      (value) => value !== undefined,
+    );
+    if (selectors.length !== 1 || !selectors[0]!.trim())
+      throw new Error(
+        selectors.length > 1
+          ? "FIELDS_SELECTORS_MUTUALLY_EXCLUSIVE"
+          : "FIELDS_SELECTOR_REQUIRED",
+      );
+    const byDataset = input.nodeId !== undefined;
+    const match = byDataset
+      ? "MATCH (dataset:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET',key:$datasetKey})<-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES'}]-(target:SLAssetNode {graphId:$graphId,kind:'TARGET_WRITE'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'HAS_FIELD'}]->(n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'})"
+      : "MATCH (n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'})";
+    const filter = input.taskId
+      ? "n.taskId=$value"
+      : input.table
+        ? "n.table=$value"
+        : "true";
     const r = await this.run(
-      `MATCH (n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'}) WHERE ${filter} RETURN properties(n) AS node ORDER BY n.column,n.writeId,n.id SKIP $offset LIMIT $limit`,
+      `${match} WHERE ${filter} WITH DISTINCT n RETURN properties(n) AS node ORDER BY n.column,n.writeId,n.id SKIP $offset LIMIT $limit`,
       {
         value: input.taskId ?? input.table?.toLowerCase(),
+        datasetKey: key(this.graphId, input.nodeId ?? ""),
         limit: Math.max(1, Math.min(1001, Math.trunc(input.limit ?? 300))),
         offset: Math.max(0, Math.trunc(input.offset ?? 0)),
       },
@@ -195,6 +214,7 @@ export class AssetGraphStore {
     nodeId?: string;
     writeId?: string;
     layer: "field" | "table" | "schedule";
+    depthUnit?: "edge" | "table-hop";
     direction?: "up" | "down";
     depth?: number;
     limit?: number;
@@ -248,7 +268,11 @@ export class AssetGraphStore {
     );
     for (const record of anchor.records) {
       const node = cleanNode(record.get("node"));
-      nodes.set(String(node.id), { ...node, depth: 0 });
+      nodes.set(String(node.id), {
+        ...node,
+        depth: 0,
+        ...(input.depthUnit === "table-hop" ? { lineageDepth: 0 } : {}),
+      });
       const stop = terminal(node);
       if (stop) terminalNodes.set(stop.nodeId, stop);
     }
@@ -259,7 +283,107 @@ export class AssetGraphStore {
       input.direction === "down"
         ? "(n)-[r:SL_ASSET_EDGE]->(m)"
         : "(n)<-[r:SL_ASSET_EDGE]-(m)";
-    for (let hop = 1; hop <= depth && frontier.length; hop++) {
+    if (input.depthUnit === "table-hop") {
+      const bestCost = new Map([...nodes.keys()].map((id) => [id, 0]));
+      const rawDepth = new Map([...nodes.keys()].map((id) => [id, 0]));
+      const expanded = new Set<string>();
+      const boundary = new Set<string>();
+      for (let cost = 0; cost <= depth && !truncated; cost++) {
+        let sameCost = new Set(
+          [...bestCost]
+            .filter(
+              ([id, value]) =>
+                value === cost &&
+                !expanded.has(id) &&
+                !terminalNodes.has(id),
+            )
+            .map(([id]) => id),
+        );
+        while (sameCost.size && !truncated) {
+          const current = [...sameCost];
+          sameCost = new Set<string>();
+          current.forEach((id) => expanded.add(id));
+          if (cost === depth && input.layer !== "field") {
+            current.forEach((id) => boundary.add(id));
+            continue;
+          }
+          const r = await this.run(
+            `UNWIND $keys AS anchor MATCH (n:SLAssetNode {key:anchor}) MATCH ${direction} WHERE r.layer=$layer AND r.kind<>'CONDITION' AND ($candidates OR r.kind<>'CANDIDATE') AND (NOT $fieldBoundary OR r.kind IN ['CONTINUES','CANDIDATE']) RETURN properties(n) AS source,properties(m) AS node,properties(r) AS edge ORDER BY r.key LIMIT $limit`,
+            {
+              keys: current.map((id) => key(this.graphId, id)),
+              layer: input.layer,
+              candidates: input.includeCandidates !== false,
+              fieldBoundary: cost === depth,
+              limit: limit - edges.size + 1,
+            },
+          );
+          for (const record of r.records) {
+            const edge = cleanEdge(record.get("edge")) as Record<string, unknown>;
+            const edgeKind = String(edge.kind);
+            const weight =
+              input.layer === "field"
+                ? edgeKind === "VALUE"
+                  ? 1
+                  : 0
+                : input.layer === "table"
+                  ? input.direction === "down"
+                    ? edgeKind === "WRITES_TABLE"
+                      ? 1
+                      : 0
+                    : edgeKind === "READS_TABLE"
+                      ? 1
+                      : 0
+                  : 1;
+            const source = cleanNode(record.get("source"));
+            const sourceId = String(source.id);
+            const node = cleanNode(record.get("node"));
+            const nodeId = String(node.id);
+            const nextCost = cost + weight;
+            const nextRawDepth = (rawDepth.get(sourceId) ?? 0) + 1;
+            const stopsAtTableBoundary =
+              input.layer === "table" && weight === 0 && cost === depth;
+            if (nextCost > depth || stopsAtTableBoundary) {
+              boundary.add(sourceId);
+              continue;
+            }
+            const edgeKey = String(edge.key ?? edge.id);
+            if (edges.size >= limit && !edges.has(edgeKey)) {
+              truncated = true;
+              boundary.add(sourceId);
+              break;
+            }
+            edges.set(edgeKey, edge);
+            const priorCost = bestCost.get(nodeId);
+            const priorRawDepth = rawDepth.get(nodeId);
+            if (
+              priorCost === undefined ||
+              nextCost < priorCost ||
+              (nextCost === priorCost &&
+                (priorRawDepth === undefined || nextRawDepth < priorRawDepth))
+            ) {
+              bestCost.set(nodeId, nextCost);
+              rawDepth.set(nodeId, nextRawDepth);
+              nodes.set(nodeId, {
+                ...node,
+                depth: nextRawDepth,
+                lineageDepth: nextCost,
+              });
+            }
+            const stop = terminal(node);
+            if (stop) terminalNodes.set(stop.nodeId, stop);
+            else {
+              if (nextCost === depth) {
+                if (weight === 0) boundary.delete(sourceId);
+                boundary.add(nodeId);
+              }
+              if (nextCost === cost && !expanded.has(nodeId))
+                sameCost.add(nodeId);
+            }
+          }
+        }
+      }
+      frontier = [...boundary];
+    } else for (let hop = 1; hop <= depth && frontier.length; hop++) {
       const r = await this.run(
         `UNWIND $keys AS anchor MATCH (n:SLAssetNode {key:anchor}) MATCH ${direction} WHERE r.layer=$layer AND r.kind<>'CONDITION' AND ($candidates OR r.kind<>'CANDIDATE') RETURN properties(n) AS source,properties(m) AS node,properties(r) AS edge ORDER BY r.key LIMIT $limit`,
         {
