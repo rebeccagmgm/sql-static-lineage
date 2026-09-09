@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
-export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.11";
+export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.14";
 
 /** Canonical evidence kind for a Pack-declared query output write. */
 export const PACK_DECLARED_QUERY_OUTPUT = "PACK_DECLARED_QUERY_OUTPUT" as const;
@@ -291,6 +291,8 @@ export interface TaskFactIndexRecord { readonly task_id: string; readonly logica
 export type MachineFactRecord = StatementRecord | SchemaReferenceRecord | DatasetIoRecord | TaskLocalMaterializationRecord | RelationNodeRecord | RelationEdgeRecord | FieldExpressionRecord | ColumnLineageRecord | LineageHopRootRecord | LineageHopNodeRecord | LineageHopEdgeRecord | OutputFieldBindingRecord | UnknownOutcomeRecord | SourceArtifactRecord | TaskFactIndexRecord;
 
 export interface GenericTaskProfile {
+  /** Source semantics that differ from the shared parser dialect. */
+  readonly source_sql_family?: "oracle";
   readonly standardized_input?: import("../input/shared/standardized-sql.ts").StandardizedInput;
 	readonly task_id: string;
 	readonly sql_snapshot: string;

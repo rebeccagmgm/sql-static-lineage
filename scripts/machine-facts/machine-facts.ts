@@ -6,10 +6,12 @@ import { Schema, SqlSession, type SchemaMapping } from "sqllens";
 import { describeStandardizedSql } from "../input/shared/standardized-sql.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
 import { buildPlanFacts, EXPRESSION_DEPENDENCY_ADAPTER_VERSION } from "../plans/plan-adapter.ts";
+import { applySourceSemantics } from "../plans/source-semantics.ts";
 import type { PlanFacts } from "../plans/plan-contract.ts";
 import { maskWithInsertTargetForParser, sanitizeSqlForParser } from "../plans/parser-sql-input.ts";
 import { deriveOutputFieldBindings, type WriteOutputContext } from "./output-field-bindings.ts";
 import { globalRelationId } from "./plan-occurrence-id.ts";
+import { globalizePlanScopeBindings } from "./plan-scope-bindings.ts";
 import {
 	fileHash as runtimeFileHash,
 	publishArtifactBundle,
@@ -635,6 +637,7 @@ function contextHash(task: GenericTaskProfile, profile: GenericAnalysisProfile, 
 		declared_outputs: normalizeWrites(task),
 		sql_slot: task.sql_slot ?? null,
 		input_pack_provenance: task.input_pack_provenance ?? null,
+		...(task.source_sql_family ? { source_sql_family: task.source_sql_family } : {}),
 		...(task.standardized_input ? { standardized_input: task.standardized_input } : {}),
 		platform_target_query_output: task.platform_target_query_output ?? null,
 		write_partition_evidence: task.write_partition_evidence ?? null,
@@ -714,6 +717,7 @@ function planRecords(
 	const unknowns: JsonRecord[] = [];
 	const reads: JsonRecord[] = [];
 	const planRelations = plan.relations as JsonRecord[];
+	const planScopeBindings = globalizePlanScopeBindings(plan, task.task_id, statementIndex);
 	const relationIds = new Set(plan.relations.map((relation) => globalRelationId(task.task_id, statementIndex, relation.id)));
 
 	for (const table of plan.physical_inputs) {
@@ -779,6 +783,8 @@ function planRecords(
 
 	for (const localRelation of plan.relations as JsonRecord[]) {
 		const relation = globalizeRelation(task.task_id, statementIndex, localRelation);
+		const scopeBindings = planScopeBindings.get(localRelation.id);
+		if (scopeBindings?.length) relation.scope_bindings = scopeBindings;
 		const relationId = relation.id as string;
 		const sourceSpan = relation.span as SourceSpan;
 		const node: JsonRecord = {
@@ -1425,7 +1431,7 @@ function buildTaskBundle(
 			: extractSqlWrites(rawSql).find((write) => sameTableReference(write.qualifiedName, parsedWrite));
 		const writeTarget = parsedWrite === null ? null : resolveDeclaredWriteTarget(task, parsedWrite);
 		const statementType = classifyStatement(rawSql);
-		const plan: PlanFacts = parserSql.restore(buildPlanFacts(planSession.doc.statements[statementIndex] ?? cell, planSql.sql, {
+		const plan: PlanFacts = parserSql.restore(buildPlanFacts(applySourceSemantics(planSession.doc.statements[statementIndex] ?? cell, task.source_sql_family, statementSlot), planSql.sql, {
 			statement_index: statementIndex,
 			dialect: profile.dialect,
 			schema,

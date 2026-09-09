@@ -1428,6 +1428,8 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	const standardized = options.standardizedInput ? loadStandardizedInput(taskPath, task, dialect, combined.sql.content) : undefined;
 	if (standardized) inputHashes.set(standardized.manifestPath, standardized.profile.artifactSha256);
 	const profileTask: GenericTaskProfile = {
+		...(String(task.taskCategory).trim().toLowerCase().startsWith("oracle2")
+			? { source_sql_family: "oracle" as const } : {}),
 		...(standardized ? { standardized_input: standardized.profile } : {}),
 		task_id: options.taskId,
 		sql_snapshot: combined.sql.path,
