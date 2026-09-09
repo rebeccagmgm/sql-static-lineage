@@ -6,7 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../evidence/schedule-evidence-cache.ts";
 import { horaeRelationLookupFromSqlite } from "../input/mainline/expand-horae-relation-closure.ts";
 import {
   taskIdsFromFile,

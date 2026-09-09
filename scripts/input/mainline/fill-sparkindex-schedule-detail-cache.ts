@@ -7,7 +7,7 @@ import {
   type TaskIdOrder,
 } from "./fill-horae-relation-cache.ts";
 import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "./szdata-schedule-detail-cache.ts";
-import { readHoraeTaskTypeCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { readHoraeTaskTypeCache } from "../../evidence/schedule-evidence-cache.ts";
 
 const SPARK_INDEX_TASK_TYPE = "sparkIndex";
 const DEFAULT_MIN_INTERVAL_MS = 2_000;

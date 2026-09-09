@@ -6,7 +6,7 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
   type HoraeRelationDirection,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import {
   expandHoraeRelationClosureFromLookup,
   neighborIdFromRelationRow,

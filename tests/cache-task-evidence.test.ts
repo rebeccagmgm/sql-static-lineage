@@ -13,7 +13,7 @@ import {
   resolveScheduleEvidenceCacheRoot,
   writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const observedAt = "2026-09-02T00:00:00.000Z";
 

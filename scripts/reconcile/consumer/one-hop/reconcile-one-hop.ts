@@ -90,7 +90,7 @@ import {
   scheduleEvidenceCachePath,
   writeHoraeRelationCache,
   type ScheduleEvidenceCacheStatus,
-} from "./schedule-evidence-cache.ts";
+} from "../../../evidence/schedule-evidence-cache.ts";
 import {
   DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   loadTerminalTableConfig,

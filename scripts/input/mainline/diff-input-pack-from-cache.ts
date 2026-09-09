@@ -28,7 +28,7 @@ import {
   validateTaskDocument,
   type TaskDocument,
 } from "../shared/input-pack.ts";
-import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../evidence/schedule-evidence-cache.ts";
 
 export type DiffAction =
   | "NEED_CREATE"

@@ -17,7 +17,7 @@ import {
   taskIdsFromFile,
   type TaskIdOrder,
 } from "./fill-horae-relation-cache.ts";
-import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { resolveScheduleEvidenceCacheRoot } from "../../evidence/schedule-evidence-cache.ts";
 import {
   excludeManualTaskIds,
   readManualTaskIds,

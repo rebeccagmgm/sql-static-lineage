@@ -11,7 +11,7 @@ import {
 import {
   writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 describe("upstream task type evidence loop discovery", () => {
   it("collects unique upstream ids from cached up relations", () => {

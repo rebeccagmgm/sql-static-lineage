@@ -19,7 +19,7 @@ import {
   readHoraeRelationCache,
   readHoraeTaskTypeCache,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const DEFAULT_MAX_ERRORS = 10;

@@ -41,7 +41,7 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeRelationCache,
   writeHoraeRelationCache,
-} from "../one-hop/schedule-evidence-cache.ts";
+} from "../../../evidence/schedule-evidence-cache.ts";
 import { isNonHiveProducerBoundary } from "../../shared/lineage-scope.ts";
 
 type JsonRecord = Record<string, unknown>;

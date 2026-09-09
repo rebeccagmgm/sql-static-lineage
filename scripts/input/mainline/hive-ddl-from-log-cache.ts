@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { leadingCreateTableStatement } from "./hive-task-sql-cache.ts";
 
 export const HIVE_DDL_FROM_LOG_CACHE_FILE_NAME = "hive-target-ddl.sql" as const;

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import {
   readHoraeTaskTypeCache,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { readTaskScheduleContext } from "./schedule-context.ts";
 
 const SAFE_TASK_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;

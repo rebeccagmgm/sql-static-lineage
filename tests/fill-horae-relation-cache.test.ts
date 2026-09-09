@@ -17,7 +17,7 @@ import {
   readHoraeRelationCache,
   resolveScheduleEvidenceCacheRoot,
   writeHoraeRelationCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 function makeTaskDirectories(
   cacheRoot: string,

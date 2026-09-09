@@ -4,7 +4,7 @@ import { join } from "node:path";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 
 export const HORAE_DATASOURCE_DIR_NAME = "horae-datasource" as const;
 export const HORAE_DATASOURCE_ROWS_FILE = "rows.jsonl" as const;

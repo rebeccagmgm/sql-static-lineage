@@ -24,7 +24,7 @@ import {
 import { HIVE_DDL_FROM_LOG_TASK_TYPES } from "../scripts/input/mainline/fill-hive-ddl-from-log-cache.ts";
 import { parseHealHiveTargetDdlFromLogArgs } from "../scripts/input/mainline/heal-hive-target-ddl-from-log.ts";
 import { assembleCacheTaskEvidence } from "../scripts/input/shared/cache-task-evidence.ts";
-import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { writeHoraeTaskTypeCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const SAMPLE_LOG = `[2026-08-27 23:26:28]-[INFO] [t1, main, HiveAssistant] Process hive ddl:
 "USE odata_ygt;

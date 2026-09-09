@@ -17,7 +17,7 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { defaultTaskStatusFile } from "./task-status.ts";
 
 const CACHE_WRITER_PATTERN =

@@ -25,7 +25,7 @@ import {
 import {
   resolveScheduleEvidenceCacheRoot,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const SAMPLE_SCRIPT = `#!/usr/bin/env python
 from HiveTask import HiveTask

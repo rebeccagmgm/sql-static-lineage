@@ -22,7 +22,7 @@ import {
   readHoraeTaskTypeCache,
   resolveScheduleEvidenceCacheRoot,
   type HoraeRelationDirection,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import {
   loadHoraeDatasourceIndex,
   preferredRdbmsDataSourceFromTaskSource,

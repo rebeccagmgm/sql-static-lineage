@@ -14,7 +14,7 @@ import {
 import {
   writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
-} from "../../../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../../scripts/evidence/schedule-evidence-cache.ts";
 import { summarizeTaskLocalBatch } from "../../../scripts/project-graph/task-local/contract.ts";
 import { failureReasonFromLoad } from "../../../scripts/project-graph/task-local/coverage.ts";
 import { projectTaskLocal } from "../../../scripts/project-graph/task-local/project-task-local.ts";

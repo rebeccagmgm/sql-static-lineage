@@ -11,7 +11,7 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 
 const TASK_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/u;
 const IMPORTABLE_EXTENSIONS = new Set([".json", ".sql"]);

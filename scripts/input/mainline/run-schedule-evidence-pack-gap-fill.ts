@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { assembleCacheTaskEvidence } from "../shared/cache-task-evidence.ts";
 import { readManualTaskIds } from "../shared/manual-task-exclusion.ts";
 import { taskIdsFromScheduleEvidenceCache } from "./fill-horae-relation-cache.ts";
-import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { resolveScheduleEvidenceCacheRoot } from "../../evidence/schedule-evidence-cache.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const defaultDataRoot =

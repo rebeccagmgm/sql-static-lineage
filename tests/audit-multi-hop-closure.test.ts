@@ -8,7 +8,7 @@ import {
   writeTableProducerIndex,
 } from "../scripts/reconcile/producer/producer-index.ts";
 import { runMultiHopClosureAudit } from "../scripts/reconcile/consumer/multi-hop/audit-multi-hop-closure.ts";
-import { writeHoraeRelationCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { writeHoraeRelationCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 import { writeTaskInput } from "../scripts/input/shared/input-pack.ts";
 
 function root(): string {

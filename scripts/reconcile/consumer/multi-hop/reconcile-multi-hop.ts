@@ -14,7 +14,7 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeRelationCache,
-} from "../one-hop/schedule-evidence-cache.ts";
+} from "../../../evidence/schedule-evidence-cache.ts";
 import {
   fingerprintTableProducerInputs,
   loadTableProducerIndex,

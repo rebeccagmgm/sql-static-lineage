@@ -31,7 +31,7 @@ import {
   horaeTaskTypeCachePath,
   readHoraeTaskTypeCache,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 import { ScheduleDetailSerialGate } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
 
 const FIXED_NOW = () => new Date("2026-08-31T00:00:00.000Z");

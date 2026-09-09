@@ -8,7 +8,7 @@ import { prefetchHoraeRelations } from "../scripts/pipeline/lineage-all.ts";
 import {
   horaeTaskTypeCachePath,
   readHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 describe("Horae task detail cache", () => {
   it("caches complete detail rows beside relation evidence and deduplicates IDs", async () => {

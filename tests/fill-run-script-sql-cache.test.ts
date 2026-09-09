@@ -12,7 +12,7 @@ import {
 import {
   resolveScheduleEvidenceCacheRoot,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const SAMPLE_LOG = `[2026-08-27 17:03:55]-[INFO] DX Command:[/bin/su, gf_pcavs, -c, /opt/schedule/BigData-pdata_pcav_n/main.sh -q ods/pre/ods_acs_ses_connect_relation_all.sql 2026-08-27]
 [2026-08-27 17:03:58]-[INFO] 2026-08-27 17:03:58.063-[INFO]-执行sql结束：常量定义语句[declare @init_date string]结束，结果为[{"@init_date":"' '"}]

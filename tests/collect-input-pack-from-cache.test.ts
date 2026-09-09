@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { collectInputPackFromCache } from "../scripts/input/mainline/collect-input-pack-from-cache.ts";
 import { writeHiveTaskSqlCache } from "../scripts/input/mainline/hive-task-sql-cache.ts";
 import { writeSzdataScheduleDetailCache } from "../scripts/input/mainline/szdata-schedule-detail-cache.ts";
-import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { writeHoraeTaskTypeCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 import { writeTaskInput } from "../scripts/input/shared/input-pack.ts";
 
 const observedAt = "2026-09-02T00:00:00.000Z";

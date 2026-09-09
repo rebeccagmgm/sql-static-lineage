@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 
 export const RUN_SCRIPT_SQL_CACHE_FILE_NAME = "run-script.sql" as const;
 export const RUN_SCRIPT_LOG_CACHE_DIR_NAME = "script-log" as const;

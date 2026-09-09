@@ -10,7 +10,7 @@ import {
   readHoraeTaskTypeCache,
   resolveScheduleEvidenceCacheRoot,
   writeHoraeTaskTypeCache,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { taskIdsFromFile } from "./fill-horae-relation-cache.ts";
 import {
   excludeManualTaskIds,

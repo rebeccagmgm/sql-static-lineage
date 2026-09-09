@@ -9,7 +9,7 @@ import {
   resolveScheduleEvidenceCacheRoot,
   SCHEDULE_EVIDENCE_CACHE_ARTIFACT_TYPE,
   SCHEDULE_EVIDENCE_CACHE_SCHEMA_VERSION,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import {
   readManualTaskIds,
   excludeManualTaskIds,

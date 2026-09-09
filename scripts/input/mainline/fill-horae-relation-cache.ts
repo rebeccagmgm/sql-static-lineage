@@ -9,7 +9,7 @@ import {
   resolveScheduleEvidenceCacheRoot,
   writeHoraeRelationCache,
   type HoraeRelationDirection,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import {
   excludeManualTaskIds,
   readManualTaskIds,

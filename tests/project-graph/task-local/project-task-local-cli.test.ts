@@ -12,7 +12,7 @@ import {
 import {
   writeHoraeRelationCache,
   writeHoraeTaskTypeCache,
-} from "../../../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../../scripts/evidence/schedule-evidence-cache.ts";
 import { selectTaskLocalBatchTaskIds } from "../../../scripts/project-graph/task-local/batch-selection.ts";
 import {
   parseProjectTaskLocalCli,

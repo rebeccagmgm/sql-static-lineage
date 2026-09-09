@@ -16,7 +16,7 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   writeTaskPartitionBindingsCache,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { DEFAULT_HIVE_DDL_JSONL_PATH } from "../shared/offline-table-resolver.ts";
 
 const DEFAULT_DATA_ROOT =

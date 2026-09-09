@@ -14,7 +14,7 @@ import {
   canonicalJson,
   sha256,
 } from "../../machine-facts/machine-facts-contract.ts";
-import { resolveScheduleEvidenceCacheRoot } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { resolveScheduleEvidenceCacheRoot } from "../../evidence/schedule-evidence-cache.ts";
 
 export const SZDATA_SCHEDULE_DETAIL_CACHE_SCHEMA_VERSION = "1.0.0" as const;
 export const SZDATA_SCHEDULE_DETAIL_CACHE_ARTIFACT_TYPE =

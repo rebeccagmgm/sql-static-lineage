@@ -16,7 +16,7 @@ import {
   writeTableInput,
   type TableEvidence,
 } from "../scripts/input/shared/input-pack.ts";
-import { writeHoraeTaskTypeCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { writeHoraeTaskTypeCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 function fixture(
   taskIds: readonly string[],

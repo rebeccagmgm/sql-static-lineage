@@ -34,7 +34,7 @@ import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   readHoraeRelationCache,
   writeHoraeRelationCache,
-} from "../one-hop/schedule-evidence-cache.ts";
+} from "../../../evidence/schedule-evidence-cache.ts";
 import { extractSqlReadTableNames } from "../../../input/shared/sql-table-references.ts";
 import {
   validateTaskDocument,

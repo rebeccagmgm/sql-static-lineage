@@ -32,7 +32,7 @@ import {
   type FillHiveDdlFromLogCacheSummary,
 } from "./fill-hive-ddl-from-log-cache.ts";
 import { DEFAULT_RUN_SCRIPT_LOG_DATE } from "./run-script-sql-cache.ts";
-import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../evidence/schedule-evidence-cache.ts";
 import {
   inventoryPartialGapsFromSummaryFiles,
   selectHiveDdlLogHealCandidates,

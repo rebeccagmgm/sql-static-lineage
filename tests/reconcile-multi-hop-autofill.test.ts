@@ -15,7 +15,7 @@ import {
   loadTerminalTableConfig,
   matchingTerminalRole,
 } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
-import { readHoraeRelationCache } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { readHoraeRelationCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const FIXED_NOW = "2026-08-26T08:00:00.000Z";
 

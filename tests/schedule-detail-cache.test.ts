@@ -34,7 +34,7 @@ import {
 import {
   horaeTaskTypeCachePath,
   writeHoraeTaskTypeCache,
-} from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const taskId = "66411";
 

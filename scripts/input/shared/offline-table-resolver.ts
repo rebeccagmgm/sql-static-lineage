@@ -37,7 +37,7 @@ import {
   preferredRdbmsDataSourceFromTaskSource,
   type HoraeDatasourceIndex,
 } from "./horae-datasource-cache.ts";
-import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT } from "../../evidence/schedule-evidence-cache.ts";
 
 export const DEFAULT_HIVE_METADATA_JSONL_PATH =
   "E:\\02_area\\股衍数据-数据cookbook\\数综基础信息\\原信息\\hive元信息-20260831快照\\hive_table_restored.jsonl";

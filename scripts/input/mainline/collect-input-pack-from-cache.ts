@@ -30,7 +30,7 @@ import {
   buildCompactTaskPartition,
   isDatabaseSourceToHiveTask,
 } from "../shared/task-partition-evidence.ts";
-import { readTaskPartitionBindingsCache } from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { readTaskPartitionBindingsCache } from "../../evidence/schedule-evidence-cache.ts";
 import { enrichTaskEndpoint, inputCollectionStatus } from "../shared/task-endpoints.ts";
 import { findSqlFinalTargetEvidence } from "../shared/sql-target-evidence.ts";
 import {
@@ -53,7 +53,7 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 
 const SQL_SLOTS: readonly SqlSlot[] = [
   "create",

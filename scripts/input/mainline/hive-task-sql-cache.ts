@@ -16,7 +16,7 @@ import {
 import {
   DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT,
   resolveScheduleEvidenceCacheRoot,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import { isTemporalSqlTemplateVariable } from "../shared/temporal-template.ts";
 
 export const HIVE_TASK_SQL_CACHE_SCHEMA_VERSION = "1.0.0" as const;

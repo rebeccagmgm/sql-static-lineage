@@ -1,7 +1,7 @@
 import {
   readHoraeRelationCache,
   readHoraeTaskTypeCache,
-} from "../../reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+} from "../../evidence/schedule-evidence-cache.ts";
 import taskTypeCodeMap from "../../input/shared/task-type-map.json" with { type: "json" };
 
 const TASK_TYPE_CODE_MAP: Readonly<Record<string, string>> = taskTypeCodeMap;

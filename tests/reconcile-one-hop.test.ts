@@ -28,7 +28,7 @@ import {
   buildTableProducerIndex,
   type TableProducerIndex,
 } from "../scripts/reconcile/producer/producer-index.ts";
-import { scheduleEvidenceCachePath } from "../scripts/reconcile/consumer/one-hop/schedule-evidence-cache.ts";
+import { scheduleEvidenceCachePath } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const frozen86840It = existsSync(
   join(

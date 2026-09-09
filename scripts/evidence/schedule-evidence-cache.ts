@@ -12,7 +12,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import {
   canonicalJson,
   sha256,
-} from "../../../machine-facts/machine-facts-contract.ts";
+} from "../machine-facts/machine-facts-contract.ts";
 
 export const DEFAULT_SCHEDULE_EVIDENCE_CACHE_ROOT =
   "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-cache";
