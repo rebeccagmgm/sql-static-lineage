@@ -5,6 +5,7 @@ import {
   controlSideForJoin,
   normalizeJoinType,
   readRelationsInSubtree,
+  resolveScopeBinding,
   relationSubtree,
   withIncomingRelations,
 } from "../../../scripts/project-graph/field-evidence-v1/relation-tree.ts";
@@ -180,14 +181,21 @@ describe("source-read-occurrence", () => {
       {
         relation_id: "rel:root.(child).source.read",
         relation_type: "read",
-        relation: { table: "demo.source", type: "read", scope_id: "root.(child).source" },
+        relation: {
+          table: "demo.source",
+          type: "read",
+          binding: "source",
+          scope_id: "opaque:body",
+          scope_bindings: [],
+        },
       },
       {
         relation_id: "rel:root.(child).project",
         relation_type: "project",
         relation: {
           type: "project",
-          scope_id: "root.(child)",
+          scope_id: "opaque:body",
+          scope_bindings: [],
           expressions: [{
             output: "amount",
             input_columns: [{
@@ -205,8 +213,17 @@ describe("source-read-occurrence", () => {
           table: "cte",
           type: "read",
           binding: "cte",
-          scope_id: "root.cte",
+          is_cte: true,
+          scope_id: "opaque:outer",
           source: "rel:root.(child).project",
+          scope_bindings: [{
+            scope_id: "opaque:outer",
+            relation_id: "rel:root.cte.read",
+            binding: "cte",
+            source_kind: "cte",
+            target_scope_id: "opaque:body",
+            target_relation_id: "rel:root.(child).project",
+          }],
         },
       },
     ];
@@ -232,6 +249,7 @@ describe("source-read-occurrence", () => {
     expect(resolution.sourceReadOccurrenceStatus).toBe("RESOLVED");
     expect(resolution.sourceReadOccurrenceId).toBe("occ:source");
     expect(resolution.sourceRelationId).toBe("rel:root.(child).source.read");
+    expect(resolution.scopeBindingStatus).toBe("EXPLICIT");
   });
 
   it("fails closed when a CTE reference has no body source bridge", () => {
@@ -759,6 +777,65 @@ describe("source-read-occurrence", () => {
 });
 
 describe("relation-tree", () => {
+  it("rejects malformed, duplicated, cross-statement and cyclic explicit bindings", () => {
+    const nodes = (mode: string) => {
+      const binding = {
+        scope_id: "outer",
+        relation_id: "rel:cte",
+        binding: mode === "alias" ? "wrong" : "cte",
+        source_kind: "cte",
+        target_scope_id: "body",
+        target_relation_id: mode === "target" ? "rel:missing" : "rel:body",
+      };
+      return buildRelationTreeIndex([
+        {
+          relation_id: "rel:cte",
+          task_id: "task",
+          statement_id: "statement:0",
+          relation_type: "read",
+          relation: {
+            type: "read",
+            binding: "cte",
+            is_cte: true,
+            scope_id: "outer",
+            source: "rel:body",
+            scope_bindings: mode === "missing"
+              ? []
+              : mode === "duplicate"
+                ? [binding, { ...binding }]
+                : [binding],
+          },
+        },
+        {
+          relation_id: "rel:body",
+          task_id: "task",
+          statement_id: mode === "statement" ? "statement:1" : "statement:0",
+          relation_type: "project",
+          relation: {
+            type: "project",
+            scope_id: "body",
+            source: mode === "cycle" ? "rel:cte" : undefined,
+            scope_bindings: [],
+          },
+        },
+      ]);
+    };
+    expect(resolveScopeBinding(nodes("missing"), {
+      ownerRelationId: "rel:cte",
+      sourceKind: "cte",
+    }).status).toBe("ABSENT");
+    expect(resolveScopeBinding(nodes("duplicate"), {
+      ownerRelationId: "rel:cte",
+      sourceKind: "cte",
+    }).status).toBe("AMBIGUOUS");
+    for (const mode of ["alias", "target", "statement", "cycle"]) {
+      expect(resolveScopeBinding(nodes(mode), {
+        ownerRelationId: "rel:cte",
+        sourceKind: "cte",
+      }).status).toBe("INVALID");
+    }
+  });
+
   it("collects read relations in a subtree and normalizes join types", () => {
     const relationNodes = [
       {

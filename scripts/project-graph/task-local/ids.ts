@@ -103,13 +103,17 @@ export function fieldDirectEdgeSemanticKey(input: {
   readonly sourceTable: string;
   readonly sourceReadOccurrenceId: string | null;
   readonly expressionId: string;
-}): Readonly<Record<string, string | null>> {
+  readonly scopeBindingPath?: readonly string[];
+}): Readonly<Record<string, string | null | readonly string[]>> {
   return {
     outputColumn: input.outputColumn,
     sourceColumn: input.sourceColumn,
     sourceTable: input.sourceTable,
     sourceReadOccurrenceId: input.sourceReadOccurrenceId,
     expressionId: input.expressionId,
+    ...(input.scopeBindingPath && input.scopeBindingPath.length > 0
+      ? { scopeBindingPath: [...input.scopeBindingPath] }
+      : {}),
   };
 }
 
@@ -120,7 +124,8 @@ export function fieldConditionalEdgeSemanticKey(input: {
   readonly sourceReadOccurrenceId: string | null;
   readonly expressionId: string;
   readonly conditionalId: string;
-}): Readonly<Record<string, string | null>> {
+  readonly scopeBindingPath?: readonly string[];
+}): Readonly<Record<string, string | null | readonly string[]>> {
   return {
     outputColumn: input.outputColumn,
     sourceColumn: input.sourceColumn,
@@ -128,5 +133,8 @@ export function fieldConditionalEdgeSemanticKey(input: {
     sourceReadOccurrenceId: input.sourceReadOccurrenceId,
     expressionId: input.expressionId,
     conditionalId: input.conditionalId,
+    ...(input.scopeBindingPath && input.scopeBindingPath.length > 0
+      ? { scopeBindingPath: [...input.scopeBindingPath] }
+      : {}),
   };
 }

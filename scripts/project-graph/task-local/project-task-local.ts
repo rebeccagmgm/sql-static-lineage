@@ -1054,6 +1054,7 @@ function projectTaskLocalFromFacts(input: {
               sourceTable: source.field.qualifiedName,
               sourceReadOccurrenceId,
               expressionId: context.expressionId,
+              scopeBindingPath: emission.sourceResolution.scopeBindingPath,
             }),
           }),
           edgeType: "FIELD_DIRECT",
@@ -1071,6 +1072,10 @@ function projectTaskLocalFromFacts(input: {
               ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
               : {}),
             sourceRelationId: emission.sourceResolution.sourceRelationId,
+            scopeBindingStatus: emission.sourceResolution.scopeBindingStatus,
+            ...(emission.sourceResolution.scopeBindingPath
+              ? { scopeBindingPath: emission.sourceResolution.scopeBindingPath }
+              : {}),
             ...(bridgeIds.length > 0
               ? { materializationBridgeIds: bridgeIds, materializationFolded: true }
               : {}),
@@ -1165,6 +1170,7 @@ function projectTaskLocalFromFacts(input: {
                 sourceReadOccurrenceId,
                 expressionId: context.expressionId,
                 conditionalId: conditional.conditionalId,
+                scopeBindingPath: emission.sourceResolution.scopeBindingPath,
               }),
             }),
             edgeType: "FIELD_CONDITIONAL",
@@ -1180,6 +1186,10 @@ function projectTaskLocalFromFacts(input: {
                 ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
                 : {}),
               sourceRelationId: emission.sourceResolution.sourceRelationId,
+              scopeBindingStatus: emission.sourceResolution.scopeBindingStatus,
+              ...(emission.sourceResolution.scopeBindingPath
+                ? { scopeBindingPath: emission.sourceResolution.scopeBindingPath }
+                : {}),
             },
           });
         }

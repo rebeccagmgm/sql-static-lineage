@@ -8,6 +8,7 @@ import { stableId } from "../task-local/ids.ts";
 import {
   nearestSetopAncestor,
   readRelationsInSubtree,
+  resolveScopeBinding,
   relationSubtree,
   type RelationRecord,
   type RelationTreeIndex,
@@ -20,6 +21,9 @@ export interface SourceReadOccurrenceResolution {
   readonly sourceReadOccurrenceStatus: TaskLocalSourceReadOccurrenceStatus;
   readonly sourceReadOccurrenceReason: TaskLocalSourceReadOccurrenceReason | null;
   readonly sourceRelationId: string | null;
+  readonly scopeBindingStatus: "NOT_REQUIRED" | "EXPLICIT" | "LEGACY_INFERRED";
+  /** Explicit logical-source route used to reach this physical occurrence. */
+  readonly scopeBindingPath?: readonly string[];
   readonly gap: TaskLocalProjectionGap | null;
 }
 
@@ -33,6 +37,7 @@ export interface FieldExpressionContext {
   /** Expressions traversed while routing a named output to this context. */
   readonly routeExpressionHops?: readonly JsonRecord[];
   readonly routePathHadAggregation?: boolean;
+  readonly scopeBindingStatus?: "NOT_REQUIRED" | "EXPLICIT" | "LEGACY_INFERRED";
 }
 
 function text(value: unknown): string | null {
@@ -98,6 +103,7 @@ function unresolved(
     sourceReadOccurrenceStatus: "UNRESOLVED",
     sourceReadOccurrenceReason: input.reason,
     sourceRelationId: null,
+    scopeBindingStatus: "NOT_REQUIRED",
     gap: gapForStatus({
       ...input,
       status: "UNRESOLVED",
@@ -119,6 +125,7 @@ function ambiguous(
     sourceReadOccurrenceStatus: "AMBIGUOUS",
     sourceReadOccurrenceReason: input.reason,
     sourceRelationId: null,
+    scopeBindingStatus: "NOT_REQUIRED",
     gap: gapForStatus({
       ...input,
       status: "AMBIGUOUS",
@@ -129,12 +136,18 @@ function ambiguous(
 function resolved(
   sourceReadOccurrenceId: string,
   sourceRelationId: string,
+  scopeBindingStatus: SourceReadOccurrenceResolution["scopeBindingStatus"] = "NOT_REQUIRED",
+  scopeBindingPath?: readonly string[],
 ): SourceReadOccurrenceResolution {
   return {
     sourceReadOccurrenceId,
     sourceReadOccurrenceStatus: "RESOLVED",
     sourceReadOccurrenceReason: null,
     sourceRelationId,
+    scopeBindingStatus,
+    ...(scopeBindingPath && scopeBindingPath.length > 0
+      ? { scopeBindingPath: [...scopeBindingPath] }
+      : {}),
     gap: null,
   };
 }
@@ -190,6 +203,37 @@ export function isReadVisibleFromExpressionScope(
   return true;
 }
 
+function readVisibleFromExpression(input: {
+  readonly index: RelationTreeIndex;
+  readonly expressionRelationId: string;
+  readonly read: RelationRecord;
+}): boolean {
+  const expressionScopeId = input.index.relations.get(input.expressionRelationId)?.scopeId ?? null;
+  if (!isReadVisibleFromExpressionScope(expressionScopeId, input.read.scopeId)) return false;
+  if (input.index.scopeBindingMode === "LEGACY") return true;
+  for (const binding of input.index.scopeBindings) {
+    if (
+      binding.status !== "RESOLVED"
+      || binding.sourceKind !== "cte"
+      || !binding.targetRelationId
+    ) continue;
+    const targetSubtree = relationSubtree(input.index, binding.targetRelationId);
+    if (
+      targetSubtree.has(input.read.relationId)
+      && !targetSubtree.has(input.expressionRelationId)
+    ) return false;
+  }
+  return true;
+}
+
+type MatchingReadResult = Readonly<{
+  relations: readonly RelationRecord[];
+  scopeBindingStatusByRelationId: ReadonlyMap<
+    string,
+    SourceReadOccurrenceResolution["scopeBindingStatus"]
+  >;
+}>;
+
 function matchingReads(input: {
   readonly index: RelationTreeIndex;
   readonly leafRelationId: string;
@@ -200,19 +244,24 @@ function matchingReads(input: {
   /** Optional logical relation qualifier from that same structured input. */
   readonly cteRelationQualifier: string | null;
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
-}): readonly RelationRecord[] {
+}): MatchingReadResult {
   const targetTable = tableKey(input.sourceTable);
   const targetColumn = normalizeName(input.sourceColumn);
-  const expressionScopeId = input.index.relations.get(input.leafRelationId)?.scopeId ?? null;
   const matches = new Map<string, RelationRecord>();
+  const scopeBindingStatusByRelationId = new Map<
+    string,
+    SourceReadOccurrenceResolution["scopeBindingStatus"]
+  >();
   const reads = readRelationsInSubtree(input.index, input.leafRelationId);
   // A CTE bridge is sound only when this branch has one immediate input
   // relation.  Counting just source-backed reads silently ignores a physical
   // sibling in the same join, which makes an unqualified CTE reference look
   // unique when it is not.
-  const directInputReads = reads.filter((relation) =>
-    isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId),
-  );
+  const directInputReads = reads.filter((relation) => readVisibleFromExpression({
+    index: input.index,
+    expressionRelationId: input.leafRelationId,
+    read: relation,
+  }));
   const referencedInputReads = input.cteRelationQualifier
     ? directInputReads.filter((relation) => relationMatchesQualifier(
       relation, input.cteRelationQualifier!, input.bindingByReadRelation,
@@ -226,11 +275,17 @@ function matchingReads(input: {
     readonly cteRead: RelationRecord;
     readonly cteBody: RelationRecord;
     readonly qualifier: string | null;
+    readonly bindingStatus: "EXPLICIT" | "LEGACY_INFERRED";
   }> = [];
   for (const relation of reads) {
     if (relation.physicalDataset === targetTable) {
-      if (isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) {
+      if (readVisibleFromExpression({
+        index: input.index,
+        expressionRelationId: input.leafRelationId,
+        read: relation,
+      })) {
         matches.set(relation.relationId, relation);
+        scopeBindingStatusByRelationId.set(relation.relationId, "NOT_REQUIRED");
       }
       continue;
     }
@@ -239,14 +294,33 @@ function matchingReads(input: {
     // branch reads a named logical output, the body emits that output, and that
     // output lists this physical field.  A CTE source pointer or table match
     // alone is insufficient evidence.
+    const explicitBinding = resolveScopeBinding(input.index, {
+      ownerRelationId: relation.relationId,
+      sourceKind: "cte",
+    });
+    const targetRelationId = explicitBinding.status === "RESOLVED"
+      ? explicitBinding.binding.targetRelationId
+      : explicitBinding.status === "LEGACY_ABSENT"
+        ? relation.sourceRelationId
+        : null;
+    const bindingStatus = explicitBinding.status === "RESOLVED"
+      ? "EXPLICIT" as const
+      : explicitBinding.status === "LEGACY_ABSENT"
+        ? "LEGACY_INFERRED" as const
+        : null;
     if (
-        !hasUniqueDirectInput
-      || !relation.sourceRelationId
+      !hasUniqueDirectInput
+      || !targetRelationId
+      || !bindingStatus
       || !input.cteOutputColumn
-        || relation.relationId !== referencedInputReads[0]!.relationId
+      || relation.relationId !== referencedInputReads[0]!.relationId
     ) continue;
-    if (!isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) continue;
-    const cteBody = input.index.relations.get(relation.sourceRelationId);
+    if (!readVisibleFromExpression({
+      index: input.index,
+      expressionRelationId: input.leafRelationId,
+      read: relation,
+    })) continue;
+    const cteBody = input.index.relations.get(targetRelationId);
     if (!cteBody) continue;
     const witnesses = cteBody.outputInputColumns.filter((column) =>
       column.outputName === normalizeName(input.cteOutputColumn!)
@@ -254,24 +328,38 @@ function matchingReads(input: {
       && column.physicalColumn === targetColumn,
     );
     if (witnesses.length !== 1) continue;
-    cteBridges.push({ cteRead: relation, cteBody, qualifier: witnesses[0]!.qualifier });
+    cteBridges.push({
+      cteRead: relation,
+      cteBody,
+      qualifier: witnesses[0]!.qualifier,
+      bindingStatus,
+    });
   }
 
   // A branch can only cross one logical CTE read for one unqualified input.
   // If Facts expose two viable reads, they have not established which relation
   // supplied the column; do not collapse their common physical dependency.
   if (cteBridges.length !== 1) {
-    return [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId));
+    return {
+      relations: [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId)),
+      scopeBindingStatusByRelationId,
+    };
   }
   const bridge = cteBridges[0]!;
-  const bodyScope = bridge.cteBody.scopeId;
   for (const sourceRead of readRelationsInSubtree(input.index, bridge.cteBody.relationId)) {
-    const suffix = bodyScope && sourceRead.scopeId?.startsWith(`${bodyScope}.`)
-      ? sourceRead.scopeId.slice(bodyScope.length)
-      : sourceRead.scopeId === bodyScope ? "" : null;
-    // Do not recursively traverse a nested CTE body.  That needs another
-    // explicit output-to-input bridge and is deliberately left unresolved.
-    const isDirectBodyRead = suffix !== null && !suffix.includes(".(child)");
+    const isDirectBodyRead = bridge.bindingStatus === "EXPLICIT"
+      ? readVisibleFromExpression({
+          index: input.index,
+          expressionRelationId: bridge.cteBody.relationId,
+          read: sourceRead,
+        })
+      : (() => {
+          const bodyScope = bridge.cteBody.scopeId;
+          const suffix = bodyScope && sourceRead.scopeId?.startsWith(`${bodyScope}.`)
+            ? sourceRead.scopeId.slice(bodyScope.length)
+            : sourceRead.scopeId === bodyScope ? "" : null;
+          return suffix !== null && !suffix.includes(".(child)");
+        })();
     if (
       isDirectBodyRead
       && sourceRead.physicalDataset === targetTable
@@ -280,9 +368,13 @@ function matchingReads(input: {
       ))
     ) {
       matches.set(sourceRead.relationId, sourceRead);
+      scopeBindingStatusByRelationId.set(sourceRead.relationId, bridge.bindingStatus);
     }
   }
-  return [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId));
+  return {
+    relations: [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId)),
+    scopeBindingStatusByRelationId,
+  };
 }
 
 function relationMatchesQualifier(
@@ -295,6 +387,7 @@ function relationMatchesQualifier(
   if (binding !== undefined && normalizeName(binding) === normalizedQualifier) {
     return true;
   }
+  if (relation.binding === normalizedQualifier) return true;
   if (relation.scopeId) {
     const scopeTail = relation.scopeId.split(".").at(-1);
     if (scopeTail && normalizeName(scopeTail) === normalizedQualifier) return true;
@@ -333,33 +426,85 @@ export function routeNamedOutputContexts(input: {
   readonly expression: JsonRecord;
   readonly sourceTable: string;
   readonly sourceColumn: string;
-  readonly relationExpressionsByRelationId: ReadonlyMap<string, readonly JsonRecord[]>;
-  readonly expressionsByRelation: ReadonlyMap<string, ReadonlyMap<number, JsonRecord>>;
+  readonly relationExpressionsByRelationId: ReadonlyMap<
+    string,
+    readonly JsonRecord[]
+  >;
+  readonly expressionsByRelation: ReadonlyMap<
+    string,
+    ReadonlyMap<number, JsonRecord>
+  >;
   readonly index: RelationTreeIndex;
+  /** Select one structured reference when the outer expression reads the same physical field twice. */
+  readonly referenceQualifier?: string;
 }): readonly FieldExpressionContext[] {
   let current = input.expression;
   const originExpressionId = text(current.expression_id);
   const path: string[] = [];
   const routeExpressionHops: JsonRecord[] = [];
   let routePathHadAggregation = false;
+  let routeScopeBindingStatus: FieldExpressionContext["scopeBindingStatus"] =
+    "NOT_REQUIRED";
   const visited = new Set<string>();
+  const terminalExplicitContext = (): readonly FieldExpressionContext[] => {
+    if (
+      routeScopeBindingStatus !== "EXPLICIT" ||
+      !expressionAcceptsPhysicalSource(
+        current,
+        input.sourceTable,
+        input.sourceColumn,
+      )
+    )
+      return [];
+    const expressionId = text(current.expression_id);
+    const relationId = text(current.relation_id);
+    if (!expressionId || !relationId) return [];
+    return [
+      {
+        expressionId,
+        expression: current,
+        relationId,
+        ordinal: numberValue(current.ordinal),
+        originExpressionId: originExpressionId ?? undefined,
+        routeRelationPath: [...path],
+        routeExpressionHops: [...routeExpressionHops],
+        routePathHadAggregation,
+        scopeBindingStatus: "EXPLICIT",
+      },
+    ];
+  };
   for (let depth = 0; depth < 16; depth += 1) {
     const relationId = text(current.relation_id);
     const outputName = text(current.output_name);
     if (!relationId || !outputName || visited.has(relationId)) return [];
     visited.add(relationId);
     path.push(relationId);
-    const raw = outputExpression(relationId, outputName, input.relationExpressionsByRelationId);
+    const raw = outputExpression(
+      relationId,
+      outputName,
+      input.relationExpressionsByRelationId,
+    );
     if (!raw) return [];
     // `current` is the field-expression record and has the expression text,
     // physical dependency status, and relation id required for classification.
     // The relation-body expression below is only a routing witness.
     routeExpressionHops.push(current);
-    const matchingInputs = (Array.isArray(raw.input_columns) ? raw.input_columns : [])
+    const matchingInputs = (
+      Array.isArray(raw.input_columns) ? raw.input_columns : []
+    )
       .map(record)
-      .filter((item): item is JsonRecord => item !== null && physicalInput(
-        item, input.sourceTable, input.sourceColumn,
-      ));
+      .filter(
+        (item): item is JsonRecord =>
+          item !== null &&
+          physicalInput(item, input.sourceTable, input.sourceColumn),
+      )
+      .filter(
+        (item) =>
+          depth !== 0 ||
+          input.referenceQualifier === undefined ||
+          normalizeName(text(item.qualifier) ?? "") ===
+            normalizeName(input.referenceQualifier),
+      );
     if (matchingInputs.length !== 1) return [];
     const namedInput = matchingInputs[0]!;
     const inputName = text(namedInput.name);
@@ -368,71 +513,133 @@ export function routeNamedOutputContexts(input: {
     if (qualifier) {
       const currentScope = input.index.relations.get(relationId)?.scopeId;
       if (!currentScope) return [];
-      // Relation scopes are lexical: root -> root.index -> root.index.x.
-      // Exact equality prevents a same-named nested alias from shadowing this
-      // output while still allowing an outer root scope.
-      const expectedScope = `${currentScope}.${normalizeName(qualifier)}`;
-      const candidates = [...relationSubtree(input.index, relationId)]
-        .map((id) => input.index.relations.get(id))
-        .filter((relation): relation is RelationRecord => relation !== undefined)
-        .filter((relation) =>
-          normalizeName(relation.scopeId ?? "") === expectedScope
-          && outputExpression(relation.relationId, inputName, input.relationExpressionsByRelationId) !== null,
-        );
+      const explicitBinding = resolveScopeBinding(input.index, {
+        scopeId: currentScope,
+        binding: qualifier,
+      });
+      const candidates =
+        explicitBinding.status === "RESOLVED" &&
+        explicitBinding.binding.targetRelationId
+          ? [
+              input.index.relations.get(
+                explicitBinding.binding.targetRelationId,
+              ),
+            ]
+              .filter(
+                (relation): relation is RelationRecord =>
+                  relation !== undefined,
+              )
+              .filter(
+                (relation) =>
+                  outputExpression(
+                    relation.relationId,
+                    inputName,
+                    input.relationExpressionsByRelationId,
+                  ) !== null,
+              )
+          : explicitBinding.status === "LEGACY_ABSENT"
+            ? (() => {
+                const expectedScope = `${currentScope}.${normalizeName(qualifier)}`;
+                return [...relationSubtree(input.index, relationId)]
+                  .map((id) => input.index.relations.get(id))
+                  .filter(
+                    (relation): relation is RelationRecord =>
+                      relation !== undefined,
+                  )
+                  .filter(
+                    (relation) =>
+                      normalizeName(relation.scopeId ?? "") === expectedScope &&
+                      outputExpression(
+                        relation.relationId,
+                        inputName,
+                        input.relationExpressionsByRelationId,
+                      ) !== null,
+                  );
+              })()
+            : [];
       if (candidates.length !== 1) return [];
       const next = outputExpression(
-        candidates[0]!.relationId, inputName, input.relationExpressionsByRelationId,
+        candidates[0]!.relationId,
+        inputName,
+        input.relationExpressionsByRelationId,
       );
-      const nextExpression = next && [...(input.expressionsByRelation.get(candidates[0]!.relationId)?.values() ?? [])]
-        .filter((item) => normalizeName(String(item.output_name ?? "")) === normalizeName(inputName));
+      const nextExpression =
+        next &&
+        [
+          ...(input.expressionsByRelation
+            .get(candidates[0]!.relationId)
+            ?.values() ?? []),
+        ].filter(
+          (item) =>
+            normalizeName(String(item.output_name ?? "")) ===
+            normalizeName(inputName),
+        );
       if (!nextExpression || nextExpression.length !== 1) return [];
       current = nextExpression[0]!;
+      if (explicitBinding.status === "RESOLVED") {
+        routeScopeBindingStatus = "EXPLICIT";
+      } else if (routeScopeBindingStatus !== "EXPLICIT") {
+        routeScopeBindingStatus = "LEGACY_INFERRED";
+      }
       continue;
     }
-    let sourceId = input.index.relations.get(relationId)?.sourceRelationId ?? null;
+    let sourceId =
+      input.index.relations.get(relationId)?.sourceRelationId ?? null;
     while (sourceId && !visited.has(sourceId)) {
       const source = input.index.relations.get(sourceId);
       if (!source) return [];
       path.push(sourceId);
       if (source.relationType === "setop") {
         const setopOrdinals = source.outputColumns
-          .map((column, ordinal) => normalizeName(column) === normalizeName(inputName)
-            ? ordinal
-            : null)
+          .map((column, ordinal) =>
+            normalizeName(column) === normalizeName(inputName) ? ordinal : null,
+          )
           .filter((ordinal): ordinal is number => ordinal !== null);
         if (setopOrdinals.length !== 1) return [];
         const setopOrdinal = setopOrdinals[0]!;
-        if (!hasCompleteSetopBranchEvidence({
-          setopRelation: source,
-          ordinal: setopOrdinal,
-          expressionsByRelation: input.expressionsByRelation,
-          index: input.index,
-        })) return [];
+        if (
+          !hasCompleteSetopBranchEvidence({
+            setopRelation: source,
+            ordinal: setopOrdinal,
+            expressionsByRelation: input.expressionsByRelation,
+            index: input.index,
+          })
+        )
+          return [];
         const contexts = expandSetopBranches({
           setopRelation: source,
           ordinal: setopOrdinal,
           expressionsByRelation: input.expressionsByRelation,
           index: input.index,
         });
-        return contexts.map((context) => ({
-          ...context,
-          originExpressionId: originExpressionId ?? undefined,
-          routeRelationPath: [...path, context.relationId ?? ""].filter(Boolean),
-          routeExpressionHops: [...routeExpressionHops, context.expression],
-          routePathHadAggregation,
-        })).filter((context) => expressionAcceptsPhysicalSource(
-          context.expression, input.sourceTable, input.sourceColumn,
-        ));
+        return contexts
+          .map((context) => ({
+            ...context,
+            originExpressionId: originExpressionId ?? undefined,
+            routeRelationPath: [...path, context.relationId ?? ""].filter(
+              Boolean,
+            ),
+            routeExpressionHops: [...routeExpressionHops, context.expression],
+            routePathHadAggregation,
+            scopeBindingStatus: routeScopeBindingStatus,
+          }))
+          .filter((context) =>
+            expressionAcceptsPhysicalSource(
+              context.expression,
+              input.sourceTable,
+              input.sourceColumn,
+            ),
+          );
       }
       // The only non-setop hop observed for this repair is the aggregate that
       // directly supplies the setop output.  Do not treat arbitrary source
       // pointers (and their possible renames) as transparent projections.
-      if (source.relationType !== "aggregate") return [];
+      if (source.relationType !== "aggregate") return terminalExplicitContext();
       routePathHadAggregation = true;
       visited.add(sourceId);
       sourceId = source.sourceRelationId;
     }
-    return [];
+    return terminalExplicitContext();
   }
   return [];
 }
@@ -528,6 +735,8 @@ export function resolveSourceReadOccurrence(input: {
   readonly index: RelationTreeIndex;
   readonly readOccurrenceByRelationId: ReadonlyMap<string, string>;
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
+  readonly scopeBindingStatus?: SourceReadOccurrenceResolution["scopeBindingStatus"];
+  readonly scopeBindingPath?: readonly string[];
 }): SourceReadOccurrenceResolution {
   const base = {
     taskId: input.taskId,
@@ -562,11 +771,11 @@ export function resolveSourceReadOccurrence(input: {
   });
   const referenceQualifier = input.referenceQualifier;
   const matches = referenceQualifier
-    ? candidates.filter((relation) => relationMatchesQualifier(
+    ? candidates.relations.filter((relation) => relationMatchesQualifier(
       relation, referenceQualifier, input.bindingByReadRelation,
     ))
     : narrowByQualifiers({
-      matches: candidates,
+      matches: candidates.relations,
       qualifiers,
       bindingByReadRelation: input.bindingByReadRelation,
     });
@@ -579,7 +788,14 @@ export function resolveSourceReadOccurrence(input: {
     if (!occurrenceId) {
       return unresolved({ ...base, reason: "CTE_SCOPE_UNRESOLVED" });
     }
-    return resolved(occurrenceId, relation.relationId);
+    return resolved(
+      occurrenceId,
+      relation.relationId,
+      input.scopeBindingStatus
+        ?? candidates.scopeBindingStatusByRelationId.get(relation.relationId)
+        ?? "NOT_REQUIRED",
+      input.scopeBindingStatus === "EXPLICIT" ? input.scopeBindingPath : undefined,
+    );
   }
   if (matches.length > 1) {
     return ambiguous({ ...base, reason: "SELF_JOIN_NO_QUALIFIER" });

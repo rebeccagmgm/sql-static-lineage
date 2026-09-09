@@ -719,6 +719,24 @@ function planRecords(
 	const planRelations = plan.relations as JsonRecord[];
 	const planScopeBindings = globalizePlanScopeBindings(plan, task.task_id, statementIndex);
 	const relationIds = new Set(plan.relations.map((relation) => globalRelationId(task.task_id, statementIndex, relation.id)));
+	for (const issue of planScopeBindings.issues) {
+		const localRelation = issue.relationId
+			? planRelations.find((relation) => relation.id === issue.relationId)
+			: undefined;
+		unknowns.push({
+			unknown_id: `unknown:${task.task_id}:${statementIndex}:scope-binding:${unknowns.length}`,
+			task_id: task.task_id,
+			statement_id: statementId,
+			subject: issue.relationId
+				? globalRelationId(task.task_id, statementIndex, issue.relationId)
+				: statementId,
+			outcome_class: "UNKNOWN",
+			reason_code: issue.reasonCode,
+			message: issue.message,
+			source_locator: localRelation?.span ?? null,
+			artifact_id: artifactId,
+		});
+	}
 
 	for (const table of plan.physical_inputs) {
 		const readOccurrences = planRelations
@@ -783,8 +801,10 @@ function planRecords(
 
 	for (const localRelation of plan.relations as JsonRecord[]) {
 		const relation = globalizeRelation(task.task_id, statementIndex, localRelation);
-		const scopeBindings = planScopeBindings.get(localRelation.id);
-		if (scopeBindings?.length) relation.scope_bindings = scopeBindings;
+		const scopeBindings = planScopeBindings.bindingsByRelationId.get(localRelation.id);
+		// Presence, including an empty array, distinguishes new explicit Facts
+		// from legacy bundles that predate the scope-binding contract.
+		relation.scope_bindings = scopeBindings ?? [];
 		const relationId = relation.id as string;
 		const sourceSpan = relation.span as SourceSpan;
 		const node: JsonRecord = {

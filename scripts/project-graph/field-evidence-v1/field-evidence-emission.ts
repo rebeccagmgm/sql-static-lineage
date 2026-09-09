@@ -334,124 +334,177 @@ export function emitFieldEvidenceForInput(input: {
     }
   }
 
-  const isOuterOnlyContext = expressionContexts.length === 1
-    && expressionContexts[0]?.expressionId === text(input.expression.expression_id);
-  const needsCteScopeFallback = outputs.some((output) =>
-    output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED"
-    && output.sourceResolution.sourceReadOccurrenceReason === "CTE_SCOPE_UNRESOLVED",
+  const needsFallback = new Set(
+    outputs
+      .filter(
+        (output) =>
+          output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED" &&
+          output.sourceResolution.sourceReadOccurrenceReason ===
+            "CTE_SCOPE_UNRESOLVED",
+      )
+      .flatMap((output) =>
+        output.expressionContexts.map((context) => context.expressionId),
+      ),
   );
-  if (!isOuterOnlyContext || !needsCteScopeFallback) return outputs;
+  if (needsFallback.size === 0) return outputs;
 
-  const routedContexts = routeNamedOutputContexts({
-    expression: input.expression,
-    sourceTable: input.sourceField.qualifiedName,
-    sourceColumn: input.sourceField.column,
-    relationExpressionsByRelationId: input.indexes.relationExpressionsByRelationId,
-    expressionsByRelation: input.indexes.expressionsByRelation,
-    index: input.indexes.relationTree,
-  });
-  if (routedContexts.length === 0) return outputs;
-
-  const outerContext = expressionContexts[0]!;
-  const routedOutputs: EmittedFieldEvidence[] = [];
-  for (const routed of routedContexts) {
-    if (!expressionAcceptsSourceField(routed.expression, input.sourceField)) continue;
-    const routeLeafRelationId = leafRelationIdForExpression(
-      routed.expression,
-      text(routed.expression.relation_id) ?? input.expanded.leafRelationId,
+  const replacements = new Map<string, readonly EmittedFieldEvidence[]>();
+  for (const outerContext of expressionContexts) {
+    if (!needsFallback.has(outerContext.expressionId)) continue;
+    const outerQualifiers = relationQualifiersForSourceField({
+      expression: outerContext.expression,
+      sourceField: input.sourceField,
+      indexes: input.indexes,
+    });
+    const routedContexts = (outerQualifiers ?? [undefined]).flatMap(
+      (referenceQualifier) =>
+        routeNamedOutputContexts({
+          expression: outerContext.expression,
+          sourceTable: input.sourceField.qualifiedName,
+          sourceColumn: input.sourceField.column,
+          relationExpressionsByRelationId:
+            input.indexes.relationExpressionsByRelationId,
+          expressionsByRelation: input.indexes.expressionsByRelation,
+          index: input.indexes.relationTree,
+          ...(referenceQualifier ? { referenceQualifier } : {}),
+        }),
     );
-    const branchInputField = inputFieldRecordForSource(routed.expression, input.sourceField);
-    const relationQualifiers = relationQualifiersForSourceField({
-      expression: routed.expression,
-      sourceField: input.sourceField,
-      indexes: input.indexes,
-    });
-    const cteInputReference = cteInputReferenceForSourceField({
-      expression: routed.expression,
-      sourceField: input.sourceField,
-      indexes: input.indexes,
-    });
-    for (const relationQualifier of relationQualifiers ?? [null]) {
-      const sourceResolution = resolveSourceReadOccurrence({
-        taskId: input.taskId,
-        expressionId: routed.expressionId,
-        sourceTable: input.sourceField.qualifiedName,
-        sourceColumn: input.sourceField.column,
-        inputField: relationQualifier
-          ? { ...branchInputField, qualifier: relationQualifier }
-          : branchInputField,
-        expressionText: text(routed.expression.expression_text),
-        ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
-          ? { referenceQualifier: relationQualifier }
-          : {}),
-        cteOutputColumn: cteInputReference?.outputColumn ?? null,
-        cteRelationQualifier: cteInputReference?.relationQualifier ?? null,
-        leafRelationId: routeLeafRelationId,
-        index: input.indexes.relationTree,
-        readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
-        bindingByReadRelation: input.indexes.bindingByReadRelation,
-      });
-      const routeHops = routed.routeExpressionHops ?? [routed.expression];
-      const composed = composePathSubtype([
-        ...input.expanded.subtypeHops,
-        ...routeHops.map((expression) => classifyExpressionSubtype(
-          expression,
-          relationTypeForExpression(input.indexes, text(expression.relation_id)),
-        )),
-        ...(routed.routePathHadAggregation ? [{
-          subtype: "AGGREGATION" as const,
-          subtypeReason: null,
-          pathHadAggregation: true,
-        }] : []),
-      ]);
-      routedOutputs.push({
-        // The route only proves the source-read identity.  Consumers use this
-        // context as the target edge identity, so it must remain the outer
-        // expression that initiated the route.
-        expressionContexts: [outerContext],
-        sourceResolution,
-        subtype: composed.subtype,
-        subtypeReason: composed.subtypeReason,
-        leafRelationId: routeLeafRelationId,
-      });
-    }
-  }
-  if (routedOutputs.length === 0) return outputs;
-  // A route represents one logical output through every required setop branch.
-  // If any branch lacks a confirmed occurrence, retaining only its resolved
-  // siblings would falsely present the outer dependency as complete.
-  if (routedOutputs.some((output) =>
-    output.sourceResolution.sourceReadOccurrenceStatus !== "RESOLVED",
-  )) return outputs;
+    if (routedContexts.length === 0) continue;
 
-  // Multiple branches can prove the same physical read.  Emit it once and
-  // compose their evidence so consumer map insertion cannot depend on output
-  // order or overwrite a stronger subtype.
-  const byReadIdentity = new Map<string, EmittedFieldEvidence[]>();
-  for (const output of routedOutputs) {
-    const key = `${output.sourceResolution.sourceReadOccurrenceId!}\u0000${output.sourceResolution.sourceRelationId!}`;
-    const values = byReadIdentity.get(key) ?? [];
-    values.push(output);
-    byReadIdentity.set(key, values);
+    const routedOutputs: EmittedFieldEvidence[] = [];
+    for (const routed of routedContexts) {
+      if (!expressionAcceptsSourceField(routed.expression, input.sourceField))
+        continue;
+      const routeLeafRelationId = leafRelationIdForExpression(
+        routed.expression,
+        text(routed.expression.relation_id) ?? input.expanded.leafRelationId,
+      );
+      const branchInputField = inputFieldRecordForSource(
+        routed.expression,
+        input.sourceField,
+      );
+      const relationQualifiers = relationQualifiersForSourceField({
+        expression: routed.expression,
+        sourceField: input.sourceField,
+        indexes: input.indexes,
+      });
+      const cteInputReference = cteInputReferenceForSourceField({
+        expression: routed.expression,
+        sourceField: input.sourceField,
+        indexes: input.indexes,
+      });
+      for (const relationQualifier of relationQualifiers ?? [null]) {
+        const sourceResolution = resolveSourceReadOccurrence({
+          taskId: input.taskId,
+          expressionId: routed.expressionId,
+          sourceTable: input.sourceField.qualifiedName,
+          sourceColumn: input.sourceField.column,
+          inputField: relationQualifier
+            ? { ...branchInputField, qualifier: relationQualifier }
+            : branchInputField,
+          expressionText: text(routed.expression.expression_text),
+          ...(relationQualifiers &&
+          relationQualifiers.length > 1 &&
+          relationQualifier
+            ? { referenceQualifier: relationQualifier }
+            : {}),
+          cteOutputColumn: cteInputReference?.outputColumn ?? null,
+          cteRelationQualifier: cteInputReference?.relationQualifier ?? null,
+          leafRelationId: routeLeafRelationId,
+          index: input.indexes.relationTree,
+          readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,
+          bindingByReadRelation: input.indexes.bindingByReadRelation,
+          scopeBindingStatus: routed.scopeBindingStatus,
+          scopeBindingPath: routed.routeRelationPath,
+        });
+        const routeHops = routed.routeExpressionHops ?? [routed.expression];
+        const composed = composePathSubtype([
+          ...input.expanded.subtypeHops,
+          ...routeHops.map((expression) =>
+            classifyExpressionSubtype(
+              expression,
+              relationTypeForExpression(
+                input.indexes,
+                text(expression.relation_id),
+              ),
+            ),
+          ),
+          ...(routed.routePathHadAggregation
+            ? [
+                {
+                  subtype: "AGGREGATION" as const,
+                  subtypeReason: null,
+                  pathHadAggregation: true,
+                },
+              ]
+            : []),
+        ]);
+        routedOutputs.push({
+          // The route only proves the source-read identity.  Consumers use this
+          // context as the target edge identity, so it must remain the outer
+          // expression that initiated the route.
+          expressionContexts: [outerContext],
+          sourceResolution,
+          subtype: composed.subtype,
+          subtypeReason: composed.subtypeReason,
+          leafRelationId: routeLeafRelationId,
+        });
+      }
+    }
+    if (
+      routedOutputs.length === 0 ||
+      routedOutputs.some(
+        (output) =>
+          output.sourceResolution.sourceReadOccurrenceStatus !== "RESOLVED",
+      )
+    )
+      continue;
+
+    // Preserve distinct explicit routes, while continuing to coalesce the
+    // same legacy/direct read identity as before.
+    const byReadIdentity = new Map<string, EmittedFieldEvidence[]>();
+    for (const output of routedOutputs) {
+      const key = [
+        output.sourceResolution.sourceReadOccurrenceId!,
+        output.sourceResolution.sourceRelationId!,
+        ...(output.sourceResolution.scopeBindingPath ?? []),
+      ].join("\u0000");
+      const values = byReadIdentity.get(key) ?? [];
+      values.push(output);
+      byReadIdentity.set(key, values);
+    }
+    replacements.set(
+      outerContext.expressionId,
+      [...byReadIdentity.values()].map((values) => {
+        const first = values[0]!;
+        const composed = composePathSubtype(
+          values.map((value) => ({
+            subtype: value.subtype,
+            subtypeReason: value.subtypeReason,
+            pathHadAggregation: value.subtype === "AGGREGATION",
+          })),
+        );
+        return {
+          ...first,
+          subtype: composed.subtype,
+          subtypeReason: composed.subtypeReason,
+        };
+      }),
+    );
   }
-  const mergedRoutedOutputs = [...byReadIdentity.values()].map((values) => {
-    const first = values[0]!;
-    const composed = composePathSubtype(values.map((value) => ({
-      subtype: value.subtype,
-      subtypeReason: value.subtypeReason,
-      pathHadAggregation: value.subtype === "AGGREGATION",
-    })));
-    return {
-      ...first,
-      subtype: composed.subtype,
-      subtypeReason: composed.subtypeReason,
-    };
-  });
-  const withoutCteScopeFallback = outputs.filter((output) => !(
-    output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED"
-    && output.sourceResolution.sourceReadOccurrenceReason === "CTE_SCOPE_UNRESOLVED"
-  ));
-  return [...withoutCteScopeFallback, ...mergedRoutedOutputs];
+  if (replacements.size === 0) return outputs;
+  const preserved = outputs.filter(
+    (output) =>
+      !(
+        output.sourceResolution.sourceReadOccurrenceStatus === "UNRESOLVED" &&
+        output.sourceResolution.sourceReadOccurrenceReason ===
+          "CTE_SCOPE_UNRESOLVED" &&
+        output.expressionContexts.some((context) =>
+          replacements.has(context.expressionId),
+        )
+      ),
+  );
+  return [...preserved, ...[...replacements.values()].flat()];
 }
 
 export function materializationBreakGap(input: {

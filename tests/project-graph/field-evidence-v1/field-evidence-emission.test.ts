@@ -693,4 +693,182 @@ describe("field-evidence emission branch scoping", () => {
     expect(result[0]?.sourceResolution.sourceReadOccurrenceId).toBe("occ:direct");
   });
 
++  it("keeps two explicit derived and CTE routes to one physical read distinct", () => {
+    const task = "route";
+    const statement = "statement:0";
+    const physical = { table: "demo.source", column: "amount" };
+    const outer = {
+      expression_id: "expr:outer",
+      relation_id: "rel:outer",
+      ordinal: 0,
+      output_name: "delta",
+      expression_text: "pvs.amount - bp.amount",
+      input_fields: [physical],
+      input_dependency_status: "PHYSICAL",
+    };
+    const routed = (name: string) => ({
+      expression_id: `expr:${name}`,
+      relation_id: `rel:${name}`,
+      ordinal: 0,
+      output_name: "amount",
+      expression_text: "amount",
+      input_fields: [physical],
+      input_dependency_status: "PHYSICAL",
+    });
+    const scopeBinding = (name: string) => ({
+      scope_id: "scope:outer",
+      relation_id: `rel:${name}`,
+      binding: name,
+      source_kind: "subquery",
+      target_scope_id: `scope:${name}`,
+      target_relation_id: `rel:${name}`,
+    });
+    const cteBinding = (name: string) => ({
+      scope_id: `scope:${name}`,
+      relation_id: `rel:${name}.read.t`,
+      binding: "t",
+      source_kind: "cte",
+      target_scope_id: "scope:t",
+      target_relation_id: "rel:t",
+    });
+    const row = (
+      relation_id: string,
+      relation_type: string,
+      relation: Record<string, unknown>,
+    ) => ({
+      task_id: task,
+      statement_id: statement,
+      relation_id,
+      relation_type,
+      relation,
+    });
+    const relationNodes = [
+      row("rel:outer", "project", {
+        type: "project",
+        scope_id: "scope:outer",
+        scope_bindings: [],
+        expressions: [
+          {
+            output: "delta",
+            input_columns: [
+              { name: "amount", qualifier: "pvs", physical: [physical] },
+              { name: "amount", qualifier: "bp", physical: [physical] },
+            ],
+          },
+        ],
+      }),
+      ...["pvs", "bp"].flatMap((name) => [
+        row(`rel:${name}`, "project", {
+          type: "project",
+          scope_id: `scope:${name}`,
+          source: `rel:${name}.aggregate`,
+          scope_bindings: [scopeBinding(name)],
+          expressions: [
+            {
+              output: "amount",
+              input_columns: [{ name: "amount", physical: [physical] }],
+            },
+          ],
+        }),
+        row(`rel:${name}.aggregate`, "aggregate", {
+          type: "aggregate",
+          scope_id: `scope:${name}`,
+          source: `rel:${name}.read.t`,
+          scope_bindings: [],
+        }),
+        row(`rel:${name}.read.t`, "read", {
+          type: "read",
+          table: "t",
+          binding: "t",
+          is_cte: true,
+          scope_id: `scope:${name}`,
+          source: "rel:t",
+          scope_bindings: [cteBinding(name)],
+        }),
+      ]),
+      row("rel:t", "project", {
+        type: "project",
+        scope_id: "scope:t",
+        source: "rel:base.read",
+        scope_bindings: [],
+        expressions: [
+          {
+            output: "amount",
+            input_columns: [{ name: "amount", physical: [physical] }],
+          },
+        ],
+      }),
+      row("rel:base.read", "read", {
+        type: "read",
+        table: "demo.source",
+        binding: "s",
+        scope_id: "scope:t.source",
+        scope_bindings: [],
+      }),
+    ];
+    const indexes = buildFieldEvidenceIndexes({
+      taskId: task,
+      expressions: [outer, routed("pvs"), routed("bp")],
+      relationNodes,
+      relationEdges: [
+        { from_relation_id: "rel:pvs", to_relation_id: "rel:outer" },
+        { from_relation_id: "rel:bp", to_relation_id: "rel:outer" },
+        { from_relation_id: "rel:pvs.aggregate", to_relation_id: "rel:pvs" },
+        {
+          from_relation_id: "rel:pvs.read.t",
+          to_relation_id: "rel:pvs.aggregate",
+        },
+        { from_relation_id: "rel:bp.aggregate", to_relation_id: "rel:bp" },
+        {
+          from_relation_id: "rel:bp.read.t",
+          to_relation_id: "rel:bp.aggregate",
+        },
+        { from_relation_id: "rel:base.read", to_relation_id: "rel:t" },
+      ],
+      datasetIoReads: [
+        {
+          direction: "READ",
+          read_occurrences: [
+            { relation_id: "rel:base.read", occurrence_id: "occ:base" },
+          ],
+        },
+      ],
+    });
+    const result = emitFieldEvidenceForInput({
+      taskId: task,
+      expression: outer,
+      sourceField: field("demo.source", "amount"),
+      inputField: physical,
+      expanded: {
+        field: field("demo.source", "amount"),
+        materializationBridgeIds: [],
+        leafExpressionId: "expr:outer",
+        leafRelationId: "rel:outer",
+        pathHadAggregation: false,
+        subtypeHops: [],
+      },
+      indexes,
+    });
+    expect(result).toHaveLength(2);
+    expect(
+      result.map((item) => item.sourceResolution.scopeBindingStatus),
+    ).toEqual(["EXPLICIT", "EXPLICIT"]);
+    expect(
+      new Set(
+        result.map((item) =>
+          item.sourceResolution.scopeBindingPath?.join("->"),
+        ),
+      ).size,
+    ).toBe(2);
+    expect(
+      result.every(
+        (item) => item.sourceResolution.sourceReadOccurrenceId === "occ:base",
+      ),
+    ).toBe(true);
+    expect(
+      result.every(
+        (item) => item.sourceResolution.sourceRelationId === "rel:base.read",
+      ),
+    ).toBe(true);
+  });
 });
