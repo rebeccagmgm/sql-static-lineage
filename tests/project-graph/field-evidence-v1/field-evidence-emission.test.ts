@@ -4,8 +4,8 @@ import {
   buildFieldEvidenceIndexes,
   emitFieldEvidenceForInput,
   expressionAcceptsSourceField,
-} from "../../../scripts/project-graph/field-evidence-v1/field-evidence-emission.ts";
-import type { PhysicalFieldIdentity } from "../../../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+} from "../../../scripts/project-graph/task-local/field-evidence/field-evidence-emission.ts";
+import type { PhysicalFieldIdentity } from "../../../scripts/reconcile/shared/physical-field.ts";
 
 function field(qualifiedName: string, column: string): PhysicalFieldIdentity {
   return {

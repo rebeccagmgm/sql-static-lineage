@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   classifyExpressionSubtype,
   composePathSubtype,
-} from "../../../scripts/project-graph/field-evidence-v1/subtype-classifier.ts";
+} from "../../../scripts/project-graph/task-local/field-evidence/subtype-classifier.ts";
 
 describe("subtype-classifier", () => {
   it("classifies bare column references as IDENTITY", () => {

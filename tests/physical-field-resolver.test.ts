@@ -4,7 +4,7 @@ import {
   type PhysicalTableCatalog,
   type PhysicalTableCatalogEntry,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
-import { resolvePhysicalInputField } from "../scripts/reconcile/consumer/field-lineage/physical-field-resolver.ts";
+import { resolvePhysicalInputField } from "../scripts/reconcile/shared/physical-field-resolver.ts";
 
 function table(
   qualifiedName: string,

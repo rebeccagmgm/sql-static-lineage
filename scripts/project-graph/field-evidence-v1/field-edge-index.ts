@@ -10,7 +10,7 @@ import {
   buildRelationTreeIndex,
   type RelationTreeIndex,
   withIncomingRelations,
-} from "./relation-tree.ts";
+} from "../task-local/field-evidence/relation-tree.ts";
 
 export interface IndexedFieldEdge {
   readonly edgeId: string;

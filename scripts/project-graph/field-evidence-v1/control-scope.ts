@@ -1,7 +1,7 @@
 import {
   subtreeContains,
   type RelationTreeIndex,
-} from "./relation-tree.ts";
+} from "../task-local/field-evidence/relation-tree.ts";
 
 export type ControlScope = "FIELD_SCOPED" | "DATASET_SCOPED" | "SCOPE_DISJOINT";
 

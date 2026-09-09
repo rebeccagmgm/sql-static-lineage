@@ -7,7 +7,7 @@ import * as causalMatrix from "../../scripts/reconcile/consumer/target-field-cau
 import * as causalNormalizer from "../../scripts/reconcile/consumer/target-field-causal-slice/semantic-dependency-normalizer.ts";
 import {
   resolvePhysicalInputField,
-} from "../../scripts/reconcile/consumer/field-lineage/physical-field-resolver.ts";
+} from "../../scripts/reconcile/shared/physical-field-resolver.ts";
 
 describe("target-field causal-slice module boundary", () => {
   it("owns the canonical contract, matrix, normalizer, and evidence adapter", () => {

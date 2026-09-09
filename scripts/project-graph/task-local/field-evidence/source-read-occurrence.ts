@@ -1,10 +1,10 @@
-import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
+import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts";
 import type {
   TaskLocalProjectionGap,
   TaskLocalSourceReadOccurrenceReason,
   TaskLocalSourceReadOccurrenceStatus,
-} from "../task-local/contract.ts";
-import { stableId } from "../task-local/ids.ts";
+} from "../contract.ts";
+import { stableId } from "../ids.ts";
 import {
   nearestSetopAncestor,
   readRelationsInSubtree,

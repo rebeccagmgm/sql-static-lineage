@@ -1,5 +1,5 @@
-import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
-import type { TaskLocalControlSide, TaskLocalJoinType } from "../task-local/contract.ts";
+import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts";
+import type { TaskLocalControlSide, TaskLocalJoinType } from "../contract.ts";
 
 export type RelationRecord = Readonly<{
   readonly relationId: string;

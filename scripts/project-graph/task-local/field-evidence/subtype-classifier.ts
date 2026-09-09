@@ -1,7 +1,7 @@
 import type {
   TaskLocalDirectSubtype,
   TaskLocalSubtypeReason,
-} from "../task-local/contract.ts";
+} from "../contract.ts";
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 

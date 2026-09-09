@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const DERIVATION_ROOTS = [
-  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/relation-tree.ts"),
-  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/source-read-occurrence.ts"),
-  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/subtype-classifier.ts"),
-  join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/field-evidence-emission.ts"),
+  join(REPO_ROOT, "scripts/project-graph/task-local/field-evidence/relation-tree.ts"),
+  join(REPO_ROOT, "scripts/project-graph/task-local/field-evidence/source-read-occurrence.ts"),
+  join(REPO_ROOT, "scripts/project-graph/task-local/field-evidence/subtype-classifier.ts"),
+  join(REPO_ROOT, "scripts/project-graph/task-local/field-evidence/field-evidence-emission.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/field-edge-index.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/resolve-read-field.ts"),
   join(REPO_ROOT, "scripts/project-graph/field-evidence-v1/control-scope.ts"),

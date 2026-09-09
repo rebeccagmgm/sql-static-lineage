@@ -1,18 +1,18 @@
 import {
 	type PhysicalTableCatalog,
 	type PhysicalTableCatalogEntry,
-} from "../../../machine-facts/input-pack-machine-facts.ts";
-import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts";
-import { type JsonRecord } from "../../../query/current-task-bundle.ts";
+} from "../../machine-facts/input-pack-machine-facts.ts";
+import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
+import { type JsonRecord } from "../../query/current-task-bundle.ts";
 import {
 	qualifyBareTableName,
 	type TaskDefaultSchema,
-} from "../../shared/task-default-schema.ts";
+} from "./task-default-schema.ts";
 
 import {
 	physicalFieldKey,
 	type PhysicalFieldIdentity,
-} from "./field-lineage-contract.ts";
+} from "./physical-field.ts";
 
 export type PhysicalFieldResolutionFailure =
 	| "TABLE_PACK_MISSING"

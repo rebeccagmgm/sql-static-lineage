@@ -3,6 +3,29 @@ import {
 	sha256,
 	type InputDependencyStatus,
 } from "../../../machine-facts/machine-facts-contract.ts";
+import {
+	physicalFieldKey,
+	type PhysicalFieldIdentity,
+} from "../../shared/physical-field.ts";
+import type {
+	DatasetControlAnnotation,
+	DatasetControlGrain,
+	DatasetControlGrainReason,
+	FieldConditionalAnnotation,
+	OpenLineageIndirectSubtype,
+} from "../../shared/field-control-contract.ts";
+
+export { physicalFieldKey } from "../../shared/physical-field.ts";
+export type { PhysicalFieldIdentity } from "../../shared/physical-field.ts";
+export type {
+	DatasetControlAnnotation,
+	DatasetControlGrain,
+	DatasetControlGrainReason,
+	DatasetControlJoinType,
+	DatasetControlSide,
+	FieldConditionalAnnotation,
+	OpenLineageIndirectSubtype,
+} from "../../shared/field-control-contract.ts";
 
 export const FIELD_LINEAGE_SCHEMA_VERSION = "1.2.0" as const;
 export const FIELD_LINEAGE_ARTIFACT_TYPE = "FIELD_MULTI_HOP_RECONCILIATION" as const;
@@ -14,15 +37,6 @@ export type FieldEvidenceStatus =
 	| "UNRESOLVED";
 export type FieldLineageOverallStatus = "COMPLETE" | "PARTIAL" | "BLOCKED";
 export type FactsPolicy = "current-only" | "allow-legacy-partial";
-
-export interface PhysicalFieldIdentity {
-	readonly platform: string;
-	readonly dataSource: string;
-	readonly stableTableId: string;
-	readonly qualifiedName: string;
-	readonly column: string;
-	readonly identityStatus: "SCHEMA_BACKED" | "TASK_LOCAL_SCHEMA_BACKED";
-}
 
 export interface PhysicalTableIdentity {
 	readonly platform: string;
@@ -68,67 +82,6 @@ export interface FieldLineageEdge {
 }
 
 export type OpenLineageDirectSubtype = "IDENTITY" | "TRANSFORMATION" | "AGGREGATION";
-export type OpenLineageIndirectSubtype = "JOIN" | "GROUP_BY" | "FILTER" | "SORT" | "WINDOW" | "CONDITIONAL";
-export type DatasetControlGrain = "REDUCE" | "PRESERVE" | "EXPAND_RISK" | "UNKNOWN";
-export type DatasetControlGrainReason =
-	| "GRAIN_JOIN_CARDINALITY_UNPROVEN"
-	| "GRAIN_JOIN_NULLABLE_SIDE_MAY_EXPAND"
-	| "GRAIN_GROUPING_REDUCES_ROWS"
-	| "GRAIN_SETOP_REDUCES_ROWS"
-	| "GRAIN_FILTER_MAY_DROP_ROWS"
-	| "GRAIN_WINDOW_CARDINALITY_UNPROVEN";
-
-export type DatasetControlJoinType =
-  | "SEMI"
-  | "ANTI"
-	| "INNER"
-	| "LEFT"
-	| "RIGHT"
-	| "FULL"
-	| "CROSS"
-	| "N/A";
-
-export type DatasetControlSide =
-	| "LEFT"
-	| "RIGHT"
-	| "BOTH"
-	| "N/A";
-
-export interface DatasetControlAnnotation {
-	readonly controlId: string;
-	readonly taskId: string;
-	readonly statementId: string;
-	readonly relationId: string | null;
-	readonly subtype: OpenLineageIndirectSubtype;
-	readonly masking: boolean;
-	readonly grain: DatasetControlGrain;
-	/** Why `grain` is not PRESERVE. Required unless grain === "PRESERVE". Independent of evidence `reasonCode`. */
-	readonly grainReason: DatasetControlGrainReason | null;
-	readonly field: PhysicalFieldIdentity | null;
-	readonly sourceText: string | null;
-	readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
-	readonly reasonCode: string | null;
-	readonly evidenceRefs: readonly string[];
-	readonly joinType?: DatasetControlJoinType;
-	readonly leftRelationId?: string | null;
-	readonly rightRelationId?: string | null;
-	readonly controlSide?: DatasetControlSide;
-}
-
-export interface FieldConditionalAnnotation {
-	readonly conditionalId: string;
-	readonly taskId: string;
-	readonly nodeId: string;
-	readonly statementId: string;
-	readonly relationId: string | null;
-	readonly subtype: "CONDITIONAL";
-	readonly masking: boolean;
-	readonly fields: readonly PhysicalFieldIdentity[];
-	readonly sourceText: string | null;
-	readonly evidenceStatus: "CONFIRMED" | "PROVISIONAL_LEGACY" | "UNRESOLVED";
-	readonly reasonCode: string | null;
-	readonly evidenceRefs: readonly string[];
-}
 
 export interface FieldProducerCandidate {
 	readonly candidateId: string;
@@ -271,16 +224,6 @@ export function canonicalizeFieldLineageArtifact(input: ArtifactInput): FieldLin
 	const errors = validateFieldLineageArtifact(artifact);
 	if (errors.length > 0) throw new Error(`FIELD_LINEAGE_ARTIFACT_INVALID: ${errors.join("; ")}`);
 	return artifact;
-}
-
-export function physicalFieldKey(field: PhysicalFieldIdentity): string {
-	return [
-		field.platform.trim().toLowerCase(),
-		field.dataSource.trim().toLowerCase(),
-		field.stableTableId.trim().toLowerCase(),
-		field.qualifiedName.trim().toLowerCase(),
-		field.column.trim().toLowerCase(),
-	].join("|");
 }
 
 function ordered(values: readonly string[]): boolean {

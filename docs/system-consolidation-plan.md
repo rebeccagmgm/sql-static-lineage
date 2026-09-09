@@ -1,8 +1,8 @@
 # 整套系统统一与精简方案
 
-日期：2026-09-09。状态：**第 1 阶段已完成；第 2 阶段 2A 已实施并完成自检，等待独立验收；未进入后续阶段**。
+日期：2026-09-09。状态：**第 1 阶段已完成；2A 与字段归属检查点 2B 均已完成并通过独立验收；未进入 continuation、产品删除或生产发布**。
 
-本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；第 2 阶段 2A 仅迁移调度证据缓存模块及 import，没有改变产品语义、生成投影或发布生产产物。
+本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；2A 仅迁移调度证据缓存模块及 import；2B 仅迁移字段解释共享内核与 task-local 投影 helper 的归属。两个检查点都没有改变图语义，也没有生成或发布生产投影；2B 只在仓库外临时目录生成了验证样例。
 
 ## 1. 本阶段结论
 
@@ -231,7 +231,7 @@ scripts/visualize/horae-relation-tree-explorer.ts
 
 ## 7. 第 2 阶段可执行范围
 
-第 2 阶段只执行 **2A：调度证据缓存归属迁移**。该项已实施并完成自检，等待独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不删除 one-hop 产品、不改缓存合同、不生成或发布 data-graph。字段解释与 continuation 的搬迁仍只是后续依赖清单。
+第 2 阶段只执行 **2A：调度证据缓存归属迁移**，现已完成并通过独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不删除 one-hop 产品、不改缓存合同、不生成或发布 data-graph。随后单独执行的 2B 是 §8.1 第 3 阶段的字段归属检查点；continuation 仍未开始。
 
 ### 7.1 范围内基线，不要求整理全仓
 
@@ -324,6 +324,21 @@ tests/schedule-detail-cache.test.ts
 - data-graph 只读复核仍为 `titans-otc` / `READY` / 版本 `fd7070e0a37c10e99ec235fdd0db10f355c581d0a2e5679410d95d9cc984489a` / compiler `1.0.9`。`86840` schedule 上游一跳仍为 27 节点、26 条 `SCHEDULE` 边；`86842.init_nom_prin` confirmed-only 字段上游仍为 11 节点、10 条 `VALUE/CONTINUES` 边；查询均为 `projectionGenerations=0`。
 - 自检结论仅为“2A 指定依赖已移除且缓存行为等价”。上述既有门禁问题需由其当前改动 owner 处理；未进入字段解释、continuation、终点配置迁移或任何产品删除。
 - 成本判断：路径迁移本身低于原 0.5–1.5 日区间的下半段，主要时间消耗在脏工作树保护和被快照目录污染的测试诊断。整体 8–13 工程日粗估暂不调整；后续应先修正测试隔离或使用明确排除参数，否则验证成本会持续偏高。
+
+### 7.7 字段归属检查点 2B 实施与自检记录（2026-09-09）
+
+- 本检查点是 §8.1 第 3 阶段的字段部分，不包含 continuation。开工和结束 HEAD 均为 `fd9a21c8cd6ed1bc76ca01d53534e005fe3ca04b`；没有提交或推送。仓库外审查目录为 `C:\Users\13246\AppData\Local\Temp\sql-static-lineage-phase2b-baseline-20260909-113657`，保存了 23 个初始范围文件的原文副本、SHA-256、HEAD、Git 状态、42,675 字节工作树 patch、空 index patch及前后测试/投影日志。
+- 初始范围内已有 6 个他人改动：`field-evidence-emission.ts`、`relation-tree.ts`、`source-read-occurrence.ts`、`project-task-local.ts`、`field-evidence-emission.test.ts` 和 `source-read-occurrence.test.ts`，共约 `+658/-39`。迁移后的逐文件归一化比较确认，这 6 个文件除必要 import/路径和换行外均与开工快照一致；没有从 HEAD 重建或覆盖其语义改动。
+- 通用 `PhysicalFieldIdentity` / `physicalFieldKey` 归入 `scripts/reconcile/shared/physical-field.ts`；控制注解合同归入 `scripts/reconcile/shared/field-control-contract.ts`；`physical-field-resolver.ts` 从 field-lineage consumer 移到 `scripts/reconcile/shared/`。`dataset-controls.ts` 保持共享归属并改用上述共享合同，避免把通用证据基础挂到单个投影消费者。
+- `valueContributionInputFields()`、`sourceFieldsForExpression()`、`fieldConditionalsForExpression()` 及必要索引/helper 归入 `scripts/project-graph/task-local/field-expression-dependencies.ts`。旧 `field-lineage.ts` 保持公开 re-export，并反向消费同一实现；`sourceFieldsForExpression()` 的返回对象和 unresolved 元素保持迁移前的可变类型，没有额外收窄调用者。`field-lineage-contract.ts` 保留产品独有 artifact 合同，同时从共享层 re-export identity/key 和控制注解类型以兼容现有消费者。因此这些实现只有一份，没有通过新内核绕回待退出 consumer。
+- `field-evidence-emission.ts`、`relation-tree.ts`、`source-read-occurrence.ts`、`subtype-classifier.ts` 原样迁到 `scripts/project-graph/task-local/field-evidence/`，原位置删除且没有转发壳。task-local、`dataset-controls.ts`、legacy `field-edge-index.ts` / `control-scope.ts` 和对应测试已更新到新路径。固定扫描下，task-local/shared 对旧 field-lineage consumer 的运行时或类型 import 为 0，四个旧 helper 路径和旧 resolver 路径引用也为 0。
+- 精确基线使用仓库外临时 Vitest config 固定 `include`、单 worker，不使用目录过滤器冒充隔离。字段内核 5 文件基线与迁移后均为 4 passed / 1 failed、46 passed / 1 failed；唯一失败始终是 `source-read-occurrence > routes a qualified output by its exact scope and setop output-column ordinal`，断言期望 `[]`、现有实现返回两个 context。task-local 的 `materialization` + `project-task-local` 前后均为 2 files / 6 tests passed；legacy `field-lineage.test.ts` 前后均为 1 file / 31 tests passed。没有修改该既有失败或削弱断言。
+- 额外路径与边界验证 `physical-field-expander.test.ts`、target causal `module-boundary.test.ts`、`no-literal-anchors.test.ts` 为 3 files / 15 tests passed。`npm run typecheck` 前后都只剩既有 `tests/run-src-table-template-rebuild.test.ts:3` 的 TS7016（未跟踪 `.mjs` 缺声明），没有新增 import、类型或循环错误。独立运行时依赖扫描从 `project-task-local`、`field-expression-dependencies`、`dataset-controls` 出发覆盖 55 个模块，未发现旧 consumer/helper 可达路径、缺失引用或循环。
+- 行为等价使用同一冻结 105387 zipper + 71698 producer 合成 Input Pack，在两个仓库外临时镜像分别运行迁移前快照与迁移后源码，并强制断言 `coverageStatus=PROJECTED`。规范化只删除 `generatedAt` / `contentHash` 并把临时绝对根替换为 `<FIXTURE_ROOT>`；没有忽略节点、边、properties、gap 或 subtype。两份 25,124 字节 JSON 的 SHA-256 均为 `6ff081b372fb66af388db2e31bae44dbedf9b5791918b98bf179262e9442396e`：包含 1 TASK、1 TARGET_WRITE、5 READ_OCCURRENCE、6 PHYSICAL_DATASET、8 PHYSICAL_FIELD，10 READS、2 WRITES、3 FIELD_DIRECT、8 DATASET_CONTROL，1 IDENTITY、2 TRANSFORMATION、8 JOIN，以及 8 个 `CONTROL_SIDE_UNRESOLVED` gap。
+- 本检查点实际解除的是 task-local 对旧 field-lineage consumer/contract/resolver 和旧 field-evidence-v1 helper 位置的直接/间接依赖。剩余依赖是有意保留的兼容消费：旧 field-lineage 仍拥有 per-root artifact/遍历产品合同并消费新字段表达式内核；legacy `field-edge-index.ts` / `control-scope.ts` 仍消费新 relation-tree；target causal 与 physical expander 消费共享 resolver。它们不构成本检查点内删除这些产品链的授权。
+- 成本判断：实现量仍落在原字段部分 1–1.5 工程日预估内，主要成本来自脏工作树保护和构造有效非空等价对照，而不是搬文件本身。continuation、旧产品能力裁决和删除成本不因本检查点自动下降；整体 8–13 工程日粗估暂不调整。
+- 独立验收结论：**2B 仅就字段归属迁移通过**。独立复跑合计 98 passed / 1 个同基线既有失败：字段内核 46 passed / 1 failed、task-local 6 passed、legacy field-lineage 31 passed、额外边界 15 passed；typecheck 仍仅有既有 TS7016，不能据此宣称全仓门禁全绿。验收同时核对了四个 helper 与 resolver 正文等价、55 模块运行时依赖无旧 field consumer 可达/缺失/循环、开工源码与 baseline 镜像一致，以及 25,124 字节非空投影的前后 hash 一致。
+- 验收中完成三项边界修正：通用 identity/key、控制注解合同和 resolver 最终归 `scripts/reconcile/shared/`，没有挂到单个 task-local 消费者；最初 `COLLECTION_FAILED / FACTS_UNAVAILABLE` 的空样例被判为无效证据并替换为强制 `PROJECTED` 的非空 105387/71698 对照；`sourceFieldsForExpression()` 一度新增的 `readonly` 返回类型已恢复迁移前可变性。最终 post 镜像与源码差异仅为格式及该类型修正，没有逻辑漂移。
 
 ## 8. 最小有效收敛方案
 

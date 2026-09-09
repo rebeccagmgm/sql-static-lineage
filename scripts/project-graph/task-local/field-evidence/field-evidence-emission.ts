@@ -1,11 +1,11 @@
-import { normalizeName } from "../../machine-facts/machine-facts-contract.ts";
-import type { PhysicalFieldIdentity } from "../../reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import { normalizeName } from "../../../machine-facts/machine-facts-contract.ts";
+import type { PhysicalFieldIdentity } from "../../../reconcile/shared/physical-field.ts";
 import type {
   TaskLocalDirectSubtype,
   TaskLocalProjectionGap,
   TaskLocalSubtypeReason,
-} from "../task-local/contract.ts";
-import { stableId } from "../task-local/ids.ts";
+} from "../contract.ts";
+import { stableId } from "../ids.ts";
 import {
   buildRelationTreeIndex,
   type RelationTreeIndex,

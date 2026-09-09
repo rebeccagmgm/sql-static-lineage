@@ -44,5 +44,5 @@ describe("shared dataset controls", () => {
   });
 });
 
-import {normalizeJoinType} from "../../../scripts/project-graph/field-evidence-v1/relation-tree.ts";
+import {normalizeJoinType} from "../../../scripts/project-graph/task-local/field-evidence/relation-tree.ts";
 it("preserves semi and anti joins as row-reducing controls",()=>{expect(normalizeJoinType("semi")).toBe("SEMI");expect(normalizeJoinType("left anti")).toBe("ANTI");expect(joinGrain("SEMI").grain).toBe("REDUCE");});

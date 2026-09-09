@@ -2,7 +2,7 @@ import {
   physicalFieldForTable,
   resolvePhysicalInputField,
   resolvedPhysicalFields,
-} from "../field-lineage/physical-field-resolver.ts";
+} from "../../shared/physical-field-resolver.ts";
 import {
   createPhysicalFieldExpander,
   type PhysicalFieldExpander,
@@ -12,7 +12,7 @@ import {
 import type {
   PhysicalFieldResolution,
   PhysicalFieldResolutionContext,
-} from "../field-lineage/physical-field-resolver.ts";
+} from "../../shared/physical-field-resolver.ts";
 
 /**
  * Canonical evidence access for the causal consumer.
@@ -51,7 +51,7 @@ export type {
   PhysicalFieldResolution,
   PhysicalFieldResolutionContext,
   PhysicalFieldResolutionFailure,
-} from "../field-lineage/physical-field-resolver.ts";
+} from "../../shared/physical-field-resolver.ts";
 export type { PhysicalFieldIdentity } from "../field-lineage/field-lineage-contract.ts";
 
 export const canonicalEvidenceAdapter: CanonicalEvidenceAdapter = Object.freeze({

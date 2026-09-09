@@ -20,11 +20,11 @@ import {
 import {
   fieldConditionalsForExpression,
   sourceFieldsForExpression,
-} from "../../reconcile/consumer/field-lineage/field-lineage.ts";
+} from "./field-expression-dependencies.ts";
 import {
   datasetControlsForStatement,
 } from "../../reconcile/shared/dataset-controls.ts";
-import type { PhysicalFieldIdentity } from "../../reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import type { PhysicalFieldIdentity } from "../../reconcile/shared/physical-field.ts";
 import { inferTaskDefaultSchema } from "../../reconcile/shared/task-default-schema.ts";
 import {
   buildCollectionFailedProjection,
@@ -53,8 +53,8 @@ import {
   isConstantExpression,
   materializationBreakGap,
   type ExpandedMaterializedField,
-} from "../field-evidence-v1/field-evidence-emission.ts";
-import { classifyExpressionSubtype } from "../field-evidence-v1/subtype-classifier.ts";
+} from "./field-evidence/field-evidence-emission.ts";
+import { classifyExpressionSubtype } from "./field-evidence/subtype-classifier.ts";
 import {
   fieldConditionalEdgeSemanticKey,
   fieldDirectEdgeSemanticKey,

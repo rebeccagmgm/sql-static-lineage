@@ -7,13 +7,13 @@ import {
   readRelationsInSubtree,
   relationSubtree,
   withIncomingRelations,
-} from "../../../scripts/project-graph/field-evidence-v1/relation-tree.ts";
+} from "../../../scripts/project-graph/task-local/field-evidence/relation-tree.ts";
 import {
   expandSetopBranchExpressions,
   expressionsByRelationAndOrdinal,
   routeNamedOutputContexts,
   resolveSourceReadOccurrence,
-} from "../../../scripts/project-graph/field-evidence-v1/source-read-occurrence.ts";
+} from "../../../scripts/project-graph/task-local/field-evidence/source-read-occurrence.ts";
 
 describe("source-read-occurrence", () => {
   it("resolves a single read relation under the leaf expression subtree", () => {

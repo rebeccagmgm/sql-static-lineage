@@ -26,7 +26,7 @@ import {
 import { isCheckdbflagTask } from "../../shared/lineage-scope.ts";
 import {
   physicalFieldForTable,
-} from "./physical-field-resolver.ts";
+} from "../../shared/physical-field-resolver.ts";
 import {
   physicalFieldKey,
   type FactsPolicy,

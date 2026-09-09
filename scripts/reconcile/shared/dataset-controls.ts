@@ -9,15 +9,14 @@ import {
   controlSideForJoin,
   normalizeJoinType,
   withIncomingRelations,
-} from "../../project-graph/field-evidence-v1/relation-tree.ts";
-import { resolvePhysicalInputField } from "../consumer/field-lineage/physical-field-resolver.ts";
+} from "../../project-graph/task-local/field-evidence/relation-tree.ts";
+import { resolvePhysicalInputField } from "./physical-field-resolver.ts";
+import { physicalFieldKey, type PhysicalFieldIdentity } from "./physical-field.ts";
 import {
-  physicalFieldKey,
   type DatasetControlAnnotation,
   type DatasetControlGrain,
   type OpenLineageIndirectSubtype,
-  type PhysicalFieldIdentity,
-} from "../consumer/field-lineage/field-lineage-contract.ts";
+} from "./field-control-contract.ts";
 import type { TaskDefaultSchema } from "./task-default-schema.ts";
 
 export const DATASET_CONTROL_RELATION_TYPES = new Set([

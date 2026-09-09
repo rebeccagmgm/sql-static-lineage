@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PhysicalFieldIdentity } from "../../../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import type { PhysicalFieldIdentity } from "../../../scripts/reconcile/shared/physical-field.ts";
 import {
   materializationRecordsForField,
   type MaterializationContext,
