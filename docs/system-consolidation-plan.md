@@ -369,6 +369,16 @@ tests/schedule-detail-cache.test.ts
 - 验收返回的缺口仅在测试承接：初版 real-artifact 改写丢失 snapshot/status/非空/limit 断言，第二版仍只覆盖三个 list query，随后 `UNKNOWN` case 的 direct expected 参数未显式匹配。三次均按最小范围修正，最终恢复原有效断言、九项 file CLI/direct API 的参数及完整结果对照，且 `UNKNOWN` 明确使用 `relationStatuses: ["UNKNOWN"]`；没有恢复旧 index 或新增框架。
 - 成本判断：实际实现低于原“能力迁移”估算，因为九项算法无需迁移，只需删除第二生命周期并保留直接查询覆盖；减少 15 个产品源码、五个命令、八个专属测试和一套 audit/parity/activation 合同的维护。仓库外迁移成本未知，整体 8–13 工程日区间暂不下调；file-query 与正式 `graph:query` 的最终去留仍需后续基于真实用户旅程裁决。
 
+### 7.10 topology / field viewer 退出决策门核对（2026-09-09）
+
+- 本轮定位基线为已推送的 `14498125e3679ed8447f27508d5b3d6f4a024619`，开工时 `HEAD` 与 `origin/main` 一致、暂存区为空，全局另有 174 项既有或并发状态。仓库外证据目录为 `C:\Users\13246\AppData\Local\Temp\sql-static-lineage-project-topology-view-retirement-20260909-1545`，保存了 9 个候选范围文件的原文、SHA-256、Git 状态与开工补丁；这些范围文件开工时均无修改。
+- 正式 data-graph 的只读状态仍为 `titans-otc` / `READY` / 版本 `fd7070e0a37c10e99ec235fdd0db10f355c581d0a2e5679410d95d9cc984489a`。有界核对不是用 READY 或数量代替验收：`86840` 表级上游 `depth=1, limit=40` 返回 28 节点、31 边和 3 个策略终点；`86842.init_nom_prin` confirmed-only 字段上游 `depth=6, limit=80` 返回 11 节点、10 边，其中 4 条为确认接续；`93338` 的 `dyna_nom_prin` processing 以 `limit=5` 返回 5/15 项，首项含 2 个输入字段。三次查询均为非空且 `projectionGenerations=0`，证明正式后端具备当前样例的表、字段和加工证据消费能力，但不证明旧文件合同、target causal 或人工页面已等价承接。
+- 依赖核对确认：旧 `project-topology` 仍为 `field-evidence-graph` 和 `target-causal-overlay` 的输入；旧 field publication/contract 仍由 target overlay 和九项 file-query 消费；三项 target causal 查询的 relation status、channel、assessment/rollup/witness 也没有正式普通 trace 的等价承接。standalone union 继续依赖 task-local source/merge、共享 continuation 内核及 topology contract 的稳定 ID/排序常量。因此这些生成、查询、overlay 和 union 模块本轮均保留，不能只因正式图有同名层级能力而删除。
+- 旧 `project-topology-view` 也未满足整项删除条件。`project-topology-acceptance-view.ts` 的 `SCHEDULE` 层会按 `edge.layer` 精确筛选选中节点的一跳 `SCHEDULE_DEPENDS_ON`，展示方向、根作用域观察和 Horae evidence refs；当前 React 只开放 table/field 层，没有承接这条人工调度旅程。内嵌 field drilldown 还保留从 `rootStateIds` 到 `FIELD_BINDING_STATE` 的精确根绑定、write observation、确认值流、候选/UNKNOWN、控制注释、分区属性和 evidence refs；正式 React 虽可字段选择、trace、表达式、输入字段、write id 和控制条件，但当前没有明确的 edge detail、partition/UNKNOWN 与 evidence locator 展示。本轮未进行浏览器实际交互或 E2E，不能把代码路径和后端查询写成前端验收。
+- 曾形成的 viewer/field-drilldown 删除补丁已按本轮外部基线完整恢复，没有保留产品行为变更或文件删除。恢复后 `project-topology-view-cli.ts`、`project-topology-acceptance-view.ts`、`project-field-drilldown.ts`、`field-drilldown-client.mjs` 和 `field-drilldown-client.d.mts` 的原始 SHA-256 均与开工基线相同；既有字段 viewer 测试覆盖也全部恢复。最终只在 `project-topology-view.test.ts` 增加对实际 `SCHEDULE_DEPENDS_ON` 层、consumer→producer 方向、Horae locator、HTML 选项和 `edge.layer` 筛选表达式的防回归断言，不修改调度算法。
+- 最终自检和独立复跑同一 viewer 测试均为 1 file / 7 tests passed，其中既有 full-field catalog、局部上游图、控制注释和重复 snapshot fail-closed 用例均继续执行；这只证明模型和生成 HTML 保留结构，不是浏览器交互验收。本轮没有提交、推送、发布、重建图或删除历史页面/产物。
+- 本轮结论是 **未实施 topology / field viewer 产品退出**，而不是“viewer 退役通过”。最小下一步应先在正式 React 承接并人工验收两条必要旅程：调度一跳及其证据；字段精确绑定中的 write observation、partition/UNKNOWN 和 evidence locator。验收成立后再删除重复静态呈现；target causal 与离线九项查询仍需各自决策门。由于本轮没有消除维护职责，整体 8–13 工程日粗估不下调，且正式前端承接成本仍落在第 5 阶段范围内。
+
 ## 8. 最小有效收敛方案
 
 ### 8.1 先做什么

@@ -144,6 +144,19 @@ describe("project topology acceptance view", () => {
       },
     );
     expect(model.edges.length).toBeGreaterThan(0);
+    expect(
+      model.edges.find((edge) => edge.type === "SCHEDULE_DEPENDS_ON"),
+    ).toMatchObject({
+      layer: "SCHEDULE",
+      from: "task:root-1",
+      to: "task:root-1-schedule-only",
+      evidenceRefs: [
+        expect.objectContaining({
+          source: "HORAE_RELATION",
+          locator: "schedule:root-1->root-1-schedule-only",
+        }),
+      ],
+    });
     expect(model.groups).toContainEqual(
       expect.objectContaining({ key: "root-1", roots: ["root-1"] }),
     );
@@ -182,6 +195,8 @@ describe("project topology acceptance view", () => {
     expect(html).toContain("边界保留各根任务的停止作用域");
     expect(html).toContain("所选节点的一跳关系");
     expect(html).toContain("数据生产");
+    expect(html).toContain('<option value="SCHEDULE">调度关系</option>');
+    expect(html).toContain("edge.layer===layer.value");
     expect(html).toContain("Shared producer");
     expect(html).toContain('id="graph"');
     expect(html).not.toContain("</script><script>");
