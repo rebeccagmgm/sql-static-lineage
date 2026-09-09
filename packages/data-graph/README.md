@@ -8,9 +8,12 @@ The producer remains the authority for SQL, Machine Facts, one-hop, multi-hop,
 field-lineage, and target-table causal closure. This package only validates the
 published artifact boundary and builds rebuildable projections.
 
-The primary workflow is published artifacts -> file queries -> the offline
-investigation view. Neo4j is an optional query-index backend; file queries and
-the view do not require an index build, database connection, or database credentials.
+The formal workflow is the repository-level `graph:prepare` -> `graph:publish`
+-> `graph:query` / `graph:serve` asset graph. The older projection file queries
+remain available for their nine bounded topology/field/causal queries, but the
+separate query-index store, build, activation, status and parity lifecycle has
+been retired. Neo4j access for the formal asset graph uses the shared
+`src/neo4j/connection.ts` boundary.
 
 This independent package was imported from `data-graph` mainline commit
 `04a37cc`. It consumes only explicitly supplied published artifacts; it has no
@@ -46,7 +49,6 @@ npm run field-evidence-graph   -> src/project-graph/field-evidence/field-evidenc
 npm run target-causal-overlay  -> src/project-graph/target-causal-overlay/target-causal-overlay-cli.ts
 npm run union-continuation-v2  -> src/project-graph/topology/task-local-union/union-continuation-v2-cli.ts
 npm run union-continuation-index -> src/project-graph/topology/task-local-union/union-continuation-index-cli.ts
-npm run query-index             -> src/project-graph/query-index/query-index-cli.ts
 ```
 
 Build a replayable WP-8.1 continuation index from current task-local 1.2.0
@@ -81,16 +83,11 @@ For the offline page, use `project-topology-view` with the published topology
 and field evidence. This view already reads file artifacts directly; the new
 query entrypoint does not add continuation or causal-overlay UI features.
 
-Use the existing optional index commands only when a Neo4j-backed copy is
-needed. For example:
-
-```text
-npm --prefix packages/data-graph run target-causal-overlay -- publish --topology <snapshot-dir> --field <field-dir> --causal <closure.json> --output-root <dir>
-npm --prefix packages/data-graph run query-index:build -- --topology <snapshot-dir> --field <field-dir> --causal-overlay <overlay-dir> --audit-root <dir> <connection>
-```
-
-All input paths are passed explicitly; no producer source path or shared
-dependency directory is used.
+The retired `query-index`, `query-index:build`, `query-index:status`,
+`query-index:query` and `query-index:parity` commands must not be used. Use the
+direct `query` command above for these older projection artifacts. For the
+formal data graph, use the repository-level `graph:query` command against an
+already published graph version; the query layer does not build projections.
 
 ## Real artifact closed loop
 
@@ -107,10 +104,8 @@ The test consumes the published topology snapshot
 evidence snapshot `1f42b891b585ad81c814ef89003222f39f00a1e0fda605904a202d0735f1121e`
 and target-causal overlay `83ddd89c5c90f03d7fd3fe753628daced1ec479f2680a7caa35732b1a84e658d`.
 It verifies one topology -> field-evidence -> causal-overlay consumption path
-through one in-memory query-index build, then compares all nine queries through
-the file and index CLI routes against the existing file APIs, including their
-evidence envelopes. This test does not connect to a live Neo4j server. Without
-the required local artifacts, it is skipped.
+through direct projection loaders and the file-query CLI. It does not build an
+index or connect to Neo4j. Without the required local artifacts, it is skipped.
 
 ## Boundary and current query scope
 
@@ -121,16 +116,11 @@ one-hop, multi-hop, field-lineage and target-table causal closure.
 gaps, `write_observation_id` and evidence references are preserved; graph and
 index output is not a facts source and does not rerun runtime conclusions.
 
-The file and index CLIs share one query dispatcher and parameter validation.
-The index backend still loads the selected projection into memory before
-executing the same query functions; a small result limit does not imply a
-small database read. Index expansion and performance optimization are outside
-the current consolidation scope.
-
-The standalone `Neo4jQueryIndexStore.traceProjectUpstreamGraphNative` method
-and its path types have been retired. It had no caller in the checked CLI,
-view, or sibling consumer code. Existing `query-index` commands and indexed
-query APIs retain their query behavior, source checks and activation gates.
+The retained file CLI and direct APIs share one query dispatcher and parameter
+validation. The removed query-index backend called those same projection query
+functions after loading its records, so retiring it does not remove the nine
+file-query names. It does remove the optional Neo4j namespace, source
+descriptor, staged build, activation, status and parity-audit contracts.
 Continuation v2/index production remains a separate artifact workflow.
 
 The task/dataset-level v1 `traceUnionUpstream` kernel and its exclusive helpers

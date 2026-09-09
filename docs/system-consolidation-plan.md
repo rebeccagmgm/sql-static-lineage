@@ -1,6 +1,6 @@
 # 整套系统统一与精简方案
 
-日期：2026-09-09。状态：**第 1 阶段已完成；2A、字段归属检查点 2B、continuation/连接归属检查点 2C 均已完成并通过独立验收；未进入 multi-hop 配置迁移、产品删除或生产发布**。
+日期：2026-09-09。状态：**第 1 阶段、2A、字段归属检查点 2B、continuation/连接归属检查点 2C、旧 project-graph query-index 产品退出检查点均已完成并通过独立验收；未进入其他产品删除或生产发布，整套统一仍未完成**。
 
 本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；2A 仅迁移调度证据缓存模块及 import；2B 仅迁移字段解释共享内核与 task-local 投影 helper 的归属；2C 仅迁移 continuation/index 与 Neo4j 连接实现的归属。三个检查点都没有改变图语义，也没有生成或发布生产投影；2B、2C 只在仓库外临时目录生成了验证样例。
 
@@ -176,7 +176,7 @@ scripts/visualize/horae-relation-tree-explorer.ts
 | field-lineage 产品 | per-root 字段路径、physical expansion、legacy HTML；task-local 只依赖少量核心 | 迁字段解释/identity；不迁 per-root artifact。退出会失去旧兼容 JSON/renderer | 消除第二套字段路径生成；验证 task-local VALUE/CONDITION/CONTROL 与 graph field trace | **迁移必要能力后删除，P1** |
 | `lineage:all` | 编排 closure、MF、one-hop、multi-hop、field-lineage 和两套 HTML | 保留会固化第二条生产链；退出会失去一键闭包、自动补包与 per-root bundle 生命周期 | 可能消除跨 5 阶段的重复编排、缓存和 manifest；须先证明 collect/Facts/prepare/publish 可承接必要自动化 | **证据不足，P1 决策门**。不默认迁移，也不直接删 |
 | old project-topology / field-evidence projection / file query | 读取 one/multi-hop/field-lineage，发布三套文件投影并提供九项查询 | 完整迁移 3–5 日且大量职责与 asset graph 重叠；退出会失去旧 snapshot/file-query 合同及可能的外部消费者 | 迁出共享内核可减少重复投影/索引；九项查询逐项以消费者、输入 Facts、索引和发布生命周期验收 | **迁共享内核；产品删除证据不足，P1 决策门** |
-| old query-index | 为旧三投影建另一套 Neo4j namespace/parity；asset graph 只借连接器 | 迁连接器约 0.25 日；保留约 4,465 行和 build/status/query/parity | 消除第二个 store、schema、activation 和 parity 产品 | **迁连接器后退出，P1**。最后核对外部 owner |
+| old query-index | 为旧三投影建另一套 Neo4j namespace/parity；asset graph 只借连接器 | 连接器已在 2C 迁出；保留约 4,465 行和 build/status/query/parity 会继续维护第二生命周期 | 消除第二个 store、schema、activation 和 parity 产品；九项直接文件查询不退出 | **已退出并通过独立验收，P1**。仓库外消费者仍未知，退出影响明确记录 |
 | standalone union CLIs | 在发布外单独生成 continuation evidence/index；正式 publish 也生成 index，但二者可能服务预发布文件检查或外部脚本 | 若无消费者，退出约 0.25 日；若仍承担独立 evidence/index 生命周期，删除会失去预发布检查与文件合同 | 可能消除第二个 index 入口；须按算法复用、输入 Facts、文件/索引产物和外部调用核对 | **证据不足，P1**。不能仅凭 standalone 判重 |
 | `scripts/tmp/run-project-task-local-batch.mts` | 仅用环境变量包装正式 CLI并写 summary；无 npm/源码/文档调用 | 无需迁能力；正式 `project-task-local` 已覆盖 | 消除未校验 env wrapper 和额外写入 | **有充分依据直接退出，P1** |
 | `visualize-horae-relation-tree` | 固定路径的调度树离线查看；后端 schedule trace 覆盖数据查询，但 React UI 尚无该层 | 退出会失去现有单页人工调度树；承接到 UI 约 0.5–1 日，或由 owner 明确接受退出 | 可消除硬编码批次路径和第五个查看器；验证必须是浏览器人工旅程 | **证据不足，P2**。前端承接或明确退出后再删 |
@@ -354,13 +354,28 @@ tests/schedule-detail-cache.test.ts
 - 独立验收结论：**2C 仅就 continuation/index 与 Neo4j 连接归属迁移通过**，未发现需要返工的产品代码缺陷。32 个基线文件 hash、源码镜像和 9 个既有改动文件的反向路径归一化均吻合；独立产物为同一证据目录下的 `review-protected.json`、`review-before.json`、`review-after.json`。验收没有启动服务、重跑有副作用的 package build 或发布生产图，因此不构成在线旅程、完整门禁或整套图统一验收。
 - 成本判断：实现仍落在 continuation 0.5–1 日加连接器约 0.25 日的原估算内；主要额外成本来自 9 个范围内既有/并发修改、前后镜像和测试目录污染。整体 8–13 工程日估算暂不下调；旧产品退出、外部 query-index owner、standalone 文件生命周期和 multi-hop 配置迁移仍需后续独立决策门。
 
+### 7.9 旧 query-index 产品退出检查点实施与独立验收记录（2026-09-09）
+
+- 本检查点基线 HEAD 为 `15b602bdb240b9a5f3d567dadbb73d2bdadf5416`，即已推送并通过独立验收的 2C 提交；暂存区为空。仓库外证据目录为 `C:\Users\13246\AppData\Local\Temp\sql-static-lineage-query-index-retirement-20260909-145517`。32 个范围文件开工时全部干净，其 canonical Git blob 与 HEAD 对应文件完全一致；同时保存了全局 Git 状态、范围清单和逐文件原始 SHA-256，但部分工作树文件混合换行，不能把 raw SHA 与 Git LF blob 直接作字节等同。全局其余 167 项脏状态不属于本检查点，未整理或回退。实施期间范围外新增未跟踪 `scripts/topic-snapshot/`，已作为并发漂移记录并保持原样。
+- 删除 `packages/data-graph/src/project-graph/query-index/` 下 15 个实现文件，以及只验证该退役产品的 store/source/builder/validation/parity/availability/CLI/Neo4j store 八个测试和 `tests/fixtures/query-cli-parity.ts`。同时从 package scripts 删除 `query-index`、`query-index:build`、`query-index:status`、`query-index:query`、`query-index:parity` 五个入口；不保留转发壳、空目录、第二 store 或第二 namespace 生命周期。
+- 仓库调用核对发现：query-index 目录外没有产品运行时代码导入该产品，目录外源码引用只有专属测试。九项 topology/field-evidence/target-causal 查询由保留的 `project-graph/query/file-query-cli.ts`、`run-projection-query.ts` 和三类直接查询模块实现；旧 index CLI 只是从第二 store 还原投影后调用同一 dispatcher。因此退出的是 source descriptor、record schema、staged build、activation、status、parity audit 与 Neo4j query-index store，不退出九项文件查询或其直接投影算法。
+- `project-graph-query-index-connection.test.ts` 迁为 `neo4j-connection.test.ts`，继续覆盖 2C 已归共享的 `src/neo4j/connection.ts`；该连接器仍由正式 `asset-graph/config.ts` 使用。`target-causal-overlay.test.ts` 只删除两个 query-index 集成 case，原直接投影、发布和文件查询断言保留。`real-artifact-closed-loop.test.ts` 改为验证真实 topology → field evidence → causal overlay 的 loader、引用一致性、直接查询与 file CLI，不再构建内存 index。
+- 退役前 11 个相关测试文件为 10 passed / 1 skipped，50 passed / 1 skipped。退役后首次定向验证在未设置验收根时为 6 passed / 1 skipped，45 passed / 1 skipped；随后确认既有三类验收产物都存在，设置只读 `DATA_GRAPH_ACCEPTANCE_ROOT` 后单独运行 `test:real-artifact` 为 1 passed，真实 topology → field evidence → causal overlay 的引用、直接查询和 file CLI 闭环通过。退役后 data-graph 全套测试为 33 passed / 2 skipped，193 passed / 3 skipped；其中默认环境的三个 optional-artifact case 仍按合同跳过。保留的 file-query `--help` 仍列出九项查询；正式根级 `graph:query --help` 可加载并明确查询期不生成投影。
+- 独立复核中发现初版 real-artifact 改写只比较三个 list query 的 direct 与 CLI，同错、同空或共享路由覆盖丢失都可能被放过；已恢复冻结 topology snapshot ID、三类查询 `ok/partial` 状态、limit=1 结果数量、三类实际 projection 的 nodes/edges 非空断言，以及原 helper 的九项 file-only query case。九项仍使用原 `UNKNOWN relation-status`、`max-hops`、`max-assessments`、`max-attachments` 参数，并对选取的 edge/root field/record/assessment/task 标识先作非空断言；`UNKNOWN` CLI case 的 expected 也显式使用同一过滤参数，不复用无过滤的非空 list 结果。cross-snapshot 引用一致性和 direct-vs-CLI 全对象比较均保留。同一只读验收根非 skip 复跑仍为 1 passed；没有为通过而弱化原本与 query-index 无关的有效质量断言。
+- 根级 typecheck 仍只有开工前已有的 `tests/run-src-table-template-rebuild.test.ts:3` TS7016。data-graph package typecheck 仍只有 2C 已记录的三个既有 fixture/tuple 错误：`asset-graph-catalog.test.ts:216` 与 `asset-graph-overview.test.ts:116/119`。没有重跑会向源码目录生成旁路文件的已知失败 build，没有启动服务、生成或发布图、连接或删除任何 Neo4j 数据/namespace/database。
+- 全引用检查要求交付时满足：旧 query-index 源目录、测试名、package script 和现役运行说明引用为 0；共享连接器与正式 asset-graph 依赖保持一份。OpenSpec 和架构历史材料仅作历史证据保留，不作为现役命令；其中出现的 query-index 不代表产品仍可运行。
+- 退出影响：仓库外消费者是否存在仍无证据，不能写成“已证明无人使用”。任何仓库外调用旧五个 npm 命令、旧 TypeScript API、query-index audit 文件或 Neo4j namespace 的工具都会在升级后失败，必须改用九项 direct file-query，或按正式 data-graph 旅程改用 `graph:query`；两者语义并未在本检查点被宣称逐项等价。本检查点只退出一套已确认重复的索引/发布生命周期，不等于 file-query、旧三投影和正式 asset-graph 已经全部统一。
+- 独立验收结论：**本检查点仅就旧 query-index 第二生命周期退出通过**，未发现需要修复的正式链路实现缺陷。独立 data-graph 全套为 33 files passed / 2 skipped、193 tests passed / 3 skipped；此后修改只涉及 real-artifact 测试，最终使用同一只读验收根独立复跑为 1 file / 1 test passed，不能把多次重复运行相加。验收确认共享 Neo4j connection 测试相对 HEAD 仅改 describe 名称、全部断言保留；target-causal-overlay 删除的两段只依赖退役 index，其余投影/发布/直接查询断言仍在。正式图 49 个擦除类型后的运行时模块缺失引用与退役产品可达路径均为 0，`graph:query --help` 成功加载。
+- 验收返回的缺口仅在测试承接：初版 real-artifact 改写丢失 snapshot/status/非空/limit 断言，第二版仍只覆盖三个 list query，随后 `UNKNOWN` case 的 direct expected 参数未显式匹配。三次均按最小范围修正，最终恢复原有效断言、九项 file CLI/direct API 的参数及完整结果对照，且 `UNKNOWN` 明确使用 `relationStatuses: ["UNKNOWN"]`；没有恢复旧 index 或新增框架。
+- 成本判断：实际实现低于原“能力迁移”估算，因为九项算法无需迁移，只需删除第二生命周期并保留直接查询覆盖；减少 15 个产品源码、五个命令、八个专属测试和一套 audit/parity/activation 合同的维护。仓库外迁移成本未知，整体 8–13 工程日区间暂不下调；file-query 与正式 `graph:query` 的最终去留仍需后续基于真实用户旅程裁决。
+
 ## 8. 最小有效收敛方案
 
 ### 8.1 先做什么
 
 1. **第 2 阶段：只做 schedule evidence cache 归属迁移（0.5–1.5 日）**。这是调用面已列全、合同可冻结、价值明确的最小解耦；完成后先用实际 diff 和测试成本校准后续估算。
 2. **第 3 阶段：字段解释与 continuation/连接归属（2–3 日，待 2A 校准）**。按 §7.3 逐条处理直接和间接依赖；每个检查点只验收指定依赖，不提前宣称全部归零。
-3. **第 4 阶段：能力决策与有条件退出（1–3 日，不含高成本迁移）**。对 one-hop 自动补包、multi-hop autofill/audit、`lineage:all`、standalone union 文件合同、九项旧查询和外部 query-index consumer 分别作“承接/明确退出/继续保留”决策；只有已有消费者、替代路径和退出影响闭合的项才能删除。无独有能力的 tmp wrapper 可优先退出。
+3. **第 4 阶段：能力决策与有条件退出（1–3 日，不含高成本迁移）**。旧 query-index 的第二生命周期已退出；继续对 one-hop 自动补包、multi-hop autofill/audit、`lineage:all`、standalone union 文件合同和九项旧文件查询分别作“承接/明确退出/继续保留”决策。只有已有消费者、替代路径和退出影响闭合的项才能删除；无独有能力的 tmp wrapper 可优先退出。
 4. **第 5 阶段：统一发布和消费（1.5–2.5 日）**。正式命令目标只保留 collect、Facts、prepare、publish、query、serve、UI；HTTP 与 React UI 的 table/field 旅程闭环。schedule 旅程要么在 UI 承接并人工验收，要么由 owner 明确接受退出，之后才能删对应旧查看器。
 5. **第 6 阶段：选择性知识/文档/测试收敛（1–2 日）**。只迁被验证需要的 task knowledge 或 catalog 能力；更新正式运行文档和分层测试入口。
 6. **第 7 阶段：隔离重建与整体验收（1–2 日）**。小批生成、增量发布、CLI/HTTP/UI 真实旅程、无悬空 imports/commands、无第二正式链，最后一次受控完整发布验收。
@@ -369,7 +384,7 @@ tests/schedule-detail-cache.test.ts
 
 - 不把 target causal closure/overlay 默认迁入主图，也不因暂不迁移就默认删除。先用 2–3 个真实问题比较普通向下影响与多通道状态/witness/UNKNOWN 解释，再决定保留、迁移最小能力或明确接受退出影响。
 - 不把 Inventory Map 的主题分类、SQLite 索引、页面和全部知识功能整体搬进 React UI，也不先删。先对照“库存发现、字段加工、人工知识”三条旅程，只迁持续使用的最小能力，其余逐项记录退出影响。
-- 不删除自动补包/自动回填、standalone union 文件能力或旧 query-index/九项查询，直到仓库内外消费者与替代路径有证据。
+- 不因 query-index 已退出就连带删除自动补包/自动回填、standalone union 文件能力或九项文件查询；这些能力仍需分别核对仓库内外消费者、替代路径和退出影响。
 - 不整理全部 survey/fill 脚本和 8,054 个未跟踪文件。先有 owner、最后使用、调用者和可重建性证据。
 - 不批量重写或删除 docs、OpenSpec 与历史 HTML；只修改正式入口索引和已退出产品运行说明。
 

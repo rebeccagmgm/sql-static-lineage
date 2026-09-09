@@ -1,17 +1,27 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { expectQueryCliParity } from "./fixtures/query-cli-parity.ts";
 
-import { getIndexedFieldEvidence } from "../src/project-graph/query-index/indexed-field-evidence-query.ts";
-import { getIndexedProjectTopology } from "../src/project-graph/query-index/indexed-project-topology-query.ts";
-import { getIndexedTargetCausalOverlay } from "../src/project-graph/query-index/indexed-target-causal-overlay-query.ts";
-import { buildQueryIndex } from "../src/project-graph/query-index/query-index-builder.ts";
-import { InMemoryQueryIndexStore } from "../src/project-graph/query-index/in-memory-query-index-store.ts";
-import { runRequiredQueryIndexParity } from "../src/project-graph/query-index/query-index-parity.ts";
-import { loadQueryIndexSource } from "../src/project-graph/query-index/query-index-source.ts";
+import { loadFieldEvidenceDirectory } from "../src/project-graph/field-evidence/field-evidence-publication.ts";
+import {
+  explainFieldEvidenceRecord,
+  getFieldEvidence,
+  traceFieldValuePath,
+} from "../src/project-graph/field-evidence/field-evidence-query.ts";
+import { runFileQueryCli } from "../src/project-graph/query/file-query-cli.ts";
+import {
+  explainTopologyEdge,
+  getProjectTopology,
+  traceProjectUpstream,
+} from "../src/project-graph/query/project-topology-query.ts";
+import { loadTargetCausalOverlayDirectory } from "../src/project-graph/target-causal-overlay/target-causal-overlay-publication.ts";
+import {
+  explainTargetCausalAssessment,
+  getTargetCausalOverlay,
+  getTargetCausalTaskRollup,
+} from "../src/project-graph/target-causal-overlay/target-causal-overlay-query.ts";
+import { loadProjectTopologyDirectory } from "../src/project-graph/topology/project-topology-publication.ts";
 
 const acceptanceRoot = process.env.DATA_GRAPH_ACCEPTANCE_ROOT;
 const topologyDirectory = join(
@@ -39,82 +49,160 @@ describe("real published artifact closed loop", () => {
   const realIt = realArtifactsAvailable ? it : it.skip;
 
   realIt(
-    "consumes topology, field evidence, and causal overlay through one index build",
+    "consumes topology, field evidence, and causal overlay through direct file queries",
     async () => {
-      const source = loadQueryIndexSource({
-        topologyDirectory,
-        fieldEvidenceDirectories: [fieldEvidenceDirectory],
-        targetCausalOverlayDirectories: [causalOverlayDirectory],
-      });
-      expect(source.descriptor.projectKey).toBe(
+      const topology = loadProjectTopologyDirectory(topologyDirectory);
+      const field = loadFieldEvidenceDirectory(fieldEvidenceDirectory);
+      const causal = loadTargetCausalOverlayDirectory(causalOverlayDirectory);
+
+      expect(topology.projection.snapshot.projectKey).toBe(
         "joint-176827-181058-209119-acceptance",
       );
-      expect(source.fieldEvidence).toHaveLength(1);
-      expect(source.targetCausalOverlays).toHaveLength(1);
-      expect(source.topology.projection.snapshot.snapshotId).toBe(
+      expect(topology.projection.snapshot.snapshotId).toBe(
         "project-snapshot-fa0f0ed6fe71fa2c5c9efb82d6e512c2e444d80fc0b57f334369f08648375fce",
       );
-      expect(
-        source.fieldEvidence[0]!.projection.snapshot.projectSource.snapshotId,
-      ).toBe(source.topology.projection.snapshot.snapshotId);
-      expect(
-        source.targetCausalOverlays[0]!.projection.snapshot.projectSource
-          .snapshotId,
-      ).toBe(source.topology.projection.snapshot.snapshotId);
-      expect(
-        source.targetCausalOverlays[0]!.projection.snapshot.fieldEvidenceSource
-          .snapshotId,
-      ).toBe(source.fieldEvidence[0]!.projection.snapshot.snapshotId);
+      expect(field.projection.snapshot.projectSource.snapshotId).toBe(
+        topology.projection.snapshot.snapshotId,
+      );
+      expect(causal.projection.snapshot.projectSource.snapshotId).toBe(
+        topology.projection.snapshot.snapshotId,
+      );
+      expect(causal.projection.snapshot.fieldEvidenceSource.snapshotId).toBe(
+        field.projection.snapshot.snapshotId,
+      );
+      for (const projection of [
+        topology.projection,
+        field.projection,
+        causal.projection,
+      ]) {
+        expect(projection.nodes.length).toBeGreaterThan(0);
+        expect(projection.edges.length).toBeGreaterThan(0);
+      }
 
-      const store = new InMemoryQueryIndexStore();
-      const auditRoot = mkdtempSync(join(tmpdir(), "data-graph-real-audit-"));
-      try {
-        const result = await buildQueryIndex({
-          source,
-          store,
-          auditOutputRoot: auditRoot,
-          batchSize: 500,
-          runParity: async (staged) =>
-            runRequiredQueryIndexParity({ source: staged.source, store }),
-        });
-        expect(result.outcome).toBe("CREATED");
-        expect(result.audit.manifest.indexedCounts.nodes).toBeGreaterThan(0);
-        expect(result.audit.manifest.indexedCounts.edges).toBeGreaterThan(0);
+      const topologyResult = getProjectTopology(topologyDirectory, {
+        limit: 1,
+      });
+      const fieldResult = getFieldEvidence(fieldEvidenceDirectory, {
+        limit: 1,
+      });
+      const causalResult = getTargetCausalOverlay(causalOverlayDirectory, {
+        limit: 1,
+      });
+      expect(topologyResult.status).toMatch(/^(ok|partial)$/u);
+      expect(fieldResult.status).toMatch(/^(ok|partial)$/u);
+      expect(causalResult.status).toMatch(/^(ok|partial)$/u);
+      expect(topologyResult.result.nodes).toHaveLength(1);
+      expect(fieldResult.result.nodes).toHaveLength(1);
+      expect(causalResult.result.assessments).toHaveLength(1);
 
-        const expected = {
-          store,
-          projectKey: source.descriptor.projectKey,
-          expectedSourceDescriptorHash: source.descriptorHash,
-        };
-        const topology = await getIndexedProjectTopology(expected, {
-          limit: 1,
-        });
-        const field = await getIndexedFieldEvidence(
-          {
-            ...expected,
-            fieldEvidenceSnapshotId:
-              source.fieldEvidence[0]!.projection.snapshot.snapshotId,
-          },
-          { limit: 1 },
+      const topologyEdge = topology.projection.edges[0];
+      const rootField = Object.keys(
+        field.projection.snapshot.selection.rootStateIds,
+      )[0];
+      const fieldRecord = field.projection.nodes[0];
+      const assessment = causal.projection.nodes.find(
+        ({ nodeType }) => nodeType === "CAUSAL_ASSESSMENT",
+      );
+      const task = causal.projection.nodes.find(
+        ({ nodeType }) => nodeType === "TASK_REF",
+      );
+      expect(topologyEdge).toBeDefined();
+      expect(rootField).toBeTruthy();
+      expect(fieldRecord).toBeDefined();
+      expect(assessment?.properties.assessmentId).toBeTruthy();
+      expect(task?.properties.taskId).toBeTruthy();
+      if (!topologyEdge || !rootField || !fieldRecord || !assessment || !task)
+        throw new Error("REAL_ARTIFACT_QUERY_IDENTIFIERS_MISSING");
+      const assessmentId = String(assessment.properties.assessmentId);
+      const taskId = String(task.properties.taskId);
+
+      const cases = [
+        {
+          directory: topologyDirectory,
+          query: "get_project_topology",
+          args: ["--limit", "1"],
+          expected: topologyResult,
+        },
+        {
+          directory: topologyDirectory,
+          query: "trace_project_upstream",
+          args: ["--start-node-id", topologyEdge.fromNodeId, "--max-hops", "1"],
+          expected: traceProjectUpstream(topologyDirectory, {
+            startNodeId: topologyEdge.fromNodeId,
+            maxHops: 1,
+          }),
+        },
+        {
+          directory: topologyDirectory,
+          query: "explain_topology_edge",
+          args: ["--edge-id", topologyEdge.edgeId],
+          expected: explainTopologyEdge(topologyDirectory, topologyEdge.edgeId),
+        },
+        {
+          directory: fieldEvidenceDirectory,
+          query: "get_field_evidence",
+          args: ["--limit", "1"],
+          expected: fieldResult,
+        },
+        {
+          directory: fieldEvidenceDirectory,
+          query: "trace_field_value_path",
+          args: ["--root-field", rootField, "--max-hops", "1"],
+          expected: traceFieldValuePath(fieldEvidenceDirectory, {
+            rootField,
+            maxHops: 1,
+          }),
+        },
+        {
+          directory: fieldEvidenceDirectory,
+          query: "explain_field_evidence_record",
+          args: ["--record-id", fieldRecord.nodeId],
+          expected: explainFieldEvidenceRecord(
+            fieldEvidenceDirectory,
+            fieldRecord.nodeId,
+          ),
+        },
+        {
+          directory: causalOverlayDirectory,
+          query: "get_target_causal_overlay",
+          args: ["--relation-status", "UNKNOWN", "--limit", "1"],
+          expected: getTargetCausalOverlay(causalOverlayDirectory, {
+            relationStatuses: ["UNKNOWN"],
+            limit: 1,
+          }),
+        },
+        {
+          directory: causalOverlayDirectory,
+          query: "get_target_causal_task_rollup",
+          args: ["--task-id", taskId, "--max-assessments", "1"],
+          expected: getTargetCausalTaskRollup(causalOverlayDirectory, taskId, {
+            maxAssessments: 1,
+          }),
+        },
+        {
+          directory: causalOverlayDirectory,
+          query: "explain_target_causal_assessment",
+          args: ["--assessment-id", assessmentId, "--max-attachments", "1"],
+          expected: explainTargetCausalAssessment(
+            causalOverlayDirectory,
+            assessmentId,
+            { maxAttachments: 1 },
+          ),
+        },
+      ] as const;
+      for (const testCase of cases) {
+        let output = "";
+        await runFileQueryCli(
+          [
+            "--directory",
+            testCase.directory,
+            "--query",
+            testCase.query,
+            ...testCase.args,
+          ],
+          { write: (text) => (output += text) },
         );
-        const causal = await getIndexedTargetCausalOverlay(
-          {
-            ...expected,
-            targetCausalOverlaySnapshotId:
-              source.targetCausalOverlays[0]!.projection.snapshot.snapshotId,
-          },
-          { limit: 1 },
-        );
-        expect(topology.status).toMatch(/^(ok|partial)$/u);
-        expect(field.status).toMatch(/^(ok|partial)$/u);
-        expect(causal.status).toMatch(/^(ok|partial)$/u);
-        expect(topology.result.nodes.length).toBeLessThanOrEqual(1);
-        expect(field.result.nodes.length).toBeLessThanOrEqual(1);
-        expect(causal.result.assessments.length).toBeLessThanOrEqual(1);
-        await expectQueryCliParity(source, store);
-      } finally {
-        rmSync(auditRoot, { recursive: true, force: true });
-        await store.close();
+        expect(JSON.parse(output), testCase.query).toEqual(testCase.expected);
       }
     },
     120_000,

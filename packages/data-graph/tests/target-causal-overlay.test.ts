@@ -3,22 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { expectQueryCliParity } from "./fixtures/query-cli-parity.ts";
 
 import { canonicalJson } from "../src/contracts/runtime.ts";
 import { buildFieldEvidenceProjection } from "../src/project-graph/field-evidence/field-evidence-projector.ts";
 import { publishFieldEvidence } from "../src/project-graph/field-evidence/field-evidence-publication.ts";
 import { loadFieldEvidenceSource } from "../src/project-graph/field-evidence/field-evidence-source.ts";
 import { parseTargetCausalOverlayCli } from "../src/project-graph/target-causal-overlay/target-causal-overlay-cli.ts";
-import { buildQueryIndex } from "../src/project-graph/query-index/query-index-builder.ts";
-import { InMemoryQueryIndexStore } from "../src/project-graph/query-index/in-memory-query-index-store.ts";
-import {
-  explainIndexedTargetCausalAssessment,
-  getIndexedTargetCausalOverlay,
-  getIndexedTargetCausalTaskRollup,
-} from "../src/project-graph/query-index/indexed-target-causal-overlay-query.ts";
-import { runRequiredQueryIndexParity } from "../src/project-graph/query-index/query-index-parity.ts";
-import { loadQueryIndexSource } from "../src/project-graph/query-index/query-index-source.ts";
 import { buildTargetCausalOverlayProjection } from "../src/project-graph/target-causal-overlay/target-causal-overlay-projector.ts";
 import {
   loadTargetCausalOverlayDirectory,
@@ -484,80 +474,5 @@ describe("target causal overlay publication and queries", () => {
         "CAUSES",
       ]),
     ).toThrow("TARGET_CAUSAL_OVERLAY_RELATION_STATUS_INVALID");
-  });
-});
-
-describe("target causal overlay query-index projection", () => {
-  it("indexes the third projection and preserves all causal query envelopes", async () => {
-    const fixture = setup();
-    const overlayDirectory = publishTargetCausalOverlay(
-      buildTargetCausalOverlayProjection(fixture.source),
-      { outputRoot: fixture.materialized.outputRoot },
-    ).directory;
-    const source = loadQueryIndexSource({
-      topologyDirectory: fixture.materialized.projectTopologyDirectory,
-      fieldEvidenceDirectories: [fixture.fieldDirectory],
-      targetCausalOverlayDirectories: [overlayDirectory],
-    });
-    expect(source.descriptor.targetCausalOverlays).toHaveLength(1);
-    expect(source.targetCausalOverlays).toHaveLength(1);
-    const store = new InMemoryQueryIndexStore();
-    const built = await buildQueryIndex({
-      source,
-      store,
-      auditOutputRoot: join(fixture.root, "query-index-audit"),
-      runParity: async () => runRequiredQueryIndexParity({ source, store }),
-    });
-    expect(built.audit.parityReport.status).toBe("PASSED");
-    await expectQueryCliParity(source, store);
-    expect(built.audit.parityReport.cases).toHaveLength(21);
-    expect(
-      built.audit.parityReport.cases.filter(({ caseId }) =>
-        caseId.startsWith("causal:"),
-      ),
-    ).toHaveLength(7);
-    const expected = {
-      store,
-      projectKey: source.descriptor.projectKey,
-      expectedSourceDescriptorHash: source.descriptorHash,
-      targetCausalOverlaySnapshotId:
-        source.descriptor.targetCausalOverlays![0]!.snapshotId,
-    };
-    expect(
-      await getIndexedTargetCausalOverlay(expected, {
-        relationStatuses: ["CONFIRMED_RELATED"],
-        limit: 10,
-      }),
-    ).toEqual(
-      getTargetCausalOverlay(overlayDirectory, {
-        relationStatuses: ["CONFIRMED_RELATED"],
-        limit: 10,
-      }),
-    );
-    expect(
-      await getIndexedTargetCausalTaskRollup(expected, "shared-producer"),
-    ).toEqual(getTargetCausalTaskRollup(overlayDirectory, "shared-producer"));
-    const assessmentId = String(
-      source.targetCausalOverlays[0]!.projection.nodes.find(
-        ({ nodeType }) => nodeType === "CAUSAL_ASSESSMENT",
-      )!.properties.assessmentId,
-    );
-    expect(
-      await explainIndexedTargetCausalAssessment(expected, assessmentId),
-    ).toEqual(explainTargetCausalAssessment(overlayDirectory, assessmentId));
-  });
-
-  it("requires the exact referenced field snapshot in the same index build", () => {
-    const fixture = setup();
-    const overlayDirectory = publishTargetCausalOverlay(
-      buildTargetCausalOverlayProjection(fixture.source),
-      { outputRoot: fixture.materialized.outputRoot },
-    ).directory;
-    expect(() =>
-      loadQueryIndexSource({
-        topologyDirectory: fixture.materialized.projectTopologyDirectory,
-        targetCausalOverlayDirectories: [overlayDirectory],
-      }),
-    ).toThrow("QUERY_INDEX_CAUSAL_FIELD_MISMATCH");
   });
 });

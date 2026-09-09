@@ -1,8 +1,8 @@
 # Phase 4 target causal overlay migration
 
-The target-causal overlay projection, file queries and query-index consumer
-have moved to the standalone `data-graph` consumer. This source repository no
-longer provides the former overlay consumer command surface.
+The target-causal overlay projection and direct file queries remain in the
+`packages/data-graph` consumer. Its former query-index backend has been
+retired; this does not retire the overlay or its direct query API.
 
 `sql-static-lineage` still owns and publishes the canonical
 `target-table-upstream-causal-closure`, including cross-task propagation,
@@ -11,6 +11,5 @@ certainty, witnesses, budgets, task rollups, `UNKNOWN`/gaps,
 consumer projection and must not turn into a facts source or rerun runtime
 conclusions.
 
-See the [data-graph README](E:/02_area/股衍数据-数据cookbook/scripts/data-graph/README.md)
-(`E:\02_area\股衍数据-数据cookbook\scripts\data-graph\README.md`) for the
-current commands, entrypoints and acceptance boundary.
+See the [current data-graph README](../packages/data-graph/README.md) for the
+remaining commands, entrypoints and acceptance boundary.

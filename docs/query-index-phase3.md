@@ -1,14 +1,22 @@
-# Phase 3 query index migration
+# Phase 3 query index retirement
 
-The Phase 3 query-index consumer, Neo4j integration and related commands have
-moved to the standalone `data-graph` consumer. This source repository no
-longer provides the former query-index command surface.
+The former `packages/data-graph/src/project-graph/query-index/` product and its
+`query-index`, `query-index:build`, `query-index:status`, `query-index:query`
+and `query-index:parity` commands have been retired. They duplicated a second
+store/schema/build/activation/status/parity lifecycle and had no repository
+runtime consumer outside that product.
 
-`sql-static-lineage` remains the canonical producer of the versioned SQL,
-Machine Facts, one-hop, multi-hop and field-lineage artifacts. The consumer
-must read those published artifacts through the stable contract; it must not
-import producer source code or become a facts authority.
+The nine bounded topology, field-evidence and target-causal query names remain
+available through the direct projection file-query command; those query
+algorithms were not owned exclusively by the retired index. The formal graph
+workflow is the repository-level `graph:prepare`, `graph:publish`,
+`graph:query` and `graph:serve` asset graph, using the shared
+`packages/data-graph/src/neo4j/connection.ts` connector.
 
-See the [data-graph README](E:/02_area/股衍数据-数据cookbook/scripts/data-graph/README.md)
-(`E:\02_area\股衍数据-数据cookbook\scripts\data-graph\README.md`) for the
-current commands, entrypoints and acceptance boundary.
+This retirement does not prove that repository-external query-index consumers
+do not exist, and it does not claim the older nine file queries are already
+semantically identical to the formal asset-graph query API. No Neo4j data,
+namespace or database is deleted by removing the source product.
+
+See the [current data-graph README](../packages/data-graph/README.md) for the
+remaining commands and boundaries.

@@ -10,7 +10,7 @@ import {
   resolveNeo4jQueryIndexConnection,
 } from "../src/neo4j/connection.ts";
 
-describe("query-index Neo4j connection boundary", () => {
+describe("shared Neo4j connection boundary", () => {
   it("resolves secrets from an explicit environment variable without importing the driver", () => {
     const config = resolveNeo4jQueryIndexConnection(
       {
