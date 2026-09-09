@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveWorkspacePaths } from "../../scripts/config/workspace-paths.ts";
 import { parseInputPackMachineFactsCli } from "../../scripts/machine-facts/input-pack-machine-facts.ts";
-import { fieldEvidenceQueryRoots } from "../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
+import { fieldEvidenceQueryRoots } from "../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query-harness.ts";
 
 function configFixture(patch: Record<string, unknown> = {}) {
   const root = mkdtempSync(join(tmpdir(), "lineage-paths-"));

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { FieldImpactFrontierCandidate } from "../../../scripts/project-graph/field-evidence-v1/impact-result-contract.ts";
-import { impactQuery, type ImpactQueryInput } from "../../../scripts/project-graph/field-evidence-v1/impact-query.ts";
+import type { FieldImpactFrontierCandidate } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-result-contract.ts";
+import { impactQuery, type ImpactQueryInput } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
   enrichFrontierCandidates,
-} from "../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
+} from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/schedule-preference.ts";
 
 function frontierCandidate(
   overrides: Partial<FieldImpactFrontierCandidate> = {},

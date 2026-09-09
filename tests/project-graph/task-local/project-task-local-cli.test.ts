@@ -131,6 +131,9 @@ describe("task-local batch CLI (TL-5)", () => {
     expect(options.taskIds).toEqual(["181058", "176827"]);
     expect(options.expandUpstream).toBe(true);
     expect(options.maxUpstreamDepth).toBe(12);
+    expect(() => runProjectTaskLocalCli(options)).toThrow(
+      "TASK_LINEAGE_ADDON_REQUIRED: use npm run addon:task-lineage:project-task-local",
+    );
   });
 
   it("parses --task-ids-file and merges with --task-ids", () => {

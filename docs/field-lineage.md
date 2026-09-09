@@ -1,5 +1,7 @@
 # Input Pack 驱动的跨 Task 字段血缘
 
+> 状态：早期 per-root 实验能力，现归 `scripts/addons/task-lineage/`；正式字段主线是 Machine Facts → task-local → continuation → data-graph。
+
 ## 目标与边界
 
 该流程从同一个 Task/Table Input Pack 准备任务级 Machine Facts，再沿表级 multi-hop 已记录的 one-hop `primary` 决策追踪字段值来源。它解决“表级树已知，但字段级链路仍需人工拼 profile”的问题。
@@ -44,7 +46,7 @@ SparkIndex 无 INSERT 的分区输出按平台的 full-width positional 契约�
 ## 第二步：生成字段 multi-hop
 
 ```text
-npm run reconcile-field-lineage -- \
+npm run addon:task-lineage:field-lineage -- \
   --data-root <input-pack-root> \
   --facts-root <facts-root> \
   --multi-hop-artifact <table-multi-hop.json> \

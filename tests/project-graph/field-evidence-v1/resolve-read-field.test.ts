@@ -7,12 +7,12 @@ import {
   type UnionContinuationIndexEntry,
 } from "../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 import { canonicalJson, sha256 } from "../../../scripts/machine-facts/machine-facts-contract.ts";
-import type { ContinuationPorts } from "../../../scripts/project-graph/field-evidence-v1/continuation/ports.ts";
-import { buildFieldEdgeIndex } from "../../../scripts/project-graph/field-evidence-v1/field-edge-index.ts";
-import { resolveReadField } from "../../../scripts/project-graph/field-evidence-v1/resolve-read-field.ts";
+import type { ContinuationPorts } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/ports.ts";
+import { buildFieldEdgeIndex } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/field-edge-index.ts";
+import { resolveReadField } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/resolve-read-field.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
-} from "../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
+} from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/schedule-preference.ts";
 import {
   canonicalizeTaskLocalProjection,
   type TaskLocalProjection,

@@ -22,7 +22,7 @@ import {
   openWriterCatalog,
 } from "../../../query/writer-catalog.ts";
 import { isLegacyProducerIndexPath } from "../../../query/table-writer-lookup.ts";
-import { validateMultiHopReconciliation } from "../multi-hop/reconcile-multi-hop.ts";
+import { validateMultiHopReconciliation } from "../../../addons/task-lineage/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
 import {
   projectTargetTableCandidateUniverse,
   type CandidateBranch,

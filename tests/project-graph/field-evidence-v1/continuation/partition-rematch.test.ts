@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
 import { openWriterCatalog, writerCatalogPort } from "../../../../scripts/query/writer-catalog.ts";
-import { applyPartitionRematch } from "../../../../scripts/project-graph/field-evidence-v1/continuation/rules/partition-rematch.ts";
-import { continuationCandidateFromIndex } from "../../../../scripts/project-graph/field-evidence-v1/continuation/types.ts";
+import { applyPartitionRematch } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/rules/partition-rematch.ts";
+import { continuationCandidateFromIndex } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/types.ts";
 import type { UnionContinuationIndexCandidate } from "../../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
 
 function indexCandidate(

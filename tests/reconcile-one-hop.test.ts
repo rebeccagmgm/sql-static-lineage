@@ -23,7 +23,7 @@ import {
   summarizeOneHop,
   summaryPathFromOutput,
   type OpenCliRunner,
-} from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
   buildTableProducerIndex,
   type TableProducerIndex,

@@ -1,5 +1,7 @@
 # 表级多跳数据路径
 
+> 状态：早期实验能力，现归 `scripts/addons/task-lineage/`；不属于正式 data-graph 生产路径。
+
 `reconcile-multi-hop` 从一个调度 `taskId` 出发，离线展开：
 
 ```text
@@ -21,7 +23,7 @@ candidate/WRITE bridge；producer index 不重新决定递归集合。
 ## 运行
 
 ```text
-npm run reconcile-multi-hop -- \
+npm run addon:task-lineage:multi-hop -- \
   --task-id <root-task-id> \
   --data-root <input-pack-root> \
   --producer-index <producer-index.json> \
@@ -36,7 +38,7 @@ npm run reconcile-multi-hop -- \
 多个根任务可以使用批量入口，避免每个根任务重复扫描整套 Task/Table Pack：
 
 ```text
-npm run reconcile-multi-hop:batch -- \
+npm run addon:task-lineage:multi-hop-batch -- \
   --task-ids <task-id-1,task-id-2,...> \
   --data-root <input-pack-root> \
   --producer-index <producer-index.json> \
@@ -52,7 +54,7 @@ npm run reconcile-multi-hop:batch -- \
 离线 Input Pack 不完整、而表详情可能提供关联调度任务时，使用 autofill 外层编排：
 
 ```text
-npm run reconcile-multi-hop:autofill -- \
+npm run addon:task-lineage:multi-hop:autofill -- \
   --task-id <root-task-id> \
   --data-root <input-pack-root> \
   --max-depth 3 --max-tasks 1000 --max-edges 10000 \
@@ -107,10 +109,10 @@ Task Pack 后会固定到新的 fingerprint 目录，旧缓存不被覆盖。可
 `throughput` 入口：
 
 ```text
-npm run reconcile-multi-hop:bounded -- <与单根入口相同的参数>
-npm run reconcile-multi-hop:batch:bounded -- <与批量入口相同的参数>
-npm run reconcile-multi-hop:throughput -- <与单根入口相同的参数>
-npm run reconcile-multi-hop:batch:throughput -- <与批量入口相同的参数>
+npm run addon:task-lineage:multi-hop-bounded -- <与单根入口相同的参数>
+npm run addon:task-lineage:multi-hop-batch-bounded -- <与批量入口相同的参数>
+npm run addon:task-lineage:multi-hop:throughput -- <与单根入口相同的参数>
+npm run addon:task-lineage:multi-hop-batch:throughput -- <与批量入口相同的参数>
 ```
 
 批量入口按唯一访问 Task 复用解析结果和按需 DDL Schema，不会为每个 root
@@ -122,7 +124,7 @@ npm run reconcile-multi-hop:batch:throughput -- <与批量入口相同的参数>
 需要先估算一批根任务跑 multi-hop 会涉及多少缺失 Input Pack 时，使用 closure audit：
 
 ```text
-npm run reconcile-multi-hop:closure-audit -- \
+npm run addon:task-lineage:multi-hop:closure-audit -- \
   --data-root <input-pack-root> \
   --task-category sparkIndex \
   --producer-index <producer-index.json> \
@@ -151,7 +153,7 @@ one-hop primary frontier；因此它适合决定补包范围，最终 multi-hop 
 已生成的 multi-hop JSON 可以按调度 ID 转成离线 HTML 图：
 
 ```text
-npm run visualize-multi-hop -- \\
+npm run addon:task-lineage:visualize-multi-hop -- \\
   --task-id 181058 \\
   --artifact-dir <multi-hop-output-dir> \\
   --output <lineage.html>
@@ -163,7 +165,7 @@ npm run visualize-multi-hop -- \\
 也可以直接传单个 JSON：
 
 ```text
-npm run visualize-multi-hop -- \\
+npm run addon:task-lineage:visualize-multi-hop -- \\
   --task-id 181058 \\
   --artifact <reconcile-multi-181058.json>
 ```

@@ -25,14 +25,14 @@ import {
 import {
   reconcileOneHop,
   type OneHopReconciliationResult,
-} from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/one-hop/reconcile-one-hop.ts";
 import {
   reconcileMultiHopBatch,
   reconcileMultiHop,
   validateMultiHopReconciliation,
-} from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
-import { buildTaskReadEvidenceRepository } from "../scripts/reconcile/consumer/multi-hop/task-read-evidence.ts";
-import type { TerminalTableConfig } from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/multi-hop/reconcile-multi-hop.ts";
+import { buildTaskReadEvidenceRepository } from "../scripts/addons/task-lineage/reconcile/consumer/multi-hop/task-read-evidence.ts";
+import type { TerminalTableConfig } from "../scripts/reconcile/shared/terminal-table-config.ts";
 import { writeHoraeRelationCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const FIXED_NOW = "2026-08-23T08:00:00.000Z";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PhysicalFieldExpansion } from "../../scripts/reconcile/consumer/field-lineage/physical-field-expander.ts";
+import type { PhysicalFieldExpansion } from "../../scripts/addons/task-lineage/reconcile/consumer/field-lineage/physical-field-expander.ts";
 import { guardOccurrenceExactPhysicalExpansion } from "../../scripts/reconcile/consumer/target-field-causal-slice/strict-physical-expansion.ts";
 
 const field = {

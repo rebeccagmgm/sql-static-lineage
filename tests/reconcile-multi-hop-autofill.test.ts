@@ -10,11 +10,11 @@ import {
 import {
   producerTaskIdsFromTableResponse,
   runMultiHopAutofill,
-} from "../scripts/reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/multi-hop/reconcile-multi-hop-autofill.ts";
 import {
   loadTerminalTableConfig,
   matchingTerminalRole,
-} from "../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+} from "../scripts/reconcile/shared/terminal-table-config.ts";
 import { readHoraeRelationCache } from "../scripts/evidence/schedule-evidence-cache.ts";
 
 const FIXED_NOW = "2026-08-26T08:00:00.000Z";

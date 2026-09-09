@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { UnionContinuationIndexCandidate } from "../../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
-import { applyScheduleTiebreak } from "../../../../scripts/project-graph/field-evidence-v1/continuation/rules/schedule-tiebreak.ts";
-import { continuationCandidateFromIndex } from "../../../../scripts/project-graph/field-evidence-v1/continuation/types.ts";
-import { DEFAULT_CONTINUATION_POLICY } from "../../../../scripts/project-graph/field-evidence-v1/continuation/policy.ts";
-import type { ContinuationPorts } from "../../../../scripts/project-graph/field-evidence-v1/continuation/ports.ts";
+import { applyScheduleTiebreak } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/rules/schedule-tiebreak.ts";
+import { continuationCandidateFromIndex } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/types.ts";
+import { DEFAULT_CONTINUATION_POLICY } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/policy.ts";
+import type { ContinuationPorts } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/ports.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
-} from "../../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
+} from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/schedule-preference.ts";
 
 function indexCandidate(
   overrides: Partial<UnionContinuationIndexCandidate> = {},

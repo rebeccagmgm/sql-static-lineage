@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createContinuationPorts } from "../../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
+import { createContinuationPorts } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query-harness.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
-} from "../../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
+} from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/schedule-preference.ts";
 
 describe("continuation read scope from facts bundle", () => {
   it("builds read scope when facts bundle is present", () => {

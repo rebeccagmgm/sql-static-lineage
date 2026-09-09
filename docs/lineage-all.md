@@ -1,5 +1,7 @@
 # 统一血缘流水线
 
+> 状态：早期聚合实验入口，现归 `scripts/addons/task-lineage/`；不再作为整套系统的正式统一流水线。
+
 `lineage:all` 将一个或多个任务串成同一条证据流水线：
 
 1. Input Pack 自动补齐（仅做任务/表的输入闭包，不产出 One-hop/Multi-hop）；
@@ -17,7 +19,7 @@
 示例：
 
 ```powershell
-npm run lineage:all -- --task-ids 155015,181058,176827,209119 `
+npm run addon:task-lineage:all -- --task-ids 155015,181058,176827,209119 `
   --data-root "E:\02_area\股衍数据-数据cookbook\sql-static-lineage-data" `
   --with-fields
 ```

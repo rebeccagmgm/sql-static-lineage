@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { UnionContinuationIndexCandidate } from "../../../../scripts/reconcile/consumer/target-table-upstream-causal-closure/union-continuation-candidate-source.ts";
-import { applyContinuationRules } from "../../../../scripts/project-graph/field-evidence-v1/continuation/pipeline.ts";
-import type { ContinuationPorts } from "../../../../scripts/project-graph/field-evidence-v1/continuation/ports.ts";
+import { applyContinuationRules } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/pipeline.ts";
+import type { ContinuationPorts } from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/continuation/ports.ts";
 import {
   createHoraeScheduleRelationLookupFromScheduleEdges,
-} from "../../../../scripts/project-graph/field-evidence-v1/schedule-preference.ts";
+} from "../../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/schedule-preference.ts";
 
 function indexCandidate(
   overrides: Partial<UnionContinuationIndexCandidate> = {},

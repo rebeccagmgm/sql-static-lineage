@@ -1,5 +1,7 @@
 # 表级单跳对账器
 
+> 状态：早期实验能力，现归 `scripts/addons/task-lineage/`；不属于正式 data-graph 生产路径。
+
 `reconcile-one-hop(taskId)` 只回答当前任务的直接上一跳：
 
 ```text
@@ -9,16 +11,16 @@
 ## 入口
 
 ```text
-npm run reconcile-one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>]
+npm run addon:task-lineage:one-hop -- --task-id <taskId> --data-root <input-pack-root> [--producer-index <index.json>] [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>]
 
 # 发现缺失父任务后自动补采 Input Pack、重建索引并重跑
-npm run reconcile-one-hop:autofill -- --task-id <taskId> --data-root <input-pack-root> --producer-index <index.json> [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>] [--force]
+npm run addon:task-lineage:one-hop-autofill -- --task-id <taskId> --data-root <input-pack-root> --producer-index <index.json> [--terminal-table-config <path>] [--output <result.json>] [--summary-output <summary.json>] [--force]
 ```
 
 处理多个根任务时，使用批量入口复用一次 Table catalog；需要严格校验 input fingerprint 时显式加开关：
 
 ```text
-npm run reconcile-one-hop:batch -- \
+npm run addon:task-lineage:one-hop-batch -- \
   --task-ids <task-id-1,task-id-2,...> \
   --data-root <input-pack-root> \
   --producer-index <index.json> \

@@ -10,7 +10,7 @@ import {
   DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   loadTerminalTableConfig,
   matchingTerminalRole,
-} from "../consumer/multi-hop/terminal-table-config.ts";
+} from "./terminal-table-config.ts";
 
 export const NO_SQL_TASK_CATEGORIES: ReadonlySet<string> = new Set([
   "checkdbflag",

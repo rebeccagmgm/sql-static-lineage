@@ -7,8 +7,8 @@ import {
   resolveMultiHopArtifactPath,
   visualizeMultiHop,
   type MultiHopArtifact,
-} from "../scripts/visualize/multi-hop-visualize.ts";
-import { buildMultiHopVizModel } from "../scripts/visualize/multi-hop-viz-model.ts";
+} from "../scripts/addons/task-lineage/visualize/multi-hop-visualize.ts";
+import { buildMultiHopVizModel } from "../scripts/addons/task-lineage/visualize/multi-hop-viz-model.ts";
 
 function artifact(): MultiHopArtifact {
   return {

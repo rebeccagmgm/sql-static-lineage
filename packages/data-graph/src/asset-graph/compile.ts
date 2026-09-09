@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { TaskLocalProjection } from "../../../../scripts/project-graph/task-local/contract.ts";
-import type { TerminalTableConfig } from "../../../../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+import type { TerminalTableConfig } from "../../../../scripts/reconcile/shared/terminal-table-config.ts";
 import { terminalNodeDetails } from "./terminal-policy.ts";
 
 export interface AssetNode {

@@ -5,8 +5,8 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { runInputPackMachineFacts } from "../../scripts/machine-facts/input-pack-machine-facts.ts";
-import { reconcileFieldLineage } from "../../scripts/reconcile/consumer/field-lineage/field-lineage.ts";
-import { visualizeFieldLineage } from "../../scripts/visualize/field-lineage-visualize.ts";
+import { reconcileFieldLineage } from "../../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage.ts";
+import { visualizeFieldLineage } from "../../scripts/addons/task-lineage/visualize/field-lineage-visualize.ts";
 import {
   createDefaultHiveSchemaFixture,
   createSelfJoinFixture,

@@ -8,7 +8,7 @@ import {
   type PhysicalFieldExpander,
   type PhysicalFieldExpanderContext,
   type PhysicalFieldExpansionRequest,
-} from "../field-lineage/physical-field-expander.ts";
+} from "../../../addons/task-lineage/reconcile/consumer/field-lineage/physical-field-expander.ts";
 import type {
   PhysicalFieldResolution,
   PhysicalFieldResolutionContext,
@@ -46,13 +46,13 @@ export type {
   PhysicalFieldExpanderTaskPack,
   PhysicalFieldExpanderTaskPackLookup,
   PhysicalFieldProducerExpansion,
-} from "../field-lineage/physical-field-expander.ts";
+} from "../../../addons/task-lineage/reconcile/consumer/field-lineage/physical-field-expander.ts";
 export type {
   PhysicalFieldResolution,
   PhysicalFieldResolutionContext,
   PhysicalFieldResolutionFailure,
 } from "../../shared/physical-field-resolver.ts";
-export type { PhysicalFieldIdentity } from "../field-lineage/field-lineage-contract.ts";
+export type { PhysicalFieldIdentity } from "../../../addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 export const canonicalEvidenceAdapter: CanonicalEvidenceAdapter = Object.freeze({
   resolvePhysicalInputField,

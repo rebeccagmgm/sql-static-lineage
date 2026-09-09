@@ -12,8 +12,8 @@ import {
   fieldEvidenceGoldenRequired,
   fieldEvidenceQueryRoots,
   primaryFinalWrite,
-} from "../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
-import type { FieldImpactResult } from "../../../scripts/project-graph/field-evidence-v1/impact-result-contract.ts";
+} from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query-harness.ts";
+import type { FieldImpactResult } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-result-contract.ts";
 import type { TaskLocalProjection } from "../../../scripts/project-graph/task-local/contract.ts";
 
 const FIXTURE_ROOT = join(

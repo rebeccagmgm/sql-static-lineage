@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   fieldEvidenceGoldenRequired,
   fieldEvidenceQueryRoots,
-} from "../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
-import { runFieldEvidenceQuery } from "../../../scripts/project-graph/field-evidence-v1/query-cli.ts";
-import { validateFieldImpactResult } from "../../../scripts/project-graph/field-evidence-v1/impact-result-contract.ts";
+} from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query-harness.ts";
+import { runFieldEvidenceQuery } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/query-cli.ts";
+import { validateFieldImpactResult } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-result-contract.ts";
 
 const roots = fieldEvidenceQueryRoots({ profile: "greek-legacy" });
 if (!roots && fieldEvidenceGoldenRequired()) {

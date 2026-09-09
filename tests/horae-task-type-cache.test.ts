@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { prefetchHoraeRelations } from "../scripts/pipeline/lineage-all.ts";
+import { prefetchHoraeRelations } from "../scripts/addons/task-lineage/pipeline/lineage-all.ts";
 import {
   horaeTaskTypeCachePath,
   readHoraeTaskTypeCache,

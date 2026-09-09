@@ -17,13 +17,13 @@ import {
 import {
   canonicalizeFieldLineageArtifact,
   validateFieldLineageArtifact,
-} from "../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 import {
   reconcileFieldLineage,
   valueContributionInputFields,
-} from "../scripts/reconcile/consumer/field-lineage/field-lineage.ts";
-import { formatFieldLineageSummary } from "../scripts/reconcile/consumer/field-lineage/format-field-lineage.ts";
-import { runFieldLineageCli } from "../scripts/reconcile/consumer/field-lineage/reconcile-field-lineage.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage.ts";
+import { formatFieldLineageSummary } from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/format-field-lineage.ts";
+import { runFieldLineageCli } from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/reconcile-field-lineage.ts";
 import {
   createSyntheticFieldLineageInputPack,
   syntheticTableLineage,

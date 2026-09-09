@@ -10,7 +10,7 @@ import {
   publishStagedTask,
   runLineageAll,
   prefetchHoraeRelations,
-} from "../scripts/pipeline/lineage-all.ts";
+} from "../scripts/addons/task-lineage/pipeline/lineage-all.ts";
 import {
   readHoraeRelationCache,
   scheduleEvidenceCachePath,

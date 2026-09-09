@@ -29,9 +29,9 @@ describe("target-field causal-slice module boundary", () => {
 
   it("no longer keeps field-lineage compatibility shims for semantic modules", () => {
     for (const relativePath of [
-      "scripts/reconcile/consumer/field-lineage/semantic-dependency-contract.ts",
-      "scripts/reconcile/consumer/field-lineage/operator-support-matrix.ts",
-      "scripts/reconcile/consumer/field-lineage/semantic-dependency-normalizer.ts",
+      "scripts/addons/task-lineage/reconcile/consumer/field-lineage/semantic-dependency-contract.ts",
+      "scripts/addons/task-lineage/reconcile/consumer/field-lineage/operator-support-matrix.ts",
+      "scripts/addons/task-lineage/reconcile/consumer/field-lineage/semantic-dependency-normalizer.ts",
     ]) {
       expect(existsSync(relativePath), relativePath).toBe(false);
     }

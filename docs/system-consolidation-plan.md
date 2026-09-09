@@ -1,6 +1,6 @@
 # 整套系统统一与精简方案
 
-日期：2026-09-09。状态：**第 1 阶段、2A、字段归属检查点 2B、continuation/连接归属检查点 2C、旧 project-graph query-index 产品退出检查点均已完成并通过独立验收；未进入其他产品删除或生产发布，整套统一仍未完成**。
+日期：2026-09-09。状态：**第 1 阶段、2A、字段归属检查点 2B、continuation/连接归属检查点 2C、旧 project-graph query-index 产品退出及 task-lineage add-on 隔离检查点均已完成自检；前五项已通过独立验收，add-on 隔离等待独立验收；未生成或发布生产图，整套统一仍未完成**。
 
 本文是唯一的整套收敛方案和盘点清单。第 1 阶段只读取源码、查询当前已发布的 data-graph 并更新本文；2A 仅迁移调度证据缓存模块及 import；2B 仅迁移字段解释共享内核与 task-local 投影 helper 的归属；2C 仅迁移 continuation/index 与 Neo4j 连接实现的归属。三个检查点都没有改变图语义，也没有生成或发布生产投影；2B、2C 只在仓库外临时目录生成了验证样例。
 
@@ -24,7 +24,7 @@
 本次推荐不是把全部旧能力搬进新目录：
 
 - 保留并强化真正的事实主链、任务局部投影、读次/写次接续和 data-graph 发布查询。
-- 旧 one-hop、multi-hop、field-lineage 和 `lineage:all` 只迁走仍被正式主线引用的证据/字段解释函数；其 per-root 产物、兼容分支、自动补包/回填和独立查看器逐项做能力决策，不能因“不默认迁移”自动获得删除许可。
+- one-hop、multi-hop、per-root field-lineage、field-evidence 查询、自动补包/闭包、`lineage:all` 和专属查看器已明确为早期 target-oriented 实验链，整体归入 `scripts/addons/task-lineage/`，不再属于正式 data-graph 生产路径。其现有能力和产物合同暂保留为显式 opt-in add-on；是否继续精简其中低价值分支须按使用证据单独裁决，不因搬入 add-on 自动永久保留。
 - 旧 project-graph 产品链先迁走 asset-graph 正在复用的 continuation 内核和 Neo4j 连接边界；旧投影、旧 file/query-index 产品及九项旧查询须按算法、Facts、索引/发布生命周期和仓库外消费者分别裁决，不能仅以“有 standalone CLI”认定重复。
 - target-field causal slice、target-table causal closure / overlay 与 Inventory Map 有独有能力，但当前缺少真实用户旅程和收益证据，暂不裁决，更不默认纳入高成本迁移。
 - 业务知识正文可以保留为内容资产，但不因此保留第二套图、第二套索引和第二套前端。
@@ -231,7 +231,7 @@ scripts/visualize/horae-relation-tree-explorer.ts
 
 ## 7. 第 2 阶段可执行范围
 
-第 2 阶段首先执行 **2A：调度证据缓存归属迁移**，现已完成并通过独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不删除 one-hop 产品、不改缓存合同、不生成或发布 data-graph。随后单独执行的 2B 与 2C 分别是 §8.1 第 3 阶段的字段归属、continuation/连接归属检查点，两者也已通过独立验收；2C 的实施与验收见 §7.8。multi-hop 配置迁移、旧产品退出和生产发布尚未开始。
+第 2 阶段首先执行 **2A：调度证据缓存归属迁移**，现已完成并通过独立验收。它解决采集、task-local 和多个消费者反向依赖 one-hop 目录的问题，但不改缓存合同、不生成或发布 data-graph。随后单独执行的 2B 与 2C 分别完成字段归属、continuation/连接归属；旧 query-index 第二生命周期已经退出。用户随后明确把 one-hop / multi-hop / field-lineage 整条早期实验链移出正式路径，实施记录见 §7.11。生产发布尚未开始。
 
 ### 7.1 范围内基线，不要求整理全仓
 
@@ -379,13 +379,24 @@ tests/schedule-detail-cache.test.ts
 - 最终自检和独立复跑同一 viewer 测试均为 1 file / 7 tests passed，其中既有 full-field catalog、局部上游图、控制注释和重复 snapshot fail-closed 用例均继续执行；这只证明模型和生成 HTML 保留结构，不是浏览器交互验收。本轮没有提交、推送、发布、重建图或删除历史页面/产物。
 - 本轮结论是 **未实施 topology / field viewer 产品退出**，而不是“viewer 退役通过”。最小下一步应先在正式 React 承接并人工验收两条必要旅程：调度一跳及其证据；字段精确绑定中的 write observation、partition/UNKNOWN 和 evidence locator。验收成立后再删除重复静态呈现；target causal 与离线九项查询仍需各自决策门。由于本轮没有消除维护职责，整体 8–13 工程日粗估不下调，且正式前端承接成本仍落在第 5 阶段范围内。
 
+### 7.11 task-lineage add-on 隔离检查点实施与自检记录（2026-09-09）
+
+- 用户明确裁决 one-hop、multi-hop、per-root field-lineage 和其 target-oriented 配套链为早期实验，不删除但退出正式路径。开工 HEAD 为 `651d4cc3439ed5f1ba9d1119385b0f0a30dde765`，暂存区为空；全局已有 193 项 tracked/untracked 状态。仓库外基线目录为 `C:\Users\13246\AppData\Local\Temp\sql-static-lineage-task-lineage-addon-20260909-162521`，保存了 92 个范围文件的原文、SHA-256、全局状态、工作区 patch 和空 index patch。提交前本检查点精确暂存 94 个文件；其余工作区状态继续留在工作区，未被整理或带入。实施未重建、发布或修改生产 data-graph。
+- 41 个既有 add-on 文件整体迁入 `scripts/addons/task-lineage/`：three reconcile products、field-evidence-v1、Input Pack closure、`lineage:all`、anchor upstream expansion、gold-case preflight 和 two HTML visualizers。另新增 add-on 边界 README 与 `project-task-local` upstream-expansion wrapper；旧目录不留转发壳。产物名称、默认输出路径、schema、canonical hash、终点和证据状态语义没有改动。
+- 正式路径仍需的最小合同没有塞进 add-on：terminal table config、source endpoint boundary config 和 producer table identity 分别归入 `scripts/reconcile/shared/`；原实现除必要相对 import 外保持正文一致。调度证据缓存、2B 字段内核、2C continuation/Neo4j 内核维持既有正式归属。
+- `project-task-local` 的普通执行不再静态加载上游闭包实验。`--expand-upstream` 只有通过 `addon:task-lineage:project-task-local` 注入 add-on expander 才可执行；缺少注入时 fail closed 为 `TASK_LINEAGE_ADDON_REQUIRED`。所有产品入口改为 `addon:task-lineage:*`，所有专属测试入口改为 `test:addon:task-lineage:*`；根默认 `npm test` 和 `test:task-local-projection` 不再把 add-on 套件作为正式主线门禁。
+- 固定扫描确认 `packages/data-graph/src`、`scripts/input`、`scripts/machine-facts`、`scripts/plans`、正式 task-local/asset-graph、`scripts/reconcile/shared` 和 `scripts/query` 对 `scripts/addons/task-lineage` 的源码 import 为 0。target-field causal slice 与 target-table causal closure 仍会显式消费 add-on 的 legacy artifact/expander；它们本身不属于正式 data-graph 主线，本检查点不把高成本 target-causal 产品一并搬迁或删除。
+- 通过：共享 boundary 2 files / 5 tests，正式 workspace/task-local CLI 2 files / 13 tests，field-lineage 8 files / 125 passed / 1 todo，multi-hop autofill 6 tests，Input Pack closure 4 tests，`lineage:all` 16 tests，one-hop 定向 3 tests，multi-hop 定向 4 tests，两个 visualizer 共 9 tests，data-graph terminal/source/publication snapshots 12 tests，根 terminal traversal 3 tests。terminal 配置迁移前后字节一致；source-boundary 与 producer identity 仅相对 import 变化。
+- 既有门禁未掩盖：完整 one-hop / multi-hop 文件仍在 Windows Vitest worker 中异常退出，两者均为 `-1073740791`；定向核心用例均通过。field-evidence 为 81 passed / 3 failed，并有 1 个 suite 因现有 writer-catalog 路径无法打开失败；其中 source-read-occurrence 的 setop 路由断言是 2B 已记录同基线失败。正式 task-local 为 105 passed / 5 failed，仍是现有 contract 构造顺序与 real-Facts golden 差异。根 typecheck 仍只有既有 `tests/run-src-table-template-rebuild.test.ts:3` TS7016。
+- 退出影响是旧的 unprefixed npm 产品命令不再存在，仓库外调用者必须改用 `addon:task-lineage:*`。本次消除了正式主线对这条实验实现的运行时/类型依赖和根命令归属混淆，但没有减少 add-on 内部 41 个文件的维护成本；下一步只有在真实使用证据不足且退出影响可接受时，才继续删除 autofill、throughput 别名或旧 per-root 产物。
+
 ## 8. 最小有效收敛方案
 
 ### 8.1 先做什么
 
 1. **第 2 阶段：只做 schedule evidence cache 归属迁移（0.5–1.5 日）**。这是调用面已列全、合同可冻结、价值明确的最小解耦；完成后先用实际 diff 和测试成本校准后续估算。
 2. **第 3 阶段：字段解释与 continuation/连接归属（2–3 日，待 2A 校准）**。按 §7.3 逐条处理直接和间接依赖；每个检查点只验收指定依赖，不提前宣称全部归零。
-3. **第 4 阶段：能力决策与有条件退出（1–3 日，不含高成本迁移）**。旧 query-index 的第二生命周期已退出；继续对 one-hop 自动补包、multi-hop autofill/audit、`lineage:all`、standalone union 文件合同和九项旧文件查询分别作“承接/明确退出/继续保留”决策。只有已有消费者、替代路径和退出影响闭合的项才能删除；无独有能力的 tmp wrapper 可优先退出。
+3. **第 4 阶段：能力决策与有条件退出（1–3 日，不含高成本迁移）**。旧 query-index 的第二生命周期已退出；task-lineage 实验链也已整体隔离为 add-on。后续只对 add-on 内的自动补包、multi-hop autofill/audit、throughput 别名、`lineage:all`、standalone union 文件合同和九项旧文件查询分别作“继续保留/明确退出”决策，不再把它们迁回正式主线。只有消费者、替代路径和退出影响闭合的项才能删除。
 4. **第 5 阶段：统一发布和消费（1.5–2.5 日）**。正式命令目标只保留 collect、Facts、prepare、publish、query、serve、UI；HTTP 与 React UI 的 table/field 旅程闭环。schedule 旅程要么在 UI 承接并人工验收，要么由 owner 明确接受退出，之后才能删对应旧查看器。
 5. **第 6 阶段：选择性知识/文档/测试收敛（1–2 日）**。只迁被验证需要的 task knowledge 或 catalog 能力；更新正式运行文档和分层测试入口。
 6. **第 7 阶段：隔离重建与整体验收（1–2 日）**。小批生成、增量发布、CLI/HTTP/UI 真实旅程、无悬空 imports/commands、无第二正式链，最后一次受控完整发布验收。
@@ -394,7 +405,7 @@ tests/schedule-detail-cache.test.ts
 
 - 不把 target causal closure/overlay 默认迁入主图，也不因暂不迁移就默认删除。先用 2–3 个真实问题比较普通向下影响与多通道状态/witness/UNKNOWN 解释，再决定保留、迁移最小能力或明确接受退出影响。
 - 不把 Inventory Map 的主题分类、SQLite 索引、页面和全部知识功能整体搬进 React UI，也不先删。先对照“库存发现、字段加工、人工知识”三条旅程，只迁持续使用的最小能力，其余逐项记录退出影响。
-- 不因 query-index 已退出就连带删除自动补包/自动回填、standalone union 文件能力或九项文件查询；这些能力仍需分别核对仓库内外消费者、替代路径和退出影响。
+- 不因 task-lineage 已进入 add-on 就宣称其中所有能力都值得长期保留，也不立即删除自动补包/自动回填、standalone union 文件能力或九项文件查询；这些能力仍需分别核对仓库内外消费者、替代路径和退出影响。
 - 不整理全部 survey/fill 脚本和 8,054 个未跟踪文件。先有 owner、最后使用、调用者和可重建性证据。
 - 不批量重写或删除 docs、OpenSpec 与历史 HTML；只修改正式入口索引和已退出产品运行说明。
 
@@ -415,7 +426,7 @@ tests/schedule-detail-cache.test.ts
 
 原估算 6–10 工程日需要上调。原因不是文件多，而是确认了三条真实反向依赖（41 个非测试 schedule-cache 调用者、task-local 对旧字段产品的直接/间接复用、asset-graph 对旧 project-graph continuation/连接器及 multi-hop 配置的复用），且关键 UI/asset-graph 源码仍未跟踪或未提交。
 
-- **推荐的最小有效收敛**：第 1 阶段已完成；后续 **8–13 工程日仅是粗估区间，不是承诺排期**，须在第 2 阶段 2A 完成后按真实调用修改、测试和脏基线成本重新校准。
+- **推荐的最小有效收敛**：第 1 阶段、2A/2B/2C、旧 query-index 退出和 task-lineage add-on 隔离已完成；剩余正式 UI/HTTP 旅程、运行文档与分层门禁、隔离重建和总体验收约 **4–7 工程日**。这是剩余量粗估，不含下表高成本可选工作。
 - owner 核对和脏工作树基线能快速固定时接近下界。
 - 高成本可选工作不计入上述数字；若 target causal 与 Inventory Map 都完整迁移，另加 **6–10 工程日**。
 

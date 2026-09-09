@@ -3,8 +3,8 @@ import {
   buildFieldLineageImpactGraph,
   renderFieldLineageImpactTree,
   renderFieldLineageHtml,
-} from "../scripts/visualize/field-lineage-visualize.ts";
-import type { FieldLineageArtifact, FieldLineageNode } from "../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+} from "../scripts/addons/task-lineage/visualize/field-lineage-visualize.ts";
+import type { FieldLineageArtifact, FieldLineageNode } from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 function field(qualifiedName: string, column: string) {
   return {

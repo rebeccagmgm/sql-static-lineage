@@ -3,10 +3,13 @@ import { join, resolve } from "node:path";
 import { resolveWorkspacePaths } from "../../config/workspace-paths.ts";
 
 import { canonicalJson } from "../../machine-facts/machine-facts-contract.ts";
-import { expandAnchorUpstreamTaskIds } from "./anchor-upstream-expansion.ts";
 import { selectTaskLocalBatchTaskIds } from "./batch-selection.ts";
 import { projectTaskLocalBatch } from "./project-task-local-batch.ts";
 import { taskLocalProjectionVersionPath } from "./projection-cache.ts";
+import type {
+  TaskLocalUpstreamExpander,
+  TaskLocalUpstreamExpansionResult,
+} from "./upstream-expansion-port.ts";
 
 export interface ProjectTaskLocalCliOptions {
   readonly dataRoot: string;
@@ -25,6 +28,10 @@ export interface ProjectTaskLocalCliOptions {
   readonly alsoTaskIds: readonly string[];
   readonly prepareFacts: boolean;
   readonly generatedAt?: string;
+}
+
+export interface ProjectTaskLocalCliDependencies {
+  readonly expandAnchorUpstreamTaskIds?: TaskLocalUpstreamExpander;
 }
 
 function option(args: readonly string[], name: string): string | undefined {
@@ -116,7 +123,10 @@ export function parseProjectTaskLocalCli(
   };
 }
 
-export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
+export function runProjectTaskLocalCli(
+  options: ProjectTaskLocalCliOptions,
+  dependencies: ProjectTaskLocalCliDependencies = {},
+): {
   readonly batchManifestPath: string;
   readonly taskIds: readonly string[];
   readonly cache: { readonly hits: number; readonly misses: number };
@@ -127,10 +137,15 @@ export function runProjectTaskLocalCli(options: ProjectTaskLocalCliOptions): {
     taskIds: options.taskIds,
     alsoTaskIds: options.alsoTaskIds,
   });
-  let upstreamExpansion: ReturnType<typeof expandAnchorUpstreamTaskIds> | null = null;
+  let upstreamExpansion: TaskLocalUpstreamExpansionResult | null = null;
   const batchTaskIds = options.expandUpstream
     ? (() => {
-        upstreamExpansion = expandAnchorUpstreamTaskIds({
+        if (!dependencies.expandAnchorUpstreamTaskIds) {
+          throw new Error(
+            "TASK_LINEAGE_ADDON_REQUIRED: use npm run addon:task-lineage:project-task-local",
+          );
+        }
+        upstreamExpansion = dependencies.expandAnchorUpstreamTaskIds({
           dataRoot: options.dataRoot,
           anchorTaskIds: selection.anchorTaskIds,
           writerCatalogPath: options.writerCatalogPath,

@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 import { writeTableInput, writeTaskInput } from "../scripts/input/shared/input-pack.ts";
 import { runInputPackMachineFacts } from "../scripts/machine-facts/input-pack-machine-facts.ts";
 import { defaultWriterCatalogPath } from "../scripts/query/writer-catalog.ts";
-import { inputPackTaskBatches } from "../scripts/reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
+import { inputPackTaskBatches } from "../scripts/addons/task-lineage/reconcile/consumer/one-hop/reconcile-one-hop-autofill.ts";
 import {
   runInputPackClosure,
   runProjectInputPackClosure,
-} from "../scripts/pipeline/input-pack-closure.ts";
+} from "../scripts/addons/task-lineage/pipeline/input-pack-closure.ts";
 
 const FIXED_NOW = "2026-08-27T00:00:00.000Z";
 

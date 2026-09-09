@@ -10,7 +10,7 @@ import {
 	type DatasetIoRecord,
 } from "../machine-facts/machine-facts-contract.ts";
 import { readJsonlRecords } from "../machine-facts/jsonl-store.ts";
-import { resolveProducerTableIdentity } from "../project-graph/field-evidence-v1/continuation/table-identity.ts";
+import { resolveProducerTableIdentity } from "../reconcile/shared/producer-table-identity.ts";
 import type { ProducerTableIdentity } from "../reconcile/producer/producer-index.ts";
 import { assertOutputOutsideDataRoot } from "../reconcile/producer/producer-index.ts";
 

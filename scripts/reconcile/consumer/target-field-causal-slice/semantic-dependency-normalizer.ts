@@ -42,7 +42,7 @@ import {
 import {
   physicalFieldKey,
   type PhysicalFieldIdentity,
-} from "../field-lineage/field-lineage-contract.ts";
+} from "../../../addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 /** A resolved Plan Facts column can be upgraded to the shared physical identity. */
 export interface SemanticPhysicalFieldResolver {

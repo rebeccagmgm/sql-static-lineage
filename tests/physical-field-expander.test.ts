@@ -4,13 +4,13 @@ import {
   createPhysicalFieldExpander,
   type PhysicalFieldEvidenceMode,
   type PhysicalFieldExpanderTaskPack,
-} from "../scripts/reconcile/consumer/field-lineage/physical-field-expander.ts";
+} from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/physical-field-expander.ts";
 import type { CurrentBundleLoad } from "../scripts/query/current-task-bundle.ts";
 import type {
   PhysicalTableCatalog,
   PhysicalTableCatalogEntry,
 } from "../scripts/machine-facts/input-pack-machine-facts.ts";
-import type { PhysicalFieldIdentity } from "../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import type { PhysicalFieldIdentity } from "../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 function table(qualifiedName: string, columns: readonly string[]): PhysicalTableCatalogEntry {
   return {

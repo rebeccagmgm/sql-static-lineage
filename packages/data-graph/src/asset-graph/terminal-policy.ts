@@ -8,7 +8,7 @@ import {
   matchingTerminalRole,
   DEFAULT_TERMINAL_TABLE_CONFIG_PATH,
   type TerminalTableConfig,
-} from "../../../../scripts/reconcile/consumer/multi-hop/terminal-table-config.ts";
+} from "../../../../scripts/reconcile/shared/terminal-table-config.ts";
 import type { UnionContinuationIndex } from "../continuation/continuation-index.ts";
 
 export interface PolicyTerminalRead {

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { runFieldEvidenceStopLoss } from "../../../scripts/project-graph/field-evidence-v1/stop-loss-cli.ts";
+import { runFieldEvidenceStopLoss } from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/stop-loss-cli.ts";
 import {
   fieldEvidenceGoldenRequired,
   fieldEvidenceQueryRoots,
-} from "../../../scripts/project-graph/field-evidence-v1/impact-query-harness.ts";
+} from "../../../scripts/addons/task-lineage/project-graph/field-evidence-v1/impact-query-harness.ts";
 
 const roots = fieldEvidenceQueryRoots({ profile: "greek-legacy" });
 if (!roots && fieldEvidenceGoldenRequired()) {

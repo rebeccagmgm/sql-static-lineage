@@ -21,8 +21,8 @@ import {
   runTask,
 } from "../../scripts/machine-facts/machine-facts.ts";
 import * as planAdapter from "../../scripts/plans/plan-adapter.ts";
-import type { PhysicalFieldIdentity } from "../../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
-import { physicalFieldKey } from "../../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import type { PhysicalFieldIdentity } from "../../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import { physicalFieldKey } from "../../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 import { loadCurrentTaskBundle } from "../../scripts/query/current-task-bundle.ts";
 import {
   makeSemanticOccurrenceScope,

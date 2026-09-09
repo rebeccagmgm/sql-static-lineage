@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "roles": {
+    "TITANS_SOURCE": {
+      "qualifiedNamePrefixes": ["titans_dm.", "titans_refdata."]
+    },
+    "INGEST_SOURCE": {
+      "consumerTaskCategorySuffixes": ["2hive"]
+    }
+  }
+}

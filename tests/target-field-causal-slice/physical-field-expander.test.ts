@@ -13,7 +13,7 @@ import type {
   PhysicalTableCatalog,
   PhysicalTableCatalogEntry,
 } from "../../scripts/machine-facts/input-pack-machine-facts.ts";
-import type { PhysicalFieldIdentity } from "../../scripts/reconcile/consumer/field-lineage/field-lineage-contract.ts";
+import type { PhysicalFieldIdentity } from "../../scripts/addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 const sourceTable = table("demo.source", ["src_a"]);
 const consumerTable = table("demo.root", ["out_a"]);

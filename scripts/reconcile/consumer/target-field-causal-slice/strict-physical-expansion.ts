@@ -5,8 +5,8 @@ import {
 import type {
   PhysicalFieldExpansion,
   PhysicalFieldProducerExpansion,
-} from "../field-lineage/physical-field-expander.ts";
-import type { PhysicalFieldIdentity } from "../field-lineage/field-lineage-contract.ts";
+} from "../../../addons/task-lineage/reconcile/consumer/field-lineage/physical-field-expander.ts";
+import type { PhysicalFieldIdentity } from "../../../addons/task-lineage/reconcile/consumer/field-lineage/field-lineage-contract.ts";
 
 function text(value: unknown): string | null {
   if (typeof value !== "string") return null;
