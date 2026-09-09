@@ -645,7 +645,7 @@ function Explorer() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="表名、任务名或 ID"
+              placeholder="技术表名、中文表说明、任务名或 ID"
             />
             <button>查找</button>
           </form>
@@ -659,6 +659,11 @@ function Explorer() {
                     ? `任务 ${n.id.replace(/^task:/, "")}`
                     : n.table}
                 </small>
+                {n.metadata?.table.description && (
+                  <small className="search-description">
+                    {n.metadata.table.description}
+                  </small>
+                )}
               </button>
             ))}
             {searchMore && (

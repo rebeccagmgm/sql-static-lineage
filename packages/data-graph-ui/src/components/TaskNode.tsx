@@ -18,6 +18,10 @@ export type TaskNodeData = LineageNodeData & {
 export function TaskNode({ data: rawData }: NodeProps) {
   const data = rawData as TaskNodeData;
   const taskId = data.raw?.taskId ?? data.raw?.id.replace(/^task:/, "") ?? "—";
+  const taskName =
+    (typeof data.raw?.detail?.taskName === "string" &&
+      data.raw.detail.taskName.trim()) ||
+    undefined;
   const ports = data.taskPorts ?? [];
   const inputs = ports.filter((port) => port.direction === "input");
   const outputs = ports.filter((port) => port.direction === "output");
@@ -39,7 +43,7 @@ export function TaskNode({ data: rawData }: NodeProps) {
   return (
     <div
       className={`task-node ${data.isAnchor ? "anchor" : ""}`}
-      title={`调度任务 ${taskId} · ${Math.max(inputs.length, outputs.length)} 条字段映射 · 点击查看加工依据`}
+      title={`${taskName ? `${taskName} · ` : ""}调度任务 ${taskId} · ${Math.max(inputs.length, outputs.length)} 条字段映射 · 点击查看加工依据`}
     >
       {ports.length ? (
         handles(inputs, "target", Position.Left)
@@ -47,6 +51,7 @@ export function TaskNode({ data: rawData }: NodeProps) {
         <Handle type="target" position={Position.Left} />
       )}
       <strong>调度 {taskId}</strong>
+      {taskName && <small className="task-node-name">{taskName}</small>}
       {data.candidateCount ? (
         <button
           className="task-candidate-badge"

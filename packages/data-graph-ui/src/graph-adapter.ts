@@ -40,6 +40,33 @@ export interface AdaptTraceOptions {
 const text = (value: unknown) =>
   typeof value === "string" && value.trim() ? value.trim() : undefined;
 
+const taskRaw = (trace: TraceResult, taskId: string): GraphNode => {
+  const taskName = text(trace.taskLabels?.[taskId]);
+  return {
+    id: `task:${taskId}`,
+    kind: "TASK",
+    taskId,
+    ...(taskName ? { label: taskName } : {}),
+    ...(taskName ? { detail: { taskName } } : {}),
+  };
+};
+
+const withSchedulerTaskName = (trace: TraceResult, node: GraphNode): GraphNode => {
+  if (node.kind !== "TASK") return node;
+  const taskId = text(node.taskId) ?? text(node.id)?.replace(/^task:/, "");
+  const taskName = taskId ? text(trace.taskLabels?.[taskId]) : undefined;
+  const { taskName: ignoredTaskName, ...detail } = node.detail ?? {};
+  return {
+    ...node,
+    ...(taskName
+      ? { label: taskName, detail: { ...detail, taskName } }
+      : { label: undefined, detail }),
+  };
+};
+
+const taskCardWidth = 210;
+const taskCardHeight = 64;
+
 function displayGroupKey(raw: GraphNode): string | undefined {
   const depth = Number(raw.depth ?? 0);
   if (raw.kind === "WRITE_FIELD") {
@@ -213,7 +240,8 @@ export function adaptTrace(
 ): { nodes: Node<LineageNodeData>[]; edges: Edge[] } {
   const highlight = relatedLineageHighlight(trace, highlightedFieldId);
   const visibleIds = visibleRawIds(trace, options);
-  const visibleNodes = trace.nodes.filter((node) => visibleIds.has(node.id));
+  const namedNodes = trace.nodes.map((node) => withSchedulerTaskName(trace, node));
+  const visibleNodes = namedNodes.filter((node) => visibleIds.has(node.id));
   const visibleEdges = trace.edges.filter(
     (edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to),
   );
@@ -230,7 +258,7 @@ export function adaptTrace(
   const terminals = new Map(
     trace.terminalNodes.map((terminal) => [terminal.nodeId, terminal]),
   );
-  const traceNodeById = new Map(trace.nodes.map((node) => [node.id, node]));
+  const traceNodeById = new Map(namedNodes.map((node) => [node.id, node]));
   const displayNodeByRawId = new Map<string, string>();
   for (const group of displayGroups)
     for (const member of group.members ?? (group.raw ? [group.raw] : []))
@@ -248,7 +276,7 @@ export function adaptTrace(
       ...depths
         .get(depth)!
         .map((group) =>
-          group.raw?.kind === "TASK" ? 132 : group.members ? 300 : 260,
+          group.raw?.kind === "TASK" ? taskCardWidth : group.members ? 300 : 260,
         ),
     );
     nextX += width + 32;
@@ -342,10 +370,11 @@ export function adaptTrace(
             depth === 0 ||
             Boolean(members?.some((member) => Number(member.depth ?? 0) === 0)),
           onFieldClick,
-          displayWidth: group.raw?.kind === "TASK" ? 132 : members ? 300 : 260,
+          displayWidth:
+            group.raw?.kind === "TASK" ? taskCardWidth : members ? 300 : 260,
           displayHeight:
             group.raw?.kind === "TASK"
-              ? 44
+              ? taskCardHeight
               : members
                 ? 92 +
                   Math.min(280, members.length * 38) +
@@ -395,7 +424,10 @@ export function adaptTrace(
       );
       const left = Math.min(input?.position.x ?? 0, output?.position.x ?? 0);
       const right = Math.max(input?.position.x ?? 0, output?.position.x ?? 0);
-      const taskX = left + 300 + Math.max(18, (right - left - 300 - 132) / 2);
+      const taskX =
+        left +
+        300 +
+        Math.max(18, (right - left - 300 - taskCardWidth) / 2);
       task = {
         id,
         type: "processingTask",
@@ -404,13 +436,13 @@ export function adaptTrace(
           y: compactTaskY(taskX, output?.position.y ?? input?.position.y ?? 42),
         },
         data: {
-          raw: { id, kind: "TASK", taskId, label: `任务 ${taskId}` },
+          raw: taskRaw(trace, taskId),
           isAnchor: false,
           highlightActive: Boolean(highlight),
           activeFieldIds: [],
           taskPorts: [],
-          displayWidth: 132,
-          displayHeight: 44,
+          displayWidth: taskCardWidth,
+          displayHeight: taskCardHeight,
         },
       };
       taskNodeById.set(id, task);
@@ -454,17 +486,14 @@ export function adaptTrace(
         },
         data: {
           raw: {
-            id: taskIdNode,
-            kind: "TASK",
-            taskId,
-            label: `任务 ${taskId}`,
+            ...taskRaw(trace, taskId),
           },
           isAnchor: false,
           highlightActive: Boolean(highlight),
           activeFieldIds: [],
           taskPorts: [],
-          displayWidth: 132,
-          displayHeight: 44,
+          displayWidth: taskCardWidth,
+          displayHeight: taskCardHeight,
         },
       };
       taskNodeById.set(taskIdNode, task);

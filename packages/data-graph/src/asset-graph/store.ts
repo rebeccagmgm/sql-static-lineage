@@ -157,13 +157,23 @@ export class AssetGraphStore {
     if (state?.state !== "READY") throw new Error("ASSET_GRAPH_NOT_PUBLISHED");
     return state;
   }
-  async search(text: string, limit = 30, offset = 0) {
+  async search(
+    text: string,
+    limit = 30,
+    offset = 0,
+    metadataIdentities: readonly {
+      platform: string;
+      dataSource: string;
+      qualifiedName: string;
+    }[] = [],
+  ) {
     await this.ready();
     const r = await this.run(
-      "MATCH (n:SLAssetNode {graphId:$graphId}) WHERE n.kind IN ['TASK','PHYSICAL_DATASET'] AND (toLower(n.label) CONTAINS $text OR n.id=$task) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit",
+      "MATCH (n:SLAssetNode {graphId:$graphId}) WHERE n.kind IN ['TASK','PHYSICAL_DATASET'] AND (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit",
       {
         text: text.toLowerCase(),
         task: `task:${text}`,
+        metadataIdentities: [...metadataIdentities],
         limit: Math.max(1, Math.min(101, Math.trunc(limit))),
         offset: Math.max(0, Math.trunc(offset)),
       },
@@ -197,7 +207,7 @@ export class AssetGraphStore {
         ? "n.table=$value"
         : "true";
     const r = await this.run(
-      `${match} WHERE ${filter} WITH DISTINCT n RETURN properties(n) AS node ORDER BY n.column,n.writeId,n.id SKIP $offset LIMIT $limit`,
+      `${match} WHERE ${filter} OPTIONAL MATCH (n)<-[:SL_ASSET_EDGE {graphId:$graphId,kind:'HAS_FIELD'}]-(target:SLAssetNode {graphId:$graphId,kind:'TARGET_WRITE'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES'}]->(dataset:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WITH DISTINCT n,dataset RETURN properties(n) AS node,properties(dataset) AS dataset ORDER BY n.column,n.writeId,n.id SKIP $offset LIMIT $limit`,
       {
         value: input.taskId ?? input.table?.toLowerCase(),
         datasetKey: key(this.graphId, input.nodeId ?? ""),
@@ -205,7 +215,32 @@ export class AssetGraphStore {
         offset: Math.max(0, Math.trunc(input.offset ?? 0)),
       },
     );
-    return r.records.map((r) => cleanNode(r.get("node")));
+    return r.records.map((r) => {
+      const node = cleanNode(r.get("node"));
+      const dataset = r.get("dataset") as Record<string, unknown> | null;
+      return dataset
+        ? { ...node, metadataIdentity: cleanNode(dataset).detail }
+        : node;
+    });
+  }
+  async metadataIdentities(nodeIds: readonly string[]) {
+    if (!nodeIds.length) return new Map<string, Record<string, unknown>>();
+    const r = await this.run(
+      "UNWIND $keys AS key MATCH (n:SLAssetNode {key:key}) OPTIONAL MATCH (n)<-[:SL_ASSET_EDGE {graphId:$graphId,kind:'HAS_FIELD'}]-(target:SLAssetNode {graphId:$graphId,kind:'TARGET_WRITE'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES'}]->(dataset:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) RETURN n.id AS nodeId,properties(dataset) AS dataset",
+      { keys: nodeIds.map((id) => key(this.graphId, id)) },
+    );
+    const identities = new Map<string, Record<string, unknown>>();
+    for (const record of r.records) {
+      const dataset = record.get("dataset") as Record<string, unknown> | null;
+      if (!dataset) continue;
+      const detail = cleanNode(dataset).detail;
+      if (detail && typeof detail === "object")
+        identities.set(
+          String(record.get("nodeId")),
+          detail as Record<string, unknown>,
+        );
+    }
+    return identities;
   }
   async traverse(input: {
     taskId?: string;

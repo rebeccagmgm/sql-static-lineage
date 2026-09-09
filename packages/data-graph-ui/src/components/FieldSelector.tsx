@@ -33,9 +33,8 @@ export function fieldChoices(
     .filter(
       (field) =>
         !needle ||
-        String(field.column ?? "")
-          .toLowerCase()
-          .includes(needle),
+        [field.column, field.metadata?.field?.comment]
+          .some((value) => String(value ?? "").toLowerCase().includes(needle)),
     )
     .sort((a, b) => {
       const task = taskIdentity(a).localeCompare(taskIdentity(b), "zh-CN", {
@@ -145,11 +144,11 @@ export function FieldSelector(props: {
             </datalist>
           </label>
           <label className="field-search">
-            <span>字段名</span>
+            <span>字段名或中文注释（当前已加载字段）</span>
             <input
               value={fieldSearch}
               onChange={(event) => setFieldSearch(event.target.value)}
-              placeholder="只搜索字段名"
+              placeholder="搜索字段名或中文注释"
             />
           </label>
           <p className="field-selection-summary">
@@ -200,6 +199,9 @@ export function FieldSelector(props: {
                     />
                     <span>
                       <b>{field.column}</b>
+                      {field.metadata?.field?.comment && (
+                        <small>{field.metadata.field.comment}</small>
+                      )}
                       <small>{occurrenceLabel ?? "单一写入"}</small>
                     </span>
                   </label>

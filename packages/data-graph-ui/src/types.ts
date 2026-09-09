@@ -1,5 +1,24 @@
 export type GraphLayer = "table" | "field";
 export type Direction = "up" | "down";
+export type MetadataStatus =
+  | "AVAILABLE"
+  | "ANNOTATION_NOT_RECORDED"
+  | "METADATA_UNAVAILABLE"
+  | "METADATA_READ_FAILED";
+export interface MetadataValue {
+  status: MetadataStatus;
+  reason?: string;
+  description?: string;
+  comment?: string;
+}
+export interface TableMetadata {
+  table: MetadataValue;
+  field?: MetadataValue;
+  source?: string;
+  collectedAt?: string;
+  contentHash?: string;
+  versionRelation?: "RUNTIME_INPUT_PACK_NOT_GRAPH_VERSION";
+}
 export interface GraphNode {
   id: string;
   kind: string;
@@ -10,6 +29,7 @@ export interface GraphNode {
   writeId?: string;
   depth?: number;
   detail?: Record<string, unknown>;
+  metadata?: TableMetadata;
   [key: string]: unknown;
 }
 export interface GraphEdge {
@@ -37,6 +57,8 @@ export interface TraceResult {
   stoppedBy: "EDGE_LIMIT" | "DEPTH_LIMIT" | null;
   frontierNodeIds: string[];
   terminalNodes: TerminalNode[];
+  /** Local SQLite scheduler-catalog task names for task cards synthesized by the view. */
+  taskLabels?: Record<string, string>;
   nodes: GraphNode[];
   edges: GraphEdge[];
   elapsedMs: number;

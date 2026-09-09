@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { api } from "../api";
 import { isSameGraphVersion } from "../contract";
-import type { GraphNode, TaskDetail, TerminalNode } from "../types";
+import type {
+  GraphNode,
+  MetadataStatus,
+  TaskDetail,
+  TerminalNode,
+} from "../types";
 const labels: Record<string, string> = {
   filter: "过滤条件",
   join: "Join",
   aggregate: "分组与聚合",
   window: "窗口",
   setop: "分支合并",
+};
+const metadataStatus: Record<MetadataStatus, string> = {
+  AVAILABLE: "已收录",
+  ANNOTATION_NOT_RECORDED: "未收录注释",
+  METADATA_UNAVAILABLE: "元数据不可用",
+  METADATA_READ_FAILED: "元数据读取失败",
 };
 export function DetailPanel({
   node,
@@ -64,6 +75,40 @@ export function DetailPanel({
           <div className="eyebrow">{node.kind}</div>
           <h3>{node.column ?? node.label ?? node.table ?? node.id}</h3>
           <code className="identity">{node.id}</code>
+          {node.metadata && (
+            <section className="metadata-detail">
+              <h3>表说明与字段注释</h3>
+              <p>
+                <b>表说明：</b>
+                {node.metadata.table.description ??
+                  metadataStatus[node.metadata.table.status]}
+              </p>
+              {node.column && (
+                <p>
+                  <b>字段注释：</b>
+                  {node.metadata.field?.comment ??
+                    metadataStatus[
+                      node.metadata.field?.status ?? "METADATA_UNAVAILABLE"
+                    ]}
+                </p>
+              )}
+              <details>
+                <summary>查看元数据来源</summary>
+                <p>来源：{node.metadata.source ?? "未提供"}</p>
+                {node.metadata.collectedAt && (
+                  <p>采集时间：{node.metadata.collectedAt}</p>
+                )}
+                {node.metadata.contentHash && (
+                  <p>内容版本：{node.metadata.contentHash}</p>
+                )}
+                {node.metadata.versionRelation && (
+                  <p className="muted">
+                    注释来自当前 Table Input Pack，不等同于画布的已发布图谱版本。
+                  </p>
+                )}
+              </details>
+            </section>
+          )}
         </>
       )}
       {terminal && (
@@ -80,6 +125,12 @@ export function DetailPanel({
       )}
       {detail && (
         <>
+          {detail.taskName && (
+            <p className="scheduler-task-name">
+              <b>调度任务名：</b>
+              {detail.taskName}
+            </p>
+          )}
           <div className="badges">
             <span>任务 {detail.taskId}</span>
             {detail.taskCategory && <span>{detail.taskCategory}</span>}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Handle,
   Position,
@@ -18,6 +18,25 @@ const names: Record<string, string> = {
   READ_OCCURRENCE: "表读取",
   TARGET_WRITE: "表写入",
 };
+
+function TableDescription({ description }: { description?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!description) return null;
+  return (
+    <div className="table-description">
+      <p data-expanded={expanded}>{description}</p>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setExpanded((value) => !value);
+        }}
+      >
+        {expanded ? "收起说明" : "展开说明"}
+      </button>
+    </div>
+  );
+}
 
 function terminalCopy(terminal: TerminalNode) {
   const boundary =
@@ -73,7 +92,12 @@ function FieldRow({
           position={Position.Left}
         />
       ))}
-      <span>{member.column ?? member.label ?? member.id}</span>
+      <span className="field-row-copy">
+        <b>{member.column ?? member.label ?? member.id}</b>
+        {member.metadata?.field?.comment && (
+          <small className="field-comment">{member.metadata.field.comment}</small>
+        )}
+      </span>
       {terminal && <small>{terminalCopy(terminal)}</small>}
       {handleNodes.map((alias) => (
         <Handle
@@ -139,6 +163,7 @@ export function LineageNode(props: NodeProps) {
           </span>
         </div>
         <strong>{first.table ?? first.label ?? first.id}</strong>
+        <TableDescription description={first.metadata?.table.description} />
         <small>{members.length} 个字段 · 点击字段查看依据</small>
         <div
           className="field-rows"
@@ -217,6 +242,7 @@ export function LineageNode(props: NodeProps) {
         {raw.writeId && <span>{raw.writeId}</span>}
       </div>
       <strong>{title}</strong>
+      <TableDescription description={raw.metadata?.table.description} />
       <small>{context}</small>
       {terminal && (
         <span className="terminal-copy">{terminalCopy(terminal)}</span>

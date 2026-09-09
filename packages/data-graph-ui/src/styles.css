@@ -358,8 +358,8 @@ h1 {
 }
 .task-node {
   position: relative;
-  width: 132px;
-  min-height: 42px;
+  width: 210px;
+  min-height: 64px;
   padding: 11px 9px;
   border: 1px solid #91afa9;
   border-radius: 999px;
@@ -374,6 +374,23 @@ h1 {
 .task-node strong {
   display: block;
   font: 600 10px monospace;
+}
+.task-node-name {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 4px;
+  color: #315e58;
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.scheduler-task-name {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+  color: #315e58;
+  font-size: 11px;
 }
 .task-port-list {
   display: grid;
@@ -416,7 +433,7 @@ h1 {
   display: flex;
   width: 100%;
   min-height: 29px;
-  align-items: center;
+  align-items: flex-start;
   border: 1px solid #d6e2de;
   border-radius: 4px;
   padding: 5px 10px;
@@ -425,6 +442,28 @@ h1 {
   text-align: left;
   font-size: 9px;
   cursor: pointer;
+}
+.field-row-copy {
+  min-width: 0;
+  flex: 1;
+}
+.field-row-copy b,
+.field-row-copy small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.field-row-copy b {
+  font: 600 9px monospace;
+}
+.field-row .field-comment {
+  margin: 3px 0 0;
+  color: #5e7772;
+  font: 9px/1.35 sans-serif;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .field-row .react-flow__handle-left {
   transform: translate(-50%, calc(-50% + var(--handle-shift, 0px)));
@@ -458,6 +497,37 @@ h1 {
   display: block;
   margin-left: auto;
   color: #93631f;
+}
+.table-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+.table-description p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #526d68;
+  font-size: 9px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.table-description p[data-expanded="true"] {
+  display: block;
+}
+.table-description button {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #17635f;
+  font-size: 9px;
+  cursor: pointer;
+}
+.search-description {
+  color: #426964 !important;
+  line-height: 1.45;
 }
 .lineage-node strong,
 .lineage-node small {
@@ -598,6 +668,20 @@ footer p {
   background: #fcebe4;
   padding: 8px;
   font-size: 10px;
+}
+.metadata-detail {
+  margin: 13px 0;
+  padding: 10px;
+  border: 1px solid #d7e4df;
+  border-radius: 7px;
+  background: #f5f9f7;
+  font-size: 11px;
+}
+.metadata-detail h3 {
+  margin-top: 0;
+}
+.metadata-detail p {
+  overflow-wrap: anywhere;
 }
 details summary {
   cursor: pointer;

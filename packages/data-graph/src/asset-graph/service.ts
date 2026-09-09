@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openAssetGraph } from "./config.ts";
 import { AssetGraphStore } from "./store.ts";
@@ -9,6 +10,55 @@ import {
 } from "./overview.ts";
 import { readJson, type PreparedManifest, type Evidence } from "./publish.ts";
 import type { FactRecord } from "./compile.ts";
+import {
+  TableMetadataResolver,
+  type MetadataIdentity,
+} from "./table-metadata.ts";
+import { SchedulerTaskNameResolver } from "./scheduler-task-names.ts";
+
+type GraphNode = Record<string, unknown>;
+
+const traceTaskIds = (nodes: readonly GraphNode[]) =>
+  nodes
+    .map((node) => node.taskId)
+    .filter((taskId): taskId is string => typeof taskId === "string");
+
+function metadataIdentity(node: GraphNode): MetadataIdentity | undefined {
+  const candidate =
+    node.metadataIdentity && typeof node.metadataIdentity === "object"
+      ? node.metadataIdentity
+      : node.detail;
+  return candidate && typeof candidate === "object"
+    ? (candidate as MetadataIdentity)
+    : undefined;
+}
+
+async function annotateNodes(
+  resolver: TableMetadataResolver,
+  nodes: readonly GraphNode[],
+  identities = new Map<string, Record<string, unknown>>(),
+): Promise<GraphNode[]> {
+  return Promise.all(
+    nodes.map(async (node) => {
+      if (
+        ![
+          "PHYSICAL_DATASET",
+          "PHYSICAL_FIELD",
+          "READ_FIELD",
+          "WRITE_FIELD",
+        ].includes(String(node.kind))
+      )
+        return node;
+      const identity =
+        metadataIdentity(node) ?? identities.get(String(node.id));
+      const column = typeof node.column === "string" ? node.column : undefined;
+      return {
+        ...node,
+        metadata: await resolver.resolve(identity, column),
+      };
+    }),
+  );
+}
 export async function taskDetail(
   store: AssetGraphStore,
   taskId: string,
@@ -87,6 +137,12 @@ export async function startAssetGraphServer(
     connection.database,
     connection.graphId,
   );
+  const metadata = new TableMetadataResolver(
+    join(connection.paths?.inputPackRoot ?? ".", "tables"),
+  );
+  const schedulerTaskNames = new SchedulerTaskNameResolver(
+    connection.paths?.evidenceRoot ?? ".",
+  );
   const html = readFileSync(
     fileURLToPath(new URL("./viewer.html", import.meta.url)),
     "utf8",
@@ -120,40 +176,57 @@ export async function startAssetGraphServer(
       if (url.pathname === "/api/status") {
         const s = await store.ready();
         value = { state: s.state, version: s.version, ...JSON.parse(s.report) };
-      } else if (url.pathname === "/api/search")
-        value = await store.search(
-          q.get("q") ?? "",
-          num("limit", 30),
-          num("offset", 0),
+      } else if (url.pathname === "/api/search") {
+        const text = q.get("q") ?? "";
+        value = await annotateNodes(
+          metadata,
+          await store.search(
+            text,
+            num("limit", 30),
+            num("offset", 0),
+            await metadata.searchDescription(text),
+          ),
         );
-      else if (url.pathname === "/api/fields")
-        value = await store.fields({
-          taskId: q.get("taskId") ?? undefined,
-          table: q.get("table") ?? undefined,
-          nodeId: q.get("nodeId") ?? undefined,
-          limit: num("limit", 300),
-          offset: num("offset", 0),
-        });
+      } else if (url.pathname === "/api/fields")
+        value = await annotateNodes(
+          metadata,
+          await store.fields({
+            taskId: q.get("taskId") ?? undefined,
+            table: q.get("table") ?? undefined,
+            nodeId: q.get("nodeId") ?? undefined,
+            limit: num("limit", 300),
+            offset: num("offset", 0),
+          }),
+        );
       else if (url.pathname === "/api/overview")
         value = await getAssetGraphOverview(store, {
           regionLimit: num("regionLimit", 100),
           flowLimit: num("flowLimit", 150),
         });
-      else if (url.pathname === "/api/regions")
-        value = await listAssetGraphRegionDatasets(store, {
+      else if (url.pathname === "/api/regions") {
+        const region = await listAssetGraphRegionDatasets(store, {
           schema: q.get("schema") ?? "",
           limit: num("limit", 50),
           offset: num("offset", 0),
         });
-      else if (url.pathname === "/api/task")
-        value = await taskDetail(
+        value = {
+          ...region,
+          items: await annotateNodes(metadata, region.items),
+        };
+      } else if (url.pathname === "/api/task") {
+        const taskId = q.get("taskId") ?? "";
+        const detail = await taskDetail(
           store,
-          q.get("taskId") ?? "",
+          taskId,
           q.get("column") ?? undefined,
           q.get("writeId") ?? undefined,
           q.get("sql") === "1",
         );
-      else if (url.pathname === "/api/trace") {
+        value = {
+          ...detail,
+          taskName: schedulerTaskNames.resolve([taskId])[taskId],
+        };
+      } else if (url.pathname === "/api/trace") {
         const layer = q.get("layer") ?? "table";
         if (!["table", "field", "schedule"].includes(layer))
           throw new Error("INVALID_GRAPH_LAYER");
@@ -163,7 +236,7 @@ export async function startAssetGraphServer(
         const depthUnit = q.get("depthUnit") ?? "edge";
         if (!["edge", "table-hop"].includes(depthUnit))
           throw new Error("INVALID_DEPTH_UNIT");
-        value = await store.traverse({
+        const trace = await store.traverse({
           taskId: q.get("taskId") ?? undefined,
           nodeId: q.get("nodeId") ?? undefined,
           column: q.get("column") ?? undefined,
@@ -176,6 +249,19 @@ export async function startAssetGraphServer(
           limit: num("limit", 150),
           includeCandidates: q.get("candidates") !== "0",
         });
+        const identities = await store.metadataIdentities(
+          trace.nodes.map((node) => String(node.id)),
+        );
+        // A trace can synthesize task cards from VALUE edges. Read task names
+        // from the local scheduler catalog, not evidence descriptions.
+        const taskLabels = schedulerTaskNames.resolve(
+          traceTaskIds(trace.nodes),
+        );
+        value = {
+          ...trace,
+          taskLabels,
+          nodes: await annotateNodes(metadata, trace.nodes, identities),
+        };
       } else {
         res.writeHead(404);
         res.end();
@@ -202,6 +288,7 @@ export async function startAssetGraphServer(
   return {
     server,
     close: async () => {
+      schedulerTaskNames.close();
       await new Promise<void>((resolve, reject) =>
         server.close((e) => (e ? reject(e) : resolve())),
       );

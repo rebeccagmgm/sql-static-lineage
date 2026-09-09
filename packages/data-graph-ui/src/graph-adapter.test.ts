@@ -22,6 +22,7 @@ const trace: TraceResult = {
   stoppedBy: null,
   frontierNodeIds: [],
   terminalNodes: [],
+  taskLabels: { consumer: "消费任务名称", producer: "生产任务名称" },
   elapsedMs: 2,
   nodes: [
     field("out:a", "WRITE_FIELD", {
@@ -179,6 +180,10 @@ describe("field trial projection", () => {
         .map(({ id }) => id)
         .sort(),
     ).toEqual(["task:consumer", "task:producer"]);
+    expect(result.nodes.find(({ id }) => id === "task:consumer")?.data.raw).toMatchObject({
+      taskId: "consumer",
+      detail: { taskName: "消费任务名称" },
+    });
     expect(result.edges.some(({ source, target }) => source === target)).toBe(
       false,
     );
@@ -305,5 +310,49 @@ describe("field trial projection", () => {
         data: { rawNode: literal.nodes[0] },
       }),
     ]);
+  });
+
+  it("uses the SQLite scheduler name for an existing task node over an old graph label", () => {
+    const result = adaptTrace({
+      ...trace,
+      taskLabels: { "144136": "odata_n_tit.d_ref_book_p_h15_f" },
+      nodes: [
+        {
+          id: "task:144136",
+          kind: "TASK",
+          taskId: "144136",
+          label: "http://jira.example.invalid/BIGDATADEV-28821",
+          depth: 0,
+        },
+      ],
+      edges: [],
+    });
+    expect(result.nodes[0]?.data.raw).toMatchObject({
+      label: "odata_n_tit.d_ref_book_p_h15_f",
+      detail: { taskName: "odata_n_tit.d_ref_book_p_h15_f" },
+    });
+  });
+
+  it("does not fall back to an old graph task label when SQLite has no name", () => {
+    const result = adaptTrace({
+      ...trace,
+      taskLabels: {},
+      nodes: [
+        {
+          id: "task:missing",
+          kind: "TASK",
+          taskId: "missing",
+          label: "old requirement annotation",
+          detail: { taskName: "old requirement annotation" },
+          depth: 0,
+        },
+      ],
+      edges: [],
+    });
+    expect(result.nodes[0]?.data.raw).toMatchObject({
+      taskId: "missing",
+      detail: {},
+    });
+    expect(result.nodes[0]?.data.raw?.label).toBeUndefined();
   });
 });
