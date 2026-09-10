@@ -1,8 +1,8 @@
 # Agent 图谱查询 CLI
 
-Agent 的正式消费入口是 `scripts/lineage-graph.ps1`。它可以从任意工作目录调用，读取已发布的 Neo4j 图；查询命令不生成 Facts、投影或接续索引。HTML 是辅助调查页。
+Agent 的正式消费入口是 `scripts/lineage-graph.ps1`。它可以从任意工作目录调用，读取已发布的 ArcadeDB 图；查询命令不生成 Facts、投影或接续索引。HTML 是辅助调查页。
 
-`metrics` 直接读取已发布版本的本地 INDEX，不需要 Neo4j。它不会用正在变化的材料重算历史发布结果。
+`metrics` 直接读取已发布版本的本地 INDEX，不需要运行图库。它不会用正在变化的材料重算历史发布结果。
 
 ## 首次调用
 
@@ -13,9 +13,9 @@ $graphCli = 'E:\02_area\股衍数据-数据cookbook\sql-static-lineage\scripts\l
 & $graphCli metrics
 ```
 
-仓库内也可以使用 `npm run --silent graph:query -- <command> ...`。直接调用 PowerShell 入口更适合 Agent：stdout 只有一份 JSON。需要 Node、已安装的锁定依赖和已启动的本机 Neo4j；不需要 HTML 服务。
+仓库内也可以使用 `npm run --silent graph:query -- <command> ...`。直接调用 PowerShell 入口更适合 Agent：stdout 只有一份 JSON。需要 Node、已安装的锁定依赖和已启动的本机 ArcadeDB；不需要 HTML 服务。
 
-路径和 Neo4j 参数统一位于 `config/workspace-paths.json`，通过 `--config <absolute-path>` 或 `LINEAGE_CONFIG` 切换材料和图。密码不写入配置：配置只指向密码文件环境变量的名字。
+路径和图库参数统一位于 `config/workspace-paths.json`，通过 `--config <absolute-path>` 或 `LINEAGE_CONFIG` 切换材料和图。`graphDatabase.provider` 当前为 `arcadedb`。密码不写入配置：`passwordFileEnv` 指定覆盖用环境变量，`passwordFile` 是相对配置文件的本地密码文件路径。启停见 [本机操作手册](data-graph-local-runbook.md)。
 
 ## 常用查询
 
@@ -81,7 +81,7 @@ compiler 1.0.5 使用既有 `config/multi-hop-terminal-table-rules.json`，把�
 
 `pagination.nextOffset` 非 null 时继续翻页，每页最多 100 个读次。只有带独立证据的源端点才归 boundary；`PARTITION_NO_MATCH` 属于 actionable。无法确认的源端点保留 `NO_KNOWN_WRITE_OBSERVATION`。原始 INDEX 不会被查询器改写。
 
-Neo4j 查询成功返回 `schemaVersion: "1.0.0"`、`ok: true`、`command`、`graph.id/version`、`data`、`meta`。`meta.projectionGenerations` 为 0。`metrics` 使用上述本地快照合同。错误返回 `ok: false` 和 `error.code`；退出码 0 为成功、1 为查询/发布问题、2 为参数错误。
+图库查询成功返回 `schemaVersion: "1.0.0"`、`ok: true`、`command`、`graph.id/version`、`data`、`meta`。`meta.backend` 当前为 `arcadedb`，`meta.projectionGenerations` 为 0。`metrics` 使用上述本地快照合同。错误返回 `ok: false` 和 `error.code`；退出码 0 为成功、1 为查询/发布问题、2 为参数错误。
 
 ## 计时 {#timing}
 
@@ -91,7 +91,7 @@ Neo4j 查询成功返回 `schemaVersion: "1.0.0"`、`ok: true`、`command`、`gr
 - 随后的 `JSON.stringify()` 与 `console.log()`
 - `finally` 中的 `driver.close()`
 
-因此它表示主函数路径（参数解析、打开连接、读取图状态、执行查询、组装 `data`）的耗时，不能写成 Neo4j 纯 Cypher 耗时，也不能与外层调用方的 wall clock 直接对比。
+因此它表示主函数路径（参数解析、打开连接、读取图状态、执行查询、组装 `data`）的耗时，不能写成 图库纯 Cypher 耗时，也不能与外层调用方的 wall clock 直接对比。
 
 命令分支内的动态 import 在计时范围内；改为懒加载后的值不能直接与原先静态加载版本的 `meta.elapsedMs` 比较。
 
@@ -109,7 +109,7 @@ npm run graph:benchmark
 
 - **减少重复工具往返**：合并多个已知、有界的查询（例如一次 `trace` 加一次 `processing`），而不是为同一任务连续 spawn 多次 CLI。
 - **单任务表达式核验**可以读固定版本的 `evidence-v3.json`；**跨任务 trace** 仍须走 CLI 或 `graph:serve`，因为涉及图版本、接续状态与遍历规则，不能仅用 evidence 替代。
-- **`graph:serve`** 复用 Neo4j driver；HTTP 路由为 `/api/status`、`/api/search`、`/api/fields`、`/api/task`、`/api/trace`。**没有** `/api/processing`；processing 仍用 CLI。
+- **`graph:serve`** 复用 Bolt driver（`neo4j-driver`）；HTTP 路由为 `/api/status`、`/api/search`、`/api/fields`、`/api/task`、`/api/trace`。**没有** `/api/processing`；processing 仍用 CLI。
 
 `search`、`fields`、`detail`、`processing` 提供 `pagination.nextOffset`，非 null 时用同一查询条件继续翻页。`trace` 返回节点、边及显式 `depth`，并携带 `depthLimit`、`edgeLimit`、`stoppedBy`、`frontierNodeIds`。需要继续调查时，以返回的节点 ID 作为 `--node-id` 查询入口；达到边数上限时，可缩小到具体写入或增大 `--limit`。
 
@@ -140,6 +140,6 @@ npm run graph:prepare -- --scope ../sql-static-lineage-data/tmp/from-cache-full/
 npm run graph:publish
 ```
 
-准备阶段校验并复用共享任务投影，发布阶段重算受影响接续并增量更新 Neo4j。相同批次重复发布返回 `UNCHANGED`。新增任务需要先加入范围文件；更新任务替换本任务拥有的关系；移出范围后清除其关系并保留其他任务仍在使用的共享实体。
+准备阶段校验并复用共享任务投影，发布阶段重算受影响接续并增量更新 ArcadeDB。相同批次重复发布返回 `UNCHANGED`。新增任务需要先加入范围文件；更新任务替换本任务拥有的关系；移出范围后清除其关系并保留其他任务仍在使用的共享实体。
 
 既有 `field-evidence:query` 是旧调查/回归入口，仍可能现场准备投影；Agent 的本批查询统一使用本文入口。旧 Greek 回归和另一个任务新增的资产目录预览都不作为本批发布内容。

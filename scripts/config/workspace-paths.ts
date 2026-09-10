@@ -91,6 +91,7 @@ export function resolveWorkspacePaths(
     ...PATH_KEYS,
     "activeProfile",
     "neo4j",
+    "graphDatabase",
     "profiles",
   ]);
   if (config.schemaVersion !== "1.0.0")

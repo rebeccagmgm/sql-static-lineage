@@ -2,7 +2,7 @@
 
 `data-graph` is the downstream consumer of versioned `sql-static-lineage`
 JSON/JSONL artifacts. It projects topology, field evidence, and target-table
-causal overlays, then serves bounded file-backed and Neo4j-backed queries.
+causal overlays, then serves bounded file-backed and ArcadeDB-backed queries.
 
 The producer remains the authority for SQL, Machine Facts, one-hop, multi-hop,
 field-lineage, and target-table causal closure. This package only validates the
@@ -12,8 +12,9 @@ The formal workflow is the repository-level `graph:prepare` -> `graph:publish`
 -> `graph:query` / `graph:serve` asset graph. The older projection file queries
 remain available for their nine bounded topology/field/causal queries, but the
 separate query-index store, build, activation, status and parity lifecycle has
-been retired. Neo4j access for the formal asset graph uses the shared
-`src/neo4j/connection.ts` boundary.
+been retired. Bolt access for the formal asset graph uses the shared
+`src/neo4j/connection.ts` boundary and Apache-2.0 `neo4j-driver`; the server
+is ArcadeDB 26.9.1. See [migration acceptance](../../docs/arcadedb-migration.md).
 
 This independent package was imported from `data-graph` mainline commit
 `04a37cc`. It consumes only explicitly supplied published artifacts; it has no

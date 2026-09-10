@@ -34,6 +34,7 @@ export class AssetGraphStore {
       "CREATE CONSTRAINT sl_asset_owner_key IF NOT EXISTS FOR (n:SLAssetOwner) REQUIRE n.key IS UNIQUE",
       "CREATE CONSTRAINT sl_asset_graph_id IF NOT EXISTS FOR (n:SLAssetGraph) REQUIRE n.id IS UNIQUE",
       "CREATE INDEX sl_asset_task_field IF NOT EXISTS FOR (n:SLAssetNode) ON (n.graphId,n.kind,n.taskId,n.column)",
+      "CREATE INDEX sl_asset_task_fields IF NOT EXISTS FOR (n:SLAssetNode) ON (n.graphId,n.kind,n.taskId)",
       "CREATE INDEX sl_asset_table_field IF NOT EXISTS FOR (n:SLAssetNode) ON (n.graphId,n.kind,n.table,n.column)",
       "CREATE INDEX sl_asset_kind IF NOT EXISTS FOR (n:SLAssetNode) ON (n.graphId,n.kind)",
       "CREATE INDEX sl_asset_edge_owner IF NOT EXISTS FOR ()-[r:SL_ASSET_EDGE]-() ON (r.ownerKey)",
@@ -73,13 +74,35 @@ export class AssetGraphStore {
           ownerKey: key(this.graphId, owner),
           owner,
           hash,
+          edgeSourceKeys: [
+            ...new Set(graph.edges.map((e) => key(this.graphId, e.from))),
+          ],
         };
-        await tx.run(
-          "MATCH ()-[r:SL_ASSET_EDGE {ownerKey:$ownerKey}]->() DELETE r",
+        // Start deletion from this owner's prior edge sources. A relationship
+        // property index is not used by every Bolt-compatible query planner.
+        const prior = await tx.run(
+          "MATCH (o:SLAssetOwner {key:$ownerKey}) RETURN o.edgeSourceKeys AS sourceKeys",
           params,
         );
+        if (prior.records.length) {
+          const sourceKeys: unknown = prior.records[0]!.get("sourceKeys");
+          if (Array.isArray(sourceKeys)) {
+            for (const sourceBatch of chunks(sourceKeys))
+              await tx.run(
+                "UNWIND $sourceKeys AS sourceKey MATCH (a:SLAssetNode {key:sourceKey})-[r:SL_ASSET_EDGE {ownerKey:$ownerKey}]->() DELETE r",
+                { ...params, sourceKeys: sourceBatch },
+              );
+          } else {
+            // Existing publications did not retain source keys. Upgrade each
+            // owner on its first replacement without leaving historical edges.
+            await tx.run(
+              "MATCH ()-[r:SL_ASSET_EDGE {ownerKey:$ownerKey}]->() DELETE r",
+              params,
+            );
+          }
+        }
         await tx.run(
-          "MERGE (o:SLAssetOwner {key:$ownerKey}) SET o.graphId=$graphId,o.id=$owner,o.hash=$hash WITH o OPTIONAL MATCH (o)-[r:SL_ASSET_OWNS]->() DELETE r",
+          "MERGE (o:SLAssetOwner {key:$ownerKey}) SET o.graphId=$graphId,o.id=$owner,o.hash=$hash,o.edgeSourceKeys=$edgeSourceKeys WITH o OPTIONAL MATCH (o)-[r:SL_ASSET_OWNS]->() DELETE r",
           params,
         );
         for (const batch of chunks(graph.nodes))
@@ -169,7 +192,7 @@ export class AssetGraphStore {
   ) {
     await this.ready();
     const r = await this.run(
-      "MATCH (n:SLAssetNode {graphId:$graphId}) WHERE n.kind IN ['TASK','PHYSICAL_DATASET'] AND (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit",
+      "CALL { MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n UNION ALL MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) RETURN n } WITH n WHERE (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit",
       {
         text: text.toLowerCase(),
         task: `task:${text}`,
@@ -200,7 +223,9 @@ export class AssetGraphStore {
     const byDataset = input.nodeId !== undefined;
     const match = byDataset
       ? "MATCH (dataset:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET',key:$datasetKey})<-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES'}]-(target:SLAssetNode {graphId:$graphId,kind:'TARGET_WRITE'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'HAS_FIELD'}]->(n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'})"
-      : "MATCH (n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'})";
+      : input.taskId
+        ? "UNWIND [$value] AS taskId MATCH (n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD',taskId:taskId})"
+        : "MATCH (n:SLAssetNode {graphId:$graphId,kind:'WRITE_FIELD'})";
     const filter = input.taskId
       ? "n.taskId=$value"
       : input.table
@@ -283,15 +308,27 @@ export class AssetGraphStore {
         ruleRef: String(d.terminalRuleRef ?? ""),
       };
     };
-    const anchorFilter = input.nodeId
-      ? "n.key=$key"
+    // Isolate the unique-key seek before the graphId guard. ArcadeDB otherwise
+    // prefers the broad graphId index, even when key is in the pattern.
+    const anchorPattern = input.nodeId
+      ? "key:$key"
       : input.layer !== "field"
         ? input.table
-          ? "n.kind='PHYSICAL_DATASET' AND n.table=$table"
-          : "n.key=$key"
-        : `n.kind='WRITE_FIELD' AND ${input.taskId ? "n.taskId=$taskId" : "n.table=$table"} AND n.column=$column AND ($writeId='' OR n.writeId=$writeId)`;
+          ? "graphId:$graphId,kind:'PHYSICAL_DATASET',table:$table"
+          : "key:$key"
+        : `graphId:$graphId,kind:'WRITE_FIELD',${input.taskId ? "taskId:anchorValue" : "table:anchorValue"},column:$column`;
+    // A single input row uses the native indexed matcher rather than the
+    // cost planner's competing task/table composite-index choice (26.9.1).
+    const anchorInput =
+      input.layer === "field" && !input.nodeId
+        ? `UNWIND [${input.taskId ? "$taskId" : "$table"}] AS anchorValue `
+        : "";
+    const anchorFilter =
+      input.layer === "field" && !input.nodeId
+        ? "n.graphId=$graphId AND ($writeId='' OR n.writeId=$writeId)"
+        : "n.graphId=$graphId";
     const anchor = await this.run(
-      `MATCH (n:SLAssetNode {graphId:$graphId}) WHERE ${anchorFilter} RETURN properties(n) AS node ORDER BY n.id LIMIT $limit`,
+      `${anchorInput}MATCH (n:SLAssetNode {${anchorPattern}}) ${anchorPattern === "key:$key" ? "WITH n LIMIT 1 " : ""}WHERE ${anchorFilter} RETURN properties(n) AS node ORDER BY n.id LIMIT $limit`,
       {
         key: key(this.graphId, input.nodeId ?? `task:${input.taskId}`),
         taskId: input.taskId ?? "",

@@ -72,7 +72,7 @@ describe("asset graph HTTP query contract", () => {
     expect(await fields.json()).toEqual([]);
     const searchQuery = queries.find(({ query }) => query.includes("CONTAINS $text"));
     const fieldsQuery = queries.find(({ query }) =>
-      query.includes("kind:'PHYSICAL_DATASET'"),
+      query.includes("key:$datasetKey"),
     );
     expect(integer(searchQuery?.params.offset)).toBe(7);
     expect(integer(fieldsQuery?.params.offset)).toBe(3);

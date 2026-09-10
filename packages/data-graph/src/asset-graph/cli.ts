@@ -70,6 +70,7 @@ export function parseAgentArgs(args: readonly string[]) {
 export async function assetGraphMain(args = process.argv.slice(2)) {
   const started = Date.now();
   let command = args[0] ?? "help";
+  let backend = "neo4j";
   try {
     const a = parseAgentArgs(args);
     command = a.command;
@@ -133,6 +134,10 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       ].includes(command)
     )
       throw new Error("INVALID_COMMAND");
+    if (command === "publish" || command === "serve") {
+      const { assetGraphConfig } = await import("./config.ts");
+      backend = assetGraphConfig(config).provider;
+    }
     if (command === "publish") {
       const { publishAssetGraph } = await import("./publish.ts");
       console.log(
@@ -162,6 +167,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       ]);
     const c = await openAssetGraph(config),
       store = new AssetGraphStore(c.driver, c.database, c.graphId);
+    backend = c.provider;
     try {
       const state = await store.ready();
       let data: unknown;
@@ -306,7 +312,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           graph: { id: c.graphId, version: state.version },
           data,
           meta: {
-            backend: "neo4j",
+            backend,
             elapsedMs,
             projectionGenerations: 0,
           },
@@ -323,9 +329,9 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
         ? String(error.code)
         : "";
     const code = /ServiceUnavailable|SessionExpired/.test(driverCode)
-      ? "NEO4J_UNAVAILABLE"
+      ? `${backend.toUpperCase()}_UNAVAILABLE`
       : /Security/.test(driverCode)
-        ? "NEO4J_AUTH_FAILED"
+        ? `${backend.toUpperCase()}_AUTH_FAILED`
         : /^[A-Z0-9_:a-z-]+$/.test(raw)
           ? raw
           : "ASSET_GRAPH_QUERY_FAILED";

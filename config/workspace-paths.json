@@ -17,11 +17,13 @@
       "continuationIndexPath": "../sql-static-lineage-artifacts/target-table-causal-closure/c2/176827-continuation-index-full-recovered-v2/union-continuation-index.json"
     }
   },
-  "neo4j": {
-    "uri": "bolt://localhost:7687",
-    "username": "neo4j",
-    "database": "neo4j",
-    "passwordFileEnv": "NEO4J_PASSWORD_FILE",
+  "graphDatabase": {
+    "provider": "arcadedb",
+    "uri": "bolt://127.0.0.1:17688",
+    "username": "root",
+    "database": "lineage_arcade_trial",
+    "passwordFileEnv": "ARCADEDB_PASSWORD_FILE",
+    "passwordFile": "../artifacts/arcadedb/password.txt",
     "graphId": "titans-otc"
   }
 }
