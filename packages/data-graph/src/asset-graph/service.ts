@@ -1,6 +1,5 @@
 import { createServer, type Server } from "node:http";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openAssetGraph } from "./config.ts";
 import { AssetGraphStore } from "./store.ts";
@@ -11,6 +10,7 @@ import {
 import { readJson, type PreparedManifest, type Evidence } from "./publish.ts";
 import type { FactRecord } from "./compile.ts";
 import {
+  defaultTableMetadataCatalogRoot,
   TableMetadataResolver,
   type MetadataIdentity,
 } from "./table-metadata.ts";
@@ -38,26 +38,27 @@ async function annotateNodes(
   nodes: readonly GraphNode[],
   identities = new Map<string, Record<string, unknown>>(),
 ): Promise<GraphNode[]> {
-  return Promise.all(
-    nodes.map(async (node) => {
-      if (
-        ![
-          "PHYSICAL_DATASET",
-          "PHYSICAL_FIELD",
-          "READ_FIELD",
-          "WRITE_FIELD",
-        ].includes(String(node.kind))
-      )
-        return node;
-      const identity =
-        metadataIdentity(node) ?? identities.get(String(node.id));
-      const column = typeof node.column === "string" ? node.column : undefined;
-      return {
-        ...node,
-        metadata: await resolver.resolve(identity, column),
-      };
-    }),
+  const selected = nodes
+    .map((node, index) => ({ node, index }))
+    .filter(({ node }) =>
+      [
+        "PHYSICAL_DATASET",
+        "PHYSICAL_FIELD",
+        "READ_FIELD",
+        "WRITE_FIELD",
+      ].includes(String(node.kind)),
   );
+  const values = await resolver.resolveMany(
+    selected.map(({ node }) => ({
+      identity: metadataIdentity(node) ?? identities.get(String(node.id)),
+      column: typeof node.column === "string" ? node.column : undefined,
+    })),
+  );
+  const result = [...nodes];
+  selected.forEach(({ node, index }, valueIndex) => {
+    result[index] = { ...node, metadata: values[valueIndex] };
+  });
+  return result;
 }
 export async function taskDetail(
   store: AssetGraphStore,
@@ -130,6 +131,7 @@ export async function taskDetail(
 export async function startAssetGraphServer(
   configPath?: string,
   port = 8791,
+  options: { readonly metadataCatalogRoot?: string } = {},
 ): Promise<{ server: Server; close: () => Promise<void> }> {
   const connection = await openAssetGraph(configPath);
   const store = new AssetGraphStore(
@@ -138,7 +140,8 @@ export async function startAssetGraphServer(
     connection.graphId,
   );
   const metadata = new TableMetadataResolver(
-    join(connection.paths?.inputPackRoot ?? ".", "tables"),
+    options.metadataCatalogRoot ??
+      defaultTableMetadataCatalogRoot(connection.paths?.evidenceRoot ?? "."),
   );
   const schedulerTaskNames = new SchedulerTaskNameResolver(
     connection.paths?.evidenceRoot ?? ".",
@@ -175,16 +178,29 @@ export async function startAssetGraphServer(
       let value: unknown;
       if (url.pathname === "/api/status") {
         const s = await store.ready();
-        value = { state: s.state, version: s.version, ...JSON.parse(s.report) };
+        value = {
+          state: s.state,
+          version: s.version,
+          metadataCatalog: metadata.status(),
+          ...JSON.parse(s.report),
+        };
       } else if (url.pathname === "/api/search") {
         const text = q.get("q") ?? "";
+        const limit = Math.max(1, Math.min(100, num("limit", 30)));
+        const offset = num("offset", 0);
         value = await annotateNodes(
           metadata,
           await store.search(
             text,
-            num("limit", 30),
-            num("offset", 0),
-            await metadata.searchDescription(text),
+            limit,
+            offset,
+            await metadata.searchDescription(text, {
+              // The graph store applies the final offset across technical-name and
+              // description matches. Supply the bounded prefix it needs;
+              // applying the offset here as well would skip description hits
+              // twice.
+              limit: Math.min(100, limit + offset),
+            }),
           ),
         );
       } else if (url.pathname === "/api/fields")
@@ -288,6 +304,7 @@ export async function startAssetGraphServer(
   return {
     server,
     close: async () => {
+      metadata.close();
       schedulerTaskNames.close();
       await new Promise<void>((resolve, reject) =>
         server.close((e) => (e ? reject(e) : resolve())),

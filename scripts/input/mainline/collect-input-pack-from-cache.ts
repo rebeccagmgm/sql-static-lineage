@@ -6,7 +6,9 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { buildTableMetadataCatalog } from "../../../packages/data-graph/src/asset-graph/table-metadata-catalog-build.ts";
+import { defaultTableMetadataCatalogRoot } from "../../../packages/data-graph/src/asset-graph/table-metadata-catalog.ts";
 
 import {
   sha256File,
@@ -79,6 +81,8 @@ export interface CollectInputPackFromCacheOptions {
   readonly notFoundDataRoot?: string;
   readonly statusFile?: string;
   readonly now?: () => Date;
+  readonly refreshMetadataCatalog?: boolean;
+  readonly metadataCatalogRoot?: string;
 }
 
 const STATUS_FLUSH_EVERY = 50;
@@ -303,6 +307,10 @@ export function collectOneTaskInputPackFromCache(
     readonly status: TaskStatusDocument;
     readonly packStore: ReturnType<typeof openOfflineTablePackStore>;
     readonly now?: () => Date;
+    readonly onTableWrite?: (table: {
+      readonly platform: string;
+      readonly stableTableId: string;
+    }) => void;
   },
 ): CollectInputPackFromCacheSummary {
   const assembled = assembleCacheTaskEvidence(taskId, options.cacheRoot);
@@ -472,6 +480,11 @@ export function collectOneTaskInputPackFromCache(
     const evidenceForTable = resolution.resolved[index];
     if (evidenceForTable !== undefined)
       options.packStore.remember(evidenceForTable, table.contentHash);
+    if (table.changed)
+      options.onTableWrite?.({
+        platform: basename(dirname(table.directory)),
+        stableTableId: basename(table.directory),
+      });
   }
   persistStatus(options.status, false, {
     taskId,
@@ -589,6 +602,10 @@ export function collectInputPackFromCache(
     map[key] = (map[key] ?? 0) + 1;
   };
   const summaries: CollectInputPackFromCacheSummary[] = [];
+  const changedTables = new Map<
+    string,
+    { readonly platform: string; readonly stableTableId: string }
+  >();
   const started = Date.now();
   for (const [index, taskId] of taskIds.entries()) {
     let summary: CollectInputPackFromCacheSummary;
@@ -603,6 +620,11 @@ export function collectInputPackFromCache(
         status,
         packStore,
         now: options.now,
+        onTableWrite: (table) =>
+          changedTables.set(
+            `${table.platform.toLowerCase()}\0${table.stableTableId}`,
+            table,
+          ),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -647,6 +669,23 @@ export function collectInputPackFromCache(
     }
   }
   flushStatus();
+  if (
+    !dryRun &&
+    options.refreshMetadataCatalog !== false &&
+    changedTables.size > 0
+  ) {
+    const metadataCatalogRoot = resolve(
+      options.metadataCatalogRoot ??
+        defaultTableMetadataCatalogRoot(cacheRoot),
+    );
+    const hasCurrent = existsSync(join(metadataCatalogRoot, "current.json"));
+    const metadataReport = buildTableMetadataCatalog({
+      tablesRoot: join(dataRoot, "tables"),
+      catalogRoot: metadataCatalogRoot,
+      ...(hasCurrent ? { scope: { tables: [...changedTables.values()] } } : {}),
+    });
+    log(`metadata catalog ${JSON.stringify(metadataReport)}`);
+  }
   log(`done ${JSON.stringify(counts)} elapsedMs=${Date.now() - started}`);
   return summaries;
 }
@@ -678,6 +717,8 @@ export function parseCollectInputPackFromCacheArgs(
     rdbmsDdlPath: optionValue(argv, "--rdbms-ddl-jsonl"),
     indexDir: optionValue(argv, "--index-dir"),
     logDir: optionValue(argv, "--log-dir"),
+    refreshMetadataCatalog: !flag(argv, "--skip-metadata-catalog-refresh"),
+    metadataCatalogRoot: optionValue(argv, "--metadata-catalog-root"),
   };
 }
 

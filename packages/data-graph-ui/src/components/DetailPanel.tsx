@@ -84,13 +84,26 @@ export function DetailPanel({
                   metadataStatus[node.metadata.table.status]}
               </p>
               {node.column && (
-                <p>
-                  <b>字段注释：</b>
-                  {node.metadata.field?.comment ??
-                    metadataStatus[
-                      node.metadata.field?.status ?? "METADATA_UNAVAILABLE"
-                    ]}
-                </p>
+                <>
+                  <p>
+                    <b>字段注释：</b>
+                    {node.metadata.field?.comment ??
+                      metadataStatus[
+                        node.metadata.field?.status ?? "METADATA_UNAVAILABLE"
+                      ]}
+                  </p>
+                  <p>
+                    <b>字段类型：</b>
+                    {node.metadata.field?.rawType ?? "未收录"}
+                  </p>
+                  <p>
+                    <b>字段顺序：</b>
+                    {node.metadata.field?.ordinal === undefined
+                      ? "未收录"
+                      : node.metadata.field.ordinal + 1}
+                    {node.metadata.field?.partition ? " · 分区字段" : ""}
+                  </p>
+                </>
               )}
               <details>
                 <summary>查看元数据来源</summary>
@@ -100,6 +113,18 @@ export function DetailPanel({
                 )}
                 {node.metadata.contentHash && (
                   <p>内容版本：{node.metadata.contentHash}</p>
+                )}
+                {node.metadata.sourceHash && (
+                  <p>来源文件 hash：{node.metadata.sourceHash}</p>
+                )}
+                {node.metadata.ddlHash && (
+                  <p>DDL hash：{node.metadata.ddlHash}</p>
+                )}
+                {node.metadata.metadataCatalog?.version && (
+                  <p>元数据目录版本：{node.metadata.metadataCatalog.version}</p>
+                )}
+                {node.metadata.metadataCatalog?.builtAt && (
+                  <p>目录更新时间：{node.metadata.metadataCatalog.builtAt}</p>
                 )}
                 {node.metadata.versionRelation && (
                   <p className="muted">

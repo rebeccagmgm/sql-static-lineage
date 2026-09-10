@@ -10,13 +10,37 @@ export interface MetadataValue {
   reason?: string;
   description?: string;
   comment?: string;
+  name?: string;
+  ordinal?: number;
+  rawType?: string;
+  partition?: boolean;
 }
 export interface TableMetadata {
   table: MetadataValue;
   field?: MetadataValue;
+  identity?: {
+    platform: string;
+    dataSource: string;
+    qualifiedName: string;
+    stableTableId: string;
+  };
+  tableName?: string;
+  objectType?: string;
   source?: string;
+  sourcePath?: string;
+  sourceHash?: string;
+  ddlHash?: string;
   collectedAt?: string;
+  updatedAt?: string;
   contentHash?: string;
+  parseStatus?: "PARSED" | "UNSUPPORTED" | "INVALID";
+  metadataCatalog?: {
+    status: "READY" | "MISSING" | "UNREADABLE" | "INCOMPATIBLE";
+    reason?: string;
+    version?: string;
+    builtAt?: string;
+    parserVersion?: string;
+  };
   versionRelation?: "RUNTIME_INPUT_PACK_NOT_GRAPH_VERSION";
 }
 export interface GraphNode {

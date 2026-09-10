@@ -91,6 +91,17 @@ describe("collect input pack from cache", () => {
 
     const [summary] = collect(roots, ["7009"]);
     expect(summary?.collectionStatus).toBe("SUCCESS");
+    expect(
+      existsSync(
+        join(
+          roots.cacheRoot,
+          "schedule-evidence",
+          "tasks-sqlite",
+          "table-metadata-catalog",
+          "current.json",
+        ),
+      ),
+    ).toBe(true);
     const directory = join(roots.dataRoot, "tasks", "exeSql", "7009");
     const task = JSON.parse(readFileSync(join(directory, "task.json"), "utf8"));
     expect(task.targetEvidenceKind).toBeUndefined();

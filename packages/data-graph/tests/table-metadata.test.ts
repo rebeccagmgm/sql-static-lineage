@@ -1,9 +1,17 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { TableMetadataResolver } from "../src/asset-graph/table-metadata.ts";
+import { buildTableMetadataCatalog } from "../src/asset-graph/table-metadata-catalog-build.ts";
+import {
+  canonicalHash,
+  INPUT_PACK_SCHEMA_VERSION,
+} from "../../../scripts/input/shared/input-pack.ts";
+
+const sha256 = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
 
 const identity = {
   platform: "hive",
@@ -20,17 +28,27 @@ async function fixture(
   const write = async (name: string, source: string, table = identity) => {
     const directory = join(root, table.platform, name);
     await mkdir(directory, { recursive: true });
-    await writeFile(
-      join(directory, "table.json"),
-      JSON.stringify({
-        ...table,
-        stableTableId: name,
-        description: options.description ?? "中文表说明 & <safe>",
-        collectedAt: "2026-09-09T00:00:00.000Z",
-        contentHash: "table-content-hash",
+    const document: Record<string, unknown> = {
+      schemaVersion: INPUT_PACK_SCHEMA_VERSION,
+      stableTableId: name,
+      platform: table.platform,
+      dataSource: table.dataSource,
+      qualifiedName: table.qualifiedName,
+      objectType: "table",
+      ddlFile: {
+        path: "ddl.sql",
+        sha256: sha256(source),
         evidenceProvider: "local:test",
-      }),
-    );
+      },
+      description: options.description ?? "中文表说明 & <safe>",
+      collectedAt: "2026-09-09T00:00:00.000Z",
+      evidenceProvider: "local:test",
+    };
+    document.contentHash = canonicalHash(document as never, [
+      "collectedAt",
+      "contentHash",
+    ]);
+    await writeFile(join(directory, "table.json"), JSON.stringify(document));
     await writeFile(join(directory, "ddl.sql"), source);
   };
   await write(
@@ -48,13 +66,15 @@ async function fixture(
         stableTableId: "dm.same__warehouse-b",
       },
     );
-  return root;
+  const catalogRoot = join(tmpdir(), `table-metadata-catalog-${randomUUID()}`);
+  await buildTableMetadataCatalog({ tablesRoot: root, catalogRoot });
+  return { root, catalogRoot };
 }
 
 describe("TableMetadataResolver", () => {
   it("reads table description and complex-DLL field comments by physical identity", async () => {
-    const root = await fixture();
-    const metadata = await new TableMetadataResolver(root).resolve(
+    const { catalogRoot } = await fixture();
+    const metadata = await new TableMetadataResolver(catalogRoot).resolve(
       identity,
       "amount",
     );
@@ -67,8 +87,8 @@ describe("TableMetadataResolver", () => {
   });
 
   it("does not join same qualified names from another physical source", async () => {
-    const root = await fixture({ second: true });
-    const resolver = new TableMetadataResolver(root);
+    const { catalogRoot } = await fixture({ second: true });
+    const resolver = new TableMetadataResolver(catalogRoot);
     expect((await resolver.resolve(identity, "amount")).field).toMatchObject({
       comment: "金额 <元>",
     });
@@ -85,33 +105,49 @@ describe("TableMetadataResolver", () => {
   });
 
   it("reports missing comments and re-reads changed DDL instead of guessing", async () => {
-    const root = await fixture();
-    let clock = 0;
-    const resolver = new TableMetadataResolver(root, {
-      now: () => clock,
-      indexTtlMs: 0,
-    });
+    const { root, catalogRoot } = await fixture();
+    const resolver = new TableMetadataResolver(catalogRoot);
     expect((await resolver.resolve(identity, "plain")).field).toMatchObject({
       status: "ANNOTATION_NOT_RECORDED",
     });
-    const ddl = join(root, "hive", identity.stableTableId, "ddl.sql");
-    await writeFile(
-      ddl,
-      "create table dm.same (amount string comment '刷新后注释', plain string);",
-    );
-    clock++;
+    const changedDdl =
+      "create table dm.same (amount string comment '刷新后注释', plain string);";
+    const directory = join(root, "hive", identity.stableTableId);
+    const tablePath = join(directory, "table.json");
+    const document = JSON.parse(await readFile(tablePath, "utf8"));
+    document.ddlFile.sha256 = sha256(changedDdl);
+    document.contentHash = canonicalHash(document as never, [
+      "collectedAt",
+      "contentHash",
+    ]);
+    await writeFile(tablePath, JSON.stringify(document));
+    await writeFile(join(directory, "ddl.sql"), changedDdl);
+    await buildTableMetadataCatalog({
+      tablesRoot: root,
+      catalogRoot,
+      scope: {
+        tables: [
+          {
+            platform: identity.platform,
+            stableTableId: identity.stableTableId,
+          },
+        ],
+      },
+    });
     expect((await resolver.resolve(identity, "amount")).field).toMatchObject({
       comment: "刷新后注释",
     });
   });
 
   it("keeps table descriptions but labels unreadable field metadata explicitly", async () => {
-    const root = await fixture({ ddl: "not a create table statement" });
+    const { catalogRoot } = await fixture({
+      ddl: "not a create table statement",
+    });
     expect(
-      await new TableMetadataResolver(root).resolve(identity, "amount"),
+      await new TableMetadataResolver(catalogRoot).resolve(identity, "amount"),
     ).toMatchObject({
       table: { status: "AVAILABLE", description: "中文表说明 & <safe>" },
-      field: { status: "METADATA_READ_FAILED" },
+      field: { status: "METADATA_UNAVAILABLE" },
     });
   });
 });

@@ -53,13 +53,31 @@ describe("asset graph HTTP query contract", () => {
     queries.length = 0;
   });
 
-  const serve = async () => {
-    const started = await startAssetGraphServer(undefined, 0);
+  const serve = async (metadataCatalogRoot?: string) => {
+    const started = await startAssetGraphServer(undefined, 0, {
+      metadataCatalogRoot,
+    });
     close = started.close;
     const address = started.server.address();
-    if (!address || typeof address === "string") throw new Error("NO_TEST_PORT");
+    if (!address || typeof address === "string")
+      throw new Error("NO_TEST_PORT");
     return `http://127.0.0.1:${address.port}`;
   };
+
+  it("keeps graph status available while reporting a missing metadata catalog", async () => {
+    const base = await serve();
+    const status = await fetch(`${base}/api/status`);
+
+    expect(status.status).toBe(200);
+    expect(await status.json()).toMatchObject({
+      state: "READY",
+      version: "test-version",
+      metadataCatalog: {
+        status: "MISSING",
+        reason: "METADATA_CATALOG_MISSING",
+      },
+    });
+  });
 
   it("passes bounded offsets through while preserving array responses", async () => {
     const base = await serve();
@@ -70,7 +88,9 @@ describe("asset graph HTTP query contract", () => {
 
     expect(await search.json()).toEqual([]);
     expect(await fields.json()).toEqual([]);
-    const searchQuery = queries.find(({ query }) => query.includes("CONTAINS $text"));
+    const searchQuery = queries.find(({ query }) =>
+      query.includes("CONTAINS $text"),
+    );
     const fieldsQuery = queries.find(({ query }) =>
       query.includes("key:$datasetKey"),
     );
@@ -123,6 +143,98 @@ describe("asset graph HTTP query contract", () => {
       }),
     );
   });
+
+  const isolatedCatalogRoot = process.env.METADATA_CATALOG_HTTP_VERIFY_ROOT;
+  const isolatedIt = isolatedCatalogRoot ? it : it.skip;
+  isolatedIt(
+    "keeps trace topology stable and serves catalog metadata after thirty seconds",
+    async () => {
+      const graphNodes = [
+        {
+          id: "task:86840",
+          kind: "TASK",
+          taskId: "86840",
+          depth: 0,
+        },
+        {
+          id: "dataset:hive:gfhive:pdata_n.t98_otc_deri_comp_sale_info",
+          kind: "PHYSICAL_DATASET",
+          table: "pdata_n.t98_otc_deri_comp_sale_info",
+          depth: 1,
+          detail: {
+            platform: "hive",
+            dataSource: "gfhive",
+            qualifiedName: "pdata_n.t98_otc_deri_comp_sale_info",
+            stableTableId: "pdata_n.t98_otc_deri_comp_sale_info__gfhive",
+            identityStatus: "CONFIRMED",
+          },
+        },
+      ];
+      const graphEdges = [
+        {
+          id: "edge:86840:table",
+          source: graphNodes[0].id,
+          target: graphNodes[1].id,
+          kind: "WRITES_TABLE",
+          layer: "table",
+        },
+      ];
+      vi.spyOn(AssetGraphStore.prototype, "traverse").mockResolvedValue({
+        version: "test-version",
+        layer: "table",
+        direction: "up",
+        depthLimit: 2,
+        edgeLimit: 80,
+        truncated: false,
+        stoppedBy: null,
+        frontierNodeIds: [],
+        terminalNodes: [],
+        nodes: graphNodes,
+        edges: graphEdges,
+        elapsedMs: 7,
+        projectionGenerations: 0,
+      });
+      vi.spyOn(
+        AssetGraphStore.prototype,
+        "metadataIdentities",
+      ).mockResolvedValue(new Map());
+      const base = await serve(isolatedCatalogRoot);
+      const request = async (label: string) => {
+        const started = performance.now();
+        const response = await fetch(
+          `${base}/api/trace?taskId=86840&layer=table&direction=up&depth=2&depthUnit=table-hop&limit=80`,
+        );
+        const body = await response.text();
+        const received = performance.now();
+        const value = JSON.parse(body);
+        const parsed = performance.now();
+        expect(response.status).toBe(200);
+        expect(value.nodes.map((node: { id: string }) => node.id)).toEqual(
+          graphNodes.map((node) => node.id),
+        );
+        expect(value.edges).toEqual(graphEdges);
+        expect(value.nodes[1].metadata).toMatchObject({
+          table: { status: "AVAILABLE" },
+          metadataCatalog: { status: "READY" },
+        });
+        return {
+          label,
+          graphQueryMs: value.elapsedMs,
+          completeHttpMs: Number((received - started).toFixed(3)),
+          clientJsonParseMs: Number((parsed - received).toFixed(3)),
+          nodes: value.nodes.length,
+          edges: value.edges.length,
+          metadataVersion: value.nodes[1].metadata.metadataCatalog.version,
+        };
+      };
+
+      const measurements = [await request("first"), await request("repeat")];
+      await new Promise((resolve) => setTimeout(resolve, 31_000));
+      measurements.push(await request("after-31s"));
+      console.info(`METADATA_HTTP_VERIFY ${JSON.stringify(measurements)}`);
+    },
+    40_000,
+  );
 });
 
 describe("exact physical dataset field lookup", () => {

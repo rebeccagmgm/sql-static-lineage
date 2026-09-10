@@ -28,6 +28,7 @@ const allowed = new Set([
   "--read-occurrence-id",
   "--consumer-task-id",
   "--publication-version",
+  "--metadata-catalog-root",
 ]);
 
 /** Milliseconds from assetGraphMain() entry until the response object is built. */
@@ -153,7 +154,9 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
     if (command === "serve") {
       const { startAssetGraphServer } = await import("./service.ts");
       const port = integer("--port", 8791, 65535, 1024),
-        server = await startAssetGraphServer(config, port);
+        server = await startAssetGraphServer(config, port, {
+          metadataCatalogRoot: option("--metadata-catalog-root"),
+        });
       console.log(
         JSON.stringify({ ok: true, url: `http://127.0.0.1:${port}` }),
       );
