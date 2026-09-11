@@ -31,14 +31,18 @@ class MemoryTraversalStore extends AssetGraphStore {
   override async run(query: string, params: Record<string, unknown> = {}) {
     if (query.includes("RETURN properties(n) AS node ORDER BY n.id"))
       return { records: [record({ node: this.node(this.anchorId) })] } as never;
-    const keys = (params.keys as string[]).map((key) => key.replace(/^test\|/, ""));
+    const keys = (params.keys as string[]).map((key) =>
+      key.replace(/^test\|/, ""),
+    );
     const up = query.includes("(n)<-[r:SL_ASSET_EDGE]-(m)");
     const layer = String(params.layer);
     const fieldBoundary = params.fieldBoundary === true;
     const candidates = params.candidates !== false;
     const rows = this.testEdges.flatMap((edge) => {
-      if (edge.layer !== layer || (!candidates && edge.kind === "CANDIDATE")) return [];
-      if (fieldBoundary && !["CONTINUES", "CANDIDATE"].includes(edge.kind)) return [];
+      if (edge.layer !== layer || (!candidates && edge.kind === "CANDIDATE"))
+        return [];
+      if (fieldBoundary && !["CONTINUES", "CANDIDATE"].includes(edge.kind))
+        return [];
       const sourceId = up ? edge.to : edge.from;
       const nextId = up ? edge.from : edge.to;
       if (!keys.includes(sourceId)) return [];
@@ -68,30 +72,72 @@ const tableNodes: TestNode[] = [
   { id: "table:c", kind: "PHYSICAL_DATASET", detail: "{}" },
 ];
 const tableEdges: TestEdge[] = [
-  { id: "write-a", from: "task:1", to: "table:a", kind: "WRITES_TABLE", layer: "table" },
-  { id: "read-b", from: "table:b", to: "task:1", kind: "READS_TABLE", layer: "table" },
-  { id: "write-b", from: "task:2", to: "table:b", kind: "WRITES_TABLE", layer: "table" },
-  { id: "read-c", from: "table:c", to: "task:2", kind: "READS_TABLE", layer: "table" },
+  {
+    id: "write-a",
+    from: "task:1",
+    to: "table:a",
+    kind: "WRITES_TABLE",
+    layer: "table",
+  },
+  {
+    id: "read-b",
+    from: "table:b",
+    to: "task:1",
+    kind: "READS_TABLE",
+    layer: "table",
+  },
+  {
+    id: "write-b",
+    from: "task:2",
+    to: "table:b",
+    kind: "WRITES_TABLE",
+    layer: "table",
+  },
+  {
+    id: "read-c",
+    from: "table:c",
+    to: "task:2",
+    kind: "READS_TABLE",
+    layer: "table",
+  },
 ];
 
 describe("asset graph table-hop depth", () => {
   it("closes one table processing step without entering the next task", async () => {
-    const result = await new MemoryTraversalStore("table:a", tableNodes, tableEdges).traverse({
+    const result = await new MemoryTraversalStore(
+      "table:a",
+      tableNodes,
+      tableEdges,
+    ).traverse({
       nodeId: "table:a",
       layer: "table",
       direction: "up",
       depth: 1,
       depthUnit: "table-hop",
     });
-    expect(result.nodes.map(({ id }) => id)).toEqual(["table:a", "task:1", "table:b"]);
-    expect(result.nodes.find(({ id }) => id === "task:1")).toMatchObject({ depth: 1, lineageDepth: 0 });
-    expect(result.nodes.find(({ id }) => id === "table:b")).toMatchObject({ depth: 2, lineageDepth: 1 });
+    expect(result.nodes.map(({ id }) => id)).toEqual([
+      "table:a",
+      "task:1",
+      "table:b",
+    ]);
+    expect(result.nodes.find(({ id }) => id === "task:1")).toMatchObject({
+      depth: 1,
+      lineageDepth: 0,
+    });
+    expect(result.nodes.find(({ id }) => id === "table:b")).toMatchObject({
+      depth: 2,
+      lineageDepth: 1,
+    });
     expect(result.nodes.some(({ id }) => id === "task:2")).toBe(false);
     expect(result.frontierNodeIds).toEqual(["table:b"]);
   });
 
   it("preserves legacy raw-edge depth by default", async () => {
-    const result = await new MemoryTraversalStore("table:a", tableNodes, tableEdges).traverse({
+    const result = await new MemoryTraversalStore(
+      "table:a",
+      tableNodes,
+      tableEdges,
+    ).traverse({
       nodeId: "table:a",
       layer: "table",
       direction: "up",
@@ -109,11 +155,33 @@ describe("asset graph table-hop depth", () => {
       { id: "read:producer", kind: "READ_FIELD", detail: "{}" },
     ];
     const edges: TestEdge[] = [
-      { id: "consumer-value", from: "read:consumer", to: "write:root", kind: "VALUE", layer: "field" },
-      { id: "bridge", from: "write:producer", to: "read:consumer", kind: "CONTINUES", layer: "field" },
-      { id: "producer-value", from: "read:producer", to: "write:producer", kind: "VALUE", layer: "field" },
+      {
+        id: "consumer-value",
+        from: "read:consumer",
+        to: "write:root",
+        kind: "VALUE",
+        layer: "field",
+      },
+      {
+        id: "bridge",
+        from: "write:producer",
+        to: "read:consumer",
+        kind: "CONTINUES",
+        layer: "field",
+      },
+      {
+        id: "producer-value",
+        from: "read:producer",
+        to: "write:producer",
+        kind: "VALUE",
+        layer: "field",
+      },
     ];
-    const result = await new MemoryTraversalStore("write:root", nodes, edges).traverse({
+    const result = await new MemoryTraversalStore(
+      "write:root",
+      nodes,
+      edges,
+    ).traverse({
       nodeId: "write:root",
       layer: "field",
       direction: "up",
@@ -125,11 +193,16 @@ describe("asset graph table-hop depth", () => {
       "read:consumer",
       "write:producer",
     ]);
-    expect(result.nodes.find(({ id }) => id === "write:producer")).toMatchObject({
+    expect(
+      result.nodes.find(({ id }) => id === "write:producer"),
+    ).toMatchObject({
       depth: 2,
       lineageDepth: 1,
     });
-    expect(result.edges.map(({ id }) => id)).toEqual(["consumer-value", "bridge"]);
+    expect(result.edges.map(({ id }) => id)).toEqual([
+      "consumer-value",
+      "bridge",
+    ]);
     expect(result.frontierNodeIds).toEqual(["write:producer"]);
   });
 });

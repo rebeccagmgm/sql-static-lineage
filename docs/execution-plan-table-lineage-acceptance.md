@@ -2,15 +2,15 @@
 
 配套：
 
-| 文档 | 读什么 |
-| --- | --- |
-| `graph-accuracy-architecture.md` | 写观察×读次、身份、分区四态、跨任务三档 |
-| `graph-user-narrative.md` | L0–L3 对用户怎么讲准/不准 |
-| `execution-plan-task-local-projection.md` | WP-3 纸条契约 |
-| `execution-plan-task-local-union.md` | WP-5 并集 + WP-8 接续 INDEX |
-| `execution-plan-gold-case-investigation.md` | 四锚点穿透批、spine、GC 路线图 |
-| `execution-plan-writer-catalog.md` | 表→谁写了它（SQLite，替代 `producer-index:update`） |
-| `execution-plan-field-evidence-v1.md` | 列级 Impact Query（**本方案不验收**） |
+| 文档                                        | 读什么                                              |
+| ------------------------------------------- | --------------------------------------------------- |
+| `graph-accuracy-architecture.md`            | 写观察×读次、身份、分区四态、跨任务三档             |
+| `graph-user-narrative.md`                   | L0–L3 对用户怎么讲准/不准                           |
+| `execution-plan-task-local-projection.md`   | WP-3 纸条契约                                       |
+| `execution-plan-task-local-union.md`        | WP-5 并集 + WP-8 接续 INDEX                         |
+| `execution-plan-gold-case-investigation.md` | 四锚点穿透批、spine、GC 路线图                      |
+| `execution-plan-writer-catalog.md`          | 表→谁写了它（SQLite，替代 `producer-index:update`） |
+| `execution-plan-field-evidence-v1.md`       | 列级 Impact Query（**本方案不验收**）               |
 
 状态：**可实施（2026-09-04）** — 金样案例已够，先落文档与 fixture，再写自动测试。
 
@@ -35,13 +35,13 @@
 
 ### 主交付物
 
-| 产物 | 必须 |
-| --- | --- |
-| `tests/fixtures/map-acceptance/<taskId>.json` | ✓ 四锚点 |
-| `tests/project-graph/map-acceptance/*.test.ts` | ✓ fail-closed |
-| `npm run test:map-acceptance`（或并入 `test:task-local-projection`） | ✓ |
-| 跨任务 INDEX 集成测（Phase B） | 第二批 |
-| `gold-case-gaps.jsonl` / L0 报告 | 与 GC-3 共用，不重复造 |
+| 产物                                                                 | 必须                   |
+| -------------------------------------------------------------------- | ---------------------- |
+| `tests/fixtures/map-acceptance/<taskId>.json`                        | ✓ 四锚点               |
+| `tests/project-graph/map-acceptance/*.test.ts`                       | ✓ fail-closed          |
+| `npm run test:map-acceptance`（或并入 `test:task-local-projection`） | ✓                      |
+| 跨任务 INDEX 集成测（Phase B）                                       | 第二批                 |
+| `gold-case-gaps.jsonl` / L0 报告                                     | 与 GC-3 共用，不重复造 |
 
 ---
 
@@ -59,12 +59,12 @@ TASK
   边上属性：partitionMatchStatus（CONFIRMED | ASSUMED | UNKNOWN | DISJOINT）
 ```
 
-| 单位 | 问什么 |
-| --- | --- |
-| 任务 | 谁跑的 SQL；`coverageStatus` 是否为 `PROJECTED` |
-| 物理表 | `qualifiedName` + 身份（`nodeId` / `identityStatus`） |
-| 读次 | 读了哪张表、几次（`readOccurrenceId`） |
-| 写观察 | 写了哪张表、几次（`writeObservationId`） |
+| 单位       | 问什么                                                                        |
+| ---------- | ----------------------------------------------------------------------------- |
+| 任务       | 谁跑的 SQL；`coverageStatus` 是否为 `PROJECTED`                               |
+| 物理表     | `qualifiedName` + 身份（`nodeId` / `identityStatus`）                         |
+| 读次       | 读了哪张表、几次（`readOccurrenceId`）                                        |
+| 写观察     | 写了哪张表、几次（`writeObservationId`）                                      |
 | 跨任务对接 | 读次能否接到写观察；**能接必显式接，不能接必显式拒**（边 / gap / 边界三选一） |
 
 ### 1.2 明确不做（本 WP）
@@ -77,10 +77,10 @@ TASK
 
 ### 1.3 两把尺子（禁止混判）
 
-| 尺子 | 验收问题 | 本方案 |
-| --- | --- | --- |
-| **地图结构** | 边在不在、分区是否错连（DISJOINT 不能留） | **验这个** |
-| **列级定责** | 这次读是否唯一来自那次写 | **不验**；留给 field-evidence / INDEX 标注 |
+| 尺子         | 验收问题                                  | 本方案                                     |
+| ------------ | ----------------------------------------- | ------------------------------------------ |
+| **地图结构** | 边在不在、分区是否错连（DISJOINT 不能留） | **验这个**                                 |
+| **列级定责** | 这次读是否唯一来自那次写                  | **不验**；留给 field-evidence / INDEX 标注 |
 
 地图绿了，列级仍可能 frontier；列级 CONFIRMED 了，也不代表地图没漏表。
 
@@ -101,12 +101,12 @@ TASK
                                               READ_SCOPE_UNAVAILABLE
 ```
 
-| 你关心的 | 地图验收 | 列级追因（不验） |
-| --- | --- | --- |
+| 你关心的             | 地图验收                             | 列级追因（不验）               |
+| -------------------- | ------------------------------------ | ------------------------------ |
 | 有没有接上可能的上游 | `candidates` 非空或 gap 解释为何全空 | 要求 `candidates.length === 1` |
-| 分区对不上 | DISJOINT → 进 `pruned`，不留边 | 候选被剪掉 |
-| 批外 writer | 必须有 `WRITER_NOT_IN_UNION` | 可能仍在 frontier |
-| 边上 CONFIRMED | 不强制 | 才升 CONFIRMED |
+| 分区对不上           | DISJOINT → 进 `pruned`，不留边       | 候选被剪掉                     |
+| 批外 writer          | 必须有 `WRITER_NOT_IN_UNION`         | 可能仍在 frontier              |
+| 边上 CONFIRMED       | 不强制                               | 才升 CONFIRMED                 |
 
 ---
 
@@ -143,14 +143,14 @@ TASK
 
 对每个 `externalRead`，系统必须落入下列**互斥结局之一**（或组合：多条 A + 若干 B，见下表）：
 
-| 结局 | 何时 | INDEX / 图上的要求 |
-| --- | --- | --- |
-| **A. 接续边** | 并集内存在同表写观察，且对该读次 `partitionMatchStatus ∈ {CONFIRMED, ASSUMED, UNKNOWN}` | 写观察出现在 `candidates[]`；**允许多条**（多写扇入） |
-| **B. 分区剪除** | 某写观察对该读次 `partitionMatchStatus = DISJOINT` | 该写观察**不得**在 `candidates[]`；必须出现在 `prunedWriteObservationIds[]`（或等价剪除清单） |
-| **C. 批外边界** | producer-index 有 confirmed writer，但 writer 任务不在穿透批 | `WRITER_NOT_IN_UNION` 边界节点或 INDEX 同义 gap；**禁止假装没有 writer** |
-| **D. 无已知 writer** | 并集内无写观察，且 producer-index 也无 confirmed writer | `NO_KNOWN_WRITER` gap |
-| **E. 源端点 / 平台边界** | 如 `*2hive` / `oracle2hive` 读源库视图，PI 无该源表的 Hive writer | `SOURCE_ENDPOINT_BOUNDARY`（或契约等价码）；**禁止伪造跨任务边** |
-| **F. 读侧 scope 不可得** | 分区谓词/身份不足以做匹配 | `READ_SCOPE_UNAVAILABLE` 等具名 gap；**禁止空 entry** |
+| 结局                     | 何时                                                                                    | INDEX / 图上的要求                                                                            |
+| ------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **A. 接续边**            | 并集内存在同表写观察，且对该读次 `partitionMatchStatus ∈ {CONFIRMED, ASSUMED, UNKNOWN}` | 写观察出现在 `candidates[]`；**允许多条**（多写扇入）                                         |
+| **B. 分区剪除**          | 某写观察对该读次 `partitionMatchStatus = DISJOINT`                                      | 该写观察**不得**在 `candidates[]`；必须出现在 `prunedWriteObservationIds[]`（或等价剪除清单） |
+| **C. 批外边界**          | producer-index 有 confirmed writer，但 writer 任务不在穿透批                            | `WRITER_NOT_IN_UNION` 边界节点或 INDEX 同义 gap；**禁止假装没有 writer**                      |
+| **D. 无已知 writer**     | 并集内无写观察，且 producer-index 也无 confirmed writer                                 | `NO_KNOWN_WRITER` gap                                                                         |
+| **E. 源端点 / 平台边界** | 如 `*2hive` / `oracle2hive` 读源库视图，PI 无该源表的 Hive writer                       | `SOURCE_ENDPOINT_BOUNDARY`（或契约等价码）；**禁止伪造跨任务边**                              |
+| **F. 读侧 scope 不可得** | 分区谓词/身份不足以做匹配                                                               | `READ_SCOPE_UNAVAILABLE` 等具名 gap；**禁止空 entry**                                         |
 
 **组合规则（常见）**：
 
@@ -188,13 +188,13 @@ TASK
 
 ### 2.3 明确不作为验收的
 
-| 项 | 处理 |
-| --- | --- |
-| L1 密度、全图 CONFIRMED 比例 | 留档观察 |
+| 项                                 | 处理                            |
+| ---------------------------------- | ------------------------------- |
+| L1 密度、全图 CONFIRMED 比例       | 留档观察                        |
 | `confirmedTwoHopRatio`、`WAIT_WP8` | field-evidence 止损，非地图 KPI |
-| 列级跨任务闭合 | Impact Query |
-| 加工标签 / 口径 | 不做 |
-| 唯一 writer / `l1Eligible` | 边上标注；不挡 T3 |
+| 列级跨任务闭合                     | Impact Query                    |
+| 加工标签 / 口径                    | 不做                            |
+| 唯一 writer / `l1Eligible`         | 边上标注；不挡 T3               |
 
 ---
 
@@ -202,21 +202,21 @@ TASK
 
 四锚点写任务（与 `execution-plan-gold-case-investigation.md` §3 一致）：
 
-| 锚点 | taskId | 目标表 | fixture 角色 |
-| --- | --- | --- | --- |
-| A | 181058 | `dm_rsk_n.otc_opt_inr_comp_pal_sum` | 临时表 / 物化边界 |
-| B | 176827 | `dm_rsk_n.otc_opt_greek_val_det_h` | 多读表 + spine 下游 |
-| C | 209119 | `dm_rsk_n.otc_opt_sub_trd_info` | 多分支 / 扇入 |
-| D | 155015 | `dm_rsk_n.v_risk_audit_log` | 跨域、少表 |
+| 锚点 | taskId | 目标表                              | fixture 角色        |
+| ---- | ------ | ----------------------------------- | ------------------- |
+| A    | 181058 | `dm_rsk_n.otc_opt_inr_comp_pal_sum` | 临时表 / 物化边界   |
+| B    | 176827 | `dm_rsk_n.otc_opt_greek_val_det_h`  | 多读表 + spine 下游 |
+| C    | 209119 | `dm_rsk_n.otc_opt_sub_trd_info`     | 多分支 / 扇入       |
+| D    | 155015 | `dm_rsk_n.v_risk_audit_log`         | 跨域、少表          |
 
 人工基准表数量（读 SQL 核对，写入 fixture）：
 
-| taskId | 读表数（约） | 写表数（约） | 备注 |
-| --- | --- | --- | --- |
-| 209119 | 35 | 1 | 控制边多，本方案不计控制表除非 `dataset-io` 有 READ |
-| 176827 | 11 | 1 | 与现有 TL-6 一致 |
-| 181058 | 18 | 1 | 含物化链上的读表 |
-| 155015 | 1 | 1 | 值链跨域在 Phase B 验 |
+| taskId | 读表数（约） | 写表数（约） | 备注                                                |
+| ------ | ------------ | ------------ | --------------------------------------------------- |
+| 209119 | 35           | 1            | 控制边多，本方案不计控制表除非 `dataset-io` 有 READ |
+| 176827 | 11           | 1            | 与现有 TL-6 一致                                    |
+| 181058 | 18           | 1            | 含物化链上的读表                                    |
+| 155015 | 1            | 1            | 值链跨域在 Phase B 验                               |
 
 已知表级 spine（Phase B **正例**必核）：
 
@@ -227,13 +227,13 @@ TASK
 
 Phase B **反例 / 边界**金样（写入 fixture `crossTaskClosure[]`）：
 
-| 场景 | 读任务 / 表 | 期望结局 | 说明 |
-| --- | --- | --- | --- |
-| 分区剪除 | 119044 读 `t03_agt_stati_info_h`，某 writer DISJOINT | **B** | 见 `union-continuation.test.ts` |
-| 多写扇入 | 176827 读 `t98_sb_otc_opt_sub_trd_prcg_indx`（vola 等） | **A×n** | 多个 `candidates` 合法；不要求长度为 1 |
-| 批外 writer | 读表在 PI 有 writer、穿透批未投影 | **C** | `WRITER_NOT_IN_UNION` |
-| 源端点 | 78588 链上读 `titans_dm.pos_eod_position_view` | **E** | 不往 Oracle 伪造边 |
-| 批内无 writer | 某读表并集内无任何写观察 | **D** 或 **F** | 视 PI / scope 证据而定 |
+| 场景          | 读任务 / 表                                             | 期望结局       | 说明                                   |
+| ------------- | ------------------------------------------------------- | -------------- | -------------------------------------- |
+| 分区剪除      | 119044 读 `t03_agt_stati_info_h`，某 writer DISJOINT    | **B**          | 见 `union-continuation.test.ts`        |
+| 多写扇入      | 176827 读 `t98_sb_otc_opt_sub_trd_prcg_indx`（vola 等） | **A×n**        | 多个 `candidates` 合法；不要求长度为 1 |
+| 批外 writer   | 读表在 PI 有 writer、穿透批未投影                       | **C**          | `WRITER_NOT_IN_UNION`                  |
+| 源端点        | 78588 链上读 `titans_dm.pos_eod_position_view`          | **E**          | 不往 Oracle 伪造边                     |
+| 批内无 writer | 某读表并集内无任何写观察                                | **D** 或 **F** | 视 PI / scope 证据而定                 |
 
 ---
 
@@ -320,14 +320,14 @@ Phase A 用任务内表清单；Phase B 用 `crossTaskClosures[]` 钉死每个�
 
 字段说明：
 
-| 字段 | 含义 |
-| --- | --- |
-| `expectedOutcome` | `CONTINUATION` \| `PRUNED` \| `WRITER_NOT_IN_UNION` \| `NO_KNOWN_WRITER` \| `SOURCE_ENDPOINT_BOUNDARY` \| `READ_SCOPE_UNAVAILABLE` |
-| `requiredCandidateTaskIds` | 正例：这些 writer **必须**出现在 `candidates[]`（可多不可少） |
-| `minCandidateCount` | 正例：至少 N 条接续（多写扇入） |
-| `prunedWriterTaskIds` | 反例：这些 writer **必须**在 `prunedWriteObservationIds` 且 **不在** `candidates[]` |
-| `boundaryWriterTaskIds` | 批外 writer：图上必须有边界节点，INDEX 可记 gap |
-| `allowedPartitionMatch` | 正例边上允许的状态；**不含 DISJOINT** |
+| 字段                       | 含义                                                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `expectedOutcome`          | `CONTINUATION` \| `PRUNED` \| `WRITER_NOT_IN_UNION` \| `NO_KNOWN_WRITER` \| `SOURCE_ENDPOINT_BOUNDARY` \| `READ_SCOPE_UNAVAILABLE` |
+| `requiredCandidateTaskIds` | 正例：这些 writer **必须**出现在 `candidates[]`（可多不可少）                                                                      |
+| `minCandidateCount`        | 正例：至少 N 条接续（多写扇入）                                                                                                    |
+| `prunedWriterTaskIds`      | 反例：这些 writer **必须**在 `prunedWriteObservationIds` 且 **不在** `candidates[]`                                                |
+| `boundaryWriterTaskIds`    | 批外 writer：图上必须有边界节点，INDEX 可记 gap                                                                                    |
+| `allowedPartitionMatch`    | 正例边上允许的状态；**不含 DISJOINT**                                                                                              |
 
 `readOccurrenceId` 可省略：测试运行时从纸条 `externalReads[]` 按 `qualifiedName` 解析，fixture 只钉结局。
 
@@ -405,24 +405,24 @@ assert: R_facts ⊆ R_proj  （T1 召回）
 
 #### 5.2.3 正例 vs 反例（同一轮断言）
 
-| 类型 | 含义 | 断言 |
-| --- | --- | --- |
-| **正例（能跨）** | 至少一个批内写观察与读次分区**可能相交** | 该写观察 ∈ `candidates[]`；`partitionMatchStatus ≠ DISJOINT` |
-| **反例（不能跨·剪枝）** | 批内写观察与读次**确定不相交** | ∈ `prunedWriteObservationIds[]`；∉ `candidates[]` |
-| **反例（不能跨·边界）** | writer 已知但不在批内 | 边界节点 + `WRITER_NOT_IN_UNION`（或 INDEX 等价 gap） |
-| **反例（不能跨·无 writer）** | 全库无 confirmed writer | `NO_KNOWN_WRITER` gap |
-| **反例（不能跨·源端点）** | 平台/源库边界，不追上游 | `SOURCE_ENDPOINT_BOUNDARY`；不造假边 |
+| 类型                         | 含义                                     | 断言                                                         |
+| ---------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| **正例（能跨）**             | 至少一个批内写观察与读次分区**可能相交** | 该写观察 ∈ `candidates[]`；`partitionMatchStatus ≠ DISJOINT` |
+| **反例（不能跨·剪枝）**      | 批内写观察与读次**确定不相交**           | ∈ `prunedWriteObservationIds[]`；∉ `candidates[]`            |
+| **反例（不能跨·边界）**      | writer 已知但不在批内                    | 边界节点 + `WRITER_NOT_IN_UNION`（或 INDEX 等价 gap）        |
+| **反例（不能跨·无 writer）** | 全库无 confirmed writer                  | `NO_KNOWN_WRITER` gap                                        |
+| **反例（不能跨·源端点）**    | 平台/源库边界，不追上游                  | `SOURCE_ENDPOINT_BOUNDARY`；不造假边                         |
 
 **金样实例（表级，不含列）：**
 
-| 读次场景 | 预期结局 | 说明 |
-| --- | --- | --- |
-| 176827 读 `t98_sb_otc_opt_comp_info` | T3-A，`candidates` 含 119044 | spine 第二跳 |
-| 176827 读 `t98_sb_otc_opt_sub_trd_prcg_indx` | T3-A，`candidates` ≥ 2 | 多写扇入；不验唯一 |
-| 某读次 vs 某写观察分区冲突 | T3-B，`pruned` 含该 writeObservationId | DISJOINT 不得留边 |
-| 176827 读 `pos_eod_position_view`（批外 150384 写 Hive 目标） | T3-C 边界 | 批内无 writer 时显式边界 |
-| 78588 读 `titans_dm.pos_eod_position_view` | T3-E 源端点 | 不往 Oracle 追 |
-| 119044 读批外表 | T3-C 或 T3-D | 与 `union-continuation.test.ts` 对齐 |
+| 读次场景                                                      | 预期结局                               | 说明                                 |
+| ------------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
+| 176827 读 `t98_sb_otc_opt_comp_info`                          | T3-A，`candidates` 含 119044           | spine 第二跳                         |
+| 176827 读 `t98_sb_otc_opt_sub_trd_prcg_indx`                  | T3-A，`candidates` ≥ 2                 | 多写扇入；不验唯一                   |
+| 某读次 vs 某写观察分区冲突                                    | T3-B，`pruned` 含该 writeObservationId | DISJOINT 不得留边                    |
+| 176827 读 `pos_eod_position_view`（批外 150384 写 Hive 目标） | T3-C 边界                              | 批内无 writer 时显式边界             |
+| 78588 读 `titans_dm.pos_eod_position_view`                    | T3-E 源端点                            | 不往 Oracle 追                       |
+| 119044 读批外表                                               | T3-C 或 T3-D                           | 与 `union-continuation.test.ts` 对齐 |
 
 #### 5.2.4 自动测试算法
 
@@ -466,11 +466,11 @@ for each e in E:
 
 每条 `entries[]` 至少利用：
 
-| 字段 | 用途 |
-| --- | --- |
-| `candidates[]` | T3-A 正例接续边 |
-| `prunedWriteObservationIds[]` | T3-B 分区剪除 |
-| `gaps[]` | T3-D/E/F 及批级解释 |
+| 字段                             | 用途                                  |
+| -------------------------------- | ------------------------------------- |
+| `candidates[]`                   | T3-A 正例接续边                       |
+| `prunedWriteObservationIds[]`    | T3-B 分区剪除                         |
+| `gaps[]`                         | T3-D/E/F 及批级解释                   |
 | `partitionMatchStatus`（候选上） | 边上标注；DISJOINT 只许出现在剪除路径 |
 
 批外 writer 的边界可出现在：INDEX `gaps[]`、并集 merge 报告、或图上的边界任务节点——**三处至少一处可读**；验收以「consumer 读次能追到 writer 线索」为准，不要求边画成 TASK→TASK。
@@ -484,34 +484,34 @@ for each e in E:
 
 ### 5.3 Phase C — 证据对齐卫生（并行、不挡 A/B）
 
-| 检查 | 动作 |
-| --- | --- |
-| Pack ↔ Facts `task_content_hash` | 批处理前扫描；stale 重跑 `input-pack:machine-facts` |
-| Pack ↔ writer catalog | Facts SUCCESS 后 UPSERT；见 `execution-plan-writer-catalog.md`。**不要**为表血缘批再跑 `producer-index:update` |
-| 读侧分区谓词缺失 | 记 L3 gap，不伪造 scope |
+| 检查                             | 动作                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pack ↔ Facts `task_content_hash` | 批处理前扫描；stale 重跑 `input-pack:machine-facts`                                                            |
+| Pack ↔ writer catalog            | Facts SUCCESS 后 UPSERT；见 `execution-plan-writer-catalog.md`。**不要**为表血缘批再跑 `producer-index:update` |
+| 读侧分区谓词缺失                 | 记 L3 gap，不伪造 scope                                                                                        |
 
 ---
 
 ## 6. 与现有测试的关系
 
-| 现有 | 本方案 |
-| --- | --- |
-| `golden-samples.test.ts` (TL-6) | 176827/119044/105387 已有读表断言；迁入 map-acceptance 或并行保留 |
-| `test:task-local-projection` | 可挂载 `test:map-acceptance` |
-| `test:field-evidence` / stop-loss | **不替代**本方案；列级止损与地图验收无关 |
-| `reconcile-one-hop` 金样 | 老消费者；地图验收以 WP-3 + INDEX 为准，不混用启发式路径 |
+| 现有                              | 本方案                                                            |
+| --------------------------------- | ----------------------------------------------------------------- |
+| `golden-samples.test.ts` (TL-6)   | 176827/119044/105387 已有读表断言；迁入 map-acceptance 或并行保留 |
+| `test:task-local-projection`      | 可挂载 `test:map-acceptance`                                      |
+| `test:field-evidence` / stop-loss | **不替代**本方案；列级止损与地图验收无关                          |
+| `reconcile-one-hop` 金样          | 老消费者；地图验收以 WP-3 + INDEX 为准，不混用启发式路径          |
 
 ---
 
 ## 7. 工作包与顺序
 
-| 包 | 内容 | 完成定义 |
-| --- | --- | --- |
-| **MA-0** | 本文档 + 四锚点 fixture JSON | fixture 与人工 SQL 清单一致 |
-| **MA-1** | `map-acceptance-harness.ts` + Phase A 测试 | 四锚点 T1/T2 绿；`MAP_ACCEPTANCE_REQUIRED` 可 fail-closed |
-| **MA-2** | Phase B INDEX 集成测 + `crossTaskClosures` + spine | T3 正例（spine）与反例（DISJOINT/批外/源端点）同一轮绿 |
-| **MA-3** | H1 批级报告字段；H2 抽查表模板 | GC-3 报告可引用，不重复实现 |
-| **MA-4** | 文档回写 `execution-plan-gold-case-investigation.md` §6 | 表级验收指向本文档 |
+| 包       | 内容                                                    | 完成定义                                                  |
+| -------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| **MA-0** | 本文档 + 四锚点 fixture JSON                            | fixture 与人工 SQL 清单一致                               |
+| **MA-1** | `map-acceptance-harness.ts` + Phase A 测试              | 四锚点 T1/T2 绿；`MAP_ACCEPTANCE_REQUIRED` 可 fail-closed |
+| **MA-2** | Phase B INDEX 集成测 + `crossTaskClosures` + spine      | T3 正例（spine）与反例（DISJOINT/批外/源端点）同一轮绿    |
+| **MA-3** | H1 批级报告字段；H2 抽查表模板                          | GC-3 报告可引用，不重复实现                               |
+| **MA-4** | 文档回写 `execution-plan-gold-case-investigation.md` §6 | 表级验收指向本文档                                        |
 
 领取顺序：**MA-0 → MA-1 → MA-2**；MA-3/MA-4 可与 MA-2 并行。
 

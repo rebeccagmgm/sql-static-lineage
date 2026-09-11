@@ -80,7 +80,7 @@ export function resolveTaskLocalCacheKeyParts(input: {
     packContentHash: input.packContentHash ?? packContentHashForTask(input.dataRoot, input.taskId),
     factsManifestSha256: factsManifestFingerprint(load),
     schemaVersion: TASK_LOCAL_PROJECTION_SCHEMA_VERSION,
-    generatorVersion: "1.3.10",
+    generatorVersion: "1.3.13",
     ...(input.scheduleCacheRoot === undefined ? {} : {
       scheduleContentHash: sha256(canonicalJson(schedule ? {
         taskName: schedule.taskName,

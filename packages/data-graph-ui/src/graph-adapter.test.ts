@@ -166,7 +166,13 @@ const containing = (result: ReturnType<typeof adaptTrace>, id: string) =>
   );
 
 describe("field trial projection", () => {
-  it("coalesces only confirmed physical bridges and inserts distinct task nodes", () => {
+  it("explains folded intermediate steps on the selected value path", () => {
+    const folded = { ...trace, edges: trace.edges.map(edge => edge.id === "consume-a" ?
+      { ...edge, detail: { ...edge.detail, materializationFolded: true, materializationBridgeIds: ["step1", "step2"] } } : edge) };
+    const result = adaptTrace(folded, undefined, "out:a");
+    expect(result.edges.find(edge => edge.id === "consume-a")?.label).toBe("取值 · 经 2 个中间步骤");
+  });
+  it("coalesces fallback physical bridges and keeps field edges direct", () => {
     const result = adaptTrace(trace);
     expect(containing(result, "producer:a")?.id).toBe(
       containing(result, "in:a")?.id,
@@ -175,27 +181,19 @@ describe("field trial projection", () => {
       /^table:pdata\.shared__hive:/,
     );
     expect(
-      result.nodes
-        .filter(({ type }) => type === "processingTask")
-        .map(({ id }) => id)
-        .sort(),
-    ).toEqual(["task:consumer", "task:producer"]);
-    expect(result.nodes.find(({ id }) => id === "task:consumer")?.data.raw).toMatchObject({
-      taskId: "consumer",
-      detail: { taskName: "消费任务名称" },
-    });
+      result.nodes.filter(({ type }) => type === "processingTask"),
+    ).toEqual([]);
     expect(result.edges.some(({ source, target }) => source === target)).toBe(
       false,
     );
     expect(
       result.edges.filter(({ data }) => data?.raw === trace.edges[0]),
-    ).toHaveLength(2);
-    expect(
-      result.edges.find(({ id }) => id === "consume-a:input")?.data?.raw,
-    ).toBe(trace.edges[0]);
-    expect(
-      result.edges.find(({ id }) => id === "consume-a:input")?.label,
-    ).toBeUndefined();
+    ).toHaveLength(1);
+    expect(result.edges.find(({ id }) => id === "consume-a")).toMatchObject({
+      sourceHandle: "in:a",
+      targetHandle: "out:a",
+      data: { raw: trace.edges[0] },
+    });
   });
 
   it("keeps candidates isolated by default and expands them with a stable target key", () => {
@@ -216,14 +214,16 @@ describe("field trial projection", () => {
     expect(containing(expanded, "candidate:a")?.id).not.toBe(
       containing(expanded, "in:a")?.id,
     );
-    expect(expanded.nodes.some(({ id }) => id === "task:candidate")).toBe(true);
+    expect(expanded.nodes.some(({ id }) => id === "task:candidate")).toBe(
+      false,
+    );
     expect(containing(expanded, "in:a")?.data.candidatesExpanded).toBe(true);
     expect(
       expanded.edges.find(({ id }) => id === "candidate-bridge")?.label,
     ).toBe("候选接续");
   });
 
-  it("preserves exact aliases and highlights through tasks without activating sibling fields", () => {
+  it("preserves exact aliases and highlights direct mappings without activating sibling fields", () => {
     const result = adaptTrace(trace, undefined, "out:a");
     const shared = containing(result, "in:a")!;
     expect(shared.data.activeFieldIds).toEqual(
@@ -237,30 +237,27 @@ describe("field trial projection", () => {
         .map(({ id }) => id),
     ).toContain("producer:a");
     expect(
-      result.nodes.find(({ id }) => id === "task:consumer")?.style?.opacity,
+      result.edges.find(({ id }) => id === "consume-a")?.style?.opacity,
     ).toBe(1);
     expect(
-      result.edges.find(({ id }) => id === "consume-a:input")?.style?.opacity,
-    ).toBe(1);
-    expect(
-      result.edges.find(({ id }) => id === "consume-b:input")?.style?.opacity,
+      result.edges.find(({ id }) => id === "consume-b")?.style?.opacity,
     ).toBe(0.14);
   });
 
-  it("highlights only a task's direct visual neighbors without crossing a shared table", () => {
+  it("does not synthesize task-level bundles in field mode", () => {
     const result = adaptTrace(trace, undefined, undefined, {
       highlightedTaskId: "task:consumer",
     });
-    expect(
-      result.nodes.find(({ id }) => id === "task:consumer")?.style?.opacity,
-    ).toBe(1);
-    expect(containing(result, "in:a")?.style?.opacity).toBe(1);
-    expect(result.nodes.some(({ id }) => id === "task:producer")).toBe(false);
-    expect(
-      result.edges.find(({ id }) => id === "consume-a:input")?.style?.opacity,
-    ).toBe(1);
-    expect(result.edges.some(({ id }) => id === "produce-a:output")).toBe(
+    expect(result.nodes.some(({ type }) => type === "processingTask")).toBe(
       false,
+    );
+    expect(result.edges.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        "consume-a",
+        "consume-b",
+        "produce-a",
+        "produce-b",
+      ]),
     );
   });
 
@@ -281,7 +278,7 @@ describe("field trial projection", () => {
     );
   });
 
-  it("keeps a constant-only output connected to its task without inventing input", () => {
+  it("keeps a constant-only field card without inventing an input edge", () => {
     const literal: TraceResult = {
       ...trace,
       nodes: [
@@ -296,26 +293,19 @@ describe("field trial projection", () => {
       edges: [],
     };
     const result = adaptTrace(literal, undefined, "literal");
-    expect(
-      result.nodes.some(
-        ({ id, type }) =>
-          id === "task:literal-task" && type === "processingTask",
-      ),
-    ).toBe(true);
-    expect(result.edges).toEqual([
-      expect.objectContaining({
-        source: "task:literal-task",
-        targetHandle: "literal",
-        label: "生成字段",
-        data: { rawNode: literal.nodes[0] },
-      }),
-    ]);
+    expect(containing(result, "literal")).toBeDefined();
+    expect(result.nodes.some(({ type }) => type === "processingTask")).toBe(
+      false,
+    );
+    expect(result.edges).toEqual([]);
   });
 
   it("uses the SQLite scheduler name for an existing task node over an old graph label", () => {
     const result = adaptTrace({
       ...trace,
       taskLabels: { "144136": "odata_n_tit.d_ref_book_p_h15_f" },
+      taskTopics: { "144136": "ODATA_N_TIT" },
+      taskTopicDescriptions: { "144136": "投资管理系统采集" },
       nodes: [
         {
           id: "task:144136",
@@ -329,7 +319,11 @@ describe("field trial projection", () => {
     });
     expect(result.nodes[0]?.data.raw).toMatchObject({
       label: "odata_n_tit.d_ref_book_p_h15_f",
-      detail: { taskName: "odata_n_tit.d_ref_book_p_h15_f" },
+      detail: {
+        taskName: "odata_n_tit.d_ref_book_p_h15_f",
+        topicName: "ODATA_N_TIT",
+        topicDescription: "投资管理系统采集",
+      },
     });
   });
 
@@ -343,7 +337,11 @@ describe("field trial projection", () => {
           kind: "TASK",
           taskId: "missing",
           label: "old requirement annotation",
-          detail: { taskName: "old requirement annotation" },
+          detail: {
+            taskName: "old requirement annotation",
+            topicName: "STALE_TOPIC",
+            topicDescription: "旧描述",
+          },
           depth: 0,
         },
       ],
@@ -354,5 +352,85 @@ describe("field trial projection", () => {
       detail: {},
     });
     expect(result.nodes[0]?.data.raw?.label).toBeUndefined();
+  });
+});
+
+it("orders published consumption fields by name without changing edge endpoints", () => {
+  const raw = [
+    field("w:z", "WRITE_FIELD", {
+      column: "z",
+      table: "s.t",
+      taskId: "t",
+      writeId: "w",
+      depth: 0,
+    }),
+    field("w:a", "WRITE_FIELD", {
+      column: "a",
+      table: "s.t",
+      taskId: "t",
+      writeId: "w",
+      depth: 0,
+    }),
+  ];
+  const result = adaptTrace({
+    ...trace,
+    nodes: raw,
+    edges: [],
+    consumption: {
+      schemaVersion: "1.0.0",
+      branches: [],
+      rootPaths: [],
+      groups: [
+        {
+          id: "published",
+          role: "WRITE",
+          presentation: "FIELD_GROUP",
+          scopeEquivalence: "PROVEN",
+          depth: 0,
+          scope: { status: "UNKNOWN", label: "范围未证明", items: [] },
+          rawNodeIds: ["w:z", "w:a"],
+          rawEdgeIds: [],
+          rootNodeIds: [],
+          fields: [],
+          writeRefs: [],
+        },
+      ],
+    },
+  });
+  expect(result.nodes[0]?.data.members?.map((member) => member.column)).toEqual(
+    ["a", "z"],
+  );
+  expect(raw.map((member) => member.column)).toEqual(["z", "a"]);
+});
+it("shows value labels only for the highlighted lineage", () => {
+  const unselected = adaptTrace(trace);
+  expect(unselected.edges.filter((edge) => edge.label === "取值")).toHaveLength(
+    0,
+  );
+});
+
+describe("table view candidate boundaries", () => {
+  it.each(["up", "down"] as const)("keeps returned table IO beyond candidate writes in %s traces", direction => {
+    const nodes: GraphNode[] = direction === "up" ? [
+      {id:"target",kind:"PHYSICAL_DATASET",table:"dm.target",depth:0},
+      {id:"task:writer",kind:"TASK",taskId:"writer",depth:1},
+      {id:"source",kind:"PHYSICAL_DATASET",table:"odata.source",depth:2},
+    ] : [
+      {id:"task:writer",kind:"TASK",taskId:"writer",depth:0},
+      {id:"target",kind:"PHYSICAL_DATASET",table:"dm.target",depth:1},
+      {id:"task:reader",kind:"TASK",taskId:"reader",depth:2},
+    ];
+    const candidate = {id:"candidate-write",from:"task:writer",to:"target",kind:"WRITES_TABLE",status:"CANDIDATE"};
+    const observed = direction === "up"
+      ? {id:"read",from:"source",to:"task:writer",kind:"READS_TABLE",status:"OBSERVED"}
+      : {id:"read",from:"target",to:"task:reader",kind:"READS_TABLE",status:"OBSERVED"};
+    const input: TraceResult = {...trace,layer:"table",direction,nodes,edges:[candidate,observed],consumption:undefined};
+    const graph = adaptTrace(input);
+    expect(graph.nodes.map(node=>node.id).sort()).toEqual(nodes.map(node=>node.id).sort());
+    expect(graph.edges.map(edge=>edge.id).sort()).toEqual(["candidate-write","read"]);
+    const rendered = graph.edges.find(edge=>edge.id === "candidate-write")!;
+    expect(rendered.style?.strokeDasharray).toBe("6 5");
+    expect(rendered.data?.raw).toEqual(candidate);
+    expect(candidate.status).toBe("CANDIDATE");
   });
 });

@@ -199,6 +199,8 @@ function matchingReads(input: {
   readonly cteOutputColumn: string | null;
   /** Optional logical relation qualifier from that same structured input. */
   readonly cteRelationQualifier: string | null;
+  /** Exact direct-read qualifier for the routed structured reference. */
+  readonly referenceQualifier: string | null;
   readonly bindingByReadRelation: ReadonlyMap<string, string>;
 }): readonly RelationRecord[] {
   const targetTable = tableKey(input.sourceTable);
@@ -222,14 +224,32 @@ function matchingReads(input: {
   // input domain is singular.  A matching CTE body must not hide a sibling
   // derived/CTE relation that could also supply the column.
   const hasUniqueDirectInput = referencedInputReads.length === 1;
+  // A setop branch can read the same CTE body more than once (for example,
+  // current and baseline aggregates over `t`).  That remains safe only when
+  // every immediate logical input points at that one body.
+  const sharedCteBodyId = referencedInputReads[0]?.sourceRelationId ?? null;
+  const hasRepeatedSharedCteInput = sharedCteBodyId !== null
+    && referencedInputReads.length > 1
+    && referencedInputReads.every(
+      (relation) => relation.sourceRelationId === sharedCteBodyId,
+    );
+  const canBridgeCteInput = hasUniqueDirectInput || hasRepeatedSharedCteInput;
   const cteBridges: Array<{
     readonly cteRead: RelationRecord;
     readonly cteBody: RelationRecord;
     readonly qualifier: string | null;
   }> = [];
+  const cteOutputColumn = input.cteOutputColumn;
   for (const relation of reads) {
     if (relation.physicalDataset === targetTable) {
-      if (isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) {
+      if (
+        isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)
+        && (!input.referenceQualifier || relationMatchesQualifier(
+          relation,
+          input.referenceQualifier,
+          input.bindingByReadRelation,
+        ))
+      ) {
         matches.set(relation.relationId, relation);
       }
       continue;
@@ -240,16 +260,18 @@ function matchingReads(input: {
     // output lists this physical field.  A CTE source pointer or table match
     // alone is insufficient evidence.
     if (
-        !hasUniqueDirectInput
+        !canBridgeCteInput
       || !relation.sourceRelationId
-      || !input.cteOutputColumn
-        || relation.relationId !== referencedInputReads[0]!.relationId
+      || !cteOutputColumn
+      || !referencedInputReads.some(
+        (candidate) => candidate.relationId === relation.relationId,
+      )
     ) continue;
     if (!isReadVisibleFromExpressionScope(expressionScopeId, relation.scopeId)) continue;
     const cteBody = input.index.relations.get(relation.sourceRelationId);
     if (!cteBody) continue;
     const witnesses = cteBody.outputInputColumns.filter((column) =>
-      column.outputName === normalizeName(input.cteOutputColumn!)
+      column.outputName === normalizeName(cteOutputColumn)
       && column.physicalDataset === targetTable
       && column.physicalColumn === targetColumn,
     );
@@ -257,13 +279,14 @@ function matchingReads(input: {
     cteBridges.push({ cteRead: relation, cteBody, qualifier: witnesses[0]!.qualifier });
   }
 
-  // A branch can only cross one logical CTE read for one unqualified input.
-  // If Facts expose two viable reads, they have not established which relation
-  // supplied the column; do not collapse their common physical dependency.
-  if (cteBridges.length !== 1) {
+  const cteBodies = new Map<string, typeof cteBridges[number]>();
+  for (const bridge of cteBridges) {
+    cteBodies.set(bridge.cteBody.relationId, bridge);
+  }
+  if (cteBodies.size !== 1) {
     return [...matches.values()].sort((left, right) => left.relationId.localeCompare(right.relationId));
   }
-  const bridge = cteBridges[0]!;
+  const bridge = [...cteBodies.values()][0]!;
   const bodyScope = bridge.cteBody.scopeId;
   for (const sourceRead of readRelationsInSubtree(input.index, bridge.cteBody.relationId)) {
     const suffix = bodyScope && sourceRead.scopeId?.startsWith(`${bodyScope}.`)
@@ -379,11 +402,43 @@ export function routeNamedOutputContexts(input: {
           normalizeName(relation.scopeId ?? "") === expectedScope
           && outputExpression(relation.relationId, inputName, input.relationExpressionsByRelationId) !== null,
         );
-      if (candidates.length !== 1) return [];
+      if (candidates.length === 1) {
+        const next = outputExpression(
+          candidates[0]!.relationId, inputName, input.relationExpressionsByRelationId,
+        );
+        const nextExpression = next && [...(input.expressionsByRelation.get(candidates[0]!.relationId)?.values() ?? [])]
+          .filter((item) => normalizeName(String(item.output_name ?? "")) === normalizeName(inputName));
+        if (!nextExpression || nextExpression.length !== 1) return [];
+        current = nextExpression[0]!;
+        continue;
+      }
+
+      // A CTE reader is represented as a read in the *same* lexical scope as
+      // its consumer, rather than a child scope named after the binding.  It
+      // is usable only when binding, source body, and that body's named output
+      // are each unique.  Do not match same-named bindings in nested scopes.
+      const normalizedScope = normalizeName(currentScope);
+      const normalizedBinding = normalizeName(qualifier);
+      const cteReaders = [...relationSubtree(input.index, relationId)]
+        .map((id) => input.index.relations.get(id))
+        .filter((relation): relation is RelationRecord => relation !== undefined)
+        .filter((relation) =>
+          relation.relationType === "read"
+          && normalizeName(relation.scopeId ?? "") === normalizedScope
+          && relation.binding === normalizedBinding
+          && relation.sourceRelationId !== null,
+        );
+      const cteBodies = new Set(cteReaders.map((reader) => reader.sourceRelationId!));
+      if (cteReaders.length !== 1 || cteBodies.size !== 1) return [];
+      const cteBody = input.index.relations.get(cteReaders[0]!.sourceRelationId!);
+      if (
+        !cteBody
+        || !cteBody.outputColumns.some((column) => normalizeName(column) === normalizeName(inputName))
+      ) return [];
       const next = outputExpression(
-        candidates[0]!.relationId, inputName, input.relationExpressionsByRelationId,
+        cteBody.relationId, inputName, input.relationExpressionsByRelationId,
       );
-      const nextExpression = next && [...(input.expressionsByRelation.get(candidates[0]!.relationId)?.values() ?? [])]
+      const nextExpression = next && [...(input.expressionsByRelation.get(cteBody.relationId)?.values() ?? [])]
         .filter((item) => normalizeName(String(item.output_name ?? "")) === normalizeName(inputName));
       if (!nextExpression || nextExpression.length !== 1) return [];
       current = nextExpression[0]!;
@@ -557,19 +612,19 @@ export function resolveSourceReadOccurrence(input: {
     sourceTable: input.sourceTable,
     sourceColumn: input.sourceColumn,
     cteOutputColumn: input.cteOutputColumn ?? null,
-    cteRelationQualifier: input.cteRelationQualifier ?? null,
+    // Narrow the logical CTE reader before bridging; the body read may use a
+    // different alias, so filtering it afterwards would reject valid evidence.
+    cteRelationQualifier: input.cteRelationQualifier
+      ?? input.referenceQualifier
+      ?? null,
+    referenceQualifier: input.referenceQualifier ?? null,
     bindingByReadRelation: input.bindingByReadRelation,
   });
-  const referenceQualifier = input.referenceQualifier;
-  const matches = referenceQualifier
-    ? candidates.filter((relation) => relationMatchesQualifier(
-      relation, referenceQualifier, input.bindingByReadRelation,
-    ))
-    : narrowByQualifiers({
-      matches: candidates,
-      qualifiers,
-      bindingByReadRelation: input.bindingByReadRelation,
-    });
+  const matches = narrowByQualifiers({
+    matches: candidates,
+    qualifiers,
+    bindingByReadRelation: input.bindingByReadRelation,
+  });
   if (matches.length === 1) {
     const relation = matches[0]!;
     const occurrenceId = readOccurrenceIdForRelation(

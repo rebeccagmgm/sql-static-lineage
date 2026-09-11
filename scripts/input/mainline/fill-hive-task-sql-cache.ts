@@ -357,6 +357,9 @@ function shouldKeepExistingHoraeLogOverMcp(
   if (existing.source !== "HORAE_LOG" || existing.sqlStatus !== "AVAILABLE") {
     return false;
   }
+  if (sqlHasStructuralTemplateVars(existing.createSql, existing.querySql)) {
+    return false;
+  }
   return (
     hiveTaskSqlPayloadLength(existing.createSql, existing.querySql) >
     hiveTaskSqlPayloadLength(mcpSlots.createSql, mcpSlots.querySql)
@@ -426,8 +429,16 @@ async function fillHoraeLogOnlyHiveTaskSqlCache(
         taskName,
         hiveDb,
       });
-      if (fromLog.createSql === null && fromLog.querySql === null) {
+      const logAvailable =
+        (fromLog.createSql !== null || fromLog.querySql !== null) &&
+        !sqlHasStructuralTemplateVars(fromLog.createSql, fromLog.querySql);
+      if (!logAvailable) {
         logEmpty += 1;
+        if (sqlHasStructuralTemplateVars(fromLog.createSql, fromLog.querySql)) {
+          process.stderr.write(
+            `[hive-task-sql-cache] ${taskId} HORAE_LOG_STRUCTURAL_TEMPLATE\n`,
+          );
+        }
         continue;
       }
       writeHiveTaskSqlCache(
@@ -578,8 +589,7 @@ export async function fillHiveTaskSqlCache(
       existing.status === "HIT" &&
       !force &&
       existing.sqlStatus === "AVAILABLE" &&
-      (!sqlHasStructuralTemplateVars(existing.createSql, existing.querySql) ||
-        existing.source !== "LOCAL_CODE")
+      !sqlHasStructuralTemplateVars(existing.createSql, existing.querySql)
     ) {
       if (existing.path.endsWith(HIVE_TASK_SQL_LEGACY_CACHE_FILE_NAME)) {
         writeHiveTaskSqlCache(taskId, existing.observedAt, existing, cacheRoot);
@@ -722,7 +732,11 @@ export async function fillHiveTaskSqlCache(
           item.taskId,
         );
         const available = slots.createSql !== null || slots.querySql !== null;
-        if (available) {
+        const mcpHasStructuralTemplateVars = sqlHasStructuralTemplateVars(
+          slots.createSql,
+          slots.querySql,
+        );
+        if (available && !mcpHasStructuralTemplateVars) {
           const existingForMcp = readHiveTaskSqlCache(item.taskId, cacheRoot);
           if (shouldKeepExistingHoraeLogOverMcp(existingForMcp, slots)) {
             process.stderr.write(
@@ -764,9 +778,14 @@ export async function fillHiveTaskSqlCache(
           mcpCached += 1;
           if (item.reason === "structural") structuralUpgrades += 1;
         } else {
-          mcpEmpty += 1;
+          if (!available) mcpEmpty += 1;
+          if (mcpHasStructuralTemplateVars) {
+            process.stderr.write(
+              `[hive-task-sql-cache] ${item.taskId} MCP_STRUCTURAL_TEMPLATE -> HORAE_LOG\n`,
+            );
+          }
 
-          // MCP empty → Horae log (expanded hive -e)
+          // MCP unavailable or still structural → Horae log (expanded hive -e).
           let logText: string;
           try {
             const logPath = runScriptLogCachePath(
@@ -816,7 +835,8 @@ export async function fillHiveTaskSqlCache(
             hiveDb: item.hiveDb,
           });
           const logAvailable =
-            fromLog.createSql !== null || fromLog.querySql !== null;
+            (fromLog.createSql !== null || fromLog.querySql !== null) &&
+            !sqlHasStructuralTemplateVars(fromLog.createSql, fromLog.querySql);
           if (logAvailable) {
             writeHiveTaskSqlCache(
               item.taskId,
@@ -834,7 +854,14 @@ export async function fillHiveTaskSqlCache(
             );
             logCached += 1;
             if (item.reason === "structural") structuralUpgrades += 1;
-          } else logEmpty += 1;
+          } else {
+            logEmpty += 1;
+            if (sqlHasStructuralTemplateVars(fromLog.createSql, fromLog.querySql)) {
+              process.stderr.write(
+                `[hive-task-sql-cache] ${item.taskId} HORAE_LOG_STRUCTURAL_TEMPLATE\n`,
+              );
+            }
+          }
         }
         if (
           (index + 1) % progressEvery === 0 ||

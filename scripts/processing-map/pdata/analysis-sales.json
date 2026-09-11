@@ -1,0 +1,554 @@
+[
+  {
+    "taskId": "107491",
+    "output": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+    "title": "合约快照展开为计提日期序列并补充日金额",
+    "summary": "把本次销售快照展开为计提日，接入各自整理的事件、持仓、金仕达状态、保证金比例及费率，按产品规则形成逐日金额。",
+    "sha256": "8f655b98522a2a9bf6e4c8aa4d945e163242145551096ab992c516dabc825ca6",
+    "inputs": [
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_info",
+        "role": "主记录",
+        "reason": "提供协议、业务类型、交易对手、标的、起止定价日和初始名义本金，并作为日期展开主记录。",
+        "lines": [
+          41,
+          50
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_trd_option_event",
+        "role": "历史状态",
+        "reason": "按生效的部分终止/提前锁盈事件累计期权名义本金变化，并展开到下一事件日前的计提日期。",
+        "lines": [
+          52,
+          78
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ref_trs_leg",
+        "role": "关系/属性补充",
+        "reason": "限定互换结构腿并把腿键映射到互换交易键。",
+        "lines": [
+          79,
+          89
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_pos_trs_leg_his_pos",
+        "role": "历史状态",
+        "reason": "按源业务日期提供互换腿初始数量和历史动态数量。",
+        "lines": [
+          90,
+          99
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ks_trade_comfirm_info",
+        "role": "历史状态",
+        "reason": "提供金仕达业务日期、动态本金、计息、占用成本、利润和费用。",
+        "lines": [
+          100,
+          119
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_pos_fast_trs_leg_his_pos",
+        "role": "历史状态",
+        "reason": "提供北上DMA的日终腿持仓动态本金。",
+        "lines": [
+          121,
+          131
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_ks_trs_for_risk",
+        "role": "关系/属性补充",
+        "reason": "提供按日期展开的保证金履约比例。",
+        "lines": [
+          132,
+          149
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_trd_daily_accrual_fee",
+        "role": "历史状态",
+        "reason": "提供按工具和计提日期展开的期权计提费率。",
+        "lines": [
+          150,
+          159
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "id": "base",
+        "title": "当日销售基础",
+        "detail": "筛选加工日销售基础，以提前终止日优先形成有效结束日；限定结束日晚于2021-09-30且起始日不晚于结束日。",
+        "output": "本次销售合约快照；四类产品仍保留Grp_Id。",
+        "join": "读取T98_OTC_DERI_COMP_SALE_INFO的加工日分区。",
+        "lines": [
+          43,
+          49
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 80
+      },
+      {
+        "id": "info",
+        "title": "info：展开计提日期",
+        "detail": "从max(起始计价日,加工日−150天)展开到加工日；序列没有统一截到结束日。",
+        "output": "销售快照记录×Accrued_Date；原快照属性随日期重复。",
+        "join": "POSEXPLODE日期位置；结束日只在后面的产品金额规则中使用。",
+        "lines": [
+          41,
+          51
+        ],
+        "parents": [
+          "base"
+        ],
+        "x": 365,
+        "y": 80
+      },
+      {
+        "id": "evt",
+        "title": "evt：期权事件累计",
+        "detail": "生效的部分终止、提前锁盈先按合约和事件日汇总，再累计并延续至下一事件日前。",
+        "output": "合约技术ID＋日的累计本金变化。",
+        "join": "以Inr_Seri_No＋Accrued_Date回接；源为期权事件。",
+        "lines": [
+          52,
+          78
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 265
+      },
+      {
+        "id": "his_dy",
+        "title": "his_dy：互换历史持仓",
+        "detail": "筛选结构腿，按初始价格×当前数量求和。",
+        "output": "交易技术ID＋持仓业务日的动态本金。",
+        "join": "Inr_Seri_No接交易键，Accrued_Date接源Busi_Date。",
+        "lines": [
+          79,
+          99
+        ],
+        "parents": [],
+        "x": 365,
+        "y": 265
+      },
+      {
+        "id": "ks",
+        "title": "ks：金仕达状态延续",
+        "detail": "确认记录用LEAD确定下一业务日，把动态本金、利息及占资成本延续到下一记录日前。",
+        "output": "确认编号＋日的状态金额。",
+        "join": "销售Agt_Id=key_trade_comfirm_id，并匹配计提日。",
+        "lines": [
+          100,
+          111
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 450
+      },
+      {
+        "id": "ks_t",
+        "title": "ks_t：实际日佣金",
+        "detail": "读取近150天实际业务记录中的利润和费用成本；不按状态延续。",
+        "output": "确认编号＋实际业务日的佣金及成本。",
+        "join": "Agt_Id＋Accrued_Date；与ks保持不同时间处理。",
+        "lines": [
+          112,
+          119
+        ],
+        "parents": [],
+        "x": 365,
+        "y": 450
+      },
+      {
+        "id": "nd",
+        "title": "nd：极速互换日终持仓",
+        "detail": "日终腿持仓按产品与源业务日汇总动态本金。",
+        "output": "产品号＋日的动态本金。",
+        "join": "销售Otc_Seri_No接产品号，计提日接持仓业务日。",
+        "lines": [
+          121,
+          131
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 635
+      },
+      {
+        "id": "prop",
+        "title": "prop：保证金比例",
+        "detail": "合约与生成日先保留一条，再按下一生成日展开有效记录。",
+        "output": "合约号＋日的Marg_Prop。",
+        "join": "CONTRACT_ID=Agt_Id，且日期相同。",
+        "lines": [
+          132,
+          149
+        ],
+        "parents": [],
+        "x": 365,
+        "y": 635
+      },
+      {
+        "id": "fee",
+        "title": "fee：计提费率",
+        "detail": "筛选ACCRUAL_PREMIUM_FEE，按产品的下一计算日展开费率。",
+        "output": "产品号＋日的费率。",
+        "join": "KEY_INSTRUMENT_ID=Otc_Seri_No，且计提日相同；这是任务内阶段，非PDATA费用结果表。",
+        "lines": [
+          150,
+          159
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 820
+      },
+      {
+        "id": "amount",
+        "title": "按产品形成逐日金额",
+        "detail": "01期权用初始本金和累计事件变化；02互换用历史持仓；03取ks状态；04取nd金额。01／02起始日优先取初始本金，其后超过结束日置零。03／04没有同一项结束日归零规则。",
+        "output": "逐日金额、费率、利息、资金成本、佣金及保证金比例随销售记录输出。",
+        "join": "info分别LEFT JOIN各阶段，按各自编号＋日期；历史值仍可能使用当前汇率和初始本金。",
+        "lines": [
+          11,
+          39
+        ],
+        "parents": [
+          "info",
+          "evt",
+          "his_dy",
+          "ks",
+          "ks_t",
+          "nd",
+          "prop",
+          "fee"
+        ],
+        "x": 760,
+        "y": 420
+      },
+      {
+        "id": "write",
+        "title": "写入计提日结果",
+        "detail": "按Busi_Date、Grp_Id覆盖目标分区，不在末尾重新按合约去重。",
+        "output": "T98_OTC_DERI_COMP_SALE_ADTNL_DET；销售记录×计提日，关联唯一性未验。",
+        "join": "Busi_Date=Accrued_Date；Data_Etl_Date／Data_Upt_Date=加工日。",
+        "lines": [
+          11,
+          39
+        ],
+        "parents": [
+          "amount"
+        ],
+        "x": 1130,
+        "y": 420
+      }
+    ],
+    "grain": {
+      "object": "销售快照记录展开到计提日，再按产品键接入逐日金额",
+      "time": "Busi_Date=Accrued_Date；Data_Etl_Date为加工日，历史金额可能配当前属性。",
+      "keys": "候选键为合约/内部工具键 + Accrued_Date + 输出分支字段；SQL未声明唯一约束。",
+      "limitation": "多个历史来源在同一工具和日期上的连接唯一性未验证；grp_id 是本SQL中的分区/分支标识，不能单独证明业务产品粒度。"
+    },
+    "questions": [
+      "各来源按工具键和 Accrued_Date 连接后是否一对一，是否存在扩行？",
+      "目标表的正式业务行键是否包含 Agt_Id、Inr_Seri_No、Otc_Seri_No 或其他标识？",
+      "四个 grp_id 分支与正式产品定义的对应关系是否有当前业务或生产证据？"
+    ],
+    "narrativeFile": "explanations/107491.md"
+  },
+  {
+    "taskId": "105743",
+    "output": "pdata_n.t98_otc_comp_mng_rela_info",
+    "title": "压缩客户/合约介绍关系并形成合约管理归属快照",
+    "summary": "客户／合约介绍关系分别排序，补人员机构，横向保存前三组，再回接销售合约，对每个归属字段分别回退，形成管理快照。",
+    "sha256": "4f41d3eefca10d8b23da323ab612ef876fdf087e0c37cabee9e0ec4bb54e78d7",
+    "inputs": [
+      {
+        "table": "odata_n_ois.o_counterparty_introduction",
+        "role": "关系/属性补充",
+        "reason": "提供当前有效的客户级介绍部门、客户经理和分配比例。",
+        "lines": [
+          45,
+          50
+        ]
+      },
+      {
+        "table": "odata_n_ois.o_contract_introduction",
+        "role": "关系/属性补充",
+        "reason": "提供当前有效的合约级介绍部门、客户经理和分配比例。",
+        "lines": [
+          51,
+          56
+        ]
+      },
+      {
+        "table": "odata_n_oom.g_hk_counterparty_introduction",
+        "role": "关系/属性补充",
+        "reason": "提供香港客户介绍关系和介绍人。",
+        "lines": [
+          57,
+          62
+        ]
+      },
+      {
+        "table": "pdata_n.t98_org_emp_base_info",
+        "role": "关系/属性补充",
+        "reason": "按 OA 用户补员工编号、姓名和在职状态，并补经办人所属机构。",
+        "lines": [
+          64,
+          69
+        ]
+      },
+      {
+        "table": "pdata_n.t04_oas_inr_org",
+        "role": "关系/属性补充",
+        "reason": "按部门号补内部机构名称并以窗口保留一条机构记录。",
+        "lines": [
+          70,
+          81
+        ]
+      },
+      {
+        "table": "pdata_n.t98_org_brch_div_info",
+        "role": "历史状态",
+        "reason": "按前一交易日口径补分公司/部门归属。",
+        "lines": [
+          82,
+          87
+        ]
+      },
+      {
+        "table": "pdata_n.t98_otc_deri_comp_sale_info",
+        "role": "主记录",
+        "reason": "限定当前业务日且账簿部门为 OTC 或 OTC_HK 的销售合约。",
+        "lines": [
+          162,
+          166
+        ]
+      },
+      {
+        "table": "pdata_news_n.t02_fin_float_income_vchr_info",
+        "role": "关系/属性补充",
+        "reason": "为特殊交易对手场景决定替代客户关系键。",
+        "lines": [
+          172,
+          182
+        ]
+      },
+      {
+        "table": "odata_n_ois.o_otc_derivative_counterparty",
+        "role": "关系/属性补充",
+        "reason": "提供客户级主经办人和介绍经办人，和香港介绍关系合并。",
+        "lines": [
+          183,
+          192
+        ]
+      },
+      {
+        "table": "odata_n_ois.o_contract_base_rate",
+        "role": "关系/属性补充",
+        "reason": "提供 OTC 合约级主经办人和介绍经办人。",
+        "lines": [
+          193,
+          198
+        ]
+      },
+      {
+        "table": "odata_n_ois.g_inr_contract_base_rate",
+        "role": "关系/属性补充",
+        "reason": "提供内部销售合约级经办人信息。",
+        "lines": [
+          211,
+          216
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_trd_otc_contr_props",
+        "role": "关系/属性补充",
+        "reason": "按交易键提取 operator 和 customerManager 属性。",
+        "lines": [
+          229,
+          237
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "id": "relations",
+        "title": "客户／合约介绍关系",
+        "detail": "合并客户、合约及香港介绍关系，限定当日有效记录。",
+        "output": "原始介绍关系行；客户键与合约键分别保留。",
+        "join": "三路 UNION ALL，各有业务键。",
+        "lines": [
+          45,
+          63
+        ],
+        "parents": [],
+        "x": 24,
+        "y": 90
+      },
+      {
+        "id": "rank",
+        "title": "排序并补人员机构",
+        "detail": "各来源按分配比例降序、客户经理排序，补员工身份、部门及所属分支。",
+        "output": "介绍关系行增加排序序号和人员机构属性。",
+        "join": "按客户号／Contract_Code分别排序；OA用户、部门号关联。",
+        "lines": [
+          46,
+          87
+        ],
+        "parents": [
+          "relations"
+        ],
+        "x": 360,
+        "y": 90
+      },
+      {
+        "id": "pivot",
+        "title": "otc_div_temp：横向前三组",
+        "detail": "按 Contract_Code、client_id 聚合，以序号1／2／3的条件聚合横向整理人员、机构和比例。",
+        "output": "任务内临时结果：每组键最多三组归属槽位；超过前三名不进入这些位置。",
+        "join": "MAX(CASE WHEN seq=...)；不是介绍人逐行输出。",
+        "lines": [
+          11,
+          89
+        ],
+        "parents": [
+          "rank"
+        ],
+        "x": 700,
+        "y": 90
+      },
+      {
+        "id": "fallback",
+        "title": "回接销售、逐字段回退",
+        "detail": "当日OTC／OTC_HK销售合约回接 ci 和 cpi，补经办人及属性。每个人员、机构、比例字段分别 COALESCE。",
+        "output": "以销售合约＋交易对手承载归属；多来源关联仍可能扩行。",
+        "join": "ci.Contract_Code=Agt_Id；cpi按客户号连接，部分凭证替代客户键。仅NULL触发回退。",
+        "lines": [
+          101,
+          249
+        ],
+        "parents": [
+          "pivot"
+        ],
+        "x": 1040,
+        "y": 90
+      },
+      {
+        "id": "snapshot",
+        "title": "管理归属快照",
+        "detail": "SELECT DISTINCT 后覆盖加工日分区，保留三组归属和审计日期。",
+        "output": "T98_OTC_COMP_MNG_RELA_INFO；候选Agt_Id＋Pty_Id，实际唯一性未验。",
+        "join": "Busi_Date=data_day_str；继续由118143／118141消费。",
+        "lines": [
+          101,
+          161
+        ],
+        "parents": [
+          "fallback"
+        ],
+        "x": 1380,
+        "y": 90
+      }
+    ],
+    "grain": {
+      "object": "销售合约与交易对手的管理归属关系快照",
+      "time": "目标 busi_date 使用 data_day_str；机构分公司补充表使用 pretradedate(date_add(data_day_str,1),1)，存在日期口径差异。",
+      "keys": "候选键为 Agt_Id + Pty_Id；SQL使用 distinct，但未声明业务唯一键。",
+      "limitation": "一行最多三组归属；逐字段 COALESCE 可混合来源，空字符串不触发回退。比例完整性、真实唯一性及历史适用性未验证。"
+    },
+    "questions": [
+      "Agt_Id + Pty_Id 在 ci/cpi、经办人和属性连接后是否仍唯一？",
+      "三组 Allocation_Proportion 是否必须合计为 1，以及空槽位如何解释？",
+      "当前员工在职状态和前一交易日机构关系是否适用于历史计提日？"
+    ],
+    "narrativeFile": "explanations/105743.md"
+  },
+  {
+    "taskId": "199176",
+    "output": "pdata_n.t98_rep_fin_otc_deri_comp_info",
+    "title": "财务互换源结果补模型合约身份与状态转码",
+    "summary": "以固定业务日的财务互换视图为主记录，按内部合约编号关联 PDATA 模型互换合约，再使用代码映射转换合约状态，形成财务报表合约结果。该SQL是报表材料加工证据，不是报送成功证据。",
+    "sha256": "48477df8b46dd9a362592ddf82d8417bc83ab932db9d0a64c44a6c75ec6fc398",
+    "inputs": [
+      {
+        "table": "odata_n_tit.d_v_fin_trs",
+        "role": "主记录",
+        "reason": "提供财务互换源合约、状态、TRS类型、定价起止日、账簿、交易对手和结算币种。",
+        "lines": [
+          26,
+          26
+        ]
+      },
+      {
+        "table": "pdata_n.t98_sb_otc_swap_comp_info",
+        "role": "关系/属性补充",
+        "reason": "按内部合约编号补协议编号、协议修饰符、交易对手身份和名称。",
+        "lines": [
+          27,
+          28
+        ]
+      },
+      {
+        "table": "pdata_n.ref_cd_cvt_map",
+        "role": "规则映射",
+        "reason": "按目标表/字段、来源表/字段和来源系统限定 CONTR_STATUS 到 Agt_Stat_Cd 的代码转换。",
+        "lines": [
+          29,
+          37
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "筛选固定业务日财务互换源",
+        "detail": "从 D_V_FIN_TRS 的 Busi_Date=2026-05-22 快照取得财务源记录。模型中的协议及交易对手身份由后续关联补充。",
+        "lines": [
+          26,
+          26
+        ]
+      },
+      {
+        "title": "按内部合约编号补模型身份",
+        "detail": "对同一业务日的 T98_SB_OTC_SWAP_COMP_INFO 做 LEFT JOIN，连接条件为 A.CONTRACT_CODE = B.Inr_Comp_No。",
+        "lines": [
+          27,
+          28
+        ]
+      },
+      {
+        "title": "按限定范围转换合约状态",
+        "detail": "从 REF_CD_CVT_MAP 选择 TIT/REF_TRS/CONTR_STATUS 到 T03_AGT/Agt_Stat_Cd 的映射，再按源状态码连接并用映射值优先、源值回退。",
+        "lines": [
+          6,
+          37
+        ]
+      },
+      {
+        "title": "写入财务报表合约结果",
+        "detail": "覆盖写入固定 Src_Tbl 与 Busi_Date 分区，并写入固定任务名、加载日期、更新日期和采集时间。",
+        "lines": [
+          1,
+          25
+        ]
+      }
+    ],
+    "grain": {
+      "object": "财务互换源合约关联模型身份后的报表合约候选行",
+      "time": "源、模型和目标均固定 Busi_Date=2026-05-22；Data_Etl_Date/Data_Upt_Date=2026-05-22；Data_Time=2026-05-23 02:50:03。",
+      "keys": "候选键为财务源 CONTRACT_CODE 与模型 Inr_Comp_No 的连接；SQL未声明任一侧唯一。",
+      "limitation": "LEFT JOIN 可能保留无模型匹配的源行；模型合约或代码映射重复会扩行；固定日期和任务名不能证明当前生产版本或外部报送结果。"
+    },
+    "questions": [
+      "D_V_FIN_TRS 的一行是否就是财务合约粒度，还是含事件/快照重复？",
+      "CONTRACT_CODE、Inr_Comp_No 和 REF_CD_CVT_MAP 的连接是否唯一？",
+      "该结果是否被后续实际报备/财务消费任务读取，还是仅为历史快照留存？"
+    ]
+  }
+]

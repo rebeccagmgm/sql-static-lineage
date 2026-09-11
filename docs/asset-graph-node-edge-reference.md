@@ -44,32 +44,32 @@ read-occurrence:<SHA256(canonicalJson({
 
 节点属性如下：
 
-| 属性 | 含义 |
-| --- | --- |
-| `taskId` | 所属调度任务 ID |
-| `occurrenceId` | Facts 中的读取标识 |
-| `relationId` | 对应的读取关系 ID |
-| `statementId` | 所属 SQL 语句 ID |
-| `datasetNodeId` | 被读取的物理表节点 ID |
-| `physicalDataset` | 被读取的表名 |
-| `identityStatus` | 表身份：`CONFIRMED / CANDIDATE_DATASET / UNRESOLVED` |
-| `readDisposition` | `EXTERNAL_READ / LOCAL_MATERIALIZATION / SELF_READ` |
-| `partitionPredicates`、`partitionPredicateStatus` | 读侧分区谓词摘要及其状态，不等于全部 WHERE 条件 |
-| 可选边界属性 | `qualificationStatus`、`identityReasonCode`、`materializationBoundaryReason` 等 |
+| 属性                                              | 含义                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `taskId`                                          | 所属调度任务 ID                                                                 |
+| `occurrenceId`                                    | Facts 中的读取标识                                                              |
+| `relationId`                                      | 对应的读取关系 ID                                                               |
+| `statementId`                                     | 所属 SQL 语句 ID                                                                |
+| `datasetNodeId`                                   | 被读取的物理表节点 ID                                                           |
+| `physicalDataset`                                 | 被读取的表名                                                                    |
+| `identityStatus`                                  | 表身份：`CONFIRMED / CANDIDATE_DATASET / UNRESOLVED`                            |
+| `readDisposition`                                 | `EXTERNAL_READ / LOCAL_MATERIALIZATION / SELF_READ`                             |
+| `partitionPredicates`、`partitionPredicateStatus` | 读侧分区谓词摘要及其状态，不等于全部 WHERE 条件                                 |
+| 可选边界属性                                      | `qualificationStatus`、`identityReasonCode`、`materializationBoundaryReason` 等 |
 
 发布后这些属性主要序列化在 `detail` 中，并提取 `taskId`、`table` 等通用字段。因此截图里的“来源表 trade”是这个读取节点的属性说明；表本身还单独有一个 `PHYSICAL_DATASET` 节点。
 
 ## 2. 当前发布图的全部节点类型：7 类
 
-| 类型 `kind` | 一个节点代表什么 | 唯一身份的主要组成 | 关键内容 |
-| --- | --- | --- | --- |
-| `TASK` | 一个调度任务 | `task:<taskId>` | 调度 ID；名称、分类、调度引用等可用元数据 |
-| `PHYSICAL_DATASET` | 一张物理表的身份或待确认身份 | platform + dataSource + qualifiedName，规范化后哈希 | 表名、物理身份与确认状态 |
-| `PHYSICAL_FIELD` | Facts 识别的物理字段身份 | platform + dataSource + stableTableId + qualifiedName + column，规范化后哈希 | 字段名、物理身份及状态；不等同于仅按“表名＋字段名”合并 |
-| `READ_OCCURRENCE` | SQL 中一处表读取 | consumerTaskId + occurrenceId + readRelationId，规范 JSON 哈希 | 所属任务、语句、读取关系、表与分区谓词 |
-| `TARGET_WRITE` | SQL／配置证据中的一处写入定义 | taskId + datasetNodeId + writeObservationId，规范 JSON 哈希 | writeObservationId、目标表名；不是运行实例 |
-| `READ_FIELD` | 某个任务的某处读取里的一个字段 | `read-field:` + SHA256(JSON.stringify([taskId + ':' + occurrenceId, 小写字段名])) | taskId、occurrenceId、表、字段及来源物理身份 |
-| `WRITE_FIELD` | 某处写入的一个输出字段 | `write-field:` + SHA256(JSON.stringify([TARGET_WRITE 节点 ID, 小写字段名])) | taskId、writeId、表和输出字段 |
+| 类型 `kind`        | 一个节点代表什么               | 唯一身份的主要组成                                                                | 关键内容                                               |
+| ------------------ | ------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `TASK`             | 一个调度任务                   | `task:<taskId>`                                                                   | 调度 ID；名称、分类、调度引用等可用元数据              |
+| `PHYSICAL_DATASET` | 一张物理表的身份或待确认身份   | platform + dataSource + qualifiedName，规范化后哈希                               | 表名、物理身份与确认状态                               |
+| `PHYSICAL_FIELD`   | Facts 识别的物理字段身份       | platform + dataSource + stableTableId + qualifiedName + column，规范化后哈希      | 字段名、物理身份及状态；不等同于仅按“表名＋字段名”合并 |
+| `READ_OCCURRENCE`  | SQL 中一处表读取               | consumerTaskId + occurrenceId + readRelationId，规范 JSON 哈希                    | 所属任务、语句、读取关系、表与分区谓词                 |
+| `TARGET_WRITE`     | SQL／配置证据中的一处写入定义  | taskId + datasetNodeId + writeObservationId，规范 JSON 哈希                       | writeObservationId、目标表名；不是运行实例             |
+| `READ_FIELD`       | 某个任务的某处读取里的一个字段 | `read-field:` + SHA256(JSON.stringify([taskId + ':' + occurrenceId, 小写字段名])) | taskId、occurrenceId、表、字段及来源物理身份           |
+| `WRITE_FIELD`      | 某处写入的一个输出字段         | `write-field:` + SHA256(JSON.stringify([TARGET_WRITE 节点 ID, 小写字段名]))       | taskId、writeId、表和输出字段                          |
 
 `READ_FIELD` 仅在值／条件边的源读次成功解析时生成；它不是表的全部 DDL 字段清单。`WRITE_FIELD` 来自输出绑定或字段依赖边，即使某列没有来源边，也可能因输出绑定而存在。
 
@@ -79,22 +79,24 @@ read-occurrence:<SHA256(canonicalJson({
 
 箭头方向按当前代码填写，不按中文名称猜测方向。
 
-| 边类型 `kind` | 起点 → 终点 | `layer` | 含义与关键证据 |
-| --- | --- | --- | --- |
-| `READS` | `TASK → READ_OCCURRENCE`；`READ_OCCURRENCE → PHYSICAL_DATASET` | catalog | 谁在何处读哪张表；带读取 ID，第二段带分区谓词摘要 |
-| `WRITES` | `TASK → TARGET_WRITE`；`TARGET_WRITE → PHYSICAL_DATASET` | catalog | 谁通过哪处写入写哪张表；带 writeObservationId |
-| `HAS_FIELD` | `TARGET_WRITE → WRITE_FIELD` | catalog | 输出字段属于哪处写入 |
-| `OBSERVED_FIELD` | `PHYSICAL_FIELD → READ_FIELD` | catalog | 来源物理字段对应哪个读取字段 |
-| `VALUE` | `READ_FIELD → WRITE_FIELD`；读次未解析时可为 `PHYSICAL_FIELD → WRITE_FIELD` | field | 字段值来源；带 expressionId、bindingId、读次解析状态和加工 subtype 等 |
-| `CONDITION` | `READ_FIELD → WRITE_FIELD`；读次未解析时可为 `PHYSICAL_FIELD → WRITE_FIELD` | field | 分支选择依赖，区别于直接值来源 |
-| `DATASET_CONTROL` | `PHYSICAL_FIELD → TARGET_WRITE` | control | Join、过滤、分组、排序、窗口等控制；带 subtype、relationId、statementId、grain 等 |
-| `READS_TABLE` | **`PHYSICAL_DATASET → TASK`** | table | externalReads 的表级汇总；带 readOccurrenceId |
-| `WRITES_TABLE` | `TASK → PHYSICAL_DATASET` | table | finalWrites 的表级汇总；带 writeObservationId |
-| `CONTINUES` | 上游 `WRITE_FIELD →` 下游 `READ_FIELD` | field | 接续索引候选满足 `l1Eligible` 后建立的字段接续；带读写 ID、分区匹配状态 |
-| `CANDIDATE` | 上游 `WRITE_FIELD →` 下游 `READ_FIELD` | field | 未达到上述条件但保留的候选；`DISJOINT` 候选不生成这条边 |
-| `SCHEDULE` | 上游 `TASK →` 下游 `TASK` | schedule | 调度参考依赖；状态为 `SCHEDULE_REFERENCE_ONLY`，不能当字段来源 |
+| 边类型 `kind`     | 起点 → 终点                                                                 | `layer`  | 含义与关键证据                                                                    |
+| ----------------- | --------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `READS`           | `TASK → READ_OCCURRENCE`；`READ_OCCURRENCE → PHYSICAL_DATASET`              | catalog  | 谁在何处读哪张表；带读取 ID，第二段带分区谓词摘要                                 |
+| `WRITES`          | `TASK → TARGET_WRITE`；`TARGET_WRITE → PHYSICAL_DATASET`                    | catalog  | 谁通过哪处写入写哪张表；带 writeObservationId                                     |
+| `HAS_FIELD`       | `TARGET_WRITE → WRITE_FIELD`                                                | catalog  | 输出字段属于哪处写入                                                              |
+| `OBSERVED_FIELD`  | `PHYSICAL_FIELD → READ_FIELD`                                               | catalog  | 来源物理字段对应哪个读取字段                                                      |
+| `VALUE`           | `READ_FIELD → WRITE_FIELD`；读次未解析时可为 `PHYSICAL_FIELD → WRITE_FIELD` | field    | 字段值来源；带 expressionId、bindingId、读次解析状态和加工 subtype 等             |
+| `CONDITION`       | `READ_FIELD → WRITE_FIELD`；读次未解析时可为 `PHYSICAL_FIELD → WRITE_FIELD` | field    | 分支选择依赖，区别于直接值来源                                                    |
+| `DATASET_CONTROL` | `PHYSICAL_FIELD → TARGET_WRITE`                                             | control  | Join、过滤、分组、排序、窗口等控制；带 subtype、relationId、statementId、grain 等 |
+| `READS_TABLE`     | **`PHYSICAL_DATASET → TASK`**                                               | table    | externalReads 的表级汇总；带 readOccurrenceId                                     |
+| `WRITES_TABLE`    | `TASK → PHYSICAL_DATASET`                                                   | table    | finalWrites 的表级汇总；带 writeObservationId                                     |
+| `CONTINUES`       | 上游 `WRITE_FIELD →` 下游 `READ_FIELD`                                      | field    | 接续索引候选满足 `l1Eligible` 后建立的字段接续；带读写 ID、分区匹配状态           |
+| `CANDIDATE`       | 上游 `WRITE_FIELD →` 下游 `READ_FIELD`                                      | field    | 未达到上述条件但保留的候选；`DISJOINT` 候选不生成这条边                           |
+| `SCHEDULE`        | 上游 `TASK →` 下游 `TASK`                                                   | schedule | 调度参考依赖；状态为 `SCHEDULE_REFERENCE_ONLY`，不能当字段来源                    |
 
 所有发布边共有：`id, from, to, kind, layer, owner, status, detail`。`detail` 保留原始边属性。**`status` 不是统一的“血缘是否确认”枚举**：普通编译边默认 `OBSERVED`，接续边保存分区匹配状态，调度边为 `SCHEDULE_REFERENCE_ONLY`；还要看 `kind`、`detail` 中的解析状态及 INDEX 资格。
+
+分区接续遵循项目规则：写入侧 `busi_date` 未赋值时，该维度直接通过匹配，不因为动态日期值未知降为候选。Facts 仍保留原始未知值；这里的确认来自匹配规则。明确提供的日内批次（如 `h13`、`h15`）仍须比较，`grp_id`、`src_tbl` 等其他分区维度仍执行各自的筛选与匹配规则，物理身份和写入资格检查也不变。SQL 动态分区 Facts 应携带指向输出绑定和表达式的 `partition_assignments`；无赋值的 SQL 分区不应被表示为运行时字符串 `UNKNOWN`。
 
 ### 全部 7 类节点与 12 类边的总图
 
@@ -141,12 +143,12 @@ SQL 语句、公式、Join 关系、过滤条件的完整定义保存在加工�
 
 当前局部投影 schema 为 **1.3.0**，它有 5 类节点与 5 类边。
 
-| 局部投影 | 发布图如何处理 |
-| --- | --- |
-| 节点：TASK / PHYSICAL_DATASET / PHYSICAL_FIELD / TARGET_WRITE / READ_OCCURRENCE | 全部保留，类型由 nodeType 映射到 kind |
-| READS / WRITES / DATASET_CONTROL | 保留原端点与类型 |
-| FIELD_DIRECT：PHYSICAL_FIELD → TARGET_WRITE，outputColumn 在属性里 | 生成 WRITE_FIELD；源读次解析后生成 READ_FIELD；发布成 VALUE |
-| FIELD_CONDITIONAL：PHYSICAL_FIELD → TARGET_WRITE，outputColumn 在属性里 | 同上，发布成 CONDITION |
+| 局部投影                                                                        | 发布图如何处理                                              |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 节点：TASK / PHYSICAL_DATASET / PHYSICAL_FIELD / TARGET_WRITE / READ_OCCURRENCE | 全部保留，类型由 nodeType 映射到 kind                       |
+| READS / WRITES / DATASET_CONTROL                                                | 保留原端点与类型                                            |
+| FIELD_DIRECT：PHYSICAL_FIELD → TARGET_WRITE，outputColumn 在属性里              | 生成 WRITE_FIELD；源读次解析后生成 READ_FIELD；发布成 VALUE |
+| FIELD_CONDITIONAL：PHYSICAL_FIELD → TARGET_WRITE，outputColumn 在属性里         | 同上，发布成 CONDITION                                      |
 
 发布阶段另外增加字段归属／观察、表级汇总、跨任务接续、调度关系，因此不能把两阶段的边名都列成“正式发布图里同时存在”。
 
@@ -165,16 +167,16 @@ SQL 语句、公式、Join 关系、过滤条件的完整定义保存在加工�
 
 `compileCatalogTask` 是独立 opt-in 入口。当前 `publish.ts` 调用的是 `compileTask`，因此不能把以下类型宣称为当前主链已发布能力。
 
-| 扩展内容 | 定义 |
-| --- | --- |
-| 新节点 `COLUMN` | 已确认的 platform + dataSource + qualifiedName + column 目录身份，不包含 Facts 的 stableTableId |
-| 新节点 `UNRESOLVED_READ_FIELD` | 按原字段边隔离的未知读次边界；替换源读次不明时共享物理字段直接承担值流端点的情况 |
-| 新边 `HAS_COLUMN` | PHYSICAL_DATASET → COLUMN |
-| 新边 `IDENTIFIES_COLUMN` | PHYSICAL_FIELD → COLUMN |
-| 新边 `OBSERVES_COLUMN` | READ_FIELD / WRITE_FIELD → COLUMN |
-| 新边 `DERIVED_FROM` | 目标 COLUMN → 来源 COLUMN，局部值依赖的资产摘要 |
-| 新边 `CONDITIONED_BY` | 目标 COLUMN → 条件来源 COLUMN，局部分支依赖的资产摘要 |
-| 扩展现有边 `HAS_FIELD` | 增加 READ_OCCURRENCE → READ_FIELD，现有 TARGET_WRITE → WRITE_FIELD 保留 |
+| 扩展内容                       | 定义                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| 新节点 `COLUMN`                | 已确认的 platform + dataSource + qualifiedName + column 目录身份，不包含 Facts 的 stableTableId |
+| 新节点 `UNRESOLVED_READ_FIELD` | 按原字段边隔离的未知读次边界；替换源读次不明时共享物理字段直接承担值流端点的情况                |
+| 新边 `HAS_COLUMN`              | PHYSICAL_DATASET → COLUMN                                                                       |
+| 新边 `IDENTIFIES_COLUMN`       | PHYSICAL_FIELD → COLUMN                                                                         |
+| 新边 `OBSERVES_COLUMN`         | READ_FIELD / WRITE_FIELD → COLUMN                                                               |
+| 新边 `DERIVED_FROM`            | 目标 COLUMN → 来源 COLUMN，局部值依赖的资产摘要                                                 |
+| 新边 `CONDITIONED_BY`          | 目标 COLUMN → 条件来源 COLUMN，局部分支依赖的资产摘要                                           |
+| 扩展现有边 `HAS_FIELD`         | 增加 READ_OCCURRENCE → READ_FIELD，现有 TARGET_WRITE → WRITE_FIELD 保留                         |
 
 目录扩展提供资产映射与摘要，不改变精细接续规则；资产摘要连通不等于跨任务字段链确认。目录覆盖的是已观察字段，不是 DDL 全字段。
 
@@ -209,3 +211,14 @@ SQL 语句、公式、Join 关系、过滤条件的完整定义保存在加工�
 - [加工证据查询](../packages/data-graph/src/asset-graph/agent-api.ts)
 
 本文不包含对现网图的查询与统计，也不承诺每个任务都有全部类型或完整证据。
+读取明确为 `partitionPredicateStatus=NONE` 且无分区谓词时，覆盖所有已知静态写入分区；不会因为没有可比较的谓词而判为 UNKNOWN。非字面量读取谓词、未知写入范围及冲突证据仍保留原判断。
+
+动态分区的直接字段输出可复用同一路径上、直接约束物理读取的 `EQ`/`IN` 字面量过滤证据。解析器沿唯一字段来源及已确认的同任务临时表绑定追值，支持字段改名、保留字段的 CTE/子查询和 INNER JOIN、外连接保留侧；严格非 NULL 传值路径不消费可能补 NULL 的外连接侧，该情况按下述有限值域规则处理。来源歧义、表达式变换和 OR 下的条件仍不推断。UNION 的所有分支须分别证明并保留各自的范围组合；跨临时表得到多值时，仅在单分区字段情况下使用，避免丢失多字段组合关联。
+
+Facts 计划适配器为集合运算根节点补建 CTE 子图，CTE 不计入 UNION/EXCEPT/INTERSECT 的分支列表。准备产物使用 `evidence-v4.json`，携带 `task-local-materializations.jsonl`；旧版证据文件不会因为同名缓存而遮蔽新字段。分区消费者要求读取表达式、写入实例、字段绑定和语句先后顺序一致。
+
+分区值传递采用有限值域：未知、完整非 NULL 值集合、完整非 NULL 值集合加可能的 SQL NULL。字段引用/改名沿绑定传递；UNION 必须证明所有分支后合并；外连接给非保留侧增加 `mayBeNull`，不把已知值集合清空。这里的集合是值域上限，不单独构成确认依据。仅当单分区字段的每个非 NULL 值另有不依赖外连接补 NULL 假设的分支证据时，写入范围才消费这个扩展。纯 NULL、缺分支或没有非 NULL 分支证据时保留未知。读取字面值可与有证据的非 NULL 值比较；若复杂或多字段的扁平读取条件无法排除 NULL，不因为字面值不同就判不相交。多分区字段没有组合关联证明时不启用该扩展。范围身份与显示保留 `mayBeNull`，不会把 `A` 与 `A（可能含 NULL）` 合并为同一范围。该规则没有任务 ID、表名、字段名或业务常量特判。
+
+补充：UNION 所有分支均有已证明值时，也允许分支值不同。分区项的 `alternatives` 用分支关系标识或 Pack 行标识保存组合，匹配器逐个组合比较，表卡逐组展示，不生成字段值的笛卡儿积。单一平台目标写入的完整 Pack 分区数组使用同一表示；多写入、冲突或不完整配置不适用。
+
+防回归：默认 `npm test` 包含 `write-partition-evidence.test.ts` 与 `partition-alternatives.test.ts`，覆盖字段数字后缀、合法数字常量、多组 Pack、UNION 多字段组合、范围展示及冲突/缺项。发布器拒绝分组键不一致的范围，不能静默发布组合错配。

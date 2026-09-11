@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import type { TaskLocalProjection } from "../../../../scripts/project-graph/task-local/contract.ts";
 import type { TerminalTableConfig } from "../../../../scripts/reconcile/shared/terminal-table-config.ts";
+import type { SourceEndpointBoundaryConfig } from "../../../../scripts/reconcile/shared/source-endpoint-boundary-config.ts";
 import { terminalNodeDetails } from "./terminal-policy.ts";
+import { sourceEndpointBoundaryNodeDetails } from "./source-endpoint-boundary.ts";
 
 export interface AssetNode {
   id: string;
@@ -42,11 +44,16 @@ export function compileTask(
   p: TaskLocalProjection,
   bindings: readonly FactRecord[] = [],
   terminalConfig?: TerminalTableConfig,
+  sourceEndpointBoundaryConfig?: SourceEndpointBoundaryConfig,
+  writeScopes: readonly { writeObservationId?: string; qualifiedName?: string; partition?: readonly unknown[] }[] = [],
 ): CompiledTask {
   const taskId = p.taskId,
     nodes = new Map<string, AssetNode>(),
     edges = new Map<string, AssetEdge>();
   const originals = new Map(p.nodes.map((n) => [n.nodeId, n]));
+  const readPropertiesByOccurrence = new Map(p.nodes
+    .filter(node => node.nodeType === "READ_OCCURRENCE")
+    .map(node => [str(node.properties.occurrenceId), node.properties]));
   const terminalReads = new Map(
     (p.localClosure?.externalReads ?? []).flatMap((read) => {
       if (!terminalConfig || read.identityStatus !== "CONFIRMED") return [];
@@ -54,9 +61,27 @@ export function compileTask(
       return details ? [[read.readOccurrenceId, details] as const] : [];
     }),
   );
+  const boundaryReads = new Map(
+    (p.localClosure?.externalReads ?? []).flatMap((read) => {
+      if (!sourceEndpointBoundaryConfig || read.identityStatus !== "CONFIRMED")
+        return [];
+      const details = sourceEndpointBoundaryNodeDetails(
+        read.qualifiedName,
+        p.taskCategory,
+        sourceEndpointBoundaryConfig,
+      );
+      return details ? [[read.readOccurrenceId, details] as const] : [];
+    }),
+  );
+  const readDisposition = (occurrenceId: string) =>
+    terminalReads.get(occurrenceId) ?? boundaryReads.get(occurrenceId);
   const reads: CompiledTask["reads"] = [],
     writes: CompiledTask["writes"] = [];
   const node = (id: string, kind: string, props: FactRecord = {}) => {
+    const scope = ["WRITE_FIELD", "TARGET_WRITE"].includes(kind)
+      ? writeScopes.find(scope => Boolean(scope.writeObservationId) && scope.writeObservationId === props.writeObservationId &&
+        scope.qualifiedName?.toLowerCase() === str(props.qualifiedName).toLowerCase())
+      : undefined;
     if (!nodes.has(id))
       nodes.set(id, {
         id,
@@ -74,7 +99,10 @@ export function compileTask(
               props.physicalDataset ??
               props.column,
           ) || id,
-        detail: JSON.stringify(props),
+        detail: JSON.stringify({ ...props, ...(scope?.partition ? {
+          partition: scope.partition,
+          ...(scope.partition.length === 0 ? { partitionStatus: "NON_PARTITIONED" } : {}),
+        } : {}) }),
       });
   };
   const edge = (
@@ -100,11 +128,21 @@ export function compileTask(
   for (const n of p.nodes) {
     const terminal =
       n.nodeType === "READ_OCCURRENCE"
-        ? terminalReads.get(str(n.properties.occurrenceId))
+        ? readDisposition(str(n.properties.occurrenceId))
         : n.nodeType === "PHYSICAL_DATASET" &&
-            n.properties.identityStatus === "CONFIRMED" &&
-            terminalConfig
-          ? terminalNodeDetails(str(n.properties.qualifiedName), terminalConfig)
+            n.properties.identityStatus === "CONFIRMED"
+          ? terminalConfig
+            ? terminalNodeDetails(
+                str(n.properties.qualifiedName),
+                terminalConfig,
+              )
+            : sourceEndpointBoundaryConfig
+              ? sourceEndpointBoundaryNodeDetails(
+                  str(n.properties.qualifiedName),
+                  p.taskCategory,
+                  sourceEndpointBoundaryConfig,
+                )
+              : null
           : null;
     node(n.nodeId, n.nodeType, { ...n.properties, ...terminal });
   }
@@ -123,7 +161,7 @@ export function compileTask(
   for (const read of p.localClosure?.externalReads ?? [])
     edge(read.datasetNodeId, taskNode, "READS_TABLE", "table", {
       readOccurrenceId: read.readOccurrenceId,
-      ...terminalReads.get(read.readOccurrenceId),
+      ...readDisposition(read.readOccurrenceId),
     });
   for (const write of p.localClosure?.finalWrites ?? []) {
     const outputQualification = write.outputQualification;
@@ -175,19 +213,16 @@ export function compileTask(
         e.properties.sourceReadOccurrenceStatus === "RESOLVED"
       ) {
         from = portId("read-field", `${taskId}:${occurrence}`, column);
+        const readProperties = readPropertiesByOccurrence.get(occurrence);
         node(from, "READ_FIELD", {
           ...source?.properties,
           occurrenceId: occurrence,
           column,
-          ...terminalReads.get(occurrence),
-          ...(terminalReads.has(occurrence)
+          ...readDisposition(occurrence),
+          ...(readProperties
             ? {
-                partitionPredicates:
-                  originals.get(
-                    (p.localClosure?.externalReads ?? []).find(
-                      (r) => r.readOccurrenceId === occurrence,
-                    )?.readOccurrenceNodeId ?? "",
-                  )?.properties.partitionPredicates ?? [],
+                partitionPredicates: readProperties.partitionPredicates,
+                partitionPredicateStatus: readProperties.partitionPredicateStatus,
               }
             : {}),
         });

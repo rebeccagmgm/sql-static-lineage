@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { readFileSync } from "node:fs";
+import { PublishedFieldOrigins, evidenceOrigins, bindingKey } from "./field-value-origin.ts";
 import { fileURLToPath } from "node:url";
 import { openAssetGraph } from "./config.ts";
 import { AssetGraphStore } from "./store.ts";
@@ -15,6 +16,8 @@ import {
   type MetadataIdentity,
 } from "./table-metadata.ts";
 import { SchedulerTaskNameResolver } from "./scheduler-task-names.ts";
+import { SchemaAnnotationResolver } from "./schema-annotation.ts";
+import { buildTraceConsumptionFromRecords } from "./trace-consumption.ts";
 
 type GraphNode = Record<string, unknown>;
 
@@ -23,18 +26,41 @@ const traceTaskIds = (nodes: readonly GraphNode[]) =>
     .map((node) => node.taskId)
     .filter((taskId): taskId is string => typeof taskId === "string");
 
-function metadataIdentity(node: GraphNode): MetadataIdentity | undefined {
+export function metadataIdentity(
+  node: GraphNode,
+  linkedIdentity?: MetadataIdentity,
+): MetadataIdentity | undefined {
   const candidate =
     node.metadataIdentity && typeof node.metadataIdentity === "object"
       ? node.metadataIdentity
       : node.detail;
-  return candidate && typeof candidate === "object"
-    ? (candidate as MetadataIdentity)
+  const own = candidate && typeof candidate === "object"
+    ? candidate as MetadataIdentity
     : undefined;
+  const normalized = (value: unknown) =>
+    typeof value === "string" ? value.trim().toLowerCase() : "";
+  const complete = (identity?: MetadataIdentity) =>
+    !!identity && ["platform", "dataSource", "qualifiedName"].every(
+      (field) => normalized(identity[field as keyof MetadataIdentity]),
+    );
+  // Only use the physical dataset linked by the write occurrence. Explicit
+  // uncertainty or conflicting identity evidence must retain the missing state.
+  if (complete(own) || (own?.identityStatus && own.identityStatus !== "CONFIRMED"))
+    return own;
+  if (!complete(linkedIdentity) ||
+      (linkedIdentity?.identityStatus && linkedIdentity.identityStatus !== "CONFIRMED"))
+    return own;
+  for (const field of ["platform", "dataSource", "qualifiedName", "stableTableId"] as const) {
+    if (normalized(own?.[field]) &&
+        normalized(own?.[field]) !== normalized(linkedIdentity?.[field]))
+      return own;
+  }
+  return linkedIdentity;
 }
 
 async function annotateNodes(
   resolver: TableMetadataResolver,
+  schemaResolver: SchemaAnnotationResolver,
   nodes: readonly GraphNode[],
   identities = new Map<string, Record<string, unknown>>(),
 ): Promise<GraphNode[]> {
@@ -47,16 +73,25 @@ async function annotateNodes(
         "READ_FIELD",
         "WRITE_FIELD",
       ].includes(String(node.kind)),
-  );
-  const values = await resolver.resolveMany(
-    selected.map(({ node }) => ({
-      identity: metadataIdentity(node) ?? identities.get(String(node.id)),
-      column: typeof node.column === "string" ? node.column : undefined,
-    })),
+    );
+  const requests = selected.map(({ node }) => ({
+    identity: metadataIdentity(node, identities.get(String(node.id))),
+    column: typeof node.column === "string" ? node.column : undefined,
+  }));
+  const values = await resolver.resolveMany(requests);
+  const schemaValues = schemaResolver.resolveMany(
+    requests.map(({ identity }) => identity),
   );
   const result = [...nodes];
   selected.forEach(({ node, index }, valueIndex) => {
-    result[index] = { ...node, metadata: values[valueIndex] };
+    const schema = schemaValues[valueIndex];
+    result[index] = {
+      ...node,
+      metadata: {
+        ...values[valueIndex],
+        ...(schema ? { schema } : {}),
+      },
+    };
   });
   return result;
 }
@@ -73,6 +108,7 @@ export async function taskDetail(
   if (!task) throw new Error("TASK_NOT_IN_PUBLISHED_GRAPH");
   const e = readJson<Evidence>(task.evidencePath),
     expressions = new Map(e.expressions.map((x) => [x.expression_id, x]));
+  const origins = evidenceOrigins(e);
   const bindings = e.bindings.filter(
     (b) =>
       (!column ||
@@ -121,6 +157,7 @@ export async function taskDetail(
         null,
       sourceSpan: expressions.get(b.expression_id)?.source_span ?? null,
       inputFields: expressions.get(b.expression_id)?.input_fields ?? [],
+      valueOrigin: origins.get(bindingKey(b.write_observation_id, b.target_field)),
     })),
     controls,
     sqlSources: sql ? e.sqlSources : undefined,
@@ -131,7 +168,10 @@ export async function taskDetail(
 export async function startAssetGraphServer(
   configPath?: string,
   port = 8791,
-  options: { readonly metadataCatalogRoot?: string } = {},
+  options: {
+    readonly metadataCatalogRoot?: string;
+    readonly datasourceCatalogPath?: string;
+  } = {},
 ): Promise<{ server: Server; close: () => Promise<void> }> {
   const connection = await openAssetGraph(configPath);
   const store = new AssetGraphStore(
@@ -143,8 +183,12 @@ export async function startAssetGraphServer(
     options.metadataCatalogRoot ??
       defaultTableMetadataCatalogRoot(connection.paths?.evidenceRoot ?? "."),
   );
+  const fieldOrigins = new PublishedFieldOrigins();
   const schedulerTaskNames = new SchedulerTaskNameResolver(
     connection.paths?.evidenceRoot ?? ".",
+  );
+  const schemaAnnotations = new SchemaAnnotationResolver(
+    options.datasourceCatalogPath,
   );
   const html = readFileSync(
     fileURLToPath(new URL("./viewer.html", import.meta.url)),
@@ -190,6 +234,7 @@ export async function startAssetGraphServer(
         const offset = num("offset", 0);
         value = await annotateNodes(
           metadata,
+          schemaAnnotations,
           await store.search(
             text,
             limit,
@@ -206,6 +251,7 @@ export async function startAssetGraphServer(
       } else if (url.pathname === "/api/fields")
         value = await annotateNodes(
           metadata,
+          schemaAnnotations,
           await store.fields({
             taskId: q.get("taskId") ?? undefined,
             table: q.get("table") ?? undefined,
@@ -227,7 +273,7 @@ export async function startAssetGraphServer(
         });
         value = {
           ...region,
-          items: await annotateNodes(metadata, region.items),
+          items: await annotateNodes(metadata, schemaAnnotations, region.items),
         };
       } else if (url.pathname === "/api/task") {
         const taskId = q.get("taskId") ?? "";
@@ -241,6 +287,7 @@ export async function startAssetGraphServer(
         value = {
           ...detail,
           taskName: schedulerTaskNames.resolve([taskId])[taskId],
+          owner: schedulerTaskNames.resolveOwners([taskId])[taskId],
         };
       } else if (url.pathname === "/api/trace") {
         const layer = q.get("layer") ?? "table";
@@ -268,15 +315,42 @@ export async function startAssetGraphServer(
         const identities = await store.metadataIdentities(
           trace.nodes.map((node) => String(node.id)),
         );
+        let annotatedTraceNodes = trace.nodes;
+        if (layer === "field" && trace.nodes.some(node => node.kind === "WRITE_FIELD")) {
+          const state = await store.ready();
+          if (String(state.version) !== trace.version) throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");
+          const incoming = new Set(trace.edges.map(edge => edge.to));
+          const frontier = new Set(trace.frontierNodeIds);
+          const stopped = new Set(trace.direction === "up" ? trace.nodes
+            .filter(node => node.kind === "WRITE_FIELD" && !incoming.has(String(node.id)) && !frontier.has(String(node.id)))
+            .map(node => String(node.id)) : []);
+          annotatedTraceNodes = fieldOrigins.annotate(trace.nodes, String(state.manifestPath), stopped);
+        }
         // A trace can synthesize task cards from VALUE edges. Read task names
         // from the local scheduler catalog, not evidence descriptions.
         const taskLabels = schedulerTaskNames.resolve(
           traceTaskIds(trace.nodes),
         );
+        const consumption = buildTraceConsumptionFromRecords({
+          direction: trace.direction,
+          nodes: trace.nodes.map((node) => ({
+            ...node,
+            metadataIdentity: identities.get(String(node.id)),
+          })),
+          edges: trace.edges,
+        });
         value = {
           ...trace,
           taskLabels,
-          nodes: await annotateNodes(metadata, trace.nodes, identities),
+          taskTopics: schedulerTaskNames.resolveTopics(traceTaskIds(trace.nodes)),
+          taskTopicDescriptions: schedulerTaskNames.resolveTopicDescriptions(traceTaskIds(trace.nodes)),
+          consumption,
+          nodes: await annotateNodes(
+            metadata,
+            schemaAnnotations,
+            annotatedTraceNodes,
+            identities,
+          ),
         };
       } else {
         res.writeHead(404);
@@ -305,6 +379,7 @@ export async function startAssetGraphServer(
     server,
     close: async () => {
       metadata.close();
+      schemaAnnotations.close();
       schedulerTaskNames.close();
       await new Promise<void>((resolve, reject) =>
         server.close((e) => (e ? reject(e) : resolve())),

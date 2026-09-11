@@ -760,6 +760,44 @@ describe("offline table resolver", () => {
     expect(resolved.resolved[0]?.partitionFields).toEqual(["busi_date"]);
   });
 
+  it("uses a unique task CREATE only for the exact target when Hive DDL is ambiguous", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-hive-amb-task-create-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "hive-meta.jsonl", []),
+      hiveDdlPath: writeJsonl(dir, "hive-ddl.jsonl", [
+        {
+          qualifiedname: "pdata_n.t04_emp_perf_tgt@gfhive:1",
+          querytext: "CREATE TABLE pdata_n.t04_emp_perf_tgt (old_a string)",
+        },
+        {
+          qualifiedname: "pdata_n.t04_emp_perf_tgt@gfhive:2",
+          querytext: "CREATE TABLE pdata_n.t04_emp_perf_tgt (old_b string)",
+        },
+      ]),
+      rdbmsCorePath: writeJsonl(dir, "rdbms-core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: null,
+    });
+    const create =
+      "CREATE TABLE IF NOT EXISTS T04_EMP_PERF_TGT (Emp_Id STRING) PARTITIONED BY (Src_Tbl STRING)";
+    const resolved = resolveOfflineTables(
+      mkdtempSync(join(tmpdir(), "pack-")),
+      task({
+        taskId: "151961",
+        taskCategory: "hiveTask-2.0",
+        target: "PDATA_N.T04_EMP_PERF_TGT",
+        sql: { create, query: "INSERT OVERWRITE TABLE T04_EMP_PERF_TGT SELECT 1" },
+      }),
+      catalog,
+    );
+    expect(resolved.unavailable).toEqual([]);
+    expect(resolved.resolved[0]).toMatchObject({
+      qualifiedName: "pdata_n.t04_emp_perf_tgt",
+      evidenceProvider: "input-pack:task-sql-create",
+    });
+    expect(resolved.resolved[0]?.ddl).toBe(create);
+  });
+
   it("joins hive metadata and ddl by table name when guids differ", () => {
     const dir = mkdtempSync(join(tmpdir(), "offline-table-"));
     const catalog = loadOfflineTableCatalog({

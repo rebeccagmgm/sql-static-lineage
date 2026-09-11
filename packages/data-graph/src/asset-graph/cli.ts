@@ -29,6 +29,7 @@ const allowed = new Set([
   "--consumer-task-id",
   "--publication-version",
   "--metadata-catalog-root",
+  "--datasource-catalog-path",
 ]);
 
 /** Milliseconds from assetGraphMain() entry until the response object is built. */
@@ -82,43 +83,49 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       return;
     }
     if (command === "metrics") {
-      const { readPublishedContinuationMetrics } = await import("./continuation-metrics-query.ts");
+      const { readPublishedContinuationMetrics } =
+        await import("./continuation-metrics-query.ts");
       const paths = resolveWorkspacePaths({ configPath: config });
-      console.log(JSON.stringify({
-        schemaVersion: "1.0.0",
-        ok: true,
-        command,
-        data: readPublishedContinuationMetrics({
-          graphOutputRoot: paths.graphOutputRoot,
-          gapLayer: option("--gap-layer"),
-          reasonCode: option("--reason-code"),
-          publicationVersion: option("--publication-version"),
-          terminalRole: option("--terminal-role"),
-          offset: integer("--offset", 0, 1_000_000),
-          limit: integer("--limit", 25, 100, 1),
+      console.log(
+        JSON.stringify({
+          schemaVersion: "1.0.0",
+          ok: true,
+          command,
+          data: readPublishedContinuationMetrics({
+            graphOutputRoot: paths.graphOutputRoot,
+            gapLayer: option("--gap-layer"),
+            reasonCode: option("--reason-code"),
+            publicationVersion: option("--publication-version"),
+            terminalRole: option("--terminal-role"),
+            offset: integer("--offset", 0, 1_000_000),
+            limit: integer("--limit", 25, 100, 1),
+          }),
         }),
-      }));
+      );
       return;
     }
     if (command === "query-read-candidates") {
       const readOccurrenceId = option("--read-occurrence-id");
       if (!readOccurrenceId)
         throw new Error("ARGUMENT_VALUE_REQUIRED:--read-occurrence-id");
-      const { readPublishedContinuationCandidates } = await import("./continuation-candidates-query.ts");
+      const { readPublishedContinuationCandidates } =
+        await import("./continuation-candidates-query.ts");
       const paths = resolveWorkspacePaths({ configPath: config });
-      console.log(JSON.stringify({
-        schemaVersion: "1.0.0",
-        ok: true,
-        command,
-        data: readPublishedContinuationCandidates({
-          graphOutputRoot: paths.graphOutputRoot,
-          readOccurrenceId,
-          consumerTaskId: option("--consumer-task-id"),
-          publicationVersion: option("--publication-version"),
-          offset: integer("--offset", 0, 1_000_000),
-          limit: integer("--limit", 25, 100, 1),
+      console.log(
+        JSON.stringify({
+          schemaVersion: "1.0.0",
+          ok: true,
+          command,
+          data: readPublishedContinuationCandidates({
+            graphOutputRoot: paths.graphOutputRoot,
+            readOccurrenceId,
+            consumerTaskId: option("--consumer-task-id"),
+            publicationVersion: option("--publication-version"),
+            offset: integer("--offset", 0, 1_000_000),
+            limit: integer("--limit", 25, 100, 1),
+          }),
         }),
-      }));
+      );
       return;
     }
     if (
@@ -156,6 +163,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       const port = integer("--port", 8791, 65535, 1024),
         server = await startAssetGraphServer(config, port, {
           metadataCatalogRoot: option("--metadata-catalog-root"),
+          datasourceCatalogPath: option("--datasource-catalog-path"),
         });
       console.log(
         JSON.stringify({ ok: true, url: `http://127.0.0.1:${port}` }),
@@ -163,11 +171,10 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
       process.once("SIGINT", () => void server.close());
       return;
     }
-    const [{ openAssetGraph }, { AssetGraphStore }] =
-      await Promise.all([
-        import("./config.ts"),
-        import("./store.ts"),
-      ]);
+    const [{ openAssetGraph }, { AssetGraphStore }] = await Promise.all([
+      import("./config.ts"),
+      import("./store.ts"),
+    ]);
     const c = await openAssetGraph(config),
       store = new AssetGraphStore(c.driver, c.database, c.graphId);
     backend = c.provider;
@@ -282,6 +289,8 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           ),
         };
       } else {
+        const { buildTraceConsumptionFromRecords } =
+          await import("./trace-consumption.ts");
         const layer = option("--layer") ?? "field",
           direction = option("--direction") ?? "up";
         if (
@@ -293,7 +302,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           throw new Error("ARGUMENT_VALUE_REQUIRED:anchor");
         if (layer === "field" && !option("--node-id") && !option("--column"))
           throw new Error("ARGUMENT_VALUE_REQUIRED:--column");
-        data = await store.traverse({
+        const trace = await store.traverse({
           taskId: option("--task-id"),
           column: option("--column"),
           table: option("--table"),
@@ -305,6 +314,20 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
           limit,
           includeCandidates: !flag("--confirmed-only"),
         });
+        const identities = await store.metadataIdentities(
+          trace.nodes.map((node) => String(node.id)),
+        );
+        data = {
+          ...trace,
+          consumption: buildTraceConsumptionFromRecords({
+            direction: trace.direction,
+            nodes: trace.nodes.map((node) => ({
+              ...node,
+              metadataIdentity: identities.get(String(node.id)),
+            })),
+            edges: trace.edges,
+          }),
+        };
       }
       const elapsedMs = mainElapsedMs(started);
       console.log(

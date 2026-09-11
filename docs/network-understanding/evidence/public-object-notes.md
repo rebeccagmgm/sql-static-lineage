@@ -3,6 +3,7 @@
 本文件记录已读证据，不宣称公共对象全部生产分支已完成审阅。发布 SQL 以 scope-inventory.json 固定版本为准；Table Pack 是本次精确物理身份匹配的独立元数据快照，状态与 SQL 版本分别记录。
 
 <a id="party"></a>
+
 ## 当事人、客户和交易对手
 
 已读 table-catalog.json 中以下精确表项的 description、字段、源对象状态及生产者：
@@ -14,32 +15,36 @@
 尚未核对：上述各生产分支的全量身份拼接和去重规则；不能据本段说明宣称全平台唯一客户识别已经完成。
 
 <a id="agreement-ids"></a>
+
 ## 协议编号实际来源
 
 已核对当前 task-catalog 指定 evidencePath 的 `query`：
 
-| 任务 | 已读行段 | 核实内容 |
-|---|---|---|
-| 105053 | 18—40 | 保证金账户KEY_MRG_ACCT_ID→Agt_Id，修饰符10219，KEY_CTPTY_ID加TIT060-前缀→持有人 |
-| 105054 | 18—40 | 资金账户KEY_CAPITAL_ACCT_ID→Agt_Id，修饰符10220，同样保留源对象持有人 |
-| 105055 | 18—40 | REF_TRS.KEY_OTC_TRADE_ID→Agt_Id，修饰符20206，关联源交易与账簿取得持有人 |
-| 105522 | 18—40 | REF_OTC_OPTION_DEAL.KEY_OTC_TRADE_ID→Agt_Id，修饰符20207，币种本分支填空 |
+| 任务   | 已读行段 | 核实内容                                                                        |
+| ------ | -------- | ------------------------------------------------------------------------------- |
+| 105053 | 18—40    | 保证金账户KEY_MRG_ACCT_ID→Agt_Id，修饰符10219，KEY_CTPTY_ID加TIT060-前缀→持有人 |
+| 105054 | 18—40    | 资金账户KEY_CAPITAL_ACCT_ID→Agt_Id，修饰符10220，同样保留源对象持有人           |
+| 105055 | 18—40    | REF_TRS.KEY_OTC_TRADE_ID→Agt_Id，修饰符20206，关联源交易与账簿取得持有人        |
+| 105522 | 18—40    | REF_OTC_OPTION_DEAL.KEY_OTC_TRADE_ID→Agt_Id，修饰符20207，币种本分支填空        |
 
 这些是精确实现映射。修饰符中文含义按当前对象分支解释，尚未用独立字典正文证明所有代码的全局含义。
 
 `pdata_n.t03_agt` 精确 Table Pack 说明协议编号和协议修饰符构成模型逻辑键；其 Hive DDL 是字段列表，没有据此实测唯一性。该表共有13个图内生产任务，已定位全部输入/槽位；只核对上述部分真实映射，剩余分支必须继续核验。
 
 <a id="agreement-maintenance"></a>
+
 ## 协议维护
 
 105522 `query` 94—135 行：按来源限定旧表，FULL OUTER JOIN新提取临时表，ON A.Agt_Id=B.Agt_Id；第120行起覆盖T03_AGT的Src_Tbl分区。已读片段足以说明“必须核对实际维护方式”，不足以证明所有历史查询能力或全部状态转换。
 
 <a id="relationships"></a>
+
 ## 关系模型
 
 `pdata_n.t03_agt_rela_h` Table Pack 说明为协议关系历史，引用关系类型代码CD051。已定位图内生产任务和字段，但本章未重新核对全部关系类型/有效期规则。具体上下游关系解释须有对应SQL，不能仅凭此元数据给全图补业务关系。
 
 <a id="organization"></a>
+
 ## 组织、账簿和账户
 
 - `pdata_n.t98_org_brch_div_info` 元数据说明机构编号取柜台、名称及所属分公司取ERP，按业务日期快照；图内无最终生产者。没有因此验证完整ERP→模型加工。
@@ -47,6 +52,7 @@
 - 财务内部账户与账套映射：198806 `query` 241—410行，部门/账簿/业务方向映射内部证券账户，408—409行内连计算日有效且ENABLE的账户信息。这里只用于说明对象职责，不把具体账户编码复制到正文。
 
 <a id="security"></a>
+
 ## 证券基础与实际用途
 
 - `pdata_news_n.t02_tit_scr_base_info` 精确Table Pack与DDL：secu_id、scr_cd、in_code、源类别、货币属性等；源类别说明并非仅股票。

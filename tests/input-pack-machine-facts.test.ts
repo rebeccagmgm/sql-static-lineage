@@ -34,6 +34,93 @@ function jsonl(path: string): Record<string, unknown>[] {
 }
 
 describe("Input Pack-driven Machine Facts", () => {
+  it.each([false, true])(
+    "keeps explicit scheduler partitions separate from query width (extra column: %s)",
+    (extraColumn) => {
+      const f = fixture();
+      writeTaskInput(f.dataRoot, {
+        taskId: "1199",
+        taskCategory: "oracle2hive",
+        taskName: "scheduler-static-partition",
+        target: {
+          platform: "hive",
+          dataSource: "warehouse",
+          qualifiedName: "demo.partitioned",
+        },
+        targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+        partition: { p: "h0850" },
+        schedulerEvidence: {
+          hivePartition: "h0850",
+          evidenceProvider: "synthetic:scheduler",
+        },
+        sql: {
+          query: {
+            content: `SELECT e.src_a AS value_col${extraColumn ? ", e.src_a AS extra_business_field" : ""} FROM demo.extra e`,
+            evidenceProvider: "synthetic:test",
+          },
+        },
+        evidenceProvider: "synthetic:test",
+        collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+      const prepared = prepareInputPackTask({
+        dataRoot: f.dataRoot,
+        taskId: "1199",
+      });
+      expect(prepared.profileTask.platform_target_query_output).toMatchObject({
+        partition_mode: "STATIC",
+        partition_assignments: [
+          {
+            field: "p",
+            status: "CONFIRMED",
+            mapping_method: "SCHEDULER_EXPLICIT_FIELD_VALUE",
+          },
+        ],
+      });
+      const result = runInputPackMachineFacts({
+        dataRoot: f.dataRoot,
+        taskIds: ["1199"],
+        outputRoot: f.factsRoot,
+      });
+      expect(result.tasks[0], JSON.stringify(result.tasks[0])).toMatchObject({
+        state: "SUCCESS",
+      });
+      const bundle = join(f.factsRoot, "registry", "tasks", "1199", "bundle");
+      const writes = jsonl(join(bundle, "dataset-io.jsonl")).filter(
+        (r) =>
+          r.write_observation_id === "write-observation:1199:platform-target:0",
+      );
+      expect(writes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            partition_mode: "STATIC",
+            partition_binding_status: "COMPLETE",
+          }),
+        ]),
+      );
+      const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
+      expect(
+        bindings.filter(
+          (b) => b.target_field === "p" && b.binding_status === "RESOLVED",
+        ),
+      ).toEqual([]);
+      if (extraColumn) {
+        expect(jsonl(join(bundle, "unknowns.jsonl"))).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              reason_code: "OUTPUT_BINDING_NOT_PROVABLE",
+            }),
+          ]),
+        );
+      } else {
+        expect(
+          bindings.some(
+            (b) =>
+              b.target_field === "value_col" && b.binding_status === "RESOLVED",
+          ),
+        ).toBe(true);
+      }
+    },
+  );
   it("keeps a repeated platform SQL response raw while parsing a derived deduplicated view", () => {
     const f = fixture();
     const repeated =
@@ -73,6 +160,100 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(
       jsonl(join(f.factsRoot, "registry", "tasks", "1100", "bundle", "unknowns.jsonl")),
     ).toHaveLength(0);
+  });
+
+  it("uses an observed SQL write as a schema anchor when a task has no declared target", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1101",
+      taskCategory: "hiveTask-2.0",
+      taskName: "demo.root_grp01",
+      sql: {
+        query: {
+          content: "INSERT OVERWRITE TABLE demo.root SELECT mid_a AS root_a, filter_key AS root_b FROM demo.mid;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const prepared = prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1101" });
+    expect(prepared.target.qualifiedName).toBe("demo.root");
+    expect(prepared.profileTask.writes).toBe("demo.root");
+
+    const result = runInputPackMachineFacts({
+      dataRoot: f.dataRoot,
+      taskIds: ["1101"],
+      outputRoot: f.factsRoot,
+      noWriterCatalog: true,
+    });
+    expect(result.tasks[0]?.state).toBe("SUCCESS");
+  });
+
+  it("does not choose between multiple SQL write identities when target is absent", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1103",
+      taskCategory: "hiveTask-2.0",
+      taskName: "demo.root_and_extra",
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.root SELECT mid_a AS root_a, filter_key AS root_b FROM demo.mid; INSERT OVERWRITE TABLE demo.extra SELECT root_a AS extra_a, root_b AS extra_b FROM demo.root;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    expect(() =>
+      prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1103" }),
+    ).toThrow(/TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:1103/);
+  });
+
+  it("does not fall back to a different platform when target is absent", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1104",
+      taskCategory: "hive2postgre",
+      taskName: "demo.root_to_postgre",
+      sql: {
+        query: {
+          content:
+            "INSERT OVERWRITE TABLE demo.root SELECT mid_a AS root_a, filter_key AS root_b FROM demo.mid;",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    expect(() =>
+      prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1104" }),
+    ).toThrow(/TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:1104/);
+  });
+
+  it("uses a DDL table as a schema anchor when the task has no query slot", () => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1102",
+      taskCategory: "hiveTask-2.0",
+      taskName: "demo.root_ddl",
+      sql: {
+        create: {
+          content: "CREATE TABLE IF NOT EXISTS demo.root (root_a STRING, root_b STRING);",
+          evidenceProvider: "synthetic:test",
+        },
+      },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const prepared = prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1102" });
+    expect(prepared.sql.slot).toBe("create");
+    expect(prepared.target.qualifiedName).toBe("demo.root");
   });
 
   it("publishes a resolved Task-local bridge for an INSERT OVERWRITE followed by a later read", () => {
@@ -344,7 +525,8 @@ describe("Input Pack-driven Machine Facts", () => {
     expect(result.tasks[0]?.state).toBe("SUCCESS");
     const bundle = join(f.factsRoot, "registry", "tasks", "1212", "bundle");
     expect(jsonl(join(bundle, "dataset-io.jsonl")).filter(
-      (row) => row.direction === "READ" && row.physical_dataset === readDataset,
+      // Both qualified and bare SQL references resolve to the same physical table.
+      (row) => row.direction === "READ" && row.physical_dataset === "demo.mid",
     )).toHaveLength(2);
     expect(jsonl(join(bundle, "task-local-materializations.jsonl")).map((bridge) => ({
       status: bridge.status,

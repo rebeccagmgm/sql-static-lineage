@@ -262,12 +262,12 @@ sqlite / `_partial*` 是还原中间件，接入层不读。
 
 ### 4.1 四份正式目录
 
-| 角色       | 路径                                                | 行数                                                            | 报告               | 主键                                          | 给 Table Pack 什么                                                                 |
-| ---------- | --------------------------------------------------- | --------------------------------------------------------------- | ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 角色       | 路径                                                | 行数                                                            | 报告               | 主键                                          | 给 Table Pack 什么                                                                        |
+| ---------- | --------------------------------------------------- | --------------------------------------------------------------- | ------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Hive 身份  | `hive元信息-20260831快照/hive_table_restored.jsonl` | 211922，全部 `datasource=gfhive`；ACTIVE 150098 / DELETED 61824 | 无完整 report      | 查询键 `lower(db.table)`                      | `qualifiedName` / `dataSource=gfhive` / `status` / `objectType=hive_table`；不写快照 guid |
-| Hive DDL   | `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 142409                                                          | SUCCESS            | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘                                                |
-| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 1223553                                                         | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource`                  | 拆 `@` 后的 qn+ds / `comment`；不写 jsonl guid                                      |
-| RDBMS DDL  | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 1202531                                                         | INCOMPLETE，缺 92  | 查询键同上                                    | `ddl` → `ddl.sql`（禁止 strip）                                                    |
+| Hive DDL   | `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 142409                                                          | SUCCESS            | 查询键：去掉 `@gfhive:时间戳` 后的 `db.table` | `querytext` → `ddl.sql`；可单独落盘                                                       |
+| RDBMS 身份 | `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 1223553                                                         | INCOMPLETE，缺 114 | 查询键 `db.table@dataSource`                  | 拆 `@` 后的 qn+ds / `comment`；不写 jsonl guid                                            |
+| RDBMS DDL  | `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 1202531                                                         | INCOMPLETE，缺 92  | 查询键同上                                    | `ddl` → `ddl.sql`（禁止 strip）                                                           |
 
 Hive 现网 collector 已经在读第一份（`DEFAULT_HIVE_METADATA_SNAPSHOT_PATH`），
 但只当“表存在”门闩，**还没接 DDL jsonl**。`180065` 的 Oracle 目标

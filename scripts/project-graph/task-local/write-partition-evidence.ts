@@ -1,4 +1,6 @@
 import { extractSqlWrites } from "../../evidence/sql-write-evidence.ts";
+import type { PartitionAlternative } from "./partition-alternatives.ts";
+import { createPartitionValueResolver, createPartitionValueDomainResolver } from "./partition-value-propagation.ts";
 import {
   canonicalPartitionValue,
   isRuntimeTemplateExpression,
@@ -6,6 +8,8 @@ import {
 } from "./partition-canonical.ts";
 
 export interface WritePartitionPart {
+  readonly mayBeNull?: boolean;
+  readonly alternatives?: readonly PartitionAlternative[];
   readonly column: string;
   readonly values: readonly string[];
   readonly valueStatus?: string;
@@ -16,6 +20,7 @@ export interface WritePartitionPart {
 }
 
 export interface WritePartitionFacts {
+  readonly provenance?: unknown;
   readonly write_observation_id?: unknown;
   readonly physical_dataset?: unknown;
   readonly partition_mode?: unknown;
@@ -26,6 +31,52 @@ export interface WritePartitionFacts {
 }
 
 type FactRecord = Record<string, unknown>;
+
+function record(value: unknown): FactRecord | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as FactRecord : null;
+}
+
+/** Only project -> filter -> read: no joins, subqueries or inferred aliases. */
+function filteredDirectColumnLiteral(
+  expression: FactRecord,
+  relations: ReadonlyMap<string | null, FactRecord>,
+): string | null {
+  const raw = text(expression.expression_text);
+  if (!raw || !/^(?:[A-Za-z_][\w$]*\.)?[A-Za-z_][\w$]*$/u.test(raw)) return null;
+  const inputs = Array.isArray(expression.input_fields) ? expression.input_fields : [];
+  if (inputs.length !== 1) return null;
+  const input = record(inputs[0]);
+  const table = text(input?.table)?.toLowerCase(), column = text(input?.column)?.toLowerCase();
+  if (!table || !column || raw.split(".").at(-1)?.toLowerCase() !== column) return null;
+  const project = record(relations.get(text(expression.relation_id))?.relation);
+  const filter = record(relations.get(text(project?.source))?.relation);
+  const read = record(relations.get(text(filter?.source))?.relation);
+  if (project?.type !== "project" || filter?.type !== "filter" || read?.type !== "read" ||
+    text(read.table)?.toLowerCase() !== table) return null;
+  const found = new Set<string>();
+  const visit = (value: unknown): void => {
+    const node = record(value);
+    if (node?.kind === "AND" && Array.isArray(node.children)) {
+      node.children.forEach(visit);
+      return;
+    }
+    // An atom under OR/NOT does not constrain every output row.
+    if (node?.kind !== "ATOM" || !["EQ", "IN"].includes(String(node.operator))) return;
+    const operands = Array.isArray(node.operands) ? node.operands.map(record) : [];
+    if (operands.length !== 2 || operands[0]?.kind !== "COLUMN" || operands[1]?.kind !== "LITERAL") return;
+    const ref = record(operands[0].column);
+    const physical = Array.isArray(ref?.physical) ? ref.physical : [];
+    const origin = physical.length === 1 ? record(physical[0]) : null;
+    if (ref?.resolution !== "PHYSICAL" || text(origin?.table)?.toLowerCase() !== table ||
+      text(origin?.column)?.toLowerCase() !== column) return;
+    const literal = literalFromExpression(operands[1].expression);
+    if (literal !== null) found.add(literal);
+  };
+  visit(filter.predicate_tree);
+  return found.size === 1 ? [...found][0]! : null;
+}
+
 type WritePartitionReason =
   | "DYNAMIC_PARTITION_BINDING_MISSING"
   | "DYNAMIC_PARTITION_EXPRESSION_ROOT_MISSING"
@@ -116,7 +167,7 @@ function resolveOutputReference(
   const matches = [
     ...sql.matchAll(
       new RegExp(
-        `(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
+        `(?<![A-Za-z0-9_$.])(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
         "giu",
       ),
     ),
@@ -147,6 +198,8 @@ type DynamicPartitionResolution =
       readonly state: "RESOLVED";
       readonly expression: string;
       readonly value: string;
+      readonly alternatives?: readonly PartitionAlternative[];
+      readonly mayBeNull?: boolean;
       readonly valueStatus: "OBSERVED_RENDERED_VALUE" | "RUNTIME_EXPRESSION";
     }
   | { readonly state: "UNRESOLVED"; readonly reason: WritePartitionReason };
@@ -169,6 +222,7 @@ function dynamicPartitionResolution(
   expressions: readonly FactRecord[],
   relations: readonly FactRecord[],
   statementSql: string | null,
+  materializations: readonly FactRecord[],
 ): DynamicPartitionResolution {
   const assignments = Array.isArray(facts.partition_assignments) ? facts.partition_assignments : [];
   const assignment = assignments.find((item) => item && typeof item === "object" && !Array.isArray(item) &&
@@ -183,16 +237,56 @@ function dynamicPartitionResolution(
   const expressionId = text(binding.expression_id);
   const root = expressionId ? expressions.find((item) => text(item.expression_id) === expressionId) : undefined;
   if (!root) return { state: "UNRESOLVED", reason: "DYNAMIC_PARTITION_EXPRESSION_ROOT_MISSING" };
+  // A single partition column has no cross-column tuple correlation to lose.
+  // Preserve possible SQL NULL separately from its complete non-NULL value set.
+  if (factColumns(facts).length === 1) {
+    const resolverInput = { bindings, expressions, relations, materializations, literal: literalFromExpression };
+    const domain = createPartitionValueDomainResolver(resolverInput)(root);
+    const certain = createPartitionValueResolver(resolverInput);
+    const witnessedValues = (expression: FactRecord, active = new Set<string>()): readonly string[] => {
+      const id = text(expression.expression_id);
+      if (!id || active.has(id)) return [];
+      const known = certain(expression);
+      if (known) return known;
+      if (expression.role !== "SETOP_OUTPUT") return [];
+      const body = record(relations.find(r => r.relation_id === expression.relation_id)?.relation);
+      if (body?.type !== "setop" || body.setop !== "union" || !Array.isArray(body.branches)) return [];
+      return body.branches.flatMap(branch => expressions.filter(e => e.relation_id === branch && e.ordinal === expression.ordinal)
+        .flatMap(e => witnessedValues(e, new Set(active).add(id))));
+    };
+    const witnesses = new Set(witnessedValues(root).map(value => canonicalPartitionValue(field, value)));
+    // Bounds alone cannot confirm an output value. Each non-NULL value also
+    // needs a branch whose value is proven without nullable-side assumptions.
+    if (domain?.mayBeNull && domain.values.length && domain.values.every(value => !isRuntimeTemplateExpression(value) &&
+      witnesses.has(canonicalPartitionValue(field, value)))) {
+      const values = [...new Set(domain.values)];
+      return { state: "RESOLVED", value: values[0]!, expression: quoteSqlLiteral(values[0]!),
+        valueStatus: "OBSERVED_RENDERED_VALUE", mayBeNull: true,
+        ...(values.length > 1 ? { alternatives: values.map((value, index) => ({
+          key: `value-domain:${index}`, value, expression: quoteSqlLiteral(value), valueStatus: "OBSERVED_RENDERED_VALUE",
+        })) } : {}),
+      };
+    }
+  }
   const ordinal = Number(binding.source_ordinal);
   const relationById = new Map(relations.map((item) => [text(item.relation_id), item]));
+  const referenceValues = createPartitionValueResolver({ bindings, expressions, relations, materializations, literal: literalFromExpression });
   const leafExpressionTexts = (
     expression: FactRecord,
     active = new Set<string>(),
-  ): { readonly texts: readonly string[]; readonly reason?: WritePartitionReason } => {
+  ): { readonly texts: readonly string[]; readonly keys?: readonly string[]; readonly reason?: WritePartitionReason } => {
     if (text(expression.role)?.toUpperCase() === "PROJECT_EXPRESSION") {
+      const propagated = literalFromExpression(expression.expression_text) === null ? referenceValues(expression) : null;
+      // Multi-column domains need a shared branch key. Never combine independent value sets.
+      if (propagated?.length && (propagated.length === 1 || factColumns(facts).length === 1)) {
+        return { texts: propagated.map(quoteSqlLiteral), keys: propagated.map((_, index) => propagated.length === 1
+          ? text(expression.relation_id) ?? "root" : `${text(expression.relation_id)}:${index}`) };
+      }
+      const filteredValue = filteredDirectColumnLiteral(expression, relationById);
+      if (filteredValue !== null) return { texts: [quoteSqlLiteral(filteredValue)], keys: [text(expression.relation_id) ?? "root"] };
       const expressionText = text(expression.expression_text);
       return expressionText
-        ? { texts: [expressionText] }
+        ? { texts: [expressionText], keys: [text(expression.relation_id) ?? "root"] }
         : { texts: [], reason: "DYNAMIC_PARTITION_EXPRESSION_TEXT_MISSING" };
     }
     if (text(expression.role)?.toUpperCase() !== "SETOP_OUTPUT") {
@@ -216,6 +310,7 @@ function dynamicPartitionResolution(
     }
     const next = new Set(active).add(relationId);
     const branchTexts: string[][] = [];
+    const branchKeys: string[] = [];
     for (const branchId of branches) {
       const branchRelation = relationById.get(branchId);
       const branchExpressions = expressions.filter((item) => text(item.relation_id) === branchId && Number(item.ordinal) === ordinal);
@@ -230,8 +325,9 @@ function dynamicPartitionResolution(
       const unresolved = nested.find((item) => item.texts.length === 0);
       if (unresolved) return unresolved;
       branchTexts.push(nested.flatMap((item) => item.texts));
+      branchKeys.push(...nested.flatMap(item => item.keys ?? []));
     }
-    return { texts: branchTexts.flat() };
+    return { texts: branchTexts.flat(), keys: branchKeys };
   };
   const textResolution = leafExpressionTexts(root);
   if (textResolution.texts.length === 0) {
@@ -274,14 +370,16 @@ function dynamicPartitionResolution(
   if (comparable.length === 0) {
     return { state: "UNRESOLVED", reason: "DYNAMIC_PARTITION_EXPRESSION_UNRESOLVED" };
   }
-  if (new Set(comparable.map((item) => item.canonical)).size !== 1) {
-    return { state: "UNRESOLVED", reason: "DYNAMIC_PARTITION_UNION_BRANCH_CONFLICT" };
-  }
+  const alternatives = new Set(comparable.map(item => item.canonical)).size > 1 ? comparable.map((item, index) => ({
+    key: textResolution.keys![index]!, value: item.value,
+    expression: item.expression, valueStatus: item.valueStatus,
+  })) : undefined;
   const best = comparable.find((item) => item.valueStatus === "OBSERVED_RENDERED_VALUE") ?? comparable[0]!;
   return {
     state: "RESOLVED",
     expression: best.expression,
     value: best.value,
+    alternatives,
     valueStatus: comparable.some((item) => item.valueStatus === "RUNTIME_EXPRESSION")
       ? "RUNTIME_EXPRESSION"
       : best.valueStatus,
@@ -340,12 +438,12 @@ function partsFromSqlExtract(
       const raw = part.observedValue ?? part.expression;
       return {
         column,
-        values: [canonicalPartitionValue(column, raw)],
+        values: part.valueStatus === "UNKNOWN" ? [] : [canonicalPartitionValue(column, raw)],
         valueStatus: part.valueStatus,
         observedValue: part.observedValue,
         expression: part.expression,
         partitionStatus:
-          extracted[0]!.partitionMode === "NONE" ? "NON_PARTITIONED" : "STATIC",
+          part.valueStatus === "UNKNOWN" ? "DYNAMIC" : extracted[0]!.partitionMode === "NONE" ? "NON_PARTITIONED" : "STATIC",
       };
     }),
   };
@@ -382,6 +480,21 @@ function factsHaveConflict(facts: WritePartitionFacts): boolean {
       return status === "CONFLICT";
     },
   );
+}
+
+function partsFromPackAlternatives(value: readonly unknown[], columns: readonly string[]): WritePartitionPart[] | null {
+  if (!value.length || !columns.length) return null;
+  const rows = value.map(record);
+  if (rows.some(row => !row || Object.keys(row).length !== columns.length ||
+    columns.some(column => typeof row[column] !== "string" || !String(row[column]).trim()))) return null;
+  return columns.map(column => {
+    const alternatives = rows.map((row, index) => ({ key: `pack:${index}`, value: String(row![column]),
+      valueStatus: isRuntimeTemplateExpression(String(row![column])) ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
+      expression: String(row![column]) }));
+    return { column, values: [...new Set(alternatives.map(a => canonicalPartitionValue(column, a.value)))],
+      valueStatus: alternatives.some(a => a.valueStatus === "RUNTIME_EXPRESSION") ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
+      partitionStatus: "STATIC", alternatives };
+  });
 }
 
 function factsHaveUnknownBinding(facts: WritePartitionFacts): boolean {
@@ -445,7 +558,7 @@ function hasExactNonEmptyFactColumns(
 export function buildWritePartitionParts(input: {
   readonly qualifiedName: string;
   readonly statementSql: string | null;
-  readonly packPartition: Record<string, unknown> | null;
+  readonly packPartition: Record<string, unknown> | readonly Record<string, unknown>[] | null;
   readonly packTarget?: unknown;
   readonly factsWrite?: WritePartitionFacts | null;
   readonly writeObservationId?: string | null;
@@ -454,6 +567,7 @@ export function buildWritePartitionParts(input: {
   readonly bindings?: readonly FactRecord[];
   readonly expressions?: readonly FactRecord[];
   readonly relations?: readonly FactRecord[];
+  readonly materializations?: readonly FactRecord[];
 }): WritePartitionPart[] {
   const facts = input.factsWrite ?? null;
   const mode = text(facts?.partition_mode)?.toUpperCase() ?? null;
@@ -469,23 +583,34 @@ export function buildWritePartitionParts(input: {
   const packParts =
     canUsePack &&
     input.packPartition &&
+    !Array.isArray(input.packPartition) &&
     !("schemaVersion" in input.packPartition)
-      ? partsFromPackPartition(input.packPartition)
+      ? partsFromPackPartition(input.packPartition as Record<string, unknown>)
       : [];
 
   if (boundFacts && factsHaveConflict(facts!))
-    return unknownParts(facts);
+    return unknownParts(facts, "CONFLICT");
+  if (canUsePack && facts?.provenance === "PLATFORM_TARGET" && Array.isArray(input.packPartition) &&
+    text(facts.partition_binding_status)?.toUpperCase() === "COMPLETE") {
+    const alternatives = partsFromPackAlternatives(input.packPartition, factColumns(facts));
+    if (alternatives) return alternatives;
+  }
   if (boundFacts && mode === "UNKNOWN") {
     if (canUsePack && hasExactNonEmptyFactColumns(packParts, facts!)) return packParts;
     return unknownParts(facts);
   }
   if (boundFacts && factsHaveUnknownBinding(facts!)) return unknownParts(facts);
-  if (boundFacts && mode === "DYNAMIC") {
+  if (boundFacts && (mode === "DYNAMIC" || mode === "MIXED")) {
     const assignments = Array.isArray(facts!.partition_assignments) ? facts!.partition_assignments : [];
+    const mixedSql = mode === "MIXED" && input.statementSql ? partsFromSqlExtract(input.qualifiedName, input.statementSql) : null;
     const parts = assignments.flatMap((assignment) => {
       if (!assignment || typeof assignment !== "object" || Array.isArray(assignment)) return [];
       const field = text((assignment as FactRecord).field);
       if (!field) return [];
+      if (mode === "MIXED" && text((assignment as FactRecord).mapping_method) === "STATIC_SQL_ASSIGNMENT") {
+        const part = mixedSql?.parts.find(part => normalizeColumnName(part.column) === normalizeColumnName(field));
+        return part && part.valueStatus !== "UNKNOWN" ? [part] : [];
+      }
       const resolved = dynamicPartitionResolution(
         facts!,
         input.writeObservationId!,
@@ -494,6 +619,7 @@ export function buildWritePartitionParts(input: {
         input.expressions ?? [],
         input.relations ?? [],
         input.statementSql,
+        input.materializations ?? [],
       );
       const packPart = packParts.find(
         (part) =>
@@ -517,10 +643,12 @@ export function buildWritePartitionParts(input: {
       }
       return [{
         column: field,
-        values: [canonicalPartitionValue(field, resolved.value)],
+        values: [...new Set((resolved.alternatives?.map(a => a.value) ?? [resolved.value]).map(value => canonicalPartitionValue(field, value)))],
         valueStatus: resolved.valueStatus,
-        observedValue: resolved.value,
-        expression: resolved.expression,
+        observedValue: resolved.alternatives || resolved.mayBeNull ? null : resolved.value,
+        expression: resolved.alternatives || resolved.mayBeNull ? undefined : resolved.expression,
+        ...(resolved.mayBeNull ? { mayBeNull: true } : {}),
+        ...(resolved.alternatives ? { alternatives: resolved.alternatives } : {}),
         partitionStatus: "STATIC",
       }];
     });

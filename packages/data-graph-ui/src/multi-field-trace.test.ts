@@ -128,7 +128,7 @@ describe("collectMultiFieldTrace", () => {
     ).rejects.toThrow("STALE_MULTI_FIELD_QUERY");
     expect(calls).toBe(1);
   });
-  it("keeps unqueried roots when the shared edge budget is exhausted", async () => {
+  it("reports unqueried roots without drawing misleading isolated nodes", async () => {
     const roots = [root("a"), root("b")];
     const result = await collectMultiFieldTrace({
       roots,
@@ -137,9 +137,49 @@ describe("collectMultiFieldTrace", () => {
       fetchTrace: async (item) => trace(item, "v1", item.id),
     });
     expect(result.truncated).toBe(true);
+    expect(result.unqueriedRootNodeIds).toEqual(["b"]);
+    expect(result.nodes.some(node => node.id === "b")).toBe(false);
     expect(result.nodes.map((node) => node.id)).toEqual(
-      expect.arrayContaining(["a", "b"]),
+      expect.arrayContaining(["a"]),
     );
+  });
+  it("merges task labels, stop reasons and the shortest shared depth", async () => {
+    const roots = [root("a"), root("b")];
+    const result = await collectMultiFieldTrace({
+      roots,
+      isCurrent: () => true,
+      fetchTrace: async (item) => ({
+        ...trace(item, "v1", item.id),
+        stoppedBy: item.id === "b" ? "DEPTH_LIMIT" : null,
+        taskLabels: { [`task-${item.id}`]: `name-${item.id}` },
+        taskTopics: { [`task-${item.id}`]: `topic-${item.id}` },
+        taskTopicDescriptions: { [`task-${item.id}`]: `中文-${item.id}` },
+        nodes: [
+          item,
+          {
+            id: "shared",
+            kind: "READ_FIELD",
+            depth: item.id === "a" ? 2 : 1,
+          },
+        ],
+        edges: [
+          {
+            id: `edge-${item.id}`,
+            from: "shared",
+            to: item.id,
+            kind: "VALUE",
+          },
+        ],
+      }),
+    });
+    expect(result.taskLabels).toEqual({
+      "task-a": "name-a",
+      "task-b": "name-b",
+    });
+    expect(result.taskTopics).toEqual({ "task-a": "topic-a", "task-b": "topic-b" });
+    expect(result.taskTopicDescriptions).toEqual({ "task-a": "中文-a", "task-b": "中文-b" });
+    expect(result.stoppedBy).toBe("DEPTH_LIMIT");
+    expect(result.nodes.find((node) => node.id === "shared")?.depth).toBe(1);
   });
   it("trims in root-reachable order even when the API edge array is reversed", async () => {
     const item = root("root");

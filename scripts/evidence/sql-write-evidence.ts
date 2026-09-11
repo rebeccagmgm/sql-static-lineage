@@ -81,7 +81,7 @@ export function partitionAssignments(
       field,
       expression,
       valueStatus:
-        literal === null ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
+        equals < 0 ? "UNKNOWN" : literal === null ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
       observedValue: literal,
     };
   });

@@ -8,12 +8,12 @@
 
 在[合约对象](07-contract-objects.md)中，合约与子交易回答“这是什么对象、由哪些下层对象组成”。结构元素表补充的是与父合约关联的一组产品安排及属性。它并没有把每个参数拆成一行，也没有在本批 SQL 中计算期权价格。
 
-| 材料 | 在已核验加工中回答的问题 | 不宜混同的内容 |
-| --- | --- | --- |
-| 合约与子交易 | 父合约是谁，子交易编号、标的、本金和日期是什么 | 多笔子交易不等于多份父合约 |
-| 本篇的合约结构元素 | 产品类型、收益付款安排、观察频率、参与率、跨币种和保护期等怎样记录 | 一个结构记录不等于一个观察日或一笔估值 |
-| 子交易观察日与障碍资料 | 各观察日期及相应障碍参数是什么 | 观察频率字段不等于完整观察日序列 |
-| [定价与风险指标](08-positions-valuation-pnl.md) | 某定价对象的 PV、模型价格、Delta、Gamma 等结果是什么 | 结构参数不能直接当作定价结果或已实现收益 |
+| 材料                                            | 在已核验加工中回答的问题                                           | 不宜混同的内容                           |
+| ----------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
+| 合约与子交易                                    | 父合约是谁，子交易编号、标的、本金和日期是什么                     | 多笔子交易不等于多份父合约               |
+| 本篇的合约结构元素                              | 产品类型、收益付款安排、观察频率、参与率、跨币种和保护期等怎样记录 | 一个结构记录不等于一个观察日或一笔估值   |
+| 子交易观察日与障碍资料                          | 各观察日期及相应障碍参数是什么                                     | 观察频率字段不等于完整观察日序列         |
+| [定价与风险指标](08-positions-valuation-pnl.md) | 某定价对象的 PV、模型价格、Delta、Gamma 等结果是什么               | 结构参数不能直接当作定价结果或已实现收益 |
 
 结构表也不是纯粹静态配置：它同时接收期末价格、当前交易数量和事务状态等来源字段。应按字段职责阅读，不能把整表统一理解成签约时永不变化的条款。
 
@@ -23,13 +23,13 @@
 
 输出为一组来源记录的宽式表达，按 `src_tbl、busi_date` 分区，三份 Facts 各有 66 个非分区输出绑定。SQL 没有按合约聚合或去重；DDL 也没有声明唯一键。因此，“某来源日期下，与某期权合约关联的一组结构信息”是可以使用的记录解释，不能升级为“每个合约每天恰好一行”。
 
-| 字段用途 | 源字段 → 输出字段举例 | 阅读重点 |
-| --- | --- | --- |
-| 产品与方向 | `CONTRACT_TYPE → Src_Agt_Type_Cd`；`CONTRACT_SUB_TYPE → Src_Agt_Sub_Type_Cd`；`DIRECTION → Opt_Dir_Type_Cd` | 消费者可以据此选择产品规则 |
-| 时间与安排 | `START_DATE/END_DATE → Bgng_Prcg_Date/End_Prcg_Date`；`REBATE_TIMING → Ko_Yield_Pay_Type_Cd`；`OBSERVATION_FREQ → Obsv_Arng_Type_Cd` | 日期值、付款安排与观察频率是不同信息 |
-| 收益条款 | `KNOCKOUT_EXTRA_PAR → Call_Prtc_Rate`；返息利率、票息及敲出收益率分别映射 | 保留不同参数名称，不能把它们直接相加成收入 |
-| 跨币种参数 | `QUANTO_COEFFICIENT → Quanto_Coef`；`INIT_EXCHANGE_RATE → Bgng_Rate`；另有计算与用户录入汇率列 | 本步承接来源值，没有解释这些值怎样在源端产生 |
-| 保护与重置 | 保护期开始／终止日、敲出重置百分比与价格、重置结束日 | 这些条款与普通起止日分别保留，不能用一个“有效期”概括 |
+| 字段用途   | 源字段 → 输出字段举例                                                                                                                | 阅读重点                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| 产品与方向 | `CONTRACT_TYPE → Src_Agt_Type_Cd`；`CONTRACT_SUB_TYPE → Src_Agt_Sub_Type_Cd`；`DIRECTION → Opt_Dir_Type_Cd`                          | 消费者可以据此选择产品规则                           |
+| 时间与安排 | `START_DATE/END_DATE → Bgng_Prcg_Date/End_Prcg_Date`；`REBATE_TIMING → Ko_Yield_Pay_Type_Cd`；`OBSERVATION_FREQ → Obsv_Arng_Type_Cd` | 日期值、付款安排与观察频率是不同信息                 |
+| 收益条款   | `KNOCKOUT_EXTRA_PAR → Call_Prtc_Rate`；返息利率、票息及敲出收益率分别映射                                                            | 保留不同参数名称，不能把它们直接相加成收入           |
+| 跨币种参数 | `QUANTO_COEFFICIENT → Quanto_Coef`；`INIT_EXCHANGE_RATE → Bgng_Rate`；另有计算与用户录入汇率列                                       | 本步承接来源值，没有解释这些值怎样在源端产生         |
+| 保护与重置 | 保护期开始／终止日、敲出重置百分比与价格、重置结束日                                                                                 | 这些条款与普通起止日分别保留，不能用一个“有效期”概括 |
 
 此处还有一个明确的标准化规则：`Inta_Bm_Cd = NVL(DW_CD_VAL, INTEREST_CALC_BASIS)`。写者按目标表、目标字段、源表、源字段与系统限定转码资料，关联不到非 NULL 的仓库代码时保留原计息基准。这个回退不会自动把空字符串当作缺失；当前也未核验转码表是否每个源值唯一。
 
@@ -100,11 +100,11 @@ Quanto_Bgng_Rate = NVL(Quanto_Coef, 0) × NVL(Bgng_Rate, 0)
 
 固定版本为 `df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3`。以下行号均指 evidence 中 `sqlSources[slot=query].content`，不是 JSON 文件行号。
 
-| 任务与精确证据 | SQL 行号与核验内容 |
-| --- | --- |
-| [108951](../../../sql-static-lineage-data/task-projections/tasks/108951/versions/4e46bd33ec785e1fa9aa5f9a94735bcb38eec01197284cb459c33cfec3868c35.evidence-v3.json) | query 第 1–42、52–78 行：身份、结构字段、日期分区及计息基准转码 |
-| [108952](../../../sql-static-lineage-data/task-projections/tasks/108952/versions/c304f1b695905fc80c12f77f1336aa07e1ec1d3af59aa7c8f71ee8a12bfb9b32.evidence-v3.json) | query 第 1–42、52–78 行：消费样例对应日期的字段映射；第 13 行付款安排；第 57、70–78 行转码及回退 |
-| [210339](../../../sql-static-lineage-data/task-projections/tasks/210339/versions/5a0fcde53d937d762b295d188b55bb88f0bfaa27d3967f92aa5c05b27844c65b.evidence-v3.json) | query 第 1、57–78 行：目标日期与标准来源标签、实际 `_P` 读源及 `h15` 过滤 |
+| 任务与精确证据                                                                                                                                                      | SQL 行号与核验内容                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [108951](../../../sql-static-lineage-data/task-projections/tasks/108951/versions/4e46bd33ec785e1fa9aa5f9a94735bcb38eec01197284cb459c33cfec3868c35.evidence-v3.json) | query 第 1–42、52–78 行：身份、结构字段、日期分区及计息基准转码                                                                                                                          |
+| [108952](../../../sql-static-lineage-data/task-projections/tasks/108952/versions/c304f1b695905fc80c12f77f1336aa07e1ec1d3af59aa7c8f71ee8a12bfb9b32.evidence-v3.json) | query 第 1–42、52–78 行：消费样例对应日期的字段映射；第 13 行付款安排；第 57、70–78 行转码及回退                                                                                         |
+| [210339](../../../sql-static-lineage-data/task-projections/tasks/210339/versions/5a0fcde53d937d762b295d188b55bb88f0bfaa27d3967f92aa5c05b27844c65b.evidence-v3.json) | query 第 1、57–78 行：目标日期与标准来源标签、实际 `_P` 读源及 `h15` 过滤                                                                                                                |
 | [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) | query 第 70–72 行日期选择；151–168 行系数组合及产品／事件标志；195、198–230 行消费范围、结构关联及源端旁路；262–277 行独立观察序列。`expressions` 中 `Actl_Trmt_Date` 提供分支与结果角色 |
 
 字段定义及分区：[结构元素 DDL](../../../sql-static-lineage-data/tables/hive/pdata_n.t03_otc_opt_comp_stru_elmn_info__gfhive/ddl.sql)。

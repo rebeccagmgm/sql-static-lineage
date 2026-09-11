@@ -3,17 +3,17 @@
 本文件是**总览**：一页看清系统分几层、每层存什么、什么在构建期、什么在查询期、
 边界在哪里。细则全部下沉到既有文档，本文件只做索引与约束汇总，不替代任何一份。
 
-| 细则                           | 文档                                                                        |
-| ------------------------------ | --------------------------------------------------------------------------- |
-| 机器单位、影响三档、第二正交轴 | `domain-asset-graph-architecture.md`                                        |
-| 四锚点并集图 P0                | `execution-plan-gold-case-investigation.md`                                 |
-| WP-3 纸条契约                  | `execution-plan-task-local-projection.md`                                   |
-| WP-5 并集 + WP-8 接续 INDEX    | `execution-plan-task-local-union.md`                                        |
+| 细则                           | 文档                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| 机器单位、影响三档、第二正交轴 | `domain-asset-graph-architecture.md`                                                                                           |
+| 四锚点并集图 P0                | `execution-plan-gold-case-investigation.md`                                                                                    |
+| WP-3 纸条契约                  | `execution-plan-task-local-projection.md`                                                                                      |
+| WP-5 并集 + WP-8 接续 INDEX    | `execution-plan-task-local-union.md`                                                                                           |
 | 字段证据链 V1（WP-11）         | `execution-plan-field-evidence-v1.md`、`openspec/changes/field-evidence-v1`、`openspec/changes/field-evidence-v1-impact-query` |
-| 重跑三档                       | `execution-plan-rerun-shrink.md`                                            |
-| 准确性冻结 WP-6…12             | `graph-accuracy-architecture.md`                                            |
-| 对用户怎么讲 L0–L3             | `graph-user-narrative.md`                                                   |
-| 输入边界                       | `l1-scope-and-architecture.md`、`input-pack.md`                             |
+| 重跑三档                       | `execution-plan-rerun-shrink.md`                                                                                               |
+| 准确性冻结 WP-6…12             | `graph-accuracy-architecture.md`                                                                                               |
+| 对用户怎么讲 L0–L3             | `graph-user-narrative.md`                                                                                                      |
+| 输入边界                       | `l1-scope-and-architecture.md`、`input-pack.md`                                                                                |
 
 ---
 
@@ -111,11 +111,11 @@ ReadField    := (readOccurrenceId, column)                  跨任务 resolve �
 
 ## 4. 三个问题、三个查询、同一份事实
 
-| 问题                         | 查询（L4）   | 走什么                                            | 输出形状                            | 现状                              |
-| ---------------------------- | ------------ | ------------------------------------------------- | ----------------------------------- | --------------------------------- |
-| 这批任务长什么样、上游是谁   | 表级 walk    | `READS/WRITES` + INDEX                            | 并集图 + `CROSS_TASK_PAIR` + gaps   | **金样跑通**（186 任务）          |
+| 问题                         | 查询（L4）   | 走什么                                            | 输出形状                            | 现状                                                   |
+| ---------------------------- | ------------ | ------------------------------------------------- | ----------------------------------- | ------------------------------------------------------ |
+| 这批任务长什么样、上游是谁   | 表级 walk    | `READS/WRITES` + INDEX                            | 并集图 + `CROSS_TASK_PAIR` + gaps   | **金样跑通**（186 任务）                               |
 | 这个字段怎么来、什么会让它变 | Impact Query | `FIELD_*` + `RESOLVE` + `DATASET_CONTROL` + scope | `value / control / frontier / gaps` | **Phase 2 进行中**（`field-evidence-v1-impact-query`） |
-| 这张表要重跑，最小上游任务集 | 反向切片     | `needed(hop) = 值列 ∪ 行决定列`                   | 值必达 / 行决定 / 倍增风险 / 已剪除 | **已有** consumer；扩并集版已暂停 |
+| 这张表要重跑，最小上游任务集 | 反向切片     | `needed(hop) = 值列 ∪ 行决定列`                   | 值必达 / 行决定 / 倍增风险 / 已剪除 | **已有** consumer；扩并集版已暂停                      |
 
 三者共用 L1–L3，**不共用遍历方式**。任何一个查询的 KPI 不能当另一个的验收。
 
@@ -185,16 +185,16 @@ scripts/data-graph（消费侧，独立仓）
 
 ## 8. 状态与演进
 
-| 工作包                                 | 层            | 状态                                                                                              |
-| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| WP-3 纸条 1.2.0                        | L2            | 已验收                                                                                            |
-| WP-5 并集 merge                        | L3            | 库完成                                                                                            |
-| WP-8 / 8.1 INDEX                       | L3            | CLI 完成；分区匹配精度是当前主瓶颈（锚点 `l1Eligible` 22%～50%）                                  |
-| GC-0 四锚点穿透                        | L2–L3         | 真数据跑通（186 任务、535 INDEX 条目）                                                            |
-| GC-3 gaps / L0–L3                      | L5            | 首版产出                                                                                          |
+| 工作包                                 | 层            | 状态                                                                                       |
+| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| WP-3 纸条 1.2.0                        | L2            | 已验收                                                                                     |
+| WP-5 并集 merge                        | L3            | 库完成                                                                                     |
+| WP-8 / 8.1 INDEX                       | L3            | CLI 完成；分区匹配精度是当前主瓶颈（锚点 `l1Eligible` 22%～50%）                           |
+| GC-0 四锚点穿透                        | L2–L3         | 真数据跑通（186 任务、535 INDEX 条目）                                                     |
+| GC-3 gaps / L0–L3                      | L5            | 首版产出                                                                                   |
 | WP-11 字段证据链 V1 Phase 1            | L2 契约 1.3.0 | **已完成**（`field-evidence-v1`）；Phase 2 Impact Query → `field-evidence-v1-impact-query` |
-| WP-10 闭包接并集                       | L4            | 暂停                                                                                              |
-| data-graph 主管线接 `TASK_LOCAL_UNION` | L4            | 未做，非 P0                                                                                       |
+| WP-10 闭包接并集                       | L4            | 暂停                                                                                       |
+| data-graph 主管线接 `TASK_LOCAL_UNION` | L4            | 未做，非 P0                                                                                |
 
 **下一步唯一动作**：实施 `field-evidence-v1-impact-query`（`FieldEdgeIndex` + Impact Query + 金样 A–E + stop-loss），按 `execution-plan-field-evidence-v1.md` §9 止损判据决定 Phase 3 或回修 WP-8。
 

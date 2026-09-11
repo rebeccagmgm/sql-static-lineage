@@ -6,7 +6,15 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import type { LineageNodeData } from "../graph-adapter";
-import type { GraphNode, TerminalNode } from "../types";
+import type {
+  ConsumptionScope,
+  ConsumptionWriteRef,
+  FieldValueOrigin,
+  GraphNode,
+  TableMetadata,
+  TerminalNode,
+} from "../types";
+import { fieldHandleVisible } from "../field-viewport";
 import { TaskNode } from "./TaskNode";
 
 const names: Record<string, string> = {
@@ -38,6 +46,25 @@ function TableDescription({ description }: { description?: string }) {
   );
 }
 
+export function SchemaDescription({
+  schema,
+}: {
+  schema?: TableMetadata["schema"];
+}) {
+  if (!schema?.displayName && !schema?.description) return null;
+  return (
+    <div className="schema-description">
+      {schema.displayName && <b>{schema.displayName}</b>}
+      {schema.description && (
+        <span>
+          {schema.displayName ? " · " : ""}
+          {schema.description}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function terminalCopy(terminal: TerminalNode) {
   const boundary =
     terminal.role === "REFERENCE_CONFIG"
@@ -55,6 +82,9 @@ function FieldRow({
   highlightActive = false,
   active = true,
   aliases = [],
+  scope,
+  writeRefs = [],
+  connectedFieldIds = [],
 }: {
   member: GraphNode;
   terminal?: TerminalNode;
@@ -62,13 +92,51 @@ function FieldRow({
   highlightActive?: boolean;
   active?: boolean;
   aliases?: GraphNode[];
+  scope?: ConsumptionScope;
+  writeRefs?: ConsumptionWriteRef[];
+  connectedFieldIds?: string[];
 }) {
   const handleNodes = [member, ...aliases].filter(
     (alias, index, all) =>
       all.findIndex((candidate) => candidate.id === alias.id) === index,
   );
+  // A read can represent a merged row, while origin metadata belongs to writes.
+  const writes = handleNodes.filter((node) => node.kind === "WRITE_FIELD");
+  const originNodes = writes.length ? writes : handleNodes;
+  const origins = new Map<string, FieldValueOrigin>();
+  for (const node of originNodes) {
+    const origin = node.valueOrigin;
+    if (origin) {
+      origins.set(
+        JSON.stringify([origin.kind, origin.label, origin.expression]),
+        origin,
+      );
+    }
+  }
+  const partialOrigin =
+    origins.size > 1 ||
+    originNodes.some((node) => !node.valueOrigin) ||
+    writeRefs.some((ref) =>
+      !writes.some((node) =>
+        node.taskId === ref.taskId &&
+        node.writeId === ref.writeId &&
+        node.valueOrigin,
+      ),
+    );
+  const hasConnectedSource = handleNodes.some(node => connectedFieldIds.includes(node.id));
+  const originValues = [...origins.values()].filter(origin =>
+    ![...origins.values()].some(other => other !== origin &&
+      other.label.split("；").some(part => part === `部分分支：${origin.label}`)));
+  const unresolved = originValues.some(origin => origin.kind === "UNRESOLVED");
+  const mixed = originValues.filter(origin => origin.kind === "UNRESOLVED" && origin.expression);
+  const labels = hasConnectedSource && unresolved
+    ? ["部分来源已追到，另有来源未定位", ...originValues.filter(origin => origin.kind !== "UNRESOLVED").map(origin => origin.label)]
+    : mixed.length
+      ? [...new Set([...mixed, ...originValues.filter(origin => origin.kind !== "UNRESOLVED")].map(origin => origin.label))]
+      : originValues.map(origin => `${partialOrigin && origin.kind !== "UNRESOLVED" && !origin.label.startsWith("部分分支：") ? "部分来源：" : ""}${origin.label}`);
   return (
     <button
+      data-field-id={member.id}
       className={`field-row ${terminal ? "terminal" : ""}`}
       data-highlight={highlightActive ? (active ? "active" : "dimmed") : "none"}
       style={{
@@ -81,7 +149,11 @@ function FieldRow({
       title={terminal?.reason ?? member.id}
       onClick={(event) => {
         event.stopPropagation();
-        onFieldClick?.(member, terminal);
+        onFieldClick?.(member, terminal, {
+          rawMembers: handleNodes,
+          writeRefs,
+          scope,
+        });
       }}
     >
       {handleNodes.map((alias) => (
@@ -95,7 +167,18 @@ function FieldRow({
       <span className="field-row-copy">
         <b>{member.column ?? member.label ?? member.id}</b>
         {member.metadata?.field?.comment && (
-          <small className="field-comment">{member.metadata.field.comment}</small>
+          <small className="field-comment">
+            {member.metadata.field.comment}
+          </small>
+        )}
+        {labels.length > 0 && (
+          <small
+            className="value-origin-badge"
+            data-kind={unresolved ? "UNRESOLVED" : originValues[0]?.kind}
+            title={originValues.map(origin => origin.expression).filter(Boolean).join("\n")}
+          >
+            {[...new Set(labels)].join("；")}
+          </small>
         )}
       </span>
       {terminal && <small>{terminalCopy(terminal)}</small>}
@@ -115,47 +198,96 @@ export function LineageNode(props: NodeProps) {
   const { data } = props;
   const updateNodeInternals = useUpdateNodeInternals();
   const fieldListRef = useRef<HTMLDivElement | null>(null);
-  const clampFieldHandles = useCallback(() => {
+  const nodeData = data as LineageNodeData;
+  const reportHidden = nodeData.onHiddenFieldsChange;
+  const updateFieldViewport = useCallback(() => {
     const list = fieldListRef.current;
     if (!list) return;
     const bounds = list.getBoundingClientRect();
+    const scale = list.offsetHeight ? bounds.height / list.offsetHeight : 1;
+    const hidden: string[] = [];
     for (const row of list.querySelectorAll<HTMLElement>(".field-row")) {
-      const rowBounds = row.getBoundingClientRect();
-      const scale =
-        row.offsetHeight > 0 ? rowBounds.height / row.offsetHeight : 1;
-      const top = bounds.top + 7 * scale;
-      const bottom = bounds.bottom - 7 * scale;
-      const center = rowBounds.top + rowBounds.height / 2;
-      const clamped = Math.max(top, Math.min(bottom, center));
-      row.style.setProperty(
-        "--handle-shift",
-        `${(clamped - center) / scale}px`,
+      const rect = row.getBoundingClientRect();
+      const visible = fieldHandleVisible(
+        rect.top,
+        rect.bottom,
+        bounds.top,
+        bounds.top + list.clientHeight * scale,
       );
+      if (!visible) {
+        for (const handle of row.querySelectorAll<HTMLElement>(
+          ".react-flow__handle",
+        )) {
+          if (handle.dataset.handleid) hidden.push(handle.dataset.handleid);
+        }
+      }
     }
-    requestAnimationFrame(() => updateNodeInternals(props.id));
-  }, [props.id, updateNodeInternals]);
+    reportHidden?.(props.id, [...new Set(hidden)].sort());
+    updateNodeInternals(props.id);
+  }, [props.id, reportHidden, updateNodeInternals]);
   useEffect(() => {
-    const frame = requestAnimationFrame(clampFieldHandles);
-    return () => cancelAnimationFrame(frame);
-  }, [clampFieldHandles, (data as LineageNodeData).members?.length]);
-  const nodeData = data as LineageNodeData;
+    const frame = requestAnimationFrame(updateFieldViewport);
+    const observer = new ResizeObserver(updateFieldViewport);
+    if (fieldListRef.current) {
+      observer.observe(fieldListRef.current);
+      for (const row of fieldListRef.current.children) observer.observe(row);
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      reportHidden?.(props.id, []);
+    };
+  }, [updateFieldViewport, reportHidden, props.id, nodeData.members]);
+  const activeSignature = nodeData.highlightActive
+    ? JSON.stringify(nodeData.activeFieldIds ?? [])
+    : "";
+  useEffect(() => {
+    const list = fieldListRef.current;
+    if (!list || !activeSignature) return;
+    const active = new Set<string>(JSON.parse(activeSignature));
+    const row = [...list.querySelectorAll<HTMLElement>(".field-row")].find(
+      (row) =>
+        [...row.querySelectorAll<HTMLElement>(".react-flow__handle")].some(
+          (handle) => active.has(handle.dataset.handleid ?? ""),
+        ),
+    );
+    if (row) {
+      const rowBounds = row.getBoundingClientRect();
+      const bounds = list.getBoundingClientRect();
+      const scale = list.offsetHeight ? bounds.height / list.offsetHeight : 1;
+      if (
+        rowBounds.top < bounds.top ||
+        rowBounds.bottom > bounds.top + list.clientHeight * scale
+      )
+        list.scrollTop +=
+          (rowBounds.top - bounds.top) / scale -
+          list.clientHeight / 2 +
+          row.offsetHeight / 2;
+    }
+    updateFieldViewport();
+  }, [activeSignature, updateFieldViewport]);
   const fieldAliases =
     (
       nodeData as LineageNodeData & {
         fieldAliases?: Record<string, GraphNode[]>;
       }
     ).fieldAliases ?? {};
+  const fieldWriteRefs = nodeData.fieldWriteRefs ?? {};
   const { raw, members, terminal, memberTerminals = {}, isAnchor } = nodeData;
   if (raw?.kind === "TASK") return <TaskNode {...props} />;
   if (members?.length) {
     const first = members[0]!;
     return (
       <div
-        className={`lineage-node grouped ${isAnchor ? "anchor" : ""} ${Object.keys(memberTerminals).length ? "terminal" : ""}`}
+        className={`lineage-node grouped ${nodeData.compactRead ? "compact-read" : ""} ${isAnchor ? "anchor" : ""} ${Object.keys(memberTerminals).length ? "terminal" : ""}`}
         title={first.table}
       >
         <div className="node-topline">
-          <span>{names[first.kind] ?? first.kind}</span>
+          <span>
+            {nodeData.compactRead
+              ? "共同消费汇合"
+              : (names[first.kind] ?? first.kind)}
+          </span>
           <span
             title={first.writeId ?? String(first.detail?.occurrenceId ?? "")}
           >
@@ -163,12 +295,27 @@ export function LineageNode(props: NodeProps) {
           </span>
         </div>
         <strong>{first.table ?? first.label ?? first.id}</strong>
+        <SchemaDescription schema={first.metadata?.schema} />
+        {nodeData.scope && (
+          <span
+            className="scope-badge"
+            data-status={nodeData.scope.status.toLowerCase()}
+          >
+            {nodeData.scope.label}
+          </span>
+        )}
         <TableDescription description={first.metadata?.table.description} />
-        <small>{members.length} 个字段 · 点击字段查看依据</small>
+        <small>
+          {members.length} 个字段
+          {nodeData.writeRefs?.length
+            ? ` · ${nodeData.writeRefs.length} 组写入证据`
+            : ""}
+          {" · 点击字段查看依据"}
+        </small>
         <div
           className="field-rows"
           ref={fieldListRef}
-          onScroll={clampFieldHandles}
+          onScroll={updateFieldViewport}
         >
           {members.map((member) => (
             <FieldRow
@@ -184,6 +331,9 @@ export function LineageNode(props: NodeProps) {
                 )
               }
               aliases={fieldAliases[member.id] ?? []}
+              connectedFieldIds={nodeData.connectedFieldIds}
+              scope={nodeData.scope}
+              writeRefs={fieldWriteRefs[member.id] ?? nodeData.writeRefs ?? []}
             />
           ))}
         </div>
@@ -222,6 +372,9 @@ export function LineageNode(props: NodeProps) {
           highlightActive={nodeData.highlightActive}
           active={nodeData.activeFieldIds?.includes(raw.id)}
           aliases={fieldAliases[raw.id] ?? []}
+          connectedFieldIds={nodeData.connectedFieldIds}
+          scope={nodeData.scope}
+          writeRefs={fieldWriteRefs[raw.id] ?? nodeData.writeRefs ?? []}
         />
       </div>
     );
@@ -242,6 +395,7 @@ export function LineageNode(props: NodeProps) {
         {raw.writeId && <span>{raw.writeId}</span>}
       </div>
       <strong>{title}</strong>
+      <SchemaDescription schema={raw.metadata?.schema} />
       <TableDescription description={raw.metadata?.table.description} />
       <small>{context}</small>
       {terminal && (

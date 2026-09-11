@@ -8,6 +8,8 @@ export interface ProducerIndexWriter {
   readonly qualifiedName?: string;
   readonly outputQualification?: TaskLocalFinalWrite["outputQualification"];
   readonly partition?: readonly {
+    readonly mayBeNull?: boolean;
+    readonly alternatives?: readonly import("../../../../scripts/project-graph/task-local/partition-alternatives.ts").PartitionAlternative[];
     readonly column: string;
     readonly values: readonly string[];
     readonly partitionStatus?: string;

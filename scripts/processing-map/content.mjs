@@ -8,6 +8,14 @@ export const sharedKnowledge = {
 export const snapshotVersion =
   "4f61cee7134b1cba7686191bc0e8606ab28cc4d673935a50298e7ba792babf9a";
 export const saleTable = "pdata_n.t98_otc_deri_comp_sale_info";
+export const sourceTopicDefinitions = [
+  {
+    id: "titans",
+    title: "TITANS topic 来源",
+    targetSchema: "odata_n_tit",
+    sourceSchemaPrefix: "titans_",
+  },
+];
 export const taskNotes = {
   144134: [
     "来源采集",
@@ -178,8 +186,8 @@ const region = (id, title, subtitle, schemas, x, y, view) =>
 
 export const views = {
   overview: {
-    title: "主流向、并行路线与交付边界",
-    subtitle: "从区域看全貌，进入节点看内部加工；点击连线数字查看对应任务。",
+    title: "来源主题、主流向与交付边界",
+    subtitle: "同一来源 topic 先聚合；展开可看进入 OData 的 schema、对象与任务。",
     width: 1560,
     height: 665,
     source: "skeleton",
@@ -191,21 +199,21 @@ export const views = {
       [1330, "05  交付"],
     ],
     boundary:
-      "数字为同一任务的来源与输出区域关联数，各方向可重叠。输出可能来自平台配置，未核验运行落地。",
+      "来源框按当前快照的直接接入关系聚合；数字对应任务集合，不代表字段因果、运行接续或实际落地。",
     nodes: [
-      region(
+      node(
         "S",
-        "Titans 可见来源",
-        "titans_dm / titans_refdata",
-        ["titans_dm", "titans_refdata"],
+        "TITANS topic 来源",
+        "按 topic 聚合 · 进入 OData",
         30,
         195,
+        { sourceTopic: "titans", kind: "source-topic" },
       ),
-      region("X", "其他已见来源", "OIS、客户、参考数据等", [], 30, 380),
+      region("X", "其他已见接入", "OIS 等非 TITANS topic 来源", [], 30, 380),
       region(
         "O",
         "odata_n_tit",
-        "采集 · 批次整理 · 部分合并",
+        "业务对象 · 版本 · 下游去向",
         ["odata_n_tit"],
         300,
         270,
@@ -301,12 +309,7 @@ export const views = {
       ),
     ],
     edges: [
-      edge("S", "O", "", {
-        pairs: [
-          ["titans_dm", "odata_n_tit"],
-          ["titans_refdata", "odata_n_tit"],
-        ],
-      }),
+      edge("S", "O", "", { sourceTopic: "titans" }),
       edge("X", "O", "", { otherSources: true }),
       edge("O", "P", "", { pairs: [["odata_n_tit", "pdata_n"]] }),
       edge("O", "N", "", { pairs: [["odata_n_tit", "pdata_news_n"]] }),

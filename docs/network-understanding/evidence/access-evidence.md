@@ -5,6 +5,7 @@
 这里提供固定发布与当前Pack补充来源定位。SQL核读不证明实际授权或运行。
 
 <a id="task-74272"></a>
+
 ## 74272
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../topics/cross-system-user-roles.md#access-export-precedence)
@@ -16,6 +17,7 @@
 边界：sys_num跨系统唯一性未证实，特殊分支仍使用旧ATP标签；实际传输目标需明确配置。
 
 <a id="task-134442"></a>
+
 ## 134442
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../topics/cross-system-user-roles.md#cross-system-source-families)
@@ -28,36 +30,37 @@
 边界：固定query删除临时表后再读写，当前Pack字节亦相同；平台执行顺序与运行交付尚未确认。
 
 <a id="task-139809"></a>
+
 ## 139809
 
 状态：NO_SCRIPT_EVIDENCE。[正文](../chapters/13-access-and-shared-support.md#access-notifications-and-gaps)
 
 [固定证据](../../../../sql-static-lineage-data/task-projections/tasks/139809/versions/b2b35037cb0b58c944facd186e8929210704fb0d46d14362507f624d039befc2.evidence-v3.json) SHA256：`2f644537a1320f91ad6094a2fbd2ad1557fd1a16a6146b40a86a4c1e40d3af20`。
 
-
 边界：邮件触发规则、内容与实际送达未知。
 
 <a id="task-139813"></a>
+
 ## 139813
 
 状态：NO_SCRIPT_EVIDENCE。[正文](../chapters/13-access-and-shared-support.md#access-notifications-and-gaps)
 
 [固定证据](../../../../sql-static-lineage-data/task-projections/tasks/139813/versions/d522714eb3741bf94763e9c2e481c2a7607565f38f025bf956a17a0159f933b7.evidence-v3.json) SHA256：`1c6c1dcfad4c36a9b5904e337f036a548b1f5ed3c926c8634c66a746e177c535`。
 
-
 边界：邮件触发规则、内容与实际送达未知。
 
 <a id="task-139814"></a>
+
 ## 139814
 
 状态：NO_SCRIPT_EVIDENCE。[正文](../chapters/13-access-and-shared-support.md#access-notifications-and-gaps)
 
 [固定证据](../../../../sql-static-lineage-data/task-projections/tasks/139814/versions/83b24a909965331bae3019e9f06c7aca4f74324ca01b0e8de0a6851b94345c26.evidence-v3.json) SHA256：`f91a42657c8c43e31452889e4919695f4483ff635f4d69eed81e7296f09292c1`。
 
-
 边界：邮件触发规则、内容与实际送达未知。
 
 <a id="task-207500"></a>
+
 ## 207500
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-user-roles)
@@ -70,6 +73,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-207507"></a>
+
 ## 207507
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-user-roles)
@@ -81,6 +85,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-207529"></a>
+
 ## 207529
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-menu-rights)
@@ -93,6 +98,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-207571"></a>
+
 ## 207571
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-counterparty-rights)
@@ -105,6 +111,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-207617"></a>
+
 ## 207617
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-menu-rights)
@@ -116,6 +123,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-207618"></a>
+
 ## 207618
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-counterparty-rights)
@@ -127,6 +135,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208179"></a>
+
 ## 208179
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)
@@ -139,6 +148,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208180"></a>
+
 ## 208180
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)
@@ -151,6 +161,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208181"></a>
+
 ## 208181
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)
@@ -163,6 +174,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208345"></a>
+
 ## 208345
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)
@@ -174,6 +186,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208346"></a>
+
 ## 208346
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)
@@ -185,6 +198,7 @@
 边界：实际源唯一性、运行与权限生效未用SQL结果或实机验证。
 
 <a id="task-208717"></a>
+
 ## 208717
 
 状态：FAMILY_RULES_EXPLAINED。[正文](../chapters/13-access-and-shared-support.md#tit-book-pool-pricing)

@@ -839,6 +839,24 @@ function hiveFromTaskCreate(
   };
 }
 
+function hiveFromUniqueTaskCreateForTarget(
+  candidate: OfflineTableCandidate,
+  sql: Partial<Record<SqlSlot, string>>,
+  taskTarget: unknown,
+  collectedAt: string,
+): TableEvidence | undefined {
+  const target = parsePhysicalTableName(taskTarget);
+  if (
+    target === undefined ||
+    !sameQualifiedName(target.qualifiedName, candidate.qualifiedName) ||
+    candidateLooksRelational(candidate)
+  )
+    return undefined;
+  const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
+  if (created.conflict || created.ddl === undefined) return undefined;
+  return hiveFromTaskCreate(candidate, created.ddl, collectedAt);
+}
+
 function hiveFromDdl(
   record: JsonRecord,
   collectedAt: string,
@@ -1200,7 +1218,16 @@ function resolveOne(
   }
 
   const hiveDdl = lookupFirst(catalog.hiveDdl, candidateKeys(candidate));
-  if (hiveDdl.status === "AMBIGUOUS") return { reason: "HIVE_DDL_AMBIGUOUS" };
+  if (hiveDdl.status === "AMBIGUOUS") {
+    const taskCreate = hiveFromUniqueTaskCreateForTarget(
+      candidate,
+      sql,
+      taskTarget,
+      collectedAt,
+    );
+    if (taskCreate !== undefined) return { evidence: taskCreate };
+    return { reason: "HIVE_DDL_AMBIGUOUS" };
+  }
   const hiveIdentity =
     catalog.hiveMetadata === undefined
       ? { status: "MISS" as const }

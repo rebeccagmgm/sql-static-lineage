@@ -6,14 +6,14 @@
 
 先完成“现有导出 → 精确重算 → 可查询结果”的小闭环；随后把 Titans 来源做成从总览到对象、任务、证据都能读的纵向样本。再完成骨架自动布局、其他来源、odata，以及迁移验证。不要先铺所有标签、所有页面或全库索引。
 
-| 阶段 | 输入 | 输出 | 进入下一阶段的条件 |
-| --- | --- | --- | --- |
-| A. 固定输入与关系重算 | 旧 network、两份 sidecar、必要留存证据 | 可搬迁输入包、规范化关系索引、基线比较 | 所有方向成员集合与 schema 摘要精确一致 |
-| B. 最小知识与元数据 | 本批对象范围、有效 JSONL 索引、既有知识 | 元数据摘录包、公共分类与解释、匹配缺口 | 有一个来源业务组能解释到对象与去向，不仅有分类数字 |
-| C. Titans 纵向样本 | A/B 结果、来源视图配置 | 总览入口 → 来源 → 类别 → 对象 → 任务／证据 | 主画面穿透、返回、同一对象身份贯通 |
-| D. 骨架计算与来源细化 | 同一输入、区域／阶段规则 | 计算得到的总览、其他来源和未展示方向 | 当前骨架可对照；改分类重跑，无前端特例 |
-| E. odata 分析 | 区域对象与关联、三任务证据 | 区域分析首层、两个明确标注的案例 | 读者知道案例所在类别与边界，不误认为全区流水线 |
-| F. 迁移与交付 | 本批另一个来源、完整 next 页面 | 迁移样本、回归结果、真实阅读发现 | 算法未复制、原入口完整、离线与内容验收通过 |
+| 阶段                  | 输入                                    | 输出                                       | 进入下一阶段的条件                                 |
+| --------------------- | --------------------------------------- | ------------------------------------------ | -------------------------------------------------- |
+| A. 固定输入与关系重算 | 旧 network、两份 sidecar、必要留存证据  | 可搬迁输入包、规范化关系索引、基线比较     | 所有方向成员集合与 schema 摘要精确一致             |
+| B. 最小知识与元数据   | 本批对象范围、有效 JSONL 索引、既有知识 | 元数据摘录包、公共分类与解释、匹配缺口     | 有一个来源业务组能解释到对象与去向，不仅有分类数字 |
+| C. Titans 纵向样本    | A/B 结果、来源视图配置                  | 总览入口 → 来源 → 类别 → 对象 → 任务／证据 | 主画面穿透、返回、同一对象身份贯通                 |
+| D. 骨架计算与来源细化 | 同一输入、区域／阶段规则                | 计算得到的总览、其他来源和未展示方向       | 当前骨架可对照；改分类重跑，无前端特例             |
+| E. odata 分析         | 区域对象与关联、三任务证据              | 区域分析首层、两个明确标注的案例           | 读者知道案例所在类别与边界，不误认为全区流水线     |
+| F. 迁移与交付         | 本批另一个来源、完整 next 页面          | 迁移样本、回归结果、真实阅读发现           | 算法未复制、原入口完整、离线与内容验收通过         |
 
 允许 C 中用一个极小计算总览连接入口，D 再补齐全部 14 节点布局。不要为临时演示写一次性坐标。
 
@@ -21,24 +21,24 @@
 
 新模块集中在 `scripts/processing-map/next/`，避免把新计算逻辑继续塞进 `content.mjs` 或 `view.js`。
 
-| 文件（待新增，除注明外） | 单一职责 | 关键接口建议 |
-| --- | --- | --- |
-| `next/cli.mjs` | 参数解析、子命令调度、JSON 结果与退出码 | `import`、`metadata`、`build`、`inspect` |
-| `next/input.mjs` | 输入包导入／读取、摘要与身份校验 | `importLegacyBundle(options)`、`loadInputBundle(path)` |
-| `next/relations.mjs` | 任务与对象索引、schema／区域成员聚合 | `buildRelationIndex(network)`、`computeSchemaFlows(index)`、`computeSchemaSummary(index)` |
-| `next/metadata.mjs` | 复用现有离线目录能力，按范围提取小包 | `extractScopedMetadata(index, catalogConfig)` |
-| `next/knowledge.mjs` | 读取本批公共 catalog，解析分类／解释／适用性 | `loadMapKnowledge(root, scope)`、`resolveClassification(subject)` |
-| `next/compute.mjs` | 总览、来源、类别、区域、对象的视图计算 | `computeMapViews(input, knowledge, definition)` |
-| `next/layout.mjs` | 确定性的分列、排序、边路由、边界框 | `layoutView(view, layoutRules)` |
-| `next/snapshot.mjs` | 结果合同、revision、差异、预算及最终写出 | `createSnapshot(...)`、`compareSnapshots(...)` |
-| `next/compat.mjs` | 新结果映射到原 DATA 结构，保留历史专题 | `assemblePageData(nextSnapshot, legacyPayload)` |
-| `next/definitions/titans-otc.json` | 本批区域、来源、阶段、路由、展开与预算配置 | 纯 JSON，无 x/y、无任意 JS |
-| `next/tests/*.test.mjs` | 关系、分类、视图、快照、兼容的有意义测试 | Node test runner；需要 TS reader 时加载已有 tsx |
-| `scripts/processing-map/payload.mjs`（必要时抽取） | 从原 build 抽出可调用的留存材料／原 DATA 构造 | `buildLegacyPayload(options)`；不在 import 时写文件 |
-| 原 `build.mjs`（最小调整） | 继续构建原入口，调用抽出的 payload | 保持原默认路径、版本闸和校验语义 |
-| 原 `view.js`（增量修改） | 消费新 view/action/memberRefs，保持原详情 | 不查文件、不计算业务分类、不按 schema 写分支 |
-| 原 `view.css`、`template.html`（必要调整） | 主画面的分类切换、成员分页、面包屑 | 保持离线 CSP、键盘入口及原布局兼容 |
-| `package.json` | 新 CLI／定向测试入口与 `pre*` 准备钩子 | 不覆盖现有 inventory-map 等未提交修改 |
+| 文件（待新增，除注明外）                           | 单一职责                                      | 关键接口建议                                                                              |
+| -------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `next/cli.mjs`                                     | 参数解析、子命令调度、JSON 结果与退出码       | `import`、`metadata`、`build`、`inspect`                                                  |
+| `next/input.mjs`                                   | 输入包导入／读取、摘要与身份校验              | `importLegacyBundle(options)`、`loadInputBundle(path)`                                    |
+| `next/relations.mjs`                               | 任务与对象索引、schema／区域成员聚合          | `buildRelationIndex(network)`、`computeSchemaFlows(index)`、`computeSchemaSummary(index)` |
+| `next/metadata.mjs`                                | 复用现有离线目录能力，按范围提取小包          | `extractScopedMetadata(index, catalogConfig)`                                             |
+| `next/knowledge.mjs`                               | 读取本批公共 catalog，解析分类／解释／适用性  | `loadMapKnowledge(root, scope)`、`resolveClassification(subject)`                         |
+| `next/compute.mjs`                                 | 总览、来源、类别、区域、对象的视图计算        | `computeMapViews(input, knowledge, definition)`                                           |
+| `next/layout.mjs`                                  | 确定性的分列、排序、边路由、边界框            | `layoutView(view, layoutRules)`                                                           |
+| `next/snapshot.mjs`                                | 结果合同、revision、差异、预算及最终写出      | `createSnapshot(...)`、`compareSnapshots(...)`                                            |
+| `next/compat.mjs`                                  | 新结果映射到原 DATA 结构，保留历史专题        | `assemblePageData(nextSnapshot, legacyPayload)`                                           |
+| `next/definitions/titans-otc.json`                 | 本批区域、来源、阶段、路由、展开与预算配置    | 纯 JSON，无 x/y、无任意 JS                                                                |
+| `next/tests/*.test.mjs`                            | 关系、分类、视图、快照、兼容的有意义测试      | Node test runner；需要 TS reader 时加载已有 tsx                                           |
+| `scripts/processing-map/payload.mjs`（必要时抽取） | 从原 build 抽出可调用的留存材料／原 DATA 构造 | `buildLegacyPayload(options)`；不在 import 时写文件                                       |
+| 原 `build.mjs`（最小调整）                         | 继续构建原入口，调用抽出的 payload            | 保持原默认路径、版本闸和校验语义                                                          |
+| 原 `view.js`（增量修改）                           | 消费新 view/action/memberRefs，保持原详情     | 不查文件、不计算业务分类、不按 schema 写分支                                              |
+| 原 `view.css`、`template.html`（必要调整）         | 主画面的分类切换、成员分页、面包屑            | 保持离线 CSP、键盘入口及原布局兼容                                                        |
+| `package.json`                                     | 新 CLI／定向测试入口与 `pre*` 准备钩子        | 不覆盖现有 inventory-map 等未提交修改                                                     |
 
 不要直接 import 原 `build.mjs` 来取得 DATA，它当前有顶层读取和写出副作用。抽取 payload 时先保持原页面生成结果与校验一致，再接新路径；不借机重构无关 SQL 阅读器或 knowledge 合同。
 
@@ -79,14 +79,32 @@ dataRoot 必须用 `resolveKnowledgeDataRoot()` 或项目已有路径解析器�
   "bundleId": "<content-digest>",
   "graphId": "titans-otc",
   "graphVersion": "<published-version>",
-  "scope": {"taskCount": 3615, "taskIdsSha256": "<digest>"},
+  "scope": { "taskCount": 3615, "taskIdsSha256": "<digest>" },
   "semantics": "same_task_read_output_association_v1",
   "files": [
-    {"role": "network", "path": "graph/table-network.json", "sha256": "<digest>"},
-    {"role": "legacyFlows", "path": "graph/schema-flows.json", "sha256": "<digest>"},
-    {"role": "legacySchemas", "path": "graph/schema-summary.json", "sha256": "<digest>"}
+    {
+      "role": "network",
+      "path": "graph/table-network.json",
+      "sha256": "<digest>"
+    },
+    {
+      "role": "legacyFlows",
+      "path": "graph/schema-flows.json",
+      "sha256": "<digest>"
+    },
+    {
+      "role": "legacySchemas",
+      "path": "graph/schema-summary.json",
+      "sha256": "<digest>"
+    }
   ],
-  "retainedEvidence": [{"role": "fixedSql", "path": "retained/fixed-sql.json", "sha256": "<digest>"}]
+  "retainedEvidence": [
+    {
+      "role": "fixedSql",
+      "path": "retained/fixed-sql.json",
+      "sha256": "<digest>"
+    }
+  ]
 }
 ```
 
@@ -124,18 +142,39 @@ schema 解析在 legacy adapter 中保持旧规则 `table.split('.')[0]` 以复�
   "schemaVersion": 1,
   "id": "titans-otc",
   "stages": [
-    {"id": "source", "order": 0, "title": "来源"},
-    {"id": "ingest", "order": 1, "title": "采集与整理"},
-    {"id": "model", "order": 2, "title": "模型与主题"},
-    {"id": "application", "order": 3, "title": "应用加工"},
-    {"id": "delivery", "order": 4, "title": "交付"}
+    { "id": "source", "order": 0, "title": "来源" },
+    { "id": "ingest", "order": 1, "title": "采集与整理" },
+    { "id": "model", "order": 2, "title": "模型与主题" },
+    { "id": "application", "order": 3, "title": "应用加工" },
+    { "id": "delivery", "order": 4, "title": "交付" }
   ],
   "regions": [
-    {"id": "S", "stageId": "source", "selector": {"tag": {"dimension": "sourceSystem", "value": "titans"}}, "knowledgeRef": "region:titans-visible", "openView": "source:titans"},
-    {"id": "O", "stageId": "ingest", "selector": {"schemaIn": ["odata_n_tit"]}, "knowledgeRef": "region:odata", "openView": "odata"}
+    {
+      "id": "S",
+      "stageId": "source",
+      "selector": { "tag": { "dimension": "sourceSystem", "value": "titans" } },
+      "knowledgeRef": "region:titans-visible",
+      "openView": "source:titans"
+    },
+    {
+      "id": "O",
+      "stageId": "ingest",
+      "selector": { "schemaIn": ["odata_n_tit"] },
+      "knowledgeRef": "region:odata",
+      "openView": "odata"
+    }
   ],
-  "routes": [{"from": "S", "to": "O", "kind": "read_output_association", "display": "split_by_schema_pair"}],
-  "sourceViews": [{"id": "source:titans", "rootRegion": "S", "groupBy": "businessObject"}]
+  "routes": [
+    {
+      "from": "S",
+      "to": "O",
+      "kind": "read_output_association",
+      "display": "split_by_schema_pair"
+    }
+  ],
+  "sourceViews": [
+    { "id": "source:titans", "rootRegion": "S", "groupBy": "businessObject" }
+  ]
 }
 ```
 
@@ -154,8 +193,18 @@ region selector 允许在不同阅读上下文重叠。不要把所有 dataset �
   "to": "O",
   "kind": "read_output_association",
   "groups": [
-    {"fromSchema": "titans_dm", "toSchema": "odata_n_tit", "memberSetRef": "flow:titans_dm:odata_n_tit", "count": 484},
-    {"fromSchema": "titans_refdata", "toSchema": "odata_n_tit", "memberSetRef": "flow:titans_refdata:odata_n_tit", "count": 30}
+    {
+      "fromSchema": "titans_dm",
+      "toSchema": "odata_n_tit",
+      "memberSetRef": "flow:titans_dm:odata_n_tit",
+      "count": 484
+    },
+    {
+      "fromSchema": "titans_refdata",
+      "toSchema": "odata_n_tit",
+      "memberSetRef": "flow:titans_refdata:odata_n_tit",
+      "count": 30
+    }
   ],
   "uniqueTaskCount": 514,
   "scope": "visible_snapshot"
@@ -178,12 +227,12 @@ region selector 允许在不同阅读上下文重叠。不要把所有 dataset �
 
 ### 5.2 原始输入与提取范围
 
-| 原信息子路径 | 当前量级 | 本批用途 |
-| --- | --- | --- |
-| `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl` | 约 948 MB | Titans 范围的候选身份、注释、键和类型来源 |
-| `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl` | 约 1.82 GB | 命中对象的 DDL／定义摘录 |
-| `hive元信息-20260831快照/hive_table_restored.jsonl` | 约 74 MB | odata 等本批仓内对象元数据 |
-| `20260830211426ddl/hive_table_ddl_restored.jsonl` | 约 154 MB | 对应结构、分区和定义 |
+| 原信息子路径                                        | 当前量级   | 本批用途                                  |
+| --------------------------------------------------- | ---------- | ----------------------------------------- |
+| `RDBMS核心信息/gf_rdbms_table_core_restored.jsonl`  | 约 948 MB  | Titans 范围的候选身份、注释、键和类型来源 |
+| `关系ddl-实际/gf_rdbms_table_ddl_restored.jsonl`    | 约 1.82 GB | 命中对象的 DDL／定义摘录                  |
+| `hive元信息-20260831快照/hive_table_restored.jsonl` | 约 74 MB   | odata 等本批仓内对象元数据                |
+| `20260830211426ddl/hive_table_ddl_restored.jsonl`   | 约 154 MB  | 对应结构、分区和定义                      |
 
 `metadata` 子命令先由图和 scope 生成目标对象 ID 集合，再查询目录。第一批为 Titans 234 个可见表身份和 odata 分析需要的对象；其他来源只提取迁移样本。每次记录命中／歧义／缺失和类型未确认原因，不能把目录全量对象并入图中成员。
 
@@ -201,24 +250,24 @@ region selector 允许在不同阅读上下文重叠。不要把所有 dataset �
 
 ### 6.1 四份结构化文件
 
-| 文件 | 内容 |
-| --- | --- |
-| `tags.json` | sourceSystem、businessObject、productScope、dataRole、processingDuty 词表；id、label、definition、order |
-| `schemas.json` | 本图范围中的 schema 分类与区域职责依据；scope 中保留 graphId／schemaName |
-| `objects.json` | 以 datasetId 绑定对象分类、用途和重要判断，不以表名末段作主键 |
-| `regions.json` | 读者标题、区域说明、典型问题、案例引用；不存布局或计算数字 |
+| 文件           | 内容                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `tags.json`    | sourceSystem、businessObject、productScope、dataRole、processingDuty 词表；id、label、definition、order |
+| `schemas.json` | 本图范围中的 schema 分类与区域职责依据；scope 中保留 graphId／schemaName                                |
+| `objects.json` | 以 datasetId 绑定对象分类、用途和重要判断，不以表名末段作主键                                           |
+| `regions.json` | 读者标题、区域说明、典型问题、案例引用；不存布局或计算数字                                              |
 
 每份带 `schemaVersion: 1`。一条分类／判断结构：
 
 ```json
 {
   "id": "classification:example",
-  "subject": {"kind": "dataset", "id": "<dataset-id>"},
+  "subject": { "kind": "dataset", "id": "<dataset-id>" },
   "dimension": "businessObject",
   "values": ["trade", "contract"],
   "preferredValue": "trade",
   "status": "interpreted",
-  "scope": {"graphId": "titans-otc"},
+  "scope": { "graphId": "titans-otc" },
   "evidenceRefs": ["<metadata-or-retained-evidence-ref>"],
   "noteRef": "notes/example.md"
 }
@@ -333,12 +382,12 @@ test:processing-map-next -> node --import tsx --test scripts/processing-map/next
 
 建议参数合同：
 
-| 命令 | 必要参数 | 行为 |
-| --- | --- | --- |
-| import | `--network`、`--flows`、`--schemas`、`--config` | 只读导入；`--retained-sql`／`--retained-principal` 可选且必须属于本包版本；本次旧基线兼容验收必须提供，正文由受控清单读取；输出 bundleId／manifest 路径 |
-| metadata | `--input <manifest>`、`--scope <titans-source|odata|configured-source>`、`--catalog-config <json>`、`--index-dir` | 只提取指定范围；索引未就绪时报明确原因；可显式 `--allow-index-build` |
-| build | `--input <manifest>`、`--definition <json>`、`--config`、`--output <html>` | 可带 `--metadata <manifest>` 和独立历史包 `--legacy-input <manifest>`；无元数据或历史附件仍可构建结构并保留缺口 |
-| inspect | `--snapshot <map.json>` 及 `--view`／`--dataset-id`／`--flow-id` 三选一 | 返回与 HTML 同份快照的成员、解释引用和缺口；`--offset/--limit` 分页 |
+| 命令     | 必要参数                                                                   | 行为                                                                                                                                                    |
+| -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| import   | `--network`、`--flows`、`--schemas`、`--config`                            | 只读导入；`--retained-sql`／`--retained-principal` 可选且必须属于本包版本；本次旧基线兼容验收必须提供，正文由受控清单读取；输出 bundleId／manifest 路径 |
+| metadata | `--input <manifest>`、`--scope <titans-source                              | odata                                                                                                                                                   | configured-source>`、`--catalog-config <json>`、`--index-dir` | 只提取指定范围；索引未就绪时报明确原因；可显式 `--allow-index-build` |
+| build    | `--input <manifest>`、`--definition <json>`、`--config`、`--output <html>` | 可带 `--metadata <manifest>` 和独立历史包 `--legacy-input <manifest>`；无元数据或历史附件仍可构建结构并保留缺口                                         |
+| inspect  | `--snapshot <map.json>` 及 `--view`／`--dataset-id`／`--flow-id` 三选一    | 返回与 HTML 同份快照的成员、解释引用和缺口；`--offset/--limit` 分页                                                                                     |
 
 `build` 可带 `--previous <map.json>` 输出差异；没有 previous 时标 `initial`。示例边界：新图多一个 schema，但传入的 legacy 包仍属于旧版本，结构照常生成，旧专题转入带旧版本标识的历史参考；不将其任务集合和说明并入当前区域。输出路径不得等于原 `docs/processing-map.html`，本批使用 `docs/processing-map-next.html`。stdout 为一个结构化 JSON 结果，进度走 stderr；错误含稳定 code、对象引用和可执行原因，不输出内部连接串。
 

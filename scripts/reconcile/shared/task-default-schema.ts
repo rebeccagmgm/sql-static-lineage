@@ -34,6 +34,18 @@ function schemaFromQualifiedName(value: unknown): string | null {
  * evidence. A qualified task target may corroborate it, but a conflicting target makes
  * the default ambiguous and therefore unusable for binding bare SQL names.
  */
+/** True when a SQL table token still carries `${…}` placeholders. */
+export function isSqlTemplateTableReference(value: string): boolean {
+  const normalized = normalizeQualifiedName(value);
+  return normalized.includes("${") || normalized.includes("}");
+}
+
+/** Lexical bare Hive identifier; excludes templates and punctuation. */
+export function isBareHiveTableIdentifier(value: string): boolean {
+  const normalized = normalizeQualifiedName(value);
+  return /^[a-z_][a-z0-9_$]*$/iu.test(normalized);
+}
+
 export function inferTaskDefaultSchema(
   task: unknown,
 ): TaskDefaultSchema | null {
@@ -61,6 +73,12 @@ export function qualifyBareTableName(
   defaultSchema: TaskDefaultSchema | null,
 ): string {
   const normalized = normalizeQualifiedName(qualifiedName);
-  if (normalized.includes(".") || !defaultSchema) return normalized;
+  if (
+    normalized.includes(".") ||
+    !defaultSchema ||
+    isSqlTemplateTableReference(normalized) ||
+    !isBareHiveTableIdentifier(normalized)
+  )
+    return normalized;
   return `${defaultSchema.schema}.${normalized}`;
 }

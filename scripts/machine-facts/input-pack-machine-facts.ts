@@ -24,6 +24,7 @@ import {
 	type TaskPartitionEvidence,
 	type TaskPartitionEvidenceRef,
 	type TaskDocument,
+	type TaskSchedulerEvidence,
 } from "../input/shared/input-pack.ts";
 import { buildTaskPartitionEvidence } from "../input/shared/task-partition-evidence.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
@@ -419,6 +420,8 @@ function resolveNamedTarget(
 function targetRecord(
 	task: TaskDocument & JsonRecord,
 	catalog: PhysicalTableCatalog,
+	sources: readonly SelectedLineageSql[],
+	defaultSchema: TaskDefaultSchema | null,
 ): { platform: string; dataSource: string; qualifiedName: string } {
 	const target = asRecord(task.target);
 	const platform = nonEmpty(target?.platform);
@@ -428,8 +431,62 @@ function targetRecord(
 		return { platform, dataSource, qualifiedName: normalizeName(qualifiedName) };
 	}
 	const name = typeof task.target === "string" ? task.target.trim() : qualifiedName;
-	if (!name) throw new Error(`TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:${task.taskId}`);
+	if (!name) return inferredSqlWriteAnchor(task, catalog, sources, defaultSchema);
 	return resolveNamedTarget(task, catalog, name);
+}
+
+/**
+ * Some scheduler task types have no target endpoint even though their SQL
+ * contains physical writes.  The selected entry is only a schema anchor:
+ * all SQL writes are still enumerated from the statements below.
+ */
+function inferredSqlWriteAnchor(
+	task: TaskDocument & JsonRecord,
+	catalog: PhysicalTableCatalog,
+	sources: readonly SelectedLineageSql[],
+	defaultSchema: TaskDefaultSchema | null,
+): { platform: string; dataSource: string; qualifiedName: string } {
+	const candidates = new Map<string, PhysicalTableCatalogEntry>();
+	for (const source of sources) {
+		for (const write of extractSqlWrites(source.content)) {
+			const qualified = qualifyBareTableName(write.qualifiedName, defaultSchema);
+			for (const entry of catalog.byQualifiedName.get(qualified) ?? [])
+				candidates.set(physicalTableKey(entry), entry);
+		}
+	}
+	if (candidates.size === 0) {
+		for (const source of sources) {
+			for (const name of createTableNames(source.content)) {
+				const qualified = qualifyBareTableName(name, defaultSchema);
+				for (const entry of catalog.byQualifiedName.get(qualified) ?? [])
+					candidates.set(physicalTableKey(entry), entry);
+			}
+		}
+	}
+	let values = [...candidates.values()];
+	const wantPlatform = controlledTaskEndpointPlatform(String(task.taskCategory ?? ""), "target");
+	if (wantPlatform)
+		values = values.filter((entry) => samePlatformToken(entry.platform, wantPlatform));
+	// A missing scheduler target can be recovered only from one physical SQL
+	// write identity.  Task-name similarity is not physical-identity evidence:
+	// choosing among multiple writes could attach an unrelated target schema.
+	if (values.length !== 1)
+		throw new Error(`TASK_TARGET_PHYSICAL_IDENTITY_UNRESOLVED:${task.taskId}`);
+	const entry = values[0]!;
+	return {
+		platform: entry.platform,
+		dataSource: entry.dataSource,
+		qualifiedName: entry.qualifiedName,
+	};
+}
+
+function createTableNames(sql: string): readonly string[] {
+	const names = new Set<string>();
+	const pattern = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)/gi;
+	for (const match of sql.matchAll(pattern)) {
+		if (match[1]) names.add(normalizeName(match[1].replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", "")));
+	}
+	return [...names].sort(compareText);
 }
 
 function fieldProducingSql(sql: string): boolean {
@@ -476,6 +533,10 @@ export function selectLineageSql(
 	const query = loaded.filter((item) => item.slot === "query");
 	if (query.length === 1) return { selected: query[0]!, sources: loaded, hashes };
 	const candidates = loaded.filter((item) => fieldProducingSql(item.content));
+	if (candidates.length === 0) {
+		const ddl = loaded.filter((item) => createTableNames(item.content).length > 0);
+		if (ddl.length === 1) return { selected: ddl[0]!, sources: loaded, hashes };
+	}
 	if (candidates.length !== 1)
 		throw new Error(`SQL_SLOT_SELECTION_AMBIGUOUS:${task.taskId}:candidates=${candidates.map((item) => item.slot).sort(compareText).join(",") || "NONE"}`);
 	return { selected: candidates[0]!, sources: loaded, hashes };
@@ -787,6 +848,7 @@ function taskPartitionEvidence(
 		taskTarget: taskTarget.qualifiedName,
 		tables,
 		sql,
+		schedulerEvidence: task.schedulerEvidence as unknown as TaskSchedulerEvidence | undefined,
 		sparkIndexMode: String(task.taskCategory).trim().toLowerCase() === "sparkindex",
 	});
 }
@@ -1325,12 +1387,12 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	const selected = selectLineageSql(dataRoot, taskPath, task);
 	const combined = combinedLineageSql(selected.sources, selected.selected);
 	const catalog = options.tableCatalog ?? loadPhysicalTableCatalog(dataRoot, { lazyDdl: true });
-	const targetRef = targetRecord(task, catalog);
+	const defaultSchema = inferTaskDefaultSchema(task);
+	const targetRef = targetRecord(task, catalog, selected.sources, defaultSchema);
 	const target = catalog.byPhysicalKey.get(physicalTableKey(targetRef));
 	if (!target) throw new Error(`TARGET_TABLE_PACK_MISSING:${physicalTableKey(targetRef)}`);
 	const logicalSourceId = logicalSourceIdFor(target.platform, target.dataSource);
 	const dialect = taskSqlDialect(String(task.taskCategory));
-	const defaultSchema = inferTaskDefaultSchema(task);
 	const schemaEntries = taskSchemaEntries(
 		catalog,
 		target,
@@ -1401,8 +1463,14 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	);
 	const targetResolutionMethod = platformTargetResolutionMethod(task);
 	const outputBindingContract = queryOutputBindingContract(task);
-	const platformPartitionShape = outputBindingContract === "SPARKINDEX_FULL_WIDTH_POSITIONAL"
-		? platformPartitionBinding(task, platformPartition, target)
+	const observedPlatformPartition = platformPartitionBinding(task, platformPartition, target);
+	const explicitSchedulerPartition = observedPlatformPartition.partition_mode === "STATIC" &&
+		(observedPlatformPartition.partition_assignments?.length ?? 0) > 0 &&
+		observedPlatformPartition.partition_assignments!.every(assignment =>
+			assignment.mapping_method === "SCHEDULER_EXPLICIT_FIELD_VALUE" &&
+			(assignment.status === "CONFIRMED" || assignment.status === "RUNTIME_EXPRESSION"));
+	const platformPartitionShape = outputBindingContract === "SPARKINDEX_FULL_WIDTH_POSITIONAL" || explicitSchedulerPartition
+		? observedPlatformPartition
 		: target.partitionFields?.length === 0
 			? { partition_mode: "NONE" as const, partition_assignments: [] }
 			: { partition_mode: "UNKNOWN" as const, partition_assignments: [] };

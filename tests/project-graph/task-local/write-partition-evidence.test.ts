@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { buildWritePartitionParts } from "../../../scripts/project-graph/task-local/write-partition-evidence.ts";
 
 describe("buildWritePartitionParts", () => {
+  it("keeps an unbound dynamic partition unknown without inventing a runtime value", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "dm.target",
+      statementSql: "insert overwrite table dm.target partition(busi_date) select id, dt from dm.source",
+      packPartition: null,
+    });
+    expect(parts).toEqual([expect.objectContaining({ column: "busi_date", values: [], valueStatus: "UNKNOWN", partitionStatus: "DYNAMIC" })]);
+  });
+
+  it("preserves an explicit SQL literal named UNKNOWN", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "dm.target",
+      statementSql: "insert overwrite table dm.target partition(kind='UNKNOWN') select id from dm.source",
+      packPartition: null,
+    });
+    expect(parts[0]).toMatchObject({ values: ["UNKNOWN"], valueStatus: "OBSERVED_RENDERED_VALUE", partitionStatus: "STATIC" });
+  });
   it("falls back to pack partition when platform-target SQL has no INSERT", () => {
     const parts = buildWritePartitionParts({
       qualifiedName: "dm_index_n.grp_def",
@@ -180,6 +197,32 @@ describe("buildWritePartitionParts", () => {
     })]);
   });
 
+  it("uses a mandatory literal value set on the directly projected source column", () => {
+    const physical = [{ table: "src.base", column: "src_tbl" }];
+    const atom = { kind: "ATOM", operator: "IN", operands: [
+      { kind: "COLUMN", column: { name: "src_tbl", resolution: "PHYSICAL", physical } },
+      { kind: "LITERAL", expression: "'SOURCE_A'", observedValue: "SOURCE_A" },
+    ] };
+    const run = (tree: unknown, sourceType = "read", sourceTable = "src.base") => buildWritePartitionParts({
+      qualifiedName: "dm.target", statementSql: null, packPartition: null, writeObservationId: "write:filter",
+      factsWrite: { write_observation_id: "write:filter", physical_dataset: "dm.target", partition_mode: "DYNAMIC",
+        partition_assignments: [{ field: "src_tbl", mapping_method: "DYNAMIC_PARTITION_OUTPUT_ORDINAL", status: "CONFIRMED" }] },
+      bindings: [{ write_observation_id: "write:filter", target_field: "src_tbl", binding_status: "RESOLVED", source_ordinal: 0, expression_id: "expr:filter" }],
+      expressions: [{ expression_id: "expr:filter", relation_id: "rel:project", role: "PROJECT_EXPRESSION", ordinal: 0, expression_text: "src_tbl", input_fields: physical }],
+      relations: [
+        { relation_id: "rel:project", relation: { type: "project", source: "rel:filter" } },
+        { relation_id: "rel:filter", relation: { type: "filter", source: "rel:read", predicate_tree: tree } },
+        { relation_id: "rel:read", relation: { type: sourceType, table: sourceTable } },
+      ],
+    });
+    expect(run({ kind: "AND", children: [atom, { kind: "ATOM", operator: "NE", operands: [] }] })[0]?.values).toEqual(["SOURCE_A"]);
+    expect(run({ kind: "OR", children: [atom, { kind: "ATOM", operator: "NE", operands: [] }] })[0]?.values).toEqual([]);
+    expect(run(atom, "join")[0]?.values).toEqual([]);
+    expect(run(atom, "read", "src.other")[0]?.values).toEqual([]);
+    expect(run({ ...atom, operands: [...atom.operands, { kind: "LITERAL", expression: "'SOURCE_B'" }] })[0]?.values).toEqual(["SOURCE_A", "SOURCE_B"]);
+    expect(run({ kind: "AND", children: [atom, { ...atom, operands: [atom.operands[0], { kind: "LITERAL", expression: "'SOURCE_B'" }] }] })[0]?.values).toEqual([]);
+  });
+
   it("resolves a UNION dynamic partition when all branches agree canonically", () => {
     const parts = buildWritePartitionParts({
       qualifiedName: "dm.target",
@@ -212,7 +255,7 @@ describe("buildWritePartitionParts", () => {
     })]);
   });
 
-  it("requires every UNION branch to provide the same bound ordinal literal", () => {
+  it("preserves different known UNION branch values as alternatives", () => {
     const parts = buildWritePartitionParts({
       qualifiedName: "dm.target", statementSql: "select 1", packPartition: null, writeObservationId: "write:union",
       factsWrite: { write_observation_id: "write:union", physical_dataset: "dm.target", partition_mode: "DYNAMIC",
@@ -229,9 +272,8 @@ describe("buildWritePartitionParts", () => {
     });
     expect(parts).toEqual([expect.objectContaining({
       column: "p",
-      values: [],
-      valueStatus: "UNKNOWN",
-      reason: "DYNAMIC_PARTITION_UNION_BRANCH_CONFLICT",
+      values: ["LEFT", "RIGHT"],
+      valueStatus: "OBSERVED_RENDERED_VALUE",
     })]);
   });
 
@@ -357,7 +399,24 @@ describe("buildWritePartitionParts", () => {
       },
     });
     expect(parts).toEqual([
-      expect.objectContaining({ column: "p", values: [], partitionStatus: "UNKNOWN" }),
+      expect.objectContaining({ column: "p", values: [], partitionStatus: "CONFLICT" }),
+    ]);
+  });
+
+  it("resolves static and dynamic fields independently in a mixed partition", () => {
+    const parts = buildWritePartitionParts({
+      qualifiedName: "dm.target", statementSql: "insert overwrite table dm.target partition(src_tbl='SOURCE', busi_date) select id, '${data_day_str}' as busi_date from dm.source", packPartition: null,
+      writeObservationId: "write:mixed",
+      factsWrite: { write_observation_id: "write:mixed", physical_dataset: "dm.target", partition_mode: "MIXED", partition_columns: ["src_tbl", "busi_date"],
+        partition_assignments: [
+          { field: "src_tbl", mapping_method: "STATIC_SQL_ASSIGNMENT", status: "CONFIRMED" },
+          { field: "busi_date", mapping_method: "DYNAMIC_PARTITION_OUTPUT_ORDINAL", status: "CONFIRMED" },
+        ] },
+      bindings: [{ write_observation_id: "write:mixed", target_field: "busi_date", binding_status: "RESOLVED", source_ordinal: 1, expression_id: "expr:date" }],
+      expressions: [{ expression_id: "expr:date", role: "PROJECT_EXPRESSION", expression_text: "'${data_day_str}' AS busi_date" }],
+    });
+    expect(parts.map(part => ({ column: part.column, values: part.values }))).toEqual([
+      { column: "src_tbl", values: ["SOURCE"] }, { column: "busi_date", values: ["${YYYY-MM-DD}"] },
     ]);
   });
 
@@ -408,7 +467,7 @@ describe("buildWritePartitionParts", () => {
       },
     });
     expect(parts).toEqual([
-      expect.objectContaining({ column: "busi_date", values: [], partitionStatus: "UNKNOWN" }),
+      expect.objectContaining({ column: "busi_date", values: [], partitionStatus: "CONFLICT" }),
     ]);
   });
 

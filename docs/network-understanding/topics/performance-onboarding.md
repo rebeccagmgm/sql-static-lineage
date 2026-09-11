@@ -3,6 +3,7 @@
 这条业务链同时描述审批工作量、应计奖励与客户开户结果。一个客户的一审、二审、回访是不同处理事件；同一事件又可能因人员归属、差错扣罚或例外名单而改变奖励。因此“奖励账户数”“审核客户数”“汇总奖励金额”不能互换。本页逐项核读 12 项发布 SQL 的全部槽位，并与[主篇已解释的奖励金额 135361 和机构审核量 137020](../chapters/09-performance-and-assets.md#p09-ecom)连接。固定版本、hash 和实际行段见 [performance-review.json](../evidence/performance-review.json)。
 
 <a id="onboarding-count"></a>
+
 ## 奖励账户数实际数什么
 
 135663 以计算日开户分析快照为入口，把一审、二审、回访各展开为一行事件，按激活日、员工、订单类型、奖励类型、跨分公司状态聚合，`reward_num=count(*)`。它不是按客户或订单去重：一单的一审和二审都可以计入“单向审核”，同一客户多个订单也会多计。开户客户须匹配当日个人交易客户定义、开户日期晚于 2017-05-01；回访排除明确呼叫中心处理日志对应的订单。输出为有效 STAFF × 事件标签 × 激活日。〔135663 query 126—241、268—288〕[^135663]
@@ -14,6 +15,7 @@
 人员归属用统一岗位历史：激活日落在 `strt_date <= 激活日 <= end_date` 的双闭区间，最新岗位结束日放宽到 2099-12-31，缺机构属性用下一条历史补齐，并套计算日机构名称。这不保证历史区间不重叠，也不保证岗位调整当天只匹配一行。〔query 76—124、237—238〕
 
 <a id="onboarding-details"></a>
+
 ## 一审、二审与回访明细并非账户数表的原样展开
 
 136128 输出订单 × 客户 × 审核步骤 × 审核人员的单向审核明细，136188 输出同类回访明细，并增加是否跨分公司。每行 `reward_num=1`，没有月度净奖励非负筛选，也没有生成差错扣罚明细。两项最终都只保留 2026-07-01 及之后、且落在回溯窗口内的激活记录；当前可达分支的一审/二审奖励为 1，回访为 2。源保留早期金额切换表达式，不意味着当前最终输出包含那些历史时期。136188 已与 136128 做全行对比，45 条不同非空行全部核读。〔136128 query 181—324；136188 query 181—319〕[^136128][^136188]
@@ -25,6 +27,7 @@
 单向审核的身份替换条件直接用紧凑的 `client_status_mod_time` 字符串与维护表日期比较；回访先 `datekey2date` 再比较。是否同一种日期格式、是否匹配到预期区间，必须核对维护表实际类型和值，不能默认两支等价。末尾员工历史仍采用双闭有效区间。回访另外排除呼叫中心订单，一审/二审没有这一回访专属排除。〔136128 query 260、285、317—322；136188 query 267、289—319〕
 
 <a id="onboarding-summary"></a>
+
 ## 汇总奖励与真实发放入口之间还有转换
 
 135530 汇总为员工 × 激活月 × 奖励类型 × 订单类型 × 回访跨分公司状态。它从金额指标和数量指标的标签名称中拆三个维度，分别识别单向审核、回访奖励、差错扣罚；以数量行作主表，按员工组合、日期和三维标签左接金额。缺少数量的金额行不会独立进入结果。随后根据当日维护表及双闭员工历史补归属，并只保留 2026-07 及以后。〔query 1—61、187—239、319—344〕[^135530]
@@ -34,6 +37,7 @@
 **213385 才是奖金额向发放数据表的一个明确接口**：它把月汇总按员工合计，项目代码固定 C81011，使用计算日往前一个月同日的员工所属 ERP 机构，另有两个人员例外；源单行金额要求绝对值大于 0，但员工汇总后的零和不再过滤。它只在 `${dd}='25'` 时选择上月源数据，而 truncate 槽位只在 `${dd}='28'` 时删除目标上月数据。两个条件不是同一天，静态代码无法证明实际调度如何配合，也不能因生成了接口行就说奖金已经发放。〔query 1—37、truncate 1〕[^213385]
 
 <a id="onboarding-customer"></a>
+
 ## 审核客户数是机构、角色与激活日的去重客户数
 
 136990 另起一条客户数链：开户订单须属于指定六类，JSON 中开户执行状态为 2，审核日不晚于计算日，并匹配 2017-05-20 及之后开户的客户；再用客户号和订单类型连接计算日开户分析快照。连接不是按订单号，因此同客户同类型多订单会先多行展开；随后按激活日、标签、机构 `count(distinct cust_pty_no)`，最终在每一个分组内去重。它分别生成客户开户机构的总数、一审员工所属机构的客户数、二审员工所属机构的客户数；三个角色组不能相加成独立客户总数。没有回访客户数或扣罚数量分支。〔query 97—167、219—287〕[^136990]
@@ -43,6 +47,7 @@
 本任务还明确排除几类派单异常：2025-11-24 至 27 日特定两个分公司互派、11 月 25 日指定机构跨团队派单，以及 2025-12-18 15:00—17:00 跨分公司派单；另有两个月份的客户例外名单。条件依赖订单最大派单时间。一审、二审与客户总体都从过滤后的同一集合计数。最终激活日只限定不早于前一个月，没有显式不晚于计算日的上界；不能用订单审核日上界代替激活日上界。某个员工修正条件用完整激活日期等于年月字符串，是否可触发也需要日期格式核验。〔query 168—222、242—264〕
 
 <a id="onboarding-income-detail"></a>
+
 ## 收支明细记录的是跨机构审核事件，不是创收金额
 
 137594 名称含“审核收支明细”，实际输出审核与派单时间、客户和员工机构、一审/二审跨机构标志、是否交易日、激活日；没有收入金额字段。它从开户成功订单出发，一审人来自审核通过日志，人员机构按各自审核日连接岗位历史；一审日志没有按订单取唯一最后一条，可能保留多次通过。派单时间则明确按订单及申请号排序取最后一条。〔query 1—188、206—257〕[^137594]
@@ -52,27 +57,38 @@
 最后的 OR/AND 括号需要保留原样理解：每个分支形如 `分公司差异1 OR 分公司差异2 OR 营业部差异1 OR 营业部差异2 AND 类型条件`。由于 AND 优先，订单类型与其起算日期只约束最后一个差异条件，而不是所有跨机构条件；不能把它重述为“所有跨机构事件均先按订单类型门槛筛选”。此外，这里只有显式审核/激活条件，没有验证客户已经获得实际入账收入。〔query 258—268〕
 
 <a id="onboarding-exports"></a>
+
 ## 下游传输还会筛掉哪些行
 
-|任务|已核读的消费规则|解释边界|
-|---|---|---|
-|135533|从月奖励汇总选择 `abs(reward)>0`，数量转整数；无日期限制。query 1—16。[^135533]|上游保留的零奖励、有工作量人员到这里被删除；负扣罚金额仍可保留。|
-|91393、91499|分别传输回访、单向审核明细，数量转整数，取计算月往前 24 个月起的月份；没有上界。query 1—21 / 1—20。[^91393][^91499]|传输窗口不保证上游已生成这 24 个月数据，也不消除源多行。|
-|90441|传输机构审核收入信息的客户总数、一审、二审数，三类数量转整数；无日期过滤。query 1—11。[^90441]|消费的是 137020 的机构计数结果，不是奖金金额。|
-|137742|传输跨机构审核收支明细，再排除 2025 年 11 月两类特定派单异常。query 1—28。[^137742]|它没有复制 136990 的 12 月 18 日排除、客户例外名单和全部日期规则，不能预设两个出口同口径。|
+| 任务         | 已核读的消费规则                                                                                                    | 解释边界                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 135533       | 从月奖励汇总选择 `abs(reward)>0`，数量转整数；无日期限制。query 1—16。[^135533]                                     | 上游保留的零奖励、有工作量人员到这里被删除；负扣罚金额仍可保留。                           |
+| 91393、91499 | 分别传输回访、单向审核明细，数量转整数，取计算月往前 24 个月起的月份；没有上界。query 1—21 / 1—20。[^91393][^91499] | 传输窗口不保证上游已生成这 24 个月数据，也不消除源多行。                                   |
+| 90441        | 传输机构审核收入信息的客户总数、一审、二审数，三类数量转整数；无日期过滤。query 1—11。[^90441]                      | 消费的是 137020 的机构计数结果，不是奖金金额。                                             |
+| 137742       | 传输跨机构审核收支明细，再排除 2025 年 11 月两类特定派单异常。query 1—28。[^137742]                                 | 它没有复制 136990 的 12 月 18 日排除、客户例外名单和全部日期规则，不能预设两个出口同口径。 |
 
 上述六个传输/发放任务中，只有 213385 提供了显式删除目标的 SQL；其余发布 evidence 仅有 query。两个指标任务 135663、136990 的 prepare 只删计算日分区，但 query 返回更长日期窗口；四个明细/汇总任务的 prepare 仅建表。实际追加、覆盖和发放状态仍需消费端与运行证据。这些区别应随[输出合同页](performance-output-contracts.md)一起阅读。
 
+[^135530]: Task 135530，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135530/versions/ef20a5dcf5704a15cb8ebf93487c21b1bbbcf03b4ee9779da8187d70108204b7.evidence-v3.json)。
 
-[^135530]: Task 135530，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135530/versions/ef20a5dcf5704a15cb8ebf93487c21b1bbbcf03b4ee9779da8187d70108204b7.evidence-v3.json>)。
-[^135663]: Task 135663，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135663/versions/bf37b332942910f3572882e67a88271c0d733e13cfd3c1eba41732b812a28495.evidence-v3.json>)。
-[^136128]: Task 136128，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136128/versions/0ff1be015f7eec89530ec5209beb4e4eb1da9af35bc2a802cff73484d6cede1f.evidence-v3.json>)。
-[^136188]: Task 136188，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136188/versions/b9862958471737bf7ebb056f99dad01018b5e0b54cf816ce8a8970f47fc48f9b.evidence-v3.json>)。
-[^136990]: Task 136990，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136990/versions/71cd26d2464f4b911d3c329bcb56d0065b0d08a9b591f96a51d0186cd636decc.evidence-v3.json>)。
-[^137594]: Task 137594，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137594/versions/b2f3b822ce080a3e2dc2c312f28d0f64ba6d5ae96b888a1723639c8666749108.evidence-v3.json>)。
-[^135533]: Task 135533，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135533/versions/f5f0bc271441945b563db2fb17f30d07381e3cbc5b235986d3fcfbf4a30bf6ee.evidence-v3.json>)。
-[^91393]: Task 91393，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/91393/versions/772353fc9005fa2bfa4d6bdc5d8bce6a9c31f7b3b4f32b8a567e8f00bea2941c.evidence-v3.json>)。
-[^91499]: Task 91499，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/91499/versions/9272dd3aece41378c36167c8a5e5a43cc951eefbb887ba32b75f6f683fd85082.evidence-v3.json>)。
-[^90441]: Task 90441，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/90441/versions/1624a730cb3c9f5ef88b6acbf8056b6c04967ccca1ca4d342d34cf0fc4fa913c.evidence-v3.json>)。
-[^137742]: Task 137742，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137742/versions/e29f0f38916aea45363a91ef9b6ad696505e2a24266d3da582a862e4672c05b6.evidence-v3.json>)。
-[^213385]: Task 213385，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/213385/versions/5ffba5856b2f55c6ea1ca4f3bf1efbd9ee6d9f0a15bcef8ee1034a142946e1c0.evidence-v3.json>)。
+[^135663]: Task 135663，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135663/versions/bf37b332942910f3572882e67a88271c0d733e13cfd3c1eba41732b812a28495.evidence-v3.json)。
+
+[^136128]: Task 136128，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136128/versions/0ff1be015f7eec89530ec5209beb4e4eb1da9af35bc2a802cff73484d6cede1f.evidence-v3.json)。
+
+[^136188]: Task 136188，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136188/versions/b9862958471737bf7ebb056f99dad01018b5e0b54cf816ce8a8970f47fc48f9b.evidence-v3.json)。
+
+[^136990]: Task 136990，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/136990/versions/71cd26d2464f4b911d3c329bcb56d0065b0d08a9b591f96a51d0186cd636decc.evidence-v3.json)。
+
+[^137594]: Task 137594，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137594/versions/b2f3b822ce080a3e2dc2c312f28d0f64ba6d5ae96b888a1723639c8666749108.evidence-v3.json)。
+
+[^135533]: Task 135533，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135533/versions/f5f0bc271441945b563db2fb17f30d07381e3cbc5b235986d3fcfbf4a30bf6ee.evidence-v3.json)。
+
+[^91393]: Task 91393，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/91393/versions/772353fc9005fa2bfa4d6bdc5d8bce6a9c31f7b3b4f32b8a567e8f00bea2941c.evidence-v3.json)。
+
+[^91499]: Task 91499，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/91499/versions/9272dd3aece41378c36167c8a5e5a43cc951eefbb887ba32b75f6f683fd85082.evidence-v3.json)。
+
+[^90441]: Task 90441，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/90441/versions/1624a730cb3c9f5ef88b6acbf8056b6c04967ccca1ca4d342d34cf0fc4fa913c.evidence-v3.json)。
+
+[^137742]: Task 137742，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137742/versions/e29f0f38916aea45363a91ef9b6ad696505e2a24266d3da582a862e4672c05b6.evidence-v3.json)。
+
+[^213385]: Task 213385，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/213385/versions/5ffba5856b2f55c6ea1ca4f3bf1efbd9ee6d9f0a15bcef8ee1034a142946e1c0.evidence-v3.json)。

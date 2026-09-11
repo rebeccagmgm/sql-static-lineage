@@ -1478,9 +1478,9 @@ function nativeHopProjection(
 }
 
 const CONTRACT_VERSION = "1.4.0";
-const ADAPTER_VERSION = "0.5.0";
+const ADAPTER_VERSION = "0.5.1";
 const EXPRESSION_DEPENDENCY_CONTRACT_VERSION = "1.4.0";
-export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.5.1";
+export const EXPRESSION_DEPENDENCY_ADAPTER_VERSION = "0.5.2";
 
 export function buildPlanFacts(
   cell: { scopes: ScopeTree; span: { start: number } },
@@ -1658,6 +1658,16 @@ export function buildPlanFacts(
     return topNId;
   }
 
+  function buildChildScopes(scope: Scope, path: string): void {
+    for (const [childIndex, child] of scope.children.entries()) {
+      if (!rootIds.has(child))
+        buildScope(
+          child,
+          `${path}.(child${childIndex === 0 ? "" : `-${childIndex}`})`,
+        );
+    }
+  }
+
   function buildScope(scope: Scope, path: string): string {
     if (!scopePathByScope.has(scope)) scopePathByScope.set(scope, path);
     if (rootIds.has(scope)) return rootIds.get(scope)!;
@@ -1714,6 +1724,9 @@ export function buildPlanFacts(
         });
       }
       rootIds.set(scope, id);
+      // CTE bodies belong to children, not branches. Build them after the
+      // branch list is frozen so they remain linked evidence, not UNION inputs.
+      buildChildScopes(scope, path);
       return addTopN(scope, path, id, outCols ?? inferredOutputs);
     }
 
@@ -2401,13 +2414,7 @@ export function buildPlanFacts(
     addTopN(scope, path, chainTail ?? pid, computedOut ?? outCols);
 
     // 表达式子查询 / CTE 子块
-    for (const [childIndex, child] of scope.children.entries()) {
-      if (!rootIds.has(child))
-        buildScope(
-          child,
-          `${path}.(child${childIndex === 0 ? "" : `-${childIndex}`})`,
-        );
-    }
+    buildChildScopes(scope, path);
     return rootIds.get(scope) ?? pid;
   }
 

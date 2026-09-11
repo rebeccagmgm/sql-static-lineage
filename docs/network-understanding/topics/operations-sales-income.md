@@ -6,11 +6,11 @@
 
 这组任务不是把一列“收入”复制三次。它们分别计算内部引入收入、境内交叉销售收入、香港交叉销售收入，客户范围、合同分类、系数来源和特殊条款都有差别。这些是经营分配和计提，不等于已经付款的财务收入；现金状态另见[收付与交割](operations-trading-and-settlement.md)。
 
-| 口径 | 参数展示 | 按日计提 | 明确范围 |
-|---|---|---|---|
-| 内部引入 | 113993 `otc_inr_sale_para` | 114013 `otc_inr_sale_daily_rpt` | 当前合约，终止/期末日不早于 2023-01-01，排除两项指定客户和极速组；OIS 客户满足监测/未删除条件或明确例外 |
-| 境内交叉销售 | 118143 `otc_sale_para` | 118141 `otc_sale_daily_rpt` | 不含 FEE_SWAP、极速组、OTC_HK；要求机构归属条件或指定历史合约例外 |
-| 香港交叉销售 | 220981 `otc_hk_sale_para` | 220979 `otc_hk_sale_daily_rpt` | 六类明确香港账簿，终止/期末日≥2025-12-01；香港客户未删除且允许计入交叉销售收入 |
+| 口径         | 参数展示                   | 按日计提                        | 明确范围                                                                                                |
+| ------------ | -------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 内部引入     | 113993 `otc_inr_sale_para` | 114013 `otc_inr_sale_daily_rpt` | 当前合约，终止/期末日不早于 2023-01-01，排除两项指定客户和极速组；OIS 客户满足监测/未删除条件或明确例外 |
+| 境内交叉销售 | 118143 `otc_sale_para`     | 118141 `otc_sale_daily_rpt`     | 不含 FEE_SWAP、极速组、OTC_HK；要求机构归属条件或指定历史合约例外                                       |
+| 香港交叉销售 | 220981 `otc_hk_sale_para`  | 220979 `otc_hk_sale_daily_rpt`  | 六类明确香港账簿，终止/期末日≥2025-12-01；香港客户未删除且允许计入交叉销售收入                          |
 
 以上是发布 SQL 的范围，不外推为现行制度。[113993 · query · 53–56行](../../../../sql-static-lineage-data/task-projections/tasks/113993/versions/ca5b742f9fa419a9517cedd6ba648182635d95c497beae835cb218fabf5db34c.evidence-v3.json) [114013 · query · 222–238行](../../../../sql-static-lineage-data/task-projections/tasks/114013/versions/3793bc56f5126d6a8042bf97f60dfcca5501521e18b981bb8bdeecfaae2c24fa.evidence-v3.json) [118143 · query · 124–130行](../../../../sql-static-lineage-data/task-projections/tasks/118143/versions/af9bfbf385124e138492654309f42a3198acd6afaf670184ef9ad2d8ac758b7c.evidence-v3.json) [118141 · query · 297–405行](../../../../sql-static-lineage-data/task-projections/tasks/118141/versions/0b0884fbbe2a38bb0db0e366f585c0306529c68f4d105990504ca8625cc4776e.evidence-v3.json) [220979 · query · 303–318行](../../../../sql-static-lineage-data/task-projections/tasks/220979/versions/62f74c1cbaa179b3c0d00713afb74014ae6a33c23466e4b7e275260cf6447ebc.evidence-v3.json)
 

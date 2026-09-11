@@ -52,13 +52,13 @@
 
 优化客群的金额采用分段累计，单位以下均为亿元：
 
-| 月均普通股票金额 x | SQL 的折算表达式 |
-|---|---|
-| 1≤x<10 | 1＋(x−1)×10% |
-| 10≤x<50 | 1＋9×10%＋(x−10)×5% |
-| 50≤x<100 | 1＋9×10%＋40×5%＋(x−50)×2% |
-| x>100 | 1＋9×10%＋40×5%＋50×2%＋(x−100)×1% |
-| 其他 | 命中 5% 集合则 x×5%，否则保留 x |
+| 月均普通股票金额 x | SQL 的折算表达式                   |
+| ------------------ | ---------------------------------- |
+| 1≤x<10             | 1＋(x−1)×10%                       |
+| 10≤x<50            | 1＋9×10%＋(x−10)×5%                |
+| 50≤x<100           | 1＋9×10%＋40×5%＋(x−50)×2%         |
+| x>100              | 1＋9×10%＋40×5%＋50×2%＋(x−100)×1% |
+| 其他               | 命中 5% 集合则 x×5%，否则保留 x    |
 
 例如 2 亿元折为 1.1 亿元，不是整笔乘 10%。还要保留一个明确的待核对点：**恰好 100 亿元不在上述四个分段内**，会继续落到后续分支。这里记录可执行 SQL 的边界，不替业务判定应采用哪一档。（148763 query 635–640）[^148763]
 
@@ -124,18 +124,18 @@ T0 更不同：从 T01_PTY_EMP_RELA_H 选推荐关系 47，条件为 STRT_DATE�
 
 随后各分公司/营业部保留基础总分的 80%，另加 20% 自选项。以下均核读了实际公式；“均分”指这部分 20% 在所列计入项间分配，固定项即使值为空仍占分母，条件项仅非空时占分母：
 
-| 任务 / 适用组织 | 其余 20% 的实际规则 |
-|---|---|
-| 237459 / 7006；237483 / 7025 | 投顾资讯收入、T0收入、两融利息各5%；买方投顾规模增长值、增长率各2.5% |
-| 237468 / 7007 | T0收入为固定项，加非空的新签投顾、买方投顾新增、两融渗透后均分 |
-| 237470 / 7010 | 资产增长率、净资产亩产、净值3个固定项，加非空的新签投顾、买方投顾新增后均分 |
-| 237471 / 7005 | 净资产亩产为固定项，加非空的新签投顾、买方投顾新增、两融渗透后均分 |
-| 237474 / 7023 | 买方投顾规模增长值、T0收入固定；两融开户服务非空时加入，均分 |
-| 237480 / 7013 | 投顾资讯收入、买方投顾规模增长值固定；两融开户服务非空时加入，均分 |
-| 237485 / 7014 | 投顾资讯收入、T0收入、买方投顾规模增长值固定；两融开户服务非空时加入，均分 |
-| 237486 / 7020 | 上一行的增长值改为买方投顾期末规模 |
-| 237478 / 7029 | 资讯5%、T0 2%、两融2%、买方规模增长3%、资产司占比增长3%、全收入3%、投顾新签2%；新签为空时其2%平分给其余6项 |
-| 237481 / 营业部0315 | 买方投顾期末规模10%、两融收入5%、两融开户服务5%；后者为空时其5%平分给前两项 |
+| 任务 / 适用组织                   | 其余 20% 的实际规则                                                    |
+| --------------------------- | --------------------------------------------------------------- |
+| 237459 / 7006；237483 / 7025 | 投顾资讯收入、T0收入、两融利息各5%；买方投顾规模增长值、增长率各2.5%                          |
+| 237468 / 7007               | T0收入为固定项，加非空的新签投顾、买方投顾新增、两融渗透后均分                                |
+| 237470 / 7010               | 资产增长率、净资产亩产、净值3个固定项，加非空的新签投顾、买方投顾新增后均分                          |
+| 237471 / 7005               | 净资产亩产为固定项，加非空的新签投顾、买方投顾新增、两融渗透后均分                               |
+| 237474 / 7023               | 买方投顾规模增长值、T0收入固定；两融开户服务非空时加入，均分                                 |
+| 237480 / 7013               | 投顾资讯收入、买方投顾规模增长值固定；两融开户服务非空时加入，均分                               |
+| 237485 / 7014               | 投顾资讯收入、T0收入、买方投顾规模增长值固定；两融开户服务非空时加入，均分                          |
+| 237486 / 7020               | 上一行的增长值改为买方投顾期末规模                                               |
+| 237478 / 7029               | 资讯5%、T0 2%、两融2%、买方规模增长3%、资产司占比增长3%、全收入3%、投顾新签2%；新签为空时其2%平分给其余6项 |
+| 237481 / 营业部0315            | 买方投顾期末规模10%、两融收入5%、两融开户服务5%；后者为空时其5%平分给前两项                      |
 
 证据分别为各任务 query 45 至末行；237459 为 45–64，237483 为 45–62，其余精确行范围见账本。并未核实自选指标上游的全部计分制度。[^237459][^237483][^237468][^237470][^237471][^237474][^237480][^237485][^237486][^237478][^237481]
 
@@ -163,22 +163,21 @@ DM_CO 的机构看板 150128/150131 则按 ALL、机构、私募、银行、托�
 
 旁支 78321 是网上开户适当性匹配检查：按低风险等级与投资品种组合分四类，只有第4类映射为 is_match=1，未匹配到适当性行也会得到 0。两个输入都固定读取 2026-05-21，不是动态计算日。它输出敏感客户明细，本篇只解释规则，不复制具体客户身份字段值；也不把这段 SQL 判定扩写成合规结论。（78321 query 1–27）[^78321]
 
-
 <a id="p09-collection"></a>
 
 ## 独立业务子页
 
-| 阅读问题 | 内容 |
-|---|---|
-| 员工和团队创收怎样计入月、季、年评价？ | [收入归属、团队考核与绩效接口](../topics/performance-income-and-evaluation.md) |
-| 接口后还会不会重算、排名和打分？ | [考核后处理：团队层级、排名与 K1 计分](../topics/performance-postprocessing.md) |
-| 算法统计、T0、回测和大宗佣金怎样区分？ | [机构算法统计、T0 与大宗交易](../topics/performance-algorithm-and-trading.md) |
-| 有效户、盈利户和资产流入流出指什么？ | [有效客户、账户盈亏与经营归属](../topics/performance-customer-profitability.md) |
-| OTC 定义、标签、对手和规模口径怎样接续？ | [OTC组合定义、标签与对手指标](../topics/performance-otc-model.md) |
-| 机构、员工与客户结构中的户均和分布怎样计算？ | [AUM 结构、关系明细与趋势](../topics/performance-asset-structure.md) |
-| 各种月季年增长率、固定基期、汇总封顶有何不同？ | [标准资产汇总、比较基期与派生指标](../topics/performance-derived-indicators.md) |
+| 阅读问题                                           | 内容                                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 员工和团队创收怎样计入月、季、年评价？             | [收入归属、团队考核与绩效接口](../topics/performance-income-and-evaluation.md)        |
+| 接口后还会不会重算、排名和打分？                   | [考核后处理：团队层级、排名与 K1 计分](../topics/performance-postprocessing.md)       |
+| 算法统计、T0、回测和大宗佣金怎样区分？             | [机构算法统计、T0 与大宗交易](../topics/performance-algorithm-and-trading.md)         |
+| 有效户、盈利户和资产流入流出指什么？               | [有效客户、账户盈亏与经营归属](../topics/performance-customer-profitability.md)       |
+| OTC 定义、标签、对手和规模口径怎样接续？           | [OTC组合定义、标签与对手指标](../topics/performance-otc-model.md)                     |
+| 机构、员工与客户结构中的户均和分布怎样计算？       | [AUM 结构、关系明细与趋势](../topics/performance-asset-structure.md)                  |
+| 各种月季年增长率、固定基期、汇总封顶有何不同？     | [标准资产汇总、比较基期与派生指标](../topics/performance-derived-indicators.md)       |
 | 开户奖励金额、账户次数、客户数与发放接口有何不同？ | [网上开户审核：奖励、账户次数、客户数与发放接口](../topics/performance-onboarding.md) |
-| 下游为何出现占位零、择一行与不同回补窗口？ | [考核与经营报表的传输、去重和占位值](../topics/performance-output-contracts.md) |
+| 下游为何出现占位零、择一行与不同回补窗口？         | [考核与经营报表的传输、去重和占位值](../topics/performance-output-contracts.md)       |
 
 这些分支各有对象和规则，OTC 组合模型与算法执行统计并非员工考核的子步骤。它们放在同一主题集合中是由于实际主题范围与数据联系，而不是把所有业务强行归成一种资产。
 
@@ -188,77 +187,136 @@ DM_CO 的机构看板 150128/150131 则按 ALL、机构、私募、银行、托�
 
 主篇和九个独立子页已经覆盖销售与资产主干、收入和团队、评分与后处理、OTC组合模型、算法交易、账户盈亏、经营结构与趋势、派生指标和多种输出合同。以下具体范围仍需补读，逐项状态以 [performance-review.json](../evidence/performance-review.json) 为准：
 
-| 尚缺的内容 | 具体任务或范围 | 不可提前宣称的结论 |
-|---|---|---|
-| 折前资产更上游、客户分组与产品比例定义 | 148368/148763 所引累积资产、比例、名单 | 比例守恒与制度正确性 |
-| 其余年均/资产包/期初期末变体 | 161054、161152、184973、184974、185235、235871、235878等 | 不能由已读月度例子自动推定所有变体 |
-| 经营客户结构、高净值与季度分配分析 | 175419、175427、176693、190435、203119、207665、208353等 | 客户分层、关系重分类和结构比较的完整规则 |
-| 户均/人均经营分析 | 177395、177407 | 当前只定位片段，尚未解释完整值来源 |
-| 机构客户屏剩余基础 | 150023、150213、150507 | 客户标志、其他日月指标完整定义 |
-| 开户恢复、回访接通与企微运营 | 100130、124476、139708、144891、167299等 | 恢复订单、回访记录、标签变化和企微周报的完整规则 |
-| 无 SQL 的检查与其他未核读出口 | 账本明确列出的条目 | 无 SQL 不等于空操作，图可连不等于目标已到数 |
+| 尚缺的内容                             | 具体任务或范围                                           | 不可提前宣称的结论                               |
+| -------------------------------------- | -------------------------------------------------------- | ------------------------------------------------ |
+| 折前资产更上游、客户分组与产品比例定义 | 148368/148763 所引累积资产、比例、名单                   | 比例守恒与制度正确性                             |
+| 其余年均/资产包/期初期末变体           | 161054、161152、184973、184974、185235、235871、235878等 | 不能由已读月度例子自动推定所有变体               |
+| 经营客户结构、高净值与季度分配分析     | 175419、175427、176693、190435、203119、207665、208353等 | 客户分层、关系重分类和结构比较的完整规则         |
+| 户均/人均经营分析                      | 177395、177407                                           | 当前只定位片段，尚未解释完整值来源               |
+| 机构客户屏剩余基础                     | 150023、150213、150507                                   | 客户标志、其他日月指标完整定义                   |
+| 开户恢复、回访接通与企微运营           | 100130、124476、139708、144891、167299等                 | 恢复订单、回访记录、标签变化和企微周报的完整规则 |
+| 无 SQL 的检查与其他未核读出口          | 账本明确列出的条目                                       | 无 SQL 不等于空操作，图可连不等于目标已到数      |
 
 全部 302 个 ID 保留在同一账本，补充来源与发布来源分开。没有执行业务 SQL，也没有拿真实金额验证分摊或制度。业务确认重点包括：历史归属、特殊系数和等号边界、缺失月份对分母的影响、分支规则重叠，以及固化日期是否由真实运行机制保证。
 
 ## 固定发布证据索引
 
-[^144887]: 任务 144887；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/144887/versions/86b30e908976e4ac3634b8c6015d797468435e497cbba52a429d86801584a44b.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^154068]: 任务 154068；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/154068/versions/cba73e64a80628a915556d376a27bacf007a5a83e8b8527afbead96db06b6970.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^155410]: 任务 155410；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/155410/versions/4da23aa129371b3f3d46459d6b9c7da9c997b304d703060b80f0b96a7ea5b7b0.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^159763]: 任务 159763；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159763/versions/c87821fad514ef930309c036b4a8b04a78b1be5539385b41aa0ce1a3ddc81a31.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^159768]: 任务 159768；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159768/versions/2b15865851e166768cd124074d8c2552233efecf18e1f3d13cf4ffae0294e376.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^171347]: 任务 171347；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171347/versions/be685e0309e487ce68dada856781e630183f11c579a76be9bd3c54a76a230232.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^171364]: 任务 171364；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171364/versions/be9b520a38166c829c880230fd7d72304277a11d8c22471617fbf291ad126625.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^148368]: 任务 148368；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148368/versions/ab6106d5a9bb9a4c27dd31551c4a5235048a218dc51aaf805b0a22728178658e.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^148763]: 任务 148763；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148763/versions/2942afc4ba95be6e33ea2c9835e34f6097f3a0bd7a0840ce0ebe0b02c94df7d2.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^160773]: 任务 160773；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160773/versions/e5170c519ac4828888a5c0ff23671138ca26fb03d6ce0e712290864cc2a0e448.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^160780]: 任务 160780；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160780/versions/6a4431dd4a7a766ab827e56d5bd79022c9e55dd19832541eb0fc81c1136160c6.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^165154]: 任务 165154；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/165154/versions/a4764b331eb83e4d0a8117314d0c94abbc7ed4a13801327ee29a10ebe27c7271.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^148419]: 任务 148419；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148419/versions/ce3b589899e068c3d4e4dd594a5fa9aa75327aa2bb954b21b2c58910bc81a0fe.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^149048]: 任务 149048；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/149048/versions/f3b36228e9dfcf43e0f6344177b1f77bbee975472bd9f924682d236764043ee5.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201644]: 任务 201644；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201644/versions/2b54993871edd3dbbc2d524485005e59675c37bdfaecd95c391322903cfbc38c.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201657]: 任务 201657；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201657/versions/f0406f462b62c4b78312190544ed86b57e4b6d9041c6a09fbe282beda7d46dc8.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201695]: 任务 201695；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201695/versions/a2de3a3e69b61a3c69e1a706c35f952771c9c38ceaed1230888944f1580e21fa.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201699]: 任务 201699；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201699/versions/08078e1193175b3a7091af1435398175f114df9715542be66e04185363859035.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^202038]: 任务 202038；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202038/versions/72921658069fb1d03352d7dbd8a557a3011a3ecc7e61dc9dba754dc5e2b691aa.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^230911]: 任务 230911；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230911/versions/3f9aaea6340a8ed636f6a88bac3368f05a03246a4599e0a03a1212a7227824b7.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^230006]: 任务 230006；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230006/versions/9f76e71e8e27c6597f52631e6a67e3b5afc0ec9c74202d71cac3b23d65cf89a3.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^230016]: 任务 230016；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230016/versions/53b0cbbf95aa8e742af9cf4eece1d128a1cf5bac9fa53590c22208b202437daf.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^235142]: 任务 235142；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/235142/versions/2af7a103b3ceb0eab5ea93202b3ccc8f1cebd802deac961ad2ac270803cb94b2.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201976]: 任务 201976；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201976/versions/d2581a77547b3abd1fd8268890bb17b83435335e03d194feae40a4f3b383948d.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^201993]: 任务 201993；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201993/versions/4ca91af1083e156ed36652b5fd0bfc5e8e6bede292787cf286481eab511e06f6.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^202020]: 任务 202020；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202020/versions/b38016b8b72136e6d6df8034d4ae5f54e8f1200e90908248150d804d4d2a0909.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^202160]: 任务 202160；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202160/versions/61f229d7a643a48243074bee0221cb65de4f29ead1b96c89032278de04b53d5d.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^202279]: 任务 202279；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202279/versions/706734faf09c10b71732db564b4079c0d58a90d3463fdf326cb822b5922f3fa7.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^202286]: 任务 202286；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202286/versions/c540f9d3d77a94ff021e572f697698eee7c202174e0c2e60f163f3d4d155de2c.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218236]: 任务 218236；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218236/versions/1358d7196445bdedc4227bae033d15fb3bde5ba7ed24d432e95715589201b58b.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218244]: 任务 218244；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218244/versions/badddbebc90b690c3249ebd851ac1ed63f0bcaada7fad9dfd76b0d976bb4bfc1.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218252]: 任务 218252；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218252/versions/191b6207f0537798da553150feb991788ccf65ac6164fea623b390e028739dd5.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218255]: 任务 218255；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218255/versions/ab8d1be9339a16fc1d8b9b519ed0a8d1475d6932d1daab96a2619fe305736bf3.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218404]: 任务 218404；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218404/versions/4192bae137ea4bf3aa09c403ad80af88285572b08279ef6c6ced0307e5ec2be1.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^232675]: 任务 232675；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232675/versions/9a56ce0dc10483a7a4e4b46a44f1d569827e3e97f1d54c1d2405aa4e72f2c70a.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^234130]: 任务 234130；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/234130/versions/062ce88e003274dcbb8acf03a30d46ef0631fded65a5a531bc9969e865db505e.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^232652]: 任务 232652；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232652/versions/16393cc39107a99e921ef0ef27a56f7cdae55a5bc90e8163b3a61025d4b6d458.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^232676]: 任务 232676；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232676/versions/b6f52c3857cdc91b57e40b18c5c08d7623df335ebb89b896b7c2b50b8ddde66a.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^232677]: 任务 232677；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232677/versions/3dd1002d5b7b3c3669fdc9ba806fd77f76515f7f16017a139d63a6e165530312.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^234147]: 任务 234147；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/234147/versions/859a46da95ad5c3b9b067ae554a844eb279bba7e17d684489fa9da4e7c924b03.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^218429]: 任务 218429；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218429/versions/bfbb5ae0ee256d9bf226396772f13eea979a2f8faae518754e60443e960bb32e.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237459]: 任务 237459；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237459/versions/9b8665852d8811f7478d4a7ff7ec85ddc70506257dd3b29162d785cc39599395.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237483]: 任务 237483；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237483/versions/0c7d41e452beab61eb30577b72f2f0fa05dd8d7e80e30e97a5564b096513ba20.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237468]: 任务 237468；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237468/versions/3d7760b5fecd63b96b14dc4aea66f9b96a4fd228e8f8c0005dd993d4caa5fbe8.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237470]: 任务 237470；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237470/versions/a70b4322ba90434f2c83e54e2d8ae72248463c64223ba78e88b2d42ca65d4524.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237471]: 任务 237471；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237471/versions/776cc60c46b0878fdef1d8f37998a8be8f650d3c63c5ef265c4847194670c4d4.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237474]: 任务 237474；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237474/versions/7834d84cc20894b66da5e8c144bda18c290a2181ee9775aecf078852733857e8.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237480]: 任务 237480；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237480/versions/c00392519956243eb4f8ea464652ca2ece32a28d4b5dbf2386c916700fc984e6.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237485]: 任务 237485；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237485/versions/8e24be40c34830342b0ab638b235f8bcaeb356a25d9f8b02b988a18c1248d58f.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237486]: 任务 237486；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237486/versions/51220542ed193040696eededc7488bcb44836762c2840a8b3eece06650f7a042.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237478]: 任务 237478；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237478/versions/f592b9378d8d04d468f10ca7b25266682e2f73ab6504e4ed25da97efbc6aa2a7.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237481]: 任务 237481；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237481/versions/4e883bd1702c8483cf550abeb8606927513034adf2ca0499cee9066b0423d106.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^237505]: 任务 237505；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237505/versions/a76c3e2e50ce2753af5a3c51b4dff49665f94d80fd8293b6c63f16f52f45f828.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^149001]: 任务 149001；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/149001/versions/381aa86e6bc1c5df789dd6103cb30fb7e7cc59b986508a20fa210e8d0c79e059.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^152234]: 任务 152234；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/152234/versions/5090d0fb6619fa7c0867888c7a5c7a65c0dfdc458a943a8ff6fffc10ec1c4786.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^150128]: 任务 150128；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/150128/versions/c29d7d05005a8b78e213418816a6bf1354346b681122fd2ac2f21045cf27ee21.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^150131]: 任务 150131；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/150131/versions/863d0b16c60c378208c2f05e7784c1d037f4edef73dab439e2536ef19bffbc91.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^135361]: 任务 135361；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135361/versions/33e53e1a9a61774dfbcdb74b82b7b8efed33ad93b98c6d198c42e9bca91f50df.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^137020]: 任务 137020；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137020/versions/690f68fc36467e4ffe4ac78275f536406e80a4574ff23460d3ddd10195393d6d.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
-[^78321]: 任务 78321；[发布 evidence](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/78321/versions/0efb8eaf242eefb2ae410ec914960338e6a6691692fb0d1fbaeb79f626d3a385.evidence-v3.json>)。精确 SQL 槽位与行段见正文及 performance-review.json。
+[^144887]: 任务 144887；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/144887/versions/86b30e908976e4ac3634b8c6015d797468435e497cbba52a429d86801584a44b.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^154068]: 任务 154068；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/154068/versions/cba73e64a80628a915556d376a27bacf007a5a83e8b8527afbead96db06b6970.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^155410]: 任务 155410；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/155410/versions/4da23aa129371b3f3d46459d6b9c7da9c997b304d703060b80f0b96a7ea5b7b0.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^159763]: 任务 159763；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159763/versions/c87821fad514ef930309c036b4a8b04a78b1be5539385b41aa0ce1a3ddc81a31.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^159768]: 任务 159768；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159768/versions/2b15865851e166768cd124074d8c2552233efecf18e1f3d13cf4ffae0294e376.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^171347]: 任务 171347；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171347/versions/be685e0309e487ce68dada856781e630183f11c579a76be9bd3c54a76a230232.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^171364]: 任务 171364；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171364/versions/be9b520a38166c829c880230fd7d72304277a11d8c22471617fbf291ad126625.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^148368]: 任务 148368；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148368/versions/ab6106d5a9bb9a4c27dd31551c4a5235048a218dc51aaf805b0a22728178658e.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^148763]: 任务 148763；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148763/versions/2942afc4ba95be6e33ea2c9835e34f6097f3a0bd7a0840ce0ebe0b02c94df7d2.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^160773]: 任务 160773；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160773/versions/e5170c519ac4828888a5c0ff23671138ca26fb03d6ce0e712290864cc2a0e448.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^160780]: 任务 160780；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160780/versions/6a4431dd4a7a766ab827e56d5bd79022c9e55dd19832541eb0fc81c1136160c6.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^165154]: 任务 165154；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/165154/versions/a4764b331eb83e4d0a8117314d0c94abbc7ed4a13801327ee29a10ebe27c7271.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^148419]: 任务 148419；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/148419/versions/ce3b589899e068c3d4e4dd594a5fa9aa75327aa2bb954b21b2c58910bc81a0fe.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^149048]: 任务 149048；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/149048/versions/f3b36228e9dfcf43e0f6344177b1f77bbee975472bd9f924682d236764043ee5.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201644]: 任务 201644；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201644/versions/2b54993871edd3dbbc2d524485005e59675c37bdfaecd95c391322903cfbc38c.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201657]: 任务 201657；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201657/versions/f0406f462b62c4b78312190544ed86b57e4b6d9041c6a09fbe282beda7d46dc8.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201695]: 任务 201695；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201695/versions/a2de3a3e69b61a3c69e1a706c35f952771c9c38ceaed1230888944f1580e21fa.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201699]: 任务 201699；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201699/versions/08078e1193175b3a7091af1435398175f114df9715542be66e04185363859035.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^202038]: 任务 202038；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202038/versions/72921658069fb1d03352d7dbd8a557a3011a3ecc7e61dc9dba754dc5e2b691aa.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^230911]: 任务 230911；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230911/versions/3f9aaea6340a8ed636f6a88bac3368f05a03246a4599e0a03a1212a7227824b7.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^230006]: 任务 230006；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230006/versions/9f76e71e8e27c6597f52631e6a67e3b5afc0ec9c74202d71cac3b23d65cf89a3.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^230016]: 任务 230016；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230016/versions/53b0cbbf95aa8e742af9cf4eece1d128a1cf5bac9fa53590c22208b202437daf.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^235142]: 任务 235142；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/235142/versions/2af7a103b3ceb0eab5ea93202b3ccc8f1cebd802deac961ad2ac270803cb94b2.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201976]: 任务 201976；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201976/versions/d2581a77547b3abd1fd8268890bb17b83435335e03d194feae40a4f3b383948d.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^201993]: 任务 201993；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201993/versions/4ca91af1083e156ed36652b5fd0bfc5e8e6bede292787cf286481eab511e06f6.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^202020]: 任务 202020；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202020/versions/b38016b8b72136e6d6df8034d4ae5f54e8f1200e90908248150d804d4d2a0909.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^202160]: 任务 202160；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202160/versions/61f229d7a643a48243074bee0221cb65de4f29ead1b96c89032278de04b53d5d.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^202279]: 任务 202279；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202279/versions/706734faf09c10b71732db564b4079c0d58a90d3463fdf326cb822b5922f3fa7.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^202286]: 任务 202286；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202286/versions/c540f9d3d77a94ff021e572f697698eee7c202174e0c2e60f163f3d4d155de2c.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218236]: 任务 218236；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218236/versions/1358d7196445bdedc4227bae033d15fb3bde5ba7ed24d432e95715589201b58b.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218244]: 任务 218244；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218244/versions/badddbebc90b690c3249ebd851ac1ed63f0bcaada7fad9dfd76b0d976bb4bfc1.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218252]: 任务 218252；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218252/versions/191b6207f0537798da553150feb991788ccf65ac6164fea623b390e028739dd5.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218255]: 任务 218255；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218255/versions/ab8d1be9339a16fc1d8b9b519ed0a8d1475d6932d1daab96a2619fe305736bf3.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218404]: 任务 218404；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218404/versions/4192bae137ea4bf3aa09c403ad80af88285572b08279ef6c6ced0307e5ec2be1.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^232675]: 任务 232675；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232675/versions/9a56ce0dc10483a7a4e4b46a44f1d569827e3e97f1d54c1d2405aa4e72f2c70a.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^234130]: 任务 234130；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/234130/versions/062ce88e003274dcbb8acf03a30d46ef0631fded65a5a531bc9969e865db505e.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^232652]: 任务 232652；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232652/versions/16393cc39107a99e921ef0ef27a56f7cdae55a5bc90e8163b3a61025d4b6d458.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^232676]: 任务 232676；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232676/versions/b6f52c3857cdc91b57e40b18c5c08d7623df335ebb89b896b7c2b50b8ddde66a.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^232677]: 任务 232677；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/232677/versions/3dd1002d5b7b3c3669fdc9ba806fd77f76515f7f16017a139d63a6e165530312.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^234147]: 任务 234147；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/234147/versions/859a46da95ad5c3b9b067ae554a844eb279bba7e17d684489fa9da4e7c924b03.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^218429]: 任务 218429；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/218429/versions/bfbb5ae0ee256d9bf226396772f13eea979a2f8faae518754e60443e960bb32e.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237459]: 任务 237459；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237459/versions/9b8665852d8811f7478d4a7ff7ec85ddc70506257dd3b29162d785cc39599395.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237483]: 任务 237483；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237483/versions/0c7d41e452beab61eb30577b72f2f0fa05dd8d7e80e30e97a5564b096513ba20.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237468]: 任务 237468；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237468/versions/3d7760b5fecd63b96b14dc4aea66f9b96a4fd228e8f8c0005dd993d4caa5fbe8.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237470]: 任务 237470；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237470/versions/a70b4322ba90434f2c83e54e2d8ae72248463c64223ba78e88b2d42ca65d4524.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237471]: 任务 237471；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237471/versions/776cc60c46b0878fdef1d8f37998a8be8f650d3c63c5ef265c4847194670c4d4.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237474]: 任务 237474；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237474/versions/7834d84cc20894b66da5e8c144bda18c290a2181ee9775aecf078852733857e8.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237480]: 任务 237480；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237480/versions/c00392519956243eb4f8ea464652ca2ece32a28d4b5dbf2386c916700fc984e6.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237485]: 任务 237485；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237485/versions/8e24be40c34830342b0ab638b235f8bcaeb356a25d9f8b02b988a18c1248d58f.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237486]: 任务 237486；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237486/versions/51220542ed193040696eededc7488bcb44836762c2840a8b3eece06650f7a042.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237478]: 任务 237478；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237478/versions/f592b9378d8d04d468f10ca7b25266682e2f73ab6504e4ed25da97efbc6aa2a7.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237481]: 任务 237481；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237481/versions/4e883bd1702c8483cf550abeb8606927513034adf2ca0499cee9066b0423d106.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^237505]: 任务 237505；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/237505/versions/a76c3e2e50ce2753af5a3c51b4dff49665f94d80fd8293b6c63f16f52f45f828.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^149001]: 任务 149001；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/149001/versions/381aa86e6bc1c5df789dd6103cb30fb7e7cc59b986508a20fa210e8d0c79e059.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^152234]: 任务 152234；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/152234/versions/5090d0fb6619fa7c0867888c7a5c7a65c0dfdc458a943a8ff6fffc10ec1c4786.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^150128]: 任务 150128；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/150128/versions/c29d7d05005a8b78e213418816a6bf1354346b681122fd2ac2f21045cf27ee21.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^150131]: 任务 150131；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/150131/versions/863d0b16c60c378208c2f05e7784c1d037f4edef73dab439e2536ef19bffbc91.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^135361]: 任务 135361；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/135361/versions/33e53e1a9a61774dfbcdb74b82b7b8efed33ad93b98c6d198c42e9bca91f50df.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^137020]: 任务 137020；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/137020/versions/690f68fc36467e4ffe4ac78275f536406e80a4574ff23460d3ddd10195393d6d.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。
+
+[^78321]: 任务 78321；[发布 evidence](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/78321/versions/0efb8eaf242eefb2ae410ec914960338e6a6691692fb0d1fbaeb79f626d3a385.evidence-v3.json)。精确 SQL 槽位与行段见正文及 performance-review.json。

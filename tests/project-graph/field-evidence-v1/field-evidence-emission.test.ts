@@ -599,6 +599,130 @@ describe("field-evidence emission branch scoping", () => {
     expect(resolution.sourceReadOccurrenceReason).toBe("SELF_JOIN_NO_QUALIFIER");
   });
 
+  it("keeps a proven CTE output when its outer expression has two readers", () => {
+    const expression = {
+      expression_id: "expr:final",
+      relation_id: "rel:root.project",
+      ordinal: 0,
+      output_name: "final",
+      expression_text: "pvs.pv - bp.pv",
+      input_fields: [{ table: "demo.metric", column: "pv" }],
+      input_dependency_status: "PHYSICAL",
+    };
+    const indexes = buildFieldEvidenceIndexes({
+      taskId: "shared-cte",
+      expressions: [expression],
+      relationNodes: [
+        {
+          relation_id: "rel:root.project",
+          relation_type: "project",
+          relation: {
+            type: "project",
+            scope_id: "root",
+            expressions: [{
+              output: "final",
+              input_columns: [
+                {
+                  name: "pv",
+                  qualifier: "pvs",
+                  physical: [{ table: "demo.metric", column: "pv" }],
+                },
+                {
+                  name: "pv",
+                  qualifier: "bp",
+                  physical: [{ table: "demo.metric", column: "pv" }],
+                },
+              ],
+            }],
+          },
+        },
+        {
+          relation_id: "rel:root.(child).project",
+          relation_type: "project",
+          relation: {
+            type: "project",
+            scope_id: "root.(child)",
+            expressions: [{
+              output: "pv",
+              input_columns: [{
+                name: "pv",
+                qualifier: "poepm",
+                physical: [{ table: "demo.metric", column: "pv" }],
+              }],
+            }],
+          },
+        },
+        {
+          relation_id: "rel:root.(child).poepm.read.metric",
+          relation_type: "read",
+          relation: {
+            type: "read",
+            table: "demo.metric",
+            binding: "poepm",
+            scope_id: "root.(child).poepm",
+          },
+        },
+        {
+          relation_id: "rel:root.pvs.read.t",
+          relation_type: "read",
+          relation: {
+            type: "read",
+            table: "t",
+            binding: "pvs",
+            scope_id: "root.pvs",
+            source: "rel:root.(child).project",
+          },
+        },
+        {
+          relation_id: "rel:root.bp.read.t",
+          relation_type: "read",
+          relation: {
+            type: "read",
+            table: "t",
+            binding: "bp",
+            scope_id: "root.bp",
+            source: "rel:root.(child).project",
+          },
+        },
+      ],
+      relationEdges: [
+        { from_relation_id: "rel:root.(child).poepm.read.metric", to_relation_id: "rel:root.(child).project" },
+        { from_relation_id: "rel:root.(child).project", to_relation_id: "rel:root.pvs.read.t" },
+        { from_relation_id: "rel:root.(child).project", to_relation_id: "rel:root.bp.read.t" },
+        { from_relation_id: "rel:root.pvs.read.t", to_relation_id: "rel:root.project" },
+        { from_relation_id: "rel:root.bp.read.t", to_relation_id: "rel:root.project" },
+      ],
+      datasetIoReads: [{
+        direction: "READ",
+        read_occurrences: [{
+          relation_id: "rel:root.(child).poepm.read.metric",
+          occurrence_id: "occ:metric",
+        }],
+      }],
+    });
+    const result = emitFieldEvidenceForInput({
+      taskId: "shared-cte",
+      expression,
+      sourceField: field("demo.metric", "pv"),
+      inputField: { table: "demo.metric", column: "pv" },
+      expanded: {
+        field: field("demo.metric", "pv"),
+        materializationBridgeIds: [],
+        leafExpressionId: "expr:final",
+        leafRelationId: "rel:root.project",
+        pathHadAggregation: false,
+        subtypeHops: [],
+      },
+      indexes,
+    });
+    expect(result).toHaveLength(2);
+    expect(result.map((item) => item.sourceResolution.sourceReadOccurrenceId))
+      .toEqual(["occ:metric", "occ:metric"]);
+    expect(result.every((item) =>
+      item.sourceResolution.sourceReadOccurrenceStatus === "RESOLVED",
+    )).toBe(true);
+  });
+
   it("falls back through a complete routed setop while preserving outer identity and aggregation", () => {
     const outer = {
       expression_id: "expr:outer", relation_id: "rel:root.project", ordinal: 0,

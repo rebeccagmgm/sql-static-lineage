@@ -10,6 +10,7 @@ import { applySourceSemantics } from "../plans/source-semantics.ts";
 import type { PlanFacts } from "../plans/plan-contract.ts";
 import { maskWithInsertTargetForParser, sanitizeSqlForParser } from "../plans/parser-sql-input.ts";
 import { deriveOutputFieldBindings, type WriteOutputContext } from "./output-field-bindings.ts";
+import { qualifyBareTableName } from "../reconcile/shared/task-default-schema.ts";
 import { globalRelationId } from "./plan-occurrence-id.ts";
 import { globalizePlanScopeBindings } from "./plan-scope-bindings.ts";
 import {
@@ -258,6 +259,17 @@ function resolveDeclaredWriteTarget(task: GenericTaskProfile, target: string): s
 		if (defaultSchema) return `${defaultSchema}.${normalizedTarget}`;
 	}
 	return normalizedTarget;
+}
+
+function resolveBareReadTarget(task: GenericTaskProfile, logicalSourceId: string, table: string): string {
+	const normalized = normalizeName(table);
+	const defaultSchema = normalizeName(task.default_schema ?? "");
+	if (!normalized || !defaultSchema || !logicalSourceId.toLowerCase().startsWith("hive-"))
+		return normalized;
+	return qualifyBareTableName(normalized, {
+		schema: defaultSchema,
+		evidenceSources: ["TASK_NAME"],
+	});
 }
 
 function spanValid(span: unknown, text: string): span is SourceSpan {
@@ -721,6 +733,7 @@ function planRecords(
 	const relationIds = new Set(plan.relations.map((relation) => globalRelationId(task.task_id, statementIndex, relation.id)));
 
 	for (const table of plan.physical_inputs) {
+		const physicalDataset = resolveBareReadTarget(task, logicalSourceId, table);
 		const readOccurrences = planRelations
 			.filter((relation) => relation.type === "read" && relation.is_cte !== true && normalizeName(String(relation.table ?? "")) === normalizeName(table))
 			.map((relation) => ({
@@ -733,8 +746,8 @@ function planRecords(
 			task_id: task.task_id,
 			statement_id: statementId,
 			direction: "READ",
-			dataset_id: datasetId(logicalSourceId, table),
-			physical_dataset: normalizeName(table),
+			dataset_id: datasetId(logicalSourceId, physicalDataset),
+			physical_dataset: physicalDataset,
 			provenance: "SQL_PLAN",
 			resolution_status: "RESOLVED",
 			read_occurrences: readOccurrences,
@@ -1208,7 +1221,12 @@ export function validateBundle(bundleDir: string): string[] {
 		if (partitionColumns.length > 0 && fullyBound && write.partition_binding_status !== "COMPLETE") {
 			errors.push(`fully bound pack-declared partition write is not COMPLETE ${write.write_observation_id}`);
 		}
-		if (partitionColumns.length > 0 && !fullyBound && write.partition_binding_status === "COMPLETE") {
+		const schedulerPartitionProven = write.partition_mode === "STATIC" &&
+			JSON.stringify(assignmentFields) === JSON.stringify(partitionColumns) &&
+			Array.isArray(write.partition_assignments) && write.partition_assignments.every((assignment: JsonRecord) =>
+				assignment.mapping_method === "SCHEDULER_EXPLICIT_FIELD_VALUE" &&
+				(assignment.status === "CONFIRMED" || assignment.status === "RUNTIME_EXPRESSION"));
+		if (partitionColumns.length > 0 && !fullyBound && !schedulerPartitionProven && write.partition_binding_status === "COMPLETE") {
 			errors.push(`unbound pack-declared partition write is incorrectly COMPLETE ${write.write_observation_id}`);
 		}
 	}
@@ -1657,23 +1675,31 @@ function buildTaskBundle(
 		const fullyBound = producerCount > 0 && writeBindings.length === producerCount;
 		const boundStaticColumns = [...new Set(writeBindings.flatMap((binding) => binding.static_partition_columns).map(normalizeName))];
 		const boundDynamicColumns = [...new Set(writeBindings.flatMap((binding) => binding.dynamic_partition_columns ?? []).map(normalizeName))];
+		const targetSchemas = schemaRefs.filter(ref => ref.status === "SUCCESS" &&
+			normalizeName(String(ref.qualified_name)) === normalizeName(record.physical_dataset));
+		const sqlWrites = record.provenance === "SQL_PARSE" && writeContext
+			? extractSqlWrites(writeContext.rawSql).filter(write => sameTableReference(write.qualifiedName, record.physical_dataset))
+			: [];
+		const explicitNonPartitioned = record.partition_status === undefined && writeContext?.partitionStatus === undefined &&
+			targetSchemas.length === 1 && targetSchemas[0]!.physical_columns.length > 0 &&
+			targetSchemas[0]!.partition_columns.length === 0 && sqlWrites.length === 1 && sqlWrites[0]!.partitionMode === "NONE";
 		if (
 			record.write_kind !== PACK_DECLARED_QUERY_OUTPUT &&
 			writeContext?.partitionStatus === undefined &&
 			boundStaticColumns.length === 0 &&
-			boundDynamicColumns.length === 0
+			boundDynamicColumns.length === 0 && !explicitNonPartitioned
 		) continue;
 		let partitionStatus =
 			record.partition_status ??
 			writeContext?.partitionStatus ??
-			(boundStaticColumns.length > 0 || boundDynamicColumns.length > 0 ? "COMPLETE" : undefined);
+			(explicitNonPartitioned ? "NOT_PARTITIONED" : boundStaticColumns.length > 0 || boundDynamicColumns.length > 0 ? "COMPLETE" : undefined);
 		const declaredPartitionColumns = (
 			record.partition_columns ?? writeContext?.partitionColumns ?? []
 		).map(normalizeName);
 		const partitionColumns = declaredPartitionColumns.length > 0
 			? declaredPartitionColumns
 			: [...boundStaticColumns, ...boundDynamicColumns];
-		let partitionMode = record.partition_mode ?? writeContext?.partitionMode;
+		let partitionMode = record.partition_mode ?? writeContext?.partitionMode ?? (explicitNonPartitioned ? "NONE" : undefined);
 		let staticPartitionColumns = record.static_partition_columns;
 		let dynamicPartitionColumns = record.dynamic_partition_columns;
 		if (fullyBound) {
@@ -1700,6 +1726,16 @@ function buildTaskBundle(
 			partitionColumns.length > 0 &&
 			classifiedColumns.size === partitionColumns.length &&
 			partitionColumns.every((column) => classifiedColumns.has(column));
+		// Explicit scheduler partition evidence is independent of whether the
+		// business SELECT columns can be bound to the target schema.
+		const schedulerAssignments = record.partition_assignments ?? [];
+		const explicitSchedulerPartition = partitionMode === "STATIC" &&
+			partitionColumnsFullyClassified &&
+			schedulerAssignments.length === partitionColumns.length &&
+			partitionColumns.every(column => schedulerAssignments.some(assignment =>
+				normalizeName(assignment.field) === column &&
+				assignment.mapping_method === "SCHEDULER_EXPLICIT_FIELD_VALUE" &&
+				(assignment.status === "CONFIRMED" || assignment.status === "RUNTIME_EXPRESSION")));
 		if (
 			partitionStatus !== "CONFLICT" &&
 			!assignmentConflict &&
@@ -1710,10 +1746,35 @@ function buildTaskBundle(
 		if (partitionStatus === "CONFLICT" || assignmentConflict) partitionBindingStatus = "CONFLICT";
 		else if (partitionMode === "NONE" && partitionStatus === "NOT_PARTITIONED") {
 			partitionBindingStatus = "NOT_PARTITIONED";
-		} else if (fullyBound && partitionColumnsFullyClassified) partitionBindingStatus = "COMPLETE";
+		} else if ((fullyBound && partitionColumnsFullyClassified) || explicitSchedulerPartition) partitionBindingStatus = "COMPLETE";
 		else if (partitionStatus === "UNKNOWN" || partitionMode === "UNKNOWN") {
 			partitionBindingStatus = "UNKNOWN";
 		} else partitionBindingStatus = "INCOMPLETE";
+		// SQL writes must expose the same assignment contract as Pack-declared
+		// writes. A resolved output binding proves an ordinal, not its runtime value.
+		let partitionAssignments = record.partition_assignments;
+		if ((record.provenance === "SQL_PARSE" || record.write_kind === PACK_DECLARED_QUERY_OUTPUT) && !assignmentConflict &&
+			(!Array.isArray(partitionAssignments) || partitionAssignments.length === 0)) {
+			if (partitionMode === "NONE") partitionAssignments = [];
+			else if (partitionBindingStatus === "COMPLETE") {
+				partitionAssignments = partitionColumns.map(field => {
+					const matches = writeBindings.filter(binding => normalizeName(binding.target_field) === field);
+					const dynamic = (dynamicPartitionColumns ?? []).map(normalizeName).includes(field);
+					const sqlAssignment = sqlWrites.length === 1 ? sqlWrites[0]!.partition.find(part => normalizeName(part.field) === field) : undefined;
+					const provenDynamic = dynamic && matches.length === 1 && matches[0]!.binding_status === "RESOLVED";
+					const provenStatic = !dynamic && sqlAssignment !== undefined && sqlAssignment.valueStatus !== "UNKNOWN";
+					return {
+						field,
+						status: provenDynamic || (provenStatic && sqlAssignment!.valueStatus === "OBSERVED_RENDERED_VALUE")
+							? "CONFIRMED" as const : provenStatic ? "RUNTIME_EXPRESSION" as const : "UNKNOWN" as const,
+						mapping_method: provenDynamic ? "DYNAMIC_PARTITION_OUTPUT_ORDINAL" as const
+							: provenStatic ? "STATIC_SQL_ASSIGNMENT" as const : "UNKNOWN" as const,
+						evidence_refs: [...new Set([record.write_statement_id, ...matches.flatMap(binding => [binding.binding_id, binding.expression_id, ...binding.evidence_refs])].filter((ref): ref is string => typeof ref === "string"))].sort(),
+					};
+				});
+				if (partitionAssignments?.some(assignment => assignment.status === "UNKNOWN")) partitionBindingStatus = "INCOMPLETE";
+			}
+		}
 		datasetIo[index] = {
 			...record,
 			partition_status: partitionStatus,
@@ -1722,6 +1783,7 @@ function buildTaskBundle(
 			partition_mode: partitionMode ?? "UNKNOWN",
 			static_partition_columns: staticPartitionColumns,
 			dynamic_partition_columns: dynamicPartitionColumns,
+			...(partitionAssignments === undefined ? {} : { partition_assignments: partitionAssignments }),
 		};
 	}
 	const taskLocalMaterializations = deriveTaskLocalMaterializations(
@@ -2208,9 +2270,11 @@ function deriveTaskLocalMaterializations(
 	const defaultSchema = normalizeName(taskDefaultSchema ?? "");
 	const qualifyTaskTable = (value: unknown): string => {
 		const normalized = normalizeName(String(value ?? ""));
-		return normalized && defaultSchema && !normalized.includes(".")
-			? `${defaultSchema}.${normalized}`
-			: normalized;
+		if (!defaultSchema) return normalized;
+		return qualifyBareTableName(normalized, {
+			schema: defaultSchema,
+			evidenceSources: ["TASK_NAME"],
+		});
 	};
 	const statementIndexes = new Map(statements.map((statement) => [statement.statement_id, statement.statement_index]));
 	const writes = datasetIo.filter((record) =>

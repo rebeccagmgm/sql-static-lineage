@@ -401,7 +401,11 @@ describe("UNION_CONTINUATION_INDEX (WP-8.1)", () => {
     const index = JSON.parse(readFileSync(result.index, "utf8")) as {
       input: { taskProjections: Array<{ schemaVersion: string }> };
     };
-    expect(index.input.taskProjections.every((task) => task.schemaVersion === "1.3.0")).toBe(true);
+    expect(
+      index.input.taskProjections.every(
+        (task) => task.schemaVersion === "1.3.0",
+      ),
+    ).toBe(true);
   });
 
   it("rejects a non-1.2.0 projected input before creating output", () => {

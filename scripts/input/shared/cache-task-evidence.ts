@@ -773,8 +773,9 @@ function manualTaskIdsFor(cacheRoot: string): ReadonlySet<string> {
 }
 
 export function assembleCacheTaskEvidence(
-  taskId: string,
-  cacheRoot: string,
+	taskId: string,
+	cacheRoot: string,
+	options: { readonly includeManual?: boolean } = {},
 ): CacheTaskEvidenceResult {
   const artifacts: string[] = [];
   const horaeRead = readHoraeTaskTypeCache(taskId, cacheRoot);
@@ -798,11 +799,14 @@ export function assembleCacheTaskEvidence(
   const status =
     firstString(schedule, ["status", "scheduleStatus"]) ??
     firstString(horae, ["status", "scheduleStatus", "taskStatus"]);
-  if (
-    isManualScheduleCycle(cycle) ||
-    isFrozenScheduleStatus(status) ||
-    manualTaskIdsFor(cacheRoot).has(taskId)
-  )
+	if (
+		!options.includeManual &&
+		(
+			isManualScheduleCycle(cycle) ||
+			isFrozenScheduleStatus(status) ||
+			manualTaskIdsFor(cacheRoot).has(taskId)
+		)
+	)
     return {
       kind: "MANUAL_OR_FROZEN",
       scheduleCycle: cycle,

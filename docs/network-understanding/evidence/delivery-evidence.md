@@ -3,6 +3,7 @@
 本页只汇集来源定位。业务说明见[交付主线](../chapters/15-delivery-and-controls.md)，有范围记录不等于已解释业务内部。补充SQL保留独立采集时间，不替换固定发布。
 
 <a id="task-11175"></a>
+
 ## 11175
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -17,6 +18,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-13378"></a>
+
 ## 13378
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -31,6 +33,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-20056"></a>
+
 ## 20056
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -40,10 +43,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/20056/versions/672cd490312d699329781bd57a7c600bcb8065097a4a2ebf18866be9664a0cfa.evidence-v3.json)；SHA256：`96ebdca24b04590e5e2d1f5668319fc1d27a9deb58215118412d2d8a9ee0cea0`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-35045"></a>
+
 ## 35045
 
 类别：runScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -53,10 +56,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/35045/versions/2501f920313508caed63b80ae7027cd817cd895d7b319bbb9d9e0a8a3521112e.evidence-v3.json)；SHA256：`d9e039b08d9bfe8e25ac2c90483f02a343f66551e5e78e9b6c37cf47834f57bd`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-37460"></a>
+
 ## 37460
 
 类别：runScript-2.0；记录状态：NO_SCRIPT_EVIDENCE。
@@ -66,10 +69,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/37460/versions/b5f63181deb3575792d80cabcf5cf042d7cad1d2aed3fa4c24cae1a26f4e016f.evidence-v3.json)；SHA256：`f489df6250293aeee99f8bb92935390630a66a854effefb1ccff6ccc5ac96afd`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-43993"></a>
+
 ## 43993
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -84,6 +87,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-43995"></a>
+
 ## 43995
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -98,6 +102,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-43996"></a>
+
 ## 43996
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -112,6 +117,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-44496"></a>
+
 ## 44496
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -121,10 +127,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/44496/versions/d6043c31116268e363e1a5dffc89c3a3c8abff206e824908d931e05850830f2b.evidence-v3.json)；SHA256：`8b312d41468ad7069b5bf526031c4b91932417dcf8d0dd15c450c0560ed92644`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-45199"></a>
+
 ## 45199
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -139,6 +145,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-45828"></a>
+
 ## 45828
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -153,6 +160,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-46366"></a>
+
 ## 46366
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -162,10 +170,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/46366/versions/e0eec27c82931f8b455c465adff9e5d13d4f4d3610ef2f7cea6299d9b1c59ea0.evidence-v3.json)；SHA256：`e0b518b07d33824d6f024420624069f981ea32a1ffa92d2a9be39f56bfd48303`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-50615"></a>
+
 ## 50615
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -180,6 +188,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-51905"></a>
+
 ## 51905
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -189,10 +198,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/51905/versions/e119ee54c4b908cb0ba8d505ef31e45ad110d74a8c70b856926c4cec7ae67876.evidence-v3.json)；SHA256：`a80cbdbc82ee40cc47360b139f688fff13ade1ac749d62f82f49673bf09d31e3`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-73878"></a>
+
 ## 73878
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -207,6 +216,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-76003"></a>
+
 ## 76003
 
 类别：runScript-2.0；记录状态：NO_SCRIPT_EVIDENCE。
@@ -216,10 +226,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/76003/versions/384c09e14dd8b8601e09853b152ba367082a6aefcc2e89b00a6381f4399064a4.evidence-v3.json)；SHA256：`c6103b862ef0830137dd87b493f6fbff45f034ed97fa1574e62d380fc50fd804`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-80234"></a>
+
 ## 80234
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -229,10 +239,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/80234/versions/ee27593009b82f18f8be35eb7cd8188c7e169b2ff129e58d5d34383126f9ae53.evidence-v3.json)；SHA256：`3093b3a864e33efdd8b4e13d914dc4a98b9d054bd1266120d04792ad196593ce`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-87053"></a>
+
 ## 87053
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -242,10 +252,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/87053/versions/0e0c4d1fce67f4d1e2e9fbd0b243e54cc5a12900c8bf44cb4e8ba18f61039eb9.evidence-v3.json)；SHA256：`b48b2498d3a676e290de775aed46e52cf298896988d4761ed46c5ff240a6c74b`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-87956"></a>
+
 ## 87956
 
 类别：runScript-2.0；记录状态：NO_SCRIPT_EVIDENCE。
@@ -255,10 +265,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/87956/versions/8723ebcb406e777e2a6d157212c5c12095c1c9f1256f08641a6c9bb58a796955.evidence-v3.json)；SHA256：`a7a6574b1aa799a254d096436bb010ec2b6f7d0cf8812314126f97472939c5d2`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-88905"></a>
+
 ## 88905
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -268,10 +278,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/88905/versions/d82365bf27ed732e000276755c02c0c3e9eeef424b83f556b0b3512a6ef0e683.evidence-v3.json)；SHA256：`da86c6b4c78b422cfb55d6495f40db08d70ea4d4f4fee17fc12148b8d2c326b9`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-89328"></a>
+
 ## 89328
 
 类别：runScript-2.0；记录状态：NO_SCRIPT_EVIDENCE。
@@ -281,10 +291,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/89328/versions/93842bbd99ae42bfdf0d7e1b322f353a6aecd21abd40da8359a0990e58e16329.evidence-v3.json)；SHA256：`b456156f4d07fd1bbdcc57cd9ef30e2277c11cd27f4f7ecc69bc7768814f9df5`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-102309"></a>
+
 ## 102309
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -294,10 +304,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/102309/versions/e5e9151deeecc052ac25593fcbf9741a31aca9a991ccc9a53cb785e862df01bf.evidence-v3.json)；SHA256：`0f451ce143bb2c02fc61d5b778eddbd44223f5ee8125c675434403c9d1b55fc5`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-102310"></a>
+
 ## 102310
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -307,10 +317,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/102310/versions/da5436419c4f481b32b5dc0679d4df68d56a6bdc2ab4c00efe23cf551cc62c64.evidence-v3.json)；SHA256：`810df76330a2336ea9bd50f304f6321d2d9d7e487297e137be72c0a42569f74b`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-102313"></a>
+
 ## 102313
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -320,10 +330,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/102313/versions/13a558697d199be954b3b267f227f1504a6e14627188042bca822c071ec304d3.evidence-v3.json)；SHA256：`ef4972ca20345e3b137b2fb9b945cd408b1457c34d25fda0a1e17ff18f1e9267`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-104440"></a>
+
 ## 104440
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -338,6 +348,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-109767"></a>
+
 ## 109767
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -352,6 +363,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-109768"></a>
+
 ## 109768
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -366,6 +378,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-110492"></a>
+
 ## 110492
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -380,6 +393,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-113380"></a>
+
 ## 113380
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -394,6 +408,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-134808"></a>
+
 ## 134808
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -408,6 +423,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-138259"></a>
+
 ## 138259
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -422,6 +438,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-139809"></a>
+
 ## 139809
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -431,10 +448,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/139809/versions/b2b35037cb0b58c944facd186e8929210704fb0d46d14362507f624d039befc2.evidence-v3.json)；SHA256：`2f644537a1320f91ad6094a2fbd2ad1557fd1a16a6146b40a86a4c1e40d3af20`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-139813"></a>
+
 ## 139813
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -444,10 +461,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/139813/versions/d522714eb3741bf94763e9c2e481c2a7607565f38f025bf956a17a0159f933b7.evidence-v3.json)；SHA256：`1c6c1dcfad4c36a9b5904e337f036a548b1f5ed3c926c8634c66a746e177c535`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-139814"></a>
+
 ## 139814
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -457,10 +474,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/139814/versions/83b24a909965331bae3019e9f06c7aca4f74324ca01b0e8de0a6851b94345c26.evidence-v3.json)；SHA256：`f91a42657c8c43e31452889e4919695f4483ff635f4d69eed81e7296f09292c1`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-139953"></a>
+
 ## 139953
 
 类别：RdpTask；记录状态：NO_SCRIPT_EVIDENCE。
@@ -470,10 +487,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/139953/versions/9a923a81ee3b5bc667ba5313083f97afc63d8ff7d5707e750742cda914ec4536.evidence-v3.json)；SHA256：`39382d8924fa2b08a67ad2b2b21ae412dc2ebf8c0395cc3769ae363a564196a5`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-139957"></a>
+
 ## 139957
 
 类别：RdpTask；记录状态：NO_SCRIPT_EVIDENCE。
@@ -483,10 +500,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/139957/versions/7f9357e5bc8b4beb4dbb04522e2c3e3fc60b154e8086285c39385f16824cef0d.evidence-v3.json)；SHA256：`47158f17695771e25e7b292d1f70768e630399e485c3b9bc5a47cace332e7ca9`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-140202"></a>
+
 ## 140202
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -501,6 +518,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-144029"></a>
+
 ## 144029
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -515,6 +533,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-144442"></a>
+
 ## 144442
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -529,6 +548,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-144742"></a>
+
 ## 144742
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -543,6 +563,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-144743"></a>
+
 ## 144743
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -557,6 +578,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-145185"></a>
+
 ## 145185
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -566,10 +588,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/145185/versions/8c6642c9f3b723754d18539b0f75a787289ac3a7f643cf57c69e6c7891bbce65.evidence-v3.json)；SHA256：`95f6a8b8550141b90fa195f595a5565d1eab818d9b8dbbece7a0a515afcab4b6`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-147871"></a>
+
 ## 147871
 
 类别：HttpTask；记录状态：NO_SCRIPT_EVIDENCE。
@@ -579,10 +601,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/147871/versions/d27ac2e02ba5f7d04fd398ce658683046a62864afcc96dd09e3366c6893a028f.evidence-v3.json)；SHA256：`bde7cbbdee5cfa09eb05b43efc7b5170360debeff7ad1fbff944f8053c986d58`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-149269"></a>
+
 ## 149269
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -597,6 +619,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-149527"></a>
+
 ## 149527
 
 类别：checkHdfsFlag；记录状态：NO_SCRIPT_EVIDENCE。
@@ -606,10 +629,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/149527/versions/0e7210d4bb009d3bd8637ff885d0987f543646ad90f29ed2971fa6f6138869fd.evidence-v3.json)；SHA256：`b8b7b869e061b0fbbc8815230736e1e4ef09fb5868098265bc59deb2fc5e8266`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-152833"></a>
+
 ## 152833
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -624,6 +647,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-156254"></a>
+
 ## 156254
 
 类别：exeSql；记录状态：LOCATED。
@@ -633,10 +657,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/156254/versions/61ce1ee2f31104683b527a98374dcd3acc98abc0a2f415b79cf0bc2f0af35f19.evidence-v3.json)；SHA256：`2a3e4069874a73d1966b95b695a6e9c9f5c328758429d1758abd8bc0294378ee`。
 
-
 边界：本交付控制页面未宣称核读这项业务计算。
 
 <a id="task-159116"></a>
+
 ## 159116
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -651,6 +675,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-160288"></a>
+
 ## 160288
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -665,6 +690,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-160292"></a>
+
 ## 160292
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -679,6 +705,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-161746"></a>
+
 ## 161746
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -693,6 +720,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-161747"></a>
+
 ## 161747
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -707,6 +735,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-161758"></a>
+
 ## 161758
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -721,6 +750,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-162563"></a>
+
 ## 162563
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -735,6 +765,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-163208"></a>
+
 ## 163208
 
 类别：exeSql；记录状态：CALL_BOUNDARY_EXPLAINED。
@@ -749,6 +780,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。 只有过程入口；过程体、内部读写与业务规则缺失。
 
 <a id="task-164991"></a>
+
 ## 164991
 
 类别：exeSql；记录状态：LOCATED。
@@ -758,10 +790,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/164991/versions/af2b0829b0727d860bd151ba906e629d6fcb52f93c1f20a606b0b0da8e2ecfbf.evidence-v3.json)；SHA256：`30d923b36974d9d70f0c4354ce1a481047a09fba5f8bd658b627a5e810a21fe2`。
 
-
 边界：本交付控制页面未宣称核读这项业务计算。
 
 <a id="task-166545"></a>
+
 ## 166545
 
 类别：exeSql；记录状态：LOCATED。
@@ -771,10 +803,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/166545/versions/a52579b2beece95633e04a5b1ab39c9e7dfba6cb4fca6233700d1eeb913744bc.evidence-v3.json)；SHA256：`a9ffe46d556c203884e57b10486ce85497b3785d13c830d8d02a52653ac44f7f`。
 
-
 边界：本交付控制页面未宣称核读这项业务计算。
 
 <a id="task-170568"></a>
+
 ## 170568
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -789,6 +821,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-172920"></a>
+
 ## 172920
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -803,6 +836,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-175178"></a>
+
 ## 175178
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -817,6 +851,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-181935"></a>
+
 ## 181935
 
 类别：runScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -826,10 +861,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/181935/versions/01ef39b24f204116115f85739834760532910280a8a2c78c2d89bd90d72a3da5.evidence-v3.json)；SHA256：`d6df4cf71519b9522267b8f34a11a2fe705c81ba8af68a951de52c070f80d4e7`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-181937"></a>
+
 ## 181937
 
 类别：runScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -839,10 +874,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/181937/versions/82e684e651daf6c933707b8606e531227ffbb433c180401a96084ec0696d4cb0.evidence-v3.json)；SHA256：`183eb6c25e9097c9966a5dc2a590cc17ca6b67f1ba31b45db012ab1f5ed2eb71`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-181938"></a>
+
 ## 181938
 
 类别：runScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -852,10 +887,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/181938/versions/1d90993ef429cdd6c28cc99e14cff4f15d170548f7ac149d569c801458bdf61d.evidence-v3.json)；SHA256：`8f23691346ef8ff2c9a88e882d668415809241c4d1018d654f30162b78e1f037`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-185524"></a>
+
 ## 185524
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -865,10 +900,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/185524/versions/a807cd5b55eb1e046bb8a9ca53fc1c7fb952268b164690a26b17f2788dd9185d.evidence-v3.json)；SHA256：`ba77a0b3f47ee2c124bbebf4498fe6096a544fdff93df6d78682be29e51a8a3f`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-190543"></a>
+
 ## 190543
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -883,6 +918,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-190593"></a>
+
 ## 190593
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -897,6 +933,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-191236"></a>
+
 ## 191236
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -911,6 +948,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-192158"></a>
+
 ## 192158
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -925,6 +963,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-192716"></a>
+
 ## 192716
 
 类别：checkHdfsFlag；记录状态：NO_SCRIPT_EVIDENCE。
@@ -934,10 +973,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/192716/versions/30dbde0d7f6abc6f1d67e8e6699f5b1e1f9d5a60bb7403a8a50c329acfab3c8c.evidence-v3.json)；SHA256：`9078c233464a18a88498c896b0297bf6f6ff3c6b26b49dae2d93fb113264f752`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-194623"></a>
+
 ## 194623
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -952,6 +991,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-194624"></a>
+
 ## 194624
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -966,6 +1006,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-194653"></a>
+
 ## 194653
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -980,6 +1021,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-194654"></a>
+
 ## 194654
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -994,6 +1036,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-194656"></a>
+
 ## 194656
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1008,6 +1051,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-196204"></a>
+
 ## 196204
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1022,6 +1066,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-196206"></a>
+
 ## 196206
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1036,6 +1081,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-196209"></a>
+
 ## 196209
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1050,6 +1096,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-196213"></a>
+
 ## 196213
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1064,6 +1111,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-196214"></a>
+
 ## 196214
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1078,6 +1126,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-198986"></a>
+
 ## 198986
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1092,6 +1141,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-199168"></a>
+
 ## 199168
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1106,6 +1156,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202682"></a>
+
 ## 202682
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1120,6 +1171,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202686"></a>
+
 ## 202686
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1134,6 +1186,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202700"></a>
+
 ## 202700
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1148,6 +1201,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202704"></a>
+
 ## 202704
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1162,6 +1216,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202705"></a>
+
 ## 202705
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1176,6 +1231,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202707"></a>
+
 ## 202707
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1190,6 +1246,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-202709"></a>
+
 ## 202709
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1204,6 +1261,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-203181"></a>
+
 ## 203181
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1218,6 +1276,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-203966"></a>
+
 ## 203966
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1232,6 +1291,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205110"></a>
+
 ## 205110
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1246,6 +1306,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205112"></a>
+
 ## 205112
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1260,6 +1321,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205114"></a>
+
 ## 205114
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1274,6 +1336,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205120"></a>
+
 ## 205120
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1288,6 +1351,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205121"></a>
+
 ## 205121
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1302,6 +1366,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205143"></a>
+
 ## 205143
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1316,6 +1381,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205145"></a>
+
 ## 205145
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1330,6 +1396,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205173"></a>
+
 ## 205173
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1344,6 +1411,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205181"></a>
+
 ## 205181
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1358,6 +1426,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205182"></a>
+
 ## 205182
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1372,6 +1441,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205541"></a>
+
 ## 205541
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1386,6 +1456,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205543"></a>
+
 ## 205543
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1400,6 +1471,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205726"></a>
+
 ## 205726
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1414,6 +1486,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205727"></a>
+
 ## 205727
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1428,6 +1501,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205758"></a>
+
 ## 205758
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1442,6 +1516,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205767"></a>
+
 ## 205767
 
 类别：checkHdfsFlag；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1451,10 +1526,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/205767/versions/68fa414378ea6d0bef43989d2ca9a22c063335725f402cae22f0db58fe6e7e4b.evidence-v3.json)；SHA256：`ab460991ee717875d007a94d2316372224c7b7c9854b9b1be49687f63427f860`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-205772"></a>
+
 ## 205772
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1469,6 +1544,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205940"></a>
+
 ## 205940
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1483,6 +1559,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205942"></a>
+
 ## 205942
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1497,6 +1574,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205956"></a>
+
 ## 205956
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1511,6 +1589,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205957"></a>
+
 ## 205957
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1525,6 +1604,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205960"></a>
+
 ## 205960
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1539,6 +1619,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205962"></a>
+
 ## 205962
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1553,6 +1634,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205964"></a>
+
 ## 205964
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1567,6 +1649,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-205972"></a>
+
 ## 205972
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1581,6 +1664,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-206823"></a>
+
 ## 206823
 
 类别：sparkScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1590,10 +1674,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/206823/versions/a4b9f64f0ed0b4133f824bac5b07ba9c1eab07c895c3f7f50602cfbc2d8fa560.evidence-v3.json)；SHA256：`41c8d8460eeb251d4c35f7cefbfe0f776a382fdb1ac3bd15b58e207802df783e`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-206827"></a>
+
 ## 206827
 
 类别：sparkScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1603,10 +1687,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/206827/versions/2c37754ad0eebeb27b298687066d49880254eeeb55156cf5394a4b1d1fb71047.evidence-v3.json)；SHA256：`52349e02808cbb234ae40070ecba0ca2e83c525e85fa26c6304946e01423e022`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-207029"></a>
+
 ## 207029
 
 类别：sparkScript；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1616,10 +1700,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/207029/versions/91bdce1d1e609221011b78d3cc4694f2a79a9ac046f6ae91253c799c257c649e.evidence-v3.json)；SHA256：`ff1ae5d2ae53e337d840fc99862736fc40d1e8509e8d862fac8611a8fa1a2e64`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-208479"></a>
+
 ## 208479
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1629,10 +1713,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/208479/versions/681eaac22bddb207628f2bb1d647a4044e73694d210bf6ae4cc4b8f3218bdf42.evidence-v3.json)；SHA256：`0c96192e5831d377cc8934bd4166c793db5c6bf50fbaa8901303e74cc8089007`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-209144"></a>
+
 ## 209144
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1647,6 +1731,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-209145"></a>
+
 ## 209145
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1661,6 +1746,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-209504"></a>
+
 ## 209504
 
 类别：checkAlert；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1675,6 +1761,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-210689"></a>
+
 ## 210689
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1684,10 +1771,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/210689/versions/78ea8f54ed334d0cb5adc2059215c2f29a06207928de942be264dbfffa556059.evidence-v3.json)；SHA256：`e018d0701b2fa4e88305771cedef6d1d6ab0d5ac9c898e10a808a3991c7eb258`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-211268"></a>
+
 ## 211268
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1702,6 +1789,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-211424"></a>
+
 ## 211424
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1716,6 +1804,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-212278"></a>
+
 ## 212278
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1725,10 +1814,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/212278/versions/2e04f5364e209133be1681be8bd9dd9099808e615e961f473e7d9daf0c03652f.evidence-v3.json)；SHA256：`28f410e903517955f1a58ea24e1f15d999a6eafd401481dc24b6ca6faa074343`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-214118"></a>
+
 ## 214118
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1743,6 +1832,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-214126"></a>
+
 ## 214126
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1757,6 +1847,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-214134"></a>
+
 ## 214134
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1771,6 +1862,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-223756"></a>
+
 ## 223756
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1785,6 +1877,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-223985"></a>
+
 ## 223985
 
 类别：checkAlert；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1799,6 +1892,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-224938"></a>
+
 ## 224938
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1813,6 +1907,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-225247"></a>
+
 ## 225247
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1827,6 +1922,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-225621"></a>
+
 ## 225621
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1841,6 +1937,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-225623"></a>
+
 ## 225623
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1855,6 +1952,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-225625"></a>
+
 ## 225625
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1869,6 +1967,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-225628"></a>
+
 ## 225628
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1883,6 +1982,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-227142"></a>
+
 ## 227142
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1897,6 +1997,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-227450"></a>
+
 ## 227450
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -1911,6 +2012,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-229291"></a>
+
 ## 229291
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1920,10 +2022,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229291/versions/71d337901e219290563cc84f520cfbc8e4fd5d8829875c6012cda08c16cc1263.evidence-v3.json)；SHA256：`6d9be103406df949c078df9303c94bd3b942c5771b3f563f7c3f910854b9b7f5`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229403"></a>
+
 ## 229403
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1933,10 +2035,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229403/versions/4b5d1e10c61d5bfaca929d42b85f054f3f9531b62a1dd8169a4805c433e54a1e.evidence-v3.json)；SHA256：`c1e3e8139e5ac4a4537d03925898262c4d70c9a2dc8587167b989b2dfebbdcca`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229409"></a>
+
 ## 229409
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1946,10 +2048,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229409/versions/2e74c0cd9897efe3fbab3518c8a1d2e672f762535ea53351721f4d8c79edb033.evidence-v3.json)；SHA256：`f5ddc1999cf7c80effbd97e7adc6fbb4f2658b324aaa2e893a6a94c25bde034f`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229413"></a>
+
 ## 229413
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1959,10 +2061,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229413/versions/bb660a7bcd8148d733d3611bc0a7b1f0c4b3aea391d2d904788572602f9d35bf.evidence-v3.json)；SHA256：`dfef2faa348bcccc4642de2595c0936f9cfc45a01913c5001c4057725b94ce78`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229419"></a>
+
 ## 229419
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1972,10 +2074,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229419/versions/41c265b68dbdeff562bbb0cb8c18948693889ef977ae54b6386faa0510412537.evidence-v3.json)；SHA256：`f3682710123a5099f635463ff8099cb7d847d7a48763bade2d66199a199526b1`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229424"></a>
+
 ## 229424
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1985,10 +2087,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229424/versions/fa825a9c87b72ba660fa5cb431de2d9e53f85263e0c543f90e916c897cab05b7.evidence-v3.json)；SHA256：`baff4853f3b2680c4fbf0715e9316f4fff256c014f851d9d145c49e255389a9c`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229435"></a>
+
 ## 229435
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -1998,10 +2100,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229435/versions/7027a79ca12caf337048fed4b889969fd6d8724a14bb8814bdfd2287819cc903.evidence-v3.json)；SHA256：`3b805ba680a92d78f542f15dc450c431bc900cb2d93c1f3931e64adcb571c515`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229437"></a>
+
 ## 229437
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2011,10 +2113,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229437/versions/3f258a1269aa270b8418f243abc3179d5b90078cbecf091d299d3ec07400f6e0.evidence-v3.json)；SHA256：`cd50a99e1c561eeadcce6b71fbea0cef3fa526585409e376e88f3f082b8f735c`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229439"></a>
+
 ## 229439
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2024,10 +2126,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229439/versions/8b5646b72fc7ea8231b5b5cdbae1bee28585ae8142f5ad9a2430b16496be2b53.evidence-v3.json)；SHA256：`03cb7094c74bac8f912839d2b64c2a07bd122e00491117ba44a299184d953143`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229441"></a>
+
 ## 229441
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2037,10 +2139,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229441/versions/aefa4a0c7adc0d903f25726ec35ee0f91791259118752400989ef62f4f119387.evidence-v3.json)；SHA256：`2ed11c9eca47fded20f1192246022275a2cecd61517aa97a56e1a4250e9f4aa7`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229444"></a>
+
 ## 229444
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2050,10 +2152,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229444/versions/da72ff693148c295fd2e7a9a2d9951f6763f437847fc8bd7fe5d6e64a891f4a4.evidence-v3.json)；SHA256：`3cebb8635062340dad143b7934bab83635229b7d753899757e50d8f405fb192d`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229476"></a>
+
 ## 229476
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2063,10 +2165,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229476/versions/bb93ed15e3178bfb6208f1a1f0c33f34141a9cd8346684e3652f45f02b4a8b1b.evidence-v3.json)；SHA256：`df4aa51080cbd0bf58669db4fad807e5e6a0239c08ed09a15ca4f9b1f0080cab`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229477"></a>
+
 ## 229477
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2076,10 +2178,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229477/versions/df80d8a84c8641c84fd82651b3f8a2981663dcd26b31dad6c0d531c3f3e50d61.evidence-v3.json)；SHA256：`ba8e79f28de84c4b4179ea81d9cdf4868f375a46200898c5838645c4c7c26555`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229488"></a>
+
 ## 229488
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2089,10 +2191,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229488/versions/d4a8d9f9e48383cc0d6d8ab87ea3cccc156e7c005ab85e7c2cd711e716a2d361.evidence-v3.json)；SHA256：`280b81d43270d6796d7255f68787795ce629174d81e528f6e9a56b9fb5203326`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229489"></a>
+
 ## 229489
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2102,10 +2204,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229489/versions/059c465fd7c4c33200d21055270077e92ca2125283c89acb08d8d38fb00995a4.evidence-v3.json)；SHA256：`9a8aec40e523e134509f5a0292dc32e420b2e4e25367d112269c8d17b925a997`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229490"></a>
+
 ## 229490
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2115,10 +2217,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229490/versions/2bd1b188c326d2a5139294d195c09d2f77689b2f84e657d9e46bfbc2cabda0a7.evidence-v3.json)；SHA256：`f1a69319b61cb47c0a5946653d322e9d0a8878c180d867245ad4d362dfab4c65`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229491"></a>
+
 ## 229491
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2128,10 +2230,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229491/versions/34491b7a49de6929828d2eb291fbec9461e8f037b436d7bb054069e2a0388e76.evidence-v3.json)；SHA256：`026e1d035e242d9306c02efe87bf5fe89faffc0a71d708ea08c125d2d83f7df0`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229509"></a>
+
 ## 229509
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2141,10 +2243,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229509/versions/e3d8a296f5491a1294d1a1261887d895e2c072fbe2d5126fb60730006d6859e2.evidence-v3.json)；SHA256：`2728793139ebafa0b182f8f923a91969c93c3ce42ea84ed90cfa9501d53f81e4`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229511"></a>
+
 ## 229511
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2154,10 +2256,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229511/versions/ad210d5783529e131f9c0c612bedd02cbfba74f7acec21168af4bb5ad41800bc.evidence-v3.json)；SHA256：`8ac2c0f9b70038426929c2cc688dff6c63b9a7795064b5f4f543fd1d91dad757`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229512"></a>
+
 ## 229512
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2167,10 +2269,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229512/versions/5c2ae5470882325c6e34e60e311d9bb3e4a938a1504bdab075ae02ec59b89099.evidence-v3.json)；SHA256：`22a04747a29857c669349485d5ff2d1b9d4983247cf596b1b6f9990d4f2de021`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229549"></a>
+
 ## 229549
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2180,10 +2282,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229549/versions/1f42211753c56b87547e437c51e7fd6997db1fbd0cfb8572a5c55ef91665ae30.evidence-v3.json)；SHA256：`c20ef792f29afa4f4aaa12a7bbc7d0bfb9befd106ea957397422aafcbea5c07f`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229550"></a>
+
 ## 229550
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2193,10 +2295,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229550/versions/7922da174da74c73cd8c0c911b63790ec915df1af6e3c93146e8d39367f87919.evidence-v3.json)；SHA256：`ae13f6e0af249be3a8df99cdc752cec616ea78616ddf976a3c843c03cb9fa374`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229559"></a>
+
 ## 229559
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2206,10 +2308,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229559/versions/19a178068d13c592f47367ed1c36509f489f1e85d51ca9bec8d4a35938275268.evidence-v3.json)；SHA256：`3933e5edf11ee3857d2f505c453d21c33cc1e7122b395919b27eabf64cee1a86`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229561"></a>
+
 ## 229561
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -2224,6 +2326,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-229562"></a>
+
 ## 229562
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2233,10 +2336,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229562/versions/263221aa8ddd306148715047184deeae4821d05ce08cf62d663d82c289dd145a.evidence-v3.json)；SHA256：`a63fd74ce6411feb6f08b848e9fb2a79a8f11e5eeb76e04c96ad6bd3d6e02f1f`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229575"></a>
+
 ## 229575
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2246,10 +2349,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229575/versions/ef050acd014b358e1081c212066a9d605554116a6e33badd75228545e6e23430.evidence-v3.json)；SHA256：`3ee0f2bee1da231488718d477c30393f32c03958834b8f70f0243e26f536de9a`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229576"></a>
+
 ## 229576
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2259,10 +2362,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229576/versions/7c5678c9b6db7023cf7b81a6b4505df50f9e8fe0527925b3bfa58fadc23bfeae.evidence-v3.json)；SHA256：`7b4caafdb438b7e0a164863c20b072dd73595016cac75bd724445489571fc777`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229606"></a>
+
 ## 229606
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2272,10 +2375,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229606/versions/162275c71ea0a186c6bafdcc0cdee27acc228089abc67999777ce84d6bd22706.evidence-v3.json)；SHA256：`8eb8f7f6e8ce4a4dd4eaf1971397c8dca13724479622a0a4df58ac66437bfc4a`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229612"></a>
+
 ## 229612
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2285,10 +2388,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229612/versions/d85e3eb05b6d3d6f68422c41e642586e808a4656e3bd648ae7226e67305aa3eb.evidence-v3.json)；SHA256：`b00bc949ad7746a74365533e69cea7462de3ccfc48959c070e9e3fe8259b8d1f`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229636"></a>
+
 ## 229636
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2298,10 +2401,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229636/versions/fba036f9044b5e8c386c14f303c64b07dbaf60cca910329d6ddab9d6d94f0c85.evidence-v3.json)；SHA256：`741e6b4e579db884a9974fc59614527c34ee5eb6a862814979d5f973453cf318`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-229637"></a>
+
 ## 229637
 
 类别：exeSql；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2311,10 +2414,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/229637/versions/aaa0b80a37f7f6d0415646389091a3806919d8a551f95d9dcc44ca63bc5efa41.evidence-v3.json)；SHA256：`7545edf867639663f757b8e876d906f0a5d3ca3f92108be306376c2aa6043f57`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-234640"></a>
+
 ## 234640
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2324,10 +2427,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/234640/versions/72cd0abeba95a5960f1cef597e122b9e8b20479cc351d6f377fa42653e3004da.evidence-v3.json)；SHA256：`9623639594d897bf507a370c7eb69e1ca1e6e76b9599ea3109c26971c0e26540`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-234824"></a>
+
 ## 234824
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2337,10 +2440,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/234824/versions/9d29f845c71c332c3c95d7b598281cdb0ed1917144e2dc7a8bb07a28f5c6a5ba.evidence-v3.json)；SHA256：`f5ab7fa61855b9b4bd4dd3aae48b15aaca8161fbc9d5a2a3b31e1608b00e4021`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-234826"></a>
+
 ## 234826
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2350,10 +2453,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/234826/versions/44173c4f22f101aaaae863ec742166d874e9f220454c1819026199cd72511ab3.evidence-v3.json)；SHA256：`3cf563f0b41c46f21f6830bf45c6d563037b0c68fcee908640aaab68d13526e8`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-235569"></a>
+
 ## 235569
 
 类别：hiveEmail；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2363,10 +2466,10 @@
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/235569/versions/4fb914c16ccbf7137a23bb0c55969a363e173e7c8411e64d8c344e90da864b69.evidence-v3.json)；SHA256：`6ce0638f55d0bc6c94342fac6c34ee52864a3435d380d83de3ba2523b11519a5`。
 
-
 边界：当前可核材料未提供处理正文、配置或过程实现。
 
 <a id="task-241339"></a>
+
 ## 241339
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -2381,6 +2484,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-243618"></a>
+
 ## 243618
 
 类别：exeSql；记录状态：FAMILY_RULES_EXPLAINED。
@@ -2395,6 +2499,7 @@
 边界：静态SQL不证明实际运行、到达或业务验收。
 
 <a id="task-243754"></a>
+
 ## 243754
 
 类别：checkdbflag；记录状态：NO_SCRIPT_EVIDENCE。
@@ -2403,6 +2508,5 @@
 固定发布未提供脚本正文；可见名称和任务类型不能证明内部规则或实际执行。
 
 固定发布证据：[JSON](../../../../sql-static-lineage-data/task-projections/tasks/243754/versions/142c0750b29b98d38d151785c546e593e43eae7f68c98cd15ab17efaee7c6a6c.evidence-v3.json)；SHA256：`75a018f657ab5ab596f358d1eb7d58b0c642ad7f7ff32f8e81c43a92e1d400e3`。
-
 
 边界：当前可核材料未提供处理正文、配置或过程实现。

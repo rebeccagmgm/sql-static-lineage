@@ -9,6 +9,9 @@ const taskName = (value: unknown): string | undefined =>
 interface CachedTaskName {
   expiresAt: number;
   name?: string;
+  owner?: string;
+  topic?: string;
+  topicDescription?: string;
 }
 
 /**
@@ -57,6 +60,25 @@ export class SchedulerTaskNameResolver {
   }
 
   public resolve(taskIds: readonly string[]): Record<string, string> {
+    return this.resolveValues(taskIds, "name");
+  }
+
+  public resolveTopics(taskIds: readonly string[]): Record<string, string> {
+    return this.resolveValues(taskIds, "topic");
+  }
+
+  public resolveTopicDescriptions(taskIds: readonly string[]): Record<string, string> {
+    return this.resolveValues(taskIds, "topicDescription");
+  }
+
+  public resolveOwners(taskIds: readonly string[]): Record<string, string> {
+    return this.resolveValues(taskIds, "owner");
+  }
+
+  private resolveValues(
+    taskIds: readonly string[],
+    field: "name" | "topic" | "topicDescription" | "owner",
+  ): Record<string, string> {
     const now = (this.options.now ?? Date.now)();
     const expiresAt = now + (this.options.ttlMs ?? 30_000);
     let database: DatabaseSync | undefined;
@@ -69,22 +91,38 @@ export class SchedulerTaskNameResolver {
     for (const taskId of new Set(taskIds)) {
       const cached = this.cache.get(taskId);
       if (cached && cached.expiresAt > now) {
-        if (cached.name) labels[taskId] = cached.name;
+        if (cached[field]) labels[taskId] = cached[field];
         continue;
       }
       let name: string | undefined;
+      let owner: string | undefined;
+      let topic: string | undefined;
+      let topicDescription: string | undefined;
       try {
         const row = database
           ?.prepare(
-            "SELECT task_name AS taskName FROM horae_task_catalog WHERE task_id = ?",
+            "SELECT * FROM horae_task_catalog WHERE task_id = ?",
           )
-          .get(taskId) as { taskName?: unknown } | undefined;
-        name = taskName(row?.taskName);
+          .get(taskId) as { task_name?: unknown; topic?: unknown; owner?: unknown } | undefined;
+        name = taskName(row?.task_name);
+        owner = taskName(row?.owner);
+        topic = taskName(row?.topic);
       } catch {
         // Optional local scheduler metadata must not block a graph query.
       }
-      this.cache.set(taskId, { expiresAt, name });
-      if (name) labels[taskId] = name;
+      if (topic) {
+        try {
+          const row = database?.prepare(
+            "SELECT description FROM horae_topic_catalog WHERE topic = ?",
+          ).get(topic) as { description?: unknown } | undefined;
+          topicDescription = taskName(row?.description);
+        } catch {
+          // Older databases can omit the optional topic dictionary.
+        }
+      }
+      const entry = { expiresAt, name, owner, topic, topicDescription };
+      this.cache.set(taskId, entry);
+      if (entry[field]) labels[taskId] = entry[field];
     }
     return labels;
   }

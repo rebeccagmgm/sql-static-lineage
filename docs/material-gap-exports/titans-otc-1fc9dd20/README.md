@@ -5,13 +5,13 @@ Total: **510** tasks
 
 ## Focus categories
 
-| Category | Count |
-|----------|------:|
-| hive2starrocks | 143 |
-| MISSING_PACK | 129 |
-| sparkIndex | 53 |
-| hive2postgre | 46 |
-| hive2mysql | 42 |
+| Category       | Count |
+| -------------- | ----: |
+| hive2starrocks |   143 |
+| MISSING_PACK   |   129 |
+| sparkIndex     |    53 |
+| hive2postgre   |    46 |
+| hive2mysql     |    42 |
 
 ## Files
 
@@ -23,10 +23,10 @@ Total: **510** tasks
 
 ## Sub-reason legend
 
-| subReason | Meaning |
-|-----------|---------|
-| MISSING_PACK | No task pack on disk |
-| NEED_MACHINE_FACTS | Pack exists with SQL; run facts pipeline |
-| NEED_FACTS_AND_TARGET_SCHEMA | Pack has bare target name; facts + DDL/schema needed |
-| PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY | Pack has no query SQL (common hive2* log tasks) |
-| SCHEMA_UNRESOLVED | Facts exist but target schema cannot be resolved |
+| subReason                               | Meaning                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| MISSING_PACK                            | No task pack on disk                                 |
+| NEED_MACHINE_FACTS                      | Pack exists with SQL; run facts pipeline             |
+| NEED_FACTS_AND_TARGET_SCHEMA            | Pack has bare target name; facts + DDL/schema needed |
+| PACK_NO_SQL_NEED_FACTS_OR_SCHEDULE_ONLY | Pack has no query SQL (common hive2* log tasks)      |
+| SCHEMA_UNRESOLVED                       | Facts exist but target schema cannot be resolved     |

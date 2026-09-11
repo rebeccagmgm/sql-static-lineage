@@ -15,6 +15,9 @@
     );
   const tasks = new Map(DATA.tasks.map((t) => [t.id, t]));
   const schemas = new Map(DATA.schemas.map((s) => [s.schema, s]));
+  const sourceTopics = new Map(
+    (DATA.sourceTopics ?? []).map((topic) => [topic.id, topic]),
+  );
   const svgNS = "http://www.w3.org/2000/svg";
   const unique = (values) => [...new Set(values)];
   const fmt = (n) => Number(n).toLocaleString("zh-CN");
@@ -66,19 +69,43 @@
     return out;
   }
   function flowGroups(edge) {
+    if (edge.sourceTopic) {
+      const topic = sourceTopics.get(edge.sourceTopic);
+      return topic
+        ? topic.sourceSchemas
+            .map((source) =>
+              DATA.flows.find(
+                (flow) =>
+                  flow.from === source.schema &&
+                  flow.to === topic.targetSchema,
+              ),
+            )
+            .filter(Boolean)
+        : [];
+    }
     if (edge.otherSources)
       return DATA.flows.filter(
         (f) =>
           f.to === "odata_n_tit" &&
-          !["titans_dm", "titans_refdata", "odata_n_tit"].includes(f.from),
+          f.from !== "odata_n_tit" &&
+          ![...sourceTopics.values()].some((topic) =>
+            f.from.startsWith(topic.sourceSchemaPrefix),
+          ),
       );
     return (edge.pairs ?? [])
       .map(([a, b]) => DATA.flows.find((f) => f.from === a && f.to === b))
       .filter(Boolean);
   }
   function edgeLabel(edge) {
-    if (edge.otherSources) return "其他来源";
     const groups = flowGroups(edge);
+    if (edge.sourceTopic) {
+      const topic = sourceTopics.get(edge.sourceTopic);
+      return topic ? `${fmt(topic.uniqueIngressTaskIds.length)} 任务` : edge.label;
+    }
+    if (edge.otherSources)
+      return groups.length
+        ? `${fmt(unique(groups.flatMap((group) => group.taskIds)).length)} 任务`
+        : "其他来源";
     return groups.length
       ? `${groups.map((f) => f.tasks).join(" / ")}${edge.suffix ? ` ${edge.suffix}` : ""}`
       : edge.label;
@@ -180,9 +207,12 @@
         node.schemas?.length === 1
           ? schemas.get(node.schemas[0])?.tables
           : null;
+      const sourceTopic = sourceTopics.get(node.sourceTopic);
       const meta =
         node.tasks?.length === 1
           ? `任务 ${node.tasks[0]}`
+          : sourceTopic
+            ? `${sourceTopic.sourceSchemas.length} schema · ${fmt(sourceTopic.tableIdentities)} 表身份`
           : node.view
             ? `${count ? `${count} 表节点 · ` : ""}展开内部加工`
             : node.principal
@@ -237,6 +267,10 @@
     applyCamera();
   }
   function setView(id, record = true) {
+    if (id === "odata") {
+      location.replace("processing-map-odata.html");
+      return;
+    }
     if (!DATA.views[id]) id = "overview";
     if (initialized) cameras.set(current, { ...camera });
     current = id;
@@ -280,6 +314,10 @@
     });
   }
   function navigate(id) {
+    if (id === "odata") {
+      location.href = "processing-map-odata.html";
+      return;
+    }
     if (current === id) return;
     setView(id);
     history.pushState({ trail: [...trail] }, "", `#${id}`);
@@ -406,8 +444,9 @@
   }
   function showEdge(edge, a, b) {
     const groups = flowGroups(edge);
-    const description =
-      "同一任务读取来源区域，并具有目标区域输出关联。任务集合可与其他方向重叠；不是逐字段因果或运行落地证明。";
+    const description = edge.sourceTopic
+      ? "每个任务在当前表级快照中读取该来源 topic 的一个 schema，并有 odata_n_tit 输出关联。它不是逐字段映射，也不能证明同一批次已接续。"
+      : "同一任务读取来源区域，并具有目标区域输出关联。任务集合可与其他方向重叠；不是逐字段因果或运行落地证明。";
     if (groups.length === 1)
       return taskList(
         groups[0].taskIds,
@@ -418,7 +457,7 @@
       const show = () => {
         panel(
           "区域关联",
-          `<h2>${esc(a.title)} → ${esc(b.title)}</h2><p>${esc(description)}</p><p class="micro">各组分别计数，不能直接相加。${edge.otherSources ? "这里列出其他来源中的已见关系，职责尚未逐域核验。" : ""}</p>${groups.map((g, i) => `<button class="row-button" data-group="${i}"><span class="count">${g.tasks} 任务 ↗</span><strong>${esc(g.from)} → ${esc(g.to)}</strong></button>`).join("")}`,
+          `<h2>${esc(a.title)} → ${esc(b.title)}</h2><p>${esc(description)}</p><p class="micro">各组分别计数，不能直接相加。${edge.sourceTopic ? "同一 topic 仅按当前直接进入 OData 的 schema 汇聚。" : edge.otherSources ? "这里列出非来源 topic 的其他已见接入关系，职责尚未逐域核验。" : ""}</p>${groups.map((g, i) => `<button class="row-button" data-group="${i}"><span class="count">${g.tasks} 任务 ↗</span><strong>${esc(g.from)} → ${esc(g.to)}</strong></button>`).join("")}`,
         );
         bindButtons("[data-group]", ({ group }) => {
           const g = groups[Number(group)];
@@ -442,6 +481,7 @@
     $("edge-document").onclick = () => showDocument(DATA.views[current].source);
   }
   function openNode(node) {
+    if (node.sourceTopic) return sourceTopicDetail(node.sourceTopic);
     if (node.view) return navigate(node.view);
     if (node.principal) return showPrincipal();
     if (node.tasks?.length === 1) return taskDetail(node.tasks[0]);
@@ -454,6 +494,88 @@
       "加工单元",
       `<h2>${esc(node.title)}</h2><p>${esc(node.subtitle)}</p><div class="notice">这个单元已有结构定位，尚未单独完成业务职责核验。</div>`,
     );
+  }
+  function sourceTopicDetail(topicId, returnTo = null) {
+    const topic = sourceTopics.get(topicId);
+    if (!topic) return;
+    const ingressFlows = topic.sourceSchemas
+      .map((source) =>
+        DATA.flows.find(
+          (flow) =>
+            flow.from === source.schema && flow.to === topic.targetSchema,
+        ),
+      )
+      .filter(Boolean);
+    const downstreamFlows = DATA.flows
+      .filter(
+        (flow) =>
+          flow.from === topic.targetSchema && flow.to !== topic.targetSchema,
+      )
+      .sort((left, right) => right.tasks - left.tasks || left.to.localeCompare(right.to));
+    const recall = () => sourceTopicDetail(topicId, returnTo);
+    panel(
+      "来源 topic 分析",
+      `<h2>${esc(topic.title)}</h2><p>按 <code>${esc(topic.sourceSchemaPrefix)}*</code> 且直接进入 <code>${esc(topic.targetSchema)}</code> 的当前表级关系聚合。这里的 topic 是来源归属规则，不等于已经完成业务对象分类。</p><div class="stats"><div><strong>${fmt(topic.sourceSchemas.length)}</strong><span>接入 source schema</span></div><div><strong>${fmt(topic.tableIdentities)}</strong><span>本批表身份</span></div><div><strong>${fmt(topic.uniqueIngressTaskIds.length)}</strong><span>不重复接入任务</span></div></div><div class="notice">“进入 OData”仅表示同一任务读取来源 schema 且具有 <code>odata_n_tit</code> 输出关联。没有字段级映射、写入分区和运行批次证据时，不把它说成逐表复制或已成功落地。</div><div class="panel-actions"><button id="topic-ingress-tasks" class="primary">查看接入任务</button><button id="topic-objects">查看来源对象</button><button id="open-odata-topic">进入 OData 区域分析</button></div><h3>按 schema 看进入 OData</h3>${topic.sourceSchemas.map((source) => `<button class="row-button" data-source-schema="${esc(source.schema)}"><span class="count">${fmt(source.tasks)} 接入任务 ↗</span><strong>${esc(source.schema)}</strong><small>${fmt(source.tables)} 表身份 · 点击查看该 schema 的当前关联</small></button>`).join("") || '<div class="empty">当前快照没有匹配的直接接入 schema。</div>'}<h3>进入 OData 后的可见去向</h3><p class="micro">下列是 <code>odata_n_tit</code> 的区域级输出关联，不能反推某个来源任务必然由同一批次继续处理。</p>${downstreamFlows.slice(0, 8).map((flow, index) => `<button class="row-button" data-topic-output="${index}"><span class="count">${fmt(flow.tasks)} 任务 ↗</span><strong>${esc(topic.targetSchema)} → ${esc(flow.to)}</strong></button>`).join("") || '<div class="empty">当前快照没有可展示的下游区域关联。</div>'}<h3>字段与 knowledge 覆盖</h3><div class="notice">该页面的固定快照只携带表身份和任务关联；没有受控的来源字段元数据、对象类型或来源标签绑定。因此不显示字段数、TABLE/VIEW 比例或标签分布，也不把缺失误报为 0。补入有范围的元数据和 knowledge 后，才应在这里按同一对象身份统计。</div>`,
+      returnTo,
+    );
+    $("topic-ingress-tasks").onclick = () =>
+      taskList(
+        topic.uniqueIngressTaskIds,
+        `${topic.title} → ${topic.targetSchema}`,
+        "按来源 topic 去重后的直接接入任务。单个任务仍可能读取多张表；此处不提供字段级映射。",
+        recall,
+      );
+    $("topic-objects").onclick = () => sourceTopicObjects(topicId, recall);
+    $("open-odata-topic").onclick = () => navigate("odata");
+    bindButtons("[data-source-schema]", ({ sourceSchema }) =>
+      regionDetail([sourceSchema], `${topic.title} · ${sourceSchema}`, recall),
+    );
+    bindButtons("[data-topic-output]", ({ topicOutput }) => {
+      const flow = downstreamFlows[Number(topicOutput)];
+      taskList(
+        flow.taskIds,
+        `${topic.targetSchema} → ${flow.to}`,
+        "这是 OData 区域级的可见输出关联；与上方来源任务没有被证明为同一批次的连续路径。",
+        recall,
+      );
+    });
+  }
+  function sourceTopicObjects(topicId, returnTo = null) {
+    const topic = sourceTopics.get(topicId);
+    if (!topic) return;
+    const sourceSchemas = new Set(topic.sourceSchemas.map((source) => source.schema));
+    const objects = DATA.tables
+      .filter((table) => sourceSchemas.has(table.name.split(".", 1)[0]))
+      .sort((left, right) => left.name.localeCompare(right.name));
+    const recall = () => sourceTopicObjects(topicId, returnTo);
+    panel(
+      "来源对象",
+      `<h2>${esc(topic.title)} · 本批表身份</h2><p class="micro">显示 ${fmt(objects.length)} 个当前图中的来源对象。表身份不是已核实的 TABLE/VIEW 类型；只提供名称与任务关联，不展示未载入的字段和标签。</p><input id="topic-object-search" class="search" aria-label="筛选来源对象" placeholder="按完整对象名筛选"><div id="topic-object-results"></div>`,
+      returnTo,
+    );
+    let page = 1;
+    function update() {
+      const query = $("topic-object-search").value.trim().toLowerCase();
+      const matches = objects.filter((object) =>
+        object.name.toLowerCase().includes(query),
+      );
+      const visible = matches.slice(0, page * 30);
+      $("topic-object-results").innerHTML =
+        `<div class="list-count">${fmt(matches.length)} 个匹配对象 · 当前显示 ${fmt(visible.length)}</div>${visible.map((object) => `<button class="row-button" data-topic-object="${esc(object.name)}"><span class="count">${fmt(object.readers.length)} 读取 / ${fmt(object.writers.length)} 输出 ↗</span><strong>${esc(object.name)}</strong><small>图中的表身份；对象类型、字段和知识标签尚未载入</small></button>`).join("") || '<div class="empty">没有匹配的来源对象。</div>'}${visible.length < matches.length ? '<button id="more-topic-objects" class="row-button">再显示 30 个 ↓</button>' : ""}`;
+      bindButtons("[data-topic-object]", ({ topicObject }) =>
+        tableDetail(topicObject, recall),
+      );
+      if ($("more-topic-objects"))
+        $("more-topic-objects").onclick = () => {
+          page += 1;
+          update();
+        };
+    }
+    $("topic-object-search").addEventListener("input", () => {
+      page = 1;
+      update();
+    });
+    update();
   }
   function regionDetail(names, title, returnTo = null) {
     const selected = names.map((n) => schemas.get(n)).filter(Boolean);

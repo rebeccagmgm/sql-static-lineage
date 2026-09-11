@@ -1,7 +1,7 @@
-import {
-  compareText,
-  sortedUnique,
-} from "../contracts/ordering.ts";
+import { compareText, sortedUnique } from "../contracts/ordering.ts";
+import { matchesReadPartitionRange } from "../../../../scripts/project-graph/task-local/partition-range.ts";
+import { isDayPartitionValue } from "../../../../scripts/project-graph/task-local/partition-day-grain.ts";
+import { expandPartitionAlternatives } from "../../../../scripts/project-graph/task-local/partition-alternatives.ts";
 import {
   isUnionContinuationV2ProjectionSchema,
   type TaskLocalProjectionClosure,
@@ -43,6 +43,7 @@ export interface UnionContinuationReadOccurrence {
   readonly identityStatus: string;
   readonly partitionPredicateStatus: "NONE" | "LITERAL" | "NON_LITERAL_PRESENT";
   readonly partitionPredicates: readonly PartitionPredicate[];
+  readonly partitionRange?: unknown;
 }
 
 export interface PartitionPredicate {
@@ -57,15 +58,15 @@ export interface UnionContinuationWriteObservation {
   readonly datasetNodeId: string | null;
   readonly qualifiedName: string;
   readonly source:
-    | "IN_UNION_FINAL_WRITE"
-    | "PRODUCER_INDEX_ONLY"
-    | "SCHEDULE_RELATION_TABLE";
+    "IN_UNION_FINAL_WRITE" | "PRODUCER_INDEX_ONLY" | "SCHEDULE_RELATION_TABLE";
   readonly outputQualification?: TaskLocalProjectionClosure["finalWrites"][number]["outputQualification"];
   readonly partition: readonly ProducerPartition[];
   readonly partitionStatus: string | null;
 }
 
 export interface ProducerPartition {
+  readonly mayBeNull?: boolean;
+  readonly alternatives?: readonly import("../../../../scripts/project-graph/task-local/partition-alternatives.ts").PartitionAlternative[];
   readonly column: string;
   readonly values: readonly string[];
   readonly partitionStatus?: string;
@@ -297,7 +298,10 @@ export function traceUnionTaskContinuationV2(
   options: TraceUnionTaskContinuationV2Options,
 ): TraceUnionTaskContinuationV2Result {
   const evidence = lookup(options.merge).tasks.get(options.consumerTaskId);
-  if (!evidence || !isUnionContinuationV2ProjectionSchema(evidence.projectionSchemaVersion)) {
+  if (
+    !evidence ||
+    !isUnionContinuationV2ProjectionSchema(evidence.projectionSchemaVersion)
+  ) {
     throw new Error(
       `UNION_CONTINUATION_PROJECTION_SCHEMA_UNSUPPORTED:${options.consumerTaskId}`,
     );
@@ -320,33 +324,72 @@ export function traceUnionTaskContinuationV2(
   };
 }
 
-
 // The union is immutable for a publication; build lookup tables once per instance.
-const lookupCache = new WeakMap<TaskLocalUnionMergeResult, ReturnType<typeof buildLookup>>();
+const lookupCache = new WeakMap<
+  TaskLocalUnionMergeResult,
+  ReturnType<typeof buildLookup>
+>();
 function buildLookup(merge: TaskLocalUnionMergeResult) {
-  const tasks = new Map(merge.taskEvidence.map(t => [t.taskId, t]));
-  const nodes = new Map(merge.nodes.map(n => [n.nodeId, n]));
-  const reads = new Map<string, {evidence: TaskLocalUnionTaskEvidence; read: TaskLocalProjectionClosure["externalReads"][number]}>();
-  const writes = new Map<string, Array<{evidence: TaskLocalUnionTaskEvidence; write: TaskLocalProjectionClosure["finalWrites"][number]}>>();
-  const scheduleTables = new Map<string, readonly { taskId: string; qualifiedName: string }[]>();
+  const tasks = new Map(merge.taskEvidence.map((t) => [t.taskId, t]));
+  const nodes = new Map(merge.nodes.map((n) => [n.nodeId, n]));
+  const reads = new Map<
+    string,
+    {
+      evidence: TaskLocalUnionTaskEvidence;
+      read: TaskLocalProjectionClosure["externalReads"][number];
+    }
+  >();
+  const writes = new Map<
+    string,
+    Array<{
+      evidence: TaskLocalUnionTaskEvidence;
+      write: TaskLocalProjectionClosure["finalWrites"][number];
+    }>
+  >();
+  const scheduleTables = new Map<
+    string,
+    readonly { taskId: string; qualifiedName: string }[]
+  >();
   for (const evidence of merge.taskEvidence) {
     const taskNode = nodes.get(`task:${evidence.taskId}`);
     scheduleTables.set(
       evidence.taskId,
       readScheduleTableReferences(taskNode?.properties.scheduleReference),
     );
-    for (const read of evidence.localClosure?.externalReads ?? []) reads.set(read.readOccurrenceId, {evidence, read});
+    for (const read of evidence.localClosure?.externalReads ?? [])
+      reads.set(read.readOccurrenceId, { evidence, read });
     if (evidence.coverageStatus !== "PROJECTED") continue;
     for (const write of evidence.localClosure?.finalWrites ?? []) {
-      for (const key of new Set([write.datasetNodeId, normalizeName(write.qualifiedName)])) {
-        const list = writes.get(key) ?? []; list.push({evidence, write}); writes.set(key, list);
+      for (const key of new Set([
+        write.datasetNodeId,
+        normalizeName(write.qualifiedName),
+      ])) {
+        const list = writes.get(key) ?? [];
+        list.push({ evidence, write });
+        writes.set(key, list);
       }
     }
   }
-  return {tasks,nodes,reads,writes,scheduleTables,legacy:merge.taskEvidence.find(e=>e.coverageStatus==="PROJECTED"&&!isUnionContinuationV2ProjectionSchema(e.projectionSchemaVersion))};
+  return {
+    tasks,
+    nodes,
+    reads,
+    writes,
+    scheduleTables,
+    legacy: merge.taskEvidence.find(
+      (e) =>
+        e.coverageStatus === "PROJECTED" &&
+        !isUnionContinuationV2ProjectionSchema(e.projectionSchemaVersion),
+    ),
+  };
 }
 function lookup(merge: TaskLocalUnionMergeResult) {
-  let value=lookupCache.get(merge); if (!value) {value=buildLookup(merge);lookupCache.set(merge,value);}return value;
+  let value = lookupCache.get(merge);
+  if (!value) {
+    value = buildLookup(merge);
+    lookupCache.set(merge, value);
+  }
+  return value;
 }
 
 function findReadOccurrence(
@@ -354,7 +397,11 @@ function findReadOccurrence(
 ): UnionContinuationReadOccurrence | null {
   const item = lookup(options.merge).reads.get(options.readOccurrenceId);
   const summary = item?.read;
-  if (!summary || (options.consumerTaskId && item?.evidence.taskId !== options.consumerTaskId)) return null;
+  if (
+    !summary ||
+    (options.consumerTaskId && item?.evidence.taskId !== options.consumerTaskId)
+  )
+    return null;
   const node = lookup(options.merge).nodes.get(summary.readOccurrenceNodeId);
   if (!node || node.nodeType !== "READ_OCCURRENCE") return null;
   const properties = node?.properties ?? {};
@@ -385,6 +432,7 @@ function findReadOccurrence(
     partitionPredicates: readPartitionPredicates(
       properties.partitionPredicates,
     ),
+    partitionRange: properties.partitionRange,
   };
 }
 
@@ -397,8 +445,14 @@ function collectWriteObservations(
   readonly alignmentGaps: readonly UnionContinuationGap[];
 } {
   const indexed = lookup(merge).writes;
-  const finalWrites = [...new Set([...(indexed.get(read.datasetNodeId) ?? []), ...(indexed.get(normalizeName(read.qualifiedName)) ?? [])])]
-    .filter(item => sameDataset(item.write.datasetNodeId, item.write.qualifiedName, read));
+  const finalWrites = [
+    ...new Set([
+      ...(indexed.get(read.datasetNodeId) ?? []),
+      ...(indexed.get(normalizeName(read.qualifiedName)) ?? []),
+    ]),
+  ].filter((item) =>
+    sameDataset(item.write.datasetNodeId, item.write.qualifiedName, read),
+  );
 
   const candidates: UnionContinuationCandidate[] = [];
   const alignmentGaps: UnionContinuationGap[] = [];
@@ -491,14 +545,20 @@ function collectWriteObservations(
     const consumerTaskId = lookup(merge).reads.get(read.readOccurrenceId)
       ?.evidence.taskId;
     for (const reference of consumerTaskId
-      ? lookup(merge).scheduleTables.get(consumerTaskId) ?? []
+      ? (lookup(merge).scheduleTables.get(consumerTaskId) ?? [])
       : []) {
-      if (normalizeName(reference.qualifiedName) !== normalizeName(read.qualifiedName))
+      if (
+        normalizeName(reference.qualifiedName) !==
+        normalizeName(read.qualifiedName)
+      )
         continue;
       const evidence = lookup(merge).tasks.get(reference.taskId);
       if (!evidence || evidence.coverageStatus !== "PROJECTED") continue;
       for (const write of evidence.localClosure?.finalWrites ?? []) {
-        if (normalizeName(write.qualifiedName) !== normalizeName(read.qualifiedName))
+        if (
+          normalizeName(write.qualifiedName) !==
+          normalizeName(read.qualifiedName)
+        )
           continue;
         const producer = producerIndexWriters.find(
           (writer) =>
@@ -596,10 +656,50 @@ function shouldCompareWritePartitionColumn(
   );
 }
 
+/** Project policy: an unassigned busi_date does not constrain continuation.
+ * Explicit batch labels still compare normally; other partition fields keep
+ * their existing matching rules. This does not invent a value in Machine Facts.
+ */
+function isUnassignedBusinessDate(part: ProducerPartition): boolean {
+  if (normalizeName(part.column) !== "busi_date") return false;
+  if (part.partitionStatus === "CONFLICT") return false;
+  if (part.values.length === 0) return true;
+  // Compatibility with the old extractor's dynamic-partition sentinel.
+  return part.valueStatus === "RUNTIME_EXPRESSION" && part.observedValue == null &&
+    part.expression === "UNKNOWN" && part.values.every(value => value === "UNKNOWN");
+}
+
 export function partitionMatchStatus(
   read: UnionContinuationReadOccurrence,
   write: UnionContinuationWriteObservation,
 ): PartitionMatchStatus {
+  if (write.partition.some(part => part.alternatives !== undefined)) {
+    const ranges = expandPartitionAlternatives(write.partition);
+    if (!ranges) return "UNKNOWN";
+    const statuses = ranges.map(partition => partitionMatchStatus(read, { ...write, partition }));
+    if (statuses.includes("CONFIRMED")) return "CONFIRMED";
+    if (statuses.every(status => status === "DISJOINT")) return "DISJOINT";
+    return statuses.includes("UNKNOWN") ? "UNKNOWN" : "ASSUMED";
+  }
+  // An unrestricted read includes every known write partition. There is no
+  // predicate to compare, which is different from an unresolved predicate.
+  if (
+    read.partitionPredicateStatus === "NONE" &&
+    read.partitionPredicates.length === 0 &&
+    !isUnknownPartition(write) &&
+    write.partitionStatus?.toUpperCase() !== "CONFLICT" &&
+    write.partition.every((part) =>
+      part.partitionStatus?.toUpperCase() !== "CONFLICT" &&
+      (partitionValueKind(part, write.partitionStatus) === "LITERAL" ||
+        (isTemporalPartitionColumn(part.column) && part.values.length > 0 && part.values.every(isDayPartitionValue))),
+    )
+  ) return "CONFIRMED";
+
+  if (!isUnknownPartition(write) && write.partitionStatus !== "CONFLICT" &&
+    typeof read.partitionRange === "object" && read.partitionRange !== null &&
+    normalizeName(String((read.partitionRange as Record<string, unknown>).table ?? "")) === normalizeName(read.qualifiedName) &&
+    matchesReadPartitionRange(read.partitionRange, write.partition) === true) return "CONFIRMED";
+
   const predicates = new Map(
     read.partitionPredicates.map((predicate) => [
       normalizeName(predicate.column),
@@ -607,19 +707,23 @@ export function partitionMatchStatus(
     ]),
   );
   const parts = write.partition.filter((part) =>
-    shouldCompareWritePartitionColumn(read, part.column),
+    isUnassignedBusinessDate(part) || shouldCompareWritePartitionColumn(read, part.column),
   );
   if (parts.length === 0) {
     return write.partition.length === 0 && !isUnknownPartition(write)
       ? "CONFIRMED"
       : "UNKNOWN";
   }
-  if (isUnknownPartition(write)) return "UNKNOWN";
+  if (isUnknownPartition(write) && !parts.some(isUnassignedBusinessDate)) return "UNKNOWN";
 
   let assumed = false;
   let unknown = false;
   let compared = false;
   for (const part of parts) {
+    if (isUnassignedBusinessDate(part)) {
+      compared = true;
+      continue;
+    }
     const predicate = predicates.get(normalizeName(part.column));
     if (!predicate || predicate.values.length === 0) {
       unknown = true;
@@ -629,10 +733,7 @@ export function partitionMatchStatus(
     const writeValues = writePartitionRawValues(part).map((value) =>
       canonicalPartitionValue(part.column, value),
     );
-    const readValues = canonicalPartitionValues(
-      part.column,
-      predicate.values,
-    );
+    const readValues = canonicalPartitionValues(part.column, predicate.values);
     const kind = partitionValueKind(part, write.partitionStatus);
     if (kind === "UNKNOWN") {
       if (
@@ -647,15 +748,16 @@ export function partitionMatchStatus(
       unknown = true;
       continue;
     }
-    if (
-      partitionCanonicalValuesOverlap(
-        part.column,
-        readValues,
-        writeValues,
-      )
-    ) {
-      continue;
-    }
+      if (partitionCanonicalValuesOverlap(part.column, readValues, writeValues)) {
+        continue;
+      }
+      // Flattened predicates cannot prove that an OR/NULL/other-column branch
+      // excludes SQL NULL (or other values). A nullable domain is not disjoint
+      // unless the reader is a literal domain for this column alone.
+      if (part.mayBeNull && (read.partitionPredicateStatus !== "LITERAL" || read.partitionPredicates.length !== 1)) {
+        unknown = true;
+        continue;
+      }
     if (kind === "ASSUMED") {
       assumed = true;
       continue;
@@ -678,8 +780,7 @@ function readScheduleTableReferences(value: unknown): readonly {
   if (!Array.isArray(rows)) return [];
   const result = new Map<string, { taskId: string; qualifiedName: string }>();
   for (const row of rows) {
-    if (typeof row !== "object" || row === null || Array.isArray(row))
-      continue;
+    if (typeof row !== "object" || row === null || Array.isArray(row)) continue;
     const record = row as Record<string, unknown>;
     const taskId = text(record.taskId);
     const qualifiedName = text(record.qualifiedName);
@@ -880,8 +981,13 @@ function assertV2ProjectionEvidence(
       `UNION_CONTINUATION_PROJECTION_SCHEMA_UNSUPPORTED:${legacyProjectedTask.taskId}`,
     );
   }
-  const owner = lookup(options.merge).reads.get(options.readOccurrenceId)?.evidence;
-  if (!owner || !isUnionContinuationV2ProjectionSchema(owner.projectionSchemaVersion)) {
+  const owner = lookup(options.merge).reads.get(
+    options.readOccurrenceId,
+  )?.evidence;
+  if (
+    !owner ||
+    !isUnionContinuationV2ProjectionSchema(owner.projectionSchemaVersion)
+  ) {
     throw new Error(
       `UNION_CONTINUATION_PROJECTION_SCHEMA_UNSUPPORTED:${options.readOccurrenceId}`,
     );

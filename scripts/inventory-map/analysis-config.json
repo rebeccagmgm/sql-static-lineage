@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "1.0.0",
+  "metadataRoot": "../../../数综基础信息/原信息",
+  "hiveCorePath": "hive元信息-20260831快照/hive_table_restored.jsonl",
+  "hiveDefinitionPath": "20260830211426ddl/hive_table_ddl_restored.jsonl",
+  "outputRoot": "../../artifacts/inventory-map/analysis"
+}

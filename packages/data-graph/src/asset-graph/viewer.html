@@ -548,7 +548,10 @@
         : "";
       const panel = `<div class="badge" style="background:#fff0cf;color:#7c5115">定义/参数表 · 已按规则停止</div><div class="control"><strong>${esc(identity)}</strong><div class="muted">定义/参数表停止展开</div><details><summary>查看命中规则</summary><div class="muted">${esc(terminal.ruleRef || "未提供")}</div></details></div>${predicatePanel}`;
       if (n.taskId) $("detail").insertAdjacentHTML("afterbegin", panel);
-      else $("detail").innerHTML = panel + '<p class="muted">该节点是上游读取端的终点，保留当前业务来源与过滤证据。</p>';
+      else
+        $("detail").innerHTML =
+          panel +
+          '<p class="muted">该节点是上游读取端的终点，保留当前业务来源与过滤证据。</p>';
     }
     async function detail(taskId = selected.taskId, column, writeId) {
       if (!taskId) return;
@@ -602,17 +605,15 @@
           `<button class="item" data-task="${id}">${name}<small>任务 ${id}</small></button>`,
       )
       .join("");
-    document
-      .querySelectorAll("[data-task]")
-      .forEach(
-        (b) =>
-          (b.onclick = () =>
-            select({
-              kind: "TASK",
-              id: "task:" + b.dataset.task,
-              label: b.textContent,
-            })),
-      );
+    document.querySelectorAll("[data-task]").forEach(
+      (b) =>
+        (b.onclick = () =>
+          select({
+            kind: "TASK",
+            id: "task:" + b.dataset.task,
+            label: b.textContent,
+          })),
+    );
     (async () => {
       try {
         const s = await api("status");

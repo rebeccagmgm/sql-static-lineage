@@ -15,9 +15,9 @@
 
 ## 仓库与远端
 
-| 角色 | 路径 | Git |
-|------|------|-----|
-| **执行仓（WP-5）** | `E:\02_area\股衍数据-数据cookbook\scripts\data-graph` | https://github.com/rebeccagmgm/data-graph · 分支 `master` @ `c516898`（已推远端） |
+| 角色                             | 路径                                                  | Git                                                                                          |
+| -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **执行仓（WP-5）**               | `E:\02_area\股衍数据-数据cookbook\scripts\data-graph` | https://github.com/rebeccagmgm/data-graph · 分支 `master` @ `c516898`（已推远端）            |
 | 上游产物仓（只读 / WP-3.2 才改） | `E:\02_area\股衍数据-数据cookbook\sql-static-lineage` | https://github.com/rebeccagmgm/sql-static-lineage · 分支 `input-pack-from-cache` @ `f6decb1` |
 
 两侧**不共享源码**；只通过已发布产物契约交互。身份算法在 WP-3 侧已抄齐并对齐冻结向量。
@@ -28,10 +28,10 @@
 
 1. `docs/execution-plan-gold-case-investigation.md` — **金样调查页 V0（当前 P0）**
 2. `sql-static-lineage/docs/execution-plan-task-local-union.md` — **WP-5 执行方案 TU-0…TU-8**（主规格）
-2. `sql-static-lineage/docs/execution-plan-asset-graph.md` — 总地图
-3. `sql-static-lineage/docs/execution-plan-task-local-projection.md` — 上游契约 1.2.0
-4. `sql-static-lineage/docs/domain-asset-graph-architecture.md` — 共享不变量
-5. data-graph 内现有 `DIRECT_PROJECT_EVIDENCE` / `project-evidence-root-traversal` design（避免重复造轮子）
+3. `sql-static-lineage/docs/execution-plan-asset-graph.md` — 总地图
+4. `sql-static-lineage/docs/execution-plan-task-local-projection.md` — 上游契约 1.2.0
+5. `sql-static-lineage/docs/domain-asset-graph-architecture.md` — 共享不变量
+6. data-graph 内现有 `DIRECT_PROJECT_EVIDENCE` / `project-evidence-root-traversal` design（避免重复造轮子）
 
 Notion（可选对照）：[WP-3 任务局部图投影](https://app.notion.com/p/3cf007dec57781858d6ef3bd2da0b168) — schema 1.1.0 / `scheduleReference` / `partitionPredicateStatus` 已写。
 
@@ -83,9 +83,9 @@ Notion（可选对照）：[WP-3 任务局部图投影](https://app.notion.com/p
 
 §5.3 `SCHEDULE_ONLY` 的 targetTable 线索：
 
-| 选项 | 做法 |
-|------|------|
-| **(a)** | WP-5 loader 自读调度缓存 |
+| 选项    | 做法                                                                         |
+| ------- | ---------------------------------------------------------------------------- |
+| **(a)** | WP-5 loader 自读调度缓存                                                     |
 | **(b)** | 开 **WP-3.2**，在 `scheduleReference` 增加 `targetTable`（方案文档倾向推荐） |
 
 证据等级只能是 `CANDIDATE`，不得当 `CONFIRMED` writer。
@@ -107,13 +107,13 @@ Notion（可选对照）：[WP-3 任务局部图投影](https://app.notion.com/p
 
 ## 原料路径（真金样时）
 
-| 输入 | 典型位置 |
-|------|----------|
-| `batch-manifest.json` | `<project-graph-root>/batch-manifest.json` |
-| envelope | `<project-graph-root>/tasks/<id>/task-local-projection.json` |
-| producer-index | data-root 侧 `TABLE_PRODUCER_INDEX` |
-| 调度缓存 | schedule-evidence（仅 SCHEDULE_ONLY / 展示） |
-| Facts / packs | sibling `sql-static-lineage-data`（本地金样） |
+| 输入                  | 典型位置                                                     |
+| --------------------- | ------------------------------------------------------------ |
+| `batch-manifest.json` | `<project-graph-root>/batch-manifest.json`                   |
+| envelope              | `<project-graph-root>/tasks/<id>/task-local-projection.json` |
+| producer-index        | data-root 侧 `TABLE_PRODUCER_INDEX`                          |
+| 调度缓存              | schedule-evidence（仅 SCHEDULE_ONLY / 展示）                 |
+| Facts / packs         | sibling `sql-static-lineage-data`（本地金样）                |
 
 WP-5 **不读** `field-lineage.json` / multi-hop 闭包文件建并集。
 

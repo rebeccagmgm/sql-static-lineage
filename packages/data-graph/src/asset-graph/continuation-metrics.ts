@@ -3,6 +3,7 @@ import type {
   UnionContinuationIndexEntry,
 } from "../continuation/continuation-index.ts";
 import type { PolicyTerminalRead } from "./terminal-policy.ts";
+import type { SourceEndpointBoundaryRead } from "./source-endpoint-boundary.ts";
 
 export type ContinuationReadClassification =
   "SOURCE_ENDPOINT_BOUNDARY" | "NO_KNOWN_WRITER" | "NO_KNOWN_WRITE_OBSERVATION";
@@ -49,6 +50,7 @@ export interface ContinuationMetrics {
 export interface ContinuationMetricsOptions {
   readonly index: UnionContinuationIndex;
   readonly boundaryEvidence?: ContinuationBoundaryEvidence;
+  readonly boundaryReads?: readonly SourceEndpointBoundaryRead[];
   readonly continuationEdgeMetrics?: ContinuationEdgeMetrics | null;
   readonly policyTerminals?: readonly PolicyTerminalRead[];
 }
@@ -69,7 +71,10 @@ export function calculateContinuationMetrics(
   let noKnownWriterReadOccurrences = 0;
   let unclassifiedNoWriterReadOccurrences = 0;
   let policyTerminalReadOccurrences = 0;
-  const policyKeys = new Set((options.policyTerminals ?? []).map(policyTerminalKey));
+  const policyKeys = new Set(
+    (options.policyTerminals ?? []).map(policyTerminalKey),
+  );
+  const boundaryReads = options.boundaryReads ?? [];
 
   const groups = {
     boundary: new Map<string, string[]>(),
@@ -80,21 +85,37 @@ export function calculateContinuationMetrics(
 
   for (const entry of options.index.entries) {
     const readKey = readKeyOf(entry);
-    const isPolicyTerminal = entry.identityStatus === "CONFIRMED" && policyKeys.has(readKeyOf(entry));
+    const evidence = {
+      sourceEndpointBoundaryReadOccurrenceIds: [...sourceBoundary],
+      expectedWriterMissingReadOccurrenceIds: [...expectedMissing],
+    };
+    const isPolicyTerminal =
+      entry.identityStatus === "CONFIRMED" && policyKeys.has(readKeyOf(entry));
+    const isBoundaryRead = isSourceEndpointBoundaryRead(entry, boundaryReads);
     if (isPolicyTerminal) {
       policyTerminalReadOccurrences += 1;
-      const policyGaps = classifyContinuationGaps(withoutPolicyContinuationGaps(entry));
-      for (const gap of policyGaps) addGap(groups[gap.group], gap.reasonCode, readKey);
+      const policyGaps = classifyContinuationGaps(
+        withoutPolicyContinuationGaps(entry),
+        evidence,
+      );
+      for (const gap of policyGaps)
+        addGap(groups[gap.group], gap.reasonCode, readKey);
+      continue;
+    }
+    if (isBoundaryRead) {
+      confirmedSourceBoundaryReadOccurrences += 1;
+      const boundaryGaps = classifyContinuationGaps(
+        withoutBoundaryContinuationGaps(entry),
+        evidence,
+      );
+      for (const gap of boundaryGaps)
+        addGap(groups[gap.group], gap.reasonCode, readKey);
       continue;
     }
     const retained = entry.candidates.filter(
       (candidate) => candidate.partitionMatchStatus !== "DISJOINT",
     );
     const hasCandidate = entry.candidates.length > 0;
-    const evidence = {
-      sourceEndpointBoundaryReadOccurrenceIds: [...sourceBoundary],
-      expectedWriterMissingReadOccurrenceIds: [...expectedMissing],
-    };
     const classification = classifyContinuationRead(entry, evidence);
     if (!hasCandidate) {
       if (classification === "SOURCE_ENDPOINT_BOUNDARY") {
@@ -158,20 +179,59 @@ export function isPolicyTerminalRead(
   entry: UnionContinuationIndexEntry,
   policyTerminals: readonly PolicyTerminalRead[],
 ): boolean {
-  return entry.identityStatus === "CONFIRMED" && policyTerminals.some((terminal) => policyTerminalKey(terminal) === readKeyOf(entry));
+  return (
+    entry.identityStatus === "CONFIRMED" &&
+    policyTerminals.some(
+      (terminal) => policyTerminalKey(terminal) === readKeyOf(entry),
+    )
+  );
 }
 
-/** Remove only gaps explained by the configured terminal traversal policy. */
-export function withoutPolicyContinuationGaps(
+/** Remove partition/writer noise while keeping no-writer gaps for boundary remap. */
+export function withoutBoundaryContinuationGaps(
   entry: UnionContinuationIndexEntry,
 ): UnionContinuationIndexEntry {
   return {
     ...entry,
     gaps: entry.gaps.filter((gap) => {
       const code = String(gap.reasonCode);
-      return !(code.startsWith("PARTITION_") || code.startsWith("NO_KNOWN_WRITE") || code.startsWith("WRITER_"));
+      return !(code.startsWith("PARTITION_") || code.startsWith("WRITER_"));
     }),
   };
+}
+
+/** Remove gaps that are noise once traversal legitimately stops. */
+export function withoutTraversalStopContinuationGaps(
+  entry: UnionContinuationIndexEntry,
+): UnionContinuationIndexEntry {
+  return {
+    ...entry,
+    gaps: entry.gaps.filter((gap) => {
+      const code = String(gap.reasonCode);
+      return !(
+        code.startsWith("PARTITION_") ||
+        code.startsWith("NO_KNOWN_WRITE") ||
+        code.startsWith("WRITER_")
+      );
+    }),
+  };
+}
+
+/** Remove only gaps explained by the configured terminal traversal policy. */
+export function withoutPolicyContinuationGaps(
+  entry: UnionContinuationIndexEntry,
+): UnionContinuationIndexEntry {
+  return withoutTraversalStopContinuationGaps(entry);
+}
+
+export function isSourceEndpointBoundaryRead(
+  entry: UnionContinuationIndexEntry,
+  boundaryReads: readonly SourceEndpointBoundaryRead[],
+): boolean {
+  const key = readKeyOf(entry);
+  return boundaryReads.some(
+    (read) => `${read.consumerTaskId}\u0000${read.readOccurrenceId}` === key,
+  );
 }
 
 /** Classify one read. Boundary labels are valid only for candidate-free reads. */

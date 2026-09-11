@@ -22,10 +22,10 @@
 
 ## h1730、h22、h23 是三种选数方式
 
-| 家族 | h22/h23 | h1730 | 目标与使用界限 |
-|---|---|---|---|
-| 合约及腿收益 | 218455/218461 读取 `d_v_ficc_trs_position_pb` 当天分区，并分别筛 `grp_id=h22/h23`；源 `data_time` 透传 | 223407 读取 `d_v_ficc_trs_position_p` 的 `busi_date='h1730'`，自行写当天分区和装载时间 | 三项均写 `dm_fii_n.v_ficc_trs_position`，不是三张永久独立日终表 |
-| 对冲持仓 | 218511/218506 读取 `d_v_risk_hedging_position_tit_pb` 当天分区，筛 h22/h23 和 GFS_FICC | 223522 读取同一 PB 表，但 `busi_date>=昨天`、`grp_id=h1730`，保留源业务日 | 三项均写 `dm_fii_n.v_risk_hedging_position_tit`，需保留同表多任务写入边界 |
+| 家族         | h22/h23                                                                                                | h1730                                                                                  | 目标与使用界限                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 合约及腿收益 | 218455/218461 读取 `d_v_ficc_trs_position_pb` 当天分区，并分别筛 `grp_id=h22/h23`；源 `data_time` 透传 | 223407 读取 `d_v_ficc_trs_position_p` 的 `busi_date='h1730'`，自行写当天分区和装载时间 | 三项均写 `dm_fii_n.v_ficc_trs_position`，不是三张永久独立日终表           |
+| 对冲持仓     | 218511/218506 读取 `d_v_risk_hedging_position_tit_pb` 当天分区，筛 h22/h23 和 GFS_FICC                 | 223522 读取同一 PB 表，但 `busi_date>=昨天`、`grp_id=h1730`，保留源业务日              | 三项均写 `dm_fii_n.v_risk_hedging_position_tit`，需保留同表多任务写入边界 |
 
 这六项的主要工作是传输既有收益与风险字段，并裁切源日期；没有重新计算合约或对冲盈亏。其小时名只表达所选批次，不证明任务实际在该时刻运行。源视图对已实现/未实现的算法需查源系统，不能从一串透传字段还原。[218455 · query · 42-86行](../../../../sql-static-lineage-data/task-projections/tasks/218455/versions/3ae7acf1beb413aad5737dca1008f87233041d0b0774df5d89dc702df843244f.evidence-v3.json) [218461 · query · 82-86行](../../../../sql-static-lineage-data/task-projections/tasks/218461/versions/f3f1fb0eeb5d4f180d78cd1c79c1dc5e6cba242530279291c667fe589d06a05d.evidence-v3.json) [223407 · query · 77-85行](../../../../sql-static-lineage-data/task-projections/tasks/223407/versions/1189963173ffbae3882338710083f06f2206f409a2385d2a15848fcd945eecb4.evidence-v3.json) [218506 · query · 214-221行](../../../../sql-static-lineage-data/task-projections/tasks/218506/versions/00d5b6668d6e4100cd84ff3ff282755553e2993d7bde5196b65994830180fe36.evidence-v3.json) [218511 · query · 214-221行](../../../../sql-static-lineage-data/task-projections/tasks/218511/versions/e33d727627270f27d7938d9a6a210547110bd101852111c44c5f98179faaac69.evidence-v3.json) [223522 · query · 214-221行](../../../../sql-static-lineage-data/task-projections/tasks/223522/versions/6ed48af52ffcc4538b69dcae3680dfbbaa9f3860759f18192f800870e3fcf209.evidence-v3.json)
 

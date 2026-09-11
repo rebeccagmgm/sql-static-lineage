@@ -3,6 +3,7 @@
 本页回答“经营报表中的有效户、盈利户、流入流出究竟怎么得来”。它与[标准资产考核](../chapters/09-performance-and-assets.md)使用不同客户范围和归属规则；有效客户资产不等于折标资产。引用均为固定发布批次的 SQL，客户投资收益原始计算与真实数据未在本页重算。
 
 <a id="pc-scope"></a>
+
 ## 有效户是上月名单与当前客户状态的交集
 
 173057、174370、174537、174918、174933 共同从当日个人及机构客户中选状态 04、所属机构非空者，再连接上月有效户运营标签 074440201。是否有效来自上月标签是否存在，不是拿今天资产即时判断。173057 汇总有效户总资产，174370 计没有该标签的客户数；两者仍要求当前客户状态满足条件，所以“非有效户”不是所有历史销户或失效客户。[173057：query 1–67、72–121；174370：query 1–119][^173057][^174370]
@@ -10,6 +11,7 @@
 机构口径按客户当前所属机构归属。员工口径把当前服务人和开发人 UNION ALL，再按客户、员工、员工姓名分组去重；同一员工兼任两种关系时通常只保留一对，不同员工则各自得到该客户全部资产／盈亏或一个客户数，没有 50% 分摊。因此把员工行相加可能超过公司行。员工还必须满足当日在职状态。173057、174370 最后组合连接未筛 status=1，另三项筛有效组合，这是已确认的变体，不能替所有任务统一补一条“仅有效组合”。[173057：query 95–121；174370：query 94–119；174537：query 100–125、226；174918：query 108–133、186；174933：query 109–134、236][^173057][^174370][^174537][^174918][^174933]
 
 <a id="pc-value"></a>
+
 ## 盈亏户分类依赖收益率，金额另取来源
 
 174933 取当年全账户收益率：严格大于 0 归盈利，严格小于 0 归亏损；零没有这两个标签，但会进入 [0,10%) 档和有效户总数。收益率缺失先补 0，也进入这个档。八个收益档从小于 -40% 到大于等于 40%，边界依次按 >= 判断。175023 用盈利／亏损客户数分别除有效户总数，未显式判零，且不乘 100。盈利比例加亏损比例可以小于 1，不能据此认为客户丢失。[174933：query 12–24、82–236；175023：query 1–23][^174933][^175023]
@@ -19,6 +21,7 @@
 174537 的“流入”和“流出”容易被列名误导。它读取同一计算时点的年度净流入指标，将正值汇入流入、负值绝对值汇入流出，并另求净值。它没有遍历逐笔入金和出金事件。例如某客户全年入金 100、出金 80，若上游年度净流入是一条 20，本层给流入 20、流出 0，而不是 100 与 80。这个例子以源年度净值确为一条为条件，说明此层正负拆分的含义；源表是否多条仍须核验。[174537：query 62–71、77–225][^174537]
 
 <a id="pc-detail"></a>
+
 ## 客户明细保留非有效户，并按账户种类展开
 
 168458 的基础客户与上月有效户标志同上，但不按 is_vld 过滤；当前服务人、开发人及两者所属机构分别保留。它给全资产账户一行，再按客户具备的普通、信用、衍生品、养老金账户类型各造一行。对应源标签依次为总计、000000001、000000002、000000005、000000003；同一客户的全资产行与分账户行不能相加。[168458：query 1–106、141–209、211–488][^168458]
@@ -28,6 +31,7 @@
 166614 将这些基础指标装成四层报表：总部、分公司、营业部、员工；一行包含总资产、盈亏金额、有效／非有效客户数、盈利／亏损客户数及收益档。人员维先限制在职并能匹配有效分公司组合。大部分缺失数值补 0，比例直接 round，可能仍为 null。表按业务季度分区，行又带计算日；是否每次覆盖整季分区需要写入配置，prepare 建表本身没有证明。[166614：query 1–90、124–210，prepare 1–2][^166614]
 
 <a id="pc-export"></a>
+
 ## 下游汇总出口又补了一组“无人归属”客户
 
 173567 不是纯复制：先读当前季度汇总，再从同季度全资产账户明细补一组服务人、开发人都为空的客户，按客户所属营业部聚合，员工显示为“-”。这组使用 4d 维度，意味着它与真实员工行并排显示。附加分支盈利最高档用 >40%，而主指标用 >=40%；正好 40% 的客户在附加分支既不属于 [20%,40%) 也不进入 >40%，这是需要核验的边界差异。[173567：query 1–73；174933：query 16–23][^173567][^174933]
@@ -36,23 +40,22 @@
 
 本页已全文核读这 10 项的全部 SQL 槽位。仍未证明上游收益率算法、有效户标签的业务制度、人员关系源唯一性及本季度分区是否只保留一张快照。特别是两个出口只按季度筛选，没有进一步挑最新计算日；若源季度确实保留多天，消费者需要核对实际存储／覆盖行为。
 
+[^166614]: Task 166614，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/166614/versions/e1b4003b7bc4647eb47fbc626464b068c841dae6ce15e907f91315fc45ff732f.evidence-v3.json)。
 
-[^166614]: Task 166614，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/166614/versions/e1b4003b7bc4647eb47fbc626464b068c841dae6ce15e907f91315fc45ff732f.evidence-v3.json>)。
+[^168458]: Task 168458，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/168458/versions/e6109d851747a11ad6375214d4e36aa641fd0aff28d6180c9dc247e7daef2d5b.evidence-v3.json)。
 
-[^168458]: Task 168458，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/168458/versions/e6109d851747a11ad6375214d4e36aa641fd0aff28d6180c9dc247e7daef2d5b.evidence-v3.json>)。
+[^173057]: Task 173057，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173057/versions/ef8d2202993c25476d8ce832073b12949e4680182733f476e15ae934106797f4.evidence-v3.json)。
 
-[^173057]: Task 173057，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173057/versions/ef8d2202993c25476d8ce832073b12949e4680182733f476e15ae934106797f4.evidence-v3.json>)。
+[^174370]: Task 174370，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174370/versions/ba12a8007ef3a5f6df60246ccb8a5b2e5e5f266c97c06de9df4136fc4e40878e.evidence-v3.json)。
 
-[^174370]: Task 174370，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174370/versions/ba12a8007ef3a5f6df60246ccb8a5b2e5e5f266c97c06de9df4136fc4e40878e.evidence-v3.json>)。
+[^174537]: Task 174537，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174537/versions/15661da48dc9a071d0a0cd40b6dfb1882d931514ffc7f3adfea11f1f376781df.evidence-v3.json)。
 
-[^174537]: Task 174537，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174537/versions/15661da48dc9a071d0a0cd40b6dfb1882d931514ffc7f3adfea11f1f376781df.evidence-v3.json>)。
+[^174918]: Task 174918，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174918/versions/2f603c425d0a943b9c4cd1e189530d6c0a358e9a55b7ed60d2a876c8e233b842.evidence-v3.json)。
 
-[^174918]: Task 174918，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174918/versions/2f603c425d0a943b9c4cd1e189530d6c0a358e9a55b7ed60d2a876c8e233b842.evidence-v3.json>)。
+[^174933]: Task 174933，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174933/versions/951cbef9fc03a10ecf91119c2ceb8ead36b8f429d83191743331bcab695e2c4a.evidence-v3.json)。
 
-[^174933]: Task 174933，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/174933/versions/951cbef9fc03a10ecf91119c2ceb8ead36b8f429d83191743331bcab695e2c4a.evidence-v3.json>)。
+[^175023]: Task 175023，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175023/versions/d696bf34e5e8cc4c37f9d967633f4f016f9668ba95bb40e4728cda165723485f.evidence-v3.json)。
 
-[^175023]: Task 175023，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175023/versions/d696bf34e5e8cc4c37f9d967633f4f016f9668ba95bb40e4728cda165723485f.evidence-v3.json>)。
+[^173567]: Task 173567，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173567/versions/4548122d4ef90ec033fafb32f924b3ec486908354922ec65ecdcf8a000264260.evidence-v3.json)。
 
-[^173567]: Task 173567，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173567/versions/4548122d4ef90ec033fafb32f924b3ec486908354922ec65ecdcf8a000264260.evidence-v3.json>)。
-
-[^175767]: Task 175767，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175767/versions/54ed647086a5bfbe948b742c309dc8ced237bc39e34fed34ff10257cfb94e72f.evidence-v3.json>)。
+[^175767]: Task 175767，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175767/versions/54ed647086a5bfbe948b742c309dc8ced237bc39e34fed34ff10257cfb94e72f.evidence-v3.json)。

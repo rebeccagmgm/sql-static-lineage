@@ -2,13 +2,13 @@
 
 读加工图时，“协议、期权合约、子交易、互换腿、事件”很容易被看成同一份数据的反复搬运。实际 SQL 展示的是几个不同问题：**对象是谁、约定了什么、内部由哪些交易或支付部分组成、存续期间发生了什么。**本章先用期权串起完整实例，再对照普通互换腿。下文的粒度是 SQL 表达的记录层次，实际唯一性尚未用数据验证。
 
-| 对象 | 这一层的一行主要回答什么 |
-|---|---|
-| 协议 `t03_agt` | 某类账户或合约的公共身份、状态是什么 |
-| 期权合约 `t03_otc_opt_comp_info` | 某业务日期，这个合约的交易对手、本金、费用和条款是什么 |
-| 期权子交易 `t03_otc_opt_comp_sub_trd_info` | 合约内部这笔子交易的方向、标的、数量和生效期限是什么 |
-| 互换腿 `t03_otc_swap_comp_leg_info` | 互换内部这一条腿的类型、支付方向和计息条件是什么 |
-| 存续期事件 `t05_otc_comp_dura_chg_evt` | 某个事件发生在何时，对哪个合约产生了什么变化 |
+| 对象                                       | 这一层的一行主要回答什么                               |
+| ------------------------------------------ | ------------------------------------------------------ |
+| 协议 `t03_agt`                             | 某类账户或合约的公共身份、状态是什么                   |
+| 期权合约 `t03_otc_opt_comp_info`           | 某业务日期，这个合约的交易对手、本金、费用和条款是什么 |
+| 期权子交易 `t03_otc_opt_comp_sub_trd_info` | 合约内部这笔子交易的方向、标的、数量和生效期限是什么   |
+| 互换腿 `t03_otc_swap_comp_leg_info`        | 互换内部这一条腿的类型、支付方向和计息条件是什么       |
+| 存续期事件 `t05_otc_comp_dura_chg_evt`     | 某个事件发生在何时，对哪个合约产生了什么变化           |
 
 这些层次可以围绕同一合约连接，但并不构成每笔业务都会依次经过的固定流程。期权子交易与互换腿也不是可以直接互换的概念。
 
@@ -69,20 +69,20 @@
 
 行号指各证据文件 `sqlSources` 内指定 SQL 内容，不是 JSON 行号。固定发布版本：`df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3`。
 
-| 任务与证据 | SQL 位置与用途 |
-|---|---|
-| [105053](../../../sql-static-lineage-data/task-projections/tasks/105053/versions/a175f2972fd954a2ac46d054f1582a93e3c720badffa7b3bb50ba14692cce80f.evidence-v3.json) | query 20–37：保证金账户公共身份 |
-| [105055](../../../sql-static-lineage-data/task-projections/tasks/105055/versions/1f55ba2fba1e4709e3edf12873c0a65f27a348cd23072a955ee40aeae6eb9b79.evidence-v3.json) | query 20–50：互换身份及账簿关联 |
-| [105522](../../../sql-static-lineage-data/task-projections/tasks/105522/versions/775423cb6e34bf5e9dbfd98c8aeeecff3de17a95d151555c1e17cc7c20d5fa05.evidence-v3.json) | query 20–50、81–100、122–218：期权身份、日期、更新与删除维护 |
-| [183084](../../../sql-static-lineage-data/task-projections/tasks/183084/versions/1b9a038b99b46db54ba8dd758e896b34238696674da8f7261532c8200ac63975.evidence-v3.json) | create 28–58：fast TRS 身份与来源范围 |
-| [105074](../../../sql-static-lineage-data/task-projections/tasks/105074/versions/5d1140e4415f810cd4465eb3f1b89d334d33a77f63976974ea136caef17aa0fa.evidence-v3.json) | query 1–30、67–78、139–167：期权日快照、本金与条款关联 |
+| 任务与证据                                                                                                                                                          | SQL 位置与用途                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [105053](../../../sql-static-lineage-data/task-projections/tasks/105053/versions/a175f2972fd954a2ac46d054f1582a93e3c720badffa7b3bb50ba14692cce80f.evidence-v3.json) | query 20–37：保证金账户公共身份                                                        |
+| [105055](../../../sql-static-lineage-data/task-projections/tasks/105055/versions/1f55ba2fba1e4709e3edf12873c0a65f27a348cd23072a955ee40aeae6eb9b79.evidence-v3.json) | query 20–50：互换身份及账簿关联                                                        |
+| [105522](../../../sql-static-lineage-data/task-projections/tasks/105522/versions/775423cb6e34bf5e9dbfd98c8aeeecff3de17a95d151555c1e17cc7c20d5fa05.evidence-v3.json) | query 20–50、81–100、122–218：期权身份、日期、更新与删除维护                           |
+| [183084](../../../sql-static-lineage-data/task-projections/tasks/183084/versions/1b9a038b99b46db54ba8dd758e896b34238696674da8f7261532c8200ac63975.evidence-v3.json) | create 28–58：fast TRS 身份与来源范围                                                  |
+| [105074](../../../sql-static-lineage-data/task-projections/tasks/105074/versions/5d1140e4415f810cd4465eb3f1b89d334d33a77f63976974ea136caef17aa0fa.evidence-v3.json) | query 1–30、67–78、139–167：期权日快照、本金与条款关联                                 |
 | [209862](../../../sql-static-lineage-data/task-projections/tasks/209862/versions/6c2726911854596f451fb7606846a02f92779f0adc82897d8cf31e5a9c2ee9ca.evidence-v3.json) | query 1–10、111、138–148：另一批次来源写入同类期权模型；不能据此推定与其他写者同时运行 |
-| [107636](../../../sql-static-lineage-data/task-projections/tasks/107636/versions/b44ae9aa7f7796e3f21a2a26cd3b38227ce711aaf77810c953915b7833ab2fb0.evidence-v3.json) | query 1–35、63、85–95：子交易身份、日期及父合约连接 |
-| [105073](../../../sql-static-lineage-data/task-projections/tasks/105073/versions/38c3459d99589b016165426956e70b01bce233d4db93eefc31ca8926ecf95052.evidence-v3.json) | query 1–18、50–55：普通互换腿及编号映射 |
-| [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) | query 3–18、33、83、198–225、262–277：子交易消费范围、父子本金及观察序列 |
-| [124565](../../../sql-static-lineage-data/task-projections/tasks/124565/versions/e4caa8bb64cd287aa65c158098934f9a131617e492e50a855591cec5a3787031.evidence-v3.json) | query 1–27、61、119–129：互换事件身份、日期和状态 |
-| [124566](../../../sql-static-lineage-data/task-projections/tasks/124566/versions/3464ce52f29b558673a9349e3cc62527561fa2593f8dd0ae4d2aef2f4f44f051.evidence-v3.json) | query 1–30、64、134–145：期权事件身份、日期和状态 |
-| [216458](../../../sql-static-lineage-data/task-projections/tasks/216458/versions/37775de9e1ea2f01eac1cf70cd6da984ee9aabaa7418b529a8003209339823b4.evidence-v3.json) | query 1–30、62、130–134：fast TRS 事件及 instrument 连接 |
-| [181556](../../../sql-static-lineage-data/task-projections/tasks/181556/versions/679fa05dcf80c91d0c5d52cbcc62ed2b1a64a00744372fdae8d379a6cf5967d7.evidence-v3.json) | query 126–144、254–278：合约快照、事件与收付款消费连接 |
+| [107636](../../../sql-static-lineage-data/task-projections/tasks/107636/versions/b44ae9aa7f7796e3f21a2a26cd3b38227ce711aaf77810c953915b7833ab2fb0.evidence-v3.json) | query 1–35、63、85–95：子交易身份、日期及父合约连接                                    |
+| [105073](../../../sql-static-lineage-data/task-projections/tasks/105073/versions/38c3459d99589b016165426956e70b01bce233d4db93eefc31ca8926ecf95052.evidence-v3.json) | query 1–18、50–55：普通互换腿及编号映射                                                |
+| [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) | query 3–18、33、83、198–225、262–277：子交易消费范围、父子本金及观察序列               |
+| [124565](../../../sql-static-lineage-data/task-projections/tasks/124565/versions/e4caa8bb64cd287aa65c158098934f9a131617e492e50a855591cec5a3787031.evidence-v3.json) | query 1–27、61、119–129：互换事件身份、日期和状态                                      |
+| [124566](../../../sql-static-lineage-data/task-projections/tasks/124566/versions/3464ce52f29b558673a9349e3cc62527561fa2593f8dd0ae4d2aef2f4f44f051.evidence-v3.json) | query 1–30、64、134–145：期权事件身份、日期和状态                                      |
+| [216458](../../../sql-static-lineage-data/task-projections/tasks/216458/versions/37775de9e1ea2f01eac1cf70cd6da984ee9aabaa7418b529a8003209339823b4.evidence-v3.json) | query 1–30、62、130–134：fast TRS 事件及 instrument 连接                               |
+| [181556](../../../sql-static-lineage-data/task-projections/tasks/181556/versions/679fa05dcf80c91d0c5d52cbcc62ed2b1a64a00744372fdae8d379a6cf5967d7.evidence-v3.json) | query 126–144、254–278：合约快照、事件与收付款消费连接                                 |
 
 结构描述同时对照了 [协议 DDL](../../../sql-static-lineage-data/tables/hive/pdata_n.t03_agt__gfhive/ddl.sql)及[事件 DDL](../../../sql-static-lineage-data/tables/hive/pdata_n.t05_otc_comp_dura_chg_evt__gfhive/ddl.sql)。元数据文字只作候选线索，以上教学结论以 SQL 和直接字段证据为依据。

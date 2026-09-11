@@ -3,6 +3,7 @@
 本记录仅声明所列25项查询的规则解释，不覆盖全部690项，也不包含运行结果。含字面反斜杠换行的SQL为便于阅读曾展开显示，以下原始行号与哈希仍按发布内容计算。
 
 <a id="quality-keys"></a>
+
 ## quality-keys
 
 ### Q49548 · EDW_PTY-PDATA_N.T01_PTY主键唯一性检核
@@ -26,6 +27,7 @@
 [发布证据](../../../../sql-static-lineage-data/task-projections/tasks/55220/versions/4aa780b5ee12d23f5fb23d2d01968e693eda1509382c96afebd96e71406d8f3f.evidence-v3.json)。query 第1–7行，SHA-256 45bf0cae6d4321fd21624c14e5a14df4b5c5aaa5fd246c9257344402bf42c612。
 
 <a id="quality-dictionary"></a>
+
 ## quality-dictionary
 
 ### Q53409 · EDW_PTY-PDATA_N.T01_INDV自然人分类代码值域范围检查
@@ -69,6 +71,7 @@
 [发布证据](../../../../sql-static-lineage-data/task-projections/tasks/53448/versions/d40f57a99224a65cf2b44eb1e49b259861b0035ab6178c0489dad035d1996acb.evidence-v3.json)。query 第1–11行，SHA-256 c333e527ef8f2252fe546f2a33002c9a77c0f55b54e2615dde7fa1184ad10fc3。
 
 <a id="quality-history"></a>
+
 ## quality-history
 
 ### Q55221 · EDW_AGT-PDATA_N.T03_AGT_NAME_H拉链表开始日期大于等于结束日期检查
@@ -88,6 +91,7 @@
 [发布证据](../../../../sql-static-lineage-data/task-projections/tasks/154818/versions/43cea39076f3cac3af22bd562498a83d7d6dd8ce4076d5d387c1993cafa91b28.evidence-v3.json)。query 第1–9行，SHA-256 e3ccdfe0ef07c205863b2befd728a17c33f95c815795b970577bcec5541ec332。
 
 <a id="quality-counts"></a>
+
 ## quality-counts
 
 ### Q126848 · EDW_PTY-105079:PDATA_N.T01_PTY_RELA_H_TIT163记录数检查
@@ -99,6 +103,7 @@
 [发布证据](../../../../sql-static-lineage-data/task-projections/tasks/198209/versions/d265f53f0efd168c9fc10b62ffe74cec0ad3fc60e9336636305d704da87c29d8.evidence-v3.json)。query 第1–3行，SHA-256 3e733034b3cb2ebcbb0cde1184c3eab1cf666d5daddad15dd892d0f81ce64c02。
 
 <a id="quality-business-rules"></a>
+
 ## quality-business-rules
 
 ### Q152678 · DM_OTC_N.OTC_SALE_DAILY_RPT分摊比例取值准确性核验
@@ -114,6 +119,7 @@
 [发布证据](../../../../sql-static-lineage-data/task-projections/tasks/197640/versions/0505b3cd1761bdd4b3f4a48576a9825411476b07491eea69364b8a963e508372.evidence-v3.json)。query 第1–93行，SHA-256 681768a6f0ba632c7c69af31660395adcafa0393c6d0f675d2684395bce76127。
 
 <a id="quality-contradiction"></a>
+
 ## quality-contradiction
 
 ### Q223385 · EDW_AGT-PDATA_N.T03_OTC_COMP_PERF_MARG_REF_TIT252模型与贴源表数据对比一致性检查

@@ -13,13 +13,30 @@ import {
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { edgeTouchesHiddenField } from "./field-viewport";
 import { api } from "./api";
-import { adaptTrace } from "./graph-adapter";
+import { adaptTrace, type FieldSelectionContext } from "./graph-adapter";
 import { DetailPanel } from "./components/DetailPanel";
+import { ResizableWorkspace } from "./components/ResizableWorkspace";
 import { LineageNode } from "./components/LineageNode";
 import { TaskNode } from "./components/TaskNode";
 import { FieldSelector } from "./components/FieldSelector";
+import { ExplorationPanel } from "./components/ExplorationPanel";
 import { isSameGraphVersion, normalizeRegionItems } from "./contract";
+import {
+  assessExplorationAnchor,
+  assessExplorationRestore,
+  createExplorationEntry,
+  deleteExplorationEntry,
+  explorationMember,
+  readExplorationEntries,
+  updateExplorationEntry,
+  withoutExplorationMember,
+  withExplorationMember,
+  writeExplorationEntries,
+  type ExplorationEntry,
+  type ExplorationState,
+} from "./exploration-entries";
 import {
   collectMultiFieldTrace,
   loadAllFieldPages,
@@ -126,16 +143,23 @@ function Explorer() {
     [autoDepthNotice, setAutoDepthNotice] = useState(""),
     [error, setError] = useState(""),
     [selected, setSelected] = useState<GraphNode>(),
-    [highlightedFieldId, setHighlightedFieldId] = useState<string>(),
+    [selectedMembers, setSelectedMembers] = useState<GraphNode[]>([]),
+    [highlightedFieldId, setHighlightedFieldId] = useState<string[]>(),
     [highlightedTaskId, setHighlightedTaskId] = useState<string>(),
     [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(
       new Set(),
     ),
     [terminal, setTerminal] = useState<TerminalNode>(),
-    [detail, setDetail] = useState<TaskDetail>(),
+    [details, setDetails] = useState<TaskDetail[]>([]),
     [detailLoading, setDetailLoading] = useState(false),
     [history, setHistory] = useState<Hist[]>([]),
     [status, setStatus] = useState<Record<string, unknown>>();
+  const detail = details[0];
+  const [explorationEntries, setExplorationEntries] = useState<
+      ExplorationEntry[]
+    >([]),
+    [activeExplorationId, setActiveExplorationId] = useState<string>(),
+    [explorationNotice, setExplorationNotice] = useState("");
   const [mode, setMode] = useState<"overview" | "lineage">("overview"),
     [overview, setOverview] = useState<OverviewResult>(),
     [regionName, setRegionName] = useState(""),
@@ -151,31 +175,83 @@ function Explorer() {
       () => ({ lineage: LineageNode, processingTask: TaskNode }),
       [],
     );
-  const loadDetail = useCallback(async (node: GraphNode, t?: TerminalNode) => {
+  const loadDetail = useCallback(async (
+    node: GraphNode,
+    t?: TerminalNode,
+    context?: FieldSelectionContext,
+  ) => {
     const sequence = ++detailSequence.current;
+    const rawMembers = context?.rawMembers?.length
+      ? context.rawMembers
+      : [node];
     setSelected(node);
+    setSelectedMembers(rawMembers);
     setTerminal(t);
-    setDetail(undefined);
-    if (!node.taskId && node.kind !== "TASK") {
+    setDetails([]);
+    const requests = new Map<
+      string,
+      { taskId: string; column?: string; writeId?: string }
+    >();
+    const nodeTaskId = node.taskId ??
+      (node.kind === "TASK" ? node.id.replace(/^task:/, "") : undefined);
+    if (nodeTaskId)
+      requests.set(`${nodeTaskId}|${node.writeId ?? ""}`, {
+        taskId: nodeTaskId,
+        column: node.column,
+        writeId: node.writeId,
+      });
+    for (const ref of context?.writeRefs ?? [])
+      requests.set(`${ref.taskId}|${ref.writeId}`, {
+        taskId: ref.taskId,
+        column: node.column,
+        writeId: ref.writeId,
+      });
+    if (!requests.size) {
       setDetailLoading(false);
       return;
     }
     setDetailLoading(true);
     try {
-      const id = node.taskId ?? node.id.replace(/^task:/, "");
-      const value = await api.task(id, {
-        column: node.column,
-        writeId: node.writeId,
-      });
+      const requestList = [...requests.values()].slice(0, 20);
+      const settled = await Promise.allSettled(
+        requestList.map((request) =>
+          api.task(request.taskId, {
+            column: request.column,
+            writeId: request.writeId,
+          }),
+        ),
+      );
       if (sequence !== detailSequence.current) return;
-      if (!isSameGraphVersion(activeVersion.current, value.version)) {
-        setDetail(undefined);
+      const values = settled.flatMap((result, index) => {
+        if (result.status !== "fulfilled") return [];
+        const request = requestList[index]!;
+        return [
+          {
+            ...result.value,
+            requestedColumn: request.column,
+            requestedWriteId: request.writeId,
+          },
+        ];
+      });
+      const failedCount = settled.length - values.length;
+      const omittedCount = Math.max(0, requests.size - requestList.length);
+      if (failedCount || omittedCount)
+        setError(
+          `加工证据仅展示 ${values.length}/${requests.size} 组：${failedCount} 组读取失败${omittedCount ? `，${omittedCount} 组超过 20 组有界上限` : ""}。`,
+        );
+      if (
+        values.some(
+          (value) =>
+            !isSameGraphVersion(activeVersion.current, value.version),
+        )
+      ) {
+        setDetails([]);
         setError("图谱版本已更新，当前证据与画布版本不一致，请重新展开。");
         return;
       }
-      setDetail(value);
+      setDetails(values);
     } catch {
-      if (sequence === detailSequence.current) setDetail(undefined);
+      if (sequence === detailSequence.current) setDetails([]);
     } finally {
       if (sequence === detailSequence.current) setDetailLoading(false);
     }
@@ -185,12 +261,15 @@ function Explorer() {
       trace
         ? adaptTrace(
             trace,
-            (raw, terminalNode) => {
+            (raw, terminalNode, context) => {
               setHighlightedTaskId(undefined);
+              const rawIds = (context?.rawMembers ?? [raw])
+                .map(({ id }) => id)
+                .sort();
               setHighlightedFieldId((current) =>
-                current === raw.id ? undefined : raw.id,
+                current?.join("|") === rawIds.join("|") ? undefined : rawIds,
               );
-              void loadDetail(raw, terminalNode);
+              void loadDetail(raw, terminalNode, context);
             },
             highlightedFieldId,
             {
@@ -216,6 +295,24 @@ function Explorer() {
       expandedCandidates,
     ],
   );
+  const [hiddenFieldsByCard, setHiddenFieldsByCard] = useState<Record<string, string[]>>({});
+  const onHiddenFieldsChange = useCallback((nodeId: string, ids: string[]) => {
+    setHiddenFieldsByCard(current => {
+      if ((current[nodeId] ?? []).join("|") === ids.join("|")) return current;
+      const next = { ...current };
+      if (ids.length) next[nodeId] = ids;
+      else delete next[nodeId];
+      return next;
+    });
+  }, []);
+  const visibleNodes = useMemo(() => graph.nodes.map(node => ({
+    ...node, data: { ...node.data, onHiddenFieldsChange },
+  })), [graph.nodes, onHiddenFieldsChange]);
+  const visibleEdges = useMemo(() => {
+    const hidden = new Set(graph.nodes.flatMap(node => hiddenFieldsByCard[node.id] ?? []));
+    return graph.edges.map(edge => ({ ...edge, hidden: edgeTouchesHiddenField(edge, hidden) }));
+  }, [graph.nodes, graph.edges, hiddenFieldsByCard]);
+  const foldedEdgeCount = visibleEdges.filter(edge => edge.hidden).length;
   const overviewGraph = useMemo(
     () => (overview ? adaptOverview(overview) : { nodes: [], edges: [] }),
     [overview],
@@ -230,6 +327,7 @@ function Explorer() {
         direction: Direction;
         depth: number;
         candidates: boolean;
+        expandedCandidateIds?: string[];
       },
     ) => {
       if (!nextAnchor) return;
@@ -287,6 +385,10 @@ function Explorer() {
           if (sequence !== requestSequence.current) return;
           setDepth(1);
           setAutoDepthNotice("关系达到 150 条上限，已自动改为 1 层。");
+        } else if (nextLayer === "field" && value.truncated) {
+          setAutoDepthNotice(
+            `字段路径达到 ${value.edgeLimit} 条关系上限；已查询 ${selectedFields.length - (value.unqueriedRootNodeIds?.length ?? 0)}/${selectedFields.length} 个已选字段，保留当前边界。`,
+          );
         } else {
           setAutoDepthNotice("");
         }
@@ -298,7 +400,9 @@ function Explorer() {
         }));
         setHighlightedFieldId(undefined);
         setHighlightedTaskId(undefined);
-        setExpandedCandidates(new Set());
+        setExpandedCandidates(
+          new Set(settings?.expandedCandidateIds ?? []),
+        );
         setTrace(value);
         pendingFit.current = fit;
         if (selectedFields.length === 1)
@@ -308,9 +412,11 @@ function Explorer() {
           );
         else if (selectedFields.length > 1) {
           setSelected(undefined);
+          setSelectedMembers([]);
           setTerminal(undefined);
-          setDetail(undefined);
+          setDetails([]);
         }
+        return value;
       } catch (e) {
         if (sequence === requestSequence.current)
           setError(e instanceof Error ? e.message : "查询失败");
@@ -331,7 +437,15 @@ function Explorer() {
     ],
   );
   const choose = useCallback(
-    async (node: GraphNode, push = false) => {
+    async (
+      node: GraphNode,
+      push = false,
+      restored?: {
+        entry: ExplorationEntry;
+        anchor: Anchor;
+        state: ExplorationState;
+      },
+    ) => {
       const navigation = ++navigationSequence.current;
       if (push && anchor)
         setHistory((items) => [
@@ -350,7 +464,8 @@ function Explorer() {
           },
         ]);
       const next: Anchor =
-        node.kind === "TASK"
+        restored?.anchor ??
+        (node.kind === "TASK"
           ? {
               taskId: node.id.replace(/^task:/, ""),
               label: node.label ?? node.id,
@@ -359,26 +474,117 @@ function Explorer() {
               table: node.table,
               nodeId: node.id,
               label: node.label ?? node.table ?? node.id,
-            };
+            });
+      const nextLayer = restored?.state.layer ?? "table";
+      const nextDirection = restored?.state.direction ?? direction;
+      const nextDepth = restored?.state.depth ?? depth;
+      const nextCandidates = restored?.state.candidates ?? candidates;
       setAnchor(next);
       setMode("lineage");
-      setLayer("table");
+      if (restored) setTrace(undefined);
+      setLayer(nextLayer);
+      setDirection(nextDirection);
+      setDepth(nextDepth);
+      setCandidates(nextCandidates);
       setSelected(node);
+      setSelectedMembers([node]);
       setTerminal(undefined);
-      setDetail(undefined);
+      setDetails([]);
       try {
-        const page = await api.fields(next);
+        let listedVersion: string | undefined;
+        const page =
+          nextLayer === "field"
+            ? await loadAllFieldPages({
+                readVersion: async () => {
+                  const current = await api.status();
+                  if (typeof current.version !== "string" || !current.version)
+                    throw new Error("图谱版本不可用，请稍后重试。");
+                  if (
+                    activeVersion.current &&
+                    current.version !== activeVersion.current
+                  )
+                    throw new Error("图谱已换版，请重新打开此专题。");
+                  listedVersion = current.version;
+                  return current.version;
+                },
+                isCurrent: () => navigation === navigationSequence.current,
+                fetchPage: (offset, limit) => api.fields(next, offset, limit),
+              })
+            : await api.fields(next);
         if (navigation !== navigationSequence.current) return;
-        const fs = page.slice(0, 100);
-        setFieldsMore(page.length > 100);
+        const fs = nextLayer === "field" ? page : page.slice(0, 100);
+        setFieldsMore(nextLayer === "field" ? false : page.length > 100);
         setFields(fs);
-        setSelectedFieldIds(fs[0] ? [fs[0].id] : []);
-        await runTrace(next, "table");
+        fieldListVersion.current = listedVersion;
+        const restoreAssessment = restored
+          ? assessExplorationRestore(
+              restored.entry,
+              activeVersion.current ?? restored.entry.graphVersion,
+              fs.map((field) => field.id),
+            )
+          : undefined;
+        const restoredFields = restoreAssessment
+          ? fs.filter((field) =>
+              restoreAssessment.selectedFieldIds.includes(field.id),
+            )
+          : [];
+        const nextSelectedIds = restored
+          ? restoredFields.map((field) => field.id)
+          : fs[0]
+            ? [fs[0].id]
+            : [];
+        setSelectedFieldIds(nextSelectedIds);
+        if (restored) restore.current = restored.state.viewport;
+        let restoredTrace: TraceResult | undefined;
+        if (restored?.state.layer === "field" && !restoredFields.length) {
+          setLayer("table");
+          setExplorationNotice(
+            "专题保存的字段在当前图谱中不存在或已变更；已保留原始起点，请从表血缘继续选择字段。",
+          );
+          restoredTrace = await runTrace(next, "table", false, undefined, {
+            direction: nextDirection,
+            depth: nextDepth,
+            candidates: nextCandidates,
+            expandedCandidateIds: restored.state.expandedCandidateIds,
+          });
+        } else {
+          restoredTrace = await runTrace(
+            next,
+            nextLayer,
+            !restored,
+            restoredFields,
+            {
+              direction: nextDirection,
+              depth: nextDepth,
+              candidates: nextCandidates,
+              expandedCandidateIds: restored?.state.expandedCandidateIds,
+            },
+          );
+        }
         if (navigation !== navigationSequence.current) return;
+        const anchorAssessment = restored
+          ? assessExplorationAnchor(
+              next,
+              restoredTrace?.nodes.map((item) => item.id) ?? [],
+            )
+          : undefined;
+        if (restored && !anchorAssessment?.present) {
+          setTrace(undefined);
+          setError(
+            `专题起点“${next.label}”在当前图谱中不存在；未按同名对象替换，请从搜索结果选择新的起点。`,
+          );
+          return;
+        }
         if (node.kind === "TASK") void loadDetail(node);
       } catch (e) {
         if (navigation === navigationSequence.current)
-          setError(e instanceof Error ? e.message : "读取失败");
+          setError(
+            restored
+              ? `专题起点“${next.label}”无法按原始身份恢复：${e instanceof Error ? e.message : "读取失败"}`
+              : e instanceof Error
+                ? e.message
+                : "读取失败",
+          );
       }
     },
     [
@@ -462,6 +668,18 @@ function Explorer() {
         activeVersion.current = value.version;
       })
       .catch((e) => setError(e instanceof Error ? e.message : "全貌读取失败"));
+  }, []);
+  useEffect(() => {
+    const storage = (() => {
+      try {
+        return window.localStorage;
+      } catch {
+        return undefined;
+      }
+    })();
+    const loaded = readExplorationEntries(storage);
+    setExplorationEntries(loaded.entries);
+    if (loaded.warning) setExplorationNotice(loaded.warning);
   }, []);
   useEffect(() => {
     if (!trace || mode !== "lineage") return;
@@ -575,7 +793,13 @@ function Explorer() {
     if (region) void openRegion(region.schema);
   };
   async function continueFromSelected() {
-    if (!selected || terminal) return;
+    if (!selected) return;
+    const terminalIds = new Set(
+      trace?.terminalNodes.map(({ nodeId }) => nodeId) ?? [],
+    );
+    const continuable = (selectedMembers.length ? selectedMembers : [selected])
+      .filter((member) => !terminalIds.has(member.id));
+    if (!continuable.length) return;
     if (anchor)
       setHistory((items) => [
         ...items,
@@ -594,15 +818,221 @@ function Explorer() {
       ]);
     const next: Anchor = {
       nodeId: selected.id,
+      memberNodeIds: continuable.map(({ id }) => id),
       label: `${selected.table ?? ""}.${selected.column ?? selected.label ?? selected.id}`,
     };
     setAnchor(next);
     setLayer("field");
-    setFields([selected]);
+    setFields(continuable);
     fieldListVersion.current = activeVersion.current;
-    setSelectedFieldIds([selected.id]);
+    setSelectedFieldIds(continuable.map(({ id }) => id));
     setFieldsMore(false);
-    await runTrace(next, "field", true, selected);
+    await runTrace(next, "field", true, continuable);
+  }
+  function localExplorationStorage(): Storage | undefined {
+    try {
+      return window.localStorage;
+    } catch {
+      return undefined;
+    }
+  }
+  function replaceExplorationEntries(next: ExplorationEntry[]) {
+    setExplorationEntries(next);
+    const result = writeExplorationEntries(localExplorationStorage(), next);
+    if (result.warning) setExplorationNotice(result.warning);
+  }
+  function currentGraphVersion(): string | undefined {
+    if (activeVersion.current) return activeVersion.current;
+    return typeof status?.version === "string" ? status.version : undefined;
+  }
+  function snapshotExplorationState(memberId: string): ExplorationState {
+    return {
+      activeMemberId: memberId,
+      layer,
+      direction,
+      depth,
+      candidates,
+      selectedFieldIds,
+      expandedCandidateIds: [...expandedCandidates],
+      viewport: flow.getViewport(),
+    };
+  }
+  function newExplorationId(): string {
+    return typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `entry-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+  function createExploration(name: string, description: string) {
+    if (!anchor) return;
+    const graphVersion = currentGraphVersion();
+    if (!graphVersion) {
+      setError("图谱版本尚未就绪，暂时不能保存探索入口。");
+      return;
+    }
+    try {
+      const member = explorationMember(anchor);
+      const entry = createExplorationEntry({
+        id: newExplorationId(),
+        name,
+        description,
+        graphVersion,
+        member,
+        state: snapshotExplorationState(member.id),
+        now: new Date().toISOString(),
+      });
+      replaceExplorationEntries([...explorationEntries, entry]);
+      setActiveExplorationId(entry.id);
+      setExplorationNotice("已保存到当前浏览器。之后打开会按当前已发布图谱重新查询。");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "创建专题失败");
+    }
+  }
+  function updateExploration(
+    entry: ExplorationEntry,
+    name: string,
+    description: string,
+  ) {
+    try {
+      const updated = updateExplorationEntry(
+        entry,
+        {
+          name,
+          description,
+          graphVersion: entry.graphVersion,
+          state: entry.state,
+        },
+        new Date().toISOString(),
+      );
+      replaceExplorationEntries(
+        explorationEntries.map((item) => (item.id === entry.id ? updated : item)),
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "修改专题失败");
+    }
+  }
+  function saveExplorationState(entry: ExplorationEntry) {
+    if (!anchor) return;
+    const graphVersion = currentGraphVersion();
+    const member = explorationMember(anchor);
+    if (!graphVersion) {
+      setError("图谱版本尚未就绪，暂时不能更新专题。");
+      return;
+    }
+    if (!entry.members.some((item) => item.id === member.id)) {
+      setError("当前起点尚未加入此专题，请先加入后再更新状态。");
+      return;
+    }
+    try {
+      const updated = updateExplorationEntry(
+        entry,
+        {
+          name: entry.name,
+          description: entry.description,
+          graphVersion,
+          state: snapshotExplorationState(member.id),
+        },
+        new Date().toISOString(),
+      );
+      replaceExplorationEntries(
+        explorationEntries.map((item) => (item.id === entry.id ? updated : item)),
+      );
+      setExplorationNotice("已更新此专题的当前查询与展示状态。");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "更新专题失败");
+    }
+  }
+  function addCurrentExplorationMember(entry: ExplorationEntry) {
+    if (!anchor) return;
+    const graphVersion = currentGraphVersion();
+    if (!graphVersion) {
+      setError("图谱版本尚未就绪，暂时不能加入起点。");
+      return;
+    }
+    const member = explorationMember(anchor);
+    const updated = {
+      ...withExplorationMember(
+        entry,
+        member,
+        snapshotExplorationState(member.id),
+        new Date().toISOString(),
+      ),
+      graphVersion,
+    };
+    replaceExplorationEntries(
+      explorationEntries.map((item) => (item.id === entry.id ? updated : item)),
+    );
+    setActiveExplorationId(entry.id);
+    setExplorationNotice("已将当前原始身份的起点加入专题。");
+  }
+  function removeExplorationMember(
+    entry: ExplorationEntry,
+    member: ReturnType<typeof explorationMember>,
+  ) {
+    const updated = withoutExplorationMember(
+      entry,
+      member.id,
+      new Date().toISOString(),
+    );
+    if (!updated) {
+      replaceExplorationEntries(
+        deleteExplorationEntry(explorationEntries, entry.id),
+      );
+      setActiveExplorationId(undefined);
+      setExplorationNotice("专题已移除最后一个起点，因此一并删除。 ");
+      return;
+    }
+    replaceExplorationEntries(
+      explorationEntries.map((item) => (item.id === entry.id ? updated : item)),
+    );
+  }
+  async function openExplorationMember(
+    entry: ExplorationEntry,
+    memberId: string,
+  ) {
+    const member = entry.members.find((item) => item.id === memberId);
+    if (!member) return;
+    const prepared: ExplorationEntry = {
+      ...entry,
+      state: { ...entry.state, activeMemberId: member.id },
+      updatedAt: new Date().toISOString(),
+    };
+    replaceExplorationEntries(
+      explorationEntries.map((item) => (item.id === entry.id ? prepared : item)),
+    );
+    setActiveExplorationId(entry.id);
+    try {
+      const current = await api.status();
+      if (typeof current.version !== "string" || !current.version)
+        throw new Error("当前已发布图谱版本不可用。");
+      const changed = assessExplorationRestore(entry, current.version, [])
+        .graphVersionChanged;
+      activeVersion.current = current.version;
+      setStatus(current);
+      setError("");
+      setExplorationNotice(
+        changed
+          ? `专题保存于图谱 ${entry.graphVersion.slice(0, 10)}，当前为 ${current.version.slice(0, 10)}；已丢弃旧画布并按当前版本重新查询。`
+          : "已按当前已发布图谱重新查询此专题。",
+      );
+      const raw: GraphNode = {
+        id:
+          member.anchor.nodeId ??
+          (member.anchor.taskId ? `task:${member.anchor.taskId}` : member.id),
+        kind: member.kind,
+        table: member.anchor.table,
+        taskId: member.anchor.taskId,
+        label: member.label,
+      };
+      await choose(raw, false, {
+        entry: prepared,
+        anchor: member.anchor,
+        state: prepared.state,
+      });
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "无法打开保存的探索入口。",
+      );
+    }
   }
   return (
     <div className="app">
@@ -622,8 +1052,35 @@ function Explorer() {
             : "等待图谱服务"}
         </div>
       </header>
-      <div className="workspace">
+      <ResizableWorkspace>
         <aside className="search-panel panel">
+          <ExplorationPanel
+            entries={explorationEntries}
+            activeEntryId={activeExplorationId}
+            currentAnchor={anchor}
+            onCreate={createExploration}
+            onOpen={(entry) =>
+              void openExplorationMember(entry, entry.state.activeMemberId)
+            }
+            onOpenMember={(entry, memberId) =>
+              void openExplorationMember(entry, memberId)
+            }
+            onUpdate={updateExploration}
+            onDelete={(entry) => {
+              replaceExplorationEntries(
+                deleteExplorationEntry(explorationEntries, entry.id),
+              );
+              if (activeExplorationId === entry.id)
+                setActiveExplorationId(undefined);
+              setExplorationNotice("已从当前浏览器删除此探索入口。");
+            }}
+            onAddCurrent={addCurrentExplorationMember}
+            onRemoveMember={removeExplorationMember}
+            onSaveCurrent={saveExplorationState}
+          />
+          {explorationNotice && (
+            <div className="exploration-notice">{explorationNotice}</div>
+          )}
           <button
             className="overview-button"
             onClick={() => {
@@ -802,12 +1259,16 @@ function Explorer() {
           {mode === "lineage" && trace?.truncated && (
             <div className="notice">
               已达到 {trace.edgeLimit} 条关系上限，请缩小范围。
+              {!!trace.unqueriedRootNodeIds?.length && ` 另有 ${trace.unqueriedRootNodeIds.length} 个已选字段尚未查询，未画作孤立字段。`}
             </div>
           )}
           {mode === "lineage" && trace?.stoppedBy === "DEPTH_LIMIT" && (
             <div className="notice neutral">
               已到 {trace.depthLimit} 层边界，前沿仍可继续展开。
             </div>
+          )}
+          {mode === "lineage" && layer === "field" && foldedEdgeCount > 0 && (
+            <div className="notice neutral">{foldedEdgeCount} 条连线因端点字段不在卡片可视范围内暂时收起；滚动查看，或点击字段定位关联字段。</div>
           )}
           <div className="flow-wrap" ref={flowWrap}>
             {mode === "overview" && overview ? (
@@ -826,8 +1287,8 @@ function Explorer() {
               </ReactFlow>
             ) : anchor ? (
               <ReactFlow
-                nodes={graph.nodes}
-                edges={graph.edges}
+                nodes={visibleNodes}
+                edges={visibleEdges}
                 nodeTypes={nodeTypes}
                 onNodeClick={onNodeClick}
                 onPaneClick={() => {
@@ -877,14 +1338,15 @@ function Explorer() {
           </footer>
         </main>
         <DetailPanel
-          key={`${selected?.id ?? "none"}:${detail?.taskId ?? "none"}:${detail?.version ?? "none"}`}
+          key={`${selected?.id ?? "none"}:${details.map((item) => `${item.taskId}:${item.requestedWriteId ?? ""}:${item.version}`).join("|") || "none"}`}
           node={selected}
           terminal={terminal}
           detail={detail}
+          details={details}
           loading={detailLoading}
           onContinue={() => void continueFromSelected()}
         />
-      </div>
+      </ResizableWorkspace>
     </div>
   );
 }

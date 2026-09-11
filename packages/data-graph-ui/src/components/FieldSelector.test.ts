@@ -36,16 +36,16 @@ const fields: GraphNode[] = [
     taskId: "2",
     column: "prcg_date",
     metadata: {
-      table: { status: "AVAILABLE", description: "定价指标表" },
-      field: { status: "AVAILABLE", comment: "定价日期" },
+      table: { status: "AVAILABLE" as const, description: "定价指标表" },
+      field: { status: "AVAILABLE" as const, comment: "定价日期" },
     },
   },
-];
+].map(field => ({...field, table:"dm.output"}));
 describe("FieldSelector helpers", () => {
   it("counts and numerically orders exact scheduling IDs", () =>
     expect(taskOptions(fields)).toEqual([
       { taskId: "2", count: 3 },
-      { taskId: "10", count: 2 },
+      { taskId: "10", count: 1 },
     ]));
   it("keeps task filtering separate from field-name search", () =>
     expect(
@@ -55,12 +55,21 @@ describe("FieldSelector helpers", () => {
     expect(fieldChoices(fields, "2", "定价日期").map(({ field }) => field.id)).toEqual([
       "c1",
     ]));
-  it("labels same-task same-column writes without displaying write IDs", () =>
+  it("groups the same physical field and retains all write members", () =>
     expect(
       fieldChoices(fields, "10", "").map(
-        ({ occurrenceLabel }) => occurrenceLabel,
+        ({ members }) => members.map(field => field.id),
       ),
-    ).toEqual(["写入 1/2", "写入 2/2"]));
+    ).toEqual([["a1", "a2"]]));
+  it("keeps other tables and ambiguous table identities separate", () => {
+    const rows = [fields[0]!, {...fields[1]!,table:"temp.output"}];
+    expect(fieldChoices(rows,"","")).toHaveLength(2);
+    expect(fieldChoices(rows.map(field=>({...field,table:undefined})),"","")).toHaveLength(2);
+  });
+  it("keeps the entire group when only an alias comment matches", () => {
+    const rows = [fields[0]!, {...fields[1]!,metadata:{table:{status:"AVAILABLE" as const},field:{status:"AVAILABLE" as const,comment:"金额"}}}];
+    expect(fieldChoices(rows,"","金额")[0]?.members.map(field=>field.id)).toEqual(["a1","a2"]);
+  });
   it("selects and clears only the current filtered fields", () => {
     expect(toggleAllVisible(["hidden"], ["a1", "a2"], true)).toEqual([
       "hidden",

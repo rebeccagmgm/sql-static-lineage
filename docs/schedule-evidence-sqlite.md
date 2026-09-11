@@ -5,11 +5,11 @@
 
 ## 1. 存储边界
 
-| 对象 | 当前写入位置 | SQLite 角色 |
-| --- | --- | --- |
-| Horae `up/down` 调度关系 | `fill-horae-relation-sqlite` | **直接主写** `evidence` 表 |
-| 任务类型、SZData detail、Hive SQL、run-script SQL、Hive target DDL 等 | `schedule-evidence/tasks/<taskId>/` 下的 JSON/SQL 文件 | 通过导入器同步到 SQLite |
-| Input Pack 当前读取端 | 文件缓存 | 尚未切换至 SQLite 主读 |
+| 对象                                                                  | 当前写入位置                                           | SQLite 角色                |
+| --------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------- |
+| Horae `up/down` 调度关系                                              | `fill-horae-relation-sqlite`                           | **直接主写** `evidence` 表 |
+| 任务类型、SZData detail、Hive SQL、run-script SQL、Hive target DDL 等 | `schedule-evidence/tasks/<taskId>/` 下的 JSON/SQL 文件 | 通过导入器同步到 SQLite    |
+| Input Pack 当前读取端                                                 | 文件缓存                                               | 尚未切换至 SQLite 主读     |
 
 路径约定：
 
@@ -44,12 +44,12 @@ npm run input-pack:import-evidence-sqlite -- `
 
 输出字段含义：
 
-| 字段 | 含义 |
-| --- | --- |
-| `inserted` | SQLite 中原先不存在的证据 |
-| `updated` | 同一主键但文件内容 hash 已变化 |
-| `unchanged` | hash 相同，安全跳过 |
-| `invalid` | 无法读取或解析的文件；非 0 时需调查 |
+| 字段                   | 含义                                                  |
+| ---------------------- | ----------------------------------------------------- |
+| `inserted`             | SQLite 中原先不存在的证据                             |
+| `updated`              | 同一主键但文件内容 hash 已变化                        |
+| `unchanged`            | hash 相同，安全跳过                                   |
+| `invalid`              | 无法读取或解析的文件；非 0 时需调查                   |
 | `skippedRelationFiles` | 故意跳过的 `horae-relation-up/down-depth-*.json` 文件 |
 
 同步不会删除 `tasks/<taskId>/` 下的原文件。

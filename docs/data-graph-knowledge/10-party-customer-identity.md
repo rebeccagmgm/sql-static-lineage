@@ -20,11 +20,11 @@ OTC 客户表保存另一组资料：主协议、补充协议、引入机构、�
 
 ## 三种连接，分别解决三个问题
 
-| 关系 | 已核实的左右方向 | 阅读时需要保留什么 |
-|---|---|---|
-| `pdata_n.t01_pty_rela_h` 当事人关系 `01` | `TIT060-KEY_CTPTY_ID` → `OUTSIDE_CTPTY_CODE` | 来源映射、关系代码与有效区间 |
-| `pdata_n.t01_pty_rela_h` 当事人关系 `29` | 账户组交易对手 → 绑定的交易对手，两端均添加当事人前缀 | 左右方向；不能把两端直接合并成一个主体 |
-| `pdata_n.t03_agt_pty_rela_h` 协议当事人关系 `06`，本章的 TRS 分支 | 互换合约编号／`20206` → `TIT060-KEY_CTPTY_ID` | 合约类别、关系角色与有效区间 |
+| 关系                                                              | 已核实的左右方向                                      | 阅读时需要保留什么                     |
+| ----------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------- |
+| `pdata_n.t01_pty_rela_h` 当事人关系 `01`                          | `TIT060-KEY_CTPTY_ID` → `OUTSIDE_CTPTY_CODE`          | 来源映射、关系代码与有效区间           |
+| `pdata_n.t01_pty_rela_h` 当事人关系 `29`                          | 账户组交易对手 → 绑定的交易对手，两端均添加当事人前缀 | 左右方向；不能把两端直接合并成一个主体 |
+| `pdata_n.t03_agt_pty_rela_h` 协议当事人关系 `06`，本章的 TRS 分支 | 互换合约编号／`20206` → `TIT060-KEY_CTPTY_ID`         | 合约类别、关系角色与有效区间           |
 
 第一种让 TIT 当事人找到外部业务客户码；第二种保存账户组的绑定；第三种把[合约对象](07-contract-objects.md)接到当事人。它们共同使用“关系表”，但不是同一种关系，也不能把账户组绑定直接解释为最终受益人穿透。
 
@@ -65,18 +65,18 @@ OTC 客户表保存另一组资料：主协议、补充协议、引入机构、�
 
 下列行号是证据 `sqlSources` 中相应 SQL 的行号，不是 JSON 行号。固定发布版本为 `df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3`。
 
-| 任务与证据 | SQL 位置与用途 |
-|---|---|
-| [104299](../../../sql-static-lineage-data/task-projections/tasks/104299/versions/1404cf6c03974c1416b23a1ae4a53f09244304023fbd9c34df5857c40e3dcb50.evidence-v3.json) | query 1–15：不含分隔下划线的交易对手来源生成名称快照 |
-| [105076](../../../sql-static-lineage-data/task-projections/tasks/105076/versions/19c788329d90316beaad3cc5f8c27b6fc7da41e73b6cb71fdf985727d314def2.evidence-v3.json) | query 1–15：当事人前缀、类别与名称映射 |
-| [105379](../../../sql-static-lineage-data/task-projections/tasks/105379/versions/c6e782c34edecabe45389cfad01d9e5be0986b177df7a0dd020d3998b0040ba9.evidence-v3.json) | query 1–11、45–62：交易对手分类及扩展参数中的产品编号 |
-| [105518](../../../sql-static-lineage-data/task-projections/tasks/105518/versions/4e041dbe440eaa6794eb7adec3d8a14e13c148bc4ba97bb31f2c60e417291fe3.evidence-v3.json) | query 1–11、45–59：另一来源的交易对手属性与删除标志 |
-| [105079](../../../sql-static-lineage-data/task-projections/tasks/105079/versions/3a36058d1f5c0a340646fbdd0f4a3ac224e685cc05a755d2cdc01fe7d49e576a.evidence-v3.json) | query 49–60、82–91：当事人与外部代码映射、历史匹配键 |
-| [219175](../../../sql-static-lineage-data/task-projections/tasks/219175/versions/30d5d93162897dfc9232b102db44478cd928fdc6879ccd28cb543c4d3eeaede8.evidence-v3.json) | create 19–31、38–57：账户组绑定关系及历史维护 |
+| 任务与证据                                                                                                                                                          | SQL 位置与用途                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [104299](../../../sql-static-lineage-data/task-projections/tasks/104299/versions/1404cf6c03974c1416b23a1ae4a53f09244304023fbd9c34df5857c40e3dcb50.evidence-v3.json) | query 1–15：不含分隔下划线的交易对手来源生成名称快照                                                   |
+| [105076](../../../sql-static-lineage-data/task-projections/tasks/105076/versions/19c788329d90316beaad3cc5f8c27b6fc7da41e73b6cb71fdf985727d314def2.evidence-v3.json) | query 1–15：当事人前缀、类别与名称映射                                                                 |
+| [105379](../../../sql-static-lineage-data/task-projections/tasks/105379/versions/c6e782c34edecabe45389cfad01d9e5be0986b177df7a0dd020d3998b0040ba9.evidence-v3.json) | query 1–11、45–62：交易对手分类及扩展参数中的产品编号                                                  |
+| [105518](../../../sql-static-lineage-data/task-projections/tasks/105518/versions/4e041dbe440eaa6794eb7adec3d8a14e13c148bc4ba97bb31f2c60e417291fe3.evidence-v3.json) | query 1–11、45–59：另一来源的交易对手属性与删除标志                                                    |
+| [105079](../../../sql-static-lineage-data/task-projections/tasks/105079/versions/3a36058d1f5c0a340646fbdd0f4a3ac224e685cc05a755d2cdc01fe7d49e576a.evidence-v3.json) | query 49–60、82–91：当事人与外部代码映射、历史匹配键                                                   |
+| [219175](../../../sql-static-lineage-data/task-projections/tasks/219175/versions/30d5d93162897dfc9232b102db44478cd928fdc6879ccd28cb543c4d3eeaede8.evidence-v3.json) | create 19–31、38–57：账户组绑定关系及历史维护                                                          |
 | [150757](../../../sql-static-lineage-data/task-projections/tasks/150757/versions/cf9b74736f6f6b66c1bf747bb99a4285a518d0ab9536af4c78f962d3ab8f7f20.evidence-v3.json) | create 146–170、284–288、593–598；query 1、133–135、445–449、547–549：OTC 客户资料及按交易日维护的快照 |
-| [105058](../../../sql-static-lineage-data/task-projections/tasks/105058/versions/8b1df6b6a3f90ae678524f3c166ad02c8db9117a040e7615a70df17da7ac3c50.evidence-v3.json) | query 49–59、82–91：TRS 合约与当事人关系 |
-| [86840](../../../sql-static-lineage-data/task-projections/tasks/86840/versions/98e14680334a17fef9cf23bcf7f2845dfd68541494598961fb3b0f6b26be0d56.evidence-v3.json) | query 13–20、202–205、339–348：外部客户码及业务客户名称消费 |
-| [105743](../../../sql-static-lineage-data/task-projections/tasks/105743/versions/9c728eb8cb3d3dff34755347b93b1a3e69aae4393bc2b6f11065ebd0f44f0152.evidence-v3.json) | query 163–192：销售客户码进入管理关系及特定条件下的关联替换 |
-| [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) | query 9–14、215–240：子交易消费采用当事人编号连接交易对手与名称 |
+| [105058](../../../sql-static-lineage-data/task-projections/tasks/105058/versions/8b1df6b6a3f90ae678524f3c166ad02c8db9117a040e7615a70df17da7ac3c50.evidence-v3.json) | query 49–59、82–91：TRS 合约与当事人关系                                                               |
+| [86840](../../../sql-static-lineage-data/task-projections/tasks/86840/versions/98e14680334a17fef9cf23bcf7f2845dfd68541494598961fb3b0f6b26be0d56.evidence-v3.json)   | query 13–20、202–205、339–348：外部客户码及业务客户名称消费                                            |
+| [105743](../../../sql-static-lineage-data/task-projections/tasks/105743/versions/9c728eb8cb3d3dff34755347b93b1a3e69aae4393bc2b6f11065ebd0f44f0152.evidence-v3.json) | query 163–192：销售客户码进入管理关系及特定条件下的关联替换                                            |
+| [107481](../../../sql-static-lineage-data/task-projections/tasks/107481/versions/d934b8cb1caf8975689bddf6801ad9d2afc27867600b583054ca3d8cf74bd20e.evidence-v3.json) | query 9–14、215–240：子交易消费采用当事人编号连接交易对手与名称                                        |
 
 名称的存储结构另见 [t01_pty_name DDL](../../../sql-static-lineage-data/tables/hive/pdata_n.t01_pty_name__gfhive/ddl.sql)。

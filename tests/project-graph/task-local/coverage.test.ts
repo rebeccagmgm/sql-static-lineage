@@ -75,6 +75,69 @@ function setupProjectedTask(): { dataRoot: string; factsRoot: string } {
   return { dataRoot, factsRoot };
 }
 
+function setupStringTargetProjectedTask(): { dataRoot: string; factsRoot: string } {
+  const parent = mkdtempSync(join(tmpdir(), "task-local-string-target-"));
+  const dataRoot = join(parent, "data");
+  const factsRoot = join(parent, "facts");
+  writeTableInput(dataRoot, {
+    platform: "hive",
+    dataSource: "warehouse-z",
+    qualifiedName: "demo.stati",
+    objectType: "hive_table",
+    partitionFields: [],
+    ddl: "CREATE TABLE demo.stati (internal_trade_id STRING, stati_cont_desc STRING);",
+    evidenceProvider: "synthetic:test",
+    collectedAt: "2026-01-01T00:00:00.000Z",
+  });
+  writeTableInput(dataRoot, {
+    platform: "hive",
+    dataSource: "warehouse-z",
+    qualifiedName: "demo.trades",
+    objectType: "hive_table",
+    partitionFields: [],
+    ddl: "CREATE TABLE demo.trades (internal_trade_id STRING, v STRING);",
+    evidenceProvider: "synthetic:test",
+    collectedAt: "2026-01-01T00:00:00.000Z",
+  });
+  writeTaskInput(dataRoot, {
+    taskId: "105388",
+    taskCategory: "hiveTask-2.0",
+    taskName: "demo.stati.string-target",
+    target: "demo.stati",
+    targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+    partition: null,
+    sql: {
+      query: {
+        content:
+          "INSERT OVERWRITE TABLE demo.stati SELECT internal_trade_id, v AS stati_cont_desc FROM demo.trades",
+        evidenceProvider: "synthetic:test",
+      },
+    },
+    evidenceProvider: "synthetic:test",
+    collectedAt: "2026-01-01T00:00:00.000Z",
+  });
+  runInputPackMachineFacts({
+    dataRoot,
+    taskIds: ["105388"],
+    outputRoot: factsRoot,
+  });
+  return { dataRoot, factsRoot };
+}
+
+function rewriteInputPackProvenance(
+  factsRoot: string,
+  taskId: string,
+  update: (inputPack: Record<string, unknown>) => void,
+): void {
+  const manifestPath = join(factsRoot, "registry", "tasks", taskId, "bundle", "manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    inputs: { input_pack: Record<string, unknown> };
+  };
+  update(manifest.inputs.input_pack);
+  writeFileSync(manifestPath, canonicalJson(manifest), "utf8");
+  refreshAttestation(factsRoot, taskId);
+}
+
 function refreshAttestation(factsRoot: string, taskId: string): void {
   const bundle = join(factsRoot, "registry", "tasks", taskId, "bundle");
   const manifestPath = join(bundle, "manifest.json");
@@ -232,6 +295,70 @@ describe("task-local coverage states", () => {
       taskId: "105387",
       generatedAt: "2026-09-02T00:00:00.000Z",
     });
+    expect(projection.coverageStatus).toBe("COLLECTION_FAILED");
+    expect(projection.failureReasonCode).toBe("SCHEMA_UNRESOLVED");
+    expect(projection.edges).toHaveLength(0);
+  });
+
+  it("recovers a string task target only from the attested table locator and content hash", () => {
+    const { dataRoot, factsRoot } = setupStringTargetProjectedTask();
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse-a",
+      qualifiedName: "demo.stati",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.stati (wrong_column STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const projection = projectTaskLocal({
+      dataRoot,
+      factsRoot,
+      taskId: "105388",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(projection.coverageStatus).toBe("PROJECTED");
+    expect(projection.failureReasonCode).toBeNull();
+    expect(projection.nodes).toContainEqual(expect.objectContaining({
+      nodeType: "PHYSICAL_DATASET",
+      properties: expect.objectContaining({
+        dataSource: "warehouse-z",
+        qualifiedName: "demo.stati",
+      }),
+    }));
+  });
+
+  it.each([
+    ["locator", (inputPack: Record<string, unknown>) => {
+      inputPack.table_locator = "tables/hive/demo.stati__warehouse-a/table.json";
+    }],
+    ["content hash", (inputPack: Record<string, unknown>) => {
+      inputPack.table_content_hash = "0".repeat(64);
+    }],
+  ])("fails closed when the attested table %s does not match", (_label, update) => {
+    const { dataRoot, factsRoot } = setupStringTargetProjectedTask();
+    writeTableInput(dataRoot, {
+      platform: "hive",
+      dataSource: "warehouse-a",
+      qualifiedName: "demo.stati",
+      objectType: "hive_table",
+      partitionFields: [],
+      ddl: "CREATE TABLE demo.stati (wrong_column STRING);",
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    rewriteInputPackProvenance(factsRoot, "105388", update);
+
+    const projection = projectTaskLocal({
+      dataRoot,
+      factsRoot,
+      taskId: "105388",
+      generatedAt: "2026-09-02T00:00:00.000Z",
+    });
+
     expect(projection.coverageStatus).toBe("COLLECTION_FAILED");
     expect(projection.failureReasonCode).toBe("SCHEMA_UNRESOLVED");
     expect(projection.edges).toHaveLength(0);

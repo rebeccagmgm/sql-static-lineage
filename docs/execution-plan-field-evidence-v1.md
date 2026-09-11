@@ -46,18 +46,18 @@
 
 ### 当前阶段（2026-09-04）
 
-| 项                                                                        | 状态                                                                    |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 字段事实存在性（真数据实测）                                              | **已确认**（§2.1）                                                      |
-| 两跳数据可达性（四锚点）                                                  | **已确认** 66/67、121/122、45/52、14/14（§2.2）                         |
-| 简单子树读次算法实测                                                      | **已测** 63.29%（5,740/9,070）；181058 仅 11.56% ← 折叠丢上下文（§2.5） |
-| SQL 结构全库分布（防过拟合）                                              | **已测** setop 40% / 同表多读 47% / LEFT 49% / 物化 10%（§2.6）         |
-| OpenSpec change 裁为纯 Phase 1                                            | **已完成**（`field-evidence-v1`）                                       |
-| 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                    |
-| Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                         |
-| Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                    |
+| 项                                                                        | 状态                                                                               |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 字段事实存在性（真数据实测）                                              | **已确认**（§2.1）                                                                 |
+| 两跳数据可达性（四锚点）                                                  | **已确认** 66/67、121/122、45/52、14/14（§2.2）                                    |
+| 简单子树读次算法实测                                                      | **已测** 63.29%（5,740/9,070）；181058 仅 11.56% ← 折叠丢上下文（§2.5）            |
+| SQL 结构全库分布（防过拟合）                                              | **已测** setop 40% / 同表多读 47% / LEFT 49% / 物化 10%（§2.6）                    |
+| OpenSpec change 裁为纯 Phase 1                                            | **已完成**（`field-evidence-v1`）                                                  |
+| 契约 1.3.0                                                                | **已完成**（FE-0 + FE-1 同 PR bump）                                               |
+| Phase 1 派生（折叠 leaf + setop 下沉 + 路径 subtype + relation 子树侧别） | **已完成**（FE-1…FE-3 + FE-1′）                                                    |
+| Phase 1 baseline（三组 cohort）                                           | **已完成**（`phase1-baseline.json`）                                               |
 | OpenSpec change `field-evidence-v1-impact-query`（Phase 2）               | **已完成**（FE-4…FE-8；金样 A–E + `test:field-evidence` + `field-evidence:query`） |
-| OpenSpec change `field-evidence-schedule-preference`（Phase 2.5）         | **已完成**（frontier Horae 推荐排序；`FIELD_IMPACT_RESULT` 1.1.0）       |
+| OpenSpec change `field-evidence-schedule-preference`（Phase 2.5）         | **已完成**（frontier Horae 推荐排序；`FIELD_IMPACT_RESULT` 1.1.0）                 |
 
 ### 立刻做什么（顺序）
 
@@ -112,12 +112,12 @@
 
 ### 2.2 两跳可达性（锚点输入字段 → 批内 producer 是否有同名输出列 binding）
 
-| 锚点   | 输入字段 | 可接到 producer binding | 断点                                                                             |
-| ------ | -------- | ----------------------- | -------------------------------------------------------------------------------- |
-| 176827 | 67       | 66                      | `pdata_n.ref_cd_cvt_map` 未投影（终止表）                                        |
-| 209119 | 122      | 121                     | 同上                                                                             |
+| 锚点   | 输入字段 | 可接到 producer binding | 断点                                                                                                                    |
+| ------ | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 176827 | 67       | 66                      | `pdata_n.ref_cd_cvt_map` 未投影（终止表）                                                                               |
+| 209119 | 122      | 121                     | 同上                                                                                                                    |
 | 181058 | 52       | 45                      | 7 个卡在 `dm_rsk_n.otc_opt_inr_comp_pal_sum_temp`（writer 在批内；Facts 有物化桥，1.2.0 投影未用全/字段链在 temp 仍断） |
-| 155015 | 14       | 14                      | —                                                                                |
+| 155015 | 14       | 14                      | —                                                                                                                       |
 
 结论：**数据层面多跳骨架已在**。缺的不是事实，是粒度、语义、侧别与查询契约。
 
@@ -255,13 +255,13 @@ ReadField     := (readOccurrenceId, column)
 
 FE-0 **只落地契约层**，不扩到派生逻辑：
 
-| 项                                          | FE-0             | FE-1 同 PR（投影发射） |
-| ------------------------------------------- | ---------------- | ---------------------- |
-| `contract.ts` 支持 1.3.0 类型与校验         | ✓                | —                      |
+| 项                                          | FE-0                                                        | FE-1 同 PR（投影发射） |
+| ------------------------------------------- | ----------------------------------------------------------- | ---------------------- |
+| `contract.ts` 支持 1.3.0 类型与校验         | ✓                                                           | —                      |
 | `TASK_LOCAL_PROJECTION_SCHEMA_VERSION` 常量 | FE-0 暂留 `1.2.0`；**FE-1 同 PR bump 到 `1.3.0`**（已合入） | bump 到 `1.3.0`        |
-| `project-task-local.ts` 发射 1.3.0          | ✗                | ✓                      |
-| `fieldDirectEdgeSemanticKey` helper         | ✓                | 调用方写入 semanticKey |
-| `gate-b-union` 等 consumer 接受 1.3.0       | ✗（登记）        | 1.3.0 投影上线前另改   |
+| `project-task-local.ts` 发射 1.3.0          | ✗                                                           | ✓                      |
+| `fieldDirectEdgeSemanticKey` helper         | ✓                                                           | 调用方写入 semanticKey |
+| `gate-b-union` 等 consumer 接受 1.3.0       | ✗（登记）                                                   | 1.3.0 投影上线前另改   |
 
 校验分支：`schemaVersion >= 1.2.0` → READS 两跳 + `readOccurrenceId`；`schemaVersion === 1.3.0` → 字段边新属性、`gaps[]`、控制侧别。1.1.0 / 1.2.0 继续可读，不补 1.3.0 字段。
 
@@ -473,12 +473,12 @@ impactQuery({
 
 多 writer 时 `frontier[].candidates[]` 可附带 Horae depth-1 推荐字段（`scheduleRelation` / `schedulePreferred`），数据源与 one-hop / multi-hop 相同：`schedule-evidence/tasks/<taskId>/horae-relation-up-depth-1.json` 或 artifact `scheduleEdges`。
 
-| 项 | 调度推荐 | CONFIRMED 接续 |
-| -- | -------- | -------------- |
-| 触发 | INDEX 多候选或 `l1Eligible=false` → frontier | INDEX 唯一候选且 `l1Eligible=true` + producer binding |
-| Horae 作用 | 排序与 UI 标记（★） | **不参与** |
-| `evidenceStatus` | 仍为 `CANDIDATE`（默认不递归） | `CONFIRMED` |
-| 多 Horae 父 | 全部 `schedulePreferred=false` + gap `SCHEDULE_PARENT_AMBIGUOUS` | — |
+| 项               | 调度推荐                                                         | CONFIRMED 接续                                        |
+| ---------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| 触发             | INDEX 多候选或 `l1Eligible=false` → frontier                     | INDEX 唯一候选且 `l1Eligible=true` + producer binding |
+| Horae 作用       | 排序与 UI 标记（★）                                              | **不参与**                                            |
+| `evidenceStatus` | 仍为 `CANDIDATE`（默认不递归）                                   | `CONFIRMED`                                           |
+| 多 Horae 父      | 全部 `schedulePreferred=false` + gap `SCHEDULE_PARENT_AMBIGUOUS` | —                                                     |
 
 **禁止**：因 Horae 有边而改 `l1Eligible`、自动 depth+1、把 frontier 标成 CONFIRMED，或向 `TASK_LOCAL_PROJECTION` 写入 TASK→TASK 数据边。
 
@@ -486,12 +486,12 @@ impactQuery({
 
 INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuationRules()`（`scripts/project-graph/field-evidence-v1/continuation/`）。
 
-| 阶段 | 规则 | 能力 | 行为 |
-| ---- | ---- | ---- | ---- |
-| PRUNE | `PRUNE_DISJOINT` | PRUNE_ONLY | 丢弃 INDEX `DISJOINT` |
-| REMATCH | `PARTITION_REMATCH` | MAY_MARK_ELIGIBLE | `matchProducersByReadScope` 重算 `partitionOverlap` |
-| REMATCH | `SCHEDULE_TIEBREAK` | PRUNE_ONLY | 同表且 ≥2 条 `PROVEN_OVERLAP`/`POSSIBLE_OVERLAP`、且恰好一个 Horae `DIRECT_PARENT` 时只留该父；UNKNOWN 不参与破平、不被丢弃。Horae UNAVAILABLE 或剩余 ≤1 则跳过。Horae 永不把 `continuationEligible` 置 true |
-| DECIDE | `reduce` | — | `pruneOn` 丢弃；`confirmOn` 且无 `SCHEDULE_PARENT_AMBIGUOUS` → `continuationEligible` |
+| 阶段    | 规则                | 能力              | 行为                                                                                                                                                                                                         |
+| ------- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PRUNE   | `PRUNE_DISJOINT`    | PRUNE_ONLY        | 丢弃 INDEX `DISJOINT`                                                                                                                                                                                        |
+| REMATCH | `PARTITION_REMATCH` | MAY_MARK_ELIGIBLE | `matchProducersByReadScope` 重算 `partitionOverlap`                                                                                                                                                          |
+| REMATCH | `SCHEDULE_TIEBREAK` | PRUNE_ONLY        | 同表且 ≥2 条 `PROVEN_OVERLAP`/`POSSIBLE_OVERLAP`、且恰好一个 Horae `DIRECT_PARENT` 时只留该父；UNKNOWN 不参与破平、不被丢弃。Horae UNAVAILABLE 或剩余 ≤1 则跳过。Horae 永不把 `continuationEligible` 置 true |
+| DECIDE  | `reduce`            | —                 | `pruneOn` 丢弃；`confirmOn` 且无 `SCHEDULE_PARENT_AMBIGUOUS` → `continuationEligible`                                                                                                                        |
 
 `resolveReadField`：管道后 `|candidates|===1 && continuationEligible && producer FieldEdge` → CONFIRMED，否则 FRONTIER。INDEX `l1Eligible` 仅作初始值；管道后的 `continuationEligible` 为准。Harness 从 `PRODUCER_INDEX_PATH`（或默认 sibling `producer-index.json`）加载 PI；缺失时 rematch 跳过并记 `PRODUCER_INDEX_UNAVAILABLE`。两段 qualifiedName 仅当消费任务 `taskCategory` 为 `sparkIndex` / `hiveTask` / `hiveTask-2.0` 时默认 `platform=hive`、`dataSource=gfhive`；`hive2*` 与 `*2hive` 不同此默认。`readScopeFor` 用 Facts 谓词 + `resolveReadPartitionScope`；`*2hive` 且 PI 无写分区时记 `SOURCE_ENDPOINT_BOUNDARY`（源库边界）；其它 scope 不可得记 `READ_SCOPE_UNAVAILABLE`（【缺证据】），不伪造 scope。
 
@@ -503,14 +503,14 @@ INDEX 只枚举可能 writer；分区与调度解释统一经 `applyContinuation
 
 输入：某条 VALUE 边 `v`（带 `sourceRelationId`）、同写观察的某条控制边 `c`（带 `subtype / joinType / controlSide / relationId / leftRelationId / rightRelationId`）。
 
-| 情形                                                                                                                                                         | scope                                            |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `c.subtype = JOIN`，`v.sourceRelationId` 位于 `c` 的**可空侧**子树（LEFT 的 right / RIGHT 的 left / FULL 任一侧）                                            | `FIELD_SCOPED` —— join 键决定该列取值或 NULL     |
-| `c.subtype = JOIN`，`v.sourceRelationId` 位于**保留侧**                                                                                                      | `DATASET_SCOPED`，保留 `grain` 提示倍增风险      |
-| `c.subtype = JOIN`，`joinType = INNER`                                                                                                                       | `DATASET_SCOPED`，**不得标无关**                 |
+| 情形                                                                                                                                                         | scope                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `c.subtype = JOIN`，`v.sourceRelationId` 位于 `c` 的**可空侧**子树（LEFT 的 right / RIGHT 的 left / FULL 任一侧）                                            | `FIELD_SCOPED` —— join 键决定该列取值或 NULL                                                                                     |
+| `c.subtype = JOIN`，`v.sourceRelationId` 位于**保留侧**                                                                                                      | `DATASET_SCOPED`，保留 `grain` 提示倍增风险                                                                                      |
+| `c.subtype = JOIN`，`joinType = INNER`                                                                                                                       | `DATASET_SCOPED`，**不得标无关**                                                                                                 |
 | `c.subtype = FILTER / GROUP_BY`                                                                                                                              | 默认 `DATASET_SCOPED`；若 `c.relationId` 与 `v.sourceRelationId` 可证处于不同 setop 分支 → `SCOPE_DISJOINT`（先于 subtype 默认） |
-| `c.relationId` 与 `v.sourceRelationId` 处于**不同 setop 分支**（如 176827 的 `setop.b0` vs `setop.b1`），或 `c` 所在 CTE 子树与 `v` 子树无公共祖先直至写观察 | `SCOPE_DISJOINT`                                 |
-| `controlSide = BOTH` 且无法判                                                                                                                                | `DATASET_SCOPED` + gap `CONTROL_SIDE_UNRESOLVED` |
+| `c.relationId` 与 `v.sourceRelationId` 处于**不同 setop 分支**（如 176827 的 `setop.b0` vs `setop.b1`），或 `c` 所在 CTE 子树与 `v` 子树无公共祖先直至写观察 | `SCOPE_DISJOINT`                                                                                                                 |
+| `controlSide = BOTH` 且无法判                                                                                                                                | `DATASET_SCOPED` + gap `CONTROL_SIDE_UNRESOLVED`                                                                                 |
 
 硬规则：
 
@@ -739,12 +739,12 @@ Phase 3 要验证的缩小为：**除重跑外，指标口径追因是否也需�
 
 ### 11.2 Change `field-evidence-v1-impact-query`（Phase 2，待 11.1 达标后开）
 
-| 包                      | 内容                                                       | 完成定义                                                            |
-| ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
-| **FE-4** 跨任务 resolve | 只读 INDEX 的 `resolveReadField()`；`FieldEdgeIndex` 接口  | 单元测试覆盖：唯一 + l1Eligible / 多候选 / 无条目 / 无 binding 四态 |
-| **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                             | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                |
-| **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence` | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed         |
-| **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`             | 输出 `confirmedTwoHopRatio / dominantGap / decision`                |
+| 包                      | 内容                                                            | 完成定义                                                                            |
+| ----------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **FE-4** 跨任务 resolve | 只读 INDEX 的 `resolveReadField()`；`FieldEdgeIndex` 接口       | 单元测试覆盖：唯一 + l1Eligible / 多候选 / 无条目 / 无 binding 四态                 |
+| **FE-5** Impact Query   | §6 算法、scope、预算、输出契约                                  | 五 case 跑通产出 `FIELD_IMPACT_RESULT`；预算超限具名                                |
+| **FE-6** 金样冻结       | §7 五 case `expected.json` + `npm run test:field-evidence`      | 缺数据 skip；`FIELD_EVIDENCE_GOLDEN_REQUIRED=1` fail closed                         |
+| **FE-7** 止损判定       | §9 统计脚本 `npm run field-evidence:stop-loss`                  | 输出 `confirmedTwoHopRatio / dominantGap / decision`                                |
 | **FE-8** 单锚点查询 CLI | `npm run field-evidence:query -- --task-id <id> --column <col>` | stdout 输出校验过的 `FIELD_IMPACT_RESULT` 1.1.0 JSON；默认锚定任务 `finalWrites[0]` |
 
 Phase 2 的行为契约草稿即本文件 §6–§7；开 change 时以此为 spec 起点（首版 OpenSpec `specs/field-evidence-v1/spec.md` 已并入本文件，不再单独维护）。

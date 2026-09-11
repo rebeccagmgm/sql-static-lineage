@@ -61,12 +61,12 @@ WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LO
 **落地验收金样**（`tests/project-graph/task-local/golden-samples.test.ts` WP-7 case；
 另有 `identity.test.ts` 覆盖裸名 ASSUMED vs TASK_TARGET）：
 
-| 能力 | 任务 | 断言要点 |
-| --- | --- | --- |
-| `READ_OCCURRENCE` + `SELF_READ` + 折叠 | 103928 | schema 1.2.0；有自读 disposition；`localFieldPaths` / `materializationFolded` |
-| materialization UNRESOLVED 边界 | 105380 | mid 表读次保留 `MATERIALIZATION_NOT_RESOLVED`，不折成 LOCAL |
-| 无 materialization 的 temp | 158641 | `temp_n.*` 写表 `identityStatus=CANDIDATE_DATASET` / `TEMP_MATERIALIZATION_MISSING` |
-| 多跳本地折叠 | 181058 | `localFieldPaths` 与折叠 `FIELD_DIRECT` |
+| 能力                                   | 任务   | 断言要点                                                                            |
+| -------------------------------------- | ------ | ----------------------------------------------------------------------------------- |
+| `READ_OCCURRENCE` + `SELF_READ` + 折叠 | 103928 | schema 1.2.0；有自读 disposition；`localFieldPaths` / `materializationFolded`       |
+| materialization UNRESOLVED 边界        | 105380 | mid 表读次保留 `MATERIALIZATION_NOT_RESOLVED`，不折成 LOCAL                         |
+| 无 materialization 的 temp             | 158641 | `temp_n.*` 写表 `identityStatus=CANDIDATE_DATASET` / `TEMP_MATERIALIZATION_MISSING` |
+| 多跳本地折叠                           | 181058 | `localFieldPaths` 与折叠 `FIELD_DIRECT`                                             |
 
 `graph-accuracy-architecture.md` 调查期候选（103234 / 103230 / 100513 / 100629 / 100815）
 未绑本包回归；105387 仍以 WP-3 金样覆盖拉链/控制边，不重复充当 WP-7 temp 清单。
@@ -77,23 +77,23 @@ WP-3 的 1.1.0 是历史兼容格式；当前 `projectTaskLocal` 生产 `TASK_LO
 
 不是 one-hop / multi-hop。每任务只读自己的 Facts 与调度缓存条目。
 
-| 输入 | 用来干什么 |
-| --- | --- |
-| `dataset-io.jsonl` | `READS` / `WRITES` / `TARGET_WRITE`（`write_observation_id`） |
-| `relation-nodes.jsonl` + `relation-edges.jsonl` + `statements.jsonl` | 交给已有 `summarizeTaskRelations()` |
-| `output-field-bindings.jsonl` + `field-expression-nodes.jsonl` + `column-lineage-edges.jsonl` | 本任务内 `FIELD_DIRECT` / `FIELD_CONDITIONAL` |
-| `schema-refs.jsonl` | 物理字段身份（platform / dataSource / 表 / 列） |
-| 调度缓存（`topicName` / `taskCategory` / `taskName`） | TASK 节点展示属性；无 Pack 时走 `SCHEDULE_ONLY` |
-| Input Pack fingerprint + `task-fact-index.jsonl` 的 `sql_sha256` + `manifest_sha256` | 增量缓存键 |
+| 输入                                                                                          | 用来干什么                                                    |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `dataset-io.jsonl`                                                                            | `READS` / `WRITES` / `TARGET_WRITE`（`write_observation_id`） |
+| `relation-nodes.jsonl` + `relation-edges.jsonl` + `statements.jsonl`                          | 交给已有 `summarizeTaskRelations()`                           |
+| `output-field-bindings.jsonl` + `field-expression-nodes.jsonl` + `column-lineage-edges.jsonl` | 本任务内 `FIELD_DIRECT` / `FIELD_CONDITIONAL`                 |
+| `schema-refs.jsonl`                                                                           | 物理字段身份（platform / dataSource / 表 / 列）               |
+| 调度缓存（`topicName` / `taskCategory` / `taskName`）                                         | TASK 节点展示属性；无 Pack 时走 `SCHEDULE_ONLY`               |
+| Input Pack fingerprint + `task-fact-index.jsonl` 的 `sql_sha256` + `manifest_sha256`          | 增量缓存键                                                    |
 
 通道映射只准这一张表，不平行发明 `rowDetermining`：
 
-| 图边 | 来自 |
-| --- | --- |
-| `FIELD_DIRECT` | 本任务 `FIELD_VALUE` 能证明的输出列 ← 输入物理列。**今天的 Facts 与 field-lineage 都没有给值边打 IDENTITY / TRANSFORMATION / AGGREGATION**（WP-1 只给 `DATASET_CONTROL` 加了 subtype；契约里的 `OpenLineageDirectSubtype` 是空声明）。本 WP 的 `subtype` 允许 `UNKNOWN`；要落真值必须在 TL-1 里从 `field-expression-nodes` 新推导并加测试，不得假设已有 |
-| `FIELD_CONDITIONAL` | `EXPRESSION_CONTROL` 且 `expression_roles` 含 `BRANCH_SELECTION`；拉链 `IS NOT NULL` CASE 不得进这里 |
-| `DATASET_CONTROL` subtype `JOIN`/`FILTER`/`GROUP_BY`/… | 控制列 → 本任务 `TARGET_WRITE`；**复用 WP-1** 的收集与 `grain`，不要重写一份 |
-| `grain` | 与 WP-1 相同：FILTER/GROUP BY → `REDUCE`；证不出基数的 JOIN → `EXPAND_RISK`；JOIN 不得 `UNKNOWN` |
+| 图边                                                   | 来自                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FIELD_DIRECT`                                         | 本任务 `FIELD_VALUE` 能证明的输出列 ← 输入物理列。**今天的 Facts 与 field-lineage 都没有给值边打 IDENTITY / TRANSFORMATION / AGGREGATION**（WP-1 只给 `DATASET_CONTROL` 加了 subtype；契约里的 `OpenLineageDirectSubtype` 是空声明）。本 WP 的 `subtype` 允许 `UNKNOWN`；要落真值必须在 TL-1 里从 `field-expression-nodes` 新推导并加测试，不得假设已有 |
+| `FIELD_CONDITIONAL`                                    | `EXPRESSION_CONTROL` 且 `expression_roles` 含 `BRANCH_SELECTION`；拉链 `IS NOT NULL` CASE 不得进这里                                                                                                                                                                                                                                                    |
+| `DATASET_CONTROL` subtype `JOIN`/`FILTER`/`GROUP_BY`/… | 控制列 → 本任务 `TARGET_WRITE`；**复用 WP-1** 的收集与 `grain`，不要重写一份                                                                                                                                                                                                                                                                            |
+| `grain`                                                | 与 WP-1 相同：FILTER/GROUP BY → `REDUCE`；证不出基数的 JOIN → `EXPAND_RISK`；JOIN 不得 `UNKNOWN`                                                                                                                                                                                                                                                        |
 
 `summarizeTaskRelations()` 告诉「哪次 READ 走哪条通道」。落边时用它过滤，不要再实现 JOIN 侧别。
 `datasetControlsForStatement` 今天是 field-lineage 内部函数：本 WP 先把它抽到两边都能 import 的小模块，再投影到图边。禁止复制一份 grain 规则。
@@ -320,16 +320,16 @@ Facts 基线（`pdata_n`，写 `t98_sb_otc_opt_comp_info`，79 列全 RESOLVED�
 
 ## 10. 领取顺序
 
-| 包 | 领取 |
-| --- | --- |
-| TL-0 | 立即 |
-| TL-1 | TL-0 后 |
-| TL-2 | 可与 TL-1 并行起步，合入前必须接上 |
-| TL-3 / TL-4 | TL-1 后可并行 |
-| TL-5 | TL-3 + TL-4 |
-| TL-6 | TL-5；主门槛 |
-| TL-7 | 可与 TL-6 并行；105387 / 119044 金样在 TL-6 收紧谓词 |
-| TL-8 | TL-5 之后 |
+| 包          | 领取                                                 |
+| ----------- | ---------------------------------------------------- |
+| TL-0        | 立即                                                 |
+| TL-1        | TL-0 后                                              |
+| TL-2        | 可与 TL-1 并行起步，合入前必须接上                   |
+| TL-3 / TL-4 | TL-1 后可并行                                        |
+| TL-5        | TL-3 + TL-4                                          |
+| TL-6        | TL-5；主门槛                                         |
+| TL-7        | 可与 TL-6 并行；105387 / 119044 金样在 TL-6 收紧谓词 |
+| TL-8        | TL-5 之后                                            |
 
 每个包合入前：`npm run typecheck`；涉及 field-lineage 抽取时加 `npm run test:field-lineage`；不改闭包也要 `npm run test:target-table-causal-closure` 作回归。
 

@@ -5,6 +5,45 @@ const chunks = <T>(xs: readonly T[], size = 500) =>
     xs.slice(i * size, (i + 1) * size),
   );
 const key = (graphId: string, id: string) => `${graphId}|${id}`;
+
+type AssetGraphCounts = {
+  nodes: Record<string, number>;
+  edges: Record<string, number>;
+};
+
+function countDelta(
+  before: unknown,
+  after: AssetGraphCounts,
+): AssetGraphCounts | null {
+  if (!before || typeof before !== "object" || Array.isArray(before))
+    return null;
+  const candidate = before as { nodes?: unknown; edges?: unknown };
+  if (
+    !candidate.nodes ||
+    typeof candidate.nodes !== "object" ||
+    Array.isArray(candidate.nodes) ||
+    !candidate.edges ||
+    typeof candidate.edges !== "object" ||
+    Array.isArray(candidate.edges)
+  )
+    return null;
+  const delta = (prior: unknown, current: Record<string, number>) => {
+    const values = prior as Record<string, unknown>;
+    return Object.fromEntries(
+      [...new Set([...Object.keys(values), ...Object.keys(current)])]
+        .sort()
+        .map((kind) => [
+          kind,
+          (current[kind] ?? 0) - Number(values[kind] ?? 0),
+        ]),
+    );
+  };
+  return {
+    nodes: delta(candidate.nodes, after.nodes),
+    edges: delta(candidate.edges, after.edges),
+  };
+}
+
 export class AssetGraphStore {
   constructor(
     readonly driver: Driver,
@@ -60,6 +99,50 @@ export class AssetGraphStore {
       "MERGE (g:SLAssetGraph {id:$graphId}) SET g.state='UPDATING',g.pendingVersion=$version",
       { version },
     );
+  }
+  /** Upgrade storage metadata even when unchanged content hashes skip replacement. */
+  async upgradeOwnerEdgeSources(): Promise<number> {
+    const session = this.driver.session({ database: this.database });
+    try {
+      return await session.executeWrite(async (tx) => {
+        const missing = await tx.run(
+          "MATCH (o:SLAssetOwner {graphId:$graphId}) WHERE o.edgeSourceKeys IS NULL RETURN o.key AS ownerKey,o.hash AS hash",
+          { graphId: this.graphId },
+        );
+        if (!missing.records.length) return 0;
+        const rows = new Map(
+          missing.records.map((r) => [
+            String(r.get("ownerKey")),
+            {
+              key: String(r.get("ownerKey")),
+              hash: String(r.get("hash")),
+              sources: [] as string[],
+            },
+          ]),
+        );
+        // Scan once for the entire upgrade, including edge-only owners. Starting
+        // from SL_ASSET_OWNS would miss continuation and scheduling edges.
+        const sources = await tx.run(
+          "MATCH (a:SLAssetNode)-[r:SL_ASSET_EDGE]->() WHERE r.ownerKey IN $ownerKeys RETURN DISTINCT r.ownerKey AS ownerKey,a.key AS sourceKey",
+          { ownerKeys: [...rows.keys()] },
+        );
+        for (const r of sources.records)
+          rows
+            .get(String(r.get("ownerKey")))
+            ?.sources.push(String(r.get("sourceKey")));
+        for (const batch of chunks([...rows.values()])) {
+          const result = await tx.run(
+            "UNWIND $rows AS row MATCH (o:SLAssetOwner {key:row.key}) WHERE o.hash=row.hash AND o.edgeSourceKeys IS NULL SET o.edgeSourceKeys=row.sources RETURN count(o) AS updated",
+            { rows: batch },
+          );
+          if (result.records[0]!.get("updated").toNumber() !== batch.length)
+            throw new Error("ASSET_OWNER_METADATA_CHANGED");
+        }
+        return rows.size;
+      });
+    } finally {
+      await session.close();
+    }
   }
   async replace(
     owner: string,
@@ -154,10 +237,35 @@ export class AssetGraphStore {
     await this.run(
       "MATCH (n:SLAssetNode {graphId:$graphId}) WHERE NOT EXISTS {MATCH (:SLAssetOwner)-[:SL_ASSET_OWNS]->(n)} DETACH DELETE n",
     );
+    const counts = await this.counts();
+    const confirmedFieldContinuations = counts.edges.CONTINUES ?? 0;
+    const candidateFieldContinuations = counts.edges.CANDIDATE ?? 0;
+    const metrics = report.continuationMetrics;
+    const finalizedReport = {
+      ...report,
+      confirmedFieldContinuations,
+      candidateFieldContinuations,
+      ...(metrics && typeof metrics === "object" && !Array.isArray(metrics)
+        ? {
+            continuationMetrics: {
+              ...metrics,
+              continuationEdgeMetrics: {
+                totalContinuationEdges: confirmedFieldContinuations + candidateFieldContinuations,
+                confirmedContinuationEdges: confirmedFieldContinuations,
+              },
+            },
+          }
+        : {}),
+      counts,
+      countBasis: "LIVE_AFTER_UNOWNED_CLEANUP",
+      preCleanupCounts: report.counts ?? null,
+      countDelta: countDelta(report.counts, counts),
+    };
     await this.run(
       "MATCH (g:SLAssetGraph {id:$graphId}) SET g.state='READY',g.version=$version,g.manifestPath=$manifestPath,g.report=$report,g.publishedAt=datetime() REMOVE g.pendingVersion",
-      { version, manifestPath, report: JSON.stringify(report) },
+      { version, manifestPath, report: JSON.stringify(finalizedReport) },
     );
+    return finalizedReport;
   }
   async counts() {
     const n = await this.run(
@@ -299,12 +407,26 @@ export class AssetGraphStore {
       const detail = node.detail;
       if (!detail || typeof detail !== "object") return null;
       const d = detail as Record<string, unknown>;
-      if (d.continuationDisposition !== "POLICY_TERMINAL") return null;
-      if (d.boundaryRole !== "REFERENCE_CONFIG") return null;
+      const disposition = d.continuationDisposition;
+      if (
+        disposition !== "POLICY_TERMINAL" &&
+        disposition !== "SOURCE_ENDPOINT_BOUNDARY"
+      )
+        return null;
+      if (
+        disposition === "POLICY_TERMINAL" &&
+        d.boundaryRole !== "REFERENCE_CONFIG"
+      )
+        return null;
       return {
         nodeId: String(node.id),
-        role: String(d.boundaryRole),
-        reason: String(d.terminalReason ?? "按定义/参数表规则停止展开"),
+        role: String(d.boundaryRole ?? ""),
+        reason: String(
+          d.terminalReason ??
+            (disposition === "SOURCE_ENDPOINT_BOUNDARY"
+              ? "源端点边界，停止展开"
+              : "按定义/参数表规则停止展开"),
+        ),
         ruleRef: String(d.terminalRuleRef ?? ""),
       };
     };
@@ -365,9 +487,7 @@ export class AssetGraphStore {
           [...bestCost]
             .filter(
               ([id, value]) =>
-                value === cost &&
-                !expanded.has(id) &&
-                !terminalNodes.has(id),
+                value === cost && !expanded.has(id) && !terminalNodes.has(id),
             )
             .map(([id]) => id),
         );
@@ -390,7 +510,10 @@ export class AssetGraphStore {
             },
           );
           for (const record of r.records) {
-            const edge = cleanEdge(record.get("edge")) as Record<string, unknown>;
+            const edge = cleanEdge(record.get("edge")) as Record<
+              string,
+              unknown
+            >;
             const edgeKind = String(edge.kind);
             const weight =
               input.layer === "field"
@@ -455,38 +578,39 @@ export class AssetGraphStore {
         }
       }
       frontier = [...boundary];
-    } else for (let hop = 1; hop <= depth && frontier.length; hop++) {
-      const r = await this.run(
-        `UNWIND $keys AS anchor MATCH (n:SLAssetNode {key:anchor}) MATCH ${direction} WHERE r.layer=$layer AND r.kind<>'CONDITION' AND ($candidates OR r.kind<>'CANDIDATE') RETURN properties(n) AS source,properties(m) AS node,properties(r) AS edge ORDER BY r.key LIMIT $limit`,
-        {
-          keys: frontier.map((id) => key(this.graphId, id)),
-          layer: input.layer,
-          candidates: input.includeCandidates !== false,
-          limit: limit - edges.size + 1,
-        },
-      );
-      const next: string[] = [];
-      for (const record of r.records) {
-        const edge = record.get("edge");
-        if (edges.size >= limit && !edges.has(edge.key)) {
-          truncated = true;
+    } else
+      for (let hop = 1; hop <= depth && frontier.length; hop++) {
+        const r = await this.run(
+          `UNWIND $keys AS anchor MATCH (n:SLAssetNode {key:anchor}) MATCH ${direction} WHERE r.layer=$layer AND r.kind<>'CONDITION' AND ($candidates OR r.kind<>'CANDIDATE') RETURN properties(n) AS source,properties(m) AS node,properties(r) AS edge ORDER BY r.key LIMIT $limit`,
+          {
+            keys: frontier.map((id) => key(this.graphId, id)),
+            layer: input.layer,
+            candidates: input.includeCandidates !== false,
+            limit: limit - edges.size + 1,
+          },
+        );
+        const next: string[] = [];
+        for (const record of r.records) {
+          const edge = record.get("edge");
+          if (edges.size >= limit && !edges.has(edge.key)) {
+            truncated = true;
+            break;
+          }
+          edges.set(edge.key, cleanEdge(edge));
+          const node = cleanNode(record.get("node"));
+          if (!nodes.has(String(node.id))) {
+            nodes.set(String(node.id), { ...node, depth: hop });
+            const stop = terminal(node);
+            if (stop) terminalNodes.set(stop.nodeId, stop);
+            else next.push(String(node.id));
+          }
+        }
+        if (truncated) {
+          frontier = [...new Set([...frontier, ...next])];
           break;
         }
-        edges.set(edge.key, cleanEdge(edge));
-        const node = cleanNode(record.get("node"));
-        if (!nodes.has(String(node.id))) {
-          nodes.set(String(node.id), { ...node, depth: hop });
-          const stop = terminal(node);
-          if (stop) terminalNodes.set(stop.nodeId, stop);
-          else next.push(String(node.id));
-        }
+        frontier = next;
       }
-      if (truncated) {
-        frontier = [...new Set([...frontier, ...next])];
-        break;
-      }
-      frontier = next;
-    }
     const final = await this.ready();
     if (final.version !== initial.version)
       throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");

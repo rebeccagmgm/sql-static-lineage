@@ -866,6 +866,11 @@ SELECT A.ID FROM \${src_table} A;`,
       expect(sqlHasStructuralTemplateVars("SELECT '${data_day_str}'")).toBe(
         false,
       );
+      expect(
+        sqlHasStructuralTemplateVars(
+          "SELECT '${yyyy-MM-dd}', '${2026-08}', '${start_day}', '${end_day}', '${Q}', '${QQ}'",
+        ),
+      ).toBe(false);
 
       const mcpOnly = await fillHiveTaskSqlCache({
         cacheRoot,
@@ -946,6 +951,158 @@ SELECT A.ID FROM \${src_table} A;`,
           { allowSchemaOnlyQualification: true },
         ),
       ).not.toContain("PDATA_N.IF");
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to Horae log when MCP SQL still contains structural template variables", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-structural-mcp-template-"));
+    try {
+      writeType(cacheRoot, "61478", {
+        taskType: "hiveTask",
+        scriptPath: "BigData-missing/x.py",
+        hiveDb: "pdata_n",
+      });
+      writeHiveTaskSqlCache(
+        "61478",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "LOCAL_CODE",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing/x.py",
+          hiveDb: "pdata_n",
+          createSql: null,
+          querySql: "INSERT OVERWRITE TABLE target SELECT id FROM ${src_table}",
+        },
+        cacheRoot,
+      );
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        minIntervalMs: 0,
+        mcpRunner: () => [
+          {
+            createSql: null,
+            querySql: "INSERT OVERWRITE TABLE target SELECT id FROM ${src_table}",
+          },
+        ],
+        logRunner: async () => `[2026-08-28 02:16:56]-[INFO] hive -e"
+[2026-08-28 02:16:56]-[INFO] use pdata_n;
+[2026-08-28 02:16:56]-[INFO] INSERT OVERWRITE TABLE target SELECT id FROM odata_n_source.source;
+[2026-08-28 02:16:56]-[INFO] "
+`,
+      });
+
+      expect(summary).toMatchObject({
+        mcpCached: 0,
+        mcpEmpty: 0,
+        logCached: 1,
+        structuralUpgrades: 1,
+      });
+      const cached = readHiveTaskSqlCache("61478", cacheRoot);
+      expect(cached).toMatchObject({ source: "HORAE_LOG", sqlStatus: "AVAILABLE" });
+      if (cached.status !== "HIT") throw new Error("expected HIT");
+      expect(cached.querySql).toContain("odata_n_source.source");
+      expect(sqlHasStructuralTemplateVars(cached.createSql, cached.querySql)).toBe(false);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat an unexpanded Horae log as resolved SQL", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-structural-log-template-"));
+    try {
+      writeType(cacheRoot, "61479", {
+        taskType: "hiveTask",
+        scriptPath: "BigData-missing/x.py",
+        hiveDb: "pdata_n",
+      });
+      writeHiveTaskSqlCache(
+        "61479",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "LOCAL_CODE",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing/x.py",
+          hiveDb: "pdata_n",
+          createSql: null,
+          querySql: "INSERT OVERWRITE TABLE target SELECT id FROM ${src_table}",
+        },
+        cacheRoot,
+      );
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        minIntervalMs: 0,
+        mcpRunner: () => [{ createSql: null, querySql: null }],
+        taskCodeRunner: () => {
+          throw new Error("task code unavailable");
+        },
+        logRunner: async () => `[2026-08-28 02:16:56]-[INFO] hive -e"
+[2026-08-28 02:16:56]-[INFO] use pdata_n;
+[2026-08-28 02:16:56]-[INFO] INSERT OVERWRITE TABLE target SELECT id FROM \${src_table};
+[2026-08-28 02:16:56]-[INFO] "
+`,
+      });
+
+      expect(summary).toMatchObject({
+        mcpEmpty: 1,
+        logCached: 0,
+        logEmpty: 1,
+        structuralUpgrades: 0,
+      });
+      const cached = readHiveTaskSqlCache("61479", cacheRoot);
+      expect(cached).toMatchObject({ source: "LOCAL_CODE", sqlStatus: "AVAILABLE" });
+      if (cached.status !== "HIT") throw new Error("expected HIT");
+      expect(sqlHasStructuralTemplateVars(cached.createSql, cached.querySql)).toBe(true);
+    } finally {
+      rmSync(cacheRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("retries a structural cached Horae log instead of skipping it", async () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "hive-sql-retry-structural-log-"));
+    try {
+      writeType(cacheRoot, "61480", {
+        taskType: "hiveTask",
+        scriptPath: "BigData-missing/x.py",
+        hiveDb: "pdata_n",
+      });
+      writeHiveTaskSqlCache(
+        "61480",
+        "2026-08-31T00:00:00.000Z",
+        {
+          source: "HORAE_LOG",
+          sqlStatus: "AVAILABLE",
+          scriptPath: "BigData-missing/x.py",
+          hiveDb: "pdata_n",
+          createSql: null,
+          querySql: "INSERT OVERWRITE TABLE target SELECT id FROM ${src_table}",
+        },
+        cacheRoot,
+      );
+      const summary = await fillHiveTaskSqlCache({
+        cacheRoot,
+        codeRoot: join(cacheRoot, "no-code"),
+        minIntervalMs: 0,
+        mcpRunner: () => [
+          {
+            createSql: null,
+            querySql: "INSERT OVERWRITE TABLE target SELECT id FROM odata_n_source.source",
+          },
+        ],
+      });
+
+      expect(summary).toMatchObject({
+        skipped: 0,
+        mcpCached: 1,
+        structuralUpgrades: 1,
+      });
+      const cached = readHiveTaskSqlCache("61480", cacheRoot);
+      expect(cached).toMatchObject({ source: "SQL_MCP", sqlStatus: "AVAILABLE" });
+      if (cached.status !== "HIT") throw new Error("expected HIT");
+      expect(sqlHasStructuralTemplateVars(cached.createSql, cached.querySql)).toBe(false);
     } finally {
       rmSync(cacheRoot, { recursive: true, force: true });
     }

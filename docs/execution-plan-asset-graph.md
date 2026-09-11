@@ -5,14 +5,14 @@
 
 细则按 WP 拆分，不要在本文件重复实现细节：
 
-| 文档                                        | 内容                                |
-| ------------------------------------------- | ----------------------------------- |
-| `execution-plan-task-local-projection.md`   | WP-3 纸条 TL-0…TL-8                 |
-| `execution-plan-task-local-union.md`        | WP-5 并集 + WP-8 接续（data-graph） |
-| `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4         |
+| 文档                                        | 内容                                   |
+| ------------------------------------------- | -------------------------------------- |
+| `execution-plan-task-local-projection.md`   | WP-3 纸条 TL-0…TL-8                    |
+| `execution-plan-task-local-union.md`        | WP-5 并集 + WP-8 接续（data-graph）    |
+| `execution-plan-gold-case-investigation.md` | **P0** 金样调查页 GC-0…GC-4            |
 | `execution-plan-writer-catalog.md`          | 表→writer 的 SQLite 目录（替 JSON PI） |
-| `graph-accuracy-architecture.md`            | WP-6…WP-12 准确性冻结               |
-| `graph-user-narrative.md`                   | L0–L3 对用户陈述                    |
+| `graph-accuracy-architecture.md`            | WP-6…WP-12 准确性冻结                  |
+| `graph-user-narrative.md`                   | L0–L3 对用户陈述                       |
 
 每个工作包（WP）按 1:1 可转成一个 OpenSpec change。领取时 `openspec new change "<wp-name>"`。
 
@@ -78,26 +78,26 @@
 
 ### 地图主链（WP-1～WP-5 + GC）
 
-| WP   | 名称          | 状态       | 说明                                    |
-| ---- | ------------- | ---------- | --------------------------------------- |
-| WP-1 | 影响通道分离  | **已合入** | field-lineage 体积与假阳性              |
-| WP-2 | 声明口径采集  | 未做       | 非 P0 阻塞                              |
-| WP-3 | 任务局部投影  | **已验收** | schema **1.2.0**；三金样 TL-6/7         |
-| WP-4 | 加工/通道识别 | 未做       | 非 P0 阻塞                              |
-| WP-5 | 并集 source   | **库完成** | 见 union 执行方案；主管线未接           |
+| WP   | 名称          | 状态       | 说明                                                                                                     |
+| ---- | ------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| WP-1 | 影响通道分离  | **已合入** | field-lineage 体积与假阳性                                                                               |
+| WP-2 | 声明口径采集  | 未做       | 非 P0 阻塞                                                                                               |
+| WP-3 | 任务局部投影  | **已验收** | schema **1.2.0**；三金样 TL-6/7                                                                          |
+| WP-4 | 加工/通道识别 | 未做       | 非 P0 阻塞                                                                                               |
+| WP-5 | 并集 source   | **库完成** | 见 union 执行方案；主管线未接                                                                            |
 | GC   | 金样调查页    | **进行中** | **四锚点一张图**；见 gold-case 执行方案；**表级精度验收**见 `execution-plan-table-lineage-acceptance.md` |
 
 ### 准确性链（WP-6～WP-12，见 graph-accuracy-architecture）
 
-| WP                     | 状态               | 与 P0 关系                                                                                                                                           |
-| ---------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WP-6 Pack 声明写观察   | **已合入**         | 事实基础                                                                                                                                             |
-| WP-7 身份/读次/1.2.0   | **已合入**         | 纸条契约                                                                                                                                             |
-| WP-8 接续 v2 + INDEX   | **CLI 完成**       | 调查页接续层                                                                                                                                         |
-| WP-9 传输图            | 独立               | 非阻塞                                                                                                                                               |
-| WP-10 closure-on-union | **暂停**           | experimental                                                                                                                                         |
+| WP                     | 状态               | 与 P0 关系                                                                                                                                                            |
+| ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WP-6 Pack 声明写观察   | **已合入**         | 事实基础                                                                                                                                                              |
+| WP-7 身份/读次/1.2.0   | **已合入**         | 纸条契约                                                                                                                                                              |
+| WP-8 接续 v2 + INDEX   | **CLI 完成**       | 调查页接续层                                                                                                                                                          |
+| WP-9 传输图            | 独立               | 非阻塞                                                                                                                                                                |
+| WP-10 closure-on-union | **暂停**           | experimental                                                                                                                                                          |
 | WP-11 字段证据链 V1    | **Phase 2 进行中** | Phase 1 已完成（`field-evidence-v1`）；Impact Query + 金样 + 止损 → `openspec/changes/field-evidence-v1-impact-query`；见 `execution-plan-field-evidence-v1.md` §6–§9 |
-| WP-12 L0–L3 envelope   | 与 GC 同步         | 调查页文案                                                                                                                                           |
+| WP-12 L0–L3 envelope   | 与 GC 同步         | 调查页文案                                                                                                                                                            |
 
 ### 历史 P0：重跑收缩
 

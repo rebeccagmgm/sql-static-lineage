@@ -33,6 +33,7 @@ describe("projection-prune", () => {
     expect(projectionVersionPrefix(cacheKey, `${cacheKey}.json`)).toBe(true);
     expect(projectionVersionPrefix(cacheKey, `${cacheKey}.evidence-v2.json`)).toBe(true);
     expect(projectionVersionPrefix(cacheKey, `${cacheKey}.evidence-v3.json`)).toBe(true);
+    expect(projectionVersionPrefix(cacheKey, `${cacheKey}.evidence-v4.json`)).toBe(true);
     expect(projectionVersionPrefix(cacheKey, "old-key.json")).toBe(false);
   });
 

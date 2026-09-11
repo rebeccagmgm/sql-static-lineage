@@ -1,3 +1,13 @@
+import type {
+  ConsumptionScope,
+  ConsumptionScopeItem,
+} from "../../data-graph/src/asset-graph/consumption-scope";
+
+export type {
+  ConsumptionScope,
+  ConsumptionScopeItem,
+} from "../../data-graph/src/asset-graph/consumption-scope";
+
 export type GraphLayer = "table" | "field";
 export type Direction = "up" | "down";
 export type MetadataStatus =
@@ -18,6 +28,10 @@ export interface MetadataValue {
 export interface TableMetadata {
   table: MetadataValue;
   field?: MetadataValue;
+  schema?: {
+    displayName?: string;
+    description?: string;
+  };
   identity?: {
     platform: string;
     dataSource: string;
@@ -43,7 +57,13 @@ export interface TableMetadata {
   };
   versionRelation?: "RUNTIME_INPUT_PACK_NOT_GRAPH_VERSION";
 }
+export interface FieldValueOrigin {
+  kind: "CONSTANT" | "EXPRESSION" | "UNRESOLVED";
+  label: string;
+  expression: string;
+}
 export interface GraphNode {
+  valueOrigin?: FieldValueOrigin;
   id: string;
   kind: string;
   label?: string;
@@ -65,6 +85,66 @@ export interface GraphEdge {
   status?: string;
   detail?: Record<string, unknown>;
 }
+export interface ConsumptionWriteRef {
+  taskId: string;
+  writeId: string;
+  rawNodeIds: string[];
+  rawEdgeIds: string[];
+  scope: ConsumptionScope;
+}
+export interface ConsumptionField {
+  column: string;
+  rawNodeIds: string[];
+  rawEdgeIds: string[];
+  writeRefs: ConsumptionWriteRef[];
+}
+export interface ConsumptionGroup {
+  id: string;
+  role: "READ" | "WRITE" | "OTHER";
+  presentation: "FIELD_GROUP" | "EVIDENCE_CONTAINER" | "RAW_NODE";
+  scopeEquivalence: "PROVEN" | "NOT_ASSERTED";
+  depth: number;
+  table?: string;
+  taskId?: string;
+  physicalIdentity?: string;
+  scope: ConsumptionScope;
+  rawNodeIds: string[];
+  rawEdgeIds: string[];
+  rootNodeIds: string[];
+  fields: ConsumptionField[];
+  writeRefs: ConsumptionWriteRef[];
+}
+export interface ConsumptionFieldMapping {
+  sourceColumn?: string;
+  targetColumn?: string;
+  sourceNodeIds: string[];
+  targetNodeIds: string[];
+  rawEdgeIds: string[];
+}
+export interface ConsumptionBranch {
+  id: string;
+  fromGroupId: string;
+  toGroupId: string;
+  kind: string;
+  status?: string;
+  scope: ConsumptionScope;
+  rawEdgeIds: string[];
+  rootNodeIds: string[];
+  fieldMappings: ConsumptionFieldMapping[];
+}
+export interface ConsumptionRootPath {
+  rootNodeId: string;
+  rawNodeIds: string[];
+  rawEdgeIds: string[];
+  groupIds: string[];
+  branchIds: string[];
+}
+export interface TraceConsumption {
+  schemaVersion: "1.0.0";
+  groups: ConsumptionGroup[];
+  branches: ConsumptionBranch[];
+  rootPaths: ConsumptionRootPath[];
+}
 export interface TerminalNode {
   nodeId: string;
   role: string;
@@ -72,6 +152,8 @@ export interface TerminalNode {
   ruleRef: string;
 }
 export interface TraceResult {
+  /** Selected roots not queried because the combined relationship budget was reached. */
+  unqueriedRootNodeIds?: string[];
   version: string;
   layer: GraphLayer;
   direction: Direction;
@@ -83,6 +165,10 @@ export interface TraceResult {
   terminalNodes: TerminalNode[];
   /** Local SQLite scheduler-catalog task names for task cards synthesized by the view. */
   taskLabels?: Record<string, string>;
+  taskTopics?: Record<string, string>;
+  taskTopicDescriptions?: Record<string, string>;
+  /** Shared CLI/HTTP consumption organization; raw nodes and edges remain canonical. */
+  consumption?: TraceConsumption;
   nodes: GraphNode[];
   edges: GraphEdge[];
   elapsedMs: number;
@@ -91,6 +177,10 @@ export interface TaskDetail {
   version: string;
   taskId: string;
   taskName?: string;
+  owner?: string;
+  /** UI request identity retained for exact follow-up evidence loading. */
+  requestedColumn?: string;
+  requestedWriteId?: string;
   taskCategory?: string;
   coverage?: string;
   failureReason?: string;
@@ -98,6 +188,7 @@ export interface TaskDetail {
     column: string;
     writeId?: string;
     expression?: string;
+    valueOrigin?: FieldValueOrigin;
     inputFields?: Array<{ table: string; column: string }>;
   }>;
   controls: Array<{
@@ -116,6 +207,8 @@ export interface Anchor {
   nodeId?: string;
   column?: string;
   writeId?: string;
+  /** Raw field members used when a visible field row represents several writes. */
+  memberNodeIds?: string[];
   label: string;
 }
 export interface OverviewResult {

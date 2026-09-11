@@ -1,0 +1,337 @@
+[
+  {
+    "taskId": "105529",
+    "output": "pdata_n.t03_agt_rela_h",
+    "title": "按协议和账簿关系维护有效历史",
+    "summary": "以当天交易对象和产品类型构造协议到账簿关系候选，与目标表当日仍有效的历史记录按 Agt_Id、Agt_Modifr 做 FULL OUTER JOIN，区分新增、删除、变更和不变，再以开链/闭链方式回写同一来源分区。此说明只适用于该项 ODATA_N_TIT.D_TRD_OTC_TRADE 写入。",
+    "sha256": "8fcb7c85359b6a53a24b5192a9f8c551dbf57cf01256f521270b3af0e04562dc",
+    "inputs": [
+      {
+        "table": "ODATA_N_TIT.D_TRD_OTC_TRADE",
+        "role": "主记录",
+        "reason": "提供当天 KEY_OTC_TRADE_ID，并作为协议关系候选的主记录。",
+        "lines": [
+          74,
+          74
+        ]
+      },
+      {
+        "table": "ODATA_N_TIT.D_REF_TRS",
+        "role": "关系/属性补充",
+        "reason": "按 KEY_OTC_TRADE_ID 判断互换类型并生成关系类型和协议类型代码。",
+        "lines": [
+          75,
+          76
+        ]
+      },
+      {
+        "table": "ODATA_N_TIT.D_REF_OTC_OPTION_DEAL",
+        "role": "关系/属性补充",
+        "reason": "按 KEY_OTC_TRADE_ID 判断期权类型。",
+        "lines": [
+          77,
+          78
+        ]
+      },
+      {
+        "table": "ODATA_N_TIT.D_REF_FX_FORWARD",
+        "role": "关系/属性补充",
+        "reason": "按 KEY_OTC_TRADE_ID 判断外汇远期类型。",
+        "lines": [
+          79,
+          80
+        ]
+      },
+      {
+        "table": "ODATA_N_TIT.D_REF_FAST_TRS",
+        "role": "关系/属性补充",
+        "reason": "按 KEY_OTC_TRADE_ID 判断极速互换类型。",
+        "lines": [
+          81,
+          82
+        ]
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "role": "历史状态",
+        "reason": "提供截至当天仍处于有效区间的历史关系，用于与当天候选比较。",
+        "lines": [
+          105,
+          110
+        ]
+      },
+      {
+        "table": "temp.t03_agt_rela_h_temp_tit165",
+        "role": "关系/属性补充",
+        "reason": "承载当天协议到账簿关系候选。",
+        "lines": [
+          48,
+          83
+        ]
+      },
+      {
+        "table": "temp.t03_agt_rela_h_mid_tit165",
+        "role": "历史状态",
+        "reason": "承载 FULL OUTER JOIN 后的 I/D/U/S 变化分类。",
+        "lines": [
+          91,
+          114
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "重跑前还原指定来源的历史状态",
+        "detail": "第一次覆盖写入仅针对该来源：先保留开始日、结束日均不等于比较日的记录；再把比较日闭链的记录结束日恢复为2099-12-31。后续才重新计算当天关系并第二次回写。",
+        "lines": [
+          1,
+          40
+        ]
+      },
+      {
+        "title": "构造当天协议关系候选",
+        "detail": "以当天 D_TRD_OTC_TRADE 为主记录，左连接 TRS、期权、外汇远期和极速 TRS；CASE 按命中来源设置协议修饰符、关系类型和协议类型，KEY_BOOK_ID 作为关联协议号。",
+        "lines": [
+          42,
+          84
+        ]
+      },
+      {
+        "title": "按有效历史与当天候选识别变化",
+        "detail": "读取 STRT_DATE <= 2026-08-27 且 END_DATE > 2026-08-27 的历史开链记录，与当天候选按 Agt_Id、Agt_Modifr FULL OUTER JOIN；字段变化分类为 U，新增/删除为 I/D，其余为 S。",
+        "lines": [
+          85,
+          115
+        ]
+      },
+      {
+        "title": "按变化类型重建有效区间并写回",
+        "detail": "保留非当前有效历史；I/U 开新链，开始日为 2026-08-27、结束日为 2099-12-31；D/U 关闭旧链，结束日为 2026-08-27；S 原样保留，最终 INSERT OVERWRITE 回写 T03_AGT_RELA_H 的 SRC_TBL 分区。",
+        "lines": [
+          116,
+          204
+        ]
+      }
+    ],
+    "grain": {
+      "object": "协议与关联协议的一段有效关系记录",
+      "time": "Strt_Date/End_Date 表示关系有效区间；Data_Time 表示写入时间；当天候选以 2026-08-27 为业务比较日。",
+      "keys": "Agt_Id + Agt_Modifr 用于当天与历史匹配；Rela_Agt_Id + Rela_Agt_Modifr 表示关联协议。",
+      "limitation": "未证明全表所有来源的唯一性，也未证明 Agt_Id 是法律主协议唯一标识；本条只覆盖 ODATA_N_TIT.D_TRD_OTC_TRADE 来源写入。"
+    },
+    "questions": [
+      "同一 Agt_Id、Agt_Modifr 是否可能在当天命中多条有效候选？",
+      "N03/N04/N10 与 20206/20207/20208 的业务含义及优先级是否已由正式规则确认？",
+      "其他 SRC_TBL 分区是否使用相同的历史维护逻辑？"
+    ]
+  },
+  {
+    "taskId": "107018",
+    "output": "pdata_n.t98_otc_swap_comp_trd_undrl_info",
+    "title": "把互换合约、账簿、结构腿和持仓组装成标的结果",
+    "summary": "先从有效协议关系、合约扩展号、交易对手名称和账簿映射规则构造合约到目标账簿映射，再分别处理规则匹配、交易对手匹配和无规则直连三条分支；随后将互换合约、协议属性、账簿、结构腿、历史持仓、资讯产品、汇率和交易对手属性写入按 SRC_TBL、BUSI_DATE 分区的交易标的结果。",
+    "sha256": "6d875301037813f5b68ade3f5fb5c85bc389cc06698d70859015fcc94167eb2d",
+    "inputs": [
+      {
+        "table": "pdata_n.t03_otc_swap_comp_hold_info",
+        "role": "历史状态",
+        "reason": "提取当前有更新的持仓业务日，并作为最终标的数量和价格来源。",
+        "lines": [
+          1,
+          7
+        ]
+      },
+      {
+        "table": "pdata_n.t03_agt_rela_h",
+        "role": "历史状态",
+        "reason": "提供业务日内有效的互换合约到账簿关系，限定 Agt_Rela_Type_Cd='N03'。",
+        "lines": [
+          17,
+          17
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_swap_comp_info",
+        "role": "主记录",
+        "reason": "提供互换合约协议编号、外部合约号、币种、交易对手和状态。",
+        "lines": [
+          18,
+          19
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_book_agt_map_regu",
+        "role": "规则映射",
+        "reason": "按外部合约号或交易对手名称匹配账簿映射规则。",
+        "lines": [
+          20,
+          24
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_deri_agt_rela_adtnl_info",
+        "role": "关系/属性补充",
+        "reason": "提供账簿映射关系及有效区间。",
+        "lines": [
+          25,
+          27
+        ]
+      },
+      {
+        "table": "pdata_n.t03_agt_pty_rela_h",
+        "role": "历史状态",
+        "reason": "第二条映射分支通过关系类型 06 取得合约交易对手。",
+        "lines": [
+          35,
+          39
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_swap_comp_leg_info",
+        "role": "关系/属性补充",
+        "reason": "提供结构腿，并限定 Swap_Comp_Leg_Type_Cd='STRUCTURE_LEG_TYPE'。",
+        "lines": [
+          123,
+          126
+        ]
+      },
+      {
+        "table": "pdata_n.t03_otc_swap_comp_hold_info",
+        "role": "关系/属性补充",
+        "reason": "按 Leg_Glbl_Seq_No 连接历史持仓，提供标的期初/当前数量和价格。",
+        "lines": [
+          127,
+          131
+        ]
+      },
+      {
+        "table": "pdata_news_n.t02_tit_scr_base_info",
+        "role": "关系/属性补充",
+        "reason": "按源产品编号补标的代码、产品简称和市场类型。",
+        "lines": [
+          132,
+          133
+        ]
+      },
+      {
+        "table": "pdata_news_n.t02_fxr_cfets_quot",
+        "role": "关系/属性补充",
+        "reason": "非 CNY 币种按持仓业务日和源币种补中间汇率。",
+        "lines": [
+          134,
+          138
+        ]
+      },
+      {
+        "table": "pdata_n.t01_pty_name",
+        "role": "关系/属性补充",
+        "reason": "按交易对手编号补全称和简称。",
+        "lines": [
+          144,
+          145
+        ]
+      },
+      {
+        "table": "pdata_n.t01_pty_cutp",
+        "role": "关系/属性补充",
+        "reason": "按交易对手编号补法律主体。",
+        "lines": [
+          146,
+          147
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "确定待处理持仓日期",
+        "detail": "从互换腿历史持仓中选取当天有更新的 BUSI_DATE；除当天 ETL 数据外，向前扩展 7 个交易日。",
+        "lines": [
+          1,
+          7
+        ]
+      },
+      {
+        "title": "构造合约到账簿映射",
+        "detail": "MAPPING 第一条 UNION 分支按外部合约号和规则表匹配；第二条分支按交易对手名称匹配；第三条分支直接使用账簿映射关系并排除已覆盖规则的 Src_Book_Map_Id；三条分支最后按合约和账簿三元组分组。",
+        "lines": [
+          9,
+          60
+        ]
+      },
+      {
+        "title": "第一条结果写入分支：直接协议账簿关系",
+        "detail": "将互换合约、有效协议属性、N03 账簿关系、账簿名称/部门、结构腿、历史持仓、资讯产品、汇率、期货属性和交易对手属性连接，排除指定无效/草稿状态码后写入 T98_OTC_SWAP_COMP_TRD_UNDRL_INFO。",
+        "lines": [
+          61,
+          148
+        ]
+      },
+      {
+        "title": "第二条结果写入分支：映射后的目标账簿关系",
+        "detail": "使用 MAPPING 将原账簿映射到目标账簿，再重复连接账簿、结构腿、持仓、产品、汇率、期货属性和交易对手属性；同样排除状态码 230、254、253、218、255，并 UNION ALL 到同一结果表。",
+        "lines": [
+          149,
+          238
+        ]
+      }
+    ],
+    "grain": {
+      "object": "互换合约结构腿在账簿、产品/标的和持仓业务日上的交易标的结果",
+      "time": "持仓/结果业务日取 HP.BUSI_DATE；有效关系和账簿映射使用 2026-05-23 的起止区间；Data_Etl_Date/Data_Upt_Date 是加载和更新时间。",
+      "keys": "候选识别键为合约协议编号/修饰符、账簿协议编号/修饰符、结构腿全局序号、产品和持仓业务日；SQL 未证明最终唯一键。",
+      "limitation": "三条映射路线和多张属性表可能产生一对多；SQL 有 GROUP BY 仅作用于 MAPPING，未证明最终写出行唯一性，也未证明 T98 表是聚合表。"
+    },
+    "questions": [
+      "第一、第二、第三映射分支是否可能对同一合约产生多个目标账簿？",
+      "结构腿与历史持仓的 Leg_Glbl_Seq_No 是否唯一？",
+      "排除状态码的业务定义和适用范围是否稳定？"
+    ]
+  },
+  {
+    "taskId": "147139",
+    "output": "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+    "title": "写入组合级履保计算结果",
+    "summary": "直接读取每日组合履保结果，将状态、动态名义本金、履保比例、追保/提取金额和保证金余额等计算字段写入 PDATA；账户协议号、客户号、保证金账户和场外合约号在此写入中均为空，组合编号由 BUNDLE_ID 承载。",
+    "sha256": "7ad9f1ccc5c9939f37c3b00db17ad87ce3c5f3846e76107b6f128e7b886225e6",
+    "inputs": [
+      {
+        "table": "ODATA_N_TIT.D_BUNDLE_MARGIN_DAILY_RESULT",
+        "role": "主记录",
+        "reason": "提供每日组合履保计算结果，包括履保状态、动态名义本金、保证金余额、追保和提取要求。",
+        "lines": [
+          40,
+          40
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "读取指定采集分区的组合履保结果",
+        "detail": "源表按 BUSI_DATE=2026-05-19 选取留存快照；这是输入过滤条件，输出业务日期另取 SRC_BUSI_DATE。",
+        "lines": [
+          40,
+          41
+        ]
+      },
+      {
+        "title": "字段映射并写入 PDATA",
+        "detail": "把 MGR_STATUS、DYNAMIC_NOTIONAL、MRG_RATE、MIN_MARGIN_AMOUNT、MGR_REMARGINABLE、MRG_WITHDRAWED 等源字段映射为 PDATA 履保结果字段；IS_CALC 转为 1/0；BUNDLE_ID 写入 Comb_Agt_Grp_Id，Busi_Date 取 SRC_BUSI_DATE 前 10 位。",
+        "lines": [
+          1,
+          39
+        ]
+      }
+    ],
+    "grain": {
+      "object": "履保组合在源业务日的计算结果",
+      "time": "Busi_Date = SUBSTR(SRC_BUSI_DATE,1,10)；Data_Etl_Date='2026-05-19'，Data_Upt_Date='2026-05-20'。",
+      "keys": "当前 SQL 明确承载 Comb_Agt_Grp_Id=BUNDLE_ID；未给出组合结果的完整唯一键。",
+      "limitation": "该写入中的 Marg_Acct_Agt_Id、Cutp_Pty_Id、Marg_Acct、Otc_Comp_Agt_Id 均为空，不能把它解释为账户或合约粒度，也不能仅凭目标表名推断账户明细。"
+    },
+    "questions": [
+      "BUNDLE_ID 是否在源表中唯一代表履保组合？",
+      "后续任务是否将该组合结果映射到账户或合约，当前三任务证据未覆盖。",
+      "源业务日与目标分区日的回补规则是否由其他写入统一处理？"
+    ]
+  }
+]

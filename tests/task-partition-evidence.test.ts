@@ -19,6 +19,63 @@ function table(partitionFields?: readonly string[]) {
   };
 }
 
+describe("scheduler partition precedence", () => {
+  const input = (hivePartition: string, fields = ["busi_date"]) => ({
+    taskTarget: target,
+    tables: [table(fields)],
+    sql: { query: "SELECT id FROM oracle_source_table" },
+    schedulerEvidence: { hivePartition, evidenceProvider: "fixture:scheduler" },
+    allowImplicitQueryOutput: false,
+    allowSourceTemporalPartitionDefault: true,
+  });
+
+  it.each(["h13", "opt", "gf"])("binds the sole partition to scheduler value %s", (value) => {
+    const args = input(value);
+    expect(buildTaskPartitionEvidence(args).targets[0]?.writes[0]?.assignments[0])
+      .toMatchObject({ field: "busi_date", value, status: "CONFIRMED" });
+    expect(buildCompactTaskPartition(args)).toEqual({ busi_date: value });
+  });
+
+  it("does not overwrite a named scheduler assignment with a date default", () => {
+    expect(buildCompactTaskPartition(input("busi_date=h13")))
+      .toEqual({ busi_date: "h13" });
+    expect(buildCompactTaskPartition(input("busi_date=h13,grp_id=01", ["busi_date", "grp_id"])))
+      .toEqual({ busi_date: "h13", grp_id: "01" });
+  });
+
+  it("preserves SparkIndex's full-width query partition contract", () => {
+    const evidence = buildTaskPartitionEvidence({
+      ...input("h13"),
+      sparkIndexMode: true,
+      allowImplicitQueryOutput: true,
+      sql: { query: "SELECT id, 'h13' AS busi_date FROM source_table" },
+    });
+    expect(evidence.targets[0]?.writes[0]?.mode).toBe("DYNAMIC");
+    expect(evidence.targets[0]?.writes[0]?.assignments[0])
+      .toMatchObject({ field: "busi_date", value: "h13", status: "CONFIRMED" });
+  });
+
+  it("supports a non-date single partition and keeps temporal canonicalization", () => {
+    expect(buildCompactTaskPartition(input("opt", ["grp_id"]))).toEqual({ grp_id: "opt" });
+    expect(buildCompactTaskPartition(input("2026-09-10"))).toEqual({ busi_date: "${YYYY-MM-DD}" });
+    expect(buildCompactTaskPartition(input("${YYYY-MM-DD}"))).toEqual({ busi_date: "${YYYY-MM-DD}" });
+  });
+
+  it("does not guess a field for a bare value when multiple partition keys exist", () => {
+    const args = input("h13", ["busi_date", "grp_id"]);
+    expect(buildCompactTaskPartition(args)).toEqual({ busi_date: "${YYYY-MM-DD}", grp_id: "*" });
+    expect(buildTaskPartitionEvidence(args).targets[0]?.writes[0]?.assignments)
+      .toEqual(expect.arrayContaining([expect.objectContaining({ field: "grp_id", status: "UNKNOWN" })]));
+  });
+
+  it("keeps explicit SQL and scheduler contradictions visible", () => {
+    expect(buildTaskPartitionEvidence({
+      ...input("busi_date=h13"),
+      sql: { query: `INSERT OVERWRITE TABLE ${target} PARTITION(busi_date='h15') SELECT id FROM source_table` },
+    }).status).toBe("CONFLICT");
+  });
+});
+
 describe("task partition map fallback", () => {
   it("emits null only when the target table is confirmed non-partitioned", () => {
     expect(

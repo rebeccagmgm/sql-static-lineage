@@ -8,11 +8,11 @@
 
 六个已核验任务的 `query` 本身都是查询，Input Pack 将输出声明为 `_temp`；`finish` 再显式写正式结果，部分任务继续写 `_bkup`。这三个写入不能混成“每个源都直接写三张表”。
 
-| 对象 | 已确认的作用与日期 |
-|---|---|
+| 对象                         | 已确认的作用与日期                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
 | `otc_trs_risk_plreport_temp` | 承接主查询组装结果；分区是来源组 `grp_id` 与运行日 `busi_date`，记录内另存 `src_busi_date` |
-| `otc_trs_risk_plreport` | 从本次临时分区取近期记录，统一列名，将 `src_busi_date` 改作正式业务日分区 |
-| `otc_trs_risk_plreport_bkup` | 普通任务的后续语句复制正式表近期结果；所查 h15 任务没有这条复制语句 |
+| `otc_trs_risk_plreport`      | 从本次临时分区取近期记录，统一列名，将 `src_busi_date` 改作正式业务日分区                  |
+| `otc_trs_risk_plreport_bkup` | 普通任务的后续语句复制正式表近期结果；所查 h15 任务没有这条复制语句                        |
 
 ```sql
 -- 159489，slot=finish，231–233 行
@@ -42,11 +42,11 @@ where grp_id = '01' and busi_date = '${yyyy-MM-dd}'
 
 ## 日期和来源变体改变了报表含义
 
-| 分支 | 与普通组 01 不同的实现 |
-|---|---|
-| 159497／组 02 | 日历生成终止日之后的日期，持仓、估值及汇率则匹配终止日；输出日期可晚于取值日期，属于到期后延续表达，不能解读为每天重新估值 |
+| 分支          | 与普通组 01 不同的实现                                                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 159497／组 02 | 日历生成终止日之后的日期，持仓、估值及汇率则匹配终止日；输出日期可晚于取值日期，属于到期后延续表达，不能解读为每天重新估值                     |
 | 159498／组 05 | 从 `KS_TRADE_COMFIRM_INFO` 与 `KS_TRS_EOD_POSTION` 出发，按确认记录与源业务日聚合；`UNION ALL` 区分存续期内外，两段都写组 05，汇率字段固定为 1 |
-| 188414／组 06 | fast 腿估值先按合约、账簿、日期求和；日持仓按合约、产品、账簿、日期汇总，名义本金另按合约、日期及币种对汇总，再接回主查询 |
+| 188414／组 06 | fast 腿估值先按合约、账簿、日期求和；日持仓按合约、产品、账簿、日期汇总，名义本金另按合约、日期及币种对汇总，再接回主查询                      |
 
 组 02 上述“终止日”在表达式中取实际结算日期，缺失时才回退合约到期日期；这两种源日期不能不加区分地称为同一业务事件。该分支也不是把终止日全部指标原样延续：当日损益置零，数量、原币与结算动态名义本金置零，本年指标在跨终止年度时另置零。取值日期冻结、日期序列延续和指标归零共同形成到期后的报告表达。[R2：query 176–186、214–240、315–317](#证据索引)
 
@@ -64,13 +64,13 @@ fast 的结构化当日收益部分采用“当日累计减前一自然日累计
 
 范围固定为图版本 `df6f0ae4b6ef465f751351b14fd02ea08542d824d7bfea36e5a58dd1039e23c3`。六份 projection 的声明 `contentHash` 均与 batch manifest 一致，状态均为 `LEGACY_NOT_L1`。以下行号指 evidence 中对应 `sqlSources.slot` 的文本行号；`query` 与 `finish` 分别计数。
 
-| 编号／任务 | 精确证据及核验范围 |
-|---|---|
+| 编号／任务 | 精确证据及核验范围                                                                                                                                                                                                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | R1／159489 | [普通整合与三次输出](../../../sql-static-lineage-data/task-projections/tasks/159489/versions/4de7ba47e9b0797b5a9cc5b79ad4157c125651c801de6f5e27980cf13a39a873.evidence-v3.json)：query 114–235、291–305、336–441、476 行；finish 117–134、219–233、351–354 行；三个输出绑定分别指向临时、正式、备份 |
-| R2／159497 | [终止日后延续](../../../sql-static-lineage-data/task-projections/tasks/159497/versions/b2d05e202fb99bb36d062dce1d70ef5ddec4267f3be1e4e4c87f3d896d34d497.evidence-v3.json)：query 116、175、300–306、323、356、377、397、420 行，显示日期与取值日期的差别 |
-| R3／159498 | [金仕达来源变体](../../../sql-static-lineage-data/task-projections/tasks/159498/versions/b30726989b53645d5e59332157b8e1a2b937c58fde53b48a0531eb88aa5ae5c4.evidence-v3.json)：query 114–127、255–284、337、449–509 行，编号、汇率、聚合与两分支 |
-| R4／188414 | [fast 整合](../../../sql-static-lineage-data/task-projections/tasks/188414/versions/da6ceb0dad005e5cbe58639332bf0380367cbc39786e65eaec8269edddb34309.evidence-v3.json)：query 3–70、72–143、260–360、433–454 行；finish 231–233、351–354 行 |
-| R5／160795 | [普通 h15 路径](../../../sql-static-lineage-data/task-projections/tasks/160795/versions/3b47fe6db3620d4bd01d0066485949a875f975bdea0464cbc3423f84a76b1692.evidence-v3.json)：query 与 R1 相同；finish 117–233 行，仅临时到正式结果 |
-| R6／188424 | [fast h15 路径](../../../sql-static-lineage-data/task-projections/tasks/188424/versions/c78666e88002a7d3a361ce5bc48ecf55d2617ecd6c04e441deb03caee4780edb.evidence-v3.json)：query 与 R4 相同；finish 117–233 行，无备份写入 |
+| R2／159497 | [终止日后延续](../../../sql-static-lineage-data/task-projections/tasks/159497/versions/b2d05e202fb99bb36d062dce1d70ef5ddec4267f3be1e4e4c87f3d896d34d497.evidence-v3.json)：query 116、175、300–306、323、356、377、397、420 行，显示日期与取值日期的差别                                            |
+| R3／159498 | [金仕达来源变体](../../../sql-static-lineage-data/task-projections/tasks/159498/versions/b30726989b53645d5e59332157b8e1a2b937c58fde53b48a0531eb88aa5ae5c4.evidence-v3.json)：query 114–127、255–284、337、449–509 行，编号、汇率、聚合与两分支                                                      |
+| R4／188414 | [fast 整合](../../../sql-static-lineage-data/task-projections/tasks/188414/versions/da6ceb0dad005e5cbe58639332bf0380367cbc39786e65eaec8269edddb34309.evidence-v3.json)：query 3–70、72–143、260–360、433–454 行；finish 231–233、351–354 行                                                         |
+| R5／160795 | [普通 h15 路径](../../../sql-static-lineage-data/task-projections/tasks/160795/versions/3b47fe6db3620d4bd01d0066485949a875f975bdea0464cbc3423f84a76b1692.evidence-v3.json)：query 与 R1 相同；finish 117–233 行，仅临时到正式结果                                                                   |
+| R6／188424 | [fast h15 路径](../../../sql-static-lineage-data/task-projections/tasks/188424/versions/c78666e88002a7d3a361ce5bc48ecf55d2617ecd6c04e441deb03caee4780edb.evidence-v3.json)：query 与 R4 相同；finish 117–233 行，无备份写入                                                                         |
 
 DDL：[正式结果](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport__gfhive/ddl.sql)、[临时结果](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport_temp__gfhive/ddl.sql)、[备份对象](../../../sql-static-lineage-data/tables/hive/dm_rsk_n.otc_trs_risk_plreport_bkup__gfhive/ddl.sql)。

@@ -15,6 +15,12 @@ export default defineConfig({
 			"tmp/worktrees/**",
 			"tests/corpus/**",
 			"temp_auto/**",
+			// Frozen release/review copies carry duplicate tests against old source.
+			".evidence-cache/standardized-release-check/**",
+			".tmp-arcadedb/commit-check/**",
+			"tmp/scope-binding-logical-router-code/**",
+			"tmp/asset-graph-publication-49faace/runtime/**",
+			"tmp/conditioned-value-path-spike-20260909/release-source/**",
 		],
 		// Use the worker-threads pool, not the default `forks` pool.
 		//

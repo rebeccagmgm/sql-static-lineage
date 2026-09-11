@@ -121,6 +121,21 @@ the existing task fields, SQL files, scheduler evidence, and code evidence.
 Use `--task-ids 100717,119044` to update a bounded set, and add `--details` to
 inspect internal per-task target statuses during a bounded dry-run.
 
+Explicit `schedulerEvidence.hivePartition` values take precedence over temporal
+defaults. For a direct target with exactly one known partition field, a bare
+value such as `h13` binds to that field; named assignments such as
+`busi_date=h13,grp_id=01` bind by field name. Bare values never infer bindings
+for multiple partition fields. Confirmed literal assignments and explicit
+scheduler expressions are retained when producing the compact map; actual ISO
+date literals still use the existing date normalization. Conflicting explicit
+SQL and scheduler assignments remain conflicts rather than being overwritten.
+
+Machine Facts consumes the same scheduler evidence for direct platform targets.
+An explicitly configured static partition is classified before positional query
+binding; an extra business output cannot be reinterpreted as that partition.
+Partition evidence can remain complete while a SQL/target column-count mismatch
+is reported separately as `OUTPUT_BINDING_NOT_PROVABLE`.
+
 `task.json.partition` keeps a compact configuration shape. A single complete
 partition instance is an object, for example
 `{ "busi_date": "${YYYY-MM-DD}" }`; multiple complete instances are an array

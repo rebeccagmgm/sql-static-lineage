@@ -8,35 +8,35 @@
 
 四个写者都向同一张表写入 90 个非分区字段，使用业务日期 `busi_date` 和分支 `grp_id` 分区。可以把记录理解为“运行日快照中，某条产品来源形成的合约综合信息”。这描述了记录的加工意图，尚未证明每天每个合约只有一条记录。
 
-| 信息 | 代表字段 | 后续阅读用途 |
-| --- | --- | --- |
-| 合约与来源标识 | `Agt_Id`、`Inr_Seri_No`、`Otc_Seri_No`、`Ext_Comp_No` | 选择正确的关联键 |
-| 客户 | `Cutp_Pty_Id`、客户名称等 | 将合约结果组织到客户 |
-| 产品与标的 | `Busi_Type`、`Src_Contr_Type`、`Undrl_Ins_Id` 等 | 区分产品规则及标的属性 |
-| 规模与时间 | `Init_Nom_Prin`、`Dyna_Nom_Prin`、起止日、提前终止日 | 计算初始、当日和历史每日规模 |
-| 账簿与条款 | `Book_Agt_Id`、`Cntr`、保证金及费用相关字段 | 组织归属和产品条款 |
+| 信息           | 代表字段                                              | 后续阅读用途                 |
+| -------------- | ----------------------------------------------------- | ---------------------------- |
+| 合约与来源标识 | `Agt_Id`、`Inr_Seri_No`、`Otc_Seri_No`、`Ext_Comp_No` | 选择正确的关联键             |
+| 客户           | `Cutp_Pty_Id`、客户名称等                             | 将合约结果组织到客户         |
+| 产品与标的     | `Busi_Type`、`Src_Contr_Type`、`Undrl_Ins_Id` 等      | 区分产品规则及标的属性       |
+| 规模与时间     | `Init_Nom_Prin`、`Dyna_Nom_Prin`、起止日、提前终止日  | 计算初始、当日和历史每日规模 |
+| 账簿与条款     | `Book_Agt_Id`、`Cntr`、保证金及费用相关字段           | 组织归属和产品条款           |
 
 字段及分区定义见[表元数据](../../../sql-static-lineage-data/tables/hive/pdata_n.t98_otc_deri_comp_sale_info__gfhive/table.json)。表名中的“销售收入”不能直接证明每行就是已确认收入；当前四写者及下游表明，它也承载大量计算收入与规模之前的基础信息。
 
 ## 四条路径统一了什么
 
-| 任务 | 已核实来源分支 | 写入本表的 `grp_id` | `Busi_Type` |
-| --- | --- | --- | --- |
-| 86840 | 期权 | `01` | `OPTION` |
-| 86841 | 普通 TRS | `02` | `TRS` |
-| 86842 | 金仕达 | `03` | `TRS` |
-| 220650 | 极速互换 | `04` | `TRS` |
+| 任务   | 已核实来源分支 | 写入本表的 `grp_id` | `Busi_Type` |
+| ------ | -------------- | ------------------- | ----------- |
+| 86840  | 期权           | `01`                | `OPTION`    |
+| 86841  | 普通 TRS       | `02`                | `TRS`       |
+| 86842  | 金仕达         | `03`                | `TRS`       |
+| 220650 | 极速互换       | `04`                | `TRS`       |
 
 这里的 `grp_id` 对照来自四条实际写入语句，只在本表及已核实消费中解释。它不是全仓通用的产品分类。只筛 `Busi_Type='TRS'` 也无法区分后三种处理方式。期权写者 86840 的明确读源包括 `odata_n_tit.d_trd_otc_trade` 与 `odata_n_tit.d_ref_otc_option_deal`（query 183、187 行）：下文的交易编号与期权本金／条款来自这些不同对象，不能把它们当作同一份源记录的别名。
 
 ### 编号要沿字段来源读
 
-| 输出字段 | 期权、普通 TRS、极速互换 | 金仕达 |
-| --- | --- | --- |
-| `Agt_Id` | `trade.internal_trade_id` | `a.key_trade_comfirm_id` |
-| `Inr_Seri_No` | `trade.key_otc_trade_id` | `a.contract_code` |
-| `Otc_Seri_No` | `trade.key_instrument_id` | `NULL` |
-| `Ext_Comp_No` | 产品合约的 `contract_code` | `a.contract_code` |
+| 输出字段      | 期权、普通 TRS、极速互换   | 金仕达                   |
+| ------------- | -------------------------- | ------------------------ |
+| `Agt_Id`      | `trade.internal_trade_id`  | `a.key_trade_comfirm_id` |
+| `Inr_Seri_No` | `trade.key_otc_trade_id`   | `a.contract_code`        |
+| `Otc_Seri_No` | `trade.key_instrument_id`  | `NULL`                   |
+| `Ext_Comp_No` | 产品合约的 `contract_code` | `a.contract_code`        |
 
 例如，附加明细任务 107491 用 `Inr_Seri_No` 关联期权事件及普通 TRS 交易键，用 `Agt_Id` 关联金仕达确认记录，用 `Otc_Seri_No` 关联极速互换工具持仓。这些不同关联方式是来源差异在消费者中的实际体现。
 
@@ -44,12 +44,12 @@
 
 ### 同名规模字段保留了不同规则
 
-| 分支 | 初始规模 `Init_Nom_Prin` | 当日动态规模 `Dyna_Nom_Prin` |
-| --- | --- | --- |
-| 期权 | 初始名义本金乘 SQL 选择的币种折算因子 | 业务日期在起始日至提前终止日或到期日的闭区间内，取当前名义本金并折算；区间外为 0 |
-| 普通 TRS | 按腿与标的选最早持仓，汇总初始价格×初始数量，再折算 | 汇总当日持仓的初始价格×当前数量，再折算 |
-| 金仕达 | 特定多空互换取动态名义本金，其余取来源名义本金 | 取来源 `dynamic_notional` |
-| 极速互换 | 按工具与标的代码选最早日终持仓，按工具汇总动态名义本金 | 当日日终持仓按工具汇总动态名义本金 |
+| 分支     | 初始规模 `Init_Nom_Prin`                               | 当日动态规模 `Dyna_Nom_Prin`                                                     |
+| -------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 期权     | 初始名义本金乘 SQL 选择的币种折算因子                  | 业务日期在起始日至提前终止日或到期日的闭区间内，取当前名义本金并折算；区间外为 0 |
+| 普通 TRS | 按腿与标的选最早持仓，汇总初始价格×初始数量，再折算    | 汇总当日持仓的初始价格×当前数量，再折算                                          |
+| 金仕达   | 特定多空互换取动态名义本金，其余取来源名义本金         | 取来源 `dynamic_notional`                                                        |
+| 极速互换 | 按工具与标的代码选最早日终持仓，按工具汇总动态名义本金 | 当日日终持仓按工具汇总动态名义本金                                               |
 
 “初始”也不是四分支共用一个算法：普通 TRS 和极速互换通过历史记录选择形成初始值，期权直接读取产品初始本金，金仕达存在产品条件分支。普通 TRS 先按腿汇总，极速互换先按工具汇总，这也是两种不同的中间粒度。
 
@@ -76,12 +76,12 @@
 
 以下行号指 evidence 文件内 `sqlSources` 中 `slot=query` 的 SQL 行号，不是 JSON 文件行号。
 
-| 证据 | 重点位置 |
-| --- | --- |
-| [86840：期权](../../../sql-static-lineage-data/task-projections/tasks/86840/versions/98e14680334a17fef9cf23bcf7f2845dfd68541494598961fb3b0f6b26be0d56.evidence-v3.json) | 第 11–15 行写入与编号；第 99–111 行本金及日期条件；第 126–127 行内部编号 |
-| [86841：普通 TRS](../../../sql-static-lineage-data/task-projections/tasks/86841/versions/a56f356a63b66ab43e23cb4855e77e6c09d02c248a066206ec5b01c40a1a758e.evidence-v3.json) | 第 83–94 行本金；第 191–242 行最早持仓、腿级汇总与当日持仓 |
-| [86842：金仕达](../../../sql-static-lineage-data/task-projections/tasks/86842/versions/8439fbba915a4a9b1ad49abd8e7fbee7c46e0bf78ba7fdb3439aa19434984fba.evidence-v3.json) | 第 11–15、37–50、85–94 行分支、编号、规模及固定账簿属性 |
-| [220650：极速互换](../../../sql-static-lineage-data/task-projections/tasks/220650/versions/719a2f738f29fc412c72090bf0422e01175b81bc09557398abeb4774e747b2e0.evidence-v3.json) | 第 11–15、37–50 行；第 127–174 行工具级初始与当日汇总 |
-| [107491：每日明细](../../../sql-static-lineage-data/task-projections/tasks/107491/versions/96d77f8bf4a0634557b1b3273438c9874160e9119146701ccf295167033dc1dc.evidence-v3.json) | 第 78、99、111、131 行各产品关联键 |
-| [105743：管理关系](../../../sql-static-lineage-data/task-projections/tasks/105743/versions/9c728eb8cb3d3dff34755347b93b1a3e69aae4393bc2b6f11065ebd0f44f0152.evidence-v3.json) | 第 103–128、163–182 行合约与客户归属 |
-| [230202：创收日报](../../../sql-static-lineage-data/task-projections/tasks/230202/versions/054fea93fea9ed6256ee5087deea9b8e94b43aef5625415a20840276b3a06ae3.evidence-v3.json) | 销售合约消费及最终字段来源；账簿分支见第 206–244 行 |
+| 证据                                                                                                                                                                          | 重点位置                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [86840：期权](../../../sql-static-lineage-data/task-projections/tasks/86840/versions/98e14680334a17fef9cf23bcf7f2845dfd68541494598961fb3b0f6b26be0d56.evidence-v3.json)       | 第 11–15 行写入与编号；第 99–111 行本金及日期条件；第 126–127 行内部编号 |
+| [86841：普通 TRS](../../../sql-static-lineage-data/task-projections/tasks/86841/versions/a56f356a63b66ab43e23cb4855e77e6c09d02c248a066206ec5b01c40a1a758e.evidence-v3.json)   | 第 83–94 行本金；第 191–242 行最早持仓、腿级汇总与当日持仓               |
+| [86842：金仕达](../../../sql-static-lineage-data/task-projections/tasks/86842/versions/8439fbba915a4a9b1ad49abd8e7fbee7c46e0bf78ba7fdb3439aa19434984fba.evidence-v3.json)     | 第 11–15、37–50、85–94 行分支、编号、规模及固定账簿属性                  |
+| [220650：极速互换](../../../sql-static-lineage-data/task-projections/tasks/220650/versions/719a2f738f29fc412c72090bf0422e01175b81bc09557398abeb4774e747b2e0.evidence-v3.json) | 第 11–15、37–50 行；第 127–174 行工具级初始与当日汇总                    |
+| [107491：每日明细](../../../sql-static-lineage-data/task-projections/tasks/107491/versions/96d77f8bf4a0634557b1b3273438c9874160e9119146701ccf295167033dc1dc.evidence-v3.json) | 第 78、99、111、131 行各产品关联键                                       |
+| [105743：管理关系](../../../sql-static-lineage-data/task-projections/tasks/105743/versions/9c728eb8cb3d3dff34755347b93b1a3e69aae4393bc2b6f11065ebd0f44f0152.evidence-v3.json) | 第 103–128、163–182 行合约与客户归属                                     |
+| [230202：创收日报](../../../sql-static-lineage-data/task-projections/tasks/230202/versions/054fea93fea9ed6256ee5087deea9b8e94b43aef5625415a20840276b3a06ae3.evidence-v3.json) | 销售合约消费及最终字段来源；账簿分支见第 206–244 行                      |

@@ -60,12 +60,12 @@ ProjectTopologySnapshotV1
 
 ## 2. 原料（全部来自 sql-static-lineage 已发布产物）
 
-| 输入                   | 路径（典型）                                                 | 用途                                                                    |
-| ---------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `batch-manifest.json`  | `<project-graph-root>/batch-manifest.json`                   | 任务列表、覆盖汇总、每任务 `contentHash` / `cacheKey` / `path`          |
+| 输入                   | 路径（典型）                                                 | 用途                                                                           |
+| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `batch-manifest.json`  | `<project-graph-root>/batch-manifest.json`                   | 任务列表、覆盖汇总、每任务 `contentHash` / `cacheKey` / `path`                 |
 | 投影 **envelope**      | `<project-graph-root>/tasks/<id>/task-local-projection.json` | 见 §2.2；内含 `projection`（schema **1.1.0 或 1.2.0**；WP-8 INDEX 要求 1.2.0） |
-| `TABLE_PRODUCER_INDEX` | data-root 侧 producer-index 产物                             | 并集外 writer 边界；writer 分区（`ProducerWriteObservation.partition`） |
-| 调度缓存               | schedule-evidence cache                                      | 仅 `SCHEDULE_ONLY` CANDIDATE writer（§5.3）与展示                       |
+| `TABLE_PRODUCER_INDEX` | data-root 侧 producer-index 产物                             | 并集外 writer 边界；writer 分区（`ProducerWriteObservation.partition`）        |
+| 调度缓存               | schedule-evidence cache                                      | 仅 `SCHEDULE_ONLY` CANDIDATE writer（§5.3）与展示                              |
 
 WP-5 **不读** `field-lineage.json`、one-hop / multi-hop 闭包文件来构建并集图。
 
@@ -165,11 +165,11 @@ WP-3 故意不在局部纸条上写「上游是 119044」。接续分两层（**
 
 与 §5.1 表级 `traceUnionUpstream` 并存：
 
-| 组件 | 路径 |
-| --- | --- |
-| v2 内核 | `task-local-union-continuation-v2.ts` |
-| 批索引 | `union-continuation-index.ts` + CLI `npm run union-continuation-index` |
-| 消费（闭包，暂停） | sql-static-lineage `union-continuation-candidate-source.ts` |
+| 组件               | 路径                                                                   |
+| ------------------ | ---------------------------------------------------------------------- |
+| v2 内核            | `task-local-union-continuation-v2.ts`                                  |
+| 批索引             | `union-continuation-index.ts` + CLI `npm run union-continuation-index` |
+| 消费（闭包，暂停） | sql-static-lineage `union-continuation-candidate-source.ts`            |
 
 金样调查页 **推荐**消费 `UNION_CONTINUATION_INDEX` + 批内纸条（见 `docs/execution-plan-gold-case-investigation.md` §2）；`visualize-task-local-machine-graph` 仅可选人读。
 

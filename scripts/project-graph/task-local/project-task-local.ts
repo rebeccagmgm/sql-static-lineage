@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
 import {
   indexTaskInputPacks,
@@ -17,6 +17,7 @@ import {
   type CurrentBundleLoad,
   type JsonRecord,
 } from "../../query/current-task-bundle.ts";
+import { readPartitionRanges } from "./partition-range.ts";
 import {
   fieldConditionalsForExpression,
   sourceFieldsForExpression,
@@ -214,6 +215,7 @@ function loadTaskPack(
   dataRoot: string,
   catalog: PhysicalTableCatalog,
   taskId: string,
+  load: CurrentBundleLoad,
 ): { document: TaskDocument & JsonRecord; target: PhysicalTableCatalogEntry | null } | null {
   const index = taskPackIndexCache.get(dataRoot)
     ?? (() => {
@@ -227,10 +229,28 @@ function loadTaskPack(
   const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
   validateTaskDocument(raw);
   const document = raw as TaskDocument & JsonRecord;
-  const targetName = text(document.target?.qualifiedName);
-  const target = targetName
-    ? catalog.byQualifiedName.get(normalizeName(targetName))?.[0] ?? null
-    : null;
+  const manifestInputs = record(load.manifest?.inputs);
+  const inputPack = record(manifestInputs?.input_pack);
+  const tableLocator = text(inputPack?.table_locator);
+  const tableContentHash = text(inputPack?.table_content_hash);
+  let target: PhysicalTableCatalogEntry | null = null;
+  if (
+    tableLocator
+    && tableContentHash
+    && /^[a-f0-9]{64}$/.test(tableContentHash)
+    && !isAbsolute(tableLocator)
+    && !tableLocator.split(/[\\/]+/).includes("..")
+  ) {
+    const expectedPath = resolve(dataRoot, tableLocator);
+    const containedPath = relative(dataRoot, expectedPath);
+    if (containedPath !== "" && !containedPath.startsWith("..") && !isAbsolute(containedPath)) {
+      target = catalog.entries.find(
+        (entry) =>
+          resolve(entry.tablePath) === expectedPath
+          && entry.tableContentHash === tableContentHash,
+      ) ?? null;
+    }
+  }
   return { document, target };
 }
 
@@ -501,7 +521,7 @@ function projectTaskLocalFromFacts(input: {
       physicalCatalogCache.set(dataRoot, next);
       return next;
     })();
-  const pack = loadTaskPack(dataRoot, catalog, taskId);
+  const pack = loadTaskPack(dataRoot, catalog, taskId, load);
   const resolvedTaskCategory = taskCategory ?? pack?.document.taskCategory ?? null;
   const fallbackTable = pack?.target ?? { platform: "hive", dataSource: "unknown" };
   const defaultSchema = pack ? inferTaskDefaultSchema(pack.document) : null;
@@ -716,6 +736,7 @@ function projectTaskLocalFromFacts(input: {
   }
 
   const relationRecords = records(load.records["relation-nodes.jsonl"]);
+  const partitionRanges = readPartitionRanges(relationRecords);
   const predicatesByOccurrence = partitionPredicatesByReadOccurrence({
     taskId,
     relationRecords,
@@ -785,6 +806,7 @@ function projectTaskLocalFromFacts(input: {
           readDisposition,
           partitionPredicates: partition.predicates,
           partitionPredicateStatus: partition.status,
+          ...(occurrence.relationId && partitionRanges.has(occurrence.relationId) ? { partitionRange: partitionRanges.get(occurrence.relationId)! } : {}),
           ...(hasUnresolvedMaterialization
             ? { materializationBoundaryReason: "MATERIALIZATION_NOT_RESOLVED" }
             : {}),

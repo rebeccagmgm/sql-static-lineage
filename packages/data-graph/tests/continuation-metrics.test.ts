@@ -76,8 +76,22 @@ describe("calculateContinuationMetrics", () => {
   });
 
   it("keeps INDEX total reads while excluding policy terminals from continuation metrics", () => {
-    const terminal = entry("terminal", [], [{ gapId: "p", reasonCode: "PARTITION_NO_MATCH", message: "", details: {} }]);
-    const result = calculateContinuationMetrics({ index: index([terminal, entry("open", [candidate("w", "CONFIRMED")])]), policyTerminals: [policy("terminal")] });
+    const terminal = entry(
+      "terminal",
+      [],
+      [
+        {
+          gapId: "p",
+          reasonCode: "PARTITION_NO_MATCH",
+          message: "",
+          details: {},
+        },
+      ],
+    );
+    const result = calculateContinuationMetrics({
+      index: index([terminal, entry("open", [candidate("w", "CONFIRMED")])]),
+      policyTerminals: [policy("terminal")],
+    });
     expect(result.totalReadOccurrences).toBe(2);
     expect(result.policyTerminalReadOccurrences).toBe(1);
     expect(result.withinUnionReadOccurrences).toBe(1);
@@ -85,11 +99,30 @@ describe("calculateContinuationMetrics", () => {
   });
 
   it("retains independent material gaps and does not apply policy to unknown identity", () => {
-    const material = entry("material", [], [{ gapId: "m", reasonCode: "READ_IDENTITY_NOT_CONFIRMED", message: "", details: {} }]);
-    const unknown = { ...entry("unknown"), identityStatus: "UNKNOWN" } as UnionContinuationIndexEntry;
-    const result = calculateContinuationMetrics({ index: index([material, unknown]), policyTerminals: [policy("material"), policy("unknown")] });
+    const material = entry(
+      "material",
+      [],
+      [
+        {
+          gapId: "m",
+          reasonCode: "READ_IDENTITY_NOT_CONFIRMED",
+          message: "",
+          details: {},
+        },
+      ],
+    );
+    const unknown = {
+      ...entry("unknown"),
+      identityStatus: "UNKNOWN",
+    } as UnionContinuationIndexEntry;
+    const result = calculateContinuationMetrics({
+      index: index([material, unknown]),
+      policyTerminals: [policy("material"), policy("unknown")],
+    });
     expect(result.policyTerminalReadOccurrences).toBe(1);
-    expect(result.gapGroups.material.reasonCodeCounts.READ_IDENTITY_NOT_CONFIRMED).toBe(1);
+    expect(
+      result.gapGroups.material.reasonCodeCounts.READ_IDENTITY_NOT_CONFIRMED,
+    ).toBe(1);
     expect(result.withinUnionReadOccurrences).toBe(1);
   });
 
@@ -275,5 +308,47 @@ describe("calculateContinuationMetrics", () => {
       calculateContinuationMetrics({ index: index([]) })
         .continuationEdgeMetrics,
     ).toBeNull();
+  });
+
+  it("does not surface partition noise for source endpoint boundary reads", () => {
+    const boundaryRead = {
+      consumerTaskId: "consumer",
+      readOccurrenceId: "boundary",
+      qualifiedName: "titans_dm.trd_otc_trade",
+      role: "TITANS_SOURCE",
+      ruleRef: "config#roles.TITANS_SOURCE",
+      evidenceRefs: ["evidence"],
+    };
+    const boundary = entry(
+      "boundary",
+      [],
+      [
+        {
+          gapId: "no-writer",
+          reasonCode: "NO_KNOWN_WRITE_OBSERVATION",
+          message: "",
+          details: {},
+        },
+        {
+          gapId: "partition",
+          reasonCode: "WRITER_PARTITION_UNKNOWN",
+          message: "",
+          details: {},
+        },
+      ],
+    );
+    const result = calculateContinuationMetrics({
+      index: index([boundary]),
+      boundaryEvidence: {
+        sourceEndpointBoundaryReadOccurrenceIds: ["boundary"],
+      },
+      boundaryReads: [boundaryRead],
+    });
+    expect(result.confirmedSourceBoundaryReadOccurrences).toBe(1);
+    expect(
+      result.gapGroups.boundary.reasonCodeCounts.SOURCE_ENDPOINT_BOUNDARY,
+    ).toBe(1);
+    expect(result.gapGroups.actionable.gapCount).toBe(0);
+    expect(result.withinUnionReadOccurrences).toBe(0);
   });
 });

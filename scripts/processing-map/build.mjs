@@ -8,9 +8,11 @@ import {
   snapshotVersion,
   saleTable,
   sharedKnowledge,
+  sourceTopicDefinitions,
 } from "./content.mjs";
 import { verifyTaskKnowledge, resolveKnowledgeDataRoot } from "../knowledge/task-knowledge.mjs";
 import { renderReading } from "./reading.mjs";
+import { buildSourceTopicAnalysis } from "./source-analysis.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
@@ -34,6 +36,10 @@ if (network.version !== snapshotVersion)
   );
 const taskIndex = new Map(network.tasks.map((t) => [t.taskId, t]));
 const flowIndex = new Map(flows.map((f) => [`${f.from}>${f.to}`, f]));
+const sourceTopics = sourceTopicDefinitions.map((definition) =>
+  buildSourceTopicAnalysis({ definition, flows, schemas }),
+);
+const sourceTopicIndex = new Map(sourceTopics.map((topic) => [topic.id, topic]));
 for (const f of flows) {
   if (
     new Set(f.taskIds).size !== f.tasks ||
@@ -55,6 +61,8 @@ for (const view of Object.values(views)) {
     throw new Error("Duplicate node identity");
   for (const n of view.nodes) {
     if (n.view && !views[n.view]) throw new Error(`Unknown view: ${n.view}`);
+    if (n.sourceTopic && !sourceTopicIndex.has(n.sourceTopic))
+      throw new Error(`Unknown source topic: ${n.sourceTopic}`);
     for (const id of n.tasks ?? [])
       if (!taskIndex.has(id)) throw new Error(`Unknown task: ${id}`);
   }
@@ -150,6 +158,7 @@ const data = {
   counts: network.counts,
   coverage: network.coverage,
   views,
+  sourceTopics,
   taskNotes,
   knowledge,
   saleTable,
@@ -203,6 +212,8 @@ const html = template
   .replace(/\/\*__DATA__\*\/\s*null/, () => serialized)
   .replace("/*__SCRIPT__*/", () => script);
 const output = resolve(root, "docs/processing-map.html");
+// Build the full-page OData drilldown before updating its overview entry.
+await import("./odata/build.mjs");
 await writeFile(output, html, "utf8");
 console.log(
   JSON.stringify({

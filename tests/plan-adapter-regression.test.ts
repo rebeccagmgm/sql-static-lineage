@@ -9,6 +9,37 @@ import { resolveReadPartitionScope } from "../scripts/evidence/sql-read-scope.ts
 import { planAdapterRoleFixtures } from "./fixtures/plan-adapter/roles.ts";
 
 describe("plan adapter star expansion", () => {
+  it.each(["UNION ALL", "EXCEPT", "INTERSECT"])(
+    "retains the CTE body and scope links above a %s root",
+    (operator) => {
+      const sql = `WITH scoped AS (SELECT id, grp_id FROM demo.events WHERE grp_id IN ('A', 'B'))
+        SELECT id, grp_id FROM scoped x ${operator} SELECT id, grp_id FROM scoped y`;
+      const schema = new Schema({ "demo.events": { id: "int", grp_id: "string" } });
+      const session = SqlSession.create(sql, "databricks", { schema });
+      const plan = buildPlanFacts(session.doc.statements[0]!, sql, {
+        dialect: "databricks", schema, include_expression_dependencies: true,
+      });
+      const cteReads = plan.relations.filter(r => r.type === "read" && r.is_cte);
+      expect(cteReads).toHaveLength(2);
+      expect(plan.relations.filter(r => r.type === "read" && !r.is_cte)).toHaveLength(1);
+      expect(plan.relations.filter(r => r.type === "filter")).toHaveLength(1);
+      for (const read of cteReads) {
+        if (read.type !== "read") throw new Error("expected CTE read");
+        expect(read.source).toBeTruthy();
+        expect(plan.relations.some(r => r.id === read.source)).toBe(true);
+        expect(plan.scope_bindings?.find(b => b.relation_id === read.id)).toMatchObject({
+          source_kind: "cte", target_relation_id: read.source,
+        });
+      }
+      expect(new Set(cteReads.map(r => r.type === "read" ? r.source : null)).size).toBe(1);
+      expect(new Set(plan.relations.map(r => r.id)).size).toBe(plan.relations.length);
+      const root = plan.relations.find(r => r.id === plan.roots[0]);
+      expect(root?.type).toBe("setop");
+      if (root?.type !== "setop") throw new Error("setop root missing");
+      expect(root.branches).toHaveLength(2);
+    },
+  );
+
   it("retains structured filter predicates and physical partition origins", () => {
     const sql =
       "SELECT id FROM demo.events e WHERE e.busi_date = '2026-08-23' AND e.grp_id IN ('01', '02')";
@@ -1007,7 +1038,7 @@ describe("plan adapter structured semantic roles", () => {
     });
 
     expect(plan.meta.contract_version).toBe("1.4.0");
-    expect(plan.meta.adapter_version).toBe("0.5.0");
+    expect(plan.meta.adapter_version).toBe("0.5.1");
     expect(dependencyPlan.meta.contract_version).toBe("1.4.0");
     expect(dependencyPlan.meta.adapter_version).toBe(
       EXPRESSION_DEPENDENCY_ADAPTER_VERSION,

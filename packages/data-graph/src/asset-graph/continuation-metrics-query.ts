@@ -8,12 +8,18 @@ import {
   calculateContinuationMetrics,
   classifyContinuationGaps,
   isPolicyTerminalRead,
+  isSourceEndpointBoundaryRead,
+  withoutBoundaryContinuationGaps,
   withoutPolicyContinuationGaps,
 } from "./continuation-metrics.ts";
 import {
   assertTerminalPolicySnapshot,
   type TerminalPolicySnapshot,
 } from "./terminal-policy.ts";
+import {
+  assertSourceEndpointBoundarySnapshot,
+  type SourceEndpointBoundarySnapshot,
+} from "./source-endpoint-boundary.ts";
 
 export const CONTINUATION_GAP_LAYERS = [
   "boundary",
@@ -50,11 +56,25 @@ export function readPublishedContinuationMetrics(input: {
     throw new Error("INVALID_ARGUMENT:--gap-layer_and_--terminal-role");
   if (input.terminalRole && input.terminalRole !== "REFERENCE_CONFIG")
     throw new Error("INVALID_ARGUMENT:--terminal-role");
-  const { publication, index, pinnedIndexHash, policyTerminals } =
-    loadPublishedContinuationIndex({
-      graphOutputRoot: input.graphOutputRoot,
-      publicationVersion: input.publicationVersion,
-    });
+  const {
+    publication,
+    index,
+    pinnedIndexHash,
+    policyTerminals,
+    boundarySnapshot,
+  } = loadPublishedContinuationIndex({
+    graphOutputRoot: input.graphOutputRoot,
+    publicationVersion: input.publicationVersion,
+  });
+  const boundaryEvidence = boundarySnapshot
+    ? {
+        sourceEndpointBoundaryReadOccurrenceIds: boundarySnapshot.reads.map(
+          (read) => read.readOccurrenceId,
+        ),
+        expectedWriterMissingReadOccurrenceIds:
+          boundarySnapshot.expectedWriterMissingReadOccurrenceIds,
+      }
+    : undefined;
   const confirmed = publication.confirmedFieldContinuations;
   const candidate = publication.candidateFieldContinuations;
   const confirmedCount =
@@ -72,6 +92,8 @@ export function readPublishedContinuationMetrics(input: {
   const hasEdgeCounts = confirmedCount !== null && candidateCount !== null;
   const metrics = calculateContinuationMetrics({
     index,
+    boundaryEvidence,
+    boundaryReads: boundarySnapshot?.reads,
     policyTerminals,
     continuationEdgeMetrics: hasEdgeCounts
       ? {
@@ -82,13 +104,20 @@ export function readPublishedContinuationMetrics(input: {
   });
   const rows = input.gapLayer
     ? index.entries.flatMap((entry) => {
-        const policyEntry = isPolicyTerminalRead(entry, policyTerminals)
+        const gapEntry = isPolicyTerminalRead(entry, policyTerminals)
           ? withoutPolicyContinuationGaps(entry)
-          : entry;
-        const gaps = classifyContinuationGaps(policyEntry).filter(
+          : boundarySnapshot &&
+              isSourceEndpointBoundaryRead(entry, boundarySnapshot.reads)
+            ? withoutBoundaryContinuationGaps(entry)
+            : entry;
+        const gaps = classifyContinuationGaps(
+          gapEntry,
+          boundaryEvidence,
+        ).filter(
           (gap) =>
             gap.group === input.gapLayer &&
-            (input.reasonCode === undefined || gap.reasonCode === input.reasonCode),
+            (input.reasonCode === undefined ||
+              gap.reasonCode === input.reasonCode),
         );
         return gaps.length
           ? [
@@ -150,7 +179,8 @@ export function readPublishedContinuationMetrics(input: {
             offset,
             limit,
             total: policyRows.length,
-            nextOffset: offset + limit < policyRows.length ? offset + limit : null,
+            nextOffset:
+              offset + limit < policyRows.length ? offset + limit : null,
           },
         }
       : {}),
@@ -167,6 +197,7 @@ export function loadPublishedContinuationIndex(input: {
   index: UnionContinuationIndex;
   pinnedIndexHash: unknown;
   policyTerminals: TerminalPolicySnapshot["reads"];
+  boundarySnapshot: SourceEndpointBoundarySnapshot | null;
 } {
   const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
   const current = read(join(input.graphOutputRoot, "current.json"));
@@ -200,11 +231,27 @@ export function loadPublishedContinuationIndex(input: {
         return snapshot.reads;
       })()
     : [];
+  const boundaryPolicyHash = publication.sourceEndpointBoundaryContentHash;
+  const boundarySnapshot: SourceEndpointBoundarySnapshot | null =
+    boundaryPolicyHash
+      ? (() => {
+          const snapshot = read(
+            join(dirname(publicationPath), "source-endpoint-boundary.json"),
+          ) as SourceEndpointBoundarySnapshot;
+          assertSourceEndpointBoundarySnapshot(
+            snapshot,
+            index.contentHash,
+            String(boundaryPolicyHash),
+          );
+          return snapshot;
+        })()
+      : null;
   return {
     publication,
     publicationPath,
     index,
     pinnedIndexHash,
     policyTerminals,
+    boundarySnapshot,
   };
 }

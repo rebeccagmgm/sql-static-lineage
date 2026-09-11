@@ -6,6 +6,12 @@
 
 入口是整体加工地图，支持区域下钻、关联任务清单、任务输入输出、四产品本金对照和固定 SQL 阅读。知识稿仍在原来的 Markdown 文件中。
 
+`odata_n_tit` 现在进入独立的主页面 `docs/processing-map-odata.html`：区域对象全貌 → 对象分组 → 同名相关表与真实去向 → 表和任务 → SQL。返回总览可继续阅读其他区域。两个 HTML 各自离线可读；从总览跳转时须保存在同一目录。原有 `processing-map.html#odata` 地址也会转入新页面。
+
+OData 页完整覆盖 411 张表、576 个接入任务、69 个内部任务和 521 个区域外读取任务。分组来自 `odata/content.mjs` 的显式对象成员；加工规则绑定 `odata-region-analysis-evidence.json` 中的任务与 SQL 摘要。同名后缀仅用于导航，不用于判断加工语义。页面收录本地 SQL，未逐项解释的任务会说明阅读范围。
+
+主构建命令会一并重建 OData 页。单独重建与检查：`node scripts/processing-map/odata/build.mjs`、`node --test scripts/processing-map/odata/model.test.mjs`。更新结构或已核 SQL 后，构建会要求先复核分析绑定。
+
 ## 重建
 
 在仓库根目录运行：

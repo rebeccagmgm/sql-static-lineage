@@ -27,29 +27,29 @@
 
 ### 0.1 上游已完成（不要重做）
 
-| WP | 产物 | 位置 |
-|----|------|------|
-| WP-6 | `PACK_DECLARED_QUERY_OUTPUT` | sql-static-lineage Facts |
-| WP-7 | `TASK_LOCAL_PROJECTION` 1.2.0：`READ_OCCURRENCE`、`localClosure.finalWrites / externalReads` | sql-static-lineage `scripts/project-graph/task-local/` |
-| WP-5 | `TASK_LOCAL_UNION` 并集 | data-graph |
-| WP-8 | `traceUnionContinuationV2` + `UNION_CONTINUATION_EVIDENCE` 1.0.0 + CLI `npm run union-continuation-v2` | data-graph `5c83639` 及后续 |
+| WP   | 产物                                                                                                   | 位置                                                   |
+| ---- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| WP-6 | `PACK_DECLARED_QUERY_OUTPUT`                                                                           | sql-static-lineage Facts                               |
+| WP-7 | `TASK_LOCAL_PROJECTION` 1.2.0：`READ_OCCURRENCE`、`localClosure.finalWrites / externalReads`           | sql-static-lineage `scripts/project-graph/task-local/` |
+| WP-5 | `TASK_LOCAL_UNION` 并集                                                                                | data-graph                                             |
+| WP-8 | `traceUnionContinuationV2` + `UNION_CONTINUATION_EVIDENCE` 1.0.0 + CLI `npm run union-continuation-v2` | data-graph `5c83639` 及后续                            |
 
 ### 0.2 闭包消费者的真实结构（`scripts/reconcile/consumer/target-table-upstream-causal-closure/`）
 
-| 组件 | 事实 | 对本 WP 的含义 |
-|------|------|---------------|
-| 候选宇宙 `projectCandidateUniverse`（`target-field-causal-slice/candidate-universe.ts`） | 来自 **multi-hop**：`writeEdges`（ROOT）、`producerBridges`（PHYSICAL_PRODUCER）、剩余 `scheduleEdges`（**SCHEDULE_ONLY**）、未绑读（UNBOUND/BLOCKED）、terminals（COVERAGE） | **接缝在这里**；调度候选今天就在宇宙里 |
-| `CandidateBranch` | `branchKind ∈ ROOT_WRITE / PHYSICAL_PRODUCER / SCHEDULE_ONLY / UNBOUND_READ / BLOCKED_READ / COVERAGE_BOUNDARY`；`readOccurrence`、`writeObservationId?`、`writeScope?`、`evidenceRefs[]`、`gapRefs[]`（字符串） | 无 `partitionMatchStatus`、无 `source=IN_UNION/PI_ONLY`；需新增字段而非硬塞 |
-| `enrichProducerWriteBridges` / `bindProducerWrite` | 给 PHYSICAL_PRODUCER 挂 Facts 写（`field_producing===true`）与 `writeScope`；1 写 → `resolved++`；**N 写 → `resolved += N`，`ambiguous` 永远 0** | 只是附着步；保留其 scope 绑定，替换其计数 |
-| 分区对照 | **目录内零处**：无 `partitionMatchStatus / PROVEN_DISJOINT / POSSIBLE_OVERLAP / DATE_PARTITION_DEFAULTED` | 分区判定必须**只来自 WP-8** |
-| `causal-closure.ts`（642 行） | `buildCausalClosure(targetWriteId, universe, summaries, fieldValueProvider, rootWriteScope, sameTaskUpstreamWrites, budget)`；certainty `CONFIRMED / CONDITIONAL / UNKNOWN`；产品档：`valueCertain / rowDetermining / multiplicityRisk`（档一/二/三） | 骨架可复用；**档位 ≠ WP-8 三档**，要做映射 |
-| `field-value-provider.ts` | 读 legacy `field-lineage.json` VALUE_FLOW；pair 级回退 `unboundByPair`；"最多引用胜出" sort | **LEGACY_COMPAT 产物**；架构不复用 → 值证据在 union-v2 模式最多 L2 |
-| 调度 | 仅 multi-hop `scheduleEdges` → `SCHEDULE_ONLY` 分支；本目录无 `SCHEDULE_FALLBACK` | union-v2 模式下不得作 producer |
-| `read-scope.ts` 的 `readOccurrenceId` | 是 **Facts relation/occurrence 定位符**（如 `task:119044:statement:0:relation:root.c.read.t03_agt_stati_info_h`） | 与 WP-7 `READ_OCCURRENCE.occurrenceId` **同源**，可作 join key |
-| 传播硬约束 | `WriteScope` 缺失 → UNKNOWN；`sameTaskUpstreamWrites`；`TARGET_WRITE_AMBIGUOUS` 须 `--write-observation-id`；宇宙 `INCOMPLETE` ⇒ 无 `PROVEN_UNRELATED` | 方案必须保留这些 |
-| 与 data-graph | **零耦合**：不读 `TASK_LOCAL_UNION` / 1.2.0 / `UNION_CONTINUATION_*` | 需新增 JSON 适配层 |
-| 金样/产物 | `sql-static-lineage-artifacts/target-table-causal-closure/{176827,176827-baseline,155015,209119}`；`209119-gate-evidence.md`：Gate A PASS WITH SCOPE，**Gate B NOT VERIFIED / REOPENED**，542 分支 46 CONFIRMED / 496 UNKNOWN | 176827 ~6–8s 可回归；209119 只抽样 |
-| 测试 | 5 文件，合成 + 抽取 relation JSON，**非**真 Facts 直跑 | 新增真语料断言要走 CLI 产物 |
+| 组件                                                                                     | 事实                                                                                                                                                                                                                                                  | 对本 WP 的含义                                                              |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 候选宇宙 `projectCandidateUniverse`（`target-field-causal-slice/candidate-universe.ts`） | 来自 **multi-hop**：`writeEdges`（ROOT）、`producerBridges`（PHYSICAL_PRODUCER）、剩余 `scheduleEdges`（**SCHEDULE_ONLY**）、未绑读（UNBOUND/BLOCKED）、terminals（COVERAGE）                                                                         | **接缝在这里**；调度候选今天就在宇宙里                                      |
+| `CandidateBranch`                                                                        | `branchKind ∈ ROOT_WRITE / PHYSICAL_PRODUCER / SCHEDULE_ONLY / UNBOUND_READ / BLOCKED_READ / COVERAGE_BOUNDARY`；`readOccurrence`、`writeObservationId?`、`writeScope?`、`evidenceRefs[]`、`gapRefs[]`（字符串）                                      | 无 `partitionMatchStatus`、无 `source=IN_UNION/PI_ONLY`；需新增字段而非硬塞 |
+| `enrichProducerWriteBridges` / `bindProducerWrite`                                       | 给 PHYSICAL_PRODUCER 挂 Facts 写（`field_producing===true`）与 `writeScope`；1 写 → `resolved++`；**N 写 → `resolved += N`，`ambiguous` 永远 0**                                                                                                      | 只是附着步；保留其 scope 绑定，替换其计数                                   |
+| 分区对照                                                                                 | **目录内零处**：无 `partitionMatchStatus / PROVEN_DISJOINT / POSSIBLE_OVERLAP / DATE_PARTITION_DEFAULTED`                                                                                                                                             | 分区判定必须**只来自 WP-8**                                                 |
+| `causal-closure.ts`（642 行）                                                            | `buildCausalClosure(targetWriteId, universe, summaries, fieldValueProvider, rootWriteScope, sameTaskUpstreamWrites, budget)`；certainty `CONFIRMED / CONDITIONAL / UNKNOWN`；产品档：`valueCertain / rowDetermining / multiplicityRisk`（档一/二/三） | 骨架可复用；**档位 ≠ WP-8 三档**，要做映射                                  |
+| `field-value-provider.ts`                                                                | 读 legacy `field-lineage.json` VALUE_FLOW；pair 级回退 `unboundByPair`；"最多引用胜出" sort                                                                                                                                                           | **LEGACY_COMPAT 产物**；架构不复用 → 值证据在 union-v2 模式最多 L2          |
+| 调度                                                                                     | 仅 multi-hop `scheduleEdges` → `SCHEDULE_ONLY` 分支；本目录无 `SCHEDULE_FALLBACK`                                                                                                                                                                     | union-v2 模式下不得作 producer                                              |
+| `read-scope.ts` 的 `readOccurrenceId`                                                    | 是 **Facts relation/occurrence 定位符**（如 `task:119044:statement:0:relation:root.c.read.t03_agt_stati_info_h`）                                                                                                                                     | 与 WP-7 `READ_OCCURRENCE.occurrenceId` **同源**，可作 join key              |
+| 传播硬约束                                                                               | `WriteScope` 缺失 → UNKNOWN；`sameTaskUpstreamWrites`；`TARGET_WRITE_AMBIGUOUS` 须 `--write-observation-id`；宇宙 `INCOMPLETE` ⇒ 无 `PROVEN_UNRELATED`                                                                                                | 方案必须保留这些                                                            |
+| 与 data-graph                                                                            | **零耦合**：不读 `TASK_LOCAL_UNION` / 1.2.0 / `UNION_CONTINUATION_*`                                                                                                                                                                                  | 需新增 JSON 适配层                                                          |
+| 金样/产物                                                                                | `sql-static-lineage-artifacts/target-table-causal-closure/{176827,176827-baseline,155015,209119}`；`209119-gate-evidence.md`：Gate A PASS WITH SCOPE，**Gate B NOT VERIFIED / REOPENED**，542 分支 46 CONFIRMED / 496 UNKNOWN                         | 176827 ~6–8s 可回归；209119 只抽样                                          |
+| 测试                                                                                     | 5 文件，合成 + 抽取 relation JSON，**非**真 Facts 直跑                                                                                                                                                                                                | 新增真语料断言要走 CLI 产物                                                 |
 
 ### 0.3 本 WP 不解决
 
@@ -68,10 +68,10 @@
 
 ### 1.1 仓界
 
-| 角色 | 仓 | 做什么 |
-|------|----|--------|
+| 角色                   | 仓                   | 做什么                                                                                                                                                      |
+| ---------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **上游小交付（先做）** | `scripts/data-graph` | **WP-8.1 并集接续索引**：把并集内所有 PROJECTED consumer 的每个 `externalReads` 读次跑 v2，汇成一份 `UNION_CONTINUATION_INDEX`（见 §2.1）；只编排，不改内核 |
-| **主战场** | `sql-static-lineage` | 闭包候选适配、计数、Gate B-UNION 证据、金样 diff |
+| **主战场**             | `sql-static-lineage` | 闭包候选适配、计数、Gate B-UNION 证据、金样 diff                                                                                                            |
 
 两仓**只通过 JSON 产物**交互（进程内 import 不可能）。契约版本钉死；DTO 各自解析，不 copy 枚举后各改各的。
 
@@ -164,13 +164,13 @@ contentHash（忽略 generatedAt）
 
 ## 3. 原料
 
-| 输入 | 用途 |
-|------|------|
-| `UNION_CONTINUATION_INDEX`（WP-8.1） | 唯一跨任务候选与分区状态来源 |
-| 现有 Facts bundles | `writeScope`、`field_producing`、`sameTaskUpstreamWrites`、`localFieldPaths` |
-| table-multi-hop 产物 | legacy 模式沿用；union-v2 模式仅用于 diff 对照与 UNBOUND/COVERAGE 边界 |
-| legacy `field-lineage.json` | legacy 模式沿用；union-v2 模式降为 L2 |
-| `176827-baseline` / 209119 产物 | 对照 |
+| 输入                                 | 用途                                                                         |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `UNION_CONTINUATION_INDEX`（WP-8.1） | 唯一跨任务候选与分区状态来源                                                 |
+| 现有 Facts bundles                   | `writeScope`、`field_producing`、`sameTaskUpstreamWrites`、`localFieldPaths` |
+| table-multi-hop 产物                 | legacy 模式沿用；union-v2 模式仅用于 diff 对照与 UNBOUND/COVERAGE 边界       |
+| legacy `field-lineage.json`          | legacy 模式沿用；union-v2 模式降为 L2                                        |
+| `176827-baseline` / 209119 产物      | 对照                                                                         |
 
 **硬规则**：分区 CONFIRMED/ASSUMED/UNKNOWN/DISJOINT 只信 WP-8 索引字段；闭包侧禁止再实现任何分区匹配，也禁止调用 `producer-index-query` 重算。
 
@@ -180,30 +180,30 @@ contentHash（忽略 generatedAt）
 
 ### 4.1 WP-8 候选 → 闭包分支资格
 
-| WP-8 候选 | 入宇宙 | 传播资格 | 计数 |
-|-----------|--------|----------|------|
-| `DISJOINT` | 否 | — | `disjointPruned` |
-| `l1Eligible=true`（身份 CONFIRMED + in-union + 分区 CONFIRMED）且 `writeScope` 绑定成功 | 是 | **可达 CONFIRMED / L1** | `l1`；`bridgeStats.resolved` |
-| `l1Eligible=true` 但 `writeScope` 缺失 | 是 | UNKNOWN（现有规则） | `l1` + gap `PRODUCER_WRITE_SCOPE_UNRESOLVED` |
-| `IN_UNION` + `ASSUMED` | 是 | 最高 CONDITIONAL / L2 | `l2Assumed` |
-| `IN_UNION` + `UNKNOWN` | 是 | UNKNOWN / L2 | `l2Unknown` |
-| `PRODUCER_INDEX_ONLY` | 是（边界） | 表级可叙；不进 L1 | `piOnly` + gap `WRITER_NOT_IN_UNION` |
-| gap `WRITE_OBSERVATION_ALIGNMENT_AMBIGUOUS` | 对应写观察按 UNKNOWN 处理 | L2 | 透传；**禁止**用 PI `:0` 消歧 |
-| 索引中找不到该读次 | 分支退 UNKNOWN | — | `unmatchedReads` + gap `CONTINUATION_READ_NOT_FOUND` |
-| 同任务写回同表的本地自读不在 `externalReads` | 分支退 UNKNOWN | — | `selfReadBoundaries` + gap `SELF_READ_NOT_EXTERNAL` |
-| multi-hop SCHEDULE_ONLY | **不生成 producer 分支** | — | 仅参考属性 |
+| WP-8 候选                                                                               | 入宇宙                    | 传播资格                | 计数                                                 |
+| --------------------------------------------------------------------------------------- | ------------------------- | ----------------------- | ---------------------------------------------------- |
+| `DISJOINT`                                                                              | 否                        | —                       | `disjointPruned`                                     |
+| `l1Eligible=true`（身份 CONFIRMED + in-union + 分区 CONFIRMED）且 `writeScope` 绑定成功 | 是                        | **可达 CONFIRMED / L1** | `l1`；`bridgeStats.resolved`                         |
+| `l1Eligible=true` 但 `writeScope` 缺失                                                  | 是                        | UNKNOWN（现有规则）     | `l1` + gap `PRODUCER_WRITE_SCOPE_UNRESOLVED`         |
+| `IN_UNION` + `ASSUMED`                                                                  | 是                        | 最高 CONDITIONAL / L2   | `l2Assumed`                                          |
+| `IN_UNION` + `UNKNOWN`                                                                  | 是                        | UNKNOWN / L2            | `l2Unknown`                                          |
+| `PRODUCER_INDEX_ONLY`                                                                   | 是（边界）                | 表级可叙；不进 L1       | `piOnly` + gap `WRITER_NOT_IN_UNION`                 |
+| gap `WRITE_OBSERVATION_ALIGNMENT_AMBIGUOUS`                                             | 对应写观察按 UNKNOWN 处理 | L2                      | 透传；**禁止**用 PI `:0` 消歧                        |
+| 索引中找不到该读次                                                                      | 分支退 UNKNOWN            | —                       | `unmatchedReads` + gap `CONTINUATION_READ_NOT_FOUND` |
+| 同任务写回同表的本地自读不在 `externalReads`                                            | 分支退 UNKNOWN            | —                       | `selfReadBoundaries` + gap `SELF_READ_NOT_EXTERNAL`  |
+| multi-hop SCHEDULE_ONLY                                                                 | **不生成 producer 分支**  | —                       | 仅参考属性                                           |
 
 **`ambiguous` 真计数**：同一读次在分区档保留后仍有 ≥2 个写观察 → 该读次计 1（`ambiguousReads`，同时写入 `bridgeStats.ambiguous`）。
 **禁止**：`resolved += writes.length`。
 
 ### 4.2 闭包产品档 ↔ L0–L3
 
-| 闭包产物 | union-v2 模式含义 |
-|----------|------------------|
-| `valueCertain`（档一） | 仅 `l1Eligible` 链 + 本任务 Facts 字段路径；**legacy field-lineage 不能单独撑起** |
-| `rowDetermining` / `multiplicityRisk`（档二/三） | 沿用 JOIN 侧别 / 控制通道规则；候选来源同上 |
-| `UNKNOWN` | 含 L2（ASSUMED/UNKNOWN/PI-only）与 gaps |
-| envelope | L0：索引/PI/投影 hash 与 `continuationStats`；L1：`l1Eligible` 到达集合；L2：其余保留候选；L3：gaps |
+| 闭包产物                                         | union-v2 模式含义                                                                                   |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `valueCertain`（档一）                           | 仅 `l1Eligible` 链 + 本任务 Facts 字段路径；**legacy field-lineage 不能单独撑起**                   |
+| `rowDetermining` / `multiplicityRisk`（档二/三） | 沿用 JOIN 侧别 / 控制通道规则；候选来源同上                                                         |
+| `UNKNOWN`                                        | 含 L2（ASSUMED/UNKNOWN/PI-only）与 gaps                                                             |
+| envelope                                         | L0：索引/PI/投影 hash 与 `continuationStats`；L1：`l1Eligible` 到达集合；L2：其余保留候选；L3：gaps |
 
 **预期代价**：176827 档一相对 baseline（27 任务）**大概率收缩**。这是把 LEGACY_COMPAT 值证据降为 L2 的直接后果，
 属准确性优先的正确结果；diff 报告要按原因码解释每条收缩，**不得**为保数字回退 legacy 值证据。
@@ -269,12 +269,12 @@ C0+C1 单独验收信心 ~80%；整包仍 ~65%。
 
 ## 7. 金样与断言来源
 
-| 样例 | 刀 | 用途 |
-|------|----|------|
-| 119044：目标表 `pdata_n.t03_agt_stati_info_h` 的两读次（WP-8 索引条目） | C1 | 接续状态进闭包分支、DISJOINT 剪、计数 |
-| 105387 `#3/#6`（当前 1.2.0 投影重跑，不用旧 envelope） | C1 | 对齐歧义保持 UNKNOWN，不共享 `:0` |
-| 176827（`176827-baseline` 档一 27） | C2 | 规模闭包；档一收缩逐条解释 |
-| 209119（542 分支） | C3 | Gate B-UNION 抽样 |
+| 样例                                                                    | 刀  | 用途                                  |
+| ----------------------------------------------------------------------- | --- | ------------------------------------- |
+| 119044：目标表 `pdata_n.t03_agt_stati_info_h` 的两读次（WP-8 索引条目） | C1  | 接续状态进闭包分支、DISJOINT 剪、计数 |
+| 105387 `#3/#6`（当前 1.2.0 投影重跑，不用旧 envelope）                  | C1  | 对齐歧义保持 UNKNOWN，不共享 `:0`     |
+| 176827（`176827-baseline` 档一 27）                                     | C2  | 规模闭包；档一收缩逐条解释            |
+| 209119（542 分支）                                                      | C3  | Gate B-UNION 抽样                     |
 
 断言来自真 Pack/Facts / 当前 producer-index / 当前 1.2.0 投影 / WP-8 索引；禁止手抄表名当唯一期望。
 
@@ -282,32 +282,32 @@ C0+C1 单独验收信心 ~80%；整包仍 ~65%。
 
 ## 8. 复用 / 禁止清单（架构 §6，本 WP 强制）
 
-| 组件 | 决策 |
-|------|------|
-| `causal-closure.ts` 传播、`WriteScope`、`sameTaskUpstreamWrites` | **复用** |
-| `bindProducerWrite` scope 绑定 | 复用（改为按 `writeObservationId` 精确） |
-| `task-relation-summary` JOIN 侧别、`datasetControlsForStatement` | 复用 |
-| WP-8 四态 `partitionMatchStatus` / `l1Eligible` / gaps | **权威，只读**（契约执行，非复用 PIQ 代码） |
-| `producer-index-query` 实现 | **不调用**；分区状态只信索引里 WP-8 已算好的四态 |
-| `enrichProducerWriteBridges` 的 N 写全 resolved | **替换** |
-| multi-hop `scheduleEdges` → SCHEDULE_ONLY producer | union-v2 **禁止**；原始边仅作为 INDEX 候选 whitelist |
-| `field-value-provider` pair 回退 / 最多引用胜出 | union-v2 **不进 L1**（≤ L2） |
-| `physical-field-expander` LEGACY_COMPAT | 间接输入，**不进 L1**；换 STRICT_CAUSAL 属 WP-11 |
-| 调度父节点直接升格 producer、任务名推表、`POSSIBLE_OVERLAP`→PRIMARY、本地分区规则 | **禁止** |
+| 组件                                                                              | 决策                                                 |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `causal-closure.ts` 传播、`WriteScope`、`sameTaskUpstreamWrites`                  | **复用**                                             |
+| `bindProducerWrite` scope 绑定                                                    | 复用（改为按 `writeObservationId` 精确）             |
+| `task-relation-summary` JOIN 侧别、`datasetControlsForStatement`                  | 复用                                                 |
+| WP-8 四态 `partitionMatchStatus` / `l1Eligible` / gaps                            | **权威，只读**（契约执行，非复用 PIQ 代码）          |
+| `producer-index-query` 实现                                                       | **不调用**；分区状态只信索引里 WP-8 已算好的四态     |
+| `enrichProducerWriteBridges` 的 N 写全 resolved                                   | **替换**                                             |
+| multi-hop `scheduleEdges` → SCHEDULE_ONLY producer                                | union-v2 **禁止**；原始边仅作为 INDEX 候选 whitelist |
+| `field-value-provider` pair 回退 / 最多引用胜出                                   | union-v2 **不进 L1**（≤ L2）                         |
+| `physical-field-expander` LEGACY_COMPAT                                           | 间接输入，**不进 L1**；换 STRICT_CAUSAL 属 WP-11     |
+| 调度父节点直接升格 producer、任务名推表、`POSSIBLE_OVERLAP`→PRIMARY、本地分区规则 | **禁止**                                             |
 
 ---
 
 ## 9. 风险与缓解
 
-| 风险 | 缓解 |
-|------|------|
-| 一次改传播爆炸（信心 65%） | C1 只改附着与计数；C2 才换宇宙来源；C1 合入前不开 C2 |
-| 两仓契约漂移 | `UNION_CONTINUATION_INDEX` 版本钉死 + contentHash；DTO 各自解析 |
-| 档一收缩被当"退步" | §4.2 预先声明；diff 原因码逐条；legacy 模式默认保留作对照 |
-| 读次 join 对不上 | gap `CONTINUATION_READ_NOT_FOUND` + UNKNOWN，不回退 fan-out |
-| 105387 多写无 PI id | 保持 WP-8 gap；闭包不消歧 |
-| 与 P0 重跑收缩回归冲突 | legacy 模式 hash 不变作回归；union-v2 并行金样 |
-| 索引规模 | 只对并集内 PROJECTED 任务生成；按 contentHash 增量 |
+| 风险                       | 缓解                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| 一次改传播爆炸（信心 65%） | C1 只改附着与计数；C2 才换宇宙来源；C1 合入前不开 C2            |
+| 两仓契约漂移               | `UNION_CONTINUATION_INDEX` 版本钉死 + contentHash；DTO 各自解析 |
+| 档一收缩被当"退步"         | §4.2 预先声明；diff 原因码逐条；legacy 模式默认保留作对照       |
+| 读次 join 对不上           | gap `CONTINUATION_READ_NOT_FOUND` + UNKNOWN，不回退 fan-out     |
+| 105387 多写无 PI id        | 保持 WP-8 gap；闭包不消歧                                       |
+| 与 P0 重跑收缩回归冲突     | legacy 模式 hash 不变作回归；union-v2 并行金样                  |
+| 索引规模                   | 只对并集内 PROJECTED 任务生成；按 contentHash 增量              |
 
 ---
 
@@ -351,8 +351,8 @@ DISJOINT 剪、SCHEDULE_ONLY 不作 producer、计数按 §4；119044（目标�
 
 ## 13. 修订记录
 
-| 日期 | 说明 |
-|------|------|
-| 2026-09-03 v1 | 初版：刀序 C0–C4，切在 `enrichProducerWriteBridges` |
-| 2026-09-03 v2 | 按 closure 实码核查修订：接缝改为候选宇宙 + JSON 契约；新增 WP-8.1 `UNION_CONTINUATION_INDEX`；明写 WriteScope/field_producing/sameTaskUpstreamWrites 约束；值证据降级与档一收缩代价；Gate B-UNION 与历史 Gate B 区分；工期 8～12 人日；WP-8 CLI 已落地 |
-| 2026-09-03 v2.1 | 契约补丁：索引 CLI 1.2.0 fail-closed 预检；INDEX 字段加 nodeId/partition/gap/provenance；PIQ 改为「四态契约执行非代码复用」；119044 写明目标表两读次 |
+| 日期            | 说明                                                                                                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-03 v1   | 初版：刀序 C0–C4，切在 `enrichProducerWriteBridges`                                                                                                                                                                                                     |
+| 2026-09-03 v2   | 按 closure 实码核查修订：接缝改为候选宇宙 + JSON 契约；新增 WP-8.1 `UNION_CONTINUATION_INDEX`；明写 WriteScope/field_producing/sameTaskUpstreamWrites 约束；值证据降级与档一收缩代价；Gate B-UNION 与历史 Gate B 区分；工期 8～12 人日；WP-8 CLI 已落地 |
+| 2026-09-03 v2.1 | 契约补丁：索引 CLI 1.2.0 fail-closed 预检；INDEX 字段加 nodeId/partition/gap/provenance；PIQ 改为「四态契约执行非代码复用」；119044 写明目标表两读次                                                                                                    |

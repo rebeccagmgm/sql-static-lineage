@@ -487,7 +487,7 @@ function platformBindingResolution(
 		};
 	}
 
-	if (write.queryOutputBindingContract !== "SPARKINDEX_FULL_WIDTH_POSITIONAL") {
+	if (write.queryOutputBindingContract !== "SPARKINDEX_FULL_WIDTH_POSITIONAL" && mode !== "STATIC") {
 		if (expressionCount === dataColumns.length) {
 			return {
 				status: "RESOLVED",

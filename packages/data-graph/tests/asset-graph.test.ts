@@ -1,6 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { compileTask } from "../src/asset-graph/compile.ts";
+import { loadGraphSourceEndpointBoundary } from "../src/asset-graph/source-endpoint-boundary.ts";
 import type { TaskLocalProjection } from "../../../scripts/project-graph/task-local/contract.ts";
+
+it("publishes write-bound non-partitioned evidence on table and field write nodes", () => {
+  const graph = compileTask(projection("p"), [], undefined, undefined, [
+    { writeObservationId: "p:a", qualifiedName: "demo.target", partition: [] },
+  ]);
+  const proven = graph.nodes.filter(node => node.writeId === "p:a" && ["TARGET_WRITE", "WRITE_FIELD"].includes(node.kind));
+  expect(proven.map(node => node.kind).sort()).toEqual(["TARGET_WRITE", "WRITE_FIELD"]);
+  for (const node of proven) expect(JSON.parse(node.detail)).toMatchObject({ partition: [], partitionStatus: "NON_PARTITIONED" });
+  expect(graph.nodes.filter(node => node.writeId === "p:b").every(node => JSON.parse(node.detail).partitionStatus === undefined)).toBe(true);
+});
 const projection = (taskId: string) =>
   ({
     taskId,
@@ -99,14 +110,23 @@ describe("published asset field graph", () => {
       (edge) => edge.kind === "WRITES_TABLE",
     );
     expect(writes).toHaveLength(2);
-    expect(writes.map((edge) => ({ status: edge.status, detail: JSON.parse(edge.detail) }))).toEqual([
+    expect(
+      writes.map((edge) => ({
+        status: edge.status,
+        detail: JSON.parse(edge.detail),
+      })),
+    ).toEqual([
       expect.objectContaining({
         status: "CONFIRMED",
-        detail: expect.objectContaining({ outputQualification: "PLATFORM_TARGET" }),
+        detail: expect.objectContaining({
+          outputQualification: "PLATFORM_TARGET",
+        }),
       }),
       expect.objectContaining({
         status: "CANDIDATE",
-        detail: expect.objectContaining({ outputQualification: "SQL_UNCONSUMED" }),
+        detail: expect.objectContaining({
+          outputQualification: "SQL_UNCONSUMED",
+        }),
       }),
     ]);
   });
@@ -181,5 +201,55 @@ describe("published asset field graph", () => {
         JSON.parse(n.detail).occurrenceId === "read:1:b",
     )!;
     expect(JSON.parse(b.detail).continuationDisposition).toBeUndefined();
+  });
+
+  it("marks titans source reads as source endpoint boundaries", () => {
+    const p = projection("1");
+    const read = {
+      readOccurrenceId: "read:1:a",
+      readOccurrenceNodeId: "read-node:a",
+      datasetNodeId: "dataset:titans",
+      qualifiedName: "titans_dm.trd_otc_trade",
+      identityStatus: "CONFIRMED",
+    };
+    const enriched = {
+      ...p,
+      nodes: [
+        ...p.nodes,
+        {
+          nodeId: "dataset:titans",
+          nodeType: "PHYSICAL_DATASET",
+          properties: {
+            qualifiedName: "titans_dm.trd_otc_trade",
+            identityStatus: "CONFIRMED",
+          },
+        },
+        {
+          nodeId: "read-node:a",
+          nodeType: "READ_OCCURRENCE",
+          properties: {
+            occurrenceId: "read:1:a",
+            physicalDataset: "titans_dm.trd_otc_trade",
+            identityStatus: "CONFIRMED",
+          },
+        },
+      ],
+      localClosure: { ...p.localClosure, externalReads: [read] },
+    } as unknown as TaskLocalProjection;
+    const g = compileTask(
+      enriched,
+      [],
+      undefined,
+      loadGraphSourceEndpointBoundary(),
+    );
+    const field = g.nodes.find(
+      (n) =>
+        n.kind === "READ_FIELD" &&
+        JSON.parse(n.detail).occurrenceId === "read:1:a",
+    )!;
+    expect(JSON.parse(field.detail)).toMatchObject({
+      continuationDisposition: "SOURCE_ENDPOINT_BOUNDARY",
+      boundaryRole: "TITANS_SOURCE",
+    });
   });
 });

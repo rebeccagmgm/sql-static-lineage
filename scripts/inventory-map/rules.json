@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "description": "按现有任务 topic 的可见名称组织阅读阶段。该标签仅用于地图分组，不代表 SQL 加工层级或运行状态。未命中规则的任务保留未分类。",
+  "stages": [
+    { "id": "ingest", "label": "采集整理", "order": 0, "color": "#287D8E" },
+    { "id": "model", "label": "模型主题", "order": 1, "color": "#5576A7" },
+    {
+      "id": "application",
+      "label": "应用指标",
+      "order": 2,
+      "color": "#9171A5"
+    },
+    { "id": "delivery", "label": "交付报送", "order": 3, "color": "#AD8450" },
+    { "id": "operations", "label": "质量运维", "order": 4, "color": "#AF6972" },
+    {
+      "id": "unclassified",
+      "label": "其他未分类",
+      "order": 5,
+      "color": "#7C858C"
+    }
+  ],
+  "defaultStageId": "unclassified",
+  "topicRules": [
+    { "exact": "DATA_QUALITY", "stageId": "operations" },
+    {
+      "regex": "^(质量|运维|监控|校验|检查|QUALITY|CHECK|MONITOR|OPS)(?:[_ .-]|$)",
+      "stageId": "operations"
+    },
+    {
+      "regex": "^(ODS|ODATA|SRC|RAW|SYNC|采集|接入)(?:[_ .-]|$)",
+      "stageId": "ingest"
+    },
+    {
+      "regex": "^(DWD|DWS|EDW|PDATA|DIM|模型|主题)(?:[_ .-]|$)",
+      "stageId": "model"
+    },
+    {
+      "regex": "^(DM|ADS|APP|MART|应用|指标)(?:[_ .-]|$)",
+      "stageId": "application"
+    },
+    {
+      "regex": "^(REPORT|RPT|EXPORT|报表|报送|交付)(?:[_ .-]|$)",
+      "stageId": "delivery"
+    }
+  ],
+  "limits": {
+    "maxNodes": 150,
+    "maxEdges": 400,
+    "maxDepth": 4,
+    "maxPageSize": 100
+  }
+}

@@ -10,11 +10,12 @@ export function projectionVersionPrefix(cacheKey: string, fileName: string): boo
   return fileName === `${cacheKey}.json`
     || fileName === `${cacheKey}.evidence-v2.json`
     || fileName === `${cacheKey}.evidence-v3.json`
+    || fileName === `${cacheKey}.evidence-v4.json`
     || fileName === `${cacheKey}.evidence.json`;
 }
 
 function isProjectionVersionArtifact(fileName: string): boolean {
-  return /^[A-Za-z0-9_-]+(?:\.evidence(?:-v[23])?)?\.json$/.test(fileName);
+  return /^[A-Za-z0-9_-]+(?:\.evidence(?:-v[234])?)?\.json$/.test(fileName);
 }
 
 export function pruneTaskProjectionVersions(

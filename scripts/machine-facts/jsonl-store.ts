@@ -8,7 +8,7 @@ export type JsonRecord = Record<string, unknown>;
 
 export type JsonlStoreResolution =
 	| { readonly status: "MISSING" }
-	| { readonly status: "PLAIN"; readonly path: string }
+	| { readonly status: "LEGACY_PLAIN"; readonly path: string }
 	| { readonly status: "GZIP"; readonly path: string }
 	| { readonly status: "CONFLICT"; readonly plain: string; readonly gzip: string };
 
@@ -24,13 +24,13 @@ export function inspectJsonlStore(logicalPath: string): JsonlStoreResolution {
 	const plain = existsSync(logicalPath);
 	const gzip = existsSync(gzipPath);
 	if (plain && gzip) return { status: "CONFLICT", plain: logicalPath, gzip: gzipPath };
-	if (plain) return { status: "PLAIN", path: logicalPath };
+	if (plain) return { status: "LEGACY_PLAIN", path: logicalPath };
 	if (gzip) return { status: "GZIP", path: gzipPath };
 	return { status: "MISSING" };
 }
 
 export function jsonlStoreExists(logicalPath: string): boolean {
-	return inspectJsonlStore(logicalPath).status !== "MISSING";
+	return inspectJsonlStore(logicalPath).status === "GZIP";
 }
 
 export function gzipCanonicalBytes(bytes: string | Uint8Array): Buffer {
@@ -59,6 +59,9 @@ export function readJsonlText(logicalPath: string): string {
 	if (resolution.status === "CONFLICT") {
 		throw new Error(`JSONL_STORE_CONFLICT:${logicalPath}`);
 	}
+	if (resolution.status === "LEGACY_PLAIN") {
+		throw new Error(`JSONL_STORE_LEGACY_PLAIN:${logicalPath}`);
+	}
 	return decodeJsonlStoreBytes(readFileSync(resolution.path));
 }
 
@@ -72,6 +75,7 @@ export function hashJsonlStore(logicalPath: string): string {
 	const resolution = inspectJsonlStore(logicalPath);
 	if (resolution.status === "MISSING") throw new Error(`JSONL_STORE_MISSING:${logicalPath}`);
 	if (resolution.status === "CONFLICT") throw new Error(`JSONL_STORE_CONFLICT:${logicalPath}`);
+	if (resolution.status === "LEGACY_PLAIN") throw new Error(`JSONL_STORE_LEGACY_PLAIN:${logicalPath}`);
 	return sha256(decodeJsonlStoreBytes(readFileSync(resolution.path)));
 }
 

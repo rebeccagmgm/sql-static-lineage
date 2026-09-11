@@ -5,6 +5,7 @@
 范围固定14项；发布SQL与当前Pack补充SQL分列。
 
 <a id="task-114802"></a>
+
 ## 114802
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -17,6 +18,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-134690"></a>
+
 ## 134690
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-asset-overview)
@@ -29,6 +31,7 @@
 资产类别特殊CASE与来源业务值不一致；统一接口多列为空；销售及配置连接唯一性未证实。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-144442"></a>
+
 ## 144442
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -40,6 +43,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-162676"></a>
+
 ## 162676
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-hk-repo)
@@ -52,6 +56,7 @@
 自然日一期、Haircut比值与重复利率列按实际表达式解释；多腿/标的字符串结果唯一性未知。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-163099"></a>
+
 ## 163099
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -65,6 +70,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-163640"></a>
+
 ## 163640
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-hk-notes)
@@ -77,6 +83,7 @@
 库存/折价等固定值；发行部门先去下划线后判断旧字符串；产品多客户或多腿可能重复金额。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-167808"></a>
+
 ## 167808
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -90,6 +97,7 @@
 源只取参数日但前置清理删除目标全表，导出不含grp_id。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-203181"></a>
+
 ## 203181
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -101,6 +109,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-207458"></a>
+
 ## 207458
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-option-detail)
@@ -113,6 +122,7 @@
 履保取运行时昨天；事件状态未过滤；结构关联可能放大累计，需源唯一性证据。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-207753"></a>
+
 ## 207753
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-swap-detail)
@@ -125,6 +135,7 @@
 履保取运行时昨天；结构/计息腿/持仓等关系可能扩行；配对关系有效期与其他关系不同。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-214154"></a>
+
 ## 214154
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -138,6 +149,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-214155"></a>
+
 ## 214155
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)
@@ -151,6 +163,7 @@
 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-215700"></a>
+
 ## 215700
 
 记录状态：FAMILY_RULES_EXPLAINED。[正文](../topics/treasury-management.md#treasury-bundle-margin)
@@ -163,6 +176,7 @@
 余额汇率缺失回退1；是否计算过滤被注释；重复接口别名不可加总，组合参数唯一性未证实。 静态SQL不证明任务运行、传输到达或实际业务消费。
 
 <a id="task-217643"></a>
+
 ## 217643
 
 记录状态：TRANSFER_VERIFIED。[正文](../topics/treasury-management.md#treasury-export-and-receipts)

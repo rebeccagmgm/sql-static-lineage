@@ -234,6 +234,150 @@ describe("source-read-occurrence", () => {
     expect(resolution.sourceRelationId).toBe("rel:root.(child).source.read");
   });
 
+  it("resolves repeated CTE reads through one uniquely witnessed body", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:root.(child).poepm.read.metric",
+        relation_type: "read",
+        relation: {
+          type: "read",
+          table: "demo.metric",
+          binding: "poepm",
+          scope_id: "root.(child).poepm",
+        },
+      },
+      {
+        relation_id: "rel:root.(child).project",
+        relation_type: "project",
+        relation: {
+          type: "project",
+          scope_id: "root.(child)",
+          expressions: [{
+            output: "pv",
+            input_columns: [{
+              name: "pv",
+              qualifier: "poepm",
+              physical: [{ table: "demo.metric", column: "pv" }],
+            }],
+          }],
+        },
+      },
+      {
+        relation_id: "rel:root.branch.pvs.read.t",
+        relation_type: "read",
+        relation: {
+          type: "read",
+          table: "t",
+          binding: "t",
+          scope_id: "root.branch.pvs",
+          source: "rel:root.(child).project",
+        },
+      },
+      {
+        relation_id: "rel:root.branch.bp.read.t",
+        relation_type: "read",
+        relation: {
+          type: "read",
+          table: "t",
+          binding: "t",
+          scope_id: "root.branch.bp",
+          source: "rel:root.(child).project",
+        },
+      },
+      {
+        relation_id: "rel:root.branch.project",
+        relation_type: "project",
+        relation: { type: "project", scope_id: "root.branch" },
+      },
+    ];
+    const index = withIncomingRelations(
+      buildRelationTreeIndex(relationNodes),
+      [
+        { from_relation_id: "rel:root.(child).poepm.read.metric", to_relation_id: "rel:root.(child).project" },
+        { from_relation_id: "rel:root.(child).project", to_relation_id: "rel:root.branch.pvs.read.t" },
+        { from_relation_id: "rel:root.(child).project", to_relation_id: "rel:root.branch.bp.read.t" },
+        { from_relation_id: "rel:root.branch.pvs.read.t", to_relation_id: "rel:root.branch.project" },
+        { from_relation_id: "rel:root.branch.bp.read.t", to_relation_id: "rel:root.branch.project" },
+      ],
+    );
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-cte-setop",
+      expressionId: "expr:pv",
+      sourceTable: "demo.metric",
+      sourceColumn: "pv",
+      inputField: { table: "demo.metric", column: "pv" },
+      cteOutputColumn: "pv",
+      leafRelationId: "rel:root.branch.project",
+      index,
+      readOccurrenceByRelationId: new Map([
+        ["rel:root.(child).poepm.read.metric", "occ:metric"],
+      ]),
+      bindingByReadRelation: new Map([
+        ["rel:root.(child).poepm.read.metric", "poepm"],
+        ["rel:root.branch.pvs.read.t", "t"],
+        ["rel:root.branch.bp.read.t", "t"],
+      ]),
+    });
+    expect(resolution).toMatchObject({
+      sourceReadOccurrenceStatus: "RESOLVED",
+      sourceReadOccurrenceId: "occ:metric",
+      sourceRelationId: "rel:root.(child).poepm.read.metric",
+    });
+  });
+
+  it("fails closed when the CTE output route is absent", () => {
+    const relationNodes = [
+      {
+        relation_id: "rel:root.(child).source.read",
+        relation_type: "read",
+        relation: { type: "read", table: "demo.source", scope_id: "root.(child).source" },
+      },
+      {
+        relation_id: "rel:root.(child).project",
+        relation_type: "project",
+        relation: {
+          type: "project",
+          scope_id: "root.(child)",
+          expressions: [{
+            output: "amount",
+            input_columns: [{
+              name: "amount",
+              physical: [{ table: "demo.source", column: "amount" }],
+            }],
+          }],
+        },
+      },
+      {
+        relation_id: "rel:root.cte.read",
+        relation_type: "read",
+        relation: {
+          type: "read",
+          table: "cte",
+          scope_id: "root.cte",
+          source: "rel:root.(child).project",
+        },
+      },
+    ];
+    const resolution = resolveSourceReadOccurrence({
+      taskId: "task-cte-no-output",
+      expressionId: "expr:amount",
+      sourceTable: "demo.source",
+      sourceColumn: "amount",
+      inputField: { table: "demo.source", column: "amount" },
+      leafRelationId: "rel:root.cte.read",
+      index: withIncomingRelations(buildRelationTreeIndex(relationNodes), [
+        { from_relation_id: "rel:root.(child).source.read", to_relation_id: "rel:root.(child).project" },
+        { from_relation_id: "rel:root.(child).project", to_relation_id: "rel:root.cte.read" },
+      ]),
+      readOccurrenceByRelationId: new Map([
+        ["rel:root.(child).source.read", "occ:source"],
+      ]),
+      bindingByReadRelation: new Map(),
+    });
+    expect(resolution.sourceReadOccurrenceStatus).toBe("UNRESOLVED");
+    expect(resolution.sourceReadOccurrenceReason).toBe("CTE_SCOPE_UNRESOLVED");
+  });
+
   it("fails closed when a CTE reference has no body source bridge", () => {
     const relationNodes = [
       {
@@ -755,10 +899,204 @@ describe("source-read-occurrence", () => {
       index,
     });
     expect(unresolvedEmptyBranchContexts).toEqual([]);
+
+    const mismatchedOutputContexts = routeNamedOutputContexts({
+      expression: outer,
+      sourceTable: "demo.source",
+      sourceColumn: "amount",
+      relationExpressionsByRelationId: relationExpressions,
+      expressionsByRelation: expressionsByRelationAndOrdinal([
+        expressions[0]!, expressions[1]!, branch0, { ...branch1, output_name: "other" },
+      ]),
+      index,
+    });
+    expect(mismatchedOutputContexts).toEqual([]);
+
   });
 });
 
 describe("relation-tree", () => {
+  it("routes a named CTE output through one binding in its consumer scope", () => {
+    const outer = {
+      expression_id: "expr:outer", relation_id: "rel:root.casttable.project", ordinal: 0,
+      output_name: "final", input_fields: [{ table: "demo.source", column: "amount" }],
+    };
+    const body = {
+      expression_id: "expr:body", relation_id: "rel:root.(child).project", ordinal: 0,
+      output_name: "metric", input_fields: [{ table: "demo.source", column: "amount" }],
+    };
+    const branch = {
+      expression_id: "expr:branch", relation_id: "rel:root.(child).setop.b0", ordinal: 0,
+      output_name: "amount", input_fields: [{ table: "demo.source", column: "amount" }],
+      input_dependency_status: "PHYSICAL",
+    };
+    const relationExpressions = new Map([
+      [outer.relation_id, [{ output: "final", input_columns: [{ name: "metric", qualifier: "it", physical: [{ table: "demo.source", column: "amount" }] }] }]],
+      [body.relation_id, [{ output: "metric", input_columns: [{ name: "amount", physical: [{ table: "demo.source", column: "amount" }] }] }]],
+    ]);
+    const relationNodes = [
+      { relation_id: outer.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.casttable" } },
+      { relation_id: "rel:root.casttable.read.it", relation_type: "read", relation: { type: "read", table: "index_table", binding: "it", scope_id: "root.casttable", source: body.relation_id } },
+      { relation_id: body.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.(child)", source: "rel:root.(child).setop", output_columns: ["metric"] } },
+      { relation_id: "rel:root.(child).setop", relation_type: "setop", relation: { type: "setop", output_columns: ["amount"], branches: [branch.relation_id] } },
+      { relation_id: branch.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.(child).setop.b0" } },
+    ];
+    const index = withIncomingRelations(buildRelationTreeIndex(relationNodes), [
+      { from_relation_id: "rel:root.casttable.read.it", to_relation_id: outer.relation_id },
+      { from_relation_id: body.relation_id, to_relation_id: "rel:root.casttable.read.it" },
+    ]);
+    const contexts = routeNamedOutputContexts({
+      expression: outer, sourceTable: "demo.source", sourceColumn: "amount",
+      relationExpressionsByRelationId: relationExpressions,
+      expressionsByRelation: expressionsByRelationAndOrdinal([outer, body, branch]), index,
+    });
+    expect(contexts.map((context) => context.expressionId)).toEqual(["expr:branch"]);
+  });
+
+  it("does not route a CTE reader when same-scope binding or source is not unique", () => {
+    const outer = {
+      expression_id: "expr:outer", relation_id: "rel:root.casttable.project", ordinal: 0,
+      output_name: "final", input_fields: [{ table: "demo.source", column: "amount" }],
+    };
+    const body = (id: string) => ({
+      expression_id: `expr:${id}`, relation_id: `rel:root.(child).${id}`, ordinal: 0,
+      output_name: "metric", input_fields: [{ table: "demo.source", column: "amount" }],
+    });
+    const first = body("first");
+    const second = body("second");
+    const relationExpressions = new Map([
+      [outer.relation_id, [{ output: "final", input_columns: [{ name: "metric", qualifier: "it", physical: [{ table: "demo.source", column: "amount" }] }] }]],
+      [first.relation_id, [{ output: "metric", input_columns: [] }]],
+      [second.relation_id, [{ output: "metric", input_columns: [] }]],
+    ]);
+    const nodes = [
+      { relation_id: outer.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.casttable" } },
+      { relation_id: first.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.(child).first", output_columns: ["metric"] } },
+      { relation_id: second.relation_id, relation_type: "project", relation: { type: "project", scope_id: "root.(child).second", output_columns: ["metric"] } },
+      { relation_id: "rel:root.casttable.read.it.1", relation_type: "read", relation: { type: "read", table: "index_table", binding: "it", scope_id: "root.casttable", source: first.relation_id } },
+      { relation_id: "rel:root.casttable.read.it.2", relation_type: "read", relation: { type: "read", table: "index_table", binding: "it", scope_id: "root.casttable", source: second.relation_id } },
+      // Same binding beneath a child scope must not make the root binding eligible.
+      { relation_id: "rel:root.casttable.child.read.it", relation_type: "read", relation: { type: "read", table: "index_table", binding: "it", scope_id: "root.casttable.child", source: first.relation_id } },
+    ];
+    const index = withIncomingRelations(buildRelationTreeIndex(nodes), [
+      { from_relation_id: "rel:root.casttable.read.it.1", to_relation_id: outer.relation_id },
+      { from_relation_id: "rel:root.casttable.read.it.2", to_relation_id: outer.relation_id },
+      { from_relation_id: "rel:root.casttable.child.read.it", to_relation_id: outer.relation_id },
+    ]);
+    expect(routeNamedOutputContexts({
+      expression: outer, sourceTable: "demo.source", sourceColumn: "amount",
+      relationExpressionsByRelationId: relationExpressions,
+      expressionsByRelation: expressionsByRelationAndOrdinal([outer, first, second]), index,
+    })).toEqual([]);
+  });
+
+  it("bridges a pivot CTE only through its unique RESULT_VALUE physical read", () => {
+    const pivotMeasure = {
+      aggregate: true,
+      output: "tag_001",
+      expression_facts: { literals: ["'tag_001'"], comparisons: [{ operator: "=" }] },
+      expression_roles: [
+        { role: "BRANCH_SELECTOR", input_columns: [{ name: "tag_id", physical: [{ table: "demo.same", column: "tag_id" }] }] },
+        { role: "RESULT_VALUE", input_columns: [{ name: "index_val", physical: [{ table: "demo.same", column: "index_val" }] }] },
+      ],
+      input_columns: [
+        { name: "tag_id", physical: [{ table: "demo.same", column: "tag_id" }] },
+        { name: "index_val", physical: [{ table: "demo.same", column: "index_val" }] },
+      ],
+    };
+    const relationNodes = [
+      { relation_id: "rel:body.read", relation_type: "read", relation: { type: "read", table: "demo.same", binding: "s", scope_id: "root.(child).s" } },
+      { relation_id: "rel:body.aggregate", relation_type: "aggregate", relation: { type: "aggregate", scope_id: "root.(child)", measures: [pivotMeasure] } },
+      { relation_id: "rel:outer.read.t", relation_type: "read", relation: { type: "read", table: "t", binding: "t", scope_id: "root.t", source: "rel:body.aggregate" } },
+    ];
+    const index = withIncomingRelations(buildRelationTreeIndex(relationNodes), [
+      { from_relation_id: "rel:body.read", to_relation_id: "rel:body.aggregate" },
+      { from_relation_id: "rel:body.aggregate", to_relation_id: "rel:outer.read.t" },
+    ]);
+    const base = {
+      taskId: "pivot-cte",
+      expressionId: "expr:pivot",
+      inputField: { table: "demo.same", column: "index_val" },
+      cteOutputColumn: "tag_001",
+      leafRelationId: "rel:outer.read.t",
+      index,
+      readOccurrenceByRelationId: new Map([["rel:body.read", "occ:body"]]),
+      bindingByReadRelation: new Map([["rel:body.read", "s"], ["rel:outer.read.t", "t"]]),
+    };
+    expect(resolveSourceReadOccurrence({
+      ...base, sourceTable: "demo.same", sourceColumn: "index_val",
+    })).toMatchObject({ sourceReadOccurrenceStatus: "RESOLVED", sourceReadOccurrenceId: "occ:body" });
+    // `tag_id` is the selector, not the value carried by output tag_001.
+    expect(resolveSourceReadOccurrence({
+      ...base, sourceTable: "demo.same", sourceColumn: "tag_id",
+      inputField: { table: "demo.same", column: "tag_id" },
+    })).toMatchObject({ sourceReadOccurrenceStatus: "UNRESOLVED", sourceReadOccurrenceReason: "CTE_SCOPE_UNRESOLVED" });
+
+    const twoPhysicalIndex = withIncomingRelations(buildRelationTreeIndex([
+      ...relationNodes.slice(0, 1),
+      { ...relationNodes[1]!, relation: { ...relationNodes[1]!.relation, measures: [{
+        ...pivotMeasure,
+        expression_roles: [pivotMeasure.expression_roles[0]!, {
+          role: "RESULT_VALUE",
+          input_columns: [{ name: "index_val", physical: [
+            { table: "demo.same", column: "index_val" },
+            { table: "demo.same", column: "other_index_val" },
+          ] }],
+        }],
+      }] } },
+      relationNodes[2]!,
+    ]), [
+      { from_relation_id: "rel:body.read", to_relation_id: "rel:body.aggregate" },
+      { from_relation_id: "rel:body.aggregate", to_relation_id: "rel:outer.read.t" },
+    ]);
+    expect(resolveSourceReadOccurrence({
+      ...base,
+      sourceTable: "demo.same",
+      sourceColumn: "index_val",
+      index: twoPhysicalIndex,
+    })).toMatchObject({ sourceReadOccurrenceStatus: "UNRESOLVED", sourceReadOccurrenceReason: "CTE_SCOPE_UNRESOLVED" });
+  });
+
+  it("keeps only a uniquely selected pivot value as a named aggregate output witness", () => {
+    const pivotMeasure = {
+      aggregate: true,
+      output: "tag_001",
+      expression_facts: {
+        literals: ["'tag_001'"],
+        comparisons: [{ operator: "=" }],
+      },
+      expression_roles: [
+        {
+          role: "BRANCH_SELECTOR",
+          input_columns: [{ name: "tag_id", physical: [{ table: "demo.source", column: "tag_id" }] }],
+        },
+        {
+          role: "RESULT_VALUE",
+          input_columns: [{ name: "index_val", physical: [{ table: "demo.source", column: "index_val" }] }],
+        },
+      ],
+      input_columns: [
+        { name: "tag_id", physical: [{ table: "demo.source", column: "tag_id" }] },
+        { name: "index_val", physical: [{ table: "demo.source", column: "index_val" }] },
+      ],
+    };
+    const index = buildRelationTreeIndex([
+      { relation_id: "rel:pivot", relation_type: "aggregate", relation: { type: "aggregate", measures: [pivotMeasure] } },
+      // Output must match the selector literal; otherwise do not route it.
+      { relation_id: "rel:mismatch", relation_type: "aggregate", relation: { type: "aggregate", measures: [{ ...pivotMeasure, output: "different" }] } },
+      // A non-literal selector cannot identify one pivot output.
+      { relation_id: "rel:nonliteral", relation_type: "aggregate", relation: { type: "aggregate", measures: [{ ...pivotMeasure, expression_facts: { literals: [], comparisons: [{ operator: "=" }] } }] } },
+      // Multiple value branches cannot be mapped to one leaf read.
+      { relation_id: "rel:multiple-values", relation_type: "aggregate", relation: { type: "aggregate", measures: [{ ...pivotMeasure, expression_roles: [...pivotMeasure.expression_roles, { role: "RESULT_VALUE", input_columns: [{ name: "other", physical: [{ table: "demo.source", column: "other" }] }] }] }] } },
+    ]);
+    expect(index.relations.get("rel:pivot")?.outputInputColumns).toMatchObject([
+      { outputName: "tag_001", physicalDataset: "demo.source", physicalColumn: "index_val" },
+    ]);
+    expect(index.relations.get("rel:mismatch")?.outputInputColumns).toEqual([]);
+    expect(index.relations.get("rel:nonliteral")?.outputInputColumns).toEqual([]);
+    expect(index.relations.get("rel:multiple-values")?.outputInputColumns).toEqual([]);
+  });
+
   it("collects read relations in a subtree and normalizes join types", () => {
     const relationNodes = [
       {

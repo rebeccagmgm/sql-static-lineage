@@ -7,13 +7,20 @@ export interface TaskOption {
 }
 export interface FieldChoice {
   field: GraphNode;
+  members: GraphNode[];
+  tableKey: string;
   occurrenceLabel?: string;
 }
 const taskIdentity = (field: GraphNode) => field.taskId || "未标注";
+const tableIdentity = (field: GraphNode) => {
+  const identity = field.metadata?.identity;
+  return JSON.stringify([taskIdentity(field), identity?.platform ?? "", identity?.dataSource ?? "",
+    (identity?.qualifiedName ?? field.table ?? field.id).toLowerCase()]);
+};
 
 export function taskOptions(fields: GraphNode[]): TaskOption[] {
   const counts = new Map<string, number>();
-  for (const field of fields)
+  for (const { field } of fieldChoices(fields, "", ""))
     counts.set(taskIdentity(field), (counts.get(taskIdentity(field)) ?? 0) + 1);
   return [...counts.entries()]
     .map(([taskId, count]) => ({ taskId, count }))
@@ -28,42 +35,34 @@ export function fieldChoices(
   fieldSearch: string,
 ): FieldChoice[] {
   const needle = fieldSearch.trim().toLowerCase();
-  const filtered = fields
+  const filtered = [...fields]
     .filter((field) => !taskId || taskIdentity(field) === taskId)
-    .filter(
-      (field) =>
-        !needle ||
-        [field.column, field.metadata?.field?.comment]
-          .some((value) => String(value ?? "").toLowerCase().includes(needle)),
-    )
     .sort((a, b) => {
       const task = taskIdentity(a).localeCompare(taskIdentity(b), "zh-CN", {
         numeric: true,
       });
       return (
         task ||
+        tableIdentity(a).localeCompare(tableIdentity(b)) ||
         String(a.column ?? "").localeCompare(String(b.column ?? ""), "zh-CN") ||
         String(a.writeId ?? a.id).localeCompare(String(b.writeId ?? b.id))
       );
     });
   const siblings = new Map<string, GraphNode[]>();
-  for (const field of fields) {
-    const key = `${taskIdentity(field)}\u0000${String(field.column ?? "").toLowerCase()}`;
+  for (const field of filtered) {
+    const key = `${tableIdentity(field)}\u0000${String(field.column ?? field.id).toLowerCase()}`;
     const group = siblings.get(key) ?? [];
-    group.push(field);
+    if (!group.some(item => item.id === field.id)) group.push(field);
     siblings.set(key, group);
   }
-  return filtered.map((field) => {
-    const key = `${taskIdentity(field)}\u0000${String(field.column ?? "").toLowerCase()}`;
-    const group = (siblings.get(key) ?? [field]).sort((a, b) =>
-      String(a.writeId ?? a.id).localeCompare(String(b.writeId ?? b.id)),
-    );
+  return [...siblings.values()].filter(group => !needle || group.some(field =>
+    [field.column, field.metadata?.field?.comment].some(value => String(value ?? "").toLowerCase().includes(needle)),
+  )).map((group) => {
+    const field = group.find(item => item.metadata?.field?.comment) ?? group[0]!;
     return {
       field,
-      occurrenceLabel:
-        group.length > 1
-          ? `写入 ${group.findIndex((item) => item.id === field.id) + 1}/${group.length}`
-          : undefined,
+      members: group,
+      tableKey: tableIdentity(field),
     };
   });
 }
@@ -96,25 +95,23 @@ export function FieldSelector(props: {
     () => fieldChoices(props.fields, taskId.trim(), fieldSearch),
     [props.fields, taskId, fieldSearch],
   );
-  const selected = new Set(props.selectedIds),
-    visibleIds = new Set(choices.map(({ field }) => field.id));
-  const visibleSelected = props.selectedIds.filter((id) =>
-      visibleIds.has(id),
-    ).length,
-    hiddenSelected = props.selectedIds.length - visibleSelected;
+  const selected = new Set(props.selectedIds);
+  const selectedCount = fieldChoices(props.fields, "", "").filter(choice => choice.members.some(field => selected.has(field.id))).length;
+  const visibleSelected = choices.filter(choice => choice.members.some(field => selected.has(field.id))).length,
+    hiddenSelected = selectedCount - visibleSelected;
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const allVisibleSelected =
-    choices.length > 0 && visibleSelected === choices.length;
+    choices.length > 0 && choices.every(choice => choice.members.every(field => selected.has(field.id)));
   useEffect(() => {
     if (selectAllRef.current)
       selectAllRef.current.indeterminate =
         visibleSelected > 0 && !allVisibleSelected;
   }, [allVisibleSelected, visibleSelected]);
-  const toggle = (id: string) =>
-    selected.has(id)
-      ? props.onChange(props.selectedIds.filter((item) => item !== id))
-      : props.onChange([...props.selectedIds, id]);
+  const toggle = (members: GraphNode[]) => props.onChange(toggleAllVisible(
+    props.selectedIds, members.map(field => field.id), !members.every(field => selected.has(field.id)),
+  ));
   let currentTask = "";
+  let currentTable = "";
   return (
     <div className="field-picker">
       <button
@@ -123,7 +120,7 @@ export function FieldSelector(props: {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        已选 {props.selectedIds.length} 个字段
+        已选 {selectedCount} 个字段
       </button>
       {open && (
         <div className="field-picker-popover">
@@ -168,7 +165,7 @@ export function FieldSelector(props: {
                   props.onChange(
                     toggleAllVisible(
                       props.selectedIds,
-                      choices.map(({ field }) => field.id),
+                      choices.flatMap(({ members }) => members.map(field => field.id)),
                       event.target.checked,
                     ),
                   )
@@ -181,28 +178,31 @@ export function FieldSelector(props: {
             </button>
           </div>
           <div className="field-picker-list">
-            {choices.map(({ field, occurrenceLabel }) => {
+            {choices.map(({ field, members, tableKey }) => {
               const nextTask = taskIdentity(field),
                 heading = nextTask !== currentTask;
               currentTask = nextTask;
+              const tableHeading = currentTable !== tableKey;
+              currentTable = tableKey;
               return (
                 <div key={field.id}>
                   {heading && (
                     <div className="field-task-heading">调度 ID {nextTask}</div>
                   )}
-                  <label title={field.writeId || field.id}>
+                  {tableHeading && <div className="field-table-heading">{field.table ?? "表身份未明确"}</div>}
+                  <label>
                     <input
                       type="checkbox"
-                      checked={selected.has(field.id)}
+                      checked={members.every(item => selected.has(item.id))}
+                      ref={element => { if (element) element.indeterminate = members.some(item => selected.has(item.id)) && !members.every(item => selected.has(item.id)); }}
                       disabled={false}
-                      onChange={() => toggle(field.id)}
+                      onChange={() => toggle(members)}
                     />
                     <span>
                       <b>{field.column}</b>
                       {field.metadata?.field?.comment && (
                         <small>{field.metadata.field.comment}</small>
                       )}
-                      <small>{occurrenceLabel ?? "单一写入"}</small>
                     </span>
                   </label>
                 </div>

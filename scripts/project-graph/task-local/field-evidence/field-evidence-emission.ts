@@ -236,9 +236,14 @@ function cteInputReferenceForSourceField(input: {
   }
   if (references.size !== 1) return null;
   const [outputColumn, qualifiers] = [...references.entries()][0]!;
-  return qualifiers.size === 1
-    ? { outputColumn, relationQualifier: [...qualifiers][0]! }
-    : null;
+  // The named CTE output is still proven when the outer expression references
+  // it through more than one logical reader.  The reader itself is ambiguous
+  // in that case, so leave its qualifier unset rather than dropping the
+  // output-to-input proof or choosing one reader.
+  return {
+    outputColumn,
+    relationQualifier: qualifiers.size === 1 ? [...qualifiers][0]! : null,
+  };
 }
 
 export function emitFieldEvidenceForInput(input: {
@@ -295,6 +300,15 @@ export function emitFieldEvidenceForInput(input: {
       sourceField: input.sourceField,
       indexes: input.indexes,
     });
+    // This source expression can already prove a named CTE output even when
+    // its physical input is read through several logical aliases.  Preserve
+    // the output proof for the normal emission path; the resolver still has
+    // to establish that every viable reader reaches one CTE body.
+    const cteInputReference = cteInputReferenceForSourceField({
+      expression: sourceExpression,
+      sourceField: input.sourceField,
+      indexes: input.indexes,
+    });
     // Split only structured physical references, never the set of possible reads.
     for (const relationQualifier of relationQualifiers ?? [null]) {
       const sourceResolution = resolveSourceReadOccurrence({
@@ -311,6 +325,8 @@ export function emitFieldEvidenceForInput(input: {
         ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
           ? { referenceQualifier: relationQualifier }
           : {}),
+        cteOutputColumn: cteInputReference?.outputColumn ?? null,
+        cteRelationQualifier: cteInputReference?.relationQualifier ?? null,
         leafRelationId,
         index: input.indexes.relationTree,
         readOccurrenceByRelationId: input.indexes.readOccurrenceByRelationId,

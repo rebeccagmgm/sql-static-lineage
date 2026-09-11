@@ -1,12 +1,7 @@
-import {
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  existsSync,
-  renameSync,
-} from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { openAssetGraph } from "./config.ts";
+import { atomicReplaceFile } from "./atomic-file-replace.ts";
 import { pruneGraphArtifactHistory } from "./prune-artifacts.ts";
 import {
   pruneAllTaskProjectionVersions,
@@ -34,42 +29,34 @@ import {
 } from "../continuation/continuation-index.ts";
 import type { ProducerIndexWriter } from "../continuation/producer-writer.ts";
 import { buildWritePartitionParts } from "../../../../scripts/project-graph/task-local/write-partition-evidence.ts";
+import { expandPartitionAlternatives } from "../../../../scripts/project-graph/task-local/partition-alternatives.ts";
 import { calculateContinuationMetrics } from "./continuation-metrics.ts";
 import {
   loadGraphTerminalPolicy,
   terminalPolicyConfigHash,
-  buildTerminalPolicySnapshot,
 } from "./terminal-policy.ts";
-export const ASSET_COMPILER_VERSION = "1.0.8";
-export interface PublishedTask {
-  taskId: string;
-  path: string;
-  evidencePath: string;
-  cacheKey: string;
-  contentHash: string;
-  coverageStatus: string;
-  taskCategory: string;
-  taskName: string | null;
-  failureReasonCode: string | null;
-}
-export interface PreparedManifest {
-  tasks: PublishedTask[];
-  taskIds: string[];
-  summary: Record<string, number>;
-  generatedAt: string;
-}
-export interface Evidence {
-  bindings: FactRecord[];
-  statements: FactRecord[];
-  datasetIo: FactRecord[];
-  expressions: FactRecord[];
-  relations: FactRecord[];
-  packPartition: Record<string, unknown> | null;
-  packTarget: unknown;
-  sqlSources: { slot: string; content: string; sha256: string }[];
-}
-export const readJson = <T>(path: string): T =>
-  JSON.parse(readFileSync(path, "utf8"));
+import {
+  loadGraphSourceEndpointBoundary,
+  sourceEndpointBoundaryConfigHash,
+  buildSourceEndpointBoundarySnapshot,
+  boundaryEvidenceFromSnapshot,
+  sourceEndpointBoundaryKey,
+} from "./source-endpoint-boundary.ts";
+import { buildPublicationSnapshots } from "./publication-snapshots.ts";
+import type {
+  Evidence,
+  PreparedManifest,
+  PublishedTask,
+} from "./evidence-json.ts";
+import { readJson } from "./evidence-json.ts";
+
+export const ASSET_COMPILER_VERSION = "1.0.17";
+export type {
+  Evidence,
+  PreparedManifest,
+  PublishedTask,
+} from "./evidence-json.ts";
+export { readJson } from "./evidence-json.ts";
 
 /** Match explicit writes by the Facts statement, never by ordinal across different SQL slots. */
 export function taskWriters(
@@ -95,12 +82,16 @@ export function taskWriters(
       bindings: e.bindings,
       expressions: e.expressions,
       relations: e.relations,
+      materializations: e.materializations,
       targetWriteCount: finalWrites.filter(
         (candidate) =>
           candidate.qualifiedName.toLowerCase() ===
           w.qualifiedName.toLowerCase(),
       ).length,
     });
+    if (!expandPartitionAlternatives(parts)) {
+      throw new Error(`INVALID_WRITE_PARTITION_ALTERNATIVES:${p.taskId}:${w.writeObservationId}`);
+    }
     return {
       taskId: p.taskId,
       writeObservationId: w.writeObservationId,
@@ -121,6 +112,8 @@ export async function publishAssetGraph(configPath?: string) {
   try {
     const terminalConfig = loadGraphTerminalPolicy();
     const terminalConfigHash = terminalPolicyConfigHash(terminalConfig);
+    const boundaryConfig = loadGraphSourceEndpointBoundary();
+    const boundaryConfigHash = sourceEndpointBoundaryConfigHash(boundaryConfig);
     const prepared = readJson<{ manifestPath: string; version: string }>(
       join(paths.graphOutputRoot, "prepared.json"),
     );
@@ -129,8 +122,10 @@ export async function publishAssetGraph(configPath?: string) {
         ASSET_COMPILER_VERSION,
         prepared.version,
         terminalConfigHash,
+        boundaryConfigHash,
       ]);
     await store.initialize();
+    await store.upgradeOwnerEdgeSources();
     const prior = await store.state();
     if (prior?.state === "READY" && prior.version === version) {
       const result = {
@@ -150,7 +145,10 @@ export async function publishAssetGraph(configPath?: string) {
       taskEvidence: TaskLocalUnionTaskEvidence[] = [],
       leanNodes = new Map<string, TaskLocalUnionNode>(),
       writers: ProducerIndexWriter[] = [],
-      writeFields = new Map<string, { id: string; writeId: string; column: string; table: string }>();
+      writeFields = new Map<
+        string,
+        { id: string; writeId: string; column: string; table: string }
+      >();
     const taskSet = new Set(manifest.taskIds),
       scheduleEdges = new Map<string, AssetEdge>(),
       changed = new Set<string>();
@@ -187,13 +185,21 @@ export async function publishAssetGraph(configPath?: string) {
       });
       const p = unpacked.projection as TaskLocalProjection;
       const e = readJson<Evidence>(task.evidencePath);
-      const graph = compileTask(p, e.bindings ?? [], terminalConfig);
+      const taskWriteScopes = p.coverageStatus === "PROJECTED" ? taskWriters(p, e) : [];
+      const graph = compileTask(
+        p,
+        e.bindings ?? [],
+        terminalConfig,
+        boundaryConfig,
+        taskWriteScopes,
+      );
       for (const w of graph.writes)
         writeFields.set(`${task.taskId}|${w.writeId}|${w.column}`, w);
       const ownerHash = digest([
         ASSET_COMPILER_VERSION,
         task.cacheKey,
         terminalConfigHash,
+        boundaryConfigHash,
       ]);
       if (ownerHashes.get(task.taskId) !== ownerHash) changed.add(task.taskId);
       taskEvidence.push({
@@ -212,7 +218,7 @@ export async function publishAssetGraph(configPath?: string) {
           n.nodeType === "PHYSICAL_DATASET"
         )
           leanNodes.set(n.nodeId, { ...n, sourceTaskIds: [task.taskId] });
-      if (p.coverageStatus === "PROJECTED") writers.push(...taskWriters(p, e));
+      writers.push(...taskWriteScopes);
       const ref = p.nodes.find((n) => n.nodeType === "TASK")?.properties
         .scheduleReference as
         | { upstreamTaskIds?: string[]; downstreamTaskIds?: string[] }
@@ -239,7 +245,10 @@ export async function publishAssetGraph(configPath?: string) {
         imported++;
       }
       localPeakRss = Math.max(localPeakRss, process.memoryUsage().rss);
-      if ((imported > 0 && imported % 100 === 0) || taskEvidence.length % 250 === 0)
+      if (
+        (imported > 0 && imported % 100 === 0) ||
+        taskEvidence.length % 250 === 0
+      )
         progress("IMPORTING_LOCAL", {
           completed: taskEvidence.length,
           total: manifest.tasks.length,
@@ -330,19 +339,42 @@ export async function publishAssetGraph(configPath?: string) {
     ];
     const indexBody = { ...refreshed, entries };
     const { contentHash: _indexHash, ...indexWithoutHash } = indexBody;
-    const index = {
+    const rawIndex = {
       ...indexWithoutHash,
       contentHash: unionContinuationIndexContentHash(indexWithoutHash),
     };
-    const terminalPolicy = buildTerminalPolicySnapshot(index, terminalConfig);
+    const taskCategoryFor = (taskId: string) =>
+      manifest.tasks.find((task) => task.taskId === taskId)?.taskCategory ??
+      null;
+    const boundarySnapshotDraft = buildSourceEndpointBoundarySnapshot({
+      index: rawIndex,
+      config: boundaryConfig,
+      taskCategoryFor,
+      unionTaskIds: taskSet,
+      writerCatalogPath: paths.writerCatalogPath,
+    });
+    const { index, terminalPolicy, boundarySnapshot } =
+      buildPublicationSnapshots({
+        rawIndex,
+        terminalConfig,
+        boundarySnapshotDraft,
+      });
+    const boundaryEvidence = boundaryEvidenceFromSnapshot(boundarySnapshot);
     const terminalReads = new Set(
       terminalPolicy.reads.map(
         (read) => `${read.consumerTaskId}|${read.readOccurrenceId}`,
       ),
     );
+    const boundaryReads = new Set(
+      boundarySnapshot.reads.map((read) => sourceEndpointBoundaryKey(read)),
+    );
     writeFileSync(
       join(outDir, "terminal-policy.json"),
       JSON.stringify(terminalPolicy),
+    );
+    writeFileSync(
+      join(outDir, "source-endpoint-boundary.json"),
+      JSON.stringify(boundarySnapshot),
     );
     writeFileSync(
       join(outDir, "union-continuation-index.json"),
@@ -353,7 +385,10 @@ export async function publishAssetGraph(configPath?: string) {
       JSON.stringify(writers),
     );
     const byRead = new Map(
-      entries.map((e) => [`${e.consumerTaskId}|${e.readOccurrenceId}`, e]),
+      index.entries.map((e) => [
+        `${e.consumerTaskId}|${e.readOccurrenceId}`,
+        e,
+      ]),
     );
     let continuationCount = 0,
       candidateCount = 0,
@@ -369,11 +404,18 @@ export async function publishAssetGraph(configPath?: string) {
       });
       const p = unpacked.projection as TaskLocalProjection;
       const e = readJson<Evidence>(task.evidencePath);
-      const g = compileTask(p, e.bindings ?? [], terminalConfig);
+      const g = compileTask(
+        p,
+        e.bindings ?? [],
+        terminalConfig,
+        boundaryConfig,
+      );
       const taskId = task.taskId;
       const links: AssetEdge[] = [];
       for (const read of g.reads) {
-        if (terminalReads.has(`${taskId}|${read.occurrence}`)) continue;
+        const readKey = `${taskId}|${read.occurrence}`;
+        if (terminalReads.has(readKey)) continue;
+        if (boundaryReads.has(`${taskId}\u0000${read.occurrence}`)) continue;
         const entry = byRead.get(`${taskId}|${read.occurrence}`);
         for (const c of entry?.candidates ?? []) {
           if (c.partitionMatchStatus === "DISJOINT" || !c.targetWriteNodeId)
@@ -425,7 +467,10 @@ export async function publishAssetGraph(configPath?: string) {
       );
     }
     for (const task of taskEvidence)
-      if (task.coverageStatus !== "PROJECTED" && ownerHashes.has(`__continue__${task.taskId}`)) {
+      if (
+        task.coverageStatus !== "PROJECTED" &&
+        ownerHashes.has(`__continue__${task.taskId}`)
+      ) {
         await store.replace(`__continue__${task.taskId}`, digest([]), {
           nodes: [],
           edges: [],
@@ -457,8 +502,12 @@ export async function publishAssetGraph(configPath?: string) {
       continuationIndexContentHash: index.contentHash,
       terminalPolicyContentHash: terminalPolicy.contentHash,
       terminalPolicyConfigHash: terminalConfigHash,
+      sourceEndpointBoundaryContentHash: boundarySnapshot.contentHash,
+      sourceEndpointBoundaryConfigHash: boundaryConfigHash,
       continuationMetrics: calculateContinuationMetrics({
         index,
+        boundaryEvidence,
+        boundaryReads: boundarySnapshot.reads,
         policyTerminals: terminalPolicy.reads,
         continuationEdgeMetrics: {
           totalContinuationEdges: continuationCount + candidateCount,
@@ -498,11 +547,19 @@ export async function publishAssetGraph(configPath?: string) {
         publicationPath: join(outDir, "publication.json"),
       }),
     );
-    renameSync(
+    atomicReplaceFile(
       join(paths.graphOutputRoot, "current.json.tmp"),
       join(paths.graphOutputRoot, "current.json"),
     );
-    await store.finish(version, prepared.manifestPath, report);
+    const finalizedReport = await store.finish(
+      version,
+      prepared.manifestPath,
+      report,
+    );
+    writeFileSync(
+      join(outDir, "publication.json"),
+      JSON.stringify(finalizedReport, null, 2),
+    );
     const preparedBeforePrune = readJson<{
       manifestPath: string;
       version: string;
@@ -525,8 +582,8 @@ export async function publishAssetGraph(configPath?: string) {
             paths.projectionRoot,
             activeProjectionReferences,
           );
-    progress("READY", { ...report, pruned, prunedProjections });
-    return { ...report, pruned, prunedProjections };
+    progress("READY", { ...finalizedReport, pruned, prunedProjections });
+    return { ...finalizedReport, pruned, prunedProjections };
   } finally {
     await driver.close();
   }

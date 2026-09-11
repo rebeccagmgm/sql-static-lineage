@@ -4,18 +4,19 @@
 
 本页的主审阅范围是 62 项；另 269 项见[合约、结构与持仓](03-contracts-and-positions.md)。两页合计闭合 EDW_AGT、EDW_SUM、EDW_EVT、EDW_NDS 的 331 项发布任务。账户及合约身份的来源见合约页，主体与组织定义见[公共对象](02-public-objects.md)，本页专注金额和事件之间怎样连接。
 
-| 想回答的问题 | 优先辨认的对象 | 不能直接替代它的对象 |
-|---|---|---|
-| 该收、该付什么 | 收付款记录、费用与支付计划 | 账户余额 |
-| 记了哪一笔资金变动 | 资金/保证金账本事件及原流水、触发来源 | 两天余额之差 |
-| 某日可用、冻结、可提多少 | 账户余额快照及相应字段 | 同期发生金额简单求和 |
-| 按什么规则要求多少保证金 | 合约参数、组合参数及履保计算结果 | 实际到账金额 |
-| 哪份通知包含哪些收付 | 结算通知及通知—收付关系 | 已发送/已收款的运行结论 |
-| 财务看到哪种业务金额 | 财务视图、合约补充信息与输出表 | 交易系统所有记录的机械合集 |
+| 想回答的问题             | 优先辨认的对象                        | 不能直接替代它的对象       |
+| ------------------------ | ------------------------------------- | -------------------------- |
+| 该收、该付什么           | 收付款记录、费用与支付计划            | 账户余额                   |
+| 记了哪一笔资金变动       | 资金/保证金账本事件及原流水、触发来源 | 两天余额之差               |
+| 某日可用、冻结、可提多少 | 账户余额快照及相应字段                | 同期发生金额简单求和       |
+| 按什么规则要求多少保证金 | 合约参数、组合参数及履保计算结果      | 实际到账金额               |
+| 哪份通知包含哪些收付     | 结算通知及通知—收付关系               | 已发送/已收款的运行结论    |
+| 财务看到哪种业务金额     | 财务视图、合约补充信息与输出表        | 交易系统所有记录的机械合集 |
 
 这些区分是对下文 SQL 字段与连接的解释，不是外加的财务制度定义。
 
 <a id="receivables-payables"></a>
+
 ## 收付记录表达应收应付，实际支付另有日期与状态
 
 `T05_OTC_RECV_PYMT_EVT` 以 `TIT157- + TRANSFER_ID` 形成事件编号，保留源收付款编号、交易号、合同号、账簿、产品、对手方、费用类型、互换持仓/腿/存续事件等关联编号。它把收付事项放回具体业务对象，而不是只存一个金额。[任务 105080，query 20–48 行](../../../../sql-static-lineage-data/task-projections/tasks/105080/versions/b7e0ad32c7134b70aa5c46f2c4dca28f34c27704958b41d86ee498e7b338e275.evidence-v3.json)
@@ -27,6 +28,7 @@
 收付款主表采用事件 ID 对比输入与既有记录、维护增改删状态的方式，不是只追加新流水。`104934` 与 `105080` 将前置建临时表的逻辑放在不同槽位；后者源查询 `D_TRD_TRANSFER` 本身没有追加业务日期条件。与此同时，NDS 的普通和 `h15` 变体按采集日期/批次选择来源并写接口分区，保留的是另一种交付形态。[任务 105080，query 74–76 行](../../../../sql-static-lineage-data/task-projections/tasks/105080/versions/b7e0ad32c7134b70aa5c46f2c4dca28f34c27704958b41d86ee498e7b338e275.evidence-v3.json)、[任务 105080，query 141–197 行](../../../../sql-static-lineage-data/task-projections/tasks/105080/versions/b7e0ad32c7134b70aa5c46f2c4dca28f34c27704958b41d86ee498e7b338e275.evidence-v3.json)、[任务 160812，query 1–51 行](../../../../sql-static-lineage-data/task-projections/tasks/160812/versions/7146ff0066b15a61f53b30fe41b81be9c1d0027da951bbed13c5948a01933e91.evidence-v3.json)、[任务 160813，query 1–51 行](../../../../sql-static-lineage-data/task-projections/tasks/160813/versions/72ffa4cd655a0c24b079277baf24501d8fde5dd3c01cf41f273dc717f244dc07.evidence-v3.json)
 
 <a id="ledger-events"></a>
+
 ## 账本事件说明什么发生了变化
 
 资金账本与保证金账本分别使用 `KEY_CAP_LEDGER_ID`、`KEY_MRG_LEDGER_ID` 形成事件，连接资金账户 `10220` 或保证金账户 `10219`。它们可以通过账户侧补对手方，通过 `KEY_INSTRUMENT_ID` 关联合约产品；**这个产品号仍需合约—产品关系才能回到合约号**，不能把它直接改叫合约 ID。[任务 173966，query 3–16 行](../../../../sql-static-lineage-data/task-projections/tasks/173966/versions/5bc7110ab371e9be23983fccb9b1f14e527e28ab47c70ed773867bcdfa5c2e02.evidence-v3.json)、[任务 173965，query 29–41 行](../../../../sql-static-lineage-data/task-projections/tasks/173965/versions/72f151a922e782aedceb8624ddfe0ef164489e69656dc3c8b23b050a8daa7eda.evidence-v3.json)
@@ -42,6 +44,7 @@
 上述账本关联账户时，SQL 只按账户 ID 连接，未对账户侧限定业务日期。本次没有数据实例证明账户侧唯一，也没有执行对账。因此“记录了账本事件”与“已经证明真实现金全部发生并入账”仍需区分。
 
 <a id="account-balances"></a>
+
 ## 余额是时点状态，且每种余额都带不同约束
 
 统一余额模型 `T03_AST_CRRC_ACCT_BAL` 的保证金分支把源 `BALANCE` 放进 `Begn_Bal`，当前余额、可用余额等多列写空；资金分支除 `BALANCE` 外，还接 `FREEZE_BALANCE`、`AVAILABLE_BALANCE`、`AR_BALANCE`、`AR_AVAILABLE_BALANCE`、`ACTUAL_WITHDRAW_AMOUNT`。两者虽然都写“期初余额”，它们首先是源余额字段按模型口径命名，不能据此推断等于当天所有业务发生之前的余额。[任务 107646，query 4–40 行](../../../../sql-static-lineage-data/task-projections/tasks/107646/versions/07d7dcb1f5682f13642353d724f67b1f61f38b2ef15fd9579c913a043afa3097.evidence-v3.json)、[任务 112644，query 4–40 行](../../../../sql-static-lineage-data/task-projections/tasks/112644/versions/b4f0596031fc8e028efc7ffbfa05d0bbed091b6bb0aba95a0111af47f2bf4a41.evidence-v3.json)；[pdata_n.t03_ast_crrc_acct_bal DDL](../../../../sql-static-lineage-data/tables/hive/pdata_n.t03_ast_crrc_acct_bal__gfhive/ddl.sql)。
@@ -53,6 +56,7 @@ NDS 保留了 `CAPITAL_ACCT_CURRENT_BALANCE / CAPITAL_ACCT_DAILY_BALANCE / MARGI
 资金账户余额汇总也有两类不同来源：财务账户映射视图把 `BALANCE` 放到资金总余额，业务发生/实际总余额字段写空；另一个固定收益部门分支从实际余额来源接入业务历史余额、实际资金余额、实际保证金余额和总余额。后者 SQL 将 `Busi_Date` 与 `h21` 比较，且账户关系的唯一性未验证，不能用它替代前者或把两者相加。[任务 199182，query 3–26 行](../../../../sql-static-lineage-data/task-projections/tasks/199182/versions/99de1de7358b9a8229830659468fe86105ed43b92a096aebab8d39b9dbb13c72.evidence-v3.json)、[任务 213442，query 3–31 行](../../../../sql-static-lineage-data/task-projections/tasks/213442/versions/6ead766160df5cd2c502be33dca49976bc47d539b16fc795e63fe4b632bf0a89.evidence-v3.json)
 
 <a id="margin-and-bundles"></a>
+
 ## 履保把合约、组合、账户连接起来，参数和结果分开保存
 
 保证金相关模型至少有三层。第一层是账户：钱和担保物记在哪个账户。第二层是合约：合同约定的初始保证金、比例、预警线、追保线、强平线等。第三层是组合：哪些合约共同接受某种履保方案和盯市处理。网络用两类关系连接它们，而非把所有保证金都附在一个合约字段上：
@@ -78,6 +82,7 @@ NDS 保留了 `CAPITAL_ACCT_CURRENT_BALANCE / CAPITAL_ACCT_DAILY_BALANCE / MARGI
 另有两个需要消费者确认的具体点：`176877.Accum_Pal` 与 `Accum_Accr_Intr` 都取同一个 `last_pos.Accum_Accr_Intr`；余额先与多条账本记录连接再 SUM 时，需要验证重复度。这里保留 SQL 原样，未将累计计提利息改称已证实的累计损益，也没有凭静态文本宣判金额错误。[任务 176877，query 26–38 行](../../../../sql-static-lineage-data/task-projections/tasks/176877/versions/ca18ec2228c784ea82fd49b33c823f7edb3a89799377028308fd79ca810fc3e0.evidence-v3.json)、[任务 176877，query 82–100 行](../../../../sql-static-lineage-data/task-projections/tasks/176877/versions/ca18ec2228c784ea82fd49b33c823f7edb3a89799377028308fd79ca810fc3e0.evidence-v3.json)
 
 <a id="settlement-chain"></a>
+
 ## 从费用和支付计划，走到结算结果及通知
 
 费用主信息记录费用类型、金额、比例、周期和支付频率。支付计划按 `KEY_FEE_PAYMENT_ID` 标识计划项，经 `KEY_FEE_ID` 接回费用，再按源费用记录判断合约编号及修饰符；它分别保存计划支付日、实际支付日、本币/原币/人民币金额和实际支付金额。模板中的 `${src_table}` 尚未落成唯一物理来源，这条业务连接只能解释为模板已表达的关系。[任务 110164，query 3–23 行](../../../../sql-static-lineage-data/task-projections/tasks/110164/versions/48d7d27b3e77395fdfc8ae4365652973f3186b128931b3ffe84c150d1d377a52.evidence-v3.json)、[任务 207947，query 6–42 行](../../../../sql-static-lineage-data/task-projections/tasks/207947/versions/d2392ce64208b224fc0b0e746c2a78307254a47c1b3e86f699873efd04d1af9a.evidence-v3.json)
@@ -89,6 +94,7 @@ NDS 保留了 `CAPITAL_ACCT_CURRENT_BALANCE / CAPITAL_ACCT_DAILY_BALANCE / MARGI
 业务层可沿以下顺序复核一项结算：先认合约身份及产品，找到费用/收付记录；需要查看通知时，通过通知—收付关系接回通知；需要查看账户实际变动时，再依据账户、产品、事件类型与触发 ID 追账本。最后对照相同业务日的余额。这是本图可支持的调查路径，**尚未证明每一笔收付款都存在到银行流水的唯一连接**。
 
 <a id="finance-interfaces"></a>
+
 ## 财务输出既使用业务事实，也加入自身的组织方式
 
 财务合约视图与统一合约宽表通过内部合约号补接 AGT：互换使用 `CONTRACT_CODE = Inr_Comp_No`，期权使用 `CONTRACT_CODE = Inr_Ord_Id`。它们保留合约类型、账簿、部门、对手方、销售方、币种等，期权分支额外带名义本金和期权费；内部合约号是否唯一没有由该 JOIN 证明。[任务 199176，query 3–28 行](../../../../sql-static-lineage-data/task-projections/tasks/199176/versions/4ff96d9491bebafd1bea237364c3fe6452da90d016bf72b29d93db5be608f674.evidence-v3.json)、[任务 199178，query 3–30 行](../../../../sql-static-lineage-data/task-projections/tasks/199178/versions/438c1e9756ac3168259109976db2fd536942f015f21423c7627f4887897e1288.evidence-v3.json)
@@ -100,6 +106,7 @@ NDS 保留了 `CAPITAL_ACCT_CURRENT_BALANCE / CAPITAL_ACCT_DAILY_BALANCE / MARGI
 保证金报送信息及附件、收益凭证等输出也属于本固定目录的接出点。它们可保留主记录与附件的区别，以及具体来源和筛选方式；本页不将一个报送表已被写入，解释成监管方接收或业务验收完成。
 
 <a id="evidence-limits"></a>
+
 ## 可以直接复核什么，哪些结论仍缺证据
 
 [funds-review.json](../evidence/funds-review.json) 包含本页全部 62 项的实际输入/输出物理节点、TablePack 和 DDL、SQL 槽位及哈希、关键控制条件、字段表达式和审阅状态；合约页账本包含另 269 项。每条记录的 `semanticReviewScope` 限定已解释的内容，不能把“解析成功”“模板核实”升级成所有字段均经过业务认可。

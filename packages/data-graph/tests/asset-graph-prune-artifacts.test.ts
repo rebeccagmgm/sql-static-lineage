@@ -1,4 +1,10 @@
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  readdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -22,7 +28,12 @@ describe("pruneGraphArtifactHistory", () => {
     mkdirSync(join(root, "union-continuation"), { recursive: true });
     writeFileSync(join(root, "union-continuation", "manifest.json"), "{}");
 
-    const manifestPath = join(root, "batches", keepBatch, "batch-manifest.json");
+    const manifestPath = join(
+      root,
+      "batches",
+      keepBatch,
+      "batch-manifest.json",
+    );
     writeFileSync(manifestPath, "{}");
 
     const result = pruneGraphArtifactHistory(root, {
@@ -52,8 +63,18 @@ describe("pruneGraphArtifactHistory", () => {
       mkdirSync(join(root, "published", version), { recursive: true });
     for (const batch of ["current-batch", "prepared-batch", "stale-batch"])
       mkdirSync(join(root, "batches", batch), { recursive: true });
-    const currentManifest = join(root, "batches", "current-batch", "batch-manifest.json");
-    const preparedManifest = join(root, "batches", "prepared-batch", "batch-manifest.json");
+    const currentManifest = join(
+      root,
+      "batches",
+      "current-batch",
+      "batch-manifest.json",
+    );
+    const preparedManifest = join(
+      root,
+      "batches",
+      "prepared-batch",
+      "batch-manifest.json",
+    );
     writeFileSync(currentManifest, "{}");
     writeFileSync(preparedManifest, "{}");
 

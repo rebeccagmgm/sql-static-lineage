@@ -23,6 +23,14 @@ export function TaskNode({ data: rawData }: NodeProps) {
       data.raw.detail.taskName.trim()) ||
     undefined;
   const ports = data.taskPorts ?? [];
+  const topicName =
+    (typeof data.raw?.detail?.topicName === "string" &&
+      data.raw.detail.topicName.trim()) ||
+    "未收录";
+  const topicDescription =
+    (typeof data.raw?.detail?.topicDescription === "string" &&
+      data.raw.detail.topicDescription.trim()) || undefined;
+  const topicDisplay = topicDescription ? `${topicDescription}（${topicName}）` : topicName;
   const inputs = ports.filter((port) => port.direction === "input");
   const outputs = ports.filter((port) => port.direction === "output");
   const handles = (
@@ -52,6 +60,9 @@ export function TaskNode({ data: rawData }: NodeProps) {
       )}
       <strong>调度 {taskId}</strong>
       {taskName && <small className="task-node-name">{taskName}</small>}
+      <small className="task-node-topic" title={`调度主题：${topicDisplay}`}>
+        调度主题：{topicDisplay}
+      </small>
       {data.candidateCount ? (
         <button
           className="task-candidate-badge"

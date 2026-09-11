@@ -2,12 +2,12 @@
 
 配套：
 
-| 文档 | 关系 |
-| --- | --- |
-| `execution-plan-table-lineage-acceptance.md` | T3-C/D 的「全库是否有 writer」改问本目录 |
-| `execution-plan-task-local-union.md` | 接续 INDEX 的批外 writer 源 |
-| `execution-plan-gold-case-investigation.md` | `--expand-upstream` 不再依赖 `producer-index:update` |
-| `execution-plan-field-evidence-v1.md` | continuation 端口换 catalog；**列级** `producerIndexForTask` 仍读 Facts bundle |
+| 文档                                         | 关系                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `execution-plan-table-lineage-acceptance.md` | T3-C/D 的「全库是否有 writer」改问本目录                                       |
+| `execution-plan-task-local-union.md`         | 接续 INDEX 的批外 writer 源                                                    |
+| `execution-plan-gold-case-investigation.md`  | `--expand-upstream` 不再依赖 `producer-index:update`                           |
+| `execution-plan-field-evidence-v1.md`        | continuation 端口换 catalog；**列级** `producerIndexForTask` 仍读 Facts bundle |
 
 状态：**方案已定（2026-09-04）** — 先落地 SQLite + 端口 + Facts 挂钩，再改下游；表血缘第一批（sparkIndex SUCCESS）**不跑** `producer-index:update`。
 
@@ -38,11 +38,11 @@ Input Pack → Machine Facts (sqlglot)
 
 ## 1. 为什么换
 
-| 现状 | 问题 |
-| --- | --- |
+| 现状                                                                     | 问题                                                |
+| ------------------------------------------------------------------------ | --------------------------------------------------- |
 | `producer-index:update` 扫 `tasks/**/task.json` + SQL `extractSqlWrites` | 与已存 sqlglot/Facts 重复；fingerprint 一变整库重建 |
-| `producer-index.json` ~100MB | 下游只要点查，却加载全部边 |
-| 不更新则过期 | 会把「其实有 writer」误判成 `NO_KNOWN_WRITER` |
+| `producer-index.json` ~100MB                                             | 下游只要点查，却加载全部边                          |
+| 不更新则过期                                                             | 会把「其实有 writer」误判成 `NO_KNOWN_WRITER`       |
 
 能力仍要保留：**全局谁写了这张表**。存储与更新路径换成 SQLite + Facts。
 
@@ -72,32 +72,32 @@ Input Pack → Machine Facts (sqlglot)
 
 ### `meta`
 
-| 列 | 含义 |
-| --- | --- |
+| 列               | 含义        |
+| ---------------- | ----------- |
 | `schema_version` | 目录 schema |
-| `built_at` | 最近写入 |
+| `built_at`       | 最近写入    |
 
 ### `task_coverage`
 
-| 列 | 含义 |
-| --- | --- |
-| `task_id` | PK |
-| `task_category` | 身份归一要用 |
-| `task_content_hash` | Pack `task.json.contentHash` |
-| `facts_manifest_sha256` | Facts bundle manifest |
-| `facts_status` | `SUCCESS` / `FAILED` / `MISSING` |
-| `indexed_at` | 写入时间 |
+| 列                      | 含义                             |
+| ----------------------- | -------------------------------- |
+| `task_id`               | PK                               |
+| `task_category`         | 身份归一要用                     |
+| `task_content_hash`     | Pack `task.json.contentHash`     |
+| `facts_manifest_sha256` | Facts bundle manifest            |
+| `facts_status`          | `SUCCESS` / `FAILED` / `MISSING` |
+| `indexed_at`            | 写入时间                         |
 
 ### `table_writers`
 
-| 列 | 含义 |
-| --- | --- |
-| `table_key` | `lower(platform)\0lower(dataSource)\0lower(qualifiedName)` |
-| `platform` / `data_source` / `qualified_name` | 查询与对账 |
-| `writer_task_id` | writer |
-| `write_observation_id` | Facts 已有则用；否则确定性派生 |
-| `write_kind` / `resolution_status` / `physical_dataset` | 对账 |
-| `partition_json` | 第一期可空；分区匹配仍以纸条 + Facts 为准 |
+| 列                                                      | 含义                                                       |
+| ------------------------------------------------------- | ---------------------------------------------------------- |
+| `table_key`                                             | `lower(platform)\0lower(dataSource)\0lower(qualifiedName)` |
+| `platform` / `data_source` / `qualified_name`           | 查询与对账                                                 |
+| `writer_task_id`                                        | writer                                                     |
+| `write_observation_id`                                  | Facts 已有则用；否则确定性派生                             |
+| `write_kind` / `resolution_status` / `physical_dataset` | 对账                                                       |
+| `partition_json`                                        | 第一期可空；分区匹配仍以纸条 + Facts 为准                  |
 
 PK：`(table_key, writer_task_id, write_observation_id)`
 INDEX：`table_key`；`writer_task_id`
@@ -141,12 +141,12 @@ hasConfirmedWriter(table): boolean
 
 `WriterHit`：`taskId` + `writeObservationId` + 表身份 + 可选 `writeKind`。
 
-| 消费 | 改法 |
-| --- | --- |
-| union-continuation `PRODUCER_INDEX_ONLY` | catalog 点查；批内仍用纸条写观察 |
-| `--expand-upstream` / input-pack closure | READ 表 → writers → 下一跳 taskId |
-| field-evidence continuation 批外 writer | `ports.producerIndex` 整包 → `ports.writerCatalog` |
-| 验收 T3-C/D | 「PI 有 writer」→「catalog 有 writer」 |
+| 消费                                     | 改法                                               |
+| ---------------------------------------- | -------------------------------------------------- |
+| union-continuation `PRODUCER_INDEX_ONLY` | catalog 点查；批内仍用纸条写观察                   |
+| `--expand-upstream` / input-pack closure | READ 表 → writers → 下一跳 taskId                  |
+| field-evidence continuation 批外 writer  | `ports.producerIndex` 整包 → `ports.writerCatalog` |
+| 验收 T3-C/D                              | 「PI 有 writer」→「catalog 有 writer」             |
 
 过渡期测试可 `WriterCatalog.fromLegacyProducerIndexJson()`；生产路径不读 JSON PI。
 
@@ -154,13 +154,13 @@ hasConfirmedWriter(table): boolean
 
 ## 7. 与 T1–T4
 
-| 尺子 | 是否依赖 catalog |
-| --- | --- |
-| T1/T2 任务内表级 | 否 |
-| T3-A/B 批内接续 / DISJOINT | 否（纸条并集） |
-| T3-C `WRITER_NOT_IN_UNION` | 是 |
-| T3-D `NO_KNOWN_WRITER` | 是（仅「已入库 Facts 范围」） |
-| T4 身份分叉 | 否 |
+| 尺子                       | 是否依赖 catalog              |
+| -------------------------- | ----------------------------- |
+| T1/T2 任务内表级           | 否                            |
+| T3-A/B 批内接续 / DISJOINT | 否（纸条并集）                |
+| T3-C `WRITER_NOT_IN_UNION` | 是                            |
+| T3-D `NO_KNOWN_WRITER`     | 是（仅「已入库 Facts 范围」） |
+| T4 身份分叉                | 否                            |
 
 sparkIndex 已入库、上游 hiveTask 尚未 Facts → 合法 T3-D。要减少 D：给那些 writer 补 Facts 再 UPSERT，而不是重跑 PI。
 
@@ -170,13 +170,13 @@ H1 报告增加：`catalogTasksIndexed`、`factsMissingWritersLookedUp`。
 
 ## 8. 工作包
 
-| 包 | 内容 | 完成定义 |
-| --- | --- | --- |
-| **WC-0** | 本文档 | 与验收 / 金样跑批命令对齐 |
-| **WC-1** | schema + UPSERT + 回填 CLI + 单测 | 点查、过期、删任务；已有 Facts 可导入 |
-| **WC-2** | Facts CLI 挂钩 | 每任务 SUCCESS 后目录可见 |
-| **WC-3** | continuation / expand-upstream / T3 改端口 | 第一批命令无 `producer-index:update` |
-| **WC-4** | 停写 JSON PI；夹具迁 sqlite/fixture rows | `producer-index:update` 退出主路径 |
+| 包       | 内容                                       | 完成定义                              |
+| -------- | ------------------------------------------ | ------------------------------------- |
+| **WC-0** | 本文档                                     | 与验收 / 金样跑批命令对齐             |
+| **WC-1** | schema + UPSERT + 回填 CLI + 单测          | 点查、过期、删任务；已有 Facts 可导入 |
+| **WC-2** | Facts CLI 挂钩                             | 每任务 SUCCESS 后目录可见             |
+| **WC-3** | continuation / expand-upstream / T3 改端口 | 第一批命令无 `producer-index:update`  |
+| **WC-4** | 停写 JSON PI；夹具迁 sqlite/fixture rows   | `producer-index:update` 退出主路径    |
 
 顺序：**WC-0 → WC-1 → WC-2 → WC-3**；WC-4 可后置。不把压缩 Facts jsonl、调度邻接 sqlite 并进本 WP。
 

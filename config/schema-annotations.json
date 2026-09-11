@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "annotations": [
+    {
+      "platform": "oracle",
+      "dataSource": "gforacle_gftzdb#gftzdb",
+      "schemaName": "titans_dm",
+      "displayName": "TITANS 业务库",
+      "description": "TITANS 相关业务数据"
+    }
+  ]
+}

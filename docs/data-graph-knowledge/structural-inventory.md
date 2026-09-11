@@ -6,57 +6,57 @@
 
 排除的四张表本身不列入变化名单。共有222张保留表度数变化，其中以下49张跨越角色类别；其余173张仍处于原度数类别。
 
-| 表 | 原入／出 | 新入／出 | 原角色 → 新角色 |
-| --- | --- | --- | --- |
-| `pdata_news_n.t02_scr_cd_rplc_info` | 0／1 | 0／0 | 单路源头 → 孤立节点 |
-| `dm_otc_n.ref_instrument_td` | 1／1 | 0／1 | 单入单出 → 单路源头 |
-| `pdata_news_n.t02_fin_prcg_vol_curv_surf` | 1／1 | 0／1 | 单入单出 → 单路源头 |
-| `pdata_news_n.t02_stk_overseas_opt_cd_map` | 1／1 | 0／1 | 单入单出 → 单路源头 |
-| `odata_n_tit.d_ref_instrument_code` | 1／2 | 1／1 | 单入多出 → 单入单出 |
-| `odata_n_tit.d_ref_instrument_pb` | 1／2 | 1／1 | 单入多出 → 单入单出 |
-| `dm_hk_n.ref_instrument` | 1／0 | 0／0 | 单入终点 → 孤立节点 |
-| `pdata_news_n.t02_fin_prcg_env_divd_curv` | 1／0 | 0／0 | 单入终点 → 孤立节点 |
-| `pdata_news_test.t02_scr_base_info_pdata_h` | 1／0 | 0／0 | 单入终点 → 孤立节点 |
-| `pdata_news_n.t02_prd_unit_nav_s_tit` | 2／1 | 1／1 | 多入单出 → 单入单出 |
-| `pdata_news_n.t02_tit_ira_crrc_attr` | 2／1 | 1／1 | 多入单出 → 单入单出 |
-| `pdata_news_n.t02_tit_stk_bene_owsr_prop` | 2／1 | 0／1 | 多入单出 → 单路源头 |
-| `pdata_news_n.tyzx_exch_quot_h` | 2／1 | 1／1 | 多入单出 → 单入单出 |
-| `dm_index_n.index_grp1_incmcopctincrsrate_astpkgrela_qtr` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_incmcopctincrsval_astpkgrela_qtr` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_org_std_ast_aft_covt_mth_apd` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_org_std_ast_aft_covt_year_apd` | 2／4 | 1／4 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_org_std_ast_bef_covt_mth_apd` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_org_std_ast_bef_covt_year_apd` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `dm_index_n.index_grp1_org_year_stdast_coporp_aft_stagger_mth_all` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_fin_undrl_attr` | 2／4 | 1／4 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_fin_vola_cate_fctr_def` | 2／3 | 1／3 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_ira_indx_info` | 2／4 | 1／4 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_opt_base_info_tit` | 2／3 | 1／3 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_opt_mkt_quot` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_scr_lbl` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_stk_rstk_disc_info` | 2／2 | 1／2 | 多入多出 → 单入多出 |
-| `pdata_news_n.t02_tit_prd_asset_info` | 2／7 | 1／7 | 多入多出 → 单入多出 |
-| `pdata_news_n.tyzx_exch_quot_h_fk` | 2／14 | 1／14 | 多入多出 → 单入多出 |
-| `dm_co_n.wt_dm_co_trans_strat_backtest_ret_rate` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_ecom_n.wt_oact_appr_income_info` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_fin_n.adm_info_otc_opt` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_hk_n.ref_instrument_code` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_mth` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_qtr` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_index_n.index_grp2_cust_org_year_stdast_coporp_aft_stagger_mth_all` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_rsk_n.crrc_mkt_intrt` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_rsk_n.futr_base_info` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_rsk_n.trd_opt_mkt_quot_day` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `dm_rsk_n.v_risk_correlation_info` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `gfedw.data_prize_p_c81011` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_fut_base_info_ext` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_ira_indx_info_pb` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_opt_deri_idx` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_opt_mult_bask_info` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_opt_ost_qtf_sstv_indx_tit` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_tit_impl_vola_srfc_indx_info` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_tit_wi_undrl_pool` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
-| `pdata_news_n.t02_tit_wi_undrl_pool_pb` | 2／0 | 1／0 | 汇聚终点 → 单入终点 |
+| 表                                                                      | 原入／出 | 新入／出 | 原角色 → 新角色     |
+| ----------------------------------------------------------------------- | -------- | -------- | ------------------- |
+| `pdata_news_n.t02_scr_cd_rplc_info`                                     | 0／1     | 0／0     | 单路源头 → 孤立节点 |
+| `dm_otc_n.ref_instrument_td`                                            | 1／1     | 0／1     | 单入单出 → 单路源头 |
+| `pdata_news_n.t02_fin_prcg_vol_curv_surf`                               | 1／1     | 0／1     | 单入单出 → 单路源头 |
+| `pdata_news_n.t02_stk_overseas_opt_cd_map`                              | 1／1     | 0／1     | 单入单出 → 单路源头 |
+| `odata_n_tit.d_ref_instrument_code`                                     | 1／2     | 1／1     | 单入多出 → 单入单出 |
+| `odata_n_tit.d_ref_instrument_pb`                                       | 1／2     | 1／1     | 单入多出 → 单入单出 |
+| `dm_hk_n.ref_instrument`                                                | 1／0     | 0／0     | 单入终点 → 孤立节点 |
+| `pdata_news_n.t02_fin_prcg_env_divd_curv`                               | 1／0     | 0／0     | 单入终点 → 孤立节点 |
+| `pdata_news_test.t02_scr_base_info_pdata_h`                             | 1／0     | 0／0     | 单入终点 → 孤立节点 |
+| `pdata_news_n.t02_prd_unit_nav_s_tit`                                   | 2／1     | 1／1     | 多入单出 → 单入单出 |
+| `pdata_news_n.t02_tit_ira_crrc_attr`                                    | 2／1     | 1／1     | 多入单出 → 单入单出 |
+| `pdata_news_n.t02_tit_stk_bene_owsr_prop`                               | 2／1     | 0／1     | 多入单出 → 单路源头 |
+| `pdata_news_n.tyzx_exch_quot_h`                                         | 2／1     | 1／1     | 多入单出 → 单入单出 |
+| `dm_index_n.index_grp1_incmcopctincrsrate_astpkgrela_qtr`               | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_incmcopctincrsval_astpkgrela_qtr`                | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_org_std_ast_aft_covt_mth_apd`                    | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_org_std_ast_aft_covt_year_apd`                   | 2／4     | 1／4     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_org_std_ast_bef_covt_mth_apd`                    | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_org_std_ast_bef_covt_year_apd`                   | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `dm_index_n.index_grp1_org_year_stdast_coporp_aft_stagger_mth_all`      | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_fin_undrl_attr`                                       | 2／4     | 1／4     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_fin_vola_cate_fctr_def`                               | 2／3     | 1／3     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_ira_indx_info`                                        | 2／4     | 1／4     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_opt_base_info_tit`                                    | 2／3     | 1／3     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_opt_mkt_quot`                                         | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_scr_lbl`                                              | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_stk_rstk_disc_info`                                   | 2／2     | 1／2     | 多入多出 → 单入多出 |
+| `pdata_news_n.t02_tit_prd_asset_info`                                   | 2／7     | 1／7     | 多入多出 → 单入多出 |
+| `pdata_news_n.tyzx_exch_quot_h_fk`                                      | 2／14    | 1／14    | 多入多出 → 单入多出 |
+| `dm_co_n.wt_dm_co_trans_strat_backtest_ret_rate`                        | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_ecom_n.wt_oact_appr_income_info`                                    | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_fin_n.adm_info_otc_opt`                                             | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_hk_n.ref_instrument_code`                                           | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_mth`      | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_index_n.index_grp1_stdastmomincrsrate_covtfrnt_astpkgrela_qtr`      | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_index_n.index_grp2_cust_org_year_stdast_coporp_aft_stagger_mth_all` | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_rsk_n.crrc_mkt_intrt`                                               | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_rsk_n.futr_base_info`                                               | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_rsk_n.trd_opt_mkt_quot_day`                                         | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `dm_rsk_n.v_risk_correlation_info`                                      | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `gfedw.data_prize_p_c81011`                                             | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_fut_base_info_ext`                                    | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_ira_indx_info_pb`                                     | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_opt_deri_idx`                                         | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_opt_mult_bask_info`                                   | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_opt_ost_qtf_sstv_indx_tit`                            | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_tit_impl_vola_srfc_indx_info`                         | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_tit_wi_undrl_pool`                                    | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
+| `pdata_news_n.t02_tit_wi_undrl_pool_pb`                                 | 2／0     | 1／0     | 汇聚终点 → 单入终点 |
 
 ## 199 条完整线性链
 
@@ -64,207 +64,207 @@
 
 没有纯单入单出环或回到同一边界的链。199条共228个中间节点，分布为173条含1个、24条含2个、1条含3个、1条含4个。194条与四表排除前完全相同。链边没有多输出任务的组合支持，但68个表对有多个任务，仍要选择真实写者核验。
 
-| 链号 | 中间节点数 | 完整表路径 | 各箭头支持任务（依次） |
-| --- | ---: | --- | --- |
-| L001 | 4 | `titans_dm.v_otcm_se_report` → `odata_n_tit.d_v_otcm_se_report_p` → `odata_n_tit.d_v_otcm_se_report_pb` → `pdata_nds.otcm_se_report_pb` → `dm_otc_n.otcm_se_report` → `gf_otc.ref_otc_option_deal` | 151775 → 151780 → 152123 → 152217 → 166630 |
-| L002 | 3 | `titans_dm.trd_trs_underlying_deal` → `odata_n_tit.d_trd_trs_underlying_deal` → `pdata_n.t05_otc_deri_swap_mtch_retu_evt` → `dm_hk_n.otc_trd_trs_underlying_deal` → `ods_titans.otc_trd_trs_underlying_deal` | 78593 → 202899 → 202186 → 202219 |
-| L003 | 2 | `odata_n_tit.a_adm_role` → `spdata.org_role` → `dm_tit.adm_role` → `titans_dm.adm_role` | 37062 → 37271 → 37371 |
-| L004 | 2 | `odata_n_tit.d_trd_transfer_pb` → `pdata_nds.trd_transfer_pb` → `dm_otc_n.trd_transfer` → `gf_otc.trd_transfer_report` | 152125 → 152222 → 152246、166640 |
-| L005 | 2 | `titans_admin.adm_menu_permission` → `odata_n_tit.a_adm_menu_permission` → `pdata_n.t99_sys_menu_info` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt` | 174378 → 177760 → 207529 |
-| L006 | 2 | `titans_dm.adm_audit_log` → `odata_n_tit.d_adm_audit_log` → `pdata_n.t05_sb_otc_comp_modif_log` → `dm_rsk_n.v_risk_audit_log` | 112715 → 114026 → 155015 |
-| L007 | 2 | `titans_dm.dm_option_contract_info` → `odata_n_tit.d_dm_option_contract_info` → `pdata_nds.dm_option_contract_info` → `dm_otc_n.otc_opt_comp_para` | 78558 → 178488 → 159177 |
-| L008 | 2 | `titans_dm.mkt_risk_daily_info` → `odata_n_tit.d_mkt_risk_daily_info` → `pdata_news_n.t02_prd_unit_nav_s_tit` → `dm_rsk_n.pric_fctr_mkt_quot_day` | 206408 → 207284 → 177526、182738、182755 |
-| L009 | 2 | `titans_dm.pos_eod_fx_exposure` → `odata_n_tit.d_pos_eod_fx_exposure` → `pdata_n.t98_otc_deri_fx_expo` → `dm_rsk_n.fx_enay_pal_expo_stmt` | 215871 → 219358 → 219735 |
-| L010 | 2 | `titans_dm.pos_trs_underlying_valuation` → `odata_n_tit.d_pos_trs_underlying_valuation_p` → `odata_n_tit.d_pos_trs_underlying_valuation_pb` → `pdata_nds.pos_trs_underlying_valuation` | 160415 → 160426 → 160821 |
-| L011 | 2 | `titans_dm.ref_future_properties` → `odata_n_tit.d_ref_future_properties_p` → `odata_n_tit.d_ref_future_properties_pb` → `pdata_news_n.t02_fut_base_info` | 144165 → 144168 → 144301 |
-| L012 | 2 | `titans_dm.ref_instrument` → `odata_n_tit.d_ref_instrument_p` → `odata_n_tit.d_ref_instrument_pb` → `pdata_nds.ref_instrument_pb` | 144137、151765 → 144143、151766 → 152124 |
-| L013 | 2 | `titans_dm.ref_rate_properites` → `odata_n_tit.d_ref_rate_properites` → `pdata_news_n.t02_tit_ira_crrc_attr` → `dm_rsk_n.crrc_mkt_intrt_base_info` | 168245 → 170648 → 171040 |
-| L014 | 2 | `titans_dm.ref_rmb_midrate` → `odata_n_tit.d_ref_rmb_midrate_p` → `odata_n_tit.d_ref_rmb_midrate_pb` → `pdata_news_n.t02_fxr_cfets_quot` | 144161 → 144166 → 144298 |
-| L015 | 2 | `titans_dm.risk_ctpty_limit_threshold` → `odata_n_tit.d_risk_ctpty_limit_threshold` → `pdata_n.t01_pty_lmt_h` → `dm_otc_n.bi_otc_cust_index` | 119127 → 229973 → 229121 |
-| L016 | 2 | `titans_dm.trd_hedge_product_info` → `odata_n_tit.d_trd_hedge_product_info` → `pdata_n.t03_otc_deri_comp_hedg_prd_info` → `dm_fms_n.tit_trs_trd_detail` | 208471 → 210926 → 207753 |
-| L017 | 2 | `titans_dm.v_otc_plreport` → `odata_n_tit.d_v_otc_plreport` → `dm_otc_n.otc_pl_mq` → `gf_otc.dm_pl_report` | 219968 → 223523 → 223583 |
-| L018 | 2 | `titans_dm.v_otc_plreport_trs` → `odata_n_tit.d_v_otc_plreport_trs` → `dm_otc_n.otc_pl_trs_mq` → `gf_otc.dm_pl_report` | 219975 → 223564 → 223588 |
-| L019 | 2 | `titans_dm.v_otc_position_report_tit` → `odata_n_tit.d_v_otc_position_report_tit` → `dm_otc_n.otc_position_mq` → `gf_otc.dm_position_report` | 219973 → 223557 → 223586 |
-| L020 | 2 | `titans_dm.v_report_margin_a1020` → `odata_n_tit.d_v_report_margin_a1020` → `pdata_n.t95_otc_deri_cust_bail_info` → `dm_cisp_test.otc_customer_margin` | 215546 → 207789 → 206314、206482 |
-| L021 | 2 | `titans_dm.v_report_product_report` → `odata_n_tit.d_v_report_product_report` → `pdata_n.t95_otc_deri_income_vchr_info` → `dm_cisp_n.det_idx_use_situ_stati` | 221005 → 223239 → 221300 |
-| L022 | 2 | `titans_dm.v_risk_hedging_position_tit` → `odata_n_tit.d_v_risk_hedging_position_tit_p` → `odata_n_tit.d_v_risk_hedging_position_tit_pb` → `dm_fii_n.v_risk_hedging_position_tit` | 218632、218635、223024 → 218633、218636、223027 → 218506、218511、223522 |
-| L023 | 2 | `titans_dm.v_risk_plreport_contract` → `odata_n_tit.d_v_risk_plreport_contract_p` → `odata_n_tit.d_v_risk_plreport_contract_pb` → `pdata_n.t98_otc_opt_inr_comp_pal_sum` | 244045、244368 → 244357 → 244380 |
-| L024 | 2 | `titans_dm.value_report_element_result` → `odata_n_tit.d_value_report_element_result_p` → `odata_n_tit.d_value_report_element_result_pb` → `dm_otc_n.bi_otc_hold_pnl` | 147153 → 147156 → 227869 |
-| L025 | 2 | `titans_operation.ope_settle_notice` → `odata_n_tit.n_ope_settle_notice` → `pdata_n.t05_otc_deri_comp_sett_ntfc_send_evt` → `dm_rsk_n.otc_deri_sett_abn_montr_indx` | 179125 → 181103 → 181556 |
-| L026 | 2 | `titans_operation.ope_settle_notice_transfer` → `odata_n_tit.n_ope_settle_notice_transfer` → `pdata_n.t05_otc_deri_evt_rela_h` → `dm_rsk_n.otc_deri_sett_abn_montr_indx` | 184965 → 185098 → 181556 |
-| L027 | 1 | `dm_engin_n.prediction_unified` → `dm_index_n.index_grp1_conv_bond_enabl_model_percent` → `dm_engin_n.employee_clt_tb` | 206201 → 208983 |
-| L028 | 1 | `dm_index_n.index_grp1_income_exam_pqtrastendastpkgrela_mth_retandorgcntr` → `dm_index_n.index_grp1_emp_mthavgtotincome_astpkgrela_qtr` → `dm_om_n.wt_emp_indi_data_mana_veal` | 199242 → 202091 |
-| L029 | 1 | `dm_index_n.index_grp1_vld_acct_servordevrela_year` → `dm_index_n.index_grp1_vld_acctpalcustprop_servordevrela_year` → `dm_om_n.wt_acct_pal_year_sum` | 175023 → 166614 |
-| L030 | 1 | `dm_index_n.index_grp2_cust_org_stdast_aft_stagger_qtrapd_all` → `dm_index_n.index_grp2_cust_org_stdastincrsval_aft_qtrapd_pqtrapd_mth_all` → `dm_om_n.wt_cust_aum_std_asset_incr_val_adv_linear_score` | 201994 → 218236 |
-| L031 | 1 | `dm_index_n.index_grp2_std_ast_aft_covt_year_apd` → `dm_index_n.index_grp1_cust_yoyincrsval_aumstdast_tdy_all` → `dm_engin_n.wt_covt_bond_open_features_data` | 187911 → 206454 |
-| L032 | 1 | `dm_index_n.index_grp2_std_ast_aft_covt_year_apd` → `dm_index_n.index_grp1_cust_yoyincrsrate_aumstdast_tdy_all` → `dm_engin_n.wt_covt_bond_open_features_data` | 187976 → 206454 |
-| L033 | 1 | `dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd` → `dm_index_n.index_grp3_cust_org_emp_asset_aft_mon_gr_mth` → `dm_om_n.wt_cust_apd_ast_covt_tbl` | 161844 → 155612 |
-| L034 | 1 | `dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd` → `dm_index_n.index_grp3_cust_org_emp_asset_bef_mon_gr_mth` → `dm_om_n.wt_cust_apd_ast_covt_tbl` | 161841 → 155612 |
-| L035 | 1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_amount_change` → `gf_otc.bi_otc_amount_change` | 227697 → 230265 |
-| L036 | 1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_busi_stat` → `gf_otc.bi_otc_busi_stat` | 228008 → 230262 |
-| L037 | 1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_underlying_analysis` → `gf_otc.bi_otc_underlying_analysis` | 234355 → 234407 |
-| L038 | 1 | `gfheguidb.aml_blacklist` → `gfheguidb.amlci_specialclient` → `gfheguidb.amlls_blacklist_relation` | 79859 → 78394 |
-| L039 | 1 | `marketrisk.ref_instrument_wind_curve` → `odata_n_tit.tit_r_ref_instrument_wind_curve_s` → `pdata_news_n.t02_fin_curv_def` | 63821 → 172069 |
-| L040 | 1 | `odata_n_tit.d_bk_book_mapping_rule` → `dm_hk_n.ref_otc_bk_book_mapping_rule` → `ods_titans.bk_book_mapping_rule` | 219369 → 219385 |
-| L041 | 1 | `odata_n_tit.d_bk_department_properties` → `dm_hk_n.info_bk_department_properties_day` → `ods_titans.bk_department_properties` | 223558 → 223562 |
-| L042 | 1 | `odata_n_tit.d_mkt_ins_daily_info` → `pdata_news_n.tyzx_exch_quot_h` → `dm_otc_n.otc_strg_mkt_quot` | 144765 → 119974 |
-| L043 | 1 | `odata_n_tit.d_pos_bucket_vega_metrics` → `pdata_nds.pos_bucket_vega_metrics` → `dm_hk_n.pos_bucket_vega_metrics` | 120040 → 166021 |
-| L044 | 1 | `odata_n_tit.d_pos_fast_trs_leg_his_pos_p` → `odata_n_tit.d_pos_fast_trs_leg_his_pos_pb` → `pdata_nds.pos_fast_trs_leg_his_pos` | 180582 → 180755 |
-| L045 | 1 | `odata_n_tit.d_pos_fast_trs_leg_valuation_p` → `odata_n_tit.d_pos_fast_trs_leg_valuation_pb` → `pdata_nds.pos_fast_trs_leg_valuation` | 180586 → 180759 |
-| L046 | 1 | `odata_n_tit.d_pos_position_daily_p` → `odata_n_tit.d_pos_position_daily_pb` → `pdata_nds.pos_position_daily` | 160423、233003 → 160818 |
-| L047 | 1 | `odata_n_tit.d_pos_trs_leg_valuation_p` → `odata_n_tit.d_pos_trs_leg_valuation_pb` → `pdata_nds.pos_trs_leg_valuation` | 160425、237112 → 160822 |
-| L048 | 1 | `odata_n_tit.d_ref_basket_constituent` → `dm_hk_n.ref_basket_constituent` → `ods_titans.ref_basket_constituent` | 233694 → 233780 |
-| L049 | 1 | `odata_n_tit.d_ref_book_p` → `dm_hk_n.info_ref_book` → `ods_titans.ref_book` | 244854 → 244858 |
-| L050 | 1 | `odata_n_tit.d_ref_corporate_action_info` → `dm_hk_n.ref_corporate_action_info` → `ods_titans.ref_corporate_action_info` | 242926 → 242955 |
-| L051 | 1 | `odata_n_tit.d_ref_counter_party_p` → `dm_hk_n.d_ref_counter_party_p` → `ods_titans.ref_counter_party` | 245381 → 245521 |
-| L052 | 1 | `odata_n_tit.d_ref_counterparty` → `pdata_n.t01_pty_imp_lkman` → `pdata_n.t98_cutp_base_info` | 150755 → 158195 |
-| L053 | 1 | `odata_n_tit.d_ref_fast_trs_leg_p` → `odata_n_tit.d_ref_fast_trs_leg_pb` → `pdata_nds.ref_fast_trs_leg` | 180585 → 180753 |
-| L054 | 1 | `odata_n_tit.d_ref_instrument` → `pdata_nds.ref_instrument` → `dm_otc_n.otc_undrl_def` | 120051 → 119976 |
-| L055 | 1 | `odata_n_tit.d_ref_instrument` → `dm_hk_n.info_ref_instrument` → `ods_titans.ref_instrument` | 243805 → 243841 |
-| L056 | 1 | `odata_n_tit.d_ref_instrument_pool_whitelist` → `pdata_nds.ref_instrument_pool_whitelist` → `dm_otc_n.ref_instrument_pool_whitelist` | 146819 → 146823 |
-| L057 | 1 | `odata_n_tit.d_ref_otc_option_deal_p` → `odata_n_tit.d_ref_otc_option_deal_pb` → `pdata_n.t03_otc_opt_comp_info` | 149698、149699、198732 → 209862 |
-| L058 | 1 | `odata_n_tit.d_risk_eod_report_metric_value` → `pdata_n.t98_otc_deri_undrl_trd_lmt_idx` → `dm_rsk_n.adm_dtl_otc_stres_tdy` | 106216、107480 → 155157 |
-| L059 | 1 | `odata_n_tit.d_trd_otc_contr_report_p` → `odata_n_tit.d_trd_otc_contr_report_pb` → `pdata_nds.trd_otc_contr_report` | 146696、146697 → 160829 |
-| L060 | 1 | `odata_n_tit.d_v_ficc_trs_position_p` → `odata_n_tit.d_v_ficc_trs_position_pb` → `dm_fii_n.v_ficc_trs_position` | 218631、218638 → 218455、218461 |
-| L061 | 1 | `odata_n_tit.d_v_fin_trs` → `pdata_nds.d_v_fin_trs` → `dm_fin_n.civ_trd_otc_trs_deli_dtl_day` | 185032 → 198806 |
-| L062 | 1 | `odata_n_tit.d_v_fin_trs_trade_record` → `pdata_nds.d_v_fin_trs_trade_record` → `dm_fin_n.civ_trd_otc_trs_deli_dtl_day` | 184959 → 198806 |
-| L063 | 1 | `odata_n_tit.d_v_risk_rm_bundlereport_tit` → `dm_otc_n.otc_bundle_report_mq` → `gf_otc.dm_bundle_report` | 223556 → 223584 |
-| L064 | 1 | `odata_n_tit.k_eq_equity_source` → `pdata_n.t00_prd_pool_info` → `dm_fms_n.tit_trs_trd_detail` | 208593 → 207753 |
-| L065 | 1 | `odata_n_tit.p_prd_notes` → `dm_hk_n.info_prd_notes` → `ods_titans.prd_notes` | 236429 → 236470 |
-| L066 | 1 | `odata_n_tit.p_prd_notes_trade_record` → `dm_hk_n.prd_notes_trade_record` → `ods_titans.prd_notes_trade_record` | 236438 → 236469 |
-| L067 | 1 | `odata_n_tit.t_bk_book` → `spdata.acct` → `dm_tit.ref_book` | 36705 → 37259 |
-| L068 | 1 | `odata_n_tit.t_bk_book` → `spdata.acct_name_h` → `dm_tit.ref_book` | 37066 → 37259 |
-| L069 | 1 | `pdata_n.${src_table}` → `pdata_n.t99_sys_func_menu_map` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt` | 242349 → 207529 |
-| L070 | 1 | `pdata_n.${src_table}` → `pdata_n.t00_sys_func_info` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt` | 242362 → 207529 |
-| L071 | 1 | `pdata_n.t05_otc_comp_dura_chg_evt` → `dm_otc_n.trd_option_event` → `gf_otc.trd_option_event` | 208755 → 210231 |
-| L072 | 1 | `pdata_n.t05_otc_deri_book_mtch_evt` → `dm_otc_n.t05_otc_deri_book_mtch_evt` → `gfval.src_t05_otc_deri_book_mtch_evt` | 181143 → 181180 |
-| L073 | 1 | `pdata_n.t05_otc_deri_comp_fee_pymt_plan` → `dm_hk_n.trd_fee_payment_schedule_day` → `ods_titans.trd_fee_payment_schedule` | 208264 → 208335 |
-| L074 | 1 | `pdata_n.t05_otc_recv_pymt_evt` → `dm_otc_n.trd_transfer_report_td` → `gf_otc.trd_transfer_report` | 159219 → 159221 |
-| L075 | 1 | `pdata_n.t95_otc_deri_cust_bail_attach` → `dm_cisp_test.otc_customer_margin_file` → `kgrp.r_otc_a1020_2_t` | 206884 → 206886 |
-| L076 | 1 | `pdata_nds.aum_emp_base_info` → `dm_index_n.wide_idx_taum_cust_eval_qtr_fol` → `dm_om_n.wt_taum_cust_eval_hy_spvs` | 237505 → 237807 |
-| L077 | 1 | `pdata_nds.cfg_instrument_pool_props_pb` → `dm_otc_n.cfg_instrument_pool_props` → `gf_otc.cfg_instrument_pool_props` | 152216 → 152251、166636 |
-| L078 | 1 | `pdata_nds.d_v_fin_capital_acct_mapping` → `dm_fin_n.civ_otc_capital_acct_mapping` → `gfval.src_otc_capital_acct_mapping` | 199720 → 199723 |
-| L079 | 1 | `pdata_nds.d_v_fin_option_info` → `dm_fin_n.civ_otc_fin_option_info` → `gfval.src_otc_fin_option_info` | 199729 → 199734 |
-| L080 | 1 | `pdata_nds.fin_trs_plreport` → `dm_otc_n.otc_trs_fin_rpt` → `gfval.src_otc_fin_trs_valuation` | 121327 → 102967 |
-| L081 | 1 | `pdata_nds.ref_instrument_pb` → `dm_otc_n.ref_instrument` → `gf_otc.ref_instrument` | 152221 → 166638 |
-| L082 | 1 | `pdata_news_n.t02_tit_note_info` → `dm_otc_n.t02_tit_note_info` → `gfval.src_t02_tit_note_info` | 181140 → 181182 |
-| L083 | 1 | `pdata_news_n.t02_tit_prd_asset_info` → `dm_otc_n.t02_tit_prd_asset_info` → `gfval.src_t02_tit_prd_asset_info` | 181142 → 181181 |
-| L084 | 1 | `pdata_news_n.t02_tit_prd_info` → `dm_otc_n.t02_tit_prd_info` → `gfval.src_t02_tit_prd_info` | 181136 → 181183 |
-| L085 | 1 | `titans_admin.adm_department` → `odata_n_tit.a_adm_department` → `titans_dm.adm_department` | 36975、64049 → 37328 |
-| L086 | 1 | `titans_admin.adm_menu_role_mapping` → `odata_n_tit.a_adm_menu_role_mapping` → `pdata_n.t04_role_righ_h` | 174379 → 178884 |
-| L087 | 1 | `titans_booking.trd_deal` → `odata_n_tit.b_trd_deal_p` → `dm_hk_n.info_trd_deal` | 245314 → 245941 |
-| L088 | 1 | `titans_dm.bundle_margin_underlying_type` → `odata_n_tit.d_bundle_margin_underlying_type` → `pdata_nds.bundle_margin_underlying_type` | 200352 → 200489 |
-| L089 | 1 | `titans_dm.capital_account` → `odata_n_tit.d_capital_account_p` → `pdata_n.t03_agt_pty_rela_h` | 204954 → 222317 |
-| L090 | 1 | `titans_dm.capital_account_ledger` → `odata_n_tit.d_capital_account_ledger` → `pdata_n.t05_otc_deri_cutp_fnd_chg_evt` | 78584 → 173966 |
-| L091 | 1 | `titans_dm.capital_acct_current_balance` → `odata_n_tit.d_capital_acct_current_balance` → `pdata_nds.capital_acct_current_balance` | 78568 → 174013 |
-| L092 | 1 | `titans_dm.capital_acct_current_balance` → `odata_n_tit.d_capital_acct_current_balance_p` → `pdata_nds.capital_acct_current_balance` | 136215、136216 → 236414 |
-| L093 | 1 | `titans_dm.capital_acct_daily_balance` → `odata_n_tit.d_capital_acct_daily_balance_p` → `odata_n_tit.d_capital_acct_daily_balance_pb` | 138542、198795、204953 → 198796 |
-| L094 | 1 | `titans_dm.margin_account_ledger` → `odata_n_tit.d_margin_account_ledger_p` → `dm_hk_n.d_margin_account_ledger_p` | 243275 → 244011 |
-| L095 | 1 | `titans_dm.margin_acct_bundle_mapping` → `odata_n_tit.d_margin_acct_bundle_mapping_p` → `dm_hk_n.d_margin_acct_bundle_mapping_p` | 243289 → 244100 |
-| L096 | 1 | `titans_dm.margin_acct_current_balance` → `odata_n_tit.d_margin_acct_current_balance` → `pdata_nds.margin_acct_current_balance` | 78573 → 174015 |
-| L097 | 1 | `titans_dm.margin_acct_current_balance` → `odata_n_tit.d_margin_acct_current_balance_p` → `dm_hk_n.d_margin_acct_current_balance_p` | 136219、136220 → 244109 |
-| L098 | 1 | `titans_dm.margin_acct_daily_balance` → `odata_n_tit.d_margin_acct_daily_balance` → `pdata_n.t03_ast_crrc_acct_bal` | 78575、107587 → 107280、107646 |
-| L099 | 1 | `titans_dm.margin_acct_daily_result` → `odata_n_tit.d_margin_acct_daily_result` → `pdata_news_n.t02_fin_cutp_bail_acct_daily_rslt` | 78579、103293 → 104658、104937 |
-| L100 | 1 | `titans_dm.margin_acct_daily_result` → `odata_n_tit.d_margin_acct_daily_result_p` → `odata_n_tit.d_margin_acct_daily_result_pb` | 136203、198811 → 198812 |
-| L101 | 1 | `titans_dm.margin_bundle_contract_mapping` → `odata_n_tit.d_margin_bundle_contract_mapping_p` → `dm_hk_n.margin_bundle_contract_mapping_d` | 243295 → 244169 |
-| L102 | 1 | `titans_dm.mkt_ins_daily_info` → `odata_n_tit.d_mkt_ins_daily_info_p` → `odata_n_tit.d_mkt_ins_daily_info` | 143402、143403、144736、207700 → 143404、143405、144739、207701 |
-| L103 | 1 | `titans_dm.mkt_ins_op_eod_metric` → `odata_n_tit.d_mkt_ins_op_eod_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx` | 78580、106101 → 121574 |
-| L104 | 1 | `titans_dm.ope_capital_acct_element` → `odata_n_tit.d_ope_capital_acct_element` → `pdata_n.t98_otc_deri_ast_acct_valu_rpt_info` | 113515 → 114021 |
-| L105 | 1 | `titans_dm.ope_option_element` → `odata_n_tit.d_ope_option_element` → `pdata_n.t98_otc_comp_valu_rpt_info` | 113511 → 114024 |
-| L106 | 1 | `titans_dm.pos_bucket_vega_metrics` → `odata_n_tit.d_pos_bucket_vega_metrics_p` → `dm_hk_n.d_pos_bucket_vega_metrics_p` | 244879 → 245094 |
-| L107 | 1 | `titans_dm.pos_eod_position_view` → `odata_n_tit.d_pos_eod_position_view` → `pdata_nds.pos_eod_position_view` | 78588 → 150384 |
-| L108 | 1 | `titans_dm.pos_eod_position_view` → `odata_n_tit.d_pos_eod_position_view_p` → `odata_n_tit.d_pos_eod_position_view_pb` | 198723 → 198727 |
-| L109 | 1 | `titans_dm.pos_pd_clearing_position` → `odata_n_tit.d_pos_pd_clearing_position` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx` | 139183 → 154814 |
-| L110 | 1 | `titans_dm.pos_qg_clearing_greeks` → `odata_n_tit.d_pos_qg_clearing_greeks` → `pdata_news_n.t02_opt_ost_qtf_sstv_indx_tit` | 217836 → 219014 |
-| L111 | 1 | `titans_dm.prd_product` → `odata_n_tit.p_prd_product` → `pdata_news_n.t02_tit_prd_info` | 156659 → 160750 |
-| L112 | 1 | `titans_dm.pricing_eod_cross_metric` → `odata_n_tit.d_pricing_eod_cross_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx` | 139174 → 154813 |
-| L113 | 1 | `titans_dm.pricing_eod_part_metric` → `odata_n_tit.d_pricing_eod_part_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx` | 139172 → 154812 |
-| L114 | 1 | `titans_dm.ref_correlation_daily_info` → `odata_n_tit.d_ref_correlation_daily_info` → `pdata_news_n.t02_oth_corre_fctr` | 114497 → 117794 |
-| L115 | 1 | `titans_dm.ref_ctpty_account` → `odata_n_tit.d_ref_ctpty_account` → `dm_hk_n.info_ref_ctpty_account_day` | 218974 → 219099 |
-| L116 | 1 | `titans_dm.ref_ctpty_auth_busi` → `odata_n_tit.d_ref_ctpty_auth_busi` → `pdata_n.t01_pty_stati_info_h` | 149655 → 173975 |
-| L117 | 1 | `titans_dm.ref_curve` → `odata_n_tit.d_ref_curve` → `pdata_news_n.t02_fin_curv_def` | 101069 → 103203 |
-| L118 | 1 | `titans_dm.ref_implied_metrics` → `odata_n_tit.d_ref_implied_metrics` → `pdata_news_n.t02_tit_impl_vola_srfc_indx_info` | 240000 → 240855 |
-| L119 | 1 | `titans_dm.ref_instrument_code` → `odata_n_tit.d_ref_instrument_code` → `dm_hk_n.ref_instrument_code_info` | 46070、71813 → 246035 |
-| L120 | 1 | `titans_dm.ref_instrument_tag` → `odata_n_tit.d_ref_instrument_tag` → `pdata_news_n.t02_scr_lbl` | 120003 → 127897 |
-| L121 | 1 | `titans_dm.ref_main_contract` → `odata_n_tit.d_ref_main_contract` → `pdata_nds.ref_main_contract` | 117928 → 117940 |
-| L122 | 1 | `titans_dm.ref_op_cumulator_schedule` → `odata_n_tit.d_ref_op_cumulator_schedule` → `pdata_n.t03_otc_opt_comp_obsv_scop_info` | 139597、211707 → 156493 |
-| L123 | 1 | `titans_dm.ref_op_cumulator_schedule` → `odata_n_tit.d_ref_op_cumulator_schedule_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244226 → 163712 |
-| L124 | 1 | `titans_dm.ref_op_deal_autocall_kidate` → `odata_n_tit.d_ref_op_deal_autocall_kidate_p` → `dm_hk_n.d_ref_op_deal_autocall_kidate_p` | 244870 → 245661 |
-| L125 | 1 | `titans_dm.ref_op_deal_autocall_kodate` → `odata_n_tit.d_ref_op_deal_autocall_kodate_p` → `dm_hk_n.d_ref_op_deal_autocall_kodate_p` | 244887 → 245676 |
-| L126 | 1 | `titans_dm.ref_op_deal_float_back_fee` → `odata_n_tit.d_ref_op_deal_float_back_fee` → `pdata_n.t03_otc_opt_comp_reed_fee_flot_rati_info` | 137768 → 139657 |
-| L127 | 1 | `titans_dm.ref_option_attribute` → `odata_n_tit.d_ref_option_attribute_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244233 → 163712 |
-| L128 | 1 | `titans_dm.ref_option_barrier_line` → `odata_n_tit.d_ref_option_barrier_line_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244237 → 163712 |
-| L129 | 1 | `titans_dm.ref_option_dailyrangeaccrual` → `odata_n_tit.d_ref_option_dailyrangeaccrual_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244238 → 163712 |
-| L130 | 1 | `titans_dm.ref_option_deal_barrier_line` → `odata_n_tit.d_ref_option_deal_barrier_line` → `pdata_n.t03_otc_opt_comp_barr_line_info` | 137761 → 139658 |
-| L131 | 1 | `titans_dm.ref_option_deal_cr` → `odata_n_tit.d_ref_option_deal_cr_p` → `dm_hk_n.d_ref_option_deal_cr_p` | 244892 → 245845 |
-| L132 | 1 | `titans_dm.ref_option_deal_pr` → `odata_n_tit.d_ref_option_deal_pr_p` → `dm_hk_n.d_ref_option_deal_pr_p` | 244068、244894 → 245885 |
-| L133 | 1 | `titans_dm.ref_option_deal_quote_reset` → `odata_n_tit.d_ref_option_deal_quote_reset` → `pdata_n.t03_otc_opt_comp_conf_pric` | 112993、211471 → 126200 |
-| L134 | 1 | `titans_dm.ref_option_deal_quote_reset` → `odata_n_tit.d_ref_option_deal_quote_reset_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244223 → 163712 |
-| L135 | 1 | `titans_dm.ref_option_dra_obs` → `odata_n_tit.d_ref_option_dra_obs_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244225 → 163712 |
-| L136 | 1 | `titans_dm.ref_otc_contr_precision_detail` → `odata_n_tit.d_ref_otc_contr_precision_detail` → `pdata_n.t03_otc_comp_calc_idx_precision_ref` | 137760 → 139660 |
-| L137 | 1 | `titans_dm.ref_sbl` → `odata_n_tit.d_ref_sbl` → `pdata_n.t03_agt_clas_h` | 137758、211641 → 139853、211812 |
-| L138 | 1 | `titans_dm.ref_sbl` → `odata_n_tit.d_ref_sbl_p` → `dm_hk_n.info_ref_sbl` | 245300 → 245763 |
-| L139 | 1 | `titans_dm.ref_sbl_leg` → `odata_n_tit.d_ref_sbl_leg` → `pdata_n.t03_otc_swap_comp_leg_info` | 137756、140181 → 103942、105073、144299 |
-| L140 | 1 | `titans_dm.ref_vol_surface` → `odata_n_tit.d_ref_vol_surface` → `pdata_news_n.t02_fin_vol_curv_surf` | 46064、71782 → 103242、103243 |
-| L141 | 1 | `titans_dm.ref_vol_surface_structure` → `odata_n_tit.d_ref_vol_surface_structure` → `pdata_news_n.t02_fin_vol_curv_surf` | 46065、71781 → 103245、103246 |
-| L142 | 1 | `titans_dm.ref_volsurface_instance` → `odata_n_tit.d_ref_volsurface_instance` → `pdata_news_n.t02_fin_vola_instc` | 71890 → 103248 |
-| L143 | 1 | `titans_dm.ref_wind_yield_curve` → `odata_n_tit.d_ref_wind_yield_curve` → `pdata_news_n.t02_fin_curv_mkt_quot` | 101077 → 103198 |
-| L144 | 1 | `titans_dm.risk_accumulated_notional` → `odata_n_tit.d_risk_accumulated_notional` → `pdata_n.t98_otc_deri_undrl_nom_prin_sum` | 112714 → 114019 |
-| L145 | 1 | `titans_dm.risk_eod_report_metric_detail` → `odata_n_tit.d_risk_eod_report_metric_detail` → `pdata_n.t98_otc_deri_undrl_trd_lmt_det` | 134570 → 134994 |
-| L146 | 1 | `titans_dm.risk_equity_market_value_acc` → `odata_n_tit.d_risk_equity_market_value_acc` → `pdata_n.t98_otc_deri_undrl_crn_info` | 103280、103281 → 106217 |
-| L147 | 1 | `titans_dm.risk_equity_nav_acc` → `odata_n_tit.d_risk_equity_nav_acc` → `pdata_n.t98_otc_comp_crn_info` | 103282、103283 → 106214 |
-| L148 | 1 | `titans_dm.risk_option_initial_metric` → `odata_n_tit.d_risk_option_initial_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx` | 78563、106088 → 121573 |
-| L149 | 1 | `titans_dm.trd_bundle_info` → `odata_n_tit.d_trd_bundle_info_p` → `odata_n_tit.d_trd_bundle_info_pb` | 198814 → 198815 |
-| L150 | 1 | `titans_dm.trd_cumulator_schedule_daily` → `odata_n_tit.d_trd_cumulator_schedule_daily_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info` | 244240 → 163712 |
-| L151 | 1 | `titans_dm.trd_daily_rebate_interest` → `odata_n_tit.d_trd_daily_rebate_interest` → `dm_otc_n.otc_hk_sale_daily_rpt` | 228349 → 220979 |
-| L152 | 1 | `titans_dm.trd_fast_trs_event` → `odata_n_tit.d_trd_fast_trs_event_p` → `dm_hk_n.info_trd_fast_trs_event` | 233001 → 245056 |
-| L153 | 1 | `titans_dm.trd_fee` → `odata_n_tit.d_trd_fee_p` → `dm_hk_n.trd_fee_info_d` | 244909 → 245219 |
-| L154 | 1 | `titans_dm.trd_option_limit_audit` → `odata_n_tit.d_trd_option_limit_audit` → `pdata_n.t03_otc_opt_comp_info` | 126973、128503 → 103943、105074、209862 |
-| L155 | 1 | `titans_dm.trd_otc_contr_props` → `odata_n_tit.d_trd_otc_contr_props_p` → `dm_hk_n.info_trd_otc_contr_props_day` | 229771 → 245013 |
-| L156 | 1 | `titans_dm.trd_trs_event` → `odata_n_tit.d_trd_trs_event_p` → `dm_hk_n.trd_trs_event_new` | 237075 → 237594 |
-| L157 | 1 | `titans_dm.trd_trs_limit_audit` → `odata_n_tit.d_trd_trs_limit_audit` → `pdata_n.t03_otc_swap_comp_info` | 113844、125859 → 103941、105072、144296 |
-| L158 | 1 | `titans_dm.v_fin_trs_plreport` → `odata_n_tit.d_v_fin_trs_plreport` → `pdata_nds.fin_trs_plreport` | 121242 → 121315 |
-| L159 | 1 | `titans_dm.v_greeks_pricing_rm` → `odata_n_tit.d_v_greeks_pricing_rm_p` → `pdata_news_n.t02_opt_greek_val_det_h` | 244037 → 245011 |
-| L160 | 1 | `titans_dm.v_margin_account_for_risk` → `odata_n_tit.d_v_margin_account_for_risk` → `odata_n_tit.otc_o_margin_account` | 40219、66058 → 41825 |
-| L161 | 1 | `titans_dm.v_report_margin_file_a1020` → `odata_n_tit.d_v_report_margin_file_a1020` → `pdata_n.t95_otc_deri_cust_bail_attach` | 206152 → 207791 |
-| L162 | 1 | `titans_dm.v_risk_contr_capital_mapping` → `odata_n_tit.d_v_risk_contr_capital_mapping` → `public.d_v_risk_contr_capital_mapping` | 70647、71684 → 79184 |
-| L163 | 1 | `titans_dm.v_risk_cross_border_trs` → `odata_n_tit.d_v_risk_cross_border_trs` → `pdata_n.t98_otc_swap_comp_pal_sum` | 44724、71636、89172、120002 → 106589、107062、143973、143974 |
-| L164 | 1 | `titans_dm.v_risk_limit_threshold` → `odata_n_tit.d_v_risk_limit_threshold` → `public.odata_n_tit_d_v_risk_limit_threshold` | 76267、76268 → 76550 |
-| L165 | 1 | `titans_dm.v_risk_margin_acct_info` → `odata_n_tit.d_v_risk_margin_acct_info` → `public.d_v_risk_margin_acct_info` | 70654、71743 → 79190 |
-| L166 | 1 | `titans_dm.v_risk_option_basket_info` → `odata_n_tit.d_v_risk_option_basket_info` → `pdata_news_n.t02_opt_mult_bask_info` | 101532、103294 → 104478、104481 |
-| L167 | 1 | `titans_dm.v_risk_option_cross_metric` → `odata_n_tit.d_v_risk_option_cross_metric` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx` | 101530、103298 → 104483、104484 |
-| L168 | 1 | `titans_dm.v_risk_option_cross_metric` → `odata_n_tit.d_v_risk_option_cross_metric_p` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx` | 244070 → 244510 |
-| L169 | 1 | `titans_dm.v_risk_option_part_metric` → `odata_n_tit.d_v_risk_option_part_metric` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx` | 101531、103295 → 104487、104489 |
-| L170 | 1 | `titans_dm.v_risk_option_part_metric` → `odata_n_tit.d_v_risk_option_part_metric_p` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx` | 244069 → 244515 |
-| L171 | 1 | `titans_dm.v_risk_plreport_tit` → `odata_n_tit.d_v_risk_plreport_tit` → `public.cal_f_rm_plreport` | 50169、71643 → 43141 |
-| L172 | 1 | `titans_dm.v_risk_qis` → `odata_n_tit.d_v_risk_qis` → `public.d_v_risk_qis` | 54824、71756 → 88992 |
-| L173 | 1 | `titans_dm.v_risk_transferreport_tit` → `odata_n_tit.d_v_risk_transferreport_tit` → `public.cal_rm_transferreport` | 50345、71700 → 20924 |
-| L174 | 1 | `titans_marketdata.ref_cbond_rate` → `odata_n_tit.m_ref_cbond_rate` → `pdata_news_n.t02_ira_indx_info` | 164507 → 165804 |
-| L175 | 1 | `titans_marketdata.ref_cbond_rate` → `odata_n_tit.m_ref_cbond_rate_p` → `pdata_news_n.t02_ira_indx_info_pb` | 238421 → 239826 |
-| L176 | 1 | `titans_marketdata.ref_restricted_stock_daily` → `odata_n_tit.m_ref_restricted_stock_daily` → `pdata_news_n.t02_stk_rstk_disc_info` | 226825 → 228593 |
-| L177 | 1 | `titans_refdata.ref_instrument_code` → `odata_n_tit.r_ref_instrument_code` → `spdata.prd_tit_idty_rela_h` | 34866、63802 → 36710 |
-| L178 | 1 | `titans_refdata.ref_listed_option_props` → `odata_n_tit.r_ref_listed_option_props` → `pdata_news_n.t02_opt_base_info_tit` | 34915、63687 → 176204 |
-| L179 | 1 | `titans_refdata.ref_option_barrieroption` → `odata_n_tit.r_ref_option_barrieroption` → `dm_hk_n.info_ref_option_barrieroption` | 228715 → 228821 |
-| L180 | 1 | `titans_refdata.ref_option_barrieroption` → `odata_n_tit.r_ref_option_barrieroption_p` → `dm_hk_n.ref_option_barrieroption` | 245290 → 245679 |
-| L181 | 1 | `titans_refdata.ref_option_cumulator` → `odata_n_tit.r_ref_option_cumulator` → `dm_hk_n.info_ref_option_cumulator` | 228718 → 228823 |
-| L182 | 1 | `titans_refdata.ref_option_cumulator` → `odata_n_tit.r_ref_option_cumulator_p` → `dm_hk_n.ref_option_cumulator` | 245292 → 245683 |
-| L183 | 1 | `titans_refdata.ref_option_digitaloption` → `odata_n_tit.r_ref_option_digitaloption` → `dm_hk_n.info_ref_option_digitaloption` | 228719 → 228825 |
-| L184 | 1 | `titans_refdata.ref_option_digitaloption` → `odata_n_tit.r_ref_option_digitaloption_p` → `dm_hk_n.ref_option_digitaloption` | 245294 → 245688 |
-| L185 | 1 | `titans_refdata.ref_option_history_info` → `odata_n_tit.r_ref_option_history_info` → `dm_hk_n.info_ref_option_history_info` | 228720 → 228826 |
-| L186 | 1 | `titans_refdata.ref_option_quote_reset` → `odata_n_tit.r_ref_option_quote_reset` → `pdata_news_n.t02_opt_mkt_quot` | 124865 → 139409 |
-| L187 | 1 | `titans_refdata.ref_option_quote_reset_rate` → `odata_n_tit.r_ref_option_quote_reset_rate` → `dm_hk_n.info_ref_option_quote_reset_rate` | 228723 → 228828 |
-| L188 | 1 | `titans_refdata.ref_option_vanillaoption` → `odata_n_tit.r_ref_option_vanillaoption_p` → `dm_hk_n.ref_option_vanillaoption` | 245297 → 245702 |
-| L189 | 1 | `titans_service.pricing_option_eod_pt_metric` → `odata_n_tit.v_pricing_option_eod_pt_metric` → `spdata.sum_agt_otc_stres_opt_day_idx` | 34905 → 37069 |
-| L190 | 1 | `titans_staticdata.ref_portfolio` → `odata_n_tit.t_ref_portfolio` → `titans_dm.ref_portfolio` | 34911、63690 → 37324 |
-| L191 | 1 | `titans_staticdata.ref_portfolio_element` → `odata_n_tit.t_ref_portfolio_element` → `titans_dm.ref_portfolio_element` | 34912、63691 → 37325 |
-| L192 | 1 | `titans_tradeflow.ref_op_deal_lizard_obsdate` → `odata_n_tit.f_ref_op_deal_lizard_obsdate_p` → `dm_hk_n.f_ref_op_deal_lizard_obsdate_p` | 244889 → 245817 |
-| L193 | 1 | `titans_tradeflow.ref_option_margin_trs_relation` → `odata_n_tit.f_ref_option_margin_trs_relation` → `pdata_n.t98_otc_deri_comp_sale_info` | 231306 → 86840、86841 |
-| L194 | 1 | `titans_tradeflow.trd_fee` → `odata_n_tit.f_trd_fee` → `pdata_n.t05_otc_deri_comp_fee_pymt_plan` | 206581 → 207947 |
-| L195 | 1 | `titans_tradeflow.trd_option_limit_audit` → `odata_n_tit.f_trd_option_limit_audit` → `dm_hk_n.trd_option_limit_audit_day` | 206587 → 207904 |
-| L196 | 1 | `titans_workflow.act_hi_procinst` → `odata_n_tit.w_act_hi_procinst` → `pdata_n.t05_tit_proc_instc` | 126921 → 128578 |
-| L197 | 1 | `titans_workflow.act_hi_procinst` → `odata_n_tit.w_act_hi_procinst_p` → `pdata_n.t05_tit_proc_instc` | 209732 → 210338 |
-| L198 | 1 | `titans_workflow.plc_process_def` → `odata_n_tit.w_plc_process_def` → `pdata_n.t99_tit_proc_def_info` | 126922 → 128577 |
-| L199 | 1 | `titans_workflow.plc_process_def` → `odata_n_tit.w_plc_process_def_p` → `pdata_n.t99_tit_proc_def_info` | 209736 → 210337 |
+| 链号 | 中间节点数 | 完整表路径                                                                                                                                                                                                   | 各箭头支持任务（依次）                                                   |
+| ---- | ---------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| L001 |          4 | `titans_dm.v_otcm_se_report` → `odata_n_tit.d_v_otcm_se_report_p` → `odata_n_tit.d_v_otcm_se_report_pb` → `pdata_nds.otcm_se_report_pb` → `dm_otc_n.otcm_se_report` → `gf_otc.ref_otc_option_deal`           | 151775 → 151780 → 152123 → 152217 → 166630                               |
+| L002 |          3 | `titans_dm.trd_trs_underlying_deal` → `odata_n_tit.d_trd_trs_underlying_deal` → `pdata_n.t05_otc_deri_swap_mtch_retu_evt` → `dm_hk_n.otc_trd_trs_underlying_deal` → `ods_titans.otc_trd_trs_underlying_deal` | 78593 → 202899 → 202186 → 202219                                         |
+| L003 |          2 | `odata_n_tit.a_adm_role` → `spdata.org_role` → `dm_tit.adm_role` → `titans_dm.adm_role`                                                                                                                      | 37062 → 37271 → 37371                                                    |
+| L004 |          2 | `odata_n_tit.d_trd_transfer_pb` → `pdata_nds.trd_transfer_pb` → `dm_otc_n.trd_transfer` → `gf_otc.trd_transfer_report`                                                                                       | 152125 → 152222 → 152246、166640                                         |
+| L005 |          2 | `titans_admin.adm_menu_permission` → `odata_n_tit.a_adm_menu_permission` → `pdata_n.t99_sys_menu_info` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt`                                                          | 174378 → 177760 → 207529                                                 |
+| L006 |          2 | `titans_dm.adm_audit_log` → `odata_n_tit.d_adm_audit_log` → `pdata_n.t05_sb_otc_comp_modif_log` → `dm_rsk_n.v_risk_audit_log`                                                                                | 112715 → 114026 → 155015                                                 |
+| L007 |          2 | `titans_dm.dm_option_contract_info` → `odata_n_tit.d_dm_option_contract_info` → `pdata_nds.dm_option_contract_info` → `dm_otc_n.otc_opt_comp_para`                                                           | 78558 → 178488 → 159177                                                  |
+| L008 |          2 | `titans_dm.mkt_risk_daily_info` → `odata_n_tit.d_mkt_risk_daily_info` → `pdata_news_n.t02_prd_unit_nav_s_tit` → `dm_rsk_n.pric_fctr_mkt_quot_day`                                                            | 206408 → 207284 → 177526、182738、182755                                 |
+| L009 |          2 | `titans_dm.pos_eod_fx_exposure` → `odata_n_tit.d_pos_eod_fx_exposure` → `pdata_n.t98_otc_deri_fx_expo` → `dm_rsk_n.fx_enay_pal_expo_stmt`                                                                    | 215871 → 219358 → 219735                                                 |
+| L010 |          2 | `titans_dm.pos_trs_underlying_valuation` → `odata_n_tit.d_pos_trs_underlying_valuation_p` → `odata_n_tit.d_pos_trs_underlying_valuation_pb` → `pdata_nds.pos_trs_underlying_valuation`                       | 160415 → 160426 → 160821                                                 |
+| L011 |          2 | `titans_dm.ref_future_properties` → `odata_n_tit.d_ref_future_properties_p` → `odata_n_tit.d_ref_future_properties_pb` → `pdata_news_n.t02_fut_base_info`                                                    | 144165 → 144168 → 144301                                                 |
+| L012 |          2 | `titans_dm.ref_instrument` → `odata_n_tit.d_ref_instrument_p` → `odata_n_tit.d_ref_instrument_pb` → `pdata_nds.ref_instrument_pb`                                                                            | 144137、151765 → 144143、151766 → 152124                                 |
+| L013 |          2 | `titans_dm.ref_rate_properites` → `odata_n_tit.d_ref_rate_properites` → `pdata_news_n.t02_tit_ira_crrc_attr` → `dm_rsk_n.crrc_mkt_intrt_base_info`                                                           | 168245 → 170648 → 171040                                                 |
+| L014 |          2 | `titans_dm.ref_rmb_midrate` → `odata_n_tit.d_ref_rmb_midrate_p` → `odata_n_tit.d_ref_rmb_midrate_pb` → `pdata_news_n.t02_fxr_cfets_quot`                                                                     | 144161 → 144166 → 144298                                                 |
+| L015 |          2 | `titans_dm.risk_ctpty_limit_threshold` → `odata_n_tit.d_risk_ctpty_limit_threshold` → `pdata_n.t01_pty_lmt_h` → `dm_otc_n.bi_otc_cust_index`                                                                 | 119127 → 229973 → 229121                                                 |
+| L016 |          2 | `titans_dm.trd_hedge_product_info` → `odata_n_tit.d_trd_hedge_product_info` → `pdata_n.t03_otc_deri_comp_hedg_prd_info` → `dm_fms_n.tit_trs_trd_detail`                                                      | 208471 → 210926 → 207753                                                 |
+| L017 |          2 | `titans_dm.v_otc_plreport` → `odata_n_tit.d_v_otc_plreport` → `dm_otc_n.otc_pl_mq` → `gf_otc.dm_pl_report`                                                                                                   | 219968 → 223523 → 223583                                                 |
+| L018 |          2 | `titans_dm.v_otc_plreport_trs` → `odata_n_tit.d_v_otc_plreport_trs` → `dm_otc_n.otc_pl_trs_mq` → `gf_otc.dm_pl_report`                                                                                       | 219975 → 223564 → 223588                                                 |
+| L019 |          2 | `titans_dm.v_otc_position_report_tit` → `odata_n_tit.d_v_otc_position_report_tit` → `dm_otc_n.otc_position_mq` → `gf_otc.dm_position_report`                                                                 | 219973 → 223557 → 223586                                                 |
+| L020 |          2 | `titans_dm.v_report_margin_a1020` → `odata_n_tit.d_v_report_margin_a1020` → `pdata_n.t95_otc_deri_cust_bail_info` → `dm_cisp_test.otc_customer_margin`                                                       | 215546 → 207789 → 206314、206482                                         |
+| L021 |          2 | `titans_dm.v_report_product_report` → `odata_n_tit.d_v_report_product_report` → `pdata_n.t95_otc_deri_income_vchr_info` → `dm_cisp_n.det_idx_use_situ_stati`                                                 | 221005 → 223239 → 221300                                                 |
+| L022 |          2 | `titans_dm.v_risk_hedging_position_tit` → `odata_n_tit.d_v_risk_hedging_position_tit_p` → `odata_n_tit.d_v_risk_hedging_position_tit_pb` → `dm_fii_n.v_risk_hedging_position_tit`                            | 218632、218635、223024 → 218633、218636、223027 → 218506、218511、223522 |
+| L023 |          2 | `titans_dm.v_risk_plreport_contract` → `odata_n_tit.d_v_risk_plreport_contract_p` → `odata_n_tit.d_v_risk_plreport_contract_pb` → `pdata_n.t98_otc_opt_inr_comp_pal_sum`                                     | 244045、244368 → 244357 → 244380                                         |
+| L024 |          2 | `titans_dm.value_report_element_result` → `odata_n_tit.d_value_report_element_result_p` → `odata_n_tit.d_value_report_element_result_pb` → `dm_otc_n.bi_otc_hold_pnl`                                        | 147153 → 147156 → 227869                                                 |
+| L025 |          2 | `titans_operation.ope_settle_notice` → `odata_n_tit.n_ope_settle_notice` → `pdata_n.t05_otc_deri_comp_sett_ntfc_send_evt` → `dm_rsk_n.otc_deri_sett_abn_montr_indx`                                          | 179125 → 181103 → 181556                                                 |
+| L026 |          2 | `titans_operation.ope_settle_notice_transfer` → `odata_n_tit.n_ope_settle_notice_transfer` → `pdata_n.t05_otc_deri_evt_rela_h` → `dm_rsk_n.otc_deri_sett_abn_montr_indx`                                     | 184965 → 185098 → 181556                                                 |
+| L027 |          1 | `dm_engin_n.prediction_unified` → `dm_index_n.index_grp1_conv_bond_enabl_model_percent` → `dm_engin_n.employee_clt_tb`                                                                                       | 206201 → 208983                                                          |
+| L028 |          1 | `dm_index_n.index_grp1_income_exam_pqtrastendastpkgrela_mth_retandorgcntr` → `dm_index_n.index_grp1_emp_mthavgtotincome_astpkgrela_qtr` → `dm_om_n.wt_emp_indi_data_mana_veal`                               | 199242 → 202091                                                          |
+| L029 |          1 | `dm_index_n.index_grp1_vld_acct_servordevrela_year` → `dm_index_n.index_grp1_vld_acctpalcustprop_servordevrela_year` → `dm_om_n.wt_acct_pal_year_sum`                                                        | 175023 → 166614                                                          |
+| L030 |          1 | `dm_index_n.index_grp2_cust_org_stdast_aft_stagger_qtrapd_all` → `dm_index_n.index_grp2_cust_org_stdastincrsval_aft_qtrapd_pqtrapd_mth_all` → `dm_om_n.wt_cust_aum_std_asset_incr_val_adv_linear_score`      | 201994 → 218236                                                          |
+| L031 |          1 | `dm_index_n.index_grp2_std_ast_aft_covt_year_apd` → `dm_index_n.index_grp1_cust_yoyincrsval_aumstdast_tdy_all` → `dm_engin_n.wt_covt_bond_open_features_data`                                                | 187911 → 206454                                                          |
+| L032 |          1 | `dm_index_n.index_grp2_std_ast_aft_covt_year_apd` → `dm_index_n.index_grp1_cust_yoyincrsrate_aumstdast_tdy_all` → `dm_engin_n.wt_covt_bond_open_features_data`                                               | 187976 → 206454                                                          |
+| L033 |          1 | `dm_index_n.index_grp3_cust_org_emp_std_ast_aft_covt_mth_apd` → `dm_index_n.index_grp3_cust_org_emp_asset_aft_mon_gr_mth` → `dm_om_n.wt_cust_apd_ast_covt_tbl`                                               | 161844 → 155612                                                          |
+| L034 |          1 | `dm_index_n.index_grp3_cust_org_emp_std_ast_bef_covt_mth_apd` → `dm_index_n.index_grp3_cust_org_emp_asset_bef_mon_gr_mth` → `dm_om_n.wt_cust_apd_ast_covt_tbl`                                               | 161841 → 155612                                                          |
+| L035 |          1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_amount_change` → `gf_otc.bi_otc_amount_change`                                                                                                               | 227697 → 230265                                                          |
+| L036 |          1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_busi_stat` → `gf_otc.bi_otc_busi_stat`                                                                                                                       | 228008 → 230262                                                          |
+| L037 |          1 | `dm_otc_n.otc_rev_daily_rpt` → `dm_otc_n.bi_otc_underlying_analysis` → `gf_otc.bi_otc_underlying_analysis`                                                                                                   | 234355 → 234407                                                          |
+| L038 |          1 | `gfheguidb.aml_blacklist` → `gfheguidb.amlci_specialclient` → `gfheguidb.amlls_blacklist_relation`                                                                                                           | 79859 → 78394                                                            |
+| L039 |          1 | `marketrisk.ref_instrument_wind_curve` → `odata_n_tit.tit_r_ref_instrument_wind_curve_s` → `pdata_news_n.t02_fin_curv_def`                                                                                   | 63821 → 172069                                                           |
+| L040 |          1 | `odata_n_tit.d_bk_book_mapping_rule` → `dm_hk_n.ref_otc_bk_book_mapping_rule` → `ods_titans.bk_book_mapping_rule`                                                                                            | 219369 → 219385                                                          |
+| L041 |          1 | `odata_n_tit.d_bk_department_properties` → `dm_hk_n.info_bk_department_properties_day` → `ods_titans.bk_department_properties`                                                                               | 223558 → 223562                                                          |
+| L042 |          1 | `odata_n_tit.d_mkt_ins_daily_info` → `pdata_news_n.tyzx_exch_quot_h` → `dm_otc_n.otc_strg_mkt_quot`                                                                                                          | 144765 → 119974                                                          |
+| L043 |          1 | `odata_n_tit.d_pos_bucket_vega_metrics` → `pdata_nds.pos_bucket_vega_metrics` → `dm_hk_n.pos_bucket_vega_metrics`                                                                                            | 120040 → 166021                                                          |
+| L044 |          1 | `odata_n_tit.d_pos_fast_trs_leg_his_pos_p` → `odata_n_tit.d_pos_fast_trs_leg_his_pos_pb` → `pdata_nds.pos_fast_trs_leg_his_pos`                                                                              | 180582 → 180755                                                          |
+| L045 |          1 | `odata_n_tit.d_pos_fast_trs_leg_valuation_p` → `odata_n_tit.d_pos_fast_trs_leg_valuation_pb` → `pdata_nds.pos_fast_trs_leg_valuation`                                                                        | 180586 → 180759                                                          |
+| L046 |          1 | `odata_n_tit.d_pos_position_daily_p` → `odata_n_tit.d_pos_position_daily_pb` → `pdata_nds.pos_position_daily`                                                                                                | 160423、233003 → 160818                                                  |
+| L047 |          1 | `odata_n_tit.d_pos_trs_leg_valuation_p` → `odata_n_tit.d_pos_trs_leg_valuation_pb` → `pdata_nds.pos_trs_leg_valuation`                                                                                       | 160425、237112 → 160822                                                  |
+| L048 |          1 | `odata_n_tit.d_ref_basket_constituent` → `dm_hk_n.ref_basket_constituent` → `ods_titans.ref_basket_constituent`                                                                                              | 233694 → 233780                                                          |
+| L049 |          1 | `odata_n_tit.d_ref_book_p` → `dm_hk_n.info_ref_book` → `ods_titans.ref_book`                                                                                                                                 | 244854 → 244858                                                          |
+| L050 |          1 | `odata_n_tit.d_ref_corporate_action_info` → `dm_hk_n.ref_corporate_action_info` → `ods_titans.ref_corporate_action_info`                                                                                     | 242926 → 242955                                                          |
+| L051 |          1 | `odata_n_tit.d_ref_counter_party_p` → `dm_hk_n.d_ref_counter_party_p` → `ods_titans.ref_counter_party`                                                                                                       | 245381 → 245521                                                          |
+| L052 |          1 | `odata_n_tit.d_ref_counterparty` → `pdata_n.t01_pty_imp_lkman` → `pdata_n.t98_cutp_base_info`                                                                                                                | 150755 → 158195                                                          |
+| L053 |          1 | `odata_n_tit.d_ref_fast_trs_leg_p` → `odata_n_tit.d_ref_fast_trs_leg_pb` → `pdata_nds.ref_fast_trs_leg`                                                                                                      | 180585 → 180753                                                          |
+| L054 |          1 | `odata_n_tit.d_ref_instrument` → `pdata_nds.ref_instrument` → `dm_otc_n.otc_undrl_def`                                                                                                                       | 120051 → 119976                                                          |
+| L055 |          1 | `odata_n_tit.d_ref_instrument` → `dm_hk_n.info_ref_instrument` → `ods_titans.ref_instrument`                                                                                                                 | 243805 → 243841                                                          |
+| L056 |          1 | `odata_n_tit.d_ref_instrument_pool_whitelist` → `pdata_nds.ref_instrument_pool_whitelist` → `dm_otc_n.ref_instrument_pool_whitelist`                                                                         | 146819 → 146823                                                          |
+| L057 |          1 | `odata_n_tit.d_ref_otc_option_deal_p` → `odata_n_tit.d_ref_otc_option_deal_pb` → `pdata_n.t03_otc_opt_comp_info`                                                                                             | 149698、149699、198732 → 209862                                          |
+| L058 |          1 | `odata_n_tit.d_risk_eod_report_metric_value` → `pdata_n.t98_otc_deri_undrl_trd_lmt_idx` → `dm_rsk_n.adm_dtl_otc_stres_tdy`                                                                                   | 106216、107480 → 155157                                                  |
+| L059 |          1 | `odata_n_tit.d_trd_otc_contr_report_p` → `odata_n_tit.d_trd_otc_contr_report_pb` → `pdata_nds.trd_otc_contr_report`                                                                                          | 146696、146697 → 160829                                                  |
+| L060 |          1 | `odata_n_tit.d_v_ficc_trs_position_p` → `odata_n_tit.d_v_ficc_trs_position_pb` → `dm_fii_n.v_ficc_trs_position`                                                                                              | 218631、218638 → 218455、218461                                          |
+| L061 |          1 | `odata_n_tit.d_v_fin_trs` → `pdata_nds.d_v_fin_trs` → `dm_fin_n.civ_trd_otc_trs_deli_dtl_day`                                                                                                                | 185032 → 198806                                                          |
+| L062 |          1 | `odata_n_tit.d_v_fin_trs_trade_record` → `pdata_nds.d_v_fin_trs_trade_record` → `dm_fin_n.civ_trd_otc_trs_deli_dtl_day`                                                                                      | 184959 → 198806                                                          |
+| L063 |          1 | `odata_n_tit.d_v_risk_rm_bundlereport_tit` → `dm_otc_n.otc_bundle_report_mq` → `gf_otc.dm_bundle_report`                                                                                                     | 223556 → 223584                                                          |
+| L064 |          1 | `odata_n_tit.k_eq_equity_source` → `pdata_n.t00_prd_pool_info` → `dm_fms_n.tit_trs_trd_detail`                                                                                                               | 208593 → 207753                                                          |
+| L065 |          1 | `odata_n_tit.p_prd_notes` → `dm_hk_n.info_prd_notes` → `ods_titans.prd_notes`                                                                                                                                | 236429 → 236470                                                          |
+| L066 |          1 | `odata_n_tit.p_prd_notes_trade_record` → `dm_hk_n.prd_notes_trade_record` → `ods_titans.prd_notes_trade_record`                                                                                              | 236438 → 236469                                                          |
+| L067 |          1 | `odata_n_tit.t_bk_book` → `spdata.acct` → `dm_tit.ref_book`                                                                                                                                                  | 36705 → 37259                                                            |
+| L068 |          1 | `odata_n_tit.t_bk_book` → `spdata.acct_name_h` → `dm_tit.ref_book`                                                                                                                                           | 37066 → 37259                                                            |
+| L069 |          1 | `pdata_n.${src_table}` → `pdata_n.t99_sys_func_menu_map` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt`                                                                                                        | 242349 → 207529                                                          |
+| L070 |          1 | `pdata_n.${src_table}` → `pdata_n.t00_sys_func_info` → `dm_ctms_n.wt_tit_sys_user_menu_rights_rt`                                                                                                            | 242362 → 207529                                                          |
+| L071 |          1 | `pdata_n.t05_otc_comp_dura_chg_evt` → `dm_otc_n.trd_option_event` → `gf_otc.trd_option_event`                                                                                                                | 208755 → 210231                                                          |
+| L072 |          1 | `pdata_n.t05_otc_deri_book_mtch_evt` → `dm_otc_n.t05_otc_deri_book_mtch_evt` → `gfval.src_t05_otc_deri_book_mtch_evt`                                                                                        | 181143 → 181180                                                          |
+| L073 |          1 | `pdata_n.t05_otc_deri_comp_fee_pymt_plan` → `dm_hk_n.trd_fee_payment_schedule_day` → `ods_titans.trd_fee_payment_schedule`                                                                                   | 208264 → 208335                                                          |
+| L074 |          1 | `pdata_n.t05_otc_recv_pymt_evt` → `dm_otc_n.trd_transfer_report_td` → `gf_otc.trd_transfer_report`                                                                                                           | 159219 → 159221                                                          |
+| L075 |          1 | `pdata_n.t95_otc_deri_cust_bail_attach` → `dm_cisp_test.otc_customer_margin_file` → `kgrp.r_otc_a1020_2_t`                                                                                                   | 206884 → 206886                                                          |
+| L076 |          1 | `pdata_nds.aum_emp_base_info` → `dm_index_n.wide_idx_taum_cust_eval_qtr_fol` → `dm_om_n.wt_taum_cust_eval_hy_spvs`                                                                                           | 237505 → 237807                                                          |
+| L077 |          1 | `pdata_nds.cfg_instrument_pool_props_pb` → `dm_otc_n.cfg_instrument_pool_props` → `gf_otc.cfg_instrument_pool_props`                                                                                         | 152216 → 152251、166636                                                  |
+| L078 |          1 | `pdata_nds.d_v_fin_capital_acct_mapping` → `dm_fin_n.civ_otc_capital_acct_mapping` → `gfval.src_otc_capital_acct_mapping`                                                                                    | 199720 → 199723                                                          |
+| L079 |          1 | `pdata_nds.d_v_fin_option_info` → `dm_fin_n.civ_otc_fin_option_info` → `gfval.src_otc_fin_option_info`                                                                                                       | 199729 → 199734                                                          |
+| L080 |          1 | `pdata_nds.fin_trs_plreport` → `dm_otc_n.otc_trs_fin_rpt` → `gfval.src_otc_fin_trs_valuation`                                                                                                                | 121327 → 102967                                                          |
+| L081 |          1 | `pdata_nds.ref_instrument_pb` → `dm_otc_n.ref_instrument` → `gf_otc.ref_instrument`                                                                                                                          | 152221 → 166638                                                          |
+| L082 |          1 | `pdata_news_n.t02_tit_note_info` → `dm_otc_n.t02_tit_note_info` → `gfval.src_t02_tit_note_info`                                                                                                              | 181140 → 181182                                                          |
+| L083 |          1 | `pdata_news_n.t02_tit_prd_asset_info` → `dm_otc_n.t02_tit_prd_asset_info` → `gfval.src_t02_tit_prd_asset_info`                                                                                               | 181142 → 181181                                                          |
+| L084 |          1 | `pdata_news_n.t02_tit_prd_info` → `dm_otc_n.t02_tit_prd_info` → `gfval.src_t02_tit_prd_info`                                                                                                                 | 181136 → 181183                                                          |
+| L085 |          1 | `titans_admin.adm_department` → `odata_n_tit.a_adm_department` → `titans_dm.adm_department`                                                                                                                  | 36975、64049 → 37328                                                     |
+| L086 |          1 | `titans_admin.adm_menu_role_mapping` → `odata_n_tit.a_adm_menu_role_mapping` → `pdata_n.t04_role_righ_h`                                                                                                     | 174379 → 178884                                                          |
+| L087 |          1 | `titans_booking.trd_deal` → `odata_n_tit.b_trd_deal_p` → `dm_hk_n.info_trd_deal`                                                                                                                             | 245314 → 245941                                                          |
+| L088 |          1 | `titans_dm.bundle_margin_underlying_type` → `odata_n_tit.d_bundle_margin_underlying_type` → `pdata_nds.bundle_margin_underlying_type`                                                                        | 200352 → 200489                                                          |
+| L089 |          1 | `titans_dm.capital_account` → `odata_n_tit.d_capital_account_p` → `pdata_n.t03_agt_pty_rela_h`                                                                                                               | 204954 → 222317                                                          |
+| L090 |          1 | `titans_dm.capital_account_ledger` → `odata_n_tit.d_capital_account_ledger` → `pdata_n.t05_otc_deri_cutp_fnd_chg_evt`                                                                                        | 78584 → 173966                                                           |
+| L091 |          1 | `titans_dm.capital_acct_current_balance` → `odata_n_tit.d_capital_acct_current_balance` → `pdata_nds.capital_acct_current_balance`                                                                           | 78568 → 174013                                                           |
+| L092 |          1 | `titans_dm.capital_acct_current_balance` → `odata_n_tit.d_capital_acct_current_balance_p` → `pdata_nds.capital_acct_current_balance`                                                                         | 136215、136216 → 236414                                                  |
+| L093 |          1 | `titans_dm.capital_acct_daily_balance` → `odata_n_tit.d_capital_acct_daily_balance_p` → `odata_n_tit.d_capital_acct_daily_balance_pb`                                                                        | 138542、198795、204953 → 198796                                          |
+| L094 |          1 | `titans_dm.margin_account_ledger` → `odata_n_tit.d_margin_account_ledger_p` → `dm_hk_n.d_margin_account_ledger_p`                                                                                            | 243275 → 244011                                                          |
+| L095 |          1 | `titans_dm.margin_acct_bundle_mapping` → `odata_n_tit.d_margin_acct_bundle_mapping_p` → `dm_hk_n.d_margin_acct_bundle_mapping_p`                                                                             | 243289 → 244100                                                          |
+| L096 |          1 | `titans_dm.margin_acct_current_balance` → `odata_n_tit.d_margin_acct_current_balance` → `pdata_nds.margin_acct_current_balance`                                                                              | 78573 → 174015                                                           |
+| L097 |          1 | `titans_dm.margin_acct_current_balance` → `odata_n_tit.d_margin_acct_current_balance_p` → `dm_hk_n.d_margin_acct_current_balance_p`                                                                          | 136219、136220 → 244109                                                  |
+| L098 |          1 | `titans_dm.margin_acct_daily_balance` → `odata_n_tit.d_margin_acct_daily_balance` → `pdata_n.t03_ast_crrc_acct_bal`                                                                                          | 78575、107587 → 107280、107646                                           |
+| L099 |          1 | `titans_dm.margin_acct_daily_result` → `odata_n_tit.d_margin_acct_daily_result` → `pdata_news_n.t02_fin_cutp_bail_acct_daily_rslt`                                                                           | 78579、103293 → 104658、104937                                           |
+| L100 |          1 | `titans_dm.margin_acct_daily_result` → `odata_n_tit.d_margin_acct_daily_result_p` → `odata_n_tit.d_margin_acct_daily_result_pb`                                                                              | 136203、198811 → 198812                                                  |
+| L101 |          1 | `titans_dm.margin_bundle_contract_mapping` → `odata_n_tit.d_margin_bundle_contract_mapping_p` → `dm_hk_n.margin_bundle_contract_mapping_d`                                                                   | 243295 → 244169                                                          |
+| L102 |          1 | `titans_dm.mkt_ins_daily_info` → `odata_n_tit.d_mkt_ins_daily_info_p` → `odata_n_tit.d_mkt_ins_daily_info`                                                                                                   | 143402、143403、144736、207700 → 143404、143405、144739、207701          |
+| L103 |          1 | `titans_dm.mkt_ins_op_eod_metric` → `odata_n_tit.d_mkt_ins_op_eod_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx`                                                                                       | 78580、106101 → 121574                                                   |
+| L104 |          1 | `titans_dm.ope_capital_acct_element` → `odata_n_tit.d_ope_capital_acct_element` → `pdata_n.t98_otc_deri_ast_acct_valu_rpt_info`                                                                              | 113515 → 114021                                                          |
+| L105 |          1 | `titans_dm.ope_option_element` → `odata_n_tit.d_ope_option_element` → `pdata_n.t98_otc_comp_valu_rpt_info`                                                                                                   | 113511 → 114024                                                          |
+| L106 |          1 | `titans_dm.pos_bucket_vega_metrics` → `odata_n_tit.d_pos_bucket_vega_metrics_p` → `dm_hk_n.d_pos_bucket_vega_metrics_p`                                                                                      | 244879 → 245094                                                          |
+| L107 |          1 | `titans_dm.pos_eod_position_view` → `odata_n_tit.d_pos_eod_position_view` → `pdata_nds.pos_eod_position_view`                                                                                                | 78588 → 150384                                                           |
+| L108 |          1 | `titans_dm.pos_eod_position_view` → `odata_n_tit.d_pos_eod_position_view_p` → `odata_n_tit.d_pos_eod_position_view_pb`                                                                                       | 198723 → 198727                                                          |
+| L109 |          1 | `titans_dm.pos_pd_clearing_position` → `odata_n_tit.d_pos_pd_clearing_position` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx`                                                                                 | 139183 → 154814                                                          |
+| L110 |          1 | `titans_dm.pos_qg_clearing_greeks` → `odata_n_tit.d_pos_qg_clearing_greeks` → `pdata_news_n.t02_opt_ost_qtf_sstv_indx_tit`                                                                                   | 217836 → 219014                                                          |
+| L111 |          1 | `titans_dm.prd_product` → `odata_n_tit.p_prd_product` → `pdata_news_n.t02_tit_prd_info`                                                                                                                      | 156659 → 160750                                                          |
+| L112 |          1 | `titans_dm.pricing_eod_cross_metric` → `odata_n_tit.d_pricing_eod_cross_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx`                                                                                 | 139174 → 154813                                                          |
+| L113 |          1 | `titans_dm.pricing_eod_part_metric` → `odata_n_tit.d_pricing_eod_part_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx`                                                                                   | 139172 → 154812                                                          |
+| L114 |          1 | `titans_dm.ref_correlation_daily_info` → `odata_n_tit.d_ref_correlation_daily_info` → `pdata_news_n.t02_oth_corre_fctr`                                                                                      | 114497 → 117794                                                          |
+| L115 |          1 | `titans_dm.ref_ctpty_account` → `odata_n_tit.d_ref_ctpty_account` → `dm_hk_n.info_ref_ctpty_account_day`                                                                                                     | 218974 → 219099                                                          |
+| L116 |          1 | `titans_dm.ref_ctpty_auth_busi` → `odata_n_tit.d_ref_ctpty_auth_busi` → `pdata_n.t01_pty_stati_info_h`                                                                                                       | 149655 → 173975                                                          |
+| L117 |          1 | `titans_dm.ref_curve` → `odata_n_tit.d_ref_curve` → `pdata_news_n.t02_fin_curv_def`                                                                                                                          | 101069 → 103203                                                          |
+| L118 |          1 | `titans_dm.ref_implied_metrics` → `odata_n_tit.d_ref_implied_metrics` → `pdata_news_n.t02_tit_impl_vola_srfc_indx_info`                                                                                      | 240000 → 240855                                                          |
+| L119 |          1 | `titans_dm.ref_instrument_code` → `odata_n_tit.d_ref_instrument_code` → `dm_hk_n.ref_instrument_code_info`                                                                                                   | 46070、71813 → 246035                                                    |
+| L120 |          1 | `titans_dm.ref_instrument_tag` → `odata_n_tit.d_ref_instrument_tag` → `pdata_news_n.t02_scr_lbl`                                                                                                             | 120003 → 127897                                                          |
+| L121 |          1 | `titans_dm.ref_main_contract` → `odata_n_tit.d_ref_main_contract` → `pdata_nds.ref_main_contract`                                                                                                            | 117928 → 117940                                                          |
+| L122 |          1 | `titans_dm.ref_op_cumulator_schedule` → `odata_n_tit.d_ref_op_cumulator_schedule` → `pdata_n.t03_otc_opt_comp_obsv_scop_info`                                                                                | 139597、211707 → 156493                                                  |
+| L123 |          1 | `titans_dm.ref_op_cumulator_schedule` → `odata_n_tit.d_ref_op_cumulator_schedule_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                           | 244226 → 163712                                                          |
+| L124 |          1 | `titans_dm.ref_op_deal_autocall_kidate` → `odata_n_tit.d_ref_op_deal_autocall_kidate_p` → `dm_hk_n.d_ref_op_deal_autocall_kidate_p`                                                                          | 244870 → 245661                                                          |
+| L125 |          1 | `titans_dm.ref_op_deal_autocall_kodate` → `odata_n_tit.d_ref_op_deal_autocall_kodate_p` → `dm_hk_n.d_ref_op_deal_autocall_kodate_p`                                                                          | 244887 → 245676                                                          |
+| L126 |          1 | `titans_dm.ref_op_deal_float_back_fee` → `odata_n_tit.d_ref_op_deal_float_back_fee` → `pdata_n.t03_otc_opt_comp_reed_fee_flot_rati_info`                                                                     | 137768 → 139657                                                          |
+| L127 |          1 | `titans_dm.ref_option_attribute` → `odata_n_tit.d_ref_option_attribute_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                                     | 244233 → 163712                                                          |
+| L128 |          1 | `titans_dm.ref_option_barrier_line` → `odata_n_tit.d_ref_option_barrier_line_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                               | 244237 → 163712                                                          |
+| L129 |          1 | `titans_dm.ref_option_dailyrangeaccrual` → `odata_n_tit.d_ref_option_dailyrangeaccrual_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                     | 244238 → 163712                                                          |
+| L130 |          1 | `titans_dm.ref_option_deal_barrier_line` → `odata_n_tit.d_ref_option_deal_barrier_line` → `pdata_n.t03_otc_opt_comp_barr_line_info`                                                                          | 137761 → 139658                                                          |
+| L131 |          1 | `titans_dm.ref_option_deal_cr` → `odata_n_tit.d_ref_option_deal_cr_p` → `dm_hk_n.d_ref_option_deal_cr_p`                                                                                                     | 244892 → 245845                                                          |
+| L132 |          1 | `titans_dm.ref_option_deal_pr` → `odata_n_tit.d_ref_option_deal_pr_p` → `dm_hk_n.d_ref_option_deal_pr_p`                                                                                                     | 244068、244894 → 245885                                                  |
+| L133 |          1 | `titans_dm.ref_option_deal_quote_reset` → `odata_n_tit.d_ref_option_deal_quote_reset` → `pdata_n.t03_otc_opt_comp_conf_pric`                                                                                 | 112993、211471 → 126200                                                  |
+| L134 |          1 | `titans_dm.ref_option_deal_quote_reset` → `odata_n_tit.d_ref_option_deal_quote_reset_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                       | 244223 → 163712                                                          |
+| L135 |          1 | `titans_dm.ref_option_dra_obs` → `odata_n_tit.d_ref_option_dra_obs_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                                         | 244225 → 163712                                                          |
+| L136 |          1 | `titans_dm.ref_otc_contr_precision_detail` → `odata_n_tit.d_ref_otc_contr_precision_detail` → `pdata_n.t03_otc_comp_calc_idx_precision_ref`                                                                  | 137760 → 139660                                                          |
+| L137 |          1 | `titans_dm.ref_sbl` → `odata_n_tit.d_ref_sbl` → `pdata_n.t03_agt_clas_h`                                                                                                                                     | 137758、211641 → 139853、211812                                          |
+| L138 |          1 | `titans_dm.ref_sbl` → `odata_n_tit.d_ref_sbl_p` → `dm_hk_n.info_ref_sbl`                                                                                                                                     | 245300 → 245763                                                          |
+| L139 |          1 | `titans_dm.ref_sbl_leg` → `odata_n_tit.d_ref_sbl_leg` → `pdata_n.t03_otc_swap_comp_leg_info`                                                                                                                 | 137756、140181 → 103942、105073、144299                                  |
+| L140 |          1 | `titans_dm.ref_vol_surface` → `odata_n_tit.d_ref_vol_surface` → `pdata_news_n.t02_fin_vol_curv_surf`                                                                                                         | 46064、71782 → 103242、103243                                            |
+| L141 |          1 | `titans_dm.ref_vol_surface_structure` → `odata_n_tit.d_ref_vol_surface_structure` → `pdata_news_n.t02_fin_vol_curv_surf`                                                                                     | 46065、71781 → 103245、103246                                            |
+| L142 |          1 | `titans_dm.ref_volsurface_instance` → `odata_n_tit.d_ref_volsurface_instance` → `pdata_news_n.t02_fin_vola_instc`                                                                                            | 71890 → 103248                                                           |
+| L143 |          1 | `titans_dm.ref_wind_yield_curve` → `odata_n_tit.d_ref_wind_yield_curve` → `pdata_news_n.t02_fin_curv_mkt_quot`                                                                                               | 101077 → 103198                                                          |
+| L144 |          1 | `titans_dm.risk_accumulated_notional` → `odata_n_tit.d_risk_accumulated_notional` → `pdata_n.t98_otc_deri_undrl_nom_prin_sum`                                                                                | 112714 → 114019                                                          |
+| L145 |          1 | `titans_dm.risk_eod_report_metric_detail` → `odata_n_tit.d_risk_eod_report_metric_detail` → `pdata_n.t98_otc_deri_undrl_trd_lmt_det`                                                                         | 134570 → 134994                                                          |
+| L146 |          1 | `titans_dm.risk_equity_market_value_acc` → `odata_n_tit.d_risk_equity_market_value_acc` → `pdata_n.t98_otc_deri_undrl_crn_info`                                                                              | 103280、103281 → 106217                                                  |
+| L147 |          1 | `titans_dm.risk_equity_nav_acc` → `odata_n_tit.d_risk_equity_nav_acc` → `pdata_n.t98_otc_comp_crn_info`                                                                                                      | 103282、103283 → 106214                                                  |
+| L148 |          1 | `titans_dm.risk_option_initial_metric` → `odata_n_tit.d_risk_option_initial_metric` → `pdata_n.t98_sb_otc_opt_sub_trd_prcg_indx`                                                                             | 78563、106088 → 121573                                                   |
+| L149 |          1 | `titans_dm.trd_bundle_info` → `odata_n_tit.d_trd_bundle_info_p` → `odata_n_tit.d_trd_bundle_info_pb`                                                                                                         | 198814 → 198815                                                          |
+| L150 |          1 | `titans_dm.trd_cumulator_schedule_daily` → `odata_n_tit.d_trd_cumulator_schedule_daily_p` → `pdata_n.t98_otc_opt_comp_sub_trd_base_info`                                                                     | 244240 → 163712                                                          |
+| L151 |          1 | `titans_dm.trd_daily_rebate_interest` → `odata_n_tit.d_trd_daily_rebate_interest` → `dm_otc_n.otc_hk_sale_daily_rpt`                                                                                         | 228349 → 220979                                                          |
+| L152 |          1 | `titans_dm.trd_fast_trs_event` → `odata_n_tit.d_trd_fast_trs_event_p` → `dm_hk_n.info_trd_fast_trs_event`                                                                                                    | 233001 → 245056                                                          |
+| L153 |          1 | `titans_dm.trd_fee` → `odata_n_tit.d_trd_fee_p` → `dm_hk_n.trd_fee_info_d`                                                                                                                                   | 244909 → 245219                                                          |
+| L154 |          1 | `titans_dm.trd_option_limit_audit` → `odata_n_tit.d_trd_option_limit_audit` → `pdata_n.t03_otc_opt_comp_info`                                                                                                | 126973、128503 → 103943、105074、209862                                  |
+| L155 |          1 | `titans_dm.trd_otc_contr_props` → `odata_n_tit.d_trd_otc_contr_props_p` → `dm_hk_n.info_trd_otc_contr_props_day`                                                                                             | 229771 → 245013                                                          |
+| L156 |          1 | `titans_dm.trd_trs_event` → `odata_n_tit.d_trd_trs_event_p` → `dm_hk_n.trd_trs_event_new`                                                                                                                    | 237075 → 237594                                                          |
+| L157 |          1 | `titans_dm.trd_trs_limit_audit` → `odata_n_tit.d_trd_trs_limit_audit` → `pdata_n.t03_otc_swap_comp_info`                                                                                                     | 113844、125859 → 103941、105072、144296                                  |
+| L158 |          1 | `titans_dm.v_fin_trs_plreport` → `odata_n_tit.d_v_fin_trs_plreport` → `pdata_nds.fin_trs_plreport`                                                                                                           | 121242 → 121315                                                          |
+| L159 |          1 | `titans_dm.v_greeks_pricing_rm` → `odata_n_tit.d_v_greeks_pricing_rm_p` → `pdata_news_n.t02_opt_greek_val_det_h`                                                                                             | 244037 → 245011                                                          |
+| L160 |          1 | `titans_dm.v_margin_account_for_risk` → `odata_n_tit.d_v_margin_account_for_risk` → `odata_n_tit.otc_o_margin_account`                                                                                       | 40219、66058 → 41825                                                     |
+| L161 |          1 | `titans_dm.v_report_margin_file_a1020` → `odata_n_tit.d_v_report_margin_file_a1020` → `pdata_n.t95_otc_deri_cust_bail_attach`                                                                                | 206152 → 207791                                                          |
+| L162 |          1 | `titans_dm.v_risk_contr_capital_mapping` → `odata_n_tit.d_v_risk_contr_capital_mapping` → `public.d_v_risk_contr_capital_mapping`                                                                            | 70647、71684 → 79184                                                     |
+| L163 |          1 | `titans_dm.v_risk_cross_border_trs` → `odata_n_tit.d_v_risk_cross_border_trs` → `pdata_n.t98_otc_swap_comp_pal_sum`                                                                                          | 44724、71636、89172、120002 → 106589、107062、143973、143974             |
+| L164 |          1 | `titans_dm.v_risk_limit_threshold` → `odata_n_tit.d_v_risk_limit_threshold` → `public.odata_n_tit_d_v_risk_limit_threshold`                                                                                  | 76267、76268 → 76550                                                     |
+| L165 |          1 | `titans_dm.v_risk_margin_acct_info` → `odata_n_tit.d_v_risk_margin_acct_info` → `public.d_v_risk_margin_acct_info`                                                                                           | 70654、71743 → 79190                                                     |
+| L166 |          1 | `titans_dm.v_risk_option_basket_info` → `odata_n_tit.d_v_risk_option_basket_info` → `pdata_news_n.t02_opt_mult_bask_info`                                                                                    | 101532、103294 → 104478、104481                                          |
+| L167 |          1 | `titans_dm.v_risk_option_cross_metric` → `odata_n_tit.d_v_risk_option_cross_metric` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx`                                                                            | 101530、103298 → 104483、104484                                          |
+| L168 |          1 | `titans_dm.v_risk_option_cross_metric` → `odata_n_tit.d_v_risk_option_cross_metric_p` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx`                                                                          | 244070 → 244510                                                          |
+| L169 |          1 | `titans_dm.v_risk_option_part_metric` → `odata_n_tit.d_v_risk_option_part_metric` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx`                                                                              | 101531、103295 → 104487、104489                                          |
+| L170 |          1 | `titans_dm.v_risk_option_part_metric` → `odata_n_tit.d_v_risk_option_part_metric_p` → `pdata_news_n.t02_opt_mutl_undrl_prcg_indx`                                                                            | 244069 → 244515                                                          |
+| L171 |          1 | `titans_dm.v_risk_plreport_tit` → `odata_n_tit.d_v_risk_plreport_tit` → `public.cal_f_rm_plreport`                                                                                                           | 50169、71643 → 43141                                                     |
+| L172 |          1 | `titans_dm.v_risk_qis` → `odata_n_tit.d_v_risk_qis` → `public.d_v_risk_qis`                                                                                                                                  | 54824、71756 → 88992                                                     |
+| L173 |          1 | `titans_dm.v_risk_transferreport_tit` → `odata_n_tit.d_v_risk_transferreport_tit` → `public.cal_rm_transferreport`                                                                                           | 50345、71700 → 20924                                                     |
+| L174 |          1 | `titans_marketdata.ref_cbond_rate` → `odata_n_tit.m_ref_cbond_rate` → `pdata_news_n.t02_ira_indx_info`                                                                                                       | 164507 → 165804                                                          |
+| L175 |          1 | `titans_marketdata.ref_cbond_rate` → `odata_n_tit.m_ref_cbond_rate_p` → `pdata_news_n.t02_ira_indx_info_pb`                                                                                                  | 238421 → 239826                                                          |
+| L176 |          1 | `titans_marketdata.ref_restricted_stock_daily` → `odata_n_tit.m_ref_restricted_stock_daily` → `pdata_news_n.t02_stk_rstk_disc_info`                                                                          | 226825 → 228593                                                          |
+| L177 |          1 | `titans_refdata.ref_instrument_code` → `odata_n_tit.r_ref_instrument_code` → `spdata.prd_tit_idty_rela_h`                                                                                                    | 34866、63802 → 36710                                                     |
+| L178 |          1 | `titans_refdata.ref_listed_option_props` → `odata_n_tit.r_ref_listed_option_props` → `pdata_news_n.t02_opt_base_info_tit`                                                                                    | 34915、63687 → 176204                                                    |
+| L179 |          1 | `titans_refdata.ref_option_barrieroption` → `odata_n_tit.r_ref_option_barrieroption` → `dm_hk_n.info_ref_option_barrieroption`                                                                               | 228715 → 228821                                                          |
+| L180 |          1 | `titans_refdata.ref_option_barrieroption` → `odata_n_tit.r_ref_option_barrieroption_p` → `dm_hk_n.ref_option_barrieroption`                                                                                  | 245290 → 245679                                                          |
+| L181 |          1 | `titans_refdata.ref_option_cumulator` → `odata_n_tit.r_ref_option_cumulator` → `dm_hk_n.info_ref_option_cumulator`                                                                                           | 228718 → 228823                                                          |
+| L182 |          1 | `titans_refdata.ref_option_cumulator` → `odata_n_tit.r_ref_option_cumulator_p` → `dm_hk_n.ref_option_cumulator`                                                                                              | 245292 → 245683                                                          |
+| L183 |          1 | `titans_refdata.ref_option_digitaloption` → `odata_n_tit.r_ref_option_digitaloption` → `dm_hk_n.info_ref_option_digitaloption`                                                                               | 228719 → 228825                                                          |
+| L184 |          1 | `titans_refdata.ref_option_digitaloption` → `odata_n_tit.r_ref_option_digitaloption_p` → `dm_hk_n.ref_option_digitaloption`                                                                                  | 245294 → 245688                                                          |
+| L185 |          1 | `titans_refdata.ref_option_history_info` → `odata_n_tit.r_ref_option_history_info` → `dm_hk_n.info_ref_option_history_info`                                                                                  | 228720 → 228826                                                          |
+| L186 |          1 | `titans_refdata.ref_option_quote_reset` → `odata_n_tit.r_ref_option_quote_reset` → `pdata_news_n.t02_opt_mkt_quot`                                                                                           | 124865 → 139409                                                          |
+| L187 |          1 | `titans_refdata.ref_option_quote_reset_rate` → `odata_n_tit.r_ref_option_quote_reset_rate` → `dm_hk_n.info_ref_option_quote_reset_rate`                                                                      | 228723 → 228828                                                          |
+| L188 |          1 | `titans_refdata.ref_option_vanillaoption` → `odata_n_tit.r_ref_option_vanillaoption_p` → `dm_hk_n.ref_option_vanillaoption`                                                                                  | 245297 → 245702                                                          |
+| L189 |          1 | `titans_service.pricing_option_eod_pt_metric` → `odata_n_tit.v_pricing_option_eod_pt_metric` → `spdata.sum_agt_otc_stres_opt_day_idx`                                                                        | 34905 → 37069                                                            |
+| L190 |          1 | `titans_staticdata.ref_portfolio` → `odata_n_tit.t_ref_portfolio` → `titans_dm.ref_portfolio`                                                                                                                | 34911、63690 → 37324                                                     |
+| L191 |          1 | `titans_staticdata.ref_portfolio_element` → `odata_n_tit.t_ref_portfolio_element` → `titans_dm.ref_portfolio_element`                                                                                        | 34912、63691 → 37325                                                     |
+| L192 |          1 | `titans_tradeflow.ref_op_deal_lizard_obsdate` → `odata_n_tit.f_ref_op_deal_lizard_obsdate_p` → `dm_hk_n.f_ref_op_deal_lizard_obsdate_p`                                                                      | 244889 → 245817                                                          |
+| L193 |          1 | `titans_tradeflow.ref_option_margin_trs_relation` → `odata_n_tit.f_ref_option_margin_trs_relation` → `pdata_n.t98_otc_deri_comp_sale_info`                                                                   | 231306 → 86840、86841                                                    |
+| L194 |          1 | `titans_tradeflow.trd_fee` → `odata_n_tit.f_trd_fee` → `pdata_n.t05_otc_deri_comp_fee_pymt_plan`                                                                                                             | 206581 → 207947                                                          |
+| L195 |          1 | `titans_tradeflow.trd_option_limit_audit` → `odata_n_tit.f_trd_option_limit_audit` → `dm_hk_n.trd_option_limit_audit_day`                                                                                    | 206587 → 207904                                                          |
+| L196 |          1 | `titans_workflow.act_hi_procinst` → `odata_n_tit.w_act_hi_procinst` → `pdata_n.t05_tit_proc_instc`                                                                                                           | 126921 → 128578                                                          |
+| L197 |          1 | `titans_workflow.act_hi_procinst` → `odata_n_tit.w_act_hi_procinst_p` → `pdata_n.t05_tit_proc_instc`                                                                                                         | 209732 → 210338                                                          |
+| L198 |          1 | `titans_workflow.plc_process_def` → `odata_n_tit.w_plc_process_def` → `pdata_n.t99_tit_proc_def_info`                                                                                                        | 126922 → 128577                                                          |
+| L199 |          1 | `titans_workflow.plc_process_def` → `odata_n_tit.w_plc_process_def_p` → `pdata_n.t99_tit_proc_def_info`                                                                                                      | 209736 → 210337                                                          |
 
 ## 怎样利用清单，而不把长链当成长篇选题
 

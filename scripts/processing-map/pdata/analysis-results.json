@@ -1,0 +1,215 @@
+[
+  {
+    "taskId": "158195",
+    "output": "pdata_n.t98_cutp_base_info",
+    "title": "主体属性按身份整合",
+    "summary": "以交易对手主体为主记录，关联名称、证件、评级和有效历史属性，再用代码字典补描述。",
+    "inputs": [
+      {
+        "table": "pdata_n.t01_pty_cutp",
+        "role": "主记录",
+        "reason": "从指定业务日和来源范围的交易对手主体开始。",
+        "lines": [
+          142,
+          149
+        ]
+      },
+      {
+        "table": "pdata_n.t01_pty_name",
+        "role": "关系/属性补充",
+        "reason": "按Pty_Id补主体名称。",
+        "lines": [
+          158,
+          159
+        ]
+      },
+      {
+        "table": "pdata_n.ref_dw_cd_val",
+        "role": "规则映射",
+        "reason": "按具体代码集补名称描述，不是交易事实输入。",
+        "lines": [
+          152,
+          157
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "选择交易对手范围",
+        "detail": "读取指定业务日的 T01_PTY_CUTP，并限定 Src_Tbl 来源范围。",
+        "lines": [
+          142,
+          149
+        ]
+      },
+      {
+        "title": "按主体键补属性和有效关系",
+        "detail": "以Pty_Id连接名称、状态、上级关系、证件、联系信息和评级；历史属性使用起止日条件，部分证件用row_number取一条。",
+        "lines": [
+          150,
+          216
+        ]
+      },
+      {
+        "title": "写入交易对手整合结果",
+        "detail": "把分散属性投影为交易对手基本信息，目标Busi_Date取data_day_str。多个属性关联后的行唯一性仍需核对。",
+        "lines": [
+          13,
+          141
+        ]
+      }
+    ],
+    "grain": {
+      "object": "交易对手主体及其匹配的属性记录",
+      "time": "主体与部分属性取指定业务日；历史状态/关系按有效期间筛选；目标分区为data_day_str。",
+      "keys": "Pty_Id是核心关联键；部分证件按Pty_Id去重，不能据此推断其他关联也唯一。",
+      "limitation": "此条仅解释158195写入；没有证明整张表Pty_Id与业务日唯一。"
+    },
+    "questions": [
+      "名称、地址、评级等各侧在所选日期是否一对一？"
+    ],
+    "sha256": "e27aaf7f5fc7b7aae4428640ba8228fd4edb8d5eb3078fae6a0c9e321c34c73f"
+  },
+  {
+    "taskId": "121575",
+    "output": "pdata_n.t98_sb_tit_day_hold_indx",
+    "title": "源计算结果按报价日重组",
+    "summary": "先选需要更新的报价日期，再从采集快照补身份和转码；源指标按报价日写入目标。",
+    "inputs": [
+      {
+        "table": "odata_n_tit.d_pos_eod_calc_metrics",
+        "role": "主记录",
+        "reason": "源日终指标结果，按采集BUSI_DATE选快照。",
+        "lines": [
+          249,
+          252
+        ]
+      },
+      {
+        "table": "pdata_n.t98_sb_tit_day_hold_indx",
+        "role": "历史状态",
+        "reason": "按目标业务日期计数，参与确定需要更新的日期。",
+        "lines": [
+          17,
+          24
+        ]
+      },
+      {
+        "table": "pdata_n.ref_cd_cvt_map",
+        "role": "规则映射",
+        "reason": "转换投资类型、状态等枚举，不重新计算源定价结果。",
+        "lines": [
+          253,
+          270
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "确定需要重写的报价日期",
+        "detail": "选择当日报价/当日更新记录的日期，并合并源目标计数不同的日期，形成日期集合。",
+        "lines": [
+          1,
+          27
+        ]
+      },
+      {
+        "title": "保留指标，补模型标识及转码",
+        "detail": "用日期集合筛选源快照；保留源持仓编号，转换模型身份与枚举，多数金额和指标来自源字段。",
+        "lines": [
+          28,
+          44
+        ]
+      },
+      {
+        "title": "按报价日写目标分区",
+        "detail": "目标Calc_Date与Busi_Date均取QUOTE_DATE前10位；读取快照的BUSI_DATE不等于输出分区日期。",
+        "lines": [
+          249,
+          298
+        ]
+      }
+    ],
+    "grain": {
+      "object": "源持仓编号对应的日终指标记录",
+      "time": "Calc_Date与目标Busi_Date来自QUOTE_DATE；源BUSI_DATE是本次读取的采集快照。",
+      "keys": "Src_Hold_Id来自POSITION_ID；不能仅凭该编号与日期认定全部记录唯一。",
+      "limitation": "记录数相等不证明内容未变；未核对源持仓粒度和代码映射唯一性。"
+    },
+    "questions": [
+      "源持仓在同一报价日期是否有多种指标记录？计数相等但数值变化的范围如何覆盖？"
+    ],
+    "sha256": "ca701fcc1112c787f71f767af041eab4ac42e05383d794e3dfcd8867573be8f5"
+  },
+  {
+    "taskId": "173965",
+    "output": "pdata_n.t05_otc_deri_cutp_marg_chg_evt",
+    "title": "保证金台账整理成业务日事件",
+    "summary": "从采集快照选择待更新的源业务日期，补账户对应交易对手和动作代码，再写保证金变动事件。",
+    "inputs": [
+      {
+        "table": "odata_n_tit.d_margin_account_ledger",
+        "role": "主记录",
+        "reason": "台账提供流水标识、发生金额、操作前后余额和源业务日期。",
+        "lines": [
+          28,
+          55
+        ]
+      },
+      {
+        "table": "odata_n_tit.d_margin_account",
+        "role": "关系/属性补充",
+        "reason": "按保证金账户键补交易对手；SQL这里未对账户侧加日期过滤。",
+        "lines": [
+          57,
+          58
+        ]
+      },
+      {
+        "table": "pdata_n.ref_cd_cvt_map",
+        "role": "规则映射",
+        "reason": "按保证金动作代码匹配资金变动类型。",
+        "lines": [
+          59,
+          67
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "title": "选择待处理源业务日期",
+        "detail": "从采集日快照选择当日源业务日期，并比较源目标日期记录数，补入计数不同的历史日期。",
+        "lines": [
+          1,
+          26
+        ]
+      },
+      {
+        "title": "台账补身份和动作含义",
+        "detail": "事件编号由台账流水号加前缀生成，账户键关联交易对手，动作代码查映射；金额和操作前后余额来自台账。",
+        "lines": [
+          28,
+          44
+        ]
+      },
+      {
+        "title": "按事件业务日组织输出",
+        "detail": "Occt_Date及目标Busi_Date来自SRC_BUSI_DATE，生效日期另取ACTUAL_BUSI_DATE；用临时日期集合限制本次重写范围。",
+        "lines": [
+          38,
+          68
+        ]
+      }
+    ],
+    "grain": {
+      "object": "保证金台账流水对应的变动事件",
+      "time": "发生日和目标分区来自SRC_BUSI_DATE；生效日来自ACTUAL_BUSI_DATE；采集快照日期另行筛选。",
+      "keys": "Evt_Id由KEY_MRG_LEDGER_ID生成；账户按KEY_MRG_ACCT_ID关联。",
+      "limitation": "没有验证账户侧多版本或代码多命中是否扩行；计数一致也不等于金额未变。"
+    },
+    "questions": [
+      "账户侧未按日期过滤时是否存在多版本匹配？"
+    ],
+    "sha256": "d22f68617e0a6bde87696208f2b7329333f10d76bfc6460d0f18d594d1dcd9f2"
+  }
+]

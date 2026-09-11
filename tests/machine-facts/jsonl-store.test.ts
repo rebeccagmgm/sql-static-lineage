@@ -53,15 +53,16 @@ describe("jsonl-store gzip envelope", () => {
     expect(first.equals(second)).toBe(true);
   });
 
-  it("still reads legacy uncompressed .jsonl and reports the same records", () => {
+  it("rejects legacy uncompressed .jsonl", () => {
     const dir = mkdtempSync(join(tmpdir(), "jsonl-store-legacy-"));
     const logical = join(dir, "dataset-io.jsonl");
     const records = [{ task_id: "t", direction: "READ", dataset_id: "d" }];
     const bytes = canonicalJsonl(records);
     writeFileSync(logical, bytes, "utf8");
-    expect(inspectJsonlStore(logical)).toEqual({ status: "PLAIN", path: logical });
-    expect(readJsonlRecords(logical)).toEqual(records);
-    expect(hashJsonlStore(logical)).toBe(sha256(bytes));
+    expect(inspectJsonlStore(logical)).toEqual({ status: "LEGACY_PLAIN", path: logical });
+    expect(jsonlStoreExists(logical)).toBe(false);
+    expect(() => readJsonlRecords(logical)).toThrow(/JSONL_STORE_LEGACY_PLAIN/);
+    expect(() => hashJsonlStore(logical)).toThrow(/JSONL_STORE_LEGACY_PLAIN/);
   });
 
   it("rejects a split-brain .jsonl plus .jsonl.gz pair", () => {
@@ -70,7 +71,7 @@ describe("jsonl-store gzip envelope", () => {
     writeCanonicalJsonl(logical, [{ statement_id: "s0" }]);
     writeFileSync(logical, canonicalJsonl([{ statement_id: "s0" }]), "utf8");
     expect(inspectJsonlStore(logical).status).toBe("CONFLICT");
-    expect(jsonlStoreExists(logical)).toBe(true);
+    expect(jsonlStoreExists(logical)).toBe(false);
     expect(() => readJsonlText(logical)).toThrow(/JSONL_STORE_CONFLICT/);
   });
 });

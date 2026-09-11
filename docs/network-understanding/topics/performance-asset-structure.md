@@ -5,6 +5,7 @@
 本页逐项核读 196245、196248、196465、197534、197760，以及存量/资产包/全量汇总 175419、175427、176693 和户均/人均 177395、177407 的全部发布 SQL 槽位。固定证据版本及范围账本见[本主题主篇](../chapters/09-performance-and-assets.md)与 [performance-review.json](../evidence/performance-review.json)。这些目标在当前固定图中没有按同一物理身份确认的直接消费者；是否由应用报表查询、实际展示哪个版本，仍需应用证据。
 
 <a id="structure-org"></a>
+
 ## 机构结构：同一批客户的分组分布
 
 196245 输出一行“营业部 × 分公司 × 客户层级 × 月”，196248 将营业部维度收起，输出“分公司 × 客户层级 × 月”。二者的客户和指标来源相同，分公司版的机构定义查询额外允许 COMPANY、DEPT_OF_HO、SUB_COMPANY。已将两个 query 的全部非空行对比并读过差异，不能仅因名字相近就认定它们相同。[^196245][^196248]
@@ -20,6 +21,7 @@
 例如同组两户资产分别为 10 万、990 万，户均为 500 万，但这一数字不能说明“大部分客户有 500 万”。本表用中位数和标准差补充这个分布问题；而“高净值客户”标签仍由上月净资产决定。示例只说明公式，不代表当前业务数据。
 
 <a id="structure-employee"></a>
+
 ## 员工结构：当前资产包关系归属，金额不按员工分摊
 
 196465 输出“员工及当前机构属性 × 客户层级 × 月”。客户入口换成计算日资产包关系附加表，来源 A_TCUST_RELA、类型 01、有效标志 1，内连接当日员工状态 0。客户分类仍用上一节的个人/机构细分加个人、机构、全量的重叠组。本任务没有给客户金额再乘员工权重，也没有沿用机构版最后的 7001—7030 范围限制。〔196465 query 109—285〕[^196465]
@@ -31,6 +33,7 @@
 员工任职、岗位、司龄和证券从业年限是画像属性。司龄以日期差加 1 除以 365；六位证券从业年月补第一日后计算年限。代码中岗位白名单是注释，未生效。换员工或机构后重跑历史月份，当前关系及属性可能改变归属；不能把此表当成历史月份当时已封存的人员考核凭证。〔196465 query 153—184、422—433〕
 
 <a id="structure-customer"></a>
+
 ## 客户结构：一户多关系明细及休眠分类优先级
 
 197534 的输出粒度不是唯一客户。它在客户及当前机构上左接资产包归属、观察池两类关系，再左接普通开发人员；一户多关系或多开发人会产生多行，且全额资产、收入、净值都会重复携带。资产包要求类型 01、有效标志 1，观察池分支只按源表及计算日取数；普通开发关系按最近交易日、类型 11、四个明确来源取客户—员工的 `distinct` 对。因此适合读关系明细，不能直接把明细总额当成客户资产总量。〔197534 query 231—265、429—448〕[^197534]
@@ -40,6 +43,7 @@
 金额分别为最近交易日总资产、当月折后日均标准资产、计算日年日均标准资产、上年 12 月错位调整后的年日均基期、当月收入、年初至今收入、客户净值和份额。增长值是 `coalesce(本年日均,0)-coalesce(上年基期,0)`，增长率再除以原始基期，没有零或空值保护。客户归属机构有效区间采用左闭右开；但员工名称/机构来自计算日基础信息，这个拼表并不把所有属性同步回业务月末。〔197534 query 28—54、56—106、267—448〕
 
 <a id="structure-trend"></a>
+
 ## 趋势：月份标签下混合当前、月均和年累计
 
 197760 每次产出当前月一行趋势值：总资产取最近交易日的月均指标；标准资产取当前月折后月日均及计算日折后年日均；创收取当年 1 月至当前月累计。四个市场指数则取最近交易日的收盘价，以代码条件 `max` 转成上证综指、上证 50、沪深 300、中证 500 四列。这里没有用资产变化回归市场指数，也没有生成指数涨跌幅，只是并排展示。〔197760 query 35—115、123—158〕[^197760]
@@ -49,6 +53,7 @@
 五项的 prepare 均只执行 `CREATE TABLE IF NOT EXISTS`，目标按月分区，业务字段多为字符串；发布 SQL 未展示分区写入时究竟覆盖还是追加的运行行为，本页不推定。核对消费时，先明确客户层级、机构范围、客户状态和员工关系，再比较同一种金额与时间窗口。折标来源见[折标和归属主篇](../chapters/09-performance-and-assets.md#p09-conversion)，收入成分与员工考核见[收入与综合评价](performance-income-and-evaluation.md)，盈利和收益率分布见[客户盈利统计](performance-customer-profitability.md)。
 
 <a id="structure-cohorts"></a>
+
 ## 存量、资产包与全量客户汇总：入金资格和统计月份分开
 
 175419 的存量客户不是“本月有余额客户”，而是计算日 BROK 状态 04、非内部户、开户日期早于当年 1 月 1 日的个人及机构客户。客户—机构关系取计算日左闭右开区间，翻牌后按客户与机构分组去重，再连接指标。175427 在这套范围前再内接当日类型 01、有效标志 1 的资产包关系，按关系行计客户数；同客户多个有效员工关系没有先压成一户，金额和人数都可能重复。176693 移除“本年以前开户”限制成为全量版；其两类入金资格的客户组合查询也不再要求 status=1。三项最终都是营业部及分公司属性 × 月份，差异不是字段命名而是客户集合。〔175419 query 72—158；175427 query 72—126；176693 query 91—116、233—270，变体完整逐行对比〕[^175419][^175427][^176693]
@@ -58,6 +63,7 @@
 金额时间也不能用一个“月日均”概括：总资产消费最近交易日的月均指标；折前年均和折后年均取计算日，折后月均取当前月；创收、股基成交、银证转入转出、产品销量取本月首日至计算日。银证转出源按负数直接加到转入形成净额。产品保有字段虽注释“日均”，实际只取计算日正市值，未求平均；销量排除五个指定现金类产品，保有排除其中四个，两个产品范围也不同。两融余额取计算日融资及融券两个标签。三项 prepare 仅建表，本 query 不证明分区运行覆盖方式。〔175419 query 159—354；175427、176693 已逐项比对值来源〕
 
 <a id="structure-per-household"></a>
+
 ## 户均分公司报表：九个客群并排，分母仍是客户行
 
 177395 以计算日有效客户—机构关系、BROK 状态 04 且非内部户为基础，只保留分公司编号 7001—8811；分类按上月末可用月均净资产：个人不足 10 万、10 万至不足 50 万、50 万至不足 500 万、至少 500 万四档，另有个人总组；机构有同业、私募、其他企业及机构总组。这里同业和私募分别用自己的标志独立判断，某客户两标志均为 1 时会进两个组，而前面机构结构报表的 CASE 有先同业后私募优先级。〔177395 query 81—161、198—268〕[^177395]
@@ -65,20 +71,29 @@
 数值为最近交易日月均总资产、当前月全口径收入、计算日折后年日均标准资产，缺失值先补 0。每客群户均为金额和除客户行数，户均资产创收为“总创收/总资产 × 10,000”，单位元/万元。中位数使用按该组条件筛选的金额 percentile(0.5)，标准差使用 STDDEV_POP；开头生成的多组升降序 row_number 并未用于最终中位数。司占比则是该分公司同客群金额除 7001—8811 范围同客群总额。所有除法均无零分母保护；计数不是 distinct，源关系放大会改变分布。〔query 1—77、162—266、419—742〕
 
 <a id="structure-per-employee"></a>
+
 ## 人均分公司报表：客户总体除以筛选后的业务人员数
 
 177407 的客户来源、九个客群、金额与时间口径已同 177395 作全行比对；它移除中位数、标准差和司占比，改为每分公司每类客户数、资产、标准资产和收入分别除以 emp_num。emp_num 来自计算日员工表，要求状态 0，岗位命中明确业务岗位白名单，司龄 `(计算日−入职日+1)/365 >= 1`，分公司仍限 7001—8811，并按员工号 distinct 计数。白名单包含投顾、理财、零售、机构、私人财富、资产配置与业务管理等指定岗位，不等价于该机构所有员工。〔177407 query 1—244、328—447〕[^177407]
 
 分子来自该分公司的全部入选客户，并没有只连接到这些满一年业务人员名下的客户。因此这个人均值描述“区域客户资源/成熟业务人员数”，不等于员工个人资产的平均，也不能用来反推出员工分摊比例。没有匹配员工分母的分公司通过左连接保留，商值为空；并未补成零或删掉机构。prepare 与户均版一样仅建月分区表。与员工个人画像的差异，见本页[员工结构](#structure-employee)。
 
-[^196245]: Task 196245，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196245/versions/c8c1031608635451b1b4ff08493973d17ababc4815d6f1c462a9be45b4fa4665.evidence-v3.json>)。
-[^196248]: Task 196248，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196248/versions/776c9ae7171689cf55e3fcd9ef26995695d14ce0d4b716247950711a7e6614a6.evidence-v3.json>)。
-[^196465]: Task 196465，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196465/versions/609c89b5e8a8c729e06117fcaa4b248fc1ef20b35cffdf9d18bbef54aec7f4be.evidence-v3.json>)。
-[^197534]: Task 197534，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197534/versions/c428131cd663baf7d4b2d9bc2b415ee2e317c26301b854ddf44a796cecedf921.evidence-v3.json>)。
-[^197760]: Task 197760，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197760/versions/1c308ac33408973162db6cbe5aba57de978a3adbe251d808e835c159ff98fa70.evidence-v3.json>)。
+[^196245]: Task 196245，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196245/versions/c8c1031608635451b1b4ff08493973d17ababc4815d6f1c462a9be45b4fa4665.evidence-v3.json)。
 
-[^175419]: Task 175419，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175419/versions/d933ccb26555754c4bf7d848ccf642c790c3e3c8ead00b0bd1720903fb4b0dc8.evidence-v3.json>)。
-[^175427]: Task 175427，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175427/versions/3f568ff65cb418d2a700f9e1434ace7351ce0b9ddd429d035ed7023c9556948f.evidence-v3.json>)。
-[^176693]: Task 176693，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/176693/versions/2130bf7ffd1a5b0495beea7d798682b49931e67c91855be30fe505c142a5c493.evidence-v3.json>)。
-[^177395]: Task 177395，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/177395/versions/e5f6a1d3344f77a015da9a1b45d71b8343fa9e409655e00170a418dac26dc933.evidence-v3.json>)。
-[^177407]: Task 177407，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/177407/versions/2f70fa3688d15da3c5f8b0b809102837ad0dde17bf33c7fe3714261be8c8c79e.evidence-v3.json>)。
+[^196248]: Task 196248，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196248/versions/776c9ae7171689cf55e3fcd9ef26995695d14ce0d4b716247950711a7e6614a6.evidence-v3.json)。
+
+[^196465]: Task 196465，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/196465/versions/609c89b5e8a8c729e06117fcaa4b248fc1ef20b35cffdf9d18bbef54aec7f4be.evidence-v3.json)。
+
+[^197534]: Task 197534，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197534/versions/c428131cd663baf7d4b2d9bc2b415ee2e317c26301b854ddf44a796cecedf921.evidence-v3.json)。
+
+[^197760]: Task 197760，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197760/versions/1c308ac33408973162db6cbe5aba57de978a3adbe251d808e835c159ff98fa70.evidence-v3.json)。
+
+[^175419]: Task 175419，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175419/versions/d933ccb26555754c4bf7d848ccf642c790c3e3c8ead00b0bd1720903fb4b0dc8.evidence-v3.json)。
+
+[^175427]: Task 175427，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/175427/versions/3f568ff65cb418d2a700f9e1434ace7351ce0b9ddd429d035ed7023c9556948f.evidence-v3.json)。
+
+[^176693]: Task 176693，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/176693/versions/2130bf7ffd1a5b0495beea7d798682b49931e67c91855be30fe505c142a5c493.evidence-v3.json)。
+
+[^177395]: Task 177395，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/177395/versions/e5f6a1d3344f77a015da9a1b45d71b8343fa9e409655e00170a418dac26dc933.evidence-v3.json)。
+
+[^177407]: Task 177407，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/177407/versions/2f70fa3688d15da3c5f8b0b809102837ad0dde17bf33c7fe3714261be8c8c79e.evidence-v3.json)。

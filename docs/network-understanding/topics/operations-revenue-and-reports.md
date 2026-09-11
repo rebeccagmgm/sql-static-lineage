@@ -16,13 +16,13 @@
 
 ## 常用经营指标的直接公式
 
-| 表/任务 | 实际粒度与口径 | 使用边界 |
-|---|---|---|
-| `bi_otc_amount_change` / 227697 | 客户名称+USCC+计提日，分别合计期权/互换动态名本，最近 12 个月 | 名字叫 change，SQL 未求相邻日差，是各日规模水平 |
-| `bi_otc_year_revenue` / 227701 | 客户+计提年，按 OPTION/TRS 汇总 `Curr_Rev` 并除 1 万；非 CNY 标的创收另列 | “跨境”由标的币种判断，不能代替法律主体或完整跨境分类；交叉奖励按公司名和结算年另接 |
-| `bi_otc_busi_stat` / 228008 | 客户+业务类型+合同类型，新增仅首个计提日初始名本，存量取当天动态名本 | 只保留期初日≥2025-04-01 的合同；利润率为今年创收/当日正存量，不是年化收益率 |
-| `bi_otc_underlying_analysis` / 234355 | 客户+标的+业务类型+计提日，动态名本÷1万 | `current_pnl` 直接 NULL；出口 234407 又排除标的名称含分号的行 |
-| `otc_rev_daily_rpt_sum` / 227888 | 按业务类型、客户、合同类型和计提日等维度合计规模/创收/NPV创收 | 数据库出口自身有聚合，不是明细的无损副本 |
+| 表/任务                               | 实际粒度与口径                                                            | 使用边界                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `bi_otc_amount_change` / 227697       | 客户名称+USCC+计提日，分别合计期权/互换动态名本，最近 12 个月             | 名字叫 change，SQL 未求相邻日差，是各日规模水平                                    |
+| `bi_otc_year_revenue` / 227701        | 客户+计提年，按 OPTION/TRS 汇总 `Curr_Rev` 并除 1 万；非 CNY 标的创收另列 | “跨境”由标的币种判断，不能代替法律主体或完整跨境分类；交叉奖励按公司名和结算年另接 |
+| `bi_otc_busi_stat` / 228008           | 客户+业务类型+合同类型，新增仅首个计提日初始名本，存量取当天动态名本      | 只保留期初日≥2025-04-01 的合同；利润率为今年创收/当日正存量，不是年化收益率        |
+| `bi_otc_underlying_analysis` / 234355 | 客户+标的+业务类型+计提日，动态名本÷1万                                   | `current_pnl` 直接 NULL；出口 234407 又排除标的名称含分号的行                      |
+| `otc_rev_daily_rpt_sum` / 227888      | 按业务类型、客户、合同类型和计提日等维度合计规模/创收/NPV创收             | 数据库出口自身有聚合，不是明细的无损副本                                           |
 
 公式证据：[227697 · query · 9–22行](../../../../sql-static-lineage-data/task-projections/tasks/227697/versions/dde02898bbcc610245d3e308de389be76c8094f2531be7b7802b18a9601ee6d9.evidence-v3.json) [227701 · query · 18–44行](../../../../sql-static-lineage-data/task-projections/tasks/227701/versions/56bc3d521850db14663cd55d76c21c53516335189eea1cde089db9c8f0342c2b.evidence-v3.json) [228008 · query · 15–44行](../../../../sql-static-lineage-data/task-projections/tasks/228008/versions/46414c969ab4fcf6f2b7c78f8a6bcb3b8564b34b4cb2c0f0fff4f32c21de790b.evidence-v3.json) [234355 · query · 11–23行](../../../../sql-static-lineage-data/task-projections/tasks/234355/versions/fea6b528ba398c82d80543a01261a83d0564f5e2642dc13c50bbcebab0b5db6c.evidence-v3.json) [234407 · query · 9–11行](../../../../sql-static-lineage-data/task-projections/tasks/234407/versions/4378ce5e239fbc0e2cd31b0f06c4d61bf9aea8caa096f59f60927486ef13e085.evidence-v3.json) [227888 · query · 1–22行](../../../../sql-static-lineage-data/task-projections/tasks/227888/versions/9a44a6e092fbaaa9ff21e97ecd96c9631a19d3578e9fed88dfc96a1f6d70b711.evidence-v3.json)
 

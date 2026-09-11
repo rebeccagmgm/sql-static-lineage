@@ -74,13 +74,13 @@ HCR 经纪股票期权又分开仓、到期、平仓：开仓用持仓与成交�
 
 期权材料按三个层次保留，不应为了看起来简单压成一行合约：合约层记录对手、账户、币种、费用和终止状态；结构层记录标的、定价日期、精度、跨币种及收益规则；子交易层记录自身有效期、产品、账簿、本金、数量、障碍和兑付安排。`civ_otc_opt_comp_sub_trd_base_info` 是较宽的子交易摘要，已有多种观察日串和产品特殊条款；它不是其他全部细表的一对一替代物。此家族主要是投影和来源筛选，没有在本章这些任务中执行敲入敲出判断或期权定价模型。依据：[220143][E220143] query 141–283；[220336][E220336] query 119–240；[220348][E220348] query 70–142；[220685][E220685] query 84–169。
 
-| 条款细节 | 行所表达的对象与处理 | 直接证据 |
-|---|---|---|
-| 合约障碍价格、障碍线 | 协议及序号下的价格、障碍类型或有效区间；只限来源，输出日期写为运行日 | [220372][E220372] query 16–31；[220461][E220461] query 20–38 |
-| 票息、行权价 | 协议及序号下的年化票息或执行价；限定来源和当日 | [220477][E220477] query 18–35；[220561][E220561] query 19–37 |
-| RESET 协商价格 | 协议、产品及观察日的协商价；来源过滤，输出日期写运行日 | [220553][E220553] query 16–30 |
-| 自动赎回 | 子交易的参与率、损失上限、敲入/票息障碍及支付标志；限定来源和当日 | [220723][E220723] query 43–85 |
-| 观察日属性 | 子交易、属性类型、观察/兑付日及票息/障碍；本任务无日期或来源过滤 | [220751][E220751] query 28–54 |
+| 条款细节               | 行所表达的对象与处理                                                                   | 直接证据                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 合约障碍价格、障碍线   | 协议及序号下的价格、障碍类型或有效区间；只限来源，输出日期写为运行日                   | [220372][E220372] query 16–31；[220461][E220461] query 20–38 |
+| 票息、行权价           | 协议及序号下的年化票息或执行价；限定来源和当日                                         | [220477][E220477] query 18–35；[220561][E220561] query 19–37 |
+| RESET 协商价格         | 协议、产品及观察日的协商价；来源过滤，输出日期写运行日                                 | [220553][E220553] query 16–30                                |
+| 自动赎回               | 子交易的参与率、损失上限、敲入/票息障碍及支付标志；限定来源和当日                      | [220723][E220723] query 43–85                                |
+| 观察日属性             | 子交易、属性类型、观察/兑付日及票息/障碍；本任务无日期或来源过滤                       | [220751][E220751] query 28–54                                |
 | 子交易障碍线、区间属性 | 前者含有效期与触线日；后者含序号、边界值和累积票息率；均按来源，后者把输出日写为运行日 | [220803][E220803] query 23–45；[220813][E220813] query 19–36 |
 
 这些“运行日写入”不代表条款当天生效。实际生效/观察日期仍在业务字段里；查历史时不能把它们与分区日互换。合约投影 220336 的过滤参数写为 `${yyy-MM-dd}`，与同家族常用四位年模板不同，其运行时解释未验证，故该项保留为已定位而未完成解释的边界。依据：[220336][E220336] query 237–240。
@@ -97,56 +97,56 @@ HCR 经纪股票期权又分开仓、到期、平仓：开仓用持仓与成交�
 
 但本范围存在三种不同证据边界。第一，部分分发任务的声明目标、清理语句与投影 `finalWrites` 的库名不一致：6 项仍投影到 `dm_fin_n`，另 3 项投影为 `gfval` 而清理目标为 `gfedw`，物理写入须继续核对。第二，期权子交易的调度邻居 220154 实际读取的是 `dm_fin_test`，不能冒充已验证的 `dm_fin_n` 出口。第三，多项条款和曲面下游只有调度邻居而无 SQL，未证明估值端读取了哪张表、哪天数据。完整说明应把这些断点留在这里；结果被业务端读取、科目映射符合制度和金额通过财务验收，都仍需各自证据。依据：逐任务 [finance-review.json](../evidence/finance-review.json) 的目标差异与 `boundaryTasks`；[220154][E220154] query 141–143。
 
-
 <!-- Evidence references: line ranges in prose refer to the named sqlSources slot, not JSON file lines. -->
-[E118174]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/118174/versions/c8b4e734d772ac25cb9d5542752868040be3d4e7dae593484dd0399c3c97b73b.evidence-v3.json>
-[E134640]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/134640/versions/2cb849173f1ba19be961fb8cb3daf3e254435038353be0622db2e1b2578088dd.evidence-v3.json>
-[E171179]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171179/versions/52b3592241d4376de5cba7958db9429eba1376e61958aae49f5fa43ce76c1402.evidence-v3.json>
-[E173137]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173137/versions/713624970a02eb7015cfd19618574740967539ea74282b6a4740ba21808cd2ec.evidence-v3.json>
-[E173282]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173282/versions/717e4c82699e93581abe3e2e01eae49b0f71e061eb619a8d247b5d91cee7deb4.evidence-v3.json>
-[E173559]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173559/versions/0cdf060be6c4559132f37e540bdbb66fd9f78eaee9d126312d0df2858ef1966e.evidence-v3.json>
-[E173563]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173563/versions/85fa5d39bbc13a68c6fd0680f090c6c0968b231b32e865d91a26cc3f84269dce.evidence-v3.json>
-[E180425]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/180425/versions/959409be87568be25142b74a046f77c9f45a17d2fe4f2426778fb3981ebb14d2.evidence-v3.json>
-[E198806]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198806/versions/1de0c6c58f34d0e3fa358ab0506890bdae1309ceaf1100bdc8699257a5faeb68.evidence-v3.json>
-[E198831]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198831/versions/05da0f88a6ca4d1d969dc1a407d45f17f711971607919208faa7c069ba4734a8.evidence-v3.json>
-[E198929]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198929/versions/609ff30c7b2e143e93105d1ec1f83b3f95aba954b81cd0ab86c8a6715f6d5ef9.evidence-v3.json>
-[E199720]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199720/versions/be42479f2011552318799a8edd1ea696ad581628a627388f7815598ab24bf6c8.evidence-v3.json>
-[E199723]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199723/versions/211709eaa427c93bdfda7446dc9307af779fe480a15e4c241e5e3229283b19de.evidence-v3.json>
-[E199729]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199729/versions/6e54bf781f68a34d6edc54ca06f2230e211c7d8f713c5c68c63b5db1abff9634.evidence-v3.json>
-[E199734]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199734/versions/5a49272383e862a201fbd9bb66f22b61d57bc144be40633ce5588ce677ea3581.evidence-v3.json>
-[E199736]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199736/versions/5c896f769db142b0c673f4f0b4f8cdbf97c1b24b71af868a3504ca677b037aa4.evidence-v3.json>
-[E199740]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199740/versions/18ed7733c1d9281e1ce2c588db2001bfce74bda509ded410dc5db1233c03a87e.evidence-v3.json>
-[E199845]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199845/versions/4bb08d4a698b6f0faade1b7cce7c5743831f02cd062849fd327a422f2c2af8ae.evidence-v3.json>
-[E199871]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199871/versions/6aef2d2a79f5cfdb960e2676b8f351cbe491fbae90b3b54a698ea2ed7f6a02e7.evidence-v3.json>
-[E199872]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199872/versions/c3aae921c63e9b6d62c0824f54470f96c440d2e7bc91452e7c20560495b32635.evidence-v3.json>
-[E200199]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200199/versions/ac14aa50c534e8937067f3c4dc24975fd9cbfe9f02515edbb3327fdee97ed22e.evidence-v3.json>
-[E200256]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200256/versions/8065f9b57caed32124b089e1205172cb7ef88b957eb103de5e61024fd9b47056.evidence-v3.json>
-[E201133]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201133/versions/e7f45e44ae7b37b2c28664938044361cacb32963df6f7cfe4dee23d9a82f26bc.evidence-v3.json>
-[E201181]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201181/versions/b546cc902285035da9857a9ae1ddafe653f37bce96c345d7a33ccd0620d79729.evidence-v3.json>
-[E202510]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202510/versions/361c0b47f677583bf3460dc9d98b7b351ba1d3a0308a3d6eb50906408c06aa32.evidence-v3.json>
-[E202957]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202957/versions/992c0825368cc5030eec5ffdf30d509e941b5afb6bb42e1f80c8be8cb4416fc3.evidence-v3.json>
-[E203056]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203056/versions/3230bad10cf9d485f435325bd429a68a6af93b2f11700da824eeaee1a70760b7.evidence-v3.json>
-[E211987]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/211987/versions/f07e8838fd233094e42ae2952bec4ab18236edc42d38189e3d2bfbedf141a442.evidence-v3.json>
-[E216868]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/216868/versions/df333aed29406e183d3cab9f77a7c5e2ba6a54345d83a8eb1bc13f424229d382.evidence-v3.json>
-[E216869]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/216869/versions/ab162b0a49d0a64ae01275ca6e3636f1e50f3a9504478445a5d376e739f713e9.evidence-v3.json>
-[E220143]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220143/versions/d6dcbc5f7f61cba2ad797a89e2c49071a556196d43eb8c4e5112302f6b46b111.evidence-v3.json>
-[E220336]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220336/versions/17f783d968023db44e69c42771700459d46357bc4753b4977337e5d789577b68.evidence-v3.json>
-[E220348]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220348/versions/b35311fa20f0fc16549dcc92d0733cae505e1acee8bd02b30ebf7961a8bb1eac.evidence-v3.json>
-[E220372]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220372/versions/e85f0f4d5726e5b4652cf0eeae364a70c9063d3ce0a9925fb9c5cec2f8d07f81.evidence-v3.json>
-[E220461]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220461/versions/e08bd15543406d116797e0e0f4fd826a7ee08f9a0c50957c91f1011ec1a8c38e.evidence-v3.json>
-[E220477]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220477/versions/6d18f3a10934ebcdfde5789be98f15509ec4b3362e593fad29ca42931801d1cc.evidence-v3.json>
-[E220553]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220553/versions/8279b87a85d24d26bc0a8703b84de3336ecf53909b9e679a02c247016535e4fd.evidence-v3.json>
-[E220561]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220561/versions/01d178343ece0500690659ed2789036171e058acae9e954f90016f1d37dfb023.evidence-v3.json>
-[E220685]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220685/versions/a0eab690ff8fc87dc7008b7e70fd6536e85d74f66c24912c727087c345125aa9.evidence-v3.json>
-[E220723]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220723/versions/1205be963e351a48fcb076ece1f1624f57969a090a2b2f3f6a5fb1ea3d55d834.evidence-v3.json>
-[E220751]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220751/versions/518762787257f3c46cb2e600fdf54a5b04b2877b9ad0a43b2c6dcee084fab014.evidence-v3.json>
-[E220803]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220803/versions/17b2ce3bbf91ac1bbdddeeceb0bf7f1b5e60092578c7b553c8e9d9a7e5f77a7c.evidence-v3.json>
-[E220813]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220813/versions/f434f57e763610b83349e81cf3dd18b5e9e46528b59bbc651cbad53a01e4d162.evidence-v3.json>
-[E220853]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220853/versions/e56ad74d726e9187f849d72ebb9f301f62b54a9ae4534dbf3eee945f6a456cf8.evidence-v3.json>
-[E225436]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/225436/versions/780633dcb8da6bd2d0d5d238de28e22aee9528442adc30565d5469588b3fc447.evidence-v3.json>
-[E226067]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226067/versions/ac7904c8a4bf64dc28d14ec438f734cd06ae4a5e6930b40803f96c67cb536338.evidence-v3.json>
-[E226123]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226123/versions/3208194f8ea6f15cde5cf62144d025249c4c8690a649d8cc732948f292a00d8b.evidence-v3.json>
-[E226134]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226134/versions/bea2195ae76ae4ba9681dc789f080fd289369ed0a1aacc950d21e030c9f9c267.evidence-v3.json>
-[E226709]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226709/versions/a9e5377c32ce58328ca7b4e07601d1d6f98ea308da183c985a2e57875797ceac.evidence-v3.json>
-[E228801]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/228801/versions/d37a8c648f7befd3a9af9376338e1abb51628a438d3ec350b6e1cb39eee61063.evidence-v3.json>
-[E220154]: <E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220154/versions/9b5d0e96fa96934f00f755e594d290940a8075b5d97758dd65bb235b83cb1b6b.evidence-v3.json>
+
+[E118174]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/118174/versions/c8b4e734d772ac25cb9d5542752868040be3d4e7dae593484dd0399c3c97b73b.evidence-v3.json
+[E134640]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/134640/versions/2cb849173f1ba19be961fb8cb3daf3e254435038353be0622db2e1b2578088dd.evidence-v3.json
+[E171179]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171179/versions/52b3592241d4376de5cba7958db9429eba1376e61958aae49f5fa43ce76c1402.evidence-v3.json
+[E173137]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173137/versions/713624970a02eb7015cfd19618574740967539ea74282b6a4740ba21808cd2ec.evidence-v3.json
+[E173282]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173282/versions/717e4c82699e93581abe3e2e01eae49b0f71e061eb619a8d247b5d91cee7deb4.evidence-v3.json
+[E173559]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173559/versions/0cdf060be6c4559132f37e540bdbb66fd9f78eaee9d126312d0df2858ef1966e.evidence-v3.json
+[E173563]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/173563/versions/85fa5d39bbc13a68c6fd0680f090c6c0968b231b32e865d91a26cc3f84269dce.evidence-v3.json
+[E180425]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/180425/versions/959409be87568be25142b74a046f77c9f45a17d2fe4f2426778fb3981ebb14d2.evidence-v3.json
+[E198806]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198806/versions/1de0c6c58f34d0e3fa358ab0506890bdae1309ceaf1100bdc8699257a5faeb68.evidence-v3.json
+[E198831]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198831/versions/05da0f88a6ca4d1d969dc1a407d45f17f711971607919208faa7c069ba4734a8.evidence-v3.json
+[E198929]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198929/versions/609ff30c7b2e143e93105d1ec1f83b3f95aba954b81cd0ab86c8a6715f6d5ef9.evidence-v3.json
+[E199720]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199720/versions/be42479f2011552318799a8edd1ea696ad581628a627388f7815598ab24bf6c8.evidence-v3.json
+[E199723]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199723/versions/211709eaa427c93bdfda7446dc9307af779fe480a15e4c241e5e3229283b19de.evidence-v3.json
+[E199729]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199729/versions/6e54bf781f68a34d6edc54ca06f2230e211c7d8f713c5c68c63b5db1abff9634.evidence-v3.json
+[E199734]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199734/versions/5a49272383e862a201fbd9bb66f22b61d57bc144be40633ce5588ce677ea3581.evidence-v3.json
+[E199736]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199736/versions/5c896f769db142b0c673f4f0b4f8cdbf97c1b24b71af868a3504ca677b037aa4.evidence-v3.json
+[E199740]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199740/versions/18ed7733c1d9281e1ce2c588db2001bfce74bda509ded410dc5db1233c03a87e.evidence-v3.json
+[E199845]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199845/versions/4bb08d4a698b6f0faade1b7cce7c5743831f02cd062849fd327a422f2c2af8ae.evidence-v3.json
+[E199871]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199871/versions/6aef2d2a79f5cfdb960e2676b8f351cbe491fbae90b3b54a698ea2ed7f6a02e7.evidence-v3.json
+[E199872]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199872/versions/c3aae921c63e9b6d62c0824f54470f96c440d2e7bc91452e7c20560495b32635.evidence-v3.json
+[E200199]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200199/versions/ac14aa50c534e8937067f3c4dc24975fd9cbfe9f02515edbb3327fdee97ed22e.evidence-v3.json
+[E200256]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200256/versions/8065f9b57caed32124b089e1205172cb7ef88b957eb103de5e61024fd9b47056.evidence-v3.json
+[E201133]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201133/versions/e7f45e44ae7b37b2c28664938044361cacb32963df6f7cfe4dee23d9a82f26bc.evidence-v3.json
+[E201181]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/201181/versions/b546cc902285035da9857a9ae1ddafe653f37bce96c345d7a33ccd0620d79729.evidence-v3.json
+[E202510]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202510/versions/361c0b47f677583bf3460dc9d98b7b351ba1d3a0308a3d6eb50906408c06aa32.evidence-v3.json
+[E202957]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/202957/versions/992c0825368cc5030eec5ffdf30d509e941b5afb6bb42e1f80c8be8cb4416fc3.evidence-v3.json
+[E203056]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203056/versions/3230bad10cf9d485f435325bd429a68a6af93b2f11700da824eeaee1a70760b7.evidence-v3.json
+[E211987]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/211987/versions/f07e8838fd233094e42ae2952bec4ab18236edc42d38189e3d2bfbedf141a442.evidence-v3.json
+[E216868]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/216868/versions/df333aed29406e183d3cab9f77a7c5e2ba6a54345d83a8eb1bc13f424229d382.evidence-v3.json
+[E216869]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/216869/versions/ab162b0a49d0a64ae01275ca6e3636f1e50f3a9504478445a5d376e739f713e9.evidence-v3.json
+[E220143]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220143/versions/d6dcbc5f7f61cba2ad797a89e2c49071a556196d43eb8c4e5112302f6b46b111.evidence-v3.json
+[E220336]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220336/versions/17f783d968023db44e69c42771700459d46357bc4753b4977337e5d789577b68.evidence-v3.json
+[E220348]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220348/versions/b35311fa20f0fc16549dcc92d0733cae505e1acee8bd02b30ebf7961a8bb1eac.evidence-v3.json
+[E220372]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220372/versions/e85f0f4d5726e5b4652cf0eeae364a70c9063d3ce0a9925fb9c5cec2f8d07f81.evidence-v3.json
+[E220461]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220461/versions/e08bd15543406d116797e0e0f4fd826a7ee08f9a0c50957c91f1011ec1a8c38e.evidence-v3.json
+[E220477]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220477/versions/6d18f3a10934ebcdfde5789be98f15509ec4b3362e593fad29ca42931801d1cc.evidence-v3.json
+[E220553]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220553/versions/8279b87a85d24d26bc0a8703b84de3336ecf53909b9e679a02c247016535e4fd.evidence-v3.json
+[E220561]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220561/versions/01d178343ece0500690659ed2789036171e058acae9e954f90016f1d37dfb023.evidence-v3.json
+[E220685]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220685/versions/a0eab690ff8fc87dc7008b7e70fd6536e85d74f66c24912c727087c345125aa9.evidence-v3.json
+[E220723]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220723/versions/1205be963e351a48fcb076ece1f1624f57969a090a2b2f3f6a5fb1ea3d55d834.evidence-v3.json
+[E220751]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220751/versions/518762787257f3c46cb2e600fdf54a5b04b2877b9ad0a43b2c6dcee084fab014.evidence-v3.json
+[E220803]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220803/versions/17b2ce3bbf91ac1bbdddeeceb0bf7f1b5e60092578c7b553c8e9d9a7e5f77a7c.evidence-v3.json
+[E220813]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220813/versions/f434f57e763610b83349e81cf3dd18b5e9e46528b59bbc651cbad53a01e4d162.evidence-v3.json
+[E220853]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220853/versions/e56ad74d726e9187f849d72ebb9f301f62b54a9ae4534dbf3eee945f6a456cf8.evidence-v3.json
+[E225436]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/225436/versions/780633dcb8da6bd2d0d5d238de28e22aee9528442adc30565d5469588b3fc447.evidence-v3.json
+[E226067]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226067/versions/ac7904c8a4bf64dc28d14ec438f734cd06ae4a5e6930b40803f96c67cb536338.evidence-v3.json
+[E226123]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226123/versions/3208194f8ea6f15cde5cf62144d025249c4c8690a649d8cc732948f292a00d8b.evidence-v3.json
+[E226134]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226134/versions/bea2195ae76ae4ba9681dc789f080fd289369ed0a1aacc950d21e030c9f9c267.evidence-v3.json
+[E226709]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/226709/versions/a9e5377c32ce58328ca7b4e07601d1d6f98ea308da183c985a2e57875797ceac.evidence-v3.json
+[E228801]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/228801/versions/d37a8c648f7befd3a9af9376338e1abb51628a438d3ec350b6e1cb39eee61063.evidence-v3.json
+[E220154]: E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220154/versions/9b5d0e96fa96934f00f755e594d290940a8075b5d97758dd65bb235b83cb1b6b.evidence-v3.json

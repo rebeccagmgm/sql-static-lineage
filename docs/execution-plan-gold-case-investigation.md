@@ -2,14 +2,14 @@
 
 配套：
 
-| 文档 | 读什么 |
-| --- | --- |
-| `domain-asset-graph-architecture.md` | 机器单位（写观察×读次）、三层、端到端数据流 |
-| `execution-plan-asset-graph.md` | 总地图、WP 状态、里程碑 |
-| `execution-plan-task-local-projection.md` | WP-3 纸条契约 1.2.0 |
-| `execution-plan-task-local-union.md` | WP-5 并集 + WP-8 接续 |
-| `graph-accuracy-architecture.md` | 准确性冻结、接续四态 |
-| `graph-user-narrative.md` | L0–L3 对用户怎么讲 |
+| 文档                                      | 读什么                                      |
+| ----------------------------------------- | ------------------------------------------- |
+| `domain-asset-graph-architecture.md`      | 机器单位（写观察×读次）、三层、端到端数据流 |
+| `execution-plan-asset-graph.md`           | 总地图、WP 状态、里程碑                     |
+| `execution-plan-task-local-projection.md` | WP-3 纸条契约 1.2.0                         |
+| `execution-plan-task-local-union.md`      | WP-5 并集 + WP-8 接续                       |
+| `graph-accuracy-architecture.md`          | 准确性冻结、接续四态                        |
+| `graph-user-narrative.md`                 | L0–L3 对用户怎么讲                          |
 
 ---
 
@@ -29,26 +29,26 @@
 
 ### 主交付物（P0）
 
-| 产物 | 必须 |
-| --- | --- |
-| `batch-manifest.json`（含 `upstreamExpansion`） | ✓ |
-| `tasks/<id>/task-local-projection.json` | ✓ |
-| `union-continuation-index.json` + `manifest.json` | ✓ |
-| `gold-case-gaps.jsonl` | ✓（GC-3） |
-| L0–L3 报告（JSON 或 MD） | ✓（GC-3） |
-| HTML | 可选 |
+| 产物                                              | 必须      |
+| ------------------------------------------------- | --------- |
+| `batch-manifest.json`（含 `upstreamExpansion`）   | ✓         |
+| `tasks/<id>/task-local-projection.json`           | ✓         |
+| `union-continuation-index.json` + `manifest.json` | ✓         |
+| `gold-case-gaps.jsonl`                            | ✓（GC-3） |
+| L0–L3 报告（JSON 或 MD）                          | ✓（GC-3） |
+| HTML                                              | 可选      |
 
 ### 当前阶段（2026-09-03）
 
-| 项 | 状态 |
-| --- | --- |
-| WP-3 纸条 1.2.0 | **已验收** |
-| WP-5 merge 库 | **完成**（data-graph） |
-| WP-8.1 INDEX CLI | **完成**（data-graph） |
-| `--task-ids` + `--expand-upstream` | **已实现**（GC-1） |
-| **真数据跑通 GC-0** | **未做** ← **当前阻塞** |
-| gaps / L0–L3 报告 | **未做**（GC-3） |
-| 一键脚本 `gold-case:unified` | **未做**（GC-2） |
+| 项                                 | 状态                    |
+| ---------------------------------- | ----------------------- |
+| WP-3 纸条 1.2.0                    | **已验收**              |
+| WP-5 merge 库                      | **完成**（data-graph）  |
+| WP-8.1 INDEX CLI                   | **完成**（data-graph）  |
+| `--task-ids` + `--expand-upstream` | **已实现**（GC-1）      |
+| **真数据跑通 GC-0**                | **未做** ← **当前阻塞** |
+| gaps / L0–L3 报告                  | **未做**（GC-3）        |
+| 一键脚本 `gold-case:unified`       | **未做**（GC-2）        |
 
 ### 你接下来立刻做什么（顺序）
 
@@ -114,11 +114,11 @@
 
 ### 2.2 批任务怎么定（核心决策）
 
-| 策略 | 命令 | 适用 |
-| --- | --- | --- |
-| **推荐：锚点向上穿透** | `--task-ids 181058,176827,209119,155015 --expand-upstream` | **金样 P0** |
-| 备选：同域横向全扫 | `--topic DM_RSK_N` | 同域 ~63 任务对比；**不是**金样主路径 |
-| 手动补洞 | `--also-task-ids …` | Pack 已有但穿透未纳入的任务 |
+| 策略                   | 命令                                                       | 适用                                  |
+| ---------------------- | ---------------------------------------------------------- | ------------------------------------- |
+| **推荐：锚点向上穿透** | `--task-ids 181058,176827,209119,155015 --expand-upstream` | **金样 P0**                           |
+| 备选：同域横向全扫     | `--topic DM_RSK_N`                                         | 同域 ~63 任务对比；**不是**金样主路径 |
+| 手动补洞               | `--also-task-ids …`                                        | Pack 已有但穿透未纳入的任务           |
 
 **穿透算法**（`anchor-upstream-expansion.ts` → `runProjectInputPackClosure`）：
 
@@ -142,11 +142,11 @@
 
 ### 2.3 三层职责（不变）
 
-| 层 | 职责 | WP |
-| --- | --- | --- |
-| ① Facts | Input Pack + Machine Facts + producer-index | WP-6 |
-| ② 投影/接续 | 纸条 → merge → INDEX | WP-3、WP-5、WP-8.1 |
-| ③ 呈现 | 可消费 JSON + gap + L0–L3 | GC、WP-12 |
+| 层          | 职责                                        | WP                 |
+| ----------- | ------------------------------------------- | ------------------ |
+| ① Facts     | Input Pack + Machine Facts + producer-index | WP-6               |
+| ② 投影/接续 | 纸条 → merge → INDEX                        | WP-3、WP-5、WP-8.1 |
+| ③ 呈现      | 可消费 JSON + gap + L0–L3                   | GC、WP-12          |
 
 调度只进 L0，**不参与**接续剪枝。
 
@@ -156,12 +156,12 @@
 
 「关心这条链路」= 该任务的 **TARGET_WRITE**（写观察），不是 TASK 节点。
 
-| 锚点 | taskId | 目标表 | 语料角色 |
-| --- | --- | --- | --- |
-| A | **181058** | `dm_rsk_n.otc_opt_inr_comp_pal_sum` | WP-7 本地折叠 / materialization |
-| B | **176827** | `dm_rsk_n.otc_opt_greek_val_det_h` | ~11 读表、97 列；spine 105387→119044 |
-| C | **209119** | `dm_rsk_n.otc_opt_sub_trd_info` | 控制边膨胀、多分支 |
-| D | **155015** | `dm_rsk_n.v_risk_audit_log` | 跨域值链 + 105387 拉链 ref |
+| 锚点 | taskId     | 目标表                              | 语料角色                             |
+| ---- | ---------- | ----------------------------------- | ------------------------------------ |
+| A    | **181058** | `dm_rsk_n.otc_opt_inr_comp_pal_sum` | WP-7 本地折叠 / materialization      |
+| B    | **176827** | `dm_rsk_n.otc_opt_greek_val_det_h`  | ~11 读表、97 列；spine 105387→119044 |
+| C    | **209119** | `dm_rsk_n.otc_opt_sub_trd_info`     | 控制边膨胀、多分支                   |
+| D    | **155015** | `dm_rsk_n.v_risk_audit_log`         | 跨域值链 + 105387 拉链 ref           |
 
 四锚点同域 DM_RSK_N，血缘 **必然跨域**（pdata_n、EDW_AGT、ODATA_N_TIT 等）。
 
@@ -257,11 +257,11 @@ npm run visualize-task-local-machine-graph -- `
 
 ### 穿透停在哪里（诚实边界）
 
-| 会继续走 | 不会当数据上游 |
-| --- | --- |
-| producer-index `confirmedProducerEdges` | 调度 `upstreamTaskIds` |
-| dataRoot 里已有 Task Pack 的任务 | 无 Pack 的 producer（manifest issues） |
-| 非 `terminal-table-rules` 的 READ 表 | 终止表 / 参考表 |
+| 会继续走                                | 不会当数据上游                         |
+| --------------------------------------- | -------------------------------------- |
+| producer-index `confirmedProducerEdges` | 调度 `upstreamTaskIds`                 |
+| dataRoot 里已有 Task Pack 的任务        | 无 Pack 的 producer（manifest issues） |
+| 非 `terminal-table-rules` 的 READ 表    | 终止表 / 参考表                        |
 
 **缺 Pack 的上游**：当前穿透 **不会** 自动采集；若要扩闭包，需 Input Pack 采集（`input-pack:from-cache` / `lineage:all` autofill）后 **重跑步骤 1**。
 
@@ -289,16 +289,16 @@ artifacts/gold-case-dm-rsk-n/
 
 ### 5.2 `batch-manifest.json` 关键字段
 
-| 字段 | 含义 |
-| --- | --- |
-| `anchorTaskIds` | 四锚点 |
-| `expandUpstream` | 是否做了穿透 |
-| `upstreamExpansion.taskIds` | 穿透得到的任务集 |
-| `upstreamExpansion.discoveredTaskIds` | 含锚点在内的发现集 |
-| `upstreamExpansion.issues` | 缺 Pack、轮次触顶等 |
-| `upstreamExpansion.counters` | 读表次数、producer 刷新等 |
-| `taskIds` | 实际投影批（穿透 ∪ also-task-ids） |
-| `tasks[].coverageStatus` | `PROJECTED` / `SCHEDULE_ONLY` / `FAILED` |
+| 字段                                  | 含义                                     |
+| ------------------------------------- | ---------------------------------------- |
+| `anchorTaskIds`                       | 四锚点                                   |
+| `expandUpstream`                      | 是否做了穿透                             |
+| `upstreamExpansion.taskIds`           | 穿透得到的任务集                         |
+| `upstreamExpansion.discoveredTaskIds` | 含锚点在内的发现集                       |
+| `upstreamExpansion.issues`            | 缺 Pack、轮次触顶等                      |
+| `upstreamExpansion.counters`          | 读表次数、producer 刷新等                |
+| `taskIds`                             | 实际投影批（穿透 ∪ also-task-ids）       |
+| `tasks[].coverageStatus`              | `PROJECTED` / `SCHEDULE_ONLY` / `FAILED` |
 
 ### 5.3 `gold-case-gaps.jsonl` 行格式（GC-3 约定）
 
@@ -324,39 +324,39 @@ artifacts/gold-case-dm-rsk-n/
 
 全图共享同一 merge/INDEX。列级 L1 能证则证；不能证进 `gold-case-gaps.jsonl` 驱动修 WP。
 
-| 锚点 | 表级 L1（INDEX） | 字段级 | 已知难点 |
-| --- | --- | --- | --- |
-| **181058** | 并集内 WRITES；无假 TASK 边 | localFieldPaths / 折叠边 | temp 折叠、读次身份 |
-| **176827** | spine 105387↔119044↔176827 | 97 列先 **高价值列** 清单 | 主表 writer 批外 → 边界或补 Pack |
-| **209119** | 表级扇入 + 分区剪枝 | 控制边≠值边 | 分支 UNKNOWN 要 reasonCode |
-| **155015** | 跨域 writer 在批内或边界 | 值链 vs 四 ref 控制边 | 71698/105387 拉链 |
+| 锚点       | 表级 L1（INDEX）            | 字段级                    | 已知难点                         |
+| ---------- | --------------------------- | ------------------------- | -------------------------------- |
+| **181058** | 并集内 WRITES；无假 TASK 边 | localFieldPaths / 折叠边  | temp 折叠、读次身份              |
+| **176827** | spine 105387↔119044↔176827  | 97 列先 **高价值列** 清单 | 主表 writer 批外 → 边界或补 Pack |
+| **209119** | 表级扇入 + 分区剪枝         | 控制边≠值边               | 分支 UNKNOWN 要 reasonCode       |
+| **155015** | 跨域 writer 在批内或边界    | 值链 vs 四 ref 控制边     | 71698/105387 拉链                |
 
 ### L0–L3（每锚点一段，写入 GC-3 报告）
 
-| 层 | 要求 |
-| --- | --- |
-| **L0** | 批内 projected / scheduleOnly / failed；四锚点是否 PROJECTED |
+| 层     | 要求                                                             |
+| ------ | ---------------------------------------------------------------- |
+| **L0** | 批内 projected / scheduleOnly / failed；四锚点是否 PROJECTED     |
 | **L1** | 仅 `partitionMatchStatus=CONFIRMED` 且 `l1Eligible` 可写「确定」 |
-| **L2** | ASSUMED / 批外 writer / 多写未剪枝 → 标候选 |
-| **L3** | UNKNOWN、DISJOINT、Facts 缺口 → reasonCode，禁止「暂无」 |
+| **L2** | ASSUMED / 批外 writer / 多写未剪枝 → 标候选                      |
+| **L3** | UNKNOWN、DISJOINT、Facts 缺口 → reasonCode，禁止「暂无」         |
 
 ---
 
 ## 7. 实现状态
 
-| 能力 | 仓库 | 状态 |
-| --- | --- | --- |
-| WP-3 `TASK_LOCAL_PROJECTION` 1.2.0 | sql-static-lineage | **已验收** |
-| TL-6 golden（105387/119044/176827） | sql-static-lineage | **有** |
-| TL-6 golden（209119/155015） | sql-static-lineage | **待 GC-4**；表级清单见 `execution-plan-table-lineage-acceptance.md` |
-| `--task-ids` + `--expand-upstream` | sql-static-lineage | **已实现（GC-1）** |
-| WP-5 `mergeTaskLocalUnion` | data-graph | **库完成** |
-| WP-8.1 `union-continuation-index` CLI | data-graph | **完成** |
-| 真数据 GC-0 跑通 | — | **未做** |
-| `gold-case-gaps.jsonl` + L0–L3 | — | **未做（GC-3）** |
-| `npm run gold-case:unified` | sql-static-lineage | **未做（GC-2）** |
-| HTML 四锚点高亮 | sql-static-lineage | **可选（GC-5）** |
-| WP-10 closure-on-union | sql-static-lineage | **暂停** |
+| 能力                                  | 仓库               | 状态                                                                 |
+| ------------------------------------- | ------------------ | -------------------------------------------------------------------- |
+| WP-3 `TASK_LOCAL_PROJECTION` 1.2.0    | sql-static-lineage | **已验收**                                                           |
+| TL-6 golden（105387/119044/176827）   | sql-static-lineage | **有**                                                               |
+| TL-6 golden（209119/155015）          | sql-static-lineage | **待 GC-4**；表级清单见 `execution-plan-table-lineage-acceptance.md` |
+| `--task-ids` + `--expand-upstream`    | sql-static-lineage | **已实现（GC-1）**                                                   |
+| WP-5 `mergeTaskLocalUnion`            | data-graph         | **库完成**                                                           |
+| WP-8.1 `union-continuation-index` CLI | data-graph         | **完成**                                                             |
+| 真数据 GC-0 跑通                      | —                  | **未做**                                                             |
+| `gold-case-gaps.jsonl` + L0–L3        | —                  | **未做（GC-3）**                                                     |
+| `npm run gold-case:unified`           | sql-static-lineage | **未做（GC-2）**                                                     |
+| HTML 四锚点高亮                       | sql-static-lineage | **可选（GC-5）**                                                     |
+| WP-10 closure-on-union                | sql-static-lineage | **暂停**                                                             |
 
 ---
 
@@ -366,13 +366,13 @@ artifacts/gold-case-dm-rsk-n/
 
 ### 阶段 A — 跑通可消费产物（GC-0）【当前 P0】
 
-| # | 动作 | 产出 | 完成标准 |
-| --- | --- | --- | --- |
-| A1 | 步骤 1：穿透批投影 | `batch-manifest.json` + 纸条 | 四锚点 `PROJECTED`；`upstreamExpansion` 无意外空批 |
-| A2 | 审 `upstreamExpansion.issues` | 决策记录 | 缺 Pack 列表：补采 or 接受边界 |
-| A3 | 步骤 2：接续 INDEX | `union-continuation-index.json` | 四锚点每个 `externalRead` 有 entry 或 INDEX gap |
-| A4 | 首版 `gold-case-gaps.jsonl` | jsonl | 所有 INDEX gap + manifest issues 具名 |
-| A5 | 首版 L0–L3 报告 | json/md | 四锚点各一段 |
+| #   | 动作                          | 产出                            | 完成标准                                           |
+| --- | ----------------------------- | ------------------------------- | -------------------------------------------------- |
+| A1  | 步骤 1：穿透批投影            | `batch-manifest.json` + 纸条    | 四锚点 `PROJECTED`；`upstreamExpansion` 无意外空批 |
+| A2  | 审 `upstreamExpansion.issues` | 决策记录                        | 缺 Pack 列表：补采 or 接受边界                     |
+| A3  | 步骤 2：接续 INDEX            | `union-continuation-index.json` | 四锚点每个 `externalRead` 有 entry 或 INDEX gap    |
+| A4  | 首版 `gold-case-gaps.jsonl`   | jsonl                           | 所有 INDEX gap + manifest issues 具名              |
+| A5  | 首版 L0–L3 报告               | json/md                         | 四锚点各一段                                       |
 
 **GC-0 勾选清单**：
 
@@ -384,33 +384,33 @@ artifacts/gold-case-dm-rsk-n/
 
 ### 阶段 B — 固化与回归（GC-4）
 
-| # | 动作 |
-| --- | --- |
-| B1 | `golden-samples.test.ts` 增加 209119、155015 |
-| B2 | INDEX 集成测：四锚点读次 entry / gap 断言 |
-| B3 | 穿透批 task 数 / spine 边 snapshot（防回归） |
+| #   | 动作                                         |
+| --- | -------------------------------------------- |
+| B1  | `golden-samples.test.ts` 增加 209119、155015 |
+| B2  | INDEX 集成测：四锚点读次 entry / gap 断言    |
+| B3  | 穿透批 task 数 / spine 边 snapshot（防回归） |
 
 ### 阶段 C — 工程化（GC-2）
 
-| # | 动作 |
-| --- | --- |
-| C1 | `npm run gold-case:unified`：步骤 1→2→（可选 HTML），固定输出目录 |
-| C2 | 可选独立落盘 `union-merge-report.json` |
+| #   | 动作                                                              |
+| --- | ----------------------------------------------------------------- |
+| C1  | `npm run gold-case:unified`：步骤 1→2→（可选 HTML），固定输出目录 |
+| C2  | 可选独立落盘 `union-merge-report.json`                            |
 
 ### 阶段 D — 体验（GC-5，可选）
 
-| # | 动作 |
-| --- | --- |
-| D1 | `--batch-manifest` 自动 glob 全批 projection |
-| D2 | 四锚点切换高亮 |
+| #   | 动作                                         |
+| --- | -------------------------------------------- |
+| D1  | `--batch-manifest` 自动 glob 全批 projection |
+| D2  | 四锚点切换高亮                               |
 
 ### 阶段 E — 扩穿透（按需，非 GC-0 阻塞）
 
-| # | 动作 | 何时 |
-| --- | --- | --- |
-| E1 | 对 `upstreamExpansion.issues` 里缺 Pack 的 taskId 跑 Input Pack 采集 | A2 决定补采时 |
-| E2 | 重跑 A1–A3 | Pack 补齐后 |
-| E3 | szdata 在线 discovery（`reconcile-multi-hop:autofill` 路径） | 仅 producer-index 也没有时 |
+| #   | 动作                                                                 | 何时                       |
+| --- | -------------------------------------------------------------------- | -------------------------- |
+| E1  | 对 `upstreamExpansion.issues` 里缺 Pack 的 taskId 跑 Input Pack 采集 | A2 决定补采时              |
+| E2  | 重跑 A1–A3                                                           | Pack 补齐后                |
+| E3  | szdata 在线 discovery（`reconcile-multi-hop:autofill` 路径）         | 仅 producer-index 也没有时 |
 
 ### 阶段 F — 列级攻坚（M0 之后）
 
@@ -420,14 +420,14 @@ artifacts/gold-case-dm-rsk-n/
 
 ## 9. 工作包（GC）定义
 
-| GC | 名称 | 状态 | 内容 |
-| --- | --- | --- | --- |
-| **GC-0** | 端到端产物 | **进行中** | 阶段 A：穿透批 + INDEX + gaps + L0–L3 |
-| **GC-1** | 锚点穿透 CLI | **完成** | `--task-ids` + `--expand-upstream` |
-| **GC-2** | 一键脚本 | 未做 | `gold-case:unified` |
-| **GC-3** | 验收报告 | 未做 | gaps.jsonl + L0–L3 |
-| **GC-4** | 测试回归 | 未做 | 209119/155015 golden + INDEX 断言 |
-| **GC-5** | HTML 调查页 | 可选 | full-stack + 锚点高亮 |
+| GC       | 名称         | 状态       | 内容                                  |
+| -------- | ------------ | ---------- | ------------------------------------- |
+| **GC-0** | 端到端产物   | **进行中** | 阶段 A：穿透批 + INDEX + gaps + L0–L3 |
+| **GC-1** | 锚点穿透 CLI | **完成**   | `--task-ids` + `--expand-upstream`    |
+| **GC-2** | 一键脚本     | 未做       | `gold-case:unified`                   |
+| **GC-3** | 验收报告     | 未做       | gaps.jsonl + L0–L3                    |
+| **GC-4** | 测试回归     | 未做       | 209119/155015 golden + INDEX 断言     |
+| **GC-5** | HTML 调查页  | 可选       | full-stack + 锚点高亮                 |
 
 ---
 
@@ -443,26 +443,26 @@ artifacts/gold-case-dm-rsk-n/
 
 ## 11. 与 WP 对照
 
-| WP | 金样中的角色 |
-| --- | --- |
-| WP-3 | 穿透闭包内每任务纸条 |
-| WP-5 | merge 成一张并集（INDEX 内嵌） |
+| WP     | 金样中的角色                      |
+| ------ | --------------------------------- |
+| WP-3   | 穿透闭包内每任务纸条              |
+| WP-5   | merge 成一张并集（INDEX 内嵌）    |
 | WP-8.1 | 全批读次接续 INDEX — **主消费面** |
-| WP-7 | 身份/读次/折叠 — gaps 驱动修 |
-| WP-11 | 列路径 — 高价值列清单后攻坚 |
-| WP-12 | L0–L3 envelope — 与 GC-3 同步 |
-| WP-10 | **不参与验收**（已暂停） |
+| WP-7   | 身份/读次/折叠 — gaps 驱动修      |
+| WP-11  | 列路径 — 高价值列清单后攻坚       |
+| WP-12  | L0–L3 envelope — 与 GC-3 同步     |
+| WP-10  | **不参与验收**（已暂停）          |
 
 ---
 
 ## 12. 仓库与路径速查
 
-| 角色 | 路径 |
-| --- | --- |
-| 执行仓（WP-3、GC） | `E:\02_area\股衍数据-数据cookbook\sql-static-lineage` |
-| 接续 INDEX（WP-8.1） | `E:\02_area\股衍数据-数据cookbook\scripts\data-graph` |
-| Input Pack | `..\sql-static-lineage-data` |
-| Machine Facts | `..\sql-static-lineage-data\field-facts` |
-| producer-index | `..\sql-static-lineage-data.producer-index\producer-index.json` |
-| 调度缓存 | `..\sql-static-lineage-cache\schedule-evidence` |
-| GC-0 产出根 | `sql-static-lineage/artifacts/gold-case-dm-rsk-n/` |
+| 角色                 | 路径                                                            |
+| -------------------- | --------------------------------------------------------------- |
+| 执行仓（WP-3、GC）   | `E:\02_area\股衍数据-数据cookbook\sql-static-lineage`           |
+| 接续 INDEX（WP-8.1） | `E:\02_area\股衍数据-数据cookbook\scripts\data-graph`           |
+| Input Pack           | `..\sql-static-lineage-data`                                    |
+| Machine Facts        | `..\sql-static-lineage-data\field-facts`                        |
+| producer-index       | `..\sql-static-lineage-data.producer-index\producer-index.json` |
+| 调度缓存             | `..\sql-static-lineage-cache\schedule-evidence`                 |
+| GC-0 产出根          | `sql-static-lineage/artifacts/gold-case-dm-rsk-n/`              |

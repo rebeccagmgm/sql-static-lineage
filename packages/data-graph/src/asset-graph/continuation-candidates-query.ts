@@ -18,17 +18,19 @@ export function readPublishedContinuationCandidates(input: {
     throw new Error("INVALID_ARGUMENT:--offset");
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
     throw new Error("INVALID_ARGUMENT:--limit");
-  const { publication, index, pinnedIndexHash } = loadPublishedContinuationIndex({
-    graphOutputRoot: input.graphOutputRoot,
-    publicationVersion: input.publicationVersion,
-  });
+  const { publication, index, pinnedIndexHash } =
+    loadPublishedContinuationIndex({
+      graphOutputRoot: input.graphOutputRoot,
+      publicationVersion: input.publicationVersion,
+    });
   const matches = index.entries.filter(
     (entry) =>
       entry.readOccurrenceId === input.readOccurrenceId &&
       (input.consumerTaskId === undefined ||
         entry.consumerTaskId === input.consumerTaskId),
   );
-  if (matches.length === 0) throw new Error("READ_OCCURRENCE_NOT_IN_PUBLISHED_INDEX");
+  if (matches.length === 0)
+    throw new Error("READ_OCCURRENCE_NOT_IN_PUBLISHED_INDEX");
   if (matches.length > 1)
     throw new Error("READ_OCCURRENCE_AMBIGUOUS:--consumer-task-id");
   const entry = matches[0]!;
@@ -94,8 +96,7 @@ function evidenceRefs(entry: UnionContinuationIndexEntry): readonly string[] {
   return [
     ...new Set(
       entry.gaps.flatMap((gap) => {
-        if (typeof gap.details["writeObservationId"] === "string")
-          return [];
+        if (typeof gap.details["writeObservationId"] === "string") return [];
         const refs = gap.details["evidenceRefs"];
         return Array.isArray(refs)
           ? refs.filter((ref): ref is string => typeof ref === "string")

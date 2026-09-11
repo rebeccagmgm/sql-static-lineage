@@ -6,10 +6,10 @@
 
 本轮只读固定发布 manifest 指向的三个任务投影与不可变证据。每项先取得 `localClosure.finalWrites`，再同时按最终 `qualifiedName` 对应的 `target_dataset`、`writeObservationId` 对应的 `write_observation_id` 筛选 `bindings`，最后用 `binding.expression_id` 精确查找同 ID 的表达式。三个任务各只有一个选中的最终写入。
 
-| 任务 | 最终目标 | 写入标识 |
-|---|---|---|
-| 207284 | `pdata_news_n.t02_prd_unit_nav_s_tit` | `write-observation:207284:12` |
-| 230202 | `dm_otc_n.otc_rev_daily_rpt` | `write-observation:230202:platform-target:0` |
+| 任务   | 最终目标                                           | 写入标识                                     |
+| ------ | -------------------------------------------------- | -------------------------------------------- |
+| 207284 | `pdata_news_n.t02_prd_unit_nav_s_tit`              | `write-observation:207284:12`                |
+| 230202 | `dm_otc_n.otc_rev_daily_rpt`                       | `write-observation:230202:platform-target:0` |
 | 159763 | `dm_index_n.index_grp3_compscal_otcderi_cs_mthapd` | `write-observation:159763:platform-target:0` |
 
 207284 是 SQL 显式写入；另两项是 Pack 声明的查询输出。所选绑定均为 `RESOLVED`，没有重复目标字段或缺失表达式。绑定成功说明输出落点已识别，不等于所有输入依赖已追清。分母是本次最终写入的绑定字段数，不是整表 DDL 列数；207284 的静态分区 `src_id/grp_id` 没有出现在这 23 条绑定中，不补入分母。
@@ -20,11 +20,11 @@
 
 ## 三组可复核的状态数字
 
-| 任务 | 绑定字段 | `PHYSICAL` | `PARTIAL` | `DERIVED_OUTPUT` | `NO_PHYSICAL_INPUT` | 至少一项输入足迹的目标 | 去重输入字段 ID |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 净值加工 207284 | 23 | 20 | 0 | 0 | 3 | 20 | 19 |
-| 创收日报 230202 | 72 | 54 | 0 | 18 | 0 | 54 | 52 |
-| 交叉销售月日均 159763 | 11 | 4 | 1 | 1 | 5 | 5 | 11 |
+| 任务                  | 绑定字段 | `PHYSICAL` | `PARTIAL` | `DERIVED_OUTPUT` | `NO_PHYSICAL_INPUT` | 至少一项输入足迹的目标 | 去重输入字段 ID |
+| --------------------- | -------: | ---------: | --------: | ---------------: | ------------------: | ---------------------: | --------------: |
+| 净值加工 207284       |       23 |         20 |         0 |                0 |                   3 |                     20 |              19 |
+| 创收日报 230202       |       72 |         54 |         0 |               18 |                   0 |                     54 |              52 |
+| 交叉销售月日均 159763 |       11 |          4 |         1 |                1 |                   5 |                      5 |              11 |
 
 `PHYSICAL` 表示表达式记录中的依赖状态。最后两列分别数目标字段和输入字段，不能互换：同一个输入可以服务多个输出。159763 的五个有足迹目标包含一个 `PARTIAL`，只统计了它已暴露的部分；`DERIVED_OUTPUT` 没有输入列表时保留该状态，不按“没有贡献”解释。表中的状态数量为零，只表示没有该状态记录。
 
@@ -32,10 +32,10 @@
 
 207284 的 20 个有输入足迹目标中，两个来源的覆盖没有重叠。
 
-| 来源，按 Facts 原名 | 覆盖目标字段 | 占全部 23 个绑定 |
-|---|---:|---:|
-| `odata_n_tit.d_mkt_risk_daily_info` | 16 | 69.6% |
-| `t02_scr_base_info` | 4 | 17.4% |
+| 来源，按 Facts 原名                 | 覆盖目标字段 | 占全部 23 个绑定 |
+| ----------------------------------- | -----------: | ---------------: |
+| `odata_n_tit.d_mkt_risk_daily_info` |           16 |            69.6% |
+| `t02_scr_base_info`                 |            4 |            17.4% |
 
 证券基础的原名没有 schema，SQL 也使用未限定名，本次不擅自补全。若仅以 20 个有足迹字段作分母，两源比例才是 80% 与 20%；必须说明采用哪个分母。
 
@@ -49,19 +49,19 @@
 
 230202 共有 54 个目标暴露输入足迹。各来源覆盖数如下，统一以 72 个绑定为分母，表中保留整数以便复算。
 
-| 来源 | 覆盖目标数／72 |
-|---|---:|
-| `pdata_n.t98_otc_deri_comp_sale_info` | 40 |
-| `pdata_n.t98_otc_deri_comp_sale_adtnl_det` | 4 |
-| `pdata_n.t98_sb_tit_day_hold_indx` | 4 |
-| `pdata_n.t98_otc_opt_comp_eday_prvs_fee` | 3 |
-| `pdata_news_n.t02_fxr_cfets_quot` | 3 |
-| `pdata_n.t98_otc_book_hold_sum` | 3 |
-| `odata_n_ois.g_client_revenue_coefficient` | 2 |
-| `pdata_news_n.t02_ira_ibor` | 2 |
-| `pdata_n.t01_corp_cust` | 1 |
-| `pdata_n.t03_otc_deri_book_adtnl_info` | 1 |
-| `pdata_news_n.t02_tit_scr_base_info` | 1 |
+| 来源                                       | 覆盖目标数／72 |
+| ------------------------------------------ | -------------: |
+| `pdata_n.t98_otc_deri_comp_sale_info`      |             40 |
+| `pdata_n.t98_otc_deri_comp_sale_adtnl_det` |              4 |
+| `pdata_n.t98_sb_tit_day_hold_indx`         |              4 |
+| `pdata_n.t98_otc_opt_comp_eday_prvs_fee`   |              3 |
+| `pdata_news_n.t02_fxr_cfets_quot`          |              3 |
+| `pdata_n.t98_otc_book_hold_sum`            |              3 |
+| `odata_n_ois.g_client_revenue_coefficient` |              2 |
+| `pdata_news_n.t02_ira_ibor`                |              2 |
+| `pdata_n.t01_corp_cust`                    |              1 |
+| `pdata_n.t03_otc_deri_book_adtnl_info`     |              1 |
+| `pdata_news_n.t02_tit_scr_base_info`       |              1 |
 
 覆盖次数合计 **64**，但目标并集只有 **54**。多出的十次来自三个重叠输出：`curr_rev` 暴露八个来源，`opt_npv_curr_rev` 三个，`map_undrl_cd` 两个。销售基础覆盖 40/72，约 55.6%，说明它是重要背景，不能据此把日报所有字段归入“销售主题”。
 
@@ -75,13 +75,13 @@
 
 159763 的来源覆盖落在五个目标上，其中两个目标重叠。
 
-| 来源 | 覆盖目标数／11 | 对应目标 |
-|---|---:|---|
-| `dm_index_n.grp_def` | 3 | `grp_id1/2/3` |
-| `pdata_n.t98_otc_deri_comp_sale_adtnl_det` | 1 | `index_val` |
-| `pdata_n.t98_otc_comp_mng_rela_info` | 1 | `index_val` |
-| `pdata_n.t98_otc_deri_comp_sale_info` | 1 | `tag_id` 的已知部分 |
-| `pdata_news_n.t02_tit_scr_base_info` | 1 | `tag_id` 的已知部分 |
+| 来源                                       | 覆盖目标数／11 | 对应目标            |
+| ------------------------------------------ | -------------: | ------------------- |
+| `dm_index_n.grp_def`                       |              3 | `grp_id1/2/3`       |
+| `pdata_n.t98_otc_deri_comp_sale_adtnl_det` |              1 | `index_val`         |
+| `pdata_n.t98_otc_comp_mng_rela_info`       |              1 | `index_val`         |
+| `pdata_n.t98_otc_deri_comp_sale_info`      |              1 | `tag_id` 的已知部分 |
+| `pdata_news_n.t02_tit_scr_base_info`       |              1 | `tag_id` 的已知部分 |
 
 覆盖次数为 **7**，目标并集为 **5**。`grp_def` 的同一个输入字段 `grp_id` 经过三个别名服务三个输出，因此三列身份不等于三个不同输入字段。
 

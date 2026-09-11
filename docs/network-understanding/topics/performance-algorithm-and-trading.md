@@ -3,6 +3,7 @@
 本页解释机构业务中的算法使用、交易表现及佣金观察，接续[销售归属、标准资产与考核](../chapters/09-performance-and-assets.md)。算法表现属于执行与经营统计，不能直接替代客户投资收益或员工考核得分。所有引用都是同一固定发布批次的 SQL；真实交易数据和供应商评价制度未在本页验证。
 
 <a id="pa-algo"></a>
+
 ## 三张算法汇总表，三个不同的观察维度
 
 159455 按客户类别汇总，159821 按主动／被动类别与具体算法名称汇总，160518 按营业部、分公司、全公司汇总。三者共同排除算法标签名含 T0 的记录，并要求能匹配计算日有效的供应商费率配置，起止日均包含。虽然本层不直接用费率乘交易额，费率表仍控制哪些算法进入统计；缺少有效配置会被 inner join 排除，区间重叠则可能放大后续值。[159455：query 228–243；159821：query 311–326；160518：query 311–328][^159455][^159821][^160518]
@@ -18,6 +19,7 @@
 算法类型表年／周／日交易额以亿元输出，月／季度额以元输出；费用以万元输出。年日均额的分母为 tradedaydiff(年初前交易日,计算日)-1，需要交易日函数定义才能确认边界日数量。周比较只在本年取数范围内计算 weekofyear，因此跨年周不包含上一年部分。机构表新增的三组供应商交易额也以元输出，不能与同表亿元总额直接比较。[159821：query 188–217、327–425、463–501；160518：query 411–424、586–630][^159821][^160518]
 
 <a id="pa-t0"></a>
+
 ## T0 日报：开通客户、使用客户和任务金额是三个口径
 
 197653 一天输出一组全体指标，与上一个交易日本表行比较差值和增长率。账户数来自当前开通或本年有正交易额的客户，只计状态 04；净资产用 row_number 每个客户取一条，防止多算法权限重复计算资产。另一分支直接取当日母单绩效：任务金额为 prnt_stmt_amt 之和，使用客户是任务金额大于 0 的 distinct pty_id，交易额为 deal_money 加 abs(over_nght_amt)。有权限、有正历史交易、今天下任务并不等价。[197653：query 19–81、82–150、188–212][^197653]
@@ -27,6 +29,7 @@
 所有环比以之前交易日的对应值为基准，分母为 0 或缺失时给 0；这不是“增长率已知为零”。输出虽叫 week_t0，实际 SQL 是日值和上一交易日比较。198013 仅按当天读取该汇总，删目标当天后传输，不重新计算周指标。[197653：query 19–54、209–212；198013：query 1–18、truncate 1][^197653][^198013]
 
 <a id="pa-backtest"></a>
+
 ## 回测收益展示中有显式占位列
 
 228180 选沪深未退市股票，取最近交易日往前 8 天至计算日的回测资料，再按策略组的最新 busi_date 排名选 rn=1。排名分组只有策略组，没有股票：它选的是该策略最新一批数据，不是每只股票各自最近值；并列最新行会保留。不同策略使用不同换算：非凸 init_pos_yield_20d×100/20，卡方及 SMART tot_yield_20d/20，跃然 aror/250。本页只确认源码中的换算，不推断原字段单位已经统一正确。[228180：query 7–99][^228180]
@@ -34,6 +37,7 @@
 STABLE 明确写成 NULL 占位，最终 coalesce 为 0。这个展示零不是测得零收益。股票行只要至少一策略非空就留下，其他缺项也变成 0。另有 seq_no=1 的 data_date 行，把各策略日期放在收益列；其笛卡尔连接要求各策略分支至少有一行，任一为空会让日期说明行消失。消费此表必须区分日期行和股票行，不能直接把全列转成收益求平均。非凸连接只按股票代码，其他策略还按市场匹配，也是需要保留的区别。[228180：query 101–143、161–210][^228180]
 
 <a id="pa-block"></a>
+
 ## 大宗交易佣金明细：成交、费用和汇率在这里合成
 
 156579 输出委托／证券／客户的交易明细及当前所属机构。第一支从指定柜台、委托类型 5、委托状态 8 的委托出发，左连当天有正实收佣金的交割记录，连接键是委托号、客户、证券；第二支直接取委托方式为 ~ 的正佣金交割记录。两支 UNION ALL，未作跨支去重；第一支无匹配交割的委托仍可保留，不能把输出行全称为已确认有成交的记录。[156579：query 109–142、189–210][^156579]
@@ -41,25 +45,25 @@ STABLE 明确写成 NULL 占位，最终 coalesce 为 0。这个展示零不是�
 交易金额与毛佣金乘汇率；净佣金实际为“实收佣金＋印花税＋过户费＋委托费＋其他费－一级费用”再乘汇率。费用字段符号是否已在来源规范化需业务确认，不能根据常识擅自把加号改成减号。缺汇率默认 1，汇率在计算前又 cast 到两位小数。两个费率用各自折算金额除成交额，未显式判零。组织表还同时含营业部与分公司自身行，匹配是否唯一依赖源机构编码。[156579：query 1–38、73–139、153–209][^156579]
 
 <a id="pa-transfer"></a>
+
 ## 三个已核读的传输出口
 
 166798 逐字段传输 160518 的当日机构层算法结果到目标表；164815 传输 156579 的当日全部列；198013 传输 197653 的当日汇总。各自先删目标当日数据，查询无再分摊、去重或费用重算。本层只能证明传输选择范围，目标真正到数需另查运行。三个计算任务的 prepare 只建分区表，没有直接显示删除当天分区；写入覆盖方式不能从建表语句推导。[166798：query 1–30、truncate 1；164815：query 1、truncate 1；198013：query 1–18、truncate 1][^166798][^164815][^198013]
 
+[^159455]: Task 159455，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159455/versions/9f1e6c63d69735749851acd7374c7729e81c861f9c86c1b05889065f61da0766.evidence-v3.json)。
 
-[^159455]: Task 159455，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159455/versions/9f1e6c63d69735749851acd7374c7729e81c861f9c86c1b05889065f61da0766.evidence-v3.json>)。
+[^159821]: Task 159821，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159821/versions/a8fb6b485a2eae361ef95dbda0033d8b94cc5f3a9f04cb0d38757744ddfdfdb9.evidence-v3.json)。
 
-[^159821]: Task 159821，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159821/versions/a8fb6b485a2eae361ef95dbda0033d8b94cc5f3a9f04cb0d38757744ddfdfdb9.evidence-v3.json>)。
+[^160518]: Task 160518，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160518/versions/e4331edc57a926cba50f7f2b9b2a4840524538a5efa404e076442d716143b470.evidence-v3.json)。
 
-[^160518]: Task 160518，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/160518/versions/e4331edc57a926cba50f7f2b9b2a4840524538a5efa404e076442d716143b470.evidence-v3.json>)。
+[^197653]: Task 197653，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197653/versions/ead42c339a3836672be4c5a79fceb57c262224557ef34ab96204647353440b56.evidence-v3.json)。
 
-[^197653]: Task 197653，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/197653/versions/ead42c339a3836672be4c5a79fceb57c262224557ef34ab96204647353440b56.evidence-v3.json>)。
+[^228180]: Task 228180，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/228180/versions/e4fd4ff93cf03e2f251b016366e35af058c823b0c26882bac5190bfd58644bf2.evidence-v3.json)。
 
-[^228180]: Task 228180，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/228180/versions/e4fd4ff93cf03e2f251b016366e35af058c823b0c26882bac5190bfd58644bf2.evidence-v3.json>)。
+[^156579]: Task 156579，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/156579/versions/ac93c20f7608a2ffb813fdadaf3861399ed4b1288db7ae88e2e060a32e44e853.evidence-v3.json)。
 
-[^156579]: Task 156579，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/156579/versions/ac93c20f7608a2ffb813fdadaf3861399ed4b1288db7ae88e2e060a32e44e853.evidence-v3.json>)。
+[^166798]: Task 166798，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/166798/versions/1908a0cae524014c421e0304236b5cdadc03498d968ee3e25713e7f24edf8d73.evidence-v3.json)。
 
-[^166798]: Task 166798，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/166798/versions/1908a0cae524014c421e0304236b5cdadc03498d968ee3e25713e7f24edf8d73.evidence-v3.json>)。
+[^164815]: Task 164815，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/164815/versions/9f7aebc9bf8fbf0d3ce3336f81376d0c7bd6a966d584bb61672b3e061cd22fa2.evidence-v3.json)。
 
-[^164815]: Task 164815，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/164815/versions/9f7aebc9bf8fbf0d3ce3336f81376d0c7bd6a966d584bb61672b3e061cd22fa2.evidence-v3.json>)。
-
-[^198013]: Task 198013，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198013/versions/e9b259a5c5f92dee27e0d495a83f9560748c5b151d5d5660cfe7d45b6511fc84.evidence-v3.json>)。
+[^198013]: Task 198013，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/198013/versions/e9b259a5c5f92dee27e0d495a83f9560748c5b151d5d5660cfe7d45b6511fc84.evidence-v3.json)。

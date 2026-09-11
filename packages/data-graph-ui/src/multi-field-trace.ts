@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode, TraceResult } from "./types";
+import { mergeTraceConsumptions } from "./trace-consumption";
 
 export const COMBINED_EDGE_LIMIT = 150;
 
@@ -82,68 +83,143 @@ export async function collectMultiFieldTrace(input: {
   const roots = input.roots;
   if (!roots.length) throw new Error("NO_FIELDS_SELECTED");
   const edgeLimit = input.edgeLimit ?? COMBINED_EDGE_LIMIT;
-  const nodes = new Map<string, GraphNode>(
-    roots.map((root) => [root.id, { ...root, depth: 0 }]),
-  );
+  const nodes = new Map<string, GraphNode>();
   const edges = new Map<string, GraphEdge>();
   const terminalNodes = new Map<string, TraceResult["terminalNodes"][number]>();
   const frontier = new Set<string>();
+  const taskLabels: Record<string, string> = {};
+  const taskTopics: Record<string, string> = {};
+  const taskTopicDescriptions: Record<string, string> = {};
+  const stoppedBy = new Set<NonNullable<TraceResult["stoppedBy"]>>();
   let version: string | undefined;
   let template: TraceResult | undefined;
   let elapsedMs = 0;
   let truncated = false;
   let queried = 0;
+  let combinedEdgeLimitReached = false;
+  const consumptions: NonNullable<TraceResult["consumption"]>[] = [];
 
   for (const root of roots) {
     if (!input.isCurrent()) throw new Error("STALE_MULTI_FIELD_QUERY");
     if (edges.size >= edgeLimit) {
       truncated = true;
+      combinedEdgeLimitReached = true;
       break;
     }
     const result = await input.fetchTrace(root);
     if (!input.isCurrent()) throw new Error("STALE_MULTI_FIELD_QUERY");
     queried += 1;
+    nodes.set(root.id, { ...nodes.get(root.id), ...root, depth: 0 });
     template ??= result;
     elapsedMs += result.elapsedMs;
     if (version !== undefined && result.version !== version)
       throw new Error("ASSET_GRAPH_CHANGED_DURING_MULTI_FIELD_QUERY");
     version = result.version;
-    for (const edge of reachableEdges(root.id, result)) {
+    Object.assign(taskLabels, result.taskLabels ?? {});
+    Object.assign(taskTopics, result.taskTopics ?? {});
+    Object.assign(taskTopicDescriptions, result.taskTopicDescriptions ?? {});
+    if (result.stoppedBy) stoppedBy.add(result.stoppedBy);
+    const acceptedEdgeIds = new Set<string>();
+    const acceptedEdges = reachableEdges(root.id, result);
+    for (const edge of acceptedEdges) {
       const identity = edgeIdentity(edge, edges.size);
-      if (edges.has(identity)) continue;
+      if (edges.has(identity)) {
+        acceptedEdgeIds.add(identity);
+        continue;
+      }
       if (edges.size >= edgeLimit) {
         truncated = true;
+        combinedEdgeLimitReached = true;
         break;
       }
       edges.set(identity, edge);
+      acceptedEdgeIds.add(identity);
     }
     const connectedIds = new Set<string>([root.id]);
-    for (const edge of edges.values()) {
+    for (const [identity, edge] of edges)
+      if (acceptedEdgeIds.has(identity)) {
       connectedIds.add(edge.from);
       connectedIds.add(edge.to);
+      }
+    for (const node of result.nodes) {
+      if (!connectedIds.has(node.id)) continue;
+      const existing = nodes.get(node.id);
+      if (!existing) nodes.set(node.id, node);
+      else {
+        const depth = Math.min(
+          Number(existing.depth ?? Number.MAX_SAFE_INTEGER),
+          Number(node.depth ?? Number.MAX_SAFE_INTEGER),
+        );
+        nodes.set(node.id, {
+          ...existing,
+          ...node,
+          ...(Number.isSafeInteger(depth) ? { depth } : {}),
+        });
+      }
     }
-    for (const node of result.nodes)
-      if (connectedIds.has(node.id) && !nodes.has(node.id))
-        nodes.set(node.id, node);
     for (const terminal of result.terminalNodes)
       if (connectedIds.has(terminal.nodeId))
         terminalNodes.set(terminal.nodeId, terminal);
     for (const id of result.frontierNodeIds)
       if (connectedIds.has(id)) frontier.add(id);
+    if (result.consumption)
+      consumptions.push({
+        ...result.consumption,
+        groups: result.consumption.groups.map((group) => ({
+          ...group,
+          rootNodeIds: group.rawNodeIds.some((id) => connectedIds.has(id))
+            ? [root.id]
+            : [],
+        })),
+        branches: result.consumption.branches.map((branch) => ({
+          ...branch,
+          rootNodeIds: branch.rawEdgeIds.some((id) =>
+            acceptedEdgeIds.has(id),
+          )
+            ? [root.id]
+            : [],
+        })),
+        rootPaths: result.consumption.rootPaths
+          .filter((path) => path.rootNodeId === root.id)
+          .map((path) => ({
+            ...path,
+            rawNodeIds: path.rawNodeIds.filter((id) => connectedIds.has(id)),
+            rawEdgeIds: path.rawEdgeIds.filter((id) =>
+              acceptedEdgeIds.has(id),
+            ),
+          })),
+      });
     truncated ||= result.truncated;
   }
   if (!template || !version) throw new Error("MULTI_FIELD_QUERY_DID_NOT_START");
   truncated ||= queried < roots.length;
+  const allowedNodeIds = new Set(nodes.keys());
+  const allowedEdgeIds = new Set(edges.keys());
   return {
     ...template,
     version,
     edgeLimit,
+    unqueriedRootNodeIds: roots.slice(queried).map(root => root.id),
     truncated,
-    stoppedBy: truncated ? "EDGE_LIMIT" : template.stoppedBy,
+    stoppedBy:
+      combinedEdgeLimitReached || stoppedBy.has("EDGE_LIMIT")
+        ? "EDGE_LIMIT"
+        : stoppedBy.has("DEPTH_LIMIT")
+          ? "DEPTH_LIMIT"
+          : null,
     frontierNodeIds: [...frontier],
     terminalNodes: [...terminalNodes.values()],
+    taskLabels,
+    taskTopics,
+    taskTopicDescriptions,
     nodes: [...nodes.values()],
     edges: [...edges.values()],
+    consumption: mergeTraceConsumptions({
+      consumptions,
+      allowedNodeIds,
+      allowedEdgeIds,
+      allRootNodeIds: roots.map(({ id }) => id),
+    }),
     elapsedMs,
   };
 }

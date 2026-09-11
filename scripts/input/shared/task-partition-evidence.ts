@@ -343,10 +343,20 @@ function partitionMapFromAssignments(
     result[assignment.field] = value;
   }
   for (const field of fields) {
+    const explicitAssignment = assignments.some(
+      (assignment) =>
+        assignment.field.toLowerCase() === field.toLowerCase() &&
+        (assignment.status === "CONFIRMED" ||
+          assignment.mappingMethod === "SCHEDULER_EXPLICIT_FIELD_VALUE"),
+    );
     const defaultValue = useTemporalTemplates
       ? sparkIndexTemporalPartitionDefault(field, sql)
       : undefined;
-    if (defaultValue !== undefined) result[field] = defaultValue;
+    if (
+      defaultValue !== undefined &&
+      !(explicitAssignment && result[field] !== undefined)
+    )
+      result[field] = defaultValue;
     else if (result[field] === undefined)
       result[field] = SPARK_INDEX_DYNAMIC_PARTITION_WILDCARD;
   }
@@ -845,6 +855,7 @@ function codeRefs(codeEvidence?: TaskCodeEvidence): TaskPartitionEvidenceRef[] {
 
 function explicitFieldValues(
   value: string | undefined,
+  singleTargetFields: readonly string[] = [],
 ): ReadonlyMap<string, string> {
   if (value === undefined) return new Map();
   const result = new Map<string, string>();
@@ -854,6 +865,19 @@ function explicitFieldValues(
     const field = match[1]?.toLowerCase();
     const raw = match[2] ?? match[3] ?? match[4];
     if (field !== undefined && raw !== undefined) result.set(field, raw);
+  }
+  // Ingestion configuration can supply just the value for one known target
+  // partition field. Never infer positional bindings for multiple fields.
+  if (result.size === 0 && singleTargetFields.length === 1) {
+    const raw = value.trim();
+    const unquoted = literalValue(raw) ?? raw;
+    const field = singleTargetFields[0]!.toLowerCase();
+    if (
+      (/^[A-Za-z0-9_.:-]+$/u.test(unquoted) ||
+        /^\$\{[^{}\r\n]+\}$/u.test(unquoted)) &&
+      ![field, "none", "null"].includes(unquoted.toLowerCase())
+    )
+      result.set(field, unquoted);
   }
   return result;
 }
@@ -1575,7 +1599,10 @@ function buildDirectWrite(
     ...codeRefs(codeEvidence),
     ...queryEvidence,
   ];
-  const schedulerValues = explicitFieldValues(schedulerEvidence?.hivePartition);
+  const schedulerValues = explicitFieldValues(
+    schedulerEvidence?.hivePartition,
+    fields,
+  );
   const buildAssignments = (
     queryAssignmentsForVariant: readonly TaskPartitionAssignment[] | undefined,
   ): readonly TaskPartitionAssignment[] =>
@@ -1648,7 +1675,8 @@ function buildDirectWrite(
       (querySql !== undefined && allowImplicitQueryOutput ? "query" : null),
     statementOrdinal: null,
     mode:
-      addPartition !== undefined
+      addPartition !== undefined ||
+      (!sparkIndexMode && fields.length > 0 && fields.every((field) => schedulerValues.has(field.toLowerCase())))
         ? "STATIC"
         : querySql !== undefined && allowImplicitQueryOutput
           ? "DYNAMIC"

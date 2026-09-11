@@ -54,7 +54,7 @@ flowchart LR
 | 区域目录、表节点数、区域读者与输出关联任务                       | `tmp/processing-skeleton/schema-summary.json`            | 页面读取预计算摘要；区域成员按任务编号去重                                       |
 | 九个视图、哪些节点可展开、节点位置、代表路线、区域职责和任务说明 | `content.mjs`                                            | 人工阅读调查材料后编排；并非自动聚类或自动业务分类                               |
 | 四产品 `init_nom_prin` 表达式、表达式角色、物理来源列、字符位置  | `tmp/otc-principal-value-case/four-writer-evidence.json` | 这是之前从 Facts / 发布证据提取的摘录；本次构建直接读取，不重新扫描完整 Facts 包 |
-| 代表任务的固定 SQL                                               | `fixed-sql.json` 中已核历史版本的留存 SQL 正文             | 读取 `sqlSources` 中的 `query` slot，核对任务编号与 SQL 摘要后内置               |
+| 代表任务的固定 SQL                                               | `fixed-sql.json` 中已核历史版本的留存 SQL 正文           | 读取 `sqlSources` 中的 `query` slot，核对任务编号与 SQL 摘要后内置               |
 | 完整调查上下文、解释与待确认项                                   | 三份 Markdown 知识稿                                     | 构建时读取原文并内置，不随外部 Markdown 修改即时更新                             |
 
 因此，目前可以自动带入的是已有结构索引和已提取证据；“该怎样分层、怎样组织路线、如何解释职责”仍由内容文件和知识稿承担。页面并没有收录所有任务的加工语义。
@@ -85,8 +85,8 @@ flowchart LR
 | `network.version === snapshotVersion`        | 表网络声明的版本与人工内容锁定版本相同                                                   | 未重新计算网络文件哈希；不能发现同版本标记下的任意内容变更             |
 | 区域方向的去重成员数量、任务存在性及区域匹配 | `taskIds` 去重数量等于方向计数；每个成员任务存在，且有相应来源区域输入与目标区域输出关联 | 不证明方向集合完整，也不证明某输入实际影响某个输出字段                 |
 | 视图节点身份、跳转目标、显式任务和连线端点   | 同视图节点 ID 不重复；目标视图、节点绑定任务和连线两端存在；显式区域对在流向索引存在     | 人工代表路线没有逐条做 SQL 因果或运行接续校验                          |
-| 代表 evidence 的 任务键                      | 留存 SQL 的任务键存在于本批表网络                                                   | 不是全量证据文件的身份审计                                             |
-| 留存 query 正文的 SHA-256              | 留存 SQL 正文与锁定的原始 query 摘要一致                                    | 不是对外部可信摘要或实时源 SQL 的核验；不证明运行和业务正确性          |
+| 代表 evidence 的 任务键                      | 留存 SQL 的任务键存在于本批表网络                                                        | 不是全量证据文件的身份审计                                             |
+| 留存 query 正文的 SHA-256                    | 留存 SQL 正文与锁定的原始 query 摘要一致                                                 | 不是对外部可信摘要或实时源 SQL 的核验；不证明运行和业务正确性          |
 | 本金摘录的 `evidencePath`                    | 四路摘录声明的证据路径与表网络中对应任务的路径一致                                       | 没有重新计算摘录表达式、来源列或字符范围，也没有逐表达式回查完整 Facts |
 | 数据插槽存在                                 | 模板具有预期的数据注入位置                                                               | 不是通用模板完整性验证                                                 |
 
@@ -136,15 +136,15 @@ node scripts/processing-map/build.mjs
 
 ### 重建输入清单
 
-| 输入                                                     | 是否由本脚本生成                         |
-| -------------------------------------------------------- | ---------------------------------------- |
-| `tmp/processing-skeleton/table-network.json`             | 否，需已有固定图导出                     |
-| `tmp/processing-skeleton/schema-flows.json`              | 否，需已有区域流向摘要                   |
-| `tmp/processing-skeleton/schema-summary.json`            | 否，需已有区域统计摘要                   |
-| `tmp/otc-principal-value-case/four-writer-evidence.json` | 否，需已有本金证据摘录                   |
-| `fixed-sql.json` 与 `knowledge/evidence/107491.json`                     | 否，须保留随仓库维护的留存材料 |
-| 三份 Markdown 知识稿                                     | 否，维护后需重建才进入页面               |
-| `scripts/processing-map/` 的内容、样式、模板与脚本       | 否，属于可维护源码                       |
+| 输入                                                     | 是否由本脚本生成               |
+| -------------------------------------------------------- | ------------------------------ |
+| `tmp/processing-skeleton/table-network.json`             | 否，需已有固定图导出           |
+| `tmp/processing-skeleton/schema-flows.json`              | 否，需已有区域流向摘要         |
+| `tmp/processing-skeleton/schema-summary.json`            | 否，需已有区域统计摘要         |
+| `tmp/otc-principal-value-case/four-writer-evidence.json` | 否，需已有本金证据摘录         |
+| `fixed-sql.json` 与 `knowledge/evidence/107491.json`     | 否，须保留随仓库维护的留存材料 |
+| 三份 Markdown 知识稿                                     | 否，维护后需重建才进入页面     |
+| `scripts/processing-map/` 的内容、样式、模板与脚本       | 否，属于可维护源码             |
 
 这两组 `tmp` 输入受 Git 忽略规则覆盖；图快照和本金摘录仍来自本地调查材料。因此，**只克隆仓库源码，不足以保证重建此 HTML**。保留现成 HTML 可以继续离线阅读；要在另一环境重建，必须另外恢复同批图快照和本金摘录，或重新完成一批材料的导出、解释复核和版本绑定。当前尚无把这些输入打成可搬迁材料包的正式命令。
 

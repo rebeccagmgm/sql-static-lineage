@@ -71,6 +71,8 @@ export interface CollectInputPackFromCacheOptions {
   readonly taskIds?: readonly string[];
   readonly force?: boolean;
   readonly dryRun?: boolean;
+  /** Include tasks marked manual or frozen by the scheduler. */
+  readonly includeManual?: boolean;
   readonly hiveMetadataPath?: string;
   readonly hiveDdlPath?: string;
   readonly rdbmsCorePath?: string;
@@ -302,6 +304,7 @@ export function collectOneTaskInputPackFromCache(
     readonly catalog: OfflineTableCatalog;
     readonly force: boolean;
     readonly dryRun: boolean;
+    readonly includeManual: boolean;
     readonly manualDataRoot: string;
     readonly notFoundDataRoot: string;
     readonly status: TaskStatusDocument;
@@ -313,7 +316,9 @@ export function collectOneTaskInputPackFromCache(
     }) => void;
   },
 ): CollectInputPackFromCacheSummary {
-  const assembled = assembleCacheTaskEvidence(taskId, options.cacheRoot);
+  const assembled = assembleCacheTaskEvidence(taskId, options.cacheRoot, {
+    includeManual: options.includeManual,
+  });
   const cacheArtifacts = [...assembled.cacheArtifacts];
 
   if (assembled.kind === "NOT_FOUND") {
@@ -615,6 +620,7 @@ export function collectInputPackFromCache(
         catalog,
         force: options.force === true,
         dryRun,
+        includeManual: options.includeManual === true,
         manualDataRoot,
         notFoundDataRoot,
         status,
@@ -711,6 +717,7 @@ export function parseCollectInputPackFromCacheArgs(
               .filter(Boolean),
     force: flag(argv, "--force"),
     dryRun: flag(argv, "--dry-run"),
+    includeManual: flag(argv, "--include-manual"),
     hiveMetadataPath: optionValue(argv, "--hive-metadata-jsonl"),
     hiveDdlPath: optionValue(argv, "--hive-ddl-jsonl"),
     rdbmsCorePath: optionValue(argv, "--rdbms-core-jsonl"),

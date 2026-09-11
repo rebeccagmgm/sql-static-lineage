@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { processingDetail } from "../src/asset-graph/agent-api.ts";
-import { readJson } from "../src/asset-graph/publish.ts";
+import { readJson } from "../src/asset-graph/evidence-json.ts";
 import type { AssetGraphStore } from "../src/asset-graph/store.ts";
 
-vi.mock("../src/asset-graph/publish.ts", () => ({ readJson: vi.fn() }));
+vi.mock("../src/asset-graph/evidence-json.ts", () => ({ readJson: vi.fn() }));
 
 const aggregateId = "task:1:statement:1:relation:aggregate";
 const filterId = "task:1:statement:1:relation:filter";

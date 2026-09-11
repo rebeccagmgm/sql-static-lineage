@@ -337,7 +337,9 @@ describe("union-continuation-v2 (WP-8)", () => {
 
   it("traces a duplicated localClosure.externalRead occurrence once", () => {
     const merge = real119044Merge();
-    const consumer = merge.taskEvidence.find((item) => item.taskId === "119044");
+    const consumer = merge.taskEvidence.find(
+      (item) => item.taskId === "119044",
+    );
     const reads = consumer?.localClosure?.externalReads ?? [];
     const first = reads[0];
     if (!consumer || !first) {
@@ -346,9 +348,11 @@ describe("union-continuation-v2 (WP-8)", () => {
     const duplicated = mergeLoadedTasksForTest([
       loadedTask({
         taskId: "119044",
-        nodes: merge.nodes.filter((node) =>
-          ["TASK", "READ_OCCURRENCE"].includes(String(node.nodeType)),
-        ).map(node => ({...node})),
+        nodes: merge.nodes
+          .filter((node) =>
+            ["TASK", "READ_OCCURRENCE"].includes(String(node.nodeType)),
+          )
+          .map((node) => ({ ...node })),
         localClosure: {
           finalWrites: [],
           externalReads: [first, first, ...reads.slice(1)],
@@ -535,6 +539,46 @@ describe("union-continuation-v2 (WP-8)", () => {
     ).toBe("DISJOINT");
   });
 
+  it("matches known write partitions when the read has no partition restriction", () => {
+    const read = {
+      readOccurrenceId: "read:all", readOccurrenceNodeId: "node:all",
+      datasetNodeId: TABLE_ID, qualifiedName: TABLE, identityStatus: "CONFIRMED",
+      partitionPredicateStatus: "NONE" as const, partitionPredicates: [],
+    };
+    const write = {
+      taskId: "writer", writeObservationId: "write:all", targetWriteNodeId: "target:all",
+      datasetNodeId: TABLE_ID, qualifiedName: TABLE, source: "IN_UNION_FINAL_WRITE" as const,
+      partitionStatus: "STATIC",
+      partition: [{ column: "src_id", values: ["TIT"] }, { column: "grp_id", values: ["01"] }],
+    };
+    expect(partitionMatchStatus(read, write)).toBe("CONFIRMED");
+    expect(partitionMatchStatus(read, { ...write, partition: [{ column: "busi_date", values: ["h20"] }] })).toBe("CONFIRMED");
+    expect(partitionMatchStatus({ ...read, partitionPredicateStatus: "NON_LITERAL_PRESENT" }, write)).toBe("UNKNOWN");
+    expect(partitionMatchStatus(read, { ...write, partitionStatus: "UNKNOWN" })).toBe("UNKNOWN");
+    expect(partitionMatchStatus(read, { ...write, partition: [{ column: "src_id", values: ["TIT"], partitionStatus: "CONFLICT" }] })).toBe("UNKNOWN");
+    expect(partitionMatchStatus({ ...read, partitionPredicateStatus: "LITERAL", partitionPredicates: [{ column: "grp_id", values: ["02"] }] }, write)).toBe("DISJOINT");
+  });
+
+  it("confirms an unassigned busi_date by policy while retaining other partition constraints", () => {
+    const read = {
+      readOccurrenceId: "read:date-policy", readOccurrenceNodeId: "node:date-policy",
+      datasetNodeId: TABLE_ID, qualifiedName: TABLE, identityStatus: "CONFIRMED",
+      partitionPredicateStatus: "LITERAL" as const,
+      partitionPredicates: [{ column: "busi_date", values: ["h13"] }, { column: "grp_id", values: ["A"] }],
+    };
+    const write = {
+      taskId: "writer", writeObservationId: "write:date-policy", targetWriteNodeId: "target:date-policy",
+      datasetNodeId: TABLE_ID, qualifiedName: TABLE, source: "IN_UNION_FINAL_WRITE" as const,
+      partitionStatus: "UNKNOWN", partition: [{ column: "busi_date", values: [], valueStatus: "UNKNOWN" }],
+    };
+    expect(partitionMatchStatus(read, write)).toBe("CONFIRMED");
+    expect(partitionMatchStatus(read, { ...write, partition: [{ column: "busi_date", values: [], valueStatus: "UNKNOWN", partitionStatus: "CONFLICT" }] })).toBe("UNKNOWN");
+    expect(partitionMatchStatus({ ...read, partitionPredicateStatus: "NONE", partitionPredicates: [] }, write)).toBe("CONFIRMED");
+    expect(partitionMatchStatus(read, { ...write, partition: [...write.partition, { column: "grp_id", values: [], valueStatus: "UNKNOWN" }] })).toBe("UNKNOWN");
+    expect(partitionMatchStatus(read, { ...write, partition: [...write.partition, { column: "grp_id", values: ["B"], valueStatus: "OBSERVED_RENDERED_VALUE" }] })).toBe("DISJOINT");
+    expect(partitionMatchStatus(read, { ...write, partition: [{ column: "busi_date", values: ["UNKNOWN"], valueStatus: "RUNTIME_EXPRESSION", expression: "UNKNOWN", observedValue: null }] })).toBe("CONFIRMED");
+  });
+
   it("ignores unconstrained writer partition columns such as grp_id", () => {
     const read = {
       readOccurrenceId: "read:1",
@@ -634,7 +678,8 @@ describe("union-continuation-v2 (WP-8)", () => {
   });
 
   it("uses an exact upstream Horae relation table to recover a real final write", () => {
-    const readId = "task:400010:statement:0:relation:root.read.t03_agt_stati_info_h";
+    const readId =
+      "task:400010:statement:0:relation:root.read.t03_agt_stati_info_h";
     const readNodeId = "read-occurrence:400010:0";
     const merge = mergeLoadedTasksForTest([
       loadedTask({
@@ -651,17 +696,25 @@ describe("union-continuation-v2 (WP-8)", () => {
               },
             },
           },
-          readNode(readId, readNodeId, "ODATA_N_TIT.D_TRD_OTC_TRADE", "09", "LITERAL"),
+          readNode(
+            readId,
+            readNodeId,
+            "ODATA_N_TIT.D_TRD_OTC_TRADE",
+            "09",
+            "LITERAL",
+          ),
         ],
         localClosure: {
           finalWrites: [],
-          externalReads: [{
-            readOccurrenceId: readId,
-            readOccurrenceNodeId: readNodeId,
-            datasetNodeId: TABLE_ID,
-            qualifiedName: TABLE,
-            identityStatus: "CONFIRMED",
-          }],
+          externalReads: [
+            {
+              readOccurrenceId: readId,
+              readOccurrenceNodeId: readNodeId,
+              datasetNodeId: TABLE_ID,
+              qualifiedName: TABLE,
+              identityStatus: "CONFIRMED",
+            },
+          ],
         },
       }),
       loadedTask({
@@ -669,12 +722,14 @@ describe("union-continuation-v2 (WP-8)", () => {
         nodes: [{ nodeId: "task:400011", nodeType: "TASK", properties: {} }],
         localClosure: {
           // Different node identity makes ordinary physical matching fail.
-          finalWrites: [{
-            writeObservationId: "write-observation:400011:0",
-            targetWriteNodeId: "target-write:400011:0",
-            datasetNodeId: "dataset:writer-identity-drift",
-            qualifiedName: TABLE,
-          }],
+          finalWrites: [
+            {
+              writeObservationId: "write-observation:400011:0",
+              targetWriteNodeId: "target-write:400011:0",
+              datasetNodeId: "dataset:writer-identity-drift",
+              qualifiedName: TABLE,
+            },
+          ],
           externalReads: [],
         },
       }),

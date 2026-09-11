@@ -5,6 +5,8 @@ export type RelationRecord = Readonly<{
   readonly relationId: string;
   readonly relationType: string;
   readonly physicalDataset: string | null;
+  /** SQL binding/alias for a read relation, when Facts expose one. */
+  readonly binding: string | null;
   /** Relation that supplies a logical CTE/read alias, when Facts expose one. */
   readonly sourceRelationId: string | null;
   /** Proven physical inputs of a named output from this relation. */
@@ -44,14 +46,59 @@ function relationBody(relation: Record<string, unknown>): Record<string, unknown
   return record(relation.relation) ?? relation;
 }
 
+function normalizedLiteral(value: unknown): string | null {
+  const literal = text(value);
+  if (!literal) return null;
+  const match = literal.match(/^(['\"])(.*)\1$/s);
+  return normalizeName(match ? match[2] : literal);
+}
+
+function pivotValueInputs(
+  expression: Record<string, unknown>,
+): readonly Record<string, unknown>[] | null | undefined {
+  // This is deliberately narrower than "a CASE exists".  A pivot output is
+  // safe to bridge only when the named aggregate output is exactly the one
+  // literal selected by one CASE branch, and exactly one RESULT_VALUE role
+  // supplies the physical value.  Anything nested or plural stays unknown.
+  if (expression.aggregate !== true) return undefined;
+  const output = text(expression.output);
+  const roles = Array.isArray(expression.expression_roles)
+    ? expression.expression_roles.map(record).filter((item): item is Record<string, unknown> => item !== null)
+    : [];
+  const selectors = roles.filter((role) => text(role.role) === "BRANCH_SELECTOR");
+  const values = roles.filter((role) => text(role.role) === "RESULT_VALUE");
+  if (selectors.length === 0 && values.length === 0) return undefined;
+  if (!output || selectors.length !== 1 || values.length !== 1) return null;
+  const facts = record(expression.expression_facts);
+  const literals = Array.isArray(facts?.literals) ? facts.literals : [];
+  if (literals.length !== 1 || normalizedLiteral(literals[0]) !== normalizeName(output)) return null;
+  const comparisons = Array.isArray(facts?.comparisons) ? facts.comparisons : [];
+  if (comparisons.length !== 1 || text(record(comparisons[0])?.operator) !== "=") return null;
+  const valueInputs = Array.isArray(values[0]!.input_columns) ? values[0]!.input_columns : [];
+  const mapped = valueInputs.map(record).filter((item): item is Record<string, unknown> => item !== null);
+  const physicalInputs = mapped.flatMap((input) =>
+    (Array.isArray(input.physical) ? input.physical : []).map(record)
+      .filter((item): item is Record<string, unknown> => item !== null),
+  );
+  return mapped.length === 1 && physicalInputs.length === 1 ? mapped : null;
+}
+
 function outputInputColumns(body: Record<string, unknown>): readonly RelationOutputInputColumn[] {
-  const expressions = Array.isArray(body.expressions) ? body.expressions : [];
+  const expressions = Array.isArray(body.expressions)
+    ? body.expressions
+    : Array.isArray(body.measures) ? body.measures : [];
   const columns: RelationOutputInputColumn[] = [];
   for (const rawExpression of expressions) {
     const expression = record(rawExpression);
     const outputName = text(expression?.output);
     if (!expression || !outputName) continue;
-    const inputs = Array.isArray(expression.input_columns) ? expression.input_columns : [];
+    const pivotInputs = pivotValueInputs(expression);
+    // A malformed pivot candidate is not a generic aggregate witness.  Its
+    // broad input_columns include selector fields and can otherwise route an
+    // output to the wrong setop leaf.
+    const inputs = pivotInputs === undefined
+      ? (Array.isArray(expression.input_columns) ? expression.input_columns : [])
+      : pivotInputs ?? [];
     for (const rawInput of inputs) {
       const input = record(rawInput);
       const inputName = text(input?.name);
@@ -75,6 +122,27 @@ function outputInputColumns(body: Record<string, unknown>): readonly RelationOut
   return columns;
 }
 
+function outputColumnNames(body: Record<string, unknown>): readonly string[] {
+  const explicit = Array.isArray(body.output_columns)
+    ? body.output_columns
+      .map((value) => text(value))
+      .filter((value): value is string => value !== null)
+    : [];
+  if (explicit.length > 0) return explicit.map(normalizeName);
+
+  // Some SQL_PLAN CTE/project nodes omit output_columns but retain the
+  // structured expression records.  Those explicit output names are enough
+  // to identify a named CTE route; do not infer names from input columns.
+  const expressions = Array.isArray(body.expressions)
+    ? body.expressions
+    : Array.isArray(body.measures) ? body.measures : [];
+  return expressions
+    .map(record)
+    .map((expression) => text(expression?.output))
+    .filter((value): value is string => value !== null)
+    .map(normalizeName);
+}
+
 export function buildRelationTreeIndex(
   relationNodes: readonly Record<string, unknown>[],
 ): RelationTreeIndex {
@@ -94,16 +162,15 @@ export function buildRelationTreeIndex(
     const branches = Array.isArray(body.branches)
       ? body.branches.map((value) => String(value)).filter(Boolean)
       : [];
-    const outputColumns = Array.isArray(body.output_columns)
-      ? body.output_columns.map((value) => text(value)).filter((value): value is string => value !== null)
-      : [];
+    const outputColumns = outputColumnNames(body);
     relations.set(relationId, {
       relationId,
       relationType,
       physicalDataset: physicalDataset ? normalizeName(physicalDataset) : null,
+      binding: text(body.binding) ? normalizeName(text(body.binding)!) : null,
       sourceRelationId: text(body.source) ?? text(row.source),
       outputInputColumns: outputInputColumns(body),
-      outputColumns: outputColumns.map(normalizeName),
+      outputColumns,
       joinType: text(body.join_type),
       leftRelationId: text(body.left),
       rightRelationId: text(body.right),

@@ -86,7 +86,10 @@ export function buildUnionContinuationEvidenceEnvelope(
   const consumer = options.merge.taskEvidence.find(
     (evidence) => evidence.taskId === consumerTaskId,
   );
-  if (!consumer || !isUnionContinuationV2ProjectionSchema(consumer.projectionSchemaVersion)) {
+  if (
+    !consumer ||
+    !isUnionContinuationV2ProjectionSchema(consumer.projectionSchemaVersion)
+  ) {
     throw new Error(
       `UNION_CONTINUATION_ENVELOPE_CONSUMER_UNSUPPORTED:${consumerTaskId}`,
     );
@@ -107,7 +110,8 @@ export function buildUnionContinuationEvidenceEnvelope(
       sourceMode: "TASK_LOCAL_UNION",
       consumerTaskId,
       readOccurrenceId: options.result.readOccurrence.readOccurrenceId,
-      projectionSchemaVersion: consumer.projectionSchemaVersion === "1.3.0" ? "1.3.0" : "1.2.0",
+      projectionSchemaVersion:
+        consumer.projectionSchemaVersion === "1.3.0" ? "1.3.0" : "1.2.0",
       taskProjections: options.merge.taskEvidence
         .map(taskProjectionRef)
         .sort((left, right) => compareText(left.taskId, right.taskId)),

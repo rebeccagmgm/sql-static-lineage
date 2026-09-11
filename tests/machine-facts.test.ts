@@ -421,6 +421,72 @@ describe("machine facts contract", () => {
 		expect(binding).toMatchObject({ target_dataset: "warehouse.demo.target", target_field: "id" });
 	});
 
+	it("qualifies a bare Hive read table only when the task has a proven default schema", () => {
+		const f = fixture();
+		const schemaPath = join(f.root, "schema.json");
+		writeFileSync(
+			schemaPath,
+			JSON.stringify({
+				records: [
+					{ qualified_name: "warehouse.source", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+					{ qualified_name: "warehouse.target", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+				],
+			}),
+			"utf8",
+		);
+		writeFileSync(f.sql, "INSERT OVERWRITE TABLE target SELECT id FROM source;\n", "utf8");
+		const profilePath = join(f.root, "profile.json");
+		const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+		profile.tasks[0].writes = "warehouse.target";
+		profile.tasks[0].default_schema = "warehouse";
+		writeFileSync(profilePath, JSON.stringify(profile), "utf8");
+
+		processProfile(f.profile, f.output, "hive-gfhive");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const reads = readJsonlRecords(join(bundle, "dataset-io.jsonl"))
+			.filter((record) => record.direction === "READ");
+
+		expect(reads).toEqual([
+			expect.objectContaining({
+				physical_dataset: "warehouse.source",
+				dataset_id: datasetId("hive-gfhive", "warehouse.source"),
+			}),
+		]);
+	});
+
+	it("does not qualify a bare read table for a non-Hive source", () => {
+		const f = fixture();
+		const schemaPath = join(f.root, "schema.json");
+		writeFileSync(
+			schemaPath,
+			JSON.stringify({
+				records: [
+					{ qualified_name: "warehouse.source", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+					{ qualified_name: "warehouse.target", status: "SUCCESS", columns: [{ name: "id", partition: false }] },
+				],
+			}),
+			"utf8",
+		);
+		writeFileSync(f.sql, "INSERT OVERWRITE TABLE target SELECT id FROM source;\n", "utf8");
+		const profilePath = join(f.root, "profile.json");
+		const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+		profile.tasks[0].writes = "warehouse.target";
+		profile.tasks[0].default_schema = "warehouse";
+		writeFileSync(profilePath, JSON.stringify(profile), "utf8");
+
+		processProfile(f.profile, f.output, "postgres-gfpostgres");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const reads = readJsonlRecords(join(bundle, "dataset-io.jsonl"))
+			.filter((record) => record.direction === "READ");
+
+		expect(reads).toEqual([
+			expect.objectContaining({
+				physical_dataset: "source",
+				dataset_id: datasetId("postgres-gfpostgres", "source"),
+			}),
+		]);
+	});
+
 	it("binds every resolvable multi-column CTAS producer ordinal to the same Write", () => {
 		const f = fixture();
 		const schemaPath = join(f.root, "schema.json");
@@ -660,6 +726,12 @@ describe("machine facts contract", () => {
 
 		processProfile(f.profile, f.output, "test-source");
 		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		const partitionWrite = readJsonlRecords(join(bundle, "dataset-io.jsonl")).find(record => record.write_observation_id);
+		expect(partitionWrite).toMatchObject({
+			partition_binding_status: "COMPLETE",
+			partition_assignments: [{ field: "dt", status: "CONFIRMED", mapping_method: "DYNAMIC_PARTITION_OUTPUT_ORDINAL" }],
+		});
+		expect(partitionWrite).toMatchObject({ partition_assignments: [{ evidence_refs: expect.arrayContaining([expect.stringContaining("output-binding:")]) }] });
 		const bindings = readJsonlText(join(bundle, "output-field-bindings.jsonl"))
 			.trim()
 			.split(/\r?\n/)
@@ -681,6 +753,16 @@ describe("machine facts contract", () => {
 		expect(unknowns).not.toContainEqual(
 			expect.objectContaining({ reason_code: "DYNAMIC_PARTITION_BINDING_NOT_PROVABLE" }),
 		);
+	});
+
+	it("emits explicit non-partitioned SQL writes only with target schema evidence", () => {
+		const f = fixture();
+		processProfile(f.profile, f.output, "test-source");
+		const bundle = join(f.root, "machine-facts", "registry", "tasks", "test-task", "bundle");
+		expect(readJsonlRecords(join(bundle, "dataset-io.jsonl")).find(record => record.write_observation_id)).toMatchObject({
+			partition_mode: "NONE", partition_status: "NOT_PARTITIONED",
+			partition_binding_status: "NOT_PARTITIONED", partition_assignments: [],
+		});
 	});
 
 	it("excludes failed status and corrupted current bundles from the index", () => {

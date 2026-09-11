@@ -130,6 +130,21 @@ describe.skipIf(!configPath)("ArcadeDB store integration", () => {
         "MATCH (o:SLAssetOwner {key:$key}) REMOVE o.edgeSourceKeys",
         { key: `${graphId}|300` },
       );
+      await store.replace("empty", "empty-hash", { nodes: [], edges: [] });
+      await store.run(
+        "MATCH (o:SLAssetOwner {key:$key}) REMOVE o.edgeSourceKeys",
+        { key: `${graphId}|empty` },
+      );
+      const beforeUpgrade = await store.counts();
+      expect(await store.upgradeOwnerEdgeSources()).toBe(2);
+      expect(await store.upgradeOwnerEdgeSources()).toBe(0);
+      expect(await store.counts()).toEqual(beforeUpgrade);
+      expect((await store.owners()).get("300")).toBe("edges-2");
+      const upgraded = await store.run(
+        "MATCH (o:SLAssetOwner {key:$key}) RETURN o.edgeSourceKeys AS sources",
+        { key: `${graphId}|300` },
+      );
+      expect(upgraded.records[0]!.get("sources")).toEqual([`${graphId}|candidate`]);
       await store.remove("300");
       expect(await store.counts()).toEqual(before);
 

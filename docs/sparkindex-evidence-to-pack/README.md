@@ -23,14 +23,14 @@ schedule-evidence/tasks/<taskId>/
          tasks/sparkIndex/<id>/ + tables/
 ```
 
-| | 离线主路径 | 现网专用路径 |
-| --- | --- | --- |
-| **命令** | `npm run input-pack:from-cache` | `npm run input-pack:sparkindex` |
-| **入口** | `scripts/input/mainline/collect-input-pack-from-cache.ts` | `scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts` |
-| **组证** | `assembleCacheTaskEvidence` → `assembleSparkIndex`（`scripts/input/shared/cache-task-evidence.ts`） | 同文件内读缓存 / 刷新后 `buildSparkIndexTaskEvidence` + merge |
-| **落盘** | 通用 `materializeTaskAndTablePacks`（`sparkIndexMode`） | `materializeSparkIndexTaskAndTables`（`scripts/input/shared/sparkindex-table-evidence.ts`） |
-| **MISS** | 不打接口 | 刷新 Horae detail、szdata schedule-detail；表走 MCP |
-| **表 DDL** | 原信息 jsonl / 已有 `tables/` | sql-mcp GUID + DDL |
+|            | 离线主路径                                                                                          | 现网专用路径                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **命令**   | `npm run input-pack:from-cache`                                                                     | `npm run input-pack:sparkindex`                                                             |
+| **入口**   | `scripts/input/mainline/collect-input-pack-from-cache.ts`                                           | `scripts/input/mainline/collect-one-task-input-pack-sparkindex.ts`                          |
+| **组证**   | `assembleCacheTaskEvidence` → `assembleSparkIndex`（`scripts/input/shared/cache-task-evidence.ts`） | 同文件内读缓存 / 刷新后 `buildSparkIndexTaskEvidence` + merge                               |
+| **落盘**   | 通用 `materializeTaskAndTablePacks`（`sparkIndexMode`）                                             | `materializeSparkIndexTaskAndTables`（`scripts/input/shared/sparkindex-table-evidence.ts`） |
+| **MISS**   | 不打接口                                                                                            | 刷新 Horae detail、szdata schedule-detail；表走 MCP                                         |
+| **表 DDL** | 原信息 jsonl / 已有 `tables/`                                                                       | sql-mcp GUID + DDL                                                                          |
 
 通用 `npm run input-pack:tasks`（`collect-one-task-input-pack.ts`）**不是** sparkIndex 专用入口。
 
@@ -47,9 +47,9 @@ sparkIndex **SQL 里通常没有 INSERT**。写身份来自 pack `target`（sche
 
 ## 3. 不是组 pack 的脚本
 
-| 命令 / 模块 | 做什么 |
-| --- | --- |
-| `npm run input-pack:fill-sparkindex-schedule-detail-cache` | 只补 `szdata-schedule-detail.json`（按 Horae 类型筛 sparkIndex） |
+| 命令 / 模块                                                 | 做什么                                                                                                                |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `npm run input-pack:fill-sparkindex-schedule-detail-cache`  | 只补 `szdata-schedule-detail.json`（按 Horae 类型筛 sparkIndex）                                                      |
 | `scripts/input/mainline/select-sparkindex-both-evidence.ts` | 按四件套文件是否存在筛 ID：horae-task-type、schedule-detail、relation up/down。**不写 pack**，也 **不是按写表名选批** |
 
 其它 fill（Horae 类型、relation、Hive SQL）是通用缓存补洞，不专属于 sparkIndex 组包。

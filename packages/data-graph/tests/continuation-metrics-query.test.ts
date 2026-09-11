@@ -354,7 +354,10 @@ describe("published continuation candidate query", () => {
 
   it("validates the published terminal-policy snapshot before querying candidates", () => {
     const { root, published, write, index } = snapshot();
-    const policy = buildTerminalPolicySnapshot(index, loadGraphTerminalPolicy());
+    const policy = buildTerminalPolicySnapshot(
+      index,
+      loadGraphTerminalPolicy(),
+    );
     write(join(published, "terminal-policy.json"), {
       ...policy,
       contentHash: "corrupted",

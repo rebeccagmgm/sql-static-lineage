@@ -31,13 +31,13 @@
 
 必给字段：
 
-| 字段 | 含义 |
-|------|------|
-| `projected` | 有 Task Pack + 可投影 SQL 边的任务数 |
-| `scheduleOnly` | 仅调度上下文、无数据边的任务数 |
-| `collectionFailed` | 采集/Facts 失败、仅边界存在的任务数 |
-| `byFailureReason` | 失败原因计数（若有） |
-| `batchRef` | manifest / contentHash，可复核 |
+| 字段               | 含义                                 |
+| ------------------ | ------------------------------------ |
+| `projected`        | 有 Task Pack + 可投影 SQL 边的任务数 |
+| `scheduleOnly`     | 仅调度上下文、无数据边的任务数       |
+| `collectionFailed` | 采集/Facts 失败、仅边界存在的任务数  |
+| `byFailureReason`  | 失败原因计数（若有）                 |
+| `batchRef`         | manifest / contentHash，可复核       |
 
 用户文案口径示例：
 
@@ -62,12 +62,12 @@
 
 典型来源：
 
-| 来源 | 用户说法 | 禁止说法 |
-|------|----------|----------|
-| producer-index 并集外 writer | 「索引提示可能还有写者 …」 | 「上游是 …」 |
-| `scheduleReference.targetTable` | 「调度登记目标表（候选）」 | 「SQL 证实写入 …」 |
-| `partitionPredicateStatus = NON_LITERAL_PRESENT` | 「读侧谓词含非字面量，无法唯一剪枝」 | 「唯一上游任务是 …」 |
-| 字段 `subtype = UNKNOWN` | 「字段有关，变换类型未定」 | 「恒等拷贝 / 已认定加工种类」 |
+| 来源                                             | 用户说法                             | 禁止说法                      |
+| ------------------------------------------------ | ------------------------------------ | ----------------------------- |
+| producer-index 并集外 writer                     | 「索引提示可能还有写者 …」           | 「上游是 …」                  |
+| `scheduleReference.targetTable`                  | 「调度登记目标表（候选）」           | 「SQL 证实写入 …」            |
+| `partitionPredicateStatus = NON_LITERAL_PRESENT` | 「读侧谓词含非字面量，无法唯一剪枝」 | 「唯一上游任务是 …」          |
+| 字段 `subtype = UNKNOWN`                         | 「字段有关，变换类型未定」           | 「恒等拷贝 / 已认定加工种类」 |
 
 `SCHEDULE_DEPENDS_ON`、可关闭的 `PRODUCER_BRIDGE` 派生边 **只属于 L2（或参考层）**，
 永不并入 L1。
@@ -89,12 +89,12 @@
 
 ## 3. 图上属性与报告的对应
 
-| 用户层 | 图上最少要带的标记 | 报告/API 区块名（建议） |
-|--------|--------------------|-------------------------|
-| L0 | 任务节点 `coverageStatus` | `coverage` |
-| L1 | 边 `evidenceStatus=CONFIRMED`，`derived=false` | `confirmedLineage` |
-| L2 | `evidenceStatus=CANDIDATE\|UNKNOWN` 或 `derived=true` + provenance | `candidates` |
-| L3 | 不静默删节点；gap 列表 + 边界任务节点 | `gaps` / `boundaries` |
+| 用户层 | 图上最少要带的标记                                                 | 报告/API 区块名（建议） |
+| ------ | ------------------------------------------------------------------ | ----------------------- |
+| L0     | 任务节点 `coverageStatus`                                          | `coverage`              |
+| L1     | 边 `evidenceStatus=CONFIRMED`，`derived=false`                     | `confirmedLineage`      |
+| L2     | `evidenceStatus=CANDIDATE\|UNKNOWN` 或 `derived=true` + provenance | `candidates`            |
+| L3     | 不静默删节点；gap 列表 + 边界任务节点                              | `gaps` / `boundaries`   |
 
 同一条逻辑边不得在 L1 与 L2 重复冒充两套结论；若既有投影边又有派生桥，
 展示时派生桥只能出现在 L2，并注明 provenance。
@@ -136,14 +136,14 @@ Build Narrative
 
 ## 6. 与现有实现的落点
 
-| 能力 | 现状 | 本规范要求 |
-|------|------|------------|
-| WP-3 `coverageStatus` / `failureReasonCode` | 已有 | 必须进 L0 用户陈述 |
-| WP-5 并集 merge gaps | 已有枚举 | 必须进 L3，不得仅日志 |
-| WP-5 `traceUnionUpstream` | 返回 writers + gaps + derived | 对外 API/UI 按 L1/L2/L3 拆开 |
-| WP-5 `exportScheduleDependsOnEdges` | 可选派生 | 仅 L2 |
-| data-graph 地图 / query-index | 尚未接 UNION | 接入时必须以本规范为展示合同 |
-| WP-3.2 `scheduleReference.targetTable` | 已拍板未做 | 落地后只进 L2 CANDIDATE |
+| 能力                                        | 现状                          | 本规范要求                   |
+| ------------------------------------------- | ----------------------------- | ---------------------------- |
+| WP-3 `coverageStatus` / `failureReasonCode` | 已有                          | 必须进 L0 用户陈述           |
+| WP-5 并集 merge gaps                        | 已有枚举                      | 必须进 L3，不得仅日志        |
+| WP-5 `traceUnionUpstream`                   | 返回 writers + gaps + derived | 对外 API/UI 按 L1/L2/L3 拆开 |
+| WP-5 `exportScheduleDependsOnEdges`         | 可选派生                      | 仅 L2                        |
+| data-graph 地图 / query-index               | 尚未接 UNION                  | 接入时必须以本规范为展示合同 |
+| WP-3.2 `scheduleReference.targetTable`      | 已拍板未做                    | 落地后只进 L2 CANDIDATE      |
 
 实现顺序建议（准确性优先，可暂缓扩图）：
 

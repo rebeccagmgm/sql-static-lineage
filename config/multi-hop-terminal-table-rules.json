@@ -7,7 +7,8 @@
         "temp_n.client_label",
         "pdata_n.ref_cd_cvt_map",
         "pdata_n.ref_cd_cvt_map_temp",
-        "pdata_n.ref_dw_cd_val"
+        "pdata_n.ref_dw_cd_val",
+        "ods_gf1.hq_data_push_log"
       ],
       "qualifiedNameTerms": [
         "tag_def",

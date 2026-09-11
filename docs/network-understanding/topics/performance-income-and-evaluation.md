@@ -3,6 +3,7 @@
 本页回答“员工和团队的业绩数从哪里来，如何变成考核接口中的月、季、年指标”。它接续[销售归属、标准资产与考核主篇](../chapters/09-performance-and-assets.md)，不把创收指标当作工资应发金额。证据固定在本知识库的发布批次；所有公式描述的是 SQL 口径，运行结果、薪酬制度和审批生效另需业务确认。
 
 <a id="pi-income"></a>
+
 ## 员工考核创收：客户归属收入与直接归属收入并行
 
 189181 的输出是一名员工、一个业务月、一个收入标签的数值。客户侧先取考核客户关系标签，并剔除主篇所述月均标准资产低于 10 万的名单，再连接客户全口径创收的指定叶子标签。员工侧另收专用席位、网上开户审核、投顾资讯、平台增值、跨销售和部分非零售客户转融通收入。后者有些没有客户 ID，不能要求每笔员工收入都回溯到同一个客户资产包。当前人员需能对应 STAFF 组合。[189181：query 1–189、380–445][^189181]
@@ -14,6 +15,7 @@
 189181 另造上月关系和上月收入分支，但只在计算日恰好为每月 8 日时输出上月记录。prepare 仅删除当前月分区。这说明 SQL 同时有当前月重算与特定日补上月的路径；其写入方式、调度是否固定 8 日以及回补幂等性不能仅从该删除语句证明。[189181：query 191–375、447–522，prepare 1–2][^189181]
 
 <a id="pi-team"></a>
+
 ## 团队长业绩：成员求和，团队长本人数取平均防止重复
 
 199817、199879、199809 分别给出团队长的总创收、日均总资产和资产创收率。团队关系用业务月的团队表拼成三类行：直接成员、子团队成员、子团队负责人本人向父团队归属。这是一层父子团队拼接，并非任意深度组织树递归。当前员工状态过滤与上月员工状态使用各自时点。[199817：query 1–45、113–159；199879：query 1–46、108–151；199809：query 1–48、142–184][^199817][^199879][^199809]
@@ -25,6 +27,7 @@
 例如一个团队长收入 100、两个成员分别 30 和 20，在每位成员一行且无重复关系时结果为 150。若某成员同时通过直接成员和子团队成员进入两次，SQL 的 UNION ALL 和 SUM 不会自行把他合并。这个例子解释连接粒度，不代表已观察到实际重复。
 
 <a id="pi-period"></a>
+
 ## 考核指标的月、季、年名称不等于三个独立计算窗口
 
 203979 把资产、收入、客户经营等指标编码成“员工×月×指标代码”行，当前员工必须有有效资产包关系。很多基础指标本来就是季度进展值，因此月代码和季代码直接取同一当前月值。增长率年代码则取“当前季度进展值＋已结束季度末值”的平均；增长值、司占比增长值、资产亩产的年代码使用这些季度值的和。不能把所有年代码统一解释为全年逐月平均。[203979：query 19–123、124–193、226–326][^203979]
@@ -36,6 +39,7 @@
 本页已核对这两个接口的主要期间、倍率和过滤分支；203958 中部部分纯编码投影、203979 后段部分逐行投影仍在账本保留未读范围。上游企业微信、服务覆盖、满意度等指标的原始业务定义不因被接口装配而自动得到证明。
 
 <a id="pi-kpi"></a>
+
 ## 机构综合 KPI：把不同基础指标展开，而非计算最终薪资
 
 244873 对有效 STAFF 员工按上月组装机构业务 KPI，再将 map 中的指标展开为行，仅保留非空、非零值。它汇入项目、证券出借、信用合同、私募同业资产、托管、OTC、衍生品客户、债券经纪、产品销售及融资净利息等来源，不把这些业务数量与金额直接加成一个总分。一般创收与 A1、A2、A9 使用一类贡献类型，其余使用另一类。输出的指标代码、数值、贡献类型和月份是下游考核输入，SQL 没有工资发放公式。[244873：query 1–276][^244873]
@@ -43,6 +47,7 @@
 需要保留的差异包括：A9 使用上月 10–25 日平均资产来源；A12 实际读取 93338 的年日均动态名义本金，旧的成交规模来源已经注释；A16 取截至上月末的本年产品销售且排除现金类；一般机构创收读取机构业务客户的全口径收入来源，旧工资接口来源已注释。A8 还有固定历史月份的信用合同金额修正，B4 的空值会在最终过滤消失。统计月相同不能消除这些累计窗口和业务范围差异。[244873：query 57–276][^244873]
 
 <a id="pi-interface"></a>
+
 ## 输出到考核系统后还会发生什么
 
 101522 把员工月收入宽表字段投影到员工收入月表，读取当前月及前两个月，truncate 也覆盖相应三个月分区。101526 的机构收入先输出同样三个月范围，finish 再按每个目标月从当前年一月累加，回写总收入、佣金、产品、两融、期权衍生品和跨销售累计列；按月和机构匹配，只更新已有行，且排除月总收入为零的参与记录。年初回补前一年月份时，“当前年一月”与目标月可能交叉，必须用真实运行参数确认是否产生空累计，不能假定它自动切回上一年。[101522：query 618–619、truncate 1；101526：query 96–97、truncate 1、finish 1–7][^101522][^101526]
@@ -51,23 +56,22 @@
 
 “员工创收”“机构创收”“管理评价指标”“机构综合 KPI”分别有不同的行粒度、过滤和期间。本页能解释 SQL 的装配规则，仍不能确认考核系统最终选中了哪套指标、审批后的系数以及员工实际领取的金额。主篇及本页账本中的 EXPLAINED 表示上述家族存在实质解释，未读字段仍按行列出。
 
+[^189181]: Task 189181，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/189181/versions/3de347d37872d798ac44392a0223754e059b1801365dd346b8832edc5d464735.evidence-v3.json)。
 
-[^189181]: Task 189181，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/189181/versions/3de347d37872d798ac44392a0223754e059b1801365dd346b8832edc5d464735.evidence-v3.json>)。
+[^199817]: Task 199817，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199817/versions/a9c316f3b2dac2a98e1acc7ee4ce375df2344a43287c9f194e8e6ba835bc1cd3.evidence-v3.json)。
 
-[^199817]: Task 199817，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199817/versions/a9c316f3b2dac2a98e1acc7ee4ce375df2344a43287c9f194e8e6ba835bc1cd3.evidence-v3.json>)。
+[^199879]: Task 199879，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199879/versions/55a0c3a6579dcbc230112a285f8b25b2bcd9e7eb611c55074f152841d56c3647.evidence-v3.json)。
 
-[^199879]: Task 199879，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199879/versions/55a0c3a6579dcbc230112a285f8b25b2bcd9e7eb611c55074f152841d56c3647.evidence-v3.json>)。
+[^199809]: Task 199809，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199809/versions/bcb95ccde860a1f6e7cce345a06b53f4b226385c91b6fe154c7b1ce5b4f77163.evidence-v3.json)。
 
-[^199809]: Task 199809，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/199809/versions/bcb95ccde860a1f6e7cce345a06b53f4b226385c91b6fe154c7b1ce5b4f77163.evidence-v3.json>)。
+[^203979]: Task 203979，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203979/versions/ebee753b33330d3ab2a73a0673d05bcad8c7b6cf3fd5e96ae7cf0f33fd6239db.evidence-v3.json)。
 
-[^203979]: Task 203979，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203979/versions/ebee753b33330d3ab2a73a0673d05bcad8c7b6cf3fd5e96ae7cf0f33fd6239db.evidence-v3.json>)。
+[^203958]: Task 203958，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203958/versions/49d807ab768f00fbef52e868ae23e373aaabd2bf43ee68e0ceefff32505370de.evidence-v3.json)。
 
-[^203958]: Task 203958，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/203958/versions/49d807ab768f00fbef52e868ae23e373aaabd2bf43ee68e0ceefff32505370de.evidence-v3.json>)。
+[^244873]: Task 244873，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/244873/versions/60c826bcc1874649bf46fb77339797853e6fc23a0c9cd8ef67fc845b4cbe3dd2.evidence-v3.json)。
 
-[^244873]: Task 244873，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/244873/versions/60c826bcc1874649bf46fb77339797853e6fc23a0c9cd8ef67fc845b4cbe3dd2.evidence-v3.json>)。
+[^101522]: Task 101522，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/101522/versions/f10e3e7d8e9dc6ecdef4915ff982a302bfce033c404f8aa42bd8d10c611f096a.evidence-v3.json)。
 
-[^101522]: Task 101522，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/101522/versions/f10e3e7d8e9dc6ecdef4915ff982a302bfce033c404f8aa42bd8d10c611f096a.evidence-v3.json>)。
+[^101526]: Task 101526，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/101526/versions/5b2af56af9a955f4cc626b6aaa444885cd5e962ca9e9b70dc2fe66b6ec1f2d6d.evidence-v3.json)。
 
-[^101526]: Task 101526，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/101526/versions/5b2af56af9a955f4cc626b6aaa444885cd5e962ca9e9b70dc2fe66b6ec1f2d6d.evidence-v3.json>)。
-
-[^122857]: Task 122857，发布 evidence：[SQL 快照](<E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/122857/versions/4e36b16a121e2878c7b55533e3d5dd8ae54df99a9e8578b9923dd2d124cd358f.evidence-v3.json>)。
+[^122857]: Task 122857，发布 evidence：[SQL 快照](E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/122857/versions/4e36b16a121e2878c7b55533e3d5dd8ae54df99a9e8578b9923dd2d124cd358f.evidence-v3.json)。

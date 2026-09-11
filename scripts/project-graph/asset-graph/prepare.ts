@@ -93,7 +93,7 @@ export function prepareAssetGraph(input: {
       "tasks",
       taskId,
       "versions",
-      `${result.cacheKey}.evidence-v3.json`,
+      `${result.cacheKey}.evidence-v4.json`,
     );
     const sqlSources: { slot: string; content: string; sha256: string }[] = [];
     for (const raw of pack?.sqlFiles ?? []) {
@@ -123,6 +123,7 @@ export function prepareAssetGraph(input: {
           statements: currentBundle.records["statements.jsonl"] ?? [],
           datasetIo: currentBundle.records["dataset-io.jsonl"] ?? [],
           relations: currentBundle.records["relation-nodes.jsonl"] ?? [],
+          materializations: currentBundle.records["task-local-materializations.jsonl"] ?? [],
         }),
       );
     const path = taskLocalProjectionVersionPath(

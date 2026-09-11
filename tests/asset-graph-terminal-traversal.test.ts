@@ -107,4 +107,34 @@ describe("asset graph reference-config terminals", () => {
     expect(result.stoppedBy).toBeNull();
     expect(driver.expansionCalls).toBe(0);
   });
+
+  it("stops upstream at source endpoint boundaries", async () => {
+    const terminal = node("read:titans", "READ_FIELD", {
+      continuationDisposition: "SOURCE_ENDPOINT_BOUNDARY",
+      boundaryRole: "TITANS_SOURCE",
+      terminalReason: "源端点边界，停止展开",
+      terminalRuleRef: "config/source-endpoint-boundary-rules.json#roles.TITANS_SOURCE",
+    });
+    const store = new AssetGraphStore(
+      fakeDriver({ anchors: [node("task:root", "WRITE_FIELD")], neighbors: [terminal] }),
+      "db",
+      "graph",
+    );
+    const result = await store.traverse({
+      taskId: "root",
+      column: "code",
+      layer: "field",
+      depth: 4,
+    });
+    expect(result.terminalNodes).toEqual([
+      {
+        nodeId: "read:titans",
+        role: "TITANS_SOURCE",
+        reason: "源端点边界，停止展开",
+        ruleRef: "config/source-endpoint-boundary-rules.json#roles.TITANS_SOURCE",
+      },
+    ]);
+    expect(result.nodes.map((n) => n.id)).toEqual(["task:root", "read:titans"]);
+    expect((store.driver as unknown as { expansionCalls: number }).expansionCalls).toBe(1);
+  });
 });

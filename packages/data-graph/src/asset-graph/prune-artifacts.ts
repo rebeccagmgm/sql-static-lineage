@@ -14,11 +14,19 @@ export function pruneGraphArtifactHistory(
   graphOutputRoot: string,
   current: GraphArtifactPointer,
   references: readonly GraphArtifactPointer[] = [],
-): { removedPublished: string[]; removedBatches: string[]; removedLegacy: string[] } {
+): {
+  removedPublished: string[];
+  removedBatches: string[];
+  removedLegacy: string[];
+} {
   const protectedPointers = [current, ...references];
-  const keepVersions = new Set(protectedPointers.map((pointer) => pointer.version));
+  const keepVersions = new Set(
+    protectedPointers.map((pointer) => pointer.version),
+  );
   const keepBatches = new Set(
-    protectedPointers.map((pointer) => batchHashFromManifestPath(pointer.manifestPath)),
+    protectedPointers.map((pointer) =>
+      batchHashFromManifestPath(pointer.manifestPath),
+    ),
   );
   const removedPublished: string[] = [];
   const removedBatches: string[] = [];

@@ -10,13 +10,13 @@ manifest：相邻数据目录的 `artifacts/graphs/titans-otc/batches/945d7d1e13
 
 该批共 3,615 个任务：2,385 个 PROJECTED，1,084 个 SCHEDULE_ONLY，146 个 COLLECTION_FAILED。仅用全批投影的 `localClosure.externalReads/finalWrites` 发现选定表的直接读消费者；没有全域扫描字段、判断所有任务业务逻辑或生成全量优化排行。
 
-| 选择组 | 主分析任务 | 选取理由 |
-| --- | --- | --- |
-| 产品与公共事实 | 86840、86841、86842、220650、107491 | 比较同字段不同算法、当日与历史规模，以及粒度变化 |
-| 归属与月日均 | 159763、224351 | 比较共同输入、不同归属和汇总结果，判断事实／指标边界 |
-| 销售日报与参数 | 118141、220979、220981 | 比较真实重复分类、重复窗口及参数时间差异 |
-| 月度与客户结果 | 199727、199706、229121 | 判断已存指标、派生分母和主题宽表复用 |
-| 风险别名反例 | 200030 | 验证同值列不等于重复计算，不按字段名误并 |
+| 选择组         | 主分析任务                          | 选取理由                                             |
+| -------------- | ----------------------------------- | ---------------------------------------------------- |
+| 产品与公共事实 | 86840、86841、86842、220650、107491 | 比较同字段不同算法、当日与历史规模，以及粒度变化     |
+| 归属与月日均   | 159763、224351                      | 比较共同输入、不同归属和汇总结果，判断事实／指标边界 |
+| 销售日报与参数 | 118141、220979、220981              | 比较真实重复分类、重复窗口及参数时间差异             |
+| 月度与客户结果 | 199727、199706、229121              | 判断已存指标、派生分母和主题宽表复用                 |
+| 风险别名反例   | 200030                              | 验证同值列不等于重复计算，不按字段名误并             |
 
 补充 6 个下游只核消费位置与用途：100170、230266、148368、160773、160780、165154。主分析共 14 任务，含补充共 20 任务，保存 45 段 SQL 原文（query／create／prepare／truncate 按材料存在情况保留）。
 
@@ -24,13 +24,13 @@ manifest：相邻数据目录的 `artifacts/graphs/titans-otc/batches/945d7d1e13
 
 ## 从结论回查原文
 
-| 文件 | 内容与定位方式 |
-| --- | --- |
-| [source-index.json](evidence/source-index.json) | 按 `/tasks` 中 `taskId` 定位固定 projection/evidence 路径、SQL 内容哈希、Facts 来源及校验状态；`/scope` 区分主分析和补充对象 |
-| [sql/](evidence/sql) | `<taskId>-<slot>.sql` 是 evidence `sqlSources[].content` 原文，不添加行号前缀；正文的 L 均从该文件第一行计 |
-| [facts-excerpts.json](evidence/facts-excerpts.json) | 从 14 个主任务已有 output-field-bindings 与 unknowns 选取记录；保留来源路径、解压后内容哈希、原始 binding_id 和状态 |
-| [table-metadata.json](evidence/table-metadata.json) | 15 个输出表元数据与 DDL 快照，保留采集日期、分区和文件哈希；元数据采集时间未必与 SQL 同步 |
-| [direct-consumers.json](evidence/direct-consumers.json) | 11 个主分析输出表的已发布直接读任务、读次和这些任务的最终写表；这是影响发现索引，不是运行使用统计 |
+| 文件                                                    | 内容与定位方式                                                                                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [source-index.json](evidence/source-index.json)         | 按 `/tasks` 中 `taskId` 定位固定 projection/evidence 路径、SQL 内容哈希、Facts 来源及校验状态；`/scope` 区分主分析和补充对象 |
+| [sql/](evidence/sql)                                    | `<taskId>-<slot>.sql` 是 evidence `sqlSources[].content` 原文，不添加行号前缀；正文的 L 均从该文件第一行计                   |
+| [facts-excerpts.json](evidence/facts-excerpts.json)     | 从 14 个主任务已有 output-field-bindings 与 unknowns 选取记录；保留来源路径、解压后内容哈希、原始 binding_id 和状态          |
+| [table-metadata.json](evidence/table-metadata.json)     | 15 个输出表元数据与 DDL 快照，保留采集日期、分区和文件哈希；元数据采集时间未必与 SQL 同步                                    |
+| [direct-consumers.json](evidence/direct-consumers.json) | 11 个主分析输出表的已发布直接读任务、读次和这些任务的最终写表；这是影响发现索引，不是运行使用统计                            |
 
 Facts 的 SQL 快照可能经过语句槽组织，与 raw query 内容不同；因此分别记录 input-pack raw SQL hash 与 analysis SQL hash，不混作一个验证。`PACK_DECLARED_QUERY_OUTPUT` 是配置声明目标的输出绑定，不描述 SQL 显式 INSERT，更不证明执行成功。
 
@@ -48,14 +48,14 @@ Facts 的 SQL 快照可能经过语句槽组织，与 raw query 内容不同；�
 
 基础表有 47 个批内直接读任务，日事实有 21 个；它们是两个不同的影响范围，存在交集，不能相加当成唯一任务数。159763 的指标有 4 个读任务；224351、229121 各有 1 个。其余选定输出当前没有可见读任务，不据此判闲置。
 
-| 消费者 | 本轮实际读到的行为 | SQL 位置 |
-| --- | --- | --- |
-| 100170 | 从归属后日规模取当前计算快照，`accrued_date → busi_date`，金额转 decimal | [L9–13](evidence/sql/100170-query.sql) |
-| 230266 | 读取客户指标表当前快照，输出换手率／新增／上月末存续 | [L22–29](evidence/sql/230266-query.sql) |
-| 148368 | 读取交叉销售月日均，按客户、机构、标签、月份汇总 | [L241–244](evidence/sql/148368-query.sql) |
-| 160773 | 读取交叉销售月日均，保留客户、机构、员工和标签 | [L60–63](evidence/sql/160773-query.sql) |
-| 160780 | 读取交叉销售月日均，并按两个标签分别乘 0.8／0.26 | [L61–65](evidence/sql/160780-query.sql) |
-| 165154 | 读取交叉销售月日均，汇总到客户、员工、标签和月份 | [L311–320](evidence/sql/165154-query.sql) |
+| 消费者 | 本轮实际读到的行为                                                       | SQL 位置                                  |
+| ------ | ------------------------------------------------------------------------ | ----------------------------------------- |
+| 100170 | 从归属后日规模取当前计算快照，`accrued_date → busi_date`，金额转 decimal | [L9–13](evidence/sql/100170-query.sql)    |
+| 230266 | 读取客户指标表当前快照，输出换手率／新增／上月末存续                     | [L22–29](evidence/sql/230266-query.sql)   |
+| 148368 | 读取交叉销售月日均，按客户、机构、标签、月份汇总                         | [L241–244](evidence/sql/148368-query.sql) |
+| 160773 | 读取交叉销售月日均，保留客户、机构、员工和标签                           | [L60–63](evidence/sql/160773-query.sql)   |
+| 160780 | 读取交叉销售月日均，并按两个标签分别乘 0.8／0.26                         | [L61–65](evidence/sql/160780-query.sql)   |
+| 165154 | 读取交叉销售月日均，汇总到客户、员工、标签和月份                         | [L311–320](evidence/sql/165154-query.sql) |
 
 图 CLI 的 `status` 返回 `NEO4J_UNAVAILABLE`；本轮消费固定发布 manifest 的不可变文件，未启动服务或发布新版本。这足以支持 SQL 和静态消费比较，但没有完成线上 Neo4j 查询验证。
 
