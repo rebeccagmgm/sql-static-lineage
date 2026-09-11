@@ -1,3 +1,4 @@
+import { normalizeHiddenTables, tableVisibilityPredicate } from "./node-visibility.ts";
 import type { AssetGraphStore } from "./store.ts";
 
 export const PROCESSING_STAGES = [
@@ -50,8 +51,9 @@ const requireStableReadyVersion = (
 
 export async function getAssetGraphOverview(
   store: OverviewStore,
-  input: { regionLimit?: number; flowLimit?: number } = {},
+  input: { regionLimit?: number; flowLimit?: number; hiddenTables?: string[] } = {},
 ) {
+  const hiddenTables = normalizeHiddenTables(input.hiddenTables ?? []);
   const initial = await store.ready();
   const regionLimit = bounded(input.regionLimit, 100, 100);
   const flowLimit = bounded(input.flowLimit, 150, 150);
@@ -59,8 +61,8 @@ export async function getAssetGraphOverview(
     "MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE size(split(coalesce(n.table,''),'.')) < 2 OR split(coalesce(n.table,''),'.')[0] = '' OR split(coalesce(n.table,''),'.')[1] = '' RETURN count(*) AS datasetCount",
   );
   const regionResult = await store.run(
-    "MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE size(split(coalesce(n.table,''),'.')) >= 2 AND split(coalesce(n.table,''),'.')[0] <> '' AND split(coalesce(n.table,''),'.')[1] <> '' WITH split(n.table,'.')[0] AS schema,count(*) AS datasetCount RETURN schema,datasetCount ORDER BY datasetCount DESC,schema LIMIT $limit",
-    { limit: regionLimit + 1 },
+    `MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${tableVisibilityPredicate("n")} AND size(split(coalesce(n.table,''),'.')) >= 2 AND split(coalesce(n.table,''),'.')[0] <> '' AND split(coalesce(n.table,''),'.')[1] <> '' WITH split(n.table,'.')[0] AS schema,count(*) AS datasetCount RETURN schema,datasetCount ORDER BY datasetCount DESC,schema LIMIT $limit`,
+    { limit: regionLimit + 1, hiddenTables },
   );
   const regionRows = regionResult.records.slice(0, regionLimit);
   const regions = regionRows.map((record) => {
@@ -74,8 +76,8 @@ export async function getAssetGraphOverview(
   const schemas = regions.map((region) => region.schema);
   const flowResult = schemas.length
     ? await store.run(
-        "MATCH (source:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'READS_TABLE'}]->(task:SLAssetNode {graphId:$graphId,kind:'TASK'}) WHERE size(split(coalesce(source.table,''),'.')) >= 2 AND split(coalesce(source.table,''),'.')[0] <> '' AND split(coalesce(source.table,''),'.')[1] <> '' WITH task,collect(DISTINCT split(source.table,'.')[0]) AS fromSchemas MATCH (task)-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES_TABLE'}]->(target:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE size(split(coalesce(target.table,''),'.')) >= 2 AND split(coalesce(target.table,''),'.')[0] <> '' AND split(coalesce(target.table,''),'.')[1] <> '' WITH task,fromSchemas,collect(DISTINCT split(target.table,'.')[0]) AS toSchemas UNWIND fromSchemas AS fromSchema UNWIND toSchemas AS toSchema WITH fromSchema,toSchema,task WHERE fromSchema IN $schemas AND toSchema IN $schemas AND fromSchema <> toSchema RETURN fromSchema,toSchema,count(DISTINCT task.id) AS taskCount ORDER BY taskCount DESC,fromSchema,toSchema LIMIT $limit",
-        { schemas, limit: flowLimit + 1 },
+        `MATCH (source:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'READS_TABLE'}]->(task:SLAssetNode {graphId:$graphId,kind:'TASK'}) WHERE ${tableVisibilityPredicate("source")} AND size(split(coalesce(source.table,''),'.')) >= 2 AND split(coalesce(source.table,''),'.')[0] <> '' AND split(coalesce(source.table,''),'.')[1] <> '' WITH task,collect(DISTINCT split(source.table,'.')[0]) AS fromSchemas MATCH (task)-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES_TABLE'}]->(target:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${tableVisibilityPredicate("target")} AND size(split(coalesce(target.table,''),'.')) >= 2 AND split(coalesce(target.table,''),'.')[0] <> '' AND split(coalesce(target.table,''),'.')[1] <> '' WITH task,fromSchemas,collect(DISTINCT split(target.table,'.')[0]) AS toSchemas UNWIND fromSchemas AS fromSchema UNWIND toSchemas AS toSchema WITH fromSchema,toSchema,task WHERE fromSchema IN $schemas AND toSchema IN $schemas AND fromSchema <> toSchema RETURN fromSchema,toSchema,count(DISTINCT task.id) AS taskCount ORDER BY taskCount DESC,fromSchema,toSchema LIMIT $limit`,
+        { schemas, limit: flowLimit + 1, hiddenTables },
       )
     : { records: [] };
   const flows = flowResult.records.slice(0, flowLimit).map((record) => {
@@ -114,7 +116,7 @@ const SCHEMA_PATTERN = /^[A-Za-z0-9_]+$/;
 
 export async function listAssetGraphRegionDatasets(
   store: OverviewStore,
-  input: { schema: string; limit?: number; offset?: number },
+  input: { schema: string; limit?: number; offset?: number; hiddenTables?: string[] },
 ) {
   if (!SCHEMA_PATTERN.test(input.schema))
     throw new Error("INVALID_GRAPH_SCHEMA");
@@ -122,10 +124,11 @@ export async function listAssetGraphRegionDatasets(
   const limit = bounded(input.limit, 50, 100);
   const offset = Math.max(0, Math.trunc(input.offset ?? 0));
   if (!Number.isSafeInteger(offset)) throw new Error("INVALID_QUERY_LIMIT");
+  const hiddenTables = normalizeHiddenTables(input.hiddenTables ?? []);
   const initial = await store.ready();
   const result = await store.run(
-    "MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE size(split(coalesce(n.table,''),'.')) >= 2 AND split(n.table,'.')[0]=$schema AND split(n.table,'.')[1] <> '' RETURN n.id AS id,n.table AS table,n.label AS label ORDER BY n.table,n.id SKIP $offset LIMIT $limit",
-    { schema, offset, limit: limit + 1 },
+    `MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${tableVisibilityPredicate("n")} AND size(split(coalesce(n.table,''),'.')) >= 2 AND split(n.table,'.')[0]=$schema AND split(n.table,'.')[1] <> '' RETURN n.id AS id,n.table AS table,n.label AS label ORDER BY n.table,n.id SKIP $offset LIMIT $limit`,
+    { schema, offset, limit: limit + 1, hiddenTables },
   );
   const items = result.records.slice(0, limit).map((record) => ({
     id: String(record.get("id")),

@@ -42,9 +42,9 @@ async function get<T>(
 }
 export const api = {
   status: () => get<Record<string, unknown>>("status"),
-  overview: () => get<OverviewResult>("overview"),
-  region: (schema: string, offset = 0, limit = 50) =>
-    get<RegionResult>("regions", { schema, offset, limit }),
+  overview: (hiddenTables: string[] = []) => get<OverviewResult>("overview", { hiddenTables: JSON.stringify(hiddenTables) }),
+  region: (schema: string, offset = 0, limit = 50, hiddenTables: string[] = []) =>
+    get<RegionResult>("regions", { schema, offset, limit, hiddenTables: JSON.stringify(hiddenTables) }),
   search: (q: string, offset = 0, limit = 31) =>
     get<GraphNode[]>("search", { q, offset, limit }),
   fields: (a: Anchor, offset = 0, limit = 101) =>

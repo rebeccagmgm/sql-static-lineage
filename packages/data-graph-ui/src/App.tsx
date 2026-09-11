@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { UPSTREAM_SCOPE_ENABLED, UpstreamScopePanel, UpstreamScopeStatus, scopedOverview, scopedRegion } from "./experimental-upstream-scope";
+import { RegionTopics } from "./region-topics/RegionTopics";
+import { GlobalVisibility, useGlobalVisibility } from "./node-visibility/GlobalVisibility";
+import { hideTableCards } from "./node-visibility/global";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
@@ -8,12 +12,11 @@ import {
   getViewportForBounds,
   useReactFlow,
   type NodeMouseHandler,
-  type Node,
-  type Edge,
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { edgeTouchesHiddenField } from "./field-viewport";
+import { NodeVisibility } from "./node-visibility/NodeVisibility";
 import { api } from "./api";
 import { TRACE_EDGE_LIMIT } from "./graph-limits";
 import { adaptTrace, type FieldSelectionContext } from "./graph-adapter";
@@ -66,65 +69,15 @@ type Hist = {
   fieldsVersion?: string;
   viewport: Viewport;
 };
-const stageNames: Record<string, string> = {
-  SOURCE: "01 来源",
-  ODATA: "02 采集与整理",
-  PDATA: "03 模型与主题",
-  DM: "04 应用加工",
-  DELIVERY: "05 交付",
-  UNCLASSIFIED: "未分类",
-};
-function adaptOverview(overview: OverviewResult): {
-  nodes: Node[];
-  edges: Edge[];
-} {
-  const stages = [...overview.stages, "UNCLASSIFIED"].filter(
-    (stage, index, all) =>
-      overview.regions.some((region) => region.stage === stage) &&
-      all.indexOf(stage) === index,
-  );
-  const positions = new Map<string, { x: number; y: number }>();
-  const nodes = overview.regions.map((region) => {
-    const column = stages.indexOf(region.stage);
-    const row = overview.regions
-      .filter((item) => item.stage === region.stage)
-      .findIndex((item) => item.schema === region.schema);
-    positions.set(region.schema, {
-      x: Math.max(0, column) * 290 + 40,
-      y: row * 94 + 65,
-    });
-    return {
-      id: `region:${region.schema}`,
-      position: positions.get(region.schema)!,
-      data: {
-        label: `${stageNames[region.stage] ?? region.stage}\n${region.schema}\n${region.datasetCount} 张表`,
-        region,
-      },
-      style: {
-        width: 220,
-        border: "1px solid #7da19b",
-        borderRadius: 7,
-        background: "#fff",
-        fontSize: 11,
-        whiteSpace: "pre-line",
-      },
-    } satisfies Node;
-  });
-  const ids = new Set(overview.regions.map((region) => region.schema));
-  const edges = overview.flows
-    .filter((flow) => ids.has(flow.fromSchema) && ids.has(flow.toSchema))
-    .map((flow, index) => ({
-      id: `flow:${flow.fromSchema}:${flow.toSchema}:${index}`,
-      source: `region:${flow.fromSchema}`,
-      target: `region:${flow.toSchema}`,
-      type: "smoothstep",
-      label: String(flow.taskCount),
-      style: { stroke: "#6b928c", strokeWidth: 1.2 },
-      data: { evidenceKind: flow.evidenceKind },
-    })) satisfies Edge[];
-  return { nodes, edges };
-}
+const OverviewCanvas = lazy(() => import("./overview-canvas/OverviewCanvas").then(module => ({ default: module.OverviewCanvas })));
+
 function Explorer() {
+  const [upstreamPatterns, setUpstreamPatterns] = useState<string[]>([]);
+  const upstreamRules = useRef(upstreamPatterns);
+  upstreamRules.current = upstreamPatterns;
+  const globalVisibility = useGlobalVisibility();
+  const visibilityRules = useRef(globalVisibility.tables);
+  visibilityRules.current = globalVisibility.tables;
   const flow = useReactFlow();
   const flowWrap = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState(""),
@@ -313,11 +266,8 @@ function Explorer() {
     const hidden = new Set(graph.nodes.flatMap(node => hiddenFieldsByCard[node.id] ?? []));
     return graph.edges.map(edge => ({ ...edge, hidden: edgeTouchesHiddenField(edge, hidden) }));
   }, [graph.nodes, graph.edges, hiddenFieldsByCard]);
+  const globalGraph = useMemo(() => hideTableCards(visibleNodes, visibleEdges, globalVisibility.tables), [visibleNodes, visibleEdges, globalVisibility.tables]);
   const foldedEdgeCount = visibleEdges.filter(edge => edge.hidden).length;
-  const overviewGraph = useMemo(
-    () => (overview ? adaptOverview(overview) : { nodes: [], edges: [] }),
-    [overview],
-  );
   const runTrace = useCallback(
     async (
       nextAnchor = anchor,
@@ -664,14 +614,23 @@ function Explorer() {
       .catch((e) =>
         setError(e instanceof Error ? e.message : "图谱服务未就绪"),
       );
-    void api
-      .overview()
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    setOverview(undefined);
+    setRegionName("");
+    setRegionMore(false);
+    setResults([]);
+    setError("");
+    void (upstreamPatterns.length ? scopedOverview(upstreamPatterns, globalVisibility.tables) : api.overview(globalVisibility.tables))
       .then((value) => {
+        if (cancelled) return;
         setOverview(value);
         activeVersion.current = value.version;
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "全貌读取失败"));
-  }, []);
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "全貌读取失败"); });
+    return () => { cancelled = true; };
+  }, [globalVisibility.tables, upstreamPatterns]);
   useEffect(() => {
     const storage = (() => {
       try {
@@ -778,7 +737,10 @@ function Explorer() {
   }
   async function openRegion(schema: string, append = false) {
     const offset = append ? results.length : 0;
-    const page = await api.region(schema, offset);
+    const rules = visibilityRules.current;
+    const scopeRules = upstreamRules.current;
+    const page = scopeRules.length ? await scopedRegion(scopeRules, rules, schema, offset) : await api.region(schema, offset, 50, rules);
+    if (rules !== visibilityRules.current || scopeRules !== upstreamRules.current) return;
     if (!isSameGraphVersion(activeVersion.current, page.version)) {
       setError("图谱版本已更新，请重新载入加工全貌。");
       return;
@@ -791,10 +753,6 @@ function Explorer() {
     );
     setRegionMore(page.pagination.nextOffset !== null);
   }
-  const onOverviewNodeClick: NodeMouseHandler = (_, visualNode) => {
-    const region = visualNode.data.region as { schema: string } | undefined;
-    if (region) void openRegion(region.schema);
-  };
   async function continueFromSelected() {
     if (!selected) return;
     const terminalIds = new Set(
@@ -1057,6 +1015,8 @@ function Explorer() {
       </header>
       <ResizableWorkspace>
         <aside className="search-panel panel">
+          <GlobalVisibility {...globalVisibility} />
+          {UPSTREAM_SCOPE_ENABLED && <UpstreamScopePanel patterns={upstreamPatterns} onApply={patterns => { setUpstreamPatterns(patterns); setMode("overview"); void flow.setViewport({ x: 0, y: 0, zoom: 0.65 }); }} onExit={() => { setUpstreamPatterns([]); setMode("overview"); }} />}
           <ExplorationPanel
             entries={explorationEntries}
             activeEntryId={activeExplorationId}
@@ -1093,7 +1053,7 @@ function Explorer() {
               void flow.setViewport({ x: 0, y: 0, zoom: 0.65 });
             }}
           >
-            全域加工骨架
+            {upstreamPatterns.length ? "上游范围骨架" : "全域加工骨架"}
           </button>
           <h2>定位任务或表</h2>
           <form
@@ -1111,6 +1071,7 @@ function Explorer() {
           </form>
           <div className="results">
             {regionName && <h3>{regionName} · 区域成员</h3>}
+            {regionName && <RegionTopics key={regionName} schema={regionName} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} version={overview?.version} />}
             {results.map((n) => (
               <button key={n.id} onClick={() => void choose(n)}>
                 <b>{n.label}</b>
@@ -1137,7 +1098,7 @@ function Explorer() {
             {regionName && regionMore && (
               <button
                 className="load-more"
-                onClick={() => void openRegion(regionName, true)}
+                onClick={() => void openRegion(regionName, true).catch(e => setError(e instanceof Error ? e.message : "区域读取失败"))}
               >
                 加载更多区域成员
               </button>
@@ -1163,7 +1124,7 @@ function Explorer() {
               </button>
               <span className="crumb">
                 {mode === "overview"
-                  ? "全域加工骨架"
+                  ? (upstreamPatterns.length ? "上游范围骨架 · 实验" : "全域加工骨架")
                   : (anchor?.label ?? "请选择任务或表")}
               </span>
             </div>
@@ -1241,6 +1202,10 @@ function Explorer() {
             )}
           </div>
           {error && <div className="error">{error}</div>}
+          {mode === "overview" && <UpstreamScopeStatus overview={overview} />}
+          {mode === "lineage" && upstreamPatterns.length > 0 && (
+            <div className="notice neutral">当前为独立血缘探索；实验范围仅约束“上游范围骨架”及其区域成员。</div>
+          )}
           {mode === "lineage" && autoDepthNotice && (
             <div className="notice">{autoDepthNotice}</div>
           )}
@@ -1250,7 +1215,7 @@ function Explorer() {
               overview.truncated.flows ||
               overview.excluded.unqualifiedDatasets > 0) && (
               <div className="notice neutral">
-                当前聚合返回 {overview.regions.length} 个区域、
+                {upstreamPatterns.length ? "范围内聚合返回" : "当前聚合返回"} {overview.regions.length} 个区域、
                 {overview.flows.length} 条区域关系
                 {overview.truncated.regions || overview.truncated.flows
                   ? "，已达到查询上限"
@@ -1275,23 +1240,13 @@ function Explorer() {
           )}
           <div className="flow-wrap" ref={flowWrap}>
             {mode === "overview" && overview ? (
+              <Suspense fallback={<div className="welcome">正在加载骨架画布…</div>}><OverviewCanvas overview={overview} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} onOpenRegion={schema => { void openRegion(schema).catch(e => setError(e instanceof Error ? e.message : "区域读取失败")); }} /></Suspense>
+            ) : mode === "overview" ? <div className="welcome">{error ? "范围读取未完成，请重新应用或退出范围。" : "正在读取加工骨架…"}</div> : anchor ? (
+              <NodeVisibility nodes={globalGraph.nodes} edges={globalGraph.edges} scope={trace}>
+                {(displayGraph) => (
               <ReactFlow
-                nodes={overviewGraph.nodes}
-                edges={overviewGraph.edges}
-                onNodeClick={onOverviewNodeClick}
-                minZoom={0.1}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                attributionPosition="bottom-left"
-              >
-                <Background color="#c8d8d5" gap={24} />
-                <MiniMap pannable zoomable />
-                <Controls />
-              </ReactFlow>
-            ) : anchor ? (
-              <ReactFlow
-                nodes={visibleNodes}
-                edges={visibleEdges}
+                nodes={displayGraph.nodes}
+                edges={displayGraph.edges}
                 nodeTypes={nodeTypes}
                 onNodeClick={onNodeClick}
                 onPaneClick={() => {
@@ -1307,6 +1262,8 @@ function Explorer() {
                 {layer === "table" && <MiniMap pannable zoomable />}
                 <Controls />
               </ReactFlow>
+                )}
+              </NodeVisibility>
             ) : (
               <div className="welcome">
                 <span>01</span>

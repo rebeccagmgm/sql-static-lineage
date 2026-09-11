@@ -1,4 +1,6 @@
 import { createServer, type Server } from "node:http";
+import { regionTopics } from "./region-topics.ts";
+import { queryExperimentalUpstreamScope } from "./experimental-upstream-scope/endpoint.ts";
 import { readFileSync } from "node:fs";
 import { PublishedFieldOrigins, evidenceOrigins, bindingKey } from "./field-value-origin.ts";
 import { fileURLToPath } from "node:url";
@@ -220,7 +222,11 @@ export async function startAssetGraphServer(
         return;
       }
       let value: unknown;
-      if (url.pathname === "/api/status") {
+      if (url.pathname === "/api/region-topics") {
+        value = await regionTopics(store, schedulerTaskNames, q);
+      } else if (url.pathname === "/api/experimental/upstream-scope") {
+        value = await queryExperimentalUpstreamScope(store, q);
+      } else if (url.pathname === "/api/status") {
         const s = await store.ready();
         value = {
           state: s.state,
@@ -262,12 +268,14 @@ export async function startAssetGraphServer(
         );
       else if (url.pathname === "/api/overview")
         value = await getAssetGraphOverview(store, {
+          hiddenTables: JSON.parse(q.get("hiddenTables") ?? "[]"),
           regionLimit: num("regionLimit", 100),
           flowLimit: num("flowLimit", 150),
         });
       else if (url.pathname === "/api/regions") {
         const region = await listAssetGraphRegionDatasets(store, {
           schema: q.get("schema") ?? "",
+          hiddenTables: JSON.parse(q.get("hiddenTables") ?? "[]"),
           limit: num("limit", 50),
           offset: num("offset", 0),
         });
