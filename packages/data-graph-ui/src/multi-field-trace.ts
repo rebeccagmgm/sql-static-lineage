@@ -1,7 +1,8 @@
 import type { GraphEdge, GraphNode, TraceResult } from "./types";
 import { mergeTraceConsumptions } from "./trace-consumption";
+import { TRACE_EDGE_LIMIT } from "./graph-limits";
 
-export const COMBINED_EDGE_LIMIT = 150;
+export const COMBINED_EDGE_LIMIT = TRACE_EDGE_LIMIT;
 
 export function shouldFallbackToDepthOne(
   result: TraceResult,

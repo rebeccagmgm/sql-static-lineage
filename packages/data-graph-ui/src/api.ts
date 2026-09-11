@@ -1,3 +1,4 @@
+import { TRACE_EDGE_LIMIT } from "./graph-limits";
 import type {
   Anchor,
   Direction,
@@ -73,7 +74,7 @@ export const api = {
       direction: i.direction,
       depth: i.depth,
       depthUnit: "table-hop",
-      limit: 150,
+      limit: TRACE_EDGE_LIMIT,
       candidates: i.includeCandidates ? 1 : 0,
     }),
   task: (

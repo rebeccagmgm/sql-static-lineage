@@ -15,6 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { edgeTouchesHiddenField } from "./field-viewport";
 import { api } from "./api";
+import { TRACE_EDGE_LIMIT } from "./graph-limits";
 import { adaptTrace, type FieldSelectionContext } from "./graph-adapter";
 import { DetailPanel } from "./components/DetailPanel";
 import { ResizableWorkspace } from "./components/ResizableWorkspace";
@@ -384,7 +385,9 @@ function Explorer() {
           value = await collectFieldsAtDepth(1);
           if (sequence !== requestSequence.current) return;
           setDepth(1);
-          setAutoDepthNotice("关系达到 150 条上限，已自动改为 1 层。");
+          setAutoDepthNotice(
+            `关系达到 ${TRACE_EDGE_LIMIT} 条上限，已自动改为 1 层。`,
+          );
         } else if (nextLayer === "field" && value.truncated) {
           setAutoDepthNotice(
             `字段路径达到 ${value.edgeLimit} 条关系上限；已查询 ${selectedFields.length - (value.unqueriedRootNodeIds?.length ?? 0)}/${selectedFields.length} 个已选字段，保留当前边界。`,
@@ -1143,7 +1146,7 @@ function Explorer() {
           <div className="scope-note">
             <b>查询边界</b>
             <p>
-              不预加载全图。每次最多读取 150 条关系；字段列表按每页 100
+              不预加载全图。每次最多读取 {TRACE_EDGE_LIMIT} 条关系；字段列表按每页 100
               项继续加载。
             </p>
           </div>
