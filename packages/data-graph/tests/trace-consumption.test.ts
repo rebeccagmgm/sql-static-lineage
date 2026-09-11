@@ -90,6 +90,44 @@ const bridge = (
 });
 
 describe("trace consumption projection", () => {
+  it("shows same-partition producers once while preserving every task and raw path", () => {
+    const root = write("root", "consumer", "root-write");
+    const shared = read("shared", "shared-read");
+    const producers = ["a", "b", "c", "d"].map(id => write(id, `task-${id}`, `write-${id}`));
+    const upstream = producers.map(p => ({ ...read(`input-${p.id}`, `input-${p.id}`), taskId: p.taskId, depth: 3 }));
+    const nodes = [root, shared, ...producers, ...upstream];
+    const edges = [
+      { id: "output", from: shared.id, to: root.id, kind: "VALUE" },
+      ...producers.flatMap(p => [bridge(`bridge-${p.id}`, p.id, shared.id, "01"),
+        { id: `value-${p.id}`, from: `input-${p.id}`, to: p.id, kind: "VALUE" }]),
+    ];
+    const snapshot = JSON.stringify({ nodes, edges });
+    const result = buildTraceConsumption({ nodes, edges, direction: "up" });
+    const groups = result.groups.filter(g => g.rawNodeIds.some(id => producers.some(p => p.id === id)));
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.taskId).toBeUndefined();
+    expect(groups[0]?.rawNodeIds).toEqual(["a", "b", "c", "d"]);
+    expect(groups[0]?.fields).toHaveLength(1);
+    expect(groups[0]?.fields[0]?.writeRefs.map(r => r.taskId)).toEqual(["task-a", "task-b", "task-c", "task-d"]);
+    expect(result.branches.filter(b => b.kind === "CONTINUES")).toHaveLength(1);
+    expect(result.branches.find(b => b.kind === "CONTINUES")?.rawEdgeIds).toHaveLength(4);
+    expect(result.rootPaths[0]?.rawEdgeIds).toEqual(edges.map(e => e.id).sort());
+    expect(JSON.stringify({ nodes, edges })).toBe(snapshot);
+    expect(buildTraceConsumption({ nodes: [...nodes].reverse(), edges: [...edges].reverse(), direction: "up" })).toEqual(result);
+  });
+
+  it.each(["candidate", "unknown", "different-read", "different-source", "different-depth"])("does not combine producers across %s boundaries", boundary => {
+    const firstRead = read("r1", "read");
+    const otherRead = read("r2", boundary === "different-read" ? "other-read" : "read");
+    const secondRead = boundary === "different-source" ? { ...otherRead, detail: { ...otherRead.detail, dataSource: "other" } } : otherRead;
+    const first = write("w1", "p1", "write:1");
+    const second = { ...write("w2", "p2", "write:2"), depth: boundary === "different-depth" ? 4 : 2 };
+    const otherEdge = bridge("b2", "w2", "r2", "01", boundary === "candidate" ? "ASSUMED" : "CONFIRMED");
+    const edge = boundary === "unknown" ? { ...otherEdge, detail: { partition: [{ column: "grp_id", values: [], partitionStatus: "UNKNOWN" }] } } : otherEdge;
+    const result = buildTraceConsumption({ nodes: [firstRead, secondRead, first, second], edges: [bridge("b1", "w1", "r1", "01"), edge], direction: "up" });
+    expect(result.groups.filter(g => g.role === "WRITE")).toHaveLength(2);
+  });
+
   it("keeps a shared read once and exposes all four confirmed source scopes", () => {
     const root = write("out", "consumer", "consumer-write");
     const input = read("read", "read:partial-key");

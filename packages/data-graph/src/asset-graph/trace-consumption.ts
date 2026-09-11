@@ -249,13 +249,29 @@ export function buildTraceConsumption(input: {
       .filter((identity): identity is string => Boolean(identity));
     return sorted(alignedReads).length === 1 ? sorted(alignedReads)[0] : undefined;
   };
+  const readKey = (node: TraceConsumptionNode) =>
+    `read:${text(node.taskId) ?? ""}:${text(node.detail?.occurrenceId) ?? node.id}:${identityForNode(node) ?? node.id}`;
+  const sharedWriteKey = (node: TraceConsumptionNode, identity: string | undefined) => {
+    if (!identity || Number(node.depth ?? 0) === 0) return undefined;
+    const outgoing = input.edges.filter(edge => edge.from === node.id);
+    if (!outgoing.length || outgoing.some(edge => edge.kind !== "CONTINUES" || edge.status !== "CONFIRMED"))
+      return undefined;
+    const scopes = outgoing.map(edge => consumptionScopeFromDetail(edge.detail));
+    const scopeKeys = sorted(scopes.map(consumptionScopeIdentity));
+    if (scopeKeys.length !== 1 || scopes.some(scope => scope.status !== "EXPLICIT")) return undefined;
+    const consumers = outgoing.map(edge => nodesById.get(edge.to));
+    if (consumers.some(consumer => consumer?.kind !== "READ_FIELD" || !physicalIdentity(consumer))) return undefined;
+    // Merge display aliases only for the same consumers at the same depth.
+    // Raw task/write ids and root paths remain independent evidence.
+    return `shared-write:${JSON.stringify([identity, Number(node.depth), scopeKeys[0], sorted(consumers.map(consumer => readKey(consumer!)))])}`;
+  };
   for (const node of input.nodes) {
     const nodeRole = role(node);
     const depth = Number(node.depth ?? 0);
     if (nodeRole === "READ") {
       keyByNode.set(
         node.id,
-        `read:${text(node.taskId) ?? ""}:${text(node.detail?.occurrenceId) ?? node.id}:${identityForNode(node) ?? node.id}`,
+        readKey(node),
       );
       continue;
     }
@@ -274,7 +290,7 @@ export function buildTraceConsumption(input: {
         : `write:${text(node.writeId) ?? node.id}`;
       keyByNode.set(
         node.id,
-        `write:${text(node.taskId) ?? ""}:${identity ?? node.id}:${safeBranch}`,
+        sharedWriteKey(node, identity) ?? `write:${text(node.taskId) ?? ""}:${identity ?? node.id}:${safeBranch}`,
       );
       continue;
     }
@@ -324,6 +340,7 @@ export function buildTraceConsumption(input: {
     } else {
       group.scope = mergeConsumptionScopes([group.scope, nodeScope]);
       group.depth = Math.min(group.depth, Number(node.depth ?? 0));
+      if (group.taskId !== text(node.taskId)) delete group.taskId;
     }
     group.rawNodeIds.add(node.id);
     incident.forEach(({ id }) => group!.rawEdgeIds.add(id));

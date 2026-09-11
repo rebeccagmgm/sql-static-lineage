@@ -277,6 +277,9 @@ export function LineageNode(props: NodeProps) {
   if (raw?.kind === "TASK") return <TaskNode {...props} />;
   if (members?.length) {
     const first = members[0]!;
+    const taskIds = [...new Set(members.flatMap(member =>
+      [member, ...(fieldAliases[member.id] ?? [])].map(alias => alias.taskId).filter((id): id is string => Boolean(id)),
+    ))].sort();
     return (
       <div
         className={`lineage-node grouped ${nodeData.compactRead ? "compact-read" : ""} ${isAnchor ? "anchor" : ""} ${Object.keys(memberTerminals).length ? "terminal" : ""}`}
@@ -289,9 +292,9 @@ export function LineageNode(props: NodeProps) {
               : (names[first.kind] ?? first.kind)}
           </span>
           <span
-            title={first.writeId ?? String(first.detail?.occurrenceId ?? "")}
+            title={taskIds.length > 1 ? `任务 ${taskIds.join("、")}` : first.writeId ?? String(first.detail?.occurrenceId ?? "")}
           >
-            任务 {first.taskId ?? "—"}
+            {taskIds.length > 1 ? `${taskIds.length} 个生产任务` : `任务 ${first.taskId ?? "—"}`}
           </span>
         </div>
         <strong>{first.table ?? first.label ?? first.id}</strong>

@@ -9,6 +9,14 @@ vi.mock("@xyflow/react", () => ({
 import { LineageNode } from "./components/LineageNode";
 import { DetailPanel } from "./components/DetailPanel";
 describe("graph metadata display", () => {
+  it("labels a merged producer card with all task identities", () => {
+    const member={id:"w1",kind:"WRITE_FIELD",taskId:"p1",writeId:"write:1",table:"pdata.shared",column:"amount"};
+    const aliases=["p2","p3","p4"].map(taskId=>({...member,id:taskId,taskId,writeId:`write:${taskId}`}));
+    const html=renderToStaticMarkup(createElement(LineageNode,{id:"shared",data:{members:[member],fieldAliases:{w1:aliases},writeRefs:[member,...aliases].map(n=>({taskId:n.taskId,writeId:n.writeId}))}}));
+    expect(html).toContain("4 个生产任务");
+    expect(html).toContain("任务 p1、p2、p3、p4");
+    expect(html).toContain("4 组写入证据");
+  });
   it("retains the table description on a compact consumption card", () => {
     const html=renderToStaticMarkup(createElement(LineageNode,{
       id:"read-group",
