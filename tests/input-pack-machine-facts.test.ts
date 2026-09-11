@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { SqlSession } from "sqllens";
+import { normalizeRepeatedSqlForAnalysis } from "../scripts/input/shared/sql-analysis-normalization.ts";
 
 import { describe, expect, it } from "vitest";
 
@@ -34,6 +37,15 @@ function jsonl(path: string): Record<string, unknown>[] {
 }
 
 describe("Input Pack-driven Machine Facts", () => {
+  it.each([
+    "INSERT INTO t SELECT 'A' AS src_tbl;\nINSERT INTO t SELECT 'a' AS src_tbl;",
+    "\r\n  INSERT INTO t SELECT 'A\r\n  B';\r\nINSERT INTO t SELECT 'A\r\n B';  \r\n",
+    "SELECT 1;\nSELECT 1;",
+    "",
+    " \r\n\t",
+  ])("keeps analysis SQL bytes unchanged: %j", (sql) => {
+    expect(normalizeRepeatedSqlForAnalysis(sql)).toBe(sql);
+  });
   it.each([false, true])(
     "keeps explicit scheduler partitions separate from query width (extra column: %s)",
     (extraColumn) => {
@@ -121,11 +133,16 @@ describe("Input Pack-driven Machine Facts", () => {
       }
     },
   );
-  it("keeps a repeated platform SQL response raw while parsing a derived deduplicated view", () => {
+  it.each([
+    ["literal case", "'A'", "'a'"],
+    ["literal whitespace", "'A  B'", "'A B'"],
+    ["identical writes", "'A'", "'A'"],
+  ])("preserves SQL occurrences without response evidence: %s", (_label, first, second) => {
     const f = fixture();
     const repeated =
-      "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m\n\n" +
-      "SELECT m.mid_a AS out_a, m.filter_key AS out_b FROM demo.mid m";
+      `INSERT INTO demo.root SELECT ${first} AS root_a, m.filter_key AS root_b FROM demo.mid m;\n` +
+      `INSERT INTO demo.root SELECT ${second} AS root_a, m.filter_key AS root_b FROM demo.mid m;`;
+    expect(normalizeRepeatedSqlForAnalysis(repeated)).toBe(repeated);
     writeTaskInput(f.dataRoot, {
       taskId: "1100",
       taskCategory: "sparkIndex",
@@ -144,8 +161,22 @@ describe("Input Pack-driven Machine Facts", () => {
 
     const prepared = prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1100" });
     expect(prepared.sqlSources[0]?.content).toBe(repeated);
-    expect(prepared.sql.content).not.toContain("\n\nSELECT");
-    expect(prepared.sql.analysisContent).not.toContain("\n\nSELECT");
+    expect(prepared.sql.content).toBe(repeated);
+    expect(prepared.sql.analysisContent).toBe(repeated);
+    const digest = createHash("sha256").update(repeated).digest("hex");
+    expect(prepared.sqlSources[0]).toMatchObject({
+      sha256: digest, analysisSha256: digest, evidenceProvider: "synthetic:test",
+    });
+    const source = prepared.sqlSources[0]!;
+    expect(source.locator).toBe("tasks/sparkIndex/1100/sql/query.sql");
+    expect(prepared.sqlSegments).toEqual([{ slot: "query", start: 0, end: repeated.length }]);
+    expect(readFileSync(source.path, "utf8")).toBe(repeated);
+    const cells = SqlSession.create(prepared.sql.analysisContent, "databricks").doc.statements;
+    expect(cells).toHaveLength(2);
+    for (const cell of cells) {
+      expect(prepared.sql.analysisContent.slice(cell.span.start, cell.span.end))
+        .toBe(source.content.slice(cell.span.start, cell.span.end));
+    }
 
     const result = runInputPackMachineFacts({
       dataRoot: f.dataRoot,
@@ -156,7 +187,13 @@ describe("Input Pack-driven Machine Facts", () => {
     const bindings = jsonl(
       join(f.factsRoot, "registry", "tasks", "1100", "bundle", "output-field-bindings.jsonl"),
     );
-    expect(bindings).toHaveLength(2);
+    expect(bindings).toHaveLength(4);
+    const bundle = join(f.factsRoot, "registry", "tasks", "1100", "bundle");
+    const statements = jsonl(join(bundle, "statements.jsonl"));
+    expect(statements).toHaveLength(2);
+    expect(statements.map((statement) => statement.span)).toEqual(cells.map((cell) => cell.span));
+    expect(new Set(bindings.map((binding) => binding.statement_id)).size).toBe(2);
+    expect(readFileSync(join(f.factsRoot, "input-pack-sources", "1100", `query-${digest}.sql`), "utf8")).toBe(repeated);
     expect(
       jsonl(join(f.factsRoot, "registry", "tasks", "1100", "bundle", "unknowns.jsonl")),
     ).toHaveLength(0);
@@ -2728,14 +2765,14 @@ describe("Input Pack-driven Machine Facts", () => {
       finishSql,
     ]);
     expect(prepared.sql.content).toBe(
-      `${querySql}\n;\n${finishSql}\n`,
+      `${querySql};\n${finishSql}`,
     );
     expect(prepared.sqlSegments).toEqual([
-      { slot: "query", start: 0, end: querySql.length + 2 },
+      { slot: "query", start: 0, end: querySql.length + 1 },
       {
         slot: "finish",
-        start: querySql.length + 3,
-        end: querySql.length + 3 + finishSql.length + 1,
+        start: querySql.length + 2,
+        end: querySql.length + 2 + finishSql.length,
       },
     ]);
 

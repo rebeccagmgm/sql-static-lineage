@@ -1,23 +1,13 @@
 /**
- * Return a parser-only SQL view for a repeated response block.
+ * Preserve SQL occurrences in the analysis view.
  *
- * The Input Pack keeps the platform response byte-for-byte. This helper is
- * deliberately limited to a derived analysis view so source evidence and its
- * hash are never rewritten.
+ * The Input Pack keeps the platform response byte-for-byte.
+ * SQL text alone cannot distinguish repeated execution from duplicated transport
+ * responses. The current slot contract supplies no response-boundary evidence,
+ * so even byte-identical blocks must survive. Keep bytes unchanged as well so
+ * statement offsets remain attributable to the original source. Retain this
+ * entry point for existing consumers; it is not a SQL equivalence test.
  */
 export function normalizeRepeatedSqlForAnalysis(content: string): string {
-	const normalized = content.replace(/\r\n?/g, "\n").trim();
-	if (normalized === "") return "\n";
-	const lines = normalized.split("\n");
-	const canonical = (value: string): string =>
-		value.replace(/\s+/g, " ").trim().toLowerCase();
-	const midpoint = Math.floor(lines.length / 2);
-	for (let offset = -2; offset <= 2; offset += 1) {
-		const split = midpoint + offset;
-		if (split <= 0 || split >= lines.length) continue;
-		const left = lines.slice(0, split).join("\n").trim();
-		const right = lines.slice(split).join("\n").trim();
-		if (left !== "" && canonical(left) === canonical(right)) return `${left}\n`;
-	}
-	return `${normalized}\n`;
+	return content;
 }

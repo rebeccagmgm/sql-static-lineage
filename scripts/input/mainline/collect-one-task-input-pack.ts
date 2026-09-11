@@ -1145,10 +1145,9 @@ export function normalizeRepeatedSqlContent(content: string): {
   duplicateBlocksRemoved: boolean;
 } {
   const normalized = normalizeRepeatedSqlForAnalysis(content);
-  const original = `${content.replace(/\r\n?/g, "\n").trim()}\n`;
   return {
     content: normalized,
-    duplicateBlocksRemoved: normalized !== original,
+    duplicateBlocksRemoved: false,
   };
 }
 

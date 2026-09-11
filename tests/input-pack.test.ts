@@ -301,14 +301,14 @@ describe("Input Pack V1", () => {
     expect(taskCategory("999", undefined)).toBe("taskType-999");
   });
 
-  it("removes only an adjacent duplicate SQL block and records the clean content", () => {
+  it("preserves adjacent identical SQL without response duplication evidence", () => {
     const sql = `SELECT id\nFROM demo.source\n\nSELECT id\nFROM demo.source`;
     expect(normalizeRepeatedSqlContent(sql)).toEqual({
-      content: "SELECT id\nFROM demo.source\n",
-      duplicateBlocksRemoved: true,
+      content: sql,
+      duplicateBlocksRemoved: false,
     });
     expect(normalizeRepeatedSqlContent("SELECT id\nFROM demo.source")).toEqual({
-      content: "SELECT id\nFROM demo.source\n",
+      content: "SELECT id\nFROM demo.source",
       duplicateBlocksRemoved: false,
     });
   });

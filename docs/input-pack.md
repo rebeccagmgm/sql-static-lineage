@@ -88,8 +88,11 @@ and their hashes cover the returned bytes. If a parser needs a conservative
 repair for a malformed legacy artifact, that repair must be performed in a
 derived analysis view and must not replace the canonical SQL file. The
 Input Pack-driven Machine Facts builder uses this boundary explicitly: raw SQL
-is frozen and hashed as source evidence, while a parser-only view may remove an
-adjacent repeated response block before statement enumeration.
+is frozen and hashed as source evidence. Repeated SQL blocks, including identical
+writes, are preserved during statement enumeration: the current SQL slot contract
+does not prove response duplication. Text equality or an evidence-provider label
+alone is insufficient to remove an occurrence. The repeated-block analysis helper
+preserves the original bytes and offsets.
 
 Legacy stored Task Packs may contain SQL that was rewritten by an older
 collector. Before using the normalizer migration, prefer recollecting the Task
