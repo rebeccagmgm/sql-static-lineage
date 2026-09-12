@@ -242,3 +242,10 @@ accepts `--limit` and non-negative `--interval-ms`. Missing or invalid
 SparkIndex by inference.
 
 Table `platform` is a standard token such as `hive` or `oracle`; the writer rejects values such as `hive / Hive内部表` and `oracle / 物理表`. A Table with direct metadata status `DELETED` may still be saved when current `table.json` and `ddl.sql` are available, and the status remains explicit in `table.json` and the collection summary. If the platform reports a SQL slot as unavailable, that slot is omitted; for 246247 this is why only the real `truncate.sql` is present and no `query.sql` is fabricated. The checked-in cases in `tests/fixtures/input-pack/cases.ts` are de-identified shapes for tasks 39045, 180065, 86840, and 246247. They are not production evidence and do not claim scheduler execution, data correctness, or business acceptance. Live platform fields not present in a supplied evidence object remain omitted; only the separately documented structural SQL-target fallback can add a target, and it requires unique Table/DDL confirmation.
+# 同步任务的目标列证据
+
+Hive→MySQL / Oracle / PostgreSQL / StarRocks 的查询可能只写目标表的部分列。可选的 `task.writeColumnEvidence` 保存实际 INSERT 目标列顺序、查询 SHA-256、完整目标身份 SHA-256，以及日志来源、日志 SHA-256 和核验时间。不能从自增列、可空列或查询别名猜测该清单。
+
+用已有 `schedule-mcp-run-logs` JSON 作为标准输入，运行 `node --import tsx scripts/input/import-sync-write-columns.ts --task-path <task.json> --data-date <yyyy-MM-dd>` 预览；加 `--apply` 才写入。导入器要求完整日志、任务及日期一致，并逐 token 核对日志 CTAS 查询与任务 SQL。支持常用数据日期格式及自然日、月、年偏移，并与运行日志逐 token 比对；交易日及其他未支持变量保持拒绝。JDBC 日志的 `insert.sql` 提供目标列及 VALUES，占位符按 SELECT 顺序绑定；同步器额外写入的字面量、无查询参数的生成函数及系统日期值不消耗 SELECT 序号，也不伪造字段来源。StarRocks 使用显式 stream-load 列清单，同时核对日志中的目标数据库、表和 CTAS 查询。实际 JDBC 目标连接须匹配现有数据源目录与 Pack 身份，并保存无敏感明文的 runtimeTargetSha256；CTAS 阶段还须与加载器读路径相符，JDBC 加载器的查询、INSERT 参数也必须一致。目标身份、重复列或列数不一致均拒绝；原始日志不写入 Pack。
+
+Facts 对已验证的非分区目标采用 `EXPLICIT_TARGET_COLUMN_LIST`：查询第 N 个输出绑定清单第 N 列，目标列必须唯一且存在于目标 schema。分区目标仍走原有证据规则，不放宽列数校验。SQL 或目标身份变化时旧证据失效；普通 Pack 刷新保留旧证据及原始哈希，输入变化后必须重新取证，不能退回按目标表全列顺序猜测。导入完成后按任务重算 Facts，再准备并发布图谱，导入本身不会修改图谱。

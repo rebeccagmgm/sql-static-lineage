@@ -1,3 +1,4 @@
+import { provenSqlOutputExpressions } from "../../plans/sql-output-domain.ts";
 import { extractSqlWrites } from "../../evidence/sql-write-evidence.ts";
 import type { PartitionAlternative } from "./partition-alternatives.ts";
 import { createPartitionValueResolver, createPartitionValueDomainResolver } from "./partition-value-propagation.ts";
@@ -128,67 +129,12 @@ function quoteSqlLiteral(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-function collectStaticPartitionValues(field: string, sql: string): string[] {
-  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  return [
-    ...sql.matchAll(
-      new RegExp(
-        `\\bpartition\\s*\\([^)]*?${escapedField}\\s*=\\s*('(?:''|[^'])*'|"(?:""|[^"])*"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?)`,
-        "giu",
-      ),
-    ),
-  ]
-    .map((match) => literalFromExpression(match[1]))
-    .filter((value): value is string => value !== null)
-    .filter((value, index, values) => values.indexOf(value) === index);
-}
-
-function resolveOutputReference(
-  expression: string,
-  field: string,
-  sql: string | null,
-): { readonly expression: string | undefined; readonly reason?: WritePartitionReason } {
-  const reference = expression.match(
-    /^(?:[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?\.)?[`"]?([A-Za-z_][A-Za-z0-9_$]*)[`"]?$/u,
-  );
-  if (reference?.[1]?.toLowerCase() !== field.toLowerCase()) {
-    return { expression };
-  }
-  if (!sql) {
-    return {
-      expression: undefined,
-      reason: "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED",
-    };
-  }
-  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const valuePattern =
-    "(?:'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?|true|false)";
-  const identifierQuote = "[" + String.fromCharCode(34, 96) + "]?";
-  const matches = [
-    ...sql.matchAll(
-      new RegExp(
-        `(?<![A-Za-z0-9_$.])(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
-        "giu",
-      ),
-    ),
-  ];
-  if (matches.length === 1) return { expression: matches[0]![1] };
-  if (matches.length > 1) {
-    return {
-      expression: undefined,
-      reason: "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
-    };
-  }
-  const partitionValues = collectStaticPartitionValues(field, sql);
-  if (partitionValues.length === 1) {
-    return { expression: quoteSqlLiteral(partitionValues[0]!) };
-  }
-  return {
-    expression: undefined,
-    reason:
-      partitionValues.length === 0
-        ? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED"
-        : "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
+function resolveOutputReference(expression: string, field: string, sql: string | null): { expression: string | undefined; reason?: WritePartitionReason } {
+  if (literalFromExpression(expression) !== null) return { expression };
+  if (!/^(?:[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?\.)?[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?$/u.test(expression)) return { expression };
+  const values = sql ? provenSqlOutputExpressions(sql, field) : null;
+  return values?.length === 1 ? { expression: values[0] } : {
+    expression: undefined, reason: values ? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE" : "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED",
   };
 }
 
@@ -580,12 +526,42 @@ export function buildWritePartitionParts(input: {
     boundFacts &&
     input.targetWriteCount === 1 &&
     packTargetMatches(input.packTarget, input.qualifiedName);
+  const protectPackParts = (parts: WritePartitionPart[]): WritePartitionPart[] => {
+    if (facts?.provenance !== "PLATFORM_TARGET") return parts;
+    // Legacy Pack values may contain only constants found in nested aliases.
+    // COMPLETE describes the old binding, not completeness of a CASE/UNION
+    // value domain. Re-prove SQL-derived business fields before using them to
+    // exclude writers. Explicit scheduler assignments remain authoritative;
+    // temporal fields retain the approved process-grain matching policy.
+    return parts.map(part => {
+      const assignments: FactRecord[] = Array.isArray(facts.partition_assignments) ? facts.partition_assignments : [];
+      const assignment = assignments.find(a =>
+        normalizeColumnName(String(a.field ?? "")) === normalizeColumnName(part.column));
+      if (isTemporalPartitionColumn(part.column) || assignment?.mapping_method === "SCHEDULER_EXPLICIT_FIELD_VALUE") return part;
+      const domain = input.statementSql ? provenSqlOutputExpressions(input.statementSql, part.column) : null;
+      const values = domain?.map(literalFromExpression);
+      const actual = new Set(part.values);
+        if (values?.length && values.every(value => value !== null && actual.has(value)) &&
+          part.values.every(value => values.includes(value))) return part;
+        // A proven scalar output replaces stale text-derived candidates (for
+        // example constants belonging to joined lookup tables). A singleton
+        // cannot lose cross-column tuple correlation. Multi-value mismatches
+        // stay UNKNOWN rather than constructing unproven Cartesian tuples.
+        if (values?.length === 1 && values[0] !== null) {
+          return { column: part.column, values: [values[0]!], observedValue: values[0],
+            expression: domain![0], valueStatus: isRuntimeTemplateExpression(values[0]!) ? "RUNTIME_EXPRESSION" : "OBSERVED_RENDERED_VALUE",
+            partitionStatus: "STATIC" };
+        }
+      return { column: part.column, values: [], valueStatus: "UNKNOWN", partitionStatus: "UNKNOWN",
+        reason: "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED" };
+    });
+  };
   const packParts =
     canUsePack &&
     input.packPartition &&
     !Array.isArray(input.packPartition) &&
     !("schemaVersion" in input.packPartition)
-      ? partsFromPackPartition(input.packPartition as Record<string, unknown>)
+      ? protectPackParts(partsFromPackPartition(input.packPartition as Record<string, unknown>))
       : [];
 
   if (boundFacts && factsHaveConflict(facts!))
@@ -593,7 +569,9 @@ export function buildWritePartitionParts(input: {
   if (canUsePack && facts?.provenance === "PLATFORM_TARGET" && Array.isArray(input.packPartition) &&
     text(facts.partition_binding_status)?.toUpperCase() === "COMPLETE") {
     const alternatives = partsFromPackAlternatives(input.packPartition, factColumns(facts));
-    if (alternatives) return alternatives;
+    if (alternatives) {
+      return protectPackParts(alternatives);
+    }
   }
   if (boundFacts && mode === "UNKNOWN") {
     if (canUsePack && hasExactNonEmptyFactColumns(packParts, facts!)) return packParts;

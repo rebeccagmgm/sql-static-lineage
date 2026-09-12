@@ -1,0 +1,8 @@
+{
+  "indicatorDir": "E:/02_area/股衍数据-Cookbook/.evidence-cache/indicator-dictionary-snapshots/20260812-refresh",
+  "tagDir": "C:/Users/13246/.opencli/tag-snapshot-output/20260814-refresh-full-sql",
+  "codeCsv": "E:/02_area/股衍数据-数据cookbook/数综基础信息/码值信息/ref_dw_cd_val_restored_60094.csv",
+  "dataElementCsv": "D:/downloadData/google/Document/shujuyuan_整理.csv",
+  "grpTypeCsv": "D:/downloadData/google/Document/grp_type_info_整理.csv",
+  "outputDir": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-cache/schedule-evidence/tasks-sqlite/asset-catalog"
+}

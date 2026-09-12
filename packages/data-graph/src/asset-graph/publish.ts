@@ -50,7 +50,7 @@ import type {
 } from "./evidence-json.ts";
 import { readJson } from "./evidence-json.ts";
 
-export const ASSET_COMPILER_VERSION = "1.0.17";
+export const ASSET_COMPILER_VERSION = "1.0.18";
 export type {
   Evidence,
   PreparedManifest,

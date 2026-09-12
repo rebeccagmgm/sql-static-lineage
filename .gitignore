@@ -20,7 +20,50 @@ tmp-inspect-*.ts
 /openspec/changes/generalize-operator-channel-mapping/
 /tests/fixtures/reconcile-one-hop/86840-input-pack/
 
+# Harvest / verification dumps (regenerated locally, not source)
+/outputs/
+/_verify-binding-scope/
+/field-facts/
+**/node_modules/
+
+# Accidental tsc emit beside TypeScript sources; keep hand-written view scripts
+/scripts/**/*.js
+/scripts/**/*.d.ts
+!/scripts/inventory-map/**/*.js
+!/scripts/processing-map/**/*.js
+!/scripts/table-catalog-harvest/**/*.js
+
+# Offline SQLite snapshots live beside the repo or under ignored outputs
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+
+# Excel lock files, workbooks, and editor junk
+~$*
+*.xlsx
+Thumbs.db
+
+# Generated analysis caches and nested install debris
+/docs/data-graph-derived-2.0/outputs/
+/docs/data-graph-derived-2.0/analysis/*.json
+/docs/data-graph-derived-2.0/analysis/*.csv
+/docs/data-graph-derived-2.0/analysis/*.json.gz
+/docs/data-graph-derived-2.0/analysis/evidence/
+/docs/data-graph-derived-2.0/analysis/swap-comp-pilot/coverage.csv
+/docs/data-graph-derived-2.0/analysis/swap-comp-pilot/evidence.json
+/docs/data-graph-derived-2.0/analysis/swap-comp-pilot/field-usage.csv
+/docs/data-graph-derived-2.0/analysis/swap-comp-pilot/usage-patterns.csv
+/docs/analysis/lineage-view-pilot/artifact.json
+/docs/analysis/lineage-view-pilot/case-evidence.json
+/docs/analysis/lineage-view-pilot/report.html
+/docs/attachments/
+/docs/新建文件夹/
+/docs/data-graph-20260910/
+*.zip
+
 # Local machine-graph / demo scratch workspaces
+.tmp-*
 .tmp-*/
 .tmp-machine-graph-demo/
 .tmp-machine-graph-demo-gold-chain/

@@ -1769,7 +1769,7 @@ describe("Input Pack-driven Machine Facts", () => {
       taskIds: ["1156"],
       outputRoot: f.factsRoot,
     });
-    expect(result.tasks[0]?.state).toBe("SUCCESS");
+    expect(result.tasks[0]?.state, JSON.stringify(result.tasks[0])).toBe("SUCCESS");
     const bundle = join(f.factsRoot, "registry", "tasks", "1156", "bundle");
     const bindings = jsonl(join(bundle, "output-field-bindings.jsonl"));
     expect(bindings.map((binding) => binding.target_field)).toEqual(["value_col"]);

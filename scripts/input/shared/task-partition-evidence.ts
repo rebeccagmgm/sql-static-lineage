@@ -1,3 +1,4 @@
+import { provenSqlOutputExpressions } from "../../plans/sql-output-domain.ts";
 import {
   extractSqlWrites,
   type SqlWrite,
@@ -1099,70 +1100,17 @@ function partitionFieldsFor(
   };
 }
 
-function resolveOutputReference(
-  expression: string,
-  field: string,
-  sql: string,
-): { readonly expression: string | undefined; readonly reason?: string } {
-  const reference = expression.match(
-    /^(?:[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?\.)?[`"]?([A-Za-z_][A-Za-z0-9_$]*)[`"]?$/u,
-  );
-  if (reference?.[1]?.toLowerCase() !== field.toLowerCase())
-    return { expression };
-  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const valuePattern =
-    "(?:'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?)";
-  const identifierQuote = "[" + String.fromCharCode(34, 96) + "]?";
-  const matches = [
-    ...sql.matchAll(
-      new RegExp(
-        `(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
-        "giu",
-      ),
-    ),
-  ];
-  if (matches.length === 1) return { expression: matches[0]![1] };
-  if (matches.length > 1)
-    return {
-      expression: undefined,
-      reason: "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
-    };
-  const filteredValues = [...collectStaticPartitionValues(field, sql)];
-  if (filteredValues.length === 1)
-    return { expression: quoteSqlLiteral(filteredValues[0]!) };
-  return {
-    expression: undefined,
-    reason:
-      filteredValues.length === 0
-        ? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED"
-        : "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE",
+function resolveOutputReference(expression: string, field: string, sql: string): { readonly expression: string | undefined; readonly reason?: string } {
+  const reference = expression.match(/^(?:[`"]?[A-Za-z_][A-Za-z0-9_$]*[`"]?\.)?[`"]?([A-Za-z_][A-Za-z0-9_$]*)[`"]?$/u);
+  if (reference?.[1]?.toLowerCase() !== field.toLowerCase()) return { expression };
+  const values = provenSqlOutputExpressions(sql, field);
+  return values?.length === 1 ? { expression: values[0] } : {
+    expression: undefined, reason: values ? "DYNAMIC_PARTITION_OUTPUT_REFERENCE_NOT_UNIQUE" : "DYNAMIC_PARTITION_OUTPUT_REFERENCE_UNRESOLVED",
   };
 }
 
-function quoteSqlLiteral(value: string): string {
-  return `'${value.replaceAll("'", "''")}'`;
-}
-
 function outputReferenceCandidates(field: string, sql: string): string[] {
-  const escapedField = field.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const valuePattern =
-    "(?:'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|\\$\\{[^}]+\\}|[-+]?\\d+(?:\\.\\d+)?)";
-  const identifierQuote = "[" + String.fromCharCode(34, 96) + "]?";
-  const aliasCandidates = [
-    ...sql.matchAll(
-      new RegExp(
-        `(${valuePattern})\\s+(?:AS\\s+)?${identifierQuote}${escapedField}${identifierQuote}(?![A-Za-z0-9_$])`,
-        "giu",
-      ),
-    ),
-  ]
-    .map((match) => match[1])
-    .filter((value): value is string => value !== undefined)
-    .filter((value, index, values) => values.indexOf(value) === index);
-  return [
-    ...aliasCandidates,
-    ...[...collectStaticPartitionValues(field, sql)].map(quoteSqlLiteral),
-  ].filter((value, index, values) => values.indexOf(value) === index);
+  return [...(provenSqlOutputExpressions(sql, field) ?? [])];
 }
 
 function directQueryProjection(

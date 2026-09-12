@@ -53,6 +53,7 @@ export interface WriteOutputContext {
 	readonly partitionMode?: PartitionBindingMode;
 	readonly partitionAssignments?: readonly PlatformPartitionAssignment[];
 	readonly queryOutputBindingContract?: QueryOutputBindingContract;
+	readonly targetColumns?: readonly string[];
 	readonly evidenceRefs?: readonly string[];
 }
 
@@ -415,6 +416,10 @@ function platformBindingResolution(
 	const fullSchemaColumns = uniqueNormalizedColumns(schemaRef.physical_columns);
 	const schemaPartitionColumns = uniqueNormalizedColumns(schemaRef.partition_columns);
 	const dataColumns = nonPartitionColumns(schemaRef);
+	if (write.targetColumns !== undefined && schemaPartitionColumns.length > 0) return {
+		status: "NOT_EVALUABLE", reason: "OUTPUT_BINDING_NOT_PROVABLE",
+		message: "explicit platform column evidence currently requires a non-partitioned target",
+	};
 	const declaredPartitionColumns = uniqueNormalizedColumns(write.partitionColumns ?? []);
 	const mode = write.partitionMode ?? (schemaPartitionColumns.length === 0 ? "NONE" : "UNKNOWN");
 	const dynamicMode = mode === "DYNAMIC" || mode === "MIXED";
@@ -458,6 +463,15 @@ function platformBindingResolution(
 				reason: "PLATFORM_TARGET_PARTITION_NOT_PROVABLE",
 				message: `non-partitioned platform target has conflicting partition evidence: ${write.partitionStatus ?? "UNKNOWN"}/${mode}`,
 			};
+		}
+		if (write.targetColumns !== undefined) {
+			const columns = write.targetColumns.map(normalizeName);
+			if (columns.length !== expressionCount || new Set(columns).size !== columns.length ||
+				columns.some(c => !c || !dataColumns.includes(c))) return {
+				status: "NOT_EVALUABLE", reason: "OUTPUT_BINDING_NOT_PROVABLE",
+				message: "explicit platform target columns are duplicated, absent from schema, or differ from query width",
+			};
+			return {status: "RESOLVED", targetColumns: columns, targetOrdinals: columns.map(c => fullSchemaColumns.indexOf(c)), staticPartitionColumns: [], dynamicPartitionColumns: []};
 		}
 		if (dataColumns.length !== expressionCount) {
 			return {
@@ -694,7 +708,7 @@ export function deriveOutputFieldBindings(input: OutputBindingInput): OutputBind
 			targetOrdinals = [...resolution.targetOrdinals];
 			bindingStaticPartitionColumns = [...resolution.staticPartitionColumns];
 			provenDynamicColumns = [...resolution.dynamicPartitionColumns];
-			bindingMethod = "TARGET_SCHEMA_POSITIONAL";
+			bindingMethod = write.targetColumns === undefined ? "TARGET_SCHEMA_POSITIONAL" : "EXPLICIT_TARGET_COLUMN_LIST";
 			evidenceRefs.push(...(write.partitionAssignments ?? []).flatMap((assignment) => assignment.evidence_refs));
 		} else if (explicitTargetColumns.length > 0) {
 			targetColumns = [...explicitTargetColumns];

@@ -50,6 +50,10 @@ export function canonicalPartitionValue(
   const value = stripQuotes(raw);
   if (!value) return value;
   if (isTemporalPartitionColumn(column)) {
+    // Process lineage, not a run-instance/date-equality assertion. This legacy
+    // scheduler spelling denotes the same DAY process as ${yyyy-MM-dd}; keep
+    // the allowlist exact so {table}, unknown variables and h15/h10 stay distinct.
+    if (/^\{busi_date\}$/i.test(value)) return "${YYYY-MM-DD}";
     if (/^\d{4}-\d{2}-\d{2}$/u.test(value)) return "${YYYY-MM-DD}";
     if (/^\d{4}-\d{2}$|^\d{6}$/u.test(value)) return "${YYYYMM}";
     if (/^\d{4}$/u.test(value)) return "${YYYY}";

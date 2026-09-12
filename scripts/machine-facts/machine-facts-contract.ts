@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MACHINE_FACTS_CONTRACT_VERSION = "1.3.0";
 export const MACHINE_FACTS_STATUS_VERSION = "1.0.0";
-export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.16";
+export const MACHINE_FACTS_ADAPTER_VERSION = "1.3.18";
 
 /** Canonical evidence kind for a Pack-declared query output write. */
 export const PACK_DECLARED_QUERY_OUTPUT = "PACK_DECLARED_QUERY_OUTPUT" as const;
@@ -340,6 +340,7 @@ export interface PlatformPartitionAssignment {
 }
 
 export interface PlatformTargetQueryOutput {
+  readonly target_columns?: readonly string[];
 	readonly target: string;
 	readonly target_resolution_method?: "DIRECT_PLATFORM_TARGET" | "SPARKINDEX_TASK_TARGET";
 	readonly query_output_slot?: string;

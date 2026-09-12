@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { validateWriteColumnEvidence, type TaskWriteColumnEvidence } from "./write-column-evidence.ts";
 
 export const INPUT_PACK_SCHEMA_VERSION = "1.0.0" as const;
 export const SQL_SLOTS = [
@@ -152,6 +153,7 @@ export interface TaskEvidence {
   readonly partition?: TaskPartitionValue | null;
   readonly schedulerEvidence?: TaskSchedulerEvidence;
   readonly codeEvidence?: TaskCodeEvidence;
+  readonly writeColumnEvidence?: TaskWriteColumnEvidence;
   readonly sql?: Partial<Record<SqlSlot, SqlSlotEvidence | string | null>>;
   readonly evidenceProvider?: string;
   readonly collectedAt?: string;
@@ -807,6 +809,7 @@ function buildTaskDocument(evidence: TaskEvidence): {
     partition: evidence.partition,
     schedulerEvidence: evidence.schedulerEvidence,
     codeEvidence: evidence.codeEvidence,
+    writeColumnEvidence: evidence.writeColumnEvidence,
     evidenceProvider: evidence.evidenceProvider,
   })) {
     if (value !== undefined) document[key] = value as JsonValue;
@@ -923,6 +926,7 @@ export function validateTaskDocument(
     "partition",
     "schedulerEvidence",
     "codeEvidence",
+    "writeColumnEvidence",
     "sqlFiles",
     "evidenceProvider",
     "collectedAt",
@@ -930,6 +934,7 @@ export function validateTaskDocument(
   ]);
   for (const key of Object.keys(document))
     if (!allowed.has(key)) fail(`unknown task field ${key}`);
+  if (document.writeColumnEvidence !== undefined) validateWriteColumnEvidence(document.writeColumnEvidence);
   if (document.schemaVersion !== INPUT_PACK_SCHEMA_VERSION)
     fail("unsupported task schemaVersion");
   safeSegment(String(document.taskId), "taskId");
@@ -1311,13 +1316,27 @@ export function writeTaskInput(
 ): WriteResult {
   mkdirSync(dataRoot, { recursive: true });
   const built = buildTaskDocument(evidence);
-  const document = createTaskDocument(evidence);
+  let document = createTaskDocument(evidence);
   const taskId = document.taskId;
   const taskCategory = safeSegment(
     String(document.taskCategory),
     "taskCategory",
   );
   const targetDirectory = join(dataRoot, "tasks", taskCategory, taskId);
+  // Keep explicit mapping evidence across recollection, including its old hashes.
+  // Changed inputs must fail verification instead of reopening positional fallback.
+  const existingPath = join(targetDirectory, "task.json");
+  if (evidence.writeColumnEvidence === undefined && existsSync(existingPath)) {
+    const previous = JSON.parse(readFileSync(existingPath, "utf8"));
+    if (previous.writeColumnEvidence) {
+        validateWriteColumnEvidence(previous.writeColumnEvidence);
+        const mapping = previous.writeColumnEvidence;
+        const merged = {...document, writeColumnEvidence: mapping} as unknown as JsonObject;
+        merged.contentHash = canonicalHash(merged, ["collectedAt", "contentHash"]);
+        validateTaskDocument(merged);
+        document = merged;
+    }
+  }
   if (
     readContentHash(join(targetDirectory, "task.json")) === document.contentHash
   )

@@ -1,0 +1,448 @@
+{
+  "schemaVersion": 1,
+  "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+  "updatedAt": "2026-09-08T08:55:26.495Z",
+  "scope": {
+    "tables": 4,
+    "tasks": 5,
+    "uses": 6
+  },
+  "uses": [
+    {
+      "sourceDatasetId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "sourceTable": "dm_index_n.grp_def",
+      "sourceComment": "组合定义",
+      "taskId": "154068",
+      "targetTable": "dm_index_n.index_grp1_dealscal_otcderi_cs_mth",
+      "targetComment": "员工_交易规模_场外衍生品&交叉销售_当月",
+      "writeObservationId": "write-observation:154068:platform-target:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "grp_id",
+          "comment": "组合ID"
+        },
+        {
+          "name": "grp_val",
+          "comment": "组合值"
+        },
+        {
+          "name": "grp_type_code",
+          "comment": "组合类型代码"
+        },
+        {
+          "name": "status",
+          "comment": "状态 1：可用 0：已失效"
+        }
+      ],
+      "uses": ["IDENTITY_MAPPING", "SCOPE_CONTROL"],
+      "explanation": "The task aggregates monthly transaction scale by employee code, then inner-joins active STAFF definitions on type and value and writes grp.grp_id. The table therefore converts an employee code to the output group identity and also excludes employees without an eligible active mapping.",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "8485310d5b6f874793f240d08704ad8b0170e61f3bf0f6cce67cd48978998439",
+        "lineStart": 94,
+        "lineEnd": 94,
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/154068/versions/0a7f8c3cf603928f81eba94612c7fd1676841cd1a80a5767174252ea7f86e55e.evidence-v3.json#sqlSources[slot=query].content",
+        "taskId": "154068",
+        "sqlSha256": "8485310d5b6f874793f240d08704ad8b0170e61f3bf0f6cce67cd48978998439",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\154068\\versions\\0a7f8c3cf603928f81eba94612c7fd1676841cd1a80a5767174252ea7f86e55e.evidence-v3.json",
+        "fixedEvidenceSha256": "2f0c9f46b31479d99f913fa9d33e63cd53e78b96dfc2b802afbc9147763d9c68"
+      },
+      "factsEvidence": {
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/154068/versions/0a7f8c3cf603928f81eba94612c7fd1676841cd1a80a5767174252ea7f86e55e.evidence-v3.json",
+        "factsManifestSha256": "2e9f032fa5564cddb1f61a5fc3998470c29e8f808e582be08a4d5242dff12605",
+        "relationIds": [
+          "task:154068:statement:0:relation:root.grp.filter",
+          "task:154068:statement:0:relation:root.join.1",
+          "task:154068:statement:0:relation:root.project"
+        ]
+      },
+      "conditions": [
+        "Row preservation requires exactly one active STAFF grp_def row for each employee grp_val; the SQL does not prove that uniqueness.",
+        "Because the join is INNER, a missing mapping removes the aggregated employee row; duplicate mappings can multiply or split output rows."
+      ],
+      "unknowns": [
+        "No runtime key-cardinality or mapping-coverage check was performed.",
+        "Static evidence does not prove the written partition completed or is business-correct."
+      ],
+      "useId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7|154068|write-observation:154068:platform-target:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "dm_index_n.grp_def"
+      }
+    },
+    {
+      "sourceDatasetId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "sourceTable": "dm_index_n.grp_def",
+      "sourceComment": "组合定义",
+      "taskId": "159763",
+      "targetTable": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+      "targetComment": "客户*营业部*员工&客户*分公司本部*员工_合约规模_场外衍生品&交叉销售_当月日均_无备注信息",
+      "writeObservationId": "write-observation:159763:platform-target:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "grp_id",
+          "comment": "组合ID"
+        },
+        {
+          "name": "grp_val",
+          "comment": "组合值"
+        },
+        {
+          "name": "grp_type_code",
+          "comment": "组合类型代码"
+        },
+        {
+          "name": "status",
+          "comment": "状态 1：可用 0：已失效"
+        }
+      ],
+      "uses": ["IDENTITY_MAPPING", "SCOPE_CONTROL"],
+      "explanation": "The same definition table is used four times: a left lookup derives the organization type, and three final inner joins map counterparty, organization, and employee values to grp_id1/grp_id2/grp_id3. This is a three-dimensional identity assembly with eligibility filtering, rather than a passive descriptive join.",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+        "lineStart": 46,
+        "lineEnd": 144,
+        "path": "docs/data-graph-derived-2.0/analysis/evidence/159763-1-query.sql",
+        "taskId": "159763",
+        "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+        "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba"
+      },
+      "factsEvidence": {
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159763/versions/a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+        "factsManifestSha256": "fb8b119a422c40f0435df74d65e7e651254d7352975fadf1a08d828a2ff3e6e2",
+        "relationIds": [
+          "task:159763:statement:0:relation:root.index.join.1",
+          "task:159763:statement:0:relation:root.join.1",
+          "task:159763:statement:0:relation:root.join.2",
+          "task:159763:statement:0:relation:root.join.3",
+          "task:159763:statement:0:relation:root.project"
+        ]
+      },
+      "conditions": [
+        "Counterparty, organization, and employee mappings must each be unique at the effective join keys to avoid row multiplication.",
+        "The three final INNER JOINs remove any row missing one required mapping; status is enforced for counterparty and staff, but not for the organization lookup shown in this SQL."
+      ],
+      "unknowns": [
+        "No current uniqueness or coverage result is available for the four grp_def aliases.",
+        "The SQL establishes mapping behavior, not the business governance of each group type."
+      ],
+      "useId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7|159763|write-observation:159763:platform-target:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "dm_index_n.grp_def"
+      }
+    },
+    {
+      "sourceDatasetId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522",
+      "sourceTable": "pdata_news_n.t02_tit_scr_base_info",
+      "sourceComment": "证券基本信息",
+      "taskId": "159763",
+      "targetTable": "dm_index_n.index_grp3_compscal_otcderi_cs_mthapd",
+      "targetComment": "客户*营业部*员工&客户*分公司本部*员工_合约规模_场外衍生品&交叉销售_当月日均_无备注信息",
+      "writeObservationId": "write-observation:159763:platform-target:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "in_code",
+          "comment": "源内部编码"
+        },
+        {
+          "name": "crrc_cd",
+          "comment": "货币代码"
+        },
+        {
+          "name": "src_id",
+          "comment": "来源标识"
+        },
+        {
+          "name": "grp_id",
+          "comment": "并行分组标识"
+        }
+      ],
+      "uses": ["ATTRIBUTE_ENRICHMENT", "CALCULATION"],
+      "explanation": "The task left-joins the selected TIT/01 security record by underlying instrument code and uses crrc_cd in CASE branches that assign tag_id. Under a unique match, this enriches each contract with a currency code and changes its tag bucket; it does not directly change the amount formula.",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+        "lineStart": 14,
+        "lineEnd": 38,
+        "path": "docs/data-graph-derived-2.0/analysis/evidence/159763-1-query.sql",
+        "taskId": "159763",
+        "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+        "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba"
+      },
+      "factsEvidence": {
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/159763/versions/a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+        "factsManifestSha256": "fb8b119a422c40f0435df74d65e7e651254d7352975fadf1a08d828a2ff3e6e2",
+        "relationIds": [
+          "task:159763:statement:0:relation:root.(child).ins.filter",
+          "task:159763:statement:0:relation:root.(child).join.3",
+          "task:159763:statement:0:relation:root.(child).project"
+        ]
+      },
+      "conditions": [
+        "Base-row retention and unchanged amounts require at most one TIT/01 security row per in_code.",
+        "A missing match is retained by LEFT JOIN but yields null crrc_cd and falls through the CASE logic; duplicate matches can multiply rows before aggregation and therefore inflate amounts."
+      ],
+      "unknowns": [
+        "No uniqueness or match-rate evidence for (src_id, grp_id, in_code) was checked.",
+        "The reason code 156 is treated specially is not established by static SQL or metadata."
+      ],
+      "useId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522|159763|write-observation:159763:platform-target:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_news_n.t02_tit_scr_base_info"
+      }
+    },
+    {
+      "sourceDatasetId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "sourceTable": "pdata_n.t03_otc_deri_book_adtnl_info",
+      "sourceComment": "每天一份快照，记录场外衍生品账簿的生效到期日、所属机构、交易与风控开关、底层标的映射等附加配置信息，用于账簿管理与业务控制。",
+      "taskId": "200078",
+      "targetTable": "dm_rsk_n.adm_v_risk_daily_bundle_margin",
+      "targetComment": "风险_每日组合履保计算结果",
+      "writeObservationId": "write-observation:200078:platform-target:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "book_agt_id",
+          "comment": "账簿协议编号"
+        },
+        {
+          "name": "bel_dept",
+          "comment": "所属部门"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期"
+        }
+      ],
+      "uses": ["ATTRIBUTE_ENRICHMENT"],
+      "explanation": "The REF_BOOK CTE selects book identity and department for the requested snapshot. A final LEFT JOIN adds RB.DEPARTMENT to each risk result through the trade-to-book identity; there is no later department filter in the inspected SQL.",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+        "lineStart": 72,
+        "lineEnd": 464,
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200078/versions/bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json#sqlSources[slot=query].content",
+        "taskId": "200078",
+        "sqlSha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\200078\\versions\\bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json",
+        "fixedEvidenceSha256": "728873d26ef37cfebd3208740cde2e6674bf964978c68d00a665fa466d26b6d5"
+      },
+      "factsEvidence": {
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200078/versions/bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json",
+        "factsManifestSha256": "71460fa1d55f37d0c47edd8e32d0b0ec61ab8508ddaea68109c487422beffee9",
+        "relationIds": [
+          "task:200078:statement:0:relation:root.(child-5).filter",
+          "task:200078:statement:0:relation:root.(child-5).project",
+          "task:200078:statement:0:relation:root.casttable.join.6",
+          "task:200078:statement:0:relation:root.project"
+        ]
+      },
+      "conditions": [
+        "The LEFT JOIN keeps an unmatched risk row but writes a null department.",
+        "No row-count effect requires at most one selected REF_BOOK row per KEY_BOOK_ID; multiple departments can create distinct output rows even with outer DISTINCT."
+      ],
+      "unknowns": [
+        "No current uniqueness or match-rate check was performed for the selected book snapshot.",
+        "Static SQL does not prove whether downstream consumers accept null or multiple departments."
+      ],
+      "useId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|200078|write-observation:200078:platform-target:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.t03_otc_deri_book_adtnl_info"
+      }
+    },
+    {
+      "sourceDatasetId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "sourceTable": "pdata_n.t03_otc_deri_book_adtnl_info",
+      "sourceComment": "每天一份快照，记录场外衍生品账簿的生效到期日、所属机构、交易与风控开关、底层标的映射等附加配置信息，用于账簿管理与业务控制。",
+      "taskId": "230202",
+      "targetTable": "dm_otc_n.otc_rev_daily_rpt",
+      "targetComment": "场外衍生品合约创收日报",
+      "writeObservationId": "write-observation:230202:platform-target:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "book_agt_id",
+          "comment": "账簿协议编号"
+        },
+        {
+          "name": "map_undrl_cd",
+          "comment": "映射标的代码"
+        },
+        {
+          "name": "cntr",
+          "comment": "柜台"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期"
+        }
+      ],
+      "uses": [
+        "IDENTITY_MAPPING",
+        "SCOPE_CONTROL",
+        "CALCULATION",
+        "GRAIN_CHANGE"
+      ],
+      "explanation": "The task inner-joins only DYNAMIC_HEDGING books to book holdings, chooses a mapped underlying code (falling back to the security classification), aggregates yield by mapped underlying and date, and joins that aggregate into the revenue formula. Here the book table controls eligible holdings, mapping identity, aggregation grain, and the values available to the calculation.",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+        "lineStart": 208,
+        "lineEnd": 244,
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230202/versions/66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json#sqlSources[slot=query].content",
+        "taskId": "230202",
+        "sqlSha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\230202\\versions\\66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+        "fixedEvidenceSha256": "662898dbb8d38f967817d03e4d2c08ae21f4d211f54ca646943e819660ce7c4c"
+      },
+      "factsEvidence": {
+        "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230202/versions/66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+        "factsManifestSha256": "9677f40654415d13613fd87ef2b2734a271237a521588c5e6bb22de62083f8f5",
+        "relationIds": [
+          "task:230202:statement:0:relation:root.casttable.u.rb.filter",
+          "task:230202:statement:0:relation:root.casttable.u.join.1",
+          "task:230202:statement:0:relation:root.casttable.u.aggregate",
+          "task:230202:statement:0:relation:root.casttable.join.5"
+        ]
+      },
+      "conditions": [
+        "The INNER JOIN intentionally removes holdings whose book is absent from the selected DYNAMIC_HEDGING snapshot.",
+        "Duplicate book rows can multiply holding yield before GROUP BY; different map_undrl_cd values split one book's yield across multiple mapped-underlying groups.",
+        "The fallback to the security classification applies when map_undrl_cd is empty or null."
+      ],
+      "unknowns": [
+        "No key-cardinality, mapping-stability, or before/after row-count check was run.",
+        "The static formula proves dependency, not runtime revenue correctness or business acceptance."
+      ],
+      "additionalSqlEvidence": [
+        {
+          "slot": "query",
+          "sha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "lineStart": 95,
+          "lineEnd": 95,
+          "taskId": "230202",
+          "sqlSha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\230202\\versions\\66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+          "fixedEvidenceSha256": "662898dbb8d38f967817d03e4d2c08ae21f4d211f54ca646943e819660ce7c4c"
+        },
+        {
+          "slot": "query",
+          "sha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "lineStart": 143,
+          "lineEnd": 143,
+          "taskId": "230202",
+          "sqlSha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\230202\\versions\\66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+          "fixedEvidenceSha256": "662898dbb8d38f967817d03e4d2c08ae21f4d211f54ca646943e819660ce7c4c"
+        }
+      ],
+      "useId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|230202|write-observation:230202:platform-target:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.t03_otc_deri_book_adtnl_info"
+      }
+    },
+    {
+      "sourceDatasetId": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140",
+      "sourceTable": "pdata_n.ref_cd_cvt_map",
+      "sourceComment": "代码转换对照",
+      "taskId": "61476",
+      "targetTable": "pdata_n.t04_inr_org",
+      "targetComment": "内部机构",
+      "writeObservationId": "write-observation:61476:0",
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "sourceFields": [
+        {
+          "name": "src_cd_val",
+          "comment": "源代码取值"
+        },
+        {
+          "name": "dw_cd_val",
+          "comment": "仓库代码取值"
+        },
+        {
+          "name": "tgt_tab_name",
+          "comment": "目标表名称"
+        },
+        {
+          "name": "tgt_tab_fld",
+          "comment": "目标表字段"
+        },
+        {
+          "name": "src_tab_name",
+          "comment": "源表名称"
+        },
+        {
+          "name": "src_fld_name",
+          "comment": "源字段名称"
+        },
+        {
+          "name": "src_sys_name",
+          "comment": "源系统名称"
+        }
+      ],
+      "uses": ["IDENTITY_MAPPING", "CALCULATION"],
+      "explanation": "按目标表和字段、源表和字段、源系统选择转换域，再将源码映射成仓库码。类型与状态字段未匹配时回退源码。",
+      "sqlEvidence": {
+        "slot": "query",
+        "sha256": "748baeb3dd09177e3e3070b02c51046049a1986f29662a52b491a63ad6126c38",
+        "lineStart": 7,
+        "lineEnd": 43,
+        "taskId": "61476",
+        "sqlSha256": "748baeb3dd09177e3e3070b02c51046049a1986f29662a52b491a63ad6126c38",
+        "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\61476\\versions\\d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+        "fixedEvidenceSha256": "8cbf857a8b41908220f989ed78270c9c322317785ef7213f915e239bc592a21b"
+      },
+      "factsEvidence": {
+        "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\61476\\versions\\d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+        "writeObservationId": "write-observation:61476:0",
+        "bindingFields": ["inr_org_type_cd", "inr_org_stat_cd"]
+      },
+      "conditions": [
+        "映射域内SRC_CD_VAL唯一时不会因转换关联倍增。",
+        "NVL回退只处理NULL，不保证空串也回退。"
+      ],
+      "unknowns": [
+        "仅核一项消费者，未核全表映射域、实际唯一性及标准代码业务含义。"
+      ],
+      "useId": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140|61476|write-observation:61476:0",
+      "sourceIdentity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.ref_cd_cvt_map"
+      }
+    }
+  ],
+  "sourceSnapshots": [
+    {
+      "path": "analysis/foundation-uses.json",
+      "sha256": "85c9d5bdb2eb381c925362b1d2e1ff4815db4df61715a57628aaf2290dd278f8"
+    },
+    {
+      "path": "analysis/role-code-map-evidence.json",
+      "sha256": "c4c0168db2a54111d0ff6851697157d038ddb2442914740ec6c5562c9c8c8711"
+    }
+  ]
+}

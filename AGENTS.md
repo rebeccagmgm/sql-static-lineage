@@ -1,3 +1,10 @@
+# Local SQLite lookup
+
+用户提到 SQLite、sqlite、sqllite、本地码值、字典或缓存库查询时，先读
+[本地 SQLite 查询导航](docs/local-sqlite-guide.md)，按问题选择数据库。
+不要先全盘扫描，也不要仅检查调度 SQL 库就断言没有字典数据。
+默认只读、有界查询；查码值时同时核对代码域、类型备注、来源和快照日期。
+
 # Repository workflow
 
 This repository is commonly used from linked Git worktrees. A worktree does

@@ -8,6 +8,9 @@ const unquote = (value: string) => value.trim().replace(/^(['"])(.*)\1$/s, "$2")
  * in evidence but do not distinguish producers within a DAY partition unit. */
 export function isDayPartitionValue(value: string): boolean {
   const text = unquote(value);
+  // Approved legacy DAY placeholder. Original SQL is retained as evidence;
+  // recognition here authorizes process continuation, not a concrete date.
+  if (/^\{busi_date\}$/i.test(text)) return true;
   // Exact scheduler alias, also used by canonicalTemporalTemplate. Do not
   // classify arbitrary parameter prefixes or rewrite the stored expression.
   if (text === "${data_day_str}") return true;

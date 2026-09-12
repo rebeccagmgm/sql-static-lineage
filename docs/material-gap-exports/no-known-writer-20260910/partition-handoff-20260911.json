@@ -1,0 +1,67 @@
+{
+  "status": "PUBLISHED",
+  "base": {
+    "version": "96f927c8fba1edfa0a3bc2c8a4570de99adf83e19455da7bcbd44ec5ac2c7cd0",
+    "manifestPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\artifacts\\graphs\\titans-otc\\batches\\a60905579119536d42c74055a4c533abbb8b2da8768fec090cf7ee5572e59412\\batch-manifest.json",
+    "publicationPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\artifacts\\graphs\\titans-otc\\published\\96f927c8fba1edfa0a3bc2c8a4570de99adf83e19455da7bcbd44ec5ac2c7cd0\\publication.json"
+  },
+  "prepared": {
+    "manifestPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\graphs\\repair\\batches\\f6ff6883b6d58226bcdd2db8da509ec1c9e96e3273e428f3733b7cdcb9451d85\\batch-manifest.json",
+    "version": "f6ff6883b6d58226bcdd2db8da509ec1c9e96e3273e428f3733b7cdcb9451d85",
+    "generatedAt": "2026-09-11T01:45:19.341Z"
+  },
+  "taskCount": 7478,
+  "compilerVersion": "1.0.17",
+  "projectionGeneratorVersion": "1.3.13",
+  "frozen1088FullyConfirmed": 668,
+  "selected331Fixed": 77,
+  "readRegressions": 0,
+  "artifacts": [
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\graphs\\repair\\batches\\f6ff6883b6d58226bcdd2db8da509ec1c9e96e3273e428f3733b7cdcb9451d85\\batch-manifest.json",
+      "sha256": "b9afcafe108704493d5703305d9820b84e3167d58890911cba75a9fb02727985"
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\prepared-continuation-index.json",
+      "sha256": "9969941894c1a3b5210511d5fcad5cab8f212b120511cb6f6e44932860b0f164"
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\prepublish-audit.json",
+      "sha256": "f9d933a174d7bd0378164292e1643fcefb223d9a29731b72a3e6b13ff6c8fe06"
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\result-summary.json",
+      "sha256": "3f53597505d909239047108ce80b34eb1637262a0e734270fa54662e1de7982f"
+    },
+    {
+      "path": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\.evidence-cache\\stock-day-repair-20260911\\read-results.json",
+      "sha256": "6c7b3e51be6a94dbd19d2eaeb6796f3431a78e7aeeccf5cd2baddd6b6016819e"
+    }
+  ],
+  "matchPolicy": "DAY_SAME_GRAIN",
+  "stockRepair": {
+    "reprojectedTasks": 74,
+    "newlyConfirmed": 91,
+    "existingTaskReads": 70,
+    "addedTaskReads": 21,
+    "confirmedCandidateRegressions": 0
+  },
+  "publishedVersion": "e5dbae3d1f3305109df24c77fb7d28bf8ec032146cf16a94daff39ca150e954c",
+  "publishedVerification": {
+    "state": "READY",
+    "version": "e5dbae3d1f3305109df24c77fb7d28bf8ec032146cf16a94daff39ca150e954c",
+    "currentVersionMatches": true,
+    "manifestMatches": true,
+    "compilerVersion": "1.0.17",
+    "taskCount": 7478,
+    "fullyL1ReadOccurrences": 9973,
+    "confirmedFieldContinuations": 87615,
+    "candidateFieldContinuations": 9085,
+    "regressions": 0,
+    "missingReads": 0,
+    "differencesFromAuditedIndex": 0,
+    "expectedRepairReads": 91,
+    "repairReadsConfirmed": 91
+  },
+  "displayFixCommit": "a380582d1564533c840f4a7bc678491d91c8d838"
+}

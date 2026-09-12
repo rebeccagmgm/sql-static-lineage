@@ -1,0 +1,3228 @@
+{
+  "generatedAt": "2026-09-11T06:16:42.922Z",
+  "publicationStatus": "READY",
+  "scopeNote": "Current published snapshot cohort: 393 unresolved platform query-output tasks plus the four previously repaired samples. Earlier 394-task snapshot is not the current denominator.",
+  "summary": {
+    "checked": 397,
+    "resolved": 105,
+    "newlyResolved": 101,
+    "remaining": 292,
+    "resolvedFieldBindings": 2322
+  },
+  "validation": {
+    "focusedTestsPassed": 106,
+    "changedSourceTypecheck": "PASS",
+    "review": "PASS",
+    "fullRepositoryChecks": "Existing unrelated failures documented in work session; not claimed green.",
+    "liveApi": "PASS",
+    "liveSamples": [
+      {
+        "taskId": "134414",
+        "valueEdges": 2
+      },
+      {
+        "taskId": "216924",
+        "valueEdges": 2
+      }
+    ]
+  },
+  "remainingReasons": {
+    "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH": 50,
+    "LOG_RUN_NOT_FOUND_NEAR_DATES": 2,
+    "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE": 34,
+    "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED": 89,
+    "WRITE_COLUMNS_EVIDENCE_INVALID": 2,
+    "LOG_COMMAND_FAILED": 1,
+    "WRITE_COLUMNS_QUERY_TEMPLATE_UNSUPPORTED": 4,
+    "WRITE_COLUMNS_INSERT_AMBIGUOUS": 1,
+    "WRITE_COLUMNS_QUERY_NOT_MATCHED": 4,
+    "EXPLICIT_PARTITIONED_TARGET_NOT_SUPPORTED": 3,
+    "WRITE_COLUMNS_LOG_INCOMPLETE_OR_WRONG_TASK": 1,
+    "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT": 37,
+    "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS": 17,
+    "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT": 34,
+    "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS": 2,
+    "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION": 11
+  },
+  "rows": [
+    {
+      "taskId": "59339",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "87720",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "43700",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "LOG_RUN_NOT_FOUND_NEAR_DATES",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "88290",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 34,
+      "previousSample": false
+    },
+    {
+      "taskId": "88296",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "88309",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 15,
+      "previousSample": false
+    },
+    {
+      "taskId": "118066",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "102967",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "121078",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 3,
+      "previousSample": false
+    },
+    {
+      "taskId": "123782",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "125761",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 26,
+      "previousSample": false
+    },
+    {
+      "taskId": "127209",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 66,
+      "previousSample": false
+    },
+    {
+      "taskId": "127210",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "132202",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "133939",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "134414",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "134752",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "140740",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "144394",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "144420",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "144423",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "146645",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 15,
+      "previousSample": false
+    },
+    {
+      "taskId": "146840",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 11,
+      "previousSample": false
+    },
+    {
+      "taskId": "152246",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "155179",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "156192",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "159182",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 36,
+      "previousSample": false
+    },
+    {
+      "taskId": "156763",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "159192",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "159197",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 9,
+      "previousSample": false
+    },
+    {
+      "taskId": "159221",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 45,
+      "previousSample": false
+    },
+    {
+      "taskId": "159325",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "163070",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 57,
+      "previousSample": false
+    },
+    {
+      "taskId": "163111",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 57,
+      "previousSample": false
+    },
+    {
+      "taskId": "166630",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "166638",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "166933",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "166640",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 45,
+      "previousSample": false
+    },
+    {
+      "taskId": "167084",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "167435",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 36,
+      "previousSample": false
+    },
+    {
+      "taskId": "167438",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 9,
+      "previousSample": false
+    },
+    {
+      "taskId": "170494",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "171657",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "175246",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 32,
+      "previousSample": false
+    },
+    {
+      "taskId": "179972",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "180336",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 20,
+      "previousSample": false
+    },
+    {
+      "taskId": "180338",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 21,
+      "previousSample": false
+    },
+    {
+      "taskId": "180340",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_EVIDENCE_INVALID",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "180342",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 53,
+      "previousSample": false
+    },
+    {
+      "taskId": "180345",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_EVIDENCE_INVALID",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "180347",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 54,
+      "previousSample": false
+    },
+    {
+      "taskId": "180348",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "180349",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 23,
+      "previousSample": false
+    },
+    {
+      "taskId": "182222",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "183994",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 37,
+      "previousSample": false
+    },
+    {
+      "taskId": "184025",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 80,
+      "previousSample": false
+    },
+    {
+      "taskId": "184031",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 17,
+      "previousSample": false
+    },
+    {
+      "taskId": "184067",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 60,
+      "previousSample": false
+    },
+    {
+      "taskId": "184097",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 25,
+      "previousSample": false
+    },
+    {
+      "taskId": "184500",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184501",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184502",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184516",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184518",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184524",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184531",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184544",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184549",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184552",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184554",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184555",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184558",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184559",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "184560",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184561",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184562",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184563",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184564",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184566",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184567",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184568",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184572",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184577",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "184570",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "LOG_COMMAND_FAILED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "188042",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 4,
+      "previousSample": false
+    },
+    {
+      "taskId": "189581",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "190436",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "190442",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "199723",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "199734",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "199740",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_TEMPLATE_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "199844",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "199855",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "201075",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 23,
+      "previousSample": false
+    },
+    {
+      "taskId": "201572",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204174",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204961",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "205988",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "206213",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "206886",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "208140",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "208630",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 75,
+      "previousSample": false
+    },
+    {
+      "taskId": "208726",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 3,
+      "previousSample": false
+    },
+    {
+      "taskId": "209137",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 76,
+      "previousSample": false
+    },
+    {
+      "taskId": "210301",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 9,
+      "previousSample": false
+    },
+    {
+      "taskId": "210345",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 16,
+      "previousSample": false
+    },
+    {
+      "taskId": "213385",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "213723",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "216480",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "217963",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218415",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218423",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218642",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 41,
+      "previousSample": false
+    },
+    {
+      "taskId": "218657",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218658",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218659",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218660",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218661",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218662",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218663",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218664",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218665",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218667",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218668",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218669",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "218683",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 41,
+      "previousSample": false
+    },
+    {
+      "taskId": "220158",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 14,
+      "previousSample": false
+    },
+    {
+      "taskId": "220192",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 21,
+      "previousSample": false
+    },
+    {
+      "taskId": "221256",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "221528",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "221944",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "221948",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 20,
+      "previousSample": false
+    },
+    {
+      "taskId": "221950",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 3,
+      "previousSample": false
+    },
+    {
+      "taskId": "223583",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 24,
+      "previousSample": false
+    },
+    {
+      "taskId": "222113",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "223584",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 78,
+      "previousSample": false
+    },
+    {
+      "taskId": "223586",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 41,
+      "previousSample": false
+    },
+    {
+      "taskId": "223588",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 24,
+      "previousSample": false
+    },
+    {
+      "taskId": "224174",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "224458",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "224460",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "224470",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "226214",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "225291",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "226257",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_TEMPLATE_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "227833",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 9,
+      "previousSample": false
+    },
+    {
+      "taskId": "227888",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228505",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228520",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228530",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228549",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228532",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228630",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228890",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228891",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228892",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228893",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228896",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228899",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228911",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228917",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228918",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228928",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "229963",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "229982",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230261",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "229971",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "LOG_RUN_NOT_FOUND_NEAR_DATES",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230262",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 12,
+      "previousSample": false
+    },
+    {
+      "taskId": "230264",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "230263",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "230265",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 5,
+      "previousSample": false
+    },
+    {
+      "taskId": "230266",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 26,
+      "previousSample": false
+    },
+    {
+      "taskId": "230438",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230443",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230452",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230485",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230472",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230602",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230728",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230748",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230773",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230811",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230815",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "231217",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 4,
+      "previousSample": false
+    },
+    {
+      "taskId": "231827",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "230829",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232592",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": false
+    },
+    {
+      "taskId": "232845",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232887",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232898",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232900",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232899",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233812",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232903",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233814",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233825",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233828",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233831",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233836",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233838",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233849",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233851",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233859",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234387",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234407",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "234510",
+      "category": "hive2oracle",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_INSERT_AMBIGUOUS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234511",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234642",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 16,
+      "previousSample": false
+    },
+    {
+      "taskId": "234648",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_TEMPLATE_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234678",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_TEMPLATE_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234986",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235085",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235413",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235524",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235541",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235578",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235587",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235589",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235591",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235625",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235645",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "237796",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "237800",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "237933",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 5,
+      "previousSample": false
+    },
+    {
+      "taskId": "237990",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "238141",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_NOT_MATCHED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "238372",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 39,
+      "previousSample": false
+    },
+    {
+      "taskId": "238374",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 86,
+      "previousSample": false
+    },
+    {
+      "taskId": "238377",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "239193",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239194",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239308",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239349",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239473",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239855",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 86,
+      "previousSample": false
+    },
+    {
+      "taskId": "239857",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239860",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "239869",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240006",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240002",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 39,
+      "previousSample": false
+    },
+    {
+      "taskId": "240007",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240008",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240037",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240036",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 18,
+      "previousSample": false
+    },
+    {
+      "taskId": "240043",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240041",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240297",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_NOT_MATCHED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "240298",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_NOT_MATCHED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "243602",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 24,
+      "previousSample": false
+    },
+    {
+      "taskId": "240300",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_QUERY_NOT_MATCHED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "243605",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "243606",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "243607",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "243704",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "244616",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "244771",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 14,
+      "previousSample": false
+    },
+    {
+      "taskId": "246583",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "246580",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 14,
+      "previousSample": false
+    },
+    {
+      "taskId": "246599",
+      "category": "hive2mysql",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_UNSUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "246603",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 7,
+      "previousSample": false
+    },
+    {
+      "taskId": "87711",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 53,
+      "previousSample": true
+    },
+    {
+      "taskId": "87716",
+      "category": "hive2mysql",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 16,
+      "previousSample": true
+    },
+    {
+      "taskId": "37371",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 6,
+      "previousSample": true
+    },
+    {
+      "taskId": "14801",
+      "category": "hive2oracle",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 66,
+      "previousSample": true
+    },
+    {
+      "taskId": "43141",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "54350",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "87431",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "87970",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "88992",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "92541",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "151193",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "EXPLICIT_PARTITIONED_TARGET_NOT_SUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "151197",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "EXPLICIT_PARTITIONED_TARGET_NOT_SUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "152794",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "EXPLICIT_PARTITIONED_TARGET_NOT_SUPPORTED",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "162452",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "203807",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "208007",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "208337",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "216907",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "216924",
+      "category": "hive2postgre",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 16,
+      "previousSample": false
+    },
+    {
+      "taskId": "223562",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "224286",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "233956",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234177",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "234637",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235094",
+      "category": "hive2postgre",
+      "status": "RESOLVED",
+      "reason": "VERIFIED_RUNTIME_COLUMN_ORDER",
+      "bindings": 13,
+      "previousSample": false
+    },
+    {
+      "taskId": "235263",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "235360",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "237804",
+      "category": "hive2postgre",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_LOG_INCOMPLETE_OR_WRONG_TASK",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "244420",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "244438",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "244446",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_TARGET_IDENTITY_INCOMPLETE",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "245023",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "245310",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "245641",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "245646",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "245647",
+      "category": "hive2starrocks",
+      "status": "UNRESOLVED",
+      "reason": "WRITE_COLUMNS_RUNTIME_TARGET_MISMATCH",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "34863",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "46070",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "50050",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "59463",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "59490",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60339",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60346",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60360",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60382",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60384",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60618",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "60753",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "61053",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "61822",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "63608",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "63684",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "63759",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "70223",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "70771",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "70779",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "70981",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "70990",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "71030",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "72219",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "72223",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "72342",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "72545",
+      "category": "oceanbase2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "73809",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "74702",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78330",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78463",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78464",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78466",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78468",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78469",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "78576",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "79338",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "86820",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "91053",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "91305",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "92052",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "95634",
+      "category": "sparkIndex",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "96619",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "101686",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "102989",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "103276",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "103651",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "105009",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "105332",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "106079",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "106093",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "106100",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "107577",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "108712",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "113476",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "119864",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "138675",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "139683",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "141883",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "141938",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "144228",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "146669",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "148795",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "149946",
+      "category": "sparkIndex",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "149948",
+      "category": "sparkIndex",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "151810",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "157998",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "159344",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "161383",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "161384",
+      "category": "mysql2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "172105",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "193856",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "193934",
+      "category": "oceanbase2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "196891",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "196894",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "197439",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "197443",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198441",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198442",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198483",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198485",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198514",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198515",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198522",
+      "category": "hive2file",
+      "status": "UNRESOLVED",
+      "reason": "HIVE2FILE_DECLARED_HIVE_TARGET_NOT_EXPORT_DESTINATION",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198739",
+      "category": "sparkIndex",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "198814",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "200083",
+      "category": "postgre2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "203865",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204962",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204967",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204968",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204969",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "204970",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "211552",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "211568",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "211603",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "211762",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "211763",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_FEWER_THAN_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "228813",
+      "category": "oceanbase2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "232658",
+      "category": "oracle2hive",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    },
+    {
+      "taskId": "237188",
+      "category": "sparkIndex",
+      "status": "UNRESOLVED",
+      "reason": "SELECT_OUTPUT_EXCEEDS_DECLARED_TARGET_COLUMNS;TASK_CREATE_DDL_ABSENT",
+      "bindings": 0,
+      "previousSample": false
+    }
+  ],
+  "publicationVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "publishedTaskCount": 7478,
+  "removedTasks": 0
+}

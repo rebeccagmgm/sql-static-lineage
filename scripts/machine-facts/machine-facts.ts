@@ -1630,6 +1630,7 @@ function buildTaskBundle(
 				partitionMode: task.platform_target_query_output.partition_mode,
 				partitionAssignments: task.platform_target_query_output.partition_assignments,
 				queryOutputBindingContract: task.platform_target_query_output.query_output_binding_contract,
+				targetColumns: task.platform_target_query_output.target_columns,
 				evidenceRefs: task.platform_target_query_output.evidence_refs,
 			});
 		} else if (uniqueQueryOutputCandidates.length === 1 && !/^[a-f0-9]{64}$/.test(sourceSqlSha256)) {

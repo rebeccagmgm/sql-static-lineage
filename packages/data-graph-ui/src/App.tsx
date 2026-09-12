@@ -560,7 +560,7 @@ function Explorer() {
       const page = await api.search(query.trim());
       setResults(page.slice(0, 30));
       setSearchMore(page.length > 30);
-      setError("");
+      setError(page.length === 0 ? "当前已发布图谱中未找到匹配的任务或表，请检查名称或缩短关键词。" : "");
     } catch (e) {
       setError(e instanceof Error ? e.message : "搜索失败");
     }

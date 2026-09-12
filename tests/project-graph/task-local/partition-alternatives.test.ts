@@ -6,7 +6,7 @@ import { createPartitionValueResolver, createPartitionValueDomainResolver } from
 
 const packInput = {
   qualifiedName: "dm.target", packTarget: { qualifiedName: "dm.target" }, targetWriteCount: 1,
-  statementSql: null, writeObservationId: "write:pack",
+  statementSql: "SELECT 'A' AS grp_id, 'h12' AS busi_date UNION ALL SELECT 'B' AS grp_id, 'h20' AS busi_date", writeObservationId: "write:pack",
   factsWrite: { write_observation_id: "write:pack", physical_dataset: "dm.target", provenance: "PLATFORM_TARGET",
     partition_mode: "DYNAMIC", partition_binding_status: "COMPLETE", partition_columns: ["grp_id", "busi_date"],
     partition_assignments: [{ field: "grp_id", status: "CONFIRMED" }, { field: "busi_date", status: "RUNTIME_EXPRESSION" }] },

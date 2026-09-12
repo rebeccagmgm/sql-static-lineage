@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+  "updatedAt": "2026-09-08T08:55:26.495Z",
+  "definition": "仅排除精确物理身份，不按名称模式全域扩展。基础表排除只作结构对照。",
+  "views": [
+    {
+      "id": "full",
+      "name": "完整基线",
+      "classes": []
+    },
+    {
+      "id": "without_system_access",
+      "name": "排除明确日志与权限结果",
+      "classes": ["SYSTEM_OR_ACCESS"]
+    },
+    {
+      "id": "without_public_reference",
+      "name": "再排除明确公共定义与参数",
+      "classes": ["SYSTEM_OR_ACCESS", "PUBLIC_REFERENCE"]
+    },
+    {
+      "id": "without_foundations",
+      "name": "再排除明确业务基础表（结构对照）",
+      "classes": ["SYSTEM_OR_ACCESS", "PUBLIC_REFERENCE", "BUSINESS_FOUNDATION"]
+    }
+  ],
+  "rows": [
+    {
+      "datasetId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "dm_index_n.grp_def"
+      },
+      "exclusionClass": "PUBLIC_REFERENCE",
+      "reason": "SQL按status、grp_type_code、grp_val筛选并连接组合定义，确认它作为公共组合解释与匹配规则参与计算。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "taskId": "159763",
+          "slot": "query",
+          "lineStart": 140,
+          "lineEnd": 144,
+          "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "evidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba",
+          "source": "evidence/159763-1-query.sql",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+          "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.ref_cd_cvt_map"
+      },
+      "exclusionClass": "PUBLIC_REFERENCE",
+      "reason": "消费SQL按目标表/字段、源表/字段和源系统限定转换域，再用源代码关联仓库代码，确认它同时承载公共定义与转换参数。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "taskId": "61476",
+          "slot": "query",
+          "lineStart": 7,
+          "lineEnd": 43,
+          "sqlSha256": "748baeb3dd09177e3e3070b02c51046049a1986f29662a52b491a63ad6126c38",
+          "evidenceSha256": null,
+          "source": "task-projections/tasks/61476/versions/d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\61476\\versions\\d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+          "fixedEvidenceSha256": "8cbf857a8b41908220f989ed78270c9c322317785ef7213f915e239bc592a21b"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.t03_otc_deri_book_adtnl_info"
+      },
+      "exclusionClass": "BUSINESS_FOUNDATION",
+      "reason": "账簿身份、所属部门、柜台与映射标的在具体消费中承担公共业务基础作用；补属性和业务控制分别记录。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+          "lineStart": 72,
+          "lineEnd": 464,
+          "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200078/versions/bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json#sqlSources[slot=query].content",
+          "taskId": "200078",
+          "sqlSha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\200078\\versions\\bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json",
+          "fixedEvidenceSha256": "728873d26ef37cfebd3208740cde2e6674bf964978c68d00a665fa466d26b6d5",
+          "writeObservationId": "write-observation:200078:platform-target:0",
+          "consumerUseId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|200078|write-observation:200078:platform-target:0"
+        },
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "lineStart": 208,
+          "lineEnd": 244,
+          "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230202/versions/66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json#sqlSources[slot=query].content",
+          "taskId": "230202",
+          "sqlSha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\230202\\versions\\66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+          "fixedEvidenceSha256": "662898dbb8d38f967817d03e4d2c08ae21f4d211f54ca646943e819660ce7c4c",
+          "writeObservationId": "write-observation:230202:platform-target:0",
+          "consumerUseId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|230202|write-observation:230202:platform-target:0"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_news_n.t02_tit_scr_base_info"
+      },
+      "exclusionClass": "BUSINESS_FOUNDATION",
+      "reason": "证券身份与币种属性参与合约标签判断，属于公共业务基础，不等于可在业务解释中省略。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "lineStart": 14,
+          "lineEnd": 38,
+          "path": "docs/data-graph-derived-2.0/analysis/evidence/159763-1-query.sql",
+          "taskId": "159763",
+          "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+          "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba",
+          "writeObservationId": "write-observation:159763:platform-target:0",
+          "consumerUseId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522|159763|write-observation:159763:platform-target:0"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "pdata_n.ref_dw_cd_val"
+      },
+      "exclusionClass": "PUBLIC_REFERENCE",
+      "reason": "写入SQL从数据字典抽取代码编号、代码值、描述、编码方式和来源表，确认它是公共代码取值参考。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "taskId": "142305",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 49,
+          "sqlSha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "evidenceSha256": "5d25264c7a5ecba999188559264f58246a497cf2c43492073933b21b9d556452",
+          "source": "evidence/142305-0-query.sql",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\142305\\versions\\b74f2c782037eccf57d1dfe0114a79dec90754e96f98ea3a05801bb2201d929b.evidence-v3.json",
+          "fixedEvidenceSha256": "5d25264c7a5ecba999188559264f58246a497cf2c43492073933b21b9d556452"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:d40fc46d1568725dd65f4af8607141524c4ab40d164808bccc30463626ec8c7e",
+      "identity": {
+        "platform": "starrocks",
+        "dataSource": "gfstarrocks_ods_titans",
+        "qualifiedName": "ods_gf1.hq_data_push_log"
+      },
+      "exclusionClass": "SYSTEM_OR_ACCESS",
+      "reason": "代表写者SQL产出推送表名、数据量、推送起止时间和状态字段，确认它记录数据推送作业的日志属性；高入度来自多写者汇聚，不代表业务结果加工。SQL中的success是写死常量，不是推送成功的运行实证。 代表SQL的success为常量，不证明实际推送成功。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "taskId": "226177",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 16,
+          "sqlSha256": "1078fc068e611ae9b38a6052137e4dd9a6562f8482a004ba4c77bc7b3edc2817",
+          "evidenceSha256": "c8277ba62c9016f5bb0c6fcb6032efd5f78d1d66512b333b3a7c99d6a2865cd7",
+          "source": "task-projections/tasks/226177/versions/8b477aff9492a475cb7bcc4dd66983c37ef009bf5e8630942cc984ac946a4128.evidence-v3.json",
+          "exclusionClass": "SYSTEM_OR_ACCESS",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\226177\\versions\\8b477aff9492a475cb7bcc4dd66983c37ef009bf5e8630942cc984ac946a4128.evidence-v3.json",
+          "fixedEvidenceSha256": "c8277ba62c9016f5bb0c6fcb6032efd5f78d1d66512b333b3a7c99d6a2865cd7"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    },
+    {
+      "datasetId": "dataset:758a925755f5af51f224ca1bee42d2330f7653a38a82f4f8fae2d694f69c0fcc",
+      "identity": {
+        "platform": "hive",
+        "dataSource": "gfhive",
+        "qualifiedName": "dm_ctms_n.pwc_psn_sys_user_roles"
+      },
+      "exclusionClass": "SYSTEM_OR_ACCESS",
+      "reason": "SQL围绕系统编号、系统用户、角色、机构和审计权限做分支筛选与去重，确认其为跨系统账号权限汇总。",
+      "evidence": [
+        {
+          "type": "SQL",
+          "taskId": "74272",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 190,
+          "sqlSha256": "a46aeefd5496939228cd057e4ec4a77734a396290fe4f02a771b6a72a7e22ab2",
+          "evidenceSha256": "09d62ae23eb45a3e913a8f39a699f4bf415a847564882c624426796119cea316",
+          "source": "evidence/74272-0-query.sql",
+          "exclusionClass": "SYSTEM_OR_ACCESS",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\74272\\versions\\974b75f0d232a830b8bd888f7853d401d428c47f52fa3713d398107233ea9c6d.evidence-v3.json",
+          "fixedEvidenceSha256": "09d62ae23eb45a3e913a8f39a699f4bf415a847564882c624426796119cea316"
+        }
+      ],
+      "reviewedGraphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+      "decisionBy": "main-executor",
+      "checkedAt": "2026-09-08T08:55:26.495Z"
+    }
+  ]
+}

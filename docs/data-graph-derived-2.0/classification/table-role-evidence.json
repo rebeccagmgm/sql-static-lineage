@@ -1,0 +1,1624 @@
+{
+  "schemaVersion": 1,
+  "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+  "updatedAt": "2026-09-08T08:55:26.495Z",
+  "scope": {
+    "definition": "out-degree top 30 union in-degree top 30",
+    "rowCount": 57,
+    "outRanking": [
+      "outDegree desc",
+      "readerTasks desc",
+      "table asc",
+      "datasetId asc"
+    ],
+    "inRanking": [
+      "inDegree desc",
+      "writerTasks desc",
+      "table asc",
+      "datasetId asc"
+    ],
+    "evidenceBoundary": "bounded role snapshot; not a whole-graph classification",
+    "sourceFiles": [
+      "baseline-cache.json.gz",
+      "metadata-annotations.json.gz",
+      "baseline-summary.json"
+    ],
+    "baselineGeneratedAt": "2026-09-08T07:54:52.983Z"
+  },
+  "sourceSnapshot": "analysis/role-labels.json",
+  "snapshotSha256": "436de6cd8bc257a1ee93b2ee1b0076681b47ce118f1b2f0efd31f0392d53aea0",
+  "description": "Detailed evidence and historical structural observations. Classification values are maintained only in table-roles.csv.",
+  "rows": [
+    {
+      "evidenceId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "datasetId": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "40db3627d0e6bdaeafb9727442621260b3149e1fad8537b88ac515d5e64f8d1f"
+        },
+        {
+          "type": "SQL",
+          "taskId": "159763",
+          "slot": "query",
+          "lineStart": 140,
+          "lineEnd": 144,
+          "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "evidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba",
+          "source": "evidence/159763-1-query.sql",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+          "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 13,
+        "outDegree": 239,
+        "inRank": null,
+        "outRank": 1,
+        "downstreamSchemas": 15,
+        "downstreamSchemaList": [
+          "dm_aud_n",
+          "dm_cmpl_n",
+          "dm_co_n",
+          "dm_co_test",
+          "dm_crd_n",
+          "dm_ecom_n",
+          "dm_engin_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_otc_n",
+          "dm_otc_test",
+          "dm_rsk_n",
+          "mfis",
+          "temp"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140",
+      "datasetId": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a3162c21bc150f50baaf76e49654e29378a92a8f85a91ee9d361c1a4cd0ffcca"
+        },
+        {
+          "type": "SQL",
+          "taskId": "61476",
+          "slot": "query",
+          "lineStart": 7,
+          "lineEnd": 43,
+          "sqlSha256": "748baeb3dd09177e3e3070b02c51046049a1986f29662a52b491a63ad6126c38",
+          "evidenceSha256": null,
+          "source": "task-projections/tasks/61476/versions/d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\61476\\versions\\d7dfc8854162129c3caa6caa4a459082cb1f8d94269fb89c4ea079fae2666ea6.evidence-v3.json",
+          "fixedEvidenceSha256": "8cbf857a8b41908220f989ed78270c9c322317785ef7213f915e239bc592a21b"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 0,
+        "outDegree": 184,
+        "inRank": null,
+        "outRank": 2,
+        "downstreamSchemas": 15,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_ctms_n",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_hr_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "gf_otc",
+          "ods_titans",
+          "pdata_n",
+          "pdata_nds",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "datasetId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "47bf9c8f732ca3c0e83e92172fa9c7c10f28afb54755fb5679cc43feca48be80"
+        },
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+          "lineStart": 72,
+          "lineEnd": 464,
+          "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/200078/versions/bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json#sqlSources[slot=query].content",
+          "taskId": "200078",
+          "sqlSha256": "0b5f60959ef74bf1a28a7c9fc438e563f44a75712336a9373a68a0959fc6c582",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\200078\\versions\\bac1118c807f237b56255d432b9d8c3e91f3938fce8a13542e8384bd6d4b7bfb.evidence-v3.json",
+          "fixedEvidenceSha256": "728873d26ef37cfebd3208740cde2e6674bf964978c68d00a665fa466d26b6d5",
+          "writeObservationId": "write-observation:200078:platform-target:0",
+          "consumerUseId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|200078|write-observation:200078:platform-target:0"
+        },
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "lineStart": 208,
+          "lineEnd": 244,
+          "path": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/230202/versions/66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json#sqlSources[slot=query].content",
+          "taskId": "230202",
+          "sqlSha256": "fa1695538980201e7f95e5904b39db2115c50872b8aec38a23e0aa239daacb2e",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\230202\\versions\\66a8337bead714201f37b4ac3d889b548cc8b19d99504b427968b24dd3e6a448.evidence-v3.json",
+          "fixedEvidenceSha256": "662898dbb8d38f967817d03e4d2c08ae21f4d211f54ca646943e819660ce7c4c",
+          "writeObservationId": "write-observation:230202:platform-target:0",
+          "consumerUseId": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed|230202|write-observation:230202:platform-target:0"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 2,
+        "outDegree": 159,
+        "inRank": null,
+        "outRank": 3,
+        "downstreamSchemas": 14,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_cmpl_n",
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_hk_test",
+          "dm_index_n",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:d1d317cd9977de850494e7de333613711dc9d5f0343bcf41f687737495ed186c",
+      "datasetId": "dataset:d1d317cd9977de850494e7de333613711dc9d5f0343bcf41f687737495ed186c",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "7a4b99bf0cb7d88f1e5f73a916b946c4fe43a9daafc96437a0bd6c7fd5010e72"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 44,
+        "outDegree": 153,
+        "inRank": 5,
+        "outRank": 4,
+        "downstreamSchemas": 19,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_cstd_n",
+          "dm_fii_n",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_opt_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "dm_rsk_test",
+          "dm_scrm_n",
+          "pdata_n",
+          "pdata_news_n",
+          "pdata_news_test",
+          "spdata_n",
+          "titans_etl",
+          "udata_hg"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:f71ed2df603c69558c7effb4b700bf8461eb35fbeaeac7e58d1db4b6abb13b4b",
+      "datasetId": "dataset:f71ed2df603c69558c7effb4b700bf8461eb35fbeaeac7e58d1db4b6abb13b4b",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "0e9495fc16e0b9fb4cbd8388eb53a28dddb1cfb14b658349c87d248a64881190"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 15,
+        "outDegree": 102,
+        "inRank": null,
+        "outRank": 5,
+        "downstreamSchemas": 12,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_hk_test",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:879c9ca3e7fa50b1981471a74f67a0842f2687b8d4a5dcc8fa24ac76caca5701",
+      "datasetId": "dataset:879c9ca3e7fa50b1981471a74f67a0842f2687b8d4a5dcc8fa24ac76caca5701",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "8e18aab9932746ea09fd6befe4b761d80866fcec6b10d2cf36db31958a0ed1df"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 1,
+        "outDegree": 94,
+        "inRank": null,
+        "outRank": 6,
+        "downstreamSchemas": 9,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_fii_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "pdata_news_n",
+          "pdata_news_test"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:4db8aa55ce40db06353dbe35858ca5eefae93df348e25de00ead4721dfb2b94f",
+      "datasetId": "dataset:4db8aa55ce40db06353dbe35858ca5eefae93df348e25de00ead4721dfb2b94f",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "8548221a81c2f6a67705f82258c87b70f5eea2ad424f42b73d863eeeac3dfdc1"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 0,
+        "outDegree": 77,
+        "inRank": null,
+        "outRank": 7,
+        "downstreamSchemas": 12,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_co_test",
+          "dm_crd_n",
+          "dm_ctms_n",
+          "dm_fii_n",
+          "dm_hr_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_otc_n",
+          "gfedw",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:87bb0c983bbd36efbb7599b806d1e6cf6427317bbf474cd3a1ae3e191638d224",
+      "datasetId": "dataset:87bb0c983bbd36efbb7599b806d1e6cf6427317bbf474cd3a1ae3e191638d224",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "bc5a810472675bc0418e4857a344b0fb415b304704b1d88849c3b718be6d74d1"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 6,
+        "outDegree": 77,
+        "inRank": null,
+        "outRank": 8,
+        "downstreamSchemas": 13,
+        "downstreamSchemaList": [
+          "dm_aud_n",
+          "dm_co_n",
+          "dm_crd_n",
+          "dm_ctms_n",
+          "dm_ecom_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_opt_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "dm_scrm_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522",
+      "datasetId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "34c8c7b9aaa3ff2d27c95bce9afc714afad57f8d5c171a302428dcf8a0467b06"
+        },
+        {
+          "type": "SQL",
+          "slot": "query",
+          "sha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "lineStart": 14,
+          "lineEnd": 38,
+          "path": "docs/data-graph-derived-2.0/analysis/evidence/159763-1-query.sql",
+          "taskId": "159763",
+          "sqlSha256": "68842177c04001f0fb4d397085cc6b4b59dc9f805501f56eb5deb697d92bbb56",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\159763\\versions\\a4ce3bda15e500afb45145270e7adcf761bf3e15b0e4a14c3f3c933deedeca80.evidence-v3.json",
+          "fixedEvidenceSha256": "b313a7bf0939cc892127e9c09736d6e8bf9f2c913581af823c5f66d3b59fe9ba",
+          "writeObservationId": "write-observation:159763:platform-target:0",
+          "consumerUseId": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522|159763|write-observation:159763:platform-target:0"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 4,
+        "outDegree": 74,
+        "inRank": null,
+        "outRank": 9,
+        "downstreamSchemas": 14,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_co_n",
+          "dm_cstd_n",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_index_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "pdata_news_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:e4b3adf0b6ff37620a08c69009d1d80e6d37a0148814261f0adc2418edd6b23d",
+      "datasetId": "dataset:e4b3adf0b6ff37620a08c69009d1d80e6d37a0148814261f0adc2418edd6b23d",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "06edfb080e5b0e4c70818baac81aefbf83ff0b5222cd68f1c5898e7816fdaa8b"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 21,
+        "outDegree": 58,
+        "inRank": null,
+        "outRank": 10,
+        "downstreamSchemas": 10,
+        "downstreamSchemaList": [
+          "dm_aud_n",
+          "dm_co_n",
+          "dm_crd_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_otc_n",
+          "dm_scrm_n",
+          "pdata_n",
+          "pdata_nds"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:2eb2a33c62057a1e01375519b9e6c34ad4eabe5f525dd5f6b073fade8163badf",
+      "datasetId": "dataset:2eb2a33c62057a1e01375519b9e6c34ad4eabe5f525dd5f6b073fade8163badf",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "ba503113cd7d039379e6e46e28d570b7057d98ec2664bbf0a36c78175c4aeea7"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 22,
+        "outDegree": 57,
+        "inRank": null,
+        "outRank": 11,
+        "downstreamSchemas": 9,
+        "downstreamSchemaList": [
+          "dm_aud_n",
+          "dm_co_n",
+          "dm_crd_n",
+          "dm_ecom_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_otc_n",
+          "pdata_nds"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:23b13077753b594b6dc75f0395dd6620018b6e30f0d7ed7b83668862bf3d4c67",
+      "datasetId": "dataset:23b13077753b594b6dc75f0395dd6620018b6e30f0d7ed7b83668862bf3d4c67",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a0aaaff5911c4ad3e0c91baf3ad9a05b17c0fee92a494fc8f947ca8981a743ba"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 20,
+        "outDegree": 50,
+        "inRank": null,
+        "outRank": 12,
+        "downstreamSchemas": 9,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:fee85ab2c397cd0f37cfcb0303667e4ab7cc45f0a4a0ee36c1e7cd2c9726aa02",
+      "datasetId": "dataset:fee85ab2c397cd0f37cfcb0303667e4ab7cc45f0a4a0ee36c1e7cd2c9726aa02",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "69428dcc388a6353b691a1888fc7b84f882ace739d915081e47b5653c6719bee"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 30,
+        "outDegree": 47,
+        "inRank": 15,
+        "outRank": 13,
+        "downstreamSchemas": 4,
+        "downstreamSchemaList": ["dm_index_n", "dm_om_n", "dm_om_test", "temp"]
+      }
+    },
+    {
+      "evidenceId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "datasetId": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "602c5c164c41fb2615ecafd2a9bec4eec5aeb6da9209a42d6c229b1000614f4a"
+        },
+        {
+          "type": "SQL",
+          "taskId": "86840",
+          "slot": "query",
+          "lineStart": 11,
+          "lineEnd": 345,
+          "sqlSha256": "cb3d1d0ba886be1df536f9b32dc382987d3b7fca45a2eb070b1c22faab28cc25",
+          "evidenceSha256": "290a2d6b48e9d276061be4f5ebca97732757a89531ac073255ba35ac15ca590e",
+          "source": "evidence/86840-1-query.sql",
+          "exclusionClass": "NONE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\86840\\versions\\a8e0bac1c4798e74596366ba0fed8b7fc280db44d9d71f053cba36276a9e52fe.evidence-v3.json",
+          "fixedEvidenceSha256": "290a2d6b48e9d276061be4f5ebca97732757a89531ac073255ba35ac15ca590e"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 34,
+        "outDegree": 44,
+        "inRank": 12,
+        "outRank": 14,
+        "downstreamSchemas": 6,
+        "downstreamSchemaList": [
+          "dm_fms_n",
+          "dm_index_n",
+          "dm_otc_n",
+          "dm_otc_test",
+          "dm_rd_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "datasetId": "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "5d4a80e2b3ef84e6e28462f90cb7a0ed93c9ff9f614458b931bbf0b3e5611ff7"
+        },
+        {
+          "type": "SQL",
+          "taskId": "142305",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 49,
+          "sqlSha256": "3d71ae535148d2c0ff2a4085b29300302d6ef493d888b5ece5e70d268cb3ce52",
+          "evidenceSha256": "5d25264c7a5ecba999188559264f58246a497cf2c43492073933b21b9d556452",
+          "source": "evidence/142305-0-query.sql",
+          "exclusionClass": "PUBLIC_REFERENCE",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\142305\\versions\\b74f2c782037eccf57d1dfe0114a79dec90754e96f98ea3a05801bb2201d929b.evidence-v3.json",
+          "fixedEvidenceSha256": "5d25264c7a5ecba999188559264f58246a497cf2c43492073933b21b9d556452"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 4,
+        "outDegree": 42,
+        "inRank": null,
+        "outRank": 15,
+        "downstreamSchemas": 15,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_cmpl_n",
+          "dm_crd_n",
+          "dm_ctms_n",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fms_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "dm_scrm_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:7ac42558fef06b1fd2fb083947bc3874a9851ff1ec7490ab3317346efecd9ccc",
+      "datasetId": "dataset:7ac42558fef06b1fd2fb083947bc3874a9851ff1ec7490ab3317346efecd9ccc",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "22c5bc5e550b83af355a25492395f56faa10cfaf16d4b7fd2b6db93bf2733db8"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 12,
+        "outDegree": 39,
+        "inRank": null,
+        "outRank": 16,
+        "downstreamSchemas": 8,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:130d8eaab919a16ff469e8270acf7f802e7371f09b77d8cb12e0560e9071518f",
+      "datasetId": "dataset:130d8eaab919a16ff469e8270acf7f802e7371f09b77d8cb12e0560e9071518f",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "702ea42cc5f99090c7824f028e7583b63f2e00da8dea9b5c6538956a6085108e"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 5,
+        "outDegree": 39,
+        "inRank": null,
+        "outRank": 17,
+        "downstreamSchemas": 6,
+        "downstreamSchemaList": [
+          "dm_fin_n",
+          "dm_hk_n",
+          "dm_hk_test",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:2a28c31d675728b6bcbc6c1a6f4fbc6f26832e7103ee1bfd3c88ba3d543ae4fa",
+      "datasetId": "dataset:2a28c31d675728b6bcbc6c1a6f4fbc6f26832e7103ee1bfd3c88ba3d543ae4fa",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "afc5f23b5c78e3e06a0cdb66c0937a0308c2a2c6a182bfde11a4ce768615ee09"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 1,
+        "outDegree": 37,
+        "inRank": null,
+        "outRank": 18,
+        "downstreamSchemas": 5,
+        "downstreamSchemaList": [
+          "a_epa",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_om_test",
+          "expl_jgj"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:6fe25163880c746448571f127e3e774ec3d12233239487215a34281dfd0dbdfa",
+      "datasetId": "dataset:6fe25163880c746448571f127e3e774ec3d12233239487215a34281dfd0dbdfa",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a71b1be637fd1197402f7e0420c006adcf2aae02cfb232e911dc198227eeda1d"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 11,
+        "outDegree": 37,
+        "inRank": null,
+        "outRank": 19,
+        "downstreamSchemas": 10,
+        "downstreamSchemaList": [
+          "dm_asm_sub_n",
+          "dm_co_n",
+          "dm_crd_n",
+          "dm_dg_n",
+          "dm_ecom_n",
+          "dm_index_n",
+          "dm_om_n",
+          "dm_opt_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:9c215566aa8c392fba61fcd382887491c5f1a4a899758778008ccb503aa29359",
+      "datasetId": "dataset:9c215566aa8c392fba61fcd382887491c5f1a4a899758778008ccb503aa29359",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "76688caa6352453c81e0a278a22484e9c7f78b1b6aaf0b4d8dee3c7a1600d838"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 8,
+        "outDegree": 34,
+        "inRank": null,
+        "outRank": 20,
+        "downstreamSchemas": 11,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "datasetId": "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a3ed3481867ad8154bd7c28bf408230ad09b39029ce4f590547fcb8f567764a6"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 0,
+        "outDegree": 34,
+        "inRank": null,
+        "outRank": 21,
+        "downstreamSchemas": 6,
+        "downstreamSchemaList": [
+          "dm_co_n",
+          "dm_crd_n",
+          "dm_ecom_n",
+          "dm_engin_n",
+          "dm_index_n",
+          "dm_otc_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:cf5dcc9bb3733cd04fffcd16bf854cd3dff4b11c9749c17a1688e2c1b56d9b3f",
+      "datasetId": "dataset:cf5dcc9bb3733cd04fffcd16bf854cd3dff4b11c9749c17a1688e2c1b56d9b3f",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "0d229a8701708825703210fb6406baa6d1154ae2533bf8900c9a5ebd0bbf6c4d"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 1,
+        "outDegree": 33,
+        "inRank": null,
+        "outRank": 22,
+        "downstreamSchemas": 2,
+        "downstreamSchemaList": ["dm_hk_n", "pdata_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:50dbf608aa591e980b98729a272bf5cf4afd1dbd1c1ae6346b38979e6d80c027",
+      "datasetId": "dataset:50dbf608aa591e980b98729a272bf5cf4afd1dbd1c1ae6346b38979e6d80c027",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "c072668a0ddc65f1b8968bd1fd559966827ccd6e98a6b1289e8f3bb3a1d52b1f"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 3,
+        "outDegree": 33,
+        "inRank": null,
+        "outRank": 23,
+        "downstreamSchemas": 11,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_cmpl_n",
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:7387a1089a7df51ee569b5c67f593085f5466097f737c19b1b3a37912da756da",
+      "datasetId": "dataset:7387a1089a7df51ee569b5c67f593085f5466097f737c19b1b3a37912da756da",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "2c51c2ca20aa0b645f24859cad70f69bfc036c39f2c32e8deb01e7c2859128a7"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 6,
+        "outDegree": 33,
+        "inRank": null,
+        "outRank": 24,
+        "downstreamSchemas": 13,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_cmpl_n",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_hk_test",
+          "dm_index_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:8bfedab27396b1ef2107fed850807e8ed54089c754022acbff7bfb955880ded2",
+      "datasetId": "dataset:8bfedab27396b1ef2107fed850807e8ed54089c754022acbff7bfb955880ded2",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "1865e9643bb6e782155a55a6fdf340734de76995fa38bb78a3a36d828387902d"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 10,
+        "outDegree": 32,
+        "inRank": null,
+        "outRank": 25,
+        "downstreamSchemas": 9,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_fii_n",
+          "dm_fin_n",
+          "dm_hk_n",
+          "dm_index_n",
+          "dm_otc_n",
+          "dm_otc_test",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:468f32c2e0e81f4af996ea87debc44fd7dccbdfbe4e8e110f1eaba4a379a5925",
+      "datasetId": "dataset:468f32c2e0e81f4af996ea87debc44fd7dccbdfbe4e8e110f1eaba4a379a5925",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "d57f2f6f9508b95b289ea3c0fad19e7a5c43fca5de4f4aa1811f448df61cf082"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 9,
+        "outDegree": 32,
+        "inRank": null,
+        "outRank": 26,
+        "downstreamSchemas": 10,
+        "downstreamSchemaList": [
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:d447eec4d7b09da0d1148dc1abc768193e951a77731a7de1164d3e41c6f5588f",
+      "datasetId": "dataset:d447eec4d7b09da0d1148dc1abc768193e951a77731a7de1164d3e41c6f5588f",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "fd338af9dbf2a7ab17498fad709173333a702aeeecfdd8b716fad0594b4e79bb"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 1,
+        "outDegree": 31,
+        "inRank": null,
+        "outRank": 27,
+        "downstreamSchemas": 6,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "gfval",
+          "pdata_n",
+          "pdata_nds"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:d4f6b955d172f20db142a44064afc6aa96dd4611841f24686af738404d421695",
+      "datasetId": "dataset:d4f6b955d172f20db142a44064afc6aa96dd4611841f24686af738404d421695",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a3a1c97dc5d7bd6a6b05d7912eda52c3b52f46b76d85a3420841a575675402d4"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 9,
+        "outDegree": 31,
+        "inRank": null,
+        "outRank": 28,
+        "downstreamSchemas": 13,
+        "downstreamSchemaList": [
+          "dm_cisp_n",
+          "dm_ecif",
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fin_n",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_index_n",
+          "dm_mast_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n",
+          "spdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:128b4323c3bdd43a207f140d975b8a52d13545002d34491b07a02b8a74b31269",
+      "datasetId": "dataset:128b4323c3bdd43a207f140d975b8a52d13545002d34491b07a02b8a74b31269",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "934cd1a98724e582424d926ad55d0cebff0113f319b9b85c9daea001b8b09390"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 1,
+        "outDegree": 29,
+        "inRank": null,
+        "outRank": 29,
+        "downstreamSchemas": 5,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "pdata_n",
+          "pdata_nds"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:dc56d0cfc55edf3f957358de9ede6ee92c559b8458bb93c1ef025864488c1077",
+      "datasetId": "dataset:dc56d0cfc55edf3f957358de9ede6ee92c559b8458bb93c1ef025864488c1077",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "7a6ac12de69dc1caa17b068e65b22ebcc5738c08c8c5479edddb176f3d67d64e"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 2,
+        "outDegree": 29,
+        "inRank": null,
+        "outRank": 30,
+        "downstreamSchemas": 7,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_fii_test",
+          "dm_fms_n",
+          "dm_hk_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:d40fc46d1568725dd65f4af8607141524c4ab40d164808bccc30463626ec8c7e",
+      "datasetId": "dataset:d40fc46d1568725dd65f4af8607141524c4ab40d164808bccc30463626ec8c7e",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "5fad36b46b3a77eb100c6036f85a5c0ba789e0fef14f4305f7af6a634532518c"
+        },
+        {
+          "type": "SQL",
+          "taskId": "226177",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 16,
+          "sqlSha256": "1078fc068e611ae9b38a6052137e4dd9a6562f8482a004ba4c77bc7b3edc2817",
+          "evidenceSha256": "c8277ba62c9016f5bb0c6fcb6032efd5f78d1d66512b333b3a7c99d6a2865cd7",
+          "source": "task-projections/tasks/226177/versions/8b477aff9492a475cb7bcc4dd66983c37ef009bf5e8630942cc984ac946a4128.evidence-v3.json",
+          "exclusionClass": "SYSTEM_OR_ACCESS",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\226177\\versions\\8b477aff9492a475cb7bcc4dd66983c37ef009bf5e8630942cc984ac946a4128.evidence-v3.json",
+          "fixedEvidenceSha256": "c8277ba62c9016f5bb0c6fcb6032efd5f78d1d66512b333b3a7c99d6a2865cd7"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 125,
+        "outDegree": 0,
+        "inRank": 1,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:758a925755f5af51f224ca1bee42d2330f7653a38a82f4f8fae2d694f69c0fcc",
+      "datasetId": "dataset:758a925755f5af51f224ca1bee42d2330f7653a38a82f4f8fae2d694f69c0fcc",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "178ddac542bd3c04b8703c96e1acfa86fbb7363d9a976e6d0211b9c2836c0a28"
+        },
+        {
+          "type": "SQL",
+          "taskId": "74272",
+          "slot": "query",
+          "lineStart": 1,
+          "lineEnd": 190,
+          "sqlSha256": "a46aeefd5496939228cd057e4ec4a77734a396290fe4f02a771b6a72a7e22ab2",
+          "evidenceSha256": "09d62ae23eb45a3e913a8f39a699f4bf415a847564882c624426796119cea316",
+          "source": "evidence/74272-0-query.sql",
+          "exclusionClass": "SYSTEM_OR_ACCESS",
+          "fixedEvidencePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\task-projections\\tasks\\74272\\versions\\974b75f0d232a830b8bd888f7853d401d428c47f52fa3713d398107233ea9c6d.evidence-v3.json",
+          "fixedEvidenceSha256": "09d62ae23eb45a3e913a8f39a699f4bf415a847564882c624426796119cea316"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 103,
+        "outDegree": 2,
+        "inRank": 2,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["dm_ctms"]
+      }
+    },
+    {
+      "evidenceId": "dataset:1f626cf7dc71431f7096fa0bccab979886471134d304c33ceefddba080f62237",
+      "datasetId": "dataset:1f626cf7dc71431f7096fa0bccab979886471134d304c33ceefddba080f62237",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "9f461e2b8118b503ee97704da84e2cd4be2f45888b0d9ac9a676a8ab7e4a963d"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 57,
+        "outDegree": 0,
+        "inRank": 3,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:8703c8022f7758fd477b9d6e740d5843a71f101b8af452bd76d7a68ecf03568b",
+      "datasetId": "dataset:8703c8022f7758fd477b9d6e740d5843a71f101b8af452bd76d7a68ecf03568b",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "384e28291adde87120a6d05f009eeabb29971853a53dba1070ab0b282ba0d682"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 51,
+        "outDegree": 1,
+        "inRank": 4,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["crmii"]
+      }
+    },
+    {
+      "evidenceId": "dataset:aa6bc0cb785d74be087d7df8cb9d8238813db7c423d3d52eea7cb7c4a6dcde4d",
+      "datasetId": "dataset:aa6bc0cb785d74be087d7df8cb9d8238813db7c423d3d52eea7cb7c4a6dcde4d",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "7f407e44e0305954860983d971a2c4e0b7f31524860274a65597841465795669"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 42,
+        "outDegree": 17,
+        "inRank": 6,
+        "outRank": null,
+        "downstreamSchemas": 5,
+        "downstreamSchemaList": [
+          "dm_cmpl_n",
+          "dm_index_n",
+          "dm_otc_n",
+          "dm_rsk_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:d6b2cce43e2775b8160b9bcca0426852729da88ae756ea878585e5e0cb709d83",
+      "datasetId": "dataset:d6b2cce43e2775b8160b9bcca0426852729da88ae756ea878585e5e0cb709d83",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "6e538de144a83e7c1f05a9560d4de26db27421981ee0efb7bdf816cb45e62fc8"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 42,
+        "outDegree": 2,
+        "inRank": 7,
+        "outRank": null,
+        "downstreamSchemas": 2,
+        "downstreamSchemaList": ["dm_fin_n", "dm_rsk_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:83df95344c64262cbbaa68bca4783d7dc4470d6880d8147afe690c44c55a6242",
+      "datasetId": "dataset:83df95344c64262cbbaa68bca4783d7dc4470d6880d8147afe690c44c55a6242",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "83906fac58d05babd396f0dcbefc16bddabf57f33a3cb9246f3b1a8dbcd28c4c"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 41,
+        "outDegree": 2,
+        "inRank": 8,
+        "outRank": null,
+        "downstreamSchemas": 2,
+        "downstreamSchemaList": ["dm_fin_n", "dm_otc_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:b0e794b95e2ffd9ec2f94bbba7af73e457ae4844857596535917d429c0860baf",
+      "datasetId": "dataset:b0e794b95e2ffd9ec2f94bbba7af73e457ae4844857596535917d429c0860baf",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "2add1b7438916109e11b40583f9b742ea9204fa143f17c8e2f754eb738f13bdf"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 40,
+        "outDegree": 1,
+        "inRank": 9,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["a_epa"]
+      }
+    },
+    {
+      "evidenceId": "dataset:bcd1fc6a4938ed216d6fa326ed536d064bd8649e0e8bf88e4e6624b5abfdcd4f",
+      "datasetId": "dataset:bcd1fc6a4938ed216d6fa326ed536d064bd8649e0e8bf88e4e6624b5abfdcd4f",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "c3b2ffcef64bd82c0fa129c0b758424a2d9a6f500f018a8f15d463e8332d10fc"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 40,
+        "outDegree": 0,
+        "inRank": 10,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:a7085d07e70e2eabd8944d36fc417dad2bc335f7f8da6ca3f9b75e33dec52841",
+      "datasetId": "dataset:a7085d07e70e2eabd8944d36fc417dad2bc335f7f8da6ca3f9b75e33dec52841",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "667ea65fae94d9b8cc99d02de08eead84d47868de4e3cf7161f5ebfd11f15f77"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 40,
+        "outDegree": 0,
+        "inRank": 11,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:452cfb85d86de036c3406b967661b64ea8db78a38582f25ca670e92c1f742dbb",
+      "datasetId": "dataset:452cfb85d86de036c3406b967661b64ea8db78a38582f25ca670e92c1f742dbb",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "2bade576f965cd2fbcab39342df140325430808347fe8e3e41e3adbd797c192e"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 34,
+        "outDegree": 0,
+        "inRank": 13,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:f1de9f4b7690b1a31ba5eef0fa813a9085e165fd18b31478890227b02e190f10",
+      "datasetId": "dataset:f1de9f4b7690b1a31ba5eef0fa813a9085e165fd18b31478890227b02e190f10",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "ae4f9698a0922f905a0e13da4d29a5ef1d7862b3d2af04b628c4436591518684"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 30,
+        "outDegree": 2,
+        "inRank": 14,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["dm_engin_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:db2727777717b1837aee3f51d38be8a96868d9f7d1896dea2e7a3b87d4c900d5",
+      "datasetId": "dataset:db2727777717b1837aee3f51d38be8a96868d9f7d1896dea2e7a3b87d4c900d5",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a722fc2e01b7d399559d136f05cd282e785fb48b8616bccfbcebc047a7d146f1"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 30,
+        "outDegree": 0,
+        "inRank": 16,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:5ae63b1571562da6b312951da1502799db1864df676a7975d1bba3482b707f6a",
+      "datasetId": "dataset:5ae63b1571562da6b312951da1502799db1864df676a7975d1bba3482b707f6a",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "86a460ac939785ed0770edc002026218ae27aab3cb08ba4ae793d37ff4d24e04"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 29,
+        "outDegree": 13,
+        "inRank": 17,
+        "outRank": null,
+        "downstreamSchemas": 4,
+        "downstreamSchemaList": [
+          "dm_fii_n",
+          "dm_index_n",
+          "dm_otc_n",
+          "pdata_n"
+        ]
+      }
+    },
+    {
+      "evidenceId": "dataset:191443f761674f6cb2d5b0cb03686ff55c9c3375fa7d122bb555fa7312a5d17d",
+      "datasetId": "dataset:191443f761674f6cb2d5b0cb03686ff55c9c3375fa7d122bb555fa7312a5d17d",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "05e5c6381c34df1c10b85854e6700c1494518a3beadfe8ae4bad5f43b5e2dadb"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 27,
+        "outDegree": 3,
+        "inRank": 18,
+        "outRank": null,
+        "downstreamSchemas": 2,
+        "downstreamSchemaList": ["pdata_n", "pdata_news_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:cb49148d05fea91959abdd59da486116c694003d3bf7bc04987713d12ce2fd8a",
+      "datasetId": "dataset:cb49148d05fea91959abdd59da486116c694003d3bf7bc04987713d12ce2fd8a",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "56b272000b902e44865d16a5e7595c8ceb2b4a3a8ae769b3fca0e5f0df5348d5"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 26,
+        "outDegree": 0,
+        "inRank": 19,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:0a1b60b542b9ca2056952956ae0179020172959b1116579b85faca51f72d774e",
+      "datasetId": "dataset:0a1b60b542b9ca2056952956ae0179020172959b1116579b85faca51f72d774e",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "53b4c1da9ed39f440d82ef78eee9773a2ee2d630d45fa6d0521fc2d14b6a4f7e"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 26,
+        "outDegree": 0,
+        "inRank": 20,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:acc454796a4803fbc658ec60dd43803f434a2f9c2aafef01c05d904bd4031271",
+      "datasetId": "dataset:acc454796a4803fbc658ec60dd43803f434a2f9c2aafef01c05d904bd4031271",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "c461f509be7a578cb5f716e12f7bca64558885aa5550414b5efd2ef474d85974"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 26,
+        "outDegree": 4,
+        "inRank": 21,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["dm_co_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:aff5b33ca29f23df44a562e3c0841df690808de9f677bd15d1f8169efdee6e80",
+      "datasetId": "dataset:aff5b33ca29f23df44a562e3c0841df690808de9f677bd15d1f8169efdee6e80",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "4f29dc8eb15675ee8788b2597b0479af6d2a27ba4f53ae05d014098de17faee2"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 26,
+        "outDegree": 0,
+        "inRank": 22,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:0ac67b63719f6ea3f351ad800a8d293556cfd87b40a5f7c1df7ed5ca37ef7656",
+      "datasetId": "dataset:0ac67b63719f6ea3f351ad800a8d293556cfd87b40a5f7c1df7ed5ca37ef7656",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "47e5a723849cac7fb4fcea7b09c481218e9f10a385b9bdf755361946010216dd"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 25,
+        "outDegree": 4,
+        "inRank": 23,
+        "outRank": null,
+        "downstreamSchemas": 3,
+        "downstreamSchemaList": ["dm_otc_n", "pdata_n", "pdata_news_n"]
+      }
+    },
+    {
+      "evidenceId": "dataset:21236f2a79b56f8073bcf3bc51c924f60325eb3068a423907bb9083b93181aa1",
+      "datasetId": "dataset:21236f2a79b56f8073bcf3bc51c924f60325eb3068a423907bb9083b93181aa1",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "5f36c8329b79c48366ff8eab563548ad78fd1203b37d0acad20d062dbef1f99c"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 24,
+        "outDegree": 1,
+        "inRank": 24,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["siebel"]
+      }
+    },
+    {
+      "evidenceId": "dataset:53528ca0091450c7373f4c917ca2ce44b9bfedfbab9cc8a67d70ba46a5ed0260",
+      "datasetId": "dataset:53528ca0091450c7373f4c917ca2ce44b9bfedfbab9cc8a67d70ba46a5ed0260",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "8da3396562f679e1da42d621575349d0f518db0eff2f9b4f05399d2834d5d3b9"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 24,
+        "outDegree": 0,
+        "inRank": 25,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:dfb90b87b66c1002dcd549a2080410c4363ff6e018dbc2723697c27a66cfbcf9",
+      "datasetId": "dataset:dfb90b87b66c1002dcd549a2080410c4363ff6e018dbc2723697c27a66cfbcf9",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "64cb63a8833227ca1dd3c2caf38bba193c37f3921b6e871b12c476e74af2db4a"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 23,
+        "outDegree": 1,
+        "inRank": 26,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["src_gfjgj"]
+      }
+    },
+    {
+      "evidenceId": "dataset:ff7035d571799990bb32295df179f4dd2308ef7e23dccc60e3c555226bb9dd0d",
+      "datasetId": "dataset:ff7035d571799990bb32295df179f4dd2308ef7e23dccc60e3c555226bb9dd0d",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "bab7c50d8e4baffe32d5f17e163c9a66989d1a66041aeb3146e9809ab03e8604"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 23,
+        "outDegree": 1,
+        "inRank": 27,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["a_epa"]
+      }
+    },
+    {
+      "evidenceId": "dataset:a50f7b8a9690052dcec0683dff838df965ec1511f8d81b3dfe1632e791d426bd",
+      "datasetId": "dataset:a50f7b8a9690052dcec0683dff838df965ec1511f8d81b3dfe1632e791d426bd",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "d0c497807ca4e3d34a701e002ec125889dc64429d71a22051f4c81e119395e5b"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 23,
+        "outDegree": 0,
+        "inRank": 28,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:85ad544e1a2fc599c42a1dd6d8e5e3abe62a16f1516803e2ec94b67f4719b5d7",
+      "datasetId": "dataset:85ad544e1a2fc599c42a1dd6d8e5e3abe62a16f1516803e2ec94b67f4719b5d7",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "a298f5d8359b62045c580d6933a316f4d1cdf3984758de5d9afe31ede96459bf"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 23,
+        "outDegree": 0,
+        "inRank": 29,
+        "outRank": null,
+        "downstreamSchemas": 0,
+        "downstreamSchemaList": []
+      }
+    },
+    {
+      "evidenceId": "dataset:42d2de4c1029355be0a81c67d3f29d70e533a6b4e832f321f4ff6c6f45f4886d",
+      "datasetId": "dataset:42d2de4c1029355be0a81c67d3f29d70e533a6b4e832f321f4ff6c6f45f4886d",
+      "evidence": [
+        {
+          "type": "METADATA",
+          "source": "metadata-annotations.json.gz",
+          "metadataSha256": "355c8a535cac08b1c8104f2ccfc47ccffac4cce9a5982c4f837c99038fcc7675"
+        }
+      ],
+      "structuralObservation": {
+        "graphVersion": "44e87de15ca82eb40480569c1db59c87b3636f7194b50576137889162425224e",
+        "inDegree": 23,
+        "outDegree": 1,
+        "inRank": 30,
+        "outRank": null,
+        "downstreamSchemas": 1,
+        "downstreamSchemaList": ["siebel"]
+      }
+    }
+  ]
+}

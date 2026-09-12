@@ -1,4 +1,5 @@
 import { resolveWorkspacePaths } from "../config/workspace-paths.ts";
+import { verifiedWriteColumns } from "../input/shared/write-column-evidence.ts";
 import {
 	existsSync,
 	lstatSync,
@@ -1462,6 +1463,9 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 		options.ddlCache,
 	);
 	const targetResolutionMethod = platformTargetResolutionMethod(task);
+	const writeColumns = task.writeColumnEvidence === undefined ? undefined : verifiedWriteColumns(
+		task.writeColumnEvidence, selected.selected.content, task.target);
+	if (writeColumns && targetResolutionMethod !== "DIRECT_PLATFORM_TARGET") throw new Error("WRITE_COLUMNS_TARGET_NOT_DIRECT");
 	const outputBindingContract = queryOutputBindingContract(task);
 	const observedPlatformPartition = platformPartitionBinding(task, platformPartition, target);
 	const explicitSchedulerPartition = observedPlatformPartition.partition_mode === "STATIC" &&
@@ -1477,12 +1481,14 @@ export function prepareInputPackTask(options: PrepareInputPackTaskOptions): Prep
 	const platformOutput = targetResolutionMethod !== null
 		? {
 				target: target.qualifiedName,
+				target_columns: writeColumns?.columns,
 				target_resolution_method: targetResolutionMethod,
 				query_output_slot: selected.selected.slot,
 				query_output_binding_contract: outputBindingContract,
 				...declaredPartition,
 				...platformPartitionShape,
-				evidence_refs: [provenance.task_locator, provenance.table_locator, provenance.ddl_locator],
+				evidence_refs: [provenance.task_locator, provenance.table_locator, provenance.ddl_locator,
+					...(writeColumns ? [`${writeColumns.source}#sha256=${writeColumns.sourceSha256}`] : [])],
 			} satisfies PlatformTargetQueryOutput
 		: undefined;
 	const explicitWritePartitionEvidence = sqlWritePartitionEvidence(

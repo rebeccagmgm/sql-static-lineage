@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-09-11T12:35:01.713Z",
+  "method": "Read-only local clause discovery plus 12 manually inspected case excerpts; no business SQL execution; no remote Wiki access",
+  "sourceTables": [
+    "evidence",
+    "horae_task_catalog",
+    "horae_topic_catalog",
+    "horae_catalog_runs",
+    "tables",
+    "fields"
+  ],
+  "sourceSqlHashCheck": {
+    "checked": 1744,
+    "mismatches": 0
+  },
+  "files": [
+    {
+      "file": "任务读写候选.json",
+      "bytes": 1603453,
+      "sha256": "e5ed46cfb3e14fe0247cdcfa85f2577dc621948cec1a13eb0a0a6958f61f5505"
+    },
+    {
+      "file": "差异案例证据.md",
+      "bytes": 27633,
+      "sha256": "013d225c14f50282003715a197cfaffe718bec8b2b335223ef07cc334f234a62"
+    },
+    {
+      "file": "核心调度覆盖.json",
+      "bytes": 501317,
+      "sha256": "9d8e5b3c9b1b0800aa1d1948848954f4d79b81169810e39abfdb4b8f199d3f45"
+    },
+    {
+      "file": "表与任务对照.json",
+      "bytes": 420234,
+      "sha256": "59b33455b91962875b88e52aad354f0f0885c09606944fb771b22b4856f721d6"
+    },
+    {
+      "file": "表与任务对照.md",
+      "bytes": 74230,
+      "sha256": "8714ac2dbd8c1c7fce68c058a99d49f47b9590bd38f6ef88fd0f63e000a9bfca"
+    }
+  ]
+}

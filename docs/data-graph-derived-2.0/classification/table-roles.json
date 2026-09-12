@@ -1,0 +1,6 @@
+{
+  "status": "MIGRATED_TO_CSV",
+  "authoritativeFile": "table-roles.csv",
+  "evidenceFile": "table-role-evidence.json",
+  "note": "This file is a migration pointer, not a classification registry. Exclusion decisions remain in exclusion-views.json."
+}
