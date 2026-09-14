@@ -1,0 +1,3939 @@
+[
+  {
+    "qualified_name": "pdata_n.t00_agnt_schd_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "智能体调度任务附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "fe13b7eb-cc65-47b7-bc40-d7d083ca9716",
+    "named_task_ids": [
+      "247683"
+    ],
+    "mention_task_ids": [
+      "247683"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_ai_skl_adtnl_info",
+    "group": "05-系统应用与组件",
+    "description": "AI技能附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "1aa88222-d4ca-4e1a-b1af-225d327ed793",
+    "named_task_ids": [
+      "234469"
+    ],
+    "mention_task_ids": [
+      "234469"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_algo_info",
+    "group": "07-产品池策略与名单",
+    "description": "算法信息",
+    "description_source": "METADATA",
+    "metadata_id": 42040,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "62010672-3472-4eb1-b3d6-035cbe174a57",
+    "named_task_ids": [
+      "158309",
+      "158311",
+      "223011"
+    ],
+    "mention_task_ids": [
+      "158309",
+      "158311",
+      "223011",
+      "243413"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_api_app_info",
+    "group": "05-系统应用与组件",
+    "description": "API应用信息",
+    "description_source": "METADATA",
+    "metadata_id": 42041,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "082eeda4-17b3-4b79-89a7-dba8193c03af",
+    "named_task_ids": [
+      "143526"
+    ],
+    "mention_task_ids": [
+      "143526"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_api_app_rela_h",
+    "group": "05-系统应用与组件",
+    "description": "API应用授权关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42042,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "db0d5af2-e716-4c92-a2f3-bdc54234798f",
+    "named_task_ids": [
+      "143527"
+    ],
+    "mention_task_ids": [
+      "143527"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_api_info",
+    "group": "05-系统应用与组件",
+    "description": "API元数据信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "2058a55f-5b57-472f-84c6-1cd426606f89",
+    "named_task_ids": [
+      "113576",
+      "143524"
+    ],
+    "mention_task_ids": [
+      "113576",
+      "143524",
+      "238538"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_app_info",
+    "group": "05-系统应用与组件",
+    "description": "应用信息",
+    "description_source": "METADATA",
+    "metadata_id": 42043,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4e6d5976-e0e5-432a-9be6-25d8b0676b46",
+    "named_task_ids": [
+      "227283",
+      "227284",
+      "227286",
+      "227287"
+    ],
+    "mention_task_ids": [
+      "227283",
+      "227284",
+      "227286",
+      "227287"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_app_sys_base_info",
+    "group": "05-系统应用与组件",
+    "description": "应用系统基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42044,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [],
+    "mention_task_ids": [
+      "155166"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_app_sys_db_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "应用系统数据库附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42045,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4bde3045-2461-4f4d-b241-35bdb7a807fd",
+    "named_task_ids": [
+      "155167"
+    ],
+    "mention_task_ids": [
+      "155167"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_app_ver_info",
+    "group": "05-系统应用与组件",
+    "description": "应用版本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42046,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "eabfea70-7f67-4adf-a67f-132ed82aa645",
+    "named_task_ids": [
+      "227289"
+    ],
+    "mention_task_ids": [
+      "227289"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_audi_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "稽核项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42047,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "83c43442-579c-41ae-925f-b6a25de2bd35",
+    "named_task_ids": [
+      "215825"
+    ],
+    "mention_task_ids": [
+      "215825"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_bat_pcus_qry_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "批量潜客查询任务附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42048,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "7854db3a-9331-4302-910a-7d50c17be00f",
+    "named_task_ids": [
+      "185007"
+    ],
+    "mention_task_ids": [
+      "185007"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_bat_pcus_qry_task_det",
+    "group": "02-需求任务与整改",
+    "description": "批量潜客查询任务明细",
+    "description_source": "CATALOG",
+    "metadata_id": 42049,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "c4ed2a83-bf8f-4abc-9c54-6e1201867e10",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_bdp_rpt_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "数综报表附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42050,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "23972390-ee3a-408f-aff2-21b60de8bfc0",
+    "named_task_ids": [
+      "220322"
+    ],
+    "mention_task_ids": [
+      "220322"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_bug_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "缺陷任务附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": 42051,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "23ae3caa-b682-4577-b908-c27a00823a36",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_busi_sys_info",
+    "group": "05-系统应用与组件",
+    "description": "业务系统信息表",
+    "description_source": "METADATA",
+    "metadata_id": 42052,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "e3184705-39e2-41e9-9141-601a18d88586",
+    "named_task_ids": [
+      "62991",
+      "50735"
+    ],
+    "mention_task_ids": [
+      "62991",
+      "110207",
+      "50735"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cab_revw_req",
+    "group": "02-需求任务与整改",
+    "description": "cab 需求评审表",
+    "description_source": "METADATA",
+    "metadata_id": 42053,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "ffdaad0b-2965-48f3-8963-3e0168aeb035",
+    "named_task_ids": [
+      "62896"
+    ],
+    "mention_task_ids": [
+      "62896"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cc_quat_scor_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "呼叫中心质检评分任务附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": 42054,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "7988cef0-34ae-4c59-aa05-1dbc48d1ed0f",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_cc2_clbk_ans_scor_def",
+    "group": "04-试卷知识与内容",
+    "description": "呼叫中心回访试题答案分值定义",
+    "description_source": "METADATA",
+    "metadata_id": 42055,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1f97ffd8-6221-4ef9-ad8e-b54223de2c07",
+    "named_task_ids": [
+      "62916"
+    ],
+    "mention_task_ids": [
+      "62916"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cc2_qstnn_adtnl_info",
+    "group": "04-试卷知识与内容",
+    "description": "呼叫中心试卷附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42056,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3dadc797-e7e4-4ea4-97a2-8cfb1604fd68",
+    "named_task_ids": [
+      "156796"
+    ],
+    "mention_task_ids": [
+      "156796"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_chk_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "核检任务附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42057,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a9bc4d8a-8dd4-404e-84ea-4c55608afb7f",
+    "named_task_ids": [
+      "89046"
+    ],
+    "mention_task_ids": [
+      "89046"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cloud_mgmt_doc_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "云上管家留痕文件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42058,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "bea3680c-2c27-4185-863a-1601d1a3ebd3",
+    "named_task_ids": [
+      "155993"
+    ],
+    "mention_task_ids": [
+      "155993"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cont_set",
+    "group": "04-试卷知识与内容",
+    "description": "内容集合",
+    "description_source": "CATALOG",
+    "metadata_id": 42059,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0dd274e7-eb19-4df7-b628-f9defb60c409",
+    "named_task_ids": [
+      "224867",
+      "224868",
+      "224869"
+    ],
+    "mention_task_ids": [
+      "224867",
+      "224868",
+      "224869"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cont_set_less_rela_h",
+    "group": "04-试卷知识与内容",
+    "description": "课程内容集合关系历史",
+    "description_source": "CATALOG",
+    "metadata_id": 42060,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "bc1bd1d6-5ca7-44fb-881d-98b54d4baf6b",
+    "named_task_ids": [
+      "227452"
+    ],
+    "mention_task_ids": [
+      "227452"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cont_set_stat_h",
+    "group": "04-试卷知识与内容",
+    "description": "内容集合状态历史",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "7abaa895-4771-4d03-863f-38b945313ceb",
+    "named_task_ids": [
+      "224870",
+      "224871"
+    ],
+    "mention_task_ids": [
+      "224870",
+      "224871"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cont_set_user_rela_h",
+    "group": "04-试卷知识与内容",
+    "description": "内容集合用户关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42061,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "ed95f5d5-49a2-4641-ad41-c1cca4c57847",
+    "named_task_ids": [
+      "224872"
+    ],
+    "mention_task_ids": [
+      "224872"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cust_dd_rpt_attach_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "客户尽调报告附件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42062,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1fc5078f-eac8-45aa-95b0-d36c0246adcc",
+    "named_task_ids": [
+      "198089"
+    ],
+    "mention_task_ids": [
+      "198089"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cust_req_work_ord_item_trc_info",
+    "group": "02-需求任务与整改",
+    "description": "客户需求工单事项跟进信息",
+    "description_source": "METADATA",
+    "metadata_id": 42063,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "87ab81f7-e5b3-45e3-83ec-8e9d942e6812",
+    "named_task_ids": [
+      "168287"
+    ],
+    "mention_task_ids": [
+      "168287"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cust_stmt_vchr_doc_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "客户对账单凭证文件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42064,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "ea11264b-00e4-4ddb-851e-fd58a614308a",
+    "named_task_ids": [
+      "192857"
+    ],
+    "mention_task_ids": [
+      "192857"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_cust_stmt_vchr_oper_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "客户对账单凭证操作任务附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": 42065,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "6e6800ba-1fd2-4799-a205-efdb0e6b69e1",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_mdl_base_info",
+    "group": "06-数据资产与报表",
+    "description": "数据模型基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42066,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a32c8242-a8a0-4817-b977-4a31fc7ddd83",
+    "named_task_ids": [
+      "150553"
+    ],
+    "mention_task_ids": [
+      "150553"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_mdl_catlg",
+    "group": "06-数据资产与报表",
+    "description": "数据模型目录",
+    "description_source": "METADATA",
+    "metadata_id": 42067,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b686a062-5b1a-4562-afef-28fe5b0082d7",
+    "named_task_ids": [
+      "150555"
+    ],
+    "mention_task_ids": [
+      "150555"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_mdl_elmn_info",
+    "group": "06-数据资产与报表",
+    "description": "数据模型元素信息",
+    "description_source": "METADATA",
+    "metadata_id": 42068,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "06f3421b-e0e9-47c4-9ec5-fa86d9722c15",
+    "named_task_ids": [
+      "150554"
+    ],
+    "mention_task_ids": [
+      "150554"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_src_link_info",
+    "group": "06-数据资产与报表",
+    "description": "数据源链接信息",
+    "description_source": "METADATA",
+    "metadata_id": 42069,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8f6ba7cc-538c-41a2-88f1-10844b20bb5d",
+    "named_task_ids": [
+      "145095"
+    ],
+    "mention_task_ids": [
+      "145095"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_std_base_info",
+    "group": "06-数据资产与报表",
+    "description": "数据标准基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42070,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b6d9b027-0188-4bc7-9a04-688fce01316a",
+    "named_task_ids": [
+      "113577"
+    ],
+    "mention_task_ids": [
+      "113577"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_data_std_inr_org_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "数据标准内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42071,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "cbc46874-0451-4b13-aa48-6a669408e4f7",
+    "named_task_ids": [
+      "198087"
+    ],
+    "mention_task_ids": [
+      "198087"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_artfs_adtnl_rela_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库制品附加关系信息",
+    "description_source": "METADATA",
+    "metadata_id": 42072,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "2aa0e683-6d61-4dce-bc2f-7a5b6f965954",
+    "named_task_ids": [
+      "155169"
+    ],
+    "mention_task_ids": [
+      "155169"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_artfs_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库制品信息",
+    "description_source": "METADATA",
+    "metadata_id": 42073,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5f18183e-4da0-419e-af5c-d8b9a474adb5",
+    "named_task_ids": [
+      "155172"
+    ],
+    "mention_task_ids": [
+      "155172"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_file_sav_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库文件存储信息",
+    "description_source": "METADATA",
+    "metadata_id": 42074,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "cefda139-6207-404d-9a40-2dad00c30735",
+    "named_task_ids": [
+      "89039"
+    ],
+    "mention_task_ids": [
+      "89039"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库信息",
+    "description_source": "METADATA",
+    "metadata_id": 42075,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "aaa6e424-6323-4357-8404-2952bbcd7ab0",
+    "named_task_ids": [
+      "113441",
+      "222698",
+      "89042"
+    ],
+    "mention_task_ids": [
+      "113441",
+      "222698",
+      "89042"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_mdl_ver_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库模型版本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42076,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "c6dfcf62-59ba-417b-910e-0009432a85f6",
+    "named_task_ids": [
+      "155177"
+    ],
+    "mention_task_ids": [
+      "155177"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_obj_clas_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库对象分类信息",
+    "description_source": "METADATA",
+    "metadata_id": 42077,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "54f2e93b-0825-43cf-9b21-29755d7e4eee",
+    "named_task_ids": [
+      "200072",
+      "200738",
+      "200741"
+    ],
+    "mention_task_ids": [
+      "137827",
+      "200072",
+      "200738",
+      "200741"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_db_obj_lbl_info",
+    "group": "06-数据资产与报表",
+    "description": "数据库对象标签信息",
+    "description_source": "METADATA",
+    "metadata_id": 42078,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "bb8ea4e1-d001-4243-b421-7e4aed907e65",
+    "named_task_ids": [
+      "200074",
+      "200739",
+      "200742"
+    ],
+    "mention_task_ids": [
+      "137827",
+      "200074",
+      "200739",
+      "200742"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_doc_attach_info",
+    "group": "03-档案附件与印章",
+    "description": "档案附件信息",
+    "description_source": "METADATA",
+    "metadata_id": 42079,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b7f2c3c6-9a01-43a6-a190-d78bf89a345f",
+    "named_task_ids": [
+      "173964",
+      "173977",
+      "212661"
+    ],
+    "mention_task_ids": [
+      "173964",
+      "173977",
+      "212661"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_doc_evt_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "档案事件关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42080,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "17a57215-d0d1-4f13-9397-dd730dae7d76",
+    "named_task_ids": [
+      "155995",
+      "192858",
+      "136764",
+      "136767",
+      "240053"
+    ],
+    "mention_task_ids": [
+      "155995",
+      "192858",
+      "110545",
+      "192860",
+      "136764",
+      "136767",
+      "240053"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_doc_info",
+    "group": "03-档案附件与印章",
+    "description": "档案信息",
+    "description_source": "METADATA",
+    "metadata_id": 42081,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d8a40447-2a55-4fb8-92f0-2cb0b3d5f50c",
+    "named_task_ids": [
+      "198088",
+      "136658",
+      "136762",
+      "136765",
+      "149022",
+      "155994",
+      "173978",
+      "192947",
+      "197311"
+    ],
+    "mention_task_ids": [
+      "110544",
+      "198088",
+      "136658",
+      "136762",
+      "136765",
+      "149022",
+      "155994",
+      "173978",
+      "192947",
+      "192948",
+      "197311"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_doc_mgmt_info",
+    "group": "03-档案附件与印章",
+    "description": "档案管理信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "d595c30c-38a9-4d81-9190-fd8520ad32bb",
+    "named_task_ids": [
+      "232074",
+      "232075"
+    ],
+    "mention_task_ids": [
+      "232074",
+      "232075"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_doc_upld_info",
+    "group": "03-档案附件与印章",
+    "description": "档案上传信息",
+    "description_source": "METADATA",
+    "metadata_id": 42082,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b22fa4d0-cfc4-4d9a-ae94-0dc61670b815",
+    "named_task_ids": [
+      "136763",
+      "136766"
+    ],
+    "mention_task_ids": [
+      "136763",
+      "136766"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_elig_ans_scor_def",
+    "group": "04-试卷知识与内容",
+    "description": "适当性答案分值定义",
+    "description_source": "METADATA",
+    "metadata_id": 42083,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "9bbc756c-2fa7-48b7-8173-77fb7466ef45",
+    "named_task_ids": [
+      "62888"
+    ],
+    "mention_task_ids": [
+      "62888"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_emp_onln_dvc_sftw_setp_info",
+    "group": "05-系统应用与组件",
+    "description": "员工联网设备软件安装信息",
+    "description_source": "METADATA",
+    "metadata_id": 42084,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "fa1b4abb-7651-43f7-851b-85d7356ebd72",
+    "named_task_ids": [
+      "141062"
+    ],
+    "mention_task_ids": [
+      "141062"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_entr_proc_attach_info",
+    "group": "03-档案附件与印章",
+    "description": "入职流程附件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42085,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "31b94b29-63d3-415b-9c79-473b02098c86",
+    "named_task_ids": [
+      "197310"
+    ],
+    "mention_task_ids": [
+      "197310"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_ew_masdg_work_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "企微群发工作任务附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42086,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d1b41e20-cfd1-4e2e-b15e-1e813190a64d",
+    "named_task_ids": [
+      "189122"
+    ],
+    "mention_task_ids": [
+      "189122"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_fld_info",
+    "group": "06-数据资产与报表",
+    "description": "表字段信息",
+    "description_source": "METADATA",
+    "metadata_id": 42087,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "770862d8-0c42-4147-8254-9c5204bea637",
+    "named_task_ids": [
+      "113442",
+      "136587",
+      "191458",
+      "89041"
+    ],
+    "mention_task_ids": [
+      "113442",
+      "136587",
+      "137827",
+      "191458",
+      "89041"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_fnd_supt_app_req_fdbk",
+    "group": "02-需求任务与整改",
+    "description": "资金支持申请需求反馈",
+    "description_source": "METADATA",
+    "metadata_id": 42088,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8825ab86-9814-4286-aecf-a3be2eba86e1",
+    "named_task_ids": [
+      "167923"
+    ],
+    "mention_task_ids": [
+      "167923"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_fnd_supt_app_req_info",
+    "group": "02-需求任务与整改",
+    "description": "资金支持申请需求信息",
+    "description_source": "METADATA",
+    "metadata_id": 42089,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "87277803-0d22-4a56-a28c-651b013d194a",
+    "named_task_ids": [
+      "167921"
+    ],
+    "mention_task_ids": [
+      "167921"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_foru_topi_info",
+    "group": "04-试卷知识与内容",
+    "description": "论坛主题信息",
+    "description_source": "METADATA",
+    "metadata_id": 42090,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "91c97456-4814-4be3-80e4-3ba24383db1d",
+    "named_task_ids": [
+      "212996"
+    ],
+    "mention_task_ids": [
+      "212996"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_gfp_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "GFP项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42091,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "9d649495-e1ef-48c4-a6a7-1c902ed5ed11",
+    "named_task_ids": [
+      "97910"
+    ],
+    "mention_task_ids": [
+      "97910",
+      "102107"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_gfp_proj_core_cust_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "GFP项目核心客户附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42092,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "17d77c47-6612-4eaa-9631-fcbb7a0a6920",
+    "named_task_ids": [
+      "156349"
+    ],
+    "mention_task_ids": [
+      "156349"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_gks_knwlg_ans_info",
+    "group": "04-试卷知识与内容",
+    "description": "金钥匙知识库答案信息",
+    "description_source": "METADATA",
+    "metadata_id": 42093,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "749a32e0-91d6-4839-b678-a557cb921bd4",
+    "named_task_ids": [
+      "62950"
+    ],
+    "mention_task_ids": [
+      "62950"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_gks_knwlg_qstn_info",
+    "group": "04-试卷知识与内容",
+    "description": "金钥匙知识库问题信息",
+    "description_source": "METADATA",
+    "metadata_id": 42096,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b4b03224-ebe2-4fc9-a2c1-024c84099c06",
+    "named_task_ids": [
+      "62874"
+    ],
+    "mention_task_ids": [
+      "62874"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_glm_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "广发租赁项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42099,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5772cefe-76e7-4597-97ae-dd885fd3fe56",
+    "named_task_ids": [
+      "162667"
+    ],
+    "mention_task_ids": [
+      "162667",
+      "170431"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_glm_proj_colla_det",
+    "group": "01-项目与业务安排",
+    "description": "广发租赁项目抵质押物明细",
+    "description_source": "METADATA",
+    "metadata_id": 42100,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "62be7ea4-93f8-48b1-8df7-2317c9bf902e",
+    "named_task_ids": [
+      "166596"
+    ],
+    "mention_task_ids": [
+      "166596"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_hive_db_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "HIVE库附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42101,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "33d2ccbe-2da4-45a8-b25f-e0a5d7f22f02",
+    "named_task_ids": [
+      "138329"
+    ],
+    "mention_task_ids": [
+      "138329"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_hive_tbl_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "HIVE表附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42102,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8e94eb54-069d-4dc7-9b7d-be39c6c57f57",
+    "named_task_ids": [
+      "132904"
+    ],
+    "mention_task_ids": [
+      "132904",
+      "137827"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_horae_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "HORAE任务附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42103,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0a517356-4801-4764-aeef-bb4a6340d180",
+    "named_task_ids": [
+      "132905"
+    ],
+    "mention_task_ids": [
+      "132905",
+      "110307",
+      "203216"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_horae_task_instc_info",
+    "group": "02-需求任务与整改",
+    "description": "HORAE任务实例信息",
+    "description_source": "CATALOG",
+    "metadata_id": 42104,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a0d121be-8929-4361-99bc-5611b109cd09",
+    "named_task_ids": [],
+    "mention_task_ids": [
+      "203216"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inctv_co_mng_info",
+    "group": "01-项目与业务安排",
+    "description": "激励合作管理信息",
+    "description_source": "METADATA",
+    "metadata_id": 42105,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "849f7e17-05bf-4689-b61e-5248d7161c5c",
+    "named_task_ids": [
+      "75004"
+    ],
+    "mention_task_ids": [
+      "75004"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inctv_plan_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "激励计划附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42106,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1f41e4b5-51b2-4dfe-86b7-f9bfbbdde230",
+    "named_task_ids": [
+      "125483",
+      "75003",
+      "85577",
+      "75000"
+    ],
+    "mention_task_ids": [
+      "125483",
+      "75003",
+      "79463",
+      "85577",
+      "75000"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inctv_plan_unlock_term_info",
+    "group": "01-项目与业务安排",
+    "description": "激励计划解锁期信息",
+    "description_source": "METADATA",
+    "metadata_id": 42107,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "50319758-3537-4574-a8e6-7b0f2137f17c",
+    "named_task_ids": [
+      "93018"
+    ],
+    "mention_task_ids": [
+      "93018"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inctv_tgt_info",
+    "group": "01-项目与业务安排",
+    "description": "激励对象信息",
+    "description_source": "METADATA",
+    "metadata_id": 42108,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "068c62ad-b85e-40c8-a436-badfe0268dfd",
+    "named_task_ids": [
+      "104627",
+      "85586"
+    ],
+    "mention_task_ids": [
+      "104627",
+      "79463",
+      "85586"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inr_it_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "内部IT项目补充信息",
+    "description_source": "METADATA",
+    "metadata_id": 42109,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "fe869a98-c3b6-4b1b-924e-e325cc33080b",
+    "named_task_ids": [
+      "62963"
+    ],
+    "mention_task_ids": [
+      "62963"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inst_ablt_compnt_base_info",
+    "group": "05-系统应用与组件",
+    "description": "工具能力组件基础信息",
+    "description_source": "METADATA",
+    "metadata_id": 42110,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "516c1724-281e-4761-8de6-496349f17a73",
+    "named_task_ids": [
+      "234481",
+      "234484",
+      "234486",
+      "234483"
+    ],
+    "mention_task_ids": [
+      "234481",
+      "234484",
+      "234486",
+      "234483"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_inst_ablt_compnt_rela_h",
+    "group": "05-系统应用与组件",
+    "description": "工具能力组件关系历史",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "ee1f146d-29d7-410c-b33b-cd2bbc5a5db8",
+    "named_task_ids": [
+      "234480"
+    ],
+    "mention_task_ids": [
+      "234480"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_ipm_proj_base_info_s",
+    "group": "01-项目与业务安排",
+    "description": "IPM项目基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42111,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "63697a4b-0f51-43c0-b04f-4e2e461b286d",
+    "named_task_ids": [
+      "62988",
+      "76297",
+      "44814"
+    ],
+    "mention_task_ids": [
+      "62988",
+      "109758",
+      "109782",
+      "76297",
+      "44814"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_ipm_proj_menb_info",
+    "group": "01-项目与业务安排",
+    "description": "立项项目成员信息",
+    "description_source": "METADATA",
+    "metadata_id": 42112,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "326ac82d-efa7-43b7-a0c0-5d09e5723d9e",
+    "named_task_ids": [
+      "62897"
+    ],
+    "mention_task_ids": [
+      "62897"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_iqa_knwlg_qstn_info",
+    "group": "04-试卷知识与内容",
+    "description": "智能应答知识库问题信息",
+    "description_source": "METADATA",
+    "metadata_id": 42113,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "2502e138-044c-4627-aa0e-4fdf32449182",
+    "named_task_ids": [
+      "124122"
+    ],
+    "mention_task_ids": [
+      "132116",
+      "124122"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_it_dev_req_info",
+    "group": "02-需求任务与整改",
+    "description": "IT开发需求单信息",
+    "description_source": "METADATA",
+    "metadata_id": 42114,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3e500b29-143d-4984-a4a5-38552d4e186f",
+    "named_task_ids": [
+      "62998",
+      "62999",
+      "99325",
+      "62975"
+    ],
+    "mention_task_ids": [
+      "62998",
+      "62999",
+      "99325",
+      "62975",
+      "102707",
+      "110196",
+      "77754"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_jir_iss_link_info",
+    "group": "02-需求任务与整改",
+    "description": "jira issue链接信息",
+    "description_source": "METADATA",
+    "metadata_id": 42115,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d539f3b6-32d5-41f8-8835-aa38695e35fe",
+    "named_task_ids": [
+      "62876",
+      "45801"
+    ],
+    "mention_task_ids": [
+      "62876",
+      "102707",
+      "110193",
+      "134954",
+      "77754",
+      "45801"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_jir_ver_his_info",
+    "group": "02-需求任务与整改",
+    "description": "JIR版本历史信息表",
+    "description_source": "METADATA",
+    "metadata_id": 42116,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5fc71dff-228d-4ea9-82bd-8dc18b00b03c",
+    "named_task_ids": [
+      "62893",
+      "48591"
+    ],
+    "mention_task_ids": [
+      "62893",
+      "110207",
+      "48591"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_jira_base_info_s",
+    "group": "02-需求任务与整改",
+    "description": "jira任务基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42117,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b52045a6-dc94-4524-9bb6-2861cfee76e5",
+    "named_task_ids": [
+      "62958"
+    ],
+    "mention_task_ids": [
+      "62958",
+      "102707",
+      "109305",
+      "109782",
+      "110193",
+      "110196",
+      "110199",
+      "110307",
+      "134954",
+      "77754"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_jira_proj_module_info",
+    "group": "01-项目与业务安排",
+    "description": "JIRA项目模块信息",
+    "description_source": "METADATA",
+    "metadata_id": 42118,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "eac7f7d2-d75e-4e2e-8d39-b3f5ec3e5c95",
+    "named_task_ids": [
+      "167139"
+    ],
+    "mention_task_ids": [
+      "110196",
+      "167139"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_jira_task_lbl_info",
+    "group": "02-需求任务与整改",
+    "description": "JIRA任务标签信息",
+    "description_source": "CATALOG",
+    "metadata_id": 42119,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3af4bbb4-d0ff-4d5a-880d-a833141a0da2",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_kafka_tbl_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "KAFKA表附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42120,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3ce1dae1-d7e6-4164-91a3-a0108371f908",
+    "named_task_ids": [
+      "191459"
+    ],
+    "mention_task_ids": [
+      "137827",
+      "191459"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_knwlg_ans",
+    "group": "04-试卷知识与内容",
+    "description": "知识库答案",
+    "description_source": "METADATA",
+    "metadata_id": 42121,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "e79d6366-20b7-40cc-82ee-f29116e1430d",
+    "named_task_ids": [
+      "62951",
+      "50900"
+    ],
+    "mention_task_ids": [
+      "62951",
+      "50900"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_knwlg_ans_stat_h",
+    "group": "04-试卷知识与内容",
+    "description": "知识库答案状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 42124,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "98053615-e60f-4d15-87f7-dbd2569a02d1",
+    "named_task_ids": [
+      "63004"
+    ],
+    "mention_task_ids": [
+      "63004"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_knwlg_catlg",
+    "group": "04-试卷知识与内容",
+    "description": "知识库目录",
+    "description_source": "METADATA",
+    "metadata_id": 42125,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "eadd8f93-9313-4485-a72b-62d7afffb442",
+    "named_task_ids": [
+      "124123",
+      "128584"
+    ],
+    "mention_task_ids": [
+      "124123",
+      "128584"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_knwlg_qstn_list",
+    "group": "04-试卷知识与内容",
+    "description": "知识库问题清单",
+    "description_source": "METADATA",
+    "metadata_id": 42126,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "23894771-f131-4bb9-bc15-89d5cf95445e",
+    "named_task_ids": [
+      "62875",
+      "124121"
+    ],
+    "mention_task_ids": [
+      "128012",
+      "62875",
+      "124121"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_list_info",
+    "group": "07-产品池策略与名单",
+    "description": "名单信息",
+    "description_source": "METADATA",
+    "metadata_id": 42129,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "60877c69-be46-4552-a33a-4c5d45355ec8",
+    "named_task_ids": [
+      "138330"
+    ],
+    "mention_task_ids": [
+      "135392",
+      "138330"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_lms_col_adtnl_info",
+    "group": "04-试卷知识与内容",
+    "description": "爱学专栏附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "6b53513e-67d8-403d-9fa5-06d776dc3a84",
+    "named_task_ids": [
+      "224865"
+    ],
+    "mention_task_ids": [
+      "224865"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_long_scr_src_req_info",
+    "group": "02-需求任务与整改",
+    "description": "长期券源需求信息",
+    "description_source": "METADATA",
+    "metadata_id": 42130,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "90c8d306-82ba-4ef9-bad6-2c8e79fc7bf3",
+    "named_task_ids": [
+      "162659"
+    ],
+    "mention_task_ids": [
+      "162659"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_long_scr_src_req_term_det",
+    "group": "02-需求任务与整改",
+    "description": "长期券源需求期限明细",
+    "description_source": "METADATA",
+    "metadata_id": 42131,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "240dd7d6-4e63-431f-b7d5-743096bc3c14",
+    "named_task_ids": [
+      "162660"
+    ],
+    "mention_task_ids": [
+      "162660"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_meta_use_info",
+    "group": "06-数据资产与报表",
+    "description": "元数据使用说明信息",
+    "description_source": "METADATA",
+    "metadata_id": 42132,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "75be6b81-d2a1-400a-b7aa-4390b1322da8",
+    "named_task_ids": [
+      "135316"
+    ],
+    "mention_task_ids": [
+      "135316",
+      "137827"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_meta_user_cmnt",
+    "group": "06-数据资产与报表",
+    "description": "元数据用户评论",
+    "description_source": "METADATA",
+    "metadata_id": 42133,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1f03bde3-08ca-4be4-84a6-0348e4f9f7c9",
+    "named_task_ids": [
+      "135317"
+    ],
+    "mention_task_ids": [
+      "135317",
+      "137827"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_mio_mtrl_adtnl_info",
+    "group": "04-试卷知识与内容",
+    "description": "运营素材附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42134,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8908a042-19e9-4803-8940-b2e95c6f69f7",
+    "named_task_ids": [
+      "212673"
+    ],
+    "mention_task_ids": [
+      "212673"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_oao_quat_task_det",
+    "group": "02-需求任务与整改",
+    "description": "网上开户质检任务明细",
+    "description_source": "METADATA",
+    "metadata_id": 42135,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "03a9e1ff-237f-4057-9aa5-a7a7e979503a",
+    "named_task_ids": [
+      "100162"
+    ],
+    "mention_task_ids": [
+      "100162"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_otc_deri_prd_pool_adtnl_info",
+    "group": "07-产品池策略与名单",
+    "description": "场外衍生品产品池附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42136,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "fd8d5e2d-e412-470a-881a-85ffeba0fdc9",
+    "named_task_ids": [
+      "208592"
+    ],
+    "mention_task_ids": [
+      "208592"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_otc_doc_attach_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "OTC档案附件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42137,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "2b088334-8132-4a04-8067-b149d7131489",
+    "named_task_ids": [
+      "212663"
+    ],
+    "mention_task_ids": [
+      "212663"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_our_risk_qstn_corr_info",
+    "group": "02-需求任务与整改",
+    "description": "我司风险问题整改信息",
+    "description_source": "METADATA",
+    "metadata_id": 42138,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "85585d63-d231-4521-84d9-ce2cd590b121",
+    "named_task_ids": [
+      "209830",
+      "212173"
+    ],
+    "mention_task_ids": [
+      "209830",
+      "212173"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_our_risk_qstn_info",
+    "group": "02-需求任务与整改",
+    "description": "我司风险问题信息",
+    "description_source": "METADATA",
+    "metadata_id": 42139,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "52e8be31-be25-4498-b31c-02981e8d1150",
+    "named_task_ids": [
+      "209829",
+      "212172"
+    ],
+    "mention_task_ids": [
+      "209829",
+      "212172"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_papr_info",
+    "group": "04-试卷知识与内容",
+    "description": "试卷信息",
+    "description_source": "METADATA",
+    "metadata_id": 42140,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0a0a86dd-ef09-4e31-8729-49cde88b0799",
+    "named_task_ids": [
+      "156795",
+      "133742"
+    ],
+    "mention_task_ids": [
+      "156795",
+      "133742",
+      "161340"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_papr_qstn_rela_h",
+    "group": "04-试卷知识与内容",
+    "description": "试卷试题关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42141,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "9fccbda9-15e7-40b6-881b-0bd4e989a498",
+    "named_task_ids": [
+      "156794",
+      "133744"
+    ],
+    "mention_task_ids": [
+      "156794",
+      "133744",
+      "161339"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_papr_stat_h",
+    "group": "04-试卷知识与内容",
+    "description": "试卷状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 42142,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "389e3794-a3e5-4319-ae64-dc0d40b3d0be",
+    "named_task_ids": [
+      "133743",
+      "156793"
+    ],
+    "mention_task_ids": [
+      "133743",
+      "156793"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_papr_stru_strg",
+    "group": "04-试卷知识与内容",
+    "description": "试卷组题策略",
+    "description_source": "METADATA",
+    "metadata_id": 42143,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "c7e06082-5382-4995-b240-37ade71b92e7",
+    "named_task_ids": [
+      "143848"
+    ],
+    "mention_task_ids": [
+      "143848"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_papr_test_lvl_def",
+    "group": "04-试卷知识与内容",
+    "description": "试卷测评等级分值定义",
+    "description_source": "METADATA",
+    "metadata_id": 42144,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8c215a64-c79e-4fd1-a32c-1a603dd065da",
+    "named_task_ids": [
+      "62889"
+    ],
+    "mention_task_ids": [
+      "62889",
+      "161341"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_pc_msg_task_adtnl_info",
+    "group": "02-需求任务与整改",
+    "description": "推送中心短信任务附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42145,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "575bd980-fad9-45a0-ab3a-9f99875a3372",
+    "named_task_ids": [
+      "183955"
+    ],
+    "mention_task_ids": [
+      "183955"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_pc_msg_task_det",
+    "group": "02-需求任务与整改",
+    "description": "推送中心短信任务明细",
+    "description_source": "METADATA",
+    "metadata_id": 42146,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "e0d6dfb3-79a3-4fcd-a94d-03be53f780f0",
+    "named_task_ids": [
+      "183954"
+    ],
+    "mention_task_ids": [
+      "183954"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_prd_line_sys_plac_info",
+    "group": "05-系统应用与组件",
+    "description": "产品线系统配置信息",
+    "description_source": "METADATA",
+    "metadata_id": 42147,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "fd122051-74fb-49d9-9a8e-df6613392156",
+    "named_task_ids": [
+      "180827"
+    ],
+    "mention_task_ids": [
+      "180827"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_prd_pool_compnt_info",
+    "group": "07-产品池策略与名单",
+    "description": "产品池成分信息",
+    "description_source": "METADATA",
+    "metadata_id": 42148,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "2a8dfb02-4ed8-4dee-8cb3-1f51f054af7f",
+    "named_task_ids": [
+      "156849",
+      "55106"
+    ],
+    "mention_task_ids": [
+      "110348",
+      "156849",
+      "159558",
+      "159559",
+      "66074",
+      "98035",
+      "159561",
+      "172254",
+      "159277",
+      "160793",
+      "181665",
+      "196684",
+      "196859",
+      "202362",
+      "213969",
+      "55106"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_prd_pool_info",
+    "group": "07-产品池策略与名单",
+    "description": "产品池信息",
+    "description_source": "METADATA",
+    "metadata_id": 42149,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "87f49e85-2596-471e-9e2d-32f7df5728bf",
+    "named_task_ids": [
+      "156848",
+      "208593"
+    ],
+    "mention_task_ids": [
+      "156848",
+      "156851",
+      "208593",
+      "110350"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_prd_scr_pool_adtnl_info",
+    "group": "07-产品池策略与名单",
+    "description": "产品中心证券池附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42150,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1292e03b-3e8e-4873-9ce9-918436794b93",
+    "named_task_ids": [
+      "156851"
+    ],
+    "mention_task_ids": [
+      "156851"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_base_info",
+    "group": "01-项目与业务安排",
+    "description": "项目基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42151,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "e62c03f4-457c-4531-b200-2443831f81d7",
+    "named_task_ids": [
+      "125482",
+      "215827",
+      "234998",
+      "63005",
+      "75005",
+      "76586",
+      "85574",
+      "97905",
+      "62906",
+      "62917",
+      "62932",
+      "62939",
+      "162662",
+      "145618",
+      "75002"
+    ],
+    "mention_task_ids": [
+      "100819",
+      "100820",
+      "104211",
+      "123759",
+      "125482",
+      "131567",
+      "162667",
+      "170431",
+      "212664",
+      "215827",
+      "234998",
+      "63005",
+      "75005",
+      "76586",
+      "79463",
+      "85574",
+      "97905",
+      "62906",
+      "62917",
+      "62932",
+      "62939",
+      "102107",
+      "162662",
+      "162663",
+      "100932",
+      "62915",
+      "145618",
+      "47787",
+      "75002"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_emp_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目员工关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42156,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4da34d4c-e094-4473-a1e8-98340378d99b",
+    "named_task_ids": [
+      "215828",
+      "76582",
+      "90942",
+      "162665"
+    ],
+    "mention_task_ids": [
+      "215828",
+      "76582",
+      "90942",
+      "122867",
+      "162665",
+      "95088"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_fin_info",
+    "group": "01-项目与业务安排",
+    "description": "项目财务信息",
+    "description_source": "METADATA",
+    "metadata_id": 42157,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "de0ecb7e-b86b-4b3c-80e0-3c71b461baaf",
+    "named_task_ids": [
+      "79795"
+    ],
+    "mention_task_ids": [
+      "79795"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_inr_org_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42158,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5e827a64-f610-4cee-bc4b-d3cb3ed25911",
+    "named_task_ids": [
+      "76584",
+      "90941",
+      "62920",
+      "97909",
+      "162664"
+    ],
+    "mention_task_ids": [
+      "100821",
+      "104211",
+      "212666",
+      "76584",
+      "90941",
+      "62920",
+      "97909",
+      "127360",
+      "162664",
+      "95088",
+      "100934"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_mem_info",
+    "group": "01-项目与业务安排",
+    "description": "项目成员信息",
+    "description_source": "METADATA",
+    "metadata_id": 42159,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "f0e86e44-f55b-41fb-936c-630550a29650",
+    "named_task_ids": [
+      "102413",
+      "102414",
+      "215821",
+      "234999",
+      "62946"
+    ],
+    "mention_task_ids": [
+      "102413",
+      "102414",
+      "102415",
+      "215821",
+      "234999",
+      "62946"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_pty_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目当事人关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42160,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "80e48486-4850-4ca8-915a-8a074346c9c5",
+    "named_task_ids": [
+      "162666"
+    ],
+    "mention_task_ids": [
+      "100908",
+      "104211",
+      "212672",
+      "162666",
+      "100936"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_purch_info",
+    "group": "01-项目与业务安排",
+    "description": "项目采购项信息",
+    "description_source": "METADATA",
+    "metadata_id": 42161,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "353d5732-f562-42c8-a35c-19781ffac589",
+    "named_task_ids": [
+      "62918"
+    ],
+    "mention_task_ids": [
+      "62918"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42162,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "6d70cac9-e382-4a0c-bae6-33d4d7da3e2a",
+    "named_task_ids": [
+      "215824",
+      "76581"
+    ],
+    "mention_task_ids": [
+      "215824",
+      "76581"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_setp_info",
+    "group": "01-项目与业务安排",
+    "description": "项目立项信息",
+    "description_source": "METADATA",
+    "metadata_id": 42163,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0f0cea98-2661-4e6c-8b14-f214d64f9f9a",
+    "named_task_ids": [
+      "197402"
+    ],
+    "mention_task_ids": [
+      "102301",
+      "197402",
+      "217574",
+      "224440",
+      "238748",
+      "241139",
+      "242425",
+      "227369"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_stat_h",
+    "group": "01-项目与业务安排",
+    "description": "项目状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 42164,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b9c99bec-856d-49d1-b6f8-d873fc6d4b28",
+    "named_task_ids": [
+      "215823",
+      "76583",
+      "62919",
+      "162663",
+      "145619"
+    ],
+    "mention_task_ids": [
+      "100820",
+      "212664",
+      "215823",
+      "76583",
+      "62919",
+      "162663",
+      "212665",
+      "145619"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_stkhold_info",
+    "group": "01-项目与业务安排",
+    "description": "项目股东信息",
+    "description_source": "METADATA",
+    "metadata_id": 42165,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0ce1ce17-b6e5-4d96-ae2a-c4f66f4af684",
+    "named_task_ids": [
+      "80182"
+    ],
+    "mention_task_ids": [
+      "80182"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_proj_user_trc_rpt",
+    "group": "01-项目与业务安排",
+    "description": "项目用户跟进报告",
+    "description_source": "METADATA",
+    "metadata_id": 42166,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d7bdda61-80d4-45cd-af3c-ec9a8e4dfd0e",
+    "named_task_ids": [
+      "185099"
+    ],
+    "mention_task_ids": [
+      "185099"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_qh_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "乾和项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42167,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4ba30292-7c7e-4c04-8fb7-8bfae5652aed",
+    "named_task_ids": [
+      "76579"
+    ],
+    "mention_task_ids": [
+      "102414",
+      "76579",
+      "93414"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_qstn_ans",
+    "group": "04-试卷知识与内容",
+    "description": "试题答案",
+    "description_source": "METADATA",
+    "metadata_id": 42168,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d11e6dc4-6e97-441d-9db8-530a228a78e7",
+    "named_task_ids": [
+      "41196",
+      "62884",
+      "62981",
+      "133741",
+      "49120"
+    ],
+    "mention_task_ids": [
+      "41196",
+      "62884",
+      "62981",
+      "133741",
+      "161342",
+      "49120"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_qstn_info",
+    "group": "04-试卷知识与内容",
+    "description": "试题信息",
+    "description_source": "METADATA",
+    "metadata_id": 42169,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "e70a09fe-567a-4b56-94de-be049ac67886",
+    "named_task_ids": [
+      "41198",
+      "62972",
+      "62980",
+      "133740"
+    ],
+    "mention_task_ids": [
+      "41198",
+      "62972",
+      "62980",
+      "133740",
+      "161343"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_quat_plan",
+    "group": "02-需求任务与整改",
+    "description": "质检计划",
+    "description_source": "CATALOG",
+    "metadata_id": 42170,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a540da6b-2396-4187-89db-525a512d0154",
+    "named_task_ids": [
+      "228498"
+    ],
+    "mention_task_ids": [
+      "228498"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rdbms_db_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "RDBMS库附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42171,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "be7b9f65-e66f-4ce5-8db8-809d56b29554",
+    "named_task_ids": [
+      "222697"
+    ],
+    "mention_task_ids": [
+      "222697"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rdbms_tbl_adtnl_info",
+    "group": "06-数据资产与报表",
+    "description": "RDBMS表附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42172,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5216181c-6b5d-42b5-9f05-64ec9131cb78",
+    "named_task_ids": [
+      "135315"
+    ],
+    "mention_task_ids": [
+      "135315",
+      "137827"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_req_base_info_s",
+    "group": "02-需求任务与整改",
+    "description": "需求基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42173,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "001fb7da-6ba1-4d1c-81dd-e60882e3b78a",
+    "named_task_ids": [
+      "44127",
+      "44174",
+      "46578",
+      "49527",
+      "62871",
+      "62955",
+      "62976",
+      "62990",
+      "62996",
+      "99326",
+      "62974",
+      "168286",
+      "44813",
+      "45121"
+    ],
+    "mention_task_ids": [
+      "44127",
+      "44174",
+      "46578",
+      "49527",
+      "62871",
+      "62955",
+      "62976",
+      "62990",
+      "62996",
+      "99326",
+      "62932",
+      "62974",
+      "65931",
+      "66224",
+      "102707",
+      "109758",
+      "109782",
+      "110193",
+      "110196",
+      "168286",
+      "77754",
+      "44813",
+      "45121"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_req_proc_tplt_def_cond",
+    "group": "02-需求任务与整改",
+    "description": "需求流程模版定义条件",
+    "description_source": "METADATA",
+    "metadata_id": 42174,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5a589fb3-697a-4c43-902a-d1d1ac0f4f6e",
+    "named_task_ids": [
+      "207936"
+    ],
+    "mention_task_ids": [
+      "207936"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_req_proc_tplt_info",
+    "group": "02-需求任务与整改",
+    "description": "需求流程模版信息",
+    "description_source": "METADATA",
+    "metadata_id": 42175,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "66009212-c4b0-421a-84ae-c70ebf779d4c",
+    "named_task_ids": [
+      "207935"
+    ],
+    "mention_task_ids": [
+      "207935"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_req_rela",
+    "group": "02-需求任务与整改",
+    "description": "需求关系",
+    "description_source": "METADATA",
+    "metadata_id": 42176,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "7d85128e-aa7c-41a1-9bbc-3762da1bce62",
+    "named_task_ids": [
+      "62873",
+      "62877",
+      "62879",
+      "67710",
+      "167138",
+      "44935",
+      "45120",
+      "47203",
+      "57752"
+    ],
+    "mention_task_ids": [
+      "62873",
+      "62877",
+      "62879",
+      "67710",
+      "109766",
+      "109782",
+      "109815",
+      "110308",
+      "167138",
+      "44935",
+      "45120",
+      "47203",
+      "57752"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_res_item_info",
+    "group": "05-系统应用与组件",
+    "description": "资源项信息",
+    "description_source": "METADATA",
+    "metadata_id": 42177,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0fa5f83b-2a82-4970-af13-efd9d9631cec",
+    "named_task_ids": [
+      "212703"
+    ],
+    "mention_task_ids": [
+      "212703",
+      "203216",
+      "204521",
+      "204522"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_res_item_lbl_rela_h",
+    "group": "05-系统应用与组件",
+    "description": "资源项标签关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42178,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "456c5a2d-a8d4-47ea-bfaa-455ac9591ad0",
+    "named_task_ids": [
+      "212675"
+    ],
+    "mention_task_ids": [
+      "212675"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_res_item_stati_info_h",
+    "group": "05-系统应用与组件",
+    "description": "资源项统计信息历史",
+    "description_source": "METADATA",
+    "metadata_id": 42179,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "247ac125-5de2-46e1-abb1-d08d9ebada93",
+    "named_task_ids": [
+      "212676"
+    ],
+    "mention_task_ids": [
+      "212676"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rms_doc_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "投研文件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42180,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0104cae8-822d-40d0-84ef-ff6e776777db",
+    "named_task_ids": [
+      "136590"
+    ],
+    "mention_task_ids": [
+      "136590"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rpt_info",
+    "group": "06-数据资产与报表",
+    "description": "报表信息",
+    "description_source": "METADATA",
+    "metadata_id": 42181,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a5659dcc-713e-4afe-820e-70870f592388",
+    "named_task_ids": [
+      "220320"
+    ],
+    "mention_task_ids": [
+      "220320"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rpt_inr_org_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "报表内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42182,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d1b48c7b-3a6d-4f42-a107-2a7492054df0",
+    "named_task_ids": [
+      "220324"
+    ],
+    "mention_task_ids": [
+      "220324"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_rpt_user_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "报表用户关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42183,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "ad9a494c-beac-4b65-aff0-7fd3cc301fac",
+    "named_task_ids": [
+      "220323"
+    ],
+    "mention_task_ids": [
+      "220323"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seal_emp_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "印章员工关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42184,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b03f3c82-ec27-45fa-a061-f20011807256",
+    "named_task_ids": [
+      "84463"
+    ],
+    "mention_task_ids": [
+      "154894",
+      "64452",
+      "84463"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seal_info",
+    "group": "03-档案附件与印章",
+    "description": "印章基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42185,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "03606248-fbba-4f02-a0ce-a57d658ac397",
+    "named_task_ids": [
+      "84458"
+    ],
+    "mention_task_ids": [
+      "84458"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seal_inr_org_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "印章内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42186,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "07fb1702-63a7-47bb-8cd2-221417e04f66",
+    "named_task_ids": [
+      "84461"
+    ],
+    "mention_task_ids": [
+      "154894",
+      "64452",
+      "84461"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seal_stat_h",
+    "group": "03-档案附件与印章",
+    "description": "印章状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 42187,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "194a7351-c54f-470b-9cc1-bd8b615c2f72",
+    "named_task_ids": [
+      "84466"
+    ],
+    "mention_task_ids": [
+      "154894",
+      "64452",
+      "84466"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_ivst_strg",
+    "group": "01-项目与业务安排",
+    "description": "种子基金投资策略",
+    "description_source": "METADATA",
+    "metadata_id": 42188,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3d010bd0-e743-43be-b17b-4a5cdad0da7b",
+    "named_task_ids": [
+      "145623"
+    ],
+    "mention_task_ids": [
+      "145623"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_ivst_strg_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "种子基金投资策略关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42189,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d73a2f87-2537-42a9-ae73-edbd92bf817d",
+    "named_task_ids": [
+      "145624"
+    ],
+    "mention_task_ids": [
+      "145624"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_land_cnsdr_trc_info",
+    "group": "01-项目与业务安排",
+    "description": "种子基金落地对价跟踪信息",
+    "description_source": "METADATA",
+    "metadata_id": 42190,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8fb69636-c856-48f7-b53d-2871b497597b",
+    "named_task_ids": [
+      "145625"
+    ],
+    "mention_task_ids": [
+      "145625"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "种子基金项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42191,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "c36856af-00c8-47cc-a966-75ce69062020",
+    "named_task_ids": [
+      "145620"
+    ],
+    "mention_task_ids": [
+      "145620"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_proj_ivst_prd_ext_map_info",
+    "group": "01-项目与业务安排",
+    "description": "种子基金项目投资产品外部映射信息",
+    "description_source": "METADATA",
+    "metadata_id": 42192,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8226a647-895b-4277-b364-8b1665a9bc32",
+    "named_task_ids": [
+      "168232"
+    ],
+    "mention_task_ids": [
+      "190314",
+      "168232"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_seed_fnd_proj_ivst_prd_info",
+    "group": "01-项目与业务安排",
+    "description": "种子基金项目投资产品信息",
+    "description_source": "METADATA",
+    "metadata_id": 42193,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a13ff37f-7e19-4743-842b-7ebb0f3e7c29",
+    "named_task_ids": [
+      "145622"
+    ],
+    "mention_task_ids": [
+      "145622"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sis_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "股票发行项目补充信息",
+    "description_source": "METADATA",
+    "metadata_id": 42194,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "f732df87-dcdc-4a80-9550-e6f805f4c17e",
+    "named_task_ids": [
+      "62915",
+      "47787"
+    ],
+    "mention_task_ids": [
+      "62915",
+      "47787"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_srp_proj_setp_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "股票质押立项补充信息",
+    "description_source": "METADATA",
+    "metadata_id": 42195,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3ddda936-1a21-45e0-863f-02e504778553",
+    "named_task_ids": [
+      "197401"
+    ],
+    "mention_task_ids": [
+      "197401",
+      "217574",
+      "224440",
+      "238748",
+      "241139",
+      "242425",
+      "227369"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_srp_proj_setp_app_proc_adtnl_cust_info",
+    "group": "01-项目与业务安排",
+    "description": "股票质押立项申请流程附加客户信息",
+    "description_source": "METADATA",
+    "metadata_id": 42196,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "cf31629d-0462-4a45-b87f-bd4373707d01",
+    "named_task_ids": [
+      "155730"
+    ],
+    "mention_task_ids": [
+      "155730",
+      "217574",
+      "224440",
+      "238748",
+      "241139",
+      "242425",
+      "227369"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_strg_info",
+    "group": "07-产品池策略与名单",
+    "description": "策略信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "aeabc502-09c5-472c-96ff-6aa94e56f094",
+    "named_task_ids": [
+      "240240"
+    ],
+    "mention_task_ids": [
+      "190520",
+      "240240"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sys_func_info",
+    "group": "05-系统应用与组件",
+    "description": "系统功能信息",
+    "description_source": "METADATA",
+    "metadata_id": 42197,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b3bb5ab9-b99a-4a3d-8ccb-7914f669eb90",
+    "named_task_ids": [
+      "242362",
+      "242363",
+      "242364",
+      "242365",
+      "242366",
+      "242367",
+      "242699",
+      "247672"
+    ],
+    "mention_task_ids": [
+      "141254",
+      "242362",
+      "242363",
+      "242364",
+      "242365",
+      "242366",
+      "242367",
+      "242699",
+      "242368",
+      "242369",
+      "247672",
+      "247673"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sys_func_subdv",
+    "group": "05-系统应用与组件",
+    "description": "系统功能细项",
+    "description_source": "METADATA",
+    "metadata_id": 42198,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "56ab030e-94c7-4b4c-933a-6c9c9fcbb765",
+    "named_task_ids": [
+      "242361",
+      "247675"
+    ],
+    "mention_task_ids": [
+      "242361",
+      "247675",
+      "247677"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sys_info",
+    "group": "05-系统应用与组件",
+    "description": "系统信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "fbbdeec8-1f9a-4d74-b341-53570664d503",
+    "named_task_ids": [
+      "196126"
+    ],
+    "mention_task_ids": [
+      "196126"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sys_stati_info_h",
+    "group": "05-系统应用与组件",
+    "description": "系统统计信息历史",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "4b8ab3e9-797f-47be-963e-3a83ef96717a",
+    "named_task_ids": [
+      "244437"
+    ],
+    "mention_task_ids": [
+      "244437"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_sys_user_rela_h",
+    "group": "05-系统应用与组件",
+    "description": "系统用户关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42199,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "20023075-be3e-422a-aa1d-520076ec742c",
+    "named_task_ids": [
+      "196127"
+    ],
+    "mention_task_ids": [
+      "196127"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_base_info",
+    "group": "02-需求任务与整改",
+    "description": "任务基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42200,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "fe6d732d-8642-46c0-9e97-1eecd8b9a1fe",
+    "named_task_ids": [
+      "100158",
+      "183958",
+      "189123",
+      "113573",
+      "185010",
+      "247684"
+    ],
+    "mention_task_ids": [
+      "100158",
+      "132905",
+      "183958",
+      "189123",
+      "113573",
+      "110307",
+      "185010",
+      "246864",
+      "247684"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_inr_org_rela_h",
+    "group": "02-需求任务与整改",
+    "description": "任务内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42201,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "bbabad84-773c-4f84-8e14-3671746036e1",
+    "named_task_ids": [
+      "189120"
+    ],
+    "mention_task_ids": [
+      "189120"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_prom_rela_h",
+    "group": "02-需求任务与整改",
+    "description": "任务营销活动关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42202,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "aebcf3cd-52d5-406a-9fbe-5d923794eff4",
+    "named_task_ids": [
+      "189124"
+    ],
+    "mention_task_ids": [
+      "189124"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_rela_h",
+    "group": "02-需求任务与整改",
+    "description": "任务关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42203,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "37a52129-f874-4f51-beab-9d75001b0da2",
+    "named_task_ids": [
+      "113575",
+      "189127"
+    ],
+    "mention_task_ids": [
+      "113575",
+      "189127"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_stat_h",
+    "group": "02-需求任务与整改",
+    "description": "任务状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 42204,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4b3f5467-1d03-4914-9b83-80970a6c329e",
+    "named_task_ids": [
+      "189169"
+    ],
+    "mention_task_ids": [
+      "189169"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_stati_info_h",
+    "group": "02-需求任务与整改",
+    "description": "任务统计信息历史",
+    "description_source": "METADATA",
+    "metadata_id": 42205,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "ae92443d-ad48-472e-bc04-dfe78cfee8a4",
+    "named_task_ids": [],
+    "mention_task_ids": []
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_strg_rela_h",
+    "group": "02-需求任务与整改",
+    "description": "任务策略关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42206,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "3ceaea69-0dff-4459-bd70-2b1402b77e21",
+    "named_task_ids": [
+      "183957"
+    ],
+    "mention_task_ids": [
+      "183957"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_task_user_rela_h",
+    "group": "02-需求任务与整改",
+    "description": "任务用户关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42207,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b6a3e1d5-c09d-42c7-bcc0-8f62f2af82a0",
+    "named_task_ids": [
+      "100159",
+      "89048",
+      "189125"
+    ],
+    "mention_task_ids": [
+      "100159",
+      "89048",
+      "189125"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_tbl_fld_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "表字段关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42208,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "38063aa1-bfa9-4b9c-ae1e-36faf69a5012",
+    "named_task_ids": [
+      "227291"
+    ],
+    "mention_task_ids": [
+      "227291"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_tbl_info",
+    "group": "06-数据资产与报表",
+    "description": "表信息",
+    "description_source": "METADATA",
+    "metadata_id": 42209,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "58f67fef-626b-48c2-ba92-1730db9cb28d",
+    "named_task_ids": [
+      "113440",
+      "135313",
+      "191457",
+      "89038"
+    ],
+    "mention_task_ids": [
+      "113440",
+      "135313",
+      "137827",
+      "191457",
+      "89038",
+      "203216"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_tbl_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "表关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42210,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a1e30022-ce6b-4371-a898-42ed706ae8be",
+    "named_task_ids": [
+      "200740",
+      "191460",
+      "200737"
+    ],
+    "mention_task_ids": [
+      "200740",
+      "191460",
+      "200737"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_tbl_sys_rela_h",
+    "group": "06-数据资产与报表",
+    "description": "表系统关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 42211,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "87e189d1-c7a0-4596-aa50-8824cfae11c2",
+    "named_task_ids": [
+      "200743"
+    ],
+    "mention_task_ids": [
+      "137827",
+      "200743"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_test_case",
+    "group": "02-需求任务与整改",
+    "description": "测试用例",
+    "description_source": "METADATA",
+    "metadata_id": 42212,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "135749"
+    ],
+    "mention_task_ids": [
+      "135749",
+      "110308"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_test_plan",
+    "group": "02-需求任务与整改",
+    "description": "测试计划",
+    "description_source": "METADATA",
+    "metadata_id": 42213,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "135750"
+    ],
+    "mention_task_ids": [
+      "135750"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_test_plan_case_det_info",
+    "group": "02-需求任务与整改",
+    "description": "测试计划用例明细信息",
+    "description_source": "METADATA",
+    "metadata_id": 42214,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "135751"
+    ],
+    "mention_task_ids": [
+      "135751",
+      "110308"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_test_req_base_info",
+    "group": "02-需求任务与整改",
+    "description": "测试需求基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 42215,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "62968",
+      "48983"
+    ],
+    "mention_task_ids": [
+      "62968",
+      "110207",
+      "48983"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_test_req_modif_info",
+    "group": "02-需求任务与整改",
+    "description": "测试需求提测变更信息",
+    "description_source": "METADATA",
+    "metadata_id": 42216,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "62969"
+    ],
+    "mention_task_ids": [
+      "62969"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_tit_s3_attach_info",
+    "group": "03-档案附件与印章",
+    "description": "自营投管S3附件信息",
+    "description_source": "METADATA",
+    "metadata_id": 42217,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "f11b8cf2-78e2-4d44-adec-56f853e1c792",
+    "named_task_ids": [
+      "124870"
+    ],
+    "mention_task_ids": [
+      "124870"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_ver_test_req_rela",
+    "group": "02-需求任务与整改",
+    "description": "测试版本需求关联关系表",
+    "description_source": "METADATA",
+    "metadata_id": 42218,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": null,
+    "named_task_ids": [
+      "62970",
+      "48985"
+    ],
+    "mention_task_ids": [
+      "62970",
+      "110207",
+      "48985"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_xir_bnd_pool_adtnl_info",
+    "group": "07-产品池策略与名单",
+    "description": "恒泰债券池附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 42219,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "8edd99a1-a664-45f6-89ab-e9dcd6706a75",
+    "named_task_ids": [
+      "62960",
+      "55088"
+    ],
+    "mention_task_ids": [
+      "202362",
+      "62960",
+      "55088"
+    ]
+  },
+  {
+    "qualified_name": "pdata_n.t00_zapp_plant_topi_adtnl_info",
+    "group": "04-试卷知识与内容",
+    "description": "元始股星球主题附加信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "f1e601b2-8871-4309-b339-49c483280283",
+    "named_task_ids": [
+      "212999"
+    ],
+    "mention_task_ids": [
+      "212999"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_doc_evt_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "档案事件关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49184,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5bdb4500-eec4-4a98-b488-7f4ccdbb28e5",
+    "named_task_ids": [
+      "110545",
+      "192860"
+    ],
+    "mention_task_ids": [
+      "155995",
+      "192858",
+      "110545",
+      "192860",
+      "136764",
+      "136767",
+      "240053"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_doc_info",
+    "group": "03-档案附件与印章",
+    "description": "档案信息",
+    "description_source": "METADATA",
+    "metadata_id": 49185,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "4420dfb2-897a-4c8d-88c6-4e4129247c4f",
+    "named_task_ids": [
+      "110544",
+      "192948"
+    ],
+    "mention_task_ids": [
+      "110544",
+      "198088",
+      "136658",
+      "136762",
+      "136765",
+      "149022",
+      "155994",
+      "173978",
+      "192947",
+      "192948",
+      "197311"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_doc_inr_org_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "档案内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49186,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "17da75fc-6aa9-48ae-b946-fc13e1a8bcaa",
+    "named_task_ids": [
+      "110546"
+    ],
+    "mention_task_ids": [
+      "110546"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_doc_pty_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "档案当事人关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49187,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "38341a99-9f32-498f-8753-1c85956752bf",
+    "named_task_ids": [
+      "110548"
+    ],
+    "mention_task_ids": [
+      "110548"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_doc_user_rela_h",
+    "group": "03-档案附件与印章",
+    "description": "档案用户关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49188,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "070578f5-f9a1-4d46-96e5-552ff44194f3",
+    "named_task_ids": [
+      "110547"
+    ],
+    "mention_task_ids": [
+      "110547"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_bond_issue_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "投行债券发行项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 49189,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "d1b49e14-b9d6-487a-b671-4183064e6048",
+    "named_task_ids": [
+      "208401"
+    ],
+    "mention_task_ids": [
+      "208401"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_proj_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "投行项目附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 49190,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "aba4aaa1-9bb2-4bb0-bb37-91a300a28235",
+    "named_task_ids": [
+      "100907",
+      "212667",
+      "100935"
+    ],
+    "mention_task_ids": [
+      "100907",
+      "104211",
+      "131567",
+      "212667",
+      "100935"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_proj_imp_point_info",
+    "group": "01-项目与业务安排",
+    "description": "投行项目重要时点信息",
+    "description_source": "METADATA",
+    "metadata_id": 49191,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "cdc25f06-0b4e-4218-b514-7d665d7aaf0f",
+    "named_task_ids": [
+      "145857"
+    ],
+    "mention_task_ids": [
+      "145857"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_proj_inr_chk_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "投行项目内核补充信息",
+    "description_source": "METADATA",
+    "metadata_id": 49192,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "cb4abdd1-2cbc-4bc6-be7a-4d7a18909d46",
+    "named_task_ids": [
+      "102306"
+    ],
+    "mention_task_ids": [
+      "102306"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_proj_risk_invtg_det",
+    "group": "01-项目与业务安排",
+    "description": "投行项目风险排查明细",
+    "description_source": "METADATA",
+    "metadata_id": 49193,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "24920805-a342-46f4-8dce-715981ff57fd",
+    "named_task_ids": [
+      "154079"
+    ],
+    "mention_task_ids": [
+      "154079"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_ibs_proj_setp_adtnl_info",
+    "group": "01-项目与业务安排",
+    "description": "投行项目立项补充信息",
+    "description_source": "METADATA",
+    "metadata_id": 49194,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "85e05c70-ff9c-4255-ade0-03d6413c30d8",
+    "named_task_ids": [
+      "102303"
+    ],
+    "mention_task_ids": [
+      "102303"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_papr_info",
+    "group": "04-试卷知识与内容",
+    "description": "试卷信息",
+    "description_source": "METADATA",
+    "metadata_id": 49195,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "40d19b5a-792e-41a6-bccb-595c70b01be4",
+    "named_task_ids": [
+      "161340"
+    ],
+    "mention_task_ids": [
+      "156795",
+      "133742",
+      "161340"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_papr_qstn_rela_h",
+    "group": "04-试卷知识与内容",
+    "description": "试卷试题关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49196,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "1baaff05-e6c0-457b-9479-cbb092360518",
+    "named_task_ids": [
+      "161339"
+    ],
+    "mention_task_ids": [
+      "156794",
+      "133744",
+      "161339"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_papr_test_lvl_def",
+    "group": "04-试卷知识与内容",
+    "description": "试卷测评等级分值定义",
+    "description_source": "METADATA",
+    "metadata_id": 49197,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "f5a12a42-bf24-4d08-94df-7df5813d9925",
+    "named_task_ids": [
+      "161341"
+    ],
+    "mention_task_ids": [
+      "62889",
+      "161341"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_prd_pool_compnt_info",
+    "group": "07-产品池策略与名单",
+    "description": "产品池成分信息",
+    "description_source": "METADATA",
+    "metadata_id": 49198,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "0f472f5d-3bd8-426a-b40f-529f08f4982c",
+    "named_task_ids": [
+      "110348"
+    ],
+    "mention_task_ids": [
+      "110348",
+      "156849",
+      "159558",
+      "159559",
+      "66074",
+      "98035",
+      "159561",
+      "172254",
+      "159277",
+      "160793",
+      "181665",
+      "196684",
+      "196859",
+      "202362",
+      "213969",
+      "55106"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_prd_pool_info",
+    "group": "07-产品池策略与名单",
+    "description": "产品池信息",
+    "description_source": "METADATA",
+    "metadata_id": 49199,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "2f8b4180-879c-44b0-8e7f-20b6f90701f4",
+    "named_task_ids": [
+      "110350"
+    ],
+    "mention_task_ids": [
+      "156848",
+      "156851",
+      "208593",
+      "110350"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_base_info",
+    "group": "01-项目与业务安排",
+    "description": "项目基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 49200,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "dd891994-d8ce-4a42-95ea-ab937b87bdf2",
+    "named_task_ids": [
+      "100819",
+      "212664",
+      "100932"
+    ],
+    "mention_task_ids": [
+      "100819",
+      "100820",
+      "104211",
+      "123759",
+      "125482",
+      "131567",
+      "162667",
+      "170431",
+      "212664",
+      "215827",
+      "234998",
+      "63005",
+      "75005",
+      "76586",
+      "79463",
+      "85574",
+      "97905",
+      "62906",
+      "62917",
+      "62932",
+      "62939",
+      "102107",
+      "162662",
+      "162663",
+      "100932",
+      "62915",
+      "145618",
+      "47787",
+      "75002"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_inr_chk_info",
+    "group": "01-项目与业务安排",
+    "description": "项目内核信息",
+    "description_source": "METADATA",
+    "metadata_id": 49201,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b821fe31-5280-42a0-a52a-766d7800d83f",
+    "named_task_ids": [
+      "102304"
+    ],
+    "mention_task_ids": [
+      "102304"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_inr_org_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目内部机构关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49202,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "25789d56-42be-480f-afae-61711b1e6433",
+    "named_task_ids": [
+      "100821",
+      "212666",
+      "100934"
+    ],
+    "mention_task_ids": [
+      "100821",
+      "104211",
+      "212666",
+      "76584",
+      "90941",
+      "62920",
+      "97909",
+      "127360",
+      "162664",
+      "95088",
+      "100934"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_mem_info",
+    "group": "01-项目与业务安排",
+    "description": "项目成员信息",
+    "description_source": "METADATA",
+    "metadata_id": 49203,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "272bf353-40c9-414f-b503-7d64849ecde8",
+    "named_task_ids": [
+      "102415"
+    ],
+    "mention_task_ids": [
+      "102413",
+      "102414",
+      "102415",
+      "215821",
+      "234999",
+      "62946"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_pty_rela_h",
+    "group": "01-项目与业务安排",
+    "description": "项目当事人关系历史",
+    "description_source": "METADATA",
+    "metadata_id": 49204,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "838f89d3-84e7-479a-8434-7eb4fa6ef1e3",
+    "named_task_ids": [
+      "100908",
+      "212672",
+      "100936"
+    ],
+    "mention_task_ids": [
+      "100908",
+      "104211",
+      "212672",
+      "162666",
+      "100936"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_setp_info",
+    "group": "01-项目与业务安排",
+    "description": "项目立项信息",
+    "description_source": "METADATA",
+    "metadata_id": 49205,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "93816a04-e030-4d93-ba01-405aa7f43c4f",
+    "named_task_ids": [
+      "102301"
+    ],
+    "mention_task_ids": [
+      "102301",
+      "197402",
+      "217574",
+      "224440",
+      "238748",
+      "241139",
+      "242425",
+      "227369"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_proj_stat_h",
+    "group": "01-项目与业务安排",
+    "description": "项目状态历史",
+    "description_source": "METADATA",
+    "metadata_id": 49206,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "5efce7e4-d977-4d44-a38f-884960011a03",
+    "named_task_ids": [
+      "100820",
+      "212665"
+    ],
+    "mention_task_ids": [
+      "100820",
+      "212664",
+      "215823",
+      "76583",
+      "62919",
+      "162663",
+      "212665",
+      "145619"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_qstn_ans",
+    "group": "04-试卷知识与内容",
+    "description": "试题答案",
+    "description_source": "METADATA",
+    "metadata_id": 49207,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "c2b58388-c97b-4561-9a29-076129c5fee4",
+    "named_task_ids": [
+      "161342"
+    ],
+    "mention_task_ids": [
+      "41196",
+      "62884",
+      "62981",
+      "133741",
+      "161342",
+      "49120"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_qstn_info",
+    "group": "04-试卷知识与内容",
+    "description": "试题信息",
+    "description_source": "METADATA",
+    "metadata_id": 49208,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "42660d45-bb65-43d5-8cc0-5d7882534b4f",
+    "named_task_ids": [
+      "161343"
+    ],
+    "mention_task_ids": [
+      "41198",
+      "62972",
+      "62980",
+      "133740",
+      "161343"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_qtf_cta_strg_adtnl_info",
+    "group": "07-产品池策略与名单",
+    "description": "量化CTA策略附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 49209,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "a857f90a-6ad7-4f34-914b-f4da469f18ec",
+    "named_task_ids": [
+      "190521"
+    ],
+    "mention_task_ids": [
+      "190521"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_res_item_info",
+    "group": "05-系统应用与组件",
+    "description": "资源项信息",
+    "description_source": "METADATA",
+    "metadata_id": 49210,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "56faf2ca-a698-4f23-816a-46c1a48784ba",
+    "named_task_ids": [
+      "204521",
+      "204522"
+    ],
+    "mention_task_ids": [
+      "212703",
+      "203216",
+      "204521",
+      "204522"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_sb_bnd_pool_adtnl_info",
+    "group": "07-产品池策略与名单",
+    "description": "自营债券池附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 49211,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "bca090f1-9fd0-40f0-aec3-811b7f704941",
+    "named_task_ids": [
+      "110352"
+    ],
+    "mention_task_ids": [
+      "110352",
+      "159277",
+      "202362"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_sb_otc_trd_attach_adtnl_info",
+    "group": "03-档案附件与印章",
+    "description": "自营场外交易附件附加信息",
+    "description_source": "METADATA",
+    "metadata_id": 49212,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "b8571659-4b14-4afd-985f-c1e1b4033301",
+    "named_task_ids": [
+      "192859"
+    ],
+    "mention_task_ids": [
+      "192859"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_strg_info",
+    "group": "07-产品池策略与名单",
+    "description": "策略信息",
+    "description_source": "METADATA",
+    "metadata_id": 49213,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "028fc728-c830-478f-abd8-19407eaebc3f",
+    "named_task_ids": [
+      "190520"
+    ],
+    "mention_task_ids": [
+      "190520",
+      "240240"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_sys_func_info",
+    "group": "05-系统应用与组件",
+    "description": "系统功能信息",
+    "description_source": "CATALOG",
+    "metadata_id": null,
+    "platform": "hive",
+    "physical_source_alias": null,
+    "catalog_guid": "078ea449-7636-4f78-80d4-c1c4ee606f67",
+    "named_task_ids": [
+      "242368",
+      "242369"
+    ],
+    "mention_task_ids": [
+      "141254",
+      "242362",
+      "242363",
+      "242364",
+      "242365",
+      "242366",
+      "242367",
+      "242699",
+      "242368",
+      "242369",
+      "247672",
+      "247673"
+    ]
+  },
+  {
+    "qualified_name": "spdata_n.t00_task_base_info",
+    "group": "02-需求任务与整改",
+    "description": "任务基本信息",
+    "description_source": "METADATA",
+    "metadata_id": 49214,
+    "platform": "hive",
+    "physical_source_alias": "hive-source-4",
+    "catalog_guid": "db3fdc2d-32cb-4228-9d90-4be0153be754",
+    "named_task_ids": [],
+    "mention_task_ids": [
+      "100158",
+      "132905",
+      "183958",
+      "189123",
+      "113573",
+      "110307",
+      "185010",
+      "246864",
+      "247684"
+    ]
+  }
+]

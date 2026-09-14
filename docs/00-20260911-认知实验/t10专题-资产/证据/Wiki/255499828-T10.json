@@ -1,0 +1,21 @@
+[
+  {
+    "pageId": "255499828",
+    "title": "模型层主题划分",
+    "keyword": "T10",
+    "section": "1",
+    "readMode": "section_bundle",
+    "contentChars": 3032,
+    "returnedChars": 71,
+    "cacheHit": "Y",
+    "truncated": "Y",
+    "complete": "Y",
+    "content": "**十大主题**\n\n1. 机构\n2. 资产\n3. 财务\n4. 当事人\n5. 事件\n6. 协议\n7. 产品\n8. 渠道\n9. 营销\n10. 区域",
+    "relatedSections": [
+      "2"
+    ],
+    "contentHash": "274abff67fe6ef11c907dbbcd7f39005404f2a39e84575af483c08bc16b0b0b0",
+    "source": "remote_wiki_mcp_page",
+    "limitations": "Complete selected section bundle from the sanitized page cache."
+  }
+]

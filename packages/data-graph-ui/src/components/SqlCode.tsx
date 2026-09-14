@@ -13,9 +13,11 @@ export function highlightSql(source: string): string {
 export function SqlCode({
   source,
   label = "SQL",
+  compact = false,
 }: {
   source: string;
   label?: string;
+  compact?: boolean;
 }) {
   const [copyState, setCopyState] = useState("");
   useEffect(() => {
@@ -37,6 +39,16 @@ export function SqlCode({
       setCopyState("复制失败，请选中 SQL 手动复制");
     }
   }
+  const code =
+    highlighted === undefined ? (
+      <code>{source}</code>
+    ) : (
+      <code
+        className="hljs language-sql"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    );
+  if (compact) return <pre className="sql-fragment">{code}</pre>;
   return (
     <div className="sql-viewer">
       <div className="sql-toolbar">
@@ -60,16 +72,7 @@ export function SqlCode({
         <pre className="sql-line-numbers" aria-hidden="true">
           {Array.from({ length: lines }, (_, index) => index + 1).join("\n")}
         </pre>
-        <pre className="sql-source">
-          {highlighted === undefined ? (
-            <code>{source}</code>
-          ) : (
-            <code
-              className="hljs language-sql"
-              dangerouslySetInnerHTML={{ __html: highlighted }}
-            />
-          )}
-        </pre>
+        <pre className="sql-source">{code}</pre>
       </div>
     </div>
   );

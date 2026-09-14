@@ -1,0 +1,997 @@
+{
+  "task_id": "105812",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.974Z",
+  "payload_sha256": "effbe247e80d57fd665a0fe26dc95032d54613336bc7e0799cd429b85de0a839",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_ORD("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Agt_Cate_Cd                STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Agt_Type_Cd                STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Ord_Cate_Cd                STRING COMMENT '订单类别代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Ord_Type_Cd                STRING COMMENT '订单类型代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Ord_Holder                 STRING COMMENT '订单持有人'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Ord_Stat_Cd                STRING COMMENT '订单状态代码'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Appr_Time                  STRING COMMENT '审核时间'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Pay_Method                 STRING COMMENT '支付方式'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Pay_Src                    STRING COMMENT '支付来源'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Appr_User                  STRING COMMENT '审核用户'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Recv_User                  STRING COMMENT '接收用户'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Del_Date                   STRING COMMENT '删除日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 31,
+      "text": ")COMMENT '订单'"
+    },
+    {
+      "line": 32,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT '源表')"
+    },
+    {
+      "line": 33,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 34,
+      "text": ""
+    },
+    {
+      "line": 35,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T03_ORD_TEMP_PRD022;"
+    },
+    {
+      "line": 36,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T03_ORD_TEMP_PRD022"
+    },
+    {
+      "line": 37,
+      "text": "AS"
+    },
+    {
+      "line": 38,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 39,
+      "text": "--GROUP13: SOURCE TABLE:[ODATA_N_PRD.P_INSURANCE_ORDER: 保险产品订单表]"
+    },
+    {
+      "line": 40,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 41,
+      "text": "SELECT"
+    },
+    {
+      "line": 42,
+      "text": "     ID                                       AS  Agt_Id                  --协议编号    "
+    },
+    {
+      "line": 43,
+      "text": "    ,'2040210'                                AS  Agt_Modifr              --协议修饰符  "
+    },
+    {
+      "line": 44,
+      "text": "    ,'204'                                    AS  Agt_Cate_Cd             --协议类别代码"
+    },
+    {
+      "line": 45,
+      "text": "    ,'2040210'                                AS  Agt_Type_Cd             --协议类型代码"
+    },
+    {
+      "line": 46,
+      "text": "    ,'insure_ord'                             AS  Ord_Cate_Cd             --订单类别代码"
+    },
+    {
+      "line": 47,
+      "text": "    ,''                                       AS  Ord_Type_Cd             --订单类型代码"
+    },
+    {
+      "line": 48,
+      "text": "    ,LPAD(CLIENT_ID,12,'0')                   AS  Ord_Holder              --订单持有人  "
+    },
+    {
+      "line": 49,
+      "text": "    ,NVL(DW_CD_VAL,STATUS)                    AS  Ord_Stat_Cd             --订单状态代码"
+    },
+    {
+      "line": 50,
+      "text": "    ,CREATED_AT                               AS  Create_Time             --创建时间                 "
+    },
+    {
+      "line": 51,
+      "text": "    ,''                                       AS  Appr_Time               --审核时间"
+    },
+    {
+      "line": 52,
+      "text": "    ,''                                       AS  Pay_Method              --支付方式"
+    },
+    {
+      "line": 53,
+      "text": "    ,''                                       AS  Pay_Src                 --支付来源"
+    },
+    {
+      "line": 54,
+      "text": "    ,''                                       AS  Appr_User               --审核用户"
+    },
+    {
+      "line": 55,
+      "text": "    ,''                                       AS  Recv_User               --接收用户"
+    },
+    {
+      "line": 56,
+      "text": "    ,'${data_src_cd}'                    AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 57,
+      "text": "    ,'${src_table}'                      AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 58,
+      "text": "    ,'${filename}'                       AS  Task_Name               --任务名"
+    },
+    {
+      "line": 59,
+      "text": "    ,'${data_day_str}'                   AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 60,
+      "text": "    ,'${data_day_str}'                   AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 61,
+      "text": "FROM  (SELECT * FROM ${src_table}  WHERE BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 62,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 63,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 64,
+      "text": "          FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 65,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_ORD'"
+    },
+    {
+      "line": 66,
+      "text": "             AND TGT_TAB_FLD  = 'Ord_Stat_Cd'"
+    },
+    {
+      "line": 67,
+      "text": "             AND SRC_TAB_NAME = 'INSURANCE_ORDER'"
+    },
+    {
+      "line": 68,
+      "text": "             AND SRC_FLD_NAME = 'STATUS'"
+    },
+    {
+      "line": 69,
+      "text": "             AND SRC_SYS_NAME='PRD')B"
+    },
+    {
+      "line": 70,
+      "text": "      ON      A.STATUS =B.SRC_CD_VAL                  --STATUS 转码"
+    },
+    {
+      "line": 71,
+      "text": ";"
+    },
+    {
+      "line": 72,
+      "text": ""
+    },
+    {
+      "line": 73,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T03_ORD_MID_PRD022;"
+    },
+    {
+      "line": 74,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T03_ORD_MID_PRD022"
+    },
+    {
+      "line": 75,
+      "text": "AS"
+    },
+    {
+      "line": 76,
+      "text": "SELECT"
+    },
+    {
+      "line": 77,
+      "text": "         A.*"
+    },
+    {
+      "line": 78,
+      "text": "        ,B.Agt_Id                     AS Agt_Id1                   --协议编号"
+    },
+    {
+      "line": 79,
+      "text": "        ,B.Agt_Modifr                 AS Agt_Modifr1               --协议修饰符"
+    },
+    {
+      "line": 80,
+      "text": "        ,B.Agt_Cate_Cd                AS Agt_Cate_Cd1              --协议类别代码"
+    },
+    {
+      "line": 81,
+      "text": "        ,B.Agt_Type_Cd                AS Agt_Type_Cd1              --协议类型代码"
+    },
+    {
+      "line": 82,
+      "text": "        ,B.Ord_Cate_Cd                AS Ord_Cate_Cd1              --订单类别代码"
+    },
+    {
+      "line": 83,
+      "text": "        ,B.Ord_Type_Cd                AS Ord_Type_Cd1              --订单类型代码"
+    },
+    {
+      "line": 84,
+      "text": "        ,B.Ord_Holder                 AS Ord_Holder1               --订单持有人"
+    },
+    {
+      "line": 85,
+      "text": "        ,B.Ord_Stat_Cd                AS Ord_Stat_Cd1              --订单状态代码"
+    },
+    {
+      "line": 86,
+      "text": "        ,B.Create_Time                AS Create_Time1              --创建时间"
+    },
+    {
+      "line": 87,
+      "text": "        ,B.Appr_Time                  AS Appr_Time1                --审核时间"
+    },
+    {
+      "line": 88,
+      "text": "        ,B.Pay_Method                 AS Pay_Method1               --支付方式"
+    },
+    {
+      "line": 89,
+      "text": "        ,B.Pay_Src                    AS Pay_Src1                  --支付来源"
+    },
+    {
+      "line": 90,
+      "text": "        ,B.Appr_User                  AS Appr_User1                --审核用户"
+    },
+    {
+      "line": 91,
+      "text": "        ,B.Recv_User                  AS Recv_User1                --接收用户"
+    },
+    {
+      "line": 92,
+      "text": "        ,B.DATA_SRC_CD                AS DATA_SRC_CD1              --数据来源代码"
+    },
+    {
+      "line": 93,
+      "text": "        ,B.SRC_TBL                    AS SRC_TBL1                  --源表"
+    },
+    {
+      "line": 94,
+      "text": "        ,B.TASK_NAME                  AS TASK_NAME1                --任务名"
+    },
+    {
+      "line": 95,
+      "text": "        ,B.DATA_ETL_DATE              AS DATA_ETL_DATE1            --数据加载日期"
+    },
+    {
+      "line": 96,
+      "text": "        ,B.DATA_UPT_DATE              AS DATA_UPT_DATE1            --数据更新日期"
+    },
+    {
+      "line": 97,
+      "text": "        ,CASE WHEN A.Agt_Id IS NULL     AND B.Agt_Id IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 98,
+      "text": "              WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 99,
+      "text": "              WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id IS NOT NULL AND ("
+    },
+    {
+      "line": 100,
+      "text": "                     COALESCE(A.Agt_Cate_Cd             ,'') <> COALESCE(B.Agt_Cate_Cd             ,'')"
+    },
+    {
+      "line": 101,
+      "text": "                  OR COALESCE(A.Agt_Type_Cd             ,'') <> COALESCE(B.Agt_Type_Cd             ,'')"
+    },
+    {
+      "line": 102,
+      "text": "                  OR COALESCE(A.Ord_Cate_Cd             ,'') <> COALESCE(B.Ord_Cate_Cd             ,'')"
+    },
+    {
+      "line": 103,
+      "text": "                  OR COALESCE(A.Ord_Type_Cd             ,'') <> COALESCE(B.Ord_Type_Cd             ,'')"
+    },
+    {
+      "line": 104,
+      "text": "                  OR COALESCE(A.Ord_Holder              ,'') <> COALESCE(B.Ord_Holder              ,'')"
+    },
+    {
+      "line": 105,
+      "text": "                  OR COALESCE(A.Ord_Stat_Cd             ,'') <> COALESCE(B.Ord_Stat_Cd             ,'')"
+    },
+    {
+      "line": 106,
+      "text": "                  OR COALESCE(A.Create_Time             ,'') <> COALESCE(B.Create_Time             ,'')"
+    },
+    {
+      "line": 107,
+      "text": "                  OR COALESCE(A.Appr_Time               ,'') <> COALESCE(B.Appr_Time               ,'')"
+    },
+    {
+      "line": 108,
+      "text": "                  OR COALESCE(A.Pay_Method              ,'') <> COALESCE(B.Pay_Method              ,'')"
+    },
+    {
+      "line": 109,
+      "text": "                  OR COALESCE(A.Pay_Src                 ,'') <> COALESCE(B.Pay_Src                 ,'')"
+    },
+    {
+      "line": 110,
+      "text": "                  OR COALESCE(A.Appr_User               ,'') <> COALESCE(B.Appr_User               ,'')"
+    },
+    {
+      "line": 111,
+      "text": "                  OR COALESCE(A.Recv_User               ,'') <> COALESCE(B.Recv_User               ,'')"
+    },
+    {
+      "line": 112,
+      "text": "             ) THEN 'U' --变更"
+    },
+    {
+      "line": 113,
+      "text": "             ELSE 'S' --无变更"
+    },
+    {
+      "line": 114,
+      "text": "             END                 AS DATA_TYPE              --数据类型"
+    },
+    {
+      "line": 115,
+      "text": "FROM  (SELECT * FROM T03_ORD "
+    },
+    {
+      "line": 116,
+      "text": "                WHERE SRC_TBL='ODATA_N_PRD.P_INSURANCE_ORDER')A"
+    },
+    {
+      "line": 117,
+      "text": "FULL OUTER JOIN ${DB_TEMP}.T03_ORD_TEMP_PRD022 B"
+    },
+    {
+      "line": 118,
+      "text": "ON    A.Agt_Id=B.Agt_Id"
+    },
+    {
+      "line": 119,
+      "text": "AND   A.Agt_Modifr=B.Agt_Modifr"
+    },
+    {
+      "line": 120,
+      "text": ";"
+    },
+    {
+      "line": 121,
+      "text": ""
+    },
+    {
+      "line": 122,
+      "text": "-- querySql"
+    },
+    {
+      "line": 123,
+      "text": "INSERT OVERWRITE TABLE T03_ORD PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 124,
+      "text": " --剔除当日新增的数据"
+    },
+    {
+      "line": 125,
+      "text": "SELECT"
+    },
+    {
+      "line": 126,
+      "text": "      *"
+    },
+    {
+      "line": 127,
+      "text": "  FROM T03_ORD"
+    },
+    {
+      "line": 128,
+      "text": "  WHERE DATA_ETL_DATE !='${data_day_str}' "
+    },
+    {
+      "line": 129,
+      "text": "    AND SRC_TBL = 'ODATA_N_PRD.P_INSURANCE_ORDER'"
+    },
+    {
+      "line": 130,
+      "text": ";"
+    },
+    {
+      "line": 131,
+      "text": ""
+    },
+    {
+      "line": 132,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 133,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 134,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 135,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 136,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 137,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 138,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 139,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 140,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 141,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 142,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 143,
+      "text": ""
+    },
+    {
+      "line": 144,
+      "text": "INSERT OVERWRITE TABLE T03_ORD PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 145,
+      "text": "SELECT"
+    },
+    {
+      "line": 146,
+      "text": "     Agt_Id                                        --协议编号"
+    },
+    {
+      "line": 147,
+      "text": "    ,Agt_Modifr                                    --协议修饰符"
+    },
+    {
+      "line": 148,
+      "text": "    ,Agt_Cate_Cd                                   --协议类别代码"
+    },
+    {
+      "line": 149,
+      "text": "    ,Agt_Type_Cd                                   --协议类型代码"
+    },
+    {
+      "line": 150,
+      "text": "    ,Ord_Cate_Cd                                   --订单类别代码"
+    },
+    {
+      "line": 151,
+      "text": "    ,Ord_Type_Cd                                   --订单类型代码"
+    },
+    {
+      "line": 152,
+      "text": "    ,Ord_Holder                                    --订单持有人"
+    },
+    {
+      "line": 153,
+      "text": "    ,Ord_Stat_Cd                                   --订单状态代码"
+    },
+    {
+      "line": 154,
+      "text": "    ,Create_Time                                   --创建时间"
+    },
+    {
+      "line": 155,
+      "text": "    ,Appr_Time                                     --审核时间"
+    },
+    {
+      "line": 156,
+      "text": "    ,Pay_Method                                    --支付方式"
+    },
+    {
+      "line": 157,
+      "text": "    ,Pay_Src                                       --支付来源"
+    },
+    {
+      "line": 158,
+      "text": "    ,Appr_User                                     --审核用户"
+    },
+    {
+      "line": 159,
+      "text": "    ,Recv_User                                     --接收用户"
+    },
+    {
+      "line": 160,
+      "text": "    ,'0'                     AS Del_Flag           --删除标志"
+    },
+    {
+      "line": 161,
+      "text": "    ,''                      AS Del_Date           --删除日期"
+    },
+    {
+      "line": 162,
+      "text": "    ,Data_Src_Cd                                   --数据来源代码"
+    },
+    {
+      "line": 163,
+      "text": "    ,Task_Name                                     --任务名"
+    },
+    {
+      "line": 164,
+      "text": "    ,Data_Etl_Date                                 --数据加载日期"
+    },
+    {
+      "line": 165,
+      "text": "    ,Data_Upt_Date                                 --数据更新日期"
+    },
+    {
+      "line": 166,
+      "text": "    ,Data_Time                                     --数据时间"
+    },
+    {
+      "line": 167,
+      "text": "    ,Src_Tbl                                       --源表"
+    },
+    {
+      "line": 168,
+      "text": "FROM ${DB_TEMP}.T03_ORD_MID_PRD022 WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 169,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 170,
+      "text": "SELECT"
+    },
+    {
+      "line": 171,
+      "text": "     Agt_Id1                                      AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 172,
+      "text": "    ,Agt_Modifr1                                  AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 173,
+      "text": "    ,Agt_Cate_Cd1                                 AS Agt_Cate_Cd              --协议类别代码"
+    },
+    {
+      "line": 174,
+      "text": "    ,Agt_Type_Cd1                                 AS Agt_Type_Cd              --协议类型代码"
+    },
+    {
+      "line": 175,
+      "text": "    ,Ord_Cate_Cd1                                 AS Ord_Cate_Cd              --订单类别代码"
+    },
+    {
+      "line": 176,
+      "text": "    ,Ord_Type_Cd1                                 AS Ord_Type_Cd              --订单类型代码"
+    },
+    {
+      "line": 177,
+      "text": "    ,Ord_Holder1                                  AS Ord_Holder               --订单持有人"
+    },
+    {
+      "line": 178,
+      "text": "    ,Ord_Stat_Cd1                                 AS Ord_Stat_Cd              --订单状态代码"
+    },
+    {
+      "line": 179,
+      "text": "    ,Create_Time1                                 AS Create_Time              --创建时间"
+    },
+    {
+      "line": 180,
+      "text": "    ,Appr_Time1                                   AS Appr_Time                --审核时间"
+    },
+    {
+      "line": 181,
+      "text": "    ,Pay_Method1                                  AS Pay_Method               --支付方式"
+    },
+    {
+      "line": 182,
+      "text": "    ,Pay_Src1                                     AS Pay_Src                  --支付来源"
+    },
+    {
+      "line": 183,
+      "text": "    ,Appr_User1                                   AS Appr_User                --审核用户"
+    },
+    {
+      "line": 184,
+      "text": "    ,Recv_User1                                   AS Recv_User                --接收用户"
+    },
+    {
+      "line": 185,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 186,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 187,
+      "text": "    ,Data_Src_Cd1                                 AS Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 188,
+      "text": "    ,Task_Name1                                   AS Task_Name                --任务名"
+    },
+    {
+      "line": 189,
+      "text": "    ,Data_Etl_Date                                AS Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 190,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 191,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 192,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 193,
+      "text": "FROM ${DB_TEMP}.T03_ORD_MID_PRD022  WHERE DATA_TYPE='U'   --有变更的数据取变更的值"
+    },
+    {
+      "line": 194,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 195,
+      "text": "SELECT"
+    },
+    {
+      "line": 196,
+      "text": "     Agt_Id1                                      AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 197,
+      "text": "    ,Agt_Modifr1                                  AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 198,
+      "text": "    ,Agt_Cate_Cd1                                 AS Agt_Cate_Cd              --协议类别代码"
+    },
+    {
+      "line": 199,
+      "text": "    ,Agt_Type_Cd1                                 AS Agt_Type_Cd              --协议类型代码"
+    },
+    {
+      "line": 200,
+      "text": "    ,Ord_Cate_Cd1                                 AS Ord_Cate_Cd              --订单类别代码"
+    },
+    {
+      "line": 201,
+      "text": "    ,Ord_Type_Cd1                                 AS Ord_Type_Cd              --订单类型代码"
+    },
+    {
+      "line": 202,
+      "text": "    ,Ord_Holder1                                  AS Ord_Holder               --订单持有人"
+    },
+    {
+      "line": 203,
+      "text": "    ,Ord_Stat_Cd1                                 AS Ord_Stat_Cd              --订单状态代码"
+    },
+    {
+      "line": 204,
+      "text": "    ,Create_Time1                                 AS Create_Time              --创建时间"
+    },
+    {
+      "line": 205,
+      "text": "    ,Appr_Time1                                   AS Appr_Time                --审核时间"
+    },
+    {
+      "line": 206,
+      "text": "    ,Pay_Method1                                  AS Pay_Method               --支付方式"
+    },
+    {
+      "line": 207,
+      "text": "    ,Pay_Src1                                     AS Pay_Src                  --支付来源"
+    },
+    {
+      "line": 208,
+      "text": "    ,Appr_User1                                   AS Appr_User                --审核用户"
+    },
+    {
+      "line": 209,
+      "text": "    ,Recv_User1                                   AS Recv_User                --接收用户"
+    },
+    {
+      "line": 210,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 211,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 212,
+      "text": "    ,Data_Src_Cd1                                 As Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 213,
+      "text": "    ,Task_Name1                                   As Task_Name                --任务名"
+    },
+    {
+      "line": 214,
+      "text": "    ,Data_Etl_Date1                               As Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 215,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 216,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 217,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 218,
+      "text": "FROM ${DB_TEMP}.T03_ORD_MID_PRD022  WHERE DATA_TYPE='I'   --插入新增的数据"
+    },
+    {
+      "line": 219,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 220,
+      "text": "SELECT"
+    },
+    {
+      "line": 221,
+      "text": "     Agt_Id                                                  --协议编号"
+    },
+    {
+      "line": 222,
+      "text": "    ,Agt_Modifr                                              --协议修饰符"
+    },
+    {
+      "line": 223,
+      "text": "    ,Agt_Cate_Cd                                             --协议类别代码"
+    },
+    {
+      "line": 224,
+      "text": "    ,Agt_Type_Cd                                             --协议类型代码"
+    },
+    {
+      "line": 225,
+      "text": "    ,Ord_Cate_Cd                                             --订单类别代码"
+    },
+    {
+      "line": 226,
+      "text": "    ,Ord_Type_Cd                                             --订单类型代码"
+    },
+    {
+      "line": 227,
+      "text": "    ,Ord_Holder                                              --订单持有人"
+    },
+    {
+      "line": 228,
+      "text": "    ,Ord_Stat_Cd                                             --订单状态代码"
+    },
+    {
+      "line": 229,
+      "text": "    ,Create_Time                                             --创建时间"
+    },
+    {
+      "line": 230,
+      "text": "    ,Appr_Time                                               --审核时间"
+    },
+    {
+      "line": 231,
+      "text": "    ,Pay_Method                                              --支付方式"
+    },
+    {
+      "line": 232,
+      "text": "    ,Pay_Src                                                 --支付来源"
+    },
+    {
+      "line": 233,
+      "text": "    ,Appr_User                                               --审核用户"
+    },
+    {
+      "line": 234,
+      "text": "    ,Recv_User                                               --接收用户"
+    },
+    {
+      "line": 235,
+      "text": "    ,'1'                              AS Del_Flag            --删除标志"
+    },
+    {
+      "line": 236,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 237,
+      "text": "            THEN Del_Date"
+    },
+    {
+      "line": 238,
+      "text": "          ELSE '${data_day_str}'"
+    },
+    {
+      "line": 239,
+      "text": "          END                         AS Del_Date            --删除日期"
+    },
+    {
+      "line": 240,
+      "text": "     ,Data_Src_Cd                                            --数据来源代码"
+    },
+    {
+      "line": 241,
+      "text": "     ,Task_Name                                              --任务名"
+    },
+    {
+      "line": 242,
+      "text": "     ,Data_Etl_Date                                          --数据加载日期"
+    },
+    {
+      "line": 243,
+      "text": "     ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 244,
+      "text": "           THEN Data_Upt_Date"
+    },
+    {
+      "line": 245,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 246,
+      "text": "          END                         AS Data_Upt_Date       --数据更新日期"
+    },
+    {
+      "line": 247,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 248,
+      "text": "            THEN Data_Time"
+    },
+    {
+      "line": 249,
+      "text": "          ELSE '${data_today}'"
+    },
+    {
+      "line": 250,
+      "text": "          END                         AS Data_Time           --数据时间"
+    },
+    {
+      "line": 251,
+      "text": "    ,Src_Tbl                                                 --源表"
+    },
+    {
+      "line": 252,
+      "text": "FROM ${DB_TEMP}.T03_ORD_MID_PRD022 WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 253,
+      "text": ";"
+    },
+    {
+      "line": 254,
+      "text": ""
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "checked_at": "2026-09-14T03:56:45.438Z",
+  "scope": "T00 generated documentation and selected evidence only",
+  "checks": {
+    "markdown": 33,
+    "json": 11,
+    "sql_files": 54,
+    "checked_local_links": 366,
+    "json_parse": "PASS",
+    "local_file_links": "PASS",
+    "count_reconciliation": "PASS",
+    "selected_sql_matches_sanitized_original": "PASS",
+    "source_sqlite_read_only": true,
+    "internal_endpoint_scan": "PASS",
+    "top_level_entry": "PASS"
+  },
+  "counts": {
+    "physical_records": 311,
+    "core_metadata_records": 199,
+    "core_fields": 4186,
+    "core_name_union": 211,
+    "catalog_assets": 255,
+    "catalog_only_names": 12,
+    "metadata_only_names": 7,
+    "sql_candidates": 619,
+    "selected_sql": 54
+  },
+  "limitations": [
+    "No application source code changed or executed",
+    "No business-row uniqueness or runtime verification",
+    "Markdown diagrams inspected as source; not rendered",
+    "Existing non-T00 documentation links were not repaired"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-09-04T22:58:53.454Z",
+  "rows": [
+    {
+      "task_id": "236449",
+      "task_name": "gfedw.erp_fix_ast_ast_nature",
+      "topic_name": "DM_FIN_N",
+      "direction": "下游",
+      "total": 1
+    }
+  ]
+}

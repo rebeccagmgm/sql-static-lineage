@@ -1,0 +1,815 @@
+{
+  "task_id": 122239,
+  "observed_at": "2026-09-05T01:06:49.010Z",
+  "payload_sha256": "1ccdae7af2d77110202cb112fb2b8d31c01b5663d0485e2eac61807783f49e33",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_DERI_AGT_RELA_ADTNL_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Book_Agt_Id                STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Book_Agt_Modifr            STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Agt_Rela_Type_Cd           STRING COMMENT '协议关系类型代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Strt_Date                  STRING COMMENT '开始日期'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Rela_Book_Agt_Id           STRING COMMENT '关联协议编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Rela_Book_Agt_Modifr       STRING COMMENT '关联协议修饰符'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Prft_Dir_Tran_Cd           STRING COMMENT '盈亏方向转换代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,End_Date                   STRING COMMENT '结束日期'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Src_Book_Map_Id            STRING COMMENT '源账簿映射编号'"
+    },
+    {
+      "line": 23,
+      "text": ")COMMENT '场外衍生品账簿协议关系附加信息'"
+    },
+    {
+      "line": 24,
+      "text": "PARTITIONED BY (SRC_TBL   STRING COMMENT '源表')"
+    },
+    {
+      "line": 25,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 26,
+      "text": ""
+    },
+    {
+      "line": 27,
+      "text": "DROP TABLE IF EXISTS ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_TEMP_TIT174;"
+    },
+    {
+      "line": 28,
+      "text": "CREATE TABLE IF NOT EXISTS ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_TEMP_TIT174"
+    },
+    {
+      "line": 29,
+      "text": "AS"
+    },
+    {
+      "line": 30,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 31,
+      "text": "--Group1: Source Table:[ODATA_N_TIT.D_BK_BOOK_MAPPING：场外衍生品账簿协议关系附加信息]"
+    },
+    {
+      "line": 32,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 33,
+      "text": "SELECT"
+    },
+    {
+      "line": 34,
+      "text": "     KEY_BOOK_ID_FROM                        AS  Book_Agt_Id1            --协议编号"
+    },
+    {
+      "line": 35,
+      "text": "    ,'20411'                                 AS  Book_Agt_Modifr1        --协议修饰符"
+    },
+    {
+      "line": 36,
+      "text": "    ,'N05'                                   AS  Agt_Rela_Type_Cd1       --协议关系类型代码                 'N05' --账簿协议与账簿协议"
+    },
+    {
+      "line": 37,
+      "text": "    ,KEY_BOOK_ID_TO                          AS  Rela_Book_Agt_Id1       --关联协议编号    "
+    },
+    {
+      "line": 38,
+      "text": "    ,'20411'                                 AS  Rela_Book_Agt_Modifr1   --关联协议修饰符  "
+    },
+    {
+      "line": 39,
+      "text": "    ,DIRECTION                               AS  Prft_Dir_Tran_Cd1       --盈亏方向转换代码"
+    },
+    {
+      "line": 40,
+      "text": "    ,'${data_src_cd}'                   AS  Data_Src_Cd1            --数据来源代码"
+    },
+    {
+      "line": 41,
+      "text": "    ,'${src_table}'                     AS  Src_Tbl1                --源表"
+    },
+    {
+      "line": 42,
+      "text": "    ,'${filename}'                      AS  Task_Name1              --任务名"
+    },
+    {
+      "line": 43,
+      "text": "    ,'${src_table}'                     AS  Real_Src_Tbl1           --真实源表"
+    },
+    {
+      "line": 44,
+      "text": "    ,ID                                      AS  Src_Book_Map_Id1        --源账簿映射编号"
+    },
+    {
+      "line": 45,
+      "text": "FROM (SELECT * FROM ODATA_N_TIT.D_BK_BOOK_MAPPING WHERE BUSI_DATE ='${data_day_str}') A"
+    },
+    {
+      "line": 46,
+      "text": ""
+    },
+    {
+      "line": 47,
+      "text": ""
+    },
+    {
+      "line": 48,
+      "text": ";"
+    },
+    {
+      "line": 49,
+      "text": ""
+    },
+    {
+      "line": 50,
+      "text": "DROP TABLE IF EXISTS ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_MID_TIT174;"
+    },
+    {
+      "line": 51,
+      "text": "CREATE TABLE ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_MID_TIT174"
+    },
+    {
+      "line": 52,
+      "text": "AS"
+    },
+    {
+      "line": 53,
+      "text": "SELECT"
+    },
+    {
+      "line": 54,
+      "text": "       A.*,B.*"
+    },
+    {
+      "line": 55,
+      "text": "       ,CASE WHEN A.Book_Agt_Id IS NULL     AND B.Book_Agt_Id1 IS NOT NULL THEN 'I'           --当天不存在历史的数据为新增"
+    },
+    {
+      "line": 56,
+      "text": "             WHEN A.Book_Agt_Id IS NOT NULL AND B.Book_Agt_Id1 IS NULL THEN 'D'           --历史不存在当天的数据为删除"
+    },
+    {
+      "line": 57,
+      "text": "             WHEN A.Book_Agt_Id IS NOT NULL AND B.Book_Agt_Id1 IS NOT NULL AND"
+    },
+    {
+      "line": 58,
+      "text": "             (   COALESCE(A.Rela_Book_Agt_Id        ,'')   <> COALESCE(B.Rela_Book_Agt_Id1       ,'')"
+    },
+    {
+      "line": 59,
+      "text": "              OR COALESCE(A.Rela_Book_Agt_Modifr    ,'')   <> COALESCE(B.Rela_Book_Agt_Modifr1   ,'')"
+    },
+    {
+      "line": 60,
+      "text": "              OR COALESCE(A.Prft_Dir_Tran_Cd        ,'')   <> COALESCE(B.Prft_Dir_Tran_Cd1       ,'')"
+    },
+    {
+      "line": 61,
+      "text": "              OR COALESCE(A.Src_Book_Map_Id         ,'')   <> COALESCE(B.Src_Book_Map_Id1        ,'')"
+    },
+    {
+      "line": 62,
+      "text": "             ) THEN 'U'                                                        --当天和历史均存在,除主键外如有字段变更为变更"
+    },
+    {
+      "line": 63,
+      "text": "             ELSE 'S' END AS DATA_TYPE                                         --其他为无变更"
+    },
+    {
+      "line": 64,
+      "text": "FROM   (  SELECT"
+    },
+    {
+      "line": 65,
+      "text": "            *"
+    },
+    {
+      "line": 66,
+      "text": "          FROM  T03_OTC_DERI_AGT_RELA_ADTNL_INFO"
+    },
+    {
+      "line": 67,
+      "text": "          WHERE STRT_DATE <='${data_day_str}'"
+    },
+    {
+      "line": 68,
+      "text": "            AND END_DATE  > '${data_day_str}'"
+    },
+    {
+      "line": 69,
+      "text": "            AND SRC_TBL IN ('ODATA_N_TIT.D_BK_BOOK_MAPPING')  )A   --历史(昨日)开链数据"
+    },
+    {
+      "line": 70,
+      "text": "FULL OUTER JOIN ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_TEMP_TIT174 B               --当天的数据"
+    },
+    {
+      "line": 71,
+      "text": "ON   NVL(A.Book_Agt_Id          ,'')= NVL(B.Book_Agt_Id1          ,'')  "
+    },
+    {
+      "line": 72,
+      "text": "AND  NVL(A.Book_Agt_Modifr      ,'')= NVL(B.Book_Agt_Modifr1      ,'')      "
+    },
+    {
+      "line": 73,
+      "text": "AND  NVL(A.Agt_Rela_Type_Cd     ,'')= NVL(B.Agt_Rela_Type_Cd1     ,'')            "
+    },
+    {
+      "line": 74,
+      "text": "AND  NVL(A.Rela_Book_Agt_Id     ,'')= NVL(B.Rela_Book_Agt_Id1     ,'')   "
+    },
+    {
+      "line": 75,
+      "text": ";"
+    },
+    {
+      "line": 76,
+      "text": ""
+    },
+    {
+      "line": 77,
+      "text": "-- querySql"
+    },
+    {
+      "line": 78,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_DERI_AGT_RELA_ADTNL_INFO PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 79,
+      "text": " --剔除掉源表当日新增和当日闭链的数据"
+    },
+    {
+      "line": 80,
+      "text": "SELECT"
+    },
+    {
+      "line": 81,
+      "text": "     Book_Agt_Id                           --协议编号"
+    },
+    {
+      "line": 82,
+      "text": "    ,Book_Agt_Modifr                       --协议修饰符"
+    },
+    {
+      "line": 83,
+      "text": "    ,Agt_Rela_Type_Cd                      --协议关系类型代码"
+    },
+    {
+      "line": 84,
+      "text": "    ,Strt_Date                             --开始日期"
+    },
+    {
+      "line": 85,
+      "text": "    ,Rela_Book_Agt_Id                      --关联协议编号"
+    },
+    {
+      "line": 86,
+      "text": "    ,Rela_Book_Agt_Modifr                  --关联协议修饰符"
+    },
+    {
+      "line": 87,
+      "text": "    ,Prft_Dir_Tran_Cd                      --盈亏方向转换代码"
+    },
+    {
+      "line": 88,
+      "text": "    ,End_Date                              --结束日期"
+    },
+    {
+      "line": 89,
+      "text": "    ,Data_Src_Cd                           --数据来源代码"
+    },
+    {
+      "line": 90,
+      "text": "    ,Task_Name                             --任务名"
+    },
+    {
+      "line": 91,
+      "text": "    ,Data_Time                             --数据时间"
+    },
+    {
+      "line": 92,
+      "text": "    ,Real_Src_Tbl                          --真实源表"
+    },
+    {
+      "line": 93,
+      "text": "    ,Src_Book_Map_Id                       --源账簿映射编号"
+    },
+    {
+      "line": 94,
+      "text": "    ,Src_Tbl                               --源表"
+    },
+    {
+      "line": 95,
+      "text": "FROM T03_OTC_DERI_AGT_RELA_ADTNL_INFO"
+    },
+    {
+      "line": 96,
+      "text": "WHERE STRT_DATE !='${data_day_str}'"
+    },
+    {
+      "line": 97,
+      "text": "  AND END_DATE  !='${data_day_str}'"
+    },
+    {
+      "line": 98,
+      "text": "  AND SRC_TBL IN ('ODATA_N_TIT.D_BK_BOOK_MAPPING')"
+    },
+    {
+      "line": 99,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 100,
+      "text": " --目标表为源表当日闭链的数据还原"
+    },
+    {
+      "line": 101,
+      "text": "SELECT"
+    },
+    {
+      "line": 102,
+      "text": "     Book_Agt_Id                           --协议编号"
+    },
+    {
+      "line": 103,
+      "text": "    ,Book_Agt_Modifr                       --协议修饰符"
+    },
+    {
+      "line": 104,
+      "text": "    ,Agt_Rela_Type_Cd                      --协议关系类型代码"
+    },
+    {
+      "line": 105,
+      "text": "    ,Strt_Date                             --开始日期"
+    },
+    {
+      "line": 106,
+      "text": "    ,Rela_Book_Agt_Id                      --关联协议编号"
+    },
+    {
+      "line": 107,
+      "text": "    ,Rela_Book_Agt_Modifr                  --关联协议修饰符"
+    },
+    {
+      "line": 108,
+      "text": "    ,Prft_Dir_Tran_Cd                      --盈亏方向转换代码"
+    },
+    {
+      "line": 109,
+      "text": "    ,'2099-12-31'  AS End_Date             --结束日期"
+    },
+    {
+      "line": 110,
+      "text": "    ,Data_Src_Cd                           --数据来源代码"
+    },
+    {
+      "line": 111,
+      "text": "    ,Task_Name                             --任务名"
+    },
+    {
+      "line": 112,
+      "text": "    ,Data_Time                             --数据时间"
+    },
+    {
+      "line": 113,
+      "text": "    ,Real_Src_Tbl                          --真实源表"
+    },
+    {
+      "line": 114,
+      "text": "    ,Src_Book_Map_Id                       --源账簿映射编号"
+    },
+    {
+      "line": 115,
+      "text": "    ,Src_Tbl                               --源表"
+    },
+    {
+      "line": 116,
+      "text": "FROM T03_OTC_DERI_AGT_RELA_ADTNL_INFO"
+    },
+    {
+      "line": 117,
+      "text": "WHERE  END_DATE ='${data_day_str}'"
+    },
+    {
+      "line": 118,
+      "text": "  AND  SRC_TBL IN ('ODATA_N_TIT.D_BK_BOOK_MAPPING')"
+    },
+    {
+      "line": 119,
+      "text": ";"
+    },
+    {
+      "line": 120,
+      "text": ""
+    },
+    {
+      "line": 121,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 122,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 123,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 124,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 125,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 126,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 127,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 128,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 129,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 130,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 131,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 132,
+      "text": ""
+    },
+    {
+      "line": 133,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_DERI_AGT_RELA_ADTNL_INFO PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 134,
+      "text": "  --历史闭链的无效数据插回目标表"
+    },
+    {
+      "line": 135,
+      "text": "SELECT"
+    },
+    {
+      "line": 136,
+      "text": "     Book_Agt_Id                                                --协议编号"
+    },
+    {
+      "line": 137,
+      "text": "    ,Book_Agt_Modifr                                            --协议修饰符"
+    },
+    {
+      "line": 138,
+      "text": "    ,Agt_Rela_Type_Cd                                           --协议关系类型代码"
+    },
+    {
+      "line": 139,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 140,
+      "text": "    ,Rela_Book_Agt_Id                                           --关联协议编号"
+    },
+    {
+      "line": 141,
+      "text": "    ,Rela_Book_Agt_Modifr                                       --关联协议修饰符"
+    },
+    {
+      "line": 142,
+      "text": "    ,Prft_Dir_Tran_Cd                                           --盈亏方向转换代码"
+    },
+    {
+      "line": 143,
+      "text": "    ,End_Date                                                   --结束日期"
+    },
+    {
+      "line": 144,
+      "text": "    ,Data_Src_Cd                                                --数据来源代码"
+    },
+    {
+      "line": 145,
+      "text": "    ,Task_Name                                                  --任务名"
+    },
+    {
+      "line": 146,
+      "text": "    ,Data_Time                                                  --数据时间"
+    },
+    {
+      "line": 147,
+      "text": "    ,Real_Src_Tbl                                               --真实源表"
+    },
+    {
+      "line": 148,
+      "text": "    ,Src_Book_Map_Id                                            --源账簿映射编号"
+    },
+    {
+      "line": 149,
+      "text": "    ,Src_Tbl                                                    --源表"
+    },
+    {
+      "line": 150,
+      "text": "FROM T03_OTC_DERI_AGT_RELA_ADTNL_INFO"
+    },
+    {
+      "line": 151,
+      "text": "WHERE NOT(    STRT_DATE <='${data_day_str}'"
+    },
+    {
+      "line": 152,
+      "text": "          AND END_DATE  > '${data_day_str}'   )"
+    },
+    {
+      "line": 153,
+      "text": "  AND SRC_TBL IN ('ODATA_N_TIT.D_BK_BOOK_MAPPING')  --只插入目标表分区字段为该表的数据"
+    },
+    {
+      "line": 154,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 155,
+      "text": " --当天有变动和新增的数据开链"
+    },
+    {
+      "line": 156,
+      "text": "SELECT   "
+    },
+    {
+      "line": 157,
+      "text": "     Book_Agt_Id1                   AS  Book_Agt_Id             --协议编号"
+    },
+    {
+      "line": 158,
+      "text": "    ,Book_Agt_Modifr1               AS  Book_Agt_Modifr         --协议修饰符"
+    },
+    {
+      "line": 159,
+      "text": "    ,Agt_Rela_Type_Cd1              AS  Agt_Rela_Type_Cd        --协议关系类型代码"
+    },
+    {
+      "line": 160,
+      "text": "    ,'${data_day_str}'         AS  Strt_Date               --开始日期"
+    },
+    {
+      "line": 161,
+      "text": "    ,Rela_Book_Agt_Id1              AS  Rela_Book_Agt_Id        --关联协议编号"
+    },
+    {
+      "line": 162,
+      "text": "    ,Rela_Book_Agt_Modifr1          AS  Rela_Book_Agt_Modifr    --关联协议修饰符"
+    },
+    {
+      "line": 163,
+      "text": "    ,Prft_Dir_Tran_Cd1              AS  Prft_Dir_Tran_Cd        --盈亏方向转换代码"
+    },
+    {
+      "line": 164,
+      "text": "    ,'2099-12-31'                   AS  End_Date                --结束日期"
+    },
+    {
+      "line": 165,
+      "text": "    ,Data_Src_Cd1                   AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 166,
+      "text": "    ,Task_Name1                     AS  Task_Name               --任务名"
+    },
+    {
+      "line": 167,
+      "text": "    ,'${data_today}'           AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 168,
+      "text": "    ,Real_Src_Tbl1                  AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 169,
+      "text": "    ,Src_Book_Map_Id1               AS  Src_Book_Map_Id         --源账簿映射编号"
+    },
+    {
+      "line": 170,
+      "text": "    ,Src_Tbl1                       AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 171,
+      "text": "FROM ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_MID_TIT174 WHERE DATA_TYPE IN ('I','U')     --新增-I,变更-U"
+    },
+    {
+      "line": 172,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 173,
+      "text": " --历史开链有变动和不存在当天的数据闭链"
+    },
+    {
+      "line": 174,
+      "text": "SELECT"
+    },
+    {
+      "line": 175,
+      "text": "     Book_Agt_Id                                                --协议编号"
+    },
+    {
+      "line": 176,
+      "text": "    ,Book_Agt_Modifr                                            --协议修饰符"
+    },
+    {
+      "line": 177,
+      "text": "    ,Agt_Rela_Type_Cd                                           --协议关系类型代码"
+    },
+    {
+      "line": 178,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 179,
+      "text": "    ,Rela_Book_Agt_Id                                           --关联协议编号"
+    },
+    {
+      "line": 180,
+      "text": "    ,Rela_Book_Agt_Modifr                                       --关联协议修饰符"
+    },
+    {
+      "line": 181,
+      "text": "    ,Prft_Dir_Tran_Cd                                           --盈亏方向转换代码"
+    },
+    {
+      "line": 182,
+      "text": "    ,'${data_day_str}'         AS  End_Date                --结束日期"
+    },
+    {
+      "line": 183,
+      "text": "    ,Data_Src_Cd                    AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 184,
+      "text": "    ,Task_Name                      AS  Task_Name               --任务名"
+    },
+    {
+      "line": 185,
+      "text": "   ,'${data_today}'            AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 186,
+      "text": "    ,Real_Src_Tbl                                               --真实源表"
+    },
+    {
+      "line": 187,
+      "text": "    ,Src_Book_Map_Id                                            --源账簿映射编号"
+    },
+    {
+      "line": 188,
+      "text": "    ,Src_Tbl                        AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 189,
+      "text": "FROM ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_MID_TIT174 WHERE DATA_TYPE IN ('D','U')     --变更-U,删除-D"
+    },
+    {
+      "line": 190,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 191,
+      "text": " --无变动的数据插回目标表"
+    },
+    {
+      "line": 192,
+      "text": "SELECT"
+    },
+    {
+      "line": 193,
+      "text": "     Book_Agt_Id                                                --协议编号"
+    },
+    {
+      "line": 194,
+      "text": "    ,Book_Agt_Modifr                                            --协议修饰符"
+    },
+    {
+      "line": 195,
+      "text": "    ,Agt_Rela_Type_Cd                                           --协议关系类型代码"
+    },
+    {
+      "line": 196,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 197,
+      "text": "    ,Rela_Book_Agt_Id                                           --关联协议编号"
+    },
+    {
+      "line": 198,
+      "text": "    ,Rela_Book_Agt_Modifr                                       --关联协议修饰符"
+    },
+    {
+      "line": 199,
+      "text": "    ,Prft_Dir_Tran_Cd                                           --盈亏方向转换代码"
+    },
+    {
+      "line": 200,
+      "text": "    ,End_Date                                                   --结束日期"
+    },
+    {
+      "line": 201,
+      "text": "    ,Data_Src_Cd                                                --数据来源代码"
+    },
+    {
+      "line": 202,
+      "text": "    ,Task_Name                                                  --任务名"
+    },
+    {
+      "line": 203,
+      "text": "    ,Data_Time                                                  --数据时间"
+    },
+    {
+      "line": 204,
+      "text": "    ,Real_Src_Tbl                                               --真实源表"
+    },
+    {
+      "line": 205,
+      "text": "    ,Src_Book_Map_Id                                            --源账簿映射编号"
+    },
+    {
+      "line": 206,
+      "text": "    ,Src_Tbl                                                    --源表"
+    },
+    {
+      "line": 207,
+      "text": "FROM ${db_temp}.T03_OTC_DERI_AGT_RELA_ADTNL_INFO_MID_TIT174 WHERE DATA_TYPE ='S'         --无变更-S"
+    },
+    {
+      "line": 208,
+      "text": ";"
+    },
+    {
+      "line": 209,
+      "text": ""
+    }
+  ]
+}

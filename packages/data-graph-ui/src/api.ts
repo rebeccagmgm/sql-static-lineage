@@ -1,4 +1,5 @@
 import { TRACE_EDGE_LIMIT } from "./graph-limits";
+import { recordPerformance } from "./performance-log";
 import type {
   Anchor,
   Direction,
@@ -8,6 +9,7 @@ import type {
   TraceResult,
   OverviewResult,
   RegionResult,
+  TaskFieldExplanation,
 } from "./types";
 export class ApiError extends Error {
   constructor(
@@ -20,33 +22,61 @@ export class ApiError extends Error {
 async function get<T>(
   path: string,
   params: Record<string, unknown> = {},
+  signal?: AbortSignal,
 ): Promise<T> {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params))
     if (v !== undefined && v !== "") q.set(k, String(v));
-  const response = await fetch(`/api/${path}?${q}`);
+  const url = `/api/${path}?${q}`;
+  const started = performance.now();
+  let response: Response;
+  try { response = signal ? await fetch(url, {signal}) : await fetch(url); }
+  catch (error) { recordPerformance({kind:"api", name:path, durationMs:performance.now() - started, status:0}); throw error; }
   let body: unknown;
   try {
     body = await response.json();
   } catch {
     throw new ApiError("服务返回了无法读取的响应", response.status);
+  } finally {
+    const graph = body && typeof body === "object" ? body as {nodes?:unknown[]; edges?:unknown[]} : undefined;
+    const timing = response.headers?.get("Server-Timing")?.match(/graph;dur=([\d.]+)/)?.[1];
+    recordPerformance({kind:"api", name:path, durationMs:performance.now() - started,
+      status:response.status, serverMs:timing ? Number(timing) : undefined,
+      requestId:response.headers?.get("X-Graph-Request-Id") ?? undefined,
+      nodes:Array.isArray(graph?.nodes) ? graph.nodes.length : undefined, edges:Array.isArray(graph?.edges) ? graph.edges.length : undefined});
   }
   if (!response.ok) {
     const message =
       typeof body === "object" && body && "error" in body
         ? String(body.error)
         : "查询失败";
-    throw new ApiError(message, response.status);
+    const partitionErrors: Record<string, string> = {
+      PARTITION_VERSION_CHANGED: "图谱已换版，请重新打开此表并选择分区。",
+      PARTITION_SELECTION_INVALID: "保存的分区范围已失效，请重新选择分区。",
+      PARTITION_FOCUS_OUTSIDE_SCOPE: "当前节点不在已选分区的查询范围内，请先从原起点继续展开。",
+      FIELD_OUTSIDE_PARTITION_SELECTION: "所选字段不属于当前分区范围，请重新选择字段。",
+      PARTITION_WRITER_LIMIT: "该表写入范围超过查询上限，未返回不完整的分区选项。",
+    };
+    throw new ApiError(partitionErrors[message] ?? message, response.status);
   }
   return body as T;
 }
 export const api = {
+  partitions: (nodeId: string) => get<import("../../data-graph/src/asset-graph/partition-selection").PartitionCatalog & {taskClusters: Record<string, string>}>("partitions", {nodeId}),
+  explain: (taskId: string, input: { writeId: string; column: string; publicationVersion: string }) =>
+    get<TaskFieldExplanation>("explain", {
+      taskId,
+      ...input,
+      maxDepth: 32,
+      maxNodes: 500,
+      maxEdges: 1000,
+    }),
   status: () => get<Record<string, unknown>>("status"),
-  overview: (hiddenTables: string[] = []) => get<OverviewResult>("overview", { hiddenTables: JSON.stringify(hiddenTables) }),
-  region: (schema: string, offset = 0, limit = 50, hiddenTables: string[] = []) =>
-    get<RegionResult>("regions", { schema, offset, limit, hiddenTables: JSON.stringify(hiddenTables) }),
-  search: (q: string, offset = 0, limit = 31) =>
-    get<GraphNode[]>("search", { q, offset, limit }),
+  overview: (hiddenTables: string[] = [], clusters: string[] = []) => get<OverviewResult>("overview", { hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) }),
+  region: (schema: string, offset = 0, limit = 50, hiddenTables: string[] = [], clusters: string[] = []) =>
+    get<RegionResult>("regions", { schema, offset, limit, hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) }),
+  search: (q: string, offset = 0, limit = 31, clusters: string[] = [], signal?: AbortSignal) =>
+    get<GraphNode[]>("search", { q, offset, limit, clusters: JSON.stringify(clusters) }, signal),
   fields: (a: Anchor, offset = 0, limit = 101) =>
     get<GraphNode[]>(
       "fields",
@@ -62,6 +92,10 @@ export const api = {
       direction: Direction;
       depth: number;
       includeCandidates: boolean;
+      clusters?: string[];
+      scopeFocus?: string;
+      scopeDepth?: number;
+      scopeDirection?: Direction;
     },
   ) =>
     get<TraceResult>("trace", {
@@ -70,6 +104,11 @@ export const api = {
       nodeId: i.nodeId,
       column: i.column,
       writeId: i.writeId,
+      partitionSelection: i.partitionSelection ? JSON.stringify(i.partitionSelection) : undefined,
+      clusters: JSON.stringify(i.clusters ?? []),
+      scopeFocus: i.scopeFocus,
+      scopeDepth: i.scopeDepth,
+      scopeDirection: i.scopeDirection,
       layer: i.layer,
       direction: i.direction,
       depth: i.depth,

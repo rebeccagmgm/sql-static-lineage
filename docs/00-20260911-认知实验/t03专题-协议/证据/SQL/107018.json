@@ -1,0 +1,1009 @@
+{
+  "task_id": "107018",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:45.352Z",
+  "payload_sha256": "a0c86bc88147ea7cec2d3da45e1e699576aba47da39357e1065d982f193bdcc8",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T98_OTC_SWAP_COMP_TRD_UNDRL_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Swap_Comp_Agt_Id           STRING COMMENT '互换合约协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Swap_Comp_Agt_Modifr       STRING COMMENT '互换合约协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Inr_Comp_No                STRING COMMENT '内部合约编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Book_Agt_Id                STRING COMMENT '账簿协议编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Book_Agt_Modifr            STRING COMMENT '账簿协议修饰符'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Book_Name                  STRING COMMENT '账簿名称'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Book_Bel_Dept              STRING COMMENT '账簿所属部门'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Prd_Id                     STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Src_Prd_Id                 STRING COMMENT '源产品编号'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Undrl_Cd                   STRING COMMENT '标的代码'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Prd_Shor_Name              STRING COMMENT '产品简称'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Undrl_Bngn_Vol             STRING COMMENT '标的期初数量'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Undrl_Curr_Vol             STRING COMMENT '标的当前数量'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Long_Shor_Clas             STRING COMMENT '多空分类'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Clos_Pric                  STRING COMMENT '收盘价格'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Mid_Pric                   STRING COMMENT '中间价'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Tit_Busi_Type_Cd           STRING COMMENT 'tit业务类型代码'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Comp_Mulplr                STRING COMMENT '合约乘数'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Res_Flag                   STRING COMMENT '限售标志'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Valu_Use_Mkt_Quot_Pric     STRING COMMENT '估值使用行情价格'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Src_Trd_Type_Cd            STRING COMMENT '源交易类别代码'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Src_Scr_Type_Cd            STRING COMMENT '源证券类型代码'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Bgng_Pric                  STRING COMMENT '期初价格'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Res_Pd_End_Date            STRING COMMENT '限售期结束日期'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Crrc_Cd                    STRING COMMENT '币种代码'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Sett_Crrc_Cd               STRING COMMENT '结算币种代码'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Lcrrc_Crrc_Cd              STRING COMMENT '本币币种代码'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Futr_Type_Cd               STRING COMMENT '期货类型代码'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Futr_Type_Desc             STRING COMMENT '期货类型描述'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Cutp_Pty_Id                STRING COMMENT '交易对手当事人编号'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Cutp_Full_Name             STRING COMMENT '交易对手全称'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Cutp_Shor_Name             STRING COMMENT '交易对手简称'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Cutp_Shor_Name_En          STRING COMMENT '交易对手英文简称'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Cutp_Legal_Enty            STRING COMMENT '交易对手法律主体'"
+    },
+    {
+      "line": 49,
+      "text": "    ,Ext_Comp_No                STRING COMMENT '外部合约编号'"
+    },
+    {
+      "line": 50,
+      "text": ")COMMENT 'T98_场外互换合约交易标的信息'"
+    },
+    {
+      "line": 51,
+      "text": "PARTITIONED BY (SRC_TBL   STRING COMMENT '源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 52,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 53,
+      "text": ""
+    },
+    {
+      "line": 54,
+      "text": "-- querySql"
+    },
+    {
+      "line": 55,
+      "text": "INSERT OVERWRITE TABLE T98_OTC_SWAP_COMP_TRD_UNDRL_INFO PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 56,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 57,
+      "text": "--Group1.: Source Table:[PDATA_N.T03_OTC_SWAP_COMP_HOLD_INFO:场外互换合约持仓信息--互换合约]  "
+    },
+    {
+      "line": 58,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 59,
+      "text": "SELECT"
+    },
+    {
+      "line": 60,
+      "text": "     RT.SWAP_COMP_AGT_ID                               AS  Swap_Comp_Agt_Id        --互换合约协议编号  "
+    },
+    {
+      "line": 61,
+      "text": "    ,RT.SWAP_COMP_AGT_MODIFR                           AS  Swap_Comp_Agt_Modifr    --互换合约协议修饰符"
+    },
+    {
+      "line": 62,
+      "text": "    ,TT.STATI_CONT_DESC                                AS  Inr_Comp_No             --内部合约编号      "
+    },
+    {
+      "line": 63,
+      "text": "    ,TOT1.RELA_AGT_ID                                  AS  Book_Agt_Id             --账簿协议编号      "
+    },
+    {
+      "line": 64,
+      "text": "    ,TOT1.RELA_AGT_MODIFR                              AS  Book_Agt_Modifr         --账簿协议修饰符    "
+    },
+    {
+      "line": 65,
+      "text": "    ,RB.Agt_Full_Name                                  AS  Book_Name               --账簿名称          "
+    },
+    {
+      "line": 66,
+      "text": "    ,RB1.Bel_Dept                                      AS  Book_Bel_Dept           --账簿所属部门      "
+    },
+    {
+      "line": 67,
+      "text": "    ,PRD_ID                                            AS  Prd_Id                  --产品编号          "
+    },
+    {
+      "line": 68,
+      "text": "    ,HP.SRC_PRD_ID                                     AS  Src_Prd_Id              --源产品编号        "
+    },
+    {
+      "line": 69,
+      "text": "    ,RI.WIND_CD_SRC                                    AS  Undrl_Cd                --标的代码          "
+    },
+    {
+      "line": 70,
+      "text": "    ,RI.CH_ABBR                                        AS  Prd_Shor_Name           --产品简称          "
+    },
+    {
+      "line": 71,
+      "text": "    ,HP.BGNG_VOL                                       AS  Undrl_Bngn_Vol          --标的期初数量      "
+    },
+    {
+      "line": 72,
+      "text": "    ,HP.VOL                                            AS  Undrl_Curr_Vol          --标的当前数量      "
+    },
+    {
+      "line": 73,
+      "text": "    ,CASE WHEN  RTL.LONG_SHOR_CLAS  = 'SHOR' THEN 'SHORT'  ELSE  RTL.LONG_SHOR_CLAS  END"
+    },
+    {
+      "line": 74,
+      "text": "                                                       AS  Long_Shor_Clas          --多空分类          "
+    },
+    {
+      "line": 75,
+      "text": "    ,HP.Mkt_Quot_Pric                                  AS  Clos_Pric               --收盘价格          "
+    },
+    {
+      "line": 76,
+      "text": "    ,CASE WHEN RT.Crrc_Cd = 'CNY' THEN '1' ELSE RRM.MID_PRICE END"
+    },
+    {
+      "line": 77,
+      "text": "                                                       AS  Mid_Pric                --中间价            "
+    },
+    {
+      "line": 78,
+      "text": "    ,TOT.AGT_CLAS_CD                                   AS  Tit_Busi_Type_Cd        --tit业务类型代码   "
+    },
+    {
+      "line": 79,
+      "text": "    ,NVL(FP.CONTR_MULPLR,'1')                          AS  Comp_Mulplr             --合约乘数          "
+    },
+    {
+      "line": 80,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 81,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 82,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 83,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 84,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 85,
+      "text": "    ,RTL.Res_Flag                                      AS  Res_Flag                --限售标志"
+    },
+    {
+      "line": 86,
+      "text": "    ,HP.Disc_Pric                                      AS  Valu_Use_Mkt_Quot_Pric  --估值使用行情价格"
+    },
+    {
+      "line": 87,
+      "text": "    ,RI.Src_Mkt_Cd                                     AS  Src_Trd_Type_Cd                    --源交易类别代码"
+    },
+    {
+      "line": 88,
+      "text": "    ,RI.Scr_Type_Src                                   AS  Src_Scr_Type_Cd                    --源证券类型代码"
+    },
+    {
+      "line": 89,
+      "text": "    ,HP.Bgng_Pric                                      AS  Bgng_Pric                          --期初价格"
+    },
+    {
+      "line": 90,
+      "text": "    ,SUBSTR(RTL.Res_Pd_End_Day,1,10)                   AS  Res_Pd_End_Date                    --限售期结束日期"
+    },
+    {
+      "line": 91,
+      "text": "    ,RT.Crrc_Cd                                        AS  Crrc_Cd                 --币种代码"
+    },
+    {
+      "line": 92,
+      "text": "    ,RT.Sett_Crrc_Cd                                   AS  Sett_Crrc_Cd            --结算币种代码"
+    },
+    {
+      "line": 93,
+      "text": "    ,RT.Lcrrc_Crrc_Cd                                  AS  Lcrrc_Crrc_Cd           --本币币种代码"
+    },
+    {
+      "line": 94,
+      "text": "    ,FP.Futr_Type_Cd                                   AS  Futr_Type_Cd            --期货类型代码"
+    },
+    {
+      "line": 95,
+      "text": "    ,PS.Const_Cn_Desc                                  AS  Futr_Type_Desc          --期货类型描述"
+    },
+    {
+      "line": 96,
+      "text": "    ,RT.CUTP_PTY_ID                                    AS  Cutp_Pty_Id             --交易对手当事人编号"
+    },
+    {
+      "line": 97,
+      "text": "    ,CFN.FULL_NAME_CH                                  AS  Cutp_Full_Name          --交易对手全称"
+    },
+    {
+      "line": 98,
+      "text": "    ,CFN.SHOR_NAME_CH                                  AS  Cutp_Shor_Name          --交易对手简称"
+    },
+    {
+      "line": 99,
+      "text": "    ,CFN.SHOR_NAME_EN                                  AS  Cutp_Shor_Name_En       --交易对手英文简称"
+    },
+    {
+      "line": 100,
+      "text": "    ,CLE.CUTP_LEGAL_ENTY                               AS  Cutp_Legal_Enty         --交易对手法律主体"
+    },
+    {
+      "line": 101,
+      "text": "    ,RT.EXT_COMP_NO                                    AS  Ext_Comp_No             --外部合约编号"
+    },
+    {
+      "line": 102,
+      "text": "    ,RT.Src_Tbl                                        AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 103,
+      "text": "    ,HP.BUSI_DATE                                      AS  Busi_Date               --业务日期"
+    },
+    {
+      "line": 104,
+      "text": "FROM (select * from PDATA_N.T03_OTC_SWAP_COMP_INFO where busi_date='${data_day_str}'  and src_tbl='ODATA_N_TIT.D_REF_TRS' ) RT --REF_TRS "
+    },
+    {
+      "line": 105,
+      "text": "    JOIN (select * from pdata_n.T03_AGT_STATI_INFO_H where strt_date<='${data_day_str}'  and end_date>'${data_day_str}'  and Agt_Stati_Info_Type_Cd='09' AND SRC_TBL='ODATA_N_TIT.D_TRD_OTC_TRADE' ) TT "
+    },
+    {
+      "line": 106,
+      "text": "    ON RT.Swap_Comp_Agt_Id  = TT.Agt_Id"
+    },
+    {
+      "line": 107,
+      "text": "    AND RT.Swap_Comp_Agt_Modifr=TT.Agt_Modifr"
+    },
+    {
+      "line": 108,
+      "text": "    JOIN (select * from PDATA_N.T03_AGT_CLAS_H where strt_date<='${data_day_str}'  and end_date>'${data_day_str}'  and Agt_Clas_Type_Cd='05' AND SRC_TBL='ODATA_N_TIT.D_TRD_OTC_TRADE') TOT"
+    },
+    {
+      "line": 109,
+      "text": "    ON TT.Agt_Id  = TOT.Agt_Id"
+    },
+    {
+      "line": 110,
+      "text": "    AND TT.Agt_Modifr=TOT.Agt_Modifr"
+    },
+    {
+      "line": 111,
+      "text": " --JOIN REF_BOOK RB"
+    },
+    {
+      "line": 112,
+      "text": " --ON TOT.KEY_BOOK_ID = RB.KEY_BOOK_ID"
+    },
+    {
+      "line": 113,
+      "text": "   JOIN (select * from pdata_n.T03_AGT_RELA_H where strt_date<='${data_day_str}'  and end_date>'${data_day_str}'  and Agt_Rela_Type_Cd='N03' AND SRC_TBL='ODATA_N_TIT.D_TRD_OTC_TRADE' ) TOT1"
+    },
+    {
+      "line": 114,
+      "text": "   ON TT.Agt_Id  = TOT1.Agt_Id"
+    },
+    {
+      "line": 115,
+      "text": "   AND TT.Agt_Modifr=TOT1.Agt_Modifr"
+    },
+    {
+      "line": 116,
+      "text": "   JOIN (select * from PDATA_N.T03_AGT_NAME_H WHERE strt_date<='${data_day_str}'  and end_date>'${data_day_str}'  AND SRC_TBL='ODATA_N_TIT.D_REF_BOOK')RB"
+    },
+    {
+      "line": 117,
+      "text": "   on TOT1.Rela_Agt_Id =RB.Agt_Id"
+    },
+    {
+      "line": 118,
+      "text": "   AND TOT1.Rela_Agt_Modifr=RB.Agt_Modifr"
+    },
+    {
+      "line": 119,
+      "text": "   "
+    },
+    {
+      "line": 120,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO where busi_date='${data_day_str}' AND SRC_TBL='ODATA_N_TIT.D_REF_BOOK' )RB1"
+    },
+    {
+      "line": 121,
+      "text": "   ON TOT1.Rela_Agt_Id =RB1.Book_Agt_Id"
+    },
+    {
+      "line": 122,
+      "text": "   AND TOT1.Rela_Agt_Modifr=RB1.Book_Agt_Modifr"
+    },
+    {
+      "line": 123,
+      "text": "   "
+    },
+    {
+      "line": 124,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_SWAP_COMP_LEG_INFO where busi_date='${data_day_str}'  and src_tbl='ODATA_N_TIT.D_REF_TRS_LEG') RTL "
+    },
+    {
+      "line": 125,
+      "text": "      ON RT.Swap_Comp_Agt_Id  = RTL.Swap_Comp_Agt_Id"
+    },
+    {
+      "line": 126,
+      "text": "      AND  RT.Swap_Comp_Agt_Modifr  = RTL.Swap_Comp_Agt_Modifr"
+    },
+    {
+      "line": 127,
+      "text": "      AND RTL.Swap_Comp_Leg_Type_Cd = 'STRUCTURE_LEG_TYPE'"
+    },
+    {
+      "line": 128,
+      "text": "   "
+    },
+    {
+      "line": 129,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_SWAP_COMP_HOLD_INFO a "
+    },
+    {
+      "line": 130,
+      "text": "          where src_tbl='ODATA_N_TIT.D_POS_TRS_LEG_HIS_POS' "
+    },
+    {
+      "line": 131,
+      "text": "            and exists (select 1 from D_POS_TRS_LEG_HIS_POS_TEMP b where a.busi_date=b.busi_date)  --取得当前有更新的日期更新"
+    },
+    {
+      "line": 132,
+      "text": "   ) HP  "
+    },
+    {
+      "line": 133,
+      "text": "   ON RTL.Leg_Glbl_Seq_No  = HP.Leg_Glbl_Seq_No "
+    },
+    {
+      "line": 134,
+      "text": "   JOIN  (select * from pdata_news_n.t02_tit_scr_base_info  WHERE src_id='TIT' and grp_id = '01') RI "
+    },
+    {
+      "line": 135,
+      "text": "   ON HP.Prd_Id = RI.src_sys_prdno"
+    },
+    {
+      "line": 136,
+      "text": "   --LEFT JOIN pdata_news_n.tyzx_exch_quot_h_fk MIDI "
+    },
+    {
+      "line": 137,
+      "text": "   --ON HP.Prd_Id = MIDI.src_sys_prdno"
+    },
+    {
+      "line": 138,
+      "text": "   --AND HP.busi_date = default.datekey2date(MIDI.trd_dt )"
+    },
+    {
+      "line": 139,
+      "text": "   LEFT JOIN pdata_news_n.t02_fxr_cfets_quot RRM "
+    },
+    {
+      "line": 140,
+      "text": "   ON  HP.BUSI_DATE =default.datekey2date(RRM.trd_dt )"
+    },
+    {
+      "line": 141,
+      "text": "   AND RT.Crrc_Cd = RRM.src_crrc_cd"
+    },
+    {
+      "line": 142,
+      "text": "   and RRM.src_id='TIT' "
+    },
+    {
+      "line": 143,
+      "text": "       and RRM.grp_id = '01' "
+    },
+    {
+      "line": 144,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_NEWS_N.t02_fut_base_info  WHERE src_id='TIT' AND grp_id = '01' )  FP "
+    },
+    {
+      "line": 145,
+      "text": "   ON  RI.scr_type = 'FUT'"
+    },
+    {
+      "line": 146,
+      "text": "   AND  RI.src_sys_prdno  = FP.src_sys_prdno "
+    },
+    {
+      "line": 147,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_NEWS_N.T02_PUB_CST_INFO  WHERE  const_type_cd='var00001')  PS"
+    },
+    {
+      "line": 148,
+      "text": "   ON   FP.Futr_Type_Cd=PS.CONST_CD"
+    },
+    {
+      "line": 149,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_N.T01_PTY_NAME  WHERE  SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' AND BUSI_DATE='${data_day_str}')  CFN"
+    },
+    {
+      "line": 150,
+      "text": "   ON   RT.Cutp_Pty_Id=CFN.pty_id"
+    },
+    {
+      "line": 151,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_N.T01_PTY_CUTP  WHERE  SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' AND BUSI_DATE='${data_day_str}')  CLE"
+    },
+    {
+      "line": 152,
+      "text": "   ON   CFN.pty_id=CLE.pty_id"
+    },
+    {
+      "line": 153,
+      "text": "   "
+    },
+    {
+      "line": 154,
+      "text": "   "
+    },
+    {
+      "line": 155,
+      "text": "   WHERE RT.Comp_Stat_Cd NOT IN ('230','254','253','218','255')"
+    },
+    {
+      "line": 156,
+      "text": "   "
+    },
+    {
+      "line": 157,
+      "text": "   UNION ALL"
+    },
+    {
+      "line": 158,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 159,
+      "text": "--Group3.: Source Table:[PDATA_N.T03_OTC_SWAP_COMP_HOLD_INFO:场外互换合约持仓信息--互换合约]  "
+    },
+    {
+      "line": 160,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 161,
+      "text": "SELECT"
+    },
+    {
+      "line": 162,
+      "text": "     RT.SWAP_COMP_AGT_ID                               AS  Swap_Comp_Agt_Id        --互换合约协议编号  "
+    },
+    {
+      "line": 163,
+      "text": "    ,RT.SWAP_COMP_AGT_MODIFR                           AS  Swap_Comp_Agt_Modifr    --互换合约协议修饰符"
+    },
+    {
+      "line": 164,
+      "text": "    ,TT.STATI_CONT_DESC                                AS  Inr_Comp_No             --内部合约编号      "
+    },
+    {
+      "line": 165,
+      "text": "    ,MP.KEY_BOOK_ID_TO                                 AS  Book_Agt_Id             --账簿协议编号      "
+    },
+    {
+      "line": 166,
+      "text": "    ,'20411'                                           AS  Book_Agt_Modifr         --账簿协议修饰符    "
+    },
+    {
+      "line": 167,
+      "text": "    ,RB.Agt_Full_Name                                  AS  Book_Name               --账簿名称          "
+    },
+    {
+      "line": 168,
+      "text": "    ,RB1.Bel_Dept                                      AS  Book_Bel_Dept           --账簿所属部门      "
+    },
+    {
+      "line": 169,
+      "text": "    ,PRD_ID                                            AS  Prd_Id                  --产品编号          "
+    },
+    {
+      "line": 170,
+      "text": "    ,HP.SRC_PRD_ID                                     AS  Src_Prd_Id              --源产品编号        "
+    },
+    {
+      "line": 171,
+      "text": "    ,RI.WIND_CD_SRC                                    AS  Undrl_Cd                --标的代码          "
+    },
+    {
+      "line": 172,
+      "text": "    ,RI.CH_ABBR                                        AS  Prd_Shor_Name           --产品简称          "
+    },
+    {
+      "line": 173,
+      "text": "    ,HP.BGNG_VOL                                       AS  Undrl_Bngn_Vol          --标的期初数量      "
+    },
+    {
+      "line": 174,
+      "text": "    ,HP.VOL                                            AS  Undrl_Curr_Vol          --标的当前数量      "
+    },
+    {
+      "line": 175,
+      "text": "    ,CASE WHEN  RTL.LONG_SHOR_CLAS = 'LONG' THEN 'SHORT' WHEN  RTL.LONG_SHOR_CLAS = 'SHOR' THEN 'LONG'  ELSE  RTL.LONG_SHOR_CLAS  END"
+    },
+    {
+      "line": 176,
+      "text": "                                                       AS  Long_Shor_Clas          --多空分类          "
+    },
+    {
+      "line": 177,
+      "text": "    ,HP.Mkt_Quot_Pric                                  AS  Clos_Pric               --收盘价格          "
+    },
+    {
+      "line": 178,
+      "text": "    ,CASE WHEN RT.Crrc_Cd = 'CNY' THEN '1' ELSE RRM.MID_PRICE END"
+    },
+    {
+      "line": 179,
+      "text": "                                                       AS  Mid_Pric                --中间价            "
+    },
+    {
+      "line": 180,
+      "text": "    ,TOT.AGT_CLAS_CD                                   AS  Tit_Busi_Type_Cd        --tit业务类型代码   "
+    },
+    {
+      "line": 181,
+      "text": "    ,NVL(FP.CONTR_MULPLR,'1')                          AS  Comp_Mulplr             --合约乘数          "
+    },
+    {
+      "line": 182,
+      "text": "    ,'PDATA_N'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 183,
+      "text": "    ,'PDATA_N.T98_OTC_SWAP_COMP_TRD_UNDRL_INFO'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 184,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 185,
+      "text": "    ,'${data_day_str}'                            AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 186,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 187,
+      "text": "    ,RTL.Res_Flag                                      AS  Res_Flag                --限售标志"
+    },
+    {
+      "line": 188,
+      "text": "    ,HP.Disc_Pric                                      AS  Valu_Use_Mkt_Quot_Pric  --估值使用行情价格"
+    },
+    {
+      "line": 189,
+      "text": "    ,RI.Src_Mkt_Cd                                     AS  Src_Trd_Type_Cd                    --源交易类别代码"
+    },
+    {
+      "line": 190,
+      "text": "    ,RI.Scr_Type_Src                                   AS  Src_Scr_Type_Cd                    --源证券类型代码"
+    },
+    {
+      "line": 191,
+      "text": "    ,HP.Bgng_Pric                                      AS  Bgng_Pric                          --期初价格"
+    },
+    {
+      "line": 192,
+      "text": "    ,SUBSTR(RTL.Res_Pd_End_Day,1,10)                   AS  Res_Pd_End_Date                    --限售期结束日期"
+    },
+    {
+      "line": 193,
+      "text": "    ,RT.Crrc_Cd                                        AS  Crrc_Cd                 --币种代码"
+    },
+    {
+      "line": 194,
+      "text": "    ,RT.Sett_Crrc_Cd                                   AS  Sett_Crrc_Cd            --结算币种代码"
+    },
+    {
+      "line": 195,
+      "text": "    ,RT.Lcrrc_Crrc_Cd                                  AS  Lcrrc_Crrc_Cd           --本币币种代码"
+    },
+    {
+      "line": 196,
+      "text": "    ,FP.Futr_Type_Cd                                   AS  Futr_Type_Cd            --期货类型代码"
+    },
+    {
+      "line": 197,
+      "text": "    ,PS.Const_Cn_Desc                                  AS  Futr_Type_Desc          --期货类型描述"
+    },
+    {
+      "line": 198,
+      "text": "    ,RT.CUTP_PTY_ID                                    AS  Cutp_Pty_Id             --交易对手当事人编号"
+    },
+    {
+      "line": 199,
+      "text": "    ,CFN.FULL_NAME_CH                                  AS  Cutp_Full_Name          --交易对手全称"
+    },
+    {
+      "line": 200,
+      "text": "    ,CFN.SHOR_NAME_CH                                  AS  Cutp_Shor_Name          --交易对手简称"
+    },
+    {
+      "line": 201,
+      "text": "    ,CFN.SHOR_NAME_EN                                  AS  Cutp_Shor_Name_En       --交易对手英文简称"
+    },
+    {
+      "line": 202,
+      "text": "    ,CLE.CUTP_LEGAL_ENTY                               AS  Cutp_Legal_Enty         --交易对手法律主体"
+    },
+    {
+      "line": 203,
+      "text": "    ,RT.EXT_COMP_NO                                    AS  Ext_Comp_No             --外部合约编号"
+    },
+    {
+      "line": 204,
+      "text": "    ,RT.Src_Tbl                                        AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 205,
+      "text": "    ,HP.BUSI_DATE                                      AS  Busi_Date               --业务日期"
+    },
+    {
+      "line": 206,
+      "text": "FROM (select * from PDATA_N.T03_OTC_SWAP_COMP_INFO where busi_date='${data_day_str}'   and src_tbl='ODATA_N_TIT.D_REF_TRS' ) RT --REF_TRS "
+    },
+    {
+      "line": 207,
+      "text": "    JOIN (select * from pdata_n.T03_AGT_STATI_INFO_H where strt_date<='${data_day_str}'   and end_date>'${data_day_str}'   and Agt_Stati_Info_Type_Cd='09' and src_tbl='ODATA_N_TIT.D_TRD_OTC_TRADE' ) TT "
+    },
+    {
+      "line": 208,
+      "text": "    ON RT.Swap_Comp_Agt_Id  = TT.Agt_Id"
+    },
+    {
+      "line": 209,
+      "text": "    AND RT.Swap_Comp_Agt_Modifr=TT.Agt_Modifr"
+    },
+    {
+      "line": 210,
+      "text": "    JOIN (select * from PDATA_N.T03_AGT_CLAS_H where strt_date<='${data_day_str}'   and end_date>'${data_day_str}'   and Agt_Clas_Type_Cd='05' and src_tbl='ODATA_N_TIT.D_TRD_OTC_TRADE' ) TOT"
+    },
+    {
+      "line": 211,
+      "text": "    ON TT.Agt_Id  = TOT.Agt_Id"
+    },
+    {
+      "line": 212,
+      "text": "    AND TT.Agt_Modifr=TOT.Agt_Modifr"
+    },
+    {
+      "line": 213,
+      "text": ""
+    },
+    {
+      "line": 214,
+      "text": "   JOIN (select * from pdata_n.T03_AGT_RELA_H where strt_date<='${data_day_str}'   and end_date>'${data_day_str}'   and Agt_Rela_Type_Cd='N03' and src_tbl='ODATA_N_TIT.D_TRD_OTC_TRADE' ) TOT1"
+    },
+    {
+      "line": 215,
+      "text": "   ON TT.Agt_Id  = TOT1.Agt_Id"
+    },
+    {
+      "line": 216,
+      "text": "   AND TT.Agt_Modifr=TOT1.Agt_Modifr"
+    },
+    {
+      "line": 217,
+      "text": ""
+    },
+    {
+      "line": 218,
+      "text": "   JOIN MAPPING MP"
+    },
+    {
+      "line": 219,
+      "text": "   ON TOT.Agt_Id = MP.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 220,
+      "text": "   AND TOT1.Rela_Agt_Id= MP.KEY_BOOK_ID_FROM"
+    },
+    {
+      "line": 221,
+      "text": "   "
+    },
+    {
+      "line": 222,
+      "text": "   JOIN (select * from PDATA_N.T03_AGT_NAME_H WHERE strt_date<='${data_day_str}'   and end_date>'${data_day_str}'   AND SRC_TBL='ODATA_N_TIT.D_REF_BOOK')RB"
+    },
+    {
+      "line": 223,
+      "text": "   ON MP.KEY_BOOK_ID_TO =RB.Agt_Id"
+    },
+    {
+      "line": 224,
+      "text": "   "
+    },
+    {
+      "line": 225,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_DERI_BOOK_ADTNL_INFO where busi_date='${data_day_str}' AND SRC_TBL='ODATA_N_TIT.D_REF_BOOK' )RB1"
+    },
+    {
+      "line": 226,
+      "text": "   ON MP.KEY_BOOK_ID_TO =RB1.Book_Agt_Id"
+    },
+    {
+      "line": 227,
+      "text": ""
+    },
+    {
+      "line": 228,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_SWAP_COMP_LEG_INFO where busi_date='${data_day_str}'   and src_tbl='ODATA_N_TIT.D_REF_TRS_LEG') RTL "
+    },
+    {
+      "line": 229,
+      "text": "      ON RT.Swap_Comp_Agt_Id  = RTL.Swap_Comp_Agt_Id"
+    },
+    {
+      "line": 230,
+      "text": "      AND  RT.Swap_Comp_Agt_Modifr  = RTL.Swap_Comp_Agt_Modifr"
+    },
+    {
+      "line": 231,
+      "text": "      AND RTL.Swap_Comp_Leg_Type_Cd = 'STRUCTURE_LEG_TYPE'"
+    },
+    {
+      "line": 232,
+      "text": "   "
+    },
+    {
+      "line": 233,
+      "text": "   JOIN (select * from PDATA_N.T03_OTC_SWAP_COMP_HOLD_INFO a "
+    },
+    {
+      "line": 234,
+      "text": "          where src_tbl='ODATA_N_TIT.D_POS_TRS_LEG_HIS_POS' "
+    },
+    {
+      "line": 235,
+      "text": "            and exists (select 1 from D_POS_TRS_LEG_HIS_POS_TEMP b where a.busi_date=b.busi_date)  --取得当前有更新的日期更新"
+    },
+    {
+      "line": 236,
+      "text": "   ) HP  "
+    },
+    {
+      "line": 237,
+      "text": "   ON RTL.Leg_Glbl_Seq_No  = HP.Leg_Glbl_Seq_No "
+    },
+    {
+      "line": 238,
+      "text": "   JOIN  (select * from pdata_news_n.t02_tit_scr_base_info  WHERE src_id='TIT' and grp_id = '01') RI "
+    },
+    {
+      "line": 239,
+      "text": "   ON HP.Prd_Id = RI.src_sys_prdno"
+    },
+    {
+      "line": 240,
+      "text": ""
+    },
+    {
+      "line": 241,
+      "text": "   LEFT JOIN pdata_news_n.t02_fxr_cfets_quot RRM "
+    },
+    {
+      "line": 242,
+      "text": "   ON  HP.BUSI_DATE =default.datekey2date(RRM.trd_dt )"
+    },
+    {
+      "line": 243,
+      "text": "   AND RT.Crrc_Cd = RRM.src_crrc_cd"
+    },
+    {
+      "line": 244,
+      "text": "   and RRM.src_id='TIT' "
+    },
+    {
+      "line": 245,
+      "text": "       and RRM.grp_id = '01' "
+    },
+    {
+      "line": 246,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_NEWS_N.t02_fut_base_info  WHERE src_id='TIT' AND grp_id = '01' )  FP "
+    },
+    {
+      "line": 247,
+      "text": "   ON  RI.scr_type = 'FUT'"
+    },
+    {
+      "line": 248,
+      "text": "   AND  RI.src_sys_prdno  = FP.src_sys_prdno "
+    },
+    {
+      "line": 249,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_NEWS_N.T02_PUB_CST_INFO  WHERE  const_type_cd='var00001')  PS"
+    },
+    {
+      "line": 250,
+      "text": "   ON   FP.Futr_Type_Cd=PS.CONST_CD"
+    },
+    {
+      "line": 251,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_N.T01_PTY_NAME  WHERE  SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' AND BUSI_DATE='${data_day_str}' )  CFN"
+    },
+    {
+      "line": 252,
+      "text": "   ON   RT.Cutp_Pty_Id=CFN.pty_id"
+    },
+    {
+      "line": 253,
+      "text": "   LEFT JOIN (SELECT * FROM PDATA_N.T01_PTY_CUTP  WHERE  SRC_TBL='ODATA_N_TIT.D_REF_COUNTER_PARTY' AND BUSI_DATE='${data_day_str}')  CLE"
+    },
+    {
+      "line": 254,
+      "text": "   ON   CFN.pty_id=CLE.pty_id"
+    },
+    {
+      "line": 255,
+      "text": "   WHERE RT.Comp_Stat_Cd NOT IN ('230','254','253','218','255')  --230 未处理, 254 待交易在途, 253 待交易, 218 作废, 255 草稿在途"
+    },
+    {
+      "line": 256,
+      "text": "   ;"
+    },
+    {
+      "line": 257,
+      "text": ""
+    }
+  ]
+}

@@ -1,0 +1,1525 @@
+{
+  "task_id": "105072",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.596Z",
+  "payload_sha256": "6a0690599f24912f3a40083e158ba39cdfe7a2945b1a7c8841f75cc866763583",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_SWAP_COMP_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Swap_Comp_Agt_Id            STRING COMMENT '互换合约协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Swap_Comp_Agt_Modifr        STRING COMMENT '互换合约协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Cutp_Pty_Id                 STRING COMMENT '交易对手当事人编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Ext_Comp_No                 STRING COMMENT '外部合约编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Crrc_Cd                     STRING COMMENT '币种代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Comb_Agt_Grp_Id             STRING COMMENT '组合协议组编号'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Comb_Type_Cd                STRING COMMENT '组合类型代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Swap_Type_Cd                STRING COMMENT '互换类型代码'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Sler_Cutp_Pty_Id            STRING COMMENT '销售方交易对手当事人编号'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Our_Id_Type_Cd              STRING COMMENT '我司身份类型代码'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Clr_Org_Id_Type_Cd          STRING COMMENT '清算机构身份类型代码'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Ast_Acct_Agt_Id             STRING COMMENT '资金账户协议编号'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Ast_Acct_Agt_Modify         STRING COMMENT '资金账户协议修饰符'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Bnk_Acct                    STRING COMMENT '银行账户'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Bnk_Bod_Name                STRING COMMENT '银行账户开户行名称'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Larg_Amt_Paid_No            STRING COMMENT '大额支付号'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Pay_Delay_Days              STRING COMMENT '兑付日延期天数'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Pay_Date                    STRING COMMENT '兑付日'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Term_Days                   STRING COMMENT '期限天数'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Trd_Date                    STRING COMMENT '交易日期'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Strt_Pric_Date              STRING COMMENT '期初定价日'"
+    },
+    {
+      "line": 31,
+      "text": "    ,End_Pric_Date               STRING COMMENT '期末定价日'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Prtc_Rate                   STRING COMMENT '参与率'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Open_Rate                   STRING COMMENT '建仓费率'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Ofst_Rate                   STRING COMMENT '平仓费率'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Comp_Stat_Cd                STRING COMMENT '合约状态'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Cust_Lkman_Id               STRING COMMENT '客户联系人编号'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Acct_Id                     STRING COMMENT '账号编号'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Cmphs_Seq_No                STRING COMMENT '综合业务管理平台序列号'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Leg_Cnt                     STRING COMMENT 'LEG数量'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Curr_Max_Leg_No             STRING COMMENT '当前最大LEG编号'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Lcrrc_Nom_Prin              STRING COMMENT '本币名义本金'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Cny_Nom_Prin                STRING COMMENT '人民币名义本金'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Ori_Crrd_Nom_Prin           STRING COMMENT '原币名义本金'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Lcrrc_Dyna_Nom_Prin         STRING COMMENT '本币动态名义本金'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Ori_Crrd_Dyna_Nom_Prin      STRING COMMENT '原币动态名义本金'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Actl_Trmt_Date              STRING COMMENT '实际终止日期'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Actl_Term                   STRING COMMENT '实际期限'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Actl_Sett_Rate              STRING COMMENT '实际结算汇率'"
+    },
+    {
+      "line": 49,
+      "text": "    ,Sett_Crrc_Cd                STRING COMMENT '结算币种代码'"
+    },
+    {
+      "line": 50,
+      "text": "    ,Trmt_Type_Cd                STRING COMMENT '终止类型代码'"
+    },
+    {
+      "line": 51,
+      "text": "    ,Erly_Trmt_Date              STRING COMMENT '提前终止日期'"
+    },
+    {
+      "line": 52,
+      "text": "    ,Actl_Vld_Date               STRING COMMENT '实际审批生效日期'"
+    },
+    {
+      "line": 53,
+      "text": "    ,Creator                     STRING COMMENT '创建人'"
+    },
+    {
+      "line": 54,
+      "text": "    ,Create_Time                 STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 55,
+      "text": "    ,Upd_Oper                    STRING COMMENT '修改人'"
+    },
+    {
+      "line": 56,
+      "text": "    ,Upd_Time                    STRING COMMENT '修改时间'"
+    },
+    {
+      "line": 57,
+      "text": "    ,Remark                      STRING COMMENT '备注'"
+    },
+    {
+      "line": 58,
+      "text": "    ,Trd_Cfm_No                  STRING COMMENT '交易确认编号'"
+    },
+    {
+      "line": 59,
+      "text": "    ,Intro_Inr_Org_Id            STRING COMMENT '引入内部机构编号'"
+    },
+    {
+      "line": 60,
+      "text": "    ,Undrl_Cd                    STRING COMMENT '标的代码'"
+    },
+    {
+      "line": 61,
+      "text": "    ,Actl_Pay_Date               STRING COMMENT '实际兑付日'"
+    },
+    {
+      "line": 62,
+      "text": "    ,Erly_Trmt_Flag              STRING COMMENT '提前终止标志'"
+    },
+    {
+      "line": 63,
+      "text": "    ,Sign_Prd_Name               STRING COMMENT '代签产品名称'"
+    },
+    {
+      "line": 64,
+      "text": "    ,Fix_Rate                    STRING COMMENT '固定收益率'"
+    },
+    {
+      "line": 65,
+      "text": "    ,Cust_Mngr_User_Id           STRING COMMENT '客户经理用户编号'"
+    },
+    {
+      "line": 66,
+      "text": "    ,Oper_User_Id                STRING COMMENT '经办人用户编号'"
+    },
+    {
+      "line": 67,
+      "text": "    ,Comp_Vld_Date               STRING COMMENT '合约生效日期'"
+    },
+    {
+      "line": 68,
+      "text": "    ,Comp_Due_Date               STRING COMMENT '合约到期日期'"
+    },
+    {
+      "line": 69,
+      "text": "    ,Otc_Dept_Flag               STRING COMMENT 'otc部门标志'"
+    },
+    {
+      "line": 70,
+      "text": "    ,Rpt_Flag                    STRING COMMENT '报送标志'"
+    },
+    {
+      "line": 71,
+      "text": "    ,Ext_Rpt_Flag                STRING COMMENT '外部报送标志'"
+    },
+    {
+      "line": 72,
+      "text": "    ,Tit_Busi_Type_Cd            STRING COMMENT 'TIT业务类型代码'"
+    },
+    {
+      "line": 73,
+      "text": "    ,Stru_Leg_Pay_Dir_Cd         STRING COMMENT '结构化腿支付方向代码'"
+    },
+    {
+      "line": 74,
+      "text": "    ,Fix_Leg_Pay_Dir_Cd          STRING COMMENT '固定腿支付方向代码'"
+    },
+    {
+      "line": 75,
+      "text": "    ,Flot_Leg_Pay_Dir_Cd         STRING COMMENT '浮动腿支付方向代码'"
+    },
+    {
+      "line": 76,
+      "text": "    ,Accum_Rlz_Intr              STRING COMMENT '累计已实现利息'"
+    },
+    {
+      "line": 77,
+      "text": "    ,Accum_Unrlz_Intr            STRING COMMENT '累计未实现利息'"
+    },
+    {
+      "line": 78,
+      "text": "    ,Oth_Fee_Tot                 STRING COMMENT '其他费用汇总'"
+    },
+    {
+      "line": 79,
+      "text": "    ,Year_Accum_Pal              STRING COMMENT '年累计盈亏'"
+    },
+    {
+      "line": 80,
+      "text": "    ,Data_Src_Cd                 STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 81,
+      "text": "    ,Task_Name                   STRING COMMENT '任务名'"
+    },
+    {
+      "line": 82,
+      "text": "    ,Data_Etl_Date               STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 83,
+      "text": "    ,Data_Upt_Date               STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 84,
+      "text": "    ,Data_Time                   STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 85,
+      "text": "    ,Sett_Crrc_Nom_Prin          STRING COMMENT '结算币种名义本金'"
+    },
+    {
+      "line": 86,
+      "text": "    ,Sett_Crrc_Dyna_Nom_Prin     STRING COMMENT '结算币种动态名义本金'"
+    },
+    {
+      "line": 87,
+      "text": "    ,Sett_Bgng_Rate              STRING COMMENT '结算期初汇率'"
+    },
+    {
+      "line": 88,
+      "text": "    ,Lcrrc_Ori_Bgng_Rate         STRING COMMENT '本币对原币期初汇率'"
+    },
+    {
+      "line": 89,
+      "text": "    ,Rate_Undrl_Sett_Crrc        STRING COMMENT '汇率标的结算币种'"
+    },
+    {
+      "line": 90,
+      "text": "    ,Rate_Undrl_Lcrrc_Crrc       STRING COMMENT '汇率标的本币币种'"
+    },
+    {
+      "line": 91,
+      "text": "    ,Lcrrc_Crrc_Cd               STRING COMMENT '本币币种代码'"
+    },
+    {
+      "line": 92,
+      "text": "    ,Revw_Stat_Cd                STRING COMMENT '复核状态代码'"
+    },
+    {
+      "line": 93,
+      "text": "    ,Qta_Appr_Stat_Cd            STRING COMMENT '限额审批状态代码'"
+    },
+    {
+      "line": 94,
+      "text": "    ,Actl_Sett_Rate_Disp         STRING COMMENT '实际结算汇率_展示'"
+    },
+    {
+      "line": 95,
+      "text": "    ,Sett_Bgng_Rate_Disp         STRING COMMENT '结算期初汇率_展示'"
+    },
+    {
+      "line": 96,
+      "text": "    ,Lcrrc_Ori_Bgng_Rate_Disp    STRING COMMENT '本币对原币期初汇率_展示'"
+    },
+    {
+      "line": 97,
+      "text": "    ,Mhs_Undrl_Flag              STRING COMMENT '港股通标的标志'"
+    },
+    {
+      "line": 98,
+      "text": "    ,Cros_Crrc_Type_Cd           STRING COMMENT '跨币种类型代码'"
+    },
+    {
+      "line": 99,
+      "text": "    ,Income_Vchr_Type_Cd         STRING COMMENT '收益凭证类型代码'"
+    },
+    {
+      "line": 100,
+      "text": "    ,Rate_Mode_Cd                STRING COMMENT '利率模式代码'"
+    },
+    {
+      "line": 101,
+      "text": "    ,Inta_Date_Delay_Days        STRING COMMENT '计息日延期天数'"
+    },
+    {
+      "line": 102,
+      "text": "    ,Reg_Scr_Src_Flag            STRING COMMENT '登记券源标志'"
+    },
+    {
+      "line": 103,
+      "text": "    ,Renw_Comp_No                STRING COMMENT '展期合约编号'"
+    },
+    {
+      "line": 104,
+      "text": "    ,Long_Bgng_Nom_Prin          STRING COMMENT '多头期初名义本金'"
+    },
+    {
+      "line": 105,
+      "text": "    ,Shor_Bgng_Nom_Prin          STRING COMMENT '空头期初名义本金'"
+    },
+    {
+      "line": 106,
+      "text": "    ,Mval                        STRING COMMENT '市值'"
+    },
+    {
+      "line": 107,
+      "text": "    ,Ast_Use_Cost                STRING COMMENT '资金使用成本'"
+    },
+    {
+      "line": 108,
+      "text": "    ,Stk_Trd_Income              STRING COMMENT '股票交易收入'"
+    },
+    {
+      "line": 109,
+      "text": "    ,Stk_Trd_Cost                STRING COMMENT '股票交易成本'"
+    },
+    {
+      "line": 110,
+      "text": "    ,Flot_Yield_Annu_Flag        STRING COMMENT '浮动收益年化标志'"
+    },
+    {
+      "line": 111,
+      "text": "    ,Inta_Pd_Type_Cd             STRING COMMENT '计息期类型代码'"
+    },
+    {
+      "line": 112,
+      "text": "    ,Itpy_Pd_Cd                  STRING COMMENT '付息周期代码'"
+    },
+    {
+      "line": 113,
+      "text": "    ,Inta_Bm_Cd                  STRING COMMENT '计息基准代码'"
+    },
+    {
+      "line": 114,
+      "text": "    ,Main_Agt_No                 STRING COMMENT '主协议编号'"
+    },
+    {
+      "line": 115,
+      "text": "    ,Supp_Agt_No                 STRING COMMENT '补充协议编号'"
+    },
+    {
+      "line": 116,
+      "text": "    ,Real_Src_Tbl                STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 117,
+      "text": "    ,Spon_Inr_Org_Id             STRING COMMENT '主办内部机构编号'"
+    },
+    {
+      "line": 118,
+      "text": "    ,Rela_Income_Vchr            STRING COMMENT '关联收益凭证'"
+    },
+    {
+      "line": 119,
+      "text": "    ,Rela_Csm_Prd                STRING COMMENT '关联代销产品'"
+    },
+    {
+      "line": 120,
+      "text": "    ,Seg_Inta_Date               STRING COMMENT '分段计息日期'"
+    },
+    {
+      "line": 121,
+      "text": "    ,Pay_Freq_Cd                 STRING COMMENT '支付频率代码'"
+    },
+    {
+      "line": 122,
+      "text": "    ,Intr_Sett_Date              STRING COMMENT '结息日期'"
+    },
+    {
+      "line": 123,
+      "text": "    ,Intr_Sett_Type_Cd           STRING COMMENT '结息类型代码'"
+    },
+    {
+      "line": 124,
+      "text": "    ,Tdy_Intr_Sett_Type_Cd       STRING COMMENT '当天结息类型代码'"
+    },
+    {
+      "line": 125,
+      "text": "    ,Intr_Sett_Hldy_Pstp_Flag    STRING COMMENT '结息节假日顺延标志'"
+    },
+    {
+      "line": 126,
+      "text": "    ,Ivst_Var_Cd                 STRING COMMENT '投资品种代码'"
+    },
+    {
+      "line": 127,
+      "text": "    ,Ivst_Term_Cd                STRING COMMENT '投资期限代码'"
+    },
+    {
+      "line": 128,
+      "text": "    ,Risk_Grade_Cd               STRING COMMENT '风险级别代码'"
+    },
+    {
+      "line": 129,
+      "text": "    ,Ori_Crrd_Long_Dyna_Nom_Prin  STRING COMMENT '原币多头动态名义本金'"
+    },
+    {
+      "line": 130,
+      "text": "    ,Sett_Crrc_Long_Dyna_Nom_Prin STRING COMMENT '结算币种多头动态名义本金'"
+    },
+    {
+      "line": 131,
+      "text": "    ,Ori_Crrd_Shor_Dyna_Nom_Prin  STRING COMMENT '原币空头动态名义本金'"
+    },
+    {
+      "line": 132,
+      "text": "    ,Sett_Crrc_Shor_Dyna_Nom_Prin STRING COMMENT '结算币种空头动态名义本金'"
+    },
+    {
+      "line": 133,
+      "text": "    ,Defr_Way_Cd                  STRING COMMENT '递延方式代码'"
+    },
+    {
+      "line": 134,
+      "text": "    ,Intr_Strt_End_Scop_Type_Cd   STRING COMMENT '利息起止区间类型代码'"
+    },
+    {
+      "line": 135,
+      "text": "    ,Pay_Cal_Type_Cd              STRING COMMENT '兑付日历类型代码'"
+    },
+    {
+      "line": 136,
+      "text": "    ,Inta_Cal_Type_Cd             STRING COMMENT '计息日历类型代码'"
+    },
+    {
+      "line": 137,
+      "text": "    ,Stk_Divd_Mode_Cd             STRING COMMENT '送股模式代码'"
+    },
+    {
+      "line": 138,
+      "text": "    ,Comp_Usag_Cd                 STRING COMMENT '合约用途代码'"
+    },
+    {
+      "line": 139,
+      "text": "    ,Comp_Create_Chan_Cd          STRING COMMENT '合约生成渠道代码'"
+    },
+    {
+      "line": 140,
+      "text": "    ,Pntra_Hold_Montr_Flag        STRING COMMENT '穿透持仓监控标志'"
+    },
+    {
+      "line": 141,
+      "text": "    ,Sett_Rate_Src_Id             STRING COMMENT '结算汇率来源编号'"
+    },
+    {
+      "line": 142,
+      "text": "    ,Src_Data_Src_Id              STRING COMMENT '源数据来源编号'"
+    },
+    {
+      "line": 143,
+      "text": "    ,Valu_Trmt_Date               STRING COMMENT '估值终止日期'"
+    },
+    {
+      "line": 144,
+      "text": ")COMMENT '场外互换合约信息'"
+    },
+    {
+      "line": 145,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 146,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 147,
+      "text": ""
+    },
+    {
+      "line": 148,
+      "text": "-- querySql"
+    },
+    {
+      "line": 149,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_SWAP_COMP_INFO PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 150,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 151,
+      "text": "--Group1: Source Table:[ODATA_N_TIT.D_REF_TRS:客户资金账户信息] "
+    },
+    {
+      "line": 152,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 153,
+      "text": "SELECT"
+    },
+    {
+      "line": 154,
+      "text": "     A.KEY_OTC_TRADE_ID                                AS  Swap_Comp_Agt_Id        --互换合约协议编号        "
+    },
+    {
+      "line": 155,
+      "text": "    ,'20206'                                           AS  Swap_Comp_Agt_Modifr    --互换合约协议修饰符      "
+    },
+    {
+      "line": 156,
+      "text": "    ,IF(NVL(TRIM(KEY_CTPTY_ID),'')='','',CONCAT('TIT060-',KEY_CTPTY_ID))"
+    },
+    {
+      "line": 157,
+      "text": "                                                       AS  Cutp_Pty_Id             --交易对手当事人编号      "
+    },
+    {
+      "line": 158,
+      "text": "    ,CONTRACT_CODE                                     AS  Ext_Comp_No             --外部合约编号            "
+    },
+    {
+      "line": 159,
+      "text": "    ,CURRENCY                                          AS  Crrc_Cd                 --币种代码                "
+    },
+    {
+      "line": 160,
+      "text": "    ,BUNDLE_ID                                         AS  Comb_Agt_Grp_Id         --组合协议编号            "
+    },
+    {
+      "line": 161,
+      "text": "    ,NVL(B.DW_CD_VAL,TRS_BUNDLE_TYPE)                  AS  Comb_Type_Cd            --组合类型代码            "
+    },
+    {
+      "line": 162,
+      "text": "    ,TRS_TYPE                                          AS  Swap_Type_Cd            --互换类型代码            "
+    },
+    {
+      "line": 163,
+      "text": "    ,IF(NVL(TRIM(SELLER),'')='','',CONCAT('TIT060-',SELLER))     AS  Sler_Cutp_Pty_Id        --销售方交易对手当事人编号"
+    },
+    {
+      "line": 164,
+      "text": "    ,PARTY                                             AS  Our_Id_Type_Cd          --我司身份类型代码        "
+    },
+    {
+      "line": 165,
+      "text": "    ,CLEARING_HOUSE                                    AS  Clr_Org_Id_Type_Cd      --清算机构身份类型代码    "
+    },
+    {
+      "line": 166,
+      "text": "    ,KEY_CAPITAL_ACCT_ID                               AS  Ast_Acct_Agt_Id         --资金账户协议编号        "
+    },
+    {
+      "line": 167,
+      "text": "    ,IF(NVL(TRIM(KEY_CAPITAL_ACCT_ID),'')='','','10220')"
+    },
+    {
+      "line": 168,
+      "text": "                                                       AS  Ast_Acct_Agt_Modify     --资金账户协议修饰符       "
+    },
+    {
+      "line": 169,
+      "text": "    ,ACCOUNT_NUMBER                                    AS  Bnk_Acct                --银行账户                "
+    },
+    {
+      "line": 170,
+      "text": "    ,BANK_OF_DEPOSIT                                   AS  Bnk_Bod_Name            --银行账户开户行名称      "
+    },
+    {
+      "line": 171,
+      "text": "    ,LARGE_PAYMENT_ACCOUNT                             AS  Larg_Amt_Paid_No        --大额支付号              "
+    },
+    {
+      "line": 172,
+      "text": "    ,PAYMENT_DATE_DELAY                                AS  Pay_Delay_Days          --兑付日延期天数          "
+    },
+    {
+      "line": 173,
+      "text": "    ,PAYMENT_DATE                                      AS  Pay_Date                --兑付日                  "
+    },
+    {
+      "line": 174,
+      "text": "    ,TIME_TO_MATURITY                                  AS  Term_Days               --期限天数                "
+    },
+    {
+      "line": 175,
+      "text": "    ,TRADE_DATE                                        AS  Trd_Date                --交易日期                "
+    },
+    {
+      "line": 176,
+      "text": "    ,START_DATE                                        AS  Strt_Pric_Date          --期初定价日            "
+    },
+    {
+      "line": 177,
+      "text": "    ,END_DATE                                          AS  End_Pric_Date           --期末定价日            "
+    },
+    {
+      "line": 178,
+      "text": "    ,PARTICIPATION_RATE                                AS  Prtc_Rate               --参与率                "
+    },
+    {
+      "line": 179,
+      "text": "    ,OPEN_RATE                                         AS  Open_Rate               --建仓费率              "
+    },
+    {
+      "line": 180,
+      "text": "    ,CLOSE_RATE                                        AS  Ofst_Rate               --平仓费率              "
+    },
+    {
+      "line": 181,
+      "text": "    ,NVL(C.DW_CD_VAL,CONTR_STATUS)                     AS  Comp_Stat_Cd            --合约状态              "
+    },
+    {
+      "line": 182,
+      "text": "    ,KEY_CONTACT_ID                                    AS  Cust_Lkman_Id           --客户联系人编号        "
+    },
+    {
+      "line": 183,
+      "text": "    ,KEY_ACCOUNT_ID                                    AS  Acct_Id                 --账号编号              "
+    },
+    {
+      "line": 184,
+      "text": "    ,ACCOUNT_SEQ_ID                                    AS  Cmphs_Seq_No            --综合业务管理平台序列号"
+    },
+    {
+      "line": 185,
+      "text": "    ,LEG_COUNTING                                      AS  Leg_Cnt                 --LEG数量               "
+    },
+    {
+      "line": 186,
+      "text": "    ,MAX_LEG_SEQ_ID                                    AS  Curr_Max_Leg_No         --当前最大LEG编号       "
+    },
+    {
+      "line": 187,
+      "text": "    ,NOTIONAL_BASE                                     AS  Lcrrc_Nom_Prin          --本币名义本金       --20230726修改源字段       "
+    },
+    {
+      "line": 188,
+      "text": "    ,''                                                AS  Cny_Nom_Prin            --人民币名义本金     --20230726删除，该字段停用了     "
+    },
+    {
+      "line": 189,
+      "text": "    ,NOTIONAL_ORG                                      AS  Ori_Crrd_Nom_Prin       --原币名义本金          "
+    },
+    {
+      "line": 190,
+      "text": "    ,DYNAMIC_NOTIONAL_BASE                             AS  Lcrrc_Dyna_Nom_Prin     --本币动态名义本金          "
+    },
+    {
+      "line": 191,
+      "text": "    ,DYNAMIC_NOTIONAL_ORG                              AS  Ori_Crrd_Dyna_Nom_Prin  --原币动态名义本金      "
+    },
+    {
+      "line": 192,
+      "text": "    ,ACTUAL_PAYMENT_DATE                               AS  Actl_Trmt_Date          --实际终止日期          "
+    },
+    {
+      "line": 193,
+      "text": "    ,ACTUAL_MATURITY                                   AS  Actl_Term               --实际期限              "
+    },
+    {
+      "line": 194,
+      "text": "    ,ACTUAL_SETTLE_RATE                                AS  Actl_Sett_Rate          --实际结算汇率          "
+    },
+    {
+      "line": 195,
+      "text": "    ,SETTLEMENT_CURRENCY                               AS  Sett_Crrc_Cd            --结算币种代码          "
+    },
+    {
+      "line": 196,
+      "text": "    ,TERMINATION_TYPE                                  AS  Trmt_Type_Cd            --终止类型代码          "
+    },
+    {
+      "line": 197,
+      "text": "    ,EARLY_TERMINATION_DATE                            AS  Erly_Trmt_Date          --提前终止日期          "
+    },
+    {
+      "line": 198,
+      "text": "    ,INPUT_DATE                                        AS  Actl_Vld_Date           --实际审批生效日期      "
+    },
+    {
+      "line": 199,
+      "text": "    ,CREATED_BY                                        AS  Creator                 --创建人                "
+    },
+    {
+      "line": 200,
+      "text": "    ,CREATED_DATETIME                                  AS  Create_Time             --创建时间              "
+    },
+    {
+      "line": 201,
+      "text": "    ,UPDATED_BY                                        AS  Upd_Oper                --修改人                "
+    },
+    {
+      "line": 202,
+      "text": "    ,UPDATED_DATETIME                                  AS  Upd_Time                --修改时间              "
+    },
+    {
+      "line": 203,
+      "text": "    ,REMARK                                            AS  Remark                  --备注 "
+    },
+    {
+      "line": 204,
+      "text": "    ,''                                                AS  Trd_Cfm_No              --交易确认编号"
+    },
+    {
+      "line": 205,
+      "text": "    ,IF(NVL(TRIM(A2.PROPERTY_VALUE),'')='','',CONCAT('ERP-',A2.PROPERTY_VALUE))"
+    },
+    {
+      "line": 206,
+      "text": "                                                       AS  Intro_Inr_Org_Id        --引入内部机构编号"
+    },
+    {
+      "line": 207,
+      "text": "    ,''                                                AS  Undrl_Cd                --标的代码"
+    },
+    {
+      "line": 208,
+      "text": "    ,''                                                AS  Actl_Pay_Date           --实际兑付日"
+    },
+    {
+      "line": 209,
+      "text": "    ,CASE WHEN EARLY_TERMINABLE ='Y'  THEN '1' "
+    },
+    {
+      "line": 210,
+      "text": "          WHEN EARLY_TERMINABLE ='N'  THEN '0'"
+    },
+    {
+      "line": 211,
+      "text": "          ELSE EARLY_TERMINABLE  END                   AS  Erly_Trmt_Flag          --提前终止标志"
+    },
+    {
+      "line": 212,
+      "text": "    ,''                                                AS  Sign_Prd_Name           --代签产品名称"
+    },
+    {
+      "line": 213,
+      "text": "    ,''                                                AS  Fix_Rate                --固定收益率"
+    },
+    {
+      "line": 214,
+      "text": "    ,A4.PROPERTY_VALUE                                 AS  Cust_Mngr_User_Id       --客户经理用户编号"
+    },
+    {
+      "line": 215,
+      "text": "    ,A5.PROPERTY_VALUE                                 AS  Oper_User_Id            --经办人用户编号"
+    },
+    {
+      "line": 216,
+      "text": "    ,''                                                AS  Comp_Vld_Date           --合约生效日期"
+    },
+    {
+      "line": 217,
+      "text": "    ,''                                                AS  Comp_Due_Date           --合约到期日期"
+    },
+    {
+      "line": 218,
+      "text": "    ,''                                                AS  Otc_Dept_Flag           --otc部门标志"
+    },
+    {
+      "line": 219,
+      "text": "    ,''                                                AS  Rpt_Flag                --报送标志"
+    },
+    {
+      "line": 220,
+      "text": "    ,''                                                AS  Ext_Rpt_Flag            --外部报送标志"
+    },
+    {
+      "line": 221,
+      "text": "    ,''                                                AS  Tit_Busi_Type_Cd        --TIT业务类型代码"
+    },
+    {
+      "line": 222,
+      "text": "    ,''                                                AS  Stru_Leg_Pay_Dir_Cd     --结构化腿支付方向代码"
+    },
+    {
+      "line": 223,
+      "text": "    ,''                                                AS  Fix_Leg_Pay_Dir_Cd      --固定腿支付方向代码"
+    },
+    {
+      "line": 224,
+      "text": "    ,''                                                AS  Flot_Leg_Pay_Dir_Cd     --浮动腿支付方向代码"
+    },
+    {
+      "line": 225,
+      "text": "    ,''                                                AS  Accum_Rlz_Intr          --累计已实现利息"
+    },
+    {
+      "line": 226,
+      "text": "    ,''                                                AS  Accum_Unrlz_Intr        --累计未实现利息"
+    },
+    {
+      "line": 227,
+      "text": "    ,''                                                AS  Oth_Fee_Tot             --其他费用汇总"
+    },
+    {
+      "line": 228,
+      "text": "    ,''                                                AS  Year_Accum_Pal          --年累计盈亏"
+    },
+    {
+      "line": 229,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 230,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 231,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 232,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 233,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 234,
+      "text": "    ,NOTIONAL                                          AS Sett_Crrc_Nom_Prin       --结算币种名义本金"
+    },
+    {
+      "line": 235,
+      "text": "    ,DYNAMIC_NOTIONAL                                  AS Sett_Crrc_Dyna_Nom_Prin  --结算币种动态名义本金"
+    },
+    {
+      "line": 236,
+      "text": "    ,SETTLE_INIT_EXCHANGE_RATE                         AS Sett_Bgng_Rate           --结算期初汇率"
+    },
+    {
+      "line": 237,
+      "text": "    ,BASE_INIT_EXCHANGE_RATE                           AS Lcrrc_Ori_Bgng_Rate      --本币对原币期初汇率"
+    },
+    {
+      "line": 238,
+      "text": "    ,SETTLE_CCY_UNDERLYING_ID                          AS Rate_Undrl_Sett_Crrc     --汇率标的结算币种"
+    },
+    {
+      "line": 239,
+      "text": "    ,BASE_CCY_UNDERLYING_ID                            AS Rate_Undrl_Lcrrc_Crrc    --汇率标的本币币种"
+    },
+    {
+      "line": 240,
+      "text": "    ,BASE_CURRENCY                                     AS Lcrrc_Crrc_Cd            --本币币种代码"
+    },
+    {
+      "line": 241,
+      "text": "    ,NVL(D.DW_CD_VAL,REPEAT_CHECK_STATUS)              AS Revw_Stat_Cd               --复核状态代码"
+    },
+    {
+      "line": 242,
+      "text": "    ,NVL(E.DW_CD_VAL,A1.AUDIT_STATUS)                  AS Qta_Appr_Stat_Cd           --限额审批状态代码"
+    },
+    {
+      "line": 243,
+      "text": "    ,ACTUAL_SETTLE_PARIS_EXC_RATE                      AS Actl_Sett_Rate_Disp        --实际结算汇率_展示"
+    },
+    {
+      "line": 244,
+      "text": "    ,SETTLE_INIT_PAIRS_EXC_RATE                        AS Sett_Bgng_Rate_Disp        --结算期初汇率_展示"
+    },
+    {
+      "line": 245,
+      "text": "    ,BASE_INIT_PAIRS_EXC_RATE                          AS Lcrrc_Ori_Bgng_Rate_Disp   --本币对原币期初汇率_展示"
+    },
+    {
+      "line": 246,
+      "text": "    ,CASE WHEN HK_STOCK_CONNECT ='Y'  THEN '1' "
+    },
+    {
+      "line": 247,
+      "text": "          WHEN HK_STOCK_CONNECT ='N'  THEN '0'"
+    },
+    {
+      "line": 248,
+      "text": "          ELSE HK_STOCK_CONNECT  END                   AS Mhs_Undrl_Flag             --港股通标的标志"
+    },
+    {
+      "line": 249,
+      "text": "    ,CROSS_CURRENCY_TYPE                               AS Cros_Crrc_Type_Cd          --跨币种类型代码"
+    },
+    {
+      "line": 250,
+      "text": "    ,RELATE_PRODUCT_TYPE                               AS Income_Vchr_Type_Cd        --收益凭证类型代码"
+    },
+    {
+      "line": 251,
+      "text": "    ,FX_RATE_MODEL                                     AS Rate_Mode_Cd               --利率模式代码"
+    },
+    {
+      "line": 252,
+      "text": "    ,INTEREST_DATES_DELAY                              AS Inta_Date_Delay_Days       --计息日延期天数"
+    },
+    {
+      "line": 253,
+      "text": "    ,CASE WHEN NEED_LEND_RECORD ='Y'  THEN '1' "
+    },
+    {
+      "line": 254,
+      "text": "          WHEN NEED_LEND_RECORD ='N'  THEN '0'"
+    },
+    {
+      "line": 255,
+      "text": "          ELSE NEED_LEND_RECORD  END                   AS Reg_Scr_Src_Flag           --登记券源标志"
+    },
+    {
+      "line": 256,
+      "text": "    ,ROLLOVER_INTERNAL_TRADE_ID                        AS Renw_Comp_No               --展期合约编号"
+    },
+    {
+      "line": 257,
+      "text": "    ,''                                                AS Long_Bgng_Nom_Prin         --多头期初名义本金"
+    },
+    {
+      "line": 258,
+      "text": "    ,''                                                AS Shor_Bgng_Nom_Prin         --空头期初名义本金"
+    },
+    {
+      "line": 259,
+      "text": "    ,''                                                AS Mval                       --市值"
+    },
+    {
+      "line": 260,
+      "text": "    ,''                                                AS Ast_Use_Cost               --资金使用成本"
+    },
+    {
+      "line": 261,
+      "text": "    ,''                                                AS Stk_Trd_Income             --股票交易收入"
+    },
+    {
+      "line": 262,
+      "text": "    ,''                                                AS Stk_Trd_Cost               --股票交易成本"
+    },
+    {
+      "line": 263,
+      "text": "    ,''                                                AS Flot_Yield_Annu_Flag       --浮动收益年化标志"
+    },
+    {
+      "line": 264,
+      "text": "    ,''                                                AS Inta_Pd_Type_Cd            --计息期类型代码"
+    },
+    {
+      "line": 265,
+      "text": "    ,''                                                AS Itpy_Pd_Cd                 --付息周期代码"
+    },
+    {
+      "line": 266,
+      "text": "    ,''                                                AS Inta_Bm_Cd                 --计息基准代码"
+    },
+    {
+      "line": 267,
+      "text": "    ,''                                                AS Main_Agt_No                --主协议编号"
+    },
+    {
+      "line": 268,
+      "text": "    ,''                                                AS Supp_Agt_No                --补充协议编号"
+    },
+    {
+      "line": 269,
+      "text": "    ,'${src_table}'                               AS Real_Src_Tbl               --真实源表"
+    },
+    {
+      "line": 270,
+      "text": "    ,IF(NVL(TRIM(A3.PROPERTY_VALUE),'')='','',CONCAT('ERP-',A3.PROPERTY_VALUE))"
+    },
+    {
+      "line": 271,
+      "text": "                                                       AS Spon_Inr_Org_Id            --主办内部机构编号"
+    },
+    {
+      "line": 272,
+      "text": "    ,A6.PROPERTY_VALUE                                 AS Rela_Income_Vchr           --关联收益凭证"
+    },
+    {
+      "line": 273,
+      "text": "    ,A7.PROPERTY_VALUE                                 AS Rela_Csm_Prd               --关联代销产品"
+    },
+    {
+      "line": 274,
+      "text": "    ,''                                                AS Seg_Inta_Date              --分段计息日期"
+    },
+    {
+      "line": 275,
+      "text": "    ,''                                                AS Pay_Freq_Cd                --支付频率代码"
+    },
+    {
+      "line": 276,
+      "text": "    ,''                                                AS Intr_Sett_Date             --结息日期"
+    },
+    {
+      "line": 277,
+      "text": "    ,''                                                AS Intr_Sett_Type_Cd          --结息类型代码"
+    },
+    {
+      "line": 278,
+      "text": "    ,''                                                AS Tdy_Intr_Sett_Type_Cd      --当天结息类型代码"
+    },
+    {
+      "line": 279,
+      "text": "    ,''                                                AS Intr_Sett_Hldy_Pstp_Flag   --结息节假日顺延标志"
+    },
+    {
+      "line": 280,
+      "text": "    ,NVL(F.DW_CD_VAL,A8.PROPERTY_VALUE)                AS Ivst_Var_Cd                --投资品种代码"
+    },
+    {
+      "line": 281,
+      "text": "    ,NVL(G.DW_CD_VAL,A9.PROPERTY_VALUE)                AS Ivst_Term_Cd               --投资期限代码"
+    },
+    {
+      "line": 282,
+      "text": "    ,NVL(H.DW_CD_VAL,A10.PROPERTY_VALUE)               AS Risk_Grade_Cd              --风险级别代码"
+    },
+    {
+      "line": 283,
+      "text": "    ,''                                                AS Ori_Crrd_Long_Dyna_Nom_Prin     --原币多头动态名义本金"
+    },
+    {
+      "line": 284,
+      "text": "    ,''                                                AS Sett_Crrc_Long_Dyna_Nom_Prin    --结算币种多头动态名义本金"
+    },
+    {
+      "line": 285,
+      "text": "    ,''                                                AS Ori_Crrd_Shor_Dyna_Nom_Prin     --原币空头动态名义本金"
+    },
+    {
+      "line": 286,
+      "text": "    ,''                                                AS Sett_Crrc_Shor_Dyna_Nom_Prin    --结算币种空头动态名义本金"
+    },
+    {
+      "line": 287,
+      "text": "    ,''                                                AS Defr_Way_Cd                     --递延方式代码"
+    },
+    {
+      "line": 288,
+      "text": "    ,''                                                AS Intr_Strt_End_Scop_Type_Cd      --利息起止区间类型代码"
+    },
+    {
+      "line": 289,
+      "text": "    ,''                                                AS Pay_Cal_Type_Cd                 --兑付日历类型代码"
+    },
+    {
+      "line": 290,
+      "text": "    ,''                                                AS Inta_Cal_Type_Cd                --计息日历类型代码"
+    },
+    {
+      "line": 291,
+      "text": "    ,''                                                AS Stk_Divd_Mode_Cd                --送股模式代码"
+    },
+    {
+      "line": 292,
+      "text": "    ,CONTRACT_USE                                      AS Comp_Usag_Cd                    --合约用途代码"
+    },
+    {
+      "line": 293,
+      "text": "    ,SOURCE_CHANNEL                                    AS Comp_Create_Chan_Cd             --合约生成渠道代码"
+    },
+    {
+      "line": 294,
+      "text": "    ,CASE WHEN UNDERLYING_VISIBLE ='Y'  THEN '1' "
+    },
+    {
+      "line": 295,
+      "text": "          WHEN UNDERLYING_VISIBLE ='N'  THEN '0'"
+    },
+    {
+      "line": 296,
+      "text": "          ELSE UNDERLYING_VISIBLE  END                 AS Pntra_Hold_Montr_Flag           --穿透持仓监控标志"
+    },
+    {
+      "line": 297,
+      "text": "    ,SETTLE_RATE_SOURCE_ID                             AS Sett_Rate_Src_Id                --结算汇率来源编号"
+    },
+    {
+      "line": 298,
+      "text": "    ,DATA_SOURCE_ID                                    AS Src_Data_Src_Id                 --源数据来源编号"
+    },
+    {
+      "line": 299,
+      "text": "    ,SUBSTR(VALUATION_END_DATE,1,10)                   AS Valu_Trmt_Date                  --估值终止日期"
+    },
+    {
+      "line": 300,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 301,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,AUDIT_STATUS  FROM ODATA_N_TIT.D_TRD_TRS_LIMIT_AUDIT WHERE  BUSI_DATE='${data_day_str}' )A1"
+    },
+    {
+      "line": 302,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A1.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 303,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='introOrg')A2"
+    },
+    {
+      "line": 304,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A2.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 305,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='sponsorOrg')A3"
+    },
+    {
+      "line": 306,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A3.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 307,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='customerManager')A4"
+    },
+    {
+      "line": 308,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A4.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 309,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='operator')A5"
+    },
+    {
+      "line": 310,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A5.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 311,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='relateProduct')A6"
+    },
+    {
+      "line": 312,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A6.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 313,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='relateProductCode')A7"
+    },
+    {
+      "line": 314,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A7.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 315,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='investAsset')A8"
+    },
+    {
+      "line": 316,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A8.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 317,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='investMaturity')A9"
+    },
+    {
+      "line": 318,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A9.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 319,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,PROPERTY_VALUE  FROM ODATA_N_TIT.D_TRD_OTC_CONTR_PROPS WHERE  BUSI_DATE='${data_day_str}' AND PROPERTY_NAME='riskLevel')A10"
+    },
+    {
+      "line": 320,
+      "text": "       ON A.KEY_OTC_TRADE_ID=A10.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 321,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 322,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 323,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 324,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 325,
+      "text": "            AND TGT_TAB_FLD  = 'Comb_Type_Cd'"
+    },
+    {
+      "line": 326,
+      "text": "            AND SRC_TAB_NAME = 'REF_TRS'"
+    },
+    {
+      "line": 327,
+      "text": "            AND SRC_FLD_NAME = 'TRS_BUNDLE_TYPE'"
+    },
+    {
+      "line": 328,
+      "text": "            AND SRC_SYS_NAME='TIT')B"
+    },
+    {
+      "line": 329,
+      "text": "   ON      A.TRS_BUNDLE_TYPE =B.SRC_CD_VAL                  --TRS_BUNDLE_TYPE 转码"
+    },
+    {
+      "line": 330,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 331,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 332,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 333,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 334,
+      "text": "            AND TGT_TAB_FLD  = 'Comp_Stat_Cd'"
+    },
+    {
+      "line": 335,
+      "text": "            AND SRC_TAB_NAME = 'REF_TRS'"
+    },
+    {
+      "line": 336,
+      "text": "            AND SRC_FLD_NAME = 'CONTR_STATUS'"
+    },
+    {
+      "line": 337,
+      "text": "            AND SRC_SYS_NAME='TIT')C"
+    },
+    {
+      "line": 338,
+      "text": "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+    },
+    {
+      "line": 339,
+      "text": "   "
+    },
+    {
+      "line": 340,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 341,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 342,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 343,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 344,
+      "text": "            AND TGT_TAB_FLD  = 'Revw_Stat_Cd'"
+    },
+    {
+      "line": 345,
+      "text": "            AND SRC_TAB_NAME = 'REF_TRS'"
+    },
+    {
+      "line": 346,
+      "text": "            AND SRC_FLD_NAME = 'REPEAT_CHECK_STATUS'"
+    },
+    {
+      "line": 347,
+      "text": "            AND SRC_SYS_NAME='TIT')D"
+    },
+    {
+      "line": 348,
+      "text": "   ON      A.REPEAT_CHECK_STATUS =D.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+    },
+    {
+      "line": 349,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 350,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 351,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 352,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 353,
+      "text": "            AND TGT_TAB_FLD  = 'Qta_Appr_Stat_Cd'"
+    },
+    {
+      "line": 354,
+      "text": "            AND SRC_TAB_NAME = 'TRD_TRS_LIMIT_AUDIT'"
+    },
+    {
+      "line": 355,
+      "text": "            AND SRC_FLD_NAME = 'AUDIT_STATUS'"
+    },
+    {
+      "line": 356,
+      "text": "            AND SRC_SYS_NAME='TIT')E"
+    },
+    {
+      "line": 357,
+      "text": "   ON      A1.AUDIT_STATUS =E.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+    },
+    {
+      "line": 358,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 359,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 360,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 361,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 362,
+      "text": "            AND TGT_TAB_FLD  = 'Ivst_Var_Cd'"
+    },
+    {
+      "line": 363,
+      "text": "            AND SRC_TAB_NAME = 'TRD_OTC_CONTR_PROPS'"
+    },
+    {
+      "line": 364,
+      "text": "            AND SRC_FLD_NAME = 'INVESTASSET'"
+    },
+    {
+      "line": 365,
+      "text": "            AND SRC_SYS_NAME='TIT')F"
+    },
+    {
+      "line": 366,
+      "text": "   ON      A8.PROPERTY_VALUE =F.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+    },
+    {
+      "line": 367,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 368,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 369,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 370,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 371,
+      "text": "            AND TGT_TAB_FLD  = 'Ivst_Term_Cd'"
+    },
+    {
+      "line": 372,
+      "text": "            AND SRC_TAB_NAME = 'TRD_OTC_CONTR_PROPS'"
+    },
+    {
+      "line": 373,
+      "text": "            AND SRC_FLD_NAME = 'INVESTMATURITY'"
+    },
+    {
+      "line": 374,
+      "text": "            AND SRC_SYS_NAME='TIT')G"
+    },
+    {
+      "line": 375,
+      "text": "   ON      A9.PROPERTY_VALUE =G.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+    },
+    {
+      "line": 376,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 377,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 378,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 379,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_SWAP_COMP_INFO'"
+    },
+    {
+      "line": 380,
+      "text": "            AND TGT_TAB_FLD  = 'Risk_Grade_Cd'"
+    },
+    {
+      "line": 381,
+      "text": "            AND SRC_TAB_NAME = 'TRD_OTC_CONTR_PROPS'"
+    },
+    {
+      "line": 382,
+      "text": "            AND SRC_FLD_NAME = 'RISKLEVEL'"
+    },
+    {
+      "line": 383,
+      "text": "            AND SRC_SYS_NAME='TIT')H"
+    },
+    {
+      "line": 384,
+      "text": "   ON      A10.PROPERTY_VALUE =H.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+    },
+    {
+      "line": 385,
+      "text": ";"
+    },
+    {
+      "line": 386,
+      "text": ""
+    }
+  ]
+}

@@ -4,14 +4,18 @@ import { compileScopePatterns } from "./pattern.ts";
 import { normalizeHiddenTables } from "../node-visibility.ts";
 
 const cache = new WeakMap<ScopeStore, Map<string, UpstreamClosure>>();
-export async function queryExperimentalUpstreamScope(store: ScopeStore, query: URLSearchParams) {
+export async function queryExperimentalUpstreamScope(store: ScopeStore, query: URLSearchParams, clusterTaskIds?: string[]) {
   const patterns = compileScopePatterns(JSON.parse(query.get("patterns") ?? "[]")).map(p => p.pattern);
   const hidden = normalizeHiddenTables(JSON.parse(query.get("hiddenTables") ?? "[]"));
   const schema = query.get("schema");
   const offset = Number(query.get("offset") ?? 0);
   if (!Number.isSafeInteger(offset) || offset < 0 || (schema !== null && !/^[A-Za-z0-9_]+$/.test(schema))) throw new Error("INVALID_SCOPE_PAGE");
   const closure = await cachedUpstreamScope(store, patterns);
-  const projected = projectUpstreamScope(closure, hidden);
+  const selected = clusterTaskIds === undefined ? undefined : new Set(clusterTaskIds);
+  const links = selected ? closure.links.filter(link => selected.has(link.task)) : closure.links;
+  const tableIds = new Set(links.flatMap(link => [link.source, link.target]));
+  const filtered = selected ? { ...closure, links, tables: closure.tables.filter(table => tableIds.has(table.id)), roots: closure.roots.filter(id => tableIds.has(id)) } : closure;
+  const projected = projectUpstreamScope(filtered, hidden);
   if (String((await store.ready()).version) !== closure.version) throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");
   if (schema === null) return projected.overview;
   const members = projected.tables.filter(table => table.table.split(".")[0].toLowerCase() === schema.toLowerCase())

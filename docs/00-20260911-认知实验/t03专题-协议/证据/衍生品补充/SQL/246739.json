@@ -1,0 +1,499 @@
+{
+  "task_id": 246739,
+  "observed_at": "2026-09-05T01:07:31.594Z",
+  "payload_sha256": "88bc93359cea1d78b850674331c338446a11e17e95a391e0c2d1d209f3a9ae0a",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T99_DERI_COMP_SPRD_COEF_REF("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Inr_Comp_No                STRING COMMENT '内部合约编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Busi_Type                  STRING COMMENT '业务类型'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Coef_Type                  STRING COMMENT '系数类型'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Src_Comp_Type_Cd           STRING COMMENT '源合约类型代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Src_Comp_Type_Name         STRING COMMENT '源合约类型名称'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Src_Undrl_Type_Cd          STRING COMMENT '源标的类型代码'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Sprd_Calc_Type             STRING COMMENT '价差计算类型'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Annu_Sprd_Coef             STRING COMMENT '年化价差系数'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Absl_Sprd_Coef             STRING COMMENT '绝对价差系数'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Vld_Date                   STRING COMMENT '生效日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Desc                       STRING COMMENT '描述'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Estb_Time                  STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Creator                    STRING COMMENT '创建人'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Upd_Prsn                   STRING COMMENT '更新人'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Bel_Busi_Dept              STRING COMMENT '所属业务部门'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Cms_Fee_Rate               STRING COMMENT '佣金费率'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Para_Appr_Evt_Id           STRING COMMENT '参数审批事件编号'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Trd_Cutp_Pty_Id            STRING COMMENT '交易对手当事人编号'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Dft_Prsn_User_Id           STRING COMMENT '拟稿人用户编号'"
+    },
+    {
+      "line": 39,
+      "text": ")COMMENT '衍生品合约价差系数参考信息'"
+    },
+    {
+      "line": 40,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 41,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 42,
+      "text": ""
+    },
+    {
+      "line": 43,
+      "text": "-- querySql"
+    },
+    {
+      "line": 44,
+      "text": "INSERT OVERWRITE TABLE T99_DERI_COMP_SPRD_COEF_REF PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 45,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 46,
+      "text": "--Group3: Source Table:[ODATA_N_OIS.G_CONTRACT_SPREAD_RATE_TEMP:交叉销售合约编号价差系数临时表] "
+    },
+    {
+      "line": 47,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 48,
+      "text": "SELECT"
+    },
+    {
+      "line": 49,
+      "text": "     A.AGT_ID_TEMP                         AS  Agt_Id                  --协议编号      "
+    },
+    {
+      "line": 50,
+      "text": "    ,A.AGT_MODIFR_TEMP                     AS  Agt_Modifr              --协议修饰符    "
+    },
+    {
+      "line": 51,
+      "text": "    ,A.CONTRACT_CODE                       AS  Inr_Comp_No             --内部合约编号  "
+    },
+    {
+      "line": 52,
+      "text": "    ,A.BUSINESS_TYPE                       AS  Busi_Type               --业务类型      "
+    },
+    {
+      "line": 53,
+      "text": "    ,A.CROSS_OR_INR                        AS  Coef_Type               --系数类型      "
+    },
+    {
+      "line": 54,
+      "text": "    ,A.CONTRACT_TYPE                       AS  Src_Comp_Type_Cd        --源合约类型代码"
+    },
+    {
+      "line": 55,
+      "text": "    ,A.CONTRACT_TYPE_NAME                  AS  Src_Comp_Type_Name      --源合约类型名称"
+    },
+    {
+      "line": 56,
+      "text": "    ,A.UNDERLYING_TYPE                     AS  Src_Undrl_Type_Cd       --源标的类型代码"
+    },
+    {
+      "line": 57,
+      "text": "    ,A.SPREAD_CALCULATION                  AS  Sprd_Calc_Type          --价差计算类型  "
+    },
+    {
+      "line": 58,
+      "text": "    ,A.ANNUALIZED_SPREAD                   AS  Annu_Sprd_Coef          --年化价差系数  "
+    },
+    {
+      "line": 59,
+      "text": "    ,A.ABSOLUTE_SPREAD                     AS  Absl_Sprd_Coef          --绝对价差系数  "
+    },
+    {
+      "line": 60,
+      "text": "    ,A.EFFECTIVE_DATE                      AS  Vld_Date                --生效日期      "
+    },
+    {
+      "line": 61,
+      "text": "    ,A.DISCRIPTION                         AS  Desc                    --描述          "
+    },
+    {
+      "line": 62,
+      "text": "    ,A.CREATED_DATETIME                    AS  Estb_Time               --创建时间      "
+    },
+    {
+      "line": 63,
+      "text": "    ,A.UPDATED_DATETIME                    AS  Upd_Time                --更新时间      "
+    },
+    {
+      "line": 64,
+      "text": "    ,A.CREATED_BY                          AS  Creator                 --创建人        "
+    },
+    {
+      "line": 65,
+      "text": "    ,A.UPDATED_BY                          AS  Upd_Prsn                --更新人        "
+    },
+    {
+      "line": 66,
+      "text": "    ,CASE WHEN A.IS_DELETED='Y' THEN '1'"
+    },
+    {
+      "line": 67,
+      "text": "          WHEN A.IS_DELETED='N' THEN '0'"
+    },
+    {
+      "line": 68,
+      "text": "          ELSE A.IS_DELETED END            AS  Del_Flag                --删除标志"
+    },
+    {
+      "line": 69,
+      "text": "    ,'${data_src_cd}'                 AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 70,
+      "text": "    ,'${filename}'                    AS  Task_Name               --任务名"
+    },
+    {
+      "line": 71,
+      "text": "    ,'${data_day_str}'                AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 72,
+      "text": "    ,'${data_today_str}'              AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 73,
+      "text": "    ,'${data_today}'                  AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 74,
+      "text": "    ,'${src_table}'                   AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 75,
+      "text": "    ,'OTC'                                 AS  Bel_Busi_Dept           --所属业务部门  'OTC' --总部股衍"
+    },
+    {
+      "line": 76,
+      "text": "    ,''                                    AS  Cms_Fee_Rate            --佣金费率"
+    },
+    {
+      "line": 77,
+      "text": "    ,CONCAT('OIS061-',A.CROSS_SELL_APPROVAL_PROCESS_ID)"
+    },
+    {
+      "line": 78,
+      "text": "                                           AS  Para_Appr_Evt_Id        --参数审批事件编号"
+    },
+    {
+      "line": 79,
+      "text": "    ,A.CLIENT_ID                           AS  Trd_Cutp_Pty_Id         --交易对手当事人编号"
+    },
+    {
+      "line": 80,
+      "text": "    ,A.DRAFTER                             AS  Dft_Prsn_User_Id        --拟稿人用户编号"
+    },
+    {
+      "line": 81,
+      "text": "FROM   ("
+    },
+    {
+      "line": 82,
+      "text": "SELECT * FROM ("
+    },
+    {
+      "line": 83,
+      "text": "    SELECT "
+    },
+    {
+      "line": 84,
+      "text": "        T1.*"
+    },
+    {
+      "line": 85,
+      "text": "       ,CASE WHEN C.KEY_OTC_TRADE_ID IS NOT NULL THEN B.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 86,
+      "text": "             WHEN D.KEY_OTC_TRADE_ID IS NOT NULL THEN B.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 87,
+      "text": "             WHEN E.KEY_TRADE_COMFIRM_ID IS NOT NULL THEN T1.CONTRACT_CODE"
+    },
+    {
+      "line": 88,
+      "text": "             ELSE ''"
+    },
+    {
+      "line": 89,
+      "text": "        END                                                             AS  AGT_ID_TEMP"
+    },
+    {
+      "line": 90,
+      "text": "       ,CASE WHEN C.KEY_OTC_TRADE_ID IS NOT NULL THEN '20206'"
+    },
+    {
+      "line": 91,
+      "text": "             WHEN D.KEY_OTC_TRADE_ID IS NOT NULL THEN '20207'"
+    },
+    {
+      "line": 92,
+      "text": "             WHEN E.KEY_TRADE_COMFIRM_ID IS NOT NULL THEN '20206-KST'"
+    },
+    {
+      "line": 93,
+      "text": "             ELSE '' "
+    },
+    {
+      "line": 94,
+      "text": "        END                                                             AS  AGT_MODIFR_TEMP"
+    },
+    {
+      "line": 95,
+      "text": "       ,ROW_NUMBER() OVER ("
+    },
+    {
+      "line": 96,
+      "text": "            PARTITION BY T1.CONTRACT_CODE, T1.CROSS_OR_INR, T1.CONTRACT_TYPE,"
+    },
+    {
+      "line": 97,
+      "text": "                         T1.SPREAD_CALCULATION, T1.ANNUALIZED_SPREAD, T1.ABSOLUTE_SPREAD"
+    },
+    {
+      "line": 98,
+      "text": "            ORDER BY T1.UPDATED_DATETIME DESC"
+    },
+    {
+      "line": 99,
+      "text": "        ) AS RN"
+    },
+    {
+      "line": 100,
+      "text": "    FROM (SELECT * FROM ${src_table} WHERE IS_DELETED = 'N' AND BUSI_DATE ='${data_day_str}') T1"
+    },
+    {
+      "line": 101,
+      "text": "    LEFT JOIN(SELECT * FROM ODATA_N_TIT.D_TRD_OTC_TRADE WHERE BUSI_DATE ='${data_day_str}') B"
+    },
+    {
+      "line": 102,
+      "text": "       ON   T1.CONTRACT_CODE=B.INTERNAL_TRADE_ID "
+    },
+    {
+      "line": 103,
+      "text": "    LEFT JOIN (SELECT * FROM ODATA_N_TIT.D_REF_TRS  WHERE BUSI_DATE ='${data_day_str}'  )C"
+    },
+    {
+      "line": 104,
+      "text": "       ON B.KEY_OTC_TRADE_ID=C.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 105,
+      "text": "    LEFT JOIN (SELECT KEY_OTC_TRADE_ID FROM ODATA_N_TIT.D_REF_OTC_OPTION_DEAL"
+    },
+    {
+      "line": 106,
+      "text": "                WHERE BUSI_DATE ='${data_day_str}') D"
+    },
+    {
+      "line": 107,
+      "text": "       ON B.KEY_OTC_TRADE_ID=D.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 108,
+      "text": "    LEFT JOIN  (SELECT DISTINCT KEY_TRADE_COMFIRM_ID FROM ODATA_N_TIT.D_KS_TRADE_COMFIRM_INFO"
+    },
+    {
+      "line": 109,
+      "text": "                 WHERE BUSI_DATE='${data_day_str}' )E"
+    },
+    {
+      "line": 110,
+      "text": "       ON T1.CONTRACT_CODE=E.KEY_TRADE_COMFIRM_ID "
+    },
+    {
+      "line": 111,
+      "text": ") T"
+    },
+    {
+      "line": 112,
+      "text": "WHERE RN = 1"
+    },
+    {
+      "line": 113,
+      "text": "  -- 排除正式表已归档的系数，只保留尚未归档的数据"
+    },
+    {
+      "line": 114,
+      "text": "  AND NOT EXISTS ("
+    },
+    {
+      "line": 115,
+      "text": "    SELECT 1"
+    },
+    {
+      "line": 116,
+      "text": "    FROM ODATA_N_OIS.O_CONTRACT_SPREAD_RATE B"
+    },
+    {
+      "line": 117,
+      "text": "    WHERE B.IS_DELETED = 'N'"
+    },
+    {
+      "line": 118,
+      "text": "      AND B.BUSI_DATE = '${data_day_str}' "
+    },
+    {
+      "line": 119,
+      "text": "      AND B.CONTRACT_CODE = T.CONTRACT_CODE"
+    },
+    {
+      "line": 120,
+      "text": "      AND B.CROSS_OR_INR = T.CROSS_OR_INR"
+    },
+    {
+      "line": 121,
+      "text": "      AND B.CONTRACT_TYPE = T.CONTRACT_TYPE"
+    },
+    {
+      "line": 122,
+      "text": "      AND B.SPREAD_CALCULATION = T.SPREAD_CALCULATION"
+    },
+    {
+      "line": 123,
+      "text": "      AND B.ANNUALIZED_SPREAD = T.ANNUALIZED_SPREAD"
+    },
+    {
+      "line": 124,
+      "text": "      AND B.ABSOLUTE_SPREAD = T.ABSOLUTE_SPREAD"
+    },
+    {
+      "line": 125,
+      "text": "  )"
+    },
+    {
+      "line": 126,
+      "text": ""
+    },
+    {
+      "line": 127,
+      "text": ")A"
+    },
+    {
+      "line": 128,
+      "text": ""
+    },
+    {
+      "line": 129,
+      "text": ";"
+    },
+    {
+      "line": 130,
+      "text": ""
+    }
+  ]
+}

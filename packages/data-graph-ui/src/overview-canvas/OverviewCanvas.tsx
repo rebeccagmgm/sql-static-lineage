@@ -25,8 +25,8 @@ function RoutedEdge(props: EdgeProps<Edge<RouteData>>) {
 const nodeTypes = { overviewRegion: RegionCard };
 const edgeTypes = { overviewRoute: RoutedEdge };
 
-function Canvas({ overview, onOpenRegion, patterns, hiddenTables }: { overview: OverviewResult; onOpenRegion: (schema: string) => void; patterns: string[]; hiddenTables: string[] }) {
-  const topicState = useCardTopics(overview.regions.map(region => region.schema), patterns, hiddenTables, overview.version);
+function Canvas({ overview, onOpenRegion, patterns, hiddenTables, clusters }: { overview: OverviewResult; onOpenRegion: (schema: string) => void; patterns: string[]; hiddenTables: string[]; clusters?: string[] }) {
+  const topicState = useCardTopics(overview.regions.map(region => region.schema), patterns, hiddenTables, overview.version, clusters);
   const viewport = useReactFlow();
   const [expanded, setExpanded] = useState(false);
   const [focus, setFocus] = useState<{ overview: OverviewResult; schema: string }>();
@@ -73,6 +73,6 @@ function Canvas({ overview, onOpenRegion, patterns, hiddenTables }: { overview: 
 }
 
 /** Self-contained renderer shared by ordinary and experimental overviews. */
-export function OverviewCanvas(props: { overview: OverviewResult; onOpenRegion: (schema: string) => void; patterns: string[]; hiddenTables: string[] }) {
+export function OverviewCanvas(props: { overview: OverviewResult; onOpenRegion: (schema: string) => void; patterns: string[]; hiddenTables: string[]; clusters?: string[] }) {
   return <ReactFlowProvider key={JSON.stringify([props.overview.regions, props.overview.flows])}><Canvas {...props} /></ReactFlowProvider>;
 }

@@ -1,0 +1,1154 @@
+{
+  "queriedDate": "2026-09-14",
+  "source": "szdata table-ddl by resolved GUID",
+  "tables": [
+    {
+      "file": "证据/资产信息DDL.json",
+      "table": "pdata_n.t10_ast_info",
+      "guid": "412cd66a-6720-4a78-8b86-d4bea4b8864a",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_name",
+          "type": "string",
+          "comment": "资产名称",
+          "isPartition": false
+        },
+        {
+          "name": "ast_cate_cd",
+          "type": "string",
+          "comment": "资产类别代码",
+          "isPartition": false
+        },
+        {
+          "name": "ast_proprt_type_cd",
+          "type": "string",
+          "comment": "资产权属类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "proprt_prsn_id",
+          "type": "string",
+          "comment": "权属人编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_lbl",
+          "type": "string",
+          "comment": "资产标签",
+          "isPartition": false
+        },
+        {
+          "name": "ast_type_cd",
+          "type": "string",
+          "comment": "资产类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "ast_stat_cd",
+          "type": "string",
+          "comment": "资产状态代码",
+          "isPartition": false
+        },
+        {
+          "name": "ast_get_method_cd",
+          "type": "string",
+          "comment": "资产取得方式代码",
+          "isPartition": false
+        },
+        {
+          "name": "ast_prop_cd",
+          "type": "string",
+          "comment": "资产属性代码",
+          "isPartition": false
+        },
+        {
+          "name": "main_ast_flag",
+          "type": "string",
+          "comment": "主资产标志",
+          "isPartition": false
+        },
+        {
+          "name": "crrc_cd",
+          "type": "string",
+          "comment": "币种代码",
+          "isPartition": false
+        },
+        {
+          "name": "vld_date",
+          "type": "string",
+          "comment": "有效日期",
+          "isPartition": false
+        },
+        {
+          "name": "exp_date",
+          "type": "string",
+          "comment": "到期日期",
+          "isPartition": false
+        },
+        {
+          "name": "stki_time",
+          "type": "string",
+          "comment": "入库时间",
+          "isPartition": false
+        },
+        {
+          "name": "stki_prop_cd",
+          "type": "string",
+          "comment": "入库性质代码",
+          "isPartition": false
+        },
+        {
+          "name": "ast_use_life",
+          "type": "string",
+          "comment": "资产使用年限",
+          "isPartition": false
+        },
+        {
+          "name": "use_strt_time",
+          "type": "string",
+          "comment": "使用开始时间",
+          "isPartition": false
+        },
+        {
+          "name": "ast_lock_rsn_cd",
+          "type": "string",
+          "comment": "资产锁定原因代码",
+          "isPartition": false
+        },
+        {
+          "name": "depr_flag",
+          "type": "string",
+          "comment": "折旧标志",
+          "isPartition": false
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "comment": "备注",
+          "isPartition": false
+        },
+        {
+          "name": "del_flag",
+          "type": "string",
+          "comment": "删除标志",
+          "isPartition": false
+        },
+        {
+          "name": "del_date",
+          "type": "string",
+          "comment": "删除日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_etl_date",
+          "type": "string",
+          "comment": "数据加载日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_upt_date",
+          "type": "string",
+          "comment": "数据更新日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_ast_book_rela_h.json",
+      "table": "pdata_n.t10_ast_ast_book_rela_h",
+      "guid": "d9242cfc-9626-4703-b359-a417b33becc9",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_ast_book_rela_type_cd",
+          "type": "string",
+          "comment": "资产资产账簿关系类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "ast_book_id",
+          "type": "string",
+          "comment": "资产账簿编号",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_clas_h.json",
+      "table": "pdata_n.t10_ast_clas_h",
+      "guid": "9a0db8a2-54db-428e-8997-28fb574dd66c",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_clas_type_cd",
+          "type": "string",
+          "comment": "资产分类类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "ast_clas_cd",
+          "type": "string",
+          "comment": "资产分类代码",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_emp_rela_h.json",
+      "table": "pdata_n.t10_ast_emp_rela_h",
+      "guid": "7707ab28-a378-4149-96e7-8905fb71a566",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_emp_rela_type_cd",
+          "type": "string",
+          "comment": "资产员工关系类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "emp_id",
+          "type": "string",
+          "comment": "员工编号",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_idty_info_h.json",
+      "table": "pdata_n.t10_ast_idty_info_h",
+      "guid": "03ac7ac0-9550-4612-8d29-09c8cf99c337",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_type_cd",
+          "type": "string",
+          "comment": "鉴别信息类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_cont",
+          "type": "string",
+          "comment": "鉴别信息内容",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_addr",
+          "type": "string",
+          "comment": "鉴别信息地址",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_iss_addr",
+          "type": "string",
+          "comment": "鉴别信息签发地",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_iss_org",
+          "type": "string",
+          "comment": "鉴别信息签发机构",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_iss_date",
+          "type": "string",
+          "comment": "鉴别信息签发日期",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_exp_date",
+          "type": "string",
+          "comment": "鉴别信息到期日期",
+          "isPartition": false
+        },
+        {
+          "name": "idty_info_insp_annu_date",
+          "type": "string",
+          "comment": "鉴别信息年检日期",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_inr_org_rela_h.json",
+      "table": "pdata_n.t10_ast_inr_org_rela_h",
+      "guid": "280be100-2961-43e7-970e-362e1ed43ac2",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_inr_org_rela_type_cd",
+          "type": "string",
+          "comment": "资产内部机构关系类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "inr_org_id",
+          "type": "string",
+          "comment": "内部机构编号",
+          "isPartition": false
+        },
+        {
+          "name": "inr_org_cate_cd",
+          "type": "string",
+          "comment": "内部机构类别代码",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_lkman_h.json",
+      "table": "pdata_n.t10_ast_lkman_h",
+      "guid": "fcc1b7e8-5d12-4b77-8b5e-7a55ed3d8a57",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "lkman_type_cd",
+          "type": "string",
+          "comment": "联系人类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "lkman_shor_name",
+          "type": "string",
+          "comment": "联系人简称",
+          "isPartition": false
+        },
+        {
+          "name": "lkman_full_name",
+          "type": "string",
+          "comment": "联系人全称",
+          "isPartition": false
+        },
+        {
+          "name": "cont_addr",
+          "type": "string",
+          "comment": "联系地址",
+          "isPartition": false
+        },
+        {
+          "name": "zip_cd",
+          "type": "string",
+          "comment": "联系邮编",
+          "isPartition": false
+        },
+        {
+          "name": "cont_phone",
+          "type": "string",
+          "comment": "联系电话",
+          "isPartition": false
+        },
+        {
+          "name": "cont_mobile",
+          "type": "string",
+          "comment": "联系手机",
+          "isPartition": false
+        },
+        {
+          "name": "cont_email",
+          "type": "string",
+          "comment": "联系邮箱",
+          "isPartition": false
+        },
+        {
+          "name": "lkman_co_name",
+          "type": "string",
+          "comment": "联系人工作单位名称",
+          "isPartition": false
+        },
+        {
+          "name": "lkman_post_name",
+          "type": "string",
+          "comment": "联系人职位名称",
+          "isPartition": false
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "comment": "备注",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_plac_h.json",
+      "table": "pdata_n.t10_ast_plac_h",
+      "guid": "acfd8736-5342-4272-b47f-a3ed8d738636",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "oper_sys",
+          "type": "string",
+          "comment": "操作系统",
+          "isPartition": false
+        },
+        {
+          "name": "mfr",
+          "type": "string",
+          "comment": "制造商",
+          "isPartition": false
+        },
+        {
+          "name": "mdl",
+          "type": "string",
+          "comment": "型号",
+          "isPartition": false
+        },
+        {
+          "name": "vol",
+          "type": "string",
+          "comment": "数量",
+          "isPartition": false
+        },
+        {
+          "name": "plac",
+          "type": "string",
+          "comment": "配置",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_ast_stat_h.json",
+      "table": "pdata_n.t10_ast_stat_h",
+      "guid": "bfaf7139-9041-4b79-bd22-e35b43aaaa01",
+      "partition": "src_tbl",
+      "fields": [
+        {
+          "name": "ast_id",
+          "type": "string",
+          "comment": "资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_stat_type_cd",
+          "type": "string",
+          "comment": "资产状态类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "strt_date",
+          "type": "string",
+          "comment": "开始日期",
+          "isPartition": false
+        },
+        {
+          "name": "ast_stat_cd",
+          "type": "string",
+          "comment": "资产状态代码",
+          "isPartition": false
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "comment": "结束日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        }
+      ]
+    },
+    {
+      "file": "证据/DDL/t10_our_fix_ast_adtnl_info.json",
+      "table": "pdata_n.t10_our_fix_ast_adtnl_info",
+      "guid": "ccfb8753-c979-423b-adbe-d5e210e4a0d5",
+      "partition": "src_tbl, busi_date",
+      "fields": [
+        {
+          "name": "fix_ast_id",
+          "type": "string",
+          "comment": "固定资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "fix_ast_src_id",
+          "type": "string",
+          "comment": "固定资产源编号",
+          "isPartition": false
+        },
+        {
+          "name": "fa_ast_id",
+          "type": "string",
+          "comment": "FA资产编号",
+          "isPartition": false
+        },
+        {
+          "name": "ast_ref_no",
+          "type": "string",
+          "comment": "资产参考号",
+          "isPartition": false
+        },
+        {
+          "name": "ori_val",
+          "type": "string",
+          "comment": "原值",
+          "isPartition": false
+        },
+        {
+          "name": "net_val",
+          "type": "string",
+          "comment": "净值",
+          "isPartition": false
+        },
+        {
+          "name": "pc_use_type_cd",
+          "type": "string",
+          "comment": "计算机使用类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "respon_prsn_emp_id",
+          "type": "string",
+          "comment": "资产责任人员工编号",
+          "isPartition": false
+        },
+        {
+          "name": "respon_prsn_user_id",
+          "type": "string",
+          "comment": "资产责任人用户编号",
+          "isPartition": false
+        },
+        {
+          "name": "respon_prsn_name",
+          "type": "string",
+          "comment": "资产责任人名称",
+          "isPartition": false
+        },
+        {
+          "name": "use_dept_inr_org_id",
+          "type": "string",
+          "comment": "使用内部机构编号",
+          "isPartition": false
+        },
+        {
+          "name": "use_dept_inr_org_name",
+          "type": "string",
+          "comment": "使用内部机构名称",
+          "isPartition": false
+        },
+        {
+          "name": "cost_bear_inr_org_id",
+          "type": "string",
+          "comment": "成本承担内部机构编号",
+          "isPartition": false
+        },
+        {
+          "name": "cost_bear_org_seg",
+          "type": "string",
+          "comment": "成本承担机构段值",
+          "isPartition": false
+        },
+        {
+          "name": "cost_bear_inr_org_name",
+          "type": "string",
+          "comment": "成本承担内部机构名称",
+          "isPartition": false
+        },
+        {
+          "name": "req_print_lbl_flag",
+          "type": "string",
+          "comment": "需打印标签标志",
+          "isPartition": false
+        },
+        {
+          "name": "print_flag",
+          "type": "string",
+          "comment": "已打印标志",
+          "isPartition": false
+        },
+        {
+          "name": "ntce_flag",
+          "type": "string",
+          "comment": "公示标志",
+          "isPartition": false
+        },
+        {
+          "name": "purch_ord_id",
+          "type": "string",
+          "comment": "采购订单编号",
+          "isPartition": false
+        },
+        {
+          "name": "contr_no",
+          "type": "string",
+          "comment": "合同编号",
+          "isPartition": false
+        },
+        {
+          "name": "po_no",
+          "type": "string",
+          "comment": "PO单号",
+          "isPartition": false
+        },
+        {
+          "name": "rent_term_type_cd",
+          "type": "string",
+          "comment": "租借期限类型代码",
+          "isPartition": false
+        },
+        {
+          "name": "rent_strt_time",
+          "type": "string",
+          "comment": "租借开始时间",
+          "isPartition": false
+        },
+        {
+          "name": "rent_end_time",
+          "type": "string",
+          "comment": "租借结束时间",
+          "isPartition": false
+        },
+        {
+          "name": "bpm_instc_id",
+          "type": "string",
+          "comment": "BPM实例编号",
+          "isPartition": false
+        },
+        {
+          "name": "proc_lnch_user_id",
+          "type": "string",
+          "comment": "流程发起用户编号",
+          "isPartition": false
+        },
+        {
+          "name": "proc_title",
+          "type": "string",
+          "comment": "流程标题",
+          "isPartition": false
+        },
+        {
+          "name": "req_insr_flag",
+          "type": "string",
+          "comment": "需投保标志",
+          "isPartition": false
+        },
+        {
+          "name": "insr_no",
+          "type": "string",
+          "comment": "投保单号",
+          "isPartition": false
+        },
+        {
+          "name": "insr_begn_time",
+          "type": "string",
+          "comment": "投保起始时间",
+          "isPartition": false
+        },
+        {
+          "name": "insr_maty_time",
+          "type": "string",
+          "comment": "投保到期时间",
+          "isPartition": false
+        },
+        {
+          "name": "aprn_bel_cd",
+          "type": "string",
+          "comment": "分摊归属代码",
+          "isPartition": false
+        },
+        {
+          "name": "depr_way",
+          "type": "string",
+          "comment": "折旧方法",
+          "isPartition": false
+        },
+        {
+          "name": "depr_mth_num",
+          "type": "string",
+          "comment": "折旧月份数",
+          "isPartition": false
+        },
+        {
+          "name": "curr_mth_depr_amt",
+          "type": "string",
+          "comment": "当月折旧金额",
+          "isPartition": false
+        },
+        {
+          "name": "incrs_depr_amt",
+          "type": "string",
+          "comment": "已提折旧金额",
+          "isPartition": false
+        },
+        {
+          "name": "trc_back_main_ast_depr_amrt_flag",
+          "type": "string",
+          "comment": "追溯主资产折旧摊销标志",
+          "isPartition": false
+        },
+        {
+          "name": "purch_oper_vsb_flag",
+          "type": "string",
+          "comment": "采购经办人可见标志",
+          "isPartition": false
+        },
+        {
+          "name": "itai_flag",
+          "type": "string",
+          "comment": "信创标志",
+          "isPartition": false
+        },
+        {
+          "name": "push_fsc_flag",
+          "type": "string",
+          "comment": "推送共享标志",
+          "isPartition": false
+        },
+        {
+          "name": "push_cloud_flag",
+          "type": "string",
+          "comment": "推送云管标志",
+          "isPartition": false
+        },
+        {
+          "name": "data_src_cd",
+          "type": "string",
+          "comment": "数据来源代码",
+          "isPartition": false
+        },
+        {
+          "name": "task_name",
+          "type": "string",
+          "comment": "任务名",
+          "isPartition": false
+        },
+        {
+          "name": "data_etl_date",
+          "type": "string",
+          "comment": "数据加载日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_upt_date",
+          "type": "string",
+          "comment": "数据更新日期",
+          "isPartition": false
+        },
+        {
+          "name": "data_time",
+          "type": "string",
+          "comment": "数据时间",
+          "isPartition": false
+        },
+        {
+          "name": "real_src_tbl",
+          "type": "string",
+          "comment": "真实源表",
+          "isPartition": false
+        },
+        {
+          "name": "src_tbl",
+          "type": "string",
+          "comment": "源表",
+          "isPartition": true
+        },
+        {
+          "name": "busi_date",
+          "type": "string",
+          "comment": "业务日期",
+          "isPartition": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+[
+  {
+    "topic": "ARCH_CIV",
+    "description": "财务估值系统采集备份",
+    "task_count_snapshot": 45,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "DM_FIN_N",
+    "description": "财务部数据集市",
+    "task_count_snapshot": 1081,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "DM_FIN_TEST",
+    "description": "财务部数据集市测试",
+    "task_count_snapshot": 560,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EDW_AST",
+    "description": "资产主题数据加工",
+    "task_count_snapshot": 10,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EDW_FIN",
+    "description": "财务主题数据加工",
+    "task_count_snapshot": 261,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_FIN_ARCV",
+    "description": "财务档案系统",
+    "task_count_snapshot": 16,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_FIN_MAN_N",
+    "description": "财务数据推送主题",
+    "task_count_snapshot": 51,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_N_CIV",
+    "description": "财务估值系统推数",
+    "task_count_snapshot": 49,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_N_FAF",
+    "description": "财务会计档案系统数据推送",
+    "task_count_snapshot": 4,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_N_FIN",
+    "description": "财务系统数据推数",
+    "task_count_snapshot": 3,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "EXP_N_FMS",
+    "description": "财务管理支撑系统数据推送",
+    "task_count_snapshot": 0,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FDM_FIN",
+    "description": "财务主题域数据加工",
+    "task_count_snapshot": 117,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FDM_FIN_MAN",
+    "description": "财务结算手工主题",
+    "task_count_snapshot": 22,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FIN_ERP_MAN",
+    "description": "财务ERP手工主题",
+    "task_count_snapshot": 8,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FIN_JGJ_MAN",
+    "description": "财务金管家手工主题",
+    "task_count_snapshot": 5,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FIN_XY_MAN",
+    "description": "财务新意手工主题",
+    "task_count_snapshot": 8,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "FIN_YGT_MAN",
+    "description": "财务一柜通手工主题",
+    "task_count_snapshot": 15,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "INDEX_FIN_MAN_N",
+    "description": "财务指标手工处理主题",
+    "task_count_snapshot": 117,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_ACV",
+    "description": "托管外包估值系统数据采集",
+    "task_count_snapshot": 386,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_CIV",
+    "description": "财务估值系统",
+    "task_count_snapshot": 75,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_CVS",
+    "description": "托管系统5.0数据采集",
+    "task_count_snapshot": 378,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_ERP",
+    "description": "ERP数据采集",
+    "task_count_snapshot": 381,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_FAC",
+    "description": "财务核算系统数据采集",
+    "task_count_snapshot": 72,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_FAF",
+    "description": "财务会计档案系统数据采集",
+    "task_count_snapshot": 15,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_FMS",
+    "description": "财务管理支撑系统数据采集",
+    "task_count_snapshot": 87,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_FMV",
+    "description": "企业财务模型与估值系统数据采集",
+    "task_count_snapshot": 0,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_FSC",
+    "description": "财务共享系统数据采集",
+    "task_count_snapshot": 24,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_PMS",
+    "description": "采购管理系统数据采集",
+    "task_count_snapshot": 43,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_PRD",
+    "description": "产品中心数据采集",
+    "task_count_snapshot": 577,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_RFD",
+    "description": "广发香港风险与财务数据转换系统数据采集",
+    "task_count_snapshot": 0,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "ODATA_N_TUP",
+    "description": "工会与党费财务系统数据采集",
+    "task_count_snapshot": 0,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "PDATA_FIN_MAN_N",
+    "description": "财务模型手工处理主题",
+    "task_count_snapshot": 30,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  },
+  {
+    "topic": "SEDW_FIN",
+    "description": "[机密] 财务主题",
+    "task_count_snapshot": 36,
+    "imported_at": "2026-09-10T09:18:27.326Z"
+  }
+]

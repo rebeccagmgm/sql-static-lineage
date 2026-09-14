@@ -1,0 +1,192 @@
+{
+  "task_id": "186395",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:07:14.837Z",
+  "payload_sha256": "1b525b4f3267e0cad2662143f327c55f45b3944ff706ce406146efe39307f410",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OUR_BANK_SAV_EDAY_DET("
+    },
+    {
+      "line": 10,
+      "text": "     Sav_Agt_Id                 STRING COMMENT '存款协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Sav_Agt_Modifr             STRING COMMENT '存款协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Det_Id                     STRING COMMENT '明细编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Sav_Amt                    STRING COMMENT '存款余额'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Annu_Intrt_Rate            STRING COMMENT '年化利率'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Ficc_Prin                  STRING COMMENT '固收部本金'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Offr_Repo_Prin             STRING COMMENT '报价回购本金'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Yield_Adj_Amt              STRING COMMENT '收益调整金额'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Busi_Date                  STRING COMMENT '业务日期'"
+    },
+    {
+      "line": 25,
+      "text": ")COMMENT '我司银行存款每日明细'"
+    },
+    {
+      "line": 26,
+      "text": "PARTITIONED BY (Src_Tbl  STRING COMMENT'源表')"
+    },
+    {
+      "line": 27,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 28,
+      "text": ""
+    },
+    {
+      "line": 29,
+      "text": "-- querySql"
+    },
+    {
+      "line": 30,
+      "text": "INSERT OVERWRITE TABLE T03_OUR_BANK_SAV_EDAY_DET PARTITION(Src_Tbl)"
+    },
+    {
+      "line": 31,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 32,
+      "text": "--Group1.: Source Table:[ODATA_N_ALM.G_DEPOSIT_INFO_HIS:存款信息历史表] "
+    },
+    {
+      "line": 33,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 34,
+      "text": "SELECT"
+    },
+    {
+      "line": 35,
+      "text": "     ACCOUNT                                           AS  Sav_Agt_Id              --存款协议编号  "
+    },
+    {
+      "line": 36,
+      "text": "    ,CONCAT('2041701-',NO)                             AS  Sav_Agt_Modifr          --存款协议修饰符"
+    },
+    {
+      "line": 37,
+      "text": "    ,DEPOSIT_ID                                        AS  Det_Id                  --明细编号"
+    },
+    {
+      "line": 38,
+      "text": "    ,CAPITAL                                           AS  Sav_Amt                 --存款余额 "
+    },
+    {
+      "line": 39,
+      "text": "    ,INTEREST_RATE                                     AS  Annu_Intrt_Rate                --年化利率           "
+    },
+    {
+      "line": 40,
+      "text": "    ,FIXED_INCOME_DEPARTMENT_PRINCIPAL                 AS  Ficc_Prin               --固收部本金    "
+    },
+    {
+      "line": 41,
+      "text": "    ,QUOTATION_REPURCHASE_PRINCIPAL                    AS  Offr_Repo_Prin          --报价回购本金  "
+    },
+    {
+      "line": 42,
+      "text": "    ,INCOME_ADJUSTED_CAPITAL                           AS  Yield_Adj_Amt           --收益调整金额  "
+    },
+    {
+      "line": 43,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 44,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 45,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 46,
+      "text": "    ,'${data_day_str}'                            AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 47,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 48,
+      "text": "    ,'${src_table}'                               AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 49,
+      "text": "    ,SUBSTR(START_DATE,1,10)                           AS  Busi_Date               --业务日期"
+    },
+    {
+      "line": 50,
+      "text": "    ,'${src_table}'                               AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 51,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE Busi_Date='${data_day_str}' AND SUBSTR(START_DATE,1,10) <='${data_day_str}')A"
+    },
+    {
+      "line": 52,
+      "text": ";"
+    },
+    {
+      "line": 53,
+      "text": ""
+    }
+  ]
+}

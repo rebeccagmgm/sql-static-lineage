@@ -19,13 +19,12 @@ import {
 } from "../../query/current-task-bundle.ts";
 import { readPartitionRanges } from "./partition-range.ts";
 import {
-  fieldConditionalsForExpression,
   sourceFieldsForExpression,
 } from "./field-expression-dependencies.ts";
 import {
   datasetControlsForStatement,
 } from "../../reconcile/shared/dataset-controls.ts";
-import type { PhysicalFieldIdentity } from "../../reconcile/shared/physical-field.ts";
+import { physicalFieldKey, type PhysicalFieldIdentity } from "../../reconcile/shared/physical-field.ts";
 import { inferTaskDefaultSchema } from "../../reconcile/shared/task-default-schema.ts";
 import {
   buildCollectionFailedProjection,
@@ -51,10 +50,10 @@ import {
   controlSideGap,
   emitFieldEvidenceForInput,
   inputFieldRecordForSource,
-  isConstantExpression,
   materializationBreakGap,
   type ExpandedMaterializedField,
 } from "./field-evidence/field-evidence-emission.ts";
+import { expandSetopBranchExpressions } from "./field-evidence/source-read-occurrence.ts";
 import { classifyExpressionSubtype } from "./field-evidence/subtype-classifier.ts";
 import {
   fieldConditionalEdgeSemanticKey,
@@ -329,6 +328,8 @@ function materializationKey(dataset: string, column: string): string {
 export interface MaterializationContext {
   readonly statementId: string | null;
   readonly expressionId: string | null;
+  readonly controlRelationId?: string;
+  readonly readOccurrenceId?: string;
 }
 
 function materializationContextForExpression(expression: JsonRecord): MaterializationContext {
@@ -339,7 +340,7 @@ function materializationContextForExpression(expression: JsonRecord): Materializ
 }
 
 function materializationContextKey(context: MaterializationContext): string {
-  return `${context.statementId ?? ""}\u0000${context.expressionId ?? ""}`;
+  return `${context.statementId ?? ""}\u0000${context.expressionId ?? ""}\u0000${context.controlRelationId ?? ""}\u0000${context.readOccurrenceId ?? ""}`;
 }
 
 function materializationRecordsForDataset(
@@ -367,6 +368,16 @@ export function materializationRecordsForField(
   context: MaterializationContext,
 ): readonly JsonRecord[] {
   const all = materializationsByField.get(materializationKey(source.qualifiedName, source.column)) ?? [];
+  if (context.controlRelationId) {
+    return all.filter((materialization) => text(materialization.read_statement_id) === context.statementId
+      && records(materialization.read_control_refs).some((reference) =>
+        text(reference.relation_id) === context.controlRelationId
+        && reference.resolution_status === "RESOLVED"
+        && text(reference.read_relation_id) !== null
+        && text(reference.read_occurrence_id) !== null
+        && (!context.readOccurrenceId || reference.read_occurrence_id === context.readOccurrenceId),
+      ));
+  }
   if (context.expressionId) {
     const expressionMatches = all.filter((materialization) =>
       Array.isArray(materialization.read_expression_ids)
@@ -448,6 +459,7 @@ function taskLocalSourceFieldsForExpression(
   taskId: string,
   taskTarget: PhysicalTableCatalogEntry,
   defaultSchema: ReturnType<typeof inferTaskDefaultSchema>,
+  effect: "VALUE" | "CONDITIONAL" = "VALUE",
 ): ReturnType<typeof sourceFieldsForExpression> {
   const result = sourceFieldsForExpression(
     expression,
@@ -456,6 +468,7 @@ function taskLocalSourceFieldsForExpression(
     taskId,
     taskTarget,
     defaultSchema,
+    effect,
   );
   // The legacy resolver can use a unique catalog tail when no task schema exists.
   // Keep task-local projection fail-closed for that one case; task-local schema-backed
@@ -467,14 +480,38 @@ function taskLocalSourceFieldsForExpression(
       .filter((table) => table !== "" && !table.includes(".")),
   );
   if (bareInputTables.size === 0) return result;
+  const rejectedFields = result.fields.filter((field) => field.identityStatus !== "TASK_LOCAL_SCHEMA_BACKED"
+    && bareInputTables.has(normalizeName(field.qualifiedName.split(".").at(-1) ?? "")));
   return {
     ...result,
+    unresolved: [...result.unresolved, ...rejectedFields.flatMap((field) =>
+      (result.inputFieldsByFieldKey.get(physicalFieldKey(field)) ?? []).map((input) => ({
+        table: String(input.table), column: field.column, reason: "SOURCE_TABLE_QUALIFICATION_UNPROVEN",
+      })))],
     fields: result.fields.filter(
       (field) =>
         field.identityStatus === "TASK_LOCAL_SCHEMA_BACKED"
         || !bareInputTables.has(normalizeName(field.qualifiedName.split(".").at(-1) ?? "")),
     ),
   };
+}
+
+/** Candidate names remain diagnostic evidence; they are not physical control inputs. */
+function physicalControlEvidence(value: unknown, unresolved: JsonRecord[]): unknown {
+  if (Array.isArray(value)) return value.map((item) => physicalControlEvidence(item, unresolved));
+  const item = record(value);
+  if (!item) return value;
+  const resolution = text(item.resolution);
+  const unresolvedColumn = resolution && resolution !== "PHYSICAL" && resolution !== "NO_PHYSICAL_INPUT";
+  if (unresolvedColumn) {
+    const candidates = records(item.sql_candidate);
+    for (const candidate of candidates.length > 0 ? candidates : [{ column: item.name }]) {
+      unresolved.push({ table: text(candidate.table), column: text(candidate.column), reason: resolution });
+    }
+  }
+  return Object.fromEntries(Object.entries(item)
+    .filter(([key]) => key !== "sql_candidate" && !(unresolvedColumn && key === "physical"))
+    .map(([key, child]) => [key, physicalControlEvidence(child, unresolved)]));
 }
 
 function expressionFor(load: CurrentBundleLoad, binding: JsonRecord): JsonRecord | null {
@@ -883,48 +920,73 @@ function projectTaskLocalFromFacts(input: {
   }>();
   const materializationBreakKeys = new Set<string>();
 
+  const branchExpressions = (expression: JsonRecord): readonly JsonRecord[] =>
+    expandSetopBranchExpressions({
+      expression,
+      expressionsByRelation: fieldEvidenceIndexes.expressionsByRelation,
+      index: fieldEvidenceIndexes.relationTree,
+    }).map((context) => context.expression);
+
+  const expressionDependencies = (expression: JsonRecord) => {
+    const value = taskLocalSourceFieldsForExpression(
+      expression, catalog, load, taskId, primaryTarget!, defaultSchema, "VALUE",
+    );
+    const conditional = taskLocalSourceFieldsForExpression(
+      expression, catalog, load, taskId, primaryTarget!, defaultSchema, "CONDITIONAL",
+    );
+    const unresolved = [...value.unresolved, ...conditional.unresolved];
+    if (!value.roles.complete || unresolved.length > 0) {
+      const expressionId = text(expression.expression_id);
+      pushGap({
+        gapId: "field-dependency:" + taskId + ":" + expressionId,
+        reasonCode: "FIELD_DEPENDENCY_UNRESOLVED",
+        details: {
+          taskId, expressionId, statementId: text(expression.statement_id),
+          reason: value.roles.reasonCode ?? "PHYSICAL_INPUT_IDENTITY_UNRESOLVED",
+          unresolved,
+        },
+      });
+    }
+    return {
+      roles: value.roles,
+      unresolved,
+      sources: [
+        ...value.fields.map((field) => ({ field, dependencyRole: "VALUE" as const, inputFields: value.inputFieldsByFieldKey.get(physicalFieldKey(field)) })),
+        ...conditional.fields.map((field) => ({ field, dependencyRole: "CONDITIONAL" as const, inputFields: conditional.inputFieldsByFieldKey.get(physicalFieldKey(field)) })),
+      ],
+    };
+  };
+
   const expandedMaterializationMemo = new Map<string, ExpandedMaterializedField[]>();
   const expandMaterializedField = (
     source: PhysicalFieldIdentity,
     visited: ReadonlySet<string> = new Set(),
     context: MaterializationContext = { statementId: null, expressionId: null },
     subtypeHops: readonly ReturnType<typeof classifyExpressionSubtype>[] = [],
+    dependencyRole: "VALUE" | "CONDITIONAL" = "VALUE",
+    sourceInputFields?: readonly JsonRecord[],
   ): ExpandedMaterializedField[] => {
     const fieldKey = materializationKey(source.qualifiedName, source.column);
-    const contextKey = materializationContextKey(context);
-    const traversalKey = `${fieldKey}\u0000${context.statementId ?? ""}`;
-    const memoKey = `${fieldKey}\u0000${contextKey}`;
+    const traversalKey = fieldKey + "\u0000" + (context.statementId ?? "");
+    const memoKey = fieldKey + "\u0000" + materializationContextKey(context) + "\u0000" + dependencyRole;
     if (visited.size === 0) {
       const cached = expandedMaterializationMemo.get(memoKey);
       if (cached) return cached;
     }
-    const candidates = materializationRecordsForField(
-      materializationsByField,
-      source,
-      context,
+    const candidates = materializationRecordsForField(materializationsByField, source, context);
+    const resolved = candidates.filter((materialization) =>
+      String(materialization.status ?? "").toUpperCase() === "RESOLVED"
+      && (materializationOutputBindingIds(materialization).length > 0 || isStaticPartitionMaterialization(materialization)),
     );
-    const resolved = candidates.filter(
-      (materialization) =>
-        String(materialization.status ?? "").toUpperCase() === "RESOLVED"
-        && (
-          materializationOutputBindingIds(materialization).length > 0
-          || isStaticPartitionMaterialization(materialization)
-        ),
-    );
-    if (
-      candidates.length !== 1
-      || resolved.length !== 1
-      || !primaryTarget
-      || visited.has(traversalKey)
-    ) {
-      const result: ExpandedMaterializedField[] = [{
-        field: source,
-        materializationBridgeIds: [],
-        leafExpressionId: context.expressionId,
-        leafRelationId: null,
-        pathHadAggregation: subtypeHops.some((hop) => hop.pathHadAggregation),
-        subtypeHops,
-      }];
+    const unexpanded = (expression?: JsonRecord): ExpandedMaterializedField[] => [{
+      field: source, dependencyRole, materializationBridgeIds: [], sourceInputFields,
+      leafExpressionId: text(expression?.expression_id) ?? context.expressionId,
+      leafRelationId: text(expression?.relation_id),
+      pathHadAggregation: subtypeHops.some((hop) => hop.pathHadAggregation),
+      subtypeHops,
+    }];
+    if (candidates.length !== 1 || resolved.length !== 1 || !primaryTarget || visited.has(traversalKey)) {
+      const result = unexpanded();
       if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
       return result;
     }
@@ -934,80 +996,38 @@ function projectTaskLocalFromFacts(input: {
       return [];
     }
     const bindingIds = materializationOutputBindingIds(materialization);
-    const producerExpressions = bindingIds.flatMap((bindingId) => {
+    const producerRoots = bindingIds.flatMap((bindingId) => {
       const binding = bindingById.get(bindingId);
-      const expression = binding ? expressionFor(load, binding) : null;
+      const expression = binding?.binding_status === "RESOLVED" ? expressionFor(load, binding) : null;
       return expression ? [expression] : [];
     });
-    if (producerExpressions.length !== bindingIds.length) {
-      const result: ExpandedMaterializedField[] = [{
-        field: source,
-        materializationBridgeIds: [],
-        leafExpressionId: context.expressionId,
-        leafRelationId: null,
-        pathHadAggregation: subtypeHops.some((hop) => hop.pathHadAggregation),
-        subtypeHops,
-      }];
-      if (visited.size === 0) expandedMaterializationMemo.set(memoKey, result);
-      return result;
-    }
+    if (producerRoots.length !== bindingIds.length) return unexpanded();
     const nextVisited = new Set(visited);
     nextVisited.add(traversalKey);
-    const result = producerExpressions.flatMap((expression) => {
+    const result = producerRoots.flatMap(branchExpressions).flatMap((expression) => {
       const hop = classifyExpressionSubtype(
         expression,
-        fieldEvidenceIndexes.relationTree.relations.get(
-          text(expression.relation_id) ?? "",
-        )?.relationType ?? null,
+        fieldEvidenceIndexes.relationTree.relations.get(text(expression.relation_id) ?? "")?.relationType ?? null,
       );
-      const underlying = taskLocalSourceFieldsForExpression(
-        expression,
-        catalog,
-        load,
-        taskId,
-        primaryTarget,
-        defaultSchema,
-      );
-      if (underlying.fields.length === 0) {
-        const dependencyStatus = String(
-          expression.input_dependency_status ?? "",
-        ).toUpperCase();
-        if (
-          underlying.unresolved.length === 0
-          && (dependencyStatus === "NO_PHYSICAL_INPUT"
-            || dependencyStatus === "DERIVED_OUTPUT")
-        ) {
-          // A resolved materialization can legitimately terminate at a literal
-          // or another derived value. It has no physical field edge to fold and
-          // is not a broken task-local bridge.
-          return [];
-        }
-        return [{
-          field: source,
-          materializationBridgeIds: [],
-          leafExpressionId: text(expression.expression_id),
-          leafRelationId: text(expression.relation_id),
-          pathHadAggregation: [...subtypeHops, hop].some((item) => item.pathHadAggregation),
-          subtypeHops: [...subtypeHops, hop],
-        }];
+      const underlying = expressionDependencies(expression);
+      if (underlying.sources.length === 0) {
+        if (underlying.roles.complete && underlying.unresolved.length === 0
+          && underlying.roles.terminalKind !== "UNKNOWN") return [];
+        return unexpanded(expression);
       }
-      const nestedContext = materializationContextForExpression(expression);
-      return underlying.fields.flatMap((field) =>
+      return underlying.sources.flatMap((input) =>
         expandMaterializedField(
-          field,
-          nextVisited,
-          nestedContext,
+          input.field, nextVisited, materializationContextForExpression(expression),
           [...subtypeHops, hop],
+          dependencyRole === "CONDITIONAL" ? "CONDITIONAL" : input.dependencyRole,
+          input.inputFields,
         ).map((expanded) => ({
-          field: expanded.field,
+          ...expanded,
           materializationBridgeIds: [
-            text(materialization.bridge_id) ?? "",
-            ...expanded.materializationBridgeIds,
+            text(materialization.bridge_id) ?? "", ...expanded.materializationBridgeIds,
           ].filter(Boolean),
           leafExpressionId: expanded.leafExpressionId ?? text(expression.expression_id),
           leafRelationId: expanded.leafRelationId ?? text(expression.relation_id),
-          pathHadAggregation: expanded.pathHadAggregation,
-          subtypeHops: expanded.subtypeHops,
         })),
       );
     });
@@ -1024,191 +1044,120 @@ function projectTaskLocalFromFacts(input: {
     if (!targetWriteNode || !primaryTarget) continue;
     const outputColumn = normalizeName(String(binding.target_field ?? ""));
     if (!outputColumn) continue;
-    const expression = expressionFor(load, binding);
-    if (!expression || isConstantExpression(expression)) continue;
-    const statementId = text(expression.statement_id);
-    if (statementId) statementIds.add(statementId);
-    const sources = taskLocalSourceFieldsForExpression(
-      expression,
-      catalog,
-      load,
-      taskId,
-      primaryTarget,
-      defaultSchema,
-    );
-    const materializationContext = materializationContextForExpression(expression);
-    for (const rawSource of sources.fields) {
-      const isTempBreakSource =
-        writtenDatasets.has(normalizeName(rawSource.qualifiedName))
-        && isTempLikeTableName(rawSource.qualifiedName);
-      for (const source of expandMaterializedField(
-        rawSource,
-        new Set(),
-        materializationContext,
-      )) {
-      const inputField = inputFieldRecordForSource(expression, source.field);
-      const emissions = emitFieldEvidenceForInput({
-        taskId,
-        expression,
-        sourceField: source.field,
-        inputField,
-        expanded: source,
-        indexes: fieldEvidenceIndexes,
-      });
-      for (const emission of emissions) {
-        const context = emission.expressionContexts[0];
-        if (!context) continue;
-        if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
-        const fromNodeId = ensureFieldNode(nodes, source.field, catalog);
-        const bridgeIds = [...new Set(source.materializationBridgeIds)].sort(compareText);
-        const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus
-          === "RESOLVED"
-          ? emission.sourceResolution.sourceReadOccurrenceId
-          : null;
-        pushEdge({
-          edgeId: taskLocalEdgeId({
-            edgeType: "FIELD_DIRECT",
-            fromNodeId,
-            toNodeId: targetWriteNode,
-            semanticKey: fieldDirectEdgeSemanticKey({
-              outputColumn,
-              sourceColumn: source.field.column,
-              sourceTable: source.field.qualifiedName,
-              sourceReadOccurrenceId,
-              expressionId: context.expressionId,
-            }),
-          }),
-          edgeType: "FIELD_DIRECT",
-          fromNodeId,
-          toNodeId: targetWriteNode,
-          properties: {
-            subtype: emission.subtype,
-            ...(emission.subtypeReason ? { subtypeReason: emission.subtypeReason } : {}),
-            outputColumn,
-            bindingId: text(binding.binding_id),
-            expressionId: context.expressionId,
-            sourceReadOccurrenceId,
-            sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
-            ...(emission.sourceResolution.sourceReadOccurrenceReason
-              ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
-              : {}),
-            sourceRelationId: emission.sourceResolution.sourceRelationId,
-            ...(bridgeIds.length > 0
-              ? { materializationBridgeIds: bridgeIds, materializationFolded: true }
-              : {}),
-          },
-        });
-        const sourceStillTemp =
-          isTempBreakSource
-          && bridgeIds.length === 0
-          && writtenDatasets.has(normalizeName(source.field.qualifiedName))
-          && isTempLikeTableName(source.field.qualifiedName);
-        if (sourceStillTemp) {
-          const breakKey = `${writeObservationId}|${outputColumn}|${rawSource.column}`;
-          if (!materializationBreakKeys.has(breakKey)) {
-            materializationBreakKeys.add(breakKey);
-            const sourceDataset = normalizeName(rawSource.qualifiedName);
-            const tracker = materializationBreakTracker.get(sourceDataset) ?? {
-              columns: new Set<string>(),
-              affectedEdgeCount: 0,
-              writeObservationIds: new Set<string>(),
-              materializationRecords: materializationRecordsForDataset(
-                materializationRecords,
-                sourceDataset,
-                sourceDataset,
-              ).length,
-            };
-            tracker.columns.add(rawSource.column);
-            tracker.affectedEdgeCount += 1;
-            tracker.writeObservationIds.add(writeObservationId);
-            materializationBreakTracker.set(sourceDataset, tracker);
-          }
-        }
-        if (bridgeIds.length > 0) {
-          const pathKey = `${fromNodeId}|${targetWriteNode}|${outputColumn}`;
-          if (!localFieldPathKeys.has(pathKey)) {
-            localFieldPathKeys.add(pathKey);
-            localFieldPaths.push({
-              sourceFieldNodeId: fromNodeId,
-              targetWriteNodeId: targetWriteNode,
-              outputColumn,
-              materializationBridgeIds: bridgeIds,
+    const boundExpression = expressionFor(load, binding);
+    if (!boundExpression) continue;
+    for (const expression of branchExpressions(boundExpression)) {
+      const statementId = text(expression.statement_id);
+      if (statementId) statementIds.add(statementId);
+      const dependencies = expressionDependencies(expression);
+      for (const rawSource of dependencies.sources) {
+        for (const expanded of expandMaterializedField(
+          rawSource.field, new Set(), materializationContextForExpression(expression), [], rawSource.dependencyRole, rawSource.inputFields,
+        )) {
+          const source = {
+            ...expanded,
+            ...(expanded.materializationBridgeIds.length > 0 ? {
+              materializationInputField: rawSource.field, materializationInputFields: rawSource.inputFields,
+            } : {}),
+          };
+          const inputField = inputFieldRecordForSource(expression, source.field);
+          const emissions = emitFieldEvidenceForInput({
+            taskId, expression, sourceField: source.field, inputField,
+            expanded: source, indexes: fieldEvidenceIndexes,
+            branchScoped: true,
+          });
+          if (emissions.length === 0) {
+            pushGap({
+              gapId: "field-emission:" + taskId + ":" + text(expression.expression_id) + ":" + physicalFieldKey(source.field) + ":" + source.dependencyRole,
+              reasonCode: "FIELD_DEPENDENCY_UNRESOLVED",
+              details: {
+                taskId, expressionId: text(expression.expression_id), leafExpressionId: source.leafExpressionId,
+                statementId, reason: "SOURCE_READ_SCOPE_NOT_EMITTED",
+                unresolved: (source.sourceInputFields ?? [{ table: source.field.qualifiedName, column: source.field.column }]).map((input) => ({
+                  table: text(input.table), column: text(input.column), reason: "SOURCE_READ_SCOPE_NOT_EMITTED",
+                })),
+              },
             });
           }
-        }
-      }
-    }
-    }
-    for (const conditional of fieldConditionalsForExpression(
-      load,
-      taskId,
-      outputColumn,
-      expression,
-      catalog,
-      defaultSchema,
-      primaryTarget,
-      evidenceStatus,
-    )) {
-      for (const source of conditional.fields) {
-        const inputField = inputFieldRecordForSource(expression, source);
-        const emissions = emitFieldEvidenceForInput({
-          taskId,
-          expression,
-          sourceField: source,
-          inputField,
-          expanded: {
-            field: source,
-            materializationBridgeIds: [],
-            leafExpressionId: text(expression.expression_id),
-            leafRelationId: text(expression.relation_id),
-            pathHadAggregation: false,
-            subtypeHops: [],
-          },
-          indexes: fieldEvidenceIndexes,
-        });
-        for (const emission of emissions) {
-          const context = emission.expressionContexts[0];
-          if (!context) continue;
-          if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
-          const fromNodeId = ensureFieldNode(nodes, source, catalog);
-          const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus
-            === "RESOLVED"
-            ? emission.sourceResolution.sourceReadOccurrenceId
-            : null;
-          pushEdge({
-            edgeId: taskLocalEdgeId({
-              edgeType: "FIELD_CONDITIONAL",
-              fromNodeId,
-              toNodeId: targetWriteNode,
-              semanticKey: fieldConditionalEdgeSemanticKey({
-                outputColumn,
-                sourceColumn: source.column,
-                sourceTable: source.qualifiedName,
-                sourceReadOccurrenceId,
-                expressionId: context.expressionId,
-                conditionalId: conditional.conditionalId,
-              }),
-            }),
-            edgeType: "FIELD_CONDITIONAL",
-            fromNodeId,
-            toNodeId: targetWriteNode,
-            properties: {
-              subtype: "CONDITIONAL",
-              outputColumn,
+          for (const emission of emissions) {
+            const context = emission.expressionContexts[0];
+            if (!context) continue;
+            if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
+            const fromNodeId = ensureFieldNode(nodes, source.field, catalog);
+            // The array is a consumer-to-producer path, not an unordered set.
+            const bridgeIds = [...new Set(source.materializationBridgeIds)];
+            const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus === "RESOLVED"
+              ? emission.sourceResolution.sourceReadOccurrenceId : null;
+            const conditional = source.dependencyRole === "CONDITIONAL";
+            const edgeType = conditional ? "FIELD_CONDITIONAL" as const : "FIELD_DIRECT" as const;
+            const commonKey = {
+              outputColumn, sourceColumn: source.field.column,
+              sourceTable: source.field.qualifiedName, sourceReadOccurrenceId,
               expressionId: context.expressionId,
-              sourceReadOccurrenceId,
-              sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
-              ...(emission.sourceResolution.sourceReadOccurrenceReason
-                ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason }
-                : {}),
-              sourceRelationId: emission.sourceResolution.sourceRelationId,
-            },
-          });
+            };
+            const semanticKey = conditional
+              ? fieldConditionalEdgeSemanticKey({
+                ...commonKey, conditionalId: "field-conditional:task-local:" + taskId + ":" + outputColumn,
+              })
+              : fieldDirectEdgeSemanticKey(commonKey);
+            pushEdge({
+              edgeId: taskLocalEdgeId({
+                edgeType, fromNodeId, toNodeId: targetWriteNode,
+                semanticKey: {
+                  ...semanticKey,
+                  ...(bridgeIds.length > 0 ? { materializationBridgeIds: bridgeIds } : {}),
+                },
+              }),
+              edgeType, fromNodeId, toNodeId: targetWriteNode,
+              properties: {
+                subtype: conditional ? "CONDITIONAL" : emission.subtype,
+                ...(!conditional && emission.subtypeReason ? { subtypeReason: emission.subtypeReason } : {}),
+                outputColumn, bindingId: text(binding.binding_id),
+                expressionId: context.expressionId, sourceReadOccurrenceId,
+                sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
+                ...(emission.sourceResolution.sourceReadOccurrenceReason
+                  ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason } : {}),
+                sourceRelationId: emission.sourceResolution.sourceRelationId,
+                ...(bridgeIds.length > 0 ? {
+                  materializationBridgeIds: bridgeIds, materializationFolded: true,
+                  materializationLeafExpressionId: source.leafExpressionId,
+                } : {}),
+              },
+            });
+            const sourceStillTemp = bridgeIds.length === 0
+              && writtenDatasets.has(normalizeName(source.field.qualifiedName))
+              && isTempLikeTableName(source.field.qualifiedName);
+            if (sourceStillTemp) {
+              const breakKey = writeObservationId + "|" + outputColumn + "|" + rawSource.field.column + "|" + edgeType;
+              if (!materializationBreakKeys.has(breakKey)) {
+                materializationBreakKeys.add(breakKey);
+                const sourceDataset = normalizeName(rawSource.field.qualifiedName);
+                const tracker = materializationBreakTracker.get(sourceDataset) ?? {
+                  columns: new Set<string>(), affectedEdgeCount: 0,
+                  writeObservationIds: new Set<string>(),
+                  materializationRecords: materializationRecordsForDataset(materializationRecords, sourceDataset, sourceDataset).length,
+                };
+                tracker.columns.add(rawSource.field.column);
+                tracker.affectedEdgeCount += 1;
+                tracker.writeObservationIds.add(writeObservationId);
+                materializationBreakTracker.set(sourceDataset, tracker);
+              }
+            }
+            if (bridgeIds.length > 0) {
+              const pathKey = fromNodeId + "|" + targetWriteNode + "|" + outputColumn + "|" + bridgeIds.join("|");
+              if (!localFieldPathKeys.has(pathKey)) {
+                localFieldPathKeys.add(pathKey);
+                localFieldPaths.push({
+                  sourceFieldNodeId: fromNodeId, targetWriteNodeId: targetWriteNode,
+                  outputColumn, materializationBridgeIds: bridgeIds,
+                });
+              }
+            }
+          }
         }
       }
     }
   }
-
   for (const [physicalDataset, tracker] of materializationBreakTracker) {
     pushGap(materializationBreakGap({
       taskId,
@@ -1224,9 +1173,18 @@ function projectTaskLocalFromFacts(input: {
     statementIds.add(statementId);
   }
 
+  const controlUnresolvedByRelation = new Map<string, JsonRecord[]>();
+  const controlLoad: CurrentBundleLoad = { ...load, records: { ...load.records,
+    "relation-nodes.jsonl": records(load.records["relation-nodes.jsonl"]).map((relation) => {
+      const unresolved: JsonRecord[] = [];
+      const body = physicalControlEvidence(relation.relation, unresolved);
+      if (unresolved.length > 0) controlUnresolvedByRelation.set(String(relation.relation_id), unresolved);
+      return { ...relation, relation: body };
+    }),
+  } };
   for (const statementId of [...statementIds].sort(compareText)) {
     for (const control of datasetControlsForStatement(
-      load,
+      controlLoad,
       taskId,
       statementId,
       catalog,
@@ -1234,6 +1192,15 @@ function projectTaskLocalFromFacts(input: {
       primaryTarget ?? fallbackTable,
       evidenceStatus,
     )) {
+      const unresolved = controlUnresolvedByRelation.get(control.relationId ?? "") ?? [];
+      if (unresolved.length > 0 || control.evidenceStatus === "UNRESOLVED") {
+        pushGap({
+          gapId: "control-dependency:" + taskId + ":" + control.relationId,
+          reasonCode: "DATASET_CONTROL_DEPENDENCY_UNRESOLVED",
+          details: { taskId, relationId: control.relationId, statementId: control.statementId,
+            reason: control.reasonCode ?? "CONTROL_INPUT_NOT_PHYSICAL", unresolved },
+        });
+      }
       if (!control.field) continue;
       const writeObservationId =
         writeObservationByStatement.get(control.statementId)
@@ -1273,6 +1240,78 @@ function projectTaskLocalFromFacts(input: {
           ...(control.rightRelationId ? { rightRelationId: control.rightRelationId } : {}),
         },
       });
+      // Preserve the computed control above. Fold its proven inputs only as
+      // DATASET_CONTROL edges scoped to this exact predicate and read use.
+      const controlBridges = (materializationsByField.get(materializationKey(control.field.qualifiedName, control.field.column)) ?? [])
+        .filter((bridge) => text(bridge.read_statement_id) === control.statementId);
+      const controlRefs = controlBridges.flatMap((bridge) => records(bridge.read_control_refs))
+        .filter((reference) => text(reference.relation_id) === control.relationId);
+      for (const reference of controlRefs) {
+        if (reference.resolution_status !== "RESOLVED"
+          || !text(reference.read_occurrence_id) || !text(reference.read_relation_id)) {
+          pushGap({
+            gapId: "control-materialization:" + control.controlId,
+            reasonCode: "TASK_LOCAL_CONTROL_MATERIALIZATION_UNRESOLVED",
+            details: { taskId, relationId: control.relationId, reason: reference.reason_code ?? "CONTROL_READ_BINDING_UNRESOLVED" },
+          });
+          continue;
+        }
+        const controlContext: MaterializationContext = {
+          statementId: control.statementId, expressionId: null,
+          controlRelationId: control.relationId!, readOccurrenceId: text(reference.read_occurrence_id)!,
+        };
+        for (const source of expandMaterializedField(control.field, new Set(), controlContext, [], "CONDITIONAL")) {
+          if (source.materializationBridgeIds.length === 0) {
+            pushGap({
+              gapId: "control-materialization-producer:" + control.controlId + ":" + reference.read_occurrence_id,
+              reasonCode: "TASK_LOCAL_CONTROL_MATERIALIZATION_UNRESOLVED",
+              details: {
+                taskId, relationId: control.relationId, readOccurrenceId: reference.read_occurrence_id,
+                reason: "CONTROL_PRODUCER_NOT_PROVABLE",
+                producerStatuses: controlBridges.map((bridge) => bridge.status),
+              },
+            });
+            continue;
+          }
+          const leaf = source.leafExpressionId ? fieldEvidenceIndexes.expressionsById.get(source.leafExpressionId) : null;
+          if (!leaf) continue;
+          for (const emission of emitFieldEvidenceForInput({
+            taskId, expression: leaf, sourceField: source.field,
+            inputField: inputFieldRecordForSource(leaf, source.field), expanded: source, indexes: fieldEvidenceIndexes,
+            branchScoped: true,
+          })) {
+            if (emission.sourceResolution.gap) pushGap(emission.sourceResolution.gap);
+            const sourceNodeId = ensureFieldNode(nodes, source.field, catalog);
+            const sourceReadOccurrenceId = emission.sourceResolution.sourceReadOccurrenceStatus === "RESOLVED"
+              ? emission.sourceResolution.sourceReadOccurrenceId : null;
+            pushEdge({
+              edgeId: taskLocalEdgeId({
+                edgeType: "DATASET_CONTROL", fromNodeId: sourceNodeId, toNodeId: targetWriteNode,
+                semanticKey: {
+                  controlId: control.controlId, controlReadOccurrenceId: reference.read_occurrence_id,
+                  sourceReadOccurrenceId, materializationBridgeIds: source.materializationBridgeIds,
+                },
+              }),
+              edgeType: "DATASET_CONTROL", fromNodeId: sourceNodeId, toNodeId: targetWriteNode,
+              properties: {
+                subtype: control.subtype, grain: control.grain,
+                ...(control.grainReason ? { grainReason: control.grainReason } : {}),
+                relationId: control.relationId, statementId: control.statementId, writeObservationId,
+                joinType: control.joinType ?? "N/A", controlSide: control.controlSide ?? "N/A",
+                ...(control.leftRelationId ? { leftRelationId: control.leftRelationId } : {}),
+                ...(control.rightRelationId ? { rightRelationId: control.rightRelationId } : {}),
+                controlInputColumn: control.field.column,
+                controlReadOccurrenceId: reference.read_occurrence_id,
+                sourceExpressionId: source.leafExpressionId, sourceReadOccurrenceId,
+                sourceReadOccurrenceStatus: emission.sourceResolution.sourceReadOccurrenceStatus,
+                ...(emission.sourceResolution.sourceReadOccurrenceReason
+                  ? { sourceReadOccurrenceReason: emission.sourceResolution.sourceReadOccurrenceReason } : {}),
+                materializationBridgeIds: source.materializationBridgeIds, materializationFolded: true,
+              },
+            });
+          }
+        }
+      }
     }
   }
 

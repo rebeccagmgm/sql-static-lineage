@@ -1,0 +1,1296 @@
+{
+  "method": "表名与注释的导航分组，不是官方分类或逐表SQL确认",
+  "counts": {
+    "06 额度权限与控制": 18,
+    "05 持有余额与对账": 34,
+    "01 通用协议属性与关系": 39,
+    "07 其他合约与签约": 43,
+    "08 账户与管理单元": 54,
+    "09 其他业务附加与待归类": 12,
+    "04 订单与业务办理": 13,
+    "03 场外账簿与运营支撑": 17,
+    "02 场外合约及结构": 26
+  },
+  "rows": [
+    {
+      "table_id": 42441,
+      "qualified_name": "pdata_n.t03_acct_repo_risk_para_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42442,
+      "qualified_name": "pdata_n.t03_acv_mkthold_seat",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42443,
+      "qualified_name": "pdata_n.t03_agt",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42444,
+      "qualified_name": "pdata_n.t03_agt_acctnt_subj_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42445,
+      "qualified_name": "pdata_n.t03_agt_addr_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42446,
+      "qualified_name": "pdata_n.t03_agt_agt_grp_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42447,
+      "qualified_name": "pdata_n.t03_agt_algo_open_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42448,
+      "qualified_name": "pdata_n.t03_agt_algo_trd_acct_hold_adtnl",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42449,
+      "qualified_name": "pdata_n.t03_agt_algo_trd_strg_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42450,
+      "qualified_name": "pdata_n.t03_agt_algo_trd_task_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42451,
+      "qualified_name": "pdata_n.t03_agt_algo_trd_task_undrl_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42452,
+      "qualified_name": "pdata_n.t03_agt_cash_guar_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42453,
+      "qualified_name": "pdata_n.t03_agt_clas_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42454,
+      "qualified_name": "pdata_n.t03_agt_div_rati",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42455,
+      "qualified_name": "pdata_n.t03_agt_ei_hold_shr_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42456,
+      "qualified_name": "pdata_n.t03_agt_emp_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42457,
+      "qualified_name": "pdata_n.t03_agt_fee_ref_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42482,
+      "qualified_name": "pdata_n.t03_agt_grp",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42483,
+      "qualified_name": "pdata_n.t03_agt_grp_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42484,
+      "qualified_name": "pdata_n.t03_agt_hold_shr_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42485,
+      "qualified_name": "pdata_n.t03_agt_idty_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42486,
+      "qualified_name": "pdata_n.t03_agt_imp_date_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42487,
+      "qualified_name": "pdata_n.t03_agt_inr_list_det",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42488,
+      "qualified_name": "pdata_n.t03_agt_inr_org_div_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42489,
+      "qualified_name": "pdata_n.t03_agt_inr_org_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42490,
+      "qualified_name": "pdata_n.t03_agt_intr_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42491,
+      "qualified_name": "pdata_n.t03_agt_keep_ass_prop_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42492,
+      "qualified_name": "pdata_n.t03_agt_lmt_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42493,
+      "qualified_name": "pdata_n.t03_agt_name_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42494,
+      "qualified_name": "pdata_n.t03_agt_org_hrch_rela",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42495,
+      "qualified_name": "pdata_n.t03_agt_prd_lmt_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42496,
+      "qualified_name": "pdata_n.t03_agt_prd_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42497,
+      "qualified_name": "pdata_n.t03_agt_pty_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42542,
+      "qualified_name": "pdata_n.t03_agt_purch_equi",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42543,
+      "qualified_name": "pdata_n.t03_agt_rat_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42544,
+      "qualified_name": "pdata_n.t03_agt_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42545,
+      "qualified_name": "pdata_n.t03_agt_righ_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42546,
+      "qualified_name": "pdata_n.t03_agt_sign_info",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42547,
+      "qualified_name": "pdata_n.t03_agt_stat_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42548,
+      "qualified_name": "pdata_n.t03_agt_stati_info_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42549,
+      "qualified_name": "pdata_n.t03_agt_user_rela_h",
+      "navigation_family": "01 通用协议属性与关系"
+    },
+    {
+      "table_id": 42552,
+      "qualified_name": "pdata_n.t03_algo_trd_fnd_acct_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42553,
+      "qualified_name": "pdata_n.t03_algo_trd_vrtl_fnd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42554,
+      "qualified_name": "pdata_n.t03_alm_liab_info",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42555,
+      "qualified_name": "pdata_n.t03_ams_fnd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42556,
+      "qualified_name": "pdata_n.t03_ams_fnd_trd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42557,
+      "qualified_name": "pdata_n.t03_ams_prd_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42558,
+      "qualified_name": "pdata_n.t03_ams_ta_shr_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42559,
+      "qualified_name": "pdata_n.t03_ams_ta_stc_shr_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42560,
+      "qualified_name": "pdata_n.t03_aplt_trd_ivstr_acct_list",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42561,
+      "qualified_name": "pdata_n.t03_arp_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42562,
+      "qualified_name": "pdata_n.t03_ast_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42563,
+      "qualified_name": "pdata_n.t03_ast_acct_ass_scr_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42564,
+      "qualified_name": "pdata_n.t03_ast_acct_marg_busi_prd_wl_det",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42565,
+      "qualified_name": "pdata_n.t03_ast_acct_old_consu_cms_ref",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42566,
+      "qualified_name": "pdata_n.t03_ast_acct_scr_crn_ctrl_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42567,
+      "qualified_name": "pdata_n.t03_ast_acct_scr_ctrl_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42568,
+      "qualified_name": "pdata_n.t03_ast_acct_scr_grp_crn_ctrl_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42569,
+      "qualified_name": "pdata_n.t03_ast_acct_spec_cash_ctrl",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42570,
+      "qualified_name": "pdata_n.t03_ast_acct_trd_risk_ctrl",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42571,
+      "qualified_name": "pdata_n.t03_ast_acct_uft_mutl_center_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42572,
+      "qualified_name": "pdata_n.t03_ast_acct_undrl_scr_marg_bail_plac_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42573,
+      "qualified_name": "pdata_n.t03_ast_crrc_acct_bal",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42574,
+      "qualified_name": "pdata_n.t03_bed_bnk_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42575,
+      "qualified_name": "pdata_n.t03_bnk_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42576,
+      "qualified_name": "pdata_n.t03_bnk_acct_bal",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42577,
+      "qualified_name": "pdata_n.t03_bond_coll_contr_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42578,
+      "qualified_name": "pdata_n.t03_bond_iss_contr_cupt_det",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42579,
+      "qualified_name": "pdata_n.t03_brok_ass_hold_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42580,
+      "qualified_name": "pdata_n.t03_brok_ast_sati_equi_shr",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42581,
+      "qualified_name": "pdata_n.t03_brp_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42582,
+      "qualified_name": "pdata_n.t03_cash_agt_grp_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42583,
+      "qualified_name": "pdata_n.t03_cash_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42584,
+      "qualified_name": "pdata_n.t03_cds_coll_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42585,
+      "qualified_name": "pdata_n.t03_cds_trd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42586,
+      "qualified_name": "pdata_n.t03_chrem_cash_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42587,
+      "qualified_name": "pdata_n.t03_cntr_spec_chrem_shr_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42588,
+      "qualified_name": "pdata_n.t03_cntr_spec_fia_shr_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42589,
+      "qualified_name": "pdata_n.t03_cred_acct_ast_liab_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42590,
+      "qualified_name": "pdata_n.t03_cred_acct_marg_coup_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42591,
+      "qualified_name": "pdata_n.t03_cros_bord_chrem_agt_sign_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42592,
+      "qualified_name": "pdata_n.t03_csdc_scr_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42593,
+      "qualified_name": "pdata_n.t03_csdc_scr_acct_cmphs_data_serv_det",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42594,
+      "qualified_name": "pdata_n.t03_csdc_scr_acct_use_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42595,
+      "qualified_name": "pdata_n.t03_csdc_sett_pty_bnk_acc",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42596,
+      "qualified_name": "pdata_n.t03_csdc_shr_stmt_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42597,
+      "qualified_name": "pdata_n.t03_csdc_sse_oth_shr_stmt_det",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42598,
+      "qualified_name": "pdata_n.t03_csdc_unqual_scr_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42599,
+      "qualified_name": "pdata_n.t03_cstd_contr_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42600,
+      "qualified_name": "pdata_n.t03_cstd_prd_acct_pdc_tran_det",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42601,
+      "qualified_name": "pdata_n.t03_cust_brok_entr_agt",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42602,
+      "qualified_name": "pdata_n.t03_cvs_mkthold_acct",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42603,
+      "qualified_name": "pdata_n.t03_deri_comp_sett_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42604,
+      "qualified_name": "pdata_n.t03_exch_opt_comb_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42605,
+      "qualified_name": "pdata_n.t03_exch_opt_occp_marg_h",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42606,
+      "qualified_name": "pdata_n.t03_exch_scr_unfnsh_det",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42607,
+      "qualified_name": "pdata_n.t03_extspd_strg_trd_cust_mngr_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42608,
+      "qualified_name": "pdata_n.t03_fap_firm_comb_hold_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42609,
+      "qualified_name": "pdata_n.t03_fap_simu_trd_comb_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42610,
+      "qualified_name": "pdata_n.t03_fia_acct_excp_det",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42611,
+      "qualified_name": "pdata_n.t03_fia_ast_uint_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42612,
+      "qualified_name": "pdata_n.t03_fia_ast_unit_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42614,
+      "qualified_name": "pdata_n.t03_fia_ast_unit_trd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42616,
+      "qualified_name": "pdata_n.t03_fin_exer_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42619,
+      "qualified_name": "pdata_n.t03_fin_exer_sell_repy_det",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42620,
+      "qualified_name": "pdata_n.t03_fin_leas_comp_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42621,
+      "qualified_name": "pdata_n.t03_fin_leas_comp_loan_det",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42622,
+      "qualified_name": "pdata_n.t03_fin_leas_comp_loan_det_cash_flow",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42623,
+      "qualified_name": "pdata_n.t03_fin_loan_comp_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42624,
+      "qualified_name": "pdata_n.t03_fin_loan_comp_wthdr_det",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42625,
+      "qualified_name": "pdata_n.t03_fnd_admin_bnk_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42626,
+      "qualified_name": "pdata_n.t03_fnd_admin_prov_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42627,
+      "qualified_name": "pdata_n.t03_fnd_sav_agt",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42628,
+      "qualified_name": "pdata_n.t03_fnd_sett_bank_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42629,
+      "qualified_name": "pdata_n.t03_foc_bnk_acct_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42630,
+      "qualified_name": "pdata_n.t03_foc_fnd_bnk_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42631,
+      "qualified_name": "pdata_n.t03_fund_admin_hk_pb_fin_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42632,
+      "qualified_name": "pdata_n.t03_futr_fnd_crrc_acct_bal",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42633,
+      "qualified_name": "pdata_n.t03_futr_o32_ast_unit",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42634,
+      "qualified_name": "pdata_n.t03_futr_o32_comb",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42635,
+      "qualified_name": "pdata_n.t03_futr_o32_comb_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42636,
+      "qualified_name": "pdata_n.t03_futr_o32_prd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42637,
+      "qualified_name": "pdata_n.t03_futr_opt_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42638,
+      "qualified_name": "pdata_n.t03_gem_acct_elig_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42639,
+      "qualified_name": "pdata_n.t03_gfhk_liab_busi_det",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42640,
+      "qualified_name": "pdata_n.t03_gks_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42641,
+      "qualified_name": "pdata_n.t03_gks_potn_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42642,
+      "qualified_name": "pdata_n.t03_ia_agt_fare_cal_pd",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42643,
+      "qualified_name": "pdata_n.t03_ia_sign_agt",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42644,
+      "qualified_name": "pdata_n.t03_ia_simu_trd_comb_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42645,
+      "qualified_name": "pdata_n.t03_ics_agt_sign_adtnl",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42646,
+      "qualified_name": "pdata_n.t03_income_vchr_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42647,
+      "qualified_name": "pdata_n.t03_indt_acct_list",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42648,
+      "qualified_name": "pdata_n.t03_intel_cond_ord",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42649,
+      "qualified_name": "pdata_n.t03_labor_contr_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42650,
+      "qualified_name": "pdata_n.t03_lmt_marg_comp_repy_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42651,
+      "qualified_name": "pdata_n.t03_load_agt_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42652,
+      "qualified_name": "pdata_n.t03_loan_agt_cutp_lmt_h",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42653,
+      "qualified_name": "pdata_n.t03_lp_sett_rsrv_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42654,
+      "qualified_name": "pdata_n.t03_lp_sett_rsrv_acct_bal",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42655,
+      "qualified_name": "pdata_n.t03_marg_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42657,
+      "qualified_name": "pdata_n.t03_marg_comp_info_t0",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42659,
+      "qualified_name": "pdata_n.t03_marg_contr_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42661,
+      "qualified_name": "pdata_n.t03_nation_debt_impa",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42662,
+      "qualified_name": "pdata_n.t03_nbo_bill_center_appr_ord_adtnl_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42663,
+      "qualified_name": "pdata_n.t03_new_med_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42664,
+      "qualified_name": "pdata_n.t03_oao_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42667,
+      "qualified_name": "pdata_n.t03_opt_ast_acct_marg_flot_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42668,
+      "qualified_name": "pdata_n.t03_opt_ast_acct_prd_lmt_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42669,
+      "qualified_name": "pdata_n.t03_opt_cptl_scr_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42670,
+      "qualified_name": "pdata_n.t03_opt_ia_agt_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42671,
+      "qualified_name": "pdata_n.t03_ord",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42672,
+      "qualified_name": "pdata_n.t03_org_busi_contr_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42673,
+      "qualified_name": "pdata_n.t03_otc_chrem_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42676,
+      "qualified_name": "pdata_n.t03_otc_chrem_fix_ivst_comp",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42677,
+      "qualified_name": "pdata_n.t03_otc_chrem_fix_ivst_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42678,
+      "qualified_name": "pdata_n.t03_otc_chrem_fix_ivst_plan_info",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42679,
+      "qualified_name": "pdata_n.t03_otc_comp_calc_idx_precision_ref",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42680,
+      "qualified_name": "pdata_n.t03_otc_comp_perf_marg_ref",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42681,
+      "qualified_name": "pdata_n.t03_otc_cutp_marg_acct_perf_guar_rslt",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42682,
+      "qualified_name": "pdata_n.t03_otc_deri_agt_agt_grp_rela_adtnl_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42683,
+      "qualified_name": "pdata_n.t03_otc_deri_agt_rela_adtnl_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42684,
+      "qualified_name": "pdata_n.t03_otc_deri_book_adtnl_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42685,
+      "qualified_name": "pdata_n.t03_otc_deri_book_agt_map_regu",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42686,
+      "qualified_name": "pdata_n.t03_otc_deri_book_agt_trd_jour_map_regu",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42687,
+      "qualified_name": "pdata_n.t03_otc_deri_book_ext_hold_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42688,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_comb_adtnl_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42689,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_comb_marg_call_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42690,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_contr_file_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42691,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_hedg_prd_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42692,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_marg_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42693,
+      "qualified_name": "pdata_n.t03_otc_deri_comp_undrl_lend_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42694,
+      "qualified_name": "pdata_n.t03_otc_deri_hedg_acct_info",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42695,
+      "qualified_name": "pdata_n.t03_otc_fx_fwd_comp_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42696,
+      "qualified_name": "pdata_n.t03_otc_fx_fwd_comp_stru_elmn_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42697,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_barr_line_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42698,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_barr_pric_adtnl_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42699,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_conf_pric",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42700,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_coup_rate",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42701,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_exer_pric",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42702,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42703,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_obsv_date_coup_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42704,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_obsv_scop_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42705,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_reed_fee_flot_rati_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42706,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sett_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42707,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_stres",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42708,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_stru_elmn_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42709,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sub_trd_auto_redp_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42710,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sub_trd_barr_line_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42711,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sub_trd_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42712,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sub_trd_obsv_date_attr_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42713,
+      "qualified_name": "pdata_n.t03_otc_opt_comp_sub_trd_scop_attr_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42714,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_bal_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42715,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_hold_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42716,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42717,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_leg_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42718,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_nom_prin",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42719,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_pos_hold_undrl_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42720,
+      "qualified_name": "pdata_n.t03_otc_swap_comp_pos_info",
+      "navigation_family": "02 场外合约及结构"
+    },
+    {
+      "table_id": 42721,
+      "qualified_name": "pdata_n.t03_our_bank_sav",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42722,
+      "qualified_name": "pdata_n.t03_our_bank_sav_eday_det",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42723,
+      "qualified_name": "pdata_n.t03_pb_ast_unit",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42724,
+      "qualified_name": "pdata_n.t03_pb_ast_unit_oper_busi_righ",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42725,
+      "qualified_name": "pdata_n.t03_pb_fnd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42726,
+      "qualified_name": "pdata_n.t03_pb_scr_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42727,
+      "qualified_name": "pdata_n.t03_pb_work_flow_agt_rela_h",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42728,
+      "qualified_name": "pdata_n.t03_pens_ast_acct_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42729,
+      "qualified_name": "pdata_n.t03_plcy_adtnl_info",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42730,
+      "qualified_name": "pdata_n.t03_plcy_adtnl_prd_info",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42731,
+      "qualified_name": "pdata_n.t03_pmb_scor_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42732,
+      "qualified_name": "pdata_n.t03_prd_cstd_unit_adtnl_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42733,
+      "qualified_name": "pdata_n.t03_prd_ext_ord",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42734,
+      "qualified_name": "pdata_n.t03_prd_insure_ord",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42735,
+      "qualified_name": "pdata_n.t03_prd_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42736,
+      "qualified_name": "pdata_n.t03_prd_sign_agt",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42737,
+      "qualified_name": "pdata_n.t03_purch_contr_pymt_det",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42738,
+      "qualified_name": "pdata_n.t03_qrp_agt",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42739,
+      "qualified_name": "pdata_n.t03_ras_ivst_plan_ord",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42740,
+      "qualified_name": "pdata_n.t03_ref_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42747,
+      "qualified_name": "pdata_n.t03_ref_contr_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42749,
+      "qualified_name": "pdata_n.t03_refin_lend_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42750,
+      "qualified_name": "pdata_n.t03_rstk_sell_ctrl_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42751,
+      "qualified_name": "pdata_n.t03_sb_fwd_buyt_repo_comp",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42752,
+      "qualified_name": "pdata_n.t03_sb_gold_delay_comp_hold_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42753,
+      "qualified_name": "pdata_n.t03_sb_nstd_fin_inst_comp",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42754,
+      "qualified_name": "pdata_n.t03_sb_opt_ast_acct_bal",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42755,
+      "qualified_name": "pdata_n.t03_sb_otc_comp_trd_fee",
+      "navigation_family": "03 场外账簿与运营支撑"
+    },
+    {
+      "table_id": 42756,
+      "qualified_name": "pdata_n.t03_sb_scr_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42757,
+      "qualified_name": "pdata_n.t03_sb_smm_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42758,
+      "qualified_name": "pdata_n.t03_sb_so_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42759,
+      "qualified_name": "pdata_n.t03_sb_so_marg_det",
+      "navigation_family": "09 其他业务附加与待归类"
+    },
+    {
+      "table_id": 42760,
+      "qualified_name": "pdata_n.t03_sb_stkhold_acct_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42761,
+      "qualified_name": "pdata_n.t03_scr_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42762,
+      "qualified_name": "pdata_n.t03_scr_acct_csdc_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42763,
+      "qualified_name": "pdata_n.t03_scr_acct_cstd_chk_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42764,
+      "qualified_name": "pdata_n.t03_scr_acct_flw_cms",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42766,
+      "qualified_name": "pdata_n.t03_scr_acct_opt_covd_scr_hold_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42767,
+      "qualified_name": "pdata_n.t03_scr_acct_righ_ctrl_adtnl",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42769,
+      "qualified_name": "pdata_n.t03_sfb_lmt_marg_comp_info",
+      "navigation_family": "06 额度权限与控制"
+    },
+    {
+      "table_id": 42770,
+      "qualified_name": "pdata_n.t03_shts_scr_src_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42771,
+      "qualified_name": "pdata_n.t03_shts_scr_src_ldr_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42772,
+      "qualified_name": "pdata_n.t03_sopt_stkhold_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42773,
+      "qualified_name": "pdata_n.t03_srp_agt_dect_tax_set_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42774,
+      "qualified_name": "pdata_n.t03_srp_comp_co_divd_adtnl_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42775,
+      "qualified_name": "pdata_n.t03_srp_comp_deflt_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42776,
+      "qualified_name": "pdata_n.t03_srp_comp_info",
+      "navigation_family": "07 其他合约与签约"
+    },
+    {
+      "table_id": 42777,
+      "qualified_name": "pdata_n.t03_sse_scr_acct_asgn_trd_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42778,
+      "qualified_name": "pdata_n.t03_st_acct_open_info",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42779,
+      "qualified_name": "pdata_n.t03_stmt_bnk_acct_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42780,
+      "qualified_name": "pdata_n.t03_ta_acct_unpd_income_det",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42781,
+      "qualified_name": "pdata_n.t03_tit_ast_acct_adtnl_info",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42782,
+      "qualified_name": "pdata_n.t03_wos_ia_ord_info",
+      "navigation_family": "04 订单与业务办理"
+    },
+    {
+      "table_id": 42783,
+      "qualified_name": "pdata_n.t03_xir_fnd_acct",
+      "navigation_family": "08 账户与管理单元"
+    },
+    {
+      "table_id": 42784,
+      "qualified_name": "pdata_n.t03_xir_lvl2_scr_hold_adtnl",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42785,
+      "qualified_name": "pdata_n.t03_xir_lvl2_scr_hold_busi",
+      "navigation_family": "05 持有余额与对账"
+    },
+    {
+      "table_id": 42786,
+      "qualified_name": "pdata_n.t03_xir_scr_acct",
+      "navigation_family": "08 账户与管理单元"
+    }
+  ]
+}

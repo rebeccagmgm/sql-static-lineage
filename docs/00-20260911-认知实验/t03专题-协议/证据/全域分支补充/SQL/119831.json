@@ -1,0 +1,1397 @@
+{
+  "task_id": "119831",
+  "default_schema": "dm_cisp_n",
+  "observed_at": "2026-09-04T02:16:04.978Z",
+  "payload_sha256": "0589dae55a1617a9fb0f9164dbda8c9b3f1eb57899ef62e8d31b0e0792fcd425",
+  "review_scope": "candidate/context only; see structural supplement ledger",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "create table if not exists fms_civ_goods_deal_info ("
+    },
+    {
+      "line": 10,
+      "text": "  p_class string comment '产品分类',"
+    },
+    {
+      "line": 11,
+      "text": "  sysordid string comment '内部交易编号 ',"
+    },
+    {
+      "line": 12,
+      "text": "  orddate string comment '交易日期 ',"
+    },
+    {
+      "line": 13,
+      "text": "  i_code string comment '交易代码',"
+    },
+    {
+      "line": 14,
+      "text": "  a_type string comment '资产类型',"
+    },
+    {
+      "line": 15,
+      "text": "  m_type string comment '市场类型',"
+    },
+    {
+      "line": 16,
+      "text": "  u_i_code string comment '标的交易代码',"
+    },
+    {
+      "line": 17,
+      "text": "  ordcount string comment '交易数量',"
+    },
+    {
+      "line": 18,
+      "text": "  ordprice string comment '交易价格',"
+    },
+    {
+      "line": 19,
+      "text": "  fst_setdate string comment '首期结算日',"
+    },
+    {
+      "line": 20,
+      "text": "  end_setdate string comment '到期结算日',"
+    },
+    {
+      "line": 21,
+      "text": "  trade_amt string comment '交易量名义金额'"
+    },
+    {
+      "line": 22,
+      "text": ")"
+    },
+    {
+      "line": 23,
+      "text": "comment '大宗商品投资交易明细'"
+    },
+    {
+      "line": 24,
+      "text": "PARTITIONED BY ( busi_date string COMMENT '业务日期') ;"
+    },
+    {
+      "line": 25,
+      "text": ""
+    },
+    {
+      "line": 26,
+      "text": "-- querySql"
+    },
+    {
+      "line": 27,
+      "text": "insert overwrite table fms_civ_goods_deal_info partition (busi_date = '2026-05-31')"
+    },
+    {
+      "line": 28,
+      "text": "SELECT"
+    },
+    {
+      "line": 29,
+      "text": "B.p_class, --商品掉期"
+    },
+    {
+      "line": 30,
+      "text": "C.SYSORDID,--系统编号"
+    },
+    {
+      "line": 31,
+      "text": "C.orddate,--交易日期"
+    },
+    {
+      "line": 32,
+      "text": "A.I_CODE,--合约代码"
+    },
+    {
+      "line": 33,
+      "text": "A.A_TYPE,--资产类型"
+    },
+    {
+      "line": 34,
+      "text": "A.M_TYPE,--市场"
+    },
+    {
+      "line": 35,
+      "text": "B.U_I_CODE, --标的代码"
+    },
+    {
+      "line": 36,
+      "text": "C.ordcount, --交易数量"
+    },
+    {
+      "line": 37,
+      "text": "C.ORDPRICE,"
+    },
+    {
+      "line": 38,
+      "text": "replace(B.FST_SETDATE,'-','') FST_SETDATE,"
+    },
+    {
+      "line": 39,
+      "text": "replace(B.END_SETDATE,'-','') END_SETDATE,"
+    },
+    {
+      "line": 40,
+      "text": "cast(cast(cast(B.FST_FULLPRICE as double) * cast(B.par_value as double) as decimal(38,2)) as decimal(38,2)) trade_amt --首期金额"
+    },
+    {
+      "line": 41,
+      "text": "FROM"
+    },
+    {
+      "line": 42,
+      "text": "("
+    },
+    {
+      "line": 43,
+      "text": "select"
+    },
+    {
+      "line": 44,
+      "text": "Agt_Id as I_CODE,"
+    },
+    {
+      "line": 45,
+      "text": "Xir_Ast_Type_Cd as A_TYPE,"
+    },
+    {
+      "line": 46,
+      "text": "Src_Exch_Type as M_TYPE,"
+    },
+    {
+      "line": 47,
+      "text": "Prd_Clas as p_class,"
+    },
+    {
+      "line": 48,
+      "text": "Fir_Sett_Date as FST_SETDATE,"
+    },
+    {
+      "line": 49,
+      "text": "Due_Sett_Date as END_SETDATE,"
+    },
+    {
+      "line": 50,
+      "text": "Undrl_Trd_Cd as U_I_CODE,"
+    },
+    {
+      "line": 51,
+      "text": "Undrl_Ast_Type_Cd AS U_A_TYPE,"
+    },
+    {
+      "line": 52,
+      "text": "Src_Undrl_Exch_Type AS U_M_TYPE,"
+    },
+    {
+      "line": 53,
+      "text": "Fir_Full_Pric_Amt AS FST_FULLPRICE,"
+    },
+    {
+      "line": 54,
+      "text": "Undrl_Ast_Amt  AS PAR_VALUE"
+    },
+    {
+      "line": 55,
+      "text": "from SPDATA_N.T03_SB_FWD_BUYT_REPO_COMP   --132373"
+    },
+    {
+      "line": 56,
+      "text": "where SRC_TBL ='ODATA_N_XIR.T_TTRD_CMDT_OUTRIGHT'"
+    },
+    {
+      "line": 57,
+      "text": "and Xir_Ast_Type_Cd = 'REP_CMDT'"
+    },
+    {
+      "line": 58,
+      "text": "and busi_date = '2026-05-31'"
+    },
+    {
+      "line": 59,
+      "text": "and Due_Sett_Date > '2026-05-31'  --未到期"
+    },
+    {
+      "line": 60,
+      "text": ")B"
+    },
+    {
+      "line": 61,
+      "text": "INNER JOIN --TTRD_CMDT_OUTRIGHT"
+    },
+    {
+      "line": 62,
+      "text": "("
+    },
+    {
+      "line": 63,
+      "text": "select"
+    },
+    {
+      "line": 64,
+      "text": "BUSI_DATE  as BEG_DATE ,"
+    },
+    {
+      "line": 65,
+      "text": "LVL2_SCR_ACCT_AGT_ID as ACCID ,"
+    },
+    {
+      "line": 66,
+      "text": "LVL1_SCR_ACCT_AGT_ID  as SECU_EXT_ACCID,"
+    },
+    {
+      "line": 67,
+      "text": "PRD_ID as I_CODE ,"
+    },
+    {
+      "line": 68,
+      "text": "HOLD_TYPE_CD  as A_TYPE,"
+    },
+    {
+      "line": 69,
+      "text": "SRC_CD_VAL as  M_TYPE , --NVL(DW_CD_VAL,M_TYPE)"
+    },
+    {
+      "line": 70,
+      "text": "VRTL_ID as VIRTUAL_ACCID"
+    },
+    {
+      "line": 71,
+      "text": "from"
+    },
+    {
+      "line": 72,
+      "text": "("
+    },
+    {
+      "line": 73,
+      "text": "select"
+    },
+    {
+      "line": 74,
+      "text": "*"
+    },
+    {
+      "line": 75,
+      "text": "from SPDATA_N.T03_XIR_LVL2_SCR_HOLD_ADTNL  --132362"
+    },
+    {
+      "line": 76,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 77,
+      "text": "and busi_date = '2026-05-31' --beg_date"
+    },
+    {
+      "line": 78,
+      "text": "and VRTL_ID = 'N/A'  --虚拟账户"
+    },
+    {
+      "line": 79,
+      "text": "and LONG_VOL  != '0'   --多头余额"
+    },
+    {
+      "line": 80,
+      "text": ")t1"
+    },
+    {
+      "line": 81,
+      "text": "LEFT JOIN"
+    },
+    {
+      "line": 82,
+      "text": "("
+    },
+    {
+      "line": 83,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 84,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 85,
+      "text": "WHERE TGT_TAB_NAME = 'T03_XIR_LVL2_SCR_HOLD_ADTNL'"
+    },
+    {
+      "line": 86,
+      "text": "AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 87,
+      "text": "AND SRC_TAB_NAME = 'TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 88,
+      "text": "AND SRC_FLD_NAME = 'M_TYPE'"
+    },
+    {
+      "line": 89,
+      "text": "AND SRC_SYS_NAME='XIR'"
+    },
+    {
+      "line": 90,
+      "text": ")t2 ON  t1.EXCH_TYPE_CD =t2.DW_CD_VAL                  --M_TYPE 转码"
+    },
+    {
+      "line": 91,
+      "text": ")A"
+    },
+    {
+      "line": 92,
+      "text": "ON A.I_CODE = B.I_CODE AND A.A_TYPE = B.A_TYPE AND A.M_TYPE = B.M_TYPE"
+    },
+    {
+      "line": 93,
+      "text": "INNER JOIN"
+    },
+    {
+      "line": 94,
+      "text": "("
+    },
+    {
+      "line": 95,
+      "text": "select"
+    },
+    {
+      "line": 96,
+      "text": "SYS_ORD_ID as SYSORDID"
+    },
+    {
+      "line": 97,
+      "text": ",FIN_INST_CD   as I_CODE"
+    },
+    {
+      "line": 98,
+      "text": ",XIR_AST_TYPE_CD  as A_TYPE"
+    },
+    {
+      "line": 99,
+      "text": ",SRC_EXCH_TYPE as M_TYPE"
+    },
+    {
+      "line": 100,
+      "text": ",ORD_DATE AS orddate"
+    },
+    {
+      "line": 101,
+      "text": ",cast(ENTR_VOL as decimal(38,4)) AS ordcount"
+    },
+    {
+      "line": 102,
+      "text": ",XIR_TRD_TYPE_CD as TRDTYPE"
+    },
+    {
+      "line": 103,
+      "text": ",cast(ENTR_PRIC as decimal(38,4)) as ORDPRICE"
+    },
+    {
+      "line": 104,
+      "text": "from SPDATA_N.T05_SB_OTC_TRD_MAIN_INFO    --110346"
+    },
+    {
+      "line": 105,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_OTC_TRADE_T'  --自营场外交易主信息"
+    },
+    {
+      "line": 106,
+      "text": "and busi_date = '2026-05-31' ---每日有数据，数据量与odata一致。"
+    },
+    {
+      "line": 107,
+      "text": ") C"
+    },
+    {
+      "line": 108,
+      "text": "ON A.I_CODE = C.I_CODE AND A.A_TYPE = C.A_TYPE AND A.M_TYPE = C.M_TYPE"
+    },
+    {
+      "line": 109,
+      "text": "LEFT JOIN --XIR_MD.TCMDT"
+    },
+    {
+      "line": 110,
+      "text": "(  --select * from odata_n_xir.m_tcmdt"
+    },
+    {
+      "line": 111,
+      "text": "select distinct"
+    },
+    {
+      "line": 112,
+      "text": "rec_id as I_CODE,"
+    },
+    {
+      "line": 113,
+      "text": "mkt_cd as M_TYPE"
+    },
+    {
+      "line": 114,
+      "text": "from pdata_news_n.t02_xir_cmdt_info  --\t92147"
+    },
+    {
+      "line": 115,
+      "text": "where src_tbl = 'odata_n_xir.m_tcmdt'"
+    },
+    {
+      "line": 116,
+      "text": "and mkt_cd='SGE'"
+    },
+    {
+      "line": 117,
+      "text": ") K"
+    },
+    {
+      "line": 118,
+      "text": "ON K.I_CODE = B.U_I_CODE  --AND K.M_TYPE = B.U_M_TYPE --AND K.A_TYPE = B.U_A_TYPE"
+    },
+    {
+      "line": 119,
+      "text": "INNER join"
+    },
+    {
+      "line": 120,
+      "text": "("
+    },
+    {
+      "line": 121,
+      "text": "select"
+    },
+    {
+      "line": 122,
+      "text": "distinct t2.Agt_Id as COMPONENT"
+    },
+    {
+      "line": 123,
+      "text": "from"
+    },
+    {
+      "line": 124,
+      "text": "("
+    },
+    {
+      "line": 125,
+      "text": "select *"
+    },
+    {
+      "line": 126,
+      "text": "from SPDATA_N.T03_AGT_ORG_HRCH_RELA     --132363"
+    },
+    {
+      "line": 127,
+      "text": "where busi_date = '2026-05-31'"
+    },
+    {
+      "line": 128,
+      "text": "and SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 129,
+      "text": "and Agt_Grp_Id='资金管理部'"
+    },
+    {
+      "line": 130,
+      "text": ")t1"
+    },
+    {
+      "line": 131,
+      "text": "left join"
+    },
+    {
+      "line": 132,
+      "text": "("
+    },
+    {
+      "line": 133,
+      "text": "select Agt_Grp_Id,Agt_Id"
+    },
+    {
+      "line": 134,
+      "text": "from SPDATA_N.T03_AGT_AGT_GRP_RELA_H    --132372"
+    },
+    {
+      "line": 135,
+      "text": "where strt_date <= '2026-05-31' and end_date = '2099-12-31'"
+    },
+    {
+      "line": 136,
+      "text": "and src_tbl = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 137,
+      "text": ")t2 on t1.Sub_Agt_Grp_Id =t2.Agt_Grp_Id"
+    },
+    {
+      "line": 138,
+      "text": ") com"
+    },
+    {
+      "line": 139,
+      "text": "on A.ACCID = com.COMPONENT"
+    },
+    {
+      "line": 140,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 141,
+      "text": "SELECT"
+    },
+    {
+      "line": 142,
+      "text": "B.p_class, --商品租借"
+    },
+    {
+      "line": 143,
+      "text": "C.SYSORDID,--系统编号"
+    },
+    {
+      "line": 144,
+      "text": "C.orddate,--交易日期"
+    },
+    {
+      "line": 145,
+      "text": "A.I_CODE,--合约代码"
+    },
+    {
+      "line": 146,
+      "text": "A.A_TYPE,--资产类型"
+    },
+    {
+      "line": 147,
+      "text": "A.M_TYPE,--市场"
+    },
+    {
+      "line": 148,
+      "text": "B.U_I_CODE, --标的代码"
+    },
+    {
+      "line": 149,
+      "text": "C.ordcount, --交易数量"
+    },
+    {
+      "line": 150,
+      "text": "C.ORDPRICE, --交易价格"
+    },
+    {
+      "line": 151,
+      "text": "replace(B.FSTSETDATE,'-','') as FST_SETDATE,--起息日"
+    },
+    {
+      "line": 152,
+      "text": "replace(B.ENDSETDATE,'-','') as END_SETDATE,--到期日"
+    },
+    {
+      "line": 153,
+      "text": "cast(B.PARVALUE as decimal(38,2)) as trade_amt --名义本金"
+    },
+    {
+      "line": 154,
+      "text": "FROM"
+    },
+    {
+      "line": 155,
+      "text": "(  --select * from odata_n_xir.t_ttrd_cmdt_lb  where ENDSETDATE > '2026-05-31'"
+    },
+    {
+      "line": 156,
+      "text": "select"
+    },
+    {
+      "line": 157,
+      "text": "rec_id as i_code,"
+    },
+    {
+      "line": 158,
+      "text": "fir_sett_dt as FSTSETDATE,--起息日"
+    },
+    {
+      "line": 159,
+      "text": "due_sett_dt as ENDSETDATE,--到期日"
+    },
+    {
+      "line": 160,
+      "text": "lb_par  as PARVALUE,"
+    },
+    {
+      "line": 161,
+      "text": "comp_cate as p_class,"
+    },
+    {
+      "line": 162,
+      "text": "scr_cd  as U_I_CODE  --没入模"
+    },
+    {
+      "line": 163,
+      "text": "from pdata_news_n.t02_xir_cmdt_brw  ---92148"
+    },
+    {
+      "line": 164,
+      "text": "where src_tbl = 'odata_n_xir.t_ttrd_cmdt_lb'"
+    },
+    {
+      "line": 165,
+      "text": ")B"
+    },
+    {
+      "line": 166,
+      "text": "INNER JOIN"
+    },
+    {
+      "line": 167,
+      "text": "("
+    },
+    {
+      "line": 168,
+      "text": "select"
+    },
+    {
+      "line": 169,
+      "text": "BUSI_DATE  as BEG_DATE ,"
+    },
+    {
+      "line": 170,
+      "text": "LVL2_SCR_ACCT_AGT_ID as ACCID ,"
+    },
+    {
+      "line": 171,
+      "text": "LVL1_SCR_ACCT_AGT_ID  as SECU_EXT_ACCID,"
+    },
+    {
+      "line": 172,
+      "text": "PRD_ID as I_CODE ,"
+    },
+    {
+      "line": 173,
+      "text": "HOLD_TYPE_CD  as A_TYPE,"
+    },
+    {
+      "line": 174,
+      "text": "SRC_CD_VAL as  M_TYPE , --NVL(DW_CD_VAL,M_TYPE)"
+    },
+    {
+      "line": 175,
+      "text": "VRTL_ID as VIRTUAL_ACCID"
+    },
+    {
+      "line": 176,
+      "text": "from"
+    },
+    {
+      "line": 177,
+      "text": "("
+    },
+    {
+      "line": 178,
+      "text": "select"
+    },
+    {
+      "line": 179,
+      "text": "*"
+    },
+    {
+      "line": 180,
+      "text": "from SPDATA_N.T03_XIR_LVL2_SCR_HOLD_ADTNL  --132362"
+    },
+    {
+      "line": 181,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS'     ---from PDATA_N.T03_XIR_LVL2_SCR_HOLD_BUSI where Src_Tbl  = 'ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_BIZ_HIS'"
+    },
+    {
+      "line": 182,
+      "text": "and busi_date = '2026-05-31' --beg_date"
+    },
+    {
+      "line": 183,
+      "text": "and VRTL_ID='N/A'"
+    },
+    {
+      "line": 184,
+      "text": "and LONG_VOL  != '0'   --多头余额"
+    },
+    {
+      "line": 185,
+      "text": ")t1"
+    },
+    {
+      "line": 186,
+      "text": "LEFT JOIN"
+    },
+    {
+      "line": 187,
+      "text": "("
+    },
+    {
+      "line": 188,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 189,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 190,
+      "text": "WHERE TGT_TAB_NAME = 'T03_XIR_LVL2_SCR_HOLD_ADTNL'"
+    },
+    {
+      "line": 191,
+      "text": "AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 192,
+      "text": "AND SRC_TAB_NAME = 'TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 193,
+      "text": "AND SRC_FLD_NAME = 'M_TYPE'"
+    },
+    {
+      "line": 194,
+      "text": "AND SRC_SYS_NAME = 'XIR'"
+    },
+    {
+      "line": 195,
+      "text": ")t2"
+    },
+    {
+      "line": 196,
+      "text": "ON  t1.EXCH_TYPE_CD =t2.DW_CD_VAL     --M_TYPE 转码"
+    },
+    {
+      "line": 197,
+      "text": ")A"
+    },
+    {
+      "line": 198,
+      "text": "ON A.I_CODE = B.I_CODE  --AND A.A_TYPE = B.A_TYPE AND A.M_TYPE = B.M_TYPE"
+    },
+    {
+      "line": 199,
+      "text": "INNER JOIN --TTRD_OTC_TRADE"
+    },
+    {
+      "line": 200,
+      "text": "("
+    },
+    {
+      "line": 201,
+      "text": "select"
+    },
+    {
+      "line": 202,
+      "text": "SYS_ORD_ID as SYSORDID"
+    },
+    {
+      "line": 203,
+      "text": ",FIN_INST_CD   as I_CODE"
+    },
+    {
+      "line": 204,
+      "text": ",XIR_AST_TYPE_CD  as A_TYPE"
+    },
+    {
+      "line": 205,
+      "text": ",SRC_EXCH_TYPE as M_TYPE"
+    },
+    {
+      "line": 206,
+      "text": ",ORD_DATE AS orddate"
+    },
+    {
+      "line": 207,
+      "text": ",cast(ENTR_VOL as decimal(38,4)) AS ordcount"
+    },
+    {
+      "line": 208,
+      "text": ",XIR_TRD_TYPE_CD as TRDTYPE"
+    },
+    {
+      "line": 209,
+      "text": ",cast(ENTR_PRIC as decimal(38,4)) as ORDPRICE"
+    },
+    {
+      "line": 210,
+      "text": "from SPDATA_N.T05_SB_OTC_TRD_MAIN_INFO"
+    },
+    {
+      "line": 211,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_OTC_TRADE_T'  --自营场外交易主信息"
+    },
+    {
+      "line": 212,
+      "text": "and busi_date = '2026-05-31' ---每日有数据，数据量与odata一致。"
+    },
+    {
+      "line": 213,
+      "text": ") C"
+    },
+    {
+      "line": 214,
+      "text": "ON A.I_CODE = C.I_CODE AND A.A_TYPE = C.A_TYPE AND A.M_TYPE = C.M_TYPE"
+    },
+    {
+      "line": 215,
+      "text": "LEFT JOIN --XIR_MD.TCMDT"
+    },
+    {
+      "line": 216,
+      "text": "(  --select * from odata_n_xir.m_tcmdt"
+    },
+    {
+      "line": 217,
+      "text": "select"
+    },
+    {
+      "line": 218,
+      "text": "rec_id as I_CODE,"
+    },
+    {
+      "line": 219,
+      "text": "mkt_cd as M_TYPE"
+    },
+    {
+      "line": 220,
+      "text": "from pdata_news_n.t02_xir_cmdt_info  --\t92147"
+    },
+    {
+      "line": 221,
+      "text": "where src_tbl = 'odata_n_xir.m_tcmdt'"
+    },
+    {
+      "line": 222,
+      "text": "and mkt_cd='SGE'"
+    },
+    {
+      "line": 223,
+      "text": ") K"
+    },
+    {
+      "line": 224,
+      "text": "ON K.I_CODE = B.U_I_CODE  --AND K.M_TYPE = B.U_M_TYPE --AND K.A_TYPE = B.U_A_TYPE"
+    },
+    {
+      "line": 225,
+      "text": "INNER join"
+    },
+    {
+      "line": 226,
+      "text": "("
+    },
+    {
+      "line": 227,
+      "text": "select"
+    },
+    {
+      "line": 228,
+      "text": "distinct t2.Agt_Id as COMPONENT"
+    },
+    {
+      "line": 229,
+      "text": "from"
+    },
+    {
+      "line": 230,
+      "text": "("
+    },
+    {
+      "line": 231,
+      "text": "select *"
+    },
+    {
+      "line": 232,
+      "text": "from SPDATA_N.T03_AGT_ORG_HRCH_RELA   --132363"
+    },
+    {
+      "line": 233,
+      "text": "where busi_date = '2026-05-31'"
+    },
+    {
+      "line": 234,
+      "text": "and SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 235,
+      "text": "and Agt_Grp_Id='资金管理部'"
+    },
+    {
+      "line": 236,
+      "text": ")t1"
+    },
+    {
+      "line": 237,
+      "text": "left join"
+    },
+    {
+      "line": 238,
+      "text": "("
+    },
+    {
+      "line": 239,
+      "text": "select Agt_Grp_Id,Agt_Id"
+    },
+    {
+      "line": 240,
+      "text": "from SPDATA_N.T03_AGT_AGT_GRP_RELA_H    --132372"
+    },
+    {
+      "line": 241,
+      "text": "where strt_date <= '2026-05-31' and end_date = '2099-12-31'"
+    },
+    {
+      "line": 242,
+      "text": "and src_tbl = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 243,
+      "text": ")t2 on t1.Sub_Agt_Grp_Id =t2.Agt_Grp_Id"
+    },
+    {
+      "line": 244,
+      "text": ") com"
+    },
+    {
+      "line": 245,
+      "text": "on A.ACCID = com.COMPONENT"
+    },
+    {
+      "line": 246,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 247,
+      "text": "SELECT"
+    },
+    {
+      "line": 248,
+      "text": "B.p_class, --商品远期"
+    },
+    {
+      "line": 249,
+      "text": "C.SYSORDID,--系统编号"
+    },
+    {
+      "line": 250,
+      "text": "C.orddate,--交易日期"
+    },
+    {
+      "line": 251,
+      "text": "A.I_CODE,--合约代码"
+    },
+    {
+      "line": 252,
+      "text": "A.A_TYPE,--资产类型"
+    },
+    {
+      "line": 253,
+      "text": "A.M_TYPE,--市场"
+    },
+    {
+      "line": 254,
+      "text": "B.U_I_CODE, --标的代码"
+    },
+    {
+      "line": 255,
+      "text": "C.ordcount, --交易数量"
+    },
+    {
+      "line": 256,
+      "text": "C.ORDPRICE, --交易价格"
+    },
+    {
+      "line": 257,
+      "text": "replace(B.FST_SETDATE,'-','') FST_SETDATE,"
+    },
+    {
+      "line": 258,
+      "text": "replace(B.END_SETDATE,'-','') END_SETDATE,"
+    },
+    {
+      "line": 259,
+      "text": "cast(CASE"
+    },
+    {
+      "line": 260,
+      "text": "WHEN C.TRDTYPE IN ('604') THEN -C.ORDCOUNT * C.ORDPRICE"
+    },
+    {
+      "line": 261,
+      "text": "WHEN B.A_TYPE = 'FWD_FUT_CMDT' THEN C.ORDCOUNT * C.ORDPRICE * 1000"
+    },
+    {
+      "line": 262,
+      "text": "ELSE C.ORDCOUNT * C.ORDPRICE"
+    },
+    {
+      "line": 263,
+      "text": "END as decimal(38,2)) as trade_amt --远期金额"
+    },
+    {
+      "line": 264,
+      "text": "FROM"
+    },
+    {
+      "line": 265,
+      "text": "("
+    },
+    {
+      "line": 266,
+      "text": "select"
+    },
+    {
+      "line": 267,
+      "text": "Agt_Id as I_CODE,"
+    },
+    {
+      "line": 268,
+      "text": "Xir_Ast_Type_Cd as A_TYPE,"
+    },
+    {
+      "line": 269,
+      "text": "Src_Exch_Type as M_TYPE,"
+    },
+    {
+      "line": 270,
+      "text": "Prd_Clas as p_class,"
+    },
+    {
+      "line": 271,
+      "text": "Fir_Sett_Date as FST_SETDATE,"
+    },
+    {
+      "line": 272,
+      "text": "Due_Sett_Date  as END_SETDATE,"
+    },
+    {
+      "line": 273,
+      "text": "Undrl_Trd_Cd as U_I_CODE,"
+    },
+    {
+      "line": 274,
+      "text": "Undrl_Ast_Type_Cd AS U_A_TYPE,"
+    },
+    {
+      "line": 275,
+      "text": "Src_Undrl_Exch_Type AS U_M_TYPE,"
+    },
+    {
+      "line": 276,
+      "text": "Fir_Full_Pric_Amt AS FST_FULLPRICE,"
+    },
+    {
+      "line": 277,
+      "text": "Undrl_Ast_Amt  AS PAR_VALUE"
+    },
+    {
+      "line": 278,
+      "text": "from SPDATA_N.T03_SB_FWD_BUYT_REPO_COMP   --132373"
+    },
+    {
+      "line": 279,
+      "text": "where SRC_TBL ='ODATA_N_XIR.T_TTRD_CMDT_OUTRIGHT'"
+    },
+    {
+      "line": 280,
+      "text": "and Xir_Ast_Type_Cd IN ('FWD_CMDT','FWD_FUT_CMDT','FWD_DEL_CMDT')"
+    },
+    {
+      "line": 281,
+      "text": "and busi_date = '2026-05-31'"
+    },
+    {
+      "line": 282,
+      "text": "and Due_Sett_Date > '2026-05-31'  --未到期"
+    },
+    {
+      "line": 283,
+      "text": ")B"
+    },
+    {
+      "line": 284,
+      "text": "INNER JOIN"
+    },
+    {
+      "line": 285,
+      "text": "("
+    },
+    {
+      "line": 286,
+      "text": "select"
+    },
+    {
+      "line": 287,
+      "text": "BUSI_DATE  as BEG_DATE ,"
+    },
+    {
+      "line": 288,
+      "text": "LVL2_SCR_ACCT_AGT_ID as ACCID ,"
+    },
+    {
+      "line": 289,
+      "text": "LVL1_SCR_ACCT_AGT_ID  as SECU_EXT_ACCID,"
+    },
+    {
+      "line": 290,
+      "text": "PRD_ID as I_CODE ,"
+    },
+    {
+      "line": 291,
+      "text": "HOLD_TYPE_CD  as A_TYPE,"
+    },
+    {
+      "line": 292,
+      "text": "SRC_CD_VAL as  M_TYPE , --NVL(DW_CD_VAL,M_TYPE)"
+    },
+    {
+      "line": 293,
+      "text": "VRTL_ID as VIRTUAL_ACCID"
+    },
+    {
+      "line": 294,
+      "text": "from"
+    },
+    {
+      "line": 295,
+      "text": "("
+    },
+    {
+      "line": 296,
+      "text": "select"
+    },
+    {
+      "line": 297,
+      "text": "*"
+    },
+    {
+      "line": 298,
+      "text": "from SPDATA_N.T03_XIR_LVL2_SCR_HOLD_ADTNL  --132362 --odata_n_xir.t_vacc_bal_secu_withbiz_his"
+    },
+    {
+      "line": 299,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 300,
+      "text": "and busi_date = '2026-05-31' --beg_date"
+    },
+    {
+      "line": 301,
+      "text": "and VRTL_ID='N/A'"
+    },
+    {
+      "line": 302,
+      "text": "and LONG_VOL != '0'   --多头余额"
+    },
+    {
+      "line": 303,
+      "text": ")t1"
+    },
+    {
+      "line": 304,
+      "text": "LEFT JOIN"
+    },
+    {
+      "line": 305,
+      "text": "("
+    },
+    {
+      "line": 306,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 307,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 308,
+      "text": "WHERE TGT_TAB_NAME = 'T03_XIR_LVL2_SCR_HOLD_ADTNL'"
+    },
+    {
+      "line": 309,
+      "text": "AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 310,
+      "text": "AND SRC_TAB_NAME = 'TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 311,
+      "text": "AND SRC_FLD_NAME = 'M_TYPE'"
+    },
+    {
+      "line": 312,
+      "text": "AND SRC_SYS_NAME='XIR'"
+    },
+    {
+      "line": 313,
+      "text": ")t2 on t1.EXCH_TYPE_CD =t2.DW_CD_VAL     --M_TYPE 转码"
+    },
+    {
+      "line": 314,
+      "text": ")A"
+    },
+    {
+      "line": 315,
+      "text": "ON A.I_CODE = B.I_CODE AND A.A_TYPE = B.A_TYPE AND A.M_TYPE = B.M_TYPE"
+    },
+    {
+      "line": 316,
+      "text": "INNER JOIN"
+    },
+    {
+      "line": 317,
+      "text": "("
+    },
+    {
+      "line": 318,
+      "text": "select"
+    },
+    {
+      "line": 319,
+      "text": "SYS_ORD_ID as SYSORDID"
+    },
+    {
+      "line": 320,
+      "text": ",FIN_INST_CD   as I_CODE"
+    },
+    {
+      "line": 321,
+      "text": ",XIR_AST_TYPE_CD  as A_TYPE"
+    },
+    {
+      "line": 322,
+      "text": ",SRC_EXCH_TYPE as M_TYPE"
+    },
+    {
+      "line": 323,
+      "text": ",ORD_DATE AS orddate"
+    },
+    {
+      "line": 324,
+      "text": ",cast(ENTR_VOL as decimal(38,4)) AS ordcount"
+    },
+    {
+      "line": 325,
+      "text": ",XIR_TRD_TYPE_CD as TRDTYPE"
+    },
+    {
+      "line": 326,
+      "text": ",cast(ENTR_PRIC as decimal(38,4)) as ORDPRICE"
+    },
+    {
+      "line": 327,
+      "text": "from SPDATA_N.T05_SB_OTC_TRD_MAIN_INFO"
+    },
+    {
+      "line": 328,
+      "text": "where SRC_TBL = 'ODATA_N_XIR.T_TTRD_OTC_TRADE_T'  --自营场外交易主信息"
+    },
+    {
+      "line": 329,
+      "text": "and busi_date = '2026-05-31' ---每日有数据，数据量与odata一致。"
+    },
+    {
+      "line": 330,
+      "text": "and XIR_TRD_TYPE_CD <> '223'"
+    },
+    {
+      "line": 331,
+      "text": ") C"
+    },
+    {
+      "line": 332,
+      "text": "ON A.I_CODE = C.I_CODE AND A.A_TYPE = C.A_TYPE AND A.M_TYPE = C.M_TYPE"
+    },
+    {
+      "line": 333,
+      "text": "INNER join"
+    },
+    {
+      "line": 334,
+      "text": "("
+    },
+    {
+      "line": 335,
+      "text": "select"
+    },
+    {
+      "line": 336,
+      "text": "distinct t2.Agt_Id as COMPONENT"
+    },
+    {
+      "line": 337,
+      "text": "from"
+    },
+    {
+      "line": 338,
+      "text": "("
+    },
+    {
+      "line": 339,
+      "text": "select *"
+    },
+    {
+      "line": 340,
+      "text": "from SPDATA_N.T03_AGT_ORG_HRCH_RELA"
+    },
+    {
+      "line": 341,
+      "text": "where busi_date = '2026-05-31'"
+    },
+    {
+      "line": 342,
+      "text": "and SRC_TBL = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 343,
+      "text": "and Agt_Grp_Id='资金管理部'"
+    },
+    {
+      "line": 344,
+      "text": ")t1"
+    },
+    {
+      "line": 345,
+      "text": "left join"
+    },
+    {
+      "line": 346,
+      "text": "("
+    },
+    {
+      "line": 347,
+      "text": "select Agt_Grp_Id,Agt_Id"
+    },
+    {
+      "line": 348,
+      "text": "from SPDATA_N.T03_AGT_AGT_GRP_RELA_H"
+    },
+    {
+      "line": 349,
+      "text": "where strt_date <= '2026-05-31' and end_date = '2099-12-31'"
+    },
+    {
+      "line": 350,
+      "text": "and src_tbl = 'ODATA_N_XIR.T_TTRD_ACC_PACKAGE_COMPONENT'"
+    },
+    {
+      "line": 351,
+      "text": ")t2 on t1.Sub_Agt_Grp_Id =t2.Agt_Grp_Id"
+    },
+    {
+      "line": 352,
+      "text": ") com"
+    },
+    {
+      "line": 353,
+      "text": "on A.ACCID = com.COMPONENT;"
+    },
+    {
+      "line": 354,
+      "text": ""
+    }
+  ]
+}

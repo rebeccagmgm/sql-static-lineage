@@ -1,0 +1,181 @@
+{
+  "date": "2026-09-14",
+  "scope": "已读SQL代表分支，不是全部来源枚举；协议类型可多来源。未标注不等于无来源。",
+  "names": {
+    "TIT": "场外衍生品投资管理系统",
+    "OIS": "OTC综合业务平台",
+    "RCC": "零售柜台新一代清算系统",
+    "RCC/ICC": "零售/机构柜台新一代清算系统",
+    "XPB": "迅投PB主经纪商系统",
+    "STA": "资产管理分TA系统",
+    "XIR": "衡泰交易管理系统",
+    "CVS": "托管系统5.0",
+    "OAO": "网上开户系统",
+    "PRD": "产品中心",
+    "GLM": "广发租赁业务管理系统",
+    "PAS": "合同管理来源（正式中文全称待确认）"
+  },
+  "rows": [
+    {
+      "code": "10219",
+      "source": "TIT",
+      "role": "余额贡献",
+      "note": "TIT保证金账户余额分支使用10219；只确认该分支，不认定类型由TIT独占。",
+      "evidence": "../证据/SQL/107280.json"
+    },
+    {
+      "code": "10220",
+      "source": "TIT",
+      "role": "对象入模",
+      "note": "D_CAPITAL_ACCOUNT生成通用协议身份，修饰符及类型10220。",
+      "evidence": "../证据/SQL/103929.json"
+    },
+    {
+      "code": "20206",
+      "source": "TIT",
+      "role": "对象入模",
+      "note": "D_REF_TRS生成普通互换身份；另有确认书20206-KST分支。",
+      "evidence": "../证据/SQL/103930.json"
+    },
+    {
+      "code": "20207",
+      "source": "TIT",
+      "role": "对象入模",
+      "note": "D_REF_OTC_OPTION_DEAL写入期权主信息，修饰符20207。",
+      "evidence": "../证据/SQL/103943.json"
+    },
+    {
+      "code": "20208",
+      "source": "TIT",
+      "role": "对象入模",
+      "note": "D_REF_FX_FORWARD写入外汇远期主信息，修饰符20208。",
+      "evidence": "../证据/SQL/163771.json"
+    },
+    {
+      "code": "20411",
+      "source": "TIT",
+      "role": "对象入模",
+      "note": "D_REF_BOOK写入账簿附加信息，修饰符20411。",
+      "evidence": "../证据/SQL/105382.json"
+    },
+    {
+      "code": "20206",
+      "source": "OIS",
+      "role": "关系补充",
+      "note": "O_CONTRACT_INTRODUCTION提供分成比例；连接TIT识别互换身份，并含确认书分支。不是OIS生产互换主档。",
+      "evidence": "../证据/SQL/134215.json"
+    },
+    {
+      "code": "20207",
+      "source": "OIS",
+      "role": "关系补充",
+      "note": "O_CONTRACT_INTRODUCTION提供分成比例；连接TIT期权来源识别20207身份。不是OIS生产期权主档。",
+      "evidence": "../证据/SQL/134215.json"
+    },
+    {
+      "code": "10101",
+      "source": "RCC",
+      "role": "对象入模",
+      "note": "A_STOCKHOLDER生成证券账户身份。",
+      "evidence": "../证据/SQL/35362.json"
+    },
+    {
+      "code": "10201",
+      "source": "RCC/ICC",
+      "role": "对象入模",
+      "note": "柜台A_FUNDACCOUNT等来源生成资产账户，存在来源排除规则。",
+      "evidence": "../证据/SQL/35803.json"
+    },
+    {
+      "code": "1020201",
+      "source": "XPB",
+      "role": "对象入模",
+      "note": "T_ACCOUNT_SUBACCOUNT连接父账户，修饰符1020201-XPB。",
+      "evidence": "../证据/SQL/130260.json"
+    },
+    {
+      "code": "10105",
+      "source": "STA",
+      "role": "对象入模",
+      "note": "S_TACCOINFO使用10105；字典名称含TA5，但已读来源为STA。",
+      "evidence": "../证据/全域分支补充/SQL/40421.json"
+    },
+    {
+      "code": "10107",
+      "source": "STA",
+      "role": "对象入模",
+      "note": "S_TACCONET生成含渠道要素的10107修饰符。",
+      "evidence": "../证据/全域分支补充/SQL/40125.json"
+    },
+    {
+      "code": "1010201",
+      "source": "XIR",
+      "role": "对象入模",
+      "note": "一级证券账户T_TTRD_ACC_SECU_EXT。",
+      "evidence": "../证据/全域分支补充/SQL/64361.json"
+    },
+    {
+      "code": "1010202",
+      "source": "XIR",
+      "role": "对象入模",
+      "note": "二级证券账户T_TTRD_ACC_SECU。",
+      "evidence": "../证据/全域分支补充/SQL/64035.json"
+    },
+    {
+      "code": "1020901",
+      "source": "XIR",
+      "role": "对象入模",
+      "note": "一级资金账户T_TTRD_ACC_CASH_EXT。",
+      "evidence": "../证据/全域分支补充/SQL/64182.json"
+    },
+    {
+      "code": "1020902",
+      "source": "XIR",
+      "role": "对象入模",
+      "note": "二级资金账户T_TTRD_ACC_CASH。",
+      "evidence": "../证据/全域分支补充/SQL/64181.json"
+    },
+    {
+      "code": "10112",
+      "source": "CVS",
+      "role": "对象入模",
+      "note": "A_T_FL_SEC_ACC写入托管股东账户；任务默认库未确认。",
+      "evidence": "../证据/全域分支补充/SQL/73056.json"
+    },
+    {
+      "code": "20102",
+      "source": "RCC",
+      "role": "对象入模",
+      "note": "H_HIS_COMPACT生成两融合约。",
+      "evidence": "../证据/SQL/35612.json"
+    },
+    {
+      "code": "2040204",
+      "source": "OAO",
+      "role": "对象入模",
+      "note": "C_TSYS_ORDER写入网上开户订单。",
+      "evidence": "../证据/全域分支补充/SQL/51626.json"
+    },
+    {
+      "code": "2040210",
+      "source": "PRD",
+      "role": "对象入模",
+      "note": "P_INSURANCE_ORDER写入订单，类型2040210。",
+      "evidence": "../证据/SQL/105812.json"
+    },
+    {
+      "code": "20408",
+      "source": "GLM",
+      "role": "对象入模",
+      "note": "P_CON_CONTRACT_HD生成父合同身份，放款与现金流沿父合同连接。",
+      "evidence": "../证据/全域分支补充/SQL/163681.json"
+    },
+    {
+      "code": "20401",
+      "source": "PAS",
+      "role": "对象入模",
+      "note": "J_HSSEMP_CONTRACT写入劳工合同，修饰符20401。",
+      "evidence": "../证据/全域分支补充/SQL/222592.json"
+    }
+  ]
+}

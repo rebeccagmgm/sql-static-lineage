@@ -1,3 +1,5 @@
+import { ClusterFilter } from "./components/ClusterFilter";
+import { readGlobalClusters, restrictTraceClusters } from "./trace-clusters";
 import { UPSTREAM_SCOPE_ENABLED, UpstreamScopePanel, UpstreamScopeStatus, scopedOverview, scopedRegion } from "./experimental-upstream-scope";
 import { RegionTopics } from "./region-topics/RegionTopics";
 import { GlobalVisibility, useGlobalVisibility } from "./node-visibility/GlobalVisibility";
@@ -7,7 +9,6 @@ import {
   Background,
   Controls,
   MiniMap,
-  ReactFlow,
   ReactFlowProvider,
   getViewportForBounds,
   useReactFlow,
@@ -19,12 +20,19 @@ import { edgeTouchesHiddenField } from "./field-viewport";
 import { NodeVisibility } from "./node-visibility/NodeVisibility";
 import { api } from "./api";
 import { TRACE_EDGE_LIMIT } from "./graph-limits";
-import { adaptTrace, type FieldSelectionContext } from "./graph-adapter";
+import { adaptTrace, INPUT_EDGE_COLOR, OUTPUT_EDGE_COLOR, type FieldSelectionContext } from "./graph-adapter";
 import { DetailPanel } from "./components/DetailPanel";
+import { DraggableLineageCanvas } from "./components/DraggableLineageCanvas";
+import { appendTableBranch } from "./branch-expansion";
+import { createGraphHighlighter } from "./graph-highlight";
 import { ResizableWorkspace } from "./components/ResizableWorkspace";
 import { LineageNode } from "./components/LineageNode";
 import { TaskNode } from "./components/TaskNode";
-import { FieldSelector } from "./components/FieldSelector";
+import { NodeAnalysisToolbar } from "./components/NodeAnalysisToolbar";
+import { FieldSelector, selectedTaskFields } from "./components/FieldSelector";
+import { PartitionSelector } from "./components/PartitionSelector";
+import { partitionFields } from "./partition-fields";
+import { collectPerformanceSnapshot, recordAction } from "./performance-log";
 import { ExplorationPanel } from "./components/ExplorationPanel";
 import { isSameGraphVersion, normalizeRegionItems } from "./contract";
 import {
@@ -64,14 +72,18 @@ type Hist = {
   depth: number;
   candidates: boolean;
   selectedFieldIds: string[];
+  fieldTaskId: string;
   fields: GraphNode[];
   fieldsMore: boolean;
   fieldsVersion?: string;
   viewport: Viewport;
 };
 const OverviewCanvas = lazy(() => import("./overview-canvas/OverviewCanvas").then(module => ({ default: module.OverviewCanvas })));
+const AnalysisWorkspace = lazy(() => import("./analysis-scope/AnalysisWorkspace").then(module => ({ default: module.AnalysisWorkspace })));
 
-function Explorer() {
+function Explorer({ onOpenAnalysis, clusters, setClusters }: { onOpenAnalysis: () => void; clusters: string[]; setClusters: (values: string[]) => void }) {
+  const clusterRules = useRef(clusters);
+  clusterRules.current = clusters;
   const [upstreamPatterns, setUpstreamPatterns] = useState<string[]>([]);
   const upstreamRules = useRef(upstreamPatterns);
   upstreamRules.current = upstreamPatterns;
@@ -83,10 +95,12 @@ function Explorer() {
   const [query, setQuery] = useState(""),
     [results, setResults] = useState<GraphNode[]>([]),
     [searchMore, setSearchMore] = useState(false),
+    [searching, setSearching] = useState(false),
     [anchor, setAnchor] = useState<Anchor>(),
     [fields, setFields] = useState<GraphNode[]>([]),
     [fieldsMore, setFieldsMore] = useState(false),
     [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]),
+    [fieldTaskId, setFieldTaskId] = useState(""),
     [layer, setLayer] = useState<GraphLayer>("table"),
     [direction, setDirection] = useState<Direction>("up"),
     [depth, setDepth] = useState(2),
@@ -109,6 +123,24 @@ function Explorer() {
     [history, setHistory] = useState<Hist[]>([]),
     [status, setStatus] = useState<Record<string, unknown>>();
   const detail = details[0];
+  const [partitionCatalog, setPartitionCatalog] = useState<Awaited<ReturnType<typeof api.partitions>>>();
+  const [partitionError, setPartitionError] = useState("");
+  const [performanceSnapshot, setPerformanceSnapshot] = useState<Awaited<ReturnType<typeof collectPerformanceSnapshot>>>();
+  useEffect(() => {
+    let current = true;
+    setPartitionCatalog(undefined); setPartitionError("");
+    if (anchor?.nodeId?.startsWith("dataset:")) void api.partitions(anchor.nodeId).then(value => {
+      if (current) setPartitionCatalog(value);
+    }).catch(error => { if (current) setPartitionError(`分区范围加载失败：${error.message}`); });
+    return () => { current = false; };
+  }, [anchor?.nodeId]);
+  const scopedFields = useMemo(() => partitionFields(fields, anchor?.partitionSelection).filter(field =>
+    !anchor?.partitionSelection || !clusters.length || !partitionCatalog || clusters.includes(partitionCatalog.taskClusters[field.taskId ?? ""] ?? "")
+  ), [fields, anchor?.partitionSelection, clusters, partitionCatalog]);
+  const [canvasFocus, setCanvasFocus] = useState<{ nodeId: string; node: GraphNode; trace?: TraceResult }>();
+  const [canvasScope, setCanvasScope] = useState<object>({});
+  const [branchPlacement, setBranchPlacement] = useState<{anchorId: string; direction: Direction}>();
+  const [branchNotice, setBranchNotice] = useState("");
   const [explorationEntries, setExplorationEntries] = useState<
       ExplorationEntry[]
     >([]),
@@ -210,11 +242,12 @@ function Explorer() {
       if (sequence === detailSequence.current) setDetailLoading(false);
     }
   }, []);
-  const graph = useMemo(
+  const clusterView = useMemo(() => trace ? restrictTraceClusters(trace, clusters) : undefined, [trace, clusters]);
+  const baseGraph = useMemo(
     () =>
       trace
         ? adaptTrace(
-            trace,
+            clusterView!.trace,
             (raw, terminalNode, context) => {
               setHighlightedTaskId(undefined);
               const rawIds = (context?.rawMembers ?? [raw])
@@ -225,10 +258,9 @@ function Explorer() {
               );
               void loadDetail(raw, terminalNode, context);
             },
-            highlightedFieldId,
+            undefined,
             {
               expandedCandidates,
-              highlightedTaskId,
               onToggleCandidates: (key: string) => {
                 pendingFit.current = true;
                 setExpandedCandidates((current) => {
@@ -243,28 +275,53 @@ function Explorer() {
         : { nodes: [], edges: [] },
     [
       trace,
+      clusterView,
       loadDetail,
-      highlightedFieldId,
-      highlightedTaskId,
       expandedCandidates,
     ],
   );
+  const highlightGraph = useMemo(() => clusterView ? createGraphHighlighter(clusterView.trace, baseGraph) : undefined, [clusterView, baseGraph]);
+  const graph = useMemo(() => highlightGraph?.(highlightedFieldId, highlightedTaskId) ?? baseGraph, [highlightGraph, highlightedFieldId, highlightedTaskId, baseGraph]);
   const [hiddenFieldsByCard, setHiddenFieldsByCard] = useState<Record<string, string[]>>({});
+  const pendingHiddenFields = useRef(new Map<string, string[]>());
+  const hiddenFieldsFrame = useRef<number | undefined>(undefined);
   const onHiddenFieldsChange = useCallback((nodeId: string, ids: string[]) => {
-    setHiddenFieldsByCard(current => {
-      if ((current[nodeId] ?? []).join("|") === ids.join("|")) return current;
-      const next = { ...current };
-      if (ids.length) next[nodeId] = ids;
-      else delete next[nodeId];
-      return next;
+    pendingHiddenFields.current.set(nodeId, ids);
+    if (hiddenFieldsFrame.current !== undefined) return;
+    hiddenFieldsFrame.current = requestAnimationFrame(() => {
+      hiddenFieldsFrame.current = undefined;
+      const updates = new Map(pendingHiddenFields.current);
+      pendingHiddenFields.current.clear();
+      setHiddenFieldsByCard(current => {
+        let next = current;
+        for (const [id, hidden] of updates) {
+          if ((current[id] ?? []).join("|") === hidden.join("|")) continue;
+          if (next === current) next = {...current};
+          if (hidden.length) next[id] = hidden;
+          else delete next[id];
+        }
+        return next;
+      });
     });
   }, []);
-  const visibleNodes = useMemo(() => graph.nodes.map(node => ({
-    ...node, data: { ...node.data, onHiddenFieldsChange },
-  })), [graph.nodes, onHiddenFieldsChange]);
+  useEffect(() => () => {
+    if (hiddenFieldsFrame.current !== undefined) cancelAnimationFrame(hiddenFieldsFrame.current);
+  }, []);
+  const decorateNode = useMemo(() => {
+    const cache = new WeakMap<(typeof graph.nodes)[number], (typeof graph.nodes)[number]>();
+    return (node: (typeof graph.nodes)[number]) => {
+      let decorated = cache.get(node);
+      if (!decorated) { decorated = {...node, data:{...node.data, onHiddenFieldsChange}}; cache.set(node, decorated); }
+      return decorated;
+    };
+  }, [onHiddenFieldsChange]);
+  const visibleNodes = useMemo(() => graph.nodes.map(decorateNode), [graph.nodes, decorateNode]);
   const visibleEdges = useMemo(() => {
     const hidden = new Set(graph.nodes.flatMap(node => hiddenFieldsByCard[node.id] ?? []));
-    return graph.edges.map(edge => ({ ...edge, hidden: edgeTouchesHiddenField(edge, hidden) }));
+    return graph.edges.map(edge => {
+      const nextHidden = edgeTouchesHiddenField(edge, hidden);
+      return Boolean(edge.hidden) === nextHidden ? edge : {...edge, hidden:nextHidden};
+    });
   }, [graph.nodes, graph.edges, hiddenFieldsByCard]);
   const globalGraph = useMemo(() => hideTableCards(visibleNodes, visibleEdges, globalVisibility.tables), [visibleNodes, visibleEdges, globalVisibility.tables]);
   const foldedEdgeCount = visibleEdges.filter(edge => edge.hidden).length;
@@ -282,16 +339,16 @@ function Explorer() {
       },
     ) => {
       if (!nextAnchor) return;
-      const selectedFields =
+      const selectedFields = partitionFields(
         nextLayer === "field"
           ? fieldOverride
             ? Array.isArray(fieldOverride)
               ? fieldOverride
               : [fieldOverride]
-            : fields.filter((field) => selectedFieldIds.includes(field.id))
-          : [];
+            : selectedTaskFields(scopedFields, selectedFieldIds, fieldTaskId)
+          : [], nextAnchor.partitionSelection);
       if (nextLayer === "field" && !selectedFields.length) {
-        setError("请至少选择一个字段。");
+        setError("请至少选择一个符合起点调度筛选的字段。");
         return;
       }
       setLoading(true);
@@ -304,6 +361,8 @@ function Explorer() {
           direction: settings?.direction ?? direction,
           depth: settings?.depth ?? depth,
           includeCandidates: settings?.candidates ?? candidates,
+          clusters: clusterRules.current,
+          partitionSelection: nextAnchor.partitionSelection,
         };
         const collectFieldsAtDepth = (queryDepth: number) =>
           collectMultiFieldTrace({
@@ -357,6 +416,11 @@ function Explorer() {
           new Set(settings?.expandedCandidateIds ?? []),
         );
         setTrace(value);
+        setExplorationNotice(current => current.startsWith("分区范围已更新") ? "" : current);
+        setCanvasScope({});
+        setHiddenFieldsByCard({});
+        setBranchPlacement(undefined);
+        setBranchNotice("");
         pendingFit.current = fit;
         if (selectedFields.length === 1)
           void loadDetail(
@@ -383,7 +447,9 @@ function Explorer() {
       depth,
       direction,
       selectedFieldIds,
+      fieldTaskId,
       fields,
+      scopedFields,
       flow,
       layer,
       loadDetail,
@@ -398,8 +464,18 @@ function Explorer() {
         anchor: Anchor;
         state: ExplorationState;
       },
+      fieldAnalysis = false,
     ) => {
+      recordAction(node.kind === "TASK" ? "open-task" : "open-table");
       const navigation = ++navigationSequence.current;
+      setLoadingAllFields(fieldAnalysis);
+      if (fieldAnalysis) {
+        ++requestSequence.current;
+        setLoading(false);
+        setFields([]);
+        setSelectedFieldIds([]);
+        setTrace(undefined);
+      }
       if (push && anchor)
         setHistory((items) => [
           ...items,
@@ -410,6 +486,7 @@ function Explorer() {
             depth,
             candidates,
             selectedFieldIds,
+            fieldTaskId,
             fields,
             fieldsMore,
             fieldsVersion: fieldListVersion.current,
@@ -426,9 +503,10 @@ function Explorer() {
           : {
               table: node.table,
               nodeId: node.id,
+              ...(node.id === anchor?.nodeId ? {partitionSelection: anchor.partitionSelection} : {}),
               label: node.label ?? node.table ?? node.id,
             });
-      const nextLayer = restored?.state.layer ?? "table";
+      const nextLayer = fieldAnalysis ? "field" : restored?.state.layer ?? "table";
       const nextDirection = restored?.state.direction ?? direction;
       const nextDepth = restored?.state.depth ?? depth;
       const nextCandidates = restored?.state.candidates ?? candidates;
@@ -469,6 +547,11 @@ function Explorer() {
         setFieldsMore(nextLayer === "field" ? false : page.length > 100);
         setFields(fs);
         fieldListVersion.current = listedVersion;
+        if (fieldAnalysis) {
+          setFieldTaskId(node.kind === "TASK" ? node.taskId || node.id.replace(/^task:/, "") : "");
+          setExplorationNotice(`已进入 ${next.label} 的字段分析，请选择字段后点击“展开”。`);
+          return;
+        }
         const restoreAssessment = restored
           ? assessExplorationRestore(
               restored.entry,
@@ -487,6 +570,7 @@ function Explorer() {
             ? [fs[0].id]
             : [];
         setSelectedFieldIds(nextSelectedIds);
+        setFieldTaskId("");
         if (restored) restore.current = restored.state.viewport;
         let restoredTrace: TraceResult | undefined;
         if (restored?.state.layer === "field" && !restoredFields.length) {
@@ -538,6 +622,8 @@ function Explorer() {
                 ? e.message
                 : "读取失败",
           );
+      } finally {
+        if (navigation === navigationSequence.current && fieldAnalysis) setLoadingAllFields(false);
       }
     },
     [
@@ -546,6 +632,7 @@ function Explorer() {
       depth,
       direction,
       selectedFieldIds,
+      fieldTaskId,
       fields,
       fieldsMore,
       flow,
@@ -554,29 +641,50 @@ function Explorer() {
       runTrace,
     ],
   );
-  async function search() {
+  const searchController = useRef<AbortController | undefined>(undefined);
+  const searchedTerm = useRef("");
+  useEffect(() => {
+    searchController.current?.abort();
+    searchController.current = undefined;
+    setSearching(false);
+    return () => searchController.current?.abort();
+  }, [clusters]);
+  async function search(append = false) {
+    const term = query.trim();
+    if (!term || searchController.current || (append && searchedTerm.current !== term)) return;
+    recordAction("search");
+    const controller = new AbortController();
+    searchController.current = controller;
+    setSearching(true);
+    setError("");
     try {
       setRegionName("");
-      const page = await api.search(query.trim());
-      setResults(page.slice(0, 30));
+      const selectedClusters = clusterRules.current;
+      const page = await api.search(term, append ? results.length : 0, 31, selectedClusters, controller.signal);
+      if (controller.signal.aborted || controller !== searchController.current || selectedClusters !== clusterRules.current) return;
+      searchedTerm.current = term;
+      setResults(current => append ? [...current, ...page.slice(0, 30)] : page.slice(0, 30));
       setSearchMore(page.length > 30);
-      setError(page.length === 0 ? "当前已发布图谱中未找到匹配的任务或表，请检查名称或缩短关键词。" : "");
+      setError(!append && page.length === 0 ? "当前已发布图谱中未找到匹配的任务或表，请检查名称或缩短关键词。" : "");
     } catch (e) {
+      if (controller.signal.aborted || controller !== searchController.current) return;
       setError(e instanceof Error ? e.message : "搜索失败");
+    } finally {
+      if (controller === searchController.current) {searchController.current = undefined; setSearching(false);}
     }
   }
   const onNodeClick: NodeMouseHandler = (_, v) => {
+    recordAction("canvas");
     const raw = v.data.raw as GraphNode | undefined;
-    if (!raw) return;
-    const t = trace?.terminalNodes.find((x) => x.nodeId === raw.id);
-    void loadDetail(raw, t);
+    if (!raw || loading) return;
+    setCanvasFocus({ nodeId: v.id, node: raw, trace });
     if (v.type === "processingTask") {
       setHighlightedFieldId(undefined);
       setHighlightedTaskId((current) => (current === v.id ? undefined : v.id));
       return;
     }
-    if (!t && (raw.kind === "TASK" || raw.kind === "PHYSICAL_DATASET"))
-      void choose(raw, true);
+    setHighlightedTaskId(undefined);
+    setHighlightedFieldId(current => current?.length === 1 && current[0] === raw.id ? undefined : [raw.id]);
   };
   async function back() {
     const navigation = ++navigationSequence.current;
@@ -589,13 +697,14 @@ function Explorer() {
     setDepth(p.depth);
     setCandidates(p.candidates);
     setSelectedFieldIds(p.selectedFieldIds);
+    setFieldTaskId(p.fieldTaskId);
     restore.current = p.viewport;
     const fs = p.fields;
     fieldListVersion.current = p.fieldsVersion;
     setFieldsMore(p.fieldsMore);
     setFields(fs);
     const restoredFields = fs.filter((field) =>
-      p.selectedFieldIds.includes(field.id),
+      p.selectedFieldIds.includes(field.id) && (!p.fieldTaskId.trim() || field.taskId === p.fieldTaskId.trim()),
     );
     setTimeout(
       () =>
@@ -616,13 +725,14 @@ function Explorer() {
       );
   }, []);
   useEffect(() => {
+    if (mode !== "overview") return;
     let cancelled = false;
     setOverview(undefined);
     setRegionName("");
     setRegionMore(false);
     setResults([]);
     setError("");
-    void (upstreamPatterns.length ? scopedOverview(upstreamPatterns, globalVisibility.tables) : api.overview(globalVisibility.tables))
+    void (upstreamPatterns.length ? scopedOverview(upstreamPatterns, globalVisibility.tables, clusters) : api.overview(globalVisibility.tables, clusters))
       .then((value) => {
         if (cancelled) return;
         setOverview(value);
@@ -630,7 +740,7 @@ function Explorer() {
       })
       .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "全貌读取失败"); });
     return () => { cancelled = true; };
-  }, [globalVisibility.tables, upstreamPatterns]);
+  }, [mode, globalVisibility.tables, upstreamPatterns, clusters]);
   useEffect(() => {
     const storage = (() => {
       try {
@@ -688,9 +798,7 @@ function Explorer() {
     return () => cancelAnimationFrame(first);
   }, [flow, graph.nodes, mode, trace]);
   async function loadMoreSearch() {
-    const page = await api.search(query.trim(), results.length);
-    setResults((current) => [...current, ...page.slice(0, 30)]);
-    setSearchMore(page.length > 30);
+    await search(true);
   }
   async function loadMoreFields() {
     if (!anchor) return;
@@ -739,8 +847,9 @@ function Explorer() {
     const offset = append ? results.length : 0;
     const rules = visibilityRules.current;
     const scopeRules = upstreamRules.current;
-    const page = scopeRules.length ? await scopedRegion(scopeRules, rules, schema, offset) : await api.region(schema, offset, 50, rules);
-    if (rules !== visibilityRules.current || scopeRules !== upstreamRules.current) return;
+    const selectedClusters = clusterRules.current;
+    const page = scopeRules.length ? await scopedRegion(scopeRules, rules, schema, offset, selectedClusters) : await api.region(schema, offset, 50, rules, selectedClusters);
+    if (rules !== visibilityRules.current || scopeRules !== upstreamRules.current || selectedClusters !== clusterRules.current) return;
     if (!isSameGraphVersion(activeVersion.current, page.version)) {
       setError("图谱版本已更新，请重新载入加工全貌。");
       return;
@@ -752,6 +861,47 @@ function Explorer() {
       append ? [...current, ...items.slice(0, 50)] : items.slice(0, 50),
     );
     setRegionMore(page.pagination.nextOffset !== null);
+  }
+  async function expandBranch(node: GraphNode, branchDirection: Direction) {
+    if (!trace || trace.layer !== "table" || loading) return;
+    const base = trace;
+    const chosenClusters = clusterRules.current;
+    const sequence = ++requestSequence.current;
+    setLoading(true);
+    setError("");
+    setBranchNotice("正在展开所选分支的一层关系…");
+    try {
+      const branch = await api.trace({
+        ...(node.kind === "TASK" ? {taskId: node.taskId ?? node.id.replace(/^task:/, "")} : {nodeId: node.id}),
+        label: node.table ?? node.label ?? node.id,
+        layer: "table", direction: branchDirection, depth: 1, includeCandidates: candidates,
+        clusters: chosenClusters,
+        partitionSelection: base.partitionSelection,
+        scopeFocus: base.partitionSelection ? node.id : undefined,
+        scopeDepth: base.partitionSelection ? base.depthLimit : undefined,
+        scopeDirection: base.partitionSelection ? base.direction : undefined,
+      });
+      if (sequence !== requestSequence.current || chosenClusters !== clusterRules.current) return;
+      const current = await api.status();
+      if (sequence !== requestSequence.current || chosenClusters !== clusterRules.current) return;
+      if (current.version !== base.version) throw new Error("图谱版本已变化，请重新展开当前图。");
+      const result = appendTableBranch(base, branch, node, branchDirection, chosenClusters);
+      setBranchNotice(`${result.addedNodes ? `新增 ${result.addedNodes} 个节点、${result.addedEdges} 条连线` : "当前筛选下没有新的节点"}${result.omittedTasks ? `；${result.omittedTasks} 个其他集群调度已过滤` : ""}${branch.truncated ? "；本次查询达到上限，关系不完整" : ""}。`);
+      if (!result.addedNodes && !result.addedEdges) return;
+      pendingFit.current = false;
+      setBranchPlacement({anchorId: node.id, direction: base.direction});
+      setTrace(result.trace);
+      setCanvasFocus(undefined);
+      setHighlightedFieldId(undefined);
+      setHighlightedTaskId(undefined);
+    } catch (cause) {
+      if (sequence === requestSequence.current) {
+        setError(cause instanceof Error ? cause.message : "分支展开失败，已保留原图。");
+        setBranchNotice("");
+      }
+    } finally {
+      if (sequence === requestSequence.current) setLoading(false);
+    }
   }
   async function continueFromSelected() {
     if (!selected) return;
@@ -771,6 +921,7 @@ function Explorer() {
           depth,
           candidates,
           selectedFieldIds,
+          fieldTaskId,
           fields,
           fieldsMore,
           fieldsVersion: fieldListVersion.current,
@@ -787,6 +938,7 @@ function Explorer() {
     setFields(continuable);
     fieldListVersion.current = activeVersion.current;
     setSelectedFieldIds(continuable.map(({ id }) => id));
+    setFieldTaskId("");
     setFieldsMore(false);
     await runTrace(next, "field", true, continuable);
   }
@@ -813,7 +965,7 @@ function Explorer() {
       direction,
       depth,
       candidates,
-      selectedFieldIds,
+      selectedFieldIds: selectedTaskFields(fields, selectedFieldIds, fieldTaskId).map(field => field.id),
       expandedCandidateIds: [...expandedCandidates],
       viewport: flow.getViewport(),
     };
@@ -885,7 +1037,7 @@ function Explorer() {
     }
     try {
       const updated = updateExplorationEntry(
-        entry,
+        {...entry, members: entry.members.map(item => item.id === member.id ? member : item)},
         {
           name: entry.name,
           description: entry.description,
@@ -1015,6 +1167,8 @@ function Explorer() {
       </header>
       <ResizableWorkspace>
         <aside className="search-panel panel">
+          <button className="analysis-open overview-button" onClick={onOpenAnalysis}>分析范围 · 只看所选表和任务</button>
+          <ClusterFilter selected={clusters} onApply={values => { setClusters(values); setSearchMore(false); setResults([]); setRegionName(""); setSelected(undefined); ++detailSequence.current; setDetails([]); setHighlightedFieldId(undefined); }} />
           <GlobalVisibility {...globalVisibility} />
           {UPSTREAM_SCOPE_ENABLED && <UpstreamScopePanel patterns={upstreamPatterns} onApply={patterns => { setUpstreamPatterns(patterns); setMode("overview"); void flow.setViewport({ x: 0, y: 0, zoom: 0.65 }); }} onExit={() => { setUpstreamPatterns([]); setMode("overview"); }} />}
           <ExplorationPanel
@@ -1056,6 +1210,12 @@ function Explorer() {
             {upstreamPatterns.length ? "上游范围骨架" : "全域加工骨架"}
           </button>
           <h2>定位任务或表</h2>
+          <details className="performance-log-control">
+            <summary>性能记录</summary>
+            <p>自动保留最近 200 条请求和卡顿记录；刷新后保留。不含搜索内容、表名或 SQL。</p>
+            <button onClick={() => void collectPerformanceSnapshot().then(setPerformanceSnapshot)}>导出性能日志</button>
+            {performanceSnapshot && <><a download="graph-performance.json" href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(performanceSnapshot, null, 2))}`}>下载 JSON</a><details><summary>查看本次日志内容</summary><pre aria-label="性能日志内容" style={{maxHeight:280,overflow:"auto",fontSize:11}}>{JSON.stringify(performanceSnapshot, null, 2)}</pre></details></>}
+          </details>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1064,14 +1224,17 @@ function Explorer() {
           >
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                searchController.current?.abort(); searchController.current = undefined;
+                setSearching(false); setSearchMore(false); setQuery(e.target.value);
+              }}
               placeholder="技术表名、中文表说明、任务名或 ID"
             />
-            <button>查找</button>
+            <button disabled={searching || !query.trim()}>{searching ? "查找中…" : "查找"}</button>
           </form>
           <div className="results">
             {regionName && <h3>{regionName} · 区域成员</h3>}
-            {regionName && <RegionTopics key={regionName} schema={regionName} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} version={overview?.version} />}
+            {regionName && <RegionTopics clusters={clusters} key={regionName} schema={regionName} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} version={overview?.version} />}
             {results.map((n) => (
               <button key={n.id} onClick={() => void choose(n)}>
                 <b>{n.label}</b>
@@ -1090,6 +1253,7 @@ function Explorer() {
             {searchMore && (
               <button
                 className="load-more"
+                disabled={searching}
                 onClick={() => void loadMoreSearch()}
               >
                 加载更多结果
@@ -1147,13 +1311,27 @@ function Explorer() {
                 </select>
                 {layer === "field" && (
                   <FieldSelector
-                    fields={fields}
+                    taskId={fieldTaskId}
+                    onTaskChange={setFieldTaskId}
+                    fields={scopedFields}
                     selectedIds={selectedFieldIds}
                     hasMore={fieldsMore}
                     onChange={setSelectedFieldIds}
                     onLoadMore={() => void loadMoreFields()}
                   />
                 )}
+                {anchor?.nodeId?.startsWith("dataset:") && (partitionError ? <span role="alert">{partitionError}</span> : <PartitionSelector
+                  catalog={partitionCatalog} selection={anchor.partitionSelection} clusters={clusters} disabled={loading || loadingAllFields}
+                  onApply={partitionSelection => {
+                    recordAction("apply-partitions");
+                    const next = {...anchor, partitionSelection};
+                    ++requestSequence.current;
+                    setAnchor(next); setCanvasFocus(undefined);
+                    setSelectedFieldIds([]); setError("");
+                    if (layer === "field") { setTrace(undefined); setExplorationNotice("分区范围已更新，请重新选择范围内的字段后展开。"); }
+                    else void runTrace(next, "table").then(value => { if (!value) setAnchor(anchor); });
+                  }}
+                />)}
                 <select
                   value={direction}
                   onChange={(e) => setDirection(e.target.value as Direction)}
@@ -1200,6 +1378,19 @@ function Explorer() {
                 </span>
               </div>
             )}
+            {mode === "lineage" && (
+              <div className="node-analysis-actions" role="toolbar" aria-label="节点分析操作">
+                <span>单击节点仅高亮；当前选中：<b>{canvasFocus?.trace === trace && canvasFocus ? canvasFocus.node.table || canvasFocus.node.label || `调度 ${canvasFocus.node.taskId}` : "请先单击一个表或调度"}</b></span>
+                <button
+                  disabled={!canvasFocus || canvasFocus.trace !== trace || loading || loadingAllFields || !["TASK", "PHYSICAL_DATASET"].includes(canvasFocus.node.kind)}
+                  onClick={() => canvasFocus && void choose(canvasFocus.node, true, undefined, canvasFocus.node.kind === "TASK")}
+                >{canvasFocus?.trace === trace && canvasFocus?.node.kind === "TASK" ? "分析此调度" : "分析此表"}</button>
+                <button
+                  disabled={!canvasFocus || canvasFocus.trace !== trace || loading || loadingAllFields}
+                  onClick={() => canvasFocus && void loadDetail(canvasFocus.node, trace?.terminalNodes.find(node => node.nodeId === canvasFocus.node.id))}
+                >查看加工证据</button>
+              </div>
+            )}
           </div>
           {error && <div className="error">{error}</div>}
           {mode === "overview" && <UpstreamScopeStatus overview={overview} />}
@@ -1208,6 +1399,11 @@ function Explorer() {
           )}
           {mode === "lineage" && autoDepthNotice && (
             <div className="notice">{autoDepthNotice}</div>
+          )}
+          {mode === "lineage" && branchNotice && <div className="notice">{branchNotice}</div>}
+          {mode === "lineage" && trace?.scopeWarnings?.map(warning => <div className="notice" key={warning}>{warning}</div>)}
+          {mode === "lineage" && !!clusters.length && (
+            <div className="notice">集群范围：{clusters.map(value => value || "未收录").join("、")}。已过滤 {clusterView?.omittedTaskIds.length ?? 0} 个其他集群或未收录调度，跨集群路径在此停止。</div>
           )}
           {mode === "overview" &&
             overview &&
@@ -1240,28 +1436,43 @@ function Explorer() {
           )}
           <div className="flow-wrap" ref={flowWrap}>
             {mode === "overview" && overview ? (
-              <Suspense fallback={<div className="welcome">正在加载骨架画布…</div>}><OverviewCanvas overview={overview} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} onOpenRegion={schema => { void openRegion(schema).catch(e => setError(e instanceof Error ? e.message : "区域读取失败")); }} /></Suspense>
+              <Suspense fallback={<div className="welcome">正在加载骨架画布…</div>}><OverviewCanvas clusters={clusters} overview={overview} patterns={upstreamPatterns} hiddenTables={globalVisibility.tables} onOpenRegion={schema => { void openRegion(schema).catch(e => setError(e instanceof Error ? e.message : "区域读取失败")); }} /></Suspense>
             ) : mode === "overview" ? <div className="welcome">{error ? "范围读取未完成，请重新应用或退出范围。" : "正在读取加工骨架…"}</div> : anchor ? (
-              <NodeVisibility nodes={globalGraph.nodes} edges={globalGraph.edges} scope={trace}>
+              <NodeVisibility nodes={globalGraph.nodes} edges={globalGraph.edges} scope={canvasScope}>
                 {(displayGraph) => (
-              <ReactFlow
+              <DraggableLineageCanvas
+                scope={canvasScope}
+                placement={branchPlacement}
                 nodes={displayGraph.nodes}
                 edges={displayGraph.edges}
                 nodeTypes={nodeTypes}
                 onNodeClick={onNodeClick}
                 onPaneClick={() => {
+                  setCanvasFocus(undefined);
                   setHighlightedFieldId(undefined);
                   setHighlightedTaskId(undefined);
                 }}
                 minZoom={0.1}
-                nodesDraggable={false}
+                nodesDraggable
                 nodesConnectable={false}
                 attributionPosition="bottom-left"
               >
                 <Background color="#c8d8d5" gap={24} />
                 {layer === "table" && <MiniMap pannable zoomable />}
                 <Controls />
-              </ReactFlow>
+                {canvasFocus?.trace === trace && canvasFocus &&
+                  ["TASK", "PHYSICAL_DATASET"].includes(canvasFocus.node.kind) &&
+                  displayGraph.nodes.some(node => node.id === canvasFocus.nodeId) &&
+                  <NodeAnalysisToolbar
+                    nodeId={canvasFocus.nodeId}
+                    node={canvasFocus.node}
+                    disabled={loading || loadingAllFields}
+                    onAnalyze={() => void choose(canvasFocus.node, true, undefined, canvasFocus.node.kind === "TASK")}
+                    onEvidence={() => void loadDetail(canvasFocus.node, trace?.terminalNodes.find(node => node.nodeId === canvasFocus.node.id))}
+                    onExpandUp={layer === "table" ? () => void expandBranch(canvasFocus.node, "up") : undefined}
+                    onExpandDown={layer === "table" ? () => void expandBranch(canvasFocus.node, "down") : undefined}
+                  />}
+              </DraggableLineageCanvas>
                 )}
               </NodeVisibility>
             ) : (
@@ -1275,6 +1486,7 @@ function Explorer() {
           <footer>
             {mode === "lineage" && (
               <div className="legend">
+                {layer === "table" && <><span><i style={{borderColor: INPUT_EDGE_COLOR}} />输入</span><span><i style={{borderColor: OUTPUT_EDGE_COLOR}} />输出</span><span>拖动节点标题可调整位置</span></>}
                 <span>
                   <i className="solid confirmed" />
                   CONFIRMED
@@ -1311,9 +1523,26 @@ function Explorer() {
   );
 }
 export default function App() {
+  const [clusters, updateClusters] = useState<string[]>(() => {
+    try { return readGlobalClusters(window.localStorage); } catch { return []; }
+  });
+  function setClusters(values: string[]) {
+    updateClusters(values);
+    try { window.localStorage.setItem("data-graph:clusters", JSON.stringify(values)); } catch { /* Keep session state when storage is unavailable. */ }
+  }
+  const [analysis, setAnalysis] = useState(() => new URLSearchParams(window.location.search).get("analysis") === "1");
+  function changeMode(enabled: boolean) {
+    const url = new URL(window.location.href);
+    if (enabled) url.searchParams.set("analysis", "1");
+    else url.searchParams.delete("analysis");
+    window.history.replaceState(null, "", url);
+    setAnalysis(enabled);
+  }
   return (
     <ReactFlowProvider>
-      <Explorer />
+      <Suspense fallback={<div className="welcome">正在加载分析范围…</div>}>
+        {analysis ? <AnalysisWorkspace clusters={clusters} setClusters={setClusters} onExit={() => changeMode(false)} /> : <Explorer clusters={clusters} setClusters={setClusters} onOpenAnalysis={() => changeMode(true)} />}
+      </Suspense>
     </ReactFlowProvider>
   );
 }

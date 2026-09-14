@@ -1,0 +1,1449 @@
+{
+  "task_id": "105743",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.879Z",
+  "payload_sha256": "6d1865f7d65470c8da52291df68059eacaa888433356d83269084f8d1371e229",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "--drop TABLE if exists otc_div_temp;"
+    },
+    {
+      "line": 10,
+      "text": "CREATE TABLE if not exists otc_div_temp("
+    },
+    {
+      "line": 11,
+      "text": "    Contract_Code string comment '合约编号',"
+    },
+    {
+      "line": 12,
+      "text": "    client_id string comment '交易对手客户编号',"
+    },
+    {
+      "line": 13,
+      "text": "    Inr_Org_Id_1 string comment '引入部门ID_1',"
+    },
+    {
+      "line": 14,
+      "text": "    Inr_Org_Name_1 string comment '引入部门名称_1',"
+    },
+    {
+      "line": 15,
+      "text": "    Div_Org_Id_1 string comment '所属分公司ID_1',"
+    },
+    {
+      "line": 16,
+      "text": "    Div_Org_Name_1 string comment '所属分公司名称_1',"
+    },
+    {
+      "line": 17,
+      "text": "    Cust_Mngr_Id_1 string comment '客户经理ID_1',"
+    },
+    {
+      "line": 18,
+      "text": "    Cust_Mngr_Name_1 string comment '客户经理姓名_1',"
+    },
+    {
+      "line": 19,
+      "text": "    Cust_Mngr_Emp_Id_1 string comment '客户经理员工编号_1',"
+    },
+    {
+      "line": 20,
+      "text": "    Allo_Prop_1 string comment '分配比例_1',"
+    },
+    {
+      "line": 21,
+      "text": "    Inr_Org_Id_2 string comment '引入部门ID_2',"
+    },
+    {
+      "line": 22,
+      "text": "    Inr_Org_Name_2 string comment '引入部门名称_2',"
+    },
+    {
+      "line": 23,
+      "text": "    Div_Org_Id_2 string comment '所属分公司ID_2',"
+    },
+    {
+      "line": 24,
+      "text": "    Div_Org_Name_2 string comment '所属分公司名称_2',"
+    },
+    {
+      "line": 25,
+      "text": "    Cust_Mngr_Id_2 string comment '客户经理ID_2',"
+    },
+    {
+      "line": 26,
+      "text": "    Cust_Mngr_Name_2 string comment '客户经理姓名_2',"
+    },
+    {
+      "line": 27,
+      "text": "    Cust_Mngr_Emp_Id_2 string comment '客户经理员工编号_2',"
+    },
+    {
+      "line": 28,
+      "text": "    Allo_Prop_2 string comment '分配比例_2',"
+    },
+    {
+      "line": 29,
+      "text": "    Inr_Org_Id_3 string comment '引入部门ID_3',"
+    },
+    {
+      "line": 30,
+      "text": "    Inr_Org_Name_3 string comment '引入部门名称_3',"
+    },
+    {
+      "line": 31,
+      "text": "    Div_Org_Id_3 string comment '所属分公司ID_3',"
+    },
+    {
+      "line": 32,
+      "text": "    Div_Org_Name_3 string comment '所属分公司名称_3',"
+    },
+    {
+      "line": 33,
+      "text": "    Cust_Mngr_Id_3 string comment '客户经理ID_3',"
+    },
+    {
+      "line": 34,
+      "text": "    Cust_Mngr_Name_3 string comment '客户经理姓名_3',"
+    },
+    {
+      "line": 35,
+      "text": "    Cust_Mngr_Emp_Id_3 string comment '客户经理员工编号_3',"
+    },
+    {
+      "line": 36,
+      "text": "    Allo_Prop_3 string comment '分配比例_3',"
+    },
+    {
+      "line": 37,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_1 string comment '客户经理员工状态代码_1',"
+    },
+    {
+      "line": 38,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_1 string comment '客户经理员工状态描述_1',"
+    },
+    {
+      "line": 39,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_2 string comment '客户经理员工状态代码_2',"
+    },
+    {
+      "line": 40,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_2 string comment '客户经理员工状态描述_2',"
+    },
+    {
+      "line": 41,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_3 string comment '客户经理员工状态代码_3',"
+    },
+    {
+      "line": 42,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_3 string comment '客户经理员工状态描述_3'"
+    },
+    {
+      "line": 43,
+      "text": "    )"
+    },
+    {
+      "line": 44,
+      "text": "COMMENT '临时表'"
+    },
+    {
+      "line": 45,
+      "text": "STORED AS ORC"
+    },
+    {
+      "line": 46,
+      "text": ";"
+    },
+    {
+      "line": 47,
+      "text": ""
+    },
+    {
+      "line": 48,
+      "text": "--drop TABLE if exists T98_OTC_COMP_MNG_RELA_INFO;"
+    },
+    {
+      "line": 49,
+      "text": "CREATE TABLE if not exists T98_OTC_COMP_MNG_RELA_INFO("
+    },
+    {
+      "line": 50,
+      "text": "    agt_id string comment '合约编号',"
+    },
+    {
+      "line": 51,
+      "text": "    pty_id string comment '客户编号',"
+    },
+    {
+      "line": 52,
+      "text": "    Inr_Org_Id_1 string comment '引入部门ID_1',"
+    },
+    {
+      "line": 53,
+      "text": "    Inr_Org_Name_1 string comment '引入部门名称_1',"
+    },
+    {
+      "line": 54,
+      "text": "    Div_Org_Id_1 string comment '所属分公司ID_1',"
+    },
+    {
+      "line": 55,
+      "text": "    Div_Org_Name_1 string comment '所属分公司名称_1',"
+    },
+    {
+      "line": 56,
+      "text": "    Cust_Mngr_User_Id_1 string comment '客户经理USER_ID_1',"
+    },
+    {
+      "line": 57,
+      "text": "    Cust_Mngr_Name_1 string comment '客户经理姓名_1',"
+    },
+    {
+      "line": 58,
+      "text": "    Cust_Mngr_Emp_Id_1 string comment '客户经理员工编号_1',"
+    },
+    {
+      "line": 59,
+      "text": "    Allo_Prop_1 string comment '分配比例_1',"
+    },
+    {
+      "line": 60,
+      "text": "    Inr_Org_Id_2 string comment '引入部门ID_2',"
+    },
+    {
+      "line": 61,
+      "text": "    Inr_Org_Name_2 string comment '引入部门名称_2',"
+    },
+    {
+      "line": 62,
+      "text": "    Div_Org_Id_2 string comment '所属分公司ID_2',"
+    },
+    {
+      "line": 63,
+      "text": "    Div_Org_Name_2 string comment '所属分公司名称_2',"
+    },
+    {
+      "line": 64,
+      "text": "    Cust_Mngr_User_Id_2 string comment '客户经理USER_ID_2',"
+    },
+    {
+      "line": 65,
+      "text": "    Cust_Mngr_Name_2 string comment '客户经理姓名_2',"
+    },
+    {
+      "line": 66,
+      "text": "    Cust_Mngr_Emp_Id_2 string comment '客户经理员工编号_2',"
+    },
+    {
+      "line": 67,
+      "text": "    Allo_Prop_2 string comment '分配比例_2',"
+    },
+    {
+      "line": 68,
+      "text": "    Inr_Org_Id_3 string comment '引入部门ID_3',"
+    },
+    {
+      "line": 69,
+      "text": "    Inr_Org_Name_3 string comment '引入部门名称_3',"
+    },
+    {
+      "line": 70,
+      "text": "    Div_Org_Id_3 string comment '所属分公司ID_3',"
+    },
+    {
+      "line": 71,
+      "text": "    Div_Org_Name_3 string comment '所属分公司名称_3',"
+    },
+    {
+      "line": 72,
+      "text": "    Cust_Mngr_User_Id_3 string comment '客户经理USER_ID_3',"
+    },
+    {
+      "line": 73,
+      "text": "    Cust_Mngr_Name_3 string comment '客户经理姓名_3',"
+    },
+    {
+      "line": 74,
+      "text": "    Cust_Mngr_Emp_Id_3 string comment '客户经理员工编号_3',"
+    },
+    {
+      "line": 75,
+      "text": "    Allo_Prop_3 string comment '分配比例_3',"
+    },
+    {
+      "line": 76,
+      "text": "    Main_Oper_User_Id string comment '主经办人ID',"
+    },
+    {
+      "line": 77,
+      "text": "    Main_Oper_Name string comment '主经办人姓名',"
+    },
+    {
+      "line": 78,
+      "text": "    Main_Oper_Emp_Id string comment '主经办人员工编号',"
+    },
+    {
+      "line": 79,
+      "text": "    Intro_Oper_User_Id string comment '引入经办人ID',"
+    },
+    {
+      "line": 80,
+      "text": "    Intro_Oper_Name string comment '引入经办人姓名',"
+    },
+    {
+      "line": 81,
+      "text": "    Intro_Oper_Emp_Id string comment '引入经办人员工编号',"
+    },
+    {
+      "line": 82,
+      "text": "    Data_Src_Cd string comment '数据来源代码',"
+    },
+    {
+      "line": 83,
+      "text": "    Task_Name string comment '任务名',"
+    },
+    {
+      "line": 84,
+      "text": "    Data_Etl_Date string comment '数据加载日期',"
+    },
+    {
+      "line": 85,
+      "text": "    Data_Upt_Date string comment '数据更新日期',"
+    },
+    {
+      "line": 86,
+      "text": "    Data_Time string comment '数据时间',"
+    },
+    {
+      "line": 87,
+      "text": "    Inr_Main_Oper_User_Id string comment '内部主经办人ID',"
+    },
+    {
+      "line": 88,
+      "text": "    Inr_Main_Oper_Name string comment '内部主经办人姓名',"
+    },
+    {
+      "line": 89,
+      "text": "    Inr_Main_Oper_Emp_Id string comment '内部主经办人员工编号',"
+    },
+    {
+      "line": 90,
+      "text": "    Inr_Intro_Oper_User_Id string comment '内部引入经办人ID',"
+    },
+    {
+      "line": 91,
+      "text": "    Inr_Intro_Oper_Name string comment '内部引入经办人姓名',"
+    },
+    {
+      "line": 92,
+      "text": "    Inr_Intro_Oper_Emp_Id string comment '内部引入经办人员工编号',"
+    },
+    {
+      "line": 93,
+      "text": "    Tit_Oper_User_Id string comment 'TITANS经办人ID',"
+    },
+    {
+      "line": 94,
+      "text": "    Tit_Oper_Name string comment 'TITANS经办人姓名',"
+    },
+    {
+      "line": 95,
+      "text": "    Tit_Oper_Emp_Id string comment 'TITANS经办人员工编号',"
+    },
+    {
+      "line": 96,
+      "text": "    Tit_Oper_Inr_Org_Id string comment 'TITANS经办人所属部门编号',"
+    },
+    {
+      "line": 97,
+      "text": "    Tit_Oper_Inr_Org_Name string comment 'TITANS经办人所属部门名称',"
+    },
+    {
+      "line": 98,
+      "text": "    Tit_Cust_Mngr_User_Id string comment 'TITANS客户经理ID',"
+    },
+    {
+      "line": 99,
+      "text": "    Tit_Cust_Mngr_Name string comment 'TITANS客户经理姓名',"
+    },
+    {
+      "line": 100,
+      "text": "    Tit_Cust_Mngr_Emp_Id string comment 'TITANS客户经理员工编号',"
+    },
+    {
+      "line": 101,
+      "text": "    Tit_Cust_Mngr_Inr_Org_Id string comment 'TITANS客户经理所属部门编号',"
+    },
+    {
+      "line": 102,
+      "text": "    Tit_Cust_Mngr_Inr_Org_Name string comment 'TITANS客户经理所属部门名称',"
+    },
+    {
+      "line": 103,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_1 string comment '客户经理员工状态代码_1',"
+    },
+    {
+      "line": 104,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_1 string comment '客户经理员工状态描述_1',"
+    },
+    {
+      "line": 105,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_2 string comment '客户经理员工状态代码_2',"
+    },
+    {
+      "line": 106,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_2 string comment '客户经理员工状态描述_2',"
+    },
+    {
+      "line": 107,
+      "text": "    Cust_Mngr_Emp_Stat_Cd_3 string comment '客户经理员工状态代码_3',"
+    },
+    {
+      "line": 108,
+      "text": "    Cust_Mngr_Emp_Stat_Desc_3 string comment '客户经理员工状态描述_3'"
+    },
+    {
+      "line": 109,
+      "text": "    )"
+    },
+    {
+      "line": 110,
+      "text": "COMMENT 'T98_OTC合约管理关系信息'"
+    },
+    {
+      "line": 111,
+      "text": "PARTITIONED BY ("
+    },
+    {
+      "line": 112,
+      "text": "    busi_date string comment '业务日期')"
+    },
+    {
+      "line": 113,
+      "text": "STORED AS ORC"
+    },
+    {
+      "line": 114,
+      "text": ";"
+    },
+    {
+      "line": 115,
+      "text": ""
+    },
+    {
+      "line": 116,
+      "text": "-- querySql"
+    },
+    {
+      "line": 117,
+      "text": "set hive.merge.mapfiles=true ;"
+    },
+    {
+      "line": 118,
+      "text": "set hive.merge.mapredfiles=true;"
+    },
+    {
+      "line": 119,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 120,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 121,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 122,
+      "text": ""
+    },
+    {
+      "line": 123,
+      "text": "set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;"
+    },
+    {
+      "line": 124,
+      "text": "set mapreduce.input.fileinputformat.split.maxsize=1073741824;"
+    },
+    {
+      "line": 125,
+      "text": "set mapreduce.input.fileinputformat.split.minsize=1073741824;"
+    },
+    {
+      "line": 126,
+      "text": ""
+    },
+    {
+      "line": 127,
+      "text": "insert overwrite table otc_div_temp"
+    },
+    {
+      "line": 128,
+      "text": "select"
+    },
+    {
+      "line": 129,
+      "text": "    A.Contract_Code,"
+    },
+    {
+      "line": 130,
+      "text": "    A.client_id,"
+    },
+    {
+      "line": 131,
+      "text": "    max(case when A.seq = '1' then A.Introduction_Department else '' end) as Inr_Org_Id_1,"
+    },
+    {
+      "line": 132,
+      "text": "    max(case when A.seq = '1' then org.ORGNAME else '' end) as Inr_Org_Name_1,"
+    },
+    {
+      "line": 133,
+      "text": "    max(case when A.seq = '1' then coalesce(dept.Brch_Bel_Div_Org_Id,A.Introduction_Department) else '' end) as Div_Org_Id_1,"
+    },
+    {
+      "line": 134,
+      "text": "    max(case when A.seq = '1' then coalesce(dept.Brch_Bel_Div_Org_Name,org.ORGNAME) else '' end) as Div_Org_Name_1,"
+    },
+    {
+      "line": 135,
+      "text": "    max(case when A.seq = '1' then A.Customer_Manager else '' end) as Cust_Mngr_Id_1,"
+    },
+    {
+      "line": 136,
+      "text": "    max(case when A.seq = '1' then D.Emp_Name else '' end) as Cust_Mngr_Name_1,"
+    },
+    {
+      "line": 137,
+      "text": "    max(case when A.seq = '1' then COALESCE(D.Emp_Id, D.OA_User_Id, '') else '' end) as Cust_Mngr_Emp_Id_1,"
+    },
+    {
+      "line": 138,
+      "text": "    max(case when A.seq = '1' then A.Allocation_Proportion else '0' end) as Allo_Prop_1,"
+    },
+    {
+      "line": 139,
+      "text": "    max(case when A.seq = '2' then A.Introduction_Department else '' end) as Inr_Org_Id_2,"
+    },
+    {
+      "line": 140,
+      "text": "    max(case when A.seq = '2' then org.ORGNAME else '' end) as Inr_Org_Name_2,"
+    },
+    {
+      "line": 141,
+      "text": "    max(case when A.seq = '2' then coalesce(dept.Brch_Bel_Div_Org_Id,A.Introduction_Department) else '' end) as Div_Org_Id_2,"
+    },
+    {
+      "line": 142,
+      "text": "    max(case when A.seq = '2' then coalesce(dept.Brch_Bel_Div_Org_Name,org.ORGNAME) else '' end) as Div_Org_Name_2,"
+    },
+    {
+      "line": 143,
+      "text": "    max(case when A.seq = '2' then A.Customer_Manager else '' end) as Cust_Mngr_Id_2,"
+    },
+    {
+      "line": 144,
+      "text": "    max(case when A.seq = '2' then D.Emp_Name else '' end) as Cust_Mngr_Name_2,"
+    },
+    {
+      "line": 145,
+      "text": "    max(case when A.seq = '2' then COALESCE(D.Emp_Id, D.OA_User_Id, '') else '' end) as Cust_Mngr_Emp_Id_2,"
+    },
+    {
+      "line": 146,
+      "text": "    max(case when A.seq = '2' then A.Allocation_Proportion else '0' end) as Allo_Prop_2,"
+    },
+    {
+      "line": 147,
+      "text": "    max(case when A.seq = '3' then A.Introduction_Department else '' end) as Inr_Org_Id_3,"
+    },
+    {
+      "line": 148,
+      "text": "    max(case when A.seq = '3' then org.ORGNAME else '' end) as Inr_Org_Name_3,"
+    },
+    {
+      "line": 149,
+      "text": "    max(case when A.seq = '3' then coalesce(dept.Brch_Bel_Div_Org_Id,A.Introduction_Department) else '' end) as Div_Org_Id_3,"
+    },
+    {
+      "line": 150,
+      "text": "    max(case when A.seq = '3' then coalesce(dept.Brch_Bel_Div_Org_Name,org.ORGNAME) else '' end) as Div_Org_Name_3,"
+    },
+    {
+      "line": 151,
+      "text": "    max(case when A.seq = '3' then A.Customer_Manager else '' end) as Cust_Mngr_Id_3,"
+    },
+    {
+      "line": 152,
+      "text": "    max(case when A.seq = '3' then D.Emp_Name else '' end) as Cust_Mngr_Name_3,"
+    },
+    {
+      "line": 153,
+      "text": "    max(case when A.seq = '3' then COALESCE(D.Emp_Id, D.OA_User_Id, '') else '' end) as Cust_Mngr_Emp_Id_3,"
+    },
+    {
+      "line": 154,
+      "text": "    max(case when A.seq = '3' then A.Allocation_Proportion else '0' end) as Allo_Prop_3,"
+    },
+    {
+      "line": 155,
+      "text": "    max(case when A.seq = '1' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_1,"
+    },
+    {
+      "line": 156,
+      "text": "    max(case when A.seq = '1' then D.Emp_Stat_Desc else '' end) as Cust_Mngr_Emp_Stat_Desc_1,"
+    },
+    {
+      "line": 157,
+      "text": "    max(case when A.seq = '2' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_2,"
+    },
+    {
+      "line": 158,
+      "text": "    max(case when A.seq = '2' then D.Emp_Stat_Desc else '' end) as Cust_Mngr_Emp_Stat_Desc_2,"
+    },
+    {
+      "line": 159,
+      "text": "    max(case when A.seq = '3' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_3,"
+    },
+    {
+      "line": 160,
+      "text": "    max(case when A.seq = '3' then D.Emp_Stat_Desc else '' end) as Cust_Mngr_Emp_Stat_Desc_3"
+    },
+    {
+      "line": 161,
+      "text": "from ("
+    },
+    {
+      "line": 162,
+      "text": "    select"
+    },
+    {
+      "line": 163,
+      "text": "        client_id, '' as Contract_Code, lpad(Introduction_Department,4,'0') as Introduction_Department, Customer_Manager, cast(Allocation_Proportion as double) as Allocation_Proportion,"
+    },
+    {
+      "line": 164,
+      "text": "        row_number() over(partition by client_id order by cast(Allocation_Proportion as double) desc, Customer_Manager) as seq"
+    },
+    {
+      "line": 165,
+      "text": "    from odata_n_ois.o_counterparty_introduction"
+    },
+    {
+      "line": 166,
+      "text": "    where busi_Date = '${data_day_str}' and Is_Deleted = 'N'"
+    },
+    {
+      "line": 167,
+      "text": "    union all"
+    },
+    {
+      "line": 168,
+      "text": "    select"
+    },
+    {
+      "line": 169,
+      "text": "        '' as client_id, Contract_Code, lpad(Introduction_Department,4,'0') as Introduction_Department, Customer_Manager, cast(Allocation_Proportion as double) as Allocation_Proportion,"
+    },
+    {
+      "line": 170,
+      "text": "        row_number() over(partition by Contract_Code order by cast(Allocation_Proportion as double) desc, Customer_Manager) as seq"
+    },
+    {
+      "line": 171,
+      "text": "    from odata_n_ois.o_contract_introduction"
+    },
+    {
+      "line": 172,
+      "text": "    where busi_Date = '${data_day_str}' and Is_Deleted = 'N'"
+    },
+    {
+      "line": 173,
+      "text": "    union all"
+    },
+    {
+      "line": 174,
+      "text": "    select"
+    },
+    {
+      "line": 175,
+      "text": "        client_id, '' as Contract_Code, lpad(department,4,'0') as Introduction_Department, introductor as Customer_Manager, cast(Allocation_Proportion as double) as Allocation_Proportion,"
+    },
+    {
+      "line": 176,
+      "text": "        row_number() over(partition by client_id order by cast(Allocation_Proportion as double) desc, introductor) as seq"
+    },
+    {
+      "line": 177,
+      "text": "    from odata_n_oom.g_hk_counterparty_introduction"
+    },
+    {
+      "line": 178,
+      "text": "    where busi_Date = '${data_day_str}'"
+    },
+    {
+      "line": 179,
+      "text": "    ) A"
+    },
+    {
+      "line": 180,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 181,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name, Emp_Stat_Cd, Emp_Stat_Desc"
+    },
+    {
+      "line": 182,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 183,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 184,
+      "text": "    ) D"
+    },
+    {
+      "line": 185,
+      "text": "ON A.Customer_Manager = D.OA_User_Id"
+    },
+    {
+      "line": 186,
+      "text": "left join ("
+    },
+    {
+      "line": 187,
+      "text": "    select * from ("
+    },
+    {
+      "line": 188,
+      "text": "        select"
+    },
+    {
+      "line": 189,
+      "text": "            if(dept_no != '', dept_no, substring(unif_org_id,2,4)) as dept_no,"
+    },
+    {
+      "line": 190,
+      "text": "            split(dn,'=')[1] as ORGNAME,"
+    },
+    {
+      "line": 191,
+      "text": "            row_number() over(partition by if(dept_no != '', dept_no, substring(unif_org_id,2,4)) order by inr_org_lvl) as rk"
+    },
+    {
+      "line": 192,
+      "text": "        from pdata_n.T04_OAS_INR_ORG"
+    },
+    {
+      "line": 193,
+      "text": "        where src_tbl = 'ODATA_N_OAS.P_GF_DEPARTMENT' and dept_flag = '1'"
+    },
+    {
+      "line": 194,
+      "text": "        ) t"
+    },
+    {
+      "line": 195,
+      "text": "    where rk = 1"
+    },
+    {
+      "line": 196,
+      "text": "    ) org"
+    },
+    {
+      "line": 197,
+      "text": "on A.Introduction_Department = org.dept_no"
+    },
+    {
+      "line": 198,
+      "text": "left join ("
+    },
+    {
+      "line": 199,
+      "text": "    SELECT Inr_Org_Id, Inr_Org_Name, Brch_Bel_Div_Org_Id, Brch_Bel_Div_Org_Name"
+    },
+    {
+      "line": 200,
+      "text": "    FROM PDATA_N.T98_ORG_BRCH_DIV_INFO"
+    },
+    {
+      "line": 201,
+      "text": "    WHERE Busi_Date = default.pretradedate(date_add('${data_day_str}', 1), 1)"
+    },
+    {
+      "line": 202,
+      "text": "    ) dept"
+    },
+    {
+      "line": 203,
+      "text": "on org.dept_no = dept.Inr_Org_Id"
+    },
+    {
+      "line": 204,
+      "text": "group by A.client_id, A.Contract_Code"
+    },
+    {
+      "line": 205,
+      "text": ";"
+    },
+    {
+      "line": 206,
+      "text": ""
+    },
+    {
+      "line": 207,
+      "text": "set hive.merge.mapfiles=true ;"
+    },
+    {
+      "line": 208,
+      "text": "set hive.merge.mapredfiles=true;"
+    },
+    {
+      "line": 209,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 210,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 211,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 212,
+      "text": ""
+    },
+    {
+      "line": 213,
+      "text": "set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;"
+    },
+    {
+      "line": 214,
+      "text": "set mapreduce.input.fileinputformat.split.maxsize=1073741824;"
+    },
+    {
+      "line": 215,
+      "text": "set mapreduce.input.fileinputformat.split.minsize=1073741824;"
+    },
+    {
+      "line": 216,
+      "text": ""
+    },
+    {
+      "line": 217,
+      "text": "insert overwrite table T98_OTC_COMP_MNG_RELA_INFO partition(busi_date = '${data_day_str}')"
+    },
+    {
+      "line": 218,
+      "text": "select distinct"
+    },
+    {
+      "line": 219,
+      "text": "    info.Agt_Id,"
+    },
+    {
+      "line": 220,
+      "text": "    info.Cutp_Pty_Id as Pty_Id,"
+    },
+    {
+      "line": 221,
+      "text": "    coalesce(ci.Inr_Org_Id_1, cpi.Inr_Org_Id_1) as Inr_Org_Id_1,"
+    },
+    {
+      "line": 222,
+      "text": "    coalesce(ci.Inr_Org_Name_1, cpi.Inr_Org_Name_1) as Inr_Org_Name_1,"
+    },
+    {
+      "line": 223,
+      "text": "    coalesce(ci.Div_Org_Id_1, cpi.Div_Org_Id_1) as Div_Org_Id_1,"
+    },
+    {
+      "line": 224,
+      "text": "    coalesce(ci.Div_Org_Name_1, cpi.Div_Org_Name_1) as Div_Org_Name_1,"
+    },
+    {
+      "line": 225,
+      "text": "    coalesce(ci.Cust_Mngr_Id_1, cpi.Cust_Mngr_Id_1) as Cust_Mngr_User_Id_1,"
+    },
+    {
+      "line": 226,
+      "text": "    coalesce(ci.Cust_Mngr_Name_1, cpi.Cust_Mngr_Name_1) as Cust_Mngr_Name_1,"
+    },
+    {
+      "line": 227,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Id_1, cpi.Cust_Mngr_Emp_Id_1) as Cust_Mngr_Emp_Id_1,"
+    },
+    {
+      "line": 228,
+      "text": "    coalesce(ci.Allo_Prop_1, cpi.Allo_Prop_1) as Allo_Prop_1,"
+    },
+    {
+      "line": 229,
+      "text": "    coalesce(ci.Inr_Org_Id_2, cpi.Inr_Org_Id_2) as Inr_Org_Id_2,"
+    },
+    {
+      "line": 230,
+      "text": "    coalesce(ci.Inr_Org_Name_2, cpi.Inr_Org_Name_2) as Inr_Org_Name_2,"
+    },
+    {
+      "line": 231,
+      "text": "    coalesce(ci.Div_Org_Id_2, cpi.Div_Org_Id_2) as Div_Org_Id_2,"
+    },
+    {
+      "line": 232,
+      "text": "    coalesce(ci.Div_Org_Name_2, cpi.Div_Org_Name_2) as Div_Org_Name_2,"
+    },
+    {
+      "line": 233,
+      "text": "    coalesce(ci.Cust_Mngr_Id_2, cpi.Cust_Mngr_Id_2) as Cust_Mngr_User_Id_2,"
+    },
+    {
+      "line": 234,
+      "text": "    coalesce(ci.Cust_Mngr_Name_2, cpi.Cust_Mngr_Name_2) as Cust_Mngr_Name_2,"
+    },
+    {
+      "line": 235,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Id_2, cpi.Cust_Mngr_Emp_Id_2) as Cust_Mngr_Emp_Id_2,"
+    },
+    {
+      "line": 236,
+      "text": "    coalesce(ci.Allo_Prop_2, cpi.Allo_Prop_2) as Allo_Prop_2,"
+    },
+    {
+      "line": 237,
+      "text": "    coalesce(ci.Inr_Org_Id_3, cpi.Inr_Org_Id_3) as Inr_Org_Id_3,"
+    },
+    {
+      "line": 238,
+      "text": "    coalesce(ci.Inr_Org_Name_3, cpi.Inr_Org_Name_3) as Inr_Org_Name_3,"
+    },
+    {
+      "line": 239,
+      "text": "    coalesce(ci.Div_Org_Id_3, cpi.Div_Org_Id_3) as Div_Org_Id_3,"
+    },
+    {
+      "line": 240,
+      "text": "    coalesce(ci.Div_Org_Name_3, cpi.Div_Org_Name_3) as Div_Org_Name_3,"
+    },
+    {
+      "line": 241,
+      "text": "    coalesce(ci.Cust_Mngr_Id_3, cpi.Cust_Mngr_Id_3) as Cust_Mngr_User_Id_3,"
+    },
+    {
+      "line": 242,
+      "text": "    coalesce(ci.Cust_Mngr_Name_3, cpi.Cust_Mngr_Name_3) as Cust_Mngr_Name_3,"
+    },
+    {
+      "line": 243,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Id_3, cpi.Cust_Mngr_Emp_Id_3) as Cust_Mngr_Emp_Id_3,"
+    },
+    {
+      "line": 244,
+      "text": "    coalesce(ci.Allo_Prop_3, cpi.Allo_Prop_3) as Allo_Prop_3,"
+    },
+    {
+      "line": 245,
+      "text": "    coalesce(s_ba.operator_name, cp.operator) as Main_Oper_User_Id,"
+    },
+    {
+      "line": 246,
+      "text": "    Main.Emp_Name as Main_Oper_Name,"
+    },
+    {
+      "line": 247,
+      "text": "    Main.Emp_Id as Main_Oper_Emp_Id,"
+    },
+    {
+      "line": 248,
+      "text": "    coalesce(s_ba.introduction_operator_name, cp.introduction_operator) as Intro_Oper_User_Id,"
+    },
+    {
+      "line": 249,
+      "text": "    Intro.Emp_Name as Intro_Oper_Name,"
+    },
+    {
+      "line": 250,
+      "text": "    Intro.Emp_Id as Intro_Oper_Emp_Id,"
+    },
+    {
+      "line": 251,
+      "text": "    'TIT' AS Data_Src_Cd,"
+    },
+    {
+      "line": 252,
+      "text": "    UPPER('${filename}') AS Task_Name,"
+    },
+    {
+      "line": 253,
+      "text": "    '${data_day_str}' AS Data_Etl_Date,"
+    },
+    {
+      "line": 254,
+      "text": "    '${data_day_str}' AS Data_Upt_Date,"
+    },
+    {
+      "line": 255,
+      "text": "    '${data_today}' AS Data_Time,"
+    },
+    {
+      "line": 256,
+      "text": "    coalesce(is_ba.operator_name, cp.operator) as Inr_Main_Oper_User_Id,"
+    },
+    {
+      "line": 257,
+      "text": "    i_Main.Emp_Name as Inr_Main_Oper_Name,"
+    },
+    {
+      "line": 258,
+      "text": "    i_Main.Emp_Id as Inr_Main_Oper_Emp_Id,"
+    },
+    {
+      "line": 259,
+      "text": "    coalesce(is_ba.introduction_operator_name, cp.introduction_operator) as Inr_Intro_Oper_User_Id,"
+    },
+    {
+      "line": 260,
+      "text": "    i_Intro.Emp_Name as Inr_Intro_Oper_Name,"
+    },
+    {
+      "line": 261,
+      "text": "    i_Intro.Emp_Id as Inr_Intro_Oper_Emp_Id,"
+    },
+    {
+      "line": 262,
+      "text": "    tit.Tit_Oper_User_Id,"
+    },
+    {
+      "line": 263,
+      "text": "    t_op.Emp_Name as Tit_Oper_Name,"
+    },
+    {
+      "line": 264,
+      "text": "    t_op.Emp_Id as Tit_Oper_Emp_Id,"
+    },
+    {
+      "line": 265,
+      "text": "    t_op.Bel_Inr_Org_Id_Len4 as Tit_Oper_Inr_Org_Id,"
+    },
+    {
+      "line": 266,
+      "text": "    t_op.Bel_Inr_Org_Name as Tit_Oper_Inr_Org_Name,"
+    },
+    {
+      "line": 267,
+      "text": "    tit.Tit_Cust_Mngr_User_Id,"
+    },
+    {
+      "line": 268,
+      "text": "    t_cm.Emp_Name as Tit_Cust_Mngr_Name,"
+    },
+    {
+      "line": 269,
+      "text": "    t_cm.Emp_Id as Tit_Cust_Mngr_Emp_Id,"
+    },
+    {
+      "line": 270,
+      "text": "    t_cm.Bel_Inr_Org_Id_Len4 as Tit_Cust_Mngr_Inr_Org_Id,"
+    },
+    {
+      "line": 271,
+      "text": "    t_cm.Bel_Inr_Org_Name as Tit_Cust_Mngr_Inr_Org_Name,"
+    },
+    {
+      "line": 272,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Cd_1, cpi.Cust_Mngr_Emp_Stat_Cd_1) as Cust_Mngr_Emp_Stat_Cd_1,"
+    },
+    {
+      "line": 273,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Desc_1, cpi.Cust_Mngr_Emp_Stat_Desc_1) as Cust_Mngr_Emp_Stat_Desc_1,"
+    },
+    {
+      "line": 274,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Cd_2, cpi.Cust_Mngr_Emp_Stat_Cd_2) as Cust_Mngr_Emp_Stat_Cd_2,"
+    },
+    {
+      "line": 275,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Desc_2, cpi.Cust_Mngr_Emp_Stat_Desc_2) as Cust_Mngr_Emp_Stat_Desc_2,"
+    },
+    {
+      "line": 276,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Cd_3, cpi.Cust_Mngr_Emp_Stat_Cd_3) as Cust_Mngr_Emp_Stat_Cd_3,"
+    },
+    {
+      "line": 277,
+      "text": "    coalesce(ci.Cust_Mngr_Emp_Stat_Desc_3, cpi.Cust_Mngr_Emp_Stat_Desc_3) as Cust_Mngr_Emp_Stat_Desc_3"
+    },
+    {
+      "line": 278,
+      "text": "from ("
+    },
+    {
+      "line": 279,
+      "text": "    select distinct Agt_Id, Cutp_Pty_Id, Inr_Seri_No, Book_Bel_Dept"
+    },
+    {
+      "line": 280,
+      "text": "    from PDATA_N.T98_OTC_DERI_COMP_SALE_INFO"
+    },
+    {
+      "line": 281,
+      "text": "    where busi_Date = '${data_day_str}' and Book_Bel_Dept in ('OTC','OTC_HK')"
+    },
+    {
+      "line": 282,
+      "text": "    ) info"
+    },
+    {
+      "line": 283,
+      "text": "left join ("
+    },
+    {
+      "line": 284,
+      "text": "    select * from otc_div_temp"
+    },
+    {
+      "line": 285,
+      "text": "    where Contract_Code != ''"
+    },
+    {
+      "line": 286,
+      "text": "    ) ci"
+    },
+    {
+      "line": 287,
+      "text": "on ci.Contract_Code = info.Agt_Id"
+    },
+    {
+      "line": 288,
+      "text": "left join ("
+    },
+    {
+      "line": 289,
+      "text": "    select * from pdata_news_n.t02_fin_float_income_vchr_info"
+    },
+    {
+      "line": 290,
+      "text": "    where busi_Date = '${data_day_str}' and src_id = 'OIS' and grp_id = '01'"
+    },
+    {
+      "line": 291,
+      "text": "        and cast(prin_prtc_prop as double) < 1"
+    },
+    {
+      "line": 292,
+      "text": "    ) fl"
+    },
+    {
+      "line": 293,
+      "text": "on fl.comp_no = info.Agt_Id"
+    },
+    {
+      "line": 294,
+      "text": "left join ("
+    },
+    {
+      "line": 295,
+      "text": "    select * from otc_div_temp"
+    },
+    {
+      "line": 296,
+      "text": "    where client_id != ''"
+    },
+    {
+      "line": 297,
+      "text": "    ) cpi"
+    },
+    {
+      "line": 298,
+      "text": "on cpi.client_id = if(info.Cutp_Pty_Id = 'DEV1100100652' and fl.comp_no is not null, fl.deal_cutp_no, info.Cutp_Pty_Id)"
+    },
+    {
+      "line": 299,
+      "text": "left join (--关联经办人"
+    },
+    {
+      "line": 300,
+      "text": "    select client_id, operator, introduction_operator"
+    },
+    {
+      "line": 301,
+      "text": "    from odata_n_ois.o_otc_derivative_counterparty"
+    },
+    {
+      "line": 302,
+      "text": "    where busi_Date = '${data_day_str}' and delete_flag = '0'"
+    },
+    {
+      "line": 303,
+      "text": "    union all"
+    },
+    {
+      "line": 304,
+      "text": "    select client_id, introductor as operator, introductor as introduction_operator"
+    },
+    {
+      "line": 305,
+      "text": "    from odata_n_oom.g_hk_counterparty_introduction"
+    },
+    {
+      "line": 306,
+      "text": "    where busi_Date = '${data_day_str}' and seq = '1'"
+    },
+    {
+      "line": 307,
+      "text": "    ) cp"
+    },
+    {
+      "line": 308,
+      "text": "on cp.client_id = if(info.Cutp_Pty_Id = 'DEV1100100652' and fl.comp_no is not null, fl.deal_cutp_no, info.Cutp_Pty_Id)"
+    },
+    {
+      "line": 309,
+      "text": "left join ("
+    },
+    {
+      "line": 310,
+      "text": "    select *"
+    },
+    {
+      "line": 311,
+      "text": "    from odata_n_ois.o_contract_base_rate"
+    },
+    {
+      "line": 312,
+      "text": "    where busi_date = '${data_day_str}' and Is_Deleted = 'N'"
+    },
+    {
+      "line": 313,
+      "text": "    ) s_ba"
+    },
+    {
+      "line": 314,
+      "text": "on info.agt_id = s_ba.CONTRACT_CODE and info.Book_Bel_Dept = 'OTC'"
+    },
+    {
+      "line": 315,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 316,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name"
+    },
+    {
+      "line": 317,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 318,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 319,
+      "text": "    ) Main"
+    },
+    {
+      "line": 320,
+      "text": "ON coalesce(s_ba.operator_name, cp.operator) = Main.OA_User_Id"
+    },
+    {
+      "line": 321,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 322,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name"
+    },
+    {
+      "line": 323,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 324,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 325,
+      "text": "    ) Intro"
+    },
+    {
+      "line": 326,
+      "text": "ON coalesce(s_ba.introduction_operator_name, cp.introduction_operator) = Intro.OA_User_Id"
+    },
+    {
+      "line": 327,
+      "text": "left join ("
+    },
+    {
+      "line": 328,
+      "text": "    select *"
+    },
+    {
+      "line": 329,
+      "text": "    from odata_n_ois.g_inr_contract_base_rate"
+    },
+    {
+      "line": 330,
+      "text": "    where busi_date = '${data_day_str}' and Is_Deleted = 'N'"
+    },
+    {
+      "line": 331,
+      "text": "    ) is_ba"
+    },
+    {
+      "line": 332,
+      "text": "on info.agt_id = is_ba.CONTRACT_CODE"
+    },
+    {
+      "line": 333,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 334,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name"
+    },
+    {
+      "line": 335,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 336,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 337,
+      "text": "    ) i_Main"
+    },
+    {
+      "line": 338,
+      "text": "ON coalesce(is_ba.operator_name, cp.operator) = i_Main.OA_User_Id"
+    },
+    {
+      "line": 339,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 340,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name"
+    },
+    {
+      "line": 341,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 342,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 343,
+      "text": "    ) i_Intro"
+    },
+    {
+      "line": 344,
+      "text": "ON coalesce(is_ba.introduction_operator_name, cp.introduction_operator) = i_Intro.OA_User_Id"
+    },
+    {
+      "line": 345,
+      "text": "left join ("
+    },
+    {
+      "line": 346,
+      "text": "    select key_otc_trade_id,"
+    },
+    {
+      "line": 347,
+      "text": "        max(case when property_name = 'operator' then property_value else '' end) as Tit_Oper_User_Id,"
+    },
+    {
+      "line": 348,
+      "text": "        max(case when property_name = 'customerManager' then property_value else '' end) as Tit_Cust_Mngr_User_Id"
+    },
+    {
+      "line": 349,
+      "text": "    from odata_n_tit.d_trd_otc_contr_props"
+    },
+    {
+      "line": 350,
+      "text": "    where busi_Date = '${data_day_str}' and property_name in ('operator','customerManager')"
+    },
+    {
+      "line": 351,
+      "text": "    group by key_otc_trade_id"
+    },
+    {
+      "line": 352,
+      "text": "    ) tit"
+    },
+    {
+      "line": 353,
+      "text": "on tit.key_otc_trade_id = info.Inr_Seri_No"
+    },
+    {
+      "line": 354,
+      "text": "left join ("
+    },
+    {
+      "line": 355,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name, Bel_Inr_Org_Id_Len4, Bel_Inr_Org_Name"
+    },
+    {
+      "line": 356,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 357,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 358,
+      "text": "    ) t_op"
+    },
+    {
+      "line": 359,
+      "text": "ON tit.Tit_Oper_User_Id = t_op.OA_User_Id"
+    },
+    {
+      "line": 360,
+      "text": "left join ("
+    },
+    {
+      "line": 361,
+      "text": "    SELECT Emp_Id, OA_User_Id, Emp_Name, Bel_Inr_Org_Id_Len4, Bel_Inr_Org_Name"
+    },
+    {
+      "line": 362,
+      "text": "    FROM PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 363,
+      "text": "    WHERE busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 364,
+      "text": "    ) t_cm"
+    },
+    {
+      "line": 365,
+      "text": "ON tit.Tit_Cust_Mngr_User_Id = t_cm.OA_User_Id"
+    },
+    {
+      "line": 366,
+      "text": ";"
+    },
+    {
+      "line": 367,
+      "text": ""
+    }
+  ]
+}

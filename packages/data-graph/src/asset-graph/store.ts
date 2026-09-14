@@ -1,3 +1,4 @@
+import { clusterParams, clusterTablePredicate, clusterTaskPredicate } from "./cluster-filter.ts";
 import { int, type Driver } from "neo4j-driver";
 import type { AssetNode, AssetEdge, CompiledTask } from "./compile.ts";
 const chunks = <T>(xs: readonly T[], size = 500) =>
@@ -297,14 +298,16 @@ export class AssetGraphStore {
       dataSource: string;
       qualifiedName: string;
     }[] = [],
+    clusterTaskIds?: string[],
   ) {
     await this.ready();
     const r = await this.run(
-      "CALL { MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n UNION ALL MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) RETURN n } WITH n WHERE (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit",
+      `CALL { MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n UNION ALL MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) RETURN n } WITH n WHERE (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) WITH collect(n) AS matchedNodes UNWIND matchedNodes AS n WITH n WHERE ((n.kind='TASK' AND ${clusterTaskPredicate("n")}) OR (n.kind='PHYSICAL_DATASET' AND ${clusterTablePredicate("n")})) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit`,
       {
         text: text.toLowerCase(),
         task: `task:${text}`,
         metadataIdentities: [...metadataIdentities],
+        ...clusterParams(clusterTaskIds),
         limit: Math.max(1, Math.min(101, Math.trunc(limit))),
         offset: Math.max(0, Math.trunc(offset)),
       },

@@ -1,0 +1,21 @@
+[
+  {
+    "taskId": "236331",
+    "section": "all",
+    "statementCount": 2,
+    "createStatementCount": 1,
+    "queryStatementCount": 1,
+    "contains": [],
+    "hitCount": 0,
+    "hits": [],
+    "evidence_level": "extracted_sql_summary",
+    "limitations": [
+      "This is SQL extracted from Data Portal schedule MCP metadata.",
+      "It is not Horae runtime log evidence and does not prove an instance succeeded."
+    ],
+    "sqlCachePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\00-20260911-认知实验\\t10专题\\证据\\SQL\\236331.sql\\tasksql-236331-20260914024943.txt",
+    "sqlBytes": 919,
+    "artifactRelativePath": "SQL/236331-current.sql",
+    "pathNote": "sqlCachePath 保留查询时原路径；专题更名后使用 artifactRelativePath 定位副本。"
+  }
+]

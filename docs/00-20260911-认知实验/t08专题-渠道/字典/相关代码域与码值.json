@@ -1,0 +1,2773 @@
+{
+  "snapshot": [
+    {
+      "kind": "indicator",
+      "snapshot_label": "20260812-refresh",
+      "status": "PARTIAL"
+    },
+    {
+      "kind": "tag",
+      "snapshot_label": "20260814-refresh-full-sql",
+      "status": "COMPLETE"
+    },
+    {
+      "kind": "code",
+      "snapshot_label": null,
+      "status": "UNVERIFIED"
+    },
+    {
+      "kind": "data_element",
+      "snapshot_label": "20260812-refresh",
+      "status": "UNVERIFIED"
+    },
+    {
+      "kind": "grp_type_info",
+      "snapshot_label": "20260812-refresh",
+      "status": "UNVERIFIED"
+    }
+  ],
+  "domains": [
+    {
+      "record_id": 125761,
+      "dw_cd_id": "CD021",
+      "dw_cd_eng_name": "PTY_STAT_TYPE_CD",
+      "dw_cd_chn_name": "当事人状态类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2021-01-26",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD021",
+          "code_value": "1",
+          "value_description": "",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2020-09-22",
+          "english_name": "PTY_STAT_TYPE_CD"
+        },
+        {
+          "code_id": "CD021",
+          "code_value": "2",
+          "value_description": "销售商TA5代销状态",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-07-02",
+          "english_name": "PTY_STAT_TYPE_CD"
+        },
+        {
+          "code_id": "CD021",
+          "code_value": "3",
+          "value_description": "销售商分TA代销状态",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-07-02",
+          "english_name": "PTY_STAT_TYPE_CD"
+        },
+        {
+          "code_id": "CD021",
+          "code_value": "4",
+          "value_description": "客户合同状态",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-07-05",
+          "english_name": "PTY_STAT_TYPE_CD"
+        },
+        {
+          "code_id": "CD021",
+          "code_value": "5",
+          "value_description": "经营状态",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-17",
+          "english_name": "PTY_STAT_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 125839,
+      "dw_cd_id": "CD100",
+      "dw_cd_eng_name": "DATA_SRC_CD",
+      "dw_cd_chn_name": "数据来源代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2021-01-26",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD100",
+          "code_value": "BDP",
+          "value_description": "大数据平台",
+          "remark": "00150",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "CC2",
+          "value_description": "呼叫中心系统2.0",
+          "remark": "CALLCENTER_2,00129.00002",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "CFM",
+          "value_description": "易淘金理财系统",
+          "remark": "ECFMS,00236",
+          "source": "20220815维护",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-08-15",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "CRM",
+          "value_description": "金管家综合服务系统",
+          "remark": "CRM,00099",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "GKS",
+          "value_description": "金钥匙系统",
+          "remark": "CLICKEGGS,00192",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "LIA",
+          "value_description": "联软上网助手",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "MIO",
+          "value_description": "手机数字化智能运营中台",
+          "remark": "GFMARKET,00041.00008",
+          "source": "20220815维护",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-08-15",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "NBO",
+          "value_description": "新一代经纪业务运营平台",
+          "remark": "NBOP,00015",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "OAO",
+          "value_description": "网上开户系统",
+          "remark": "GF_ZZKH_JZ,00016",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "OSC",
+          "value_description": "非现场柜台业务系统",
+          "remark": "FXC,00017",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "PRD",
+          "value_description": "产品中心",
+          "remark": "PCENTER,00084",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "SIP",
+          "value_description": "GF-SMART智能化平台",
+          "remark": "GF_SMART,00151",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "WCM",
+          "value_description": "企业微信会话留痕系统",
+          "remark": "QYWXCHATLOG,00373.00001",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "WOS",
+          "value_description": "理财网店系统",
+          "remark": "GFWEALTH,00213",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        },
+        {
+          "code_id": "CD100",
+          "code_value": "WTM",
+          "value_description": "无线天利营销通道（短信）",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-06-18",
+          "english_name": "DATA_SRC_CD"
+        }
+      ],
+      "valueScope": "仅 T08 已见来源"
+    },
+    {
+      "record_id": 125844,
+      "dw_cd_id": "CD1004",
+      "dw_cd_eng_name": "CHAN_ORG_RELA_TYPE_CD",
+      "dw_cd_chn_name": "渠道内部机构关系类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2023-11-08",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1004",
+          "code_value": "01",
+          "value_description": "归属内部机构",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-11-08",
+          "english_name": "CHAN_ORG_RELA_TYPE_CD"
+        },
+        {
+          "code_id": "CD1004",
+          "code_value": "02",
+          "value_description": "引流营业部",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-11-08",
+          "english_name": "CHAN_ORG_RELA_TYPE_CD"
+        },
+        {
+          "code_id": "CD1004",
+          "code_value": "03",
+          "value_description": "特殊引流营业部",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-11-08",
+          "english_name": "CHAN_ORG_RELA_TYPE_CD"
+        },
+        {
+          "code_id": "CD1004",
+          "code_value": "04",
+          "value_description": "渠道锁定的营业部",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-11-08",
+          "english_name": "CHAN_ORG_RELA_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 125963,
+      "dw_cd_id": "CD1112",
+      "dw_cd_eng_name": "DVC_TYPE_CD",
+      "dw_cd_chn_name": "设备类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2024-01-02",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "tbl_devtype.idevtype",
+      "remark": "LIA",
+      "values": [
+        {
+          "code_id": "CD1112",
+          "code_value": "0",
+          "value_description": "未知",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "1",
+          "value_description": "主机",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "10",
+          "value_description": "桌面PC",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "11",
+          "value_description": "笔记本电脑",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "12",
+          "value_description": "服务器",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "13",
+          "value_description": "Windows主机",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "14",
+          "value_description": "Linux主机",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "15",
+          "value_description": "Unix主机",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "2",
+          "value_description": "网络交换机(二层)",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "3",
+          "value_description": "路由器",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "30",
+          "value_description": "Iphone",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "31",
+          "value_description": "IphoneGz",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "32",
+          "value_description": "Android",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "33",
+          "value_description": "AndroidGz",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "34",
+          "value_description": "Comp",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "35",
+          "value_description": "WinPC",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "36",
+          "value_description": "MacPC",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "37",
+          "value_description": "Web",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "38",
+          "value_description": "Harmony",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-12-12",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "4",
+          "value_description": "交换机(三层)",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "5",
+          "value_description": "Hub",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "6",
+          "value_description": "网络打印机",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "7",
+          "value_description": "UPS",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "8",
+          "value_description": "防火墙",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1112",
+          "code_value": "9",
+          "value_description": "IDS",
+          "remark": "LIA系统表tbl_devtype.idevtype",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-01-02",
+          "english_name": "DVC_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126282,
+      "dw_cd_id": "CD1412",
+      "dw_cd_eng_name": "CHAN_CATE_CD",
+      "dw_cd_chn_name": "渠道类别代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2024-08-09",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1412",
+          "code_value": "01",
+          "value_description": "金钥匙开户渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "02",
+          "value_description": "金管家引流渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "03",
+          "value_description": "注册金纽带的渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "04",
+          "value_description": "店铺",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "05",
+          "value_description": "运营位",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "06",
+          "value_description": "积分商城应用APP",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "07",
+          "value_description": "广发通帐号注册来源应用APP",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "08",
+          "value_description": "两融ATP接入终端",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "09",
+          "value_description": "现货ATP接入终端",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "10",
+          "value_description": "AGENT平台应用APP",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "11",
+          "value_description": "企微应用",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-02-20",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "12",
+          "value_description": "呼叫中心受理渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "13",
+          "value_description": "中登",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-03-27",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "14",
+          "value_description": "证通",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-03-27",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "15",
+          "value_description": "开户引流渠道投放平台",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "16",
+          "value_description": "结算数据分发渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "CHAN_CATE_CD"
+        },
+        {
+          "code_id": "CD1412",
+          "code_value": "17",
+          "value_description": "监管报送渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-07-17",
+          "english_name": "CHAN_CATE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126283,
+      "dw_cd_id": "CD1413",
+      "dw_cd_eng_name": "CHAN_STAT_CD",
+      "dw_cd_chn_name": "渠道状态代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2024-08-09",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1413",
+          "code_value": "close",
+          "value_description": "关闭",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_STAT_CD"
+        },
+        {
+          "code_id": "CD1413",
+          "code_value": "configed",
+          "value_description": "已配置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_STAT_CD"
+        },
+        {
+          "code_id": "CD1413",
+          "code_value": "delete",
+          "value_description": "删除",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_STAT_CD"
+        },
+        {
+          "code_id": "CD1413",
+          "code_value": "normal",
+          "value_description": "正常",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_STAT_CD"
+        },
+        {
+          "code_id": "CD1413",
+          "code_value": "offline",
+          "value_description": "离线",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_STAT_CD"
+        },
+        {
+          "code_id": "CD1413",
+          "code_value": "unconfiged",
+          "value_description": "未配置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_STAT_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126406,
+      "dw_cd_id": "CD153",
+      "dw_cd_eng_name": "LIST_TYPE_CD",
+      "dw_cd_chn_name": "名单类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2023-01-03",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD153",
+          "code_value": "95575_MSG_CHN_BL",
+          "value_description": "95575短信渠道黑名单",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-16",
+          "english_name": "LIST_TYPE_CD"
+        },
+        {
+          "code_id": "CD153",
+          "code_value": "CAM_CHN_BL",
+          "value_description": "营销渠道黑名单",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-16",
+          "english_name": "LIST_TYPE_CD"
+        },
+        {
+          "code_id": "CD153",
+          "code_value": "DF_STRG_OPER_SITE_CUST",
+          "value_description": "定向策略对应运营位客户名单",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-16",
+          "english_name": "LIST_TYPE_CD"
+        }
+      ],
+      "valueScope": "仅 T08 已读 SQL 使用的三种名单"
+    },
+    {
+      "record_id": 126472,
+      "dw_cd_id": "CD1591",
+      "dw_cd_eng_name": "CHAN_STATI_INFO_TYPE_CD",
+      "dw_cd_chn_name": "渠道统计信息类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2025-01-17",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1591",
+          "code_value": "01",
+          "value_description": "打折渠道标志",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-01-17",
+          "english_name": "CHAN_STATI_INFO_TYPE_CD"
+        },
+        {
+          "code_id": "CD1591",
+          "code_value": "02",
+          "value_description": "渠道受理类型",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_STATI_INFO_TYPE_CD"
+        },
+        {
+          "code_id": "CD1591",
+          "code_value": "03",
+          "value_description": "渠道预约有效期",
+          "remark": "单位：秒",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "CHAN_STATI_INFO_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126577,
+      "dw_cd_id": "CD1687",
+      "dw_cd_eng_name": "CHAN_LMT_TYPE_CD",
+      "dw_cd_chn_name": "渠道限制类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2025-05-08",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1687",
+          "code_value": "Invalid",
+          "value_description": "失效配置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "CHAN_LMT_TYPE_CD"
+        },
+        {
+          "code_id": "CD1687",
+          "code_value": "SecretKey",
+          "value_description": "秘钥核销配置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "CHAN_LMT_TYPE_CD"
+        },
+        {
+          "code_id": "CD1687",
+          "code_value": "Threshold",
+          "value_description": "熔断配置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "CHAN_LMT_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126578,
+      "dw_cd_id": "CD1688",
+      "dw_cd_eng_name": "APP_REGAIN_WAY_CD",
+      "dw_cd_chn_name": "申请恢复方式代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2025-05-08",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1688",
+          "code_value": "Daily",
+          "value_description": "每天自动恢复",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "APP_REGAIN_WAY_CD"
+        },
+        {
+          "code_id": "CD1688",
+          "code_value": "Manual",
+          "value_description": "人工申请",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "APP_REGAIN_WAY_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126579,
+      "dw_cd_id": "CD1689",
+      "dw_cd_eng_name": "CHAN_LMT_STAT_CD",
+      "dw_cd_chn_name": "渠道限制状态代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2025-05-08",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1689",
+          "code_value": "0",
+          "value_description": "未熔断",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "CHAN_LMT_STAT_CD"
+        },
+        {
+          "code_id": "CD1689",
+          "code_value": "1",
+          "value_description": "熔断",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-05-08",
+          "english_name": "CHAN_LMT_STAT_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126685,
+      "dw_cd_id": "CD1786",
+      "dw_cd_eng_name": "PST_DVC_TYPE_CD",
+      "dw_cd_chn_name": "通讯设备类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2025-09-18",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1786",
+          "code_value": "1",
+          "value_description": "录音设备",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "PST_DVC_TYPE_CD"
+        },
+        {
+          "code_id": "CD1786",
+          "code_value": "2",
+          "value_description": "留言",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "PST_DVC_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 126688,
+      "dw_cd_id": "CD1789",
+      "dw_cd_eng_name": "CHAN_ACPT_TYPE_CD",
+      "dw_cd_chn_name": "渠道受理类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2025-09-18",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD1789",
+          "code_value": "1",
+          "value_description": "电话受理",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_ACPT_TYPE_CD"
+        },
+        {
+          "code_id": "CD1789",
+          "code_value": "2",
+          "value_description": "在线受理",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_ACPT_TYPE_CD"
+        },
+        {
+          "code_id": "CD1789",
+          "code_value": "3",
+          "value_description": "离线受理",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "CHAN_ACPT_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127063,
+      "dw_cd_id": "CD2130",
+      "dw_cd_eng_name": "SETT_DISTR_CHAN_TYPE_CD",
+      "dw_cd_chn_name": "结算分发渠道类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2026-06-25",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD2130",
+          "code_value": "00",
+          "value_description": "网络传输",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "SETT_DISTR_CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD2130",
+          "code_value": "10",
+          "value_description": "深证通",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "SETT_DISTR_CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD2130",
+          "code_value": "20",
+          "value_description": "基金通",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "SETT_DISTR_CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD2130",
+          "code_value": "30",
+          "value_description": "银行专线",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "SETT_DISTR_CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD2130",
+          "code_value": "40",
+          "value_description": "邮件",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "SETT_DISTR_CHAN_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127064,
+      "dw_cd_id": "CD2131",
+      "dw_cd_eng_name": "PATH_ANLS_MODE_CD",
+      "dw_cd_chn_name": "路径解析模式代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2026-06-25",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD2131",
+          "code_value": "01",
+          "value_description": "按FTP服务器设置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "PATH_ANLS_MODE_CD"
+        },
+        {
+          "code_id": "CD2131",
+          "code_value": "02",
+          "value_description": "按目录设置",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-25",
+          "english_name": "PATH_ANLS_MODE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127158,
+      "dw_cd_id": "CD2217",
+      "dw_cd_eng_name": "AFL_RELA_TYPE_CD",
+      "dw_cd_chn_name": "挂靠关系类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2026-08-13",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD2217",
+          "code_value": "1",
+          "value_description": "推荐人开发关系",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "AFL_RELA_TYPE_CD"
+        },
+        {
+          "code_id": "CD2217",
+          "code_value": "2",
+          "value_description": "互联网转化关系",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "AFL_RELA_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127159,
+      "dw_cd_id": "CD2218",
+      "dw_cd_eng_name": "HIDE_ACCT_TYPE_CD",
+      "dw_cd_chn_name": "隐藏账户类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2026-08-13",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD2218",
+          "code_value": "1",
+          "value_description": "隐藏广发基金账户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "HIDE_ACCT_TYPE_CD"
+        },
+        {
+          "code_id": "CD2218",
+          "code_value": "2",
+          "value_description": "隐藏柜台市场账户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "HIDE_ACCT_TYPE_CD"
+        },
+        {
+          "code_id": "CD2218",
+          "code_value": "3",
+          "value_description": "隐藏沪（深）市账户转户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-08-13",
+          "english_name": "HIDE_ACCT_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127365,
+      "dw_cd_id": "CD386",
+      "dw_cd_eng_name": "CUST_TYPE_CD",
+      "dw_cd_chn_name": "客户类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2021-12-09",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD386",
+          "code_value": "1",
+          "value_description": "交易账号",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-12-09",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "10",
+          "value_description": "手机号",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-05-21",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "11",
+          "value_description": "微信ID",
+          "remark": "open接口ID",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-06-12",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "12",
+          "value_description": "Appid",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-06-12",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "2",
+          "value_description": "广发通账号",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2021-12-09",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "3",
+          "value_description": "游客",
+          "remark": "",
+          "source": "20230309新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-03-10",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "4",
+          "value_description": "对公客户联系人",
+          "remark": "",
+          "source": "20230315新增，20230721修改",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-07-27",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "5",
+          "value_description": "外部嘉宾",
+          "remark": "",
+          "source": "20230515新增，20230721修改",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-07-27",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "6",
+          "value_description": "OA账号",
+          "remark": "",
+          "source": "20230515新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-15",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "7",
+          "value_description": "魔方app用户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-12-08",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "8",
+          "value_description": "魔方匿名用户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-12-08",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "9",
+          "value_description": "魔方微信活动用户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-12-08",
+          "english_name": "CUST_TYPE_CD"
+        },
+        {
+          "code_id": "CD386",
+          "code_value": "99",
+          "value_description": "未知",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-06-12",
+          "english_name": "CUST_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127412,
+      "dw_cd_id": "CD434",
+      "dw_cd_eng_name": "CHAN_TYPE_CD",
+      "dw_cd_chn_name": "渠道类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2022-04-14",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD434",
+          "code_value": "01",
+          "value_description": "银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0101",
+          "value_description": "中国银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0102",
+          "value_description": "工商银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "010201",
+          "value_description": "中国工商银行_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0103",
+          "value_description": "广发银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0104",
+          "value_description": "招商银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0105",
+          "value_description": "建设银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "010501",
+          "value_description": "中国建设银行_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "010502",
+          "value_description": "中国建设银行_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "010503",
+          "value_description": "中国建设银行_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0106",
+          "value_description": "兴业银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0107",
+          "value_description": "平安银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0108",
+          "value_description": "农业银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0109",
+          "value_description": "浦发银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0110",
+          "value_description": "光大银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0111",
+          "value_description": "交通银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0112",
+          "value_description": "邮储银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0113",
+          "value_description": "广州银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0114",
+          "value_description": "上海银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0115",
+          "value_description": "民生银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0116",
+          "value_description": "华夏银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0117",
+          "value_description": "东莞银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0118",
+          "value_description": "中信银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0119",
+          "value_description": "宁波银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0120",
+          "value_description": "江苏银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0121",
+          "value_description": "南京银行",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02",
+          "value_description": "APP",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02001",
+          "value_description": "360_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02002",
+          "value_description": "360_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02003",
+          "value_description": "360_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02004",
+          "value_description": "360商城_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02005",
+          "value_description": "百度_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02006",
+          "value_description": "百度_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02007",
+          "value_description": "百度_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02008",
+          "value_description": "百度商城_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02009",
+          "value_description": "大智慧_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02010",
+          "value_description": "股票雷达_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02011",
+          "value_description": "神马搜索_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02012",
+          "value_description": "神马搜索_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02013",
+          "value_description": "神马搜索_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02014",
+          "value_description": "新浪_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02015",
+          "value_description": "新浪_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02016",
+          "value_description": "新浪_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02017",
+          "value_description": "搜狗_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02018",
+          "value_description": "搜狗引流_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02019",
+          "value_description": "搜狗_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02020",
+          "value_description": "搜狗_专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02021",
+          "value_description": "股票雷达_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02022",
+          "value_description": "股票雷达_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02023",
+          "value_description": "daliangxq_安卓",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02024",
+          "value_description": "daliangxq_IOS",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02025",
+          "value_description": "同花顺专版",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02050",
+          "value_description": "文本生成应用",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02051",
+          "value_description": "工作流工具",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02052",
+          "value_description": "基础聊天应用",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02053",
+          "value_description": "高阶聊天应用",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02054",
+          "value_description": "智能Agent_可自主选择工具",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "02055",
+          "value_description": "今日头条-h5",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "03",
+          "value_description": "APP应用市场",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0301",
+          "value_description": "苹果商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0302",
+          "value_description": "华为商城新版_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0303",
+          "value_description": "华为商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0304",
+          "value_description": "广发官网专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0305",
+          "value_description": "OPPO商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0306",
+          "value_description": "VIVO商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0307",
+          "value_description": "小米商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0308",
+          "value_description": "应用宝商城_专版",
+          "remark": "",
+          "source": "20230526新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0399",
+          "value_description": "未定义安卓应用商城",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "04",
+          "value_description": "电商部",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05",
+          "value_description": "司内电子渠道",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05001",
+          "value_description": "广发简化1",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05002",
+          "value_description": "广发简化2",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05003",
+          "value_description": "广发简化3",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05004",
+          "value_description": "广发简化4",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05005",
+          "value_description": "广发简化5",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05006",
+          "value_description": "广发简化6",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05007",
+          "value_description": "广发简化7",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05008",
+          "value_description": "广发简化8",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05009",
+          "value_description": "广发简化9",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05010",
+          "value_description": "广发简化10",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05011",
+          "value_description": "广发简化11",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05012",
+          "value_description": "迷你首页",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05013",
+          "value_description": "金钥匙",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05014",
+          "value_description": "易淘金",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05015",
+          "value_description": "香港易淘金",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05016",
+          "value_description": "机构APP",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05017",
+          "value_description": "投研",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05018",
+          "value_description": "直播",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05019",
+          "value_description": "短视频",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "05020",
+          "value_description": "理财网店",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-08-09",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "06",
+          "value_description": "社交媒体",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0601",
+          "value_description": "企业微信",
+          "remark": "",
+          "source": "20230525新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-05-30",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "0602",
+          "value_description": "微信",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "07",
+          "value_description": "操作系统",
+          "remark": "",
+          "source": "20221115新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-11-16",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08",
+          "value_description": "运营位",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2024-09-12",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08001",
+          "value_description": "易淘金CMS_配置中心-广告管理",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08002",
+          "value_description": "易淘金CMS_配置中心-弹窗广告",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08003",
+          "value_description": "易淘金CMS_配置中心-配置发现页菜单",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08004",
+          "value_description": "易淘金CMS_配置中心-运营位管理",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08005",
+          "value_description": "易淘金CMS_直播管理-投资时钟推荐",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08006",
+          "value_description": "易淘金CMS_我的",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08007",
+          "value_description": "易淘金CMS_理财-自定义运营位",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08008",
+          "value_description": "易淘金CMS_发现页统一配置",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08009",
+          "value_description": "易淘金CMS_场景化运营-客户尊享+",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08010",
+          "value_description": "易淘金CMS_场景化运营-活动专区",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08011",
+          "value_description": "易淘金CMS_增值服务",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08012",
+          "value_description": "易淘金CMS_机会-策略未付费设置",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08013",
+          "value_description": "易淘金CMS_消息推送",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08014",
+          "value_description": "易淘金CMS_现金页",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08015",
+          "value_description": "易淘金CMS_积分商城",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08016",
+          "value_description": "易淘金CMS_统一搜索",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08017",
+          "value_description": "易淘金CMS_行情-机会页",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08018",
+          "value_description": "易淘金CMS_配置中⼼-⽂字链运营位",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08019",
+          "value_description": "易淘金CMS_配置中心",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "08020",
+          "value_description": "易淘金CMS_配置中心-智能助理弹窗",
+          "remark": "",
+          "source": "MIO",
+          "source_table": "ODATA_N_MIO.H_CW_BUSI_CATEGORY",
+          "business_date": "2026-08-21",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "96",
+          "value_description": "未细分外部投放平台",
+          "remark": "开户引流渠道的外部投放平台",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2026-06-05",
+          "english_name": "CHAN_TYPE_CD"
+        },
+        {
+          "code_id": "CD434",
+          "code_value": "99",
+          "value_description": "其它",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-04-14",
+          "english_name": "CHAN_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127479,
+      "dw_cd_id": "CD503",
+      "dw_cd_eng_name": "DVRS_TYPE_CD",
+      "dw_cd_chn_name": "引流类型代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2022-11-16",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD503",
+          "code_value": "1",
+          "value_description": "开户引流",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-11-16",
+          "english_name": "DVRS_TYPE_CD"
+        },
+        {
+          "code_id": "CD503",
+          "code_value": "A",
+          "value_description": "外部来源",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-11-16",
+          "english_name": "DVRS_TYPE_CD"
+        },
+        {
+          "code_id": "CD503",
+          "code_value": "B",
+          "value_description": "内部场景",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-11-16",
+          "english_name": "DVRS_TYPE_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127486,
+      "dw_cd_id": "CD510",
+      "dw_cd_eng_name": "DVC_STAT_CD",
+      "dw_cd_chn_name": "设备状态代码",
+      "encd_mode": "源系统硬编码",
+      "data_std_id": "",
+      "crt_date": "2022-12-13",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD510",
+          "code_value": "1",
+          "value_description": "在线",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-12-13",
+          "english_name": "DVC_STAT_CD"
+        },
+        {
+          "code_id": "CD510",
+          "code_value": "2",
+          "value_description": "离线",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2022-12-13",
+          "english_name": "DVC_STAT_CD"
+        },
+        {
+          "code_id": "CD510",
+          "code_value": "50",
+          "value_description": "启用",
+          "remark": "",
+          "source": "20250916新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "DVC_STAT_CD"
+        },
+        {
+          "code_id": "CD510",
+          "code_value": "51",
+          "value_description": "禁用",
+          "remark": "",
+          "source": "20250916新增",
+          "source_table": "MANU_MATN",
+          "business_date": "2025-09-18",
+          "english_name": "DVC_STAT_CD"
+        }
+      ]
+    },
+    {
+      "record_id": 127634,
+      "dw_cd_id": "CD658",
+      "dw_cd_eng_name": "DVC_USER_RELA_TYPE_CD",
+      "dw_cd_chn_name": "设备用户关系类型代码",
+      "encd_mode": "仓库特有编码",
+      "data_std_id": "",
+      "crt_date": "2023-03-23",
+      "matn": "xiongdan,huzhuohua",
+      "dc_dict_entry": "",
+      "src_dict_tbl": "",
+      "remark": "",
+      "values": [
+        {
+          "code_id": "CD658",
+          "code_value": "01",
+          "value_description": "设备归属用户",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-03-22",
+          "english_name": "DVC_USER_RELA_TYPE_CD"
+        },
+        {
+          "code_id": "CD658",
+          "code_value": "02",
+          "value_description": "设备负责人",
+          "remark": "",
+          "source": "",
+          "source_table": "MANU_MATN",
+          "business_date": "2023-03-22",
+          "english_name": "DVC_USER_RELA_TYPE_CD"
+        }
+      ]
+    }
+  ]
+}

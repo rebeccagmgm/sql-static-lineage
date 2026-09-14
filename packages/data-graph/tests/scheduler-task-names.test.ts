@@ -34,6 +34,7 @@ describe("SchedulerTaskNameResolver", () => {
     expect(resolver.resolveTopics(["168293"])).toEqual({});
     expect(resolver.resolveTopicDescriptions(["168293"])).toEqual({});
     expect(resolver.resolveOwners(["168293"])).toEqual({});
+    expect(resolver.resolveClusters(["168293"])).toEqual({});
     resolver.close();
   });
   it("reads catalog topics including tasks without names and omits missing topics", async () => {
@@ -43,6 +44,9 @@ describe("SchedulerTaskNameResolver", () => {
     const database = new DatabaseSync(sqlitePath);
     database.exec(`CREATE TABLE horae_task_catalog(task_id TEXT PRIMARY KEY, task_name TEXT, topic TEXT);
       INSERT INTO horae_task_catalog VALUES ('1', 'Task one', ' DM_OTC_N '), ('2', NULL, 'ODATA_N_TIT'), ('3', 'Task three', ' ');
+      ALTER TABLE horae_task_catalog ADD COLUMN cluster TEXT;
+      UPDATE horae_task_catalog SET cluster='沙溪(马场)' WHERE task_id='1';
+      UPDATE horae_task_catalog SET cluster='观达(科学城)' WHERE task_id='2';
       ALTER TABLE horae_task_catalog ADD COLUMN owner TEXT;
       UPDATE horae_task_catalog SET owner=' account_one,account_two ' WHERE task_id='1';
       CREATE TABLE horae_topic_catalog(topic TEXT PRIMARY KEY, description TEXT);
@@ -54,6 +58,7 @@ describe("SchedulerTaskNameResolver", () => {
     try {
       expect(resolver.resolve(["1", "2", "3"])).toEqual({ "1": "Task one", "3": "Task three" });
       expect(resolver.resolveTopics(["1", "2", "3", "missing"])).toEqual({ "1": "DM_OTC_N", "2": "ODATA_N_TIT" });
+      expect(resolver.resolveClusters(["1", "2", "3", "missing"])).toEqual({ "1": "沙溪(马场)", "2": "观达(科学城)" });
       expect(resolver.resolveTopics(["1"])).toEqual({ "1": "DM_OTC_N" });
       expect(resolver.resolveTopicDescriptions(["1", "2", "missing"])).toEqual({ "1": "柜台交易市场部数据集市" });
       expect(resolver.resolveOwners(["1", "2", "missing"])).toEqual({ "1": "account_one,account_two" });

@@ -1,0 +1,333 @@
+{
+  "task_id": "103614",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:43.948Z",
+  "payload_sha256": "88778207b17076743f79c15d1e1d0cef2f4c6e023c33f9d20e0f3c9e31dca479",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 9,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 10,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 11,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 12,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 13,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 14,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 15,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 16,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 17,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 18,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 19,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 20,
+      "text": "--Group22: Source Table:[ODATA_N_RCC.A_DERIVSHARE:衍生品份额表]"
+    },
+    {
+      "line": 21,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 22,
+      "text": "INSERT OVERWRITE TABLE T03_AGT_HOLD_SHR_H PARTITION(BUSI_DATE,SRC_TBL)"
+    },
+    {
+      "line": 23,
+      "text": "SELECT"
+    },
+    {
+      "line": 24,
+      "text": "        A.FUND_ACCOUNT                                      AS AGT_ID                  --协议编号"
+    },
+    {
+      "line": 25,
+      "text": "       ,'10201'                                             AS AGT_MODIFR              --协议修饰符"
+    },
+    {
+      "line": 26,
+      "text": "       ,CONCAT('RCC-',A.PRODTA_NO,'-',A.PROD_CODE)          AS PRD_ID                  --产品编号"
+    },
+    {
+      "line": 27,
+      "text": "       ,A.DERIV_PROD_TYPE                                   AS SRC_PRD_CATE_CD         --源产品类别代码"
+    },
+    {
+      "line": 28,
+      "text": "       ,'LONG'                                              AS Long_Shor_Clas          --多空分类"
+    },
+    {
+      "line": 29,
+      "text": "       ,'SPT_NTP'                                           AS Holder_Type_Cd          --持仓类型代码"
+    },
+    {
+      "line": 30,
+      "text": "       ,A.BUY_DATE                                          AS BUY_DATE                --买入日期"
+    },
+    {
+      "line": 31,
+      "text": "       ,'102'                                               AS AGT_CATE_CD             --协议类别代码"
+    },
+    {
+      "line": 32,
+      "text": "       ,'10201'                                             AS AGT_TYPE_CD             --协议类型代码"
+    },
+    {
+      "line": 33,
+      "text": "       ,LPAD(BRANCH_NO,4,'0')                               AS INR_ORG_ID              --内部机构编号"
+    },
+    {
+      "line": 34,
+      "text": "       ,''                                                  AS SALE_NET_ID             --销售网点编号"
+    },
+    {
+      "line": 35,
+      "text": "       ,''                                                  AS SEAT_NO                 --席位号"
+    },
+    {
+      "line": 36,
+      "text": "       ,A.FUND_ACCOUNT                                      AS AST_ACCT_AGT_ID         --资产账号"
+    },
+    {
+      "line": 37,
+      "text": "       ,'10201'                                             AS AST_ACCT_AGT_MODIFR     --资产账号修饰符"
+    },
+    {
+      "line": 38,
+      "text": "       ,'NONE'                                              AS EXCH_TYPE_CD            --市场代码"
+    },
+    {
+      "line": 39,
+      "text": "       ,''                                                  AS SRC_TRD_TYPE_CD         --源交易类别代码"
+    },
+    {
+      "line": 40,
+      "text": "       ,NVL(DW_CD_VAL, A.MONEY_TYPE)                        AS CRRC_CD                 --币种代码"
+    },
+    {
+      "line": 41,
+      "text": "       ,LPAD(A.CLIENT_ID,12,'0')                            AS SHR_HOLDER_PTY_ID       --份额持有人编号"
+    },
+    {
+      "line": 42,
+      "text": "       ,''                                                  AS PRD_SUB_TYPE_CD         --产品子类代码"
+    },
+    {
+      "line": 43,
+      "text": "       ,A.ALLOT_NO                                          AS APP_ID                  --申请编号"
+    },
+    {
+      "line": 44,
+      "text": "       ,A.BEGIN_AMOUNT                                      AS BEGN_VOL                --期初份额"
+    },
+    {
+      "line": 45,
+      "text": "       ,A.CURRENT_AMOUNT                                    AS CURR_VOL                --当前份额"
+    },
+    {
+      "line": 46,
+      "text": "       ,''                                                  AS UNCOME_BUY_VOL          --未回买入份额"
+    },
+    {
+      "line": 47,
+      "text": "       ,''                                                  AS UNCOME_SELL_VOL         --未回卖出份额"
+    },
+    {
+      "line": 48,
+      "text": "       ,A.FROZEN_AMOUNT                                     AS FRZ_VOL                 --冻结份额"
+    },
+    {
+      "line": 49,
+      "text": "       ,A.UNFROZEN_AMOUNT                                   AS UNFRZ_VOL               --解冻份额"
+    },
+    {
+      "line": 50,
+      "text": "       ,''                                                  AS DIVD_METHOD_CD          --分红方式代码"
+    },
+    {
+      "line": 51,
+      "text": "       ,''                                                  AS BEF_AFT_FARE_TYPE_CD    --前后收费类型代码"
+    },
+    {
+      "line": 52,
+      "text": "       ,A.BUSINESS_PRICE                                    AS COST_PRIC               --成本价"
+    },
+    {
+      "line": 53,
+      "text": "       ,IF(B.PROD_CODE IS NOT NULL,B.NET_VALUE*A.CURRENT_AMOUNT,C.PAR_VALUE*A.CURRENT_AMOUNT)"
+    },
+    {
+      "line": 54,
+      "text": "                                                            AS REF_MVAL                --参考市值"
+    },
+    {
+      "line": 55,
+      "text": "       ,''                                                  AS ACCUM_BUY_VOL           --累计买入份额"
+    },
+    {
+      "line": 56,
+      "text": "       ,''                                                  AS ACCUM_BUY_AMT           --累计买入金额"
+    },
+    {
+      "line": 57,
+      "text": "       ,''                                                  AS ACCUM_SELL_VOL          --累计卖出份额"
+    },
+    {
+      "line": 58,
+      "text": "       ,''                                                  AS ACCUM_SELL_AMT          --累计卖出金额"
+    },
+    {
+      "line": 59,
+      "text": "       ,A.CHECK_STR                                         AS CHK_STR                 --校验串"
+    },
+    {
+      "line": 60,
+      "text": "       ,A.POSITION_STR                                      AS POS_STR                 --定位串"
+    },
+    {
+      "line": 61,
+      "text": "       ,'RCC'                                               AS DATA_SRC_CD             --数据来源代码"
+    },
+    {
+      "line": 62,
+      "text": "       ,'${filename}'                                  AS TASK_NAME               --任务名"
+    },
+    {
+      "line": 63,
+      "text": "       ,'${data_day_str}'                              AS DATA_ETL_DATE           --数据加载日期"
+    },
+    {
+      "line": 64,
+      "text": "       ,'${data_day_str}'                            AS DATA_UPT_DATE           --数据更新日期"
+    },
+    {
+      "line": 65,
+      "text": "       ,'${data_today}'                                AS DATA_TIME               --数据时间"
+    },
+    {
+      "line": 66,
+      "text": "       ,''                                                  AS Corr_Vol                --修正份额"
+    },
+    {
+      "line": 67,
+      "text": "       ,'${data_day_str}'                              AS BUSI_DATE               --业务日期"
+    },
+    {
+      "line": 68,
+      "text": "       ,'ODATA_N_RCC.A_DERIVSHARE'                          AS SRC_TBL                 --源表"
+    },
+    {
+      "line": 69,
+      "text": "FROM   (SELECT *  FROM ODATA_N_RCC.A_DERIVSHARE WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 70,
+      "text": ""
+    },
+    {
+      "line": 71,
+      "text": "LEFT JOIN (SELECT *  FROM ODATA_N_RCC.H_HIS_DERIVPRICE WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 72,
+      "text": "       ON A.PROD_CODE=B.PROD_CODE AND B.INIT_DATE='${data_day_int}' "
+    },
+    {
+      "line": 73,
+      "text": " "
+    },
+    {
+      "line": 74,
+      "text": "LEFT JOIN(SELECT *  FROM ODATA_N_RCC.P_DERIVPRODCODE WHERE  BUSI_DATE='${data_day_str}' )C"
+    },
+    {
+      "line": 75,
+      "text": "       ON A.PROD_CODE=C.PROD_CODE "
+    },
+    {
+      "line": 76,
+      "text": ""
+    },
+    {
+      "line": 77,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 78,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 79,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 80,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_AGT_HOLD_SHR_H'"
+    },
+    {
+      "line": 81,
+      "text": "            AND TGT_TAB_FLD  = 'Crrc_Cd'"
+    },
+    {
+      "line": 82,
+      "text": "            AND SRC_TAB_NAME = 'OPTHOLD'"
+    },
+    {
+      "line": 83,
+      "text": "            AND SRC_FLD_NAME = 'MONEY_TYPE'"
+    },
+    {
+      "line": 84,
+      "text": "            AND SRC_SYS_NAME='RCC')D"
+    },
+    {
+      "line": 85,
+      "text": "   ON      A.MONEY_TYPE =D.SRC_CD_VAL                  --MONEY_TYPE 转码"
+    },
+    {
+      "line": 86,
+      "text": ""
+    },
+    {
+      "line": 87,
+      "text": ";"
+    },
+    {
+      "line": 88,
+      "text": ""
+    }
+  ]
+}

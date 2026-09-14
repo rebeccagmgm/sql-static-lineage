@@ -1,0 +1,195 @@
+{
+  "task_id": "177928",
+  "observed_at": "2026-09-05T01:07:12.098Z",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_DERI_BOOK_AGT_MAP_REGU("
+    },
+    {
+      "line": 10,
+      "text": "         Src_Book_Agt_Id            STRING COMMENT '源账簿协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "        ,Src_Book_Agt_Modifr        STRING COMMENT '源账簿协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "        ,Tgt_Book_Agt_Id            STRING COMMENT '目标账簿协议编号'"
+    },
+    {
+      "line": 13,
+      "text": "        ,Tgt_Book_Agt_Modifr        STRING COMMENT '目标账协议修饰符'"
+    },
+    {
+      "line": 14,
+      "text": "        ,Sel_Fld_Name               STRING COMMENT '筛选字段名称'"
+    },
+    {
+      "line": 15,
+      "text": "        ,Oper                       STRING COMMENT '运算符号'"
+    },
+    {
+      "line": 16,
+      "text": "        ,Sel_Cond                   STRING COMMENT '筛选条件'"
+    },
+    {
+      "line": 17,
+      "text": "        ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 18,
+      "text": "        ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 19,
+      "text": "        ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 20,
+      "text": "        ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 21,
+      "text": "        ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 22,
+      "text": "        ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 23,
+      "text": "        ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 24,
+      "text": "        ,Src_Book_Map_Id            STRING COMMENT '源账簿映射编号'"
+    },
+    {
+      "line": 25,
+      "text": "    )COMMENT '场外衍生品账簿协议映射规则'"
+    },
+    {
+      "line": 26,
+      "text": "    PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 27,
+      "text": "    STORED AS ORC;"
+    },
+    {
+      "line": 28,
+      "text": ""
+    },
+    {
+      "line": 29,
+      "text": "-- querySql"
+    },
+    {
+      "line": 30,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_DERI_BOOK_AGT_MAP_REGU PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 31,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 32,
+      "text": "    --Group1: Source Table:[ODATA_N_TIT.D_BK_BOOK_MAPPING_RULE:账簿映射条件表] "
+    },
+    {
+      "line": 33,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 34,
+      "text": "    SELECT"
+    },
+    {
+      "line": 35,
+      "text": "         B.KEY_BOOK_ID_FROM                      AS  Src_Book_Agt_Id         --源账簿协议编号  "
+    },
+    {
+      "line": 36,
+      "text": "        ,'20411'                                 AS  Src_Book_Agt_Modifr     --源账簿协议修饰符"
+    },
+    {
+      "line": 37,
+      "text": "        ,B.KEY_BOOK_ID_TO                        AS  Tgt_Book_Agt_Id         --目标账簿协议编号"
+    },
+    {
+      "line": 38,
+      "text": "        ,'20411'                                 AS  Tgt_Book_Agt_Modifr     --目标账协议修饰符"
+    },
+    {
+      "line": 39,
+      "text": "        ,A.COLUMN_NAME                           AS  Sel_Fld_Name            --筛选字段名称    "
+    },
+    {
+      "line": 40,
+      "text": "        ,A.OPERATOR                              AS  Oper                    --运算符号        "
+    },
+    {
+      "line": 41,
+      "text": "        ,A.CONDITION                             AS  Sel_Cond                --筛选条件        "
+    },
+    {
+      "line": 42,
+      "text": "        ,A.REMARK                                AS  Remark                  --备注            "
+    },
+    {
+      "line": 43,
+      "text": "        ,'${data_src_cd}'                   AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 44,
+      "text": "        ,'${filename}'                      AS  Task_Name               --任务名"
+    },
+    {
+      "line": 45,
+      "text": "        ,'${data_day_str}'                  AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 46,
+      "text": "        ,'${data_day_str}'                  AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 47,
+      "text": "        ,'${data_today}'                    AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 48,
+      "text": "        ,'${src_table}'                     AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 49,
+      "text": "        ,KEY_BOOK_MAPPING_ID                     AS  Src_Book_Map_Id         --源账簿映射编号"
+    },
+    {
+      "line": 50,
+      "text": "    FROM (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' ) A"
+    },
+    {
+      "line": 51,
+      "text": "    INNER JOIN (SELECT * FROM ODATA_N_TIT.D_BK_BOOK_MAPPING WHERE BUSI_DATE='${data_day_str}' ) B"
+    },
+    {
+      "line": 52,
+      "text": "            ON A.KEY_BOOK_MAPPING_ID=B.ID"
+    },
+    {
+      "line": 53,
+      "text": "    ;"
+    },
+    {
+      "line": 54,
+      "text": ""
+    }
+  ],
+  "payload_sha256": "3391b5f71dd8df40df1ab1255977fd31694a9d16b76a23d5f174fda219919953"
+}

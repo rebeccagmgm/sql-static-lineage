@@ -1,0 +1,1496 @@
+{
+  "source": "../sql-static-lineage-cache/schedule-evidence/tasks-sqlite/schedule-evidence.sqlite",
+  "queriedAt": "2026-09-14T02:43:56.060Z",
+  "criterion": "SQL全文字面包含 t10_；仅候选，不等于语义读写或已精读",
+  "total": 93,
+  "coreCount": 11,
+  "entries": [
+    {
+      "task_id": "100110",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "40dd96c0a29e1fb998edee8954431829f8718bb5e958be5ca788f49ff3511f8e",
+      "chars": 13467,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.ecif_err_cust_info_add_s",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "106753",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "90afc03d99d043fe8c5a72590e41cf023720f2210e8b2c4cb6d4f59133aa61b5",
+      "chars": 9130,
+      "coreAsset": false,
+      "task": {
+        "task_name": "pdata_ams.t10_bond_valution_kxc",
+        "topic": "DM_AMS_BETA"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "201313",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "c306500eac92529687180e1c1681df432397f4418f5a516ba618473f2e5daefc",
+      "chars": 11452,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_cs_org_cust_base_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "204556",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "6c8c7f741d482a7fd95a53530152b87798d4eaebe371d2c32730c95e5f1cf132",
+      "chars": 52542,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_psn",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "205091",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "086127a7f1b2c7f8c6a7029d50c8fd7d55299300467f9425e694fde0d56abed1",
+      "chars": 149721,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_org",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "205221",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "09c889a190c4e1c22c7036a6cb8c33b9614070532afdaf7fac5e8ac7476f5715",
+      "chars": 4277,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_repsn",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "205793",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "ba460bf7dc9257a64ef3af21694c8517bb6307a497df08863e0303e493d14e9e",
+      "chars": 16755,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_reorg",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "208640",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "49ee23b38b974ed0488ac9d308d1e71a0be516aec89c18ac4b4d30dcb2d42460",
+      "chars": 6710,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_reall",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "209905",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "d8109167e98158f2df7e93f6ee8047e9f7ec9e19fab0102390dd4982da41bce0",
+      "chars": 22585,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_data_compare_detail_all",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "213505",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "fb19c4053258ce72c3117d9201ed37395abdf0b66d783184d892788443e3ebcf",
+      "chars": 15410,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_peval_result_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "45408",
+      "evidence_type": "hive-target-ddl",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "454f29539e2e4535315b5ae22a26954c3e81c15229df352a85cd93ec12092a3c",
+      "chars": 1929,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_n_hfm.g_cux_ebs_gl_balances_f",
+        "topic": "odata_n_hfm"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "50214",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T03:20:29.844Z",
+      "content_sha256": "7651bd8814ec020ee41f0ef34fcf4a1b2684858501c8852bc943425c30d377b4",
+      "chars": 54937,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_ppos_lhsm_cptj_wb",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "72270",
+      "evidence_type": "hive-target-ddl",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "6c9a3776227ffaee520a5cbc0e1d0de0a9033252d19181d9708cd34c3c940ecd",
+      "chars": 764,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_ecif.ecif_e_t10_err_cust_cert_info_s",
+        "topic": "ODATA_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "72322",
+      "evidence_type": "hive-target-ddl",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "c0282b25064f2508e07c0da613577f687ec97895fb1645ec4e1b582327e705d5",
+      "chars": 596,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_ecif.ecif_e_t10_data_compare_detail_temp",
+        "topic": "ODATA_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "72665",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T02:30:12.508Z",
+      "content_sha256": "66d3a9d173a26b289a38ef857b48739d90f7ed5c168483c2b9ca60752ed3d188",
+      "chars": 391,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_ecif.ecif_e_t10_data_compare_detail_s",
+        "topic": "ODATA_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "236113",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "97aa22b7ca456573e5a14c74baf8ab75bf884bc38c95fab92660bc0e77699bdd",
+      "chars": 9822,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_EMP_RELA_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_emp_rela_h_fam001"
+      ],
+      "file": "SQL/236113.sql"
+    },
+    {
+      "task_id": "207121",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T04:37:46.754Z",
+      "content_sha256": "0ad0645ec033023217444c14074df4ec05619bf91faf9853e7b59b09cb7994aa",
+      "chars": 22070,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_uid_org_pt10_data_compare",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "212620",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-04T04:37:46.754Z",
+      "content_sha256": "f180598f1ad9d444f01b482d3dca258d346a016c8386a75ee066162995a0e3ae",
+      "chars": 54220,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_uid_prod_pt10_data_compare",
+        "topic": "DM_ECIF"
+      },
+      "tables": [
+        "temp_n.t10_data_compare_detail"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "236109",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "8a374f3e907d779d7f1dd01fa34b9c6063abc963b472d709be66e7c0806c47fc",
+      "chars": 25026,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_INFO_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_info_fam001"
+      ],
+      "file": "SQL/236109.sql"
+    },
+    {
+      "task_id": "236110",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "60f9ad7540112f4a66e71a16bc369f74ce25db863a1efdf3394687c30271cd5a",
+      "chars": 12761,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_STAT_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_stat_h_fam001"
+      ],
+      "file": "SQL/236110.sql"
+    },
+    {
+      "task_id": "236111",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "7f4d7aa968101abfbb7e56178460f35f767dafe56f53a0ad257f4ef67d26f56f",
+      "chars": 11549,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_PLAC_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_plac_h_fam001"
+      ],
+      "file": "SQL/236111.sql"
+    },
+    {
+      "task_id": "236114",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "4ce803e3b7b0dbda36a84ebf2adb5003368a803f5c846089934fb3082cd8b3aa",
+      "chars": 17160,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_IDTY_INFO_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_idty_info_h_fam001"
+      ],
+      "file": "SQL/236114.sql"
+    },
+    {
+      "task_id": "236115",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "594a03bfdc6c7d425a7e6e811fb4b060e6ee162d516a601fa76aae21d7cb1d1b",
+      "chars": 9704,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_AST_BOOK_RELA_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_ast_book_rela_h_fam001"
+      ],
+      "file": "SQL/236115.sql"
+    },
+    {
+      "task_id": "236116",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "2f3f0296ceba828ff4605a7bc016e1e800c65ef0d16d7b448bd09a7584cf2a7c",
+      "chars": 16023,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_LKMAN_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_lkman_h_fam001"
+      ],
+      "file": "SQL/236116.sql"
+    },
+    {
+      "task_id": "236117",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "da6bf943149bdad24f1255a9aa45fa58a1f98d9d50524b4704771422b7cdd8b2",
+      "chars": 11581,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_CLAS_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_clas_h_fam001"
+      ],
+      "file": "SQL/236117.sql"
+    },
+    {
+      "task_id": "236118",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "a7dfc15b3410564785deefea51600556fc678f999da64e3861539320d78aae4b",
+      "chars": 12837,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_INR_ORG_RELA_H_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_inr_org_rela_h_fam001"
+      ],
+      "file": "SQL/236118.sql"
+    },
+    {
+      "task_id": "236119",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "0a0b41bf23366fd2db260067aed84a99e1eb8ac4bda27e421f35c1f94a278955",
+      "chars": 9144,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_OUR_FIX_AST_ADTNL_INFO_FAM001",
+        "topic": "EDW_AST"
+      },
+      "tables": [
+        "pdata_n.t10_our_fix_ast_adtnl_info_fam001"
+      ],
+      "file": "SQL/236119.sql"
+    },
+    {
+      "task_id": "133287",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "12ac041c687ac6b717de096bbc45ea6bae46789cbb366a2c053e497d32552225",
+      "chars": 2406,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.ecrm_cust_cert_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "201287",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "42a493c7798e4613906f7979df9dd52f0b8496033227b527456527f988b28bd3",
+      "chars": 8764,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.s_err_prod_mana_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "207684",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "d51f9c06269a7d0e750be8628cc673dfa318d58d56467d48106ac558540ab99e",
+      "chars": 10988,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_info_item_change_regist",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "207750",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "53c7fbb9dd3f4e50eeea11b72a62ef99d2c1100bf1f454a45f75fef26c078c58",
+      "chars": 7978,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_cust_first_page",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "209798",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "23da7032cd178c602ed88343f91bf6198d5921c2ae6b3e76ab8d57a688fdb152",
+      "chars": 65308,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_uid_prod_otr_cs_prod_clean",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "209925",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "9e6eaa181ee3857802a0b557c34322e8bafd2ad19ddd92ede965c395c67e8188",
+      "chars": 15018,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_busin_otr_compare_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "211028",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "ce6edc0b688aa317f370a1eacfe2c4480243b392796f19de00a19b2f49364ea5",
+      "chars": 21082,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_uid_prod_otr_cs_prod_clean_fnc",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "213429",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "cf498e5fca4c6a1173e16d7a07edbb0b950d85268f0a85300423da8af3b31662",
+      "chars": 17616,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_proc_cust_info_count",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "216159",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "d133d2807ff9fca9f30302031d09b9bc663a1b9960014e67371a98fc0d388482",
+      "chars": 18817,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.proc_pt10_err_prod_no_info",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "236112",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "88a584caffbd71996c781dce7b1e5c1ea2f89c9e7ddc9a686a85749869f5ff42",
+      "chars": 9437,
+      "coreAsset": true,
+      "task": {
+        "task_name": "PDATA_N.T10_AST_ADDR_H_FAM001",
+        "topic": "BD_S_TEST"
+      },
+      "tables": [
+        "pdata_n.t10_ast_addr_h_fam001",
+        "temp.t10_ast_addr_h_temp_fam001",
+        "temp.t10_ast_addr_h_mid_fam001"
+      ],
+      "file": "SQL/236112.sql"
+    },
+    {
+      "task_id": "32019",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "ece0c088413a0d22127b7a171698117ec7fb9abc854b3827e3e4bfc57bab4dde",
+      "chars": 6649,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t02_prod_expense",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "32287",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "41992f8cc5d33f88fb83dbbc54d93bf8f680abc89f062e059307eda84dd6a282",
+      "chars": 17806,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_profit",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "32392",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "15e0f3776a995acaf7c0a134ec0dbec59b04402220cc67f1c2d116b7005111ce",
+      "chars": 17485,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_comp_profit",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "32523",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "f8955359eac253eb19079a5d5b4a1e5a2d392265a3473d311929dcdb8d9195f6",
+      "chars": 10549,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t02_bond_valuation",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "32830",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "07956ecb1e9c8cd082055de70d63729d897ccfc42e247fc3662b3a010bff63cf",
+      "chars": 14200,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_prod_valution_detail",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "32832",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "782f582dc0d3872f46381862da98a47417fe4f14a0364fccb8bd2d6cc6f451f1",
+      "chars": 40010,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.c02_prod_hold_summary",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "33112",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "fcf12692974452e090d5e5a8cd47046717c469ef923eee37587f6c97356fbd6f",
+      "chars": 4286,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_prod_fee_amt",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_voucher"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "33333",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "689bf791cfaf1e9c8d3f199aa19147d0ac3365e185baf84ca54e91a47505c011",
+      "chars": 2454,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_prod_voucher_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "33339",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "fcca91dc5cfbc1c46f29e19e7edef9799a4c767fe33381b6e74ba16743d657a0",
+      "chars": 7281,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_prod_voucher",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "34802",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "529c8623b575c66f32ef571f03587bebbfa6e8641f5d2dc45623abd3924cf6a1",
+      "chars": 13926,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_profit_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "34840",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "3f445c8361d551bf75ecebc74e1e520a685eb62439052f8a2220ad0a9015c4e4",
+      "chars": 7938,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_prod_valution_detail_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "34842",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "bf68e78137e1cb642822eb0a69a2953aebd303cc2da9e6ad7c71b83a1b56e9bd",
+      "chars": 18144,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.c02_prod_hold_summary_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "41375",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "dbe9d5032b75af0697dd08a88ec1979dacd56b7ed2a0e535ae8ef222f4e8edb9",
+      "chars": 8816,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_ppos_fqljdwjz",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_voucher"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "41996",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "1eb4f2722b989e58e8e82f64876484ead75216757148db458b0ae1a48c8f78ae",
+      "chars": 13020,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_balancesheet",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "42103",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "c336501df95918f67819a211c46724fdddedb170b3342f087b869abfaec9e841",
+      "chars": 57007,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_ppos_nmzcfz",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance",
+        "gf_rcp.t10_balancesheet"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "42191",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "31a8519719ce74ae585adebb68df0ebac524a9606a803746e2d2c29cab2ccb22",
+      "chars": 6842,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_subj_balance",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "42239",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "c1ae8a0e2401970dc2d61aaae9b528ed47615b9470ce89c1456dd0698f797019",
+      "chars": 18500,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_ppos_ndlr",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_profit",
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "42795",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "ef8ab993337524dc76db82c3071609423a4b5f961bb2c72398ac3b998760dc93",
+      "chars": 5628,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_acsyss_y5_zczh",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "43439",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "224fb957afb89a2c9790f806ee3b445044d707bc4cf6292b0e0d1a78321cea1e",
+      "chars": 22213,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.c02_prod_ass_portfolio_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "43501",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "85fbb65fd1bb6dc13aca01d9484d356e419c6d0293a33c97d715a8bbe68727d4",
+      "chars": 16467,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_cashflow",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "43504",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "b8343dd0b3497306d6f76111461a55f95c960925ebc91dfbad59ba3e9ec4b22c",
+      "chars": 5145,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_api_ppos_ndxjll",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_cashflow"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "44673",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "5bb08816f2e1045a91b84b73abe95608e66ef29cd1c0d03865e622a32a77c3a6",
+      "chars": 7027,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_nsh_zcpz",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "44698",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "d9d9a74f5de233e47d7889222b3f3fa3b55116f9d772178b48c8c23cbb49174a",
+      "chars": 5754,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_nsh_top_zc",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "44718",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "131fbb9be35afeb3f60dd78a5d1da6633e6c45ed10d7c27224cf96e621d76d6f",
+      "chars": 22023,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_nsh_zcfz",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_balancesheet",
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "45558",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "7f715fc1d5609c9a365fcf63abad4771ecbe5b579436aa3c0194146fde35917a",
+      "chars": 2466,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_subj_balance_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "46737",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "efb100e2f22559ca9dc279b9824d87ba66472faaa9b80c2f7cbb9cb051369d2b",
+      "chars": 15687,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.mid_t10_balancesheet_01",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "46748",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "3b43e3d5094772aa8c6bfcc9b94a5e00525ebdfe6919b2c731bda70d9a2248eb",
+      "chars": 10337,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.mid_t10_balancesheet_02",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "48032",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "b5e3f809af99246a601ef9c3bae2ec9dff504a2dc1d45b4b3f27b1c28e8c9cd7",
+      "chars": 15636,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_tzzqk",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance",
+        "gf_rcp.t10_subj_balance_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "48392",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "2d0e332e95722fbe51491c862fb3c9c9c5fb92f1ade3db78ffb641799361727b",
+      "chars": 6114,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_balancesheet_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "49261",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "9a5ab6ea0a11651d755ef25f963aaacc4de62dc8050fa6d417c4cccbd47aa64a",
+      "chars": 8070,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_cpyjxx_wb",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_balancesheet"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "49377",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "be65decc58863aecf25db57211bfb6a63b1e3dedc3e370621431790ff65a34a4",
+      "chars": 6869,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_cpyjxx_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_balancesheet_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "51496",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "e66d559fbd5cd02de010e2fcfe3245b5a629ca178a62635dfc5db86817250c38",
+      "chars": 7397,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_khzb_qttz",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "58306",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "e78b5707b2549d9be64baa7630b1c5e39b0ecb9fafe7ee1b093fddac7e6a8259",
+      "chars": 6593,
+      "coreAsset": false,
+      "task": {
+        "task_name": "fz_gf_dcp.d04_rep_nsh_zcpz",
+        "topic": "GF_DCP_TEST"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "67903",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "e8c955284fb056fbab33e0c4140e1cafccfdeb4fbcf7e1859625292207c22316",
+      "chars": 1368,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_n_hfm.g_cux_ebs_gl_balances_f",
+        "topic": "odata_n_hfm"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "78691",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "dc4e736fb7f11af0655661f9123be69fe7caedc5c3dfffb4bbb1dd659da394d6",
+      "chars": 2149,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_zzsxx",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "78722",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "529bdc475fc331d64f43cf6d2583fd634cb5d276f280b10dad336f56e40a7cd4",
+      "chars": 2234,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_zzsxx_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "78852",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "2b46ca7c402a8dfc7e63513b7ba61d33f4387f315686d7115b630762bdb946c7",
+      "chars": 2515,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_gpccfl",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "78888",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "431410d730aa0b36310dcc43a695efd3ce2703d5c0fe63d4804d9a9e4f2db8aa",
+      "chars": 2524,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_gpccfl_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "79069",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "77705f0999745dfa6f9c831dc2486e704d0cbddc7337b9d7c8c52a3e70c25099",
+      "chars": 1909,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_gzbty",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "79083",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "b48884373038725d3165422863f5a59fee8cdd3454b1dd3b1be514c36d426f15",
+      "chars": 2021,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_gzbty_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_prod_valution_detail_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "79192",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "868f80edda32abe82c095641d86a31e825710095e4ef2991ad15bbb4405216db",
+      "chars": 5440,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_kmyebty",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "79367",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "1d0862fd9b68a8f53df8690f4ff4328bcf3f58bbb2718752085871b4b973f606",
+      "chars": 5504,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d05_kmyebty_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "86338",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T01:17:09.959Z",
+      "content_sha256": "6452f6c3b37a674fdcaf7fa950efc66fb68b4a6ada2621f9e71f0e88aa86b3bf",
+      "chars": 2826,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.ecif_err_cust_certinfo_s",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "216494",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T03:20:29.844Z",
+      "content_sha256": "f382e631bab0e1af09a3f583f433e29229790a70b01763f9f4551b7f0bd13ce1",
+      "chars": 107067,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_fii_test.prd_fnd_perf_dtl",
+        "topic": "DM_FII_TEST"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "221485",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T03:20:29.844Z",
+      "content_sha256": "7ece3b10fca77d71487c9012d9e5192ed942c7ad8b27bd5f5be3625ec1c064d6",
+      "chars": 125040,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_fii_n.prd_fnd_rsrc_fnd_indx",
+        "topic": "DM_FII_N"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "221489",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T03:20:29.844Z",
+      "content_sha256": "77b670baf95d46400fceeaadba8a7f5eb0d3b6dd789087a796837fa5440a8550",
+      "chars": 107065,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_fii_n.prd_fnd_perf_dtl",
+        "topic": "DM_FII_N"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "74114",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T03:20:29.844Z",
+      "content_sha256": "b4a1e52fcadc5a69788bc95d91e2624c65667c29a0b9aae13cb803369e0e05a3",
+      "chars": 1582,
+      "coreAsset": false,
+      "task": {
+        "task_name": "dm_ecif.ecif_count_busi_pg_s",
+        "topic": "DM_ECIF"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "111408",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "ffdb059d830a954476aad900d5189e9512ca29aba746d12c0f72d1358bee6a06",
+      "chars": 14786,
+      "coreAsset": false,
+      "task": {
+        "task_name": "pdata_ams.t10_balancesheet_zg_kxc",
+        "topic": "DM_AMS_BETA"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "185155",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "e41a36017e4263123b6b1a264e2dea4b425f09882c09cbc79a2944589fef6754",
+      "chars": 12914,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_dcp.rep_mkt_03_gs_smjj_tg",
+        "topic": "GF_DCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "186701",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "c257db9a716567e3b9767382e45cdd7b41510c6ba16302c909e8ad744e632cc6",
+      "chars": 8912,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_dcp.rep_mkt_03_gs_smjj_tg_jy",
+        "topic": "GF_DCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "32390",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "cf9855a7b7f95c09be7df91041c92f86fa7698dcc35a06a01bab689763ccbd62",
+      "chars": 18751,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.t10_comp_cashflow",
+        "topic": "GF_RCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "46307",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "55c65156393e3c3a598614b4be96d3162263933fe51ee05acc46cb4886fc176a",
+      "chars": 12975,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_gs_smjj_tg",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "46318",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T06:45:38.728Z",
+      "content_sha256": "ec5774e7cc404725e8b5333958d4cbf6b13902727fce35273adf276c1b383429",
+      "chars": 7619,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_rcp.d04_rep_gs_smjj_tg_jy",
+        "topic": "GF_RCP"
+      },
+      "tables": [
+        "gf_rcp.t10_subj_balance_tg"
+      ],
+      "file": null
+    },
+    {
+      "task_id": "220435",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T07:55:37.686Z",
+      "content_sha256": "f412883abf71fc2a5253f262010717c31c02ee55785484b6e183212a54af2dd7",
+      "chars": 9886,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_dcp.rep_mkt_03_gs_smjj_tg_gd",
+        "topic": "GF_DCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "220441",
+      "evidence_type": "hive-task",
+      "observed_at": "",
+      "imported_at": "2026-09-05T07:55:37.686Z",
+      "content_sha256": "593b00d59ba2a400c495170796ec0bbf1f9b772a8e214ea095b0723260be77f5",
+      "chars": 9377,
+      "coreAsset": false,
+      "task": {
+        "task_name": "gf_dcp.rep_mkt_03_gs_smjj_tg_jy_gd",
+        "topic": "GF_DCP"
+      },
+      "tables": [],
+      "file": null
+    },
+    {
+      "task_id": "6038",
+      "evidence_type": "hive-target-ddl",
+      "observed_at": "",
+      "imported_at": "2026-09-06T10:12:12.222Z",
+      "content_sha256": "ae331cc53c75b0f3f0fa9873b9a601c03a35ceae98e78fa0524ecca4cea69c80",
+      "chars": 1852,
+      "coreAsset": false,
+      "task": {
+        "task_name": "odata_erp.erp_l_gl_summary_templates",
+        "topic": "ODATA_ERP"
+      },
+      "tables": [],
+      "file": null
+    }
+  ]
+}

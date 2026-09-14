@@ -1,0 +1,3043 @@
+{
+  "task_id": 216975,
+  "observed_at": "2026-09-05T01:07:23.990Z",
+  "payload_sha256": "e959888aa8e52879c1e3accbf83e07271f372e880ad5bf276c58a744d002b0a5",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "create table if not exists t98_otc_deri_cust_ecr"
+    },
+    {
+      "line": 10,
+      "text": "("
+    },
+    {
+      "line": 11,
+      "text": "    row_id                        string comment '行id',"
+    },
+    {
+      "line": 12,
+      "text": "    client_id                     string comment '客户编号',"
+    },
+    {
+      "line": 13,
+      "text": "    pty_cate                      string comment '客户类别',"
+    },
+    {
+      "line": 14,
+      "text": "    pvc_type                      string comment '专业投资者类型',"
+    },
+    {
+      "line": 15,
+      "text": "    signature_name                string comment '代签产品名称',"
+    },
+    {
+      "line": 16,
+      "text": "    CORPORATE_NAME                string comment '公司名称',"
+    },
+    {
+      "line": 17,
+      "text": "    unifiedsocial_code            string comment '统一社会信用代码',"
+    },
+    {
+      "line": 18,
+      "text": "    indt_name                     string comment '行业名称',"
+    },
+    {
+      "line": 19,
+      "text": "    scope_business                string comment '经营范围',"
+    },
+    {
+      "line": 20,
+      "text": "    risk_level                    string comment '风险等级',"
+    },
+    {
+      "line": 21,
+      "text": "    reg_cptl                      string comment '注册资本（万元）',"
+    },
+    {
+      "line": 22,
+      "text": "    start_date                    string comment '成立日期',"
+    },
+    {
+      "line": 23,
+      "text": "    end_date                      string comment '终止日期',"
+    },
+    {
+      "line": 24,
+      "text": "    setup_date                    string comment '成立日期',"
+    },
+    {
+      "line": 25,
+      "text": "    id_kind                       string comment '证件类型',"
+    },
+    {
+      "line": 26,
+      "text": "    reg_cty_cd                    string comment '注册国家编码(如CHN)',"
+    },
+    {
+      "line": 27,
+      "text": "    reg_cty                       string comment '注册国家',"
+    },
+    {
+      "line": 28,
+      "text": "    nature_desc                   string comment '公司性质',"
+    },
+    {
+      "line": 29,
+      "text": "    aptitude                      string comment '资质',"
+    },
+    {
+      "line": 30,
+      "text": "    cptl_attr                     string comment '资本属性',"
+    },
+    {
+      "line": 31,
+      "text": "    TAX_IDENTITY_CATE             string comment '税收居民身份',"
+    },
+    {
+      "line": 32,
+      "text": "    public_related                STRING COMMENT '是否上市公司关联',"
+    },
+    {
+      "line": 33,
+      "text": "    public_stock_code             STRING COMMENT '上市公司股票代码',"
+    },
+    {
+      "line": 34,
+      "text": "    client_type                   STRING COMMENT '客户类型',"
+    },
+    {
+      "line": 35,
+      "text": "    client_type_desc              STRING COMMENT '客户类型描述',"
+    },
+    {
+      "line": 36,
+      "text": "    secondray_trader              STRING COMMENT '二级交易商id',"
+    },
+    {
+      "line": 37,
+      "text": "    secondray_trader_name         STRING COMMENT '二级交易商名称',"
+    },
+    {
+      "line": 38,
+      "text": "    prod_code                     STRING COMMENT '产品代码',"
+    },
+    {
+      "line": 39,
+      "text": "    prod_type_desc                STRING COMMENT '产品类型描述',"
+    },
+    {
+      "line": 40,
+      "text": "    prod_type_other               STRING COMMENT '其他产品类型',"
+    },
+    {
+      "line": 41,
+      "text": "    product_estab_date            STRING COMMENT '产品成立日期',"
+    },
+    {
+      "line": 42,
+      "text": "    prod_end_date                 STRING COMMENT '产品结束日期',"
+    },
+    {
+      "line": 43,
+      "text": "    prod_public_related           STRING COMMENT '产品是否上市公司关联',"
+    },
+    {
+      "line": 44,
+      "text": "    prod_public_stock_code        STRING COMMENT '产品上市公司股票代码',"
+    },
+    {
+      "line": 45,
+      "text": "    prod_record_date              STRING COMMENT '产品备案日期',"
+    },
+    {
+      "line": 46,
+      "text": "    product_asset                 STRING COMMENT '产品资产',"
+    },
+    {
+      "line": 47,
+      "text": "    basic_host_agency             STRING COMMENT '托管机构',"
+    },
+    {
+      "line": 48,
+      "text": "    fund_manager_tel              STRING COMMENT '基金经理电话',"
+    },
+    {
+      "line": 49,
+      "text": "    advisor_name                  STRING COMMENT '顾问名称',"
+    },
+    {
+      "line": 50,
+      "text": "    advisor_cert_type             STRING COMMENT '顾问证件类型',"
+    },
+    {
+      "line": 51,
+      "text": "    advisor_cert_no               STRING COMMENT '顾问证件号码',"
+    },
+    {
+      "line": 52,
+      "text": "    fund_manager                  STRING COMMENT '基金经理',"
+    },
+    {
+      "line": 53,
+      "text": "    benefit_over_flag             STRING COMMENT '受益所有人标志',"
+    },
+    {
+      "line": 54,
+      "text": "    aml_monitor_flag              STRING COMMENT '反洗钱监控标志',"
+    },
+    {
+      "line": 55,
+      "text": "    client_qualify_review         STRING COMMENT '客户资格审核',"
+    },
+    {
+      "line": 56,
+      "text": "    client_qualify_review_des     STRING COMMENT '客户资格审核描述',"
+    },
+    {
+      "line": 57,
+      "text": "    early_term_flow_date          STRING COMMENT '提前终止流程日期',"
+    },
+    {
+      "line": 58,
+      "text": "    is_china_security_easy_sign   STRING COMMENT '是否中国证券易签',"
+    },
+    {
+      "line": 59,
+      "text": "    is_our_company_template       STRING COMMENT '是否我司模板',"
+    },
+    {
+      "line": 60,
+      "text": "    is_valid_single_file          STRING COMMENT '是否有效单文件',"
+    },
+    {
+      "line": 61,
+      "text": "    no_auto_visit                 STRING COMMENT '是否禁止自动访问',"
+    },
+    {
+      "line": 62,
+      "text": "    return_visit_date             STRING COMMENT '回访日期',"
+    },
+    {
+      "line": 63,
+      "text": "    chat_room_name                STRING COMMENT '聊天室名称',"
+    },
+    {
+      "line": 64,
+      "text": "    trs_chat_room_name            STRING COMMENT '交易聊天室名称',"
+    },
+    {
+      "line": 65,
+      "text": "    margin_type                   STRING COMMENT '保证金类型',"
+    },
+    {
+      "line": 66,
+      "text": "    client_qualify_review_reason  STRING COMMENT '客户资格审核原因',"
+    },
+    {
+      "line": 67,
+      "text": "    option_product_quality_reason STRING COMMENT '期权产品质量原因',"
+    },
+    {
+      "line": 68,
+      "text": "    emsx_originate_trader_firm    STRING COMMENT 'EMSX发起交易商公司',"
+    },
+    {
+      "line": 69,
+      "text": "    master_agreement_date         STRING COMMENT '主协议日期',"
+    },
+    {
+      "line": 70,
+      "text": "    allow_busi_type               STRING COMMENT '允许业务类型',"
+    },
+    {
+      "line": 71,
+      "text": "    swap_include_dma              STRING COMMENT '互换包含DMA',"
+    },
+    {
+      "line": 72,
+      "text": "    partial_margin_flag           STRING COMMENT '部分保证金标志',"
+    },
+    {
+      "line": 73,
+      "text": "    margin_business_limit_flag    STRING COMMENT '保证金业务限制标志',"
+    },
+    {
+      "line": 74,
+      "text": "    operator                      STRING COMMENT '操作人',"
+    },
+    {
+      "line": 75,
+      "text": "    introduction_operator         STRING COMMENT '介绍人',"
+    },
+    {
+      "line": 76,
+      "text": "    introduction_department       STRING COMMENT '介绍部门',"
+    },
+    {
+      "line": 77,
+      "text": "    termof_investment             STRING COMMENT '投资期限',"
+    },
+    {
+      "line": 78,
+      "text": "    abbreviation                  STRING COMMENT '简称',"
+    },
+    {
+      "line": 79,
+      "text": "    name_abbreviation             STRING COMMENT '名称缩写',"
+    },
+    {
+      "line": 80,
+      "text": "    premium_margin_ratio          STRING COMMENT '溢价保证金比例',"
+    },
+    {
+      "line": 81,
+      "text": "    aml_risk_level                STRING COMMENT '反洗钱风险等级',"
+    },
+    {
+      "line": 82,
+      "text": "    is_credited                   STRING COMMENT '是否授信',"
+    },
+    {
+      "line": 83,
+      "text": "    concern_flag                  STRING COMMENT '关注标志',"
+    },
+    {
+      "line": 84,
+      "text": "    valid_flag                    STRING COMMENT '有效标志',"
+    },
+    {
+      "line": 85,
+      "text": "    related_party_flag            STRING COMMENT '关联方标志',"
+    },
+    {
+      "line": 86,
+      "text": "    grant_balance                 STRING COMMENT '授信余额',"
+    },
+    {
+      "line": 87,
+      "text": "    grant_balance_expire_date     STRING COMMENT '授信余额到期日',"
+    },
+    {
+      "line": 88,
+      "text": "    firm_name                     STRING COMMENT '公司名称',"
+    },
+    {
+      "line": 89,
+      "text": "    audit_status                  STRING COMMENT '审核状态',"
+    },
+    {
+      "line": 90,
+      "text": "    lei_code                      STRING COMMENT 'LEI代码',"
+    },
+    {
+      "line": 91,
+      "text": "    protocol_type                 STRING COMMENT '协议类型',"
+    },
+    {
+      "line": 92,
+      "text": "    exchange_report_flag          STRING COMMENT '交易所报告标志',"
+    },
+    {
+      "line": 93,
+      "text": "    master_agreement_id           STRING COMMENT '主协议ID',"
+    },
+    {
+      "line": 94,
+      "text": "    master_agreement_id_both      STRING COMMENT '主协议ID双方',"
+    },
+    {
+      "line": 95,
+      "text": "    report_status                 STRING COMMENT '报告状态',"
+    },
+    {
+      "line": 96,
+      "text": "    agreement_signing_date        STRING COMMENT '协议签署日期',"
+    },
+    {
+      "line": 97,
+      "text": "    supplement_agreement_id       STRING COMMENT '补充协议ID',"
+    },
+    {
+      "line": 98,
+      "text": "    supplement_agreement_id_both  STRING COMMENT '补充协议ID双方',"
+    },
+    {
+      "line": 99,
+      "text": "    supplement_report_status      STRING COMMENT '补充报告状态',"
+    },
+    {
+      "line": 100,
+      "text": "    fill_role                     STRING COMMENT '填写角色',"
+    },
+    {
+      "line": 101,
+      "text": "    rpt_prodcode                  STRING COMMENT '报告产品代码',"
+    },
+    {
+      "line": 102,
+      "text": "    product_report_status         STRING COMMENT '产品报告状态',"
+    },
+    {
+      "line": 103,
+      "text": "    list_attribute                STRING COMMENT '列表属性',"
+    },
+    {
+      "line": 104,
+      "text": "    reg_addr                      STRING COMMENT '注册地址',"
+    },
+    {
+      "line": 105,
+      "text": "    reg_prov                      STRING COMMENT '注册省份',"
+    },
+    {
+      "line": 106,
+      "text": "    reg_city                      STRING COMMENT '注册城市',"
+    },
+    {
+      "line": 107,
+      "text": "    ofc_addr                      STRING COMMENT '办公地址',"
+    },
+    {
+      "line": 108,
+      "text": "    ofc_prov                      STRING COMMENT '办公省份',"
+    },
+    {
+      "line": 109,
+      "text": "    ofc_city                      STRING COMMENT '办公城市',"
+    },
+    {
+      "line": 110,
+      "text": "    big_client                    STRING COMMENT '是否大客户',"
+    },
+    {
+      "line": 111,
+      "text": "    apro_date                     STRING COMMENT '批准日期',"
+    },
+    {
+      "line": 112,
+      "text": "    fiid                          STRING COMMENT '记录准入流程id',"
+    },
+    {
+      "line": 113,
+      "text": "    ecrm_flow_id                  STRING COMMENT 'ecrm的准入流程id',"
+    },
+    {
+      "line": 114,
+      "text": "    evaluation_email              STRING COMMENT '估值接收邮箱',"
+    },
+    {
+      "line": 115,
+      "text": "    aml_monitor_flag_org          STRING COMMENT '是否存在服务关系（机构表中）',"
+    },
+    {
+      "line": 116,
+      "text": "    start_date_org                STRING COMMENT '有效期开始日',"
+    },
+    {
+      "line": 117,
+      "text": "    end_date_org                  STRING COMMENT '有效期结束日',"
+    },
+    {
+      "line": 118,
+      "text": "    swap_single_stamp_effective        STRING COMMENT '互换单章生效',"
+    },
+    {
+      "line": 119,
+      "text": "    trade_confirmation_stamp_priority  STRING COMMENT '盖章方式优先',"
+    },
+    {
+      "line": 120,
+      "text": "    customer_manager                   STRING COMMENT '客户经理',"
+    },
+    {
+      "line": 121,
+      "text": "    customer_manager_org               STRING COMMENT '所属分公司',"
+    },
+    {
+      "line": 122,
+      "text": "    restore_service_relationship_date  STRING COMMENT '交易权限管理_恢复服务关系时间',"
+    },
+    {
+      "line": 123,
+      "text": "    admit_date                         string comment '准入日期',"
+    },
+    {
+      "line": 124,
+      "text": "    review_buffer_end                  string comment '缓冲期到期日',"
+    },
+    {
+      "line": 125,
+      "text": "    daily_monitor_margin_trade         string comment '是否仅开展逐日盯市履保交易',"
+    },
+    {
+      "line": 126,
+      "text": "    create_time                        string comment '创建时间',"
+    },
+    {
+      "line": 127,
+      "text": "    update_time                        string comment '更新时间'"
+    },
+    {
+      "line": 128,
+      "text": ") comment 'T98_运管交易对手客户信息表'"
+    },
+    {
+      "line": 129,
+      "text": "    partitioned by (busi_date string,source string COMMENT '来源')"
+    },
+    {
+      "line": 130,
+      "text": "    stored as orc"
+    },
+    {
+      "line": 131,
+      "text": ""
+    },
+    {
+      "line": 132,
+      "text": "drop table if exists t98_otc_deri_cust_ecr_temp01;"
+    },
+    {
+      "line": 133,
+      "text": "create table t98_otc_deri_cust_ecr_temp01 stored as orc as"
+    },
+    {
+      "line": 134,
+      "text": "with deriv_cust as (select registered_address                                          reg_addr"
+    },
+    {
+      "line": 135,
+      "text": "                         , default.zh_to_simple(default.full2half(registered_address)) reg_addr1"
+    },
+    {
+      "line": 136,
+      "text": "                         , office_address                                              ofc_addr"
+    },
+    {
+      "line": 137,
+      "text": "                         , default.zh_to_simple(default.full2half(office_address))     ofc_addr1"
+    },
+    {
+      "line": 138,
+      "text": "                         , id"
+    },
+    {
+      "line": 139,
+      "text": "                         , client_id"
+    },
+    {
+      "line": 140,
+      "text": "                         , is_prod_holder"
+    },
+    {
+      "line": 141,
+      "text": "                         , professional_investors"
+    },
+    {
+      "line": 142,
+      "text": "                         , signature_name"
+    },
+    {
+      "line": 143,
+      "text": "                         , CORPORATE_NAME"
+    },
+    {
+      "line": 144,
+      "text": "                         , unifiedsocial_code"
+    },
+    {
+      "line": 145,
+      "text": "                         , industry"
+    },
+    {
+      "line": 146,
+      "text": "                         , scope_business"
+    },
+    {
+      "line": 147,
+      "text": "                         , risk_level"
+    },
+    {
+      "line": 148,
+      "text": "                         , registered_capital"
+    },
+    {
+      "line": 149,
+      "text": "                         , start_date"
+    },
+    {
+      "line": 150,
+      "text": "                         , end_date"
+    },
+    {
+      "line": 151,
+      "text": "                         , setup_date"
+    },
+    {
+      "line": 152,
+      "text": "                         , id_kind"
+    },
+    {
+      "line": 153,
+      "text": "                         , register_country"
+    },
+    {
+      "line": 154,
+      "text": "                         , nature"
+    },
+    {
+      "line": 155,
+      "text": "                         , aptitude"
+    },
+    {
+      "line": 156,
+      "text": "                         , capital_attribute"
+    },
+    {
+      "line": 157,
+      "text": "                         , nontaxresident"
+    },
+    {
+      "line": 158,
+      "text": "                         , public_related"
+    },
+    {
+      "line": 159,
+      "text": "                         , public_stock_code"
+    },
+    {
+      "line": 160,
+      "text": "                         , client_type"
+    },
+    {
+      "line": 161,
+      "text": "                         , secondray_trader"
+    },
+    {
+      "line": 162,
+      "text": "                         , prod_code"
+    },
+    {
+      "line": 163,
+      "text": "                         , prod_type"
+    },
+    {
+      "line": 164,
+      "text": "                         , prod_type_other"
+    },
+    {
+      "line": 165,
+      "text": "                         , product_estab_date"
+    },
+    {
+      "line": 166,
+      "text": "                         , prod_end_date"
+    },
+    {
+      "line": 167,
+      "text": "                         , prod_public_related"
+    },
+    {
+      "line": 168,
+      "text": "                         , prod_public_stock_code"
+    },
+    {
+      "line": 169,
+      "text": "                         , prod_record_date"
+    },
+    {
+      "line": 170,
+      "text": "                         , product_asset"
+    },
+    {
+      "line": 171,
+      "text": "                         , basic_host_agency"
+    },
+    {
+      "line": 172,
+      "text": "                         , fund_manager_tel"
+    },
+    {
+      "line": 173,
+      "text": "                         , advisor_name"
+    },
+    {
+      "line": 174,
+      "text": "                         , advisor_cert_type"
+    },
+    {
+      "line": 175,
+      "text": "                         , advisor_cert_no"
+    },
+    {
+      "line": 176,
+      "text": "                         , fund_manager"
+    },
+    {
+      "line": 177,
+      "text": "                         , benefit_over_flag"
+    },
+    {
+      "line": 178,
+      "text": "                         , aml_monitor_flag"
+    },
+    {
+      "line": 179,
+      "text": "                         , client_qualify_review"
+    },
+    {
+      "line": 180,
+      "text": "                         , client_qualify_review_des"
+    },
+    {
+      "line": 181,
+      "text": "                         , early_term_flow_date"
+    },
+    {
+      "line": 182,
+      "text": "                         , is_China_Security_Easy_Sign"
+    },
+    {
+      "line": 183,
+      "text": "                         , is_Our_Company_Template"
+    },
+    {
+      "line": 184,
+      "text": "                         , is_Valid_Single_File"
+    },
+    {
+      "line": 185,
+      "text": "                         , no_auto_visit"
+    },
+    {
+      "line": 186,
+      "text": "                         , return_visit_date"
+    },
+    {
+      "line": 187,
+      "text": "                         , chat_room_name"
+    },
+    {
+      "line": 188,
+      "text": "                         , trs_chat_room_name"
+    },
+    {
+      "line": 189,
+      "text": "                         , margin_type"
+    },
+    {
+      "line": 190,
+      "text": "                         , client_qualify_review_reason"
+    },
+    {
+      "line": 191,
+      "text": "                         , option_product_quality_reason"
+    },
+    {
+      "line": 192,
+      "text": "                         , emsx_originate_trader_firm"
+    },
+    {
+      "line": 193,
+      "text": "                         , master_agreement_date"
+    },
+    {
+      "line": 194,
+      "text": "                         , allow_busi_type"
+    },
+    {
+      "line": 195,
+      "text": "                         , swap_include_dma"
+    },
+    {
+      "line": 196,
+      "text": "                         , partial_margin_flag"
+    },
+    {
+      "line": 197,
+      "text": "                         , margin_business_limit_flag"
+    },
+    {
+      "line": 198,
+      "text": "                         , operator"
+    },
+    {
+      "line": 199,
+      "text": "                         , introduction_operator"
+    },
+    {
+      "line": 200,
+      "text": "                         , introduction_department"
+    },
+    {
+      "line": 201,
+      "text": "                         , termof_investment"
+    },
+    {
+      "line": 202,
+      "text": "                         , abbreviation"
+    },
+    {
+      "line": 203,
+      "text": "                         , name_abbreviation"
+    },
+    {
+      "line": 204,
+      "text": "                         , premium_margin_ratio"
+    },
+    {
+      "line": 205,
+      "text": "                         , aml_risk_level"
+    },
+    {
+      "line": 206,
+      "text": "                         , is_credited"
+    },
+    {
+      "line": 207,
+      "text": "                         , concern_flag"
+    },
+    {
+      "line": 208,
+      "text": "                         , valid_flag"
+    },
+    {
+      "line": 209,
+      "text": "                         , related_party_flag"
+    },
+    {
+      "line": 210,
+      "text": "                         , grant_balance"
+    },
+    {
+      "line": 211,
+      "text": "                         , grant_balance_expire_date"
+    },
+    {
+      "line": 212,
+      "text": "                         , firm_name"
+    },
+    {
+      "line": 213,
+      "text": "                         , audit_status"
+    },
+    {
+      "line": 214,
+      "text": "                         , lei_code"
+    },
+    {
+      "line": 215,
+      "text": "                         , protocol_type"
+    },
+    {
+      "line": 216,
+      "text": "                         , exchange_report_flag"
+    },
+    {
+      "line": 217,
+      "text": "                         , master_agreement_id"
+    },
+    {
+      "line": 218,
+      "text": "                         , master_agreement_id_both"
+    },
+    {
+      "line": 219,
+      "text": "                         , report_status"
+    },
+    {
+      "line": 220,
+      "text": "                         , agreement_signing_date"
+    },
+    {
+      "line": 221,
+      "text": "                         , supplement_agreement_id"
+    },
+    {
+      "line": 222,
+      "text": "                         , supplement_agreement_id_both"
+    },
+    {
+      "line": 223,
+      "text": "                         , supplement_report_status"
+    },
+    {
+      "line": 224,
+      "text": "                         , fill_role"
+    },
+    {
+      "line": 225,
+      "text": "                         , rpt_prodcode"
+    },
+    {
+      "line": 226,
+      "text": "                         , product_report_status"
+    },
+    {
+      "line": 227,
+      "text": "                         , list_attribute"
+    },
+    {
+      "line": 228,
+      "text": "                         , fiid"
+    },
+    {
+      "line": 229,
+      "text": "                         , ecrm_flow_id"
+    },
+    {
+      "line": 230,
+      "text": "                         , evaluation_email"
+    },
+    {
+      "line": 231,
+      "text": "                         , swap_single_stamp_effective"
+    },
+    {
+      "line": 232,
+      "text": "                         , trade_confirmation_stamp_priority"
+    },
+    {
+      "line": 233,
+      "text": "                         , customer_manager"
+    },
+    {
+      "line": 234,
+      "text": "                         , customer_manager_org"
+    },
+    {
+      "line": 235,
+      "text": "                         , restore_service_relationship_date"
+    },
+    {
+      "line": 236,
+      "text": "                         , null admit_date"
+    },
+    {
+      "line": 237,
+      "text": "                         , create_time"
+    },
+    {
+      "line": 238,
+      "text": "                         , update_time"
+    },
+    {
+      "line": 239,
+      "text": "                         , cast(null as string) daily_monitor_margin_trade"
+    },
+    {
+      "line": 240,
+      "text": "                         ,'OTC' source"
+    },
+    {
+      "line": 241,
+      "text": "                    from odata_n_ois.o_otc_derivative_counterparty"
+    },
+    {
+      "line": 242,
+      "text": "                    where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 243,
+      "text": "                      and delete_flag = '0'"
+    },
+    {
+      "line": 244,
+      "text": ""
+    },
+    {
+      "line": 245,
+      "text": "                    union all"
+    },
+    {
+      "line": 246,
+      "text": "                    select registered_address                                          reg_addr"
+    },
+    {
+      "line": 247,
+      "text": "                         , default.zh_to_simple(default.full2half(registered_address)) reg_addr1"
+    },
+    {
+      "line": 248,
+      "text": "                         , office_address                                              ofc_addr"
+    },
+    {
+      "line": 249,
+      "text": "                         , default.zh_to_simple(default.full2half(office_address))     ofc_addr1"
+    },
+    {
+      "line": 250,
+      "text": "                         , id"
+    },
+    {
+      "line": 251,
+      "text": "                         , client_id"
+    },
+    {
+      "line": 252,
+      "text": "                         , is_prod_holder"
+    },
+    {
+      "line": 253,
+      "text": "                         , professional_investors"
+    },
+    {
+      "line": 254,
+      "text": "                         , signature_name"
+    },
+    {
+      "line": 255,
+      "text": "                         , CORPORATE_NAME"
+    },
+    {
+      "line": 256,
+      "text": "                         , unifiedsocial_code"
+    },
+    {
+      "line": 257,
+      "text": "                         , industry"
+    },
+    {
+      "line": 258,
+      "text": "                         , scope_business"
+    },
+    {
+      "line": 259,
+      "text": "                         , risk_level"
+    },
+    {
+      "line": 260,
+      "text": "                         , registered_capital"
+    },
+    {
+      "line": 261,
+      "text": "                         , start_date"
+    },
+    {
+      "line": 262,
+      "text": "                         , end_date"
+    },
+    {
+      "line": 263,
+      "text": "                         , setup_date"
+    },
+    {
+      "line": 264,
+      "text": "                         , id_kind"
+    },
+    {
+      "line": 265,
+      "text": "                         , register_country"
+    },
+    {
+      "line": 266,
+      "text": "                         , nature"
+    },
+    {
+      "line": 267,
+      "text": "                         , aptitude"
+    },
+    {
+      "line": 268,
+      "text": "                         , capital_attribute"
+    },
+    {
+      "line": 269,
+      "text": "                         , nontaxresident"
+    },
+    {
+      "line": 270,
+      "text": "                         , public_related"
+    },
+    {
+      "line": 271,
+      "text": "                         , public_stock_code"
+    },
+    {
+      "line": 272,
+      "text": "                         , client_type"
+    },
+    {
+      "line": 273,
+      "text": "                         , secondray_trader"
+    },
+    {
+      "line": 274,
+      "text": "                         , prod_code"
+    },
+    {
+      "line": 275,
+      "text": "                         , prod_type"
+    },
+    {
+      "line": 276,
+      "text": "                         , prod_type_other"
+    },
+    {
+      "line": 277,
+      "text": "                         , product_estab_date"
+    },
+    {
+      "line": 278,
+      "text": "                         , prod_end_date"
+    },
+    {
+      "line": 279,
+      "text": "                         , prod_public_related"
+    },
+    {
+      "line": 280,
+      "text": "                         , prod_public_stock_code"
+    },
+    {
+      "line": 281,
+      "text": "                         , null prod_record_date"
+    },
+    {
+      "line": 282,
+      "text": "                         , product_asset"
+    },
+    {
+      "line": 283,
+      "text": "                         , basic_host_agency"
+    },
+    {
+      "line": 284,
+      "text": "                         , fund_manager_tel"
+    },
+    {
+      "line": 285,
+      "text": "                         , advisor_name"
+    },
+    {
+      "line": 286,
+      "text": "                         , advisor_cert_type"
+    },
+    {
+      "line": 287,
+      "text": "                         , advisor_cert_no"
+    },
+    {
+      "line": 288,
+      "text": "                         , fund_manager"
+    },
+    {
+      "line": 289,
+      "text": "                         , benefit_over_flag"
+    },
+    {
+      "line": 290,
+      "text": "                         , aml_monitor_flag"
+    },
+    {
+      "line": 291,
+      "text": "                         , client_qualify_review"
+    },
+    {
+      "line": 292,
+      "text": "                         , client_qualify_review_des"
+    },
+    {
+      "line": 293,
+      "text": "                         , null  early_term_flow_date"
+    },
+    {
+      "line": 294,
+      "text": "                         , is_China_Security_Easy_Sign"
+    },
+    {
+      "line": 295,
+      "text": "                         , is_Our_Company_Template"
+    },
+    {
+      "line": 296,
+      "text": "                         , is_Valid_Single_File"
+    },
+    {
+      "line": 297,
+      "text": "                         , no_auto_visit"
+    },
+    {
+      "line": 298,
+      "text": "                         , return_visit_date"
+    },
+    {
+      "line": 299,
+      "text": "                         , chat_room_name"
+    },
+    {
+      "line": 300,
+      "text": "                         , null  trs_chat_room_name"
+    },
+    {
+      "line": 301,
+      "text": "                         , margin_type"
+    },
+    {
+      "line": 302,
+      "text": "                         , client_qualify_review_reason"
+    },
+    {
+      "line": 303,
+      "text": "                         , option_product_quality_reason"
+    },
+    {
+      "line": 304,
+      "text": "                         , null  emsx_originate_trader_firm"
+    },
+    {
+      "line": 305,
+      "text": "                         , master_agreement_date"
+    },
+    {
+      "line": 306,
+      "text": "                         , allow_busi_type"
+    },
+    {
+      "line": 307,
+      "text": "                         , null  swap_include_dma"
+    },
+    {
+      "line": 308,
+      "text": "                         , partial_margin_flag"
+    },
+    {
+      "line": 309,
+      "text": "                         , null  margin_business_limit_flag"
+    },
+    {
+      "line": 310,
+      "text": "                         , operator"
+    },
+    {
+      "line": 311,
+      "text": "                         , introduction_operator"
+    },
+    {
+      "line": 312,
+      "text": "                         , introduction_department"
+    },
+    {
+      "line": 313,
+      "text": "                         , termof_investment"
+    },
+    {
+      "line": 314,
+      "text": "                         , abbreviation"
+    },
+    {
+      "line": 315,
+      "text": "                         , name_abbreviation"
+    },
+    {
+      "line": 316,
+      "text": "                         , null  premium_margin_ratio"
+    },
+    {
+      "line": 317,
+      "text": "                         , aml_risk_level"
+    },
+    {
+      "line": 318,
+      "text": "                         , is_credited"
+    },
+    {
+      "line": 319,
+      "text": "                         , concern_flag"
+    },
+    {
+      "line": 320,
+      "text": "                         , valid_flag"
+    },
+    {
+      "line": 321,
+      "text": "                         , related_party_flag"
+    },
+    {
+      "line": 322,
+      "text": "                         , grant_balance"
+    },
+    {
+      "line": 323,
+      "text": "                         , grant_balance_expire_date"
+    },
+    {
+      "line": 324,
+      "text": "                         , null firm_name"
+    },
+    {
+      "line": 325,
+      "text": "                         , audit_status"
+    },
+    {
+      "line": 326,
+      "text": "                         , lei_code"
+    },
+    {
+      "line": 327,
+      "text": "                         , protocol_type"
+    },
+    {
+      "line": 328,
+      "text": "                         , exchange_report_flag"
+    },
+    {
+      "line": 329,
+      "text": "                         , master_agreement_id"
+    },
+    {
+      "line": 330,
+      "text": "                         , master_agreement_id_both"
+    },
+    {
+      "line": 331,
+      "text": "                         , report_status"
+    },
+    {
+      "line": 332,
+      "text": "                         , agreement_signing_date"
+    },
+    {
+      "line": 333,
+      "text": "                         , supplement_agreement_id"
+    },
+    {
+      "line": 334,
+      "text": "                         , supplement_agreement_id_both"
+    },
+    {
+      "line": 335,
+      "text": "                         , supplement_report_status"
+    },
+    {
+      "line": 336,
+      "text": "                         , fill_role"
+    },
+    {
+      "line": 337,
+      "text": "                         , rpt_prodcode"
+    },
+    {
+      "line": 338,
+      "text": "                         , product_report_status"
+    },
+    {
+      "line": 339,
+      "text": "                         , list_attribute"
+    },
+    {
+      "line": 340,
+      "text": "                         , fiid"
+    },
+    {
+      "line": 341,
+      "text": "                         , ecrm_flow_id"
+    },
+    {
+      "line": 342,
+      "text": "                         , evaluation_email"
+    },
+    {
+      "line": 343,
+      "text": "                         , swap_single_stamp_effective"
+    },
+    {
+      "line": 344,
+      "text": "                         , trade_confirmation_stamp_priority"
+    },
+    {
+      "line": 345,
+      "text": "                         , customer_manager"
+    },
+    {
+      "line": 346,
+      "text": "                         , null                                                        customer_manager_org      -- 暂无该字段"
+    },
+    {
+      "line": 347,
+      "text": "                         , null                                                        restore_service_relationship_date"
+    },
+    {
+      "line": 348,
+      "text": "                         , admit_date"
+    },
+    {
+      "line": 349,
+      "text": "                         , create_time"
+    },
+    {
+      "line": 350,
+      "text": "                         , update_time"
+    },
+    {
+      "line": 351,
+      "text": "                         , daily_monitor_margin_trade"
+    },
+    {
+      "line": 352,
+      "text": "                         , 'FICC' source"
+    },
+    {
+      "line": 353,
+      "text": "                    from odata_n_ois.f_otc_derivative_counterparty"
+    },
+    {
+      "line": 354,
+      "text": "                    where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 355,
+      "text": "                      and delete_flag = '0')"
+    },
+    {
+      "line": 356,
+      "text": "   , prov as (select distinct tag_name prov, regexp_replace(tag_name, '(市|省|特别行政区|自治区)$', '') part_prov"
+    },
+    {
+      "line": 357,
+      "text": "              from dm_index_n.tag_def"
+    },
+    {
+      "line": 358,
+      "text": "              where tag_partition_id = 'tagdim100328'"
+    },
+    {
+      "line": 359,
+      "text": "                and calc_ind = '0'"
+    },
+    {
+      "line": 360,
+      "text": "                and dim_num = '1'"
+    },
+    {
+      "line": 361,
+      "text": "                and status = '1')"
+    },
+    {
+      "line": 362,
+      "text": "   , prov_city as (select distinct t1.tag_name                                             prov"
+    },
+    {
+      "line": 363,
+      "text": "                                 , t2.tag_name                                             city"
+    },
+    {
+      "line": 364,
+      "text": "                                 , regexp_replace(t2.tag_name, '(市|盟|地区|自治州)$', '') part_city"
+    },
+    {
+      "line": 365,
+      "text": "                   from (select dim_val, tag_name"
+    },
+    {
+      "line": 366,
+      "text": "                         from dm_index_n.tag_def"
+    },
+    {
+      "line": 367,
+      "text": "                         where tag_partition_id = 'tagdim100328'"
+    },
+    {
+      "line": 368,
+      "text": "                           and calc_ind = '0'"
+    },
+    {
+      "line": 369,
+      "text": "                           and dim_num = '1'"
+    },
+    {
+      "line": 370,
+      "text": "                           and status = '1') t1"
+    },
+    {
+      "line": 371,
+      "text": "                            left join (select dim_val"
+    },
+    {
+      "line": 372,
+      "text": "                                            , tag_name"
+    },
+    {
+      "line": 373,
+      "text": "                                            , regexp_replace(dim_val, '[0-9]{{2}}00$', '0000') prov_cd"
+    },
+    {
+      "line": 374,
+      "text": "                                       from dm_index_n.tag_def"
+    },
+    {
+      "line": 375,
+      "text": "                                       where tag_partition_id = 'tagdim100329'"
+    },
+    {
+      "line": 376,
+      "text": "                                         and calc_ind = '0'"
+    },
+    {
+      "line": 377,
+      "text": "                                         and dim_num = '1'"
+    },
+    {
+      "line": 378,
+      "text": "                                         and tag_name <> '那曲地区' -- 去除旧数据"
+    },
+    {
+      "line": 379,
+      "text": "                                         and status = '1') t2 on t2.prov_cd = t1.dim_val)"
+    },
+    {
+      "line": 380,
+      "text": "select t.reg_addr"
+    },
+    {
+      "line": 381,
+      "text": "     , t.id"
+    },
+    {
+      "line": 382,
+      "text": "     , t.client_id"
+    },
+    {
+      "line": 383,
+      "text": "     , t.is_prod_holder"
+    },
+    {
+      "line": 384,
+      "text": "     , t.professional_investors"
+    },
+    {
+      "line": 385,
+      "text": "     , t.signature_name"
+    },
+    {
+      "line": 386,
+      "text": "     , t.CORPORATE_NAME"
+    },
+    {
+      "line": 387,
+      "text": "     , t.unifiedsocial_code"
+    },
+    {
+      "line": 388,
+      "text": "     , t.industry"
+    },
+    {
+      "line": 389,
+      "text": "     , t.scope_business"
+    },
+    {
+      "line": 390,
+      "text": "     , t.risk_level"
+    },
+    {
+      "line": 391,
+      "text": "     , t.registered_capital"
+    },
+    {
+      "line": 392,
+      "text": "     , t.start_date"
+    },
+    {
+      "line": 393,
+      "text": "     , t.end_date"
+    },
+    {
+      "line": 394,
+      "text": "     , t.setup_date"
+    },
+    {
+      "line": 395,
+      "text": "     , t.id_kind"
+    },
+    {
+      "line": 396,
+      "text": "     , t.register_country"
+    },
+    {
+      "line": 397,
+      "text": "     , t.nature"
+    },
+    {
+      "line": 398,
+      "text": "     , t.aptitude"
+    },
+    {
+      "line": 399,
+      "text": "     , t.capital_attribute"
+    },
+    {
+      "line": 400,
+      "text": "     , t.nontaxresident"
+    },
+    {
+      "line": 401,
+      "text": "     , t.public_related"
+    },
+    {
+      "line": 402,
+      "text": "     , t.public_stock_code"
+    },
+    {
+      "line": 403,
+      "text": "     , t.client_type"
+    },
+    {
+      "line": 404,
+      "text": "     , t.secondray_trader"
+    },
+    {
+      "line": 405,
+      "text": "     , t.prod_code"
+    },
+    {
+      "line": 406,
+      "text": "     , t.prod_type"
+    },
+    {
+      "line": 407,
+      "text": "     , t.prod_type_other"
+    },
+    {
+      "line": 408,
+      "text": "     , t.product_estab_date"
+    },
+    {
+      "line": 409,
+      "text": "     , t.prod_end_date"
+    },
+    {
+      "line": 410,
+      "text": "     , t.prod_public_related"
+    },
+    {
+      "line": 411,
+      "text": "     , t.prod_public_stock_code"
+    },
+    {
+      "line": 412,
+      "text": "     , t.prod_record_date"
+    },
+    {
+      "line": 413,
+      "text": "     , t.product_asset"
+    },
+    {
+      "line": 414,
+      "text": "     , t.basic_host_agency"
+    },
+    {
+      "line": 415,
+      "text": "     , t.fund_manager_tel"
+    },
+    {
+      "line": 416,
+      "text": "     , t.advisor_name"
+    },
+    {
+      "line": 417,
+      "text": "     , t.advisor_cert_type"
+    },
+    {
+      "line": 418,
+      "text": "     , t.advisor_cert_no"
+    },
+    {
+      "line": 419,
+      "text": "     , t.fund_manager"
+    },
+    {
+      "line": 420,
+      "text": "     , t.benefit_over_flag"
+    },
+    {
+      "line": 421,
+      "text": "     , t.aml_monitor_flag"
+    },
+    {
+      "line": 422,
+      "text": "     , t.client_qualify_review"
+    },
+    {
+      "line": 423,
+      "text": "     , t.client_qualify_review_des"
+    },
+    {
+      "line": 424,
+      "text": "     , t.early_term_flow_date"
+    },
+    {
+      "line": 425,
+      "text": "     , t.is_China_Security_Easy_Sign"
+    },
+    {
+      "line": 426,
+      "text": "     , t.is_Our_Company_Template"
+    },
+    {
+      "line": 427,
+      "text": "     , t.is_Valid_Single_File"
+    },
+    {
+      "line": 428,
+      "text": "     , t.no_auto_visit"
+    },
+    {
+      "line": 429,
+      "text": "     , t.return_visit_date"
+    },
+    {
+      "line": 430,
+      "text": "     , t.chat_room_name"
+    },
+    {
+      "line": 431,
+      "text": "     , t.trs_chat_room_name"
+    },
+    {
+      "line": 432,
+      "text": "     , t.margin_type"
+    },
+    {
+      "line": 433,
+      "text": "     , t.client_qualify_review_reason"
+    },
+    {
+      "line": 434,
+      "text": "     , t.option_product_quality_reason"
+    },
+    {
+      "line": 435,
+      "text": "     , t.emsx_originate_trader_firm"
+    },
+    {
+      "line": 436,
+      "text": "     , t.master_agreement_date"
+    },
+    {
+      "line": 437,
+      "text": "     , t.allow_busi_type"
+    },
+    {
+      "line": 438,
+      "text": "     , t.swap_include_dma"
+    },
+    {
+      "line": 439,
+      "text": "     , t.partial_margin_flag"
+    },
+    {
+      "line": 440,
+      "text": "     , t.margin_business_limit_flag"
+    },
+    {
+      "line": 441,
+      "text": "     , t.operator"
+    },
+    {
+      "line": 442,
+      "text": "     , t.introduction_operator"
+    },
+    {
+      "line": 443,
+      "text": "     , t.introduction_department"
+    },
+    {
+      "line": 444,
+      "text": "     , t.termof_investment"
+    },
+    {
+      "line": 445,
+      "text": "     , t.abbreviation"
+    },
+    {
+      "line": 446,
+      "text": "     , t.name_abbreviation"
+    },
+    {
+      "line": 447,
+      "text": "     , t.premium_margin_ratio"
+    },
+    {
+      "line": 448,
+      "text": "     , t.aml_risk_level"
+    },
+    {
+      "line": 449,
+      "text": "     , t.is_credited"
+    },
+    {
+      "line": 450,
+      "text": "     , t.concern_flag"
+    },
+    {
+      "line": 451,
+      "text": "     , t.valid_flag"
+    },
+    {
+      "line": 452,
+      "text": "     , t.related_party_flag"
+    },
+    {
+      "line": 453,
+      "text": "     , t.grant_balance"
+    },
+    {
+      "line": 454,
+      "text": "     , t.grant_balance_expire_date"
+    },
+    {
+      "line": 455,
+      "text": "     , t.firm_name"
+    },
+    {
+      "line": 456,
+      "text": "     , t.audit_status"
+    },
+    {
+      "line": 457,
+      "text": "     , t.lei_code"
+    },
+    {
+      "line": 458,
+      "text": "     , t.protocol_type"
+    },
+    {
+      "line": 459,
+      "text": "     , t.exchange_report_flag"
+    },
+    {
+      "line": 460,
+      "text": "     , t.master_agreement_id"
+    },
+    {
+      "line": 461,
+      "text": "     , t.master_agreement_id_both"
+    },
+    {
+      "line": 462,
+      "text": "     , t.report_status"
+    },
+    {
+      "line": 463,
+      "text": "     , t.agreement_signing_date"
+    },
+    {
+      "line": 464,
+      "text": "     , t.supplement_agreement_id"
+    },
+    {
+      "line": 465,
+      "text": "     , t.supplement_agreement_id_both"
+    },
+    {
+      "line": 466,
+      "text": "     , t.supplement_report_status"
+    },
+    {
+      "line": 467,
+      "text": "     , t.fill_role"
+    },
+    {
+      "line": 468,
+      "text": "     , t.rpt_prodcode"
+    },
+    {
+      "line": 469,
+      "text": "     , t.product_report_status"
+    },
+    {
+      "line": 470,
+      "text": "     , t.list_attribute"
+    },
+    {
+      "line": 471,
+      "text": "     , t.fiid"
+    },
+    {
+      "line": 472,
+      "text": "     , t.ecrm_flow_id"
+    },
+    {
+      "line": 473,
+      "text": "     , t.evaluation_email"
+    },
+    {
+      "line": 474,
+      "text": "     , t.swap_single_stamp_effective"
+    },
+    {
+      "line": 475,
+      "text": "     , t.trade_confirmation_stamp_priority"
+    },
+    {
+      "line": 476,
+      "text": "     , t.customer_manager"
+    },
+    {
+      "line": 477,
+      "text": "     , t.customer_manager_org"
+    },
+    {
+      "line": 478,
+      "text": "     , coalesce(nullif(p1.prov, ''), nullif(t.reg_prov, ''), cp.prov)  reg_prov"
+    },
+    {
+      "line": 479,
+      "text": "     , nvl(cp.city, t.reg_city)                                        reg_city"
+    },
+    {
+      "line": 480,
+      "text": "     , t.ofc_addr"
+    },
+    {
+      "line": 481,
+      "text": "     , coalesce(nullif(p2.prov, ''), nullif(t.ofc_prov, ''), cp2.prov) ofc_prov"
+    },
+    {
+      "line": 482,
+      "text": "     , nvl(cp2.city, t.ofc_city)                                       ofc_city"
+    },
+    {
+      "line": 483,
+      "text": "     , t.restore_service_relationship_date"
+    },
+    {
+      "line": 484,
+      "text": "     , t.admit_date"
+    },
+    {
+      "line": 485,
+      "text": "     , t.daily_monitor_margin_trade"
+    },
+    {
+      "line": 486,
+      "text": "     , t.create_time"
+    },
+    {
+      "line": 487,
+      "text": "     , t.update_time"
+    },
+    {
+      "line": 488,
+      "text": "     , t.source"
+    },
+    {
+      "line": 489,
+      "text": "from (select *"
+    },
+    {
+      "line": 490,
+      "text": "           , coalesce(nullif(regexp_extract(reg_addr1, '({provs_str})', 1), ''),"
+    },
+    {
+      "line": 491,
+      "text": "                      nullif(regexp_extract(reg_addr1, '({part_provs})([^路街道村县镇乡].*)?$', 1), '')) reg_prov"
+    },
+    {
+      "line": 492,
+      "text": "           , coalesce(nullif(regexp_extract(reg_addr1, '({citys_str})', 1), ''),"
+    },
+    {
+      "line": 493,
+      "text": "                      nullif(regexp_extract(reg_addr1, '({part_citys})([^路街道村县镇乡].*)?$', 1), '')) reg_city"
+    },
+    {
+      "line": 494,
+      "text": "           , coalesce(nullif(regexp_extract(ofc_addr1, '({provs_str})', 1), ''),"
+    },
+    {
+      "line": 495,
+      "text": "                      nullif(regexp_extract(ofc_addr1, '({part_provs})([^路街道村县镇乡].*)?$', 1), '')) ofc_prov"
+    },
+    {
+      "line": 496,
+      "text": "           , coalesce(nullif(regexp_extract(ofc_addr1, '({citys_str})', 1), ''),"
+    },
+    {
+      "line": 497,
+      "text": "                      nullif(regexp_extract(ofc_addr1, '({part_citys})([^路街道村县镇乡].*)?$', 1), '')) ofc_city"
+    },
+    {
+      "line": 498,
+      "text": "      from deriv_cust) t"
+    },
+    {
+      "line": 499,
+      "text": "         left join prov_city cp on t.reg_city <> '' and (cp.city = t.reg_city or cp.part_city = t.reg_city)"
+    },
+    {
+      "line": 500,
+      "text": "         left join prov_city cp2 on t.ofc_city <> '' and (cp2.city = t.ofc_city or cp2.part_city = t.ofc_city)"
+    },
+    {
+      "line": 501,
+      "text": "         left join prov p1 on t.reg_prov <> '' and p1.part_prov = t.reg_prov"
+    },
+    {
+      "line": 502,
+      "text": "         left join prov p2 on t.ofc_prov <> '' and p2.part_prov = t.ofc_prov"
+    },
+    {
+      "line": 503,
+      "text": ";"
+    },
+    {
+      "line": 504,
+      "text": ""
+    },
+    {
+      "line": 505,
+      "text": "-- querySql"
+    },
+    {
+      "line": 506,
+      "text": "with review_buffer as (select A.*"
+    },
+    {
+      "line": 507,
+      "text": "       from (select client_id"
+    },
+    {
+      "line": 508,
+      "text": "                  , review_buffer_end"
+    },
+    {
+      "line": 509,
+      "text": "                  , 'OTC' source"
+    },
+    {
+      "line": 510,
+      "text": "             from odata_n_ois.g_client_review_buffer"
+    },
+    {
+      "line": 511,
+      "text": "             where BUSI_DATE = '{busi_date}'  and trim(review_buffer_end) <> ''"
+    },
+    {
+      "line": 512,
+      "text": "            ) A"
+    },
+    {
+      "line": 513,
+      "text": "                left join (select client_id"
+    },
+    {
+      "line": 514,
+      "text": "                           from odata_n_ois.g_client_review_whitelist"
+    },
+    {
+      "line": 515,
+      "text": "                           where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 516,
+      "text": "                           group by client_id) B on A.client_id = B.client_id"
+    },
+    {
+      "line": 517,
+      "text": "       where B.client_id is null"
+    },
+    {
+      "line": 518,
+      "text": "       "
+    },
+    {
+      "line": 519,
+      "text": "       union all "
+    },
+    {
+      "line": 520,
+      "text": "       select A.*"
+    },
+    {
+      "line": 521,
+      "text": "       from (select client_id"
+    },
+    {
+      "line": 522,
+      "text": "                  , review_buffer_end"
+    },
+    {
+      "line": 523,
+      "text": "                  , 'FICC' source"
+    },
+    {
+      "line": 524,
+      "text": "             from odata_n_ois.f_client_review_buffer"
+    },
+    {
+      "line": 525,
+      "text": "             where BUSI_DATE = '{busi_date}'  and trim(review_buffer_end) <> ''"
+    },
+    {
+      "line": 526,
+      "text": "            ) A"
+    },
+    {
+      "line": 527,
+      "text": "                left join (select client_id"
+    },
+    {
+      "line": 528,
+      "text": "                           from odata_n_ois.f_client_review_whitelist"
+    },
+    {
+      "line": 529,
+      "text": "                           where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 530,
+      "text": "                           group by client_id) B on A.client_id = B.client_id"
+    },
+    {
+      "line": 531,
+      "text": "       where B.client_id is null"
+    },
+    {
+      "line": 532,
+      "text": "       )"
+    },
+    {
+      "line": 533,
+      "text": "    , dict as ("
+    },
+    {
+      "line": 534,
+      "text": "         select distinct t2.dict_category, t1.dict_value, t1.dict_desc, 'OTC' source"
+    },
+    {
+      "line": 535,
+      "text": "         from (select dict_category_id"
+    },
+    {
+      "line": 536,
+      "text": "                         , dict_value"
+    },
+    {
+      "line": 537,
+      "text": "                         , dict_desc"
+    },
+    {
+      "line": 538,
+      "text": "                    from odata_n_ois.g_dictions_details"
+    },
+    {
+      "line": 539,
+      "text": "                    where busi_date = '{busi_date}') t1"
+    },
+    {
+      "line": 540,
+      "text": "         inner join (select id,dict_category"
+    },
+    {
+      "line": 541,
+      "text": "                    from odata_n_ois.g_dictions"
+    },
+    {
+      "line": 542,
+      "text": "                    where busi_date = '{busi_date}'"
+    },
+    {
+      "line": 543,
+      "text": "                      and dict_category in('xz','nation') ) t2 on t2.id = t1.dict_category_id"
+    },
+    {
+      "line": 544,
+      "text": "         "
+    },
+    {
+      "line": 545,
+      "text": "         union all "
+    },
+    {
+      "line": 546,
+      "text": "         select distinct t2.dict_category, t1.dict_value, t1.dict_desc, 'FICC' source"
+    },
+    {
+      "line": 547,
+      "text": "         from (select dict_category_id"
+    },
+    {
+      "line": 548,
+      "text": "                         , dict_value"
+    },
+    {
+      "line": 549,
+      "text": "                         , dict_desc"
+    },
+    {
+      "line": 550,
+      "text": "                    from odata_n_ois.f_dictions_details"
+    },
+    {
+      "line": 551,
+      "text": "                    where busi_date = '{busi_date}') t1"
+    },
+    {
+      "line": 552,
+      "text": "         inner join (select id,dict_category"
+    },
+    {
+      "line": 553,
+      "text": "                    from odata_n_ois.f_dictions"
+    },
+    {
+      "line": 554,
+      "text": "                    where busi_date = '{busi_date}'"
+    },
+    {
+      "line": 555,
+      "text": "                      and dict_category in('xz','nation') ) t2 on t2.id = t1.dict_category_id             "
+    },
+    {
+      "line": 556,
+      "text": "    )"
+    },
+    {
+      "line": 557,
+      "text": "insert overwrite table t98_otc_deri_cust_ecr partition (busi_date , source)"
+    },
+    {
+      "line": 558,
+      "text": "select A.id                                   as            row_id"
+    },
+    {
+      "line": 559,
+      "text": "     , A.client_id"
+    },
+    {
+      "line": 560,
+      "text": "     , case A.is_prod_holder"
+    },
+    {
+      "line": 561,
+      "text": "           when '01' then '自然人'"
+    },
+    {
+      "line": 562,
+      "text": "           when '02' then '机构'"
+    },
+    {
+      "line": 563,
+      "text": "           when '03' then '产品' end           as            pty_cate"
+    },
+    {
+      "line": 564,
+      "text": "     , case A.professional_investors"
+    },
+    {
+      "line": 565,
+      "text": "           when '1'  then '普通投资者'"
+    },
+    {
+      "line": 566,
+      "text": "           when '211' then 'A1'"
+    },
+    {
+      "line": 567,
+      "text": "           when '212' then 'A2'"
+    },
+    {
+      "line": 568,
+      "text": "           when '213' then 'A3'"
+    },
+    {
+      "line": 569,
+      "text": "           when '214' then 'A4' "
+    },
+    {
+      "line": 570,
+      "text": "           when '221' then 'B类（机构）' "
+    },
+    {
+      "line": 571,
+      "text": "           when '222' then 'B类（自然人）'end            as            pvc_type"
+    },
+    {
+      "line": 572,
+      "text": "     , A.signature_name"
+    },
+    {
+      "line": 573,
+      "text": "     , A.CORPORATE_NAME"
+    },
+    {
+      "line": 574,
+      "text": "     , A.unifiedsocial_code"
+    },
+    {
+      "line": 575,
+      "text": "     , dict1.SRC_CD_DESC                       as            indt_name"
+    },
+    {
+      "line": 576,
+      "text": "     , A.scope_business"
+    },
+    {
+      "line": 577,
+      "text": "     , A.risk_level"
+    },
+    {
+      "line": 578,
+      "text": "     , A.registered_capital"
+    },
+    {
+      "line": 579,
+      "text": "     , A.start_date"
+    },
+    {
+      "line": 580,
+      "text": "     , A.end_date"
+    },
+    {
+      "line": 581,
+      "text": "     , A.setup_date"
+    },
+    {
+      "line": 582,
+      "text": "     , A.id_kind"
+    },
+    {
+      "line": 583,
+      "text": "     , A.register_country       reg_cty_cd"
+    },
+    {
+      "line": 584,
+      "text": "     , dict4.dict_desc          reg_cty"
+    },
+    {
+      "line": 585,
+      "text": "     , dict3.dict_desc          nature_desc     "
+    },
+    {
+      "line": 586,
+      "text": "     , A.aptitude"
+    },
+    {
+      "line": 587,
+      "text": "     , case A.capital_attribute"
+    },
+    {
+      "line": 588,
+      "text": "           when '1' then '境内'"
+    },
+    {
+      "line": 589,
+      "text": "           when '2' then '三资'"
+    },
+    {
+      "line": 590,
+      "text": "           when '3' then '境外'"
+    },
+    {
+      "line": 591,
+      "text": "           else A.capital_attribute end                      cptl_attr"
+    },
+    {
+      "line": 592,
+      "text": "     , case A.nontaxresident"
+    },
+    {
+      "line": 593,
+      "text": "           when '1' then '居民'"
+    },
+    {
+      "line": 594,
+      "text": "           when '2' then '非居民'"
+    },
+    {
+      "line": 595,
+      "text": "           when '3' then '其他' end                          TAX_IDENTITY_CATE"
+    },
+    {
+      "line": 596,
+      "text": "     , if(lower(A.public_related) = 'true', '是', '否')  public_related"
+    },
+    {
+      "line": 597,
+      "text": "     , A.public_stock_code"
+    },
+    {
+      "line": 598,
+      "text": "     , A.client_type"
+    },
+    {
+      "line": 599,
+      "text": "     , case A.client_type"
+    },
+    {
+      "line": 600,
+      "text": "           when '1' then '一级交易商'"
+    },
+    {
+      "line": 601,
+      "text": "           when '2' then '二级交易商'"
+    },
+    {
+      "line": 602,
+      "text": "           when '0' then '非一二级交易商' end                client_type_desc"
+    },
+    {
+      "line": 603,
+      "text": "     , A.secondray_trader"
+    },
+    {
+      "line": 604,
+      "text": "     , D.CORPORATE_NAME                            as  secondray_trader_name"
+    },
+    {
+      "line": 605,
+      "text": "     , A.prod_code"
+    },
+    {
+      "line": 606,
+      "text": "     , dict2.dw_cd_val_desc                    as            prod_type_desc"
+    },
+    {
+      "line": 607,
+      "text": "     , A.prod_type_other"
+    },
+    {
+      "line": 608,
+      "text": "     , A.product_estab_date"
+    },
+    {
+      "line": 609,
+      "text": "     , A.prod_end_date"
+    },
+    {
+      "line": 610,
+      "text": "     , if(lower(A.prod_public_related) = 'true', '是','否')   prod_public_related"
+    },
+    {
+      "line": 611,
+      "text": "     , A.prod_public_stock_code"
+    },
+    {
+      "line": 612,
+      "text": "     , A.prod_record_date"
+    },
+    {
+      "line": 613,
+      "text": "     , A.product_asset"
+    },
+    {
+      "line": 614,
+      "text": "     , A.basic_host_agency"
+    },
+    {
+      "line": 615,
+      "text": "     , A.fund_manager_tel"
+    },
+    {
+      "line": 616,
+      "text": "     , A.advisor_name"
+    },
+    {
+      "line": 617,
+      "text": "     , case A.advisor_cert_type when '01' then '内地身份证'"
+    },
+    {
+      "line": 618,
+      "text": "            when '02' then '外国护照'"
+    },
+    {
+      "line": 619,
+      "text": "            when '09' then '港澳居民来往内地通行证'"
+    },
+    {
+      "line": 620,
+      "text": "            when '10' then '台湾居民来往内地通行证'"
+    },
+    {
+      "line": 621,
+      "text": "            when 'A4' then '统一社会信用证'"
+    },
+    {
+      "line": 622,
+      "text": "            when 'A5' then '营业执照'"
+    },
+    {
+      "line": 623,
+      "text": "            when 'A7' then '全国组织机构代码'"
+    },
+    {
+      "line": 624,
+      "text": "            when '99' then '其他' end               as         advisor_cert_type"
+    },
+    {
+      "line": 625,
+      "text": "     , A.advisor_cert_no"
+    },
+    {
+      "line": 626,
+      "text": "     , A.fund_manager"
+    },
+    {
+      "line": 627,
+      "text": "     , A.benefit_over_flag"
+    },
+    {
+      "line": 628,
+      "text": "     , if(lower(A.aml_monitor_flag) = 'true', '是','否')                    aml_monitor_flag"
+    },
+    {
+      "line": 629,
+      "text": "     , if(lower(A.client_qualify_review) = 'true', '是', '否')       client_qualify_review"
+    },
+    {
+      "line": 630,
+      "text": "     , A.client_qualify_review_des"
+    },
+    {
+      "line": 631,
+      "text": "     , A.early_term_flow_date"
+    },
+    {
+      "line": 632,
+      "text": "     , if(lower(A.is_China_Security_Easy_Sign) = 'true', '是', '否') is_China_Security_Easy_Sign"
+    },
+    {
+      "line": 633,
+      "text": "     , if(lower(A.is_Our_Company_Template) = 'true', '是', '否')     is_Our_Company_Template"
+    },
+    {
+      "line": 634,
+      "text": "     , if(lower(A.is_Valid_Single_File) = 'true', '是', '否')        is_Valid_Single_File"
+    },
+    {
+      "line": 635,
+      "text": "     , if(lower(A.no_auto_visit) = 'true', '是', '否')             no_auto_visit"
+    },
+    {
+      "line": 636,
+      "text": "     , A.return_visit_date"
+    },
+    {
+      "line": 637,
+      "text": "     , A.chat_room_name"
+    },
+    {
+      "line": 638,
+      "text": "     , A.trs_chat_room_name"
+    },
+    {
+      "line": 639,
+      "text": "     , A.margin_type"
+    },
+    {
+      "line": 640,
+      "text": "     , A.client_qualify_review_reason"
+    },
+    {
+      "line": 641,
+      "text": "     , A.option_product_quality_reason"
+    },
+    {
+      "line": 642,
+      "text": "     , A.emsx_originate_trader_firm"
+    },
+    {
+      "line": 643,
+      "text": "     , A.master_agreement_date"
+    },
+    {
+      "line": 644,
+      "text": "     , A.allow_busi_type"
+    },
+    {
+      "line": 645,
+      "text": "     , if(lower(A.swap_include_dma) = 'true', '是', '否')           swap_include_dma"
+    },
+    {
+      "line": 646,
+      "text": "     , if(A.partial_margin_flag = '1', '是', '否')           partial_margin_flag"
+    },
+    {
+      "line": 647,
+      "text": "     , if(lower(A.margin_business_limit_flag) = 'true', '是', '否') margin_business_limit_flag"
+    },
+    {
+      "line": 648,
+      "text": "     , A.operator"
+    },
+    {
+      "line": 649,
+      "text": "     , A.introduction_operator"
+    },
+    {
+      "line": 650,
+      "text": "     , A.introduction_department"
+    },
+    {
+      "line": 651,
+      "text": "     , A.termof_investment"
+    },
+    {
+      "line": 652,
+      "text": "     , A.abbreviation"
+    },
+    {
+      "line": 653,
+      "text": "     , A.name_abbreviation"
+    },
+    {
+      "line": 654,
+      "text": "     , A.premium_margin_ratio"
+    },
+    {
+      "line": 655,
+      "text": "     , A.aml_risk_level"
+    },
+    {
+      "line": 656,
+      "text": "     , case A.is_credited when 'no' then '禁止'"
+    },
+    {
+      "line": 657,
+      "text": "         when 'credited' then '经风控部批准可以授信'  "
+    },
+    {
+      "line": 658,
+      "text": "         when 'yes' then '可以'  "
+    },
+    {
+      "line": 659,
+      "text": "            end   is_credited"
+    },
+    {
+      "line": 660,
+      "text": "     , if(lower(A.concern_flag) = 'true', '是','否')    concern_flag"
+    },
+    {
+      "line": 661,
+      "text": "     , A.valid_flag"
+    },
+    {
+      "line": 662,
+      "text": "     , if(lower(A.related_party_flag) = 'true', '是','否')  related_party_flag"
+    },
+    {
+      "line": 663,
+      "text": "     , A.grant_balance"
+    },
+    {
+      "line": 664,
+      "text": "     , A.grant_balance_expire_date"
+    },
+    {
+      "line": 665,
+      "text": "     , A.firm_name"
+    },
+    {
+      "line": 666,
+      "text": "     , A.audit_status"
+    },
+    {
+      "line": 667,
+      "text": "     , A.lei_code"
+    },
+    {
+      "line": 668,
+      "text": "     , A.protocol_type"
+    },
+    {
+      "line": 669,
+      "text": "     , if(lower(A.exchange_report_flag) = 'true', '是','否')    exchange_report_flag"
+    },
+    {
+      "line": 670,
+      "text": "     , A.master_agreement_id"
+    },
+    {
+      "line": 671,
+      "text": "     , A.master_agreement_id_both"
+    },
+    {
+      "line": 672,
+      "text": "     , A.report_status"
+    },
+    {
+      "line": 673,
+      "text": "     , A.agreement_signing_date"
+    },
+    {
+      "line": 674,
+      "text": "     , A.supplement_agreement_id"
+    },
+    {
+      "line": 675,
+      "text": "     , A.supplement_agreement_id_both"
+    },
+    {
+      "line": 676,
+      "text": "     , A.supplement_report_status"
+    },
+    {
+      "line": 677,
+      "text": "     , A.fill_role"
+    },
+    {
+      "line": 678,
+      "text": "     , A.rpt_prodcode"
+    },
+    {
+      "line": 679,
+      "text": "     , A.product_report_status"
+    },
+    {
+      "line": 680,
+      "text": "     , case A.list_attribute when '1' then '是'  when '2' then '否'  end  list_attribute"
+    },
+    {
+      "line": 681,
+      "text": "     , A.reg_addr"
+    },
+    {
+      "line": 682,
+      "text": "     , if(C.reg_prov<>'', C.reg_prov, A.reg_prov) as            reg_prov"
+    },
+    {
+      "line": 683,
+      "text": "     , if(C.reg_city<>'', C.reg_city, A.reg_city) as            reg_city"
+    },
+    {
+      "line": 684,
+      "text": "     , A.ofc_addr"
+    },
+    {
+      "line": 685,
+      "text": "     , A.ofc_prov"
+    },
+    {
+      "line": 686,
+      "text": "     , A.ofc_city"
+    },
+    {
+      "line": 687,
+      "text": "     , if(C.big_client = 'true', '是', '否')   as            big_client"
+    },
+    {
+      "line": 688,
+      "text": "     , substr(C.issuing_date, 1, 10)           as           apro_date"
+    },
+    {
+      "line": 689,
+      "text": "     , A.fiid"
+    },
+    {
+      "line": 690,
+      "text": "     , A.ecrm_flow_id"
+    },
+    {
+      "line": 691,
+      "text": "     , A.evaluation_email"
+    },
+    {
+      "line": 692,
+      "text": "     , if(C.aml_monitor_flag = 'true', '是', '否') as       aml_monitor_flag_org"
+    },
+    {
+      "line": 693,
+      "text": "     , substr(C.start_date,1,10)                            start_date_org"
+    },
+    {
+      "line": 694,
+      "text": "     , substr(C.end_date,1,10)                              end_date_org"
+    },
+    {
+      "line": 695,
+      "text": "     , if(lower(A.swap_single_stamp_effective)='true', '是', '否')   swap_single_stamp_effective"
+    },
+    {
+      "line": 696,
+      "text": "     , case A.trade_confirmation_stamp_priority when 'none' then '无' "
+    },
+    {
+      "line": 697,
+      "text": "        when 'offline'  then '线下盖章' when 'online' then '线上电签'"
+    },
+    {
+      "line": 698,
+      "text": "        end  trade_confirmation_stamp_priority"
+    },
+    {
+      "line": 699,
+      "text": "     , A.customer_manager                   "
+    },
+    {
+      "line": 700,
+      "text": "     , A.customer_manager_org  "
+    },
+    {
+      "line": 701,
+      "text": "     , A.restore_service_relationship_date"
+    },
+    {
+      "line": 702,
+      "text": "     , A.admit_date"
+    },
+    {
+      "line": 703,
+      "text": "     , B.review_buffer_end"
+    },
+    {
+      "line": 704,
+      "text": "     , case lower(A.daily_monitor_margin_trade) when 'true' then '是' "
+    },
+    {
+      "line": 705,
+      "text": "         when 'false' then '否' else '' end as daily_monitor_margin_trade"
+    },
+    {
+      "line": 706,
+      "text": "     , A.create_time"
+    },
+    {
+      "line": 707,
+      "text": "     , A.update_time"
+    },
+    {
+      "line": 708,
+      "text": "     , '{busi_date}' as busi_date"
+    },
+    {
+      "line": 709,
+      "text": "     , A.source           "
+    },
+    {
+      "line": 710,
+      "text": "from t98_otc_deri_cust_ecr_temp01 A"
+    },
+    {
+      "line": 711,
+      "text": "         left join"
+    },
+    {
+      "line": 712,
+      "text": "     (SELECT distinct SRC_CD_VAL, SRC_CD_DESC"
+    },
+    {
+      "line": 713,
+      "text": "      FROM pdata_n.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 714,
+      "text": "      WHERE TGT_TAB_NAME = 'T01_PTY_INDT_H'"
+    },
+    {
+      "line": 715,
+      "text": "        AND TGT_TAB_FLD = 'Indt_Cd'"
+    },
+    {
+      "line": 716,
+      "text": "        AND SRC_TAB_NAME = 'OTC_DERIVATIVE_COUNTERPARTY'"
+    },
+    {
+      "line": 717,
+      "text": "        AND SRC_FLD_NAME = 'INDUSTRY'"
+    },
+    {
+      "line": 718,
+      "text": "        AND SRC_SYS_NAME = 'OIS') dict1 on dict1.SRC_CD_VAL = A.industry"
+    },
+    {
+      "line": 719,
+      "text": "         left join (select dw_cd_val, dw_cd_val_desc"
+    },
+    {
+      "line": 720,
+      "text": "                    from pdata_n.ref_dw_cd_val"
+    },
+    {
+      "line": 721,
+      "text": "                    where dw_cd_id = 'CD081'"
+    },
+    {
+      "line": 722,
+      "text": "                      and dw_cd_eng_name = 'SRC_PRD_CATE_CD'"
+    },
+    {
+      "line": 723,
+      "text": "                      and remark = 'OTC_DERIVATIVE_COUNTERPARTY.PROD_TYPE') dict2 on dict2.dw_cd_val = A.prod_type"
+    },
+    {
+      "line": 724,
+      "text": "         left join dict dict3 on dict3.dict_category = 'xz' and dict3.source = A.source and dict3.dict_value = A.nature"
+    },
+    {
+      "line": 725,
+      "text": "         left join dict dict4 on dict4.dict_category = 'nation' and  dict4.source = A.source and dict4.dict_value = A.register_country"
+    },
+    {
+      "line": 726,
+      "text": "         left join review_buffer B on B.client_id = A.client_id"
+    },
+    {
+      "line": 727,
+      "text": "         left join"
+    },
+    {
+      "line": 728,
+      "text": "         (  select unifiedsocial_code"
+    },
+    {
+      "line": 729,
+      "text": "                 , nvl(trim(id_kind), '')  id_kind"
+    },
+    {
+      "line": 730,
+      "text": "                 , issuing_date"
+    },
+    {
+      "line": 731,
+      "text": "                 , trim(register_province) reg_prov"
+    },
+    {
+      "line": 732,
+      "text": "                 , trim(register_city)     reg_city"
+    },
+    {
+      "line": 733,
+      "text": "                 , big_client"
+    },
+    {
+      "line": 734,
+      "text": "                 , aml_monitor_flag"
+    },
+    {
+      "line": 735,
+      "text": "                 , start_date "
+    },
+    {
+      "line": 736,
+      "text": "                 , end_date"
+    },
+    {
+      "line": 737,
+      "text": "                 , 'OTC' source"
+    },
+    {
+      "line": 738,
+      "text": "            from odata_n_ois.g_counterparty_org"
+    },
+    {
+      "line": 739,
+      "text": "            where busi_date = '{busi_date}'"
+    },
+    {
+      "line": 740,
+      "text": "            "
+    },
+    {
+      "line": 741,
+      "text": "            union all "
+    },
+    {
+      "line": 742,
+      "text": "            select unifiedsocial_code"
+    },
+    {
+      "line": 743,
+      "text": "                 , nvl(trim(id_kind), '')  id_kind"
+    },
+    {
+      "line": 744,
+      "text": "                 , issuing_date"
+    },
+    {
+      "line": 745,
+      "text": "                 , trim(register_province) reg_prov"
+    },
+    {
+      "line": 746,
+      "text": "                 , trim(register_city)     reg_city"
+    },
+    {
+      "line": 747,
+      "text": "                 , big_client"
+    },
+    {
+      "line": 748,
+      "text": "                 , aml_monitor_flag"
+    },
+    {
+      "line": 749,
+      "text": "                 , start_date "
+    },
+    {
+      "line": 750,
+      "text": "                 , end_date"
+    },
+    {
+      "line": 751,
+      "text": "                 , 'FICC' source"
+    },
+    {
+      "line": 752,
+      "text": "            from odata_n_ois.f_counterparty_org"
+    },
+    {
+      "line": 753,
+      "text": "            where busi_date = '{busi_date}'"
+    },
+    {
+      "line": 754,
+      "text": "            ) C on C.source = A.source "
+    },
+    {
+      "line": 755,
+      "text": "            and C.unifiedsocial_code = A.unifiedsocial_code and C.id_kind = nvl(A.id_kind, '')"
+    },
+    {
+      "line": 756,
+      "text": "         left join "
+    },
+    {
+      "line": 757,
+      "text": "         (  select client_id, CORPORATE_NAME"
+    },
+    {
+      "line": 758,
+      "text": "            from odata_n_ois.o_otc_derivative_counterparty"
+    },
+    {
+      "line": 759,
+      "text": "            where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 760,
+      "text": ""
+    },
+    {
+      "line": 761,
+      "text": "            union all"
+    },
+    {
+      "line": 762,
+      "text": "            select client_id, CORPORATE_NAME"
+    },
+    {
+      "line": 763,
+      "text": "            from odata_n_ois.f_otc_derivative_counterparty"
+    },
+    {
+      "line": 764,
+      "text": "            where BUSI_DATE = '{busi_date}'"
+    },
+    {
+      "line": 765,
+      "text": "        ) D on A.secondray_trader not in ('', '0') and D.client_id=A.secondray_trader"
+    },
+    {
+      "line": 766,
+      "text": ""
+    }
+  ]
+}

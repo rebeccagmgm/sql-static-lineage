@@ -89,6 +89,7 @@ export async function collectMultiFieldTrace(input: {
   const terminalNodes = new Map<string, TraceResult["terminalNodes"][number]>();
   const frontier = new Set<string>();
   const taskLabels: Record<string, string> = {};
+  const taskClusters: Record<string, string> = {};
   const taskTopics: Record<string, string> = {};
   const taskTopicDescriptions: Record<string, string> = {};
   const stoppedBy = new Set<NonNullable<TraceResult["stoppedBy"]>>();
@@ -117,6 +118,7 @@ export async function collectMultiFieldTrace(input: {
       throw new Error("ASSET_GRAPH_CHANGED_DURING_MULTI_FIELD_QUERY");
     version = result.version;
     Object.assign(taskLabels, result.taskLabels ?? {});
+    Object.assign(taskClusters, result.taskClusters ?? {});
     Object.assign(taskTopics, result.taskTopics ?? {});
     Object.assign(taskTopicDescriptions, result.taskTopicDescriptions ?? {});
     if (result.stoppedBy) stoppedBy.add(result.stoppedBy);
@@ -211,6 +213,7 @@ export async function collectMultiFieldTrace(input: {
     frontierNodeIds: [...frontier],
     terminalNodes: [...terminalNodes.values()],
     taskLabels,
+    taskClusters,
     taskTopics,
     taskTopicDescriptions,
     nodes: [...nodes.values()],

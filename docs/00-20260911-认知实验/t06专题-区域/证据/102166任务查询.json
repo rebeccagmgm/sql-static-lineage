@@ -1,0 +1,97 @@
+[
+  {
+    "taskId": "102166",
+    "taskName": "PDATA_N.T06_ADMIN_AREA_TEMP",
+    "taskType": "101",
+    "topicName": "EDW_LOC",
+    "source": "-",
+    "target": "-",
+    "loadMode": "-",
+    "hivePartition": "-",
+    "acquisitionClass": "SQL_UNAVAILABLE",
+    "executionModel": "UNKNOWN",
+    "sqlStatus": "UNAVAILABLE",
+    "sqlSlots": {
+      "create": {
+        "status": "UNAVAILABLE",
+        "available": false,
+        "role": "ddl",
+        "source": "-",
+        "sources": [],
+        "statementCount": 0,
+        "bytes": 0
+      },
+      "query": {
+        "status": "UNAVAILABLE",
+        "available": false,
+        "role": "main",
+        "source": "-",
+        "sources": [],
+        "statementCount": 0,
+        "bytes": 0
+      },
+      "prepare": {
+        "status": "UNAVAILABLE",
+        "available": false,
+        "role": "precondition",
+        "source": "-",
+        "sources": [],
+        "statementCount": 0,
+        "bytes": 0
+      },
+      "truncate": {
+        "status": "UNAVAILABLE",
+        "available": false,
+        "role": "precondition",
+        "source": "-",
+        "sources": [],
+        "statementCount": 0,
+        "bytes": 0
+      },
+      "finish": {
+        "status": "UNAVAILABLE",
+        "available": false,
+        "role": "postcondition",
+        "source": "-",
+        "sources": [],
+        "statementCount": 0,
+        "bytes": 0
+      }
+    },
+    "codeEvidence": {
+      "status": "SKIPPED",
+      "taskId": "102166",
+      "codePathStatus": "SCRIPT_PATH_FOUND"
+    },
+    "attempts": [
+      {
+        "source": "schedule-detail",
+        "status": "SUCCESS",
+        "provenance": "Portal prod-api schedule detail"
+      },
+      {
+        "source": "sql-mcp",
+        "status": "SUCCESS",
+        "provenance": "metadata.get_horae_sql_by_task_id"
+      },
+      {
+        "source": "code",
+        "status": "SKIPPED",
+        "provenance": "optional --include-code"
+      },
+      {
+        "source": "local-save",
+        "status": "SUCCESS",
+        "provenance": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\00-20260911-认知实验\\t06专题\\证据\\102166任务来源.json"
+      }
+    ],
+    "savedPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\docs\\00-20260911-认知实验\\t06专题\\证据\\102166任务来源.json",
+    "evidenceLevel": "opencli_task_source",
+    "limitations": [
+      "Collected metadata and configured SQL are evidence of platform-visible source definitions, not runtime success or business correctness.",
+      "SQL bodies are hidden unless --full true or explicitly saved with --save-to.",
+      "Core query/create SQL was not obtained; collection remains partial."
+    ],
+    "status": "PARTIAL"
+  }
+]

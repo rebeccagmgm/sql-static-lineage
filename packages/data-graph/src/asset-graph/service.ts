@@ -1,3 +1,4 @@
+import { ClusterCatalog, parseClusters } from "./cluster-filter.ts";
 import { createServer, type Server } from "node:http";
 import { regionTopics } from "./region-topics.ts";
 import { queryExperimentalUpstreamScope } from "./experimental-upstream-scope/endpoint.ts";
@@ -12,14 +13,21 @@ import {
 } from "./overview.ts";
 import { readJson, type PreparedManifest, type Evidence } from "./publish.ts";
 import type { FactRecord } from "./compile.ts";
+import type { TaskLocalProjection } from "../../../../scripts/project-graph/task-local/contract.ts";
+import { unpackTaskLocalProjectionEnvelope } from "../continuation/task-local-projection.ts";
 import {
   defaultTableMetadataCatalogRoot,
   TableMetadataResolver,
   type MetadataIdentity,
+  type TableMetadata,
 } from "./table-metadata.ts";
 import { SchedulerTaskNameResolver } from "./scheduler-task-names.ts";
 import { SchemaAnnotationResolver } from "./schema-annotation.ts";
 import { buildTraceConsumptionFromRecords } from "./trace-consumption.ts";
+import { queryTaskFieldExplanation } from "./task-field-explanation-query.ts";
+import { PartitionQueries } from "./partition-query.ts";
+import { parsePartitionSelection } from "./partition-selection.ts";
+import { RequestPerformanceLog } from "./performance-log.ts";
 
 type GraphNode = Record<string, unknown>;
 
@@ -97,12 +105,88 @@ async function annotateNodes(
   });
   return result;
 }
+
+async function taskBindingMetadata(
+  projectionPath: string,
+  contentHash: string,
+  bindings: readonly FactRecord[],
+  resolver: Pick<TableMetadataResolver, "resolveMany">,
+): Promise<
+  readonly {
+    metadata: Omit<TableMetadata, "metadataCatalog">;
+    outputScope: "FINAL" | "OTHER" | "UNKNOWN";
+  }[]
+> {
+  if (!bindings.length) return [];
+  try {
+    const { projection: body } = unpackTaskLocalProjectionEnvelope({
+      envelope: readJson<unknown>(projectionPath),
+      manifestTaskContentHash: contentHash,
+    });
+    const projection = body as TaskLocalProjection;
+    const nodes = new Map(projection.nodes.map((node) => [node.nodeId, node]));
+    const normalize = (value: unknown) =>
+      typeof value === "string" ? value.trim().toLowerCase() : "";
+    const requests = bindings.map((binding) => {
+      const writes = (projection.localClosure?.finalWrites ?? []).filter(
+        (write) =>
+          Boolean(binding.write_observation_id) &&
+          write.writeObservationId === binding.write_observation_id,
+      );
+      const write = writes.length === 1 ? writes[0] : undefined;
+      const target = write && nodes.get(write.targetWriteNodeId);
+      const dataset = write && nodes.get(write.datasetNodeId);
+      const identity =
+        target?.nodeType === "TARGET_WRITE" &&
+        dataset?.nodeType === "PHYSICAL_DATASET"
+          ? metadataIdentity({ detail: target.properties }, dataset.properties)
+          : undefined;
+      const matchesTable =
+        !normalize(binding.target_dataset) ||
+        normalize(binding.target_dataset) ===
+          normalize(identity?.qualifiedName);
+      return {
+        outputScope:
+          write && write.outputQualification !== "SQL_UNCONSUMED"
+            ? ("FINAL" as const)
+            : ("OTHER" as const),
+        identity: matchesTable ? identity : undefined,
+        column:
+          typeof binding.target_field === "string"
+            ? binding.target_field
+            : undefined,
+      };
+    });
+    const values = await resolver.resolveMany(requests);
+    return values.map((metadata, index) => ({
+      metadata,
+      outputScope: requests[index]!.outputScope,
+    }));
+  } catch {
+    // Annotation failures must not hide the original processing evidence.
+    return bindings.map(() => ({
+      outputScope: "UNKNOWN",
+      metadata: {
+        table: {
+          status: "METADATA_READ_FAILED",
+          reason: "PROCESSING_METADATA_READ_FAILED",
+        },
+        field: {
+          status: "METADATA_READ_FAILED",
+          reason: "PROCESSING_METADATA_READ_FAILED",
+        },
+      },
+    }));
+  }
+}
+
 export async function taskDetail(
   store: AssetGraphStore,
   taskId: string,
   column?: string,
   writeId?: string,
   sql = false,
+  metadata?: Pick<TableMetadataResolver, "resolveMany">,
 ) {
   const state = await store.ready(),
     manifest = readJson<PreparedManifest>(String(state.manifestPath));
@@ -120,6 +204,9 @@ export async function taskDetail(
   const statementIds = new Set(
     bindings.map((b) => b.write_statement_id ?? b.statement_id),
   );
+  const metadataValues = metadata
+    ? await taskBindingMetadata(task.path, task.contentHash, bindings, metadata)
+    : undefined;
   const controls = e.relations
     .filter(
       (r) =>
@@ -150,9 +237,11 @@ export async function taskDetail(
     taskCategory: task.taskCategory,
     coverage: task.coverageStatus,
     failureReason: task.failureReasonCode,
-    bindings: bindings.map((b) => ({
+    bindings: bindings.map((b, index) => ({
       column: b.target_field,
+      table: b.target_dataset,
       writeId: b.write_observation_id,
+      ...(metadataValues ? metadataValues[index] : {}),
       expression:
         expressions.get(b.expression_id)?.expression_text ??
         expressions.get(b.expression_id)?.display_text ??
@@ -196,15 +285,23 @@ export async function startAssetGraphServer(
     fileURLToPath(new URL("./viewer.html", import.meta.url)),
     "utf8",
   );
+  const clusterCatalog = new ClusterCatalog(store, schedulerTaskNames);
+  const partitionQueries = new PartitionQueries(store, connection.paths.graphOutputRoot);
+  const performanceLog = new RequestPerformanceLog();
   const server = createServer(async (req, res) => {
+    const requestId = performanceLog.start(req.url ?? "/");
+    res.setHeader("X-Graph-Request-Id", requestId);
+    res.once("finish", () => performanceLog.finish(requestId, res.statusCode));
+    res.once("close", () => { if (!res.writableFinished) performanceLog.disconnect(requestId); });
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    if (req.method !== "GET") {
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    const browserReport = req.method === "POST" && url.pathname === "/api/diagnostics/browser";
+    if (req.method !== "GET" && !browserReport) {
       res.writeHead(405);
       res.end();
       return;
     }
-    const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const q = url.searchParams;
     const num = (key: string, defaultValue: number) => {
       const raw = q.get(key);
@@ -216,16 +313,40 @@ export async function startAssetGraphServer(
       return n;
     };
     try {
+      if (browserReport) {
+        const origin = req.headers.origin;
+        if (req.headers["content-type"]?.split(";")[0] !== "application/json" || (origin && new URL(origin).host !== req.headers.host) || req.headers["sec-fetch-site"] === "cross-site") {
+          res.writeHead(403); res.end(); return;
+        }
+        const chunks: Buffer[] = []; let bytes = 0;
+        for await (const chunk of req) {
+          bytes += chunk.length;
+          if (bytes > 64000) throw new Error("BROWSER_DIAGNOSTICS_TOO_LARGE");
+          chunks.push(Buffer.from(chunk));
+        }
+        performanceLog.recordBrowser(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+        res.writeHead(204); res.end(); return;
+      }
+      if (url.pathname === "/api/diagnostics") {
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify(performanceLog.snapshot()));
+        return;
+      }
       if (url.pathname === "/") {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.end(html);
         return;
       }
       let value: unknown;
-      if (url.pathname === "/api/region-topics") {
-        value = await regionTopics(store, schedulerTaskNames, q);
+      const clusters = parseClusters(q.get("clusters"));
+      const clusterTaskIds = await clusterCatalog.select(clusters);
+      if (url.pathname === "/api/clusters") {
+        const catalog = await clusterCatalog.read();
+        value = { version: catalog.version, clusters: catalog.clusters };
+      } else if (url.pathname === "/api/region-topics") {
+        value = await regionTopics(store, schedulerTaskNames, q, clusterTaskIds);
       } else if (url.pathname === "/api/experimental/upstream-scope") {
-        value = await queryExperimentalUpstreamScope(store, q);
+        value = await queryExperimentalUpstreamScope(store, q, clusterTaskIds);
       } else if (url.pathname === "/api/status") {
         const s = await store.ready();
         value = {
@@ -252,8 +373,13 @@ export async function startAssetGraphServer(
               // twice.
               limit: Math.min(100, limit + offset),
             }),
+            clusterTaskIds,
           ),
         );
+      } else if (url.pathname === "/api/partitions") {
+        const catalog = await partitionQueries.catalog(q.get("nodeId") ?? "");
+        const taskIds = catalog.options.flatMap(option => option.writes.map(write => write.taskId));
+        value = {...catalog, taskClusters: schedulerTaskNames.resolveClusters(taskIds)};
       } else if (url.pathname === "/api/fields")
         value = await annotateNodes(
           metadata,
@@ -269,6 +395,7 @@ export async function startAssetGraphServer(
       else if (url.pathname === "/api/overview")
         value = await getAssetGraphOverview(store, {
           hiddenTables: JSON.parse(q.get("hiddenTables") ?? "[]"),
+          clusterTaskIds,
           regionLimit: num("regionLimit", 100),
           flowLimit: num("flowLimit", 150),
         });
@@ -276,6 +403,7 @@ export async function startAssetGraphServer(
         const region = await listAssetGraphRegionDatasets(store, {
           schema: q.get("schema") ?? "",
           hiddenTables: JSON.parse(q.get("hiddenTables") ?? "[]"),
+          clusterTaskIds,
           limit: num("limit", 50),
           offset: num("offset", 0),
         });
@@ -283,6 +411,12 @@ export async function startAssetGraphServer(
           ...region,
           items: await annotateNodes(metadata, schemaAnnotations, region.items),
         };
+      } else if (url.pathname === "/api/explain") {
+        value = await queryTaskFieldExplanation(store, {
+          taskId: q.get("taskId") ?? "", writeId: q.get("writeId") ?? "", column: q.get("column") ?? "",
+          publicationVersion: q.get("publicationVersion") ?? undefined,
+          maxDepth: num("maxDepth", 32), maxNodes: num("maxNodes", 500), maxEdges: num("maxEdges", 1000),
+        });
       } else if (url.pathname === "/api/task") {
         const taskId = q.get("taskId") ?? "";
         const detail = await taskDetail(
@@ -291,11 +425,14 @@ export async function startAssetGraphServer(
           q.get("column") ?? undefined,
           q.get("writeId") ?? undefined,
           q.get("sql") === "1",
+          metadata,
         );
         value = {
           ...detail,
+          bindings: detail.bindings.filter((binding) => binding.outputScope === "FINAL"),
           taskName: schedulerTaskNames.resolve([taskId])[taskId],
           owner: schedulerTaskNames.resolveOwners([taskId])[taskId],
+          cluster: schedulerTaskNames.resolveClusters([taskId])[taskId],
         };
       } else if (url.pathname === "/api/trace") {
         const layer = q.get("layer") ?? "table";
@@ -307,7 +444,12 @@ export async function startAssetGraphServer(
         const depthUnit = q.get("depthUnit") ?? "edge";
         if (!["edge", "table-hop"].includes(depthUnit))
           throw new Error("INVALID_DEPTH_UNIT");
-        const trace = await store.traverse({
+        const partitionSelection = parsePartitionSelection(q.get("partitionSelection"));
+        if (partitionSelection && layer === "field") await partitionQueries.validateField(partitionSelection, q.get("nodeId") ?? "");
+        const trace = partitionSelection && layer === "table" ? await partitionQueries.trace(partitionSelection, {
+          direction: direction as "up" | "down", depth: num("depth", 4), limit: num("limit", 150), includeCandidates: q.get("candidates") !== "0",
+          focusNodeId: q.get("scopeFocus") ?? undefined, scopeDepth: num("scopeDepth", 1), scopeDirection: q.get("scopeDirection") === "down" ? "down" : "up", clusterTaskIds,
+        }) : await store.traverse({
           taskId: q.get("taskId") ?? undefined,
           nodeId: q.get("nodeId") ?? undefined,
           column: q.get("column") ?? undefined,
@@ -351,6 +493,7 @@ export async function startAssetGraphServer(
           ...trace,
           taskLabels,
           taskTopics: schedulerTaskNames.resolveTopics(traceTaskIds(trace.nodes)),
+          taskClusters: schedulerTaskNames.resolveClusters(traceTaskIds(trace.nodes)),
           taskTopicDescriptions: schedulerTaskNames.resolveTopicDescriptions(traceTaskIds(trace.nodes)),
           consumption,
           nodes: await annotateNodes(
@@ -366,6 +509,7 @@ export async function startAssetGraphServer(
         return;
       }
       res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Server-Timing", `graph;dur=${performanceLog.elapsed(requestId)}`);
       res.end(JSON.stringify(value));
     } catch (error) {
       const message = error instanceof Error ? error.message : "QUERY_FAILED";
@@ -377,6 +521,8 @@ export async function startAssetGraphServer(
             : "ASSET_GRAPH_QUERY_FAILED",
         }),
       );
+    } finally {
+      performanceLog.finish(requestId, res.statusCode);
     }
   });
   await new Promise<void>((resolve, reject) => {

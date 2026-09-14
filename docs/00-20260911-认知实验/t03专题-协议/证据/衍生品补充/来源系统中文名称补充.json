@@ -1,0 +1,53 @@
+{
+  "status": "UNVERIFIED",
+  "values": [
+    {
+      "code_id": "CD100",
+      "code_value": "CSS",
+      "value_description": "综合结算业务支撑系统",
+      "remark": "JSXT,00193",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18"
+    },
+    {
+      "code_id": "CD100",
+      "code_value": "IOA",
+      "value_description": "企业门户2.0",
+      "remark": "IOA,00108.00011",
+      "source_table": "MANU_MATN",
+      "business_date": "2022-08-15"
+    },
+    {
+      "code_id": "CD100",
+      "code_value": "OIS",
+      "value_description": "OTC综合业务平台",
+      "remark": "OTCISP,00218",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18"
+    },
+    {
+      "code_id": "CD100",
+      "code_value": "RCC",
+      "value_description": "零售柜台新一代清算系统",
+      "remark": "JGGT_XYDQSXT,00307.00001",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18"
+    },
+    {
+      "code_id": "CD100",
+      "code_value": "TA6",
+      "value_description": "资产管理TA6",
+      "remark": "",
+      "source_table": "MANU_MATN",
+      "business_date": "2026-07-03"
+    },
+    {
+      "code_id": "CD100",
+      "code_value": "TIT",
+      "value_description": "场外衍生品投资管理系统",
+      "remark": "TITANS,00377",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18"
+    }
+  ]
+}

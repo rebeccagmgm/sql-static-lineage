@@ -1,0 +1,400 @@
+{
+  "task_id": "49074",
+  "default_schema": "PDATA_N",
+  "observed_at": "2026-09-05T01:06:16.237Z",
+  "payload_sha256": "452fc05b5e259447b139448640891fe5e0891469bd6d51afd3d121135863fedb",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_IA_SIGN_AGT("
+    },
+    {
+      "line": 10,
+      "text": "     AGT_ID                    STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,AGT_MODIFR                STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,AGT_CATE_CD               STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,AGT_TYPE_CD               STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,AGT_HOLDER                STRING COMMENT '协议持有人'"
+    },
+    {
+      "line": 15,
+      "text": "    ,IA_AGT_TYPE_CD            STRING COMMENT '投顾协议类型代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,IA                        STRING COMMENT '投资顾问'"
+    },
+    {
+      "line": 17,
+      "text": "    ,CUST_MNGR                 STRING COMMENT '客户经理'"
+    },
+    {
+      "line": 18,
+      "text": "    ,DEVPR                     STRING COMMENT '开发人员'"
+    },
+    {
+      "line": 19,
+      "text": "    ,AGT_STAT_CD               STRING COMMENT '协议状态代码'"
+    },
+    {
+      "line": 20,
+      "text": "    ,SIGN_DATE                 STRING COMMENT '签约日期'"
+    },
+    {
+      "line": 21,
+      "text": "    ,EFF_DATE                  STRING COMMENT '生效日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,RSCD_DATE                 STRING COMMENT '解约日期'"
+    },
+    {
+      "line": 23,
+      "text": "    ,SIGN_AST                  STRING COMMENT '签约资产'"
+    },
+    {
+      "line": 24,
+      "text": "    ,RSCD_AST                  STRING COMMENT '解约资产'"
+    },
+    {
+      "line": 25,
+      "text": "    ,AST_SCAL_FEE              STRING COMMENT '资产规模费'"
+    },
+    {
+      "line": 26,
+      "text": "    ,RSCD_RSN                  STRING COMMENT '解除原因'"
+    },
+    {
+      "line": 27,
+      "text": "    ,CHRG_MODE_CD              STRING COMMENT '收费模式代码'"
+    },
+    {
+      "line": 28,
+      "text": "    ,DECT_MODE_CD              STRING COMMENT '扣费方式代码'"
+    },
+    {
+      "line": 29,
+      "text": "    ,FARE_RATI                 STRING COMMENT '收费比例(%)'"
+    },
+    {
+      "line": 30,
+      "text": "    ,FEE                       STRING COMMENT '收费金额'"
+    },
+    {
+      "line": 31,
+      "text": "    ,OLD_RATI                  STRING COMMENT '原费率(‰)'"
+    },
+    {
+      "line": 32,
+      "text": "    ,NEW_RATI                  STRING COMMENT '新费率(‰)'"
+    },
+    {
+      "line": 33,
+      "text": "    ,BASI_CMS_RATI             STRING COMMENT '基准佣金率'"
+    },
+    {
+      "line": 34,
+      "text": "    ,CUST_PHONE                STRING COMMENT '客户手机'"
+    },
+    {
+      "line": 35,
+      "text": "    ,IA_TEAM                   STRING COMMENT '投顾团队'"
+    },
+    {
+      "line": 36,
+      "text": "    ,ASGN_GRP_IA               STRING COMMENT '指定总部投顾'"
+    },
+    {
+      "line": 37,
+      "text": "    ,REMARK                    STRING COMMENT '备注'"
+    },
+    {
+      "line": 38,
+      "text": "    ,DATA_SRC_CD               STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 39,
+      "text": "    ,TASK_NAME                 STRING COMMENT '任务名'"
+    },
+    {
+      "line": 40,
+      "text": "    ,DATA_ETL_DATE             STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 41,
+      "text": "    ,DATA_UPT_DATE             STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 42,
+      "text": "    ,DATA_TIME                 STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 43,
+      "text": ")COMMENT '投顾签约协议'"
+    },
+    {
+      "line": 44,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT '源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 45,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 46,
+      "text": ""
+    },
+    {
+      "line": 47,
+      "text": "-- querySql"
+    },
+    {
+      "line": 48,
+      "text": "INSERT OVERWRITE TABLE  T03_IA_SIGN_AGT  PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 49,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 50,
+      "text": "--Group1: Source Table:[ODATA_N_CRM.C_TTZGW_QYXY:投资顾问签约协议] "
+    },
+    {
+      "line": 51,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 52,
+      "text": "SELECT "
+    },
+    {
+      "line": 53,
+      "text": "      A.ID                                      AS AGT_ID                    --协议编号"
+    },
+    {
+      "line": 54,
+      "text": "      ,'CRM029-20405'                           AS AGT_MODIFR                --协议修饰符"
+    },
+    {
+      "line": 55,
+      "text": "      ,'204'                                    AS AGT_CATE_CD               --协议类别代码"
+    },
+    {
+      "line": 56,
+      "text": "      ,'20405'                                  AS AGT_TYPE_CD               --协议类型代码"
+    },
+    {
+      "line": 57,
+      "text": "      ,LPAD(A.KHH,12,0)                         AS AGT_HOLDER                --协议持有人"
+    },
+    {
+      "line": 58,
+      "text": "      ,A.XYLX                                   AS IA_AGT_TYPE_CD            --投顾协议类型代码"
+    },
+    {
+      "line": 59,
+      "text": "      ,NVL(D.RYBH,A.TZGW)                       AS IA                        --投资顾问"
+    },
+    {
+      "line": 60,
+      "text": "      ,NVL(C.RYBH,A.KHJL)                       AS CUST_MNGR                 --客户经理"
+    },
+    {
+      "line": 61,
+      "text": "      ,A.JJR                                    AS DEVPR                     --开发人员"
+    },
+    {
+      "line": 62,
+      "text": "      ,NVL(B.DW_CD_VAL,A.QYZT)                  AS AGT_STAT_CD               --协议状态代码"
+    },
+    {
+      "line": 63,
+      "text": "      ,A.QYRQ                                   AS SIGN_DATE                 --签约日期"
+    },
+    {
+      "line": 64,
+      "text": "      ,A.SXRQ                                   AS EFF_DATE                  --生效日期"
+    },
+    {
+      "line": 65,
+      "text": "      ,A.JYRQ                                   AS RSCD_DATE                 --解约日期"
+    },
+    {
+      "line": 66,
+      "text": "      ,A.QYZC                                   AS SIGN_AST                  --签约资产"
+    },
+    {
+      "line": 67,
+      "text": "      ,A.JYZC                                   AS RSCD_AST                  --解约资产"
+    },
+    {
+      "line": 68,
+      "text": "      ,A.ZCGMF                                  AS AST_SCAL_FEE              --资产规模费"
+    },
+    {
+      "line": 69,
+      "text": "      ,A.JCYY                                   AS RSCD_RSN                  --解除原因"
+    },
+    {
+      "line": 70,
+      "text": "      ,A.SFMS                                   AS CHRG_MODE_CD              --收费模式代码"
+    },
+    {
+      "line": 71,
+      "text": "      ,A.KFFS                                   AS DECT_MODE_CD              --扣费方式代码"
+    },
+    {
+      "line": 72,
+      "text": "      ,A.SFBL                                   AS FARE_RATI                 --收费比例(%)"
+    },
+    {
+      "line": 73,
+      "text": "      ,A.SFJE                                   AS FEE                       --收费金额"
+    },
+    {
+      "line": 74,
+      "text": "      ,A.YFL                                    AS OLD_RATI                  --原费率(‰)"
+    },
+    {
+      "line": 75,
+      "text": "      ,A.XFL                                    AS NEW_RATI                  --新费率(‰)"
+    },
+    {
+      "line": 76,
+      "text": "      ,A.JZYJL                                  AS BASI_CMS_RATI             --基准佣金率"
+    },
+    {
+      "line": 77,
+      "text": "      ,A.FWSJ                                   AS CUST_PHONE                --客户手机"
+    },
+    {
+      "line": 78,
+      "text": "      ,A.TGTD                                   AS IA_TEAM                   --投顾团队"
+    },
+    {
+      "line": 79,
+      "text": "      ,A.ZBTG                                   AS ASGN_GRP_IA               --指定总部投顾"
+    },
+    {
+      "line": 80,
+      "text": "      ,A.BZ                                     AS REMARK                    --备注"
+    },
+    {
+      "line": 81,
+      "text": "      ,'CRM'                                    AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 82,
+      "text": "      ,UPPER('${filename}')                AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 83,
+      "text": "      ,'${data_day_str}'                   AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 84,
+      "text": "      ,'${data_day_str}'                   AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 85,
+      "text": "      ,'${data_today}'                     AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 86,
+      "text": "      ,'ODATA_N_CRM.C_TTZGW_QYXY'               AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 87,
+      "text": "      ,'${data_day_str}'                   AS BUSI_DATE                 --业务日期"
+    },
+    {
+      "line": 88,
+      "text": "FROM  (SELECT * FROM ${src_table_crm}.C_TTZGW_QYXY WHERE BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 89,
+      "text": "LEFT JOIN ODATA_N_CRM.C_TRYXX D"
+    },
+    {
+      "line": 90,
+      "text": "ON A.TZGW=D.ID"
+    },
+    {
+      "line": 91,
+      "text": "AND D.BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 92,
+      "text": "LEFT JOIN ODATA_N_CRM.C_TRYXX C"
+    },
+    {
+      "line": 93,
+      "text": "ON A.KHJL=C.ID"
+    },
+    {
+      "line": 94,
+      "text": "AND C.BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 95,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 96,
+      "text": "         SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 97,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 98,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_IA_SIGN_AGT'"
+    },
+    {
+      "line": 99,
+      "text": "            AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 100,
+      "text": "            AND SRC_TAB_NAME = 'TTZGW_QYXY'"
+    },
+    {
+      "line": 101,
+      "text": "            AND SRC_FLD_NAME = 'QYZT'"
+    },
+    {
+      "line": 102,
+      "text": "            AND SRC_SYS_NAME='CRM')B"
+    },
+    {
+      "line": 103,
+      "text": "ON        A.QYZT =B.SRC_CD_VAL                  --QYZT 转码"
+    },
+    {
+      "line": 104,
+      "text": ";"
+    },
+    {
+      "line": 105,
+      "text": ""
+    }
+  ]
+}

@@ -1,0 +1,2055 @@
+{
+  "task_id": "104934",
+  "payload_sha256": "76e6518f783c3ad658d642d6927900c6dc0972d3bf9a86d3931da03887b69041",
+  "observed_at": "2026-09-05T01:06:44.510Z",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T05_OTC_RECV_PYMT_EVT("
+    },
+    {
+      "line": 10,
+      "text": "     Evt_Id                     STRING COMMENT '事件编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Recv_Pymt_No               STRING COMMENT '收付款编号'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Trd_Id                     STRING COMMENT '交易编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Comp_No                    STRING COMMENT '合约编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Paid_Date                  STRING COMMENT '支付日期'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Recv_Pymt_Type_Cd          STRING COMMENT '收付款类型代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Crrc_Cd                    STRING COMMENT '币种代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Recv_Pymt_Dir_Cd           STRING COMMENT '收付款方向代码'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Recv_Pymt_Stat_Cd          STRING COMMENT '收付款状态代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Book_Agt_Id                STRING COMMENT '账簿协议编号'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Book_Agt_Modifr            STRING COMMENT '账簿协议修饰符'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Begn_Date                  STRING COMMENT '起始日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,End_Date                   STRING COMMENT '结束日期'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Prd_Id                     STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Src_Prd_Id                 STRING COMMENT '源产品编号'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Clr_Date                   STRING COMMENT '清算日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Fee_Type_Cd                STRING COMMENT '费用类型代码'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Swap_Hold_Id               STRING COMMENT '互换持仓编号'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Swap_Hold_Undrl_Cd         STRING COMMENT '互换持仓标的代码'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Src_Prd_Type_Cd            STRING COMMENT '源产品类型代码'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Rate                       STRING COMMENT '汇率'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Undrl_Qty                  STRING COMMENT '标的数量'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Pric                       STRING COMMENT '价格'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Leg_Glbl_Seq_No            STRING COMMENT 'Leg全局序号'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Prft_Type_Cd               STRING COMMENT '收益类型代码'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Swap_Dura_Evt_No           STRING COMMENT '互换存续期事件编号'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Swap_Dura_Evt_Type_Cd      STRING COMMENT '互换存续期事件类型代码'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Actl_Paid_Date             STRING COMMENT '实际支付日期'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Amt                        STRING COMMENT '金额'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Our_Payb_Amt               STRING COMMENT '我司应付金额'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Our_Rcvb_Amt               STRING COMMENT '我司应收金额'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Ocrrc_Amt                  STRING COMMENT '原币种金额'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Our_Payb_Ocrrc_Amt         STRING COMMENT '我司应付原币种金额'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Our_Rcvb_Ocrrc_Amt         STRING COMMENT '我司应收原币种金额'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Aft_Adj_Amt                STRING COMMENT '调整后金额'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Aft_Adj_Our_Payb_Amt       STRING COMMENT '调整后我司应付金额'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Aft_Adj_Our_Rcvb_Amt       STRING COMMENT '调整后我司应收金额'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Aft_Adj_Ocrrc_Amt          STRING COMMENT '调整后原币种金额'"
+    },
+    {
+      "line": 49,
+      "text": "    ,Aft_Adj_Our_Payb_Ocrrc_Amt   STRING COMMENT '调整后我司应付原币种金额'"
+    },
+    {
+      "line": 50,
+      "text": "    ,Aft_Adj_Our_Rcvb_Ocrrc_Amt   STRING COMMENT '调整后我司应收原币种金额'"
+    },
+    {
+      "line": 51,
+      "text": "    ,Clr_Type_Cd                STRING COMMENT '清算类型代码'"
+    },
+    {
+      "line": 52,
+      "text": "    ,Paid_Date_Id               STRING COMMENT '支付日期编号'"
+    },
+    {
+      "line": 53,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 54,
+      "text": "    ,Creator                    STRING COMMENT '创建人'"
+    },
+    {
+      "line": 55,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 56,
+      "text": "    ,Upd_User                   STRING COMMENT '更新人'"
+    },
+    {
+      "line": 57,
+      "text": "    ,Ver_No                     STRING COMMENT '版本号'"
+    },
+    {
+      "line": 58,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 59,
+      "text": "    ,Del_Date                   STRING COMMENT '删除日期'"
+    },
+    {
+      "line": 60,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 61,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 62,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 63,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 64,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 65,
+      "text": ")COMMENT '场外衍生品收付款事件'"
+    },
+    {
+      "line": 66,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT '源表')"
+    },
+    {
+      "line": 67,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 68,
+      "text": ""
+    },
+    {
+      "line": 69,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_TEMP_TIT157;"
+    },
+    {
+      "line": 70,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_TEMP_TIT157"
+    },
+    {
+      "line": 71,
+      "text": "AS"
+    },
+    {
+      "line": 72,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 73,
+      "text": "--GROUP1.: SOURCE TABLE:[ODATA_N_TIT.D_TRD_TRANSFER: 场外衍生品收付款记录表]"
+    },
+    {
+      "line": 74,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 75,
+      "text": "SELECT"
+    },
+    {
+      "line": 76,
+      "text": "     CONCAT('TIT157-',TRANSFER_ID)            AS  Evt_Id                  --事件编号                 "
+    },
+    {
+      "line": 77,
+      "text": "    ,TRANSFER_ID                              AS  Recv_Pymt_No            --收付款编号               "
+    },
+    {
+      "line": 78,
+      "text": "    ,TRADE_ID                                 AS  Trd_Id                  --交易编号                 "
+    },
+    {
+      "line": 79,
+      "text": "    ,KEY_CONTRACT_ID                          AS  Comp_No                 --合约编号                 "
+    },
+    {
+      "line": 80,
+      "text": "    ,SUBSTR(PAYMENT_DATE,1,10)                AS  Paid_Date               --支付日期                 "
+    },
+    {
+      "line": 81,
+      "text": "    ,TRANSFER_TYPE                            AS  Recv_Pymt_Type_Cd       --收付款类型代码           "
+    },
+    {
+      "line": 82,
+      "text": "    ,CURRENCY                                 AS  Crrc_Cd                 --币种代码                 "
+    },
+    {
+      "line": 83,
+      "text": "    ,PAYRECEIVE_TYPE                          AS  Recv_Pymt_Dir_Cd        --收付款方向代码           "
+    },
+    {
+      "line": 84,
+      "text": "    ,TRANSFER_STATUS                          AS  Recv_Pymt_Stat_Cd       --收付款状态代码           "
+    },
+    {
+      "line": 85,
+      "text": "    ,BOOK_ID                                  AS  Book_Agt_Id             --账簿协议编号             "
+    },
+    {
+      "line": 86,
+      "text": "    ,'20411'                                  AS  Book_Agt_Modifr         --账簿协议修饰符           "
+    },
+    {
+      "line": 87,
+      "text": "    ,SUBSTR(START_DATE,1,10)                  AS  Begn_Date               --起始日期                 "
+    },
+    {
+      "line": 88,
+      "text": "    ,SUBSTR(END_DATE,1,10)                    AS  End_Date                --结束日期                 "
+    },
+    {
+      "line": 89,
+      "text": "    ,IF(NVL(TRIM(KEY_CTPTY_ID),'')='','',CONCAT('TIT060-',KEY_CTPTY_ID))"
+    },
+    {
+      "line": 90,
+      "text": "                                              AS  Pty_Id                  --当事人编号               "
+    },
+    {
+      "line": 91,
+      "text": "    ,CONCAT('TIT-',KEY_INSTRUMENT_ID)         AS  Prd_Id                  --产品编号                 "
+    },
+    {
+      "line": 92,
+      "text": "    ,KEY_INSTRUMENT_ID                        AS  Src_Prd_Id              --源产品编号               "
+    },
+    {
+      "line": 93,
+      "text": "    ,SUBSTR(CLEARING_DATE,1,10)               AS  Clr_Date                --清算日期                 "
+    },
+    {
+      "line": 94,
+      "text": "    ,TRANSFER_FEE_TYPE                        AS  Fee_Type_Cd             --费用类型代码             "
+    },
+    {
+      "line": 95,
+      "text": "    ,TRS_LEG_POSITION_ID                      AS  Swap_Hold_Id            --互换持仓编号             "
+    },
+    {
+      "line": 96,
+      "text": "    ,UNDERLYING_WIND_CODE                     AS  Swap_Hold_Undrl_Cd      --互换持仓标的代码         "
+    },
+    {
+      "line": 97,
+      "text": "    ,INS_FAMILY                               AS  Src_Prd_Type_Cd         --源产品类型代码           "
+    },
+    {
+      "line": 98,
+      "text": "    ,EXCHANGE_RATE                            AS  Rate                    --汇率                     "
+    },
+    {
+      "line": 99,
+      "text": "    ,UNDERLYING_QUANTITY                      AS  Undrl_Qty               --标的数量                 "
+    },
+    {
+      "line": 100,
+      "text": "    ,PRICE                                    AS  Pric                    --价格                     "
+    },
+    {
+      "line": 101,
+      "text": "    ,KEY_LEG_ID                               AS  Leg_Glbl_Seq_No         --Leg全局序号              "
+    },
+    {
+      "line": 102,
+      "text": "    ,PROFIT_TYPE                              AS  Prft_Type_Cd            --收益类型代码             "
+    },
+    {
+      "line": 103,
+      "text": "    ,KEY_TRS_EVENT_ID                         AS  Swap_Dura_Evt_No        --互换存续期事件编号       "
+    },
+    {
+      "line": 104,
+      "text": "    ,TRS_EVENT_TYPE                           AS  Swap_Dura_Evt_Type_Cd   --互换存续期事件类型代码   "
+    },
+    {
+      "line": 105,
+      "text": "    ,SUBSTR(ACTUAL_PAYMENT_DATE,1,10)         AS  Actl_Paid_Date          --实际支付日期             "
+    },
+    {
+      "line": 106,
+      "text": "    ,AMOUNT                                   AS  Amt                     --金额                     "
+    },
+    {
+      "line": 107,
+      "text": "    ,PAYABLE                                  AS  Our_Payb_Amt            --我司应付金额             "
+    },
+    {
+      "line": 108,
+      "text": "    ,RECEIVALBE                               AS  Our_Rcvb_Amt            --我司应收金额             "
+    },
+    {
+      "line": 109,
+      "text": "    ,AMOUNT_ORG                               AS  Ocrrc_Amt               --原币种金额               "
+    },
+    {
+      "line": 110,
+      "text": "    ,PAYABLE_ORG                              AS  Our_Payb_Ocrrc_Amt      --我司应付原币种金额       "
+    },
+    {
+      "line": 111,
+      "text": "    ,RECEIVALBE_ORG                           AS  Our_Rcvb_Ocrrc_Amt      --我司应收原币种金额       "
+    },
+    {
+      "line": 112,
+      "text": "    ,AMOUNT_ADJUSTED                          AS  Aft_Adj_Amt             --调整后金额               "
+    },
+    {
+      "line": 113,
+      "text": "    ,AMOUNT_RECEIVALBE                        AS  Aft_Adj_Our_Payb_Amt    --调整后我司应付金额       "
+    },
+    {
+      "line": 114,
+      "text": "    ,AMOUNT_PAYABLE                           AS  Aft_Adj_Our_Rcvb_Amt    --调整后我司应收金额       "
+    },
+    {
+      "line": 115,
+      "text": "    ,AMOUNT_ADJUSTED_ORG                      AS  Aft_Adj_Ocrrc_Amt       --调整后原币种金额         "
+    },
+    {
+      "line": 116,
+      "text": "    ,AMOUNT_RECEIVALBE_ORG                    AS  Aft_Adj_Our_Payb_Ocrrc_Amt--调整后我司应付原币种金额"
+    },
+    {
+      "line": 117,
+      "text": "    ,AMOUNT_PAYABLE_ORG                       AS  Aft_Adj_Our_Rcvb_Ocrrc_Amt--调整后我司应收原币种金额"
+    },
+    {
+      "line": 118,
+      "text": "    ,CLEARING_TYPE                            AS  Clr_Type_Cd             --清算类型代码             "
+    },
+    {
+      "line": 119,
+      "text": "    ,KEY_FEE_PAYMENT_ID                       AS  Paid_Date_Id            --支付日期编号             "
+    },
+    {
+      "line": 120,
+      "text": "    ,CREATED_DATETIME                         AS  Create_Time             --创建时间                 "
+    },
+    {
+      "line": 121,
+      "text": "    ,CREATED_BY                               AS  Creator                 --创建人                   "
+    },
+    {
+      "line": 122,
+      "text": "    ,UPDATED_DATETIME                         AS  Upd_Time                --更新时间                 "
+    },
+    {
+      "line": 123,
+      "text": "    ,UPDATED_BY                               AS  Upd_User                --更新人                   "
+    },
+    {
+      "line": 124,
+      "text": "    ,VERSION                                  AS  Ver_No                  --版本号                   "
+    },
+    {
+      "line": 125,
+      "text": "    ,'${data_src_cd}'                    AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 126,
+      "text": "    ,'${src_table}'                      AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 127,
+      "text": "    ,'${filename}'                       AS  Task_Name               --任务名"
+    },
+    {
+      "line": 128,
+      "text": "    ,'${data_day_str}'                   AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 129,
+      "text": "    ,'${data_day_str}'                   AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 130,
+      "text": "FROM  ODATA_N_TIT.D_TRD_TRANSFER A"
+    },
+    {
+      "line": 131,
+      "text": ""
+    },
+    {
+      "line": 132,
+      "text": ";"
+    },
+    {
+      "line": 133,
+      "text": ""
+    },
+    {
+      "line": 134,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157;"
+    },
+    {
+      "line": 135,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157"
+    },
+    {
+      "line": 136,
+      "text": "AS"
+    },
+    {
+      "line": 137,
+      "text": "SELECT"
+    },
+    {
+      "line": 138,
+      "text": "         A.*"
+    },
+    {
+      "line": 139,
+      "text": "        ,B.Evt_Id                     AS Evt_Id1                   --事件编号"
+    },
+    {
+      "line": 140,
+      "text": "        ,B.Recv_Pymt_No               AS Recv_Pymt_No1             --收付款编号"
+    },
+    {
+      "line": 141,
+      "text": "        ,B.Trd_Id                     AS Trd_Id1                   --交易编号"
+    },
+    {
+      "line": 142,
+      "text": "        ,B.Comp_No                    AS Comp_No1                  --合约编号"
+    },
+    {
+      "line": 143,
+      "text": "        ,B.Paid_Date                  AS Paid_Date1                --支付日期"
+    },
+    {
+      "line": 144,
+      "text": "        ,B.Recv_Pymt_Type_Cd          AS Recv_Pymt_Type_Cd1        --收付款类型代码"
+    },
+    {
+      "line": 145,
+      "text": "        ,B.Crrc_Cd                    AS Crrc_Cd1                  --币种代码"
+    },
+    {
+      "line": 146,
+      "text": "        ,B.Recv_Pymt_Dir_Cd           AS Recv_Pymt_Dir_Cd1         --收付款方向代码"
+    },
+    {
+      "line": 147,
+      "text": "        ,B.Recv_Pymt_Stat_Cd          AS Recv_Pymt_Stat_Cd1        --收付款状态代码"
+    },
+    {
+      "line": 148,
+      "text": "        ,B.Book_Agt_Id                AS Book_Agt_Id1              --账簿协议编号"
+    },
+    {
+      "line": 149,
+      "text": "        ,B.Book_Agt_Modifr            AS Book_Agt_Modifr1          --账簿协议修饰符"
+    },
+    {
+      "line": 150,
+      "text": "        ,B.Begn_Date                  AS Begn_Date1                --起始日期"
+    },
+    {
+      "line": 151,
+      "text": "        ,B.End_Date                   AS End_Date1                 --结束日期"
+    },
+    {
+      "line": 152,
+      "text": "        ,B.Pty_Id                     AS Pty_Id1                   --当事人编号"
+    },
+    {
+      "line": 153,
+      "text": "        ,B.Prd_Id                     AS Prd_Id1                   --产品编号"
+    },
+    {
+      "line": 154,
+      "text": "        ,B.Src_Prd_Id                 AS Src_Prd_Id1               --源产品编号"
+    },
+    {
+      "line": 155,
+      "text": "        ,B.Clr_Date                   AS Clr_Date1                 --清算日期"
+    },
+    {
+      "line": 156,
+      "text": "        ,B.Fee_Type_Cd                AS Fee_Type_Cd1              --费用类型代码"
+    },
+    {
+      "line": 157,
+      "text": "        ,B.Swap_Hold_Id               AS Swap_Hold_Id1             --互换持仓编号"
+    },
+    {
+      "line": 158,
+      "text": "        ,B.Swap_Hold_Undrl_Cd         AS Swap_Hold_Undrl_Cd1       --互换持仓标的代码"
+    },
+    {
+      "line": 159,
+      "text": "        ,B.Src_Prd_Type_Cd            AS Src_Prd_Type_Cd1          --源产品类型代码"
+    },
+    {
+      "line": 160,
+      "text": "        ,B.Rate                       AS Rate1                     --汇率"
+    },
+    {
+      "line": 161,
+      "text": "        ,B.Undrl_Qty                  AS Undrl_Qty1                --标的数量"
+    },
+    {
+      "line": 162,
+      "text": "        ,B.Pric                       AS Pric1                     --价格"
+    },
+    {
+      "line": 163,
+      "text": "        ,B.Leg_Glbl_Seq_No            AS Leg_Glbl_Seq_No1          --Leg全局序号"
+    },
+    {
+      "line": 164,
+      "text": "        ,B.Prft_Type_Cd               AS Prft_Type_Cd1             --收益类型代码"
+    },
+    {
+      "line": 165,
+      "text": "        ,B.Swap_Dura_Evt_No           AS Swap_Dura_Evt_No1         --互换存续期事件编号"
+    },
+    {
+      "line": 166,
+      "text": "        ,B.Swap_Dura_Evt_Type_Cd      AS Swap_Dura_Evt_Type_Cd1    --互换存续期事件类型代码"
+    },
+    {
+      "line": 167,
+      "text": "        ,B.Actl_Paid_Date             AS Actl_Paid_Date1           --实际支付日期"
+    },
+    {
+      "line": 168,
+      "text": "        ,B.Amt                        AS Amt1                      --金额"
+    },
+    {
+      "line": 169,
+      "text": "        ,B.Our_Payb_Amt               AS Our_Payb_Amt1             --我司应付金额"
+    },
+    {
+      "line": 170,
+      "text": "        ,B.Our_Rcvb_Amt               AS Our_Rcvb_Amt1             --我司应收金额"
+    },
+    {
+      "line": 171,
+      "text": "        ,B.Ocrrc_Amt                  AS Ocrrc_Amt1                --原币种金额"
+    },
+    {
+      "line": 172,
+      "text": "        ,B.Our_Payb_Ocrrc_Amt         AS Our_Payb_Ocrrc_Amt1       --我司应付原币种金额"
+    },
+    {
+      "line": 173,
+      "text": "        ,B.Our_Rcvb_Ocrrc_Amt         AS Our_Rcvb_Ocrrc_Amt1       --我司应收原币种金额"
+    },
+    {
+      "line": 174,
+      "text": "        ,B.Aft_Adj_Amt                AS Aft_Adj_Amt1              --调整后金额"
+    },
+    {
+      "line": 175,
+      "text": "        ,B.Aft_Adj_Our_Payb_Amt       AS Aft_Adj_Our_Payb_Amt1     --调整后我司应付金额"
+    },
+    {
+      "line": 176,
+      "text": "        ,B.Aft_Adj_Our_Rcvb_Amt       AS Aft_Adj_Our_Rcvb_Amt1     --调整后我司应收金额"
+    },
+    {
+      "line": 177,
+      "text": "        ,B.Aft_Adj_Ocrrc_Amt          AS Aft_Adj_Ocrrc_Amt1        --调整后原币种金额"
+    },
+    {
+      "line": 178,
+      "text": "        ,B.Aft_Adj_Our_Payb_Ocrrc_Amt   AS Aft_Adj_Our_Payb_Ocrrc_Amt1  --调整后我司应付原币种金额"
+    },
+    {
+      "line": 179,
+      "text": "        ,B.Aft_Adj_Our_Rcvb_Ocrrc_Amt   AS Aft_Adj_Our_Rcvb_Ocrrc_Amt1  --调整后我司应收原币种金额"
+    },
+    {
+      "line": 180,
+      "text": "        ,B.Clr_Type_Cd                AS Clr_Type_Cd1              --清算类型代码"
+    },
+    {
+      "line": 181,
+      "text": "        ,B.Paid_Date_Id               AS Paid_Date_Id1             --支付日期编号"
+    },
+    {
+      "line": 182,
+      "text": "        ,B.Create_Time                AS Create_Time1              --创建时间"
+    },
+    {
+      "line": 183,
+      "text": "        ,B.Creator                    AS Creator1                  --创建人"
+    },
+    {
+      "line": 184,
+      "text": "        ,B.Upd_Time                   AS Upd_Time1                 --更新时间"
+    },
+    {
+      "line": 185,
+      "text": "        ,B.Upd_User                   AS Upd_User1                 --更新人"
+    },
+    {
+      "line": 186,
+      "text": "        ,B.Ver_No                     AS Ver_No1                   --版本号"
+    },
+    {
+      "line": 187,
+      "text": "        ,B.DATA_SRC_CD                AS DATA_SRC_CD1              --数据来源代码"
+    },
+    {
+      "line": 188,
+      "text": "        ,B.SRC_TBL                    AS SRC_TBL1                  --源表"
+    },
+    {
+      "line": 189,
+      "text": "        ,B.TASK_NAME                  AS TASK_NAME1                --任务名"
+    },
+    {
+      "line": 190,
+      "text": "        ,B.DATA_ETL_DATE              AS DATA_ETL_DATE1            --数据加载日期"
+    },
+    {
+      "line": 191,
+      "text": "        ,B.DATA_UPT_DATE              AS DATA_UPT_DATE1            --数据更新日期"
+    },
+    {
+      "line": 192,
+      "text": "        ,CASE WHEN A.Evt_Id IS NULL     AND B.Evt_Id IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 193,
+      "text": "              WHEN A.Evt_Id IS NOT NULL AND B.Evt_Id IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 194,
+      "text": "              WHEN A.Evt_Id IS NOT NULL AND B.Evt_Id IS NOT NULL AND ("
+    },
+    {
+      "line": 195,
+      "text": "                     COALESCE(A.Recv_Pymt_No            ,'') <> COALESCE(B.Recv_Pymt_No            ,'')"
+    },
+    {
+      "line": 196,
+      "text": "                  OR COALESCE(A.Trd_Id                  ,'') <> COALESCE(B.Trd_Id                  ,'')"
+    },
+    {
+      "line": 197,
+      "text": "                  OR COALESCE(A.Comp_No                 ,'') <> COALESCE(B.Comp_No                 ,'')"
+    },
+    {
+      "line": 198,
+      "text": "                  OR COALESCE(A.Paid_Date               ,'') <> COALESCE(B.Paid_Date               ,'')"
+    },
+    {
+      "line": 199,
+      "text": "                  OR COALESCE(A.Recv_Pymt_Type_Cd       ,'') <> COALESCE(B.Recv_Pymt_Type_Cd       ,'')"
+    },
+    {
+      "line": 200,
+      "text": "                  OR COALESCE(A.Crrc_Cd                 ,'') <> COALESCE(B.Crrc_Cd                 ,'')"
+    },
+    {
+      "line": 201,
+      "text": "                  OR COALESCE(A.Recv_Pymt_Dir_Cd        ,'') <> COALESCE(B.Recv_Pymt_Dir_Cd        ,'')"
+    },
+    {
+      "line": 202,
+      "text": "                  OR COALESCE(A.Recv_Pymt_Stat_Cd       ,'') <> COALESCE(B.Recv_Pymt_Stat_Cd       ,'')"
+    },
+    {
+      "line": 203,
+      "text": "                  OR COALESCE(A.Book_Agt_Id             ,'') <> COALESCE(B.Book_Agt_Id             ,'')"
+    },
+    {
+      "line": 204,
+      "text": "                  OR COALESCE(A.Book_Agt_Modifr         ,'') <> COALESCE(B.Book_Agt_Modifr         ,'')"
+    },
+    {
+      "line": 205,
+      "text": "                  OR COALESCE(A.Begn_Date               ,'') <> COALESCE(B.Begn_Date               ,'')"
+    },
+    {
+      "line": 206,
+      "text": "                  OR COALESCE(A.End_Date                ,'') <> COALESCE(B.End_Date                ,'')"
+    },
+    {
+      "line": 207,
+      "text": "                  OR COALESCE(A.Pty_Id                  ,'') <> COALESCE(B.Pty_Id                  ,'')"
+    },
+    {
+      "line": 208,
+      "text": "                  OR COALESCE(A.Prd_Id                  ,'') <> COALESCE(B.Prd_Id                  ,'')"
+    },
+    {
+      "line": 209,
+      "text": "                  OR COALESCE(A.Src_Prd_Id              ,'') <> COALESCE(B.Src_Prd_Id              ,'')"
+    },
+    {
+      "line": 210,
+      "text": "                  OR COALESCE(A.Clr_Date                ,'') <> COALESCE(B.Clr_Date                ,'')"
+    },
+    {
+      "line": 211,
+      "text": "                  OR COALESCE(A.Fee_Type_Cd             ,'') <> COALESCE(B.Fee_Type_Cd             ,'')"
+    },
+    {
+      "line": 212,
+      "text": "                  OR COALESCE(A.Swap_Hold_Id            ,'') <> COALESCE(B.Swap_Hold_Id            ,'')"
+    },
+    {
+      "line": 213,
+      "text": "                  OR COALESCE(A.Swap_Hold_Undrl_Cd      ,'') <> COALESCE(B.Swap_Hold_Undrl_Cd      ,'')"
+    },
+    {
+      "line": 214,
+      "text": "                  OR COALESCE(A.Src_Prd_Type_Cd         ,'') <> COALESCE(B.Src_Prd_Type_Cd         ,'')"
+    },
+    {
+      "line": 215,
+      "text": "                  OR COALESCE(A.Rate                    ,'') <> COALESCE(B.Rate                    ,'')"
+    },
+    {
+      "line": 216,
+      "text": "                  OR COALESCE(A.Undrl_Qty               ,'') <> COALESCE(B.Undrl_Qty               ,'')"
+    },
+    {
+      "line": 217,
+      "text": "                  OR COALESCE(A.Pric                    ,'') <> COALESCE(B.Pric                    ,'')"
+    },
+    {
+      "line": 218,
+      "text": "                  OR COALESCE(A.Leg_Glbl_Seq_No         ,'') <> COALESCE(B.Leg_Glbl_Seq_No         ,'')"
+    },
+    {
+      "line": 219,
+      "text": "                  OR COALESCE(A.Prft_Type_Cd            ,'') <> COALESCE(B.Prft_Type_Cd            ,'')"
+    },
+    {
+      "line": 220,
+      "text": "                  OR COALESCE(A.Swap_Dura_Evt_No        ,'') <> COALESCE(B.Swap_Dura_Evt_No        ,'')"
+    },
+    {
+      "line": 221,
+      "text": "                  OR COALESCE(A.Swap_Dura_Evt_Type_Cd   ,'') <> COALESCE(B.Swap_Dura_Evt_Type_Cd   ,'')"
+    },
+    {
+      "line": 222,
+      "text": "                  OR COALESCE(A.Actl_Paid_Date          ,'') <> COALESCE(B.Actl_Paid_Date          ,'')"
+    },
+    {
+      "line": 223,
+      "text": "                  OR COALESCE(A.Amt                     ,'') <> COALESCE(B.Amt                     ,'')"
+    },
+    {
+      "line": 224,
+      "text": "                  OR COALESCE(A.Our_Payb_Amt            ,'') <> COALESCE(B.Our_Payb_Amt            ,'')"
+    },
+    {
+      "line": 225,
+      "text": "                  OR COALESCE(A.Our_Rcvb_Amt            ,'') <> COALESCE(B.Our_Rcvb_Amt            ,'')"
+    },
+    {
+      "line": 226,
+      "text": "                  OR COALESCE(A.Ocrrc_Amt               ,'') <> COALESCE(B.Ocrrc_Amt               ,'')"
+    },
+    {
+      "line": 227,
+      "text": "                  OR COALESCE(A.Our_Payb_Ocrrc_Amt      ,'') <> COALESCE(B.Our_Payb_Ocrrc_Amt      ,'')"
+    },
+    {
+      "line": 228,
+      "text": "                  OR COALESCE(A.Our_Rcvb_Ocrrc_Amt      ,'') <> COALESCE(B.Our_Rcvb_Ocrrc_Amt      ,'')"
+    },
+    {
+      "line": 229,
+      "text": "                  OR COALESCE(A.Aft_Adj_Amt             ,'') <> COALESCE(B.Aft_Adj_Amt             ,'')"
+    },
+    {
+      "line": 230,
+      "text": "                  OR COALESCE(A.Aft_Adj_Our_Payb_Amt    ,'') <> COALESCE(B.Aft_Adj_Our_Payb_Amt    ,'')"
+    },
+    {
+      "line": 231,
+      "text": "                  OR COALESCE(A.Aft_Adj_Our_Rcvb_Amt    ,'') <> COALESCE(B.Aft_Adj_Our_Rcvb_Amt    ,'')"
+    },
+    {
+      "line": 232,
+      "text": "                  OR COALESCE(A.Aft_Adj_Ocrrc_Amt       ,'') <> COALESCE(B.Aft_Adj_Ocrrc_Amt       ,'')"
+    },
+    {
+      "line": 233,
+      "text": "                  OR COALESCE(A.Aft_Adj_Our_Payb_Ocrrc_Amt,'') <> COALESCE(B.Aft_Adj_Our_Payb_Ocrrc_Amt,'')"
+    },
+    {
+      "line": 234,
+      "text": "                  OR COALESCE(A.Aft_Adj_Our_Rcvb_Ocrrc_Amt,'') <> COALESCE(B.Aft_Adj_Our_Rcvb_Ocrrc_Amt,'')"
+    },
+    {
+      "line": 235,
+      "text": "                  OR COALESCE(A.Clr_Type_Cd             ,'') <> COALESCE(B.Clr_Type_Cd             ,'')"
+    },
+    {
+      "line": 236,
+      "text": "                  OR COALESCE(A.Paid_Date_Id            ,'') <> COALESCE(B.Paid_Date_Id            ,'')"
+    },
+    {
+      "line": 237,
+      "text": "                  OR COALESCE(A.Create_Time             ,'') <> COALESCE(B.Create_Time             ,'')"
+    },
+    {
+      "line": 238,
+      "text": "                  OR COALESCE(A.Creator                 ,'') <> COALESCE(B.Creator                 ,'')"
+    },
+    {
+      "line": 239,
+      "text": "                  OR COALESCE(A.Upd_Time                ,'') <> COALESCE(B.Upd_Time                ,'')"
+    },
+    {
+      "line": 240,
+      "text": "                  OR COALESCE(A.Upd_User                ,'') <> COALESCE(B.Upd_User                ,'')"
+    },
+    {
+      "line": 241,
+      "text": "                  OR COALESCE(A.Ver_No                  ,'') <> COALESCE(B.Ver_No                  ,'')"
+    },
+    {
+      "line": 242,
+      "text": "             ) THEN 'U' --变更"
+    },
+    {
+      "line": 243,
+      "text": "             ELSE 'S' --无变更"
+    },
+    {
+      "line": 244,
+      "text": "             END                 AS DATA_TYPE              --数据类型"
+    },
+    {
+      "line": 245,
+      "text": "FROM  (SELECT * FROM T05_OTC_RECV_PYMT_EVT "
+    },
+    {
+      "line": 246,
+      "text": "                WHERE SRC_TBL='ODATA_N_TIT.D_TRD_TRANSFER')A"
+    },
+    {
+      "line": 247,
+      "text": "FULL OUTER JOIN ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_TEMP_TIT157 B"
+    },
+    {
+      "line": 248,
+      "text": "ON    A.Evt_Id=B.Evt_Id"
+    },
+    {
+      "line": 249,
+      "text": ";"
+    },
+    {
+      "line": 250,
+      "text": ""
+    },
+    {
+      "line": 251,
+      "text": "-- querySql"
+    },
+    {
+      "line": 252,
+      "text": "INSERT OVERWRITE TABLE T05_OTC_RECV_PYMT_EVT PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 253,
+      "text": " --剔除当日新增的数据"
+    },
+    {
+      "line": 254,
+      "text": "SELECT"
+    },
+    {
+      "line": 255,
+      "text": "      *"
+    },
+    {
+      "line": 256,
+      "text": "  FROM T05_OTC_RECV_PYMT_EVT"
+    },
+    {
+      "line": 257,
+      "text": "  WHERE DATA_ETL_DATE !='${data_day_str}' "
+    },
+    {
+      "line": 258,
+      "text": "    AND SRC_TBL = 'ODATA_N_TIT.D_TRD_TRANSFER'"
+    },
+    {
+      "line": 259,
+      "text": ";"
+    },
+    {
+      "line": 260,
+      "text": ""
+    },
+    {
+      "line": 261,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 262,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 263,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 264,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 265,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 266,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 267,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 268,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 269,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 270,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 271,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 272,
+      "text": ""
+    },
+    {
+      "line": 273,
+      "text": "INSERT OVERWRITE TABLE T05_OTC_RECV_PYMT_EVT PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 274,
+      "text": "SELECT"
+    },
+    {
+      "line": 275,
+      "text": "     Evt_Id                                        --事件编号"
+    },
+    {
+      "line": 276,
+      "text": "    ,Recv_Pymt_No                                  --收付款编号"
+    },
+    {
+      "line": 277,
+      "text": "    ,Trd_Id                                        --交易编号"
+    },
+    {
+      "line": 278,
+      "text": "    ,Comp_No                                       --合约编号"
+    },
+    {
+      "line": 279,
+      "text": "    ,Paid_Date                                     --支付日期"
+    },
+    {
+      "line": 280,
+      "text": "    ,Recv_Pymt_Type_Cd                             --收付款类型代码"
+    },
+    {
+      "line": 281,
+      "text": "    ,Crrc_Cd                                       --币种代码"
+    },
+    {
+      "line": 282,
+      "text": "    ,Recv_Pymt_Dir_Cd                              --收付款方向代码"
+    },
+    {
+      "line": 283,
+      "text": "    ,Recv_Pymt_Stat_Cd                             --收付款状态代码"
+    },
+    {
+      "line": 284,
+      "text": "    ,Book_Agt_Id                                   --账簿协议编号"
+    },
+    {
+      "line": 285,
+      "text": "    ,Book_Agt_Modifr                               --账簿协议修饰符"
+    },
+    {
+      "line": 286,
+      "text": "    ,Begn_Date                                     --起始日期"
+    },
+    {
+      "line": 287,
+      "text": "    ,End_Date                                      --结束日期"
+    },
+    {
+      "line": 288,
+      "text": "    ,Pty_Id                                        --当事人编号"
+    },
+    {
+      "line": 289,
+      "text": "    ,Prd_Id                                        --产品编号"
+    },
+    {
+      "line": 290,
+      "text": "    ,Src_Prd_Id                                    --源产品编号"
+    },
+    {
+      "line": 291,
+      "text": "    ,Clr_Date                                      --清算日期"
+    },
+    {
+      "line": 292,
+      "text": "    ,Fee_Type_Cd                                   --费用类型代码"
+    },
+    {
+      "line": 293,
+      "text": "    ,Swap_Hold_Id                                  --互换持仓编号"
+    },
+    {
+      "line": 294,
+      "text": "    ,Swap_Hold_Undrl_Cd                            --互换持仓标的代码"
+    },
+    {
+      "line": 295,
+      "text": "    ,Src_Prd_Type_Cd                               --源产品类型代码"
+    },
+    {
+      "line": 296,
+      "text": "    ,Rate                                          --汇率"
+    },
+    {
+      "line": 297,
+      "text": "    ,Undrl_Qty                                     --标的数量"
+    },
+    {
+      "line": 298,
+      "text": "    ,Pric                                          --价格"
+    },
+    {
+      "line": 299,
+      "text": "    ,Leg_Glbl_Seq_No                               --Leg全局序号"
+    },
+    {
+      "line": 300,
+      "text": "    ,Prft_Type_Cd                                  --收益类型代码"
+    },
+    {
+      "line": 301,
+      "text": "    ,Swap_Dura_Evt_No                              --互换存续期事件编号"
+    },
+    {
+      "line": 302,
+      "text": "    ,Swap_Dura_Evt_Type_Cd                         --互换存续期事件类型代码"
+    },
+    {
+      "line": 303,
+      "text": "    ,Actl_Paid_Date                                --实际支付日期"
+    },
+    {
+      "line": 304,
+      "text": "    ,Amt                                           --金额"
+    },
+    {
+      "line": 305,
+      "text": "    ,Our_Payb_Amt                                  --我司应付金额"
+    },
+    {
+      "line": 306,
+      "text": "    ,Our_Rcvb_Amt                                  --我司应收金额"
+    },
+    {
+      "line": 307,
+      "text": "    ,Ocrrc_Amt                                     --原币种金额"
+    },
+    {
+      "line": 308,
+      "text": "    ,Our_Payb_Ocrrc_Amt                            --我司应付原币种金额"
+    },
+    {
+      "line": 309,
+      "text": "    ,Our_Rcvb_Ocrrc_Amt                            --我司应收原币种金额"
+    },
+    {
+      "line": 310,
+      "text": "    ,Aft_Adj_Amt                                   --调整后金额"
+    },
+    {
+      "line": 311,
+      "text": "    ,Aft_Adj_Our_Payb_Amt                          --调整后我司应付金额"
+    },
+    {
+      "line": 312,
+      "text": "    ,Aft_Adj_Our_Rcvb_Amt                          --调整后我司应收金额"
+    },
+    {
+      "line": 313,
+      "text": "    ,Aft_Adj_Ocrrc_Amt                             --调整后原币种金额"
+    },
+    {
+      "line": 314,
+      "text": "    ,Aft_Adj_Our_Payb_Ocrrc_Amt                    --调整后我司应付原币种金额"
+    },
+    {
+      "line": 315,
+      "text": "    ,Aft_Adj_Our_Rcvb_Ocrrc_Amt                    --调整后我司应收原币种金额"
+    },
+    {
+      "line": 316,
+      "text": "    ,Clr_Type_Cd                                   --清算类型代码"
+    },
+    {
+      "line": 317,
+      "text": "    ,Paid_Date_Id                                  --支付日期编号"
+    },
+    {
+      "line": 318,
+      "text": "    ,Create_Time                                   --创建时间"
+    },
+    {
+      "line": 319,
+      "text": "    ,Creator                                       --创建人"
+    },
+    {
+      "line": 320,
+      "text": "    ,Upd_Time                                      --更新时间"
+    },
+    {
+      "line": 321,
+      "text": "    ,Upd_User                                      --更新人"
+    },
+    {
+      "line": 322,
+      "text": "    ,Ver_No                                        --版本号"
+    },
+    {
+      "line": 323,
+      "text": "    ,'0'                     AS Del_Flag           --删除标志"
+    },
+    {
+      "line": 324,
+      "text": "    ,''                      AS Del_Date           --删除日期"
+    },
+    {
+      "line": 325,
+      "text": "    ,Data_Src_Cd                                   --数据来源代码"
+    },
+    {
+      "line": 326,
+      "text": "    ,Task_Name                                     --任务名"
+    },
+    {
+      "line": 327,
+      "text": "    ,Data_Etl_Date                                 --数据加载日期"
+    },
+    {
+      "line": 328,
+      "text": "    ,Data_Upt_Date                                 --数据更新日期"
+    },
+    {
+      "line": 329,
+      "text": "    ,Data_Time                                     --数据时间"
+    },
+    {
+      "line": 330,
+      "text": "    ,Src_Tbl                                       --源表"
+    },
+    {
+      "line": 331,
+      "text": "FROM ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157 WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 332,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 333,
+      "text": "SELECT"
+    },
+    {
+      "line": 334,
+      "text": "     Evt_Id1                                      AS Evt_Id                   --事件编号"
+    },
+    {
+      "line": 335,
+      "text": "    ,Recv_Pymt_No1                                AS Recv_Pymt_No             --收付款编号"
+    },
+    {
+      "line": 336,
+      "text": "    ,Trd_Id1                                      AS Trd_Id                   --交易编号"
+    },
+    {
+      "line": 337,
+      "text": "    ,Comp_No1                                     AS Comp_No                  --合约编号"
+    },
+    {
+      "line": 338,
+      "text": "    ,Paid_Date1                                   AS Paid_Date                --支付日期"
+    },
+    {
+      "line": 339,
+      "text": "    ,Recv_Pymt_Type_Cd1                           AS Recv_Pymt_Type_Cd        --收付款类型代码"
+    },
+    {
+      "line": 340,
+      "text": "    ,Crrc_Cd1                                     AS Crrc_Cd                  --币种代码"
+    },
+    {
+      "line": 341,
+      "text": "    ,Recv_Pymt_Dir_Cd1                            AS Recv_Pymt_Dir_Cd         --收付款方向代码"
+    },
+    {
+      "line": 342,
+      "text": "    ,Recv_Pymt_Stat_Cd1                           AS Recv_Pymt_Stat_Cd        --收付款状态代码"
+    },
+    {
+      "line": 343,
+      "text": "    ,Book_Agt_Id1                                 AS Book_Agt_Id              --账簿协议编号"
+    },
+    {
+      "line": 344,
+      "text": "    ,Book_Agt_Modifr1                             AS Book_Agt_Modifr          --账簿协议修饰符"
+    },
+    {
+      "line": 345,
+      "text": "    ,Begn_Date1                                   AS Begn_Date                --起始日期"
+    },
+    {
+      "line": 346,
+      "text": "    ,End_Date1                                    AS End_Date                 --结束日期"
+    },
+    {
+      "line": 347,
+      "text": "    ,Pty_Id1                                      AS Pty_Id                   --当事人编号"
+    },
+    {
+      "line": 348,
+      "text": "    ,Prd_Id1                                      AS Prd_Id                   --产品编号"
+    },
+    {
+      "line": 349,
+      "text": "    ,Src_Prd_Id1                                  AS Src_Prd_Id               --源产品编号"
+    },
+    {
+      "line": 350,
+      "text": "    ,Clr_Date1                                    AS Clr_Date                 --清算日期"
+    },
+    {
+      "line": 351,
+      "text": "    ,Fee_Type_Cd1                                 AS Fee_Type_Cd              --费用类型代码"
+    },
+    {
+      "line": 352,
+      "text": "    ,Swap_Hold_Id1                                AS Swap_Hold_Id             --互换持仓编号"
+    },
+    {
+      "line": 353,
+      "text": "    ,Swap_Hold_Undrl_Cd1                          AS Swap_Hold_Undrl_Cd       --互换持仓标的代码"
+    },
+    {
+      "line": 354,
+      "text": "    ,Src_Prd_Type_Cd1                             AS Src_Prd_Type_Cd          --源产品类型代码"
+    },
+    {
+      "line": 355,
+      "text": "    ,Rate1                                        AS Rate                     --汇率"
+    },
+    {
+      "line": 356,
+      "text": "    ,Undrl_Qty1                                   AS Undrl_Qty                --标的数量"
+    },
+    {
+      "line": 357,
+      "text": "    ,Pric1                                        AS Pric                     --价格"
+    },
+    {
+      "line": 358,
+      "text": "    ,Leg_Glbl_Seq_No1                             AS Leg_Glbl_Seq_No          --Leg全局序号"
+    },
+    {
+      "line": 359,
+      "text": "    ,Prft_Type_Cd1                                AS Prft_Type_Cd             --收益类型代码"
+    },
+    {
+      "line": 360,
+      "text": "    ,Swap_Dura_Evt_No1                            AS Swap_Dura_Evt_No         --互换存续期事件编号"
+    },
+    {
+      "line": 361,
+      "text": "    ,Swap_Dura_Evt_Type_Cd1                       AS Swap_Dura_Evt_Type_Cd    --互换存续期事件类型代码"
+    },
+    {
+      "line": 362,
+      "text": "    ,Actl_Paid_Date1                              AS Actl_Paid_Date           --实际支付日期"
+    },
+    {
+      "line": 363,
+      "text": "    ,Amt1                                         AS Amt                      --金额"
+    },
+    {
+      "line": 364,
+      "text": "    ,Our_Payb_Amt1                                AS Our_Payb_Amt             --我司应付金额"
+    },
+    {
+      "line": 365,
+      "text": "    ,Our_Rcvb_Amt1                                AS Our_Rcvb_Amt             --我司应收金额"
+    },
+    {
+      "line": 366,
+      "text": "    ,Ocrrc_Amt1                                   AS Ocrrc_Amt                --原币种金额"
+    },
+    {
+      "line": 367,
+      "text": "    ,Our_Payb_Ocrrc_Amt1                          AS Our_Payb_Ocrrc_Amt       --我司应付原币种金额"
+    },
+    {
+      "line": 368,
+      "text": "    ,Our_Rcvb_Ocrrc_Amt1                          AS Our_Rcvb_Ocrrc_Amt       --我司应收原币种金额"
+    },
+    {
+      "line": 369,
+      "text": "    ,Aft_Adj_Amt1                                 AS Aft_Adj_Amt              --调整后金额"
+    },
+    {
+      "line": 370,
+      "text": "    ,Aft_Adj_Our_Payb_Amt1                        AS Aft_Adj_Our_Payb_Amt     --调整后我司应付金额"
+    },
+    {
+      "line": 371,
+      "text": "    ,Aft_Adj_Our_Rcvb_Amt1                        AS Aft_Adj_Our_Rcvb_Amt     --调整后我司应收金额"
+    },
+    {
+      "line": 372,
+      "text": "    ,Aft_Adj_Ocrrc_Amt1                           AS Aft_Adj_Ocrrc_Amt        --调整后原币种金额"
+    },
+    {
+      "line": 373,
+      "text": "    ,Aft_Adj_Our_Payb_Ocrrc_Amt1                  AS Aft_Adj_Our_Payb_Ocrrc_Amt --调整后我司应付原币种金额"
+    },
+    {
+      "line": 374,
+      "text": "    ,Aft_Adj_Our_Rcvb_Ocrrc_Amt1                  AS Aft_Adj_Our_Rcvb_Ocrrc_Amt --调整后我司应收原币种金额"
+    },
+    {
+      "line": 375,
+      "text": "    ,Clr_Type_Cd1                                 AS Clr_Type_Cd              --清算类型代码"
+    },
+    {
+      "line": 376,
+      "text": "    ,Paid_Date_Id1                                AS Paid_Date_Id             --支付日期编号"
+    },
+    {
+      "line": 377,
+      "text": "    ,Create_Time1                                 AS Create_Time              --创建时间"
+    },
+    {
+      "line": 378,
+      "text": "    ,Creator1                                     AS Creator                  --创建人"
+    },
+    {
+      "line": 379,
+      "text": "    ,Upd_Time1                                    AS Upd_Time                 --更新时间"
+    },
+    {
+      "line": 380,
+      "text": "    ,Upd_User1                                    AS Upd_User                 --更新人"
+    },
+    {
+      "line": 381,
+      "text": "    ,Ver_No1                                      AS Ver_No                   --版本号"
+    },
+    {
+      "line": 382,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 383,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 384,
+      "text": "    ,Data_Src_Cd1                                 AS Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 385,
+      "text": "    ,Task_Name1                                   AS Task_Name                --任务名"
+    },
+    {
+      "line": 386,
+      "text": "    ,Data_Etl_Date                                AS Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 387,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 388,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 389,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 390,
+      "text": "FROM ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157  WHERE DATA_TYPE='U'   --有变更的数据取变更的值"
+    },
+    {
+      "line": 391,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 392,
+      "text": "SELECT"
+    },
+    {
+      "line": 393,
+      "text": "     Evt_Id1                                      AS Evt_Id                   --事件编号"
+    },
+    {
+      "line": 394,
+      "text": "    ,Recv_Pymt_No1                                AS Recv_Pymt_No             --收付款编号"
+    },
+    {
+      "line": 395,
+      "text": "    ,Trd_Id1                                      AS Trd_Id                   --交易编号"
+    },
+    {
+      "line": 396,
+      "text": "    ,Comp_No1                                     AS Comp_No                  --合约编号"
+    },
+    {
+      "line": 397,
+      "text": "    ,Paid_Date1                                   AS Paid_Date                --支付日期"
+    },
+    {
+      "line": 398,
+      "text": "    ,Recv_Pymt_Type_Cd1                           AS Recv_Pymt_Type_Cd        --收付款类型代码"
+    },
+    {
+      "line": 399,
+      "text": "    ,Crrc_Cd1                                     AS Crrc_Cd                  --币种代码"
+    },
+    {
+      "line": 400,
+      "text": "    ,Recv_Pymt_Dir_Cd1                            AS Recv_Pymt_Dir_Cd         --收付款方向代码"
+    },
+    {
+      "line": 401,
+      "text": "    ,Recv_Pymt_Stat_Cd1                           AS Recv_Pymt_Stat_Cd        --收付款状态代码"
+    },
+    {
+      "line": 402,
+      "text": "    ,Book_Agt_Id1                                 AS Book_Agt_Id              --账簿协议编号"
+    },
+    {
+      "line": 403,
+      "text": "    ,Book_Agt_Modifr1                             AS Book_Agt_Modifr          --账簿协议修饰符"
+    },
+    {
+      "line": 404,
+      "text": "    ,Begn_Date1                                   AS Begn_Date                --起始日期"
+    },
+    {
+      "line": 405,
+      "text": "    ,End_Date1                                    AS End_Date                 --结束日期"
+    },
+    {
+      "line": 406,
+      "text": "    ,Pty_Id1                                      AS Pty_Id                   --当事人编号"
+    },
+    {
+      "line": 407,
+      "text": "    ,Prd_Id1                                      AS Prd_Id                   --产品编号"
+    },
+    {
+      "line": 408,
+      "text": "    ,Src_Prd_Id1                                  AS Src_Prd_Id               --源产品编号"
+    },
+    {
+      "line": 409,
+      "text": "    ,Clr_Date1                                    AS Clr_Date                 --清算日期"
+    },
+    {
+      "line": 410,
+      "text": "    ,Fee_Type_Cd1                                 AS Fee_Type_Cd              --费用类型代码"
+    },
+    {
+      "line": 411,
+      "text": "    ,Swap_Hold_Id1                                AS Swap_Hold_Id             --互换持仓编号"
+    },
+    {
+      "line": 412,
+      "text": "    ,Swap_Hold_Undrl_Cd1                          AS Swap_Hold_Undrl_Cd       --互换持仓标的代码"
+    },
+    {
+      "line": 413,
+      "text": "    ,Src_Prd_Type_Cd1                             AS Src_Prd_Type_Cd          --源产品类型代码"
+    },
+    {
+      "line": 414,
+      "text": "    ,Rate1                                        AS Rate                     --汇率"
+    },
+    {
+      "line": 415,
+      "text": "    ,Undrl_Qty1                                   AS Undrl_Qty                --标的数量"
+    },
+    {
+      "line": 416,
+      "text": "    ,Pric1                                        AS Pric                     --价格"
+    },
+    {
+      "line": 417,
+      "text": "    ,Leg_Glbl_Seq_No1                             AS Leg_Glbl_Seq_No          --Leg全局序号"
+    },
+    {
+      "line": 418,
+      "text": "    ,Prft_Type_Cd1                                AS Prft_Type_Cd             --收益类型代码"
+    },
+    {
+      "line": 419,
+      "text": "    ,Swap_Dura_Evt_No1                            AS Swap_Dura_Evt_No         --互换存续期事件编号"
+    },
+    {
+      "line": 420,
+      "text": "    ,Swap_Dura_Evt_Type_Cd1                       AS Swap_Dura_Evt_Type_Cd    --互换存续期事件类型代码"
+    },
+    {
+      "line": 421,
+      "text": "    ,Actl_Paid_Date1                              AS Actl_Paid_Date           --实际支付日期"
+    },
+    {
+      "line": 422,
+      "text": "    ,Amt1                                         AS Amt                      --金额"
+    },
+    {
+      "line": 423,
+      "text": "    ,Our_Payb_Amt1                                AS Our_Payb_Amt             --我司应付金额"
+    },
+    {
+      "line": 424,
+      "text": "    ,Our_Rcvb_Amt1                                AS Our_Rcvb_Amt             --我司应收金额"
+    },
+    {
+      "line": 425,
+      "text": "    ,Ocrrc_Amt1                                   AS Ocrrc_Amt                --原币种金额"
+    },
+    {
+      "line": 426,
+      "text": "    ,Our_Payb_Ocrrc_Amt1                          AS Our_Payb_Ocrrc_Amt       --我司应付原币种金额"
+    },
+    {
+      "line": 427,
+      "text": "    ,Our_Rcvb_Ocrrc_Amt1                          AS Our_Rcvb_Ocrrc_Amt       --我司应收原币种金额"
+    },
+    {
+      "line": 428,
+      "text": "    ,Aft_Adj_Amt1                                 AS Aft_Adj_Amt              --调整后金额"
+    },
+    {
+      "line": 429,
+      "text": "    ,Aft_Adj_Our_Payb_Amt1                        AS Aft_Adj_Our_Payb_Amt     --调整后我司应付金额"
+    },
+    {
+      "line": 430,
+      "text": "    ,Aft_Adj_Our_Rcvb_Amt1                        AS Aft_Adj_Our_Rcvb_Amt     --调整后我司应收金额"
+    },
+    {
+      "line": 431,
+      "text": "    ,Aft_Adj_Ocrrc_Amt1                           AS Aft_Adj_Ocrrc_Amt        --调整后原币种金额"
+    },
+    {
+      "line": 432,
+      "text": "    ,Aft_Adj_Our_Payb_Ocrrc_Amt1                  AS Aft_Adj_Our_Payb_Ocrrc_Amt --调整后我司应付原币种金额"
+    },
+    {
+      "line": 433,
+      "text": "    ,Aft_Adj_Our_Rcvb_Ocrrc_Amt1                  AS Aft_Adj_Our_Rcvb_Ocrrc_Amt --调整后我司应收原币种金额"
+    },
+    {
+      "line": 434,
+      "text": "    ,Clr_Type_Cd1                                 AS Clr_Type_Cd              --清算类型代码"
+    },
+    {
+      "line": 435,
+      "text": "    ,Paid_Date_Id1                                AS Paid_Date_Id             --支付日期编号"
+    },
+    {
+      "line": 436,
+      "text": "    ,Create_Time1                                 AS Create_Time              --创建时间"
+    },
+    {
+      "line": 437,
+      "text": "    ,Creator1                                     AS Creator                  --创建人"
+    },
+    {
+      "line": 438,
+      "text": "    ,Upd_Time1                                    AS Upd_Time                 --更新时间"
+    },
+    {
+      "line": 439,
+      "text": "    ,Upd_User1                                    AS Upd_User                 --更新人"
+    },
+    {
+      "line": 440,
+      "text": "    ,Ver_No1                                      AS Ver_No                   --版本号"
+    },
+    {
+      "line": 441,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 442,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 443,
+      "text": "    ,Data_Src_Cd1                                 As Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 444,
+      "text": "    ,Task_Name1                                   As Task_Name                --任务名"
+    },
+    {
+      "line": 445,
+      "text": "    ,Data_Etl_Date1                               As Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 446,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 447,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 448,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 449,
+      "text": "FROM ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157  WHERE DATA_TYPE='I'   --插入新增的数据"
+    },
+    {
+      "line": 450,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 451,
+      "text": "SELECT"
+    },
+    {
+      "line": 452,
+      "text": "     Evt_Id                                                  --事件编号"
+    },
+    {
+      "line": 453,
+      "text": "    ,Recv_Pymt_No                                            --收付款编号"
+    },
+    {
+      "line": 454,
+      "text": "    ,Trd_Id                                                  --交易编号"
+    },
+    {
+      "line": 455,
+      "text": "    ,Comp_No                                                 --合约编号"
+    },
+    {
+      "line": 456,
+      "text": "    ,Paid_Date                                               --支付日期"
+    },
+    {
+      "line": 457,
+      "text": "    ,Recv_Pymt_Type_Cd                                       --收付款类型代码"
+    },
+    {
+      "line": 458,
+      "text": "    ,Crrc_Cd                                                 --币种代码"
+    },
+    {
+      "line": 459,
+      "text": "    ,Recv_Pymt_Dir_Cd                                        --收付款方向代码"
+    },
+    {
+      "line": 460,
+      "text": "    ,Recv_Pymt_Stat_Cd                                       --收付款状态代码"
+    },
+    {
+      "line": 461,
+      "text": "    ,Book_Agt_Id                                             --账簿协议编号"
+    },
+    {
+      "line": 462,
+      "text": "    ,Book_Agt_Modifr                                         --账簿协议修饰符"
+    },
+    {
+      "line": 463,
+      "text": "    ,Begn_Date                                               --起始日期"
+    },
+    {
+      "line": 464,
+      "text": "    ,End_Date                                                --结束日期"
+    },
+    {
+      "line": 465,
+      "text": "    ,Pty_Id                                                  --当事人编号"
+    },
+    {
+      "line": 466,
+      "text": "    ,Prd_Id                                                  --产品编号"
+    },
+    {
+      "line": 467,
+      "text": "    ,Src_Prd_Id                                              --源产品编号"
+    },
+    {
+      "line": 468,
+      "text": "    ,Clr_Date                                                --清算日期"
+    },
+    {
+      "line": 469,
+      "text": "    ,Fee_Type_Cd                                             --费用类型代码"
+    },
+    {
+      "line": 470,
+      "text": "    ,Swap_Hold_Id                                            --互换持仓编号"
+    },
+    {
+      "line": 471,
+      "text": "    ,Swap_Hold_Undrl_Cd                                      --互换持仓标的代码"
+    },
+    {
+      "line": 472,
+      "text": "    ,Src_Prd_Type_Cd                                         --源产品类型代码"
+    },
+    {
+      "line": 473,
+      "text": "    ,Rate                                                    --汇率"
+    },
+    {
+      "line": 474,
+      "text": "    ,Undrl_Qty                                               --标的数量"
+    },
+    {
+      "line": 475,
+      "text": "    ,Pric                                                    --价格"
+    },
+    {
+      "line": 476,
+      "text": "    ,Leg_Glbl_Seq_No                                         --Leg全局序号"
+    },
+    {
+      "line": 477,
+      "text": "    ,Prft_Type_Cd                                            --收益类型代码"
+    },
+    {
+      "line": 478,
+      "text": "    ,Swap_Dura_Evt_No                                        --互换存续期事件编号"
+    },
+    {
+      "line": 479,
+      "text": "    ,Swap_Dura_Evt_Type_Cd                                   --互换存续期事件类型代码"
+    },
+    {
+      "line": 480,
+      "text": "    ,Actl_Paid_Date                                          --实际支付日期"
+    },
+    {
+      "line": 481,
+      "text": "    ,Amt                                                     --金额"
+    },
+    {
+      "line": 482,
+      "text": "    ,Our_Payb_Amt                                            --我司应付金额"
+    },
+    {
+      "line": 483,
+      "text": "    ,Our_Rcvb_Amt                                            --我司应收金额"
+    },
+    {
+      "line": 484,
+      "text": "    ,Ocrrc_Amt                                               --原币种金额"
+    },
+    {
+      "line": 485,
+      "text": "    ,Our_Payb_Ocrrc_Amt                                      --我司应付原币种金额"
+    },
+    {
+      "line": 486,
+      "text": "    ,Our_Rcvb_Ocrrc_Amt                                      --我司应收原币种金额"
+    },
+    {
+      "line": 487,
+      "text": "    ,Aft_Adj_Amt                                             --调整后金额"
+    },
+    {
+      "line": 488,
+      "text": "    ,Aft_Adj_Our_Payb_Amt                                    --调整后我司应付金额"
+    },
+    {
+      "line": 489,
+      "text": "    ,Aft_Adj_Our_Rcvb_Amt                                    --调整后我司应收金额"
+    },
+    {
+      "line": 490,
+      "text": "    ,Aft_Adj_Ocrrc_Amt                                       --调整后原币种金额"
+    },
+    {
+      "line": 491,
+      "text": "    ,Aft_Adj_Our_Payb_Ocrrc_Amt                                --调整后我司应付原币种金额"
+    },
+    {
+      "line": 492,
+      "text": "    ,Aft_Adj_Our_Rcvb_Ocrrc_Amt                                --调整后我司应收原币种金额"
+    },
+    {
+      "line": 493,
+      "text": "    ,Clr_Type_Cd                                             --清算类型代码"
+    },
+    {
+      "line": 494,
+      "text": "    ,Paid_Date_Id                                            --支付日期编号"
+    },
+    {
+      "line": 495,
+      "text": "    ,Create_Time                                             --创建时间"
+    },
+    {
+      "line": 496,
+      "text": "    ,Creator                                                 --创建人"
+    },
+    {
+      "line": 497,
+      "text": "    ,Upd_Time                                                --更新时间"
+    },
+    {
+      "line": 498,
+      "text": "    ,Upd_User                                                --更新人"
+    },
+    {
+      "line": 499,
+      "text": "    ,Ver_No                                                  --版本号"
+    },
+    {
+      "line": 500,
+      "text": "    ,'1'                              AS Del_Flag            --删除标志"
+    },
+    {
+      "line": 501,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 502,
+      "text": "            THEN Del_Date"
+    },
+    {
+      "line": 503,
+      "text": "          ELSE '${data_day_str}'"
+    },
+    {
+      "line": 504,
+      "text": "          END                         AS Del_Date            --删除日期"
+    },
+    {
+      "line": 505,
+      "text": "     ,Data_Src_Cd                                            --数据来源代码"
+    },
+    {
+      "line": 506,
+      "text": "     ,Task_Name                                              --任务名"
+    },
+    {
+      "line": 507,
+      "text": "     ,Data_Etl_Date                                          --数据加载日期"
+    },
+    {
+      "line": 508,
+      "text": "     ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 509,
+      "text": "           THEN Data_Upt_Date"
+    },
+    {
+      "line": 510,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 511,
+      "text": "          END                         AS Data_Upt_Date       --数据更新日期"
+    },
+    {
+      "line": 512,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 513,
+      "text": "            THEN Data_Time"
+    },
+    {
+      "line": 514,
+      "text": "          ELSE '${data_today}'"
+    },
+    {
+      "line": 515,
+      "text": "          END                         AS Data_Time           --数据时间"
+    },
+    {
+      "line": 516,
+      "text": "    ,Src_Tbl                                                 --源表"
+    },
+    {
+      "line": 517,
+      "text": "FROM ${DB_TEMP}.T05_OTC_RECV_PYMT_EVT_MID_TIT157 WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 518,
+      "text": ";"
+    },
+    {
+      "line": 519,
+      "text": ""
+    }
+  ]
+}

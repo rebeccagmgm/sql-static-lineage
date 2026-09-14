@@ -152,6 +152,8 @@ export interface TerminalNode {
   ruleRef: string;
 }
 export interface TraceResult {
+  partitionSelection?: import("../../data-graph/src/asset-graph/partition-selection").PartitionSelection;
+  scopeWarnings?: string[];
   /** Selected roots not queried because the combined relationship budget was reached. */
   unqueriedRootNodeIds?: string[];
   version: string;
@@ -165,6 +167,7 @@ export interface TraceResult {
   terminalNodes: TerminalNode[];
   /** Local SQLite scheduler-catalog task names for task cards synthesized by the view. */
   taskLabels?: Record<string, string>;
+  taskClusters?: Record<string, string>;
   taskTopics?: Record<string, string>;
   taskTopicDescriptions?: Record<string, string>;
   /** Shared CLI/HTTP consumption organization; raw nodes and edges remain canonical. */
@@ -178,6 +181,7 @@ export interface TaskDetail {
   taskId: string;
   taskName?: string;
   owner?: string;
+  cluster?: string;
   /** UI request identity retained for exact follow-up evidence loading. */
   requestedColumn?: string;
   requestedWriteId?: string;
@@ -186,8 +190,11 @@ export interface TaskDetail {
   failureReason?: string;
   bindings: Array<{
     column: string;
+    table?: string;
+    outputScope?: "FINAL" | "OTHER" | "UNKNOWN";
     writeId?: string;
     expression?: string;
+    metadata?: TableMetadata;
     valueOrigin?: FieldValueOrigin;
     inputFields?: Array<{ table: string; column: string }>;
   }>;
@@ -202,6 +209,7 @@ export interface TaskDetail {
   sqlSources?: Array<{ slot: string; content: string }>;
 }
 export interface Anchor {
+  partitionSelection?: import("../../data-graph/src/asset-graph/partition-selection").PartitionSelection;
   taskId?: string;
   table?: string;
   nodeId?: string;
@@ -210,6 +218,59 @@ export interface Anchor {
   /** Raw field members used when a visible field row represents several writes. */
   memberNodeIds?: string[];
   label: string;
+}
+export interface ProcessingSourceLocation {
+  slot: string;
+  lineStart?: number;
+  lineEnd?: number;
+}
+export interface TaskProcessingStage {
+  id: string;
+  kind: "SOURCE" | "WRITE" | "BRANCH";
+  table: string;
+  label?: string;
+  writeId?: string;
+  readOccurrenceId?: string;
+  statementId?: string;
+  statementIndex?: number;
+  slot?: string;
+  role?: "FINAL" | "INTERMEDIATE" | "SOURCE";
+  expressions: Array<{
+    id: string;
+    column: string;
+    text: string;
+    roles?: string[];
+    sourceLocation?: ProcessingSourceLocation;
+  }>;
+  controls: Array<{
+    id: string;
+    kind: string;
+    text: string;
+    sourceLocation?: ProcessingSourceLocation;
+  }>;
+  gapIds?: string[];
+}
+export interface TaskProcessingEdge {
+  id: string;
+  from: string;
+  to: string;
+  kind: "VALUE" | "CONDITION" | "CONTROL" | "MATERIALIZATION";
+  label?: string;
+  status?: "RESOLVED" | "UNRESOLVED";
+  columns?: string[];
+  expressionIds?: string[];
+}
+export interface TaskFieldExplanation {
+  version: string;
+  taskId: string;
+  anchor: { writeId: string; column: string };
+  status: "COMPLETE" | "PARTIAL" | "TRUNCATED";
+  stages: TaskProcessingStage[];
+  edges: TaskProcessingEdge[];
+  gaps: Array<{ id?: string; code: string; message: string; stageId?: string }>;
+  limits: { maxDepth: number; maxNodes: number; maxEdges: number };
+  frontierStageIds: string[];
+  stoppedBy: string[];
 }
 export interface OverviewResult {
   version: string;

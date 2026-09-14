@@ -68,11 +68,12 @@ describe("asset graph live overview", () => {
     expect(run.mock.calls[1][0]).toContain(
       "split(coalesce(n.table,''),'.')[1] <> ''",
     );
-    expect(run.mock.calls[1][1]).toEqual({ limit: 3, hiddenTables: [] });
+    expect(run.mock.calls[1][1]).toEqual({ limit: 3, hiddenTables: [], clusterFiltered: false, clusterTaskIds: [] });
     expect(run.mock.calls[2][1]).toEqual({
       schemas: ["pdata_otc", "dm_otc"],
       limit: 2,
       hiddenTables: [],
+      clusterFiltered: false, clusterTaskIds: [],
     });
     expect(run.mock.calls[2][0]).toContain(
       "split(coalesce(source.table,''),'.')[1] <> ''",

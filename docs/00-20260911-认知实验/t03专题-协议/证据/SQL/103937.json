@@ -1,0 +1,769 @@
+{
+  "task_id": "103937",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.102Z",
+  "payload_sha256": "7570329d29ee61e14d6715f41b7fb4b587a4e43ff9c0ab0f898f40ec2c2a3da5",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_AGT_STAT_H("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Agt_Stat_Type_Cd           STRING COMMENT '协议状态类型代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Strt_Date                  STRING COMMENT '开始日期'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Agt_Cate_Cd                STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Agt_Type_Cd                STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Agt_Stat_Cd                STRING COMMENT '协议状态代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,End_Date                   STRING COMMENT '结束日期'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 21,
+      "text": ")COMMENT '协议状态历史'"
+    },
+    {
+      "line": 22,
+      "text": "PARTITIONED BY (SRC_TBL   STRING COMMENT '源表')"
+    },
+    {
+      "line": 23,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 24,
+      "text": ""
+    },
+    {
+      "line": 25,
+      "text": "DROP TABLE IF EXISTS ${db_temp}.T03_AGT_STAT_H_TEMP_TIT156;"
+    },
+    {
+      "line": 26,
+      "text": "CREATE TABLE IF NOT EXISTS ${db_temp}.T03_AGT_STAT_H_TEMP_TIT156"
+    },
+    {
+      "line": 27,
+      "text": "AS"
+    },
+    {
+      "line": 28,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 29,
+      "text": "--Group82: Source Table:[ODATA_N_TIT.D_REF_OTC_OPTION_DEAL：场外交易-期权交易合同要素表]"
+    },
+    {
+      "line": 30,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 31,
+      "text": "SELECT"
+    },
+    {
+      "line": 32,
+      "text": "     KEY_OTC_TRADE_ID                        AS  Agt_Id1                 --协议编号        "
+    },
+    {
+      "line": 33,
+      "text": "    ,'20207'                                 AS  Agt_Modifr1             --协议修饰符      "
+    },
+    {
+      "line": 34,
+      "text": "    ,'10'                                    AS  Agt_Stat_Type_Cd1       --协议状态类型代码"
+    },
+    {
+      "line": 35,
+      "text": "    ,'202'                                   AS  Agt_Cate_Cd1            --协议类别代码    "
+    },
+    {
+      "line": 36,
+      "text": "    ,'20207'                                 AS  Agt_Type_Cd1            --协议类型代码    "
+    },
+    {
+      "line": 37,
+      "text": "    ,NVL(DW_CD_VAL,CONTR_STATUS)             AS  Agt_Stat_Cd1            --协议状态代码    "
+    },
+    {
+      "line": 38,
+      "text": "    ,'${data_src_cd}'                   AS  Data_Src_Cd1            --数据来源代码"
+    },
+    {
+      "line": 39,
+      "text": "    ,'${src_table}'                     AS  Src_Tbl1                --源表"
+    },
+    {
+      "line": 40,
+      "text": "    ,'${filename}'                      AS  Task_Name1              --任务名"
+    },
+    {
+      "line": 41,
+      "text": "FROM (SELECT *FROM ODATA_N_TIT.D_REF_OTC_OPTION_DEAL WHERE BUSI_DATE ='${data_day_str}') A"
+    },
+    {
+      "line": 42,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 43,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 44,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 45,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_AGT_STAT_H'"
+    },
+    {
+      "line": 46,
+      "text": "            AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 47,
+      "text": "            AND SRC_TAB_NAME = 'REF_OTC_OPTION_DEAL'"
+    },
+    {
+      "line": 48,
+      "text": "            AND SRC_FLD_NAME = 'CONTR_STATUS'"
+    },
+    {
+      "line": 49,
+      "text": "            AND SRC_SYS_NAME='TIT')B"
+    },
+    {
+      "line": 50,
+      "text": "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+    },
+    {
+      "line": 51,
+      "text": ";"
+    },
+    {
+      "line": 52,
+      "text": ""
+    },
+    {
+      "line": 53,
+      "text": "DROP TABLE IF EXISTS ${db_temp}.T03_AGT_STAT_H_MID_TIT156;"
+    },
+    {
+      "line": 54,
+      "text": "CREATE TABLE ${db_temp}.T03_AGT_STAT_H_MID_TIT156"
+    },
+    {
+      "line": 55,
+      "text": "AS"
+    },
+    {
+      "line": 56,
+      "text": "SELECT"
+    },
+    {
+      "line": 57,
+      "text": "       A.*,B.*"
+    },
+    {
+      "line": 58,
+      "text": "       ,CASE WHEN A.Agt_Id IS NULL     AND B.Agt_Id1 IS NOT NULL THEN 'I'           --当天不存在历史的数据为新增"
+    },
+    {
+      "line": 59,
+      "text": "             WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id1 IS NULL THEN 'D'           --历史不存在当天的数据为删除"
+    },
+    {
+      "line": 60,
+      "text": "             WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id1 IS NOT NULL AND"
+    },
+    {
+      "line": 61,
+      "text": "             (   COALESCE(A.Agt_Cate_Cd             ,'')   <> COALESCE(B.Agt_Cate_Cd1            ,'')"
+    },
+    {
+      "line": 62,
+      "text": "              OR COALESCE(A.Agt_Type_Cd             ,'')   <> COALESCE(B.Agt_Type_Cd1            ,'')"
+    },
+    {
+      "line": 63,
+      "text": "              OR COALESCE(A.Agt_Stat_Cd             ,'')   <> COALESCE(B.Agt_Stat_Cd1            ,'')"
+    },
+    {
+      "line": 64,
+      "text": "             ) THEN 'U'                                                        --当天和历史均存在,除主键外如有字段变更为变更"
+    },
+    {
+      "line": 65,
+      "text": "             ELSE 'S' END AS DATA_TYPE                                         --其他为无变更"
+    },
+    {
+      "line": 66,
+      "text": "FROM   (  SELECT"
+    },
+    {
+      "line": 67,
+      "text": "            *"
+    },
+    {
+      "line": 68,
+      "text": "          FROM  T03_AGT_STAT_H"
+    },
+    {
+      "line": 69,
+      "text": "          WHERE STRT_DATE <='${data_day_str}'"
+    },
+    {
+      "line": 70,
+      "text": "            AND END_DATE  > '${data_day_str}'"
+    },
+    {
+      "line": 71,
+      "text": "            AND SRC_TBL IN ('ODATA_N_TIT.D_REF_OTC_OPTION_DEAL')  )A   --历史(昨日)开链数据"
+    },
+    {
+      "line": 72,
+      "text": "FULL OUTER JOIN ${db_temp}.T03_AGT_STAT_H_TEMP_TIT156 B               --当天的数据"
+    },
+    {
+      "line": 73,
+      "text": "ON   A.Agt_Id= B.Agt_Id1"
+    },
+    {
+      "line": 74,
+      "text": "AND  A.Agt_Modifr= B.Agt_Modifr1"
+    },
+    {
+      "line": 75,
+      "text": ";"
+    },
+    {
+      "line": 76,
+      "text": ""
+    },
+    {
+      "line": 77,
+      "text": "-- querySql"
+    },
+    {
+      "line": 78,
+      "text": "INSERT OVERWRITE TABLE T03_AGT_STAT_H PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 79,
+      "text": " --剔除掉源表当日新增和当日闭链的数据"
+    },
+    {
+      "line": 80,
+      "text": "SELECT"
+    },
+    {
+      "line": 81,
+      "text": "     Agt_Id                                --协议编号"
+    },
+    {
+      "line": 82,
+      "text": "    ,Agt_Modifr                            --协议修饰符"
+    },
+    {
+      "line": 83,
+      "text": "    ,Agt_Stat_Type_Cd                      --协议状态类型代码"
+    },
+    {
+      "line": 84,
+      "text": "    ,Strt_Date                             --开始日期"
+    },
+    {
+      "line": 85,
+      "text": "    ,Agt_Cate_Cd                           --协议类别代码"
+    },
+    {
+      "line": 86,
+      "text": "    ,Agt_Type_Cd                           --协议类型代码"
+    },
+    {
+      "line": 87,
+      "text": "    ,Agt_Stat_Cd                           --协议状态代码"
+    },
+    {
+      "line": 88,
+      "text": "    ,End_Date                              --结束日期"
+    },
+    {
+      "line": 89,
+      "text": "    ,Data_Src_Cd                           --数据来源代码"
+    },
+    {
+      "line": 90,
+      "text": "    ,Task_Name                             --任务名"
+    },
+    {
+      "line": 91,
+      "text": "    ,Data_Time                             --数据时间"
+    },
+    {
+      "line": 92,
+      "text": "    ,Src_Tbl                               --源表"
+    },
+    {
+      "line": 93,
+      "text": "FROM T03_AGT_STAT_H"
+    },
+    {
+      "line": 94,
+      "text": "WHERE STRT_DATE !='${data_day_str}'"
+    },
+    {
+      "line": 95,
+      "text": "  AND END_DATE  !='${data_day_str}'"
+    },
+    {
+      "line": 96,
+      "text": "  AND SRC_TBL IN ('ODATA_N_TIT.D_REF_OTC_OPTION_DEAL')"
+    },
+    {
+      "line": 97,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 98,
+      "text": " --目标表为源表当日闭链的数据还原"
+    },
+    {
+      "line": 99,
+      "text": "SELECT"
+    },
+    {
+      "line": 100,
+      "text": "     Agt_Id                                --协议编号"
+    },
+    {
+      "line": 101,
+      "text": "    ,Agt_Modifr                            --协议修饰符"
+    },
+    {
+      "line": 102,
+      "text": "    ,Agt_Stat_Type_Cd                      --协议状态类型代码"
+    },
+    {
+      "line": 103,
+      "text": "    ,Strt_Date                             --开始日期"
+    },
+    {
+      "line": 104,
+      "text": "    ,Agt_Cate_Cd                           --协议类别代码"
+    },
+    {
+      "line": 105,
+      "text": "    ,Agt_Type_Cd                           --协议类型代码"
+    },
+    {
+      "line": 106,
+      "text": "    ,Agt_Stat_Cd                           --协议状态代码"
+    },
+    {
+      "line": 107,
+      "text": "    ,'2099-12-31'  AS End_Date             --结束日期"
+    },
+    {
+      "line": 108,
+      "text": "    ,Data_Src_Cd                           --数据来源代码"
+    },
+    {
+      "line": 109,
+      "text": "    ,Task_Name                             --任务名"
+    },
+    {
+      "line": 110,
+      "text": "    ,Data_Time                             --数据时间"
+    },
+    {
+      "line": 111,
+      "text": "    ,Src_Tbl                               --源表"
+    },
+    {
+      "line": 112,
+      "text": "FROM T03_AGT_STAT_H"
+    },
+    {
+      "line": 113,
+      "text": "WHERE  END_DATE ='${data_day_str}'"
+    },
+    {
+      "line": 114,
+      "text": "  AND  SRC_TBL IN ('ODATA_N_TIT.D_REF_OTC_OPTION_DEAL')"
+    },
+    {
+      "line": 115,
+      "text": ";"
+    },
+    {
+      "line": 116,
+      "text": ""
+    },
+    {
+      "line": 117,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 118,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 119,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 120,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 121,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 122,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 123,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 124,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 125,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 126,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 127,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 128,
+      "text": ""
+    },
+    {
+      "line": 129,
+      "text": "INSERT OVERWRITE TABLE T03_AGT_STAT_H PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 130,
+      "text": "  --历史闭链的无效数据插回目标表"
+    },
+    {
+      "line": 131,
+      "text": "SELECT"
+    },
+    {
+      "line": 132,
+      "text": "     Agt_Id                                                     --协议编号"
+    },
+    {
+      "line": 133,
+      "text": "    ,Agt_Modifr                                                 --协议修饰符"
+    },
+    {
+      "line": 134,
+      "text": "    ,Agt_Stat_Type_Cd                                           --协议状态类型代码"
+    },
+    {
+      "line": 135,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 136,
+      "text": "    ,Agt_Cate_Cd                                                --协议类别代码"
+    },
+    {
+      "line": 137,
+      "text": "    ,Agt_Type_Cd                                                --协议类型代码"
+    },
+    {
+      "line": 138,
+      "text": "    ,Agt_Stat_Cd                                                --协议状态代码"
+    },
+    {
+      "line": 139,
+      "text": "    ,End_Date                                                   --结束日期"
+    },
+    {
+      "line": 140,
+      "text": "    ,Data_Src_Cd                                                --数据来源代码"
+    },
+    {
+      "line": 141,
+      "text": "    ,Task_Name                                                  --任务名"
+    },
+    {
+      "line": 142,
+      "text": "    ,Data_Time                                                  --数据时间"
+    },
+    {
+      "line": 143,
+      "text": "    ,Src_Tbl                                                    --源表"
+    },
+    {
+      "line": 144,
+      "text": "FROM T03_AGT_STAT_H"
+    },
+    {
+      "line": 145,
+      "text": "WHERE NOT(    STRT_DATE <='${data_day_str}'"
+    },
+    {
+      "line": 146,
+      "text": "          AND END_DATE  > '${data_day_str}'   )"
+    },
+    {
+      "line": 147,
+      "text": "  AND SRC_TBL IN ('ODATA_N_TIT.D_REF_OTC_OPTION_DEAL')  --只插入目标表分区字段为该表的数据"
+    },
+    {
+      "line": 148,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 149,
+      "text": " --当天有变动和新增的数据开链"
+    },
+    {
+      "line": 150,
+      "text": "SELECT   "
+    },
+    {
+      "line": 151,
+      "text": "     Agt_Id1                        AS  Agt_Id                  --协议编号"
+    },
+    {
+      "line": 152,
+      "text": "    ,Agt_Modifr1                    AS  Agt_Modifr              --协议修饰符"
+    },
+    {
+      "line": 153,
+      "text": "    ,Agt_Stat_Type_Cd1              AS  Agt_Stat_Type_Cd        --协议状态类型代码"
+    },
+    {
+      "line": 154,
+      "text": "    ,'${data_day_str}'         AS  Strt_Date               --开始日期"
+    },
+    {
+      "line": 155,
+      "text": "    ,Agt_Cate_Cd1                   AS  Agt_Cate_Cd             --协议类别代码"
+    },
+    {
+      "line": 156,
+      "text": "    ,Agt_Type_Cd1                   AS  Agt_Type_Cd             --协议类型代码"
+    },
+    {
+      "line": 157,
+      "text": "    ,Agt_Stat_Cd1                   AS  Agt_Stat_Cd             --协议状态代码"
+    },
+    {
+      "line": 158,
+      "text": "    ,'2099-12-31'                   AS  End_Date                --结束日期"
+    },
+    {
+      "line": 159,
+      "text": "    ,Data_Src_Cd1                   AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 160,
+      "text": "    ,Task_Name1                     AS  Task_Name               --任务名"
+    },
+    {
+      "line": 161,
+      "text": "    ,'${data_today}'           AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 162,
+      "text": "    ,Src_Tbl1                       AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 163,
+      "text": "FROM ${db_temp}.T03_AGT_STAT_H_MID_TIT156 WHERE DATA_TYPE IN ('I','U')     --新增-I,变更-U"
+    },
+    {
+      "line": 164,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 165,
+      "text": " --历史开链有变动和不存在当天的数据闭链"
+    },
+    {
+      "line": 166,
+      "text": "SELECT"
+    },
+    {
+      "line": 167,
+      "text": "     Agt_Id                                                     --协议编号"
+    },
+    {
+      "line": 168,
+      "text": "    ,Agt_Modifr                                                 --协议修饰符"
+    },
+    {
+      "line": 169,
+      "text": "    ,Agt_Stat_Type_Cd                                           --协议状态类型代码"
+    },
+    {
+      "line": 170,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 171,
+      "text": "    ,Agt_Cate_Cd                                                --协议类别代码"
+    },
+    {
+      "line": 172,
+      "text": "    ,Agt_Type_Cd                                                --协议类型代码"
+    },
+    {
+      "line": 173,
+      "text": "    ,Agt_Stat_Cd                                                --协议状态代码"
+    },
+    {
+      "line": 174,
+      "text": "    ,'${data_day_str}'         AS  End_Date                --结束日期"
+    },
+    {
+      "line": 175,
+      "text": "    ,Data_Src_Cd                    AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 176,
+      "text": "    ,Task_Name                      AS  Task_Name               --任务名"
+    },
+    {
+      "line": 177,
+      "text": "   ,'${data_today}'            AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 178,
+      "text": "    ,Src_Tbl                        AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 179,
+      "text": "FROM ${db_temp}.T03_AGT_STAT_H_MID_TIT156 WHERE DATA_TYPE IN ('D','U')     --变更-U,删除-D"
+    },
+    {
+      "line": 180,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 181,
+      "text": " --无变动的数据插回目标表"
+    },
+    {
+      "line": 182,
+      "text": "SELECT"
+    },
+    {
+      "line": 183,
+      "text": "     Agt_Id                                                     --协议编号"
+    },
+    {
+      "line": 184,
+      "text": "    ,Agt_Modifr                                                 --协议修饰符"
+    },
+    {
+      "line": 185,
+      "text": "    ,Agt_Stat_Type_Cd                                           --协议状态类型代码"
+    },
+    {
+      "line": 186,
+      "text": "    ,Strt_Date                                                  --开始日期"
+    },
+    {
+      "line": 187,
+      "text": "    ,Agt_Cate_Cd                                                --协议类别代码"
+    },
+    {
+      "line": 188,
+      "text": "    ,Agt_Type_Cd                                                --协议类型代码"
+    },
+    {
+      "line": 189,
+      "text": "    ,Agt_Stat_Cd                                                --协议状态代码"
+    },
+    {
+      "line": 190,
+      "text": "    ,End_Date                                                   --结束日期"
+    },
+    {
+      "line": 191,
+      "text": "    ,Data_Src_Cd                                                --数据来源代码"
+    },
+    {
+      "line": 192,
+      "text": "    ,Task_Name                                                  --任务名"
+    },
+    {
+      "line": 193,
+      "text": "    ,Data_Time                                                  --数据时间"
+    },
+    {
+      "line": 194,
+      "text": "    ,Src_Tbl                                                    --源表"
+    },
+    {
+      "line": 195,
+      "text": "FROM ${db_temp}.T03_AGT_STAT_H_MID_TIT156 WHERE DATA_TYPE ='S'         --无变更-S"
+    },
+    {
+      "line": 196,
+      "text": ";"
+    },
+    {
+      "line": 197,
+      "text": ""
+    }
+  ]
+}

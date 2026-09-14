@@ -1,0 +1,12 @@
+[
+  {
+    "grp_type_code": "DB_TBL",
+    "grp_type_name": "数据库表",
+    "grp_attr_table_name": "PDATA_N.T00_TBL_INFO",
+    "grp_attr_table_pk": "TBL_NAME",
+    "grp_def_sql": "select '1900-01-01' begin_date,'2099-12-31' end_date, lower(concat(dbs.db_name, '.', tbl.tbl_name)) as grp_val, lower(concat(dbs.db_name, '.', tbl.tbl_name)) as grp_name from pdata_n.t00_tbl_info tbl join pdata_n.t00_db_info dbs on tbl.db_id = dbs.db_id where tbl.src_tbl='ODATA_N_BDP.M_TBLS' and dbs.src_tbl='ODATA_N_BDP.M_DBS' and dbs.db_name not like '%temp%' and dbs.db_name not in ('pdata', 'odata_ygt', 'oview', 'odata_msg', 'pview', 'gfmobiledb', 'gfguitai', 'fview', 'spdata')",
+    "data_time": "2023-02-07 00:00:00",
+    "modify_time": "2029-02-07 00:00:00",
+    "status": "1"
+  }
+]

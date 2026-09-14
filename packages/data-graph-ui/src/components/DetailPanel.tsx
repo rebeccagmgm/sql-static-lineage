@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { SqlCode } from "./SqlCode";
+import { TaskProcessingGraph } from "./TaskProcessingGraph";
 import { isSameGraphVersion } from "../contract";
 import type {
   GraphNode,
@@ -82,6 +83,54 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
     }
   }
 
+  const finalBindings = detail.bindings.filter(
+    (binding) => binding.outputScope === "FINAL",
+  );
+  const renderBindings = (bindings: TaskDetail["bindings"]) =>
+    bindings.map((binding, index) => {
+      const field = binding.metadata?.field;
+      const comment =
+        field?.status === "AVAILABLE" ? field.comment?.trim() : undefined;
+      const status =
+        field?.status === "AVAILABLE" && !comment
+          ? "ANNOTATION_NOT_RECORDED"
+          : (field?.status ?? "METADATA_UNAVAILABLE");
+      return (
+        <section
+          key={`${binding.writeId ?? "unknown-write"}-${binding.column}-${index}`}
+          className="evidence"
+        >
+          <div className="evidence-field-title">
+            <b>{binding.column}</b>
+            <span
+              className="evidence-field-comment"
+              data-status={status}
+              title="目标字段注释，来自当前元数据目录"
+            >
+              {!binding.metadata
+                ? "注释尚未加载"
+                : (comment ?? metadataStatus[status])}
+            </span>
+          </div>
+          {binding.table && <small>目标表：{binding.table}</small>}
+          {binding.valueOrigin && (
+            <p className="value-origin-detail">{binding.valueOrigin.label}</p>
+          )}
+          {binding.expression ? (
+            <SqlCode source={binding.expression} compact />
+          ) : (
+            <p className="muted">当前没有字段表达式</p>
+          )}
+          {binding.writeId && <code>{binding.writeId}</code>}
+          {binding.inputFields?.map((field) => (
+            <small key={`${field.table}.${field.column}`}>
+              {field.table}.{field.column}
+            </small>
+          ))}
+        </section>
+      );
+    });
+
   return (
     <section className="task-evidence">
       <h3>{detail.taskName ?? `任务 ${detail.taskId}`}</h3>
@@ -93,7 +142,15 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
       )}
       <p className="scheduler-task-name">
         <b>负责人：</b>
-        {detail.owner?.split(",").map((owner) => owner.trim()).filter(Boolean).join("、") || "未收录"}
+        {detail.owner
+          ?.split(",")
+          .map((owner) => owner.trim())
+          .filter(Boolean)
+          .join("、") || "未收录"}
+      </p>
+      <p className="scheduler-task-name">
+        <b>调度集群：</b>
+        {detail.cluster || "未收录"}
       </p>
       <div className="badges">
         <span>任务 {detail.taskId}</span>
@@ -110,22 +167,14 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
       {detail.failureReason && (
         <p className="warning">材料缺口：{detail.failureReason}</p>
       )}
-      {detail.bindings.map((binding, index) => (
-        <section
-          key={`${binding.writeId ?? "unknown-write"}-${binding.column}-${index}`}
-          className="evidence"
-        >
-          <b>{binding.column}</b>
-          {binding.valueOrigin && <p className="value-origin-detail">{binding.valueOrigin.label}</p>}
-          <pre>{binding.expression ?? "当前没有字段表达式"}</pre>
-          {binding.writeId && <code>{binding.writeId}</code>}
-          {binding.inputFields?.map((field) => (
-            <small key={`${field.table}.${field.column}`}>
-              {field.table}.{field.column}
-            </small>
-          ))}
-        </section>
-      ))}
+      <TaskProcessingGraph detail={detail} />
+      {finalBindings.length > 0 && <h3>最终输出字段</h3>}
+      {!finalBindings.length && detail.bindings.length > 0 && (
+        <p className="muted">
+          暂未取得最终输出字段，请重新选择任务加载。
+        </p>
+      )}
+      {renderBindings(finalBindings)}
       <h3>加工条件</h3>
       {detail.controls.length ? (
         detail.controls.slice(0, 35).map((control, index) => (
@@ -133,11 +182,18 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
             <b>
               {labels[control.kind] ?? control.kind} {control.joinType ?? ""}
             </b>
-            <p>
-              {control.condition ??
-                control.sourceText ??
-                JSON.stringify(control.groupBy ?? control.window ?? "详见 SQL")}
-            </p>
+            {control.condition || control.sourceText ? (
+              <SqlCode
+                source={control.condition || control.sourceText!}
+                compact
+              />
+            ) : (
+              <p>
+                {JSON.stringify(
+                  control.groupBy ?? control.window ?? "详见 SQL",
+                )}
+              </p>
+            )}
           </section>
         ))
       ) : (

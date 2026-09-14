@@ -1,0 +1,276 @@
+{
+  "task_id": "164895",
+  "default_schema": null,
+  "observed_at": "2026-09-05T05:58:30.814Z",
+  "payload_sha256": "9e2c4859f166fb7534da89b7bf9480143b5a02d38610bb3e7248eadb0ea5c930",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_FIN_LOAN_COMP_WTHDR_DET ("
+    },
+    {
+      "line": 10,
+      "text": "  Wthdr_Det_Id STRING COMMENT '提款明细编号',"
+    },
+    {
+      "line": 11,
+      "text": "  Agt_Id STRING COMMENT '协议编号',"
+    },
+    {
+      "line": 12,
+      "text": "  Agt_Modifr STRING COMMENT '协议修饰符',"
+    },
+    {
+      "line": 13,
+      "text": "  Wthdr_Doc_No STRING COMMENT '提款单据号',"
+    },
+    {
+      "line": 14,
+      "text": "  Wthdr_Date STRING COMMENT '提款日期',"
+    },
+    {
+      "line": 15,
+      "text": "  Wthdr_Pd STRING COMMENT '提款期间 ',"
+    },
+    {
+      "line": 16,
+      "text": "  Wthdr_End_Date STRING COMMENT '借款结束日期',"
+    },
+    {
+      "line": 17,
+      "text": "  Wthdr_Amt STRING COMMENT '提款金额',"
+    },
+    {
+      "line": 18,
+      "text": "  Loan_Rate STRING COMMENT '借款利率',"
+    },
+    {
+      "line": 19,
+      "text": "  Wthdr_Appr_Stat_Cd STRING COMMENT '提款审批状态代码',"
+    },
+    {
+      "line": 20,
+      "text": "  Prin_Bal STRING COMMENT '本金余额',"
+    },
+    {
+      "line": 21,
+      "text": "  Intr_Bal STRING COMMENT '利息余额',"
+    },
+    {
+      "line": 22,
+      "text": "  Cash_Flow_Imp_Id STRING COMMENT '现金流导入编号',"
+    },
+    {
+      "line": 23,
+      "text": "  Remark STRING COMMENT '备注',"
+    },
+    {
+      "line": 24,
+      "text": "  Create_Time STRING COMMENT '创建日期',"
+    },
+    {
+      "line": 25,
+      "text": "  Last_Upd_time STRING COMMENT '最后更新日期',"
+    },
+    {
+      "line": 26,
+      "text": "  Data_Src_Cd STRING COMMENT '数据来源代码',"
+    },
+    {
+      "line": 27,
+      "text": "  Task_Name STRING COMMENT '任务名',"
+    },
+    {
+      "line": 28,
+      "text": "  Data_Etl_Date STRING COMMENT '数据加载日期',"
+    },
+    {
+      "line": 29,
+      "text": "  Data_Upt_Date STRING COMMENT '数据更新日期',"
+    },
+    {
+      "line": 30,
+      "text": "  Data_Time STRING COMMENT '数据时间',"
+    },
+    {
+      "line": 31,
+      "text": "  Real_Src_Tbl STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 32,
+      "text": ")"
+    },
+    {
+      "line": 33,
+      "text": "COMMENT '融资借款合同提款明细'"
+    },
+    {
+      "line": 34,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT'源表')"
+    },
+    {
+      "line": 35,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 36,
+      "text": ""
+    },
+    {
+      "line": 37,
+      "text": "-- querySql"
+    },
+    {
+      "line": 38,
+      "text": "INSERT OVERWRITE TABLE T03_FIN_LOAN_COMP_WTHDR_DET PARTITION(SRC_TBL='ODATA_N_GLM.P_TRE_LOAN_CONTRACT_WITHDRAW')"
+    },
+    {
+      "line": 39,
+      "text": "SELECT"
+    },
+    {
+      "line": 40,
+      "text": "WITHDRAW_ID                           AS  Wthdr_Det_Id            --提款明细编号"
+    },
+    {
+      "line": 41,
+      "text": ",LOAN_CONTRACT_ID                      AS  Agt_Id                  --协议编号"
+    },
+    {
+      "line": 42,
+      "text": ",IF(NVL(TRIM(LOAN_CONTRACT_ID),'')='','','20416')"
+    },
+    {
+      "line": 43,
+      "text": "AS  Agt_Modifr              --协议修饰符"
+    },
+    {
+      "line": 44,
+      "text": ",WITHDRAW_NUMBER                       AS  Wthdr_Doc_No            --提款单据号"
+    },
+    {
+      "line": 45,
+      "text": ",SUBSTR(WITHDRAW_DATE,1,10)            AS  Wthdr_Date              --提款日期"
+    },
+    {
+      "line": 46,
+      "text": ",INTERNAL_PERIOD_NUM                   AS  Wthdr_Pd                --提款期间"
+    },
+    {
+      "line": 47,
+      "text": ",SUBSTR(REPAYMENT_DATE,1,10)           AS  Wthdr_End_Date          --借款结束日期"
+    },
+    {
+      "line": 48,
+      "text": ",WITHDRAW_AMOUNT                       AS  Wthdr_Amt               --提款金额"
+    },
+    {
+      "line": 49,
+      "text": ",INT_RATE                              AS  Loan_Rate               --借款利率"
+    },
+    {
+      "line": 50,
+      "text": ",NVL(DW_CD_VAL,STATUS)                 AS  Wthdr_Appr_Stat_Cd      --提款审批状态代码"
+    },
+    {
+      "line": 51,
+      "text": ",REF_N01                               AS  Prin_Bal                --本金余额"
+    },
+    {
+      "line": 52,
+      "text": ",REF_N02                               AS  Intr_Bal                --利息余额"
+    },
+    {
+      "line": 53,
+      "text": ",IMPORT_ID                             AS  Cash_Flow_Imp_Id        --现金流导入编号"
+    },
+    {
+      "line": 54,
+      "text": ",NOTE                                  AS  Remark                  --备注"
+    },
+    {
+      "line": 55,
+      "text": ",CREATION_DATE                         AS  Create_Time             --创建日期"
+    },
+    {
+      "line": 56,
+      "text": ",LAST_UPDATE_DATE                      AS  Last_Upd_time           --最后更新日期"
+    },
+    {
+      "line": 57,
+      "text": ",'GLM'                 AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 58,
+      "text": ",'PDATA_N.T03_FIN_LOAN_COMP_WTHDR_DET_GLM028'                    AS  Task_Name               --任务名"
+    },
+    {
+      "line": 59,
+      "text": ",'2026-05-19'                AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 60,
+      "text": ",'2026-05-19'                AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 61,
+      "text": ",'2026-05-20 00:25:18'                  AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 62,
+      "text": ",'ODATA_N_GLM.P_TRE_LOAN_CONTRACT_WITHDRAW'                   AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 63,
+      "text": "FROM   (SELECT *  FROM ODATA_N_GLM.P_TRE_LOAN_CONTRACT_WITHDRAW WHERE  BUSI_DATE='2026-05-19' AND DEL_FLAG='N')A"
+    },
+    {
+      "line": 64,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 65,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 66,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 67,
+      "text": "WHERE TGT_TAB_NAME = 'T03_FIN_LOAN_COMP_WTHDR_DET'"
+    },
+    {
+      "line": 68,
+      "text": "AND TGT_TAB_FLD  = 'Wthdr_Appr_Stat_Cd'"
+    },
+    {
+      "line": 69,
+      "text": "AND SRC_TAB_NAME = 'TRE_LOAN_CONTRACT_WITHDRAW'"
+    },
+    {
+      "line": 70,
+      "text": "AND SRC_FLD_NAME = 'STATUS'"
+    },
+    {
+      "line": 71,
+      "text": "AND SRC_SYS_NAME='GLM')B"
+    },
+    {
+      "line": 72,
+      "text": "ON      A.STATUS =B.SRC_CD_VAL                  --STATUS 转码"
+    },
+    {
+      "line": 73,
+      "text": ";"
+    },
+    {
+      "line": 74,
+      "text": ""
+    }
+  ]
+}

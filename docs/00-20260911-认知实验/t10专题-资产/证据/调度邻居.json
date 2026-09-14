@@ -1,0 +1,596 @@
+[
+  {
+    "taskId": 236109,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:37.512Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "236689",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INFO资产状态代码值域范围检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "236692",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INFO资产类型代码值域范围检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "236701",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INFO资产属性代码值域范围检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240896",
+        "task_name": "EDW_AST-236109:PDATA_N.T10_AST_INFO_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240898",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INFO主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240899",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INFO资产类别代码值域范围检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      }
+    ]
+  },
+  {
+    "taskId": 236109,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:38.877Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236110,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:34.519Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "240897",
+        "task_name": "EDW_AST-236110:PDATA_N.T10_AST_STAT_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240900",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_STAT_H资产状态代码值域范围检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240901",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_STAT_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240902",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_STAT_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240903",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_STAT_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "240904",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_STAT_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      }
+    ]
+  },
+  {
+    "taskId": 236110,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:41.882Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236111,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:30.513Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "240911",
+        "task_name": "EDW_AST-236111:PDATA_N.T10_AST_PLAC_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "240912",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_PLAC_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "240914",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_PLAC_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "240915",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_PLAC_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "240916",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_PLAC_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236111,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:44.890Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236112,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:27.523Z",
+    "rows": []
+  },
+  {
+    "taskId": 236112,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:47.866Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236113,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-02T10:14:27.159Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "241106",
+        "task_name": "EDW_AST-236113:PDATA_N.T10_AST_EMP_RELA_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241109",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_EMP_RELA_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241110",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_EMP_RELA_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241112",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_EMP_RELA_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241113",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_EMP_RELA_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236113,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-02T08:21:35.169Z",
+    "rows": [
+      {
+        "direction": "上游",
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "total": 2
+      },
+      {
+        "direction": "上游",
+        "task_id": "61612",
+        "task_name": "PDATA_N.T04_USER_EMP_RELA_H_IOA004",
+        "topic_name": "EDW_ORG",
+        "total": 2
+      }
+    ]
+  },
+  {
+    "taskId": 236114,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:23.970Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "241211",
+        "task_name": "EDW_AST-236114:PDATA_N.T10_AST_IDTY_INFO_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241212",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_IDTY_INFO_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241214",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_IDTY_INFO_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241216",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_IDTY_INFO_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241225",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_IDTY_INFO_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236114,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:51.892Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236115,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:18.497Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "241204",
+        "task_name": "EDW_AST-236115:PDATA_N.T10_AST_AST_BOOK_RELA_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241207",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_AST_BOOK_RELA_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241208",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_AST_BOOK_RELA_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241209",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_AST_BOOK_RELA_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241210",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_AST_BOOK_RELA_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236115,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:55.885Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236116,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:14.642Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "241227",
+        "task_name": "EDW_AST-236116:PDATA_N.T10_AST_LKMAN_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241230",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_LKMAN_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241231",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_LKMAN_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241232",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_LKMAN_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241233",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_LKMAN_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236116,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:49:59.884Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236117,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:11.246Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "236331",
+        "task_name": "dm_fin_n.erp_fix_ast_ast_nature",
+        "topic_name": "DM_FIN_N",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "241124",
+        "task_name": "EDW_AST-236117:PDATA_N.T10_AST_CLAS_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "241127",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_CLAS_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "241129",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_CLAS_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "241130",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_CLAS_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      },
+      {
+        "direction": "下游",
+        "task_id": "241131",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_CLAS_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 6
+      }
+    ]
+  },
+  {
+    "taskId": 236117,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:50:03.874Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236118,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:07.511Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "241115",
+        "task_name": "EDW_AST-236118:PDATA_N.T10_AST_INR_ORG_RELA_H_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241117",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INR_ORG_RELA_H主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241119",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INR_ORG_RELA_H拉链表-开始日期大于等于结束日期检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241120",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INR_ORG_RELA_H拉链表重复链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      },
+      {
+        "direction": "下游",
+        "task_id": "241121",
+        "task_name": "EDW_AST-PDATA_N.T10_AST_INR_ORG_RELA_H拉链表交叉链检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 5
+      }
+    ]
+  },
+  {
+    "taskId": 236118,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:50:07.893Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  },
+  {
+    "taskId": 236119,
+    "type": "horae-relation-down-depth-1",
+    "observedAt": "2026-09-04T02:19:04.508Z",
+    "rows": [
+      {
+        "direction": "下游",
+        "task_id": "236331",
+        "task_name": "dm_fin_n.erp_fix_ast_ast_nature",
+        "topic_name": "DM_FIN_N",
+        "total": 3
+      },
+      {
+        "direction": "下游",
+        "task_id": "241046",
+        "task_name": "EDW_AST-236119:PDATA_N.T10_OUR_FIX_AST_ADTNL_INFO_FAM001记录数检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 3
+      },
+      {
+        "direction": "下游",
+        "task_id": "241048",
+        "task_name": "EDW_AST-PDATA_N.T10_OUR_FIX_AST_ADTNL_INFO主键唯一性检查",
+        "topic_name": "DATA_QUALITY",
+        "total": 3
+      }
+    ]
+  },
+  {
+    "taskId": 236119,
+    "type": "horae-relation-up-depth-1",
+    "observedAt": "2026-09-06T03:50:11.885Z",
+    "rows": [
+      {
+        "task_id": "233413",
+        "task_name": "odata_n_fam.w_asset_account_f",
+        "topic_name": "ODATA_N_FAM",
+        "direction": "上游",
+        "total": 1
+      }
+    ]
+  }
+]

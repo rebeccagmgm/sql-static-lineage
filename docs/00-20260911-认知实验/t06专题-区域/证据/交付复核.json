@@ -1,0 +1,12 @@
+{
+  "scope": "仅本目录的文档、证据复制与内部一致性；未执行业务SQL或数据质量测试",
+  "checkedAt": "2026-09-14T02:26:46.683Z",
+  "markdownFiles": 16,
+  "validJsonFiles": 19,
+  "localLinksChecked": 142,
+  "sourceSqlHashesMatched": 21,
+  "physicalObjects": 3,
+  "formalFields": 21,
+  "directReaderTasks": 20,
+  "errors": []
+}

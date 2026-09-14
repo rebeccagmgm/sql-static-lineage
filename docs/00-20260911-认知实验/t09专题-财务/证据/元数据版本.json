@@ -1,0 +1,18 @@
+[
+  {
+    "key": "schema_version",
+    "value": "1.0.0"
+  },
+  {
+    "key": "parser_version",
+    "value": "572f98f0f166ac3377520338242fee30c2ee7232ee9f009a742fbf3df54baa3d"
+  },
+  {
+    "key": "catalog_hash",
+    "value": "4877b15fb9a9accd5c6876b3e5d2ae31db910988153bf57d3d84e56430f6ff21"
+  },
+  {
+    "key": "built_at",
+    "value": "2026-09-10T03:29:20.463Z"
+  }
+]

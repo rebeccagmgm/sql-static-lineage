@@ -1,0 +1,876 @@
+{
+  "task_id": "40421",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:13.258Z",
+  "payload_sha256": "2180d6976659e3937bee6a0d7ae9ec6c8b4ca7009f7f7bacadeca00d39435e52",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_AMS_FND_ACCT("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                    STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Agt_Holder                STRING COMMENT '协议持有人编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Agt_Cate_Cd               STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Agt_Type_Cd               STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Agt_Stat_Cd               STRING COMMENT '协议状态代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Sler_Id                   STRING COMMENT '销售商编号'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Oper_Net_No               STRING COMMENT '操作网点编号'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Acct_Frz_Rsn_Cd           STRING COMMENT '账户冻结原因代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Src_Prd_Id                STRING COMMENT '源产品编号'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Clr_Bat_No                STRING COMMENT '清算批次号'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Exch_Shr_Clas_Cd          STRING COMMENT '交易所份额分类代码'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Del_Flag                  STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Del_Date                  STRING COMMENT '删除日期'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Data_Src_Cd               STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Task_Name                 STRING COMMENT '任务名'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Data_Etl_Date             STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Data_Upt_Date             STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Data_Time                 STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Tnt_Id                    STRING COMMENT '租户号'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Ta_No                     STRING COMMENT 'TA编号'"
+    },
+    {
+      "line": 31,
+      "text": ")COMMENT '资管基金账户'"
+    },
+    {
+      "line": 32,
+      "text": "PARTITIONED BY (Busi_Date STRING COMMENT '业务日期',Src_Tbl  STRING COMMENT '源表')"
+    },
+    {
+      "line": 33,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 34,
+      "text": ""
+    },
+    {
+      "line": 35,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 36,
+      "text": "--Group1: Source Table:[ODATA_N_STA.S_TACCOINFO:基金账户表]"
+    },
+    {
+      "line": 37,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 38,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_AMS_FND_ACCT_TEMP_STA002;"
+    },
+    {
+      "line": 39,
+      "text": "CREATE TABLE IF NOT EXISTS TEMP.T03_AMS_FND_ACCT_TEMP_STA002"
+    },
+    {
+      "line": 40,
+      "text": "AS"
+    },
+    {
+      "line": 41,
+      "text": "SELECT"
+    },
+    {
+      "line": 42,
+      "text": "        C_FUNDACCO                              AS Agt_Id1                                  --协议编号"
+    },
+    {
+      "line": 43,
+      "text": "       ,'10105'                                 AS Agt_Modifr1                              --协议修饰符"
+    },
+    {
+      "line": 44,
+      "text": "       ,CONCAT('STA001-',C_CUSTNO)              AS Agt_Holder1                              --协议持有人编号"
+    },
+    {
+      "line": 45,
+      "text": "       ,'101'                                   AS Agt_Cate_Cd1                             --协议类别代码"
+    },
+    {
+      "line": 46,
+      "text": "       ,'10105'                                 AS Agt_Type_Cd1                             --协议类型代码"
+    },
+    {
+      "line": 47,
+      "text": "       ,NVL(C.DW_CD_VAL,C_ACCOSTATUS)           AS Agt_Stat_Cd1                             --协议状态代码"
+    },
+    {
+      "line": 48,
+      "text": "       ,C_AGENCYNO                              AS Sler_Id1                                 --销售商编号"
+    },
+    {
+      "line": 49,
+      "text": "       ,C_CHILDNETNO                            AS Oper_Net_No1                             --操作网点编号"
+    },
+    {
+      "line": 50,
+      "text": "       ,C_FREEZECAUSE                           AS Acct_Frz_Rsn_Cd1                         --账户冻结原因代码"
+    },
+    {
+      "line": 51,
+      "text": "       ,''                                      AS Src_Prd_Id1                              --源产品编号"
+    },
+    {
+      "line": 52,
+      "text": "       ,''                                      AS Clr_Bat_No1                              --清算批次号"
+    },
+    {
+      "line": 53,
+      "text": "       ,C_BOURSEFLAG                            AS Exch_Shr_Clas_Cd1                        --交易所份额分类代码"
+    },
+    {
+      "line": 54,
+      "text": "       ,'STA'                                   AS Data_Src_Cd1                             --数据来源代码"
+    },
+    {
+      "line": 55,
+      "text": "       ,'ODATA_N_STA.S_TACCOINFO'               AS Src_Tbl1                                 --源表"
+    },
+    {
+      "line": 56,
+      "text": "       ,UPPER('${filename}')               AS Task_Name1                               --任务名"
+    },
+    {
+      "line": 57,
+      "text": "       ,'${data_day_str}'                  AS Data_Etl_Date1                           --数据加载日期"
+    },
+    {
+      "line": 58,
+      "text": "       ,'${data_day_str}'                  AS Data_Upt_Date1                           --数据更新日期"
+    },
+    {
+      "line": 59,
+      "text": "       ,''                                      AS Tnt_Id1                                   --租户号"
+    },
+    {
+      "line": 60,
+      "text": "       ,''                                      AS Ta_No1                                   --TA编号"
+    },
+    {
+      "line": 61,
+      "text": "FROM  (SELECT * FROM ODATA_N_STA.S_TACCOINFO WHERE BUSI_DATE='${data_day_str}')A"
+    },
+    {
+      "line": 62,
+      "text": ""
+    },
+    {
+      "line": 63,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 64,
+      "text": "          SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 65,
+      "text": "          FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 66,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_AMS_FND_ACCT'"
+    },
+    {
+      "line": 67,
+      "text": "            AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 68,
+      "text": "            AND SRC_TAB_NAME = 'TACCOINFO'"
+    },
+    {
+      "line": 69,
+      "text": "            AND SRC_FLD_NAME = 'C_ACCOSTATUS'"
+    },
+    {
+      "line": 70,
+      "text": "            AND SRC_SYS_NAME='STA') C"
+    },
+    {
+      "line": 71,
+      "text": "ON        A.C_ACCOSTATUS = C.SRC_CD_VAL                  --C_ACCOSTATUS转码"
+    },
+    {
+      "line": 72,
+      "text": ""
+    },
+    {
+      "line": 73,
+      "text": ";"
+    },
+    {
+      "line": 74,
+      "text": ""
+    },
+    {
+      "line": 75,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_AMS_FND_ACCT_MID_STA002;"
+    },
+    {
+      "line": 76,
+      "text": "CREATE TABLE IF NOT EXISTS TEMP.T03_AMS_FND_ACCT_MID_STA002"
+    },
+    {
+      "line": 77,
+      "text": "AS"
+    },
+    {
+      "line": 78,
+      "text": "SELECT"
+    },
+    {
+      "line": 79,
+      "text": "       A.*"
+    },
+    {
+      "line": 80,
+      "text": "      ,B.*"
+    },
+    {
+      "line": 81,
+      "text": "      ,CASE WHEN A.AGT_ID IS NULL AND B.AGT_ID1 IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 82,
+      "text": "            WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID1 IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 83,
+      "text": "            WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID1 IS NOT NULL AND ("
+    },
+    {
+      "line": 84,
+      "text": "                COALESCE(A.Agt_Holder        ,'')   <> COALESCE(B.Agt_Holder1        ,'')"
+    },
+    {
+      "line": 85,
+      "text": "             OR COALESCE(A.Agt_Cate_Cd       ,'')   <> COALESCE(B.Agt_Cate_Cd1       ,'')"
+    },
+    {
+      "line": 86,
+      "text": "             OR COALESCE(A.Agt_Type_Cd       ,'')   <> COALESCE(B.Agt_Type_Cd1       ,'')"
+    },
+    {
+      "line": 87,
+      "text": "             OR COALESCE(A.Agt_Stat_Cd       ,'')   <> COALESCE(B.Agt_Stat_Cd1       ,'')"
+    },
+    {
+      "line": 88,
+      "text": "             OR COALESCE(A.Sler_Id           ,'')   <> COALESCE(B.Sler_Id1           ,'')"
+    },
+    {
+      "line": 89,
+      "text": "             OR COALESCE(A.Oper_Net_No       ,'')   <> COALESCE(B.Oper_Net_No1       ,'')"
+    },
+    {
+      "line": 90,
+      "text": "             OR COALESCE(A.Acct_Frz_Rsn_Cd   ,'')   <> COALESCE(B.Acct_Frz_Rsn_Cd1   ,'')"
+    },
+    {
+      "line": 91,
+      "text": "             OR COALESCE(A.Src_Prd_Id        ,'')   <> COALESCE(B.Src_Prd_Id1        ,'')"
+    },
+    {
+      "line": 92,
+      "text": "             OR COALESCE(A.Clr_Bat_No        ,'')   <> COALESCE(B.Clr_Bat_No1        ,'')"
+    },
+    {
+      "line": 93,
+      "text": "             OR COALESCE(A.Exch_Shr_Clas_Cd  ,'')   <> COALESCE(B.Exch_Shr_Clas_Cd1  ,'')"
+    },
+    {
+      "line": 94,
+      "text": "             OR COALESCE(A.Tnt_Id            ,'')   <> COALESCE(B.Tnt_Id1            ,'')"
+    },
+    {
+      "line": 95,
+      "text": "             OR COALESCE(A.Ta_No             ,'')   <> COALESCE(B.Ta_No1             ,'')"
+    },
+    {
+      "line": 96,
+      "text": "             )"
+    },
+    {
+      "line": 97,
+      "text": "            THEN     'U' --变更"
+    },
+    {
+      "line": 98,
+      "text": "            ELSE     'S' --无变更"
+    },
+    {
+      "line": 99,
+      "text": "            END AS DATA_TYPE"
+    },
+    {
+      "line": 100,
+      "text": "FROM  (SELECT * FROM T03_AMS_FND_ACCT"
+    },
+    {
+      "line": 101,
+      "text": "        WHERE SRC_TBL ='ODATA_N_STA.S_TACCOINFO'   --只对比ODATA_N_STA.S_TACCOINFO表的数据"
+    },
+    {
+      "line": 102,
+      "text": "          AND BUSI_DATE=default.pretradedate('${data_day_str}',1)"
+    },
+    {
+      "line": 103,
+      "text": "      )A"
+    },
+    {
+      "line": 104,
+      "text": "FULL OUTER JOIN TEMP.T03_AMS_FND_ACCT_TEMP_STA002 B"
+    },
+    {
+      "line": 105,
+      "text": "ON    A.AGT_ID=B.AGT_ID1"
+    },
+    {
+      "line": 106,
+      "text": "AND   A.AGT_MODIFR=B.AGT_MODIFR1"
+    },
+    {
+      "line": 107,
+      "text": ";"
+    },
+    {
+      "line": 108,
+      "text": ""
+    },
+    {
+      "line": 109,
+      "text": "-- querySql"
+    },
+    {
+      "line": 110,
+      "text": "INSERT OVERWRITE TABLE T03_AMS_FND_ACCT PARTITION(Busi_Date,SRC_TBL)"
+    },
+    {
+      "line": 111,
+      "text": "SELECT"
+    },
+    {
+      "line": 112,
+      "text": "     Agt_Id                                     --协议编号"
+    },
+    {
+      "line": 113,
+      "text": "    ,Agt_Modifr                                 --协议修饰符"
+    },
+    {
+      "line": 114,
+      "text": "    ,Agt_Holder                                 --协议持有人编号"
+    },
+    {
+      "line": 115,
+      "text": "    ,Agt_Cate_Cd                                --协议类别代码"
+    },
+    {
+      "line": 116,
+      "text": "    ,Agt_Type_Cd                                --协议类型代码"
+    },
+    {
+      "line": 117,
+      "text": "    ,Agt_Stat_Cd                                --协议状态代码"
+    },
+    {
+      "line": 118,
+      "text": "    ,Sler_Id                                    --销售商编号"
+    },
+    {
+      "line": 119,
+      "text": "    ,Oper_Net_No                                --操作网点编号"
+    },
+    {
+      "line": 120,
+      "text": "    ,Acct_Frz_Rsn_Cd                            --账户冻结原因代码"
+    },
+    {
+      "line": 121,
+      "text": "    ,Src_Prd_Id                                 --源产品编号"
+    },
+    {
+      "line": 122,
+      "text": "    ,Clr_Bat_No                                 --清算批次号"
+    },
+    {
+      "line": 123,
+      "text": "    ,Exch_Shr_Clas_Cd                           --交易所份额分类代码"
+    },
+    {
+      "line": 124,
+      "text": "    ,'0'                     AS Del_Flag        --删除标志"
+    },
+    {
+      "line": 125,
+      "text": "    ,''                      AS Del_Date        --删除日期"
+    },
+    {
+      "line": 126,
+      "text": "    ,Data_Src_Cd                                --数据来源代码"
+    },
+    {
+      "line": 127,
+      "text": "    ,Task_Name                                  --任务名"
+    },
+    {
+      "line": 128,
+      "text": "    ,Data_Etl_Date                              --数据加载日期"
+    },
+    {
+      "line": 129,
+      "text": "    ,Data_Upt_Date                              --数据更新日期"
+    },
+    {
+      "line": 130,
+      "text": "    ,Data_Time                                  --数据时间"
+    },
+    {
+      "line": 131,
+      "text": "    ,Tnt_Id                                     --租户号"
+    },
+    {
+      "line": 132,
+      "text": "    ,Ta_No                                      --TA编号"
+    },
+    {
+      "line": 133,
+      "text": "    ,'${data_day_str}'  AS Busi_Date       --业务日期"
+    },
+    {
+      "line": 134,
+      "text": "    ,Src_Tbl                                    --源表"
+    },
+    {
+      "line": 135,
+      "text": "FROM TEMP.T03_AMS_FND_ACCT_MID_STA002 WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 136,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 137,
+      "text": "SELECT"
+    },
+    {
+      "line": 138,
+      "text": "      Agt_Id1                   AS Agt_Id                    --协议编号"
+    },
+    {
+      "line": 139,
+      "text": "     ,Agt_Modifr1               AS Agt_Modifr                --协议修饰符"
+    },
+    {
+      "line": 140,
+      "text": "     ,Agt_Holder1               AS Agt_Holder                --协议持有人编号"
+    },
+    {
+      "line": 141,
+      "text": "     ,Agt_Cate_Cd1              AS Agt_Cate_Cd               --协议类别代码"
+    },
+    {
+      "line": 142,
+      "text": "     ,Agt_Type_Cd1              AS Agt_Type_Cd               --协议类型代码"
+    },
+    {
+      "line": 143,
+      "text": "     ,Agt_Stat_Cd1              AS Agt_Stat_Cd               --协议状态代码"
+    },
+    {
+      "line": 144,
+      "text": "     ,Sler_Id1                  AS Sler_Id                   --销售商编号"
+    },
+    {
+      "line": 145,
+      "text": "     ,Oper_Net_No1              AS Oper_Net_No               --操作网点编号"
+    },
+    {
+      "line": 146,
+      "text": "     ,Acct_Frz_Rsn_Cd1          AS Acct_Frz_Rsn_Cd           --账户冻结原因代码"
+    },
+    {
+      "line": 147,
+      "text": "     ,Src_Prd_Id1               AS Src_Prd_Id                --源产品编号"
+    },
+    {
+      "line": 148,
+      "text": "     ,Clr_Bat_No1               AS Clr_Bat_No                --清算批次号"
+    },
+    {
+      "line": 149,
+      "text": "     ,Exch_Shr_Clas_Cd1         AS Exch_Shr_Clas_Cd          --交易所份额分类代码"
+    },
+    {
+      "line": 150,
+      "text": "     ,'0'                       AS Del_Flag                  --删除标志"
+    },
+    {
+      "line": 151,
+      "text": "     ,''                        AS Del_Date                  --删除日期"
+    },
+    {
+      "line": 152,
+      "text": "     ,Data_Src_Cd1              AS Data_Src_Cd               --数据来源代码"
+    },
+    {
+      "line": 153,
+      "text": "     ,Task_Name1                AS Task_Name                 --任务名"
+    },
+    {
+      "line": 154,
+      "text": "     ,Data_Etl_Date             AS Data_Etl_Date             --数据加载日期"
+    },
+    {
+      "line": 155,
+      "text": "     ,Data_Upt_Date1            AS Data_Upt_Date             --数据更新日期"
+    },
+    {
+      "line": 156,
+      "text": "     ,'${data_today}'      AS Data_Time                 --数据时间"
+    },
+    {
+      "line": 157,
+      "text": "     ,Tnt_Id1                   AS Tnt_Id                    --租户号"
+    },
+    {
+      "line": 158,
+      "text": "     ,Ta_No1                    AS Ta_No                     --TA编号"
+    },
+    {
+      "line": 159,
+      "text": "     ,'${data_day_str}'    AS Busi_Date                 --业务日期"
+    },
+    {
+      "line": 160,
+      "text": "     ,Src_Tbl1                  AS Src_Tbl                   --源表"
+    },
+    {
+      "line": 161,
+      "text": "FROM TEMP.T03_AMS_FND_ACCT_MID_STA002 WHERE DATA_TYPE='U'           --有变更的数据取变更的值"
+    },
+    {
+      "line": 162,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 163,
+      "text": "SELECT"
+    },
+    {
+      "line": 164,
+      "text": "      Agt_Id1                   AS Agt_Id                    --协议编号"
+    },
+    {
+      "line": 165,
+      "text": "     ,Agt_Modifr1               AS Agt_Modifr                --协议修饰符"
+    },
+    {
+      "line": 166,
+      "text": "     ,Agt_Holder1               AS Agt_Holder                --协议持有人编号"
+    },
+    {
+      "line": 167,
+      "text": "     ,Agt_Cate_Cd1              AS Agt_Cate_Cd               --协议类别代码"
+    },
+    {
+      "line": 168,
+      "text": "     ,Agt_Type_Cd1              AS Agt_Type_Cd               --协议类型代码"
+    },
+    {
+      "line": 169,
+      "text": "     ,Agt_Stat_Cd1              AS Agt_Stat_Cd               --协议状态代码"
+    },
+    {
+      "line": 170,
+      "text": "     ,Sler_Id1                  AS Sler_Id                   --销售商编号"
+    },
+    {
+      "line": 171,
+      "text": "     ,Oper_Net_No1              AS Oper_Net_No               --操作网点编号"
+    },
+    {
+      "line": 172,
+      "text": "     ,Acct_Frz_Rsn_Cd1          AS Acct_Frz_Rsn_Cd           --账户冻结原因代码"
+    },
+    {
+      "line": 173,
+      "text": "     ,Src_Prd_Id1               AS Src_Prd_Id                --源产品编号"
+    },
+    {
+      "line": 174,
+      "text": "     ,Clr_Bat_No1               AS Clr_Bat_No                --清算批次号"
+    },
+    {
+      "line": 175,
+      "text": "     ,Exch_Shr_Clas_Cd1         AS Exch_Shr_Clas_Cd          --交易所份额分类代码"
+    },
+    {
+      "line": 176,
+      "text": "     ,'0'                       AS Del_Flag                  --删除标志"
+    },
+    {
+      "line": 177,
+      "text": "     ,''                        AS Del_Date                  --删除日期"
+    },
+    {
+      "line": 178,
+      "text": "     ,Data_Src_Cd1              AS Data_Src_Cd               --数据来源代码"
+    },
+    {
+      "line": 179,
+      "text": "     ,Task_Name1                AS Task_Name                 --任务名"
+    },
+    {
+      "line": 180,
+      "text": "     ,Data_Etl_Date1            AS Data_Etl_Date             --数据加载日期"
+    },
+    {
+      "line": 181,
+      "text": "     ,Data_Upt_Date1            AS Data_Upt_Date             --数据更新日期"
+    },
+    {
+      "line": 182,
+      "text": "     ,'${data_today}'      AS Data_Time                 --数据时间"
+    },
+    {
+      "line": 183,
+      "text": "     ,Tnt_Id1                   AS Tnt_Id                    --租户号"
+    },
+    {
+      "line": 184,
+      "text": "     ,Ta_No1                    AS Ta_No                     --TA编号"
+    },
+    {
+      "line": 185,
+      "text": "     ,'${data_day_str}'    AS Busi_Date                 --业务日期"
+    },
+    {
+      "line": 186,
+      "text": "     ,Src_Tbl1                  AS Src_Tbl                   --源表"
+    },
+    {
+      "line": 187,
+      "text": "FROM TEMP.T03_AMS_FND_ACCT_MID_STA002 WHERE DATA_TYPE='I' --插入新增的数据"
+    },
+    {
+      "line": 188,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 189,
+      "text": "SELECT"
+    },
+    {
+      "line": 190,
+      "text": "     Agt_Id                                     --协议编号"
+    },
+    {
+      "line": 191,
+      "text": "    ,Agt_Modifr                                 --协议修饰符"
+    },
+    {
+      "line": 192,
+      "text": "    ,Agt_Holder                                 --协议持有人编号"
+    },
+    {
+      "line": 193,
+      "text": "    ,Agt_Cate_Cd                                --协议类别代码"
+    },
+    {
+      "line": 194,
+      "text": "    ,Agt_Type_Cd                                --协议类型代码"
+    },
+    {
+      "line": 195,
+      "text": "    ,Agt_Stat_Cd                                --协议状态代码"
+    },
+    {
+      "line": 196,
+      "text": "    ,Sler_Id                                    --销售商编号"
+    },
+    {
+      "line": 197,
+      "text": "    ,Oper_Net_No                                --操作网点编号"
+    },
+    {
+      "line": 198,
+      "text": "    ,Acct_Frz_Rsn_Cd                            --账户冻结原因代码"
+    },
+    {
+      "line": 199,
+      "text": "    ,Src_Prd_Id                                 --源产品编号"
+    },
+    {
+      "line": 200,
+      "text": "    ,Clr_Bat_No                                 --清算批次号"
+    },
+    {
+      "line": 201,
+      "text": "    ,Exch_Shr_Clas_Cd                           --交易所份额分类代码"
+    },
+    {
+      "line": 202,
+      "text": "     ,'1' DEL_FLAG                              --删除标志"
+    },
+    {
+      "line": 203,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 204,
+      "text": "           THEN DEL_DATE"
+    },
+    {
+      "line": 205,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 206,
+      "text": "           END                AS   DEL_DATE     --删除日期"
+    },
+    {
+      "line": 207,
+      "text": "     ,DATA_SRC_CD                               --数据来源代码"
+    },
+    {
+      "line": 208,
+      "text": "     ,TASK_NAME                                 --任务名"
+    },
+    {
+      "line": 209,
+      "text": "     ,DATA_ETL_DATE                             --数据加载日期"
+    },
+    {
+      "line": 210,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 211,
+      "text": "           THEN DATA_UPT_DATE"
+    },
+    {
+      "line": 212,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 213,
+      "text": "           END               AS DATA_UPT_DATE   --数据更新日期"
+    },
+    {
+      "line": 214,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 215,
+      "text": "           THEN DATA_TIME"
+    },
+    {
+      "line": 216,
+      "text": "           ELSE '${data_today}'"
+    },
+    {
+      "line": 217,
+      "text": "           END               AS DATA_TIME       --数据时间"
+    },
+    {
+      "line": 218,
+      "text": "     ,Tnt_Id                 AS Tnt_Id          --租户号"
+    },
+    {
+      "line": 219,
+      "text": "     ,Ta_No                  AS Ta_No           --TA编号"
+    },
+    {
+      "line": 220,
+      "text": "     ,'${data_day_str}' AS Busi_Date       --业务日期"
+    },
+    {
+      "line": 221,
+      "text": "     ,SRC_TBL                                   --源表"
+    },
+    {
+      "line": 222,
+      "text": "FROM TEMP.T03_AMS_FND_ACCT_MID_STA002 WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 223,
+      "text": ";"
+    },
+    {
+      "line": 224,
+      "text": ""
+    }
+  ]
+}

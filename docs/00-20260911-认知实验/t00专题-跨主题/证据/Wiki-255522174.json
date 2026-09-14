@@ -1,0 +1,19 @@
+[
+  {
+    "pageId": "255522174",
+    "title": "基本的设计思想",
+    "keyword": null,
+    "section": null,
+    "readMode": "full",
+    "contentChars": 269,
+    "returnedChars": 269,
+    "cacheHit": "Y",
+    "truncated": "N",
+    "complete": "Y",
+    "content": "1. 面向业务分析的需求划分主题→十大主题  \n   1. T00 CSA ；T01 PTY 当事人；T02 资讯；T03 协议；T04 ORG 机构；T05 EVT 事件；T06 LOC 区域；T07 CAM 营销；T08 渠道；T09 FIN 财务；T98 SUM 汇总；T99 REF 参考/代码\n2. 按源独立并发写入：按src\\_tbl分区→ 提高跑批效率、细化了依赖粒度  \n   1. 比如说，写表A的任务实际上只依赖于写表B的分区1，则应对于该分区单独开一个任务，否则任务越来越多的时候就会因为等待上游任务跑完浪费很多时间",
+    "relatedSections": [],
+    "contentHash": "4fd6fa3aad40d321f595ca6c8d2f34eec091e393dbfb66e3ab5c03591e0dc10b",
+    "source": "remote_wiki_mcp_page",
+    "limitations": "Full remote Wiki page returned explicitly."
+  }
+]

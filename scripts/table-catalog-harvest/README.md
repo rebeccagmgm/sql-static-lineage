@@ -52,7 +52,11 @@ Kafka topics are marked not applicable. The output is
 `outputs/partition-filter-harvest-20260912/partition-filters.sqlite`.
 Place `stop.requested` in that output directory to pause; remove it before resuming.
 Only one collector can hold the process lock. Requests run serially with a random
-1–1.5 second delay after each response. Any request error pauses the entire run.
+1–1.5 second delay after each response. The specifically verified business error
+`typeName is null` (HTTP 200, business code 1, exact observed message) marks that
+table BLOCKED, records an event, and immediately proceeds to the next table.
+Permissions, rate limits, unknown business errors and data validation failures
+still pause the entire run. A finished queue with BLOCKED tables is FINISHED_PARTIAL.
 
 `tasks` records table identities and keys; `filters` stores independent per-key
 values, never inferred partition combinations. Business values are preserved;

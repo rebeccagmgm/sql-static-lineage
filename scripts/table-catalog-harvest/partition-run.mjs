@@ -3,6 +3,7 @@ import {existsSync,mkdirSync,readFileSync,writeFileSync,renameSync,unlinkSync,op
 import {resolve,join} from 'node:path';
 import {PortalTransport,sleep} from './transport.mjs';
 import {summarizeValues} from './partition-values.mjs';
+import {partitionBusinessErrorCode,runPartitionTable} from './partition-errors.mjs';
 
 const root=resolve('outputs/partition-filter-harvest-20260912');
 mkdirSync(root,{recursive:true});
@@ -39,7 +40,7 @@ try {
   }
   let stopping=false;process.on('SIGINT',()=>{stopping=true;});process.on('SIGTERM',()=>{stopping=true;});
   const stopped=()=>stopping||existsSync(join(root,'stop.requested'));
-  const t=new PortalTransport('partition-filter-harvest');
+  const t=new PortalTransport('partition-filter-harvest',{businessErrorCode:partitionBusinessErrorCode});
   let requests=db.prepare('SELECT requests FROM run').get().requests;
   const report=(status,error=null)=>{
     db.prepare('UPDATE run SET status=?,updated_at=?,requests=?,error_code=? WHERE id=1').run(status,now(),requests,error);
@@ -64,6 +65,7 @@ try {
       while(!stopped()&&completed<limit){
         active=db.prepare("SELECT * FROM tasks WHERE state IN ('PENDING','COLLECTING') ORDER BY CASE WHEN guid='687b993b-085a-4890-bab4-71d3aa716d93' THEN 0 WHEN database_name='pdata_n' THEN 1 WHEN type='hive_table' THEN 2 ELSE 3 END,guid LIMIT 1").get();
         if(!active)break;
+        await runPartitionTable(async()=>{
         let keys=active.keys_json?JSON.parse(active.keys_json):await request('getPartitionKeys.json',{guid:active.guid});
         if(!Array.isArray(keys)||keys.some(x=>typeof x!=='string'||!x)||new Set(keys).size!==keys.length)throw Error('INVALID_PARTITION_KEYS');
         db.prepare("UPDATE tasks SET state='COLLECTING',keys_json=?,updated_at=?,error_code=NULL WHERE guid=?").run(JSON.stringify(keys),now(),active.guid);
@@ -75,10 +77,19 @@ try {
           db.prepare('INSERT INTO filters VALUES(?,?,?,?,?)').run(active.guid,key,ordinal,JSON.stringify(summary),now());
         }
         db.prepare('UPDATE tasks SET state=?,updated_at=? WHERE guid=?').run(keys.length?'CAPTURED_UNVERIFIED':'NO_KEYS_RETURNED',now(),active.guid);
+        },()=>{
+          db.exec('BEGIN IMMEDIATE');
+          try {
+            db.prepare("UPDATE tasks SET state='BLOCKED',error_code='SOURCE_METADATA_TYPE_MISSING',updated_at=? WHERE guid=?").run(now(),active.guid);
+            db.prepare('INSERT INTO events VALUES(?,?,?)').run(now(),'TASK_QUARANTINED',JSON.stringify({guid:active.guid,code:'SOURCE_METADATA_TYPE_MISSING'}));
+            db.exec('COMMIT');
+          }catch(error){db.exec('ROLLBACK');throw error;}
+        });
         completed++;active=null;report('RUNNING');
       }
       const pending=db.prepare("SELECT count(*) n FROM tasks WHERE state IN ('PENDING','COLLECTING')").get().n;
-      report(stopped()?'PAUSED_USER':pending?'PILOT_COMPLETE':'FINISHED_WITH_UNVERIFIED_COMPLETENESS');
+      const blocked=db.prepare("SELECT count(*) n FROM tasks WHERE state='BLOCKED'").get().n;
+      report(stopped()?'PAUSED_USER':pending?'PILOT_COMPLETE':blocked?'FINISHED_PARTIAL':'FINISHED_WITH_UNVERIFIED_COMPLETENESS');
     }
   }catch(e){
     const code=/^[A-Z0-9_]+$/.test(e.message)?e.message:'UNEXPECTED_ERROR';

@@ -14,6 +14,9 @@ const allowed = new Set([
   "--layer",
   "--direction",
   "--depth",
+  "--max-depth",
+  "--max-nodes",
+  "--max-edges",
   "--limit",
   "--offset",
   "--slot",
@@ -137,6 +140,7 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
         "fields",
         "trace",
         "detail",
+        "explain",
         "processing",
         "compare",
       ].includes(command)
@@ -230,6 +234,14 @@ export async function assetGraphMain(args = process.argv.slice(2)) {
             nextOffset: rows.length > limit ? offset + limit : null,
           },
         };
+      } else if (command === "explain") {
+        if (!option("--write-id") || !option("--column")) throw new Error("ARGUMENT_VALUE_REQUIRED:--write-id_and_--column");
+        const { queryTaskFieldExplanation } = await import("./task-field-explanation-query.ts");
+        data = await queryTaskFieldExplanation(store, {
+          taskId: requireTask(), writeId: option("--write-id") ?? "", column: option("--column") ?? "",
+          publicationVersion: option("--publication-version"),
+          maxDepth: integer("--max-depth", 32, 64, 1), maxNodes: integer("--max-nodes", 500, 2000, 1), maxEdges: integer("--max-edges", 1000, 4000, 1),
+        });
       } else if (command === "detail") {
         const { taskDetail } = await import("./service.ts");
         const d = await taskDetail(

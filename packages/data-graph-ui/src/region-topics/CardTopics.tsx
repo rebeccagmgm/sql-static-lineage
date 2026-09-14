@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 export type CardTopicData = { topics: Array<{ name: string; label: string; tableCount?: number }>; total: number; incomplete: boolean };
-export function useCardTopics(schemas: string[], patterns: string[], hiddenTables: string[], version: string) {
-  const key = JSON.stringify({ schemas, patterns, hiddenTables, version });
+export function useCardTopics(schemas: string[], patterns: string[], hiddenTables: string[], version: string, clusters: string[] = []) {
+  const key = JSON.stringify({ schemas, patterns, hiddenTables, version, clusters });
   const [state, setState] = useState<{ key: string; values?: Record<string, CardTopicData>; failed?: boolean }>();
   useEffect(() => {
     if (!schemas.length) return;
     const controller = new AbortController();
-    const query = new URLSearchParams({ schemas: JSON.stringify(schemas), patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables) });
+    const query = new URLSearchParams({ schemas: JSON.stringify(schemas), patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) });
     void fetch(`/api/region-topics?${query}`, { signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error("TOPICS_FAILED");
       const body = await response.json() as { version: string; regions: Array<CardTopicData & { schema: string }> };

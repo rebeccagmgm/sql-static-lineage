@@ -7,8 +7,9 @@ const exec = promisify(execFile);
 export const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
 
 export class PortalTransport {
-  constructor(session) {
+  constructor(session, { businessErrorCode = () => 'PORTAL_BUSINESS_ERROR' } = {}) {
     this.session = session;
+    this.businessErrorCode = businessErrorCode;
     this.cliPath = join(homedir(),'AppData/Roaming/npm/node_modules/@jackwener/opencli/dist/src/main.js');
     this.requestCount = 0;
   }
@@ -32,7 +33,7 @@ export class PortalTransport {
       const envelope = typeof value === 'string' ? JSON.parse(value) : value;
       if (envelope.status !== 200) throw new Error('HTTP_' + Number(envelope.status));
       const body = JSON.parse(envelope.body);
-      if (body.code !== 0) throw new Error('PORTAL_BUSINESS_ERROR');
+      if (body.code !== 0) throw new Error(this.businessErrorCode(body));
       return JSON.stringify(envelope);
     }};
   }

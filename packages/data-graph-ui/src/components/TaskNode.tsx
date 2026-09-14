@@ -1,4 +1,5 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { memo } from "react";
 import type { LineageNodeData } from "../graph-adapter";
 
 export interface TaskPort {
@@ -15,13 +16,14 @@ export type TaskNodeData = LineageNodeData & {
   onExpandCandidates?: () => void;
 };
 
-export function TaskNode({ data: rawData }: NodeProps) {
+export const TaskNode = memo(function TaskNode({ data: rawData }: NodeProps) {
   const data = rawData as TaskNodeData;
   const taskId = data.raw?.taskId ?? data.raw?.id.replace(/^task:/, "") ?? "—";
   const taskName =
     (typeof data.raw?.detail?.taskName === "string" &&
       data.raw.detail.taskName.trim()) ||
     undefined;
+  const cluster = typeof data.raw?.detail?.cluster === "string" ? data.raw.detail.cluster.trim() : "";
   const ports = data.taskPorts ?? [];
   const topicName =
     (typeof data.raw?.detail?.topicName === "string" &&
@@ -59,6 +61,7 @@ export function TaskNode({ data: rawData }: NodeProps) {
         <Handle type="target" position={Position.Left} />
       )}
       <strong>调度 {taskId}</strong>
+      <small className="task-node-cluster">集群：{cluster || "未收录"}</small>
       {taskName && <small className="task-node-name">{taskName}</small>}
       <small className="task-node-topic" title={`调度主题：${topicDisplay}`}>
         调度主题：{topicDisplay}
@@ -84,4 +87,4 @@ export function TaskNode({ data: rawData }: NodeProps) {
       )}
     </div>
   );
-}
+}, (previous, next) => previous.id === next.id && previous.data === next.data && previous.selected === next.selected);

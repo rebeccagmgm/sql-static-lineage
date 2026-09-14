@@ -1,0 +1,949 @@
+{
+  "task_id": "103930",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.059Z",
+  "payload_sha256": "6873c03909ccb6217be4c5aa783ac389907aa6f1d4710f57f96edfc53175881d",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_AGT("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Agt_Cate_Cd                STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Agt_Type_Cd                STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Bel_Inr_Org_Id             STRING COMMENT '所属内部机构编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Agt_Holder                 STRING COMMENT '协议持有人'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Exch_Type_Cd               STRING COMMENT '市场代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Vld_Date                   STRING COMMENT '生效日期'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Due_Date                   STRING COMMENT '到期日期'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Agt_Stat_Cd                STRING COMMENT '协议状态代码'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Crrc_Cd                    STRING COMMENT '币种代码'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Del_Date                   STRING COMMENT '删除日期'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 29,
+      "text": ")COMMENT '协议'"
+    },
+    {
+      "line": 30,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT '源表')"
+    },
+    {
+      "line": 31,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 32,
+      "text": ""
+    },
+    {
+      "line": 33,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T03_AGT_TEMP_TIT154;"
+    },
+    {
+      "line": 34,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T03_AGT_TEMP_TIT154"
+    },
+    {
+      "line": 35,
+      "text": "AS"
+    },
+    {
+      "line": 36,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 37,
+      "text": "--GROUP95: SOURCE TABLE:[ODATA_N_TIT.D_REF_TRS: 场外交易-TRS]"
+    },
+    {
+      "line": 38,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 39,
+      "text": "SELECT"
+    },
+    {
+      "line": 40,
+      "text": "     A.KEY_OTC_TRADE_ID                         AS  Agt_Id                  --协议编号        "
+    },
+    {
+      "line": 41,
+      "text": "    ,'20206'                                  AS  Agt_Modifr              --协议修饰符      "
+    },
+    {
+      "line": 42,
+      "text": "    ,'202'                                    AS  Agt_Cate_Cd             --协议类别代码    "
+    },
+    {
+      "line": 43,
+      "text": "    ,'20206'                                  AS  Agt_Type_Cd             --协议类型代码    "
+    },
+    {
+      "line": 44,
+      "text": "    ,''                                       AS  Bel_Inr_Org_Id          --所属内部机构编号"
+    },
+    {
+      "line": 45,
+      "text": "    ,CONCAT('TIT060-',C.KEY_CTPTY_ID)         AS  Agt_Holder              --协议持有人      "
+    },
+    {
+      "line": 46,
+      "text": "    ,''                                       AS  Exch_Type_Cd            --市场代码        "
+    },
+    {
+      "line": 47,
+      "text": "    ,default.date2datekey(SUBSTR(A.CREATED_DATETIME,1,10))"
+    },
+    {
+      "line": 48,
+      "text": "                                              AS  Vld_Date                --生效日期        "
+    },
+    {
+      "line": 49,
+      "text": "    ,''                                       AS  Due_Date                --到期日期        "
+    },
+    {
+      "line": 50,
+      "text": "    ,NVL(D.DW_CD_VAL,A.CONTR_STATUS)              AS  Agt_Stat_Cd             --协议状态代码    "
+    },
+    {
+      "line": 51,
+      "text": "    ,A.CURRENCY                                 AS  Crrc_Cd                 --币种代码        "
+    },
+    {
+      "line": 52,
+      "text": "    ,'${data_src_cd}'                    AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 53,
+      "text": "    ,'${src_table}'                      AS  Src_Tbl                 --源表"
+    },
+    {
+      "line": 54,
+      "text": "    ,'${filename}'                       AS  Task_Name               --任务名"
+    },
+    {
+      "line": 55,
+      "text": "    ,'${data_day_str}'                   AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 56,
+      "text": "    ,'${data_day_str}'                   AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 57,
+      "text": "    ,'${src_table}'                      AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 58,
+      "text": "FROM  (SELECT * FROM ${src_table}  WHERE BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 59,
+      "text": "LEFT JOIN  (SELECT * FROM ODATA_N_TIT.D_TRD_OTC_TRADE WHERE BUSI_DATE='${data_day_str}' ) B "
+    },
+    {
+      "line": 60,
+      "text": "      ON A.KEY_OTC_TRADE_ID=B.KEY_OTC_TRADE_ID "
+    },
+    {
+      "line": 61,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_TIT.D_REF_BOOK WHERE BUSI_DATE='${data_day_str}' ) C "
+    },
+    {
+      "line": 62,
+      "text": "      ON B.KEY_BOOK_ID=C.KEY_BOOK_ID"
+    },
+    {
+      "line": 63,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 64,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 65,
+      "text": "          FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 66,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_AGT'"
+    },
+    {
+      "line": 67,
+      "text": "             AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 68,
+      "text": "             AND SRC_TAB_NAME = 'REF_TRS'"
+    },
+    {
+      "line": 69,
+      "text": "             AND SRC_FLD_NAME = 'CONTR_STATUS'"
+    },
+    {
+      "line": 70,
+      "text": "             AND SRC_SYS_NAME='TIT')D"
+    },
+    {
+      "line": 71,
+      "text": "      ON      A.CONTR_STATUS =D.SRC_CD_VAL                  --CONTR_STATUS 转码"
+    },
+    {
+      "line": 72,
+      "text": ";"
+    },
+    {
+      "line": 73,
+      "text": ""
+    },
+    {
+      "line": 74,
+      "text": "DROP TABLE IF EXISTS ${DB_TEMP}.T03_AGT_MID_TIT154;"
+    },
+    {
+      "line": 75,
+      "text": "CREATE TABLE IF NOT EXISTS ${DB_TEMP}.T03_AGT_MID_TIT154"
+    },
+    {
+      "line": 76,
+      "text": "AS"
+    },
+    {
+      "line": 77,
+      "text": "SELECT"
+    },
+    {
+      "line": 78,
+      "text": "         A.*"
+    },
+    {
+      "line": 79,
+      "text": "        ,B.Agt_Id                     AS Agt_Id1                   --协议编号"
+    },
+    {
+      "line": 80,
+      "text": "        ,B.Agt_Modifr                 AS Agt_Modifr1               --协议修饰符"
+    },
+    {
+      "line": 81,
+      "text": "        ,B.Agt_Cate_Cd                AS Agt_Cate_Cd1              --协议类别代码"
+    },
+    {
+      "line": 82,
+      "text": "        ,B.Agt_Type_Cd                AS Agt_Type_Cd1              --协议类型代码"
+    },
+    {
+      "line": 83,
+      "text": "        ,B.Bel_Inr_Org_Id             AS Bel_Inr_Org_Id1           --所属内部机构编号"
+    },
+    {
+      "line": 84,
+      "text": "        ,B.Agt_Holder                 AS Agt_Holder1               --协议持有人"
+    },
+    {
+      "line": 85,
+      "text": "        ,B.Exch_Type_Cd               AS Exch_Type_Cd1             --市场代码"
+    },
+    {
+      "line": 86,
+      "text": "        ,B.Vld_Date                   AS Vld_Date1                 --生效日期"
+    },
+    {
+      "line": 87,
+      "text": "        ,B.Due_Date                   AS Due_Date1                 --到期日期"
+    },
+    {
+      "line": 88,
+      "text": "        ,B.Agt_Stat_Cd                AS Agt_Stat_Cd1              --协议状态代码"
+    },
+    {
+      "line": 89,
+      "text": "        ,B.Crrc_Cd                    AS Crrc_Cd1                  --币种代码"
+    },
+    {
+      "line": 90,
+      "text": "        ,B.DATA_SRC_CD                AS DATA_SRC_CD1              --数据来源代码"
+    },
+    {
+      "line": 91,
+      "text": "        ,B.SRC_TBL                    AS SRC_TBL1                  --源表"
+    },
+    {
+      "line": 92,
+      "text": "        ,B.TASK_NAME                  AS TASK_NAME1                --任务名"
+    },
+    {
+      "line": 93,
+      "text": "        ,B.DATA_ETL_DATE              AS DATA_ETL_DATE1            --数据加载日期"
+    },
+    {
+      "line": 94,
+      "text": "        ,B.DATA_UPT_DATE              AS DATA_UPT_DATE1            --数据更新日期"
+    },
+    {
+      "line": 95,
+      "text": "        ,B.Real_Src_Tbl               AS Real_Src_Tbl1             --真实源表"
+    },
+    {
+      "line": 96,
+      "text": "        ,CASE WHEN A.Agt_Id IS NULL     AND B.Agt_Id IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 97,
+      "text": "              WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 98,
+      "text": "              WHEN A.Agt_Id IS NOT NULL AND B.Agt_Id IS NOT NULL AND ("
+    },
+    {
+      "line": 99,
+      "text": "                     COALESCE(A.Agt_Modifr              ,'') <> COALESCE(B.Agt_Modifr              ,'')"
+    },
+    {
+      "line": 100,
+      "text": "                  OR COALESCE(A.Agt_Cate_Cd             ,'') <> COALESCE(B.Agt_Cate_Cd             ,'')"
+    },
+    {
+      "line": 101,
+      "text": "                  OR COALESCE(A.Agt_Type_Cd             ,'') <> COALESCE(B.Agt_Type_Cd             ,'')"
+    },
+    {
+      "line": 102,
+      "text": "                  OR COALESCE(A.Bel_Inr_Org_Id          ,'') <> COALESCE(B.Bel_Inr_Org_Id          ,'')"
+    },
+    {
+      "line": 103,
+      "text": "                  OR COALESCE(A.Agt_Holder              ,'') <> COALESCE(B.Agt_Holder              ,'')"
+    },
+    {
+      "line": 104,
+      "text": "                  OR COALESCE(A.Exch_Type_Cd            ,'') <> COALESCE(B.Exch_Type_Cd            ,'')"
+    },
+    {
+      "line": 105,
+      "text": "                  OR COALESCE(A.Vld_Date                ,'') <> COALESCE(B.Vld_Date                ,'')"
+    },
+    {
+      "line": 106,
+      "text": "                  OR COALESCE(A.Due_Date                ,'') <> COALESCE(B.Due_Date                ,'')"
+    },
+    {
+      "line": 107,
+      "text": "                  OR COALESCE(A.Agt_Stat_Cd             ,'') <> COALESCE(B.Agt_Stat_Cd             ,'')"
+    },
+    {
+      "line": 108,
+      "text": "                  OR COALESCE(A.Crrc_Cd                 ,'') <> COALESCE(B.Crrc_Cd                 ,'')"
+    },
+    {
+      "line": 109,
+      "text": "             ) THEN 'U' --变更"
+    },
+    {
+      "line": 110,
+      "text": "             ELSE 'S' --无变更"
+    },
+    {
+      "line": 111,
+      "text": "             END                 AS DATA_TYPE              --数据类型"
+    },
+    {
+      "line": 112,
+      "text": "FROM  (SELECT * FROM T03_AGT "
+    },
+    {
+      "line": 113,
+      "text": "                WHERE SRC_TBL='ODATA_N_TIT.D_REF_TRS')A"
+    },
+    {
+      "line": 114,
+      "text": "FULL OUTER JOIN ${DB_TEMP}.T03_AGT_TEMP_TIT154 B"
+    },
+    {
+      "line": 115,
+      "text": "ON    A.Agt_Id=B.Agt_Id"
+    },
+    {
+      "line": 116,
+      "text": ";"
+    },
+    {
+      "line": 117,
+      "text": ""
+    },
+    {
+      "line": 118,
+      "text": "-- querySql"
+    },
+    {
+      "line": 119,
+      "text": "INSERT OVERWRITE TABLE T03_AGT PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 120,
+      "text": " --剔除当日新增的数据"
+    },
+    {
+      "line": 121,
+      "text": "SELECT"
+    },
+    {
+      "line": 122,
+      "text": "      *"
+    },
+    {
+      "line": 123,
+      "text": "  FROM T03_AGT"
+    },
+    {
+      "line": 124,
+      "text": "  WHERE DATA_ETL_DATE !='${data_day_str}' "
+    },
+    {
+      "line": 125,
+      "text": "    AND SRC_TBL = 'ODATA_N_TIT.D_REF_TRS'"
+    },
+    {
+      "line": 126,
+      "text": ";"
+    },
+    {
+      "line": 127,
+      "text": ""
+    },
+    {
+      "line": 128,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 129,
+      "text": "set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 130,
+      "text": "set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 131,
+      "text": "set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 132,
+      "text": "set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 133,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 134,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 135,
+      "text": "set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 136,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 137,
+      "text": "set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 138,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 139,
+      "text": ""
+    },
+    {
+      "line": 140,
+      "text": "INSERT OVERWRITE TABLE T03_AGT PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 141,
+      "text": "SELECT"
+    },
+    {
+      "line": 142,
+      "text": "     Agt_Id                                        --协议编号"
+    },
+    {
+      "line": 143,
+      "text": "    ,Agt_Modifr                                    --协议修饰符"
+    },
+    {
+      "line": 144,
+      "text": "    ,Agt_Cate_Cd                                   --协议类别代码"
+    },
+    {
+      "line": 145,
+      "text": "    ,Agt_Type_Cd                                   --协议类型代码"
+    },
+    {
+      "line": 146,
+      "text": "    ,Bel_Inr_Org_Id                                --所属内部机构编号"
+    },
+    {
+      "line": 147,
+      "text": "    ,Agt_Holder                                    --协议持有人"
+    },
+    {
+      "line": 148,
+      "text": "    ,Exch_Type_Cd                                  --市场代码"
+    },
+    {
+      "line": 149,
+      "text": "    ,Vld_Date                                      --生效日期"
+    },
+    {
+      "line": 150,
+      "text": "    ,Due_Date                                      --到期日期"
+    },
+    {
+      "line": 151,
+      "text": "    ,Agt_Stat_Cd                                   --协议状态代码"
+    },
+    {
+      "line": 152,
+      "text": "    ,Crrc_Cd                                       --币种代码"
+    },
+    {
+      "line": 153,
+      "text": "    ,'0'                     AS Del_Flag           --删除标志"
+    },
+    {
+      "line": 154,
+      "text": "    ,''                      AS Del_Date           --删除日期"
+    },
+    {
+      "line": 155,
+      "text": "    ,Data_Src_Cd                                   --数据来源代码"
+    },
+    {
+      "line": 156,
+      "text": "    ,Task_Name                                     --任务名"
+    },
+    {
+      "line": 157,
+      "text": "    ,Data_Etl_Date                                 --数据加载日期"
+    },
+    {
+      "line": 158,
+      "text": "    ,Data_Upt_Date                                 --数据更新日期"
+    },
+    {
+      "line": 159,
+      "text": "    ,Data_Time                                     --数据时间"
+    },
+    {
+      "line": 160,
+      "text": "    ,Real_Src_Tbl                                  --真实源表"
+    },
+    {
+      "line": 161,
+      "text": "    ,Src_Tbl                                       --源表"
+    },
+    {
+      "line": 162,
+      "text": "FROM ${DB_TEMP}.T03_AGT_MID_TIT154 WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 163,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 164,
+      "text": "SELECT"
+    },
+    {
+      "line": 165,
+      "text": "     Agt_Id1                                      AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 166,
+      "text": "    ,Agt_Modifr1                                  AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 167,
+      "text": "    ,Agt_Cate_Cd1                                 AS Agt_Cate_Cd              --协议类别代码"
+    },
+    {
+      "line": 168,
+      "text": "    ,Agt_Type_Cd1                                 AS Agt_Type_Cd              --协议类型代码"
+    },
+    {
+      "line": 169,
+      "text": "    ,Bel_Inr_Org_Id1                              AS Bel_Inr_Org_Id           --所属内部机构编号"
+    },
+    {
+      "line": 170,
+      "text": "    ,Agt_Holder1                                  AS Agt_Holder               --协议持有人"
+    },
+    {
+      "line": 171,
+      "text": "    ,Exch_Type_Cd1                                AS Exch_Type_Cd             --市场代码"
+    },
+    {
+      "line": 172,
+      "text": "    ,Vld_Date1                                    AS Vld_Date                 --生效日期"
+    },
+    {
+      "line": 173,
+      "text": "    ,Due_Date1                                    AS Due_Date                 --到期日期"
+    },
+    {
+      "line": 174,
+      "text": "    ,Agt_Stat_Cd1                                 AS Agt_Stat_Cd              --协议状态代码"
+    },
+    {
+      "line": 175,
+      "text": "    ,Crrc_Cd1                                     AS Crrc_Cd                  --币种代码"
+    },
+    {
+      "line": 176,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 177,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 178,
+      "text": "    ,Data_Src_Cd1                                 AS Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 179,
+      "text": "    ,Task_Name1                                   AS Task_Name                --任务名"
+    },
+    {
+      "line": 180,
+      "text": "    ,Data_Etl_Date                                AS Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 181,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 182,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 183,
+      "text": "    ,Real_Src_Tbl1                                AS Real_Src_Tbl             --真实源表"
+    },
+    {
+      "line": 184,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 185,
+      "text": "FROM ${DB_TEMP}.T03_AGT_MID_TIT154  WHERE DATA_TYPE='U'   --有变更的数据取变更的值"
+    },
+    {
+      "line": 186,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 187,
+      "text": "SELECT"
+    },
+    {
+      "line": 188,
+      "text": "     Agt_Id1                                      AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 189,
+      "text": "    ,Agt_Modifr1                                  AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 190,
+      "text": "    ,Agt_Cate_Cd1                                 AS Agt_Cate_Cd              --协议类别代码"
+    },
+    {
+      "line": 191,
+      "text": "    ,Agt_Type_Cd1                                 AS Agt_Type_Cd              --协议类型代码"
+    },
+    {
+      "line": 192,
+      "text": "    ,Bel_Inr_Org_Id1                              AS Bel_Inr_Org_Id           --所属内部机构编号"
+    },
+    {
+      "line": 193,
+      "text": "    ,Agt_Holder1                                  AS Agt_Holder               --协议持有人"
+    },
+    {
+      "line": 194,
+      "text": "    ,Exch_Type_Cd1                                AS Exch_Type_Cd             --市场代码"
+    },
+    {
+      "line": 195,
+      "text": "    ,Vld_Date1                                    AS Vld_Date                 --生效日期"
+    },
+    {
+      "line": 196,
+      "text": "    ,Due_Date1                                    AS Due_Date                 --到期日期"
+    },
+    {
+      "line": 197,
+      "text": "    ,Agt_Stat_Cd1                                 AS Agt_Stat_Cd              --协议状态代码"
+    },
+    {
+      "line": 198,
+      "text": "    ,Crrc_Cd1                                     AS Crrc_Cd                  --币种代码"
+    },
+    {
+      "line": 199,
+      "text": "    ,'0'                                          AS Del_Flag                 --删除标志"
+    },
+    {
+      "line": 200,
+      "text": "    ,''                                           AS Del_Date                 --删除日期"
+    },
+    {
+      "line": 201,
+      "text": "    ,Data_Src_Cd1                                 As Data_Src_Cd              --数据来源代码"
+    },
+    {
+      "line": 202,
+      "text": "    ,Task_Name1                                   As Task_Name                --任务名"
+    },
+    {
+      "line": 203,
+      "text": "    ,Data_Etl_Date1                               As Data_Etl_Date            --数据加载日期"
+    },
+    {
+      "line": 204,
+      "text": "    ,Data_Upt_Date1                               AS Data_Upt_Date            --数据更新日期"
+    },
+    {
+      "line": 205,
+      "text": "    ,'${data_today}'                         AS Data_Time                --数据时间"
+    },
+    {
+      "line": 206,
+      "text": "    ,Real_Src_Tbl1                                AS Real_Src_Tbl             --真实源表"
+    },
+    {
+      "line": 207,
+      "text": "    ,Src_Tbl1                                     AS Src_Tbl                  --源表"
+    },
+    {
+      "line": 208,
+      "text": "FROM ${DB_TEMP}.T03_AGT_MID_TIT154  WHERE DATA_TYPE='I'   --插入新增的数据"
+    },
+    {
+      "line": 209,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 210,
+      "text": "SELECT"
+    },
+    {
+      "line": 211,
+      "text": "     Agt_Id                                                  --协议编号"
+    },
+    {
+      "line": 212,
+      "text": "    ,Agt_Modifr                                              --协议修饰符"
+    },
+    {
+      "line": 213,
+      "text": "    ,Agt_Cate_Cd                                             --协议类别代码"
+    },
+    {
+      "line": 214,
+      "text": "    ,Agt_Type_Cd                                             --协议类型代码"
+    },
+    {
+      "line": 215,
+      "text": "    ,Bel_Inr_Org_Id                                          --所属内部机构编号"
+    },
+    {
+      "line": 216,
+      "text": "    ,Agt_Holder                                              --协议持有人"
+    },
+    {
+      "line": 217,
+      "text": "    ,Exch_Type_Cd                                            --市场代码"
+    },
+    {
+      "line": 218,
+      "text": "    ,Vld_Date                                                --生效日期"
+    },
+    {
+      "line": 219,
+      "text": "    ,Due_Date                                                --到期日期"
+    },
+    {
+      "line": 220,
+      "text": "    ,Agt_Stat_Cd                                             --协议状态代码"
+    },
+    {
+      "line": 221,
+      "text": "    ,Crrc_Cd                                                 --币种代码"
+    },
+    {
+      "line": 222,
+      "text": "    ,'1'                              AS Del_Flag            --删除标志"
+    },
+    {
+      "line": 223,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 224,
+      "text": "            THEN Del_Date"
+    },
+    {
+      "line": 225,
+      "text": "          ELSE '${data_day_str}'"
+    },
+    {
+      "line": 226,
+      "text": "          END                         AS Del_Date            --删除日期"
+    },
+    {
+      "line": 227,
+      "text": "     ,Data_Src_Cd                                            --数据来源代码"
+    },
+    {
+      "line": 228,
+      "text": "     ,Task_Name                                              --任务名"
+    },
+    {
+      "line": 229,
+      "text": "     ,Data_Etl_Date                                          --数据加载日期"
+    },
+    {
+      "line": 230,
+      "text": "     ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 231,
+      "text": "           THEN Data_Upt_Date"
+    },
+    {
+      "line": 232,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 233,
+      "text": "          END                         AS Data_Upt_Date       --数据更新日期"
+    },
+    {
+      "line": 234,
+      "text": "    ,CASE WHEN Del_Date !=''"
+    },
+    {
+      "line": 235,
+      "text": "            THEN Data_Time"
+    },
+    {
+      "line": 236,
+      "text": "          ELSE '${data_today}'"
+    },
+    {
+      "line": 237,
+      "text": "          END                         AS Data_Time           --数据时间"
+    },
+    {
+      "line": 238,
+      "text": "    ,Real_Src_Tbl                                            --真实源表"
+    },
+    {
+      "line": 239,
+      "text": "    ,Src_Tbl                                                 --源表"
+    },
+    {
+      "line": 240,
+      "text": "FROM ${DB_TEMP}.T03_AGT_MID_TIT154 WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 241,
+      "text": ";"
+    },
+    {
+      "line": 242,
+      "text": ""
+    }
+  ]
+}

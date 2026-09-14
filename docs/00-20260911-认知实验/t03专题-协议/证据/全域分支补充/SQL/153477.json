@@ -1,0 +1,720 @@
+{
+  "task_id": "153477",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:07:01.804Z",
+  "payload_sha256": "e70bb1ca164ea3d3d08a7406eb00dc524467d263af0e717043c4f40ec72cc2cf",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;"
+    },
+    {
+      "line": 10,
+      "text": "set mapreduce.input.fileinputformat.spilt.maxsize=1073741824;"
+    },
+    {
+      "line": 11,
+      "text": "set mapreduce.input.fileinputformat.spilt.minsize=1073741824;"
+    },
+    {
+      "line": 12,
+      "text": "set hive.merge.mapfiles=true;         "
+    },
+    {
+      "line": 13,
+      "text": "set hive.merge.mapredfiles=true;      "
+    },
+    {
+      "line": 14,
+      "text": "set hive.exec.reducers.max=200;       "
+    },
+    {
+      "line": 15,
+      "text": "set hive.exec.parallel=true;"
+    },
+    {
+      "line": 16,
+      "text": "set hive.exec.parallel.thread.number=16;"
+    },
+    {
+      "line": 17,
+      "text": "set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 18,
+      "text": "set hive.exec.max.dynamic.partitions.pernode=20000;"
+    },
+    {
+      "line": 19,
+      "text": "set hive.exec.max.dynamic.partitions=20000;"
+    },
+    {
+      "line": 20,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 21,
+      "text": "set hive.exec.parallel=true;"
+    },
+    {
+      "line": 22,
+      "text": "set hive.optimize.sort.dynamic.partition=true;"
+    },
+    {
+      "line": 23,
+      "text": "set hive.optimize.skewjoin=true;\t"
+    },
+    {
+      "line": 24,
+      "text": "set hive.skewjoin.key=100000;\t\t"
+    },
+    {
+      "line": 25,
+      "text": "set hive.optimize.skewjoin.compiletime=true; "
+    },
+    {
+      "line": 26,
+      "text": "set hive.groupby.skewindata=true;"
+    },
+    {
+      "line": 27,
+      "text": ""
+    },
+    {
+      "line": 28,
+      "text": ""
+    },
+    {
+      "line": 29,
+      "text": "create table if not exists t98_ia_cust_prd_income_det("
+    },
+    {
+      "line": 30,
+      "text": "    pty_id                     string comment '当事人编号'"
+    },
+    {
+      "line": 31,
+      "text": "   ,pty_name                   string comment '客户名称'"
+    },
+    {
+      "line": 32,
+      "text": "   ,bel_inr_org_id             string comment '所属内部机构编号'"
+    },
+    {
+      "line": 33,
+      "text": "   ,bel_inr_org_name           string comment '所属内部机构名称'"
+    },
+    {
+      "line": 34,
+      "text": "   ,ord_inr_org_id             string comment '订单所属内部机构编号'"
+    },
+    {
+      "line": 35,
+      "text": "   ,ord_inr_org_name           string comment '订单所属内部机构名称'"
+    },
+    {
+      "line": 36,
+      "text": "   ,prd_id                     string comment '产品编号'"
+    },
+    {
+      "line": 37,
+      "text": "   ,src_prd_id                 string comment '源产品编号'"
+    },
+    {
+      "line": 38,
+      "text": "   ,prd_name                   string comment '源产品名称'"
+    },
+    {
+      "line": 39,
+      "text": "   ,prd_type                   string comment '产品分类'"
+    },
+    {
+      "line": 40,
+      "text": "   ,prd_income                 string comment '产品收入' "
+    },
+    {
+      "line": 41,
+      "text": "   ,prd_sign_date              string comment '产品签约日期'"
+    },
+    {
+      "line": 42,
+      "text": "   ,prd_strt_date              string comment '产品开始日期'"
+    },
+    {
+      "line": 43,
+      "text": "   ,prd_end_date               string comment '产品结束日期'"
+    },
+    {
+      "line": 44,
+      "text": "   ,sale_emp_id                string comment '销售员工编号'"
+    },
+    {
+      "line": 45,
+      "text": "   ,sale_emp_name              string comment '销售员工名称'"
+    },
+    {
+      "line": 46,
+      "text": "   ,dev_emp_id                 string comment '开发员工编号'"
+    },
+    {
+      "line": 47,
+      "text": "   ,dev_emp_name               string comment '开发员工名称'"
+    },
+    {
+      "line": 48,
+      "text": "   ,serv_emp_id                string comment '服务员工编号'"
+    },
+    {
+      "line": 49,
+      "text": "   ,serv_emp_name              string comment '服务员工名称'"
+    },
+    {
+      "line": 50,
+      "text": "   ,recmd_emp_id               string comment '推荐员工编号'"
+    },
+    {
+      "line": 51,
+      "text": "   ,recmd_emp_name             string comment '推荐员工名称'"
+    },
+    {
+      "line": 52,
+      "text": "   ,prdc_emp_id                string comment '生产员工编号'"
+    },
+    {
+      "line": 53,
+      "text": "   ,prdc_emp_name              string comment '生产员工名称'"
+    },
+    {
+      "line": 54,
+      "text": "   ,prdc_emp_type_cd           string comment '生产员工类型代码(1-人员 2-团队)'"
+    },
+    {
+      "line": 55,
+      "text": "   ,prdc_emp_inr_org_id        string comment '生产员工营业部编号'"
+    },
+    {
+      "line": 56,
+      "text": "   ,join_agt_id                string comment '关联协议编号'"
+    },
+    {
+      "line": 57,
+      "text": "   ,data_time                  string comment '数据时间'"
+    },
+    {
+      "line": 58,
+      "text": ")comment '投顾客户产品收入明细-固收小投顾'"
+    },
+    {
+      "line": 59,
+      "text": "partitioned by (prd_income_type_cd string comment'产品收入类型代码(1-睿组合 2-聚金盆 3-固收资讯类 4-固收小投顾 5-固收睿金股 6-资产提成小投顾 7-提佣小投顾 8-财富管家套餐 9-提佣金股棒 10-额外提佣财富锦囊套餐)', busi_date string comment'业务日期')"
+    },
+    {
+      "line": 60,
+      "text": "stored as orc;"
+    },
+    {
+      "line": 61,
+      "text": ""
+    },
+    {
+      "line": 62,
+      "text": "-- querySql"
+    },
+    {
+      "line": 63,
+      "text": "insert overwrite table t98_ia_cust_prd_income_det partition (prd_income_type_cd,busi_date)"
+    },
+    {
+      "line": 64,
+      "text": "select a.pty_id"
+    },
+    {
+      "line": 65,
+      "text": "      ,b.full_name_ch as pty_name"
+    },
+    {
+      "line": 66,
+      "text": "      ,c.inr_org_id as bel_inr_org_id"
+    },
+    {
+      "line": 67,
+      "text": "      ,d1.inr_org_shor_name as bel_inr_org_name"
+    },
+    {
+      "line": 68,
+      "text": "      ,a.inr_org_id as ord_inr_org_id "
+    },
+    {
+      "line": 69,
+      "text": "      ,d2.inr_org_shor_name as ord_inr_org_name"
+    },
+    {
+      "line": 70,
+      "text": "      ,e.src_sys_prdno as prd_id,e.scr_cd as src_prd_id"
+    },
+    {
+      "line": 71,
+      "text": "      ,e.ch_name as prd_name,e.prd_type"
+    },
+    {
+      "line": 72,
+      "text": "      ,a.buy_amt as prd_income"
+    },
+    {
+      "line": 73,
+      "text": "      ,f.sign_date as prd_sign_date"
+    },
+    {
+      "line": 74,
+      "text": "      ,f.eff_date as prd_strt_date"
+    },
+    {
+      "line": 75,
+      "text": "      ,f.rscd_date as prd_end_date"
+    },
+    {
+      "line": 76,
+      "text": "      ,g.sale_emp_id,g.sale_emp_name"
+    },
+    {
+      "line": 77,
+      "text": "      ,i.normal_dev_emp_id as dev_emp_id,i.normal_dev_emp_name as dev_emp_name"
+    },
+    {
+      "line": 78,
+      "text": "      ,i.serv_emp_id,i.serv_emp_name"
+    },
+    {
+      "line": 79,
+      "text": "      ,g.recmd_user as recmd_emp_id,h.emp_name as recmd_emp_name"
+    },
+    {
+      "line": 80,
+      "text": "      ,f.ia as prdc_emp_id,j.emp_name as prdc_emp_name"
+    },
+    {
+      "line": 81,
+      "text": "      ,'1' as prdc_emp_type_cd,substr(k.org_cd,2,4) as prdc_emp_inr_org_id"
+    },
+    {
+      "line": 82,
+      "text": "      ,a.ia_agt_id as join_agt_id "
+    },
+    {
+      "line": 83,
+      "text": "      ,from_unixtime(unix_timestamp(),'yyyy-MM-dd HH:mm:ss') as data_time"
+    },
+    {
+      "line": 84,
+      "text": "      ,null as ivst_prd_id,null as remark,null as serv_prd_id,null as serv_prd_name"
+    },
+    {
+      "line": 85,
+      "text": "      ,'4' as prd_income_type_cd"
+    },
+    {
+      "line": 86,
+      "text": "      ,a.busi_date"
+    },
+    {
+      "line": 87,
+      "text": "from"
+    },
+    {
+      "line": 88,
+      "text": "  ("
+    },
+    {
+      "line": 89,
+      "text": "    select ia_agt_id,pty_id,inr_org_id,busi_date"
+    },
+    {
+      "line": 90,
+      "text": "          ,sum(cast(buy_amt as double)) as buy_amt"
+    },
+    {
+      "line": 91,
+      "text": "    from"
+    },
+    {
+      "line": 92,
+      "text": "      ("
+    },
+    {
+      "line": 93,
+      "text": "        select a1.ia_agt_id,a1.pty_id,b1.inr_org_id,a1.fir_cal_date"
+    },
+    {
+      "line": 94,
+      "text": "              ,a1.next_cal_date,a1.chrg_amt,a1.buy_amt,b1.dzrq"
+    },
+    {
+      "line": 95,
+      "text": "              ,case when c1.busi_date < '${mon_first_str}' then b1.dzrq else c1.busi_date end as busi_date"
+    },
+    {
+      "line": 96,
+      "text": "        from"
+    },
+    {
+      "line": 97,
+      "text": "          (  select ia_agt_id,pty_id,default.datekey2date(fir_cal_date) as fir_cal_date"
+    },
+    {
+      "line": 98,
+      "text": "              ,default.datekey2date(next_cal_date) as next_cal_date,chrg_amt,buy_amt"
+    },
+    {
+      "line": 99,
+      "text": "             from PDATA_N.T03_IA_AGT_FARE_CAL_PD"
+    },
+    {
+      "line": 100,
+      "text": "             where src_tbl ='ODATA_N_CRM.C_TTZGW_GDFWFJSJL'"
+    },
+    {
+      "line": 101,
+      "text": "               and cast(buy_amt as double) > 0"
+    },
+    {
+      "line": 102,
+      "text": "          ) a1"
+    },
+    {
+      "line": 103,
+      "text": "        join"
+    },
+    {
+      "line": 104,
+      "text": "          (  select pty_id,lpad(inr_org_id,4,'0') as inr_org_id,default.datekey2date(max(chrg_succ_date)) dzrq, chrg_mth kfyf"
+    },
+    {
+      "line": 105,
+      "text": "                   ,default.add_months(default.datekey2date(concat(chrg_mth,'27')),-1) ksrq"
+    },
+    {
+      "line": 106,
+      "text": "                   ,default.datekey2date(concat(chrg_mth,'26')) jsrq"
+    },
+    {
+      "line": 107,
+      "text": "             from PDATA_N.T05_IVST_ADVS_BUSI_CHRG_EVT"
+    },
+    {
+      "line": 108,
+      "text": "             where src_tbl ='ODATA_N_CRM.C_TGTKFXXB'"
+    },
+    {
+      "line": 109,
+      "text": "               and chrg_stat_cd = '5' and chrg_type_cd = '1'   --固定服务费"
+    },
+    {
+      "line": 110,
+      "text": "               and chrg_mth between '201205' and '${data_mon_int}'"
+    },
+    {
+      "line": 111,
+      "text": "             group by pty_id,chrg_mth,inr_org_id"
+    },
+    {
+      "line": 112,
+      "text": "             having max(chrg_succ_date) <= '${data_day_int}'"
+    },
+    {
+      "line": 113,
+      "text": "          ) b1 on a1.pty_id = b1.pty_id"
+    },
+    {
+      "line": 114,
+      "text": "        join"
+    },
+    {
+      "line": 115,
+      "text": "          ("
+    },
+    {
+      "line": 116,
+      "text": "            select distinct trd_date as busi_date"
+    },
+    {
+      "line": 117,
+      "text": "            from pdata_n.T99_TRD_CAL_REF"
+    },
+    {
+      "line": 118,
+      "text": "            where trd_date <= '${data_day_str}'"
+    },
+    {
+      "line": 119,
+      "text": "              and src_tbl = 'ODATA_N_RCC.U_EXCHANGEDATE'"
+    },
+    {
+      "line": 120,
+      "text": "          ) c1 on 1=1"
+    },
+    {
+      "line": 121,
+      "text": "        where a1.fir_cal_date BETWEEN b1.ksrq AND b1.jsrq"
+    },
+    {
+      "line": 122,
+      "text": "          and c1.busi_date >= (case when b1.dzrq >= '${mon_first_str}' then a1.fir_cal_date else '${mon_first_str}' end)"
+    },
+    {
+      "line": 123,
+      "text": "          and c1.busi_date >= a1.fir_cal_date and c1.busi_date < a1.next_cal_date"
+    },
+    {
+      "line": 124,
+      "text": "          and ((b1.dzrq < '${mon_first_str}' and a1.next_cal_date > '${mon_first_str}') or (b1.dzrq >= '${mon_first_str}'))"
+    },
+    {
+      "line": 125,
+      "text": "      ) m "
+    },
+    {
+      "line": 126,
+      "text": "    group by ia_agt_id,pty_id,inr_org_id,busi_date"
+    },
+    {
+      "line": 127,
+      "text": "  ) a "
+    },
+    {
+      "line": 128,
+      "text": "left join (select * from pdata_n.t01_pty_name where busi_date =default.pretradedate(date_sub('${data_day_str}',-1),1) and src_tbl='ODATA_N_RCC.A_CLIENT') b on b.pty_id=a.pty_id"
+    },
+    {
+      "line": 129,
+      "text": "left join"
+    },
+    {
+      "line": 130,
+      "text": "  ("
+    },
+    {
+      "line": 131,
+      "text": "    select * from pdata_n.t01_pty_inr_org_rela_h "
+    },
+    {
+      "line": 132,
+      "text": "    where pty_inr_org_rela_type_cd='10' and src_tbl = 'ODATA_N_RCC.A_CLIENT'"
+    },
+    {
+      "line": 133,
+      "text": "     and strt_date <='${data_day_str}' and end_date  > '${data_day_str}'"
+    },
+    {
+      "line": 134,
+      "text": "  ) c on c.pty_id = a.pty_id"
+    },
+    {
+      "line": 135,
+      "text": "left join"
+    },
+    {
+      "line": 136,
+      "text": "  ("
+    },
+    {
+      "line": 137,
+      "text": "    select * from pdata_n.t04_inr_org_name_h "
+    },
+    {
+      "line": 138,
+      "text": "    where src_tbl = 'ODATA_N_RCC.U_ALLBRANCH'"
+    },
+    {
+      "line": 139,
+      "text": "     and strt_date <='${data_day_str}' and end_date  > '${data_day_str}'"
+    },
+    {
+      "line": 140,
+      "text": "  ) d1 on d1.inr_org_id = c.inr_org_id"
+    },
+    {
+      "line": 141,
+      "text": "left join"
+    },
+    {
+      "line": 142,
+      "text": "  ("
+    },
+    {
+      "line": 143,
+      "text": "    select * from pdata_n.t04_inr_org_name_h "
+    },
+    {
+      "line": 144,
+      "text": "    where src_tbl = 'ODATA_N_RCC.U_ALLBRANCH'"
+    },
+    {
+      "line": 145,
+      "text": "     and strt_date <='${data_day_str}' and end_date  > '${data_day_str}'"
+    },
+    {
+      "line": 146,
+      "text": "  ) d2 on d2.inr_org_id = a.inr_org_id"
+    },
+    {
+      "line": 147,
+      "text": "left join"
+    },
+    {
+      "line": 148,
+      "text": "  ("
+    },
+    {
+      "line": 149,
+      "text": "    select src_sys_prdno,prd_stat,scr_cd,ch_name,ch_abbr,prd_type,secu_id "
+    },
+    {
+      "line": 150,
+      "text": "    from pdata_news_n.t02_prd_fin_info"
+    },
+    {
+      "line": 151,
+      "text": "    where scr_cd = 'XTG'"
+    },
+    {
+      "line": 152,
+      "text": "  ) e on 1=1"
+    },
+    {
+      "line": 153,
+      "text": "left join"
+    },
+    {
+      "line": 154,
+      "text": "  ("
+    },
+    {
+      "line": 155,
+      "text": "    select agt_id,agt_holder,ia,default.datekey2date(sign_date) as sign_date"
+    },
+    {
+      "line": 156,
+      "text": "          ,default.datekey2date(eff_date) as eff_date,default.datekey2date(rscd_date) as rscd_date"
+    },
+    {
+      "line": 157,
+      "text": "    from pdata_n.T03_IA_SIGN_AGT"
+    },
+    {
+      "line": 158,
+      "text": "    where src_tbl ='ODATA_N_CRM.C_TTZGW_QYXY' "
+    },
+    {
+      "line": 159,
+      "text": "      and busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 160,
+      "text": "  ) f on f.agt_id = a.ia_agt_id"
+    },
+    {
+      "line": 161,
+      "text": "left join"
+    },
+    {
+      "line": 162,
+      "text": "  ("
+    },
+    {
+      "line": 163,
+      "text": "    select *"
+    },
+    {
+      "line": 164,
+      "text": "    from pdata_n.t98_cust_prd_sale_rela_clm"
+    },
+    {
+      "line": 165,
+      "text": "    where busi_date = default.pretradedate(date_sub('${data_day_str}',-1),1)"
+    },
+    {
+      "line": 166,
+      "text": "      and rela_clm_stat_cd = '2' and src_prd_id = 'XTG' and length(sale_emp_id) >= 5"
+    },
+    {
+      "line": 167,
+      "text": "  ) g on g.pty_id = a.pty_id and g.join_app_no = a.ia_agt_id"
+    },
+    {
+      "line": 168,
+      "text": "left join (select * from pdata_n.t98_org_emp_base_info where busi_date = '${data_day_str}') h on h.emp_id = g.recmd_user"
+    },
+    {
+      "line": 169,
+      "text": "left join "
+    },
+    {
+      "line": 170,
+      "text": "  ("
+    },
+    {
+      "line": 171,
+      "text": "    select pty_id,normal_dev_emp_id,normal_dev_emp_name,serv_emp_id,serv_emp_name,busi_date "
+    },
+    {
+      "line": 172,
+      "text": "    from pdata_n.t98_cust_brok_mng_rela_info "
+    },
+    {
+      "line": 173,
+      "text": "    where busi_date between '${mon_first_str}' and '${data_day_str}'"
+    },
+    {
+      "line": 174,
+      "text": "      and (normal_dev_emp_id is not null or serv_emp_id is not null)"
+    },
+    {
+      "line": 175,
+      "text": "  ) i on i.pty_id = a.pty_id and i.busi_date = a.busi_date"
+    },
+    {
+      "line": 176,
+      "text": "left join"
+    },
+    {
+      "line": 177,
+      "text": "  ("
+    },
+    {
+      "line": 178,
+      "text": "    select emp_id,emp_name,bel_inr_org_id,bel_inr_org_name"
+    },
+    {
+      "line": 179,
+      "text": "    from PDATA_N.T98_ORG_EMP_BASE_INFO"
+    },
+    {
+      "line": 180,
+      "text": "    where busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 181,
+      "text": "  ) j on j.emp_id = f.ia"
+    },
+    {
+      "line": 182,
+      "text": "left join (select * from pdata_n.t04_erp_inr_org where src_tbl = 'ODATA_N_ERP.A_GF_ORGANIZATION_UNITS_V') k on k.inr_org_id = j.bel_inr_org_id"
+    },
+    {
+      "line": 183,
+      "text": ""
+    },
+    {
+      "line": 184,
+      "text": ";"
+    },
+    {
+      "line": 185,
+      "text": ""
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 type TopicResult = { version: string; topics: Array<{ name: string; label: string }>; incomplete: boolean };
-export function RegionTopics({ schema, patterns, hiddenTables, version }: { schema: string; patterns: string[]; hiddenTables: string[]; version?: string }) {
+export function RegionTopics({ schema, patterns, hiddenTables, version, clusters = [] }: { schema: string; patterns: string[]; hiddenTables: string[]; version?: string; clusters?: string[] }) {
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<TopicResult>();
   const [error, setError] = useState("");
@@ -9,7 +9,7 @@ export function RegionTopics({ schema, patterns, hiddenTables, version }: { sche
     if (!open) return;
     const controller = new AbortController();
     setResult(undefined); setError("");
-    const query = new URLSearchParams({ schema, patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables) });
+    const query = new URLSearchParams({ schema, patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) });
     void fetch(`/api/region-topics?${query}`, { signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error("调度主题读取失败，请稍后重试。");
       const data = await response.json() as TopicResult;
@@ -17,7 +17,7 @@ export function RegionTopics({ schema, patterns, hiddenTables, version }: { sche
       if (!controller.signal.aborted) setResult(data);
     }).catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "读取失败"); });
     return () => controller.abort();
-  }, [open, schema, patterns, hiddenTables, version]);
+  }, [open, schema, patterns, hiddenTables, version, clusters]);
   return <details className="region-topics" onToggle={event => setOpen(event.currentTarget.open)}>
     <summary>关联加工主题</summary>
     {open && <div style={{ padding: "8px 0", fontSize: 12 }}>

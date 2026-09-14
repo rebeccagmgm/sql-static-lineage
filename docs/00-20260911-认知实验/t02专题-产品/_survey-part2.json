@@ -1,0 +1,903 @@
+{
+  "pdata_n": [
+    {
+      "guid": "457a0727-d4d3-4d18-bfcf-c93ae5e15767",
+      "name": "t02_stk_char_yield",
+      "database_name": "pdata_n",
+      "qualified_name": "pdata_n.t02_stk_char_yield@gfhive"
+    },
+    {
+      "guid": "02f0d6d1-49cf-470a-b856-f39d6c7ef18b",
+      "name": "t02_stk_fctr_expo_sw",
+      "database_name": "pdata_n",
+      "qualified_name": "pdata_n.t02_stk_fctr_expo_sw@gfhive"
+    },
+    {
+      "guid": "f97c50f7-e3e0-4063-903d-de13a19649d5",
+      "name": "t02_oth_indt_fctr_earn_sw",
+      "database_name": "pdata_n",
+      "qualified_name": "pdata_n.t02_oth_indt_fctr_earn_sw@gfhive"
+    }
+  ],
+  "spdata_n": [
+    {
+      "guid": "8d0defd4-ad8c-4e52-9193-e4e68a2c01db",
+      "name": "t02_ashare_mergerevent",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_ashare_mergerevent@gfhive"
+    },
+    {
+      "guid": "5b4cb86c-2668-4bd9-b15e-ac6b8d732abd",
+      "name": "t02_ashare_mjrholder_trade",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_ashare_mjrholder_trade@gfhive"
+    },
+    {
+      "guid": "30cdf91d-0ba3-4f3f-b3bb-ae6acb937d60",
+      "name": "t02_ashare_staff_structure",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_ashare_staff_structure@gfhive"
+    },
+    {
+      "guid": "48b503b0-0c73-43ff-a279-6d05604eddf5",
+      "name": "t02_bills",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bills@gfhive"
+    },
+    {
+      "guid": "e4b85f98-37c0-458a-aca1-7f053cb3ab6b",
+      "name": "t02_bond_city_investment",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bond_city_investment@gfhive"
+    },
+    {
+      "guid": "f6af7e96-3bab-461a-aecc-1813eb74047e",
+      "name": "t02_bond_payment",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bond_payment@gfhive"
+    },
+    {
+      "guid": "8a19d344-44ef-4962-ba03-6a86cb952f73",
+      "name": "t02_bond_resale_exp",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bond_resale_exp@gfhive"
+    },
+    {
+      "guid": "225c76a2-de87-4d5b-a759-78a4e69e43eb",
+      "name": "t02_bonddt",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bonddt@gfhive"
+    },
+    {
+      "guid": "a86ea110-e369-4b59-bdb8-5ab081322d98",
+      "name": "t02_bondtypes",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_bondtypes@gfhive"
+    },
+    {
+      "guid": "47317b1d-3f6c-43ba-95f1-24a7d96f3a69",
+      "name": "t02_cbond_yieldcurve_sample",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_cbond_yieldcurve_sample@gfhive"
+    },
+    {
+      "guid": "63b1aa7e-9838-40d0-b6c8-e610e67fdfcf",
+      "name": "t02_company_basicinfo",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_company_basicinfo@gfhive"
+    },
+    {
+      "guid": "8c80daf6-e933-4cd4-b01d-84cbaf0abb2a",
+      "name": "t02_conver_bond_resale_exp",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_conver_bond_resale_exp@gfhive"
+    },
+    {
+      "guid": "b4b2b42b-970f-40f7-a495-050617b90fdb",
+      "name": "t02_fund",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_fund@gfhive"
+    },
+    {
+      "guid": "fd866be5-ad5b-45e3-a808-aea93fa0bdf3",
+      "name": "t02_futures",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_futures@gfhive"
+    },
+    {
+      "guid": "f6e18de3-a570-41ad-ab17-ba8c1c3e4bbf",
+      "name": "t02_futures_quote",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_futures_quote@gfhive"
+    },
+    {
+      "guid": "03f1b779-99e2-4f4b-948f-ca1dbb9fa173",
+      "name": "t02_nsd_prod",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_nsd_prod@gfhive"
+    },
+    {
+      "guid": "094f3cf4-a998-4371-992e-78fcdb9cd0be",
+      "name": "t02_prod_basicinfo",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_prod_basicinfo@gfhive"
+    },
+    {
+      "guid": "ced3290e-1ef1-47ab-bf15-6d84e391bec2",
+      "name": "t02_prod_code",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_prod_code@gfhive"
+    },
+    {
+      "guid": "8a4a25b1-ce9e-4052-9d11-2524d9057590",
+      "name": "t02_prod_quotation",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_prod_quotation@gfhive"
+    },
+    {
+      "guid": "76743957-f8c1-4d90-85ca-f7026ad5dada",
+      "name": "t02_prod_xjzl_contract_stat",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_prod_xjzl_contract_stat@gfhive"
+    },
+    {
+      "guid": "36c068f6-d96e-4211-8bf2-1a893cbe691a",
+      "name": "t02_stock",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_stock@gfhive"
+    },
+    {
+      "guid": "5bff8404-ff6c-462d-b1c2-72a42d8702da",
+      "name": "t02_stock_suspension_info",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_stock_suspension_info@gfhive"
+    },
+    {
+      "guid": "36a67f2c-a241-4d25-9a6a-89622588cf93",
+      "name": "t02_stockquote",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_stockquote@gfhive"
+    },
+    {
+      "guid": "6fe22edc-c275-47aa-a04d-0c22097f006e",
+      "name": "t02_swap_zg",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_swap_zg@gfhive"
+    },
+    {
+      "guid": "3f82c21f-21a0-4d28-9d44-07857f1274e3",
+      "name": "t02_tradedate_value",
+      "database_name": "pdata_ams",
+      "qualified_name": "pdata_ams.t02_tradedate_value@gfhive"
+    },
+    {
+      "guid": "4465f8e2-7628-44cc-be3f-53d1ed927606",
+      "name": "t02_bond",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_bond@gfhive"
+    },
+    {
+      "guid": "e95ad1bf-a862-454b-b8bc-093285d3ffe9",
+      "name": "t02_bond_pric_stati_h",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_bond_pric_stati_h@gfhive"
+    },
+    {
+      "guid": "02300790-f910-4646-8a0a-8597a70bf9cb",
+      "name": "t02_cros_bord_chrem_imp_prd_info",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_cros_bord_chrem_imp_prd_info@gfhive"
+    },
+    {
+      "guid": "67b102c7-8abd-4ded-82ee-91ca94787128",
+      "name": "t02_fnd",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_fnd@gfhive"
+    },
+    {
+      "guid": "2081e885-d4f5-4916-9407-456c4aee08fc",
+      "name": "t02_fnd_fare_rate_h",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_fnd_fare_rate_h@gfhive"
+    },
+    {
+      "guid": "a4f821cd-4d83-45ae-88d0-859949eec62b",
+      "name": "t02_fnd_mngr",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_fnd_mngr@gfhive"
+    },
+    {
+      "guid": "72551d9a-f53b-4d35-a539-2f38a0401b85",
+      "name": "t02_fnd_ror_h",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_fnd_ror_h@gfhive"
+    },
+    {
+      "guid": "ffc62ad3-8c07-4a4c-a622-077fff1db198",
+      "name": "t02_fnd_top10_ivst_proj_s",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_fnd_top10_ivst_proj_s@gfhive"
+    },
+    {
+      "guid": "18612a8e-d0c3-4fa3-83b9-7130916afdc3",
+      "name": "t02_idx_quot",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_idx_quot@gfhive"
+    },
+    {
+      "guid": "6c69b48f-d3f1-4e77-9915-83389cf0b444",
+      "name": "t02_info_prd",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_info_prd@gfhive"
+    },
+    {
+      "guid": "e1275781-b4da-43cb-96f4-582b0f9a2540",
+      "name": "t02_info_prd_fnd_hold_s",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_info_prd_fnd_hold_s@gfhive"
+    },
+    {
+      "guid": "d07d63b3-0088-44de-8bb0-67031d018058",
+      "name": "t02_info_prd_stk_hold_s",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_info_prd_stk_hold_s@gfhive"
+    },
+    {
+      "guid": "13257384-0446-48bc-ab40-5f5331937c34",
+      "name": "t02_intr_h",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_intr_h@gfhive"
+    },
+    {
+      "guid": "036efb6b-e380-4735-b0ee-e4e39e83d02f",
+      "name": "t02_ipo_nwsr_info",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_ipo_nwsr_info@gfhive"
+    },
+    {
+      "guid": "9e4eb744-1237-4778-b240-0a28b2d58ed9",
+      "name": "t02_note",
+      "database_name": "pdata_hk",
+      "qualified_name": "pdata_hk.t02_note@gfhive"
+    }
+  ],
+  "name_families_news": [
+    {
+      "family": "other",
+      "n": 353
+    },
+    {
+      "family": "co",
+      "n": 264
+    },
+    {
+      "family": "fnd",
+      "n": 167
+    },
+    {
+      "family": "fin",
+      "n": 137
+    },
+    {
+      "family": "stk",
+      "n": 125
+    },
+    {
+      "family": "bnd",
+      "n": 117
+    },
+    {
+      "family": "scr",
+      "n": 69
+    },
+    {
+      "family": "prd",
+      "n": 49
+    },
+    {
+      "family": "quot",
+      "n": 44
+    },
+    {
+      "family": "idx",
+      "n": 38
+    },
+    {
+      "family": "opt",
+      "n": 37
+    },
+    {
+      "family": "cstd",
+      "n": 31
+    },
+    {
+      "family": "fut",
+      "n": 21
+    },
+    {
+      "family": "fxr",
+      "n": 7
+    },
+    {
+      "family": "ta",
+      "n": 3
+    },
+    {
+      "family": "pub",
+      "n": 3
+    }
+  ],
+  "core_objects": [
+    {
+      "name": "t02_co_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_co_base_info@gfhive",
+      "guid": "bfe8d12d-ae6b-461f-b543-84d3f97c611b"
+    },
+    {
+      "name": "t02_cstd_prd_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_cstd_prd_base_info@gfhive",
+      "guid": "0a5ffb4c-bcf5-4743-b19e-e97ba658a2d3"
+    },
+    {
+      "name": "t02_exch_quot_h",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_exch_quot_h@gfhive",
+      "guid": "2377fcd1-28a2-45ef-a688-2737761d4935"
+    },
+    {
+      "name": "t02_exch_quot_s",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_exch_quot_s@gfhive",
+      "guid": "20926a16-c19e-46bb-9eda-6f699fa28ead"
+    },
+    {
+      "name": "t02_fnd_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_fnd_base_info@gfhive",
+      "guid": "424a54fe-c229-45fa-84b6-0db45dc5cc2d"
+    },
+    {
+      "name": "t02_fnd_divd",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_fnd_divd@gfhive",
+      "guid": "8733648f-1c02-468d-8100-58392e52bcfd"
+    },
+    {
+      "name": "t02_fnd_scal",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_fnd_scal@gfhive",
+      "guid": "4385a3b7-af35-4e50-8972-692af079f521"
+    },
+    {
+      "name": "t02_fut_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_fut_base_info@gfhive",
+      "guid": "cfc81b0e-6993-4e8f-853b-d9ba80cb4895"
+    },
+    {
+      "name": "t02_marg_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_marg_base_info@gfhive",
+      "guid": "6badd2da-0e59-44c7-b55c-1de3805d4efc"
+    },
+    {
+      "name": "t02_prd_fin_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_prd_fin_info@gfhive",
+      "guid": "be4fa415-aca3-4734-8a70-f7dda46e3c75"
+    },
+    {
+      "name": "t02_prd_unit_nav_h",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_prd_unit_nav_h@gfhive",
+      "guid": "e93ce051-ef32-43ee-af7f-c9d83003cf84"
+    },
+    {
+      "name": "t02_pub_covt_const",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_pub_covt_const@gfhive",
+      "guid": "ca695041-7811-4176-bb69-f2ba9f398e52"
+    },
+    {
+      "name": "t02_pub_cst_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_pub_cst_info@gfhive",
+      "guid": "15d0b306-1769-4aa0-aeff-9167ad2b8aef"
+    },
+    {
+      "name": "t02_scr_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_scr_base_info@gfhive",
+      "guid": "d227e494-0a4b-4e8a-9236-eaac784c09a9"
+    },
+    {
+      "name": "t02_scr_rela",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_scr_rela@gfhive",
+      "guid": "78e31169-3dcb-4856-a4d3-87907e851dce"
+    },
+    {
+      "name": "t02_scr_type",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_scr_type@gfhive",
+      "guid": "49ee54d0-60b9-47b4-9dac-2cf529c71fbb"
+    },
+    {
+      "name": "t02_stk_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_stk_base_info@gfhive",
+      "guid": "ce065d84-9c8a-4de0-a426-b42dc8e04384"
+    },
+    {
+      "name": "t02_ta5_fin_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_ta5_fin_info@gfhive",
+      "guid": "bf516ac3-63ac-42e2-833f-bfd0e492cf93"
+    },
+    {
+      "name": "t02_tit_scr_base_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_tit_scr_base_info@gfhive",
+      "guid": "50d0b62d-4f91-47af-87c4-06f22165f5da"
+    },
+    {
+      "name": "t02_tmc_fin_info",
+      "database_name": "pdata_news_n",
+      "qualified_name": "pdata_news_n.t02_tmc_fin_info@gfhive",
+      "guid": "3aba083a-3795-42f8-b520-5116cb99bcb5"
+    }
+  ],
+  "meta": {
+    "t02_all": {
+      "n": 2345
+    },
+    "t02_parsed_news": {
+      "n": 1595
+    },
+    "t02_parsed_pdata_n": {
+      "n": 4
+    },
+    "core_desc": [
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_co_base_info",
+        "table_name": "t02_co_base_info",
+        "description": "企业基本信息",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_exch_quot_h",
+        "table_name": "t02_exch_quot_h",
+        "description": "证券交易日行情",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_fnd_base_info",
+        "table_name": "t02_fnd_base_info",
+        "description": "基金基础信息表",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_prd_fin_info",
+        "table_name": "t02_prd_fin_info",
+        "description": "产品中心产品基本信息",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_prd_unit_nav_h",
+        "table_name": "t02_prd_unit_nav_h",
+        "description": "基金净值表",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_pub_covt_const",
+        "table_name": "t02_pub_covt_const",
+        "description": "常量转换表",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_pub_cst_info",
+        "table_name": "t02_pub_cst_info",
+        "description": "常量表",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_scr_base_info",
+        "table_name": "t02_scr_base_info",
+        "description": "证券基本信息",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_scr_type",
+        "table_name": "t02_scr_type",
+        "description": "证券类型分类",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      },
+      {
+        "platform": "hive",
+        "qualified_name": "pdata_news_n.t02_stk_base_info",
+        "table_name": "t02_stk_base_info",
+        "description": "股票基本信息",
+        "parse_status": "PARSED",
+        "object_type": "hive_table"
+      }
+    ]
+  },
+  "codes": {
+    "domain_count": {
+      "n": 143
+    },
+    "cd060": [
+      {
+        "code_value": "01",
+        "value_description": "公开优先股",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "02",
+        "value_description": "非公开优先股",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "03",
+        "value_description": "创新企业股票",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "31",
+        "value_description": "公开优先股配股",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "32",
+        "value_description": "科创板配售",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "41",
+        "value_description": "市值申购",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "42",
+        "value_description": "公开优先股申购",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "91",
+        "value_description": "政策性金融债",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "A1",
+        "value_description": "货币基金",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "A2",
+        "value_description": "上证通场内货币基金",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "E1",
+        "value_description": "股票申购配号",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "E2",
+        "value_description": "债券申购配号",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "G1",
+        "value_description": "信用申购",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "I1",
+        "value_description": "合格投资者",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "L1",
+        "value_description": "跨境LOF",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "T1",
+        "value_description": "港股通ETF",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "T2",
+        "value_description": "黄金ETF",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "T3",
+        "value_description": "商品期货ETF",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "U1",
+        "value_description": "可分离交易可转换公司债券",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "Y1",
+        "value_description": "可交换债券",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "Y2",
+        "value_description": "定向可转债",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "Z1",
+        "value_description": "报价回购",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "a1",
+        "value_description": "可交换私募债",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "a2",
+        "value_description": "创新创业可转换债券",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "c1",
+        "value_description": "创业板创新企业股票",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "d1",
+        "value_description": "沪伦通存托凭证",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "d2",
+        "value_description": "中国存托凭证",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "e1",
+        "value_description": "科创股票成长层",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "g1",
+        "value_description": "科创存托凭证成长层",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      },
+      {
+        "code_value": "h1",
+        "value_description": "全流通股",
+        "remark": "odata_n_rcc.u_sysdictionary:dict_entry=1297",
+        "source_table": "ODATA_N_RCC.U_SYSDICTIONARY",
+        "business_date": "2026-08-21"
+      }
+    ],
+    "cd106": [
+      {
+        "n": 53
+      }
+    ],
+    "cd081": [
+      {
+        "n": 395
+      }
+    ]
+  },
+  "sql": {
+    "scr_base": [
+      {
+        "task_id": "100000",
+        "evidence_type": "hive-task",
+        "sql_length": 3035
+      },
+      {
+        "task_id": "100019",
+        "evidence_type": "hive-task",
+        "sql_length": 8874
+      },
+      {
+        "task_id": "100036",
+        "evidence_type": "hive-task",
+        "sql_length": 3651
+      },
+      {
+        "task_id": "100051",
+        "evidence_type": "hive-task",
+        "sql_length": 17147
+      },
+      {
+        "task_id": "100090",
+        "evidence_type": "hive-task",
+        "sql_length": 5642
+      },
+      {
+        "task_id": "100136",
+        "evidence_type": "hive-task",
+        "sql_length": 4033
+      },
+      {
+        "task_id": "100140",
+        "evidence_type": "hive-task",
+        "sql_length": 3198
+      },
+      {
+        "task_id": "100240",
+        "evidence_type": "hive-task",
+        "sql_length": 3940
+      },
+      {
+        "task_id": "100252",
+        "evidence_type": "hive-task",
+        "sql_length": 4957
+      },
+      {
+        "task_id": "100254",
+        "evidence_type": "hive-task",
+        "sql_length": 4010
+      },
+      {
+        "task_id": "100615",
+        "evidence_type": "hive-task",
+        "sql_length": 7009
+      },
+      {
+        "task_id": "100640",
+        "evidence_type": "hive-task",
+        "sql_length": 5494
+      },
+      {
+        "task_id": "101064",
+        "evidence_type": "hive-task",
+        "sql_length": 12783
+      },
+      {
+        "task_id": "101194",
+        "evidence_type": "hive-task",
+        "sql_length": 8081
+      },
+      {
+        "task_id": "101496",
+        "evidence_type": "hive-task",
+        "sql_length": 17124
+      }
+    ],
+    "prd_fin": [
+      {
+        "task_id": "100743",
+        "evidence_type": "hive-task",
+        "sql_length": 17042
+      },
+      {
+        "task_id": "102667",
+        "evidence_type": "hive-task",
+        "sql_length": 3679
+      },
+      {
+        "task_id": "105603",
+        "evidence_type": "hive-task",
+        "sql_length": 4920
+      },
+      {
+        "task_id": "107193",
+        "evidence_type": "hive-task",
+        "sql_length": 15402
+      },
+      {
+        "task_id": "116444",
+        "evidence_type": "hive-task",
+        "sql_length": 10430
+      },
+      {
+        "task_id": "121468",
+        "evidence_type": "hive-task",
+        "sql_length": 3654
+      },
+      {
+        "task_id": "121616",
+        "evidence_type": "hive-task",
+        "sql_length": 10430
+      },
+      {
+        "task_id": "122166",
+        "evidence_type": "hive-task",
+        "sql_length": 21142
+      },
+      {
+        "task_id": "122255",
+        "evidence_type": "hive-task",
+        "sql_length": 13822
+      },
+      {
+        "task_id": "128982",
+        "evidence_type": "hive-task",
+        "sql_length": 21686
+      }
+    ]
+  }
+}

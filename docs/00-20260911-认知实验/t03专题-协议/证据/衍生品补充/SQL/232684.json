@@ -1,0 +1,279 @@
+{
+  "task_id": "232684",
+  "payload_sha256": "8454f2e74e9ddc2a02bebc750b275ed9720e0fe8e0041bedb83214f52b2b30b8",
+  "observed_at": "2026-09-05T01:07:28.433Z",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_DERI_COMP_COMB_MARG_CALL_INFO("
+    },
+    {
+      "line": 10,
+      "text": "      Agt_Grp_Id                 STRING COMMENT '协议组编号'"
+    },
+    {
+      "line": 11,
+      "text": "     ,Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 12,
+      "text": "     ,Perf_Marg_Date             STRING COMMENT '履保日期'"
+    },
+    {
+      "line": 13,
+      "text": "     ,Cfm_Stat_Cd                STRING COMMENT '确认状态代码'"
+    },
+    {
+      "line": 14,
+      "text": "     ,Defr_Days                  STRING COMMENT '递延天数'"
+    },
+    {
+      "line": 15,
+      "text": "     ,Pay_Date                   STRING COMMENT '应兑付日期'"
+    },
+    {
+      "line": 16,
+      "text": "     ,Marg_Call_Amt              STRING COMMENT '追保金额'"
+    },
+    {
+      "line": 17,
+      "text": "     ,Marg_Call_Fnsh_Date        STRING COMMENT '追保完成日期'"
+    },
+    {
+      "line": 18,
+      "text": "     ,Trgr_Frc_Ofst_Flag         STRING COMMENT '触发强平标志'"
+    },
+    {
+      "line": 19,
+      "text": "     ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 20,
+      "text": "     ,Create_User_Id             STRING COMMENT '创建用户编号'"
+    },
+    {
+      "line": 21,
+      "text": "     ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 22,
+      "text": "     ,Upd_User_Id                STRING COMMENT '更新用户编号'"
+    },
+    {
+      "line": 23,
+      "text": "     ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 24,
+      "text": "     ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 25,
+      "text": "     ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 26,
+      "text": "     ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 27,
+      "text": "     ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 28,
+      "text": "     ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 29,
+      "text": "     ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 30,
+      "text": ")COMMENT '场外衍生品合约组合追保信息'"
+    },
+    {
+      "line": 31,
+      "text": "PARTITIONED BY (Src_Tbl  STRING COMMENT'源表',Busi_Date  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 32,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 33,
+      "text": ""
+    },
+    {
+      "line": 34,
+      "text": "-- querySql"
+    },
+    {
+      "line": 35,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_DERI_COMP_COMB_MARG_CALL_INFO PARTITION(Src_Tbl='${src_table}',Busi_Date='${data_day_str}')"
+    },
+    {
+      "line": 36,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 37,
+      "text": "--Group1.: Source Table:[ODATA_N_TIT.G_MARGIN_CALL_SETTING:追保记录] "
+    },
+    {
+      "line": 38,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 39,
+      "text": "SELECT"
+    },
+    {
+      "line": 40,
+      "text": "      A.BUNDLE_ID                                         AS  Agt_Grp_Id              --协议组编号  "
+    },
+    {
+      "line": 41,
+      "text": "     ,B.Cutp_Pty_Id                                       AS  Pty_Id                  --当事人编号  "
+    },
+    {
+      "line": 42,
+      "text": "     ,SUBSTR(A.SRC_BUSI_DATE,1,10)                        AS  Perf_Marg_Date          --履保日期    "
+    },
+    {
+      "line": 43,
+      "text": "     ,NVL(C.DW_CD_VAL,A.CONFIRM_STATUS)                   AS  Cfm_Stat_Cd             --确认状态代码"
+    },
+    {
+      "line": 44,
+      "text": "     ,A.DEFERRAL_DAYS                                     AS  Defr_Days               --递延天数    "
+    },
+    {
+      "line": 45,
+      "text": "     ,SUBSTR(A.DELIVERY_DATE,1,10)                        AS  Pay_Date                --应兑付日期  "
+    },
+    {
+      "line": 46,
+      "text": "     ,A.REMARGIN_AMT                                      AS  Marg_Call_Amt           --追保金额    "
+    },
+    {
+      "line": 47,
+      "text": "     ,A.MARGIN_CALL_TIME                                  AS  Marg_Call_Fnsh_Date     --追保完成日期"
+    },
+    {
+      "line": 48,
+      "text": "     ,CASE WHEN A.CLOSEOUT_STATUS = '是' THEN '1'"
+    },
+    {
+      "line": 49,
+      "text": "           WHEN A.CLOSEOUT_STATUS = '否' THEN '0'"
+    },
+    {
+      "line": 50,
+      "text": "           ELSE A.CLOSEOUT_STATUS END                     AS  Trgr_Frc_Ofst_Flag      --触发强平标志"
+    },
+    {
+      "line": 51,
+      "text": "     ,A.REMARK                                            AS  Remark                  --备注        "
+    },
+    {
+      "line": 52,
+      "text": "     ,A.CREATED_BY                                        AS  Create_User_Id          --创建用户编号"
+    },
+    {
+      "line": 53,
+      "text": "     ,A.CREATED_DATETIME                                  AS  Create_Time             --创建时间    "
+    },
+    {
+      "line": 54,
+      "text": "     ,A.UPDATED_BY                                        AS  Upd_User_Id             --更新用户编号"
+    },
+    {
+      "line": 55,
+      "text": "     ,A.UPDATED_DATETIME                                  AS  Upd_Time                --更新时间    "
+    },
+    {
+      "line": 56,
+      "text": "     ,'${data_src_cd}'                               AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 57,
+      "text": "     ,'${filename}'                                  AS  Task_Name               --任务名"
+    },
+    {
+      "line": 58,
+      "text": "     ,'${data_day_str}'                              AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 59,
+      "text": "     ,'${data_day_str}'                              AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 60,
+      "text": "     ,'${data_today}'                                AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 61,
+      "text": "     ,'${src_table}'                                 AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 62,
+      "text": "FROM (SELECT *  FROM ${src_table} WHERE  Busi_Date='${data_day_str}' )A"
+    },
+    {
+      "line": 63,
+      "text": "LEFT JOIN(SELECT * FROM PDATA_N.T03_OTC_DERI_COMP_COMB_ADTNL_INFO WHERE SRC_TBL='ODATA_N_TIT.D_TRD_BUNDLE_INFO')B"
+    },
+    {
+      "line": 64,
+      "text": "       ON A.BUNDLE_ID=B.Agt_Grp_Id "
+    },
+    {
+      "line": 65,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 66,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 67,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 68,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_DERI_COMP_COMB_MARG_CALL_INFO'"
+    },
+    {
+      "line": 69,
+      "text": "            AND TGT_TAB_FLD  = 'Cfm_Stat_Cd'"
+    },
+    {
+      "line": 70,
+      "text": "            AND SRC_TAB_NAME = 'MARGIN_CALL_SETTING'"
+    },
+    {
+      "line": 71,
+      "text": "            AND SRC_FLD_NAME = 'CONFIRM_STATUS'"
+    },
+    {
+      "line": 72,
+      "text": "            AND SRC_SYS_NAME='TIT')C"
+    },
+    {
+      "line": 73,
+      "text": "   ON      A.CONFIRM_STATUS =C.SRC_CD_VAL                  --CONFIRM_STATUS 转码"
+    },
+    {
+      "line": 74,
+      "text": ";"
+    },
+    {
+      "line": 75,
+      "text": ""
+    }
+  ]
+}

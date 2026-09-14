@@ -1,0 +1,542 @@
+[
+  {
+    "task_id": "62906",
+    "source_sha256": "001de5e8c99fc532c143b3030d349a6f274125b5138b1e04ce758d9dff59f10c",
+    "sql_file": "SQL/62906.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.441Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PROJ_BASE_INFO_PMS003"
+  },
+  {
+    "task_id": "162666",
+    "source_sha256": "629e3c632103056285607cb9347aabbf036b3170a545809fc27db541b72ca283",
+    "sql_file": "SQL/162666.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:05.547Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PROJ_PTY_RELA_H_GLM012"
+  },
+  {
+    "task_id": "100819",
+    "source_sha256": "5e088c96879bece1f2a5538a0896cfcf814ee938c31fe985898730dcfcb52100",
+    "sql_file": "SQL/100819.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:43.017Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "SPDATA_N.T00_PROJ_BASE_INFO_IBS026"
+  },
+  {
+    "task_id": "113575",
+    "source_sha256": "d25bed133695b1e92bb393cd71423649b0e4bf86ef89e8454edb0abaf5c27367",
+    "sql_file": "SQL/113575.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:47.369Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TASK_RELA_H_BDP035"
+  },
+  {
+    "task_id": "62888",
+    "source_sha256": "420095209d0a521bd14ee058c434bd531b78ed7d32604c58fe070a69ab51e1db",
+    "sql_file": "SQL/62888.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.360Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_ELIG_ANS_SCOR_DEF_RCC177"
+  },
+  {
+    "task_id": "156794",
+    "source_sha256": "cd59976b8a7096cf9174d794621e2f4adb9732258f817b050e5248e63e6833fe",
+    "sql_file": "SQL/156794.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:03.366Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PAPR_QSTN_RELA_H_CC2025"
+  },
+  {
+    "task_id": "62951",
+    "source_sha256": "3db203f362d697027c24ab395077b30da71c311237163ac65d5f7af3ee15d903",
+    "sql_file": "SQL/62951.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.687Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_KNWLG_ANS_GKS011"
+  },
+  {
+    "task_id": "227291",
+    "source_sha256": "b5b0b62bb1993438050e9ff1c0aad6a86804e00afd658052fde17eb4011e3400",
+    "sql_file": "SQL/227291.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:27.164Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TBL_FLD_RELA_H_BDP032"
+  },
+  {
+    "task_id": "200740",
+    "source_sha256": "57975682c3347f96d90a4f082283b8aeb1dd7edc615120af34541e0b1e8abfd0",
+    "sql_file": "SQL/200740.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:18.631Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TBL_RELA_H_BDP030"
+  },
+  {
+    "task_id": "137827",
+    "source_sha256": "aaae363eef5f8f928bfe5704af4c6e936fdd0c9029197d72ecc45ed148e17604",
+    "sql_file": "SQL/137827.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-02T06:51:59.038Z",
+    "redacted": false,
+    "review_status": "REVIEWED_CONSUMER_SLICE",
+    "task_name": "dm_hr_n.search_bdp_table_info"
+  },
+  {
+    "task_id": "207936",
+    "source_sha256": "d472ee7b5e8d2f221ded522d1a679292babba12d17f1153e155395bd03107452",
+    "sql_file": "SQL/207936.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:20.687Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_REQ_PROC_TPLT_DEF_COND_TIT325"
+  },
+  {
+    "task_id": "208592",
+    "source_sha256": "e61147c186539dc4e0a728d1d195e63595e7fe4eb9d48678f4542b81deabc754",
+    "sql_file": "SQL/208592.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:21.172Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_OTC_DERI_PRD_POOL_ADTNL_INFO_TIT329"
+  },
+  {
+    "task_id": "173964",
+    "source_sha256": "c63b43be679fc2d4f0cf0185b0052d4c78ff835ed25396bd95391f13bdd7580a",
+    "sql_file": "SQL/173964.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:10.114Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_DOC_ATTACH_INFO_TIT221"
+  },
+  {
+    "task_id": "212663",
+    "source_sha256": "68edf113c98c3c8ef85e2e5e2c74d4e898d2a057dbbb90c71b16f161cd28218b",
+    "sql_file": "SQL/212663.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:22.717Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_OTC_DOC_ATTACH_ADTNL_INFO_OIS050"
+  },
+  {
+    "task_id": "159558",
+    "source_sha256": "36f76ea741626543be2fdd34c4abb5f75c7b0f726129038238e07fa09d0a9fd9",
+    "sql_file": "SQL/159558.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-03T07:57:01.994Z",
+    "redacted": false,
+    "review_status": "REVIEWED_CONSUMER_SLICE",
+    "task_name": "dm_index_n.wmmg_act_index_sale_det_s"
+  },
+  {
+    "task_id": "84458",
+    "source_sha256": "17154dc283061f2ebb583e4bd4061197ed3872b5918ace75c23aa2caf5c05e40",
+    "sql_file": "SQL/84458.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T02:23:48.897Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_SEAL_INFO_BPM005"
+  },
+  {
+    "task_id": "209830",
+    "source_sha256": "eb13b3f7666f22c791a1338c612c179c916cdfdaf7613f2282a18937daf87100",
+    "sql_file": "SQL/209830.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:21.429Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_OUR_RISK_QSTN_CORR_INFO_DRC013"
+  },
+  {
+    "task_id": "113440",
+    "source_sha256": "66cfae4b803e1e689fed1310cd0a8e648977c59027ab9cdfafb04fab547a576c",
+    "sql_file": "SQL/113440.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:47.313Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TBL_INFO_BDP030"
+  },
+  {
+    "task_id": "113442",
+    "source_sha256": "0050d8f4594dfd4e930dcf7d50705cc387c9c44b7fdc5fc5ac9ffe15cb8e902c",
+    "sql_file": "SQL/113442.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:47.325Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_FLD_INFO_BDP032"
+  },
+  {
+    "task_id": "113573",
+    "source_sha256": "5a7099b3b97dc0566d6b35e0eefc2c32758bd92514ae7d1c172c9195f430228a",
+    "sql_file": "SQL/113573.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:47.363Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TASK_BASE_INFO_BDP034"
+  },
+  {
+    "task_id": "62871",
+    "source_sha256": "3d45b12892dd95983b90426900f8367c4696130aee87d13ef1e503060ad54d04",
+    "sql_file": "SQL/62871.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.258Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_REQ_BASE_INFO_S_JIR001"
+  },
+  {
+    "task_id": "143527",
+    "source_sha256": "1789afd5582eae12da2438676e75bd1a067b845b3755f90c58c0907d2e585753",
+    "sql_file": "SQL/143527.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:57.574Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_API_APP_RELA_H_BDP058"
+  },
+  {
+    "task_id": "242362",
+    "source_sha256": "10c91a4b327bb342de049f761b52309fa798ef9dba994bcc04160e9f2e34c15d",
+    "sql_file": "SQL/242362.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:30.829Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_SYS_FUNC_INFO_TIT004"
+  },
+  {
+    "task_id": "156848",
+    "source_sha256": "11374bb9c21667d3409afab97206158fa76df39f87300f57741b8a103bea8199",
+    "sql_file": "SQL/156848.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:03.408Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PRD_POOL_INFO_PRD061"
+  },
+  {
+    "task_id": "156849",
+    "source_sha256": "d8f0dee60e8e8fe722b6b52415dbf74577299704ad0a309baa42b301488f3a56",
+    "sql_file": "SQL/156849.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:03.413Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PRD_POOL_COMPNT_INFO_PRD062"
+  },
+  {
+    "task_id": "208593",
+    "source_sha256": "65214853c020578a69588ac7b7fd3986746702e1be2945c687bc1c8ee53011a3",
+    "sql_file": "SQL/208593.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:21.179Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PRD_POOL_INFO_TIT329"
+  },
+  {
+    "task_id": "207935",
+    "source_sha256": "5a75922486af8e5942897a283f6683056e9046014be9d48856fcaf737fe27cac",
+    "sql_file": "SQL/207935.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:20.663Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_REQ_PROC_TPLT_INFO_TIT324"
+  },
+  {
+    "task_id": "124870",
+    "source_sha256": "ec8c3f9443809e0e58292ed666ca0debcf7664c3093385ba10926dbf5ab309e4",
+    "sql_file": "SQL/124870.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:50.173Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_TIT_S3_ATTACH_INFO_TIT221"
+  },
+  {
+    "task_id": "62980",
+    "source_sha256": "8258b82cd7b1c405d746a9936cbb3e95360f2749756887bda1e4a7fc79a6eca1",
+    "sql_file": "SQL/62980.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.853Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_QSTN_INFO_CC2003"
+  },
+  {
+    "task_id": "156795",
+    "source_sha256": "e848309c07c0f75c5188fd01ed60999d4804de8091b62292a5c7458a704f3516",
+    "sql_file": "SQL/156795.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:03.371Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_PAPR_INFO_CC2024"
+  },
+  {
+    "task_id": "63004",
+    "source_sha256": "c3d07ced56e8951fbe5412300d37d3fadc87ab80a98dd0fcd7ca6adbdb450ac4",
+    "sql_file": "SQL/63004.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.999Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_KNWLG_ANS_STAT_H_GKS011"
+  },
+  {
+    "task_id": "62875",
+    "source_sha256": "2615ff230dac18e3d0bdc0a2da6edecd04d48df795d846edfe8257a3ed1f8d48",
+    "sql_file": "SQL/62875.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.289Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_KNWLG_QSTN_LIST_GKS010"
+  },
+  {
+    "task_id": "62991",
+    "source_sha256": "4018150d51fd997d09a1de6fe29558eecf972f2725417ab85c61803f3a10ce01",
+    "sql_file": "SQL/62991.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:20.921Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_BUSI_SYS_INFO_ACM001"
+  },
+  {
+    "task_id": "162663",
+    "source_sha256": "d42dc575081d6361664b47b1e2e99c34a8e453eca027622de5894a9149636c65",
+    "sql_file": "SQL/162663.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:05.528Z",
+    "redacted": false,
+    "review_status": "ARCHIVED_DDL_NOT_FULL_REVIEW",
+    "task_name": "PDATA_N.T00_PROJ_STAT_H_GLM012"
+  },
+  {
+    "task_id": "196126",
+    "source_sha256": "4082ab1ed277fc65a8d6b23265951de3a2dc4a673d88a6403e24ee565165de74",
+    "sql_file": "SQL/196126.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:07:17.081Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_SYS_INFO_BDP103"
+  },
+  {
+    "task_id": "143524",
+    "source_sha256": "a0227711f301956fac3600f77951c39156d45e9bf843c33d6aacd4ade91f1c13",
+    "sql_file": "SQL/143524.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:57.557Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_API_INFO_BDP055"
+  },
+  {
+    "task_id": "234469",
+    "source_sha256": "6bea84645be4a419b25bd938d645601e44f7318bd53849a9630f1e1f518cbb01",
+    "sql_file": "SQL/234469.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:27:15.319Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_AI_SKL_ADTNL_INFO_MIO072"
+  },
+  {
+    "task_id": "247683",
+    "source_sha256": "c9114ff161a13e999ff85c29b3436793b942bc7e555682a84b70d66622218940",
+    "sql_file": "SQL/247683.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T00:26:28.934Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_AGNT_SCHD_TASK_ADTNL_INFO_WAS003"
+  },
+  {
+    "task_id": "232074",
+    "source_sha256": "da6123a336d855a7e27f4072316cc42797d9d46224b96856b35873a4bb1bc626",
+    "sql_file": "SQL/232074.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:23:50.620Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_DOC_MGMT_INFO_DMS002"
+  },
+  {
+    "task_id": "234480",
+    "source_sha256": "a4a2f7c3bc016a6447e5587e6f488f21b80edd224ece95f661645da16522a983",
+    "sql_file": "SQL/234480.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:27:17.581Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_INST_ABLT_COMPNT_RELA_H_MIO072"
+  },
+  {
+    "task_id": "240240",
+    "source_sha256": "2597a17a50dff98f6de53bded1eba8c7050b9edf80ddbe78ea5f1009d1dbc7a9",
+    "sql_file": "SQL/240240.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:36:36.845Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_STRG_INFO_FS2003"
+  },
+  {
+    "task_id": "110348",
+    "source_sha256": "df10ab934f6f7ecc5aad953018ea6d58cde1687379c6e2a2409fd1095d5b89c6",
+    "sql_file": "SQL/110348.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:46.460Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "SPDATA_N.T00_PRD_POOL_COMPNT_INFO_XIR226"
+  },
+  {
+    "task_id": "110350",
+    "source_sha256": "274840286a189e1e3e024104e7a715aa081c481a8f58609e000f246dd5ae9803",
+    "sql_file": "SQL/110350.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T02:37:08.390Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "SPDATA_N.T00_PRD_POOL_INFO_XIR225"
+  },
+  {
+    "task_id": "98035",
+    "source_sha256": "85dc3051f6c067525f608faa759ef6d0f78c00e3f5b86f991831c1083fb44235",
+    "sql_file": "SQL/98035.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-04T02:00:32.086Z",
+    "redacted": false,
+    "review_status": "REVIEWED_CONSUMER_SLICE",
+    "task_name": "dm_ecom_n.gfmobile_fund_trade_daily"
+  },
+  {
+    "task_id": "66074",
+    "source_sha256": "409ea5172a34dae8090a549aed6d5c75a32712627fc96328126f5cfafa929bbb",
+    "sql_file": "SQL/66074.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:26.289Z",
+    "redacted": false,
+    "review_status": "REVIEWED_CONSUMER_SLICE",
+    "task_name": "pdata_news_n.tyzx_scr_clas_info_RCC_fnd_grp02"
+  },
+  {
+    "task_id": "224870",
+    "source_sha256": "8109012c46e2912bb7c51e6605b0b426da78431cd9008157fdffcb4193684139",
+    "sql_file": "SQL/224870.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:16:53.231Z",
+    "redacted": false,
+    "review_status": "ARCHIVED_DDL_NOT_FULL_REVIEW",
+    "task_name": "PDATA_N.T00_CONT_SET_STAT_H_LMS040"
+  },
+  {
+    "task_id": "224865",
+    "source_sha256": "fc8072b07cfd10452e7a8f67d427f0c2ae7d64497df0548ccd79d560eff13127",
+    "sql_file": "SQL/224865.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:16:45.101Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_LMS_COL_ADTNL_INFO_LMS040"
+  },
+  {
+    "task_id": "244437",
+    "source_sha256": "9c0e20a4b4e9a018cab44889a587fd624f5db42504b85b11d6461155932aec5c",
+    "sql_file": "SQL/244437.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:44:26.867Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_SYS_STATI_INFO_H_ISM012"
+  },
+  {
+    "task_id": "212999",
+    "source_sha256": "418f1d80241820ea43b262eecb88c8821bcb009db671c8c9677cdd75b4ca8ea3",
+    "sql_file": "SQL/212999.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:06:43.860Z",
+    "redacted": false,
+    "review_status": "ARCHIVED_DDL_NOT_FULL_REVIEW",
+    "task_name": "PDATA_N.T00_ZAPP_PLANT_TOPI_ADTNL_INFO_ESS016"
+  },
+  {
+    "task_id": "242368",
+    "source_sha256": "09352baec9fb4241663ca12bdfaa5455b4a57d32edc64d1ff025d5fd8931507a",
+    "sql_file": "SQL/242368.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T07:39:12.641Z",
+    "redacted": false,
+    "review_status": "ARCHIVED_DDL_NOT_FULL_REVIEW",
+    "task_name": "SPDATA_N.T00_SYS_FUNC_INFO_ADS019"
+  },
+  {
+    "task_id": "145620",
+    "source_sha256": "04ac227c6834b4612dcebffd3ed7f85db58ad53fb79dc5c599cdeabf3075bfad",
+    "sql_file": "SQL/145620.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:58.336Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_SEED_FND_PROJ_ADTNL_INFO_ECR069"
+  },
+  {
+    "task_id": "125483",
+    "source_sha256": "745e38f0257242a154d40672b38cf3e81a0515c8c66deafde025c628ddeab9f4",
+    "sql_file": "SQL/125483.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T01:06:50.485Z",
+    "redacted": false,
+    "review_status": "REVIEWED_PROJECTION_SLICE",
+    "task_name": "PDATA_N.T00_INCTV_PLAN_ADTNL_INFO_CRM176"
+  },
+  {
+    "task_id": "136764",
+    "source_sha256": "a07da1c7e77cc757b250d6144ec1daf63877986714270e9e237e1b280c2ff6e1",
+    "sql_file": "SQL/136764.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T05:38:45.646Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_DOC_EVT_RELA_H_CC2017"
+  },
+  {
+    "task_id": "136762",
+    "source_sha256": "351c422406fec655efb63ff77a8f48c9227554055172a87379285294c5c4b9bf",
+    "sql_file": "SQL/136762.sql",
+    "observed_at": "",
+    "header_observed_at": "2026-09-05T05:38:41.568Z",
+    "redacted": false,
+    "review_status": "REVIEWED_KEY_PRODUCTION_SECTIONS",
+    "task_name": "PDATA_N.T00_DOC_INFO_CC2017"
+  }
+]

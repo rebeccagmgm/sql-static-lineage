@@ -1,0 +1,190 @@
+{
+  "checked_at": "2026-09-14T03:54:57.846Z",
+  "status": "PASS",
+  "files": 43,
+  "markdown": 18,
+  "json": 14,
+  "sql": 11,
+  "bytes": 6859220,
+  "checks": [
+    {
+      "name": "Markdown链接可定位",
+      "pass": true,
+      "actual": []
+    },
+    {
+      "name": "元数据对象689且身份不合并",
+      "pass": true,
+      "actual": 689
+    },
+    {
+      "name": "字段20148",
+      "pass": true,
+      "actual": 20148
+    },
+    {
+      "name": "平台728个源GUID",
+      "pass": true,
+      "actual": 728
+    },
+    {
+      "name": "主库428条均有用途入口",
+      "pass": true,
+      "actual": [
+        {
+          "name": "技术与运行统计",
+          "count": 11
+        },
+        {
+          "name": "财务资金与报送",
+          "count": 45
+        },
+        {
+          "name": "收入费用绩效与协同",
+          "count": 85
+        },
+        {
+          "name": "场外交易估值与风险",
+          "count": 47
+        },
+        {
+          "name": "托管资管与基金运营",
+          "count": 60
+        },
+        {
+          "name": "产品销售保有与投顾",
+          "count": 19
+        },
+        {
+          "name": "员工机构与组织管理",
+          "count": 31
+        },
+        {
+          "name": "交易账户持仓与策略",
+          "count": 50
+        },
+        {
+          "name": "营销渠道内容与服务运营",
+          "count": 30
+        },
+        {
+          "name": "客户身份签约与关系",
+          "count": 46
+        },
+        {
+          "name": "其他用途待核",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "name": "候选覆盖每一物理记录",
+      "pass": true,
+      "actual": 689
+    },
+    {
+      "name": "覆盖中的候选任务均可定位",
+      "pass": true,
+      "actual": 1727
+    },
+    {
+      "name": "按用途查表不重不漏",
+      "pass": true,
+      "actual": 428
+    },
+    {
+      "name": "正文完整T98表名均有目录依据",
+      "pass": true,
+      "actual": []
+    },
+    {
+      "name": "11份SQL副本及来源核对",
+      "pass": true,
+      "actual": [
+        {
+          "task_id": "61573",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "66277",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "86840",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "86841",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "86842",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "220650",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "105743",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "107491",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "178807",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "37439",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        },
+        {
+          "task_id": "100243",
+          "hash_matches": true,
+          "source_matches": true,
+          "text_matches": true
+        }
+      ]
+    },
+    {
+      "name": "图查询版本截断范围保留",
+      "pass": true,
+      "actual": {
+        "nodes": 25,
+        "edges": 24,
+        "truncated": true,
+        "generations": 0
+      }
+    },
+    {
+      "name": "连接地址及疑似凭证检查",
+      "pass": true,
+      "actual": []
+    }
+  ],
+  "failures": [],
+  "boundary": "文档链接与来源一致性检查，不是SQL运行或业务数据验收"
+}

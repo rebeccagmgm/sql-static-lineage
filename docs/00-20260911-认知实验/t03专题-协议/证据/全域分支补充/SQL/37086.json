@@ -1,0 +1,2256 @@
+{
+  "task_id": "37086",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:11.357Z",
+  "payload_sha256": "60f0284abaa26d6298da73dc790fbd7a648130cffabaafeea974ece2fb857762",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_BRP_COMP_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                    STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Bel_Inr_Org_Id            STRING COMMENT '所属内部机构编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Agt_Holder                STRING COMMENT '协议持有人编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Rela_Comp_Agt_Id          STRING COMMENT '关联合约协议编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Rela_Comp_Agt_Modifr      STRING COMMENT '关联合约协议修饰符'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Ast_Acct_Agt_Id           STRING COMMENT '资产账户协议编号'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Ast_Acct_Agt_Modifr       STRING COMMENT '资产账户协议修饰符'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Scr_Acct_Agt_Id           STRING COMMENT '证券账户协议编号'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Scr_Acct_Agt_Modifr       STRING COMMENT '证券账户协议修饰符'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Brp_Comp_Type_Cd          STRING COMMENT '债券质押协议回购合约类型代码'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Brp_Comp_Stat_Cd          STRING COMMENT '债券质押协议回购合约状态代码'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Exch_Type_Cd              STRING COMMENT '市场代码'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Prd_Id                    STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Scr_Cd                    STRING COMMENT '证券代码'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Buy_Sell_Dir_Cd           STRING COMMENT '买卖方向代码'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Entr_Date                 STRING COMMENT '委托日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Entr_Vol                  STRING COMMENT '委托数量'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Entr_Amt                  STRING COMMENT '委托金额'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Bk_Amt                    STRING COMMENT '购回金额'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Bk_Date                   STRING COMMENT '转入日期'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Real_Bk_Amt               STRING COMMENT '实际购回金额'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Real_Bk_Date              STRING COMMENT '实际购回日期'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Real_Bk_Rate              STRING COMMENT '实际购回利率'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Exp_Ror                   STRING COMMENT '到期年收益率'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Covt_Ratio                STRING COMMENT '折算率系数'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Ori_Rep_Id                STRING COMMENT '原申报序号'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Agcy_Id                   STRING COMMENT '销售商代码'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Trdr_Id                   STRING COMMENT '交易员编号'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Cutp_Seat_No              STRING COMMENT '对方席位号'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Cutp_Agcy                 STRING COMMENT '对方销售商'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Cutp_Trdr                 STRING COMMENT '对方交易员'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Cutp_Agcy_Name            STRING COMMENT '对方销售商名称'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Plge_Name                 STRING COMMENT '质权人名称'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Join_Pos_Str              STRING COMMENT '关联定位串'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Join_Date                 STRING COMMENT '关联日期'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Brp_Ivst_Name             STRING COMMENT '发起方投资者账户名称'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Trd_Date                  STRING COMMENT '交易日期'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Clr_Date                  STRING COMMENT '清算日期'"
+    },
+    {
+      "line": 49,
+      "text": "    ,Pos_Str                   STRING COMMENT '定位串'"
+    },
+    {
+      "line": 50,
+      "text": "    ,Remark                    STRING COMMENT '备注'"
+    },
+    {
+      "line": 51,
+      "text": "    ,Del_Flag                  STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 52,
+      "text": "    ,Del_Date                  STRING COMMENT '删除日期'"
+    },
+    {
+      "line": 53,
+      "text": "    ,Data_Src_Cd               STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 54,
+      "text": "    ,Task_Name                 STRING COMMENT '任务名'"
+    },
+    {
+      "line": 55,
+      "text": "    ,Data_Etl_Date             STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 56,
+      "text": "    ,Data_Upt_Date             STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 57,
+      "text": "    ,DATA_TIME                 STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 58,
+      "text": ")COMMENT '债券质押协议回购合约信息'"
+    },
+    {
+      "line": 59,
+      "text": "PARTITIONED BY ( Src_Tbl  STRING COMMENT '源表',BUSI_DATE STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 60,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 61,
+      "text": ""
+    },
+    {
+      "line": 62,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 63,
+      "text": "--Group1: Source Table:[ODATA_N_RCC.A_BRPCONTRACT,ODATA_N_RCC.H_HIS_BRPCONTRACT:债券质押协议回购合约表]"
+    },
+    {
+      "line": 64,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 65,
+      "text": ""
+    },
+    {
+      "line": 66,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_BRP_COMP_INFO_RCC028_TEMP;"
+    },
+    {
+      "line": 67,
+      "text": "CREATE TABLE IF NOT EXISTS TEMP.T03_BRP_COMP_INFO_RCC028_TEMP"
+    },
+    {
+      "line": 68,
+      "text": "AS"
+    },
+    {
+      "line": 69,
+      "text": "SELECT"
+    },
+    {
+      "line": 70,
+      "text": "        Agt_Id                                                      --协议编号"
+    },
+    {
+      "line": 71,
+      "text": "       ,Agt_Modifr                                                  --协议修饰符"
+    },
+    {
+      "line": 72,
+      "text": "       ,Bel_Inr_Org_Id                                              --所属内部机构编号"
+    },
+    {
+      "line": 73,
+      "text": "       ,Agt_Holder                                                  --协议持有人编号"
+    },
+    {
+      "line": 74,
+      "text": "       ,Rela_Comp_Agt_Id                                            --关联合约协议编号"
+    },
+    {
+      "line": 75,
+      "text": "       ,Rela_Comp_Agt_Modifr                                        --关联合约协议修饰符"
+    },
+    {
+      "line": 76,
+      "text": "       ,Ast_Acct_Agt_Id                                             --资产账户协议编号"
+    },
+    {
+      "line": 77,
+      "text": "       ,Ast_Acct_Agt_Modifr                                         --资产账户协议修饰符"
+    },
+    {
+      "line": 78,
+      "text": "       ,Scr_Acct_Agt_Id                                             --证券账户协议编号"
+    },
+    {
+      "line": 79,
+      "text": "       ,Scr_Acct_Agt_Modifr                                         --证券账户协议修饰符"
+    },
+    {
+      "line": 80,
+      "text": "       ,Brp_Comp_Type_Cd                                            --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 81,
+      "text": "       ,NVL(B.DW_CD_VAL,A.Brp_Comp_Stat_Cd)  AS Brp_Comp_Stat_Cd    --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 82,
+      "text": "       ,NVL(C.DW_CD_VAL,A.EXCH_TYPE_CD)      AS Exch_Type_Cd        --市场代码"
+    },
+    {
+      "line": 83,
+      "text": "       ,Prd_Id                                                      --产品编号"
+    },
+    {
+      "line": 84,
+      "text": "       ,Scr_Cd                                                      --证券代码"
+    },
+    {
+      "line": 85,
+      "text": "       ,Buy_Sell_Dir_Cd                                             --买卖方向代码"
+    },
+    {
+      "line": 86,
+      "text": "       ,Entr_Date                                                   --委托日期"
+    },
+    {
+      "line": 87,
+      "text": "       ,Entr_Vol                                                    --委托数量"
+    },
+    {
+      "line": 88,
+      "text": "       ,Entr_Amt                                                    --委托金额"
+    },
+    {
+      "line": 89,
+      "text": "       ,Bk_Amt                                                      --购回金额"
+    },
+    {
+      "line": 90,
+      "text": "       ,Bk_Date                                                     --转入日期"
+    },
+    {
+      "line": 91,
+      "text": "       ,Real_Bk_Amt                                                 --实际购回金额"
+    },
+    {
+      "line": 92,
+      "text": "       ,Real_Bk_Date                                                --实际购回日期"
+    },
+    {
+      "line": 93,
+      "text": "       ,Real_Bk_Rate                                                --实际购回利率"
+    },
+    {
+      "line": 94,
+      "text": "       ,Exp_Ror                                                     --到期年收益率"
+    },
+    {
+      "line": 95,
+      "text": "       ,Covt_Ratio                                                  --折算率系数"
+    },
+    {
+      "line": 96,
+      "text": "       ,Ori_Rep_Id                                                  --原申报序号"
+    },
+    {
+      "line": 97,
+      "text": "       ,Agcy_Id                                                     --销售商代码"
+    },
+    {
+      "line": 98,
+      "text": "       ,Trdr_Id                                                     --交易员编号"
+    },
+    {
+      "line": 99,
+      "text": "       ,Cutp_Seat_No                                                --对方席位号"
+    },
+    {
+      "line": 100,
+      "text": "       ,Cutp_Agcy                                                   --对方销售商"
+    },
+    {
+      "line": 101,
+      "text": "       ,Cutp_Trdr                                                   --对方交易员"
+    },
+    {
+      "line": 102,
+      "text": "       ,Cutp_Agcy_Name                                              --对方销售商名称"
+    },
+    {
+      "line": 103,
+      "text": "       ,Plge_Name                                                   --质权人名称"
+    },
+    {
+      "line": 104,
+      "text": "       ,Join_Pos_Str                                                --关联定位串"
+    },
+    {
+      "line": 105,
+      "text": "       ,Join_Date                                                   --关联日期"
+    },
+    {
+      "line": 106,
+      "text": "       ,Brp_Ivst_Name                                               --发起方投资者账户名称"
+    },
+    {
+      "line": 107,
+      "text": "       ,Trd_Date                                                    --交易日期"
+    },
+    {
+      "line": 108,
+      "text": "       ,Clr_Date                                                    --清算日期"
+    },
+    {
+      "line": 109,
+      "text": "       ,Pos_Str                                                     --定位串"
+    },
+    {
+      "line": 110,
+      "text": "       ,Remark                                                      --备注"
+    },
+    {
+      "line": 111,
+      "text": "       ,DATA_SRC_CD                                                 --数据来源代码"
+    },
+    {
+      "line": 112,
+      "text": "       ,SRC_TBL                                                     --源表"
+    },
+    {
+      "line": 113,
+      "text": "       ,TASK_NAME                                                   --任务名"
+    },
+    {
+      "line": 114,
+      "text": "       ,DATA_ETL_DATE                                               --数据加载日期"
+    },
+    {
+      "line": 115,
+      "text": "       ,DATA_UPT_DATE                                               --数据更新日期"
+    },
+    {
+      "line": 116,
+      "text": "FROM (SELECT"
+    },
+    {
+      "line": 117,
+      "text": "               POSITION_STR                                          AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 118,
+      "text": "              ,'20105'                                               AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 119,
+      "text": "              ,LPAD(BRANCH_NO,4,'0')                                 AS Bel_Inr_Org_Id           --所属内部机构编号"
+    },
+    {
+      "line": 120,
+      "text": "              ,CLIENT_ID                                             AS Agt_Holder               --协议持有人编号"
+    },
+    {
+      "line": 121,
+      "text": "              ,JOIN_CONTRACT_ID                                      AS Rela_Comp_Agt_Id         --关联合约协议编号"
+    },
+    {
+      "line": 122,
+      "text": "              ,''                                                    AS Rela_Comp_Agt_Modifr     --关联合约协议修饰符"
+    },
+    {
+      "line": 123,
+      "text": "              ,FUND_ACCOUNT                                          AS Ast_Acct_Agt_Id          --资产账户协议编号"
+    },
+    {
+      "line": 124,
+      "text": "              ,'10201'                                               AS Ast_Acct_Agt_Modifr      --资产账户协议修饰符"
+    },
+    {
+      "line": 125,
+      "text": "              ,FUND_ACCOUNT                                          AS Scr_Acct_Agt_Id          --证券账户协议编号"
+    },
+    {
+      "line": 126,
+      "text": "              ,CONCAT('10101-',EXCHANGE_TYPE,'-',STOCK_ACCOUNT)      AS Scr_Acct_Agt_Modifr      --证券账户协议修饰符"
+    },
+    {
+      "line": 127,
+      "text": "              ,BRP_CONTRACT_TYPE                                     AS Brp_Comp_Type_Cd         --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 128,
+      "text": "              ,BRP_CONTRACT_STATUS                                   AS Brp_Comp_Stat_Cd         --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 129,
+      "text": "              ,EXCHANGE_TYPE                                         AS Exch_Type_Cd             --市场代码"
+    },
+    {
+      "line": 130,
+      "text": "              ,CONCAT('RCC-',EXCHANGE_TYPE,'-',STOCK_CODE)           AS Prd_Id                   --产品编号"
+    },
+    {
+      "line": 131,
+      "text": "              ,STOCK_CODE                                            AS Scr_Cd                   --证券代码"
+    },
+    {
+      "line": 132,
+      "text": "              ,ENTRUST_BS                                            AS Buy_Sell_Dir_Cd          --买卖方向代码"
+    },
+    {
+      "line": 133,
+      "text": "              ,ENTRUST_DATE                                          AS Entr_Date                --委托日期"
+    },
+    {
+      "line": 134,
+      "text": "              ,ENTRUST_AMOUNT                                        AS Entr_Vol                 --委托数量"
+    },
+    {
+      "line": 135,
+      "text": "              ,ENTRUST_BALANCE                                       AS Entr_Amt                 --委托金额"
+    },
+    {
+      "line": 136,
+      "text": "              ,BACK_BALANCE                                          AS Bk_Amt                   --购回金额"
+    },
+    {
+      "line": 137,
+      "text": "              ,DATE_BACK                                             AS Bk_Date                  --转入日期"
+    },
+    {
+      "line": 138,
+      "text": "              ,REAL_BACK_BALANCE                                     AS Real_Bk_Amt              --实际购回金额"
+    },
+    {
+      "line": 139,
+      "text": "              ,REAL_DATE_BACK                                        AS Real_Bk_Date             --实际购回日期"
+    },
+    {
+      "line": 140,
+      "text": "              ,REAL_YEAR_RATE                                        AS Real_Bk_Rate             --实际购回利率"
+    },
+    {
+      "line": 141,
+      "text": "              ,EXPIRE_YEAR_RATE                                      AS Exp_Ror                  --到期年收益率"
+    },
+    {
+      "line": 142,
+      "text": "              ,FUNDER_RATIO                                          AS Covt_Ratio               --折算率系数"
+    },
+    {
+      "line": 143,
+      "text": "              ,ORIG_REPORT_ID                                        AS Ori_Rep_Id               --原申报序号"
+    },
+    {
+      "line": 144,
+      "text": "              ,CASE WHEN TRIM(AGENCY_NO) !='' AND AGENCY_NO IS NOT NULL THEN CONCAT('RCC066-',AGENCY_NO)"
+    },
+    {
+      "line": 145,
+      "text": "                      ELSE AGENCY_NO  END                            AS Agcy_Id                  --销售商代码"
+    },
+    {
+      "line": 146,
+      "text": "              ,TRADER_ID                                             AS Trdr_Id                  --交易员编号"
+    },
+    {
+      "line": 147,
+      "text": "              ,PROP_SEAT_NO                                          AS Cutp_Seat_No             --对方席位号"
+    },
+    {
+      "line": 148,
+      "text": "              ,OPPO_AGENCY                                           AS Cutp_Agcy                --对方销售商"
+    },
+    {
+      "line": 149,
+      "text": "              ,OPPO_TRADER_ID                                        AS Cutp_Trdr                --对方交易员"
+    },
+    {
+      "line": 150,
+      "text": "              ,OPPO_AGENCY_NAME                                      AS Cutp_Agcy_Name           --对方销售商名称"
+    },
+    {
+      "line": 151,
+      "text": "              ,PLEDGEE_NAME                                          AS Plge_Name                --质权人名称"
+    },
+    {
+      "line": 152,
+      "text": "              ,POSITION_STR_JOIN                                     AS Join_Pos_Str             --关联定位串"
+    },
+    {
+      "line": 153,
+      "text": "              ,JOIN_DATE                                             AS Join_Date                --关联日期"
+    },
+    {
+      "line": 154,
+      "text": "              ,BRP_INVESTOR_NAME                                     AS Brp_Ivst_Name            --发起方投资者账户名称"
+    },
+    {
+      "line": 155,
+      "text": "              ,INIT_DATE                                             AS Trd_Date                 --交易日期"
+    },
+    {
+      "line": 156,
+      "text": "              ,DATE_CLEAR                                            AS Clr_Date                 --清算日期"
+    },
+    {
+      "line": 157,
+      "text": "              ,POSITION_STR                                          AS Pos_Str                  --定位串"
+    },
+    {
+      "line": 158,
+      "text": "              ,REMARK                                                AS Remark                   --备注"
+    },
+    {
+      "line": 159,
+      "text": "              ,'RCC'                                                 AS DATA_SRC_CD              --数据来源代码"
+    },
+    {
+      "line": 160,
+      "text": "              ,'ODATA_N_RCC.A_BRPCONTRACT'                           AS SRC_TBL                  --源表"
+    },
+    {
+      "line": 161,
+      "text": "              ,UPPER('${filename}')                             AS TASK_NAME                --任务名"
+    },
+    {
+      "line": 162,
+      "text": "              ,'${data_day_str}'                                AS DATA_ETL_DATE            --数据加载日期"
+    },
+    {
+      "line": 163,
+      "text": "              ,'${data_day_str}'                              AS DATA_UPT_DATE            --数据更新日期"
+    },
+    {
+      "line": 164,
+      "text": "       FROM ODATA_N_RCC.A_BRPCONTRACT"
+    },
+    {
+      "line": 165,
+      "text": "       WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 166,
+      "text": "       UNION ALL"
+    },
+    {
+      "line": 167,
+      "text": "       SELECT"
+    },
+    {
+      "line": 168,
+      "text": "               POSITION_STR                                          AS Agt_Id                   --协议编号"
+    },
+    {
+      "line": 169,
+      "text": "              ,'20105'                                               AS Agt_Modifr               --协议修饰符"
+    },
+    {
+      "line": 170,
+      "text": "              ,LPAD(BRANCH_NO,4,'0')                                 AS Bel_Inr_Org_Id           --所属内部机构编号"
+    },
+    {
+      "line": 171,
+      "text": "              ,CLIENT_ID                                             AS Agt_Holder               --协议持有人编号"
+    },
+    {
+      "line": 172,
+      "text": "              ,JOIN_CONTRACT_ID                                      AS Rela_Comp_Agt_Id         --关联合约协议编号"
+    },
+    {
+      "line": 173,
+      "text": "              ,''                                                    AS Rela_Comp_Agt_Modifr     --关联合约协议修饰符"
+    },
+    {
+      "line": 174,
+      "text": "              ,FUND_ACCOUNT                                          AS Ast_Acct_Agt_Id          --资产账户协议编号"
+    },
+    {
+      "line": 175,
+      "text": "              ,'10201'                                               AS Ast_Acct_Agt_Modifr      --资产账户协议修饰符"
+    },
+    {
+      "line": 176,
+      "text": "              ,FUND_ACCOUNT                                          AS Scr_Acct_Agt_Id          --证券账户协议编号"
+    },
+    {
+      "line": 177,
+      "text": "              ,CONCAT('10101-',EXCHANGE_TYPE,'-',STOCK_ACCOUNT)      AS Scr_Acct_Agt_Modifr      --证券账户协议修饰符"
+    },
+    {
+      "line": 178,
+      "text": "              ,BRP_CONTRACT_TYPE                                     AS Brp_Comp_Type_Cd         --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 179,
+      "text": "              ,BRP_CONTRACT_STATUS                                   AS Brp_Comp_Stat_Cd         --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 180,
+      "text": "              ,EXCHANGE_TYPE                                         AS Exch_Type_Cd             --市场代码"
+    },
+    {
+      "line": 181,
+      "text": "              ,CONCAT('RCC-',EXCHANGE_TYPE,'-',STOCK_CODE)           AS Prd_Id                   --产品编号"
+    },
+    {
+      "line": 182,
+      "text": "              ,STOCK_CODE                                            AS Scr_Cd                   --证券代码"
+    },
+    {
+      "line": 183,
+      "text": "              ,ENTRUST_BS                                            AS Buy_Sell_Dir_Cd          --买卖方向代码"
+    },
+    {
+      "line": 184,
+      "text": "              ,ENTRUST_DATE                                          AS Entr_Date                --委托日期"
+    },
+    {
+      "line": 185,
+      "text": "              ,ENTRUST_AMOUNT                                        AS Entr_Vol                 --委托数量"
+    },
+    {
+      "line": 186,
+      "text": "              ,ENTRUST_BALANCE                                       AS Entr_Amt                 --委托金额"
+    },
+    {
+      "line": 187,
+      "text": "              ,BACK_BALANCE                                          AS Bk_Amt                   --购回金额"
+    },
+    {
+      "line": 188,
+      "text": "              ,DATE_BACK                                             AS Bk_Date                  --转入日期"
+    },
+    {
+      "line": 189,
+      "text": "              ,REAL_BACK_BALANCE                                     AS Real_Bk_Amt              --实际购回金额"
+    },
+    {
+      "line": 190,
+      "text": "              ,REAL_DATE_BACK                                        AS Real_Bk_Date             --实际购回日期"
+    },
+    {
+      "line": 191,
+      "text": "              ,REAL_YEAR_RATE                                        AS Real_Bk_Rate             --实际购回利率"
+    },
+    {
+      "line": 192,
+      "text": "              ,EXPIRE_YEAR_RATE                                      AS Exp_Ror                  --到期年收益率"
+    },
+    {
+      "line": 193,
+      "text": "              ,FUNDER_RATIO                                          AS Covt_Ratio               --折算率系数"
+    },
+    {
+      "line": 194,
+      "text": "              ,ORIG_REPORT_ID                                        AS Ori_Rep_Id               --原申报序号"
+    },
+    {
+      "line": 195,
+      "text": "              ,CASE WHEN TRIM(AGENCY_NO) !='' AND AGENCY_NO IS NOT NULL THEN CONCAT('RCC066-',AGENCY_NO)"
+    },
+    {
+      "line": 196,
+      "text": "                      ELSE AGENCY_NO  END                            AS Agcy_Id                  --销售商代码"
+    },
+    {
+      "line": 197,
+      "text": "              ,TRADER_ID                                             AS Trdr_Id                  --交易员编号"
+    },
+    {
+      "line": 198,
+      "text": "              ,PROP_SEAT_NO                                          AS Cutp_Seat_No             --对方席位号"
+    },
+    {
+      "line": 199,
+      "text": "              ,OPPO_AGENCY                                           AS Cutp_Agcy                --对方销售商"
+    },
+    {
+      "line": 200,
+      "text": "              ,OPPO_TRADER_ID                                        AS Cutp_Trdr                --对方交易员"
+    },
+    {
+      "line": 201,
+      "text": "              ,OPPO_AGENCY_NAME                                      AS Cutp_Agcy_Name           --对方销售商名称"
+    },
+    {
+      "line": 202,
+      "text": "              ,PLEDGEE_NAME                                          AS Plge_Name                --质权人名称"
+    },
+    {
+      "line": 203,
+      "text": "              ,POSITION_STR_JOIN                                     AS Join_Pos_Str             --关联定位串"
+    },
+    {
+      "line": 204,
+      "text": "              ,JOIN_DATE                                             AS Join_Date                --关联日期"
+    },
+    {
+      "line": 205,
+      "text": "              ,BRP_INVESTOR_NAME                                     AS Brp_Ivst_Name            --发起方投资者账户名称"
+    },
+    {
+      "line": 206,
+      "text": "              ,INIT_DATE                                             AS Trd_Date                 --交易日期"
+    },
+    {
+      "line": 207,
+      "text": "              ,DATE_CLEAR                                            AS Clr_Date                 --清算日期"
+    },
+    {
+      "line": 208,
+      "text": "              ,POSITION_STR                                          AS Pos_Str                  --定位串"
+    },
+    {
+      "line": 209,
+      "text": "              ,REMARK                                                AS Remark                   --备注"
+    },
+    {
+      "line": 210,
+      "text": "              ,'RCC'                                                 AS DATA_SRC_CD              --数据来源代码"
+    },
+    {
+      "line": 211,
+      "text": "              ,'ODATA_N_RCC.H_HIS_BRPCONTRACT'                       AS SRC_TBL                  --源表"
+    },
+    {
+      "line": 212,
+      "text": "              ,UPPER('${filename}')                             AS TASK_NAME                --任务名"
+    },
+    {
+      "line": 213,
+      "text": "              ,'${data_day_str}'                                AS DATA_ETL_DATE            --数据加载日期"
+    },
+    {
+      "line": 214,
+      "text": "              ,'${data_day_str}'                              AS DATA_UPT_DATE            --数据更新日期"
+    },
+    {
+      "line": 215,
+      "text": "       FROM ODATA_N_RCC.H_HIS_BRPCONTRACT HIS"
+    },
+    {
+      "line": 216,
+      "text": "       WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 217,
+      "text": ")A"
+    },
+    {
+      "line": 218,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 219,
+      "text": "          SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 220,
+      "text": "          FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 221,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_BRP_COMP_INFO'"
+    },
+    {
+      "line": 222,
+      "text": "            AND TGT_TAB_FLD  = 'Brp_Comp_Stat_Cd'"
+    },
+    {
+      "line": 223,
+      "text": "            AND SRC_TAB_NAME = 'BRPCONTRACT'"
+    },
+    {
+      "line": 224,
+      "text": "            AND SRC_FLD_NAME = 'BRP_CONTRACT_STATUS'"
+    },
+    {
+      "line": 225,
+      "text": "            AND SRC_SYS_NAME='RCC') B"
+    },
+    {
+      "line": 226,
+      "text": "ON        A.Brp_Comp_Stat_Cd = B.SRC_CD_VAL                  --BRP_CONTRACT_STATUS转码"
+    },
+    {
+      "line": 227,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 228,
+      "text": "          SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 229,
+      "text": "          FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 230,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_BRP_COMP_INFO'"
+    },
+    {
+      "line": 231,
+      "text": "            AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 232,
+      "text": "            AND SRC_TAB_NAME = 'BRPCONTRACT'"
+    },
+    {
+      "line": 233,
+      "text": "            AND SRC_FLD_NAME = 'EXCHANGE_TYPE'"
+    },
+    {
+      "line": 234,
+      "text": "            AND SRC_SYS_NAME='RCC') C"
+    },
+    {
+      "line": 235,
+      "text": "ON        A.Exch_Type_Cd = C.SRC_CD_VAL                  --EXCHANGE_TYPE转码"
+    },
+    {
+      "line": 236,
+      "text": ";"
+    },
+    {
+      "line": 237,
+      "text": ""
+    },
+    {
+      "line": 238,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_BRP_COMP_INFO_RCC028_MID;"
+    },
+    {
+      "line": 239,
+      "text": "CREATE TABLE IF NOT EXISTS TEMP.T03_BRP_COMP_INFO_RCC028_MID"
+    },
+    {
+      "line": 240,
+      "text": "AS"
+    },
+    {
+      "line": 241,
+      "text": "SELECT"
+    },
+    {
+      "line": 242,
+      "text": "       A.*"
+    },
+    {
+      "line": 243,
+      "text": "      ,B.Agt_Id                 AS Agt_Id1                         --协议编号"
+    },
+    {
+      "line": 244,
+      "text": "      ,B.Agt_Modifr             AS Agt_Modifr1                     --协议修饰符"
+    },
+    {
+      "line": 245,
+      "text": "      ,B.Bel_Inr_Org_Id         AS Bel_Inr_Org_Id1                 --所属内部机构编号"
+    },
+    {
+      "line": 246,
+      "text": "      ,B.Agt_Holder             AS Agt_Holder1                     --协议持有人编号"
+    },
+    {
+      "line": 247,
+      "text": "      ,B.Rela_Comp_Agt_Id       AS Rela_Comp_Agt_Id1               --关联合约协议编号"
+    },
+    {
+      "line": 248,
+      "text": "      ,B.Rela_Comp_Agt_Modifr   AS Rela_Comp_Agt_Modifr1           --关联合约协议修饰符"
+    },
+    {
+      "line": 249,
+      "text": "      ,B.Ast_Acct_Agt_Id        AS Ast_Acct_Agt_Id1                --资产账户协议编号"
+    },
+    {
+      "line": 250,
+      "text": "      ,B.Ast_Acct_Agt_Modifr    AS Ast_Acct_Agt_Modifr1            --资产账户协议修饰符"
+    },
+    {
+      "line": 251,
+      "text": "      ,B.Scr_Acct_Agt_Id        AS Scr_Acct_Agt_Id1                --证券账户协议编号"
+    },
+    {
+      "line": 252,
+      "text": "      ,B.Scr_Acct_Agt_Modifr    AS Scr_Acct_Agt_Modifr1            --证券账户协议修饰符"
+    },
+    {
+      "line": 253,
+      "text": "      ,B.Brp_Comp_Type_Cd       AS Brp_Comp_Type_Cd1               --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 254,
+      "text": "      ,B.Brp_Comp_Stat_Cd       AS Brp_Comp_Stat_Cd1               --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 255,
+      "text": "      ,B.Exch_Type_Cd           AS Exch_Type_Cd1                   --市场代码"
+    },
+    {
+      "line": 256,
+      "text": "      ,B.Prd_Id                 AS Prd_Id1                         --产品编号"
+    },
+    {
+      "line": 257,
+      "text": "      ,B.Scr_Cd                 AS Scr_Cd1                         --证券代码"
+    },
+    {
+      "line": 258,
+      "text": "      ,B.Buy_Sell_Dir_Cd        AS Buy_Sell_Dir_Cd1                --买卖方向代码"
+    },
+    {
+      "line": 259,
+      "text": "      ,B.Entr_Date              AS Entr_Date1                      --委托日期"
+    },
+    {
+      "line": 260,
+      "text": "      ,B.Entr_Vol               AS Entr_Vol1                       --委托数量"
+    },
+    {
+      "line": 261,
+      "text": "      ,B.Entr_Amt               AS Entr_Amt1                       --委托金额"
+    },
+    {
+      "line": 262,
+      "text": "      ,B.Bk_Amt                 AS Bk_Amt1                         --购回金额"
+    },
+    {
+      "line": 263,
+      "text": "      ,B.Bk_Date                AS Bk_Date1                        --转入日期"
+    },
+    {
+      "line": 264,
+      "text": "      ,B.Real_Bk_Amt            AS Real_Bk_Amt1                    --实际购回金额"
+    },
+    {
+      "line": 265,
+      "text": "      ,B.Real_Bk_Date           AS Real_Bk_Date1                   --实际购回日期"
+    },
+    {
+      "line": 266,
+      "text": "      ,B.Real_Bk_Rate           AS Real_Bk_Rate1                   --实际购回利率"
+    },
+    {
+      "line": 267,
+      "text": "      ,B.Exp_Ror                AS Exp_Ror1                        --到期年收益率"
+    },
+    {
+      "line": 268,
+      "text": "      ,B.Covt_Ratio             AS Covt_Ratio1                     --折算率系数"
+    },
+    {
+      "line": 269,
+      "text": "      ,B.Ori_Rep_Id             AS Ori_Rep_Id1                     --原申报序号"
+    },
+    {
+      "line": 270,
+      "text": "      ,B.Agcy_Id                AS Agcy_Id1                        --销售商代码"
+    },
+    {
+      "line": 271,
+      "text": "      ,B.Trdr_Id                AS Trdr_Id1                        --交易员编号"
+    },
+    {
+      "line": 272,
+      "text": "      ,B.Cutp_Seat_No           AS Cutp_Seat_No1                   --对方席位号"
+    },
+    {
+      "line": 273,
+      "text": "      ,B.Cutp_Agcy              AS Cutp_Agcy1                      --对方销售商"
+    },
+    {
+      "line": 274,
+      "text": "      ,B.Cutp_Trdr              AS Cutp_Trdr1                      --对方交易员"
+    },
+    {
+      "line": 275,
+      "text": "      ,B.Cutp_Agcy_Name         AS Cutp_Agcy_Name1                 --对方销售商名称"
+    },
+    {
+      "line": 276,
+      "text": "      ,B.Plge_Name              AS Plge_Name1                      --质权人名称"
+    },
+    {
+      "line": 277,
+      "text": "      ,B.Join_Pos_Str           AS Join_Pos_Str1                   --关联定位串"
+    },
+    {
+      "line": 278,
+      "text": "      ,B.Join_Date              AS Join_Date1                      --关联日期"
+    },
+    {
+      "line": 279,
+      "text": "      ,B.Brp_Ivst_Name          AS Brp_Ivst_Name1                  --发起方投资者账户名称"
+    },
+    {
+      "line": 280,
+      "text": "      ,B.Trd_Date               AS Trd_Date1                       --交易日期"
+    },
+    {
+      "line": 281,
+      "text": "      ,B.Clr_Date               AS Clr_Date1                       --清算日期"
+    },
+    {
+      "line": 282,
+      "text": "      ,B.Pos_Str                AS Pos_Str1                        --定位串"
+    },
+    {
+      "line": 283,
+      "text": "      ,B.Remark                 AS Remark1                         --备注"
+    },
+    {
+      "line": 284,
+      "text": "      ,B.DATA_SRC_CD            AS DATA_SRC_CD1                    --数据来源代码"
+    },
+    {
+      "line": 285,
+      "text": "      ,B.SRC_TBL                AS SRC_TBL1                        --源表"
+    },
+    {
+      "line": 286,
+      "text": "      ,B.TASK_NAME              AS TASK_NAME1                      --任务名"
+    },
+    {
+      "line": 287,
+      "text": "      ,B.DATA_ETL_DATE          AS DATA_ETL_DATE1                  --数据加载日期"
+    },
+    {
+      "line": 288,
+      "text": "      ,B.DATA_UPT_DATE          AS DATA_UPT_DATE1                  --数据更新日期"
+    },
+    {
+      "line": 289,
+      "text": "      ,CASE WHEN A.AGT_ID IS NULL AND B.AGT_ID IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 290,
+      "text": "            WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 291,
+      "text": "            WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID IS NOT NULL AND ("
+    },
+    {
+      "line": 292,
+      "text": "                COALESCE(A.Bel_Inr_Org_Id       ,'')   <> COALESCE(B.Bel_Inr_Org_Id      ,'')"
+    },
+    {
+      "line": 293,
+      "text": "             OR COALESCE(A.Agt_Holder           ,'')   <> COALESCE(B.Agt_Holder          ,'')"
+    },
+    {
+      "line": 294,
+      "text": "             OR COALESCE(A.Rela_Comp_Agt_Id     ,'')   <> COALESCE(B.Rela_Comp_Agt_Id    ,'')"
+    },
+    {
+      "line": 295,
+      "text": "             OR COALESCE(A.Rela_Comp_Agt_Modifr ,'')   <> COALESCE(B.Rela_Comp_Agt_Modifr,'')"
+    },
+    {
+      "line": 296,
+      "text": "             OR COALESCE(A.Ast_Acct_Agt_Id      ,'')   <> COALESCE(B.Ast_Acct_Agt_Id     ,'')"
+    },
+    {
+      "line": 297,
+      "text": "             OR COALESCE(A.Ast_Acct_Agt_Modifr  ,'')   <> COALESCE(B.Ast_Acct_Agt_Modifr ,'')"
+    },
+    {
+      "line": 298,
+      "text": "             OR COALESCE(A.Scr_Acct_Agt_Id      ,'')   <> COALESCE(B.Scr_Acct_Agt_Id     ,'')"
+    },
+    {
+      "line": 299,
+      "text": "             OR COALESCE(A.Scr_Acct_Agt_Modifr  ,'')   <> COALESCE(B.Scr_Acct_Agt_Modifr ,'')"
+    },
+    {
+      "line": 300,
+      "text": "             OR COALESCE(A.Brp_Comp_Type_Cd     ,'')   <> COALESCE(B.Brp_Comp_Type_Cd    ,'')"
+    },
+    {
+      "line": 301,
+      "text": "             OR COALESCE(A.Brp_Comp_Stat_Cd     ,'')   <> COALESCE(B.Brp_Comp_Stat_Cd    ,'')"
+    },
+    {
+      "line": 302,
+      "text": "             OR COALESCE(A.Exch_Type_Cd         ,'')   <> COALESCE(B.Exch_Type_Cd        ,'')"
+    },
+    {
+      "line": 303,
+      "text": "             OR COALESCE(A.Prd_Id               ,'')   <> COALESCE(B.Prd_Id              ,'')"
+    },
+    {
+      "line": 304,
+      "text": "             OR COALESCE(A.Scr_Cd               ,'')   <> COALESCE(B.Scr_Cd              ,'')"
+    },
+    {
+      "line": 305,
+      "text": "             OR COALESCE(A.Buy_Sell_Dir_Cd      ,'')   <> COALESCE(B.Buy_Sell_Dir_Cd     ,'')"
+    },
+    {
+      "line": 306,
+      "text": "             OR COALESCE(A.Entr_Date            ,'')   <> COALESCE(B.Entr_Date           ,'')"
+    },
+    {
+      "line": 307,
+      "text": "             OR COALESCE(A.Entr_Vol             ,'')   <> COALESCE(B.Entr_Vol            ,'')"
+    },
+    {
+      "line": 308,
+      "text": "             OR COALESCE(A.Entr_Amt             ,'')   <> COALESCE(B.Entr_Amt            ,'')"
+    },
+    {
+      "line": 309,
+      "text": "             OR COALESCE(A.Bk_Amt               ,'')   <> COALESCE(B.Bk_Amt              ,'')"
+    },
+    {
+      "line": 310,
+      "text": "             OR COALESCE(A.Bk_Date              ,'')   <> COALESCE(B.Bk_Date             ,'')"
+    },
+    {
+      "line": 311,
+      "text": "             OR COALESCE(A.Real_Bk_Amt          ,'')   <> COALESCE(B.Real_Bk_Amt         ,'')"
+    },
+    {
+      "line": 312,
+      "text": "             OR COALESCE(A.Real_Bk_Date         ,'')   <> COALESCE(B.Real_Bk_Date        ,'')"
+    },
+    {
+      "line": 313,
+      "text": "             OR COALESCE(A.Real_Bk_Rate         ,'')   <> COALESCE(B.Real_Bk_Rate        ,'')"
+    },
+    {
+      "line": 314,
+      "text": "             OR COALESCE(A.Exp_Ror              ,'')   <> COALESCE(B.Exp_Ror             ,'')"
+    },
+    {
+      "line": 315,
+      "text": "             OR COALESCE(A.Covt_Ratio           ,'')   <> COALESCE(B.Covt_Ratio          ,'')"
+    },
+    {
+      "line": 316,
+      "text": "             OR COALESCE(A.Ori_Rep_Id           ,'')   <> COALESCE(B.Ori_Rep_Id          ,'')"
+    },
+    {
+      "line": 317,
+      "text": "             OR COALESCE(A.Agcy_Id              ,'')   <> COALESCE(B.Agcy_Id             ,'')"
+    },
+    {
+      "line": 318,
+      "text": "             OR COALESCE(A.Trdr_Id              ,'')   <> COALESCE(B.Trdr_Id             ,'')"
+    },
+    {
+      "line": 319,
+      "text": "             OR COALESCE(A.Cutp_Seat_No         ,'')   <> COALESCE(B.Cutp_Seat_No        ,'')"
+    },
+    {
+      "line": 320,
+      "text": "             OR COALESCE(A.Cutp_Agcy            ,'')   <> COALESCE(B.Cutp_Agcy           ,'')"
+    },
+    {
+      "line": 321,
+      "text": "             OR COALESCE(A.Cutp_Trdr            ,'')   <> COALESCE(B.Cutp_Trdr           ,'')"
+    },
+    {
+      "line": 322,
+      "text": "             OR COALESCE(A.Cutp_Agcy_Name       ,'')   <> COALESCE(B.Cutp_Agcy_Name      ,'')"
+    },
+    {
+      "line": 323,
+      "text": "             OR COALESCE(A.Plge_Name            ,'')   <> COALESCE(B.Plge_Name           ,'')"
+    },
+    {
+      "line": 324,
+      "text": "             OR COALESCE(A.Join_Pos_Str         ,'')   <> COALESCE(B.Join_Pos_Str        ,'')"
+    },
+    {
+      "line": 325,
+      "text": "             OR COALESCE(A.Join_Date            ,'')   <> COALESCE(B.Join_Date           ,'')"
+    },
+    {
+      "line": 326,
+      "text": "             OR COALESCE(A.Brp_Ivst_Name        ,'')   <> COALESCE(B.Brp_Ivst_Name       ,'')"
+    },
+    {
+      "line": 327,
+      "text": "             OR COALESCE(A.Trd_Date             ,'')   <> COALESCE(B.Trd_Date            ,'')"
+    },
+    {
+      "line": 328,
+      "text": "             OR COALESCE(A.Clr_Date             ,'')   <> COALESCE(B.Clr_Date            ,'')"
+    },
+    {
+      "line": 329,
+      "text": "             OR COALESCE(A.Pos_Str              ,'')   <> COALESCE(B.Pos_Str             ,'')"
+    },
+    {
+      "line": 330,
+      "text": "             OR COALESCE(A.Remark               ,'')   <> COALESCE(B.Remark              ,'')"
+    },
+    {
+      "line": 331,
+      "text": "             OR COALESCE(A.SRC_TBL              ,'')   <> COALESCE(B.SRC_TBL             ,'')"
+    },
+    {
+      "line": 332,
+      "text": "             "
+    },
+    {
+      "line": 333,
+      "text": "             )"
+    },
+    {
+      "line": 334,
+      "text": "            THEN     'U' --变更"
+    },
+    {
+      "line": 335,
+      "text": "            ELSE     'S' --无变更"
+    },
+    {
+      "line": 336,
+      "text": "            END AS DATA_TYPE"
+    },
+    {
+      "line": 337,
+      "text": "FROM  (SELECT * FROM T03_BRP_COMP_INFO"
+    },
+    {
+      "line": 338,
+      "text": "        WHERE SRC_TBL IN ('ODATA_N_RCC.A_BRPCONTRACT','ODATA_N_RCC.H_HIS_BRPCONTRACT')  --只对比ODATA_N_RCC.A_BRPCONTRACT,ODATA_N_RCC.H_HIS_BRPCONTRACT表的数据"
+    },
+    {
+      "line": 339,
+      "text": "\t\t  AND BUSI_DATE=default.pretradedate('${data_day_str}',1)"
+    },
+    {
+      "line": 340,
+      "text": "\t\t)A"
+    },
+    {
+      "line": 341,
+      "text": "FULL OUTER JOIN TEMP.T03_BRP_COMP_INFO_RCC028_TEMP B"
+    },
+    {
+      "line": 342,
+      "text": "ON    A.AGT_ID=B.AGT_ID"
+    },
+    {
+      "line": 343,
+      "text": "AND   A.AGT_MODIFR=B.AGT_MODIFR"
+    },
+    {
+      "line": 344,
+      "text": ";"
+    },
+    {
+      "line": 345,
+      "text": ""
+    },
+    {
+      "line": 346,
+      "text": "-- querySql"
+    },
+    {
+      "line": 347,
+      "text": "INSERT OVERWRITE TABLE T03_BRP_COMP_INFO PARTITION (Src_Tbl,BUSI_DATE)"
+    },
+    {
+      "line": 348,
+      "text": "SELECT"
+    },
+    {
+      "line": 349,
+      "text": "      Agt_Id                                  --协议编号"
+    },
+    {
+      "line": 350,
+      "text": "     ,Agt_Modifr                              --协议修饰符"
+    },
+    {
+      "line": 351,
+      "text": "     ,Bel_Inr_Org_Id                          --所属内部机构编号"
+    },
+    {
+      "line": 352,
+      "text": "     ,Agt_Holder                              --协议持有人编号"
+    },
+    {
+      "line": 353,
+      "text": "     ,Rela_Comp_Agt_Id                        --关联合约协议编号"
+    },
+    {
+      "line": 354,
+      "text": "     ,Rela_Comp_Agt_Modifr                    --关联合约协议修饰符"
+    },
+    {
+      "line": 355,
+      "text": "     ,Ast_Acct_Agt_Id                         --资产账户协议编号"
+    },
+    {
+      "line": 356,
+      "text": "     ,Ast_Acct_Agt_Modifr                     --资产账户协议修饰符"
+    },
+    {
+      "line": 357,
+      "text": "     ,Scr_Acct_Agt_Id                         --证券账户协议编号"
+    },
+    {
+      "line": 358,
+      "text": "     ,Scr_Acct_Agt_Modifr                     --证券账户协议修饰符"
+    },
+    {
+      "line": 359,
+      "text": "     ,Brp_Comp_Type_Cd                        --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 360,
+      "text": "     ,Brp_Comp_Stat_Cd                        --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 361,
+      "text": "     ,Exch_Type_Cd                            --市场代码"
+    },
+    {
+      "line": 362,
+      "text": "     ,Prd_Id                                  --产品编号"
+    },
+    {
+      "line": 363,
+      "text": "     ,Scr_Cd                                  --证券代码"
+    },
+    {
+      "line": 364,
+      "text": "     ,Buy_Sell_Dir_Cd                         --买卖方向代码"
+    },
+    {
+      "line": 365,
+      "text": "     ,Entr_Date                               --委托日期"
+    },
+    {
+      "line": 366,
+      "text": "     ,Entr_Vol                                --委托数量"
+    },
+    {
+      "line": 367,
+      "text": "     ,Entr_Amt                                --委托金额"
+    },
+    {
+      "line": 368,
+      "text": "     ,Bk_Amt                                  --购回金额"
+    },
+    {
+      "line": 369,
+      "text": "     ,Bk_Date                                 --转入日期"
+    },
+    {
+      "line": 370,
+      "text": "     ,Real_Bk_Amt                             --实际购回金额"
+    },
+    {
+      "line": 371,
+      "text": "     ,Real_Bk_Date                            --实际购回日期"
+    },
+    {
+      "line": 372,
+      "text": "     ,Real_Bk_Rate                            --实际购回利率"
+    },
+    {
+      "line": 373,
+      "text": "     ,Exp_Ror                                 --到期年收益率"
+    },
+    {
+      "line": 374,
+      "text": "     ,Covt_Ratio                              --折算率系数"
+    },
+    {
+      "line": 375,
+      "text": "     ,Ori_Rep_Id                              --原申报序号"
+    },
+    {
+      "line": 376,
+      "text": "     ,Agcy_Id                                 --销售商代码"
+    },
+    {
+      "line": 377,
+      "text": "     ,Trdr_Id                                 --交易员编号"
+    },
+    {
+      "line": 378,
+      "text": "     ,Cutp_Seat_No                            --对方席位号"
+    },
+    {
+      "line": 379,
+      "text": "     ,Cutp_Agcy                               --对方销售商"
+    },
+    {
+      "line": 380,
+      "text": "     ,Cutp_Trdr                               --对方交易员"
+    },
+    {
+      "line": 381,
+      "text": "     ,Cutp_Agcy_Name                          --对方销售商名称"
+    },
+    {
+      "line": 382,
+      "text": "     ,Plge_Name                               --质权人名称"
+    },
+    {
+      "line": 383,
+      "text": "     ,Join_Pos_Str                            --关联定位串"
+    },
+    {
+      "line": 384,
+      "text": "     ,Join_Date                               --关联日期"
+    },
+    {
+      "line": 385,
+      "text": "     ,Brp_Ivst_Name                           --发起方投资者账户名称"
+    },
+    {
+      "line": 386,
+      "text": "     ,Trd_Date                                --交易日期"
+    },
+    {
+      "line": 387,
+      "text": "     ,Clr_Date                                --清算日期"
+    },
+    {
+      "line": 388,
+      "text": "     ,Pos_Str                                 --定位串"
+    },
+    {
+      "line": 389,
+      "text": "     ,Remark                                  --备注"
+    },
+    {
+      "line": 390,
+      "text": "     ,'0'                    AS DEL_FLAG      --删除标志"
+    },
+    {
+      "line": 391,
+      "text": "     ,''                     AS DEL_DATE      --删除日期"
+    },
+    {
+      "line": 392,
+      "text": "     ,DATA_SRC_CD                             --数据来源代码"
+    },
+    {
+      "line": 393,
+      "text": "     ,TASK_NAME                               --任务名"
+    },
+    {
+      "line": 394,
+      "text": "     ,DATA_ETL_DATE                           --数据加载日期"
+    },
+    {
+      "line": 395,
+      "text": "     ,DATA_UPT_DATE                           --数据更新日期"
+    },
+    {
+      "line": 396,
+      "text": "     ,DATA_TIME                               --数据时间"
+    },
+    {
+      "line": 397,
+      "text": "     ,SRC_TBL                                 --源表"
+    },
+    {
+      "line": 398,
+      "text": "     ,'${data_day_str}'   AS BUSI_DATE   --业务日期"
+    },
+    {
+      "line": 399,
+      "text": "FROM TEMP.T03_BRP_COMP_INFO_RCC028_MID WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 400,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 401,
+      "text": "SELECT"
+    },
+    {
+      "line": 402,
+      "text": "      Agt_Id1                AS Agt_Id                    --协议编号"
+    },
+    {
+      "line": 403,
+      "text": "     ,Agt_Modifr1            AS Agt_Modifr                --协议修饰符"
+    },
+    {
+      "line": 404,
+      "text": "     ,Bel_Inr_Org_Id1        AS Bel_Inr_Org_Id            --所属内部机构编号"
+    },
+    {
+      "line": 405,
+      "text": "     ,Agt_Holder1            AS Agt_Holder                --协议持有人编号"
+    },
+    {
+      "line": 406,
+      "text": "     ,Rela_Comp_Agt_Id1      AS Rela_Comp_Agt_Id          --关联合约协议编号"
+    },
+    {
+      "line": 407,
+      "text": "     ,Rela_Comp_Agt_Modifr1  AS Rela_Comp_Agt_Modifr      --关联合约协议修饰符"
+    },
+    {
+      "line": 408,
+      "text": "     ,Ast_Acct_Agt_Id1       AS Ast_Acct_Agt_Id           --资产账户协议编号"
+    },
+    {
+      "line": 409,
+      "text": "     ,Ast_Acct_Agt_Modifr1   AS Ast_Acct_Agt_Modifr       --资产账户协议修饰符"
+    },
+    {
+      "line": 410,
+      "text": "     ,Scr_Acct_Agt_Id1       AS Scr_Acct_Agt_Id           --证券账户协议编号"
+    },
+    {
+      "line": 411,
+      "text": "     ,Scr_Acct_Agt_Modifr1   AS Scr_Acct_Agt_Modifr       --证券账户协议修饰符"
+    },
+    {
+      "line": 412,
+      "text": "     ,Brp_Comp_Type_Cd1      AS Brp_Comp_Type_Cd          --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 413,
+      "text": "     ,Brp_Comp_Stat_Cd1      AS Brp_Comp_Stat_Cd          --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 414,
+      "text": "     ,Exch_Type_Cd1          AS Exch_Type_Cd              --市场代码"
+    },
+    {
+      "line": 415,
+      "text": "     ,Prd_Id1                AS Prd_Id                    --产品编号"
+    },
+    {
+      "line": 416,
+      "text": "     ,Scr_Cd1                AS Scr_Cd                    --证券代码"
+    },
+    {
+      "line": 417,
+      "text": "     ,Buy_Sell_Dir_Cd1       AS Buy_Sell_Dir_Cd           --买卖方向代码"
+    },
+    {
+      "line": 418,
+      "text": "     ,Entr_Date1             AS Entr_Date                 --委托日期"
+    },
+    {
+      "line": 419,
+      "text": "     ,Entr_Vol1              AS Entr_Vol                  --委托数量"
+    },
+    {
+      "line": 420,
+      "text": "     ,Entr_Amt1              AS Entr_Amt                  --委托金额"
+    },
+    {
+      "line": 421,
+      "text": "     ,Bk_Amt1                AS Bk_Amt                    --购回金额"
+    },
+    {
+      "line": 422,
+      "text": "     ,Bk_Date1               AS Bk_Date                   --转入日期"
+    },
+    {
+      "line": 423,
+      "text": "     ,Real_Bk_Amt1           AS Real_Bk_Amt               --实际购回金额"
+    },
+    {
+      "line": 424,
+      "text": "     ,Real_Bk_Date1          AS Real_Bk_Date              --实际购回日期"
+    },
+    {
+      "line": 425,
+      "text": "     ,Real_Bk_Rate1          AS Real_Bk_Rate              --实际购回利率"
+    },
+    {
+      "line": 426,
+      "text": "     ,Exp_Ror1               AS Exp_Ror                   --到期年收益率"
+    },
+    {
+      "line": 427,
+      "text": "     ,Covt_Ratio1            AS Covt_Ratio                --折算率系数"
+    },
+    {
+      "line": 428,
+      "text": "     ,Ori_Rep_Id1            AS Ori_Rep_Id                --原申报序号"
+    },
+    {
+      "line": 429,
+      "text": "     ,Agcy_Id1               AS Agcy_Id                   --销售商代码"
+    },
+    {
+      "line": 430,
+      "text": "     ,Trdr_Id1               AS Trdr_Id                   --交易员编号"
+    },
+    {
+      "line": 431,
+      "text": "     ,Cutp_Seat_No1          AS Cutp_Seat_No              --对方席位号"
+    },
+    {
+      "line": 432,
+      "text": "     ,Cutp_Agcy1             AS Cutp_Agcy                 --对方销售商"
+    },
+    {
+      "line": 433,
+      "text": "     ,Cutp_Trdr1             AS Cutp_Trdr                 --对方交易员"
+    },
+    {
+      "line": 434,
+      "text": "     ,Cutp_Agcy_Name1        AS Cutp_Agcy_Name            --对方销售商名称"
+    },
+    {
+      "line": 435,
+      "text": "     ,Plge_Name1             AS Plge_Name                 --质权人名称"
+    },
+    {
+      "line": 436,
+      "text": "     ,Join_Pos_Str1          AS Join_Pos_Str              --关联定位串"
+    },
+    {
+      "line": 437,
+      "text": "     ,Join_Date1             AS Join_Date                 --关联日期"
+    },
+    {
+      "line": 438,
+      "text": "     ,Brp_Ivst_Name1         AS Brp_Ivst_Name             --发起方投资者账户名称"
+    },
+    {
+      "line": 439,
+      "text": "     ,Trd_Date1              AS Trd_Date                  --交易日期"
+    },
+    {
+      "line": 440,
+      "text": "     ,Clr_Date1              AS Clr_Date                  --清算日期"
+    },
+    {
+      "line": 441,
+      "text": "     ,Pos_Str1               AS Pos_Str                   --定位串"
+    },
+    {
+      "line": 442,
+      "text": "     ,Remark1                AS Remark                    --备注"
+    },
+    {
+      "line": 443,
+      "text": "     ,'0'                    AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 444,
+      "text": "     ,''                     AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 445,
+      "text": "     ,DATA_SRC_CD1           AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 446,
+      "text": "     ,TASK_NAME1             AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 447,
+      "text": "     ,DATA_ETL_DATE          AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 448,
+      "text": "     ,DATA_UPT_DATE1         AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 449,
+      "text": "     ,'${data_today}'   AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 450,
+      "text": "     ,SRC_TBL1               AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 451,
+      "text": "     ,'${data_day_str}' AS BUSI_DATE                 --业务日期"
+    },
+    {
+      "line": 452,
+      "text": "FROM TEMP.T03_BRP_COMP_INFO_RCC028_MID WHERE DATA_TYPE='U'           --有变更的数据取变更的值"
+    },
+    {
+      "line": 453,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 454,
+      "text": "SELECT"
+    },
+    {
+      "line": 455,
+      "text": "      Agt_Id1                AS Agt_Id                    --协议编号"
+    },
+    {
+      "line": 456,
+      "text": "     ,Agt_Modifr1            AS Agt_Modifr                --协议修饰符"
+    },
+    {
+      "line": 457,
+      "text": "     ,Bel_Inr_Org_Id1        AS Bel_Inr_Org_Id            --所属内部机构编号"
+    },
+    {
+      "line": 458,
+      "text": "     ,Agt_Holder1            AS Agt_Holder                --协议持有人编号"
+    },
+    {
+      "line": 459,
+      "text": "     ,Rela_Comp_Agt_Id1      AS Rela_Comp_Agt_Id          --关联合约协议编号"
+    },
+    {
+      "line": 460,
+      "text": "     ,Rela_Comp_Agt_Modifr1  AS Rela_Comp_Agt_Modifr      --关联合约协议修饰符"
+    },
+    {
+      "line": 461,
+      "text": "     ,Ast_Acct_Agt_Id1       AS Ast_Acct_Agt_Id           --资产账户协议编号"
+    },
+    {
+      "line": 462,
+      "text": "     ,Ast_Acct_Agt_Modifr1   AS Ast_Acct_Agt_Modifr       --资产账户协议修饰符"
+    },
+    {
+      "line": 463,
+      "text": "     ,Scr_Acct_Agt_Id1       AS Scr_Acct_Agt_Id           --证券账户协议编号"
+    },
+    {
+      "line": 464,
+      "text": "     ,Scr_Acct_Agt_Modifr1   AS Scr_Acct_Agt_Modifr       --证券账户协议修饰符"
+    },
+    {
+      "line": 465,
+      "text": "     ,Brp_Comp_Type_Cd1      AS Brp_Comp_Type_Cd          --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 466,
+      "text": "     ,Brp_Comp_Stat_Cd1      AS Brp_Comp_Stat_Cd          --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 467,
+      "text": "     ,Exch_Type_Cd1          AS Exch_Type_Cd              --市场代码"
+    },
+    {
+      "line": 468,
+      "text": "     ,Prd_Id1                AS Prd_Id                    --产品编号"
+    },
+    {
+      "line": 469,
+      "text": "     ,Scr_Cd1                AS Scr_Cd                    --证券代码"
+    },
+    {
+      "line": 470,
+      "text": "     ,Buy_Sell_Dir_Cd1       AS Buy_Sell_Dir_Cd           --买卖方向代码"
+    },
+    {
+      "line": 471,
+      "text": "     ,Entr_Date1             AS Entr_Date                 --委托日期"
+    },
+    {
+      "line": 472,
+      "text": "     ,Entr_Vol1              AS Entr_Vol                  --委托数量"
+    },
+    {
+      "line": 473,
+      "text": "     ,Entr_Amt1              AS Entr_Amt                  --委托金额"
+    },
+    {
+      "line": 474,
+      "text": "     ,Bk_Amt1                AS Bk_Amt                    --购回金额"
+    },
+    {
+      "line": 475,
+      "text": "     ,Bk_Date1               AS Bk_Date                   --转入日期"
+    },
+    {
+      "line": 476,
+      "text": "     ,Real_Bk_Amt1           AS Real_Bk_Amt               --实际购回金额"
+    },
+    {
+      "line": 477,
+      "text": "     ,Real_Bk_Date1          AS Real_Bk_Date              --实际购回日期"
+    },
+    {
+      "line": 478,
+      "text": "     ,Real_Bk_Rate1          AS Real_Bk_Rate              --实际购回利率"
+    },
+    {
+      "line": 479,
+      "text": "     ,Exp_Ror1               AS Exp_Ror                   --到期年收益率"
+    },
+    {
+      "line": 480,
+      "text": "     ,Covt_Ratio1            AS Covt_Ratio                --折算率系数"
+    },
+    {
+      "line": 481,
+      "text": "     ,Ori_Rep_Id1            AS Ori_Rep_Id                --原申报序号"
+    },
+    {
+      "line": 482,
+      "text": "     ,Agcy_Id1               AS Agcy_Id                   --销售商代码"
+    },
+    {
+      "line": 483,
+      "text": "     ,Trdr_Id1               AS Trdr_Id                   --交易员编号"
+    },
+    {
+      "line": 484,
+      "text": "     ,Cutp_Seat_No1          AS Cutp_Seat_No              --对方席位号"
+    },
+    {
+      "line": 485,
+      "text": "     ,Cutp_Agcy1             AS Cutp_Agcy                 --对方销售商"
+    },
+    {
+      "line": 486,
+      "text": "     ,Cutp_Trdr1             AS Cutp_Trdr                 --对方交易员"
+    },
+    {
+      "line": 487,
+      "text": "     ,Cutp_Agcy_Name1        AS Cutp_Agcy_Name            --对方销售商名称"
+    },
+    {
+      "line": 488,
+      "text": "     ,Plge_Name1             AS Plge_Name                 --质权人名称"
+    },
+    {
+      "line": 489,
+      "text": "     ,Join_Pos_Str1          AS Join_Pos_Str              --关联定位串"
+    },
+    {
+      "line": 490,
+      "text": "     ,Join_Date1             AS Join_Date                 --关联日期"
+    },
+    {
+      "line": 491,
+      "text": "     ,Brp_Ivst_Name1         AS Brp_Ivst_Name             --发起方投资者账户名称"
+    },
+    {
+      "line": 492,
+      "text": "     ,Trd_Date1              AS Trd_Date                  --交易日期"
+    },
+    {
+      "line": 493,
+      "text": "     ,Clr_Date1              AS Clr_Date                  --清算日期"
+    },
+    {
+      "line": 494,
+      "text": "     ,Pos_Str1               AS Pos_Str                   --定位串"
+    },
+    {
+      "line": 495,
+      "text": "     ,Remark1                AS Remark                    --备注"
+    },
+    {
+      "line": 496,
+      "text": "     ,'0'                    AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 497,
+      "text": "     ,''                     AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 498,
+      "text": "     ,DATA_SRC_CD1           AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 499,
+      "text": "     ,TASK_NAME1             AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 500,
+      "text": "     ,DATA_ETL_DATE1         AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 501,
+      "text": "     ,DATA_UPT_DATE1         AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 502,
+      "text": "     ,'${data_today}'   AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 503,
+      "text": "     ,SRC_TBL1               AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 504,
+      "text": "     ,'${data_day_str}' AS BUSI_DATE                 --业务日期"
+    },
+    {
+      "line": 505,
+      "text": "FROM TEMP.T03_BRP_COMP_INFO_RCC028_MID WHERE DATA_TYPE='I' --插入新增的数据"
+    },
+    {
+      "line": 506,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 507,
+      "text": "SELECT"
+    },
+    {
+      "line": 508,
+      "text": "      Agt_Id                                  --协议编号"
+    },
+    {
+      "line": 509,
+      "text": "     ,Agt_Modifr                              --协议修饰符"
+    },
+    {
+      "line": 510,
+      "text": "     ,Bel_Inr_Org_Id                          --所属内部机构编号"
+    },
+    {
+      "line": 511,
+      "text": "     ,Agt_Holder                              --协议持有人编号"
+    },
+    {
+      "line": 512,
+      "text": "     ,Rela_Comp_Agt_Id                        --关联合约协议编号"
+    },
+    {
+      "line": 513,
+      "text": "     ,Rela_Comp_Agt_Modifr                    --关联合约协议修饰符"
+    },
+    {
+      "line": 514,
+      "text": "     ,Ast_Acct_Agt_Id                         --资产账户协议编号"
+    },
+    {
+      "line": 515,
+      "text": "     ,Ast_Acct_Agt_Modifr                     --资产账户协议修饰符"
+    },
+    {
+      "line": 516,
+      "text": "     ,Scr_Acct_Agt_Id                         --证券账户协议编号"
+    },
+    {
+      "line": 517,
+      "text": "     ,Scr_Acct_Agt_Modifr                     --证券账户协议修饰符"
+    },
+    {
+      "line": 518,
+      "text": "     ,Brp_Comp_Type_Cd                        --债券质押协议回购合约类型代码"
+    },
+    {
+      "line": 519,
+      "text": "     ,Brp_Comp_Stat_Cd                        --债券质押协议回购合约状态代码"
+    },
+    {
+      "line": 520,
+      "text": "     ,Exch_Type_Cd                            --市场代码"
+    },
+    {
+      "line": 521,
+      "text": "     ,Prd_Id                                  --产品编号"
+    },
+    {
+      "line": 522,
+      "text": "     ,Scr_Cd                                  --证券代码"
+    },
+    {
+      "line": 523,
+      "text": "     ,Buy_Sell_Dir_Cd                         --买卖方向代码"
+    },
+    {
+      "line": 524,
+      "text": "     ,Entr_Date                               --委托日期"
+    },
+    {
+      "line": 525,
+      "text": "     ,Entr_Vol                                --委托数量"
+    },
+    {
+      "line": 526,
+      "text": "     ,Entr_Amt                                --委托金额"
+    },
+    {
+      "line": 527,
+      "text": "     ,Bk_Amt                                  --购回金额"
+    },
+    {
+      "line": 528,
+      "text": "     ,Bk_Date                                 --转入日期"
+    },
+    {
+      "line": 529,
+      "text": "     ,Real_Bk_Amt                             --实际购回金额"
+    },
+    {
+      "line": 530,
+      "text": "     ,Real_Bk_Date                            --实际购回日期"
+    },
+    {
+      "line": 531,
+      "text": "     ,Real_Bk_Rate                            --实际购回利率"
+    },
+    {
+      "line": 532,
+      "text": "     ,Exp_Ror                                 --到期年收益率"
+    },
+    {
+      "line": 533,
+      "text": "     ,Covt_Ratio                              --折算率系数"
+    },
+    {
+      "line": 534,
+      "text": "     ,Ori_Rep_Id                              --原申报序号"
+    },
+    {
+      "line": 535,
+      "text": "     ,Agcy_Id                                 --销售商代码"
+    },
+    {
+      "line": 536,
+      "text": "     ,Trdr_Id                                 --交易员编号"
+    },
+    {
+      "line": 537,
+      "text": "     ,Cutp_Seat_No                            --对方席位号"
+    },
+    {
+      "line": 538,
+      "text": "     ,Cutp_Agcy                               --对方销售商"
+    },
+    {
+      "line": 539,
+      "text": "     ,Cutp_Trdr                               --对方交易员"
+    },
+    {
+      "line": 540,
+      "text": "     ,Cutp_Agcy_Name                          --对方销售商名称"
+    },
+    {
+      "line": 541,
+      "text": "     ,Plge_Name                               --质权人名称"
+    },
+    {
+      "line": 542,
+      "text": "     ,Join_Pos_Str                            --关联定位串"
+    },
+    {
+      "line": 543,
+      "text": "     ,Join_Date                               --关联日期"
+    },
+    {
+      "line": 544,
+      "text": "     ,Brp_Ivst_Name                           --发起方投资者账户名称"
+    },
+    {
+      "line": 545,
+      "text": "     ,Trd_Date                                --交易日期"
+    },
+    {
+      "line": 546,
+      "text": "     ,Clr_Date                                --清算日期"
+    },
+    {
+      "line": 547,
+      "text": "     ,Pos_Str                                 --定位串"
+    },
+    {
+      "line": 548,
+      "text": "     ,Remark                                  --备注"
+    },
+    {
+      "line": 549,
+      "text": "     ,'1' DEL_FLAG                            --删除标志"
+    },
+    {
+      "line": 550,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 551,
+      "text": "           THEN DEL_DATE"
+    },
+    {
+      "line": 552,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 553,
+      "text": "           END                AS   DEL_DATE --删除日期"
+    },
+    {
+      "line": 554,
+      "text": "     ,DATA_SRC_CD                             --数据来源代码"
+    },
+    {
+      "line": 555,
+      "text": "     ,TASK_NAME                               --任务名"
+    },
+    {
+      "line": 556,
+      "text": "     ,DATA_ETL_DATE                           --数据加载日期"
+    },
+    {
+      "line": 557,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 558,
+      "text": "           THEN DATA_UPT_DATE"
+    },
+    {
+      "line": 559,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 560,
+      "text": "           END               AS DATA_UPT_DATE --数据更新日期"
+    },
+    {
+      "line": 561,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 562,
+      "text": "           THEN DATA_TIME"
+    },
+    {
+      "line": 563,
+      "text": "           ELSE '${data_today}'"
+    },
+    {
+      "line": 564,
+      "text": "           END               AS DATA_TIME     --数据时间"
+    },
+    {
+      "line": 565,
+      "text": "     ,SRC_TBL                                 --源表"
+    },
+    {
+      "line": 566,
+      "text": "     ,'${data_day_str}' AS BUSI_DATE     --业务日期"
+    },
+    {
+      "line": 567,
+      "text": "FROM TEMP.T03_BRP_COMP_INFO_RCC028_MID WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 568,
+      "text": ";"
+    },
+    {
+      "line": 569,
+      "text": ""
+    }
+  ]
+}

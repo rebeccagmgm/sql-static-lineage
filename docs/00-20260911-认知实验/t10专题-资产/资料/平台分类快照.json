@@ -1,0 +1,1253 @@
+{
+  "queriedAt": "2026-09-14T02:43:55.089Z",
+  "source": "outputs/table-catalog-union-20260911/catalog.sqlite",
+  "run": [
+    {
+      "status": "PARTIAL",
+      "started_at": "2026-09-11T13:50:31.932Z",
+      "updated_at": "2026-09-12T00:10:25.168Z"
+    }
+  ],
+  "assets": [
+    {
+      "guid": "92560ed9-5626-4e72-b50e-0da61fc1edc5",
+      "name": "t10_balancesheet_zg",
+      "database": "pdata_ams",
+      "qualifiedName": "pdata_ams.t10_balancesheet_zg@gfhive",
+      "comment": "产品资产负债表",
+      "metadataUpdatedAt": "2026-09-09 03:26:59",
+      "firstSeen": "2026-09-11T15:49:33.055Z",
+      "lastSeen": "2026-09-11T15:49:33.055Z",
+      "classifications": null,
+      "fields": [
+        {
+          "comment": "代理主键",
+          "name": "sk_primary_key"
+        },
+        {
+          "comment": "产品代理外键",
+          "name": "sk_f_prod"
+        },
+        {
+          "comment": "产品代码",
+          "name": "prod_code"
+        },
+        {
+          "comment": "货币单位",
+          "name": "curr"
+        },
+        {
+          "comment": "交易日期",
+          "name": "trade_dt"
+        },
+        {
+          "comment": "银行存款",
+          "name": "bank_deposits"
+        },
+        {
+          "comment": "应收结算备付金",
+          "name": "receivable_s_cover"
+        },
+        {
+          "comment": "存出保证金",
+          "name": "deposit_deposit"
+        },
+        {
+          "comment": "持有至到期投资",
+          "name": "held_to_maturity"
+        },
+        {
+          "comment": "交易性金融资产市值合计",
+          "name": "total_votf_ass"
+        },
+        {
+          "comment": "股票投资市值",
+          "name": "stock_investment_val"
+        },
+        {
+          "comment": "基金投资",
+          "name": "fund_investment_val_in_total"
+        },
+        {
+          "comment": "债券投资市值",
+          "name": "bond_invest_value"
+        },
+        {
+          "comment": "资产支持证券投资市值",
+          "name": "asset_invest_secur_value"
+        },
+        {
+          "comment": "贵金属投资",
+          "name": "actuals_invest_value"
+        },
+        {
+          "comment": "衍生金融资产",
+          "name": "dfa_value"
+        },
+        {
+          "comment": "买入返售金融资产(元)",
+          "name": "buying_btsof_ass"
+        },
+        {
+          "comment": "应收证券清算款",
+          "name": "secu_clear_acct_receivable"
+        },
+        {
+          "comment": "应收利息",
+          "name": "int_amt"
+        },
+        {
+          "comment": "应收股利",
+          "name": "dividends_receivable"
+        },
+        {
+          "comment": "应收申购款",
+          "name": "subscription_p_receivable"
+        },
+        {
+          "comment": "递延所得税资产",
+          "name": "defered_tax_ass"
+        },
+        {
+          "comment": "其他资产合计",
+          "name": "other_ass_total"
+        },
+        {
+          "comment": "资产总值（市值）",
+          "name": "total_ass_mkt_val"
+        },
+        {
+          "comment": "短期借款",
+          "name": "short_term_loan"
+        },
+        {
+          "comment": "交易性金融负债",
+          "name": "trans_f_liabilities"
+        },
+        {
+          "comment": "衍生金融负债",
+          "name": "dervative_f_liabilities"
+        },
+        {
+          "comment": "卖出回购金融资产款",
+          "name": "financial_asf_repurchase"
+        },
+        {
+          "comment": "应付证券清算款",
+          "name": "secu_clear_acct_pay"
+        },
+        {
+          "comment": "应付赎回款",
+          "name": "cope_redemption_pay"
+        },
+        {
+          "comment": "应付管理人报酬",
+          "name": "payable_supervisor"
+        },
+        {
+          "comment": "应付托管费",
+          "name": "managed_payble_fee"
+        },
+        {
+          "comment": "应付销售服务费",
+          "name": "sales_sp_fee"
+        },
+        {
+          "comment": "应付交易费用合计",
+          "name": "cope_tc_combined"
+        },
+        {
+          "comment": "应交税费",
+          "name": "should_pta_fee"
+        },
+        {
+          "comment": "应付利息",
+          "name": "interest_payable"
+        },
+        {
+          "comment": "应付利润",
+          "name": "profit_payable"
+        },
+        {
+          "comment": "递延所得税负债",
+          "name": "deferred_tax_liabilty"
+        },
+        {
+          "comment": "其他负债",
+          "name": "other_liabilities"
+        },
+        {
+          "comment": "负债合计",
+          "name": "liability_combbined"
+        },
+        {
+          "comment": "本期末实收基金",
+          "name": "final_amt_fund"
+        },
+        {
+          "comment": "未分配利润",
+          "name": "no_profit"
+        },
+        {
+          "comment": "所有者权益合计（市值）",
+          "name": "total_owners_mkt_equity"
+        },
+        {
+          "comment": "负债和所有者权益合计(市值)",
+          "name": "total_la_capital"
+        },
+        {
+          "comment": "权证/牛熊证投资市值合计",
+          "name": "warrant_invest_value"
+        },
+        {
+          "comment": "其他衍生金融资产市值",
+          "name": "other_dfa_val"
+        },
+        {
+          "comment": "股票投资成本",
+          "name": "stock_investment_cost"
+        },
+        {
+          "comment": "债券投资成本",
+          "name": "bond_invest_cost"
+        },
+        {
+          "comment": "资产支持证券投资成本",
+          "name": "asset_invest_cost_value"
+        },
+        {
+          "comment": "基金投资成本合计(元)",
+          "name": "fund_investment_cost_total"
+        },
+        {
+          "comment": "其他衍生金融资产成本",
+          "name": "other_dfa_cost"
+        },
+        {
+          "comment": "其他应收款",
+          "name": "other_receivables"
+        },
+        {
+          "comment": "资产总值（成本）",
+          "name": "total_asse_cost"
+        },
+        {
+          "comment": "应付赎回费",
+          "name": "cope_redemption_fee"
+        },
+        {
+          "comment": "其他应付款",
+          "name": "other_payable"
+        },
+        {
+          "comment": "所有者权益合计（成本）",
+          "name": "total_owners_equity"
+        },
+        {
+          "comment": "负债和所有者权益合计(成本)",
+          "name": "total_la_capital_cost"
+        },
+        {
+          "comment": "非标产品投资市值",
+          "name": "nsd_invest_value"
+        },
+        {
+          "comment": "非标产品投资成本",
+          "name": "nsd_invest_cost"
+        },
+        {
+          "comment": "系统来源",
+          "name": "system_source"
+        },
+        {
+          "comment": "内部使用",
+          "name": "syntimestamp"
+        },
+        {
+          "comment": "创建日期",
+          "name": "create_dt"
+        },
+        {
+          "comment": "更新日期",
+          "name": "update_dt"
+        }
+      ]
+    },
+    {
+      "guid": "4dbebefa-ca16-4275-b084-93523c32cef0",
+      "name": "t10_bond_valution",
+      "database": "pdata_ams",
+      "qualifiedName": "pdata_ams.t10_bond_valution@gfhive",
+      "comment": "债券估值表",
+      "metadataUpdatedAt": "2026-05-21 19:36:37",
+      "firstSeen": "2026-09-11T15:49:33.055Z",
+      "lastSeen": "2026-09-11T15:49:33.055Z",
+      "classifications": null,
+      "fields": [
+        {
+          "comment": "交易日期",
+          "name": "trade_dt"
+        },
+        {
+          "comment": "债券市场代码代理外键",
+          "name": "sk_f_bmpk_id"
+        },
+        {
+          "comment": "来源系统证券代码",
+          "name": "src_secu_code"
+        },
+        {
+          "comment": "债券名称",
+          "name": "bond_name"
+        },
+        {
+          "comment": "债券类型",
+          "name": "bond_type"
+        },
+        {
+          "comment": "剩余年限",
+          "name": "remaining_life"
+        },
+        {
+          "comment": "收益率",
+          "name": "ytm"
+        },
+        {
+          "comment": "收益率曲线代码",
+          "name": "yield_curve_code"
+        },
+        {
+          "comment": "收益率曲线名称",
+          "name": "yield_curve_name"
+        },
+        {
+          "comment": "久期",
+          "name": "duration"
+        },
+        {
+          "comment": "修正久期",
+          "name": "correct_duration"
+        },
+        {
+          "comment": "凸性",
+          "name": "convexity"
+        },
+        {
+          "comment": "点差",
+          "name": "spread"
+        },
+        {
+          "comment": "利差久期",
+          "name": "spread_duration"
+        },
+        {
+          "comment": "利率凸性",
+          "name": "interest_rate_convexity"
+        },
+        {
+          "comment": "利差凸性",
+          "name": "spread_convexity"
+        },
+        {
+          "comment": "基点价值",
+          "name": "base_point_val"
+        },
+        {
+          "comment": "可流通存量",
+          "name": "negotiable_stock"
+        },
+        {
+          "comment": "利率久期",
+          "name": "interest_rate_duration"
+        },
+        {
+          "comment": "日终全价",
+          "name": "endday_full_price"
+        },
+        {
+          "comment": "日终应计利息",
+          "name": "endday_accrued_interest"
+        },
+        {
+          "comment": "剩余本金",
+          "name": "residual_principal"
+        },
+        {
+          "comment": "点差收益率",
+          "name": "spread_yield"
+        },
+        {
+          "comment": "数据来源",
+          "name": "data_source"
+        },
+        {
+          "comment": "内部使用",
+          "name": "syntimestamp"
+        },
+        {
+          "comment": "创建日期",
+          "name": "create_dt"
+        },
+        {
+          "comment": "更新日期",
+          "name": "update_dt"
+        },
+        {
+          "comment": "系统来源",
+          "name": "system_source"
+        },
+        {
+          "comment": "净价",
+          "name": "net_price"
+        },
+        {
+          "comment": "全价",
+          "name": "all_price"
+        },
+        {
+          "comment": "应计利息",
+          "name": "summary_accrued_int"
+        }
+      ]
+    },
+    {
+      "guid": "d9242cfc-9626-4703-b359-a417b33becc9",
+      "name": "t10_ast_ast_book_rela_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_ast_book_rela_h@gfhive",
+      "comment": "资产资产账簿关系历史",
+      "metadataUpdatedAt": "2026-08-12 09:02:15",
+      "firstSeen": "2026-09-11T14:12:42.595Z",
+      "lastSeen": "2026-09-11T15:00:02.577Z",
+      "classifications": [
+        "分类_按元数据分类_交易_结算管理_会计核算信息",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产资产账簿关系类型代码",
+          "name": "ast_ast_book_rela_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "资产账簿编号",
+          "name": "ast_book_id"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "9a0db8a2-54db-428e-8997-28fb574dd66c",
+      "name": "t10_ast_clas_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_clas_h@gfhive",
+      "comment": "资产分类历史",
+      "metadataUpdatedAt": "2026-07-10 17:05:15",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:42.158Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产分类类型代码",
+          "name": "ast_clas_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "资产分类代码",
+          "name": "ast_clas_cd"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "7707ab28-a378-4149-96e7-8905fb71a566",
+      "name": "t10_ast_emp_rela_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_emp_rela_h@gfhive",
+      "comment": "资产员工关系历史",
+      "metadataUpdatedAt": "2026-08-12 09:05:21",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T15:00:02.577Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产员工关系类型代码",
+          "name": "ast_emp_rela_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "员工编号",
+          "name": "emp_id"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "03ac7ac0-9550-4612-8d29-09c8cf99c337",
+      "name": "t10_ast_idty_info_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_idty_info_h@gfhive",
+      "comment": "资产鉴别信息历史",
+      "metadataUpdatedAt": "2026-08-12 09:05:33",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:42.158Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "鉴别信息类型代码",
+          "name": "idty_info_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "鉴别信息内容",
+          "name": "idty_info_cont"
+        },
+        {
+          "comment": "鉴别信息地址",
+          "name": "idty_info_addr"
+        },
+        {
+          "comment": "鉴别信息签发地",
+          "name": "idty_info_iss_addr"
+        },
+        {
+          "comment": "鉴别信息签发机构",
+          "name": "idty_info_iss_org"
+        },
+        {
+          "comment": "鉴别信息签发日期",
+          "name": "idty_info_iss_date"
+        },
+        {
+          "comment": "鉴别信息到期日期",
+          "name": "idty_info_exp_date"
+        },
+        {
+          "comment": "鉴别信息年检日期",
+          "name": "idty_info_insp_annu_date"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "412cd66a-6720-4a78-8b86-d4bea4b8864a",
+      "name": "t10_ast_info",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_info@gfhive",
+      "comment": "资产信息",
+      "metadataUpdatedAt": "2026-08-12 09:05:43",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:42.158Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产名称",
+          "name": "ast_name"
+        },
+        {
+          "comment": "资产类别代码",
+          "name": "ast_cate_cd"
+        },
+        {
+          "comment": "资产权属类型代码",
+          "name": "ast_proprt_type_cd"
+        },
+        {
+          "comment": "权属人编号",
+          "name": "proprt_prsn_id"
+        },
+        {
+          "comment": "资产标签",
+          "name": "ast_lbl"
+        },
+        {
+          "comment": "资产类型代码",
+          "name": "ast_type_cd"
+        },
+        {
+          "comment": "资产状态代码",
+          "name": "ast_stat_cd"
+        },
+        {
+          "comment": "资产取得方式代码",
+          "name": "ast_get_method_cd"
+        },
+        {
+          "comment": "资产属性代码",
+          "name": "ast_prop_cd"
+        },
+        {
+          "comment": "主资产标志",
+          "name": "main_ast_flag"
+        },
+        {
+          "comment": "币种代码",
+          "name": "crrc_cd"
+        },
+        {
+          "comment": "有效日期",
+          "name": "vld_date"
+        },
+        {
+          "comment": "到期日期",
+          "name": "exp_date"
+        },
+        {
+          "comment": "入库时间",
+          "name": "stki_time"
+        },
+        {
+          "comment": "入库性质代码",
+          "name": "stki_prop_cd"
+        },
+        {
+          "comment": "资产使用年限",
+          "name": "ast_use_life"
+        },
+        {
+          "comment": "使用开始时间",
+          "name": "use_strt_time"
+        },
+        {
+          "comment": "资产锁定原因代码",
+          "name": "ast_lock_rsn_cd"
+        },
+        {
+          "comment": "折旧标志",
+          "name": "depr_flag"
+        },
+        {
+          "comment": "备注",
+          "name": "remark"
+        },
+        {
+          "comment": "删除标志",
+          "name": "del_flag"
+        },
+        {
+          "comment": "删除日期",
+          "name": "del_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据加载日期",
+          "name": "data_etl_date"
+        },
+        {
+          "comment": "数据更新日期",
+          "name": "data_upt_date"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "280be100-2961-43e7-970e-362e1ed43ac2",
+      "name": "t10_ast_inr_org_rela_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_inr_org_rela_h@gfhive",
+      "comment": "资产内部机构关系历史",
+      "metadataUpdatedAt": "2026-08-12 09:05:55",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:51.609Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产内部机构关系类型代码",
+          "name": "ast_inr_org_rela_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "内部机构编号",
+          "name": "inr_org_id"
+        },
+        {
+          "comment": "内部机构类别代码",
+          "name": "inr_org_cate_cd"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "fcc1b7e8-5d12-4b77-8b5e-7a55ed3d8a57",
+      "name": "t10_ast_lkman_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_lkman_h@gfhive",
+      "comment": "资产重要联系人历史",
+      "metadataUpdatedAt": "2026-08-12 09:06:09",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:42.158Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "联系人类型代码",
+          "name": "lkman_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "联系人简称",
+          "name": "lkman_shor_name"
+        },
+        {
+          "comment": "联系人全称",
+          "name": "lkman_full_name"
+        },
+        {
+          "comment": "联系地址",
+          "name": "cont_addr"
+        },
+        {
+          "comment": "联系邮编",
+          "name": "zip_cd"
+        },
+        {
+          "comment": "联系电话",
+          "name": "cont_phone"
+        },
+        {
+          "comment": "联系手机",
+          "name": "cont_mobile"
+        },
+        {
+          "comment": "联系邮箱",
+          "name": "cont_email"
+        },
+        {
+          "comment": "联系人工作单位名称",
+          "name": "lkman_co_name"
+        },
+        {
+          "comment": "联系人职位名称",
+          "name": "lkman_post_name"
+        },
+        {
+          "comment": "备注",
+          "name": "remark"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "acfd8736-5342-4272-b47f-a3ed8d738636",
+      "name": "t10_ast_plac_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_plac_h@gfhive",
+      "comment": "资产配置历史",
+      "metadataUpdatedAt": "2026-08-12 09:06:17",
+      "firstSeen": "2026-09-11T14:13:51.034Z",
+      "lastSeen": "2026-09-11T15:00:17.843Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "操作系统",
+          "name": "oper_sys"
+        },
+        {
+          "comment": "制造商",
+          "name": "mfr"
+        },
+        {
+          "comment": "型号",
+          "name": "mdl"
+        },
+        {
+          "comment": "数量",
+          "name": "vol"
+        },
+        {
+          "comment": "配置",
+          "name": "plac"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "bfaf7139-9041-4b79-bd22-e35b43aaaa01",
+      "name": "t10_ast_stat_h",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_ast_stat_h@gfhive",
+      "comment": "资产状态历史",
+      "metadataUpdatedAt": "2026-08-12 09:06:27",
+      "firstSeen": "2026-09-11T14:13:51.034Z",
+      "lastSeen": "2026-09-11T15:00:02.577Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "资产编号",
+          "name": "ast_id"
+        },
+        {
+          "comment": "资产状态类型代码",
+          "name": "ast_stat_type_cd"
+        },
+        {
+          "comment": "开始日期",
+          "name": "strt_date"
+        },
+        {
+          "comment": "资产状态代码",
+          "name": "ast_stat_cd"
+        },
+        {
+          "comment": "结束日期",
+          "name": "end_date"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    },
+    {
+      "guid": "ccfb8753-c979-423b-adbe-d5e210e4a0d5",
+      "name": "t10_our_fix_ast_adtnl_info",
+      "database": "pdata_n",
+      "qualifiedName": "pdata_n.t10_our_fix_ast_adtnl_info@gfhive",
+      "comment": "我司固定资产附加信息",
+      "metadataUpdatedAt": "2026-08-12 09:06:39",
+      "firstSeen": "2026-09-11T14:13:45.958Z",
+      "lastSeen": "2026-09-11T14:59:51.609Z",
+      "classifications": [
+        "分类_按元数据分类_其他_综合管理_财务数据",
+        "分级_3",
+        "自定义_资讯_模型表"
+      ],
+      "fields": [
+        {
+          "comment": "固定资产编号",
+          "name": "fix_ast_id"
+        },
+        {
+          "comment": "固定资产源编号",
+          "name": "fix_ast_src_id"
+        },
+        {
+          "comment": "FA资产编号",
+          "name": "fa_ast_id"
+        },
+        {
+          "comment": "资产参考号",
+          "name": "ast_ref_no"
+        },
+        {
+          "comment": "原值",
+          "name": "ori_val"
+        },
+        {
+          "comment": "净值",
+          "name": "net_val"
+        },
+        {
+          "comment": "计算机使用类型代码",
+          "name": "pc_use_type_cd"
+        },
+        {
+          "comment": "资产责任人员工编号",
+          "name": "respon_prsn_emp_id"
+        },
+        {
+          "comment": "资产责任人用户编号",
+          "name": "respon_prsn_user_id"
+        },
+        {
+          "comment": "资产责任人名称",
+          "name": "respon_prsn_name"
+        },
+        {
+          "comment": "使用内部机构编号",
+          "name": "use_dept_inr_org_id"
+        },
+        {
+          "comment": "使用内部机构名称",
+          "name": "use_dept_inr_org_name"
+        },
+        {
+          "comment": "成本承担内部机构编号",
+          "name": "cost_bear_inr_org_id"
+        },
+        {
+          "comment": "成本承担机构段值",
+          "name": "cost_bear_org_seg"
+        },
+        {
+          "comment": "成本承担内部机构名称",
+          "name": "cost_bear_inr_org_name"
+        },
+        {
+          "comment": "需打印标签标志",
+          "name": "req_print_lbl_flag"
+        },
+        {
+          "comment": "已打印标志",
+          "name": "print_flag"
+        },
+        {
+          "comment": "公示标志",
+          "name": "ntce_flag"
+        },
+        {
+          "comment": "采购订单编号",
+          "name": "purch_ord_id"
+        },
+        {
+          "comment": "合同编号",
+          "name": "contr_no"
+        },
+        {
+          "comment": "PO单号",
+          "name": "po_no"
+        },
+        {
+          "comment": "租借期限类型代码",
+          "name": "rent_term_type_cd"
+        },
+        {
+          "comment": "租借开始时间",
+          "name": "rent_strt_time"
+        },
+        {
+          "comment": "租借结束时间",
+          "name": "rent_end_time"
+        },
+        {
+          "comment": "BPM实例编号",
+          "name": "bpm_instc_id"
+        },
+        {
+          "comment": "流程发起用户编号",
+          "name": "proc_lnch_user_id"
+        },
+        {
+          "comment": "流程标题",
+          "name": "proc_title"
+        },
+        {
+          "comment": "需投保标志",
+          "name": "req_insr_flag"
+        },
+        {
+          "comment": "投保单号",
+          "name": "insr_no"
+        },
+        {
+          "comment": "投保起始时间",
+          "name": "insr_begn_time"
+        },
+        {
+          "comment": "投保到期时间",
+          "name": "insr_maty_time"
+        },
+        {
+          "comment": "分摊归属代码",
+          "name": "aprn_bel_cd"
+        },
+        {
+          "comment": "折旧方法",
+          "name": "depr_way"
+        },
+        {
+          "comment": "折旧月份数",
+          "name": "depr_mth_num"
+        },
+        {
+          "comment": "当月折旧金额",
+          "name": "curr_mth_depr_amt"
+        },
+        {
+          "comment": "已提折旧金额",
+          "name": "incrs_depr_amt"
+        },
+        {
+          "comment": "追溯主资产折旧摊销标志",
+          "name": "trc_back_main_ast_depr_amrt_flag"
+        },
+        {
+          "comment": "采购经办人可见标志",
+          "name": "purch_oper_vsb_flag"
+        },
+        {
+          "comment": "信创标志",
+          "name": "itai_flag"
+        },
+        {
+          "comment": "推送共享标志",
+          "name": "push_fsc_flag"
+        },
+        {
+          "comment": "推送云管标志",
+          "name": "push_cloud_flag"
+        },
+        {
+          "comment": "数据来源代码",
+          "name": "data_src_cd"
+        },
+        {
+          "comment": "任务名",
+          "name": "task_name"
+        },
+        {
+          "comment": "数据加载日期",
+          "name": "data_etl_date"
+        },
+        {
+          "comment": "数据更新日期",
+          "name": "data_upt_date"
+        },
+        {
+          "comment": "数据时间",
+          "name": "data_time"
+        },
+        {
+          "comment": "真实源表",
+          "name": "real_src_tbl"
+        }
+      ]
+    }
+  ]
+}

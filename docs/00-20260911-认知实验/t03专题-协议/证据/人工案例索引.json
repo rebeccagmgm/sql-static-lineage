@@ -1,0 +1,170 @@
+[
+  {
+    "task_id": "103929",
+    "observed_at": "2026-09-05T01:06:44.053Z",
+    "payload_sha256": "ccbd482fda0a4795f453bf06cbbc58ea7a8a8433f80e26700d21c8cdbfe0cab1",
+    "line_count": 238,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103930",
+    "observed_at": "2026-09-05T01:06:44.059Z",
+    "payload_sha256": "6873c03909ccb6217be4c5aa783ac389907aa6f1d4710f57f96edfc53175881d",
+    "line_count": 242,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "35362",
+    "observed_at": "2026-09-05T01:06:09.944Z",
+    "payload_sha256": "3d4570024929d1515370196bc8fc659969d756db47c29a9916ecb139a50c8393",
+    "line_count": 355,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "35803",
+    "observed_at": "2026-09-05T01:06:10.365Z",
+    "payload_sha256": "f189de1d92de1a58d0db5630557ceedfe6f0c7091fdffee0ff20f4057d27cbae",
+    "line_count": 400,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "130260",
+    "observed_at": "2026-09-05T01:06:51.776Z",
+    "payload_sha256": "d36fa9fd417054c0dd17551a885ec141c7712f35c3e1d4679a2d5d2ae1124551",
+    "line_count": 504,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "105812",
+    "observed_at": "2026-09-05T01:06:44.974Z",
+    "payload_sha256": "effbe247e80d57fd665a0fe26dc95032d54613336bc7e0799cd429b85de0a839",
+    "line_count": 254,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103935",
+    "observed_at": "2026-09-05T01:06:44.091Z",
+    "payload_sha256": "14dc40ce68a085e99ae9f10c113ae79c2a12df1360ed54873a4cac75a3f3e9ff",
+    "line_count": 233,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103933",
+    "observed_at": "2026-09-05T01:06:44.077Z",
+    "payload_sha256": "9926dde745b9bf363936fdb28bf7a6e93a23c5da972670cf1c89e921b6fc3a05",
+    "line_count": 189,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103614",
+    "observed_at": "2026-09-05T01:06:43.948Z",
+    "payload_sha256": "88778207b17076743f79c15d1e1d0cef2f4c6e023c33f9d20e0f3c9e31dca479",
+    "line_count": 88,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "105395",
+    "observed_at": "2026-09-05T01:06:44.777Z",
+    "payload_sha256": "23dd102ef7ea7053bb2b7af95996b8f47474ed147edbc8d9ada829f8e2b86aad",
+    "line_count": 212,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "105382",
+    "observed_at": "2026-09-05T01:06:44.712Z",
+    "payload_sha256": "09e286547299e0254e3f9a1d1182dd9e616f08662e16f47899ce369501a3348a",
+    "line_count": 85,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "134215",
+    "observed_at": "2026-09-05T01:06:53.708Z",
+    "payload_sha256": "4a201f4704a337c90ca232bb4b054fd27e42fdd004c7f7bff8cb449f53130bd0",
+    "line_count": 78,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103941",
+    "observed_at": "2026-09-05T01:06:44.128Z",
+    "payload_sha256": "af101a13967633b7e627500b6e96223c312e5a7dec6a4b9cddeca59d24f2c8fc",
+    "line_count": 386,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103942",
+    "observed_at": "2026-09-05T01:06:44.136Z",
+    "payload_sha256": "0312206e904e9e0fe1f787a14d80be4c4ccd1747ff74adcac9cc28f3e1c03750",
+    "line_count": 206,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103943",
+    "observed_at": "2026-09-05T01:06:44.143Z",
+    "payload_sha256": "6c2a2139030255fa1d55892560b38ff1ff5189f4b3a4f2ff46d8d7a734afde82",
+    "line_count": 378,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "105072",
+    "observed_at": "2026-09-05T01:06:44.596Z",
+    "payload_sha256": "6a0690599f24912f3a40083e158ba39cdfe7a2945b1a7c8841f75cc866763583",
+    "line_count": 386,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "112119",
+    "observed_at": "2026-09-05T01:06:46.973Z",
+    "payload_sha256": "1550c51979f127622b4349ea68ca04ebfff9fcab67e0021618efccbc1fc7a80d",
+    "line_count": 311,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "107018",
+    "observed_at": "2026-09-05T01:06:45.352Z",
+    "payload_sha256": "a0c86bc88147ea7cec2d3da45e1e699576aba47da39357e1065d982f193bdcc8",
+    "line_count": 257,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "105743",
+    "observed_at": "2026-09-05T01:06:44.879Z",
+    "payload_sha256": "6d1865f7d65470c8da52291df68059eacaa888433356d83269084f8d1371e229",
+    "line_count": 367,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "163771",
+    "observed_at": "2026-09-05T01:07:06.128Z",
+    "payload_sha256": "4e6c481b6b51a1673c3c981ad45fd4be479f4af0868877db349a606dea500281",
+    "line_count": 90,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "103937",
+    "observed_at": "2026-09-05T01:06:44.102Z",
+    "payload_sha256": "7570329d29ee61e14d6715f41b7fb4b587a4e43ff9c0ab0f898f40ec2c2a3da5",
+    "line_count": 197,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "35612",
+    "observed_at": "2026-09-05T01:06:10.110Z",
+    "payload_sha256": "6e66a3b309fb06b79b52fc08694a6b42fa4ee5999cbe93a30f63ead3d6b52e19",
+    "line_count": 783,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "107280",
+    "observed_at": "2026-09-05T01:06:45.410Z",
+    "payload_sha256": "b1cec2fb47225a7d090f7d40984b7a7d43ce3719d65d43a68766982f84445a14",
+    "line_count": 96,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  },
+  {
+    "task_id": "163772",
+    "observed_at": "2026-09-05T01:07:06.135Z",
+    "payload_sha256": "2c4adb4c36b68467501513f9394df6032bfb284af9db2e6a7afe07724430acbe",
+    "line_count": 78,
+    "scope": "代表性投影、身份、连接或维护段；不是整任务运行核验"
+  }
+]

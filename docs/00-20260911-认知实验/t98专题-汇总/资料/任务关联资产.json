@@ -1,0 +1,73 @@
+{
+  "relation_status": "SOURCE_DECLARED_TASK_LINK_NOT_SQL_PROOF",
+  "links": [
+    {
+      "record_id": 315,
+      "asset_kind": "tag_dimension_detail",
+      "asset_id": "tagdim102003",
+      "relation_kind": "markingTaskIds",
+      "task_id": "173295"
+    },
+    {
+      "record_id": 5119,
+      "asset_kind": "tag_dimension",
+      "asset_id": "tagdim102003",
+      "relation_kind": "markingTaskIds",
+      "task_id": "173295"
+    },
+    {
+      "record_id": 57856,
+      "asset_kind": "indicator",
+      "asset_id": "ind2025101794622891",
+      "relation_kind": "horaeTaskId",
+      "task_id": "213997"
+    },
+    {
+      "record_id": 59356,
+      "asset_kind": "indicator",
+      "asset_id": "ind2024102111399128",
+      "relation_kind": "horaeTaskId",
+      "task_id": "175880"
+    },
+    {
+      "record_id": 60185,
+      "asset_kind": "indicator",
+      "asset_id": "ind2025031793868868",
+      "relation_kind": "horaeTaskId",
+      "task_id": "193565"
+    },
+    {
+      "record_id": 64830,
+      "asset_kind": "indicator",
+      "asset_id": "ind2025062485215240",
+      "relation_kind": "horaeTaskId",
+      "task_id": "203772"
+    }
+  ],
+  "indicators": [
+    {
+      "indicator_id": "ind2025101794622891",
+      "name": "外包账套_累计发生额&累计发生数量_股权资产_年末_无备注信息",
+      "definition": "【业务定义】统计外包账套不同科目的累计发生额及累计发生数量历史累计合计项（股权资产相关），按标签划分统计项\n【包含组合】外包账套\n【包含标签】默认、年末私募股权资产负债统计项、年度私募股权现金流量统计项、年度私募股权利润统计项",
+      "status": "ONLINE"
+    },
+    {
+      "indicator_id": "ind2024102111399128",
+      "name": "广发证券&分公司&管理人_收入_金融产品&经营分析_当月_无备注信息",
+      "definition": "财富经纪业务的金融产品收入，用于财富管理部经营分析，主要包括：、各渠道、大公募、大私募、前后端、协会口径、客户层级等细分维度。",
+      "status": "ONLINE"
+    },
+    {
+      "indicator_id": "ind2025031793868868",
+      "name": "客户*产品_线上收入占比_线上理财_当月_无备注信息",
+      "definition": "客户产品层级的线上收入占比",
+      "status": "ONLINE"
+    },
+    {
+      "indicator_id": "ind2025062485215240",
+      "name": "客户*产品_收入_线上运营_当月_无备注信息",
+      "definition": "线上运营的客户产品级别收入，主要包括：前端认申购收入、后端保有收入、线上销售及保有收入等",
+      "status": "DEVELOPING"
+    }
+  ]
+}

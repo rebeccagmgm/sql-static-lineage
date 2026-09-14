@@ -1,5 +1,6 @@
 import type { Viewport } from "@xyflow/react";
 import type { Anchor, Direction, GraphLayer } from "./types";
+import {parsePartitionSelection} from "../../data-graph/src/asset-graph/partition-selection";
 
 export const EXPLORATION_STORAGE_KEY =
   "sql-static-lineage:data-graph-ui:exploration-entries";
@@ -77,6 +78,10 @@ function isViewport(value: unknown): value is Viewport {
 }
 
 function isAnchor(value: unknown): value is Anchor {
+  if (isRecord(value) && value.partitionSelection !== undefined) {
+    try { parsePartitionSelection(JSON.stringify(value.partitionSelection)); }
+    catch { return false; }
+  }
   return (
     isRecord(value) &&
     typeof value.label === "string" &&

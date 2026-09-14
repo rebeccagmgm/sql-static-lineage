@@ -1,0 +1,380 @@
+{
+  "task_id": "139056",
+  "default_schema": null,
+  "observed_at": "2026-09-05T02:42:12.839Z",
+  "payload_sha256": "5804a0275a0c21a5aeec3e4d1df99b6e8c904c0f3556fb75fa14352696321b59",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_CSTD_CONTR_INFO ("
+    },
+    {
+      "line": 10,
+      "text": "  Agt_Id STRING COMMENT '协议编号',"
+    },
+    {
+      "line": 11,
+      "text": "  Agt_Modifr STRING COMMENT '协议修饰符',"
+    },
+    {
+      "line": 12,
+      "text": "  Agt_Stat_Cd STRING COMMENT '协议状态代码',"
+    },
+    {
+      "line": 13,
+      "text": "  Src_Agt_Stat_Cd STRING COMMENT '源合同状态代码',"
+    },
+    {
+      "line": 14,
+      "text": "  Prnt_Contr_No STRING COMMENT '母合同编号',"
+    },
+    {
+      "line": 15,
+      "text": "  Chld_Contr_No STRING COMMENT '子合同编号',"
+    },
+    {
+      "line": 16,
+      "text": "  Chld_Contr_Type_Cd STRING COMMENT '子合同类型代码',"
+    },
+    {
+      "line": 17,
+      "text": "  Elec_Contr_Flag STRING COMMENT '电子合同标志',"
+    },
+    {
+      "line": 18,
+      "text": "  Ext_No STRING COMMENT '外部编号',"
+    },
+    {
+      "line": 19,
+      "text": "  Sign_Flag STRING COMMENT '签订标志',"
+    },
+    {
+      "line": 20,
+      "text": "  Sign_Date STRING COMMENT '签订日期',"
+    },
+    {
+      "line": 21,
+      "text": "  Adm_Prsn_Co_Name STRING COMMENT '管理人公司名称',"
+    },
+    {
+      "line": 22,
+      "text": "  Adm_Prsn_Co_Rgst_Cd STRING COMMENT '管理人公司备案编码',"
+    },
+    {
+      "line": 23,
+      "text": "  Prd_Cd STRING COMMENT '产品代码',"
+    },
+    {
+      "line": 24,
+      "text": "  Prd_Name STRING COMMENT '产品名称',"
+    },
+    {
+      "line": 25,
+      "text": "  Gf_Cstd_Prd_Code STRING COMMENT '广发托管产品编码',"
+    },
+    {
+      "line": 26,
+      "text": "  Src_Data_Src STRING COMMENT '源数据来源',"
+    },
+    {
+      "line": 27,
+      "text": "  Archv_Stat_Cd STRING COMMENT '归档状态代码',"
+    },
+    {
+      "line": 28,
+      "text": "  Src_Archv_Stat STRING COMMENT '源归档状态代码',"
+    },
+    {
+      "line": 29,
+      "text": "  Estb_Time STRING COMMENT '创建时间',"
+    },
+    {
+      "line": 30,
+      "text": "  Cutp_Name STRING COMMENT '相对方名称',"
+    },
+    {
+      "line": 31,
+      "text": "  Cutp_Prop STRING COMMENT '相对方性质',"
+    },
+    {
+      "line": 32,
+      "text": "  Cutp_Cert_Typ STRING COMMENT '相对方证件类型',"
+    },
+    {
+      "line": 33,
+      "text": "  Cutp_Doc_No STRING COMMENT '相对方证件号码',"
+    },
+    {
+      "line": 34,
+      "text": "  Cutp_Rep_Prd_Name STRING COMMENT '相对方代表产品名称',"
+    },
+    {
+      "line": 35,
+      "text": "  Data_Src_Cd STRING COMMENT '数据来源代码',"
+    },
+    {
+      "line": 36,
+      "text": "  Task_Name STRING COMMENT '任务名',"
+    },
+    {
+      "line": 37,
+      "text": "  Data_Etl_Date STRING COMMENT '数据加载日期',"
+    },
+    {
+      "line": 38,
+      "text": "  Data_Upt_Date STRING COMMENT '数据更新日期',"
+    },
+    {
+      "line": 39,
+      "text": "  Data_Time STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 40,
+      "text": ")"
+    },
+    {
+      "line": 41,
+      "text": "COMMENT '托管合同信息'"
+    },
+    {
+      "line": 42,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT'源表',BUSI_DATE STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 43,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 44,
+      "text": ""
+    },
+    {
+      "line": 45,
+      "text": "-- querySql"
+    },
+    {
+      "line": 46,
+      "text": "INSERT OVERWRITE TABLE T03_CSTD_CONTR_INFO PARTITION(SRC_TBL='ODATA_N_GCM.H_V_TG_SUB_CONTRACT',BUSI_DATE='2026-05-19')"
+    },
+    {
+      "line": 47,
+      "text": "SELECT"
+    },
+    {
+      "line": 48,
+      "text": "ID                                                AS  Agt_Id                  --协议编号"
+    },
+    {
+      "line": 49,
+      "text": ",'2041201'                                         AS  Agt_Modifr              --协议修饰符                     '2041201'"
+    },
+    {
+      "line": 50,
+      "text": ",NVL(B.DW_CD_VAL,STATUS)                           AS  Agt_Stat_Cd             --协议状态代码                         需要标准化"
+    },
+    {
+      "line": 51,
+      "text": ",STATUS                                            AS  Src_Agt_Stat_Cd         --源合同状态代码"
+    },
+    {
+      "line": 52,
+      "text": ",RELATED_CONTRACT_CODE                             AS  Prnt_Contr_No           --母合同编号"
+    },
+    {
+      "line": 53,
+      "text": ",SUB_CONTRACT_CODE                                 AS  Chld_Contr_No           --子合同编号"
+    },
+    {
+      "line": 54,
+      "text": ",SUB_CONTRACT_TYPE                                 AS  Chld_Contr_Type_Cd      --子合同类型代码"
+    },
+    {
+      "line": 55,
+      "text": ",IS_E_CONTRACT                                     AS  Elec_Contr_Flag         --电子合同标志"
+    },
+    {
+      "line": 56,
+      "text": ",REF_ID                                            AS  Ext_No                  --外部编号"
+    },
+    {
+      "line": 57,
+      "text": ",IS_SIGN                                           AS  Sign_Flag               --签订标志"
+    },
+    {
+      "line": 58,
+      "text": ",SIGN_TIME                                         AS  Sign_Date               --签订日期"
+    },
+    {
+      "line": 59,
+      "text": ",COMPANY_NAME                                      AS  Adm_Prsn_Co_Name        --管理人公司名称"
+    },
+    {
+      "line": 60,
+      "text": ",COMPANY_CODE                                      AS  Adm_Prsn_Co_Rgst_Cd     --管理人公司备案编码"
+    },
+    {
+      "line": 61,
+      "text": ",FUND_CODE                                         AS  Prd_Cd                  --产品代码"
+    },
+    {
+      "line": 62,
+      "text": ",FUND_NAME                                         AS  Prd_Name                --产品名称"
+    },
+    {
+      "line": 63,
+      "text": ",COMPANY_PRODUCT_CODE                              AS  Gf_Cstd_Prd_Code        --广发托管产品编码"
+    },
+    {
+      "line": 64,
+      "text": ",E_CONTRACT_SOURCE                                 AS  Src_Data_Src            --源数据来源"
+    },
+    {
+      "line": 65,
+      "text": ",NVL(C.DW_CD_VAL,IS_FILED)                         AS  Archv_Stat_Cd           --归档状态代码                         需要标准化"
+    },
+    {
+      "line": 66,
+      "text": ",IS_FILED                                          AS  Src_Archv_Stat          --源归档状态代码"
+    },
+    {
+      "line": 67,
+      "text": ",CREATION_TIME                                     AS  Estb_Time               --创建时间"
+    },
+    {
+      "line": 68,
+      "text": ",T.OPPOSITE_NAME                                    AS  Cutp_Name               --相对方名称"
+    },
+    {
+      "line": 69,
+      "text": ",T.OPPOSITE_CHARACTER                                AS  Cutp_Prop               --相对方性质"
+    },
+    {
+      "line": 70,
+      "text": ",T.CERTIFICATE_TYPE                                  AS  Cutp_Cert_Typ           --相对方证件类型"
+    },
+    {
+      "line": 71,
+      "text": ",T.CERTIFICATE_NUM                                   AS  Cutp_Doc_No             --相对方证件号码"
+    },
+    {
+      "line": 72,
+      "text": ",T.OPPOSITE_FUND_NAME                                AS  Cutp_Rep_Prd_Name       --相对方代表产品名称"
+    },
+    {
+      "line": 73,
+      "text": ",'GCM'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 74,
+      "text": ",'PDATA_N.T03_CSTD_CONTR_INFO_GCM003'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 75,
+      "text": ",'2026-05-19'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 76,
+      "text": ",'2026-05-20'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 77,
+      "text": ",'2026-05-20 07:01:40'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 78,
+      "text": "FROM   (SELECT *  FROM ODATA_N_GCM.H_V_TG_SUB_CONTRACT WHERE  BUSI_DATE='2026-05-19' )A"
+    },
+    {
+      "line": 79,
+      "text": "LEFT JOIN  (SELECT SUB_CONTRACT_ID,OPPOSITE_NAME,OPPOSITE_CHARACTER,CERTIFICATE_TYPE,CERTIFICATE_NUM,OPPOSITE_FUND_NAME  FROM ODATA_N_GCM.H_V_TG_SUB_CONTRACT_OPPOSITE  WHERE  BUSI_DATE='2026-05-19' )T"
+    },
+    {
+      "line": 80,
+      "text": "ON A.ID=T.SUB_CONTRACT_ID"
+    },
+    {
+      "line": 81,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 82,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 83,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 84,
+      "text": "WHERE TGT_TAB_NAME = 'T03_CSTD_CONTR_INFO'"
+    },
+    {
+      "line": 85,
+      "text": "AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 86,
+      "text": "AND SRC_TAB_NAME = 'V_TG_SUB_CONTRACT'"
+    },
+    {
+      "line": 87,
+      "text": "AND SRC_FLD_NAME = 'STATUS'"
+    },
+    {
+      "line": 88,
+      "text": "AND SRC_SYS_NAME='GCM')B"
+    },
+    {
+      "line": 89,
+      "text": "ON      A.STATUS =B.SRC_CD_VAL                  --STATUS 转码"
+    },
+    {
+      "line": 90,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 91,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 92,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 93,
+      "text": "WHERE TGT_TAB_NAME = 'T03_CSTD_CONTR_INFO'"
+    },
+    {
+      "line": 94,
+      "text": "AND TGT_TAB_FLD  = 'Archv_Stat_Cd'"
+    },
+    {
+      "line": 95,
+      "text": "AND SRC_TAB_NAME = 'V_TG_SUB_CONTRACT'"
+    },
+    {
+      "line": 96,
+      "text": "AND SRC_FLD_NAME = 'IS_FILED'"
+    },
+    {
+      "line": 97,
+      "text": "AND SRC_SYS_NAME='GCM')C"
+    },
+    {
+      "line": 98,
+      "text": "ON      A.IS_FILED =C.SRC_CD_VAL                  --IS_FILED 转码"
+    },
+    {
+      "line": 99,
+      "text": ";"
+    },
+    {
+      "line": 100,
+      "text": ""
+    }
+  ]
+}

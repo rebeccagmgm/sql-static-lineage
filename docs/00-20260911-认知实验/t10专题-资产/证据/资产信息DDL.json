@@ -1,0 +1,11 @@
+[
+  {
+    "guid": "412cd66a-6720-4a78-8b86-d4bea4b8864a",
+    "qualifiedName": "pdata_n.t10_ast_info@gfhive",
+    "dbName": "pdata_n",
+    "tableName": "t10_ast_info",
+    "type": "hive / Hive内部表",
+    "partition": "src_tbl",
+    "ddl": "create table t10_ast_info(ast_id string comment '资产编号',ast_name string comment '资产名称',ast_cate_cd string comment '资产类别代码',ast_proprt_type_cd string comment '资产权属类型代码',proprt_prsn_id string comment '权属人编号',ast_lbl string comment '资产标签',ast_type_cd string comment '资产类型代码',ast_stat_cd string comment '资产状态代码',ast_get_method_cd string comment '资产取得方式代码',ast_prop_cd string comment '资产属性代码',main_ast_flag string comment '主资产标志',crrc_cd string comment '币种代码',vld_date string comment '有效日期',exp_date string comment '到期日期',stki_time string comment '入库时间',stki_prop_cd string comment '入库性质代码',ast_use_life string comment '资产使用年限',use_strt_time string comment '使用开始时间',ast_lock_rsn_cd string comment '资产锁定原因代码',depr_flag string comment '折旧标志',remark string comment '备注',del_flag string comment '删除标志',del_date string comment '删除日期',data_src_cd string comment '数据来源代码',task_name string comment '任务名',data_etl_date string comment '数据加载日期',data_upt_date string comment '数据更新日期',data_time string comment '数据时间',real_src_tbl string comment '真实源表') partitioned by (src_tbl string comment '源表') row format delimited fields terminated by ',' stored as orc;"
+  }
+]

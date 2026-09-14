@@ -1,0 +1,293 @@
+{
+  "task_id": "163772",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:07:06.135Z",
+  "payload_sha256": "2c4adb4c36b68467501513f9394df6032bfb284af9db2e6a7afe07724430acbe",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_FX_FWD_COMP_STRU_ELMN_INFO("
+    },
+    {
+      "line": 10,
+      "text": "      Fx_Fwd_Comp_Agt_Id         STRING COMMENT '外汇远期合约协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "     ,Fx_Fwd_Comp_Agt_Modifr     STRING COMMENT '外汇远期合约协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "     ,Undrl_Prd_Id               STRING COMMENT '标的产品编号'"
+    },
+    {
+      "line": 13,
+      "text": "     ,Src_Undrl_Prd_Id           STRING COMMENT '源标的产品编号'"
+    },
+    {
+      "line": 14,
+      "text": "     ,Undrl_Cd                   STRING COMMENT '标的代码'"
+    },
+    {
+      "line": 15,
+      "text": "     ,Deli_Method_Cd             STRING COMMENT '交割方式代码'"
+    },
+    {
+      "line": 16,
+      "text": "     ,Bgng_Prcg_Date             STRING COMMENT '期初定价日期'"
+    },
+    {
+      "line": 17,
+      "text": "     ,End_Prcg_Date              STRING COMMENT '期末定价日期'"
+    },
+    {
+      "line": 18,
+      "text": "     ,Sett_Crrc_Cd               STRING COMMENT '结算币种代码'"
+    },
+    {
+      "line": 19,
+      "text": "     ,Crrc_Cd1                   STRING COMMENT '币种代码1'"
+    },
+    {
+      "line": 20,
+      "text": "     ,Crrc_Cd2                   STRING COMMENT '币种代码2'"
+    },
+    {
+      "line": 21,
+      "text": "     ,Bgng_Vol                   STRING COMMENT '期初数量'"
+    },
+    {
+      "line": 22,
+      "text": "     ,Sler_Paid_Crrc1_Vol        STRING COMMENT '销售方支付币种1数量'"
+    },
+    {
+      "line": 23,
+      "text": "     ,Sler_Paid_Crrc2_Vol        STRING COMMENT '销售方支付币种2数量'"
+    },
+    {
+      "line": 24,
+      "text": "     ,Deli_Rate                  STRING COMMENT '交割汇率'"
+    },
+    {
+      "line": 25,
+      "text": "     ,Sett_Rate                  STRING COMMENT '结算汇率'"
+    },
+    {
+      "line": 26,
+      "text": "     ,End_Rate                   STRING COMMENT '期末汇率'"
+    },
+    {
+      "line": 27,
+      "text": "     ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 28,
+      "text": "     ,Create_User_Id             STRING COMMENT '创建用户编号'"
+    },
+    {
+      "line": 29,
+      "text": "     ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 30,
+      "text": "     ,Upd_User_Id                STRING COMMENT '更新用户编号'"
+    },
+    {
+      "line": 31,
+      "text": "     ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 32,
+      "text": "     ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 33,
+      "text": "     ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 34,
+      "text": "     ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 35,
+      "text": "     ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 36,
+      "text": "     ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 37,
+      "text": ")COMMENT '场外外汇远期合约结构要素信息'"
+    },
+    {
+      "line": 38,
+      "text": "PARTITIONED BY (Src_Tbl  STRING COMMENT'源表',Busi_Date  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 39,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 40,
+      "text": ""
+    },
+    {
+      "line": 41,
+      "text": "-- querySql"
+    },
+    {
+      "line": 42,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_FX_FWD_COMP_STRU_ELMN_INFO PARTITION(Src_Tbl='${src_table}',Busi_Date='${data_day_str}')"
+    },
+    {
+      "line": 43,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 44,
+      "text": "--Group1: Source Table:[ODATA_N_TIT.D_REF_FX_FORWARD_STRUCTURE:外汇远期-结构要素] "
+    },
+    {
+      "line": 45,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 46,
+      "text": "SELECT"
+    },
+    {
+      "line": 47,
+      "text": "      KEY_OTC_TRADE_ID                                  AS  Fx_Fwd_Comp_Agt_Id      --外汇远期合约协议编号  "
+    },
+    {
+      "line": 48,
+      "text": "     ,'20208'                                           AS  Fx_Fwd_Comp_Agt_Modifr  --外汇远期合约协议修饰符"
+    },
+    {
+      "line": 49,
+      "text": "     ,IF(NVL(TRIM(UNDERLYING_INS_ID),'')='','',CONCAT('TIT-',UNDERLYING_INS_ID))"
+    },
+    {
+      "line": 50,
+      "text": "                                                        AS  Undrl_Prd_Id            --标的产品编号          "
+    },
+    {
+      "line": 51,
+      "text": "     ,UNDERLYING_INS_ID                                 AS  Src_Undrl_Prd_Id        --源标的产品编号        "
+    },
+    {
+      "line": 52,
+      "text": "     ,UNDERLYING_WIND_CODE                              AS  Undrl_Cd                --标的代码              "
+    },
+    {
+      "line": 53,
+      "text": "     ,SETTLEMENT_METHOD                                 AS  Deli_Method_Cd          --交割方式代码          "
+    },
+    {
+      "line": 54,
+      "text": "     ,SUBSTR(START_DATE,1,10)                           AS  Bgng_Prcg_Date          --期初定价日期          "
+    },
+    {
+      "line": 55,
+      "text": "     ,SUBSTR(END_DATE  ,1,10)                           AS  End_Prcg_Date           --期末定价日期          "
+    },
+    {
+      "line": 56,
+      "text": "     ,SETTLEMENT_CCY                                    AS  Sett_Crrc_Cd            --结算币种代码          "
+    },
+    {
+      "line": 57,
+      "text": "     ,FIRST_CCY                                         AS  Crrc_Cd1                --币种代码1             "
+    },
+    {
+      "line": 58,
+      "text": "     ,SECOND_CCY                                        AS  Crrc_Cd2                --币种代码2             "
+    },
+    {
+      "line": 59,
+      "text": "     ,INITIAL_QTY                                       AS  Bgng_Vol                --期初数量              "
+    },
+    {
+      "line": 60,
+      "text": "     ,FIRST_QTY                                         AS  Sler_Paid_Crrc1_Vol     --销售方支付币种1数量   "
+    },
+    {
+      "line": 61,
+      "text": "     ,SECOND_QTY                                        AS  Sler_Paid_Crrc2_Vol     --销售方支付币种2数量   "
+    },
+    {
+      "line": 62,
+      "text": "     ,STRIKE_FX_RATE                                    AS  Deli_Rate               --交割汇率              "
+    },
+    {
+      "line": 63,
+      "text": "     ,SETTLEMENT_FX_RATE                                AS  Sett_Rate               --结算汇率              "
+    },
+    {
+      "line": 64,
+      "text": "     ,MATURITY_FX_RATE                                  AS  End_Rate                --期末汇率              "
+    },
+    {
+      "line": 65,
+      "text": "     ,CREATED_DATETIME                                  AS  Create_Time             --创建时间              "
+    },
+    {
+      "line": 66,
+      "text": "     ,CREATED_BY                                        AS  Create_User_Id          --创建用户编号          "
+    },
+    {
+      "line": 67,
+      "text": "     ,UPDATED_DATETIME                                  AS  Upd_Time                --更新时间              "
+    },
+    {
+      "line": 68,
+      "text": "     ,UPDATED_BY                                        AS  Upd_User_Id             --更新用户编号          "
+    },
+    {
+      "line": 69,
+      "text": "     ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 70,
+      "text": "     ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 71,
+      "text": "     ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 72,
+      "text": "     ,'${data_day_str}'                            AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 73,
+      "text": "     ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 74,
+      "text": "     ,'${src_table}'                               AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 75,
+      "text": "FROM (SELECT *  FROM ${src_table} WHERE  Busi_Date='${data_day_str}' )A"
+    },
+    {
+      "line": 76,
+      "text": ""
+    },
+    {
+      "line": 77,
+      "text": ";"
+    },
+    {
+      "line": 78,
+      "text": ""
+    }
+  ]
+}

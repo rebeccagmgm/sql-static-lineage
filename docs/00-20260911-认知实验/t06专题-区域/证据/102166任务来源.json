@@ -1,0 +1,105 @@
+{
+  "taskId": "102166",
+  "metadata": {
+    "taskId": "102166",
+    "taskName": "PDATA_N.T06_ADMIN_AREA_TEMP",
+    "taskDesc": "行政区域--QUERY_TEMP.TMP_ADDR_CODE:行政区代码临时表",
+    "status": "Y",
+    "taskType": "101",
+    "topicName": "EDW_LOC",
+    "cycleNum": "1",
+    "cycleUnit": "O",
+    "cluster": "2",
+    "database": "PDATA_N",
+    "tableName": "-",
+    "insertMode": "-",
+    "querySql": "",
+    "querySqlSource": "schedule-detail",
+    "prepareSql": "",
+    "finishSql": "",
+    "truncateSql": "",
+    "inCharge": "wxzhengx",
+    "businessUsername": "-",
+    "scenarioType": "-",
+    "scenarioDesc": "-",
+    "lastRunDate": "-",
+    "lastRunState": "-",
+    "lastRunStateName": "-",
+    "lastEndTime": "-",
+    "tryLimit": "3",
+    "tasklink": "",
+    "syncSource": "",
+    "syncTarget": "",
+    "loadMode": "-",
+    "hivePartition": ""
+  },
+  "sqlSlots": {
+    "create": {
+      "status": "UNAVAILABLE",
+      "available": false,
+      "role": "ddl",
+      "source": "-",
+      "sources": [],
+      "statementCount": 0,
+      "bytes": 0
+    },
+    "query": {
+      "status": "UNAVAILABLE",
+      "available": false,
+      "role": "main",
+      "source": "-",
+      "sources": [],
+      "statementCount": 0,
+      "bytes": 0
+    },
+    "prepare": {
+      "status": "UNAVAILABLE",
+      "available": false,
+      "role": "precondition",
+      "source": "-",
+      "sources": [],
+      "statementCount": 0,
+      "bytes": 0
+    },
+    "truncate": {
+      "status": "UNAVAILABLE",
+      "available": false,
+      "role": "precondition",
+      "source": "-",
+      "sources": [],
+      "statementCount": 0,
+      "bytes": 0
+    },
+    "finish": {
+      "status": "UNAVAILABLE",
+      "available": false,
+      "role": "postcondition",
+      "source": "-",
+      "sources": [],
+      "statementCount": 0,
+      "bytes": 0
+    }
+  },
+  "codeEvidence": {
+    "status": "SKIPPED",
+    "taskId": "102166",
+    "codePathStatus": "SCRIPT_PATH_FOUND"
+  },
+  "attempts": [
+    {
+      "source": "schedule-detail",
+      "status": "SUCCESS",
+      "provenance": "Portal prod-api schedule detail"
+    },
+    {
+      "source": "sql-mcp",
+      "status": "SUCCESS",
+      "provenance": "metadata.get_horae_sql_by_task_id"
+    },
+    {
+      "source": "code",
+      "status": "SKIPPED",
+      "provenance": "optional --include-code"
+    }
+  ]
+}

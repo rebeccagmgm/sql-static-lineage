@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import { appendHiddenBatch, projectVisibility } from "./state";
 import "./style.css";
@@ -14,7 +14,7 @@ export function NodeVisibility<N extends Node, E extends Edge>({
   if (session.scope !== scope) {
     setSession({ scope, selecting: false, selected: [], history: [] });
   }
-  const graph = projectVisibility(nodes, edges, session.history, session.selected);
+  const graph = useMemo(() => projectVisibility(nodes, edges, session.history, session.selected), [nodes, edges, session.history, session.selected]);
   return <div className="node-visibility">
     <div className="node-visibility-toolbar" role="toolbar" aria-label="节点隐藏">
       <button aria-pressed={session.selecting} onClick={() => setSession(s => ({ ...s, selecting: !s.selecting, selected: [] }))}>

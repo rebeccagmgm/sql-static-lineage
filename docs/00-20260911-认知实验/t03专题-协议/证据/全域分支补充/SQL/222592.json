@@ -1,0 +1,428 @@
+{
+  "task_id": "222592",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:07:26.061Z",
+  "payload_sha256": "23166aa96fec120658a323da877a2dcc9564788421e67f453d4fde40cd22a3ec",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_LABOR_CONTR_INFO("
+    },
+    {
+      "line": 10,
+      "text": "         Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "        ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "        ,Eff_Date                   STRING COMMENT '生效日期'"
+    },
+    {
+      "line": 13,
+      "text": "        ,End_Date                   STRING COMMENT '结束日期'"
+    },
+    {
+      "line": 14,
+      "text": "        ,Comp_Type_Cd               STRING COMMENT '合同类型代码'"
+    },
+    {
+      "line": 15,
+      "text": "        ,Comp_Stat_Cd               STRING COMMENT '合同状态代码'"
+    },
+    {
+      "line": 16,
+      "text": "        ,Comp_Desc                  STRING COMMENT '合同描述'"
+    },
+    {
+      "line": 17,
+      "text": "        ,Comp_Sign_Behav_Type_Cd    STRING COMMENT '合同签订行为类型代码'"
+    },
+    {
+      "line": 18,
+      "text": "        ,Comp_Chg_Type_Cd           STRING COMMENT '合同变更类型代码'"
+    },
+    {
+      "line": 19,
+      "text": "        ,Hand_Stat_Cd               STRING COMMENT '处理状态代码'"
+    },
+    {
+      "line": 20,
+      "text": "        ,Sign_Team_Cd               STRING COMMENT '签约期限代码'"
+    },
+    {
+      "line": 21,
+      "text": "        ,Sign_Team_Unit             STRING COMMENT '签约期限单位'"
+    },
+    {
+      "line": 22,
+      "text": "        ,Cont_Sign_Rsn_Desc         STRING COMMENT '续签原因描述'"
+    },
+    {
+      "line": 23,
+      "text": "        ,Cont_Sign_Team             STRING COMMENT '续签期限'"
+    },
+    {
+      "line": 24,
+      "text": "        ,Cont_Sign_Team_Unit        STRING COMMENT '续签期限单位'"
+    },
+    {
+      "line": 25,
+      "text": "        ,Cont_Sign_Date             STRING COMMENT '续签日期'"
+    },
+    {
+      "line": 26,
+      "text": "        ,Comp_Adtnl                 STRING COMMENT '合同附件'"
+    },
+    {
+      "line": 27,
+      "text": "        ,Comp_Adtnl_Upld_Date       STRING COMMENT '附件上传日期'"
+    },
+    {
+      "line": 28,
+      "text": "        ,Oper_Id                    STRING COMMENT '操作人'"
+    },
+    {
+      "line": 29,
+      "text": "        ,Src_Data_Src_Cd            STRING COMMENT '源数据来源代码'"
+    },
+    {
+      "line": 30,
+      "text": "        ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 31,
+      "text": "        ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 32,
+      "text": "        ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 33,
+      "text": "        ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 34,
+      "text": "        ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 35,
+      "text": "        ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 36,
+      "text": "        ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 37,
+      "text": "    )COMMENT '劳工合同信息'"
+    },
+    {
+      "line": 38,
+      "text": "    PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 39,
+      "text": "    STORED AS ORC;"
+    },
+    {
+      "line": 40,
+      "text": ""
+    },
+    {
+      "line": 41,
+      "text": "-- querySql"
+    },
+    {
+      "line": 42,
+      "text": "INSERT OVERWRITE TABLE T03_LABOR_CONTR_INFO PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 43,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 44,
+      "text": "    --Group3.: Source Table:[ODATA_N_PAS.J_HSSEMP_CONTRACT:合同管理信息表] "
+    },
+    {
+      "line": 45,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 46,
+      "text": "    SELECT"
+    },
+    {
+      "line": 47,
+      "text": "         ID                                    AS  Agt_Id                  --协议编号            "
+    },
+    {
+      "line": 48,
+      "text": "        ,'20401'                               AS  Agt_Modifr              --协议修饰符          "
+    },
+    {
+      "line": 49,
+      "text": "        ,CONTRACT_START_DATE                   AS  Eff_Date                --生效日期            "
+    },
+    {
+      "line": 50,
+      "text": "        ,CONTRACT_END_DATE                     AS  End_Date                --结束日期            "
+    },
+    {
+      "line": 51,
+      "text": "        ,NVL(B.DW_CD_VAL,TYPE_ID)              AS  Comp_Type_Cd            --合同类型代码        "
+    },
+    {
+      "line": 52,
+      "text": "        ,''                                    AS  Comp_Stat_Cd            --合同状态代码        "
+    },
+    {
+      "line": 53,
+      "text": "        ,''                                    AS  Comp_Desc               --合同描述            "
+    },
+    {
+      "line": 54,
+      "text": "        ,CONTRACT_TYPE                         AS  Comp_Sign_Behav_Type_Cd --合同签订行为类型代码"
+    },
+    {
+      "line": 55,
+      "text": "        ,NVL(C.DW_CD_VAL,CHANGE_TYPE_ID)       AS  Comp_Chg_Type_Cd        --合同变更类型代码    "
+    },
+    {
+      "line": 56,
+      "text": "        ,NVL(D.DW_CD_VAL,STATUS)               AS  Hand_Stat_Cd            --处理状态代码        "
+    },
+    {
+      "line": 57,
+      "text": "        ,NVL(E.DW_CD_VAL,CONTRACT_PERIOD_ID)   AS  Sign_Team_Cd            --签约期限代码        "
+    },
+    {
+      "line": 58,
+      "text": "        ,''                                    AS  Sign_Team_Unit          --签约期限单位        "
+    },
+    {
+      "line": 59,
+      "text": "        ,''                                    AS  Cont_Sign_Rsn_Desc      --续签原因描述        "
+    },
+    {
+      "line": 60,
+      "text": "        ,''                                    AS  Cont_Sign_Team          --续签期限            "
+    },
+    {
+      "line": 61,
+      "text": "        ,''                                    AS  Cont_Sign_Team_Unit     --续签期限单位        "
+    },
+    {
+      "line": 62,
+      "text": "        ,''                                    AS  Cont_Sign_Date          --续签日期            "
+    },
+    {
+      "line": 63,
+      "text": "        ,ATTACH                                AS  Comp_Adtnl              --合同附件            "
+    },
+    {
+      "line": 64,
+      "text": "        ,''                                    AS  Comp_Adtnl_Upld_Date    --附件上传日期        "
+    },
+    {
+      "line": 65,
+      "text": "        ,''                                    AS  Oper_Id                 --操作人              "
+    },
+    {
+      "line": 66,
+      "text": "        ,DATA_SOURCE                           AS  Src_Data_Src_Cd         --源数据来源代码              "
+    },
+    {
+      "line": 67,
+      "text": "        ,REMARK                                AS  Remark                  --备注                   "
+    },
+    {
+      "line": 68,
+      "text": "        ,'${data_src_cd}'                 AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 69,
+      "text": "        ,'${filename}'                    AS  Task_Name               --任务名"
+    },
+    {
+      "line": 70,
+      "text": "        ,'${data_day_str}'                AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 71,
+      "text": "        ,'${data_day_str}'                AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 72,
+      "text": "        ,'${data_today}'                  AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 73,
+      "text": "        ,'${src_table}'                   AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 74,
+      "text": "    FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' AND STATUS<>'9' )A"
+    },
+    {
+      "line": 75,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 76,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 77,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 78,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_LABOR_CONTR_INFO'"
+    },
+    {
+      "line": 79,
+      "text": "                AND TGT_TAB_FLD  = 'Comp_Type_Cd'"
+    },
+    {
+      "line": 80,
+      "text": "                AND SRC_TAB_NAME = 'HSSEMP_CONTRACT'"
+    },
+    {
+      "line": 81,
+      "text": "                AND SRC_FLD_NAME = 'TYPE_ID'"
+    },
+    {
+      "line": 82,
+      "text": "                AND SRC_SYS_NAME='PAS')B"
+    },
+    {
+      "line": 83,
+      "text": "       ON      A.TYPE_ID =B.SRC_CD_VAL                  --TYPE_ID 转码"
+    },
+    {
+      "line": 84,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 85,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 86,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 87,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_LABOR_CONTR_INFO'"
+    },
+    {
+      "line": 88,
+      "text": "                AND TGT_TAB_FLD  = 'Comp_Chg_Type_Cd'"
+    },
+    {
+      "line": 89,
+      "text": "                AND SRC_TAB_NAME = 'HSSEMP_CONTRACT'"
+    },
+    {
+      "line": 90,
+      "text": "                AND SRC_FLD_NAME = 'CHANGE_TYPE_ID'"
+    },
+    {
+      "line": 91,
+      "text": "                AND SRC_SYS_NAME='PAS')C"
+    },
+    {
+      "line": 92,
+      "text": "       ON      A.CHANGE_TYPE_ID =C.SRC_CD_VAL                  --CHANGE_TYPE_ID 转码"
+    },
+    {
+      "line": 93,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 94,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 95,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 96,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_LABOR_CONTR_INFO'"
+    },
+    {
+      "line": 97,
+      "text": "                AND TGT_TAB_FLD  = 'Hand_Stat_Cd'"
+    },
+    {
+      "line": 98,
+      "text": "                AND SRC_TAB_NAME = 'HSSEMP_CONTRACT'"
+    },
+    {
+      "line": 99,
+      "text": "                AND SRC_FLD_NAME = 'STATUS'"
+    },
+    {
+      "line": 100,
+      "text": "                AND SRC_SYS_NAME='PAS')D"
+    },
+    {
+      "line": 101,
+      "text": "       ON      A.STATUS =D.SRC_CD_VAL                  --STATUS 转码"
+    },
+    {
+      "line": 102,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 103,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 104,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 105,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_LABOR_CONTR_INFO'"
+    },
+    {
+      "line": 106,
+      "text": "                AND TGT_TAB_FLD  = 'Sign_Team_Cd'"
+    },
+    {
+      "line": 107,
+      "text": "                AND SRC_TAB_NAME = 'HSSEMP_CONTRACT'"
+    },
+    {
+      "line": 108,
+      "text": "                AND SRC_FLD_NAME = 'CONTRACT_PERIOD_ID'"
+    },
+    {
+      "line": 109,
+      "text": "                AND SRC_SYS_NAME='PAS')E"
+    },
+    {
+      "line": 110,
+      "text": "       ON      A.CONTRACT_PERIOD_ID =E.SRC_CD_VAL                  --CONTRACT_PERIOD_ID 转码"
+    },
+    {
+      "line": 111,
+      "text": "    ;"
+    },
+    {
+      "line": 112,
+      "text": ""
+    }
+  ]
+}

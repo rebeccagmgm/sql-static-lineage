@@ -1,0 +1,6552 @@
+{
+  "extractedAt": "2026-09-14T02:37:32.381Z",
+  "catalog": [
+    {
+      "key": "schema_version",
+      "value": "1.0.0"
+    },
+    {
+      "key": "parser_version",
+      "value": "572f98f0f166ac3377520338242fee30c2ee7232ee9f009a742fbf3df54baa3d"
+    },
+    {
+      "key": "catalog_hash",
+      "value": "4877b15fb9a9accd5c6876b3e5d2ae31db910988153bf57d3d84e56430f6ff21"
+    },
+    {
+      "key": "built_at",
+      "value": "2026-09-10T03:29:20.463Z"
+    }
+  ],
+  "objects": [
+    {
+      "id": 43722,
+      "stable_table_id": "pdata_n.t08_ad_oper_site_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_ad_oper_site_info",
+      "table_name": "t08_ad_oper_site_info",
+      "description": "广告运营位信息",
+      "description_normalized": "广告运营位信息",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_ad_oper_site_info__gfhive",
+      "source_hash": "1163f6a7792f52a7290aa8a758f2f5cba4c23e35d669ab0adae21e53d4ff9320",
+      "ddl_hash": "5dc43fd3028437a145e0d1027a15c7c3ae8357da2cdaa32ecdf544e831057682",
+      "content_hash": "845fca1afd919dcc0adc4d79fff05d33ece6228b023d157ea3844745c6be411f",
+      "collected_at": "2026-09-07T07:59:23.785Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Oper_Seat_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源运营位编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Lvl1_Clas_Name",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "一级分类名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Lvl2_Clas_Name",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "二级分类名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Lvl3_Clas_Name",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "三级分类名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Vld_Indx_Flag",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "有效指标标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Had_Plac_Stat_Flag",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "已配置状态标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Reach_Indx_Plac_Para",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "触达指标配置参数",
+          "is_partition": 0
+        },
+        {
+          "name": "Reach_Sql_Tplt",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "触达sql模板",
+          "is_partition": 0
+        },
+        {
+          "name": "View_Indx_Plac_Para",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "浏览指标配置参数",
+          "is_partition": 0
+        },
+        {
+          "name": "View_Sql_Tplt",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "浏览sql模板",
+          "is_partition": 0
+        },
+        {
+          "name": "Create_Time",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Time",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_User_Id",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "更新人用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43723,
+      "stable_table_id": "pdata_n.t08_ad_oper_site_mtrl_plac_rec__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_ad_oper_site_mtrl_plac_rec",
+      "table_name": "t08_ad_oper_site_mtrl_plac_rec",
+      "description": "广告运营位素材配置记录",
+      "description_normalized": "广告运营位素材配置记录",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_ad_oper_site_mtrl_plac_rec__gfhive",
+      "source_hash": "51891e60798612e4c0fc92f5970e6b114dd50aa773055835a24158b51c23c7f8",
+      "ddl_hash": "22a19de6ddb26be529066bbc3b6b1a89328b8bb62b6865a393821cbf37aa5138",
+      "content_hash": "1daff3af8b8bc8f1e57f39dc0c84c04861fe1a1cc4957b0e87cfc745840eff5c",
+      "collected_at": "2026-09-04T05:45:42.924Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Src_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "源ID",
+          "is_partition": 0
+        },
+        {
+          "name": "Use_Chan",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "使用渠道",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Id",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Chan_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Res_Item_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "资源项编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Rpt_Data_Id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "上报数据编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Create_Time",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43724,
+      "stable_table_id": "pdata_n.t08_agent_app_chan_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_agent_app_chan_info",
+      "table_name": "t08_agent_app_chan_info",
+      "description": "智能体应用渠道信息",
+      "description_normalized": "智能体应用渠道信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_agent_app_chan_info__gfhive",
+      "source_hash": "3a11c28c4e09e492e588ca168a140c5a761616cc8c9e5838b76a3e6d40f794f5",
+      "ddl_hash": "c4ba61805a464a30cc1469e4f17c97b7ad6357ee07bce99caf3116e9eed93108",
+      "content_hash": "9db7678241c47a31d43762aaa2ff6a10758c1c4f11a93ec33d8b168bba549359",
+      "collected_at": "2026-09-07T07:38:47.094Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Tnt_User_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "租户用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Icon",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "图标",
+          "is_partition": 0
+        },
+        {
+          "name": "Icon_Bkgd",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "图标背景",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Mdl_Plac_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "应用模型配置编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Work_Flow_Id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "工作流编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Enable_Web_Sta_Flag",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "启用WEB站点标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Enable_Api_Acs_Flag",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "启用API访问标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Tplt_App_Flag",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "模版应用标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Had_Lnch_Flag",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "已发布标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Comn_Flag",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "通用标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Create_Time",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Modif_Time",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "修改时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 20,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 21,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43725,
+      "stable_table_id": "pdata_n.t08_brok_mobile_cntr_dvc_adtnl_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_brok_mobile_cntr_dvc_adtnl_info",
+      "table_name": "t08_brok_mobile_cntr_dvc_adtnl_info",
+      "description": "经纪移动柜台设备附加信息",
+      "description_normalized": "经纪移动柜台设备附加信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_brok_mobile_cntr_dvc_adtnl_info__gfhive",
+      "source_hash": "80bc5433cabc6ccdf4b2b4341bc6a49c68227ef2b00fc41d4c57b0ada73d5b28",
+      "ddl_hash": "7fa649465b1012f5ff30c763b0959c4bbd0da6ebf12233c0668324bc9d234848",
+      "content_hash": "961271a50aea0ba0d69072d470d1fe1b8f3ef34b12b0e5a3ed0a81275ad80b99",
+      "collected_at": "2026-09-04T05:41:24.604Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "设备编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "设备类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Seq_No",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "设备序列号",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Mdl",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "设备型号",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Bel_Inr_Org_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "设备归属内部机构",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Mgmt_Emp",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "设备管理员工",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Comn_Emp",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "设备常用员工",
+          "is_partition": 0
+        },
+        {
+          "name": "Reg_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "登记日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43726,
+      "stable_table_id": "pdata_n.t08_cc_pst_dvc_plac_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_cc_pst_dvc_plac_info",
+      "table_name": "t08_cc_pst_dvc_plac_info",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/pdata_n.t08_cc_pst_dvc_plac_info__gfhive",
+      "source_hash": "adc5a3fe5fe4732916cd5250246e379f0fd01e2a600258b2a338148c6e83543c",
+      "ddl_hash": "0ef1884a2bc27b3b3ba7e0d4f74dfc6d97a40f6d9a5e634477dbf6c0296ba663",
+      "content_hash": "554aa41a91f0e3497745c68e9f5edd7eca9f1c9fe4a57d31df910eb83add1941",
+      "collected_at": "2026-09-07T08:59:40.631Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Link_Addr",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Snd_File_Name",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Ind",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_User_Oid",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Evt_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "cust_id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "cust_name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "phone",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 43727,
+      "stable_table_id": "pdata_n.t08_chan__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan",
+      "table_name": "t08_chan",
+      "description": "渠道",
+      "description_normalized": "渠道",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan__gfhive",
+      "source_hash": "fec687942b8f2a4b32220d6853790d90fecc385957974f4d2c7d784c1b0d4fae",
+      "ddl_hash": "0831f2f6dbf418dad4c4c30b6eaf3961e981cfd0df743f063653dbd660acff01",
+      "content_hash": "b13cad382a26219b03d8e635281f11d9dc4861cb2744918a85a384e09d9c9911",
+      "collected_at": "2026-09-02T08:27:14.518Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Chan_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Name",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Addr",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "渠道地址",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Type_Cd",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "渠道类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Stat_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "渠道状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Remark",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "备注",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Cate_Cd",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "渠道类别代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43728,
+      "stable_table_id": "pdata_n.t08_chan_cust_list__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_cust_list",
+      "table_name": "t08_chan_cust_list",
+      "description": "渠道客户名单",
+      "description_normalized": "渠道客户名单",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_cust_list__gfhive",
+      "source_hash": "e68df9180d325133283b9afbd01cda71d595a90dc1e5d9d827569c5d9dbfa753",
+      "ddl_hash": "f668a57848f741411a15c05d7c999f60ef36e1bf561acc8eef3de2b37ed3785c",
+      "content_hash": "22d58e3882ae716111db3ab5fb90b10140ac3f6c05d2380fbd3a71de20c92a20",
+      "collected_at": "2026-09-04T05:44:19.023Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "List_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "名单类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Cust_Type_Cd",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "客户类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Cust_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "客户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Cust_Name",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "客户名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Cust_Info",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "客户信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "源ID",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Info",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "来源信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Creat_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Time",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "修改时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        },
+        {
+          "name": "Busi_Date",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43729,
+      "stable_table_id": "pdata_n.t08_chan_dvrs_fee__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_dvrs_fee",
+      "table_name": "t08_chan_dvrs_fee",
+      "description": "渠道引流费用",
+      "description_normalized": "渠道引流费用",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_dvrs_fee__gfhive",
+      "source_hash": "130f749c42963bba3a165d0fcd34c9296614b7b1254f176fc7885516285a95db",
+      "ddl_hash": "ba9ed46512056ac6e798a17d258d1fdc0777f0a6132943eb21cf43f7668ed00d",
+      "content_hash": "befdfbf1749b0295cdcf1ffd3603452ef3088ce3fd807bdefec15f46e24da78c",
+      "collected_at": "2026-09-04T05:42:17.406Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源ID",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Name",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Fee_Mon",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "费用月份",
+          "is_partition": 0
+        },
+        {
+          "name": "Payb_Fee",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "应付费用",
+          "is_partition": 0
+        },
+        {
+          "name": "Actl_Fee",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "实付费用",
+          "is_partition": 0
+        },
+        {
+          "name": "Aprn_Inr_Org_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "分摊内部机构编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Emp_Id",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "更新员工号",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43730,
+      "stable_table_id": "pdata_n.t08_chan_inr_org_rela_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_inr_org_rela_h",
+      "table_name": "t08_chan_inr_org_rela_h",
+      "description": "渠道内部机构关系历史",
+      "description_normalized": "渠道内部机构关系历史",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_inr_org_rela_h__gfhive",
+      "source_hash": "8a17ca8ea2f30e40b6c965599a1271e9433dcee6100fa8c73a16c6498be7973e",
+      "ddl_hash": "8b9113f2afece2c06f136bdaf42aa0ec9f035a5e44d0ee1d7e25c29a08b1e948",
+      "content_hash": "d33b331c9e9318a2cecd8d6d5fc541d5e199fca0ce81ddfd771d4054dd280338",
+      "collected_at": "2026-09-04T05:30:12.012Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Org_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道内部机构关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Inr_Org_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "内部机构编号",
+          "is_partition": 0
+        },
+        {
+          "name": "END_DATE",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_SRC_CD",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "TASK_NAME",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_TIME",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43731,
+      "stable_table_id": "pdata_n.t08_chan_rela_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_rela_h",
+      "table_name": "t08_chan_rela_h",
+      "description": "渠道关系历史",
+      "description_normalized": "渠道关系历史",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_rela_h__gfhive",
+      "source_hash": "29a79a8297da734dce86d6a6ca89229fa36ed39fb8b11427793f4f0f90b216a0",
+      "ddl_hash": "20124fec0b8c1672116f3500895d0bcf8c5dcf0e8ef88051c48da096ee03924c",
+      "content_hash": "c02f69f3b03c2d2ccf25605a898eef23eb2680b9011fd9a172cd68af8174120a",
+      "collected_at": "2026-09-02T08:26:18.462Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Rela_Chan_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "关联渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43732,
+      "stable_table_id": "pdata_n.t08_chan_stati_info_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_stati_info_h",
+      "table_name": "t08_chan_stati_info_h",
+      "description": "渠道统计信息历史",
+      "description_normalized": "渠道统计信息历史",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_stati_info_h__gfhive",
+      "source_hash": "605572a2c03c844d434e7171bf4579f1fa4e606060e767ccdcef1b504cc5d856",
+      "ddl_hash": "308e801e98801e18b33ff7a2d7f4508ff7aa8d8f84058fab23ba15ed0307088f",
+      "content_hash": "5746f8bff8371a7a21fed3c0017e733633f3ba1612f8b96b01bfda3b1d006677",
+      "collected_at": "2026-09-07T10:46:06.190Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Stati_Info_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道统计信息类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Stati_Cont_Desc",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "统计内容描述",
+          "is_partition": 0
+        },
+        {
+          "name": "Stati_Qty_Info",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "统计数值信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Stati_Num_Info",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "统计数量信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Stati_Subdv_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "统计细项代码",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43733,
+      "stable_table_id": "pdata_n.t08_chan_user_rela_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_chan_user_rela_h",
+      "table_name": "t08_chan_user_rela_h",
+      "description": "渠道用户关系历史",
+      "description_normalized": "渠道用户关系历史",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_chan_user_rela_h__gfhive",
+      "source_hash": "c878dbc72aa51f43e30413a433abd4b3a9f1420e90b0a882739e8124b3f84017",
+      "ddl_hash": "50adc2b7f5d10fc6295b31bad137274a4a07577f9628a5f57de12281c605b3d5",
+      "content_hash": "2d5a549105186c2f9a931c1ce6a3d65acd64ed39b72c3bf8d3130bd8104b33ac",
+      "collected_at": "2026-09-07T07:38:47.123Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_User_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道用户关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43734,
+      "stable_table_id": "pdata_n.t08_crm_dvrs_chan_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_crm_dvrs_chan_info",
+      "table_name": "t08_crm_dvrs_chan_info",
+      "description": "开户引流渠道信息",
+      "description_normalized": "开户引流渠道信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl,local:tables-cache",
+      "source_path": "hive/pdata_n.t08_crm_dvrs_chan_info__gfhive",
+      "source_hash": "92ca2596737fdf709f4f5957aa0aff4860f14d21180a93fbee633e2c0719780a",
+      "ddl_hash": "912e0f497772c02fac919487cd07ff4f65b015acd995cb4a89c81f8553b349b5",
+      "content_hash": "5632f9ebe3c83b920fcf65d214f3b05a1df6796675df5ecf0ded2e96750bc1b7",
+      "collected_at": "2026-08-22T21:10:45.709Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "chan_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "src_chan_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_name",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_user_name",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "渠道用户名称",
+          "is_partition": 0
+        },
+        {
+          "name": "dvrs_inr_org_id",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "引流营业部编号",
+          "is_partition": 0
+        },
+        {
+          "name": "cms_cd",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "佣金代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvrs_type_cd",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "引流类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "co_org_cd",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "合作机构代码",
+          "is_partition": 0
+        },
+        {
+          "name": "co_org_name",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "合作机构名称",
+          "is_partition": 0
+        },
+        {
+          "name": "co_org_abbr_en",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "合作机构英文简称",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "del_date",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "disc_flag",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "打折渠道标志",
+          "is_partition": 0
+        },
+        {
+          "name": "dvrs_src",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "引流来源",
+          "is_partition": 0
+        },
+        {
+          "name": "real_src_tbl",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43735,
+      "stable_table_id": "pdata_n.t08_dvc_base_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_dvc_base_info",
+      "table_name": "t08_dvc_base_info",
+      "description": "设备基本信息",
+      "description_normalized": "设备基本信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_path": "hive/pdata_n.t08_dvc_base_info__gfhive",
+      "source_hash": "cc655f63ede2136e629c1569d137889c288ab83f7c2dc321a19f0d2014cb28ce",
+      "ddl_hash": "18876705f4387d8241df54c883ba4f274bb62293f9b16d67080f6e809c2f5727",
+      "content_hash": "43997d23552b73c408a6308de41c2629cf45becabf96cd324122c40877450a3f",
+      "collected_at": "2026-08-22T23:01:17.363Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "dvc_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "设备编号",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_cate_cd",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "设备类别代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_name",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "设备名",
+          "is_partition": 0
+        },
+        {
+          "name": "domain_id",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "管理域ID",
+          "is_partition": 0
+        },
+        {
+          "name": "gnrl_dvc_ip",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "广义设备IP",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_ip",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "设备IP",
+          "is_partition": 0
+        },
+        {
+          "name": "mac",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "设备MAC地址",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_ind",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "设备标识",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_oid",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "设备厂商OID",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_desc",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "设备描述",
+          "is_partition": 0
+        },
+        {
+          "name": "net_seg",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "所属网段",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_serv",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "设备服务",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_type_cd",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "设备类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_nknm",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "设备别名",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_stat_cd",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "设备状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "inr_org_id",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "内部机构编号",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_prin_user_id",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "设备负责人用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_loc",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "设备位置",
+          "is_partition": 0
+        },
+        {
+          "name": "unit_dvc_flag",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "单位设备标志",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_down_time",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "设备最近离线时间",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_fir_fd_time",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "设备首次发现时间",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "del_date",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 23,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 24,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 25,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 26,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 27,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "trmn_brand",
+          "ordinal": 28,
+          "raw_type": "string",
+          "comment": "终端品牌",
+          "is_partition": 0
+        },
+        {
+          "name": "seq_no",
+          "ordinal": 29,
+          "raw_type": "string",
+          "comment": "序列号",
+          "is_partition": 0
+        },
+        {
+          "name": "svc_no",
+          "ordinal": 30,
+          "raw_type": "string",
+          "comment": "运营商编号",
+          "is_partition": 0
+        },
+        {
+          "name": "oper_sys",
+          "ordinal": 31,
+          "raw_type": "string",
+          "comment": "操作系统",
+          "is_partition": 0
+        },
+        {
+          "name": "sdk_ver",
+          "ordinal": 32,
+          "raw_type": "string",
+          "comment": "SDK版本",
+          "is_partition": 0
+        },
+        {
+          "name": "sys_ver",
+          "ordinal": 33,
+          "raw_type": "string",
+          "comment": "系统版本",
+          "is_partition": 0
+        },
+        {
+          "name": "real_src_tbl",
+          "ordinal": 34,
+          "raw_type": "string",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_upd_time",
+          "ordinal": 35,
+          "raw_type": "string",
+          "comment": "设备更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_clos_push_flag",
+          "ordinal": 36,
+          "raw_type": "string",
+          "comment": "设备关闭推送标志",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 37,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43736,
+      "stable_table_id": "pdata_n.t08_dvc_inr_org_rela_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_dvc_inr_org_rela_h",
+      "table_name": "t08_dvc_inr_org_rela_h",
+      "description": "设备内部机构关系历史",
+      "description_normalized": "设备内部机构关系历史",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_dvc_inr_org_rela_h__gfhive",
+      "source_hash": "cf8cf2db92f0250d52274ab127f1d3c8fda7959b83366bbb7b69f03076177f42",
+      "ddl_hash": "d516ae7b76d091676dd78913b519b8237c38a39149d7e5ffd05aa84960fe68fe",
+      "content_hash": "12b7a6670f8e621c8e0dee316dd2ea40e5ca88f91bb5506e78ac40a1dec2121d",
+      "collected_at": "2026-09-07T09:44:08.647Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Org_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道内部机构关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Inr_Org_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "内部机构编号",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43737,
+      "stable_table_id": "pdata_n.t08_dvc_stat_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_dvc_stat_h",
+      "table_name": "t08_dvc_stat_h",
+      "description": "设备状态历史",
+      "description_normalized": "设备状态历史",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_dvc_stat_h__gfhive",
+      "source_hash": "b5016e5dcbeccc4a534428664cc27edfc91d581624065024b950348e637c621d",
+      "ddl_hash": "2e5135e26184e79b19f7b9cd4a1b75a970f0e536f13fd3a02db8350232c5a8af",
+      "content_hash": "048ab4ef09d832a0110e3cc9d620f70e436f3cf356edbe745c8c1559eaa749cf",
+      "collected_at": "2026-09-07T09:44:08.602Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "设备编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Pty_Stat_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道状态类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Type_Cd",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "设备类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Stat_Cd",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "设备状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43738,
+      "stable_table_id": "pdata_n.t08_dvc_user_rela_h__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_dvc_user_rela_h",
+      "table_name": "t08_dvc_user_rela_h",
+      "description": "设备用户关系历史",
+      "description_normalized": "设备用户关系历史",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_dvc_user_rela_h__gfhive",
+      "source_hash": "c9380a98b6840c5a137a1562e70c126c8b765bd2922e8fb212b95a921eea0aac",
+      "ddl_hash": "7f7276bd5cabe1a6a7e0d74ad2b010b00ef4cd5d2bee4b7ddbcc4e9ecf289d38",
+      "content_hash": "1c793f4bc47972b6d54bc5336479dd612ac0276a07811564fd50d72ab4dac4b8",
+      "collected_at": "2026-09-04T05:33:17.849Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "设备编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Cate_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "设备类别代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_User_Rela_Type_Cd",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "设备用户关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "开始日期",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Chan_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "应用渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_User_Id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "源用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "结束日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43739,
+      "stable_table_id": "pdata_n.t08_emp_onln_dvc_adtnl_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_emp_onln_dvc_adtnl_info",
+      "table_name": "t08_emp_onln_dvc_adtnl_info",
+      "description": "员工联网设备附加信息",
+      "description_normalized": "员工联网设备附加信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_path": "hive/pdata_n.t08_emp_onln_dvc_adtnl_info__gfhive",
+      "source_hash": "c70e8c6c379941d037c912912905ea1159c6058b892b8b9a37eb4032150e6839",
+      "ddl_hash": "47e41d23d1e5cf46e9b17b073be340abea10d996279a36b3077ad114947e84d6",
+      "content_hash": "275ac1d76885db79913d90df745b44a4e1be1b00b156eff46f1f6c10fa9b15a3",
+      "collected_at": "2026-08-22T23:01:39.814Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "dvc_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "设备编号",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_beg_time",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "设备启动时间",
+          "is_partition": 0
+        },
+        {
+          "name": "uni_acs_agnt_stat_cd",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "UniAccess代理状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "snmp_agnt_stat_cd",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "SNMP代理运行状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "old_uni_acs_agnt_stat_cd",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "旧UniAccess代理状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "last_uni_acs_agnt_down_time",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "最新UniAccess代理离线时间",
+          "is_partition": 0
+        },
+        {
+          "name": "agnt_type_cd",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "代理类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dot1x_ver",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "DOT1x 版本",
+          "is_partition": 0
+        },
+        {
+          "name": "uni_acs_agnt_ver",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "UniAccess代理版本",
+          "is_partition": 0
+        },
+        {
+          "name": "windows_domain",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "Windows 域",
+          "is_partition": 0
+        },
+        {
+          "name": "topo_fd_flag",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "拓扑发现标志",
+          "is_partition": 0
+        },
+        {
+          "name": "manu_add_flag",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "手工添加标志",
+          "is_partition": 0
+        },
+        {
+          "name": "long_unrun_flag",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "长期未运行标志",
+          "is_partition": 0
+        },
+        {
+          "name": "fd_long_unrun_time",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "发现长期未运行时间",
+          "is_partition": 0
+        },
+        {
+          "name": "topo_use_dvc_type_cd",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "拓扑使用设备类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_type_manu_setp_flag",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "设备类型手工设置标志",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_ast_id",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "设备资产编号",
+          "is_partition": 0
+        },
+        {
+          "name": "manu_setp_dvc_attr_flag",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "手工设置设备属性标志",
+          "is_partition": 0
+        },
+        {
+          "name": "imultios",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "imultios",
+          "is_partition": 0
+        },
+        {
+          "name": "hide_flag",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "隐藏标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ext_stat_cd",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "可扩展状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_rpt_link",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "设备报告链接",
+          "is_partition": 0
+        },
+        {
+          "name": "cust_setp_pkg_name",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "客户化名称",
+          "is_partition": 0
+        },
+        {
+          "name": "cust_setp_pkg_time",
+          "ordinal": 23,
+          "raw_type": "string",
+          "comment": "客户化时间",
+          "is_partition": 0
+        },
+        {
+          "name": "setp_pkg_type",
+          "ordinal": 24,
+          "raw_type": "string",
+          "comment": "安装包类型",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_chk_scor",
+          "ordinal": 25,
+          "raw_type": "string",
+          "comment": "设备检查评分",
+          "is_partition": 0
+        },
+        {
+          "name": "vlan_form",
+          "ordinal": 26,
+          "raw_type": "string",
+          "comment": "Vlan格式",
+          "is_partition": 0
+        },
+        {
+          "name": "has_tag",
+          "ordinal": 27,
+          "raw_type": "string",
+          "comment": "标记",
+          "is_partition": 0
+        },
+        {
+          "name": "last_pwd_setp_time",
+          "ordinal": 28,
+          "raw_type": "string",
+          "comment": "密码最近修改时间",
+          "is_partition": 0
+        },
+        {
+          "name": "switch_dvc_id",
+          "ordinal": 29,
+          "raw_type": "string",
+          "comment": "交换机设备id",
+          "is_partition": 0
+        },
+        {
+          "name": "switch_name",
+          "ordinal": 30,
+          "raw_type": "string",
+          "comment": "交换机名名称",
+          "is_partition": 0
+        },
+        {
+          "name": "port",
+          "ordinal": 31,
+          "raw_type": "string",
+          "comment": "端口号",
+          "is_partition": 0
+        },
+        {
+          "name": "switch_port_name",
+          "ordinal": 32,
+          "raw_type": "string",
+          "comment": "交换机端口名",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_reg_rslt",
+          "ordinal": 33,
+          "raw_type": "string",
+          "comment": "设备注册结果",
+          "is_partition": 0
+        },
+        {
+          "name": "open_serv",
+          "ordinal": 34,
+          "raw_type": "string",
+          "comment": "开放服务",
+          "is_partition": 0
+        },
+        {
+          "name": "add_ad_flag",
+          "ordinal": 35,
+          "raw_type": "string",
+          "comment": "加入AD域标志",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_fd_stat_cd",
+          "ordinal": 36,
+          "raw_type": "string",
+          "comment": "设备发现状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_loc_lgtd",
+          "ordinal": 37,
+          "raw_type": "string",
+          "comment": "设备位置经度",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_loc_latd",
+          "ordinal": 38,
+          "raw_type": "string",
+          "comment": "设备位置纬度",
+          "is_partition": 0
+        },
+        {
+          "name": "gps_lgtd",
+          "ordinal": 39,
+          "raw_type": "string",
+          "comment": "gps定位经度",
+          "is_partition": 0
+        },
+        {
+          "name": "gps_latd",
+          "ordinal": 40,
+          "raw_type": "string",
+          "comment": "gps定位纬度",
+          "is_partition": 0
+        },
+        {
+          "name": "nat_ip",
+          "ordinal": 41,
+          "raw_type": "string",
+          "comment": "NATIP地址",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_ad_acct",
+          "ordinal": 42,
+          "raw_type": "string",
+          "comment": "设备AD账号",
+          "is_partition": 0
+        },
+        {
+          "name": "email",
+          "ordinal": 43,
+          "raw_type": "string",
+          "comment": "Email",
+          "is_partition": 0
+        },
+        {
+          "name": "iso_flag",
+          "ordinal": 44,
+          "raw_type": "string",
+          "comment": "隔离标志",
+          "is_partition": 0
+        },
+        {
+          "name": "net_disp_stat_cd",
+          "ordinal": 45,
+          "raw_type": "string",
+          "comment": "断网处置状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_canc_stat_cd",
+          "ordinal": 46,
+          "raw_type": "string",
+          "comment": "设备报废状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "unchk_dvc_flag",
+          "ordinal": 47,
+          "raw_type": "string",
+          "comment": "免检设备标志",
+          "is_partition": 0
+        },
+        {
+          "name": "baidu_loc",
+          "ordinal": 48,
+          "raw_type": "string",
+          "comment": "百度位置",
+          "is_partition": 0
+        },
+        {
+          "name": "dvc_strt_time",
+          "ordinal": 49,
+          "raw_type": "string",
+          "comment": "设备的开机启动时间",
+          "is_partition": 0
+        },
+        {
+          "name": "local_id",
+          "ordinal": 50,
+          "raw_type": "string",
+          "comment": "本地Id",
+          "is_partition": 0
+        },
+        {
+          "name": "chip_id",
+          "ordinal": 51,
+          "raw_type": "string",
+          "comment": "芯片ID",
+          "is_partition": 0
+        },
+        {
+          "name": "hd_id",
+          "ordinal": 52,
+          "raw_type": "string",
+          "comment": "硬盘ID",
+          "is_partition": 0
+        },
+        {
+          "name": "board_id",
+          "ordinal": 53,
+          "raw_type": "string",
+          "comment": "主板ID",
+          "is_partition": 0
+        },
+        {
+          "name": "crpd_port_type_cd",
+          "ordinal": 54,
+          "raw_type": "string",
+          "comment": "通信端口类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 55,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "del_date",
+          "ordinal": 56,
+          "raw_type": "string",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 57,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 58,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 59,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 60,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 61,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 62,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43740,
+      "stable_table_id": "pdata_n.t08_ew_chan_adtnl_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_ew_chan_adtnl_info",
+      "table_name": "t08_ew_chan_adtnl_info",
+      "description": "企微渠道附加信息",
+      "description_normalized": "企微渠道附加信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_path": "hive/pdata_n.t08_ew_chan_adtnl_info__gfhive",
+      "source_hash": "1241f444089d0004b77318dd37628ec66293a60b41a11a12ebd8d75fd65ea5c3",
+      "ddl_hash": "8d18548ae6a395cd7bf2297d73364f180974bdf40998fa4fa9aae525a3730699",
+      "content_hash": "b58cb20a1fceb871e0c8e0c4eda498c1b0bb967b1ab69424118f1bccd5bc1f0d",
+      "collected_at": "2026-08-27T08:54:49.251Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "chan_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "src_chan_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_name",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "prnt_src_info",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "父来源信息",
+          "is_partition": 0
+        },
+        {
+          "name": "chld_src_info",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "子来源信息",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_addr",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "渠道地址",
+          "is_partition": 0
+        },
+        {
+          "name": "qrcd_vld_days",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "二维码有效天数",
+          "is_partition": 0
+        },
+        {
+          "name": "perm_flag",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "永久标志",
+          "is_partition": 0
+        },
+        {
+          "name": "supt_emoji_flag",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "支持emoji标志",
+          "is_partition": 0
+        },
+        {
+          "name": "lbl_flag",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "打标签标志",
+          "is_partition": 0
+        },
+        {
+          "name": "lbl_name",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "标签名称",
+          "is_partition": 0
+        },
+        {
+          "name": "send_welcome_lang_flag",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "发送欢迎语标志",
+          "is_partition": 0
+        },
+        {
+          "name": "welcome_lang_info",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "欢迎语信息",
+          "is_partition": 0
+        },
+        {
+          "name": "trmn",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "终端",
+          "is_partition": 0
+        },
+        {
+          "name": "remark",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "备注",
+          "is_partition": 0
+        },
+        {
+          "name": "new_remark",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "新备注",
+          "is_partition": 0
+        },
+        {
+          "name": "create_time",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "modif_time",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "修改时间",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "del_date",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 23,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 24,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "real_src_tbl",
+          "ordinal": 25,
+          "raw_type": "string",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 26,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43741,
+      "stable_table_id": "pdata_n.t08_gks_chan_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_gks_chan_info",
+      "table_name": "t08_gks_chan_info",
+      "description": "金钥匙渠道信息",
+      "description_normalized": "金钥匙渠道信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_path": "hive/pdata_n.t08_gks_chan_info__gfhive",
+      "source_hash": "fb69727a44e846a6df40611d566499b895c34f4fff9fd55c6e3e87ef82f06255",
+      "ddl_hash": "2122d93de9d145a0464895e0c8ea89a9d3594a2abb35db2f785e8e4e434408e9",
+      "content_hash": "fafad842b600915d9e73825803cca354113c20c04aac34f959a748a21db1902b",
+      "collected_at": "2026-08-27T08:45:06.847Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "chan_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "src_chan_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_name",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "chan_user_name",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "渠道用户名称",
+          "is_partition": 0
+        },
+        {
+          "name": "inr_org_id",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "营业部编号",
+          "is_partition": 0
+        },
+        {
+          "name": "dvrs_inr_org_id",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "引流营业部编号",
+          "is_partition": 0
+        },
+        {
+          "name": "cms_pkg",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "佣金套餐",
+          "is_partition": 0
+        },
+        {
+          "name": "chn_pkg",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "渠道套餐",
+          "is_partition": 0
+        },
+        {
+          "name": "bnk_no",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "托管银行",
+          "is_partition": 0
+        },
+        {
+          "name": "idx_page",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "首页文件",
+          "is_partition": 0
+        },
+        {
+          "name": "ext_chn",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "外部合作主渠道",
+          "is_partition": 0
+        },
+        {
+          "name": "inr_occa",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "内部主场景",
+          "is_partition": 0
+        },
+        {
+          "name": "sub_ext_chn",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "外部合作子渠道",
+          "is_partition": 0
+        },
+        {
+          "name": "sub_inr_occa",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "内部子场景",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl1_cate",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "一级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl2_cate",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "二级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl3_cate",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "三级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "chn_oact_cate",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "渠道开户群组类别",
+          "is_partition": 0
+        },
+        {
+          "name": "mode",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "模式",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "del_date",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 23,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 24,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 25,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "refr_emp_id",
+          "ordinal": 26,
+          "raw_type": "string",
+          "comment": "推荐人员工编号",
+          "is_partition": 0
+        },
+        {
+          "name": "appr_date",
+          "ordinal": 27,
+          "raw_type": "string",
+          "comment": "审核日期",
+          "is_partition": 0
+        },
+        {
+          "name": "lock_refr_flag",
+          "ordinal": 28,
+          "raw_type": "string",
+          "comment": "锁定推荐人标志",
+          "is_partition": 0
+        },
+        {
+          "name": "lock_org_flag",
+          "ordinal": 29,
+          "raw_type": "string",
+          "comment": "锁定营业部标志",
+          "is_partition": 0
+        },
+        {
+          "name": "disc_flag",
+          "ordinal": 30,
+          "raw_type": "string",
+          "comment": "打折渠道标志",
+          "is_partition": 0
+        },
+        {
+          "name": "skip_brch_opt_flag",
+          "ordinal": 31,
+          "raw_type": "string",
+          "comment": "跳过营业部选择标志",
+          "is_partition": 0
+        },
+        {
+          "name": "canc_diff_addr_chk_flag",
+          "ordinal": 32,
+          "raw_type": "string",
+          "comment": "取消异地地址校验标志",
+          "is_partition": 0
+        },
+        {
+          "name": "supt_brch_link_flag",
+          "ordinal": 33,
+          "raw_type": "string",
+          "comment": "支持营业部联动标志",
+          "is_partition": 0
+        },
+        {
+          "name": "bel_prior",
+          "ordinal": 34,
+          "raw_type": "string",
+          "comment": "归属优先级",
+          "is_partition": 0
+        },
+        {
+          "name": "los_bk_del_flag",
+          "ordinal": 35,
+          "raw_type": "string",
+          "comment": "流失挽回剔除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "fin_lvl1_clas",
+          "ordinal": 36,
+          "raw_type": "string",
+          "comment": "财务一级分类",
+          "is_partition": 0
+        },
+        {
+          "name": "fin_lvl2_clas",
+          "ordinal": 37,
+          "raw_type": "string",
+          "comment": "财务二级分类",
+          "is_partition": 0
+        },
+        {
+          "name": "prin_emp_id",
+          "ordinal": 38,
+          "raw_type": "string",
+          "comment": "负责人员工编号",
+          "is_partition": 0
+        },
+        {
+          "name": "prin_emp_name",
+          "ordinal": 39,
+          "raw_type": "string",
+          "comment": "负责人员工名称",
+          "is_partition": 0
+        },
+        {
+          "name": "real_src_tbl",
+          "ordinal": 40,
+          "raw_type": "string",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "afl_rela_type_cd",
+          "ordinal": 41,
+          "raw_type": "string",
+          "comment": "挂靠关系类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "hide_acct_type_cd",
+          "ordinal": 42,
+          "raw_type": "string",
+          "comment": "隐藏账户类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 43,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43742,
+      "stable_table_id": "pdata_n.t08_gu_bnk_org_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_gu_bnk_org_info",
+      "table_name": "t08_gu_bnk_org_info",
+      "description": "金纽带银行机构信息",
+      "description_normalized": "金纽带银行机构信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_gu_bnk_org_info__gfhive",
+      "source_hash": "725ae2d4cfce7f5a5642025c83c01e96057cdf27965b33bd70bd9abdc8c29fb0",
+      "ddl_hash": "d1934628dbe049b30023a1e09787428da26f814b97ca797c710e3c8af9a5c429",
+      "content_hash": "0491eb1e98a5dcbd15fe3849114dfff6920f9b137e67eb89f00b1a51d11b4e98",
+      "collected_at": "2026-09-04T05:30:12.449Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "CHAN_ID",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_CHAN_ID",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "PRNT_CHAN_ID",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "父渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "PRNT_SRC_CHAN_ID",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "源父渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "CHAN_NAME",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "ORG_CITY_SUBB",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "机构市支行",
+          "is_partition": 0
+        },
+        {
+          "name": "ORG_PROV_BRCH",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "机构省分行",
+          "is_partition": 0
+        },
+        {
+          "name": "ORG_LVL",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "机构级别",
+          "is_partition": 0
+        },
+        {
+          "name": "BNK_ID",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "银行编号",
+          "is_partition": 0
+        },
+        {
+          "name": "HEAD_OFC_FLAG",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "总部标志",
+          "is_partition": 0
+        },
+        {
+          "name": "DEL_FLAG",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "DEL_DATE",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_SRC_CD",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "TASK_NAME",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_ETL_DATE",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_UPT_DATE",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_TIME",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43743,
+      "stable_table_id": "pdata_n.t08_oact_chan_lmt_plac_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_oact_chan_lmt_plac_info",
+      "table_name": "t08_oact_chan_lmt_plac_info",
+      "description": "开户渠道限制配置信息",
+      "description_normalized": "开户渠道限制配置信息",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_oact_chan_lmt_plac_info__gfhive",
+      "source_hash": "a56538db086aa21f0d21e33720546152a62052892658092b7c116e5a08e01113",
+      "ddl_hash": "16f594042f1cf71da7151fbefbcf996a0e6911be18cccc27058d70f9c1ed49cc",
+      "content_hash": "fa4f56b179c1115ad978f82053b0531f75a478976d9b03e80e41e2e0c74e8383",
+      "collected_at": "2026-09-07T08:26:26.425Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Plac_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "配置编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Inr_Occa",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "内部主场景",
+          "is_partition": 0
+        },
+        {
+          "name": "Sub_Inr_Occa",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "内部子场景",
+          "is_partition": 0
+        },
+        {
+          "name": "Ext_Chn",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "外部合作主渠道",
+          "is_partition": 0
+        },
+        {
+          "name": "Sub_Ext_Chn",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "外部合作子渠道",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Owner_Type_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "渠道所有者类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Refr_Emp_Id",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "推荐人员工编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Brch_Inr_Org_Id",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "营业部内部机构编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Jnt_Oact_Ptnr_Emp_Mobile",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "联合开户合作方员工手机号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Lmt_Type_Cd",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "渠道限制类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Regain_Way_Cd",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "申请恢复方式代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Lmt_Thrh",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "渠道限制阈值",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Lmt_Date",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "渠道限制日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Lmt_Stat_Cd",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "渠道限制状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Abc_Brch_No",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "农行营业部编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Abc_Prsn_No",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "农行人员编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Abc_Net_No",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "农行网点编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Ccb_Net_No",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "建行网点编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Ccb_Upper_Net_No",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "建行分行编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Ccb_Act_No",
+          "ordinal": 20,
+          "raw_type": "STRING",
+          "comment": "建行活动编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Icbc_Loc_No",
+          "ordinal": 21,
+          "raw_type": "STRING",
+          "comment": "工行区域编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Icbc_Prsn_No",
+          "ordinal": 22,
+          "raw_type": "STRING",
+          "comment": "工行人员编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Icbc_Net_No",
+          "ordinal": 23,
+          "raw_type": "STRING",
+          "comment": "工行网点编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Boc_Upper_Net_No",
+          "ordinal": 24,
+          "raw_type": "STRING",
+          "comment": "中行分行编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Boc_Net_No",
+          "ordinal": 25,
+          "raw_type": "STRING",
+          "comment": "中行网点编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Boc_Prsn_No",
+          "ordinal": 26,
+          "raw_type": "STRING",
+          "comment": "中行人员编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Cib_Prsn_No",
+          "ordinal": 27,
+          "raw_type": "STRING",
+          "comment": "兴业银行人员编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 28,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 29,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 30,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 31,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 32,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 33,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 34,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        },
+        {
+          "name": "Busi_Date",
+          "ordinal": 35,
+          "raw_type": "STRING",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43744,
+      "stable_table_id": "pdata_n.t08_oact_dvrs_bnk_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_oact_dvrs_bnk_info",
+      "table_name": "t08_oact_dvrs_bnk_info",
+      "description": "开户引流合作银行信息",
+      "description_normalized": "开户引流合作银行信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_oact_dvrs_bnk_info__gfhive",
+      "source_hash": "19fa6e2ee1c697c0df6cc862a64576be1263ce1a1273dd31653e50652b55f285",
+      "ddl_hash": "abf0675ee41f3ef39741a7d00ed7bf367727bcfd46e7f1fd917e3fa087c4aa3d",
+      "content_hash": "0ec1e52b380a3c3d763429bac2602cd468ce22e20ea791df4efca91bd1cdbacf",
+      "collected_at": "2026-09-04T05:30:13.422Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Chan_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Bnk_No",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "银行代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Bnk_Name",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "银行名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43745,
+      "stable_table_id": "pdata_n.t08_oper_site_ai_mdl_plac_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_oper_site_ai_mdl_plac_info",
+      "table_name": "t08_oper_site_ai_mdl_plac_info",
+      "description": "运营位AI模型配置信息",
+      "description_normalized": "运营位ai模型配置信息",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_oper_site_ai_mdl_plac_info__gfhive",
+      "source_hash": "c28d0ef29452a98d11d3c1a4fc866b8d476a66df456733f164cf20b2c9a29ace",
+      "ddl_hash": "9ff89a86555a1954ac88fd46bef0b762703cf9c24b0c4062fbec4121e5f68ac7",
+      "content_hash": "17398da725fbd1e95ef54663e65f16a419d2d8323d47a679a6cb77eb130ee5fb",
+      "collected_at": "2026-09-04T08:25:59.944Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Plac_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "配置编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Oper_Site_Chan_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "运营位渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Oper_Site_Chan_Name",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "运营位名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Oper_Site_Resrc_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "运营位资源编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Oper_Site_Resrc_Info",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "运营位资源信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Ai_Mdl_Type_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "Ai模型类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Ai_Mdl_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "Ai模型编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Scor_Thrh",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "分数阈值",
+          "is_partition": 0
+        },
+        {
+          "name": "Plac_Vld_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "配置生效时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Plac_Invld_Time",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "配置失效时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Create_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Time",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Prsn_User_Id",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "更新人用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43746,
+      "stable_table_id": "pdata_n.t08_pmb_acs_chan_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_pmb_acs_chan_info",
+      "table_name": "t08_pmb_acs_chan_info",
+      "description": "积分商城接入渠道信息",
+      "description_normalized": "积分商城接入渠道信息",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_pmb_acs_chan_info__gfhive",
+      "source_hash": "2b9ff0cdb16e8fc30f55d360f72415b8069b9a029d075fa957217b14950b35e3",
+      "ddl_hash": "a0654efbf50b584dcb369e76e975d7c88940942f74e51496d9d9c9a0d3370b2d",
+      "content_hash": "d26e810e5b1a1d3246bbb3d8af94d819b366aeb8885e9fcd9dafafc2f4766e2c",
+      "collected_at": "2026-09-02T08:28:15.551Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Chan_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Name",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "渠道名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Auth_Flag",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "验证标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Acs_Key",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "访问口令",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43747,
+      "stable_table_id": "pdata_n.t08_shop_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_shop_info",
+      "table_name": "t08_shop_info",
+      "description": "店铺信息",
+      "description_normalized": "店铺信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_shop_info__gfhive",
+      "source_hash": "3548409d0c1633de1838235b17b34b1d50b700313f2081e43caccb18e2973ea0",
+      "ddl_hash": "47f7259cd660952fe70c6159cefcd1b9d7cd5c4258ca364746b8fee4655f4c14",
+      "content_hash": "9d50ea5de2c51dff79878bb6607510739e123df49d81df1056464584a4fdfc78",
+      "collected_at": "2026-09-04T05:32:30.615Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "渠道类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Id",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "店铺编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Name",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "店铺名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Wechat",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "微信号",
+          "is_partition": 0
+        },
+        {
+          "name": "Qq",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "QQ号",
+          "is_partition": 0
+        },
+        {
+          "name": "Mobile",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "手机号",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Ntce",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "店铺公告",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Intro",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "店铺简介",
+          "is_partition": 0
+        },
+        {
+          "name": "Ivst_Idea",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "投资理念",
+          "is_partition": 0
+        },
+        {
+          "name": "Ability",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "能力专长",
+          "is_partition": 0
+        },
+        {
+          "name": "His_Perf",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "历史业绩",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Owner_User_Id",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "店主信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Owner_Nknm",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "店主别名",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Type_Cd",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "店铺类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Kind",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "店铺种类",
+          "is_partition": 0
+        },
+        {
+          "name": "Hide_Flag",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "隐藏标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Owner_Clos_Flag",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "用户关闭店铺标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Sign_Promis_Flag",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "签订承诺书标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Fnd_Sale_Qual_Flag",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "基金销售资格标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Ia_Qual_Flag",
+          "ordinal": 20,
+          "raw_type": "STRING",
+          "comment": "投顾资格标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Perm_Push_App_Flag",
+          "ordinal": 21,
+          "raw_type": "STRING",
+          "comment": "允许推送到APP标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Owner_Bel_Oa",
+          "ordinal": 22,
+          "raw_type": "STRING",
+          "comment": "店主所属Oa",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Uniq_Cd",
+          "ordinal": 23,
+          "raw_type": "STRING",
+          "comment": "店铺唯一代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Invt_Info",
+          "ordinal": 24,
+          "raw_type": "STRING",
+          "comment": "邀请信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Create_Time",
+          "ordinal": 25,
+          "raw_type": "STRING",
+          "comment": "店铺创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upd_Time",
+          "ordinal": 26,
+          "raw_type": "STRING",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 27,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 28,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 29,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 30,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 31,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 32,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 33,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Shop_Cstsv_Info",
+          "ordinal": 34,
+          "raw_type": "STRING",
+          "comment": "店小二信息",
+          "is_partition": 0
+        },
+        {
+          "name": "Occp_Emp_Info",
+          "ordinal": 35,
+          "raw_type": "STRING",
+          "comment": "职员信息",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 36,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43748,
+      "stable_table_id": "pdata_n.t08_sip_chan_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_sip_chan_info",
+      "table_name": "t08_sip_chan_info",
+      "description": "智能化平台渠道信息",
+      "description_normalized": "智能化平台渠道信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_path": "hive/pdata_n.t08_sip_chan_info__gfhive",
+      "source_hash": "ce0c0c0476f40c0dc08aa14e41d63b3665c78469c9638d4ab4dc265f1ed7a5da",
+      "ddl_hash": "e54df9a65831b2d7274f30e3f6f62895f093bb20c258c5dc8a069bd146c138ef",
+      "content_hash": "0c4b23ceccbda46b0626a3a4179497fe89288ec2766e7f1e4e09423fba912ba9",
+      "collected_at": "2026-08-22T12:26:58.966Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "chan_busi_type_cd",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "渠道业务类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl1_entr",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "一级入口",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl1_entr_name",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "一级入口名称",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl1_entr_desc",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "一级入口中文描述",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl2_entr",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "二级入口",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl2_entr_name",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "二级入口名称",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl2_entr_desc",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "二级入口中文描述",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl1_cate",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "一级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl2_cate",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "二级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "lvl3_cate",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "三级类别",
+          "is_partition": 0
+        },
+        {
+          "name": "modif_date",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "修改时间",
+          "is_partition": 0
+        },
+        {
+          "name": "remark",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "备注",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43749,
+      "stable_table_id": "pdata_n.t08_wos_live_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_wos_live_info",
+      "table_name": "t08_wos_live_info",
+      "description": "直播信息",
+      "description_normalized": "直播信息",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/pdata_n.t08_wos_live_info__gfhive",
+      "source_hash": "4a3716ba66d4da6cfb537c3a5453008c89e040e31eeadf0e069cc3bae0b55869",
+      "ddl_hash": "0b0f13e5870c89c69aadfe698a6990bde69cc06ea1ef8c257139a5b4ebf0b15f",
+      "content_hash": "c1e79a64c483bda3a657f271b1d8cd2bc9fad132d78be6e9fcf56e06aeb0efd5",
+      "collected_at": "2026-09-02T08:26:24.380Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "CHAN_ID",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_CHAN_ID",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "源渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "ANCHOR_ID",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "主播Id",
+          "is_partition": 0
+        },
+        {
+          "name": "ANCHOR_NAME",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "主播名称",
+          "is_partition": 0
+        },
+        {
+          "name": "APP_ID",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "申请Id",
+          "is_partition": 0
+        },
+        {
+          "name": "APP_RSN",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "申请原因",
+          "is_partition": 0
+        },
+        {
+          "name": "RM_STAT",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "房间状态",
+          "is_partition": 0
+        },
+        {
+          "name": "RM_STAT_SCOR",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "房间状态评分",
+          "is_partition": 0
+        },
+        {
+          "name": "RM_NAME",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "房间名称",
+          "is_partition": 0
+        },
+        {
+          "name": "RM_DESC",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "房间介绍",
+          "is_partition": 0
+        },
+        {
+          "name": "COVER_IMG",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "封面图片",
+          "is_partition": 0
+        },
+        {
+          "name": "KIND",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "种类",
+          "is_partition": 0
+        },
+        {
+          "name": "LIVE_PLAN_TIME",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "直播计划时间",
+          "is_partition": 0
+        },
+        {
+          "name": "ENABLE_PLAYBACK_VIDEO",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "启用回放视频",
+          "is_partition": 0
+        },
+        {
+          "name": "UPLD_VIDEO",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "上传视频",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_KIND_LMT",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "观众类型限制",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_SCOP_LMT",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "观众范围限制",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_CNT_LMT",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "观众数量限制",
+          "is_partition": 0
+        },
+        {
+          "name": "BRCH_CNT",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "营业部统计",
+          "is_partition": 0
+        },
+        {
+          "name": "PV",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "浏览次数",
+          "is_partition": 0
+        },
+        {
+          "name": "UV",
+          "ordinal": 20,
+          "raw_type": "STRING",
+          "comment": "访问次数",
+          "is_partition": 0
+        },
+        {
+          "name": "MAX_UV",
+          "ordinal": 21,
+          "raw_type": "STRING",
+          "comment": "在线用户数峰值",
+          "is_partition": 0
+        },
+        {
+          "name": "LIKE_CNT",
+          "ordinal": 22,
+          "raw_type": "STRING",
+          "comment": "点赞数量",
+          "is_partition": 0
+        },
+        {
+          "name": "LIVE_CHAT_RM_ONLN_CNT",
+          "ordinal": 23,
+          "raw_type": "STRING",
+          "comment": "直播间聊天室在线人数",
+          "is_partition": 0
+        },
+        {
+          "name": "CHAT_RM_STAT",
+          "ordinal": 24,
+          "raw_type": "STRING",
+          "comment": "聊天室状态",
+          "is_partition": 0
+        },
+        {
+          "name": "BEF_PLY_ALR_FLAG",
+          "ordinal": 25,
+          "raw_type": "STRING",
+          "comment": "开播前提醒标志",
+          "is_partition": 0
+        },
+        {
+          "name": "PRESET_PLY_TIME",
+          "ordinal": 26,
+          "raw_type": "STRING",
+          "comment": "预设开播时间",
+          "is_partition": 0
+        },
+        {
+          "name": "END_PLY_TIME",
+          "ordinal": 27,
+          "raw_type": "STRING",
+          "comment": "结束播放时间",
+          "is_partition": 0
+        },
+        {
+          "name": "REAL_PLY_TIME",
+          "ordinal": 28,
+          "raw_type": "STRING",
+          "comment": "真实播放时间",
+          "is_partition": 0
+        },
+        {
+          "name": "UPLD_VIDEO_TIME",
+          "ordinal": 29,
+          "raw_type": "STRING",
+          "comment": "上传视频时间",
+          "is_partition": 0
+        },
+        {
+          "name": "ANCHOR_OA",
+          "ordinal": 30,
+          "raw_type": "STRING",
+          "comment": "主播oa",
+          "is_partition": 0
+        },
+        {
+          "name": "LIVE_LMT_TYPE",
+          "ordinal": 31,
+          "raw_type": "STRING",
+          "comment": "直播限制类型",
+          "is_partition": 0
+        },
+        {
+          "name": "RPT_AUDIENCE_CNT",
+          "ordinal": 32,
+          "raw_type": "STRING",
+          "comment": "报备观众人数",
+          "is_partition": 0
+        },
+        {
+          "name": "LIVING_UV",
+          "ordinal": 33,
+          "raw_type": "STRING",
+          "comment": "直播时的uv",
+          "is_partition": 0
+        },
+        {
+          "name": "PRD_CD",
+          "ordinal": 34,
+          "raw_type": "STRING",
+          "comment": "产品代码",
+          "is_partition": 0
+        },
+        {
+          "name": "TEST_FLAG",
+          "ordinal": 35,
+          "raw_type": "STRING",
+          "comment": "测试标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ANCHOR_TEAM",
+          "ordinal": 36,
+          "raw_type": "STRING",
+          "comment": "主播团队",
+          "is_partition": 0
+        },
+        {
+          "name": "UPD_TIME",
+          "ordinal": 37,
+          "raw_type": "STRING",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "MIX_STREAM_FLAG",
+          "ordinal": 38,
+          "raw_type": "STRING",
+          "comment": "混流标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_MEM_FLAG",
+          "ordinal": 39,
+          "raw_type": "STRING",
+          "comment": "允许会员观看标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_PORTAL_FLAG",
+          "ordinal": 40,
+          "raw_type": "STRING",
+          "comment": "允许广发通用户观看标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_ANONYMOUS_FLAG",
+          "ordinal": 41,
+          "raw_type": "STRING",
+          "comment": "允许匿名用户观看标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_GRP_CHAT_FLAG",
+          "ordinal": 42,
+          "raw_type": "STRING",
+          "comment": "允许群聊标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_AUDIENCE_IN_RM_FLAG",
+          "ordinal": 43,
+          "raw_type": "STRING",
+          "comment": "允许观众进入直播间标志",
+          "is_partition": 0
+        },
+        {
+          "name": "ALLOW_AUDIENCE_IN_RM_REAL_TIME_FLAG",
+          "ordinal": 44,
+          "raw_type": "STRING",
+          "comment": "允许观众进入直播间实时性标志",
+          "is_partition": 0
+        },
+        {
+          "name": "TRTC_RM_ID",
+          "ordinal": 45,
+          "raw_type": "STRING",
+          "comment": "trtc直播间id",
+          "is_partition": 0
+        },
+        {
+          "name": "ATTACH_ADDR",
+          "ordinal": 46,
+          "raw_type": "STRING",
+          "comment": "附件地址",
+          "is_partition": 0
+        },
+        {
+          "name": "LIVE_CHAT_RM_ONLN_CNT_PEAK",
+          "ordinal": 47,
+          "raw_type": "STRING",
+          "comment": "直播间聊天室在线人数峰值",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_RISK_LVL_LMT",
+          "ordinal": 48,
+          "raw_type": "STRING",
+          "comment": "观众风险等级限制",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_IVST_TERM_LMT",
+          "ordinal": 49,
+          "raw_type": "STRING",
+          "comment": "观众投资期限限制",
+          "is_partition": 0
+        },
+        {
+          "name": "AUDIENCE_IVST_TYPE_LMT",
+          "ordinal": 50,
+          "raw_type": "STRING",
+          "comment": "观众投资类型限制",
+          "is_partition": 0
+        },
+        {
+          "name": "QCLOUD_REC_VIDEO",
+          "ordinal": 51,
+          "raw_type": "STRING",
+          "comment": "腾讯云录制视频",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TRMN",
+          "ordinal": 52,
+          "raw_type": "STRING",
+          "comment": "来源终端",
+          "is_partition": 0
+        },
+        {
+          "name": "DELIVER_CHAN_TYPE_CD",
+          "ordinal": 53,
+          "raw_type": "STRING",
+          "comment": "分发渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_DELIVER_CHAN_TYPE_CD",
+          "ordinal": 54,
+          "raw_type": "STRING",
+          "comment": "源分发渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "IVST_LIVE_FLAG",
+          "ordinal": 55,
+          "raw_type": "STRING",
+          "comment": "投顾类直播标志",
+          "is_partition": 0
+        },
+        {
+          "name": "STK_INFO",
+          "ordinal": 56,
+          "raw_type": "STRING",
+          "comment": "股票信息",
+          "is_partition": 0
+        },
+        {
+          "name": "LBL",
+          "ordinal": 57,
+          "raw_type": "STRING",
+          "comment": "标签",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_SRC_CD",
+          "ordinal": 58,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "TASK_NAME",
+          "ordinal": 59,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_ETL_DATE",
+          "ordinal": 60,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "DATA_UPT_DATE",
+          "ordinal": 61,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 62,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        },
+        {
+          "name": "BUSI_DATE",
+          "ordinal": 63,
+          "raw_type": "STRING",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 43750,
+      "stable_table_id": "pdata_n.t08_wos_shor_vdo_info__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t08_wos_shor_vdo_info",
+      "table_name": "t08_wos_shor_vdo_info",
+      "description": "理财网店短视频信息",
+      "description_normalized": "理财网店短视频信息",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/pdata_n.t08_wos_shor_vdo_info__gfhive",
+      "source_hash": "7591a78a71797c8f7ce22edf06b3bf03d84a5a427dce50197adbd36001d406d0",
+      "ddl_hash": "7481d2e616628d8caf706a3a973b1e9f7194a1ccf41687cd964e5f1a55f03118",
+      "content_hash": "102e4f966f0a6b9749d43ded53338b1e931cde5428774a5b80abb8613cba6aa8",
+      "collected_at": "2026-09-04T05:31:41.370Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "渠道编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Shor_Vdo_Id",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "短视频id",
+          "is_partition": 0
+        },
+        {
+          "name": "Anchor_User_Id",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "主播用户编号",
+          "is_partition": 0
+        },
+        {
+          "name": "Anchor_User_Name",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "主播用户名称",
+          "is_partition": 0
+        },
+        {
+          "name": "Shor_Vdo_Title",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "标题",
+          "is_partition": 0
+        },
+        {
+          "name": "Desc",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "描述",
+          "is_partition": 0
+        },
+        {
+          "name": "Cover_Img",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "封面",
+          "is_partition": 0
+        },
+        {
+          "name": "Shor_Vdo_Stat_Cd",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "短视频状态代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Shor_Vdo_Clas",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "短视频分类",
+          "is_partition": 0
+        },
+        {
+          "name": "Ivst_Advs_Flag",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "投顾标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Lbl_Name",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "标签名称",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Id",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "申请id",
+          "is_partition": 0
+        },
+        {
+          "name": "Like_Cnt",
+          "ordinal": 12,
+          "raw_type": "STRING",
+          "comment": "累计点赞数",
+          "is_partition": 0
+        },
+        {
+          "name": "Pv",
+          "ordinal": 13,
+          "raw_type": "STRING",
+          "comment": "累计pv",
+          "is_partition": 0
+        },
+        {
+          "name": "Heat",
+          "ordinal": 14,
+          "raw_type": "STRING",
+          "comment": "热度",
+          "is_partition": 0
+        },
+        {
+          "name": "Rels_Time",
+          "ordinal": 15,
+          "raw_type": "STRING",
+          "comment": "发布的时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Upld_Time",
+          "ordinal": 16,
+          "raw_type": "STRING",
+          "comment": "上传的时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Del_Time",
+          "ordinal": 17,
+          "raw_type": "STRING",
+          "comment": "视频删除时间",
+          "is_partition": 0
+        },
+        {
+          "name": "Qcloud_File_Id",
+          "ordinal": 18,
+          "raw_type": "STRING",
+          "comment": "腾讯云文件id",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Height",
+          "ordinal": 19,
+          "raw_type": "STRING",
+          "comment": "视频高度",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Width",
+          "ordinal": 20,
+          "raw_type": "STRING",
+          "comment": "视频宽度",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Dura",
+          "ordinal": 21,
+          "raw_type": "STRING",
+          "comment": "视频时长(S)",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Url",
+          "ordinal": 22,
+          "raw_type": "STRING",
+          "comment": "视频链接地址",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Cover_Img_Url",
+          "ordinal": 23,
+          "raw_type": "STRING",
+          "comment": "视频封面地址",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Self_Adapt_Url",
+          "ordinal": 24,
+          "raw_type": "STRING",
+          "comment": "视频自适应地址",
+          "is_partition": 0
+        },
+        {
+          "name": "Vdo_Trnlt_Url",
+          "ordinal": 25,
+          "raw_type": "STRING",
+          "comment": "视频转码后地址",
+          "is_partition": 0
+        },
+        {
+          "name": "Busi_Link_Type",
+          "ordinal": 26,
+          "raw_type": "STRING",
+          "comment": "业务链接类型",
+          "is_partition": 0
+        },
+        {
+          "name": "Busi_Link",
+          "ordinal": 27,
+          "raw_type": "STRING",
+          "comment": "业务链接内容",
+          "is_partition": 0
+        },
+        {
+          "name": "Busi_Link_Title",
+          "ordinal": 28,
+          "raw_type": "STRING",
+          "comment": "业务链接标题",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Flag",
+          "ordinal": 29,
+          "raw_type": "STRING",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "Del_Date",
+          "ordinal": 30,
+          "raw_type": "STRING",
+          "comment": "删除日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 31,
+          "raw_type": "STRING",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 32,
+          "raw_type": "STRING",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Etl_Date",
+          "ordinal": 33,
+          "raw_type": "STRING",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Upt_Date",
+          "ordinal": 34,
+          "raw_type": "STRING",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 35,
+          "raw_type": "STRING",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "SRC_TBL",
+          "ordinal": 36,
+          "raw_type": "STRING",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 53710,
+      "stable_table_id": "temp.t08_chan_inr_org_rela_h_mid_osc003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_inr_org_rela_h_mid_osc003",
+      "table_name": "t08_chan_inr_org_rela_h_mid_osc003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_chan_inr_org_rela_h_mid_osc003__gfhive",
+      "source_hash": "7166fdcd256feec7a193d79c279253730e451c226f53ab770c72f4bafdcff602",
+      "ddl_hash": "95b32419a0936f9a997d2072d26c31a5c87e1921f8c69d551e51a0c88f062989",
+      "content_hash": "79d24fa8a6bd9d53c207432814e06c5add72d2d3ca6f09491c85171c2039a07b",
+      "collected_at": "2026-09-04T05:36:18.524Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53711,
+      "stable_table_id": "temp.t08_chan_mid_aum082__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_aum082",
+      "table_name": "t08_chan_mid_aum082",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_mid_aum082__gfhive",
+      "source_hash": "38b69b4a7b8effb602994684fe34143106e884c679e436e67862ca5ee6519758",
+      "ddl_hash": "aa783da1fc0e0c91a9686ed042fd15045500fb9f4f875448f57ddbfef2084c5c",
+      "content_hash": "4a6042e210a41fcb25ad41af5e1c8ae362bcf2563af36f31f83635a98ffc7957",
+      "collected_at": "2026-09-04T05:30:12.191Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53712,
+      "stable_table_id": "temp.t08_chan_mid_aum083__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_aum083",
+      "table_name": "t08_chan_mid_aum083",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_mid_aum083__gfhive",
+      "source_hash": "0db078bc2e389e8e037ed1f289c4b352b56598bc87cd880bc4eecf5af7d5726c",
+      "ddl_hash": "e8fb5b9192caa0a1c2c0695a6ca5ac1a90c9155e2d81bd04ea596bc2e6318453",
+      "content_hash": "b9d703d244ea34bec6c6e5097a09a7d44de53aad326c07aeed5df32cfd508d73",
+      "collected_at": "2026-09-04T05:30:12.882Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53713,
+      "stable_table_id": "temp.t08_chan_mid_aum098__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_aum098",
+      "table_name": "t08_chan_mid_aum098",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_mid_aum098__gfhive",
+      "source_hash": "e3d0cbeea3e20dd73bf325df546092a02eca219edc1d2309a2bd207b291675f6",
+      "ddl_hash": "050f0e3d03e2f71be67046d4688a3327bab663e5ebe4c183e42fc23c0e98f040",
+      "content_hash": "baa3700c1e089bc3f8f432d66dcb28d868d7c6137d2b82ebe09b00bdbaedd990",
+      "collected_at": "2026-09-04T05:30:12.928Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53714,
+      "stable_table_id": "temp.t08_chan_mid_gks032__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_gks032",
+      "table_name": "t08_chan_mid_gks032",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_mid_gks032__gfhive",
+      "source_hash": "d804db4b72badb4b28dda3dcda202d543ca7059fe15e4f495d6fafde44d092e5",
+      "ddl_hash": "6c503c7a6da8ef10214a5d8db3ac1e042df8316cf960ac238b57bdda37eb1eca",
+      "content_hash": "081a7e17be49dc38bc0106feb4640a0c58bc9471b0718cc3bed3799176489802",
+      "collected_at": "2026-09-04T05:30:12.430Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53715,
+      "stable_table_id": "temp.t08_chan_mid_oao031__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_oao031",
+      "table_name": "t08_chan_mid_oao031",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_mid_oao031__gfhive",
+      "source_hash": "485dd23012bd1db45416224ce39dee7cb3b36b29c92a021fdbfd272bc55544a2",
+      "ddl_hash": "ec7bab60758fc8e201554cc60dc5de969dd22c0223b7825b54e0b26262becbdb",
+      "content_hash": "8674d0d274e04f5e4c1f8c73e694772450a078dc9abeb7b3d6ea7d6fd76a9f9e",
+      "collected_at": "2026-09-04T05:30:12.120Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53716,
+      "stable_table_id": "temp.t08_chan_mid_wcm032__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_wcm032",
+      "table_name": "t08_chan_mid_wcm032",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_chan_mid_wcm032__gfhive",
+      "source_hash": "0516accf46036c04eb55d9396252adbcb656e432426b06b401549c916e8280b6",
+      "ddl_hash": "59758121fa2cfe3418aa3c40fa0f64c08b3e31bca66cc82e91ad9d0d03e759de",
+      "content_hash": "33bc2d4586ef94f8a47e21feda2d74c405e9119029192eba179ce11a32a16225",
+      "collected_at": "2026-09-07T11:44:31.917Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53717,
+      "stable_table_id": "temp.t08_chan_mid_wos018__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_mid_wos018",
+      "table_name": "t08_chan_mid_wos018",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_chan_mid_wos018__gfhive",
+      "source_hash": "02e4c1b4e16853372cfccc804c97f2f7988b5693f826d3b35495b1011a311554",
+      "ddl_hash": "967656059e4603ac89f6d7b79088db0fa2adb61ece442ee3b995a888c8581f4d",
+      "content_hash": "4ce7beffa88bb60c6d9b8b387bfcda8873fb77aa574cb4a20b90e0c804d7464e",
+      "collected_at": "2026-09-04T05:32:30.524Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53718,
+      "stable_table_id": "temp.t08_chan_rela_h_aum098_mid__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_rela_h_aum098_mid",
+      "table_name": "t08_chan_rela_h_aum098_mid",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_rela_h_aum098_mid__gfhive",
+      "source_hash": "223d65f208ab31a91da8398996c901ba990d1fb7a56be578226a2aaefefab6ff",
+      "ddl_hash": "3e3e1f446e80c6025d9ae1f94a2f5ba03ae3772d01824084beb330f787e59b6f",
+      "content_hash": "b64e54f5b21fee348063716efdba1593e6c62ea16e71a1901ce8eedff05ca1ef",
+      "collected_at": "2026-09-08T05:49:22.016Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53719,
+      "stable_table_id": "temp.t08_chan_rela_h_aum098_temp__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_rela_h_aum098_temp",
+      "table_name": "t08_chan_rela_h_aum098_temp",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_rela_h_aum098_temp__gfhive",
+      "source_hash": "71cdb6ea154da5333901b4192a3e9f2b717691eae6c8bdf7c332a53222355427",
+      "ddl_hash": "494dd1dbf90eb5c780633eee39ecec8a848cb6a57c66b5085060804d6c7c0a54",
+      "content_hash": "b5cb78bf318842296e0d28d78d8eeed86ebc48f6a7465bee670617bb52456376",
+      "collected_at": "2026-09-08T05:49:22.016Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53720,
+      "stable_table_id": "temp.t08_chan_temp_aum082__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_aum082",
+      "table_name": "t08_chan_temp_aum082",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_temp_aum082__gfhive",
+      "source_hash": "19867b73996ea99261e948d464ac6b31618da07bebb3547ef4c2ab2c5dd48034",
+      "ddl_hash": "bf4a6ac1c4cdb41a6a0d763a03bdffe50ff7815806959cfe5d2c9716a62a87ae",
+      "content_hash": "cac89b69cdc98b2e7a6ef280428e225cbc83cfa45836b4896983f9cdcf80ccd5",
+      "collected_at": "2026-09-04T05:30:12.191Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53721,
+      "stable_table_id": "temp.t08_chan_temp_aum083__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_aum083",
+      "table_name": "t08_chan_temp_aum083",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_temp_aum083__gfhive",
+      "source_hash": "5986c4a797887cd734498fd69a4eb19933b33cd4befe93bfacc995a14ed9244a",
+      "ddl_hash": "7cfe2054654aa13154062855fe4f8f9b7a66babcac4ca18349e0f4ae2a18b867",
+      "content_hash": "be7e1dede3f7cc2398e33c73e4435ac44f3eb900836f451a94559dc209cf439c",
+      "collected_at": "2026-09-04T05:30:12.882Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53722,
+      "stable_table_id": "temp.t08_chan_temp_aum098__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_aum098",
+      "table_name": "t08_chan_temp_aum098",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_temp_aum098__gfhive",
+      "source_hash": "90020930974497932a108a45d7230177d0a0699e29e3836eaa59c0f43f24a888",
+      "ddl_hash": "0862bc16c4d2f53506ad63ba7faf2c0d747ca3ef66b935d35b9b3c08b4e99b7f",
+      "content_hash": "d6a080f52a18585c10819b8c1704e68d47d480323f4fc808bca21092fe9222c6",
+      "collected_at": "2026-09-04T05:30:12.928Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53723,
+      "stable_table_id": "temp.t08_chan_temp_gks032__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_gks032",
+      "table_name": "t08_chan_temp_gks032",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_temp_gks032__gfhive",
+      "source_hash": "93b3bf9eaac3c8395dadb8620be2cc4028fdc018b2f5706e3a1d09b78cdf3224",
+      "ddl_hash": "7d4c51090e8cf6b813832a9910caec5ed0f51449457d99341c7d81a323eaa54b",
+      "content_hash": "f13650b12e6d9f3d842815e6a7919c00f3ee8cab5960ddf9b81f4c5efe83d8ac",
+      "collected_at": "2026-09-04T05:30:12.430Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53724,
+      "stable_table_id": "temp.t08_chan_temp_oao031__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_oao031",
+      "table_name": "t08_chan_temp_oao031",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_chan_temp_oao031__gfhive",
+      "source_hash": "52f5bdbdac5cd140cfe700c02a8c694b8e9697d208da98b5d7388892eedb93a1",
+      "ddl_hash": "8336d4edccd596f2ae9b4da3986fa5d5f6595512e76d5f6ee81fc7e6d1ed0709",
+      "content_hash": "13210ed2c796a001debda1df907c597a9ee83293070f5777dc43437c92795f6c",
+      "collected_at": "2026-09-04T05:30:12.120Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53725,
+      "stable_table_id": "temp.t08_chan_temp_wos018__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_temp_wos018",
+      "table_name": "t08_chan_temp_wos018",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_chan_temp_wos018__gfhive",
+      "source_hash": "7c7a5905d51dc523209b245e29ebd369b09082d7bdbf5a1f51286e510200deef",
+      "ddl_hash": "32c14d73e8a5fff23481c0aed08901c830b7d2de7325e8a1c13f815b5115039a",
+      "content_hash": "d353c48f669ecb360361b982b9ae36d718359e46254042b817b3865d4d5810f4",
+      "collected_at": "2026-09-04T05:32:30.524Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53726,
+      "stable_table_id": "temp.t08_chan_user_rela_h_mid_llm013__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_user_rela_h_mid_llm013",
+      "table_name": "t08_chan_user_rela_h_mid_llm013",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_chan_user_rela_h_mid_llm013__gfhive",
+      "source_hash": "b27416a65f0b7924836474bc76cb573a726c0e19f6e6a60e9dea38b099a89c27",
+      "ddl_hash": "533530c25e560b875dc6616fd9f8b993afa4f2265b5a288ec5a3044f76f5292c",
+      "content_hash": "e9d5ae2ea003433ffd30b5f26f9d49a678714f4f95be2c7894c2d1e73f672386",
+      "collected_at": "2026-09-07T07:38:47.123Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_User_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53727,
+      "stable_table_id": "temp.t08_chan_user_rela_h_temp_llm013__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_chan_user_rela_h_temp_llm013",
+      "table_name": "t08_chan_user_rela_h_temp_llm013",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_chan_user_rela_h_temp_llm013__gfhive",
+      "source_hash": "006041658da27bb3123a6a0e5eafe80f5f4bf233f33fb04604ada2a0b8da0ab9",
+      "ddl_hash": "35e780c45dbbd0d3fac5ddd41c972c8793dd65bd99e8c87e0820b3a2a0dfa5f6",
+      "content_hash": "bf93722274901c53a0dd0c6ebba1ebe0ba632da8c73c973220665c3b49a9bffd",
+      "collected_at": "2026-09-07T07:38:47.123Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_User_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Real_Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53728,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_mid_aum082__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_mid_aum082",
+      "table_name": "t08_crm_dvrs_chan_info_mid_aum082",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_mid_aum082__gfhive",
+      "source_hash": "0518d2d1bca131c5fa5730409b1543a6430802f3bf45b7ec256ba6fabf0b1b0d",
+      "ddl_hash": "244b0960cbbedadcd683a102d287635393d5abb1e7dc3eff6b19ec8e43e929a4",
+      "content_hash": "c559f88b47e35110c5b4484d86f22e61313c439e728d75031d1b31f22e734b07",
+      "collected_at": "2026-09-02T08:26:24.490Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53729,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_mid_aum083__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_mid_aum083",
+      "table_name": "t08_crm_dvrs_chan_info_mid_aum083",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_mid_aum083__gfhive",
+      "source_hash": "741eca3faa6e4da9427269c88a2298b7ee47effcf4c7249640e2b4003498f803",
+      "ddl_hash": "1431a465be10d14a95f3d5f144ae657efa9a7af1db6d4414a54cf7f342a4b58c",
+      "content_hash": "23bb2e241be07e1622e9056a8170022275ddce332736b9461868f000a723a0b3",
+      "collected_at": "2026-09-02T08:26:24.687Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53730,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_mid_aum098__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_mid_aum098",
+      "table_name": "t08_crm_dvrs_chan_info_mid_aum098",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_mid_aum098__gfhive",
+      "source_hash": "bb22893b7beafc9f8eb57d8ab375dbc64aab490adf0d28d14d809839f97969ec",
+      "ddl_hash": "450939272f0df63f646cf054a11261ea4996dd7e4a05069c65d0e79c6d268eb8",
+      "content_hash": "cb6fb0093421a406513500eb6fe0b52b4c4c4df4916f7d9e348110a4fc9686e1",
+      "collected_at": "2026-09-02T08:26:24.657Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53731,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_temp_aum082__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_temp_aum082",
+      "table_name": "t08_crm_dvrs_chan_info_temp_aum082",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_temp_aum082__gfhive",
+      "source_hash": "d19a7aaafd5f1e195d6c3e27a396c6ed6abf4f1f59e9cdca77d4afdfed8d2acb",
+      "ddl_hash": "dbb98396e9946a772d7adbeac8a922e292db7267eabb5e8c506e2fccd42777fb",
+      "content_hash": "ac79cbcad1a035b57947ddac297833693eae21fbbeb0da90c2696eaa4ea97783",
+      "collected_at": "2026-09-02T08:26:24.490Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53732,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_temp_aum083__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_temp_aum083",
+      "table_name": "t08_crm_dvrs_chan_info_temp_aum083",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_temp_aum083__gfhive",
+      "source_hash": "a35a9f2cb91066559df1a3fdd37333e50743175bff3bc8014b0dd98297c90f9c",
+      "ddl_hash": "a2d0d39721ae86be05420f5b6f8e583f919ff145a7f5470b20b16ee9a1596624",
+      "content_hash": "f9ba576360d769b4169e3b49dd71c44cc6f3482f6bf2a398bb8fff70c4e6ebcb",
+      "collected_at": "2026-09-02T08:26:24.687Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53733,
+      "stable_table_id": "temp.t08_crm_dvrs_chan_info_temp_aum098__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_crm_dvrs_chan_info_temp_aum098",
+      "table_name": "t08_crm_dvrs_chan_info_temp_aum098",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_crm_dvrs_chan_info_temp_aum098__gfhive",
+      "source_hash": "8bd9dc50583d238cb8f7172e0f0581303ef6d979a215ce9fa3b897cd996be2a4",
+      "ddl_hash": "95650e005e684cf8b6350bd1dea06f280d7ebcaf2c0b590ef63aa707369b82fe",
+      "content_hash": "3a5891595c31d65a9045ad6c8f045ef144e12e6383a6a1bfacd4b17d5ee32efa",
+      "collected_at": "2026-09-02T08:26:24.657Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53734,
+      "stable_table_id": "temp.t08_dvc_inr_org_rela_h_mid_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_inr_org_rela_h_mid_lia003",
+      "table_name": "t08_dvc_inr_org_rela_h_mid_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_inr_org_rela_h_mid_lia003__gfhive",
+      "source_hash": "264af8897c6a48478e483ccfc6cc5b8b05c85174869046e105dfcbdd695cc7db",
+      "ddl_hash": "7d980f5d3e2072ad874af068b8cd75fb0dfdfcd823897cdfb5c6e1c40d500a79",
+      "content_hash": "65968543e3ae6183e47459135fe3ee79acca0bc016a39e422b968755122588c0",
+      "collected_at": "2026-09-07T09:44:08.647Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Org_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Inr_Org_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53735,
+      "stable_table_id": "temp.t08_dvc_inr_org_rela_h_temp_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_inr_org_rela_h_temp_lia003",
+      "table_name": "t08_dvc_inr_org_rela_h_temp_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_inr_org_rela_h_temp_lia003__gfhive",
+      "source_hash": "d92dee1c9fd5d75fdf77e9479b3c67eaf6aa492636153bd1bec1d5fb9e837dc2",
+      "ddl_hash": "6735bae5aea305c4b6dc9dcc48d38bdb5d63a9cf05767c79490cde5ee9af036e",
+      "content_hash": "90034518fedaca03ea5bbed9ce5cb5f46efaba4cbbc0a0d9ae6887e4e2289ed3",
+      "collected_at": "2026-09-07T09:44:08.647Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Chan_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Chan_Org_Rela_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Inr_Org_Id",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53736,
+      "stable_table_id": "temp.t08_dvc_stat_h_mid_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_stat_h_mid_lia003",
+      "table_name": "t08_dvc_stat_h_mid_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_stat_h_mid_lia003__gfhive",
+      "source_hash": "4c67be7eb3076b6c9839e62d6d4c09b0d05edbeb065d1110afaf657a1381e8c3",
+      "ddl_hash": "9bd96ad6a9974ac823fe107b6ef16116cf78bb9b3057429801968496496157b8",
+      "content_hash": "170a52fb9fad62e16192b5cf6773dad7b7aa5f4a91ceec5dcfd89719c1002fde",
+      "collected_at": "2026-09-07T09:44:08.602Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Stat_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Type_Cd",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Stat_Cd",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53737,
+      "stable_table_id": "temp.t08_dvc_stat_h_temp_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_stat_h_temp_lia003",
+      "table_name": "t08_dvc_stat_h_temp_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_stat_h_temp_lia003__gfhive",
+      "source_hash": "dcaf96020b1b0304055fdd88e7ad5a5d641168f5ac1fcc68e0c89a7b2899cac0",
+      "ddl_hash": "838843d05658a51fb0835c54cbc6520b223aa9ef079be86b28a69f9e66a26200",
+      "content_hash": "beeb1064ed249cc927d3961b87a501bc40cd1a35b14ba2e9ac7f40ef4dfacd70",
+      "collected_at": "2026-09-07T09:44:08.602Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Stat_Type_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Type_Cd",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Stat_Cd",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53738,
+      "stable_table_id": "temp.t08_dvc_user_rela_h_mid_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_user_rela_h_mid_lia003",
+      "table_name": "t08_dvc_user_rela_h_mid_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_user_rela_h_mid_lia003__gfhive",
+      "source_hash": "783dac76f2448e9031e39195b783458f5ae683f923b1034688b03f5a6ea4378f",
+      "ddl_hash": "e4407884929283dcf33c8f47fd506de4418b48c210d074145b1b597eb012a316",
+      "content_hash": "3d3526c3e47dc384b3b5f8a8c8491d3cc1c1829fa1bb073089bf62f4cbef9c75",
+      "collected_at": "2026-09-07T09:49:52.384Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Cate_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_User_Rela_Type_Cd",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Chan_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_User_Id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53739,
+      "stable_table_id": "temp.t08_dvc_user_rela_h_temp_lia003__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_dvc_user_rela_h_temp_lia003",
+      "table_name": "t08_dvc_user_rela_h_temp_lia003",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:spliced-from-query-projection",
+      "source_path": "hive/temp.t08_dvc_user_rela_h_temp_lia003__gfhive",
+      "source_hash": "4455226535168a518d805026d41a46d95ab372ddd66ede3afe2d55be50c37ee9",
+      "ddl_hash": "94a0ac2a3e401c6a7d87f1ac91b09b0565e534ff76c7f7af5b58d539e1dc2b96",
+      "content_hash": "e4da38a2d7902ba8a3895c4e7d170a5188578d72a8f6113f9856cc92d30b97f1",
+      "collected_at": "2026-09-07T09:49:52.384Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "Dvc_Id",
+          "ordinal": 0,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_Cate_Cd",
+          "ordinal": 1,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Dvc_User_Rela_Type_Cd",
+          "ordinal": 2,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Strt_Date",
+          "ordinal": 3,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "App_Chan_Id",
+          "ordinal": 4,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_User_Id",
+          "ordinal": 5,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "User_Id",
+          "ordinal": 6,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "End_Date",
+          "ordinal": 7,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Src_Cd",
+          "ordinal": 8,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Task_Name",
+          "ordinal": 9,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Data_Time",
+          "ordinal": 10,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        },
+        {
+          "name": "Src_Tbl",
+          "ordinal": 11,
+          "raw_type": "STRING",
+          "comment": "",
+          "is_partition": 0
+        }
+      ]
+    },
+    {
+      "id": 53740,
+      "stable_table_id": "temp.t08_gks_chan_info_mid_gks034__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gks_chan_info_mid_gks034",
+      "table_name": "t08_gks_chan_info_mid_gks034",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_gks_chan_info_mid_gks034__gfhive",
+      "source_hash": "9ee01d16790fa9a73045a9a91e31f6d1c0b4b03d161893d398c2863c176530c2",
+      "ddl_hash": "d55a436a9f929952c11c5d44158acc3e7b7b4bb6367a42605ba4dce2279540e3",
+      "content_hash": "0f562e6fe759888268b118fcb0f04a65079d205ec71a2d5931213a30ee199f6a",
+      "collected_at": "2026-09-04T03:25:34.581Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53741,
+      "stable_table_id": "temp.t08_gks_chan_info_mid_oao031__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gks_chan_info_mid_oao031",
+      "table_name": "t08_gks_chan_info_mid_oao031",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_gks_chan_info_mid_oao031__gfhive",
+      "source_hash": "f65470e6f1957e577e72a7b468e4e3a6b60a24931685487fa2eea5efa3cbced1",
+      "ddl_hash": "d013e0d0b352bb31b5ac793c9ea1c53a5207bd834da6d8ed0a88989296f3cf56",
+      "content_hash": "f2f150e8bf4cae195fb65db54461cf66d63fba404ca2615fdf0140162a13e6f3",
+      "collected_at": "2026-09-08T05:49:22.429Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53742,
+      "stable_table_id": "temp.t08_gks_chan_info_temp_gks034__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gks_chan_info_temp_gks034",
+      "table_name": "t08_gks_chan_info_temp_gks034",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_gks_chan_info_temp_gks034__gfhive",
+      "source_hash": "15d4b2baac5fa39efb3f2b73f13ad85152dbeb727a7aedbe2c33f5d085352e60",
+      "ddl_hash": "db0fe0857a9ef5b007b3a0a28474d363e32ce271b7e6eb12e7961108810a4309",
+      "content_hash": "87949cb6732d17380aa6c0da4f64852132ffb86bff58b523dbbf0be9ea67dbe8",
+      "collected_at": "2026-09-08T05:49:22.473Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53743,
+      "stable_table_id": "temp.t08_gks_chan_info_temp_oao031__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gks_chan_info_temp_oao031",
+      "table_name": "t08_gks_chan_info_temp_oao031",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_gks_chan_info_temp_oao031__gfhive",
+      "source_hash": "9e49366117b43e98cfe5910439725a589ddfb777beea3c0223a0c5ea85a82a08",
+      "ddl_hash": "374cb1a91ad2daf1a88679aaeb0f9d5a18a7c2c70cc1b86385bb7702cae36285",
+      "content_hash": "0001dce6b3dbf740a1239010822d72027cf442bdd4a9851fedac497a5364fb83",
+      "collected_at": "2026-09-08T05:49:22.429Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53744,
+      "stable_table_id": "temp.t08_gu_bnk_org_info_mid_gks032__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gu_bnk_org_info_mid_gks032",
+      "table_name": "t08_gu_bnk_org_info_mid_gks032",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "input-pack:task-sql-create",
+      "source_path": "hive/temp.t08_gu_bnk_org_info_mid_gks032__gfhive",
+      "source_hash": "2bc417b5c472e485319dd020305097a2874e401040eff38de568fda421724f0d",
+      "ddl_hash": "52e7ba98110d9c50c1d11934ffad3f3d23cf090cd1c6e729dcb29dd80c1418a0",
+      "content_hash": "791fbc6cf89450595059870b741c497742283c293253f61de017d5dac70d9768",
+      "collected_at": "2026-09-04T05:30:12.449Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53745,
+      "stable_table_id": "temp.t08_gu_bnk_org_info_temp_gks032__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_gu_bnk_org_info_temp_gks032",
+      "table_name": "t08_gu_bnk_org_info_temp_gks032",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_gu_bnk_org_info_temp_gks032__gfhive",
+      "source_hash": "879aac7e8f14975e781af9bf27e25b7fa0e7ea0368d58862d6cbc2668c4b61b9",
+      "ddl_hash": "29de5d9ea3364d7fd1ee7997cd2baf61446a2633af2ebff51cd17949f4e549f1",
+      "content_hash": "ea0b2fec7d79b813f1af9e04abc7f13278edf6938df9aa218fd1f15f5dc48903",
+      "collected_at": "2026-09-04T05:30:12.449Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53746,
+      "stable_table_id": "temp.t08_pmb_acs_chan_info_mid_pmb012__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_pmb_acs_chan_info_mid_pmb012",
+      "table_name": "t08_pmb_acs_chan_info_mid_pmb012",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_pmb_acs_chan_info_mid_pmb012__gfhive",
+      "source_hash": "d5f2879b69dd0a8ca3090418ec1849959860d4eda43f778b3731b969f763c374",
+      "ddl_hash": "76dddb8ce77bd9b6e13fc6428f9ec70d906a6f278ce52af7519830fe2e83e16a",
+      "content_hash": "461d559d367972753c9c9b1a6b3290cb7c573db2852c99ccd8b163f6fd97858c",
+      "collected_at": "2026-09-04T05:34:44.508Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    },
+    {
+      "id": 53747,
+      "stable_table_id": "temp.t08_shop_info_mid_wos018__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "temp.t08_shop_info_mid_wos018",
+      "table_name": "t08_shop_info_mid_wos018",
+      "description": "",
+      "description_normalized": "",
+      "object_type": "hive_table",
+      "source": "local:hive-metadata-snapshot,local:hive-ddl-jsonl",
+      "source_path": "hive/temp.t08_shop_info_mid_wos018__gfhive",
+      "source_hash": "1dd446ec6fbd97ad883635988a0925407430dac29c11e86c41dbb16087997890",
+      "ddl_hash": "fa98cddaeb191b0e5c6727e93dd2e85fc7346b8cdd8366c4bed0d6f29f67baac",
+      "content_hash": "033d0a817f2e9f305c89bd9faa5d2738ff7e07ec0abb632c6e44f28a4baa054c",
+      "collected_at": "2026-09-04T05:32:30.615Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "UNSUPPORTED",
+      "fields": []
+    }
+  ]
+}

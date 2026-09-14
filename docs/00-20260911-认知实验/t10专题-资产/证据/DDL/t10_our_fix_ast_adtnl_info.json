@@ -1,0 +1,11 @@
+[
+  {
+    "guid": "ccfb8753-c979-423b-adbe-d5e210e4a0d5",
+    "qualifiedName": "pdata_n.t10_our_fix_ast_adtnl_info@gfhive",
+    "dbName": "pdata_n",
+    "tableName": "t10_our_fix_ast_adtnl_info",
+    "type": "hive / Hive内部表",
+    "partition": "src_tbl, busi_date",
+    "ddl": "create table t10_our_fix_ast_adtnl_info(fix_ast_id string comment '固定资产编号',fix_ast_src_id string comment '固定资产源编号',fa_ast_id string comment 'FA资产编号',ast_ref_no string comment '资产参考号',ori_val string comment '原值',net_val string comment '净值',pc_use_type_cd string comment '计算机使用类型代码',respon_prsn_emp_id string comment '资产责任人员工编号',respon_prsn_user_id string comment '资产责任人用户编号',respon_prsn_name string comment '资产责任人名称',use_dept_inr_org_id string comment '使用内部机构编号',use_dept_inr_org_name string comment '使用内部机构名称',cost_bear_inr_org_id string comment '成本承担内部机构编号',cost_bear_org_seg string comment '成本承担机构段值',cost_bear_inr_org_name string comment '成本承担内部机构名称',req_print_lbl_flag string comment '需打印标签标志',print_flag string comment '已打印标志',ntce_flag string comment '公示标志',purch_ord_id string comment '采购订单编号',contr_no string comment '合同编号',po_no string comment 'PO单号',rent_term_type_cd string comment '租借期限类型代码',rent_strt_time string comment '租借开始时间',rent_end_time string comment '租借结束时间',bpm_instc_id string comment 'BPM实例编号',proc_lnch_user_id string comment '流程发起用户编号',proc_title string comment '流程标题',req_insr_flag string comment '需投保标志',insr_no string comment '投保单号',insr_begn_time string comment '投保起始时间',insr_maty_time string comment '投保到期时间',aprn_bel_cd string comment '分摊归属代码',depr_way string comment '折旧方法',depr_mth_num string comment '折旧月份数',curr_mth_depr_amt string comment '当月折旧金额',incrs_depr_amt string comment '已提折旧金额',trc_back_main_ast_depr_amrt_flag string comment '追溯主资产折旧摊销标志',purch_oper_vsb_flag string comment '采购经办人可见标志',itai_flag string comment '信创标志',push_fsc_flag string comment '推送共享标志',push_cloud_flag string comment '推送云管标志',data_src_cd string comment '数据来源代码',task_name string comment '任务名',data_etl_date string comment '数据加载日期',data_upt_date string comment '数据更新日期',data_time string comment '数据时间',real_src_tbl string comment '真实源表') partitioned by (src_tbl string comment '源表',busi_date string comment '业务日期') row format delimited fields terminated by ',' stored as orc;"
+  }
+]

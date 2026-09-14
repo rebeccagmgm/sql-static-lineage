@@ -1,0 +1,97 @@
+{
+  "code_id": "CD100",
+  "snapshot_status": "UNVERIFIED",
+  "values": [
+    {
+      "code_value": "FAP",
+      "value_description": "基金投顾组合管理平台",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "IA_PORTFOLIO_PL,00380.00002"
+    },
+    {
+      "code_value": "GPB",
+      "value_description": "广发投易通系统（极速版）",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "TYT_JSB,00033"
+    },
+    {
+      "code_value": "HPB",
+      "value_description": "恒生PB主经纪商系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "GFHSPB,00011"
+    },
+    {
+      "code_value": "ICC",
+      "value_description": "机构柜台新一代清算系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "LSGT_XYDQSXT,00307.00002"
+    },
+    {
+      "code_value": "IOA",
+      "value_description": "企业门户2.0",
+      "source_table": "MANU_MATN",
+      "business_date": "2022-08-15",
+      "remark": "IOA,00108.00011"
+    },
+    {
+      "code_value": "OIS",
+      "value_description": "OTC综合业务平台",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "OTCISP,00218"
+    },
+    {
+      "code_value": "PRD",
+      "value_description": "产品中心",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "PCENTER,00084"
+    },
+    {
+      "code_value": "RAS",
+      "value_description": "机器人投顾系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "ROBOT,00120"
+    },
+    {
+      "code_value": "RCC",
+      "value_description": "零售柜台新一代清算系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "JGGT_XYDQSXT,00307.00001"
+    },
+    {
+      "code_value": "TIT",
+      "value_description": "场外衍生品投资管理系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "TITANS,00377"
+    },
+    {
+      "code_value": "TMC",
+      "value_description": "托管管理人综合信息系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "GCFMDD,00292"
+    },
+    {
+      "code_value": "XIR",
+      "value_description": "衡泰交易管理系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "XIR,00051"
+    },
+    {
+      "code_value": "XPB",
+      "value_description": "迅投PB主经纪商系统",
+      "source_table": "MANU_MATN",
+      "business_date": "2021-06-18",
+      "remark": "XTPB,00012"
+    }
+  ]
+}

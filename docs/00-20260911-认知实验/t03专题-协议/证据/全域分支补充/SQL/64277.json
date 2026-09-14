@@ -1,0 +1,545 @@
+{
+  "task_id": "64277",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:24.671Z",
+  "payload_sha256": "6736e3a20df1102dcdd43ea97278a7c1c4a1082675ffed4ac0073bd3c71dbce6",
+  "review_scope": "selected identity, source joins, expressions, date and write scope",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_XIR_LVL2_SCR_HOLD_ADTNL("
+    },
+    {
+      "line": 10,
+      "text": "     LVL1_SCR_ACCT_AGT_ID               STRING COMMENT '一级证券账户协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,LVL1_SCR_ACCT_AGT_MODIFR           STRING COMMENT '一级证券账户协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,LVL2_SCR_ACCT_AGT_ID               STRING COMMENT '二级证券账户协议编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,LVL2_SCR_ACCT_AGT_MODIFR           STRING COMMENT '二级证券账户协议修饰符'"
+    },
+    {
+      "line": 14,
+      "text": "    ,PRD_ID                             STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,SRC_PRD_CATE_CD                    STRING COMMENT '源产品类别代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,LONG_SHOR_CLAS                     STRING COMMENT '多空分类'"
+    },
+    {
+      "line": 17,
+      "text": "    ,HOLD_TYPE_CD                       STRING COMMENT '持仓类型代码'"
+    },
+    {
+      "line": 18,
+      "text": "    ,EXCH_TYPE_CD                       STRING COMMENT '市场代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,VRTL_ID                            STRING COMMENT '虚拟ID'"
+    },
+    {
+      "line": 20,
+      "text": "    ,LONG_VOL                           STRING COMMENT '多头余额'"
+    },
+    {
+      "line": 21,
+      "text": "    ,LONG_RCVB_VOL                      STRING COMMENT '多头应收额'"
+    },
+    {
+      "line": 22,
+      "text": "    ,LONG_PAYB_VOL                      STRING COMMENT '多头应付额'"
+    },
+    {
+      "line": 23,
+      "text": "    ,LONG_LMT                           STRING COMMENT '多头额度'"
+    },
+    {
+      "line": 24,
+      "text": "    ,LONG_CAN_SELL                      STRING COMMENT '多头可卖数'"
+    },
+    {
+      "line": 25,
+      "text": "    ,LONG_FRZ_VOL                       STRING COMMENT '多头冻结数'"
+    },
+    {
+      "line": 26,
+      "text": "    ,LONG_MARG_OCCP                     STRING COMMENT '多头保证金占用'"
+    },
+    {
+      "line": 27,
+      "text": "    ,LONG_COST                          STRING COMMENT '非逐日多头成本'"
+    },
+    {
+      "line": 28,
+      "text": "    ,LONG_COST_NO_FEE                   STRING COMMENT '不含费用非逐日多头成本'"
+    },
+    {
+      "line": 29,
+      "text": "    ,LONG_ACTL_PRFT                     STRING COMMENT '非逐日多头实际损益'"
+    },
+    {
+      "line": 30,
+      "text": "    ,LONG_COST_MTM                      STRING COMMENT '逐日多头成本'"
+    },
+    {
+      "line": 31,
+      "text": "    ,LONG_ACTL_PRFT_MTM                 STRING COMMENT '逐日多头实际损益'"
+    },
+    {
+      "line": 32,
+      "text": "    ,LONG_COST_T1                       STRING COMMENT '多头T+1成本'"
+    },
+    {
+      "line": 33,
+      "text": "    ,LONG_COST_NET_PRIC                 STRING COMMENT '多头净价成本'"
+    },
+    {
+      "line": 34,
+      "text": "    ,BEGN_LONG_COST_CHRG                STRING COMMENT '期初多头成本占资费用'"
+    },
+    {
+      "line": 35,
+      "text": "    ,SHOR_VOL                           STRING COMMENT '空头余额'"
+    },
+    {
+      "line": 36,
+      "text": "    ,SHOR_RCVB_VOL                      STRING COMMENT '空头应收额'"
+    },
+    {
+      "line": 37,
+      "text": "    ,SHOR_PAYB_VOL                      STRING COMMENT '空头应付额'"
+    },
+    {
+      "line": 38,
+      "text": "    ,SHOR_LMT                           STRING COMMENT '空头额度'"
+    },
+    {
+      "line": 39,
+      "text": "    ,SHOR_CAN_SELL                      STRING COMMENT '空头可卖数'"
+    },
+    {
+      "line": 40,
+      "text": "    ,SHOR_FRZ_VOL                       STRING COMMENT '空头冻结数'"
+    },
+    {
+      "line": 41,
+      "text": "    ,SHOR_MARG_OCCP                     STRING COMMENT '空头保证金占用'"
+    },
+    {
+      "line": 42,
+      "text": "    ,SHOR_COST                          STRING COMMENT '非逐日空头成本'"
+    },
+    {
+      "line": 43,
+      "text": "    ,SHOR_COST_NO_FEE                   STRING COMMENT '不含费用非逐日空头成本'"
+    },
+    {
+      "line": 44,
+      "text": "    ,SHOR_ACTL_PRFT                     STRING COMMENT '非逐日空头实际损益'"
+    },
+    {
+      "line": 45,
+      "text": "    ,BEGN_LONG_COST_MTM                 STRING COMMENT '逐日期初空头成本'"
+    },
+    {
+      "line": 46,
+      "text": "    ,SHOR_COST_MTM                      STRING COMMENT '逐日空头成本'"
+    },
+    {
+      "line": 47,
+      "text": "    ,SHOR_ACTL_PRFT_MTM                 STRING COMMENT '逐日空头实际损益'"
+    },
+    {
+      "line": 48,
+      "text": "    ,FUTR_SCR_BEGN_IMPA_VOL             STRING COMMENT '期货保证券出入库期初质押数量'"
+    },
+    {
+      "line": 49,
+      "text": "    ,SWAP_SCR_BEGN_IMPA_VOL             STRING COMMENT '互换保证券出入库期初质押数量'"
+    },
+    {
+      "line": 50,
+      "text": "    ,QRP_SCR_BEGN_IMPA_VOL              STRING COMMENT '报价回购出入库期初质押数量'"
+    },
+    {
+      "line": 51,
+      "text": "    ,UPD_TIME                           STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 52,
+      "text": "    ,END_DATE                           STRING COMMENT '失效日期'"
+    },
+    {
+      "line": 53,
+      "text": "    ,DATA_SRC_CD                        STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 54,
+      "text": "    ,TASK_NAME                          STRING COMMENT '任务名'"
+    },
+    {
+      "line": 55,
+      "text": "    ,DATA_ETL_DATE                      STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 56,
+      "text": "    ,DATA_UPT_DATE                      STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 57,
+      "text": "    ,DATA_TIME                          STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 58,
+      "text": ")COMMENT '自营二级证券账户持仓附加'"
+    },
+    {
+      "line": 59,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT '源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 60,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 61,
+      "text": ""
+    },
+    {
+      "line": 62,
+      "text": "-- querySql"
+    },
+    {
+      "line": 63,
+      "text": "set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 64,
+      "text": "set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 65,
+      "text": "SET hive.exec.max.dynamic.partitions=50000;"
+    },
+    {
+      "line": 66,
+      "text": "SET hive.exec.max.dynamic.partitions.pernode=50000;"
+    },
+    {
+      "line": 67,
+      "text": "set hive.optimize.sort.dynamic.partition=true;"
+    },
+    {
+      "line": 68,
+      "text": "set hive.map.aggr = true;"
+    },
+    {
+      "line": 69,
+      "text": "set hive.groupby.skewindata=true;"
+    },
+    {
+      "line": 70,
+      "text": ""
+    },
+    {
+      "line": 71,
+      "text": ""
+    },
+    {
+      "line": 72,
+      "text": "INSERT OVERWRITE TABLE  T03_XIR_LVL2_SCR_HOLD_ADTNL  PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 73,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 74,
+      "text": "--Group1: Source Table:[ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS:二级证券账户余额历史表] "
+    },
+    {
+      "line": 75,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 76,
+      "text": "SELECT"
+    },
+    {
+      "line": 77,
+      "text": "     SECU_EXT_ACCID                               AS LVL1_SCR_ACCT_AGT_ID         --一级证券账户协议编号"
+    },
+    {
+      "line": 78,
+      "text": "    ,'1010201'                                    AS LVL1_SCR_ACCT_AGT_MODIFR     --一级证券账户协议修饰符"
+    },
+    {
+      "line": 79,
+      "text": "    ,ACCID                                        AS LVL2_SCR_ACCT_AGT_ID         --二级证券账户协议编号"
+    },
+    {
+      "line": 80,
+      "text": "    , '1010202'                                   AS LVL2_SCR_ACCT_AGT_MODIFR     --二级证券账户协议修饰符"
+    },
+    {
+      "line": 81,
+      "text": "    ,I_CODE                                       AS PRD_ID                       --产品编号"
+    },
+    {
+      "line": 82,
+      "text": "    ,''                                           AS SRC_PRD_CATE_CD              --源产品类别代码"
+    },
+    {
+      "line": 83,
+      "text": "    ,CASE WHEN LS = 'L' THEN 'LONG'"
+    },
+    {
+      "line": 84,
+      "text": "          WHEN LS = 'S' THEN 'SHOR'"
+    },
+    {
+      "line": 85,
+      "text": "          ELSE LS END                             AS LONG_SHOR_CLAS               --多空分类"
+    },
+    {
+      "line": 86,
+      "text": "    ,A_TYPE                                       AS HOLD_TYPE_CD                 --持仓类型代码"
+    },
+    {
+      "line": 87,
+      "text": "    ,NVL(DW_CD_VAL,M_TYPE)                        AS EXCH_TYPE_CD                 --市场代码"
+    },
+    {
+      "line": 88,
+      "text": "    ,VIRTUAL_ACCID                                AS VRTL_ID                      --虚拟ID"
+    },
+    {
+      "line": 89,
+      "text": "    ,PS_L_AMOUNT                                  AS LONG_VOL                     --多头余额"
+    },
+    {
+      "line": 90,
+      "text": "    ,PS_L_REC_AMOUNT                              AS LONG_RCVB_VOL                --多头应收额"
+    },
+    {
+      "line": 91,
+      "text": "    ,PS_L_PAY_AMOUNT                              AS LONG_PAYB_VOL                --多头应付额"
+    },
+    {
+      "line": 92,
+      "text": "    ,PS_L_QUO_AMOUNT                              AS LONG_LMT                     --多头额度"
+    },
+    {
+      "line": 93,
+      "text": "    ,PS_L_AVAAMOUNT                               AS LONG_CAN_SELL                --多头可卖数"
+    },
+    {
+      "line": 94,
+      "text": "    ,PS_L_FREAMOUNT                               AS LONG_FRZ_VOL                 --多头冻结数"
+    },
+    {
+      "line": 95,
+      "text": "    ,PS_L_MARGIN_USED                             AS LONG_MARG_OCCP               --多头保证金占用"
+    },
+    {
+      "line": 96,
+      "text": "    ,PS_L_COST                                    AS LONG_COST                    --非逐日多头成本"
+    },
+    {
+      "line": 97,
+      "text": "    ,PS_L_COST_NOT_FEE                            AS LONG_COST_NO_FEE             --不含费用非逐日多头成本"
+    },
+    {
+      "line": 98,
+      "text": "    ,PS_L_ACTUAL_PL                               AS LONG_ACTL_PRFT               --非逐日多头实际损益"
+    },
+    {
+      "line": 99,
+      "text": "    ,PS_L_COST_D                                  AS LONG_COST_MTM                --逐日多头成本"
+    },
+    {
+      "line": 100,
+      "text": "    ,PS_L_ACTUAL_PL_D                             AS LONG_ACTL_PRFT_MTM           --逐日多头实际损益"
+    },
+    {
+      "line": 101,
+      "text": "    ,PS_L_COST_T1                                 AS LONG_COST_T1                 --多头T+1成本"
+    },
+    {
+      "line": 102,
+      "text": "    ,PS_L_COST_NETPRICE                           AS LONG_COST_NET_PRIC           --多头净价成本"
+    },
+    {
+      "line": 103,
+      "text": "    ,PS_L_COST_CHARGE                             AS BEGN_LONG_COST_CHRG          --期初多头成本占资费用"
+    },
+    {
+      "line": 104,
+      "text": "    ,PS_S_AMOUNT                                  AS SHOR_VOL                     --空头余额"
+    },
+    {
+      "line": 105,
+      "text": "    ,PS_S_REC_AMOUNT                              AS SHOR_RCVB_VOL                --空头应收额"
+    },
+    {
+      "line": 106,
+      "text": "    ,PS_S_PAY_AMOUNT                              AS SHOR_PAYB_VOL                --空头应付额"
+    },
+    {
+      "line": 107,
+      "text": "    ,PS_S_QUO_AMOUNT                              AS SHOR_LMT                     --空头额度"
+    },
+    {
+      "line": 108,
+      "text": "    ,PS_S_AVAAMOUNT                               AS SHOR_CAN_SELL                --空头可卖数"
+    },
+    {
+      "line": 109,
+      "text": "    ,PS_S_FREAMOUNT                               AS SHOR_FRZ_VOL                 --空头冻结数"
+    },
+    {
+      "line": 110,
+      "text": "    ,PS_S_MARGIN_USED                             AS SHOR_MARG_OCCP               --空头保证金占用"
+    },
+    {
+      "line": 111,
+      "text": "    ,PS_S_COST                                    AS SHOR_COST                    --非逐日空头成本"
+    },
+    {
+      "line": 112,
+      "text": "    ,PS_S_COST_NOT_FEE                            AS SHOR_COST_NO_FEE             --不含费用非逐日空头成本"
+    },
+    {
+      "line": 113,
+      "text": "    ,PS_S_ACTUAL_PL                               AS SHOR_ACTL_PRFT               --非逐日空头实际损益"
+    },
+    {
+      "line": 114,
+      "text": "    ,PS_L_COST_T1_REAL                            AS BEGN_LONG_COST_MTM           --逐日期初空头成本"
+    },
+    {
+      "line": 115,
+      "text": "    ,PS_S_COST_D                                  AS SHOR_COST_MTM                --逐日空头成本"
+    },
+    {
+      "line": 116,
+      "text": "    ,PS_S_ACTUAL_PL_D                             AS SHOR_ACTL_PRFT_MTM           --逐日空头实际损益"
+    },
+    {
+      "line": 117,
+      "text": "    ,PS_L_FRE_BF_AMOUNT                           AS FUTR_SCR_BEGN_IMPA_VOL       --期货保证券出入库期初质押数量"
+    },
+    {
+      "line": 118,
+      "text": "    ,PS_L_FRE_SWAP_AMOUNT                         AS SWAP_SCR_BEGN_IMPA_VOL       --互换保证券出入库期初质押数量"
+    },
+    {
+      "line": 119,
+      "text": "    ,PS_L_FRE_QR_AMOUNT                           AS QRP_SCR_BEGN_IMPA_VOL        --报价回购出入库期初质押数量"
+    },
+    {
+      "line": 120,
+      "text": "    ,PS_UPDATETIME                                AS UPD_TIME                     --更新时间"
+    },
+    {
+      "line": 121,
+      "text": "    ,END_DATE                                     AS END_DATE                     --失效时间"
+    },
+    {
+      "line": 122,
+      "text": "    ,'XIR'                                        AS DATA_SRC_CD                  --数据来源代码"
+    },
+    {
+      "line": 123,
+      "text": "    ,UPPER('${filename}')                    AS TASK_NAME                    --任务名"
+    },
+    {
+      "line": 124,
+      "text": "    ,'${data_day_str}'                       AS DATA_ETL_DATE                --数据加载日期"
+    },
+    {
+      "line": 125,
+      "text": "    ,'${data_day_str}'                       AS DATA_UPT_DATE                --数据更新日期"
+    },
+    {
+      "line": 126,
+      "text": "    ,'${data_today}'                         AS DATA_TIME                    --数据时间"
+    },
+    {
+      "line": 127,
+      "text": "    ,'ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS'    AS SRC_TBL                      --源表"
+    },
+    {
+      "line": 128,
+      "text": "    ,BEG_DATE                                     AS BUSI_DATE                    --业务日期"
+    },
+    {
+      "line": 129,
+      "text": "FROM (SELECT * FROM ODATA_N_XIR.T_TTRD_ACC_BALANCE_SECU_HIS WHERE BUSI_DATE >=DEFAULT.ADD_MONTHS('${data_day_str}',-1))A"
+    },
+    {
+      "line": 130,
+      "text": " LEFT JOIN ("
+    },
+    {
+      "line": 131,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 132,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 133,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_XIR_LVL2_SCR_HOLD_ADTNL'"
+    },
+    {
+      "line": 134,
+      "text": "            AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 135,
+      "text": "            AND SRC_TAB_NAME = 'TTRD_ACC_BALANCE_SECU_HIS'"
+    },
+    {
+      "line": 136,
+      "text": "            AND SRC_FLD_NAME = 'M_TYPE'"
+    },
+    {
+      "line": 137,
+      "text": "            AND SRC_SYS_NAME='XIR')B"
+    },
+    {
+      "line": 138,
+      "text": "   ON      A.M_TYPE =B.SRC_CD_VAL                  --M_TYPE 转码"
+    },
+    {
+      "line": 139,
+      "text": " "
+    },
+    {
+      "line": 140,
+      "text": ";"
+    },
+    {
+      "line": 141,
+      "text": ""
+    }
+  ]
+}

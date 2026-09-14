@@ -10,6 +10,7 @@ interface CachedTaskName {
   expiresAt: number;
   name?: string;
   owner?: string;
+  cluster?: string;
   topic?: string;
   topicDescription?: string;
 }
@@ -75,9 +76,13 @@ export class SchedulerTaskNameResolver {
     return this.resolveValues(taskIds, "owner");
   }
 
+  public resolveClusters(taskIds: readonly string[]): Record<string, string> {
+    return this.resolveValues(taskIds, "cluster");
+  }
+
   private resolveValues(
     taskIds: readonly string[],
-    field: "name" | "topic" | "topicDescription" | "owner",
+    field: "name" | "topic" | "topicDescription" | "owner" | "cluster",
   ): Record<string, string> {
     const now = (this.options.now ?? Date.now)();
     const expiresAt = now + (this.options.ttlMs ?? 30_000);
@@ -96,6 +101,7 @@ export class SchedulerTaskNameResolver {
       }
       let name: string | undefined;
       let owner: string | undefined;
+      let cluster: string | undefined;
       let topic: string | undefined;
       let topicDescription: string | undefined;
       try {
@@ -103,9 +109,10 @@ export class SchedulerTaskNameResolver {
           ?.prepare(
             "SELECT * FROM horae_task_catalog WHERE task_id = ?",
           )
-          .get(taskId) as { task_name?: unknown; topic?: unknown; owner?: unknown } | undefined;
+          .get(taskId) as { task_name?: unknown; topic?: unknown; owner?: unknown; cluster?: unknown } | undefined;
         name = taskName(row?.task_name);
         owner = taskName(row?.owner);
+        cluster = taskName(row?.cluster);
         topic = taskName(row?.topic);
       } catch {
         // Optional local scheduler metadata must not block a graph query.
@@ -120,7 +127,7 @@ export class SchedulerTaskNameResolver {
           // Older databases can omit the optional topic dictionary.
         }
       }
-      const entry = { expiresAt, name, owner, topic, topicDescription };
+      const entry = { expiresAt, name, owner, cluster, topic, topicDescription };
       this.cache.set(taskId, entry);
       if (entry[field]) labels[taskId] = entry[field];
     }

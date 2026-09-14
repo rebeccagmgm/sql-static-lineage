@@ -80,16 +80,24 @@ export function toggleAllVisible(
   ];
 }
 
+export function selectedTaskFields(fields: GraphNode[], selectedIds: string[], taskId: string): GraphNode[] {
+  const selected = new Set(selectedIds);
+  const task = taskId.trim();
+  return fields.filter(field => selected.has(field.id) && (!task || taskIdentity(field) === task));
+}
+
 export function FieldSelector(props: {
   fields: GraphNode[];
   selectedIds: string[];
   hasMore: boolean;
   onChange: (ids: string[]) => void;
   onLoadMore: () => void;
+  taskId: string;
+  onTaskChange: (taskId: string) => void;
 }) {
   const [fieldSearch, setFieldSearch] = useState(""),
-    [taskId, setTaskId] = useState(""),
     [open, setOpen] = useState(false);
+  const taskId = props.taskId;
   const options = useMemo(() => taskOptions(props.fields), [props.fields]);
   const choices = useMemo(
     () => fieldChoices(props.fields, taskId.trim(), fieldSearch),
@@ -120,16 +128,16 @@ export function FieldSelector(props: {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        已选 {selectedCount} 个字段
+        本次已选 {fieldChoices(selectedTaskFields(props.fields, props.selectedIds, taskId), "", "").length} 个字段
       </button>
       {open && (
         <div className="field-picker-popover">
           <label className="field-search">
-            <span>调度 ID（当前已加载字段）</span>
+            <span>起点调度 ID（限制本次展开）</span>
             <input
               list="loaded-task-ids"
               value={taskId}
-              onChange={(event) => setTaskId(event.target.value)}
+              onChange={(event) => props.onTaskChange(event.target.value)}
               placeholder="输入精确调度 ID"
             />
             <datalist id="loaded-task-ids">
@@ -149,6 +157,7 @@ export function FieldSelector(props: {
             />
           </label>
           <p className="field-selection-summary">
+            {taskId.trim() && <>本次仅展开调度 {taskId.trim()} 的已选字段；其他调度的选择保留但不参与查询。<br /></>}
             当前已加载范围匹配 {choices.length} 个，已选 {visibleSelected} 个
             {hiddenSelected
               ? `；另有 ${hiddenSelected} 个已选字段被筛选隐藏`

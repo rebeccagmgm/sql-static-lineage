@@ -1,0 +1,727 @@
+{
+  "task_id": 96673,
+  "observed_at": "2026-09-05T01:06:41.232Z",
+  "payload_sha256": "15083621c8df5030d4080e308b854a6f81cd756337ef70d8662be91391af7c07",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "create table if not exists  t02_bnd_income_vchr_ois_h"
+    },
+    {
+      "line": 10,
+      "text": "("
+    },
+    {
+      "line": 11,
+      "text": "     rec_id\t\t\t\tstring comment '记录编号'"
+    },
+    {
+      "line": 12,
+      "text": "    ,secu_id\t\t\tstring comment '统一证券编码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,src_sys_prdno\t\tstring comment '源系统产品编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,corp_id\t\t\tstring comment '公司id'"
+    },
+    {
+      "line": 15,
+      "text": "    ,sav_cash\t\t\tstring comment '存量本金'"
+    },
+    {
+      "line": 16,
+      "text": "    ,low_ror\t\t\tstring comment '最低收益率'"
+    },
+    {
+      "line": 17,
+      "text": "    ,expe_ror\t\t\tstring comment '预期收益率'"
+    },
+    {
+      "line": 18,
+      "text": "    ,prd_strt_dt\t\tstring comment '产品开始日期'"
+    },
+    {
+      "line": 19,
+      "text": "    ,prd_val_dt\t\t\tstring comment '产品起息日期'"
+    },
+    {
+      "line": 20,
+      "text": "    ,prd_maty_dt\t\tstring comment '产品到期日期'"
+    },
+    {
+      "line": 21,
+      "text": "    ,pay_dt\t\t\t\tstring comment '兑付日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,inta_days\t\t\tstring comment '计息天数'"
+    },
+    {
+      "line": 23,
+      "text": "    ,prd_type\t\t\tstring comment '产品类型'"
+    },
+    {
+      "line": 24,
+      "text": "    ,prd_stru\t\t\tstring comment '产品结构'"
+    },
+    {
+      "line": 25,
+      "text": "    ,dept\t\t\t\tstring comment '部门'"
+    },
+    {
+      "line": 26,
+      "text": "    ,iss_site\t\t\tstring comment '发行场所'"
+    },
+    {
+      "line": 27,
+      "text": "    ,intrt_ulmt\t\t\tstring comment '利率上限'"
+    },
+    {
+      "line": 28,
+      "text": "    ,pay_intrt\t\t\tstring comment '兑付利率'"
+    },
+    {
+      "line": 29,
+      "text": "    ,pay_amt\t\t\tstring comment '兑付金额'"
+    },
+    {
+      "line": 30,
+      "text": "    ,bren_flag\t\t\tstring comment '是否保本'"
+    },
+    {
+      "line": 31,
+      "text": "    ,preterm_flag\t\tstring comment '是否提前终止'"
+    },
+    {
+      "line": 32,
+      "text": "    ,preterm_date\t\tstring comment '提前终止日期'"
+    },
+    {
+      "line": 33,
+      "text": "    ,last_upd_prsn_id\tstring comment '最后更新人id'"
+    },
+    {
+      "line": 34,
+      "text": "    ,cost_ulmt          string comment '特定成本上限'"
+    },
+    {
+      "line": 35,
+      "text": "    ,inta_regu          string comment '计息规则'"
+    },
+    {
+      "line": 36,
+      "text": "    ,itpy_regu          string comment '付息规则'"
+    },
+    {
+      "line": 37,
+      "text": "    ,ori_pay_dt         string comment '原始兑付日'"
+    },
+    {
+      "line": 38,
+      "text": "    ,actl_ivstr         string comment '实际投资人'"
+    },
+    {
+      "line": 39,
+      "text": "    ,fnd_type_cd        string comment '资金类型代码'    "
+    },
+    {
+      "line": 40,
+      "text": "    ,fnd_type_name      string comment '资金类型名称'    "
+    },
+    {
+      "line": 41,
+      "text": "    ,fwd_rela_flag      string comment '是否挂钩远期'    "
+    },
+    {
+      "line": 42,
+      "text": "    ,tot_cost           string comment '总成本'"
+    },
+    {
+      "line": 43,
+      "text": "    ,remark1\t\t\tstring comment '备注'"
+    },
+    {
+      "line": 44,
+      "text": "    ,remark\t\t\t\tstring comment '备注'"
+    },
+    {
+      "line": 45,
+      "text": "    ,src_tbl\t\t\tstring comment '来源表'"
+    },
+    {
+      "line": 46,
+      "text": "    ,src_rec_id\t\t\tstring comment '来源记录'"
+    },
+    {
+      "line": 47,
+      "text": "    ,rec_upd_time\t\tstring comment '记录更新时间'"
+    },
+    {
+      "line": 48,
+      "text": "    ,rec_down_time\t\tstring comment '记录创建时间'"
+    },
+    {
+      "line": 49,
+      "text": ")"
+    },
+    {
+      "line": 50,
+      "text": "partitioned by "
+    },
+    {
+      "line": 51,
+      "text": "("
+    },
+    {
+      "line": 52,
+      "text": "    busi_date           string comment '数据日期'"
+    },
+    {
+      "line": 53,
+      "text": "    ,src_id             string comment '数据来源'"
+    },
+    {
+      "line": 54,
+      "text": "    ,grp_id             string comment '并行分组标识'"
+    },
+    {
+      "line": 55,
+      "text": ")"
+    },
+    {
+      "line": 56,
+      "text": "stored as ORC;"
+    },
+    {
+      "line": 57,
+      "text": ""
+    },
+    {
+      "line": 58,
+      "text": "-- querySql"
+    },
+    {
+      "line": 59,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 60,
+      "text": "    set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 61,
+      "text": "    set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 62,
+      "text": "    set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 63,
+      "text": "    set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 64,
+      "text": "    set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 65,
+      "text": "    set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 66,
+      "text": "    set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 67,
+      "text": "    set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 68,
+      "text": "    set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 69,
+      "text": "    set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 70,
+      "text": "    set hive.optimize.sort.dynamic.partition=true;"
+    },
+    {
+      "line": 71,
+      "text": "    set hive.map.aggr = true;"
+    },
+    {
+      "line": 72,
+      "text": "    set hive.groupby.skewindata=true;"
+    },
+    {
+      "line": 73,
+      "text": "    set hive.support.concurrency=false;"
+    },
+    {
+      "line": 74,
+      "text": ""
+    },
+    {
+      "line": 75,
+      "text": "with t02_bnd_income_vchr_ois_h_temp AS ("
+    },
+    {
+      "line": 76,
+      "text": "    select"
+    },
+    {
+      "line": 77,
+      "text": "         a.prd_no                                                   as rec_id               --记录编号"
+    },
+    {
+      "line": 78,
+      "text": "        ,coalesce(b.secu_id,concat('FIN.','100000001.',a.prd_no,'.99'))  as secu_id              --统一证券编码"
+    },
+    {
+      "line": 79,
+      "text": "        ,coalesce(b.src_sys_prdno,concat('OTC-',a.prd_no))          as src_sys_prdno        --源系统产品编号"
+    },
+    {
+      "line": 80,
+      "text": "        ,''                                                         as corp_id              --公司id"
+    },
+    {
+      "line": 81,
+      "text": "        ,a.clbj                                                     as sav_cash             --存量本金"
+    },
+    {
+      "line": 82,
+      "text": "        ,a.zdsyl                                                    as low_ror              --最低收益率"
+    },
+    {
+      "line": 83,
+      "text": "        ,a.yqsyl                                                    as expe_ror             --预期收益率"
+    },
+    {
+      "line": 84,
+      "text": "        ,regexp_replace(a.cpqsr,'-','')                             as prd_strt_dt          --产品开始日期"
+    },
+    {
+      "line": 85,
+      "text": "        ,regexp_replace(a.cpqxr,'-','')                             as prd_val_dt           --产品起息日期"
+    },
+    {
+      "line": 86,
+      "text": "        ,regexp_replace(a.cpdqr,'-','')                             as prd_maty_dt          --产品到期日期"
+    },
+    {
+      "line": 87,
+      "text": "        ,regexp_replace(a.dfr,'-','')                               as pay_dt               --兑付日期"
+    },
+    {
+      "line": 88,
+      "text": "        ,a.jxts                                                     as inta_days            --计息天数"
+    },
+    {
+      "line": 89,
+      "text": "        ,a.lx                                                       as prd_type             --产品类型"
+    },
+    {
+      "line": 90,
+      "text": "        ,a.cpjg                                                     as prd_stru             --产品结构"
+    },
+    {
+      "line": 91,
+      "text": "        ,a.bm                                                       as dept                 --部门"
+    },
+    {
+      "line": 92,
+      "text": "        ,a.fxcs                                                     as iss_site             --发行场所"
+    },
+    {
+      "line": 93,
+      "text": "        ,a.llsx                                                     as intrt_ulmt           --利率上限"
+    },
+    {
+      "line": 94,
+      "text": "        ,a.dfll                                                     as pay_intrt            --兑付利率"
+    },
+    {
+      "line": 95,
+      "text": "        ,a.dfje                                                     as pay_amt              --兑付金额"
+    },
+    {
+      "line": 96,
+      "text": "        ,a.is_baoben                                                as bren_flag            --是否保本"
+    },
+    {
+      "line": 97,
+      "text": "        ,a.is_tqzz                                                  as preterm_flag         --是否提前终止"
+    },
+    {
+      "line": 98,
+      "text": "        ,substr(a.pre_termination_date,1,19)                        as preterm_date         --提前终止日期"
+    },
+    {
+      "line": 99,
+      "text": "        ,a.lastmodify_by                                            as last_upd_prsn_id     --最后更新人id"
+    },
+    {
+      "line": 100,
+      "text": "        ,a.specific_cost_max                                        as cost_ulmt            --特定成本上限  "
+    },
+    {
+      "line": 101,
+      "text": "        ,a.interest_calc_rules                                      as inta_regu"
+    },
+    {
+      "line": 102,
+      "text": "        ,case a.interest_payment_rules when 'BALLOON_PAYMENT' then '一次性到期还本' "
+    },
+    {
+      "line": 103,
+      "text": "                                        when 'AMORTIZED_PAYMENT' then '分期付息到期还本' "
+    },
+    {
+      "line": 104,
+      "text": "                                        end                         as itpy_regu"
+    },
+    {
+      "line": 105,
+      "text": "        ,default.date2datekey(a.original_maturity_date)             as ori_pay_dt"
+    },
+    {
+      "line": 106,
+      "text": "        ,a.actual_investor                                          as actl_ivstr"
+    },
+    {
+      "line": 107,
+      "text": "        ,c.const_cd                                                 as fnd_type_cd"
+    },
+    {
+      "line": 108,
+      "text": "        ,coalesce(c.const_cn_desc,d.dict_prompt)                    as fnd_type_name"
+    },
+    {
+      "line": 109,
+      "text": "        ,case a.forward_linkage_flag when 'true' then '1' "
+    },
+    {
+      "line": 110,
+      "text": "                                        when 'false' then '0' "
+    },
+    {
+      "line": 111,
+      "text": "                                        end                         as fwd_rela_flag            "
+    },
+    {
+      "line": 112,
+      "text": "        ,''                                                         as tot_cost"
+    },
+    {
+      "line": 113,
+      "text": "        ,a.bz                                                       as remark1              --备注"
+    },
+    {
+      "line": 114,
+      "text": "        ,''                                                         as remark               --备注"
+    },
+    {
+      "line": 115,
+      "text": "        ,'odata_n_ois.o_otc_incomecertificate'                      as src_tbl              --来源表"
+    },
+    {
+      "line": 116,
+      "text": "        ,a.prd_no                                                   as src_rec_id           --来源记录"
+    },
+    {
+      "line": 117,
+      "text": "        ,substr(a.lastmodify_time,1,19)                             as rec_upd_time         --记录更新时间"
+    },
+    {
+      "line": 118,
+      "text": "        ,from_unixtime(unix_timestamp(),'yyyy-MM-dd HH:mm:ss')      as rec_down_time        --记录创建时间"
+    },
+    {
+      "line": 119,
+      "text": "    from  ("
+    },
+    {
+      "line": 120,
+      "text": "        select * "
+    },
+    {
+      "line": 121,
+      "text": "        from odata_n_ois.o_otc_incomecertificate "
+    },
+    {
+      "line": 122,
+      "text": "        where busi_date='${data_day_str}'"
+    },
+    {
+      "line": 123,
+      "text": "        )  a"
+    },
+    {
+      "line": 124,
+      "text": "    left join ("
+    },
+    {
+      "line": 125,
+      "text": "        select * "
+    },
+    {
+      "line": 126,
+      "text": "        from t02_scr_base_info "
+    },
+    {
+      "line": 127,
+      "text": "        where src_id = 'OTC' "
+    },
+    {
+      "line": 128,
+      "text": "        ) b "
+    },
+    {
+      "line": 129,
+      "text": "    on a.prd_no = b.scr_cd"
+    },
+    {
+      "line": 130,
+      "text": "    left join ("
+    },
+    {
+      "line": 131,
+      "text": "        select *"
+    },
+    {
+      "line": 132,
+      "text": "        from t02_pub_covt_const "
+    },
+    {
+      "line": 133,
+      "text": "        where src_id = 'OIS' and const_type_cd = 'var00512'"
+    },
+    {
+      "line": 134,
+      "text": "        ) c"
+    },
+    {
+      "line": 135,
+      "text": "    on a.fund_type = c.src_const_cd"
+    },
+    {
+      "line": 136,
+      "text": "    left join ( "
+    },
+    {
+      "line": 137,
+      "text": "        select distinct subentry,dict_prompt"
+    },
+    {
+      "line": 138,
+      "text": "        from odata_n_ois.g_otc_dictionary "
+    },
+    {
+      "line": 139,
+      "text": "        where busi_date = '${data_day_str}' and dict_entry= 'fund_types'"
+    },
+    {
+      "line": 140,
+      "text": "        ) d"
+    },
+    {
+      "line": 141,
+      "text": "    on a.fund_type = d.subentry"
+    },
+    {
+      "line": 142,
+      "text": ")"
+    },
+    {
+      "line": 143,
+      "text": "    INSERT OVERWRITE TABLE t02_bnd_income_vchr_ois_h PARTITION(busi_date='${data_day_str}', src_id = 'OIS', grp_id = '01')"
+    },
+    {
+      "line": 144,
+      "text": "    select "
+    },
+    {
+      "line": 145,
+      "text": "         rec_id"
+    },
+    {
+      "line": 146,
+      "text": "        ,secu_id"
+    },
+    {
+      "line": 147,
+      "text": "        ,src_sys_prdno"
+    },
+    {
+      "line": 148,
+      "text": "        ,corp_id"
+    },
+    {
+      "line": 149,
+      "text": "        ,sav_cash"
+    },
+    {
+      "line": 150,
+      "text": "        ,low_ror"
+    },
+    {
+      "line": 151,
+      "text": "        ,expe_ror"
+    },
+    {
+      "line": 152,
+      "text": "        ,prd_strt_dt"
+    },
+    {
+      "line": 153,
+      "text": "        ,prd_val_dt"
+    },
+    {
+      "line": 154,
+      "text": "        ,prd_maty_dt"
+    },
+    {
+      "line": 155,
+      "text": "        ,pay_dt"
+    },
+    {
+      "line": 156,
+      "text": "        ,inta_days"
+    },
+    {
+      "line": 157,
+      "text": "        ,prd_type"
+    },
+    {
+      "line": 158,
+      "text": "        ,prd_stru"
+    },
+    {
+      "line": 159,
+      "text": "        ,dept"
+    },
+    {
+      "line": 160,
+      "text": "        ,iss_site"
+    },
+    {
+      "line": 161,
+      "text": "        ,intrt_ulmt"
+    },
+    {
+      "line": 162,
+      "text": "        ,pay_intrt"
+    },
+    {
+      "line": 163,
+      "text": "        ,pay_amt"
+    },
+    {
+      "line": 164,
+      "text": "        ,bren_flag"
+    },
+    {
+      "line": 165,
+      "text": "        ,preterm_flag"
+    },
+    {
+      "line": 166,
+      "text": "        ,preterm_date"
+    },
+    {
+      "line": 167,
+      "text": "        ,last_upd_prsn_id"
+    },
+    {
+      "line": 168,
+      "text": "        ,cost_ulmt"
+    },
+    {
+      "line": 169,
+      "text": "        ,inta_regu"
+    },
+    {
+      "line": 170,
+      "text": "        ,itpy_regu"
+    },
+    {
+      "line": 171,
+      "text": "        ,ori_pay_dt"
+    },
+    {
+      "line": 172,
+      "text": "        ,actl_ivstr"
+    },
+    {
+      "line": 173,
+      "text": "        ,fnd_type_cd"
+    },
+    {
+      "line": 174,
+      "text": "        ,fnd_type_name"
+    },
+    {
+      "line": 175,
+      "text": "        ,fwd_rela_flag"
+    },
+    {
+      "line": 176,
+      "text": "        ,tot_cost"
+    },
+    {
+      "line": 177,
+      "text": "        ,remark1"
+    },
+    {
+      "line": 178,
+      "text": "        ,remark"
+    },
+    {
+      "line": 179,
+      "text": "        ,src_tbl"
+    },
+    {
+      "line": 180,
+      "text": "        ,src_rec_id"
+    },
+    {
+      "line": 181,
+      "text": "        ,rec_upd_time"
+    },
+    {
+      "line": 182,
+      "text": "        ,rec_down_time"
+    },
+    {
+      "line": 183,
+      "text": "    from t02_bnd_income_vchr_ois_h_temp"
+    },
+    {
+      "line": 184,
+      "text": " "
+    },
+    {
+      "line": 185,
+      "text": ""
+    },
+    {
+      "line": 186,
+      "text": "    ;"
+    },
+    {
+      "line": 187,
+      "text": ""
+    }
+  ]
+}

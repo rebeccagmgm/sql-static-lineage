@@ -1,0 +1,524 @@
+{
+  "task_id": "170431",
+  "default_schema": "dm_index_n",
+  "observed_at": "2026-09-01T14:21:03.143Z",
+  "payload_sha256": "67502953a5f6c877de5cdc6fc1baadad18020298433ce874737099e3a2b36f81",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "create table if not exists busi_rela_proj ("
+    },
+    {
+      "line": 10,
+      "text": "  row_id STRING COMMENT 'ID',"
+    },
+    {
+      "line": 11,
+      "text": "  last_upd STRING COMMENT '更新时间',"
+    },
+    {
+      "line": 12,
+      "text": "  business_type STRING COMMENT '业务类型',"
+    },
+    {
+      "line": 13,
+      "text": "  custom_id STRING COMMENT '客户Id',"
+    },
+    {
+      "line": 14,
+      "text": "  name STRING COMMENT '项目名称',"
+    },
+    {
+      "line": 15,
+      "text": "  project_no STRING COMMENT '项目编号',"
+    },
+    {
+      "line": 16,
+      "text": "  project_id STRING COMMENT '项目编号',"
+    },
+    {
+      "line": 17,
+      "text": "  src_proj_id STRING COMMENT '原始项目编号',"
+    },
+    {
+      "line": 18,
+      "text": "  source STRING COMMENT '来源系统',"
+    },
+    {
+      "line": 19,
+      "text": "  status STRING COMMENT '项目状态',"
+    },
+    {
+      "line": 20,
+      "text": "  stage STRING COMMENT '项目阶段',"
+    },
+    {
+      "line": 21,
+      "text": "  proj_progress STRING COMMENT '项目进展',"
+    },
+    {
+      "line": 22,
+      "text": "  divn_name STRING COMMENT '所属部门名称',"
+    },
+    {
+      "line": 23,
+      "text": "  divn_num STRING COMMENT '所属部门编码',"
+    },
+    {
+      "line": 24,
+      "text": "  end_dt STRING COMMENT '结束时间',"
+    },
+    {
+      "line": 25,
+      "text": "  start_dt STRING COMMENT '开始时间',"
+    },
+    {
+      "line": 26,
+      "text": "  contract_amt STRING COMMENT '合约金额',"
+    },
+    {
+      "line": 27,
+      "text": "  achive STRING COMMENT '实现收入（万元）',"
+    },
+    {
+      "line": 28,
+      "text": "  asset_con STRING COMMENT '资产贡献（万元）',"
+    },
+    {
+      "line": 29,
+      "text": "  count_draw STRING COMMENT '计提收入（万元）',"
+    },
+    {
+      "line": 30,
+      "text": "  financing_rate STRING COMMENT '贷款利率',"
+    },
+    {
+      "line": 31,
+      "text": "  inpawn_rate STRING COMMENT '抵押贷款利率',"
+    },
+    {
+      "line": 32,
+      "text": "  develop_flag STRING COMMENT '是否认定开发关系',"
+    },
+    {
+      "line": 33,
+      "text": "  prod_code STRING COMMENT '产品代码',"
+    },
+    {
+      "line": 34,
+      "text": "  Prin_User_Id string COMMENT '负责人用户编号',"
+    },
+    {
+      "line": 35,
+      "text": "  principal_name string COMMENT '负责人用户名称',"
+    },
+    {
+      "line": 36,
+      "text": "  type string COMMENT '项目类型',"
+    },
+    {
+      "line": 37,
+      "text": "  APP_PROJ_TIME string COMMENT '项目时间',"
+    },
+    {
+      "line": 38,
+      "text": "  deptname string COMMENT '部门名称',"
+    },
+    {
+      "line": 39,
+      "text": "  dept_ids string COMMENT '部门编码',"
+    },
+    {
+      "line": 40,
+      "text": "  is_secret string COMMENT '是否涉密',"
+    },
+    {
+      "line": 41,
+      "text": "  GRP_MEMBER string COMMENT '产品简称',"
+    },
+    {
+      "line": 42,
+      "text": "  MEMBER_ROLE string COMMENT '发行主体'"
+    },
+    {
+      "line": 43,
+      "text": ")"
+    },
+    {
+      "line": 44,
+      "text": "comment '科学城项目信息'"
+    },
+    {
+      "line": 45,
+      "text": "PARTITIONED BY ( partition_id STRING COMMENT '业务类型代码' )"
+    },
+    {
+      "line": 46,
+      "text": "STORED AS ORC ;"
+    },
+    {
+      "line": 47,
+      "text": ""
+    },
+    {
+      "line": 48,
+      "text": "-- querySql"
+    },
+    {
+      "line": 49,
+      "text": "insert overwrite table busi_rela_proj PARTITION (partition_id = 'GFFL')"
+    },
+    {
+      "line": 50,
+      "text": "select  concat(substr(default.uuid(), 25), 'GFL')  row_id"
+    },
+    {
+      "line": 51,
+      "text": ", from_unixtime(unix_timestamp() - 28800, 'yyyy-MM-dd HH:mm:ss') last_upd"
+    },
+    {
+      "line": 52,
+      "text": ", case"
+    },
+    {
+      "line": 53,
+      "text": "when proj.business_type = 'ENTRUSTMENT_LOAN' then '委托贷款'"
+    },
+    {
+      "line": 54,
+      "text": "when proj.business_type = 'FACTORING' then '保理业务'"
+    },
+    {
+      "line": 55,
+      "text": "when proj.business_type = 'LEASE' then '直接租赁'"
+    },
+    {
+      "line": 56,
+      "text": "when proj.business_type = 'LEASEBACK' then '售后回租'"
+    },
+    {
+      "line": 57,
+      "text": "when proj.business_type = 'CREDIT_LINE' then '授信额度'"
+    },
+    {
+      "line": 58,
+      "text": "else proj.business_type end as                             business_type"
+    },
+    {
+      "line": 59,
+      "text": ", concat('GFFL.',replace(proj.Pty_Id, 'GLM003-', ''))            custom_id"
+    },
+    {
+      "line": 60,
+      "text": ", proj.Proj_Full_Name                                            name"
+    },
+    {
+      "line": 61,
+      "text": ", proj.Proj_Cd                                                   project_no"
+    },
+    {
+      "line": 62,
+      "text": ", concat('GFFL.', proj.src_proj_id)                              project_id"
+    },
+    {
+      "line": 63,
+      "text": ", proj.src_proj_id                as                             src_proj_id"
+    },
+    {
+      "line": 64,
+      "text": ", 'GFFL'                                                         source"
+    },
+    {
+      "line": 65,
+      "text": ", nvl(dict.SRC_CD_DESC, proj.Proj_Stat_Cd)                       status"
+    },
+    {
+      "line": 66,
+      "text": ", null                                                           stage"
+    },
+    {
+      "line": 67,
+      "text": ", nvl(dict.SRC_CD_DESC, proj.Proj_Stat_Cd)                       proj_progress"
+    },
+    {
+      "line": 68,
+      "text": ", NVL(usr.INR_ORG_NAME, '广发融资租赁（广东）有限公司')                divn_name"
+    },
+    {
+      "line": 69,
+      "text": ", NVL(usr.Unif_Org_Id, '58360000')                               divn_num"
+    },
+    {
+      "line": 70,
+      "text": ", substr(con.END_DATE, 1, 10)                                    end_dt"
+    },
+    {
+      "line": 71,
+      "text": ", substr(nvl(con.START_DATE, proj.Create_Time), 1, 10)           start_dt"
+    },
+    {
+      "line": 72,
+      "text": ", null                                                           contract_amt"
+    },
+    {
+      "line": 73,
+      "text": ", con.achive"
+    },
+    {
+      "line": 74,
+      "text": ", con.asset_con"
+    },
+    {
+      "line": 75,
+      "text": ", null                                                           count_draw"
+    },
+    {
+      "line": 76,
+      "text": ", null                                                           financing_rate"
+    },
+    {
+      "line": 77,
+      "text": ", null                                                           inpawn_rate"
+    },
+    {
+      "line": 78,
+      "text": ", 'Y'                                                            develop_flag"
+    },
+    {
+      "line": 79,
+      "text": ", null                                                           prod_code"
+    },
+    {
+      "line": 80,
+      "text": ", Prin_User_Id"
+    },
+    {
+      "line": 81,
+      "text": ", null as principal_name"
+    },
+    {
+      "line": 82,
+      "text": ",  null as type"
+    },
+    {
+      "line": 83,
+      "text": ",  null as APP_PROJ_TIME"
+    },
+    {
+      "line": 84,
+      "text": ",  null as deptname"
+    },
+    {
+      "line": 85,
+      "text": ",  null as dept_ids"
+    },
+    {
+      "line": 86,
+      "text": ",  null as is_secret"
+    },
+    {
+      "line": 87,
+      "text": ", null                                                           GRP_MEMBER"
+    },
+    {
+      "line": 88,
+      "text": ", null                                                           MEMBER_ROLE"
+    },
+    {
+      "line": 89,
+      "text": "from ("
+    },
+    {
+      "line": 90,
+      "text": "select proj_id"
+    },
+    {
+      "line": 91,
+      "text": ", replace(proj_id, 'GLM012-', '') src_proj_id"
+    },
+    {
+      "line": 92,
+      "text": ", Proj_Full_Name"
+    },
+    {
+      "line": 93,
+      "text": ", Proj_Cd"
+    },
+    {
+      "line": 94,
+      "text": ", Proj_Stat_Cd"
+    },
+    {
+      "line": 95,
+      "text": ", Pty_Id       -- CONCAT('GLM003-',A.BP_ID_TENANT)"
+    },
+    {
+      "line": 96,
+      "text": ", trim(Leas_Busi_Type_Cd)      as      business_type"
+    },
+    {
+      "line": 97,
+      "text": ", Create_Time"
+    },
+    {
+      "line": 98,
+      "text": ", Prin_User_Id --负责人/经理"
+    },
+    {
+      "line": 99,
+      "text": "from PDATA_N.T00_GLM_PROJ_ADTNL_INFO"
+    },
+    {
+      "line": 100,
+      "text": "where src_tbl = 'ODATA_N_GLM.P_PRJ_PROJECT'"
+    },
+    {
+      "line": 101,
+      "text": "and Src_Data_Clas_Cd = 'NORMAL'"
+    },
+    {
+      "line": 102,
+      "text": ") proj"
+    },
+    {
+      "line": 103,
+      "text": "inner join"
+    },
+    {
+      "line": 104,
+      "text": "("
+    },
+    {
+      "line": 105,
+      "text": "select Pty_Id    -- CONCAT('GLM003-',BP_ID)"
+    },
+    {
+      "line": 106,
+      "text": ", Cust_Name -- bp_name"
+    },
+    {
+      "line": 107,
+      "text": "from PDATA_N.T01_GLM_CUST_ADTNL_INFO"
+    },
+    {
+      "line": 108,
+      "text": "where src_tbl = 'ODATA_N_GLM.P_HLS_BP_MASTER'"
+    },
+    {
+      "line": 109,
+      "text": "and Pty_Role = 'TENANT' -- bp_category"
+    },
+    {
+      "line": 110,
+      "text": "and pty_cate_cd = '212100' -- BP_CLASS = 'ORG'  即：广发租赁机构客户"
+    },
+    {
+      "line": 111,
+      "text": ") cust on cust.Pty_Id = proj.Pty_Id"
+    },
+    {
+      "line": 112,
+      "text": "left join"
+    },
+    {
+      "line": 113,
+      "text": "("
+    },
+    {
+      "line": 114,
+      "text": "select Proj_Id"
+    },
+    {
+      "line": 115,
+      "text": ", SUM(Fin_Amt) / 100000000  AS asset_con  -- 总规模"
+    },
+    {
+      "line": 116,
+      "text": ", SUM(Prin_Bal) / 10000     AS ACHIVE     -- 本金余额"
+    },
+    {
+      "line": 117,
+      "text": ", min(Actl_Lease_Strt_Date) as START_DATE -- inception_of_lease"
+    },
+    {
+      "line": 118,
+      "text": ", max(Leas_Pd_End_Date)     as END_DATE   -- LEASE_END_DATE"
+    },
+    {
+      "line": 119,
+      "text": "from PDATA_N.T03_FIN_LEAS_COMP_LOAN_DET"
+    },
+    {
+      "line": 120,
+      "text": "where src_tbl = 'ODATA_N_GLM.P_CON_CONTRACT'"
+    },
+    {
+      "line": 121,
+      "text": "and src_data_clas_cd = 'NORMAL'"
+    },
+    {
+      "line": 122,
+      "text": "group by Proj_Id"
+    },
+    {
+      "line": 123,
+      "text": ") con on con.Proj_Id = proj.proj_id"
+    },
+    {
+      "line": 124,
+      "text": "left join temp_n.usr_emp_info_gffl_ecr usr on usr.user_id = proj.Prin_User_Id"
+    },
+    {
+      "line": 125,
+      "text": "left join"
+    },
+    {
+      "line": 126,
+      "text": "("
+    },
+    {
+      "line": 127,
+      "text": "SELECT DW_CD_VAL, SRC_CD_DESC"
+    },
+    {
+      "line": 128,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 129,
+      "text": "WHERE TGT_TAB_NAME = 'T00_PROJ_BASE_INFO'"
+    },
+    {
+      "line": 130,
+      "text": "AND TGT_TAB_FLD = 'Proj_Stat_Cd'"
+    },
+    {
+      "line": 131,
+      "text": "AND SRC_TAB_NAME = 'PRJ_PROJECT'"
+    },
+    {
+      "line": 132,
+      "text": "AND SRC_FLD_NAME = 'PROJECT_STATUS'"
+    },
+    {
+      "line": 133,
+      "text": "AND SRC_SYS_NAME = 'GLM'"
+    },
+    {
+      "line": 134,
+      "text": ") dict on dict.DW_CD_VAL = proj.Proj_Stat_Cd"
+    },
+    {
+      "line": 135,
+      "text": ";"
+    },
+    {
+      "line": 136,
+      "text": ""
+    }
+  ]
+}

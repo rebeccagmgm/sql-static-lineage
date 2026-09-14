@@ -1,0 +1,316 @@
+{
+  "task_id": "181043",
+  "default_schema": null,
+  "observed_at": "2026-09-05T06:20:28.625Z",
+  "payload_sha256": "04e41701fb8dbcf3b47667cabed6df289f12c86d6dfae10d418b169530004f5a",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_AST_ACCT_MARG_BUSI_PRD_WL_DET ("
+    },
+    {
+      "line": 10,
+      "text": "  List_Type_Cd STRING COMMENT '名单类型代码',"
+    },
+    {
+      "line": 11,
+      "text": "  Ast_Acct_Agt_Id STRING COMMENT '资产账户协议编号',"
+    },
+    {
+      "line": 12,
+      "text": "  Ast_Acct_Agt_Modifr STRING COMMENT '资产账户协议修饰符',"
+    },
+    {
+      "line": 13,
+      "text": "  Marg_Busi_List_Type_Cd STRING COMMENT '两融业务名单类型代码',"
+    },
+    {
+      "line": 14,
+      "text": "  Exch_Type_Cd STRING COMMENT '市场代码',"
+    },
+    {
+      "line": 15,
+      "text": "  Src_Trd_Type_Cd STRING COMMENT '源交易类别代码',"
+    },
+    {
+      "line": 16,
+      "text": "  Src_Scr_Type_Cd STRING COMMENT '源证券类型代码',"
+    },
+    {
+      "line": 17,
+      "text": "  Prd_Id STRING COMMENT '产品编号',"
+    },
+    {
+      "line": 18,
+      "text": "  Src_Prd_Id STRING COMMENT '源产品编号',"
+    },
+    {
+      "line": 19,
+      "text": "  List_Stat_Cd STRING COMMENT '名单状态代码',"
+    },
+    {
+      "line": 20,
+      "text": "  End_Date STRING COMMENT '到期日期',"
+    },
+    {
+      "line": 21,
+      "text": "  Unif_Acct STRING COMMENT '中登一码通账户',"
+    },
+    {
+      "line": 22,
+      "text": "  Marg_Comp_Type_Cd STRING COMMENT '两融合约类别代码',"
+    },
+    {
+      "line": 23,
+      "text": "  Perm_Marg_Comp_Src_Cd STRING COMMENT '允许两融合约来源代码',"
+    },
+    {
+      "line": 24,
+      "text": "  Perm_Marg_Busi_Type_Cd STRING COMMENT '允许两融业务类别代码',"
+    },
+    {
+      "line": 25,
+      "text": "  Risk_Montr_Indx_Str STRING COMMENT '风险监控指标串',"
+    },
+    {
+      "line": 26,
+      "text": "  Create_Date STRING COMMENT '创建日期',"
+    },
+    {
+      "line": 27,
+      "text": "  Remark STRING COMMENT '备注',"
+    },
+    {
+      "line": 28,
+      "text": "  Data_Src_Cd STRING COMMENT '数据来源代码',"
+    },
+    {
+      "line": 29,
+      "text": "  Task_Name STRING COMMENT '任务名',"
+    },
+    {
+      "line": 30,
+      "text": "  Data_Etl_Date STRING COMMENT '数据加载日期',"
+    },
+    {
+      "line": 31,
+      "text": "  Data_Upt_Date STRING COMMENT '数据更新日期',"
+    },
+    {
+      "line": 32,
+      "text": "  Data_Time STRING COMMENT '数据时间',"
+    },
+    {
+      "line": 33,
+      "text": "  Real_Src_Tbl STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 34,
+      "text": ")"
+    },
+    {
+      "line": 35,
+      "text": "COMMENT '资产账户两融业务产品白名单明细'"
+    },
+    {
+      "line": 36,
+      "text": "PARTITIONED BY (Src_Tbl STRING COMMENT'源表',Busi_Date STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 37,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 38,
+      "text": ""
+    },
+    {
+      "line": 39,
+      "text": "-- querySql"
+    },
+    {
+      "line": 40,
+      "text": "INSERT OVERWRITE TABLE T03_AST_ACCT_MARG_BUSI_PRD_WL_DET PARTITION(Src_Tbl='ODATA_N_RCC.C_CRDTBUSIWHITELIST',Busi_Date='2026-05-20')"
+    },
+    {
+      "line": 41,
+      "text": "SELECT"
+    },
+    {
+      "line": 42,
+      "text": "'MARG_BUSI_WL'                                    AS  List_Type_Cd            --名单类型代码                               'MARG_BUSI_WL' --融资融券业务白名单"
+    },
+    {
+      "line": 43,
+      "text": ",IF(NVL(TRIM(FUND_ACCOUNT),'')='!' OR NVL(TRIM(FUND_ACCOUNT),'')='','',FUND_ACCOUNT)"
+    },
+    {
+      "line": 44,
+      "text": "AS  Ast_Acct_Agt_Id         --资产账户协议编号"
+    },
+    {
+      "line": 45,
+      "text": ",IF(NVL(TRIM(FUND_ACCOUNT),'')='!' OR NVL(TRIM(FUND_ACCOUNT),'')='','','10201')"
+    },
+    {
+      "line": 46,
+      "text": "AS  Ast_Acct_Agt_Modifr     --资产账户协议修饰符"
+    },
+    {
+      "line": 47,
+      "text": ",CRDTWHITE_TYPE                                    AS  Marg_Busi_List_Type_Cd  --两融业务名单类型代码"
+    },
+    {
+      "line": 48,
+      "text": ",NVL(DW_CD_VAL,EXCHANGE_TYPE)                      AS  Exch_Type_Cd            --市场代码"
+    },
+    {
+      "line": 49,
+      "text": ",EXCHANGE_TYPE                                     AS  Src_Trd_Type_Cd         --源交易类别代码"
+    },
+    {
+      "line": 50,
+      "text": ",STOCK_TYPE                                        AS  Src_Scr_Type_Cd         --源证券类型代码"
+    },
+    {
+      "line": 51,
+      "text": ",IF(NVL(TRIM(STOCK_CODE),'')='!' OR NVL(TRIM(STOCK_CODE),'')='' OR NVL(TRIM(EXCHANGE_TYPE),'')='','',CONCAT('RCC-',EXCHANGE_TYPE,'-',STOCK_CODE))"
+    },
+    {
+      "line": 52,
+      "text": "AS  Prd_Id                  --产品编号"
+    },
+    {
+      "line": 53,
+      "text": ",STOCK_CODE                                        AS  Src_Prd_Id              --源产品编号"
+    },
+    {
+      "line": 54,
+      "text": ",case when END_DATE<'20260520' then '5' --过期"
+    },
+    {
+      "line": 55,
+      "text": "end                                         AS  List_Stat_Cd            --名单状态代码"
+    },
+    {
+      "line": 56,
+      "text": ",END_DATE                                          AS  End_Date                --到期日期"
+    },
+    {
+      "line": 57,
+      "text": ",ACODE_ACCOUNT                                     AS  Unif_Acct               --中登一码通账户"
+    },
+    {
+      "line": 58,
+      "text": ",CASE WHEN COMPACT_TYPE='0' THEN'2010201'"
+    },
+    {
+      "line": 59,
+      "text": "WHEN COMPACT_TYPE='1' THEN'2010202'"
+    },
+    {
+      "line": 60,
+      "text": "WHEN COMPACT_TYPE='2' THEN'2010203'"
+    },
+    {
+      "line": 61,
+      "text": "ELSE '20102' END                             AS  Marg_Comp_Type_Cd       --两融合约类别代码"
+    },
+    {
+      "line": 62,
+      "text": ",EN_COMPACT_SOURCE                                 AS  Perm_Marg_Comp_Src_Cd   --允许两融合约来源代码"
+    },
+    {
+      "line": 63,
+      "text": ",EN_CRDT_BUSI_TYPE                                 AS  Perm_Marg_Busi_Type_Cd  --允许两融业务类别代码"
+    },
+    {
+      "line": 64,
+      "text": ",EN_CRDTRISK_NO                                    AS  Risk_Montr_Indx_Str     --风险监控指标串"
+    },
+    {
+      "line": 65,
+      "text": ",CREATE_DATE                                       AS  Create_Date             --创建日期"
+    },
+    {
+      "line": 66,
+      "text": ",REMARK                                            AS  Remark                  --备注"
+    },
+    {
+      "line": 67,
+      "text": ",'RCC'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 68,
+      "text": ",'PDATA_N.T03_AST_ACCT_MARG_BUSI_PRD_WL_DET_RCC418'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 69,
+      "text": ",'2026-05-20'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 70,
+      "text": ",'2026-05-20'                            AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 71,
+      "text": ",'2026-05-21 05:55:24'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 72,
+      "text": ",'ODATA_N_RCC.C_CRDTBUSIWHITELIST'                               AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 73,
+      "text": "FROM (SELECT *  FROM ODATA_N_RCC.C_CRDTBUSIWHITELIST WHERE  Busi_Date='2026-05-20' )A"
+    },
+    {
+      "line": 74,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 75,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 76,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 77,
+      "text": "WHERE TGT_TAB_NAME = 'T03_AST_ACCT_MARG_BUSI_PRD_WL_DET'"
+    },
+    {
+      "line": 78,
+      "text": "AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 79,
+      "text": "AND SRC_TAB_NAME = 'CRDTBUSIWHITELIST'"
+    },
+    {
+      "line": 80,
+      "text": "AND SRC_FLD_NAME = 'EXCHANGE_TYPE'"
+    },
+    {
+      "line": 81,
+      "text": "AND SRC_SYS_NAME='RCC')B"
+    },
+    {
+      "line": 82,
+      "text": "ON      A.EXCHANGE_TYPE =B.SRC_CD_VAL                  --EXCHANGE_TYPE 转码"
+    },
+    {
+      "line": 83,
+      "text": ";"
+    },
+    {
+      "line": 84,
+      "text": ""
+    }
+  ]
+}

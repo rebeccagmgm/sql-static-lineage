@@ -1,0 +1,344 @@
+{
+  "task_id": "62495",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:19.879Z",
+  "payload_sha256": "7fad886d9b8238dd879d123847aaa8fd1027e7af0466099836073273c488e0db",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_FAP_FIRM_COMB_HOLD_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Trc_Strg_Prd_Id            STRING COMMENT '跟踪策略产品编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Ivst_Advs_Comb_Prd_Id      STRING COMMENT '投顾组合产品编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Src_Firm_Comb_Id           STRING COMMENT '源实盘组合编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Comb_Name                  STRING COMMENT '组合名称'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Comb_Create_Time           STRING COMMENT '组合创建时间'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Comb_Exp_Time              STRING COMMENT '组合到期时间'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Comb_Stat_Cd               STRING COMMENT '组合状态代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Shr_Holder_Pty_Id          STRING COMMENT '份额持有人编号'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Ast_Unit_Id                STRING COMMENT '资产单元编号'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Fir_Tran_Amt               STRING COMMENT '首次转入金额'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Frim_Comb_Type_Cd          STRING COMMENT '实盘组合类型代码'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Oth_Info                   STRING COMMENT '其他信息'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Ivst_Advs_Comb_Cyc         STRING COMMENT '投顾组合期限'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Recmd_Emp_Id               STRING COMMENT '推荐员工编号'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Comb_Quit_Time             STRING COMMENT '组合退出时间'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Comb_Run_Time              STRING COMMENT '组合开始运行时间'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Comb_Cont_Flag             STRING COMMENT '组合续期标志'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Comb_Clos_Time             STRING COMMENT '组合关闭时间'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Comb_Quit_Method_Cd        STRING COMMENT '组合退出方式代码'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Fnd_Tran_Time              STRING COMMENT '资金转入时间'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Frz_Flag                   STRING COMMENT '冻结标志'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Ivst_Advs_Org              STRING COMMENT '投顾机构'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Trd_Lmt_Info               STRING COMMENT '交易限制信息'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Trc_Strg_Prd_Name          STRING COMMENT '跟踪策略产品名称'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Ivst_Advs_Comb_Prd_Name    STRING COMMENT '投顾组合产品名称'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 44,
+      "text": ")COMMENT '基金投顾实盘组合持仓信息'"
+    },
+    {
+      "line": 45,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 46,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 47,
+      "text": ""
+    },
+    {
+      "line": 48,
+      "text": "-- querySql"
+    },
+    {
+      "line": 49,
+      "text": "INSERT OVERWRITE TABLE T03_FAP_FIRM_COMB_HOLD_INFO PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 50,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 51,
+      "text": "--Group1: Source Table:[ODATA_N_FAP.F_INVEST_PLAN:实盘组合表] "
+    },
+    {
+      "line": 52,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 53,
+      "text": "SELECT"
+    },
+    {
+      "line": 54,
+      "text": "     FUNDACCOUNT                                       AS  Agt_Id                  --协议编号"
+    },
+    {
+      "line": 55,
+      "text": "    ,'10201'                                           AS  Agt_Modifr              --协议修饰符"
+    },
+    {
+      "line": 56,
+      "text": "    ,CONCAT('FAS-S-',STRATEGYID)                       AS  Trc_Strg_Prd_Id         --跟踪策略产品编号"
+    },
+    {
+      "line": 57,
+      "text": "    ,CONCAT('FAS-P-',BINDPORTID)                       AS  Ivst_Advs_Comb_Prd_Id   --投顾组合产品编号"
+    },
+    {
+      "line": 58,
+      "text": "    ,ID                                                AS  Src_Firm_Comb_Id        --源实盘组合编号"
+    },
+    {
+      "line": 59,
+      "text": "    ,NAME                                              AS  Comb_Name               --组合名称"
+    },
+    {
+      "line": 60,
+      "text": "    ,CREATEAT                                          AS  Comb_Create_Time        --组合创建时间"
+    },
+    {
+      "line": 61,
+      "text": "    ,ENDAT                                             AS  Comb_Exp_Time           --组合到期时间"
+    },
+    {
+      "line": 62,
+      "text": "    ,STATUS                                            AS  Comb_Stat_Cd            --组合状态代码"
+    },
+    {
+      "line": 63,
+      "text": "    ,CLIENTID                                          AS  Shr_Holder_Pty_Id       --份额持有人编号"
+    },
+    {
+      "line": 64,
+      "text": "    ,ASSETUNITID                                       AS  Ast_Unit_Id             --资产单元编号"
+    },
+    {
+      "line": 65,
+      "text": "    ,AMOUNT                                            AS  Fir_Tran_Amt            --首次转入金额"
+    },
+    {
+      "line": 66,
+      "text": "    ,PTYPE                                             AS  Frim_Comb_Type_Cd       --实盘组合类型代码"
+    },
+    {
+      "line": 67,
+      "text": "    ,UPDATEAT                                          AS  Upd_Time                --更新时间"
+    },
+    {
+      "line": 68,
+      "text": "    ,OTHER                                             AS  Oth_Info                --其他信息"
+    },
+    {
+      "line": 69,
+      "text": "    ,PERIOD                                            AS  Ivst_Advs_Comb_Cyc      --投顾组合期限"
+    },
+    {
+      "line": 70,
+      "text": "    ,RECOMMEND                                         AS  Recmd_Emp_Id            --推荐员工编号"
+    },
+    {
+      "line": 71,
+      "text": "    ,QUITAT                                            AS  Comb_Quit_Time          --组合退出时间"
+    },
+    {
+      "line": 72,
+      "text": "    ,RUNAT                                             AS  Comb_Run_Time           --组合开始运行时间"
+    },
+    {
+      "line": 73,
+      "text": "    ,RENEW                                             AS  Comb_Cont_Flag          --组合续期标志"
+    },
+    {
+      "line": 74,
+      "text": "    ,CLOSEDAT                                          AS  Comb_Clos_Time          --组合关闭时间"
+    },
+    {
+      "line": 75,
+      "text": "    ,QUITWAY                                           AS  Comb_Quit_Method_Cd     --组合退出方式代码"
+    },
+    {
+      "line": 76,
+      "text": "    ,TRANSINAT                                         AS  Fnd_Tran_Time           --资金转入时间"
+    },
+    {
+      "line": 77,
+      "text": "    ,FROZENSTATUS                                      AS  Frz_Flag                --冻结标志"
+    },
+    {
+      "line": 78,
+      "text": "    ,PARTNERID                                         AS  Ivst_Advs_Org           --投顾机构"
+    },
+    {
+      "line": 79,
+      "text": "    ,REDEEMLIMITSTR                                    AS  Trd_Lmt_Info            --交易限制信息"
+    },
+    {
+      "line": 80,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 81,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 82,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 83,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 84,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 85,
+      "text": "    ,STRATEGYNAME                                      AS  Trc_Strg_Prd_Name       --跟踪策略产品名称"
+    },
+    {
+      "line": 86,
+      "text": "    ,BINDPORTNAME                                      AS  Ivst_Advs_Comb_Prd_Name --投顾组合产品名称"
+    },
+    {
+      "line": 87,
+      "text": "    ,'${src_table}'                               AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 88,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 89,
+      "text": ""
+    },
+    {
+      "line": 90,
+      "text": ";"
+    },
+    {
+      "line": 91,
+      "text": ""
+    }
+  ]
+}

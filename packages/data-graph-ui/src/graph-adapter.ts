@@ -1,4 +1,6 @@
 import { MarkerType, Position, type Edge, type Node } from "@xyflow/react";
+import { consumptionScopeIdentity } from "../../data-graph/src/asset-graph/consumption-scope";
+import { mergeTraceConsumptions } from "./trace-consumption";
 import type {
   ConsumptionGroup,
   ConsumptionScope,
@@ -28,6 +30,7 @@ export interface LineageNodeData extends Record<string, unknown> {
   scope?: ConsumptionScope;
   writeRefs?: ConsumptionWriteRef[];
   compactRead?: boolean;
+  consumerTaskIds?: string[];
   taskPorts?: Array<{
     id: string;
     label: string;
@@ -65,6 +68,7 @@ const text = (value: unknown) =>
   typeof value === "string" && value.trim() ? value.trim() : undefined;
 
 const taskRaw = (trace: TraceResult, taskId: string): GraphNode => {
+  const cluster = text(trace.taskClusters?.[taskId]);
   const taskName = text(trace.taskLabels?.[taskId]);
   const topicName = text(trace.taskTopics?.[taskId]);
   const topicDescription = topicName ? text(trace.taskTopicDescriptions?.[taskId]) : undefined;
@@ -74,6 +78,7 @@ const taskRaw = (trace: TraceResult, taskId: string): GraphNode => {
     taskId,
     ...(taskName ? { label: taskName } : {}),
     detail: {
+      ...(cluster ? { cluster } : {}),
       ...(taskName ? { taskName } : {}),
       ...(topicName ? { topicName } : {}),
       ...(topicDescription ? { topicDescription } : {}),
@@ -84,15 +89,17 @@ const taskRaw = (trace: TraceResult, taskId: string): GraphNode => {
 const withSchedulerTaskName = (trace: TraceResult, node: GraphNode): GraphNode => {
   if (node.kind !== "TASK") return node;
   const taskId = text(node.taskId) ?? text(node.id)?.replace(/^task:/, "");
+  const cluster = taskId ? text(trace.taskClusters?.[taskId]) : undefined;
   const taskName = taskId ? text(trace.taskLabels?.[taskId]) : undefined;
   const topicName = taskId ? text(trace.taskTopics?.[taskId]) : undefined;
   const topicDescription = taskId && topicName ? text(trace.taskTopicDescriptions?.[taskId]) : undefined;
-  const { taskName: ignoredTaskName, topicName: ignoredTopicName, topicDescription: ignoredTopicDescription, ...detail } = node.detail ?? {};
+  const { cluster: ignoredCluster, taskName: ignoredTaskName, topicName: ignoredTopicName, topicDescription: ignoredTopicDescription, ...detail } = node.detail ?? {};
   return {
     ...node,
     label: taskName,
     detail: {
       ...detail,
+      ...(cluster ? { cluster } : {}),
       ...(taskName ? { taskName } : {}),
       ...(topicName ? { topicName } : {}),
       ...(topicDescription ? { topicDescription } : {}),
@@ -101,7 +108,9 @@ const withSchedulerTaskName = (trace: TraceResult, node: GraphNode): GraphNode =
 };
 
 const taskCardWidth = 210;
-const taskCardHeight = 88;
+export const INPUT_EDGE_COLOR = "#2878b5";
+export const OUTPUT_EDGE_COLOR = "#9b4f96";
+const taskCardHeight = 108;
 
 function displayGroupKey(raw: GraphNode): string | undefined {
   const depth = Number(raw.depth ?? 0);
@@ -158,8 +167,41 @@ function buildGroups(
         },
       ];
     });
+    const unique = new Map<string, DisplayGroup>();
+    for (const group of projected) {
+      const source = group.consumption!;
+      // A write can be split into field subsets by downstream consumers or
+      // per-field requests. Those subsets belong to the same display card;
+      // raw field ids and edges still determine the individual connections.
+      const writes = source.rawNodeIds.map(id => byId.get(id));
+      const eligible = source.role === "WRITE" && source.scope.status === "EXPLICIT" &&
+        Boolean(source.physicalIdentity) && writes.length > 0 &&
+        writes.every(node => node?.kind === "WRITE_FIELD" && text(node.taskId) && text(node.writeId));
+      const key = eligible ? JSON.stringify([
+        source.physicalIdentity, source.depth, consumptionScopeIdentity(source.scope),
+        [...new Set(writes.map(node => JSON.stringify([node!.taskId, node!.writeId])))].sort(),
+      ]) : source.id;
+      const existing = unique.get(key);
+      if (!existing) { unique.set(key, group); continue; }
+      const merged = mergeTraceConsumptions({
+        consumptions: [{ schemaVersion: "1.0.0", groups: [existing.consumption!, {...source, id: existing.id}], branches: [], rootPaths: [] }],
+        allowedNodeIds: new Set(nodes.map(node => node.id)),
+        allowedEdgeIds: new Set(edges.map(rawEdgeId)),
+        allRootNodeIds: [...new Set([...existing.consumption!.rootNodeIds, ...source.rootNodeIds])],
+      });
+      const members = [...new Map([...(existing.members ?? []), ...(group.members ?? [])]
+        .map(member => [member.id, member])).values()]
+        .sort((a, b) => (a.column ?? a.id).localeCompare(b.column ?? b.id));
+      const combined = merged!.groups[0]!;
+      const proven = existing.consumption!.scopeEquivalence === "PROVEN" && source.scopeEquivalence === "PROVEN";
+      unique.set(key, {...existing, members, consumption: {
+        ...combined,
+        presentation: proven ? combined.presentation : "EVIDENCE_CONTAINER",
+        scopeEquivalence: proven ? "PROVEN" : "NOT_ASSERTED",
+      }});
+    }
     return [
-      ...projected,
+      ...unique.values(),
       ...nodes
         .filter((node) => !assigned.has(node.id))
         .map((raw) => ({
@@ -287,7 +329,7 @@ function visibleRawIds(trace: TraceResult, options: AdaptTraceOptions) {
   return visible;
 }
 
-function relatedLineageHighlight(
+export function relatedLineageHighlight(
   trace: TraceResult,
   fieldIds?: string | string[],
 ) {
@@ -340,7 +382,7 @@ function relatedLineageHighlight(
       for (const edge of adjacency.get(current) ?? []) {
         edgeIds.add(edge.id);
         nodeIds.add(edge.next);
-        if (edge.boundary) continue;
+        if (edge.boundary || trace.layer === "table") continue;
         if (visited.has(edge.next)) continue;
         visited.add(edge.next);
         pending.push(edge.next);
@@ -459,6 +501,12 @@ export function adaptTrace(
       const cardActive =
         !highlight || rawNodes.some((node) => highlight.nodeIds.has(node.id));
       const rawIds = new Set(rawNodes.map(({ id }) => id));
+      const consumerTaskIds = [...new Set(visibleEdges
+        .filter(edge => edge.kind === "CONTINUES" && edge.status === "CONFIRMED" && rawIds.has(edge.from) && !rawIds.has(edge.to))
+        .map(edge => traceNodeById.get(edge.to))
+        .filter(node => node?.kind === "READ_FIELD")
+        .map(node => text(node?.taskId))
+        .filter((id): id is string => Boolean(id)))].sort((a, b) => a.localeCompare(b, "en", {numeric: true}));
       const candidateEdges = trace.edges.filter(
         (edge) => edge.kind === "CANDIDATE" && rawIds.has(edge.to),
       );
@@ -493,7 +541,7 @@ export function adaptTrace(
           : compactRead
             ? 120 + Math.min(120, (members?.length ?? 0) * 38)
             : members
-              ? 112 +
+              ? 112 + (consumerTaskIds.length ? 28 : 0) +
                 Math.min(280, members.length * 38) +
                 (candidateTaskIds.size ? 32 : 0)
               : terminals.has(group.raw?.id ?? "")
@@ -522,6 +570,7 @@ export function adaptTrace(
           scope: group.consumption?.scope,
           writeRefs: group.consumption?.writeRefs,
           compactRead,
+          consumerTaskIds,
           terminal: group.raw ? terminals.get(group.raw.id) : undefined,
           memberTerminals,
           highlightActive: Boolean(highlight),
@@ -676,13 +725,13 @@ export function adaptTrace(
       type: "smoothstep",
       label: highlight?.nodeIds.has(write.id) ? "生成字段" : undefined,
       style: {
-        stroke: "#6f8f8b",
+        stroke: OUTPUT_EDGE_COLOR,
         strokeWidth: 1.5,
         opacity: active ? 1 : 0.14,
       },
       labelStyle: { opacity: active ? 1 : 0.14 },
       labelBgStyle: { opacity: active ? 1 : 0.14 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#3c827b" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: OUTPUT_EDGE_COLOR },
       data: { rawNode: write },
     });
   }
@@ -710,6 +759,7 @@ export function adaptTrace(
       raw.id ?? raw.key ?? `${raw.from}->${raw.to}:${raw.kind}:${index}`;
     const candidate = raw.kind === "CANDIDATE" || raw.status === "CANDIDATE";
     const confirmed = raw.status === "CONFIRMED";
+    const color = candidate ? "#b07a3b" : raw.kind === "READS_TABLE" ? INPUT_EDGE_COLOR : raw.kind === "WRITES_TABLE" ? OUTPUT_EDGE_COLOR : confirmed ? "#26746d" : "#6f8f8b";
     const sourceIsField =
       nodeById.get(raw.from)?.kind.includes("FIELD") ?? false;
     const targetIsField = nodeById.get(raw.to)?.kind.includes("FIELD") ?? false;
@@ -747,10 +797,10 @@ export function adaptTrace(
             )[raw.kind] ?? raw.kind),
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: candidate ? "#b07a3b" : "#3c827b",
+        color,
       },
       style: {
-        stroke: candidate ? "#b07a3b" : confirmed ? "#26746d" : "#6f8f8b",
+        stroke: color,
         strokeWidth: confirmed ? 2 : 1.5,
         strokeDasharray: candidate ? "6 5" : undefined,
         opacity: !highlight || highlight.edgeIds.has(edgeId) ? 1 : 0.14,
@@ -767,6 +817,8 @@ export function adaptTrace(
       {
         ...visual,
         id: `${edgeId}:input`,
+        style: {...visual.style, stroke: candidate ? color : INPUT_EDGE_COLOR},
+        markerEnd: {...visual.markerEnd, color: candidate ? color : INPUT_EDGE_COLOR},
         target: `task:${taskId}`,
         targetHandle: `${edgeId}:input`,
         label: highlight?.edgeIds.has(edgeId) ? "输入" : undefined,
@@ -774,6 +826,8 @@ export function adaptTrace(
       {
         ...visual,
         id: `${edgeId}:output`,
+        style: {...visual.style, stroke: candidate ? color : OUTPUT_EDGE_COLOR},
+        markerEnd: {...visual.markerEnd, color: candidate ? color : OUTPUT_EDGE_COLOR},
         source: `task:${taskId}`,
         sourceHandle: `${edgeId}:output`,
         label: highlight?.edgeIds.has(edgeId) ? "产出" : undefined,

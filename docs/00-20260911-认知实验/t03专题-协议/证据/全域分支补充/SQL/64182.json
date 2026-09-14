@@ -1,0 +1,361 @@
+{
+  "task_id": "64182",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:24.256Z",
+  "payload_sha256": "0bd4878244f6ef0caaed8eb4f97741a84735eded7089256b153353899901bd36",
+  "review_scope": "selected identity, source joins, expressions, date and write scope",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_XIR_FND_ACCT("
+    },
+    {
+      "line": 10,
+      "text": "     AGT_ID                    STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,AGT_MODIFR                STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,AGT_CATE_CD               STRING COMMENT '协议类别代码'"
+    },
+    {
+      "line": 13,
+      "text": "    ,AGT_TYPE_CD               STRING COMMENT '协议类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,AGT_NAME                  STRING COMMENT '协议名称'"
+    },
+    {
+      "line": 15,
+      "text": "    ,AGT_STAT_CD               STRING COMMENT '协议状态代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,EXCH_TYPE_CD              STRING COMMENT '市场代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,EXCH_ACCT                 STRING COMMENT '交易所账户'"
+    },
+    {
+      "line": 18,
+      "text": "    ,XIR_FND_ACCT_TYPE_CD      STRING COMMENT '自营资金账户类型代码'"
+    },
+    {
+      "line": 19,
+      "text": "    ,CSTD_BNK                  STRING COMMENT '托管银行'"
+    },
+    {
+      "line": 20,
+      "text": "    ,BEL_DEPT                  STRING COMMENT '资金账户所属部门'"
+    },
+    {
+      "line": 21,
+      "text": "    ,CRS_POS_TRD_APPR_FLAG     STRING COMMENT '跨头寸内部交易审批标志'"
+    },
+    {
+      "line": 22,
+      "text": "    ,CLR_FLAG                  STRING COMMENT '清算标志'"
+    },
+    {
+      "line": 23,
+      "text": "    ,DATA_SRC_CD               STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 24,
+      "text": "    ,TASK_NAME                 STRING COMMENT '任务名'"
+    },
+    {
+      "line": 25,
+      "text": "    ,DATA_ETL_DATE             STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,DATA_UPT_DATE             STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,DATA_TIME                 STRING COMMENT '数据时间'  "
+    },
+    {
+      "line": 28,
+      "text": ")COMMENT '自营资金账户'"
+    },
+    {
+      "line": 29,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT '源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 30,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 31,
+      "text": ""
+    },
+    {
+      "line": 32,
+      "text": "-- querySql"
+    },
+    {
+      "line": 33,
+      "text": "WITH TMP_T_TTRD_ACC_CASH_EXT AS("
+    },
+    {
+      "line": 34,
+      "text": "SELECT A.ACCID,A.ACCNAME,A.EXHACC,A.ACCTYPE,A.CUSTODIAN_BANK,A.MARKETS,A.STATUS,A.BUSI_DATE "
+    },
+    {
+      "line": 35,
+      "text": "         FROM ${src_table_xir}.T_TTRD_ACC_CASH_EXT A"
+    },
+    {
+      "line": 36,
+      "text": "        WHERE A.BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 37,
+      "text": "      ),"
+    },
+    {
+      "line": 38,
+      "text": "TMP_MARKETS AS("
+    },
+    {
+      "line": 39,
+      "text": "SELECT D.ACCID,"
+    },
+    {
+      "line": 40,
+      "text": "        concat_ws(',',collect_set(NVL(C.DW_CD_VAL,D.MARKETS))) as MARKETS"
+    },
+    {
+      "line": 41,
+      "text": "FROM(SELECT A.ACCID, TRIM(D.MARKETS) AS  MARKETS"
+    },
+    {
+      "line": 42,
+      "text": "         FROM TMP_T_TTRD_ACC_CASH_EXT A"
+    },
+    {
+      "line": 43,
+      "text": "              lateral view explode(split(MARKETS, ',')) D AS MARKETS "
+    },
+    {
+      "line": 44,
+      "text": "        )D"
+    },
+    {
+      "line": 45,
+      "text": " LEFT JOIN ("
+    },
+    {
+      "line": 46,
+      "text": "         SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 47,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 48,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_XIR_FND_ACCT'"
+    },
+    {
+      "line": 49,
+      "text": "            AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 50,
+      "text": "            AND SRC_TAB_NAME = 'TTRD_ACC_CASH_EXT'"
+    },
+    {
+      "line": 51,
+      "text": "            AND SRC_FLD_NAME = 'MARKETS'"
+    },
+    {
+      "line": 52,
+      "text": "            AND SRC_SYS_NAME='XIR')C"
+    },
+    {
+      "line": 53,
+      "text": "   ON D.MARKETS =C.SRC_CD_VAL               "
+    },
+    {
+      "line": 54,
+      "text": "GROUP BY D.ACCID"
+    },
+    {
+      "line": 55,
+      "text": ")"
+    },
+    {
+      "line": 56,
+      "text": "INSERT OVERWRITE TABLE  T03_XIR_FND_ACCT  PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 57,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 58,
+      "text": "--Group1: Source Table:[ODATA_N_XIR.T_TTRD_ACC_CASH_EXT:一级资金账户表] "
+    },
+    {
+      "line": 59,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 60,
+      "text": "SELECT"
+    },
+    {
+      "line": 61,
+      "text": "       A.ACCID                                           AS AGT_ID              --协议编号"
+    },
+    {
+      "line": 62,
+      "text": "      ,'1020901'                                       AS AGT_MODIFR          --协议修饰符"
+    },
+    {
+      "line": 63,
+      "text": "      ,'102'                                           AS AGT_CATE_CD         --协议类别代码"
+    },
+    {
+      "line": 64,
+      "text": "      ,'1020901'                                       AS AGT_TYPE_CD         --协议类型代码"
+    },
+    {
+      "line": 65,
+      "text": "      ,ACCNAME                                         AS AGT_NAME            --协议名称"
+    },
+    {
+      "line": 66,
+      "text": "      ,NVL(B.DW_CD_VAL,STATUS)                         AS AGT_STAT_CD         --协议状态代码"
+    },
+    {
+      "line": 67,
+      "text": "      ,D.MARKETS                                      AS EXCH_TYPE_CD        --市场代码"
+    },
+    {
+      "line": 68,
+      "text": "      ,EXHACC                                          AS EXCH_ACCT           --交易所账户"
+    },
+    {
+      "line": 69,
+      "text": "      ,ACCTYPE                                         AS XIR_FND_ACCT_TYPE_CD--自营资金账户类型代码"
+    },
+    {
+      "line": 70,
+      "text": "      ,CUSTODIAN_BANK                                  AS CSTD_BNK            --托管银行"
+    },
+    {
+      "line": 71,
+      "text": "      ,''                                              AS BEL_DEPT            --资金账户所属部门"
+    },
+    {
+      "line": 72,
+      "text": "      ,''                                              AS CRS_POS_TRD_APPR_FLAG     --跨头寸内部交易审批标志"
+    },
+    {
+      "line": 73,
+      "text": "      ,''                                              AS CLR_FLAG            --清算标志"
+    },
+    {
+      "line": 74,
+      "text": "      ,'XIR'                                           AS DATA_SRC_CD         --数据来源代码"
+    },
+    {
+      "line": 75,
+      "text": "      ,UPPER('${filename}')                       AS TASK_NAME           --任务名"
+    },
+    {
+      "line": 76,
+      "text": "      ,'${data_day_str}'                          AS DATA_ETL_DATE       --数据加载日期"
+    },
+    {
+      "line": 77,
+      "text": "      ,'${data_day_str}'                          AS DATA_UPT_DATE       --数据更新日期"
+    },
+    {
+      "line": 78,
+      "text": "      ,'${data_today}'                            AS DATA_TIME           --数据时间"
+    },
+    {
+      "line": 79,
+      "text": "      ,'ODATA_N_XIR.T_TTRD_ACC_CASH_EXT'               AS SRC_TBL             --源表"
+    },
+    {
+      "line": 80,
+      "text": "      ,BUSI_DATE                                       AS BUSI_DATE           --业务日期"
+    },
+    {
+      "line": 81,
+      "text": " FROM TMP_T_TTRD_ACC_CASH_EXT A"
+    },
+    {
+      "line": 82,
+      "text": " LEFT JOIN TMP_MARKETS D"
+    },
+    {
+      "line": 83,
+      "text": "   ON A.ACCID=D.ACCID"
+    },
+    {
+      "line": 84,
+      "text": " LEFT JOIN ("
+    },
+    {
+      "line": 85,
+      "text": "         SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 86,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 87,
+      "text": "          WHERE TGT_TAB_NAME = 'T03_XIR_FND_ACCT'"
+    },
+    {
+      "line": 88,
+      "text": "            AND TGT_TAB_FLD  = 'Agt_Stat_Cd'"
+    },
+    {
+      "line": 89,
+      "text": "            AND SRC_TAB_NAME = 'TTRD_ACC_CASH_EXT'"
+    },
+    {
+      "line": 90,
+      "text": "            AND SRC_FLD_NAME = 'STATUS'"
+    },
+    {
+      "line": 91,
+      "text": "            AND SRC_SYS_NAME='XIR')B"
+    },
+    {
+      "line": 92,
+      "text": "   ON      A.STATUS =B.SRC_CD_VAL                  --STATUS 转码"
+    },
+    {
+      "line": 93,
+      "text": ""
+    },
+    {
+      "line": 94,
+      "text": ";"
+    },
+    {
+      "line": 95,
+      "text": ""
+    }
+  ]
+}

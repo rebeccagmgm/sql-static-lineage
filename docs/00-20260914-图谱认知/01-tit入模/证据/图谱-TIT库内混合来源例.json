@@ -1,0 +1,71 @@
+{
+  "command": "trace --table odata_n_tit.otc_o_margin_account --layer table --depth 2 --limit 50 --confirmed-only",
+  "graph": {
+    "id": "titans-otc",
+    "version": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46"
+  },
+  "truncated": false,
+  "stoppedBy": "DEPTH_LIMIT",
+  "nodes": [
+    {
+      "id": "dataset:fbee97b1650e08238d17bda0b22b3fd4fe8dbf8f4680c8c10109f63448766a9c",
+      "kind": "PHYSICAL_DATASET",
+      "taskId": "",
+      "table": "odata_n_tit.otc_o_margin_account",
+      "writeId": "",
+      "depth": 0
+    },
+    {
+      "id": "task:41825",
+      "kind": "TASK",
+      "taskId": "41825",
+      "table": "",
+      "writeId": "",
+      "depth": 1
+    },
+    {
+      "id": "dataset:68b33454cbdd8c847292b5d1774b93aeb2996757c615bfc0f225ba6392154500",
+      "kind": "PHYSICAL_DATASET",
+      "taskId": "",
+      "table": "odata_n_tit.d_v_margin_account_for_risk",
+      "writeId": "",
+      "depth": 2
+    },
+    {
+      "id": "dataset:f033e344ab4aef2ba4c4f7bd6667258be76bbfaab5e965f1328a3060f6168263",
+      "kind": "PHYSICAL_DATASET",
+      "taskId": "",
+      "table": "odata_n_ois.o_v_margin_account",
+      "writeId": "",
+      "depth": 2
+    }
+  ],
+  "edges": [
+    {
+      "id": "28bade67cdfac454ad9f0e9ed2c7a9b2280705d9f07433519dfdf35349840fdc",
+      "from": "task:41825",
+      "to": "dataset:fbee97b1650e08238d17bda0b22b3fd4fe8dbf8f4680c8c10109f63448766a9c",
+      "kind": "WRITES_TABLE",
+      "status": "CONFIRMED"
+    },
+    {
+      "id": "1bcf1e18a9d33135ff65428c4f31975edd0d174b571d4c8c4a844fd7bf598a51",
+      "from": "dataset:68b33454cbdd8c847292b5d1774b93aeb2996757c615bfc0f225ba6392154500",
+      "to": "task:41825",
+      "kind": "READS_TABLE",
+      "status": "OBSERVED"
+    },
+    {
+      "id": "2c2864a4f2fa81ebfaa52d5c317d10546d450e6fb11d8f1340b313878757f1a1",
+      "from": "dataset:f033e344ab4aef2ba4c4f7bd6667258be76bbfaab5e965f1328a3060f6168263",
+      "to": "task:41825",
+      "kind": "READS_TABLE",
+      "status": "OBSERVED"
+    }
+  ],
+  "meta": {
+    "backend": "arcadedb",
+    "elapsedMs": 461,
+    "projectionGenerations": 0
+  }
+}

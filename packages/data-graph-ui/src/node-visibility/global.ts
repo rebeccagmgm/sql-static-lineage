@@ -1,4 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
+import { withVisibility } from "./stable-copy";
 import type { LineageNodeData } from "../graph-adapter";
 export { normalizeHiddenTables } from "../../../data-graph/src/asset-graph/node-visibility";
 import { normalizeHiddenTables } from "../../../data-graph/src/asset-graph/node-visibility";
@@ -17,7 +18,13 @@ export function hideTableCards<N extends Node, E extends Edge>(nodes: N[], edges
     return members.length > 0 && members.every(member => member.kind !== "TASK" && rules.has(String(member.table ?? member.metadata?.identity?.qualifiedName ?? "").toLowerCase()));
   }).map(node => node.id));
   return {
-    nodes: nodes.map(node => ({ ...node, hidden: Boolean(node.hidden || hidden.has(node.id)) })),
-    edges: edges.map(edge => ({ ...edge, hidden: Boolean(edge.hidden || hidden.has(edge.source) || hidden.has(edge.target)) })),
+    nodes: nodes.map(node => {
+      const nextHidden = Boolean(node.hidden || hidden.has(node.id));
+      return withVisibility(node, {hidden:nextHidden});
+    }),
+    edges: edges.map(edge => {
+      const nextHidden = Boolean(edge.hidden || hidden.has(edge.source) || hidden.has(edge.target));
+      return withVisibility(edge, {hidden:nextHidden});
+    }),
   };
 }

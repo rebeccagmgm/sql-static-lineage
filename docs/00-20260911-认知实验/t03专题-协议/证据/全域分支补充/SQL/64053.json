@@ -1,0 +1,617 @@
+{
+  "task_id": "64053",
+  "default_schema": null,
+  "observed_at": "2026-09-05T02:08:05.243Z",
+  "payload_sha256": "c402553cc97aa8cf57a8644b1b33fe3afe7c424ae4748c02c8b8903c0955a052",
+  "review_scope": "candidate/context only; see structural supplement ledger",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_SCR_ACCT_CSTD_CHK_INFO ("
+    },
+    {
+      "line": 10,
+      "text": "  UNIF_ACCT STRING COMMENT '中登一码通账户',"
+    },
+    {
+      "line": 11,
+      "text": "  SCR_ACCT_CATE_CD STRING COMMENT '中登证券账户类别代码',"
+    },
+    {
+      "line": 12,
+      "text": "  SCR_ACCT STRING COMMENT '中登证券账户',"
+    },
+    {
+      "line": 13,
+      "text": "  EXCH_TYPE_CD STRING COMMENT '市场代码',"
+    },
+    {
+      "line": 14,
+      "text": "  CSDC_SCR_ACCT_STAT_CD STRING COMMENT '中登证券账户状态代码',"
+    },
+    {
+      "line": 15,
+      "text": "  TRD_UNIT STRING COMMENT '交易单元',"
+    },
+    {
+      "line": 16,
+      "text": "  CLR_NO1 STRING COMMENT '清算编号1',"
+    },
+    {
+      "line": 17,
+      "text": "  CLR_NO2 STRING COMMENT '清算编号2',"
+    },
+    {
+      "line": 18,
+      "text": "  ASSIS_FLAG STRING COMMENT '辅助标志',"
+    },
+    {
+      "line": 19,
+      "text": "  OACT_AGCY_ID STRING COMMENT '开户代理机构代码',"
+    },
+    {
+      "line": 20,
+      "text": "  CSTD_BUSI_UNIT STRING COMMENT '托管业务单元',"
+    },
+    {
+      "line": 21,
+      "text": "  ASGN_TRD_EFF_DATE STRING COMMENT '指定交易生效日期',"
+    },
+    {
+      "line": 22,
+      "text": "  DEL_FLAG STRING COMMENT '删除标志',"
+    },
+    {
+      "line": 23,
+      "text": "  DEL_DATE STRING COMMENT '删除日期',"
+    },
+    {
+      "line": 24,
+      "text": "  DATA_SRC_CD STRING COMMENT '数据来源代码',"
+    },
+    {
+      "line": 25,
+      "text": "  TASK_NAME STRING COMMENT '任务名',"
+    },
+    {
+      "line": 26,
+      "text": "  DATA_ETL_DATE STRING COMMENT '数据加载日期',"
+    },
+    {
+      "line": 27,
+      "text": "  DATA_UPT_DATE STRING COMMENT '数据更新日期',"
+    },
+    {
+      "line": 28,
+      "text": "  DATA_TIME STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 29,
+      "text": ")"
+    },
+    {
+      "line": 30,
+      "text": "COMMENT '证券账户托管对账信息'"
+    },
+    {
+      "line": 31,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT '源表')"
+    },
+    {
+      "line": 32,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 33,
+      "text": ""
+    },
+    {
+      "line": 34,
+      "text": "CREATE TABLE TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_TEMP AS SELECT YMTH AS UNIF_ACCT1 --中登一码通账户 ,ZHLB AS SCR_ACCT_CATE_CD1 --中登证券账户类别代码 ,ZQZH AS SCR_ACCT1 --中登证券账户 ,'SSE' AS EXCH_TYPE_CD1 --市场代码 ,NVL ("
+    },
+    {
+      "line": 35,
+      "text": "  B.DW_CD_VAL,"
+    },
+    {
+      "line": 36,
+      "text": "  ZQZHZT"
+    },
+    {
+      "line": 37,
+      "text": ")"
+    },
+    {
+      "line": 38,
+      "text": "AS CSDC_SCR_ACCT_STAT_CD1--中登证券账户状态代码 ,JYDY AS TRD_UNIT1 --交易单元 ,QSBH1 AS CLR_NO11 --清算编号1 ,QSBH2 AS CLR_NO21 --清算编号2 ,FZBZ AS ASSIS_FLAG1 --辅助标志 ,KHJGDM AS OACT_AGCY_ID1 --开户代理机构代码 ,TGYWDY AS CSTD_BUSI_UNIT1 --托管业务单元 ,IF(SXRQ='0','',SXRQ) AS ASGN_TRD_EFF_DATE1 --指定交易生效日期 ,'CSS' AS DATA_SRC_CD1 --数据来源代码 ,'ODATA_N_CSS.E_SRC_DBF_HSTGDZ' AS SRC_TBL1 --源表 ,UPPER('PDATA_N.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001') AS TASK_NAME1 --任务名 ,'2026-05-20' AS DATA_ETL_DATE1 --数据加载日期 ,'2026-05-20' AS DATA_UPT_DATE1 --数据更新日期 FROM ODATA_N_CSS.E_SRC_DBF_HSTGDZ A LEFT JOIN ( SELECT SRC_CD_VAL,DW_CD_VAL FROM PDATA_N.REF_CD_CVT_MAP WHERE TGT_TAB_NAME = 'T03_SCR_ACCT_CSTD_CHK_INFO' AND TGT_TAB_FLD = 'Csdc_Scr_Acct_Stat_Cd' AND SRC_TAB_NAME = 'RC_DBF_HSTGDZ' AND SRC_FLD_NAME = 'ZQZHZT' AND SRC_SYS_NAME='CSS') B ON A.ZQZHZT = B.SRC_CD_VAL --ZQZHZT 转码 ;"
+    },
+    {
+      "line": 39,
+      "text": ""
+    },
+    {
+      "line": 40,
+      "text": "CREATE TABLE IF NOT EXISTS TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID AS SELECT A.* ,B.* ,CASE WHEN A.UNIF_ACCT IS NULL AND B.UNIF_ACCT1 IS NOT NULL THEN 'I' --新增 WHEN A.UNIF_ACCT IS NOT NULL AND B.UNIF_ACCT1 IS NULL THEN 'D' --删除 WHEN A.UNIF_ACCT IS NOT NULL AND B.UNIF_ACCT1 IS NOT NULL AND ("
+    },
+    {
+      "line": 41,
+      "text": "  COALESCE(A.SCR_ACCT_CATE_CD ,'') <> COALESCE(B.SCR_ACCT_CATE_CD1 ,'') OR COALESCE(A.EXCH_TYPE_CD ,'') <> COALESCE(B.EXCH_TYPE_CD1 ,'') OR COALESCE(A.CSDC_SCR_ACCT_STAT_CD,'') <> COALESCE(B.CSDC_SCR_ACCT_STAT_CD1,'') OR COALESCE(A.TRD_UNIT ,'') <> COALESCE(B.TRD_UNIT1 ,'') OR COALESCE(A.CLR_NO1 ,'') <> COALESCE(B.CLR_NO11 ,'') OR COALESCE(A.CLR_NO2 ,'') <> COALESCE(B.CLR_NO21 ,'') OR COALESCE(A.ASSIS_FLAG ,'') <> COALESCE(B.ASSIS_FLAG1 ,'') OR COALESCE(A.OACT_AGCY_ID ,'') <> COALESCE(B.OACT_AGCY_ID1 ,'') OR COALESCE(A.CSTD_BUSI_UNIT ,'') <> COALESCE(B.CSTD_BUSI_UNIT1 ,'') OR COALESCE(A.ASGN_TRD_EFF_DATE ,'') <> COALESCE(B.ASGN_TRD_EFF_DATE1 ,'')"
+    },
+    {
+      "line": 42,
+      "text": ")"
+    },
+    {
+      "line": 43,
+      "text": "THEN 'U' --变更 ELSE 'S' --无变更 END AS DATA_TYPE FROM (SELECT * FROM T03_SCR_ACCT_CSTD_CHK_INFO WHERE SRC_TBL='ODATA_N_CSS.E_SRC_DBF_HSTGDZ')A --只对比ODATA_N_CSS.E_SRC_DBF_HSTGDZ该表的数据 FULL OUTER JOIN TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_TEMP B ON A.UNIF_ACCT=B.UNIF_ACCT1 AND A.SCR_ACCT =B.SCR_ACCT1 ;"
+    },
+    {
+      "line": 44,
+      "text": ""
+    },
+    {
+      "line": 45,
+      "text": "-- querySql"
+    },
+    {
+      "line": 46,
+      "text": "INSERT OVERWRITE TABLE T03_SCR_ACCT_CSTD_CHK_INFO PARTITION (SRC_TBL)"
+    },
+    {
+      "line": 47,
+      "text": "SELECT"
+    },
+    {
+      "line": 48,
+      "text": "*"
+    },
+    {
+      "line": 49,
+      "text": "FROM T03_SCR_ACCT_CSTD_CHK_INFO"
+    },
+    {
+      "line": 50,
+      "text": "WHERE DATA_ETL_DATE !='2026-05-20'"
+    },
+    {
+      "line": 51,
+      "text": ";"
+    },
+    {
+      "line": 52,
+      "text": ""
+    },
+    {
+      "line": 53,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_TEMP;"
+    },
+    {
+      "line": 54,
+      "text": ""
+    },
+    {
+      "line": 55,
+      "text": "DROP TABLE IF EXISTS TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID;"
+    },
+    {
+      "line": 56,
+      "text": ""
+    },
+    {
+      "line": 57,
+      "text": "INSERT OVERWRITE TABLE T03_SCR_ACCT_CSTD_CHK_INFO PARTITION(SRC_TBL)"
+    },
+    {
+      "line": 58,
+      "text": "SELECT"
+    },
+    {
+      "line": 59,
+      "text": "UNIF_ACCT                  AS UNIF_ACCT                 --中登一码通账户"
+    },
+    {
+      "line": 60,
+      "text": ",SCR_ACCT_CATE_CD           AS SCR_ACCT_CATE_CD          --中登证券账户类别代码"
+    },
+    {
+      "line": 61,
+      "text": ",SCR_ACCT                   AS SCR_ACCT                  --中登证券账户"
+    },
+    {
+      "line": 62,
+      "text": ",EXCH_TYPE_CD               AS EXCH_TYPE_CD              --市场代码"
+    },
+    {
+      "line": 63,
+      "text": ",CSDC_SCR_ACCT_STAT_CD      AS CSDC_SCR_ACCT_STAT_CD     --中登证券账户状态代码"
+    },
+    {
+      "line": 64,
+      "text": ",TRD_UNIT                   AS TRD_UNIT                  --交易单元"
+    },
+    {
+      "line": 65,
+      "text": ",CLR_NO1                    AS CLR_NO1                   --清算编号1"
+    },
+    {
+      "line": 66,
+      "text": ",CLR_NO2                    AS CLR_NO2                   --清算编号2"
+    },
+    {
+      "line": 67,
+      "text": ",ASSIS_FLAG                 AS ASSIS_FLAG                --辅助标志"
+    },
+    {
+      "line": 68,
+      "text": ",OACT_AGCY_ID               AS OACT_AGCY_ID              --开户代理机构代码"
+    },
+    {
+      "line": 69,
+      "text": ",CSTD_BUSI_UNIT             AS CSTD_BUSI_UNIT            --托管业务单元"
+    },
+    {
+      "line": 70,
+      "text": ",ASGN_TRD_EFF_DATE          AS ASGN_TRD_EFF_DATE         --指定交易生效日期"
+    },
+    {
+      "line": 71,
+      "text": ",'0'                        AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 72,
+      "text": ",''                         AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 73,
+      "text": ",DATA_SRC_CD                AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 74,
+      "text": ",TASK_NAME                  AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 75,
+      "text": ",DATA_ETL_DATE              AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 76,
+      "text": ",DATA_UPT_DATE              AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 77,
+      "text": ",DATA_TIME                  AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 78,
+      "text": ",SRC_TBL                    AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 79,
+      "text": "FROM TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 80,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 81,
+      "text": "SELECT"
+    },
+    {
+      "line": 82,
+      "text": "UNIF_ACCT1                  AS UNIF_ACCT                 --中登一码通账户"
+    },
+    {
+      "line": 83,
+      "text": ",SCR_ACCT_CATE_CD1           AS SCR_ACCT_CATE_CD          --中登证券账户类别代码"
+    },
+    {
+      "line": 84,
+      "text": ",SCR_ACCT1                   AS SCR_ACCT                  --中登证券账户"
+    },
+    {
+      "line": 85,
+      "text": ",EXCH_TYPE_CD1               AS EXCH_TYPE_CD              --市场代码"
+    },
+    {
+      "line": 86,
+      "text": ",CSDC_SCR_ACCT_STAT_CD1      AS CSDC_SCR_ACCT_STAT_CD     --中登证券账户状态代码"
+    },
+    {
+      "line": 87,
+      "text": ",TRD_UNIT1                   AS TRD_UNIT                  --交易单元"
+    },
+    {
+      "line": 88,
+      "text": ",CLR_NO11                    AS CLR_NO1                   --清算编号1"
+    },
+    {
+      "line": 89,
+      "text": ",CLR_NO21                    AS CLR_NO2                   --清算编号2"
+    },
+    {
+      "line": 90,
+      "text": ",ASSIS_FLAG1                 AS ASSIS_FLAG                --辅助标志"
+    },
+    {
+      "line": 91,
+      "text": ",OACT_AGCY_ID1               AS OACT_AGCY_ID              --开户代理机构代码"
+    },
+    {
+      "line": 92,
+      "text": ",CSTD_BUSI_UNIT1             AS CSTD_BUSI_UNIT            --托管业务单元"
+    },
+    {
+      "line": 93,
+      "text": ",ASGN_TRD_EFF_DATE1          AS ASGN_TRD_EFF_DATE         --指定交易生效日期"
+    },
+    {
+      "line": 94,
+      "text": ",'0'                         AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 95,
+      "text": ",''                          AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 96,
+      "text": ",DATA_SRC_CD1                AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 97,
+      "text": ",TASK_NAME1                  AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 98,
+      "text": ",DATA_ETL_DATE               AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 99,
+      "text": ",DATA_UPT_DATE1              AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 100,
+      "text": ",'2026-05-21 15:05:12'        AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 101,
+      "text": ",SRC_TBL1                    AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 102,
+      "text": "FROM TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID WHERE DATA_TYPE='U'           --有变更的数据取变更的值"
+    },
+    {
+      "line": 103,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 104,
+      "text": "SELECT"
+    },
+    {
+      "line": 105,
+      "text": "UNIF_ACCT1                  AS UNIF_ACCT                 --中登一码通账户"
+    },
+    {
+      "line": 106,
+      "text": ",SCR_ACCT_CATE_CD1           AS SCR_ACCT_CATE_CD          --中登证券账户类别代码"
+    },
+    {
+      "line": 107,
+      "text": ",SCR_ACCT1                   AS SCR_ACCT                  --中登证券账户"
+    },
+    {
+      "line": 108,
+      "text": ",EXCH_TYPE_CD1               AS EXCH_TYPE_CD              --市场代码"
+    },
+    {
+      "line": 109,
+      "text": ",CSDC_SCR_ACCT_STAT_CD1      AS CSDC_SCR_ACCT_STAT_CD     --中登证券账户状态代码"
+    },
+    {
+      "line": 110,
+      "text": ",TRD_UNIT1                   AS TRD_UNIT                  --交易单元"
+    },
+    {
+      "line": 111,
+      "text": ",CLR_NO11                    AS CLR_NO1                   --清算编号1"
+    },
+    {
+      "line": 112,
+      "text": ",CLR_NO21                    AS CLR_NO2                   --清算编号2"
+    },
+    {
+      "line": 113,
+      "text": ",ASSIS_FLAG1                 AS ASSIS_FLAG                --辅助标志"
+    },
+    {
+      "line": 114,
+      "text": ",OACT_AGCY_ID1               AS OACT_AGCY_ID              --开户代理机构代码"
+    },
+    {
+      "line": 115,
+      "text": ",CSTD_BUSI_UNIT1             AS CSTD_BUSI_UNIT            --托管业务单元"
+    },
+    {
+      "line": 116,
+      "text": ",ASGN_TRD_EFF_DATE1          AS ASGN_TRD_EFF_DATE         --指定交易生效日期"
+    },
+    {
+      "line": 117,
+      "text": ",'0'                         AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 118,
+      "text": ",''                          AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 119,
+      "text": ",DATA_SRC_CD1                AS DATA_SRC_CD               --数据来源代码"
+    },
+    {
+      "line": 120,
+      "text": ",TASK_NAME1                  AS TASK_NAME                 --任务名"
+    },
+    {
+      "line": 121,
+      "text": ",DATA_ETL_DATE1              AS DATA_ETL_DATE             --数据加载日期"
+    },
+    {
+      "line": 122,
+      "text": ",DATA_UPT_DATE1              AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 123,
+      "text": ",'2026-05-21 15:05:12'        AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 124,
+      "text": ",SRC_TBL1                    AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 125,
+      "text": "FROM TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID WHERE DATA_TYPE='I' --插入新增的数据"
+    },
+    {
+      "line": 126,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 127,
+      "text": "SELECT"
+    },
+    {
+      "line": 128,
+      "text": "UNIF_ACCT                  AS UNIF_ACCT                 --中登一码通账户"
+    },
+    {
+      "line": 129,
+      "text": ",SCR_ACCT_CATE_CD           AS SCR_ACCT_CATE_CD          --中登证券账户类别代码"
+    },
+    {
+      "line": 130,
+      "text": ",SCR_ACCT                   AS SCR_ACCT                  --中登证券账户"
+    },
+    {
+      "line": 131,
+      "text": ",EXCH_TYPE_CD               AS EXCH_TYPE_CD              --市场代码"
+    },
+    {
+      "line": 132,
+      "text": ",CSDC_SCR_ACCT_STAT_CD      AS CSDC_SCR_ACCT_STAT_CD     --中登证券账户状态代码"
+    },
+    {
+      "line": 133,
+      "text": ",TRD_UNIT                   AS TRD_UNIT                  --交易单元"
+    },
+    {
+      "line": 134,
+      "text": ",CLR_NO1                    AS CLR_NO1                   --清算编号1"
+    },
+    {
+      "line": 135,
+      "text": ",CLR_NO2                    AS CLR_NO2                   --清算编号2"
+    },
+    {
+      "line": 136,
+      "text": ",ASSIS_FLAG                 AS ASSIS_FLAG                --辅助标志"
+    },
+    {
+      "line": 137,
+      "text": ",OACT_AGCY_ID               AS OACT_AGCY_ID              --开户代理机构代码"
+    },
+    {
+      "line": 138,
+      "text": ",CSTD_BUSI_UNIT             AS CSTD_BUSI_UNIT            --托管业务单元"
+    },
+    {
+      "line": 139,
+      "text": ",ASGN_TRD_EFF_DATE          AS ASGN_TRD_EFF_DATE         --指定交易生效日期"
+    },
+    {
+      "line": 140,
+      "text": ",'1'                        AS DEL_FLAG                  --删除标志"
+    },
+    {
+      "line": 141,
+      "text": ",CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 142,
+      "text": "THEN DEL_DATE"
+    },
+    {
+      "line": 143,
+      "text": "ELSE '2026-05-20'"
+    },
+    {
+      "line": 144,
+      "text": "END                       AS DEL_DATE                  --删除日期"
+    },
+    {
+      "line": 145,
+      "text": ",DATA_SRC_CD                                             --数据来源代码"
+    },
+    {
+      "line": 146,
+      "text": ",TASK_NAME                                               --任务名"
+    },
+    {
+      "line": 147,
+      "text": ",DATA_ETL_DATE                                           --数据加载日期"
+    },
+    {
+      "line": 148,
+      "text": ",CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 149,
+      "text": "THEN DATA_UPT_DATE"
+    },
+    {
+      "line": 150,
+      "text": "ELSE '2026-05-20'"
+    },
+    {
+      "line": 151,
+      "text": "END                       AS DATA_UPT_DATE             --数据更新日期"
+    },
+    {
+      "line": 152,
+      "text": ",CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 153,
+      "text": "THEN DATA_TIME"
+    },
+    {
+      "line": 154,
+      "text": "ELSE '2026-05-21 15:05:12'"
+    },
+    {
+      "line": 155,
+      "text": "END                       AS DATA_TIME                 --数据时间"
+    },
+    {
+      "line": 156,
+      "text": ",SRC_TBL                    AS SRC_TBL                   --源表"
+    },
+    {
+      "line": 157,
+      "text": "FROM TEMP.T03_SCR_ACCT_CSTD_CHK_INFO_CSS001_MID WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 158,
+      "text": ";"
+    },
+    {
+      "line": 159,
+      "text": ""
+    }
+  ]
+}

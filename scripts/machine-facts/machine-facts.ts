@@ -46,6 +46,7 @@ import {
 	type SchemaReferenceRecord,
 	type DatasetIoRecord,
 	type TaskLocalMaterializationRecord,
+	type TaskLocalControlReadRef,
 	type RelationNodeRecord,
 	type RelationEdgeRecord,
 	type FieldExpressionRecord,
@@ -1135,6 +1136,61 @@ export function validateBundle(bundleDir: string): string[] {
 	}
 	const bindingOrdinals = new Set<string>();
 	const bindings = readJsonlForValidation(join(bundleDir, "output-field-bindings.jsonl"), errors);
+	const materializationsPath = join(bundleDir, "task-local-materializations.jsonl");
+	if (jsonlStoreExists(materializationsPath)) {
+		const nodesById = new Map(relationNodes.map(node => [String(node.relation_id), node]));
+		// Recover normalization only from paired relation/occurrence evidence, so
+		// validation handles a task's qualified bare reads without tail matching.
+		const provenReadTables = new Map<string, Set<string>>();
+		for (const io of datasetIo.filter(record => record.direction === "READ")) {
+			for (const occurrence of Array.isArray(io.read_occurrences) ? io.read_occurrences : []) {
+				const read = nodesById.get(String(occurrence?.relation_id));
+				if (!read || read.statement_id !== io.statement_id || read.relation?.read_occurrence_id !== occurrence?.occurrence_id) continue;
+				const rawTable = normalizeName(String(read.relation?.table ?? ""));
+				const identities = provenReadTables.get(rawTable) ?? new Set<string>();
+				identities.add(normalizeName(String(io.physical_dataset)));
+				provenReadTables.set(rawTable, identities);
+			}
+		}
+		const qualifiedControlTable = (value: unknown): string => {
+			const normalized = normalizeName(String(value ?? ""));
+			const identities = provenReadTables.get(normalized);
+			return identities?.size === 1 ? [...identities][0]! : normalized;
+		};
+		const provenControlUses = new Set(collectTaskLocalControlReads(relationNodes as RelationNodeRecord[], datasetIo as DatasetIoRecord[], qualifiedControlTable)
+			.filter(use => use.ref.resolution_status === "RESOLVED")
+			.map(use => `${use.statementId}\u0000${use.table}\u0000${use.column}\u0000${canonicalJson(use.ref)}`));
+		for (const bridge of readJsonlForValidation(materializationsPath, errors)) {
+			if (bridge.read_control_refs === undefined) continue; // Legacy bundles remain valid.
+			if (!Array.isArray(bridge.read_control_refs)) continue; // Record schema reports this.
+			const seenControlRefs = new Set<string>();
+			for (const rawRef of bridge.read_control_refs) {
+				if (rawRef === null || typeof rawRef !== "object") continue;
+				const ref = rawRef as JsonRecord;
+				const key = canonicalJson(ref);
+				if (seenControlRefs.has(key)) errors.push(`duplicate materialization control reference ${bridge.bridge_id}`);
+				seenControlRefs.add(key);
+				const control = nodesById.get(String(ref.relation_id));
+				if (!control || !["filter", "join"].includes(String(control.relation_type).toLowerCase()) || control.task_id !== bridge.task_id || control.statement_id !== bridge.read_statement_id) {
+					errors.push(`materialization control owner mismatch ${bridge.bridge_id}`);
+					continue;
+				}
+				if (ref.resolution_status !== "RESOLVED") {
+					if (ref.read_relation_id !== null || ref.read_occurrence_id !== null || typeof ref.reason_code !== "string" || !ref.reason_code.trim()) errors.push(`unresolved materialization control must retain reason and null endpoints ${bridge.bridge_id}`);
+					continue;
+				}
+				const read = nodesById.get(String(ref.read_relation_id));
+				const reachable = scopedControlReadNodes(control as RelationNodeRecord, nodesById as Map<string, RelationNodeRecord>);
+				const occurrences = datasetIo.filter(io => io.direction === "READ" && io.task_id === bridge.task_id && io.statement_id === bridge.read_statement_id && io.resolution_status === "RESOLVED" && normalizeName(String(io.physical_dataset)) === normalizeName(String(bridge.physical_dataset)))
+					.flatMap(io => Array.isArray(io.read_occurrences) ? io.read_occurrences : [])
+					.filter(occurrence => occurrence?.relation_id === ref.read_relation_id && occurrence?.occurrence_id === ref.read_occurrence_id);
+				const useKey = `${bridge.read_statement_id}\u0000${normalizeName(String(bridge.physical_dataset))}\u0000${normalizeName(String(bridge.column))}\u0000${canonicalJson(ref)}`;
+				if (!read || !reachable.some(node => node.relation_id === ref.read_relation_id) || read.relation?.read_occurrence_id !== ref.read_occurrence_id || typeof ref.read_occurrence_id !== "string" || !ref.read_occurrence_id || occurrences.length !== 1 || !provenControlUses.has(useKey)) {
+					errors.push(`materialization control read occurrence not proven ${bridge.bridge_id}`);
+				}
+			}
+		}
+	}
 	for (const binding of bindings) {
 		if (!expressionIds.has(binding.expression_id)) errors.push(`output binding expression endpoint missing ${binding.binding_id}`);
 		if (binding.binding_status !== "RESOLVED") errors.push(`output binding must be resolved ${binding.binding_id}`);
@@ -1796,6 +1852,7 @@ function buildTaskBundle(
 		expressions,
 		outputBindings,
 		schemaRefs,
+		relations,
 	);
 	const dedupedUnknowns = new Set<string>();
 	const retainedUnknowns = unknowns.filter((item) => {
@@ -2258,7 +2315,92 @@ function parseArgs(args: string[]): { profile: string; output: string; sourceId?
 	};
 }
 
-function deriveTaskLocalMaterializations(
+function scopedControlReadNodes(
+	control: RelationNodeRecord,
+	byId: ReadonlyMap<string, RelationNodeRecord>,
+): RelationNodeRecord[] {
+	const body = control.relation as JsonRecord | null;
+	if (!body || typeof body !== "object") return [];
+	const reachableReads: RelationNodeRecord[] = [];
+	const visited = new Set<string>();
+	const pending = [body.source, body.left, body.right].filter((id): id is string => typeof id === "string");
+	while (pending.length > 0) {
+		const id = pending.pop()!;
+		if (visited.has(id)) continue;
+		visited.add(id);
+		const node = byId.get(id);
+		const relation = node?.relation as JsonRecord | null;
+		if (!node || !relation || node.statement_id !== control.statement_id || node.task_id !== control.task_id || !body.scope_id || relation.scope_id !== body.scope_id) continue;
+		if (node.relation_type === "read") {
+			if (relation.is_cte !== true) reachableReads.push(node);
+			continue;
+		}
+		for (const child of [relation.source, relation.left, relation.right, ...(Array.isArray(relation.branches) ? relation.branches : [])]) {
+			if (typeof child === "string") pending.push(child);
+		}
+	}
+	return reachableReads;
+}
+
+function collectTaskLocalControlReads(
+	relations: readonly RelationNodeRecord[],
+	datasetIo: readonly DatasetIoRecord[],
+	qualifyTable: (value: unknown) => string,
+): { statementId: string; table: string; column: string; ref: TaskLocalControlReadRef }[] {
+	const byId = new Map(relations.map(relation => [relation.relation_id, relation]));
+	const asRecord = (value: unknown): JsonRecord | null =>
+		typeof value === "object" && value !== null && !Array.isArray(value) ? value as JsonRecord : null;
+	const output: { statementId: string; table: string; column: string; ref: TaskLocalControlReadRef }[] = [];
+	for (const control of relations) {
+		const type = control.relation_type.toLowerCase();
+		if (type !== "filter" && type !== "join") continue;
+		const body = asRecord(control.relation);
+		if (!body) continue;
+		const columns: unknown[] = type === "filter" ? body.predicate_columns : body.condition_columns;
+		if (!Array.isArray(columns)) continue;
+		// Follow explicit child relation IDs, never relation-name prefixes. Stopping
+		// at another scope prevents a derived/CTE alias being guessed as a read.
+		const reachableReads = scopedControlReadNodes(control, byId);
+		for (const raw of columns) {
+			const input = asRecord(raw);
+			if (!input || !Array.isArray(input.physical)) continue;
+			for (const physical of input.physical) {
+				const pair = asRecord(physical);
+				const table = qualifyTable(pair?.table);
+				const column = normalizeName(String(pair?.column ?? ""));
+				if (!table || !column) continue;
+				const qualifier = normalizeName(String(input.qualifier ?? ""));
+				const candidates = reachableReads.filter(node => {
+					const read = asRecord(node.relation)!;
+					return qualifyTable(read.table) === table && (!qualifier || normalizeName(String(read.binding ?? "")) === qualifier);
+				});
+				let ref: TaskLocalControlReadRef = {
+					relation_id: control.relation_id, read_relation_id: null, read_occurrence_id: null,
+					resolution_status: candidates.length > 1 ? "AMBIGUOUS" : "UNRESOLVED",
+					reason_code: candidates.length > 1 ? "CONTROL_READ_OCCURRENCE_AMBIGUOUS" : "CONTROL_READ_SCOPE_NOT_PROVEN",
+				};
+				if (input.resolution !== "PHYSICAL") {
+					ref = { ...ref, resolution_status: "UNRESOLVED", reason_code: "CONTROL_FIELD_NOT_RESOLVED" };
+				} else if (candidates.length === 1) {
+					const read = candidates[0]!;
+					const occurrenceId = asRecord(read.relation)?.read_occurrence_id;
+					const proofs = datasetIo.filter(io => io.direction === "READ" && io.task_id === control.task_id && io.statement_id === control.statement_id && io.resolution_status === "RESOLVED" && qualifyTable(io.physical_dataset) === table)
+						.flatMap(io => Array.isArray(io.read_occurrences) ? io.read_occurrences : [])
+						.map(asRecord).filter(occurrence => occurrence !== null && occurrence.relation_id === read.relation_id && occurrence.occurrence_id === occurrenceId);
+					if (typeof occurrenceId === "string" && occurrenceId.length > 0 && proofs.length === 1) {
+						ref = { relation_id: control.relation_id, read_relation_id: read.relation_id, read_occurrence_id: occurrenceId, resolution_status: "RESOLVED" };
+					} else {
+						ref = { ...ref, reason_code: "CONTROL_READ_OCCURRENCE_NOT_PROVEN" };
+					}
+				}
+				output.push({ statementId: control.statement_id, table, column, ref });
+			}
+		}
+	}
+	return output;
+}
+
+export function deriveTaskLocalMaterializations(
 	taskId: string,
 	logicalSourceId: string,
 	taskDefaultSchema: string | undefined,
@@ -2267,6 +2409,7 @@ function deriveTaskLocalMaterializations(
 	expressions: readonly FieldExpressionRecord[],
 	outputBindings: readonly OutputFieldBindingRecord[],
 	schemaRefs: readonly SchemaReferenceRecord[],
+	relations: readonly RelationNodeRecord[] = [],
 ): TaskLocalMaterializationRecord[] {
 	const defaultSchema = normalizeName(taskDefaultSchema ?? "");
 	const qualifyTaskTable = (value: unknown): string => {
@@ -2290,7 +2433,8 @@ function deriveTaskLocalMaterializations(
 		values.push(binding);
 		bindingsByObservation.set(binding.write_observation_id, values);
 	}
-	const fieldsByStatement = new Map<string, Map<string, { readonly table: string; readonly column: string; readonly expressionIds: Set<string> }>>();
+	type FieldUse = { readonly table: string; readonly column: string; readonly expressionIds: Set<string>; readonly controlRefs: Map<string, TaskLocalControlReadRef> };
+	const fieldsByStatement = new Map<string, Map<string, FieldUse>>();
 	for (const expression of expressions) {
 		const fields = fieldsByStatement.get(expression.statement_id) ?? new Map();
 		for (const raw of expression.input_fields) {
@@ -2299,11 +2443,19 @@ function deriveTaskLocalMaterializations(
 			const column = normalizeName(String(input?.column ?? ""));
 			if (!table || !column) continue;
 			const key = `${table}\u0000${column}`;
-			const current = fields.get(key) ?? { table, column, expressionIds: new Set<string>() };
+			const current: FieldUse = fields.get(key) ?? { table, column, expressionIds: new Set<string>(), controlRefs: new Map() };
 			current.expressionIds.add(expression.expression_id);
 			fields.set(key, current);
 		}
 		fieldsByStatement.set(expression.statement_id, fields);
+	}
+	for (const use of collectTaskLocalControlReads(relations, datasetIo, qualifyTaskTable)) {
+		const fields = fieldsByStatement.get(use.statementId) ?? new Map<string, FieldUse>();
+		const key = `${use.table}\u0000${use.column}`;
+		const current = fields.get(key) ?? { table: use.table, column: use.column, expressionIds: new Set<string>(), controlRefs: new Map<string, TaskLocalControlReadRef>() };
+		current.controlRefs.set(canonicalJson(use.ref), use.ref);
+		fields.set(key, current);
+		fieldsByStatement.set(use.statementId, fields);
 	}
 	const records: TaskLocalMaterializationRecord[] = [];
 	const reads = datasetIo.filter((record) => record.direction === "READ");
@@ -2359,8 +2511,11 @@ function deriveTaskLocalMaterializations(
 			);
 			const candidates = candidatesByWrite.flat();
 			const bridgeId = `task-local-materialization:${taskId}:${readStatementId}:${physicalDataset}:${field.column}`;
-			const evidenceRefs = ["statements.jsonl", "dataset-io.jsonl", "field-expression-nodes.jsonl", "output-field-bindings.jsonl"] as const;
-			if (effectiveWrites.length === 1 && candidates.length === 1) {
+			const controlRefs = [...field.controlRefs.values()].sort((left, right) => compareText(canonicalJson(left), canonicalJson(right)));
+			const controlConsumption = controlRefs.length === 0 ? {} : { read_control_refs: controlRefs };
+			const evidenceRefs = ["statements.jsonl", "dataset-io.jsonl", "field-expression-nodes.jsonl", "output-field-bindings.jsonl", ...(controlRefs.length === 0 ? [] : ["relation-nodes.jsonl"])];
+			const producerProven = (write: DatasetIoRecord): boolean => write.resolution_status === "RESOLVED" && write.producer_enumeration_status === "COMPLETE";
+			if (effectiveWrites.length === 1 && candidates.length === 1 && candidates[0]!.binding_status === "RESOLVED" && producerProven(effectiveWrites[0]!)) {
 				const binding = candidates[0]!;
 				const write = writeByObservation.get(binding.write_observation_id);
 				const writeStatementId = String(write?.write_statement_id ?? write?.statement_id ?? binding.write_statement_id);
@@ -2379,6 +2534,7 @@ function deriveTaskLocalMaterializations(
 						read_statement_index: readStatementIndex,
 						output_binding_id: binding.binding_id,
 						read_expression_ids: [...field.expressionIds].sort(compareText),
+						...controlConsumption,
 						status: "RESOLVED",
 						provenance: "SAME_TASK_SQL_WRITE_READ",
 						evidence_refs: evidenceRefs,
@@ -2415,7 +2571,7 @@ function deriveTaskLocalMaterializations(
 					schemaPartitionColumns.has(field.column);
 				const staticPartitionProducerProven =
 					staticPartitionProvenByWrite || staticPartitionProvenByBindings;
-				if (writeStatementIndex !== undefined && staticPartitionProducerProven) {
+				if (writeStatementIndex !== undefined && staticPartitionProducerProven && producerProven(write)) {
 					records.push({
 						bridge_id: bridgeId,
 						task_id: taskId,
@@ -2430,6 +2586,7 @@ function deriveTaskLocalMaterializations(
 						output_binding_id: null,
 						producer_kind: "STATIC_PARTITION_ASSIGNMENT",
 						read_expression_ids: [...field.expressionIds].sort(compareText),
+						...controlConsumption,
 						status: "RESOLVED",
 						provenance: "SAME_TASK_SQL_WRITE_READ",
 						evidence_refs: evidenceRefs,
@@ -2437,7 +2594,7 @@ function deriveTaskLocalMaterializations(
 					continue;
 				}
 			}
-			if (accumulatedWritesProven && candidatesByWrite.every((values) => values.length === 1)) {
+			if (accumulatedWritesProven && effectiveWrites.every(producerProven) && candidatesByWrite.every((values) => values.length === 1 && values[0]!.binding_status === "RESOLVED")) {
 				const bindings = candidatesByWrite.map((values) => values[0]!);
 				const contributingWrites = bindings.map((binding) => writeByObservation.get(binding.write_observation_id));
 				if (contributingWrites.every((write): write is DatasetIoRecord => write !== undefined)) {
@@ -2463,6 +2620,7 @@ function deriveTaskLocalMaterializations(
 							output_binding_id: null,
 							output_binding_ids: bindings.map((binding) => binding.binding_id),
 							read_expression_ids: [...field.expressionIds].sort(compareText),
+							...controlConsumption,
 							status: "RESOLVED",
 							provenance: "SAME_TASK_SQL_WRITE_READ",
 							evidence_refs: evidenceRefs,
@@ -2486,6 +2644,7 @@ function deriveTaskLocalMaterializations(
 				read_statement_index: readStatementIndex,
 				output_binding_id: null,
 				read_expression_ids: [...field.expressionIds].sort(compareText),
+				...controlConsumption,
 				status: candidates.length > 1 || effectiveWrites.length > 1 ? "AMBIGUOUS" : "UNRESOLVED",
 				provenance: "SAME_TASK_SQL_WRITE_READ",
 				evidence_refs: evidenceRefs,

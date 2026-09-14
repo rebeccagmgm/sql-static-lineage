@@ -1,0 +1,11 @@
+[
+  {
+    "guid": "bfaf7139-9041-4b79-bd22-e35b43aaaa01",
+    "qualifiedName": "pdata_n.t10_ast_stat_h@gfhive",
+    "dbName": "pdata_n",
+    "tableName": "t10_ast_stat_h",
+    "type": "hive / Hive内部表",
+    "partition": "src_tbl",
+    "ddl": "create table t10_ast_stat_h(ast_id string comment '资产编号',ast_stat_type_cd string comment '资产状态类型代码',strt_date string comment '开始日期',ast_stat_cd string comment '资产状态代码',end_date string comment '结束日期',data_src_cd string comment '数据来源代码',task_name string comment '任务名',data_time string comment '数据时间',real_src_tbl string comment '真实源表') partitioned by (src_tbl string comment '源表') row format delimited fields terminated by ',' stored as orc;"
+  }
+]

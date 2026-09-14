@@ -1,0 +1,640 @@
+{
+  "taskId": "149557",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "a0f991936329bf38371c23407812d625d188857e83a3e238edbcd730cc290397",
+  "inGraph": true,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 149557"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: PDATA_N"
+    },
+    {
+      "line": 3,
+      "text": "-- source: LOCAL_CODE"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: BigData-GF_FDM_N/PTY/PDATA_N.T01_BENE_OWNER_DD_INFO_OIS021.py"
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T01:07:00.334Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T01_BENE_OWNER_DD_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Dd_Rpt_Id                  STRING COMMENT '尽调报告编号'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Bene_Owner_Info_Id         STRING COMMENT '受益所有人信息编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Bene_Owner_Clas_Cd         STRING COMMENT '受益所有人分类代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Bene_Owner_Type_Cd         STRING COMMENT '受益所有人认定类型代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Hold_Prop                  STRING COMMENT '持有比例'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Bene_Owner_Name            STRING COMMENT '受益所有人姓名'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Sex_Cd                     STRING COMMENT '性别'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Birt_Date                  STRING COMMENT '出生日期'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Cert_Type_Cd               STRING COMMENT '证件类型代码'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Cert_No                    STRING COMMENT '证件号'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Cert_Eff_Date              STRING COMMENT '证件起始日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Cert_Exp_Date              STRING COMMENT '证件到期日期'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Addr                       STRING COMMENT '地址'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Dd_Date                    STRING COMMENT '尽调日期'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Dd_Stat_Cd                 STRING COMMENT '尽调状态代码'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Ver                        STRING COMMENT '版本'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Upt_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Enable_Bene_Path_Flag      STRING COMMENT '启用受益人路径标志'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Bene_Owner_Cate_Cd         STRING COMMENT '受益所有人类别代码'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Bene_Owner_Style_Cd        STRING COMMENT '受益所有人所属类别代码'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Nationality                STRING COMMENT '国籍'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Phone                      STRING COMMENT '联系号码'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Mobile                     STRING COMMENT '手机号码'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Email                      STRING COMMENT '电子邮件'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Spec_Prsn_Type_Cd          STRING COMMENT '特殊人员类型代码'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Owsr_Type_Cd               STRING COMMENT '持股类型代码'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Job                        STRING COMMENT '职务'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Cert_Chk_Rslt_Cd           STRING COMMENT '证件验证结果代码'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Prov                       STRING COMMENT '省份编码'"
+    },
+    {
+      "line": 49,
+      "text": "    ,City                       STRING COMMENT '城市编码'"
+    },
+    {
+      "line": 50,
+      "text": "    ,Cty                        STRING COMMENT '区县编码'"
+    },
+    {
+      "line": 51,
+      "text": "    ,Bene_Owner_Rela_Type_Cd    STRING COMMENT '受益所有人关系类型代码'"
+    },
+    {
+      "line": 52,
+      "text": "    ,Bene_Owner_Sub_Type_Cd     STRING COMMENT '受益所有人认定子类型代码'"
+    },
+    {
+      "line": 53,
+      "text": "    ,Bene_Proprt_Strt_Date      STRING COMMENT '受益所有权开始日期'"
+    },
+    {
+      "line": 54,
+      "text": "    ,Bene_Proprt_End_Date       STRING COMMENT '受益所有权结束日期'"
+    },
+    {
+      "line": 55,
+      "text": "    ,Actl_Ctrl_Method_Desc      STRING COMMENT '实际控制方式描述'"
+    },
+    {
+      "line": 56,
+      "text": "    ,Oth_Job                    STRING COMMENT '其他职务'"
+    },
+    {
+      "line": 57,
+      "text": ")COMMENT '受益所有人尽调信息'"
+    },
+    {
+      "line": 58,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 59,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 60,
+      "text": ""
+    },
+    {
+      "line": 61,
+      "text": "-- querySql"
+    },
+    {
+      "line": 62,
+      "text": "INSERT OVERWRITE TABLE T01_BENE_OWNER_DD_INFO PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 63,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 64,
+      "text": "--Group2: Source Table:[ODATA_N_OIS.G_AML_BENEFICIARY:受益所有人] "
+    },
+    {
+      "line": 65,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 66,
+      "text": "SELECT"
+    },
+    {
+      "line": 67,
+      "text": "     C.CLIENT_ID                                   AS  Pty_Id                  --当事人编号              "
+    },
+    {
+      "line": 68,
+      "text": "    ,''                                            AS  Dd_Rpt_Id               --尽调报告编号               "
+    },
+    {
+      "line": 69,
+      "text": "    ,A.ID                                          AS  Bene_Owner_Info_Id      --受益所有人信息编号        "
+    },
+    {
+      "line": 70,
+      "text": "    ,NVL(D.DW_CD_VAL,A.CLIENT_KIND)                AS  Bene_Owner_Clas_Cd      --受益所有人分类代码             "
+    },
+    {
+      "line": 71,
+      "text": "    ,NVL(E.DW_CD_VAL,A.BENEFICIARY_TYPE)           AS  Bene_Owner_Type_Cd      --受益所有人认定类型代码          "
+    },
+    {
+      "line": 72,
+      "text": "    ,A.HOLD_RATE                                   AS  Hold_Prop               --持有比例                    "
+    },
+    {
+      "line": 73,
+      "text": "    ,A.NAME                                        AS  Bene_Owner_Name         --受益所有人姓名"
+    },
+    {
+      "line": 74,
+      "text": "    ,NVL(F.DW_CD_VAL,A.GENDER)                     AS  Sex_Cd                  --性别"
+    },
+    {
+      "line": 75,
+      "text": "    ,REGEXP_REPLACE(A.BIRTH,'-','')                AS  Birt_Date               --出生日期                "
+    },
+    {
+      "line": 76,
+      "text": "    ,NVL(G.DW_CD_VAL,A.ID_KIND)                    AS  Cert_Type_Cd            --证件类型代码              "
+    },
+    {
+      "line": 77,
+      "text": "    ,A.ID_NO                                       AS  Cert_No                 --证件号                  "
+    },
+    {
+      "line": 78,
+      "text": "    ,REGEXP_REPLACE(A.ID_VALIDDATE_START,'-','')   AS  Cert_Eff_Date           --证件起始日期              "
+    },
+    {
+      "line": 79,
+      "text": "    ,REGEXP_REPLACE(A.ID_VALIDDATE_END,'-','')     AS  Cert_Exp_Date           --证件到期日期              "
+    },
+    {
+      "line": 80,
+      "text": "    ,A.ADDRESS                                     AS  Addr                    --地址                   "
+    },
+    {
+      "line": 81,
+      "text": "    ,''                                            AS  Dd_Date                 --尽调日期                "
+    },
+    {
+      "line": 82,
+      "text": "    ,''                                            AS  Dd_Stat_Cd              --尽调状态代码               "
+    },
+    {
+      "line": 83,
+      "text": "    ,''                                            AS  Remark                  --备注                   "
+    },
+    {
+      "line": 84,
+      "text": "    ,''                                            AS  Del_Flag                --删除标志                 "
+    },
+    {
+      "line": 85,
+      "text": "    ,A.VERSION                                     AS  Ver                     --版本                   "
+    },
+    {
+      "line": 86,
+      "text": "    ,''                                            AS  Create_Time             --创建时间                 "
+    },
+    {
+      "line": 87,
+      "text": "    ,''                                            AS  Upt_Time                --更新时间                 "
+    },
+    {
+      "line": 88,
+      "text": "    ,''                                            AS  Enable_Bene_Path_Flag   --启用受益人路径标志            "
+    },
+    {
+      "line": 89,
+      "text": "    ,'${data_src_cd}'                         AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 90,
+      "text": "    ,'${filename}'                            AS  Task_Name               --任务名"
+    },
+    {
+      "line": 91,
+      "text": "    ,'${data_day_str}'                        AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 92,
+      "text": "    ,'${data_today_str}'                      AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 93,
+      "text": "    ,'${data_today}'                          AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 94,
+      "text": "    ,IF(A.ENTITY_TYPE = '机构','0',A.ENTITY_TYPE)  AS  Bene_Owner_Cate_Cd      --受益所有人类别代码"
+    },
+    {
+      "line": 95,
+      "text": "    ,A.CATEGORY                                    AS  Bene_Owner_Style_Cd     --受益所有人所属类别代码"
+    },
+    {
+      "line": 96,
+      "text": "    ,IF(A.COUNTRY = 'CTN','TWN', A.COUNTRY)        AS  Nationality             --国籍"
+    },
+    {
+      "line": 97,
+      "text": "    ,A.PHONE                                       AS  Phone                   --联系号码"
+    },
+    {
+      "line": 98,
+      "text": "    ,A.MOBILE                                      AS  Mobile                  --手机号码"
+    },
+    {
+      "line": 99,
+      "text": "    ,A.EMAIL                                       AS  Email                   --电子邮件   DD_NO_NAT_PER_BENEF_INFO_ID"
+    },
+    {
+      "line": 100,
+      "text": "    ,A.SPECIAL_TYPE                                AS  Spec_Prsn_Type_Cd       --特殊人员类型代码"
+    },
+    {
+      "line": 101,
+      "text": "    ,A.HOLD_TYPE                                   AS  Owsr_Type_Cd            --持股类型代码"
+    },
+    {
+      "line": 102,
+      "text": "    ,A.POSITION                                    AS  Job                     --职务"
+    },
+    {
+      "line": 103,
+      "text": "    ,''                                            AS  Cert_Chk_Rslt_Cd        --证件验证结果代码"
+    },
+    {
+      "line": 104,
+      "text": "    ,'${src_table}'                           AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 105,
+      "text": "    ,''                                            AS  Prov                   --省份编码"
+    },
+    {
+      "line": 106,
+      "text": "    ,''                                            AS  City                   --城市编码"
+    },
+    {
+      "line": 107,
+      "text": "    ,''                                            AS  Cty                    --区县编码"
+    },
+    {
+      "line": 108,
+      "text": "    ,''                                            AS  Bene_Owner_Rela_Type_Cd    --受益所有人关系类型代码"
+    },
+    {
+      "line": 109,
+      "text": "    ,''                                            AS  Bene_Owner_Sub_Type_Cd     --受益所有人认定子类型代码"
+    },
+    {
+      "line": 110,
+      "text": "    ,''                                            AS  Bene_Proprt_Strt_Date      --受益所有权开始日期"
+    },
+    {
+      "line": 111,
+      "text": "    ,''                                            AS  Bene_Proprt_End_Date       --受益所有权结束日期"
+    },
+    {
+      "line": 112,
+      "text": "    ,''                                            AS  Actl_Ctrl_Method_Desc      --实际控制方式描述"
+    },
+    {
+      "line": 113,
+      "text": "    ,''                                            AS  Oth_Job                    --其他职务"
+    },
+    {
+      "line": 114,
+      "text": "FROM   (SELECT *  FROM ODATA_N_OIS.G_AML_BENEFICIARY WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 115,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_OIS.G_AML_COUNTERPARTY WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 116,
+      "text": "       ON A.COUNTERPARTY_ID=B.ID"
+    },
+    {
+      "line": 117,
+      "text": "INNER JOIN (SELECT * FROM ODATA_N_OIS.O_OTC_DERIVATIVE_COUNTERPARTY WHERE BUSI_DATE='${data_day_str}') C"
+    },
+    {
+      "line": 118,
+      "text": "       ON B.CLIENT_ID=C.CLIENT_ID"
+    },
+    {
+      "line": 119,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 120,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 121,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 122,
+      "text": "         WHERE TGT_TAB_NAME = 'T01_BENE_OWNER_DD_INFO'"
+    },
+    {
+      "line": 123,
+      "text": "            AND TGT_TAB_FLD  = 'Bene_Owner_Clas_Cd'"
+    },
+    {
+      "line": 124,
+      "text": "            AND SRC_TAB_NAME = 'AML_BENEFICIARY'"
+    },
+    {
+      "line": 125,
+      "text": "            AND SRC_FLD_NAME = 'CLIENT_KIND'"
+    },
+    {
+      "line": 126,
+      "text": "            AND SRC_SYS_NAME='OIS')D"
+    },
+    {
+      "line": 127,
+      "text": "   ON      A.CLIENT_KIND =D.SRC_CD_VAL                  --CLIENT_KIND 转码"
+    },
+    {
+      "line": 128,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 129,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 130,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 131,
+      "text": "         WHERE TGT_TAB_NAME = 'T01_BENE_OWNER_DD_INFO'"
+    },
+    {
+      "line": 132,
+      "text": "            AND TGT_TAB_FLD  = 'Bene_Owner_Type_Cd'"
+    },
+    {
+      "line": 133,
+      "text": "            AND SRC_TAB_NAME = 'AML_BENEFICIARY'"
+    },
+    {
+      "line": 134,
+      "text": "            AND SRC_FLD_NAME = 'BENEFICIARY_TYPE'"
+    },
+    {
+      "line": 135,
+      "text": "            AND SRC_SYS_NAME='OIS')E"
+    },
+    {
+      "line": 136,
+      "text": "   ON      A.BENEFICIARY_TYPE =E.SRC_CD_VAL                  --BENEFICIARY_TYPE 转码"
+    },
+    {
+      "line": 137,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 138,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 139,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 140,
+      "text": "         WHERE TGT_TAB_NAME = 'T01_BENE_OWNER_DD_INFO'"
+    },
+    {
+      "line": 141,
+      "text": "            AND TGT_TAB_FLD  = 'Sex_Cd'"
+    },
+    {
+      "line": 142,
+      "text": "            AND SRC_TAB_NAME = 'AML_BENEFICIARY'"
+    },
+    {
+      "line": 143,
+      "text": "            AND SRC_FLD_NAME = 'GENDER'"
+    },
+    {
+      "line": 144,
+      "text": "            AND SRC_SYS_NAME='OIS')F"
+    },
+    {
+      "line": 145,
+      "text": "   ON      A.GENDER =F.SRC_CD_VAL                  --GENDER 转码"
+    },
+    {
+      "line": 146,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 147,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 148,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 149,
+      "text": "         WHERE TGT_TAB_NAME = 'T01_BENE_OWNER_DD_INFO'"
+    },
+    {
+      "line": 150,
+      "text": "            AND TGT_TAB_FLD  = 'Cert_Type_Cd'"
+    },
+    {
+      "line": 151,
+      "text": "            AND SRC_TAB_NAME = 'AML_BENEFICIARY'"
+    },
+    {
+      "line": 152,
+      "text": "            AND SRC_FLD_NAME = 'ID_KIND'"
+    },
+    {
+      "line": 153,
+      "text": "            AND SRC_SYS_NAME='OIS')G"
+    },
+    {
+      "line": 154,
+      "text": "   ON      A.ID_KIND =G.SRC_CD_VAL                  --ID_KIND 转码"
+    },
+    {
+      "line": 155,
+      "text": ""
+    },
+    {
+      "line": 156,
+      "text": ";"
+    },
+    {
+      "line": 157,
+      "text": ""
+    }
+  ]
+}

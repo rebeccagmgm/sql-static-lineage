@@ -34,6 +34,7 @@ vi.mock("../src/asset-graph/config.ts", () => ({
     driver,
     database: "neo4j",
     graphId: "test-graph",
+    paths: {graphOutputRoot: "unused-test-graph-root"},
   }),
 }));
 

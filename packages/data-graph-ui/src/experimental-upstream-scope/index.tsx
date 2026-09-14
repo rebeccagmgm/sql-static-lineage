@@ -15,16 +15,16 @@ const errors: Record<string, string> = {
   UPSTREAM_SCOPE_TIME_LIMIT: "本次未完成全部上游计算，请缩小起点范围；未显示部分结果。",
   ASSET_GRAPH_CHANGED_DURING_QUERY: "图谱版本发生变化，请重新应用范围。",
 };
-async function requestScope<T>(patterns: string[], hiddenTables: string[], schema?: string, offset = 0): Promise<T> {
-  const query = new URLSearchParams({ patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables) });
+async function requestScope<T>(patterns: string[], hiddenTables: string[], schema?: string, offset = 0, clusters: string[] = []): Promise<T> {
+  const query = new URLSearchParams({ patterns: JSON.stringify(patterns), hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) });
   if (schema !== undefined) { query.set("schema", schema); query.set("offset", String(offset)); }
   const response = await fetch(`/api/experimental/upstream-scope?${query}`);
   const body = await response.json();
   if (!response.ok) throw new Error(errors[body.error] ?? "实验范围读取失败，请检查图谱服务后重试。");
   return body as T;
 }
-export const scopedOverview = (patterns: string[], hidden: string[]) => requestScope<ScopedOverview>(patterns, hidden);
-export const scopedRegion = (patterns: string[], hidden: string[], schema: string, offset: number) => requestScope<RegionResult>(patterns, hidden, schema, offset);
+export const scopedOverview = (patterns: string[], hidden: string[], clusters: string[] = []) => requestScope<ScopedOverview>(patterns, hidden, undefined, 0, clusters);
+export const scopedRegion = (patterns: string[], hidden: string[], schema: string, offset: number, clusters: string[] = []) => requestScope<RegionResult>(patterns, hidden, schema, offset, clusters);
 
 export function UpstreamScopePanel({ patterns, onApply, onExit }: { patterns: string[]; onApply: (patterns: string[]) => void; onExit: () => void }) {
   const [draft, setDraft] = useState("%t01\\_%");

@@ -1,0 +1,421 @@
+{
+  "task_id": "105820",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:06:44.982Z",
+  "payload_sha256": "c30d781ac026e69dc2ae59aa42a7ba8935591543818b1f2e727ba79900f9e1d7",
+  "review_scope": "selected identity, source joins, expressions, date and write scope",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_CSTD_PRD_ACCT_PDC_TRAN_DET("
+    },
+    {
+      "line": 10,
+      "text": "     Cstd_Bnk_Acct_Agt_Id       STRING COMMENT '托管产品银行账户协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Cstd_Bnk_Acct_Agt_Modifr   STRING COMMENT '托管产品银行账户协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Pymt_Bnk_Acct              STRING COMMENT '付款方银行账户'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Tran_Type_Cd               STRING COMMENT '转账类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Pay_Freq_Cd                STRING COMMENT '频率代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Auto_Redt_Fee_Flag         STRING COMMENT '自动扣费标志'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Prd_Id                     STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Src_Prd_Id                 STRING COMMENT '源产品编号'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Prd_Name                   STRING COMMENT '产品名称'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Summ                       STRING COMMENT '摘要'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Auto_Occu_Jour_Flag        STRING COMMENT '自动生成流水标志'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Jour_Day_Type              STRING COMMENT '流水日类型'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Pay_Day_Type               STRING COMMENT '支付日类型'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Coll_Jour_Mth_Seq          STRING COMMENT '取流水月顺序'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Coll_Jour_Day_Seq          STRING COMMENT '取流水日顺序'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Strt_Tran_Mth_Seq          STRING COMMENT '开始划款月顺序'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Strt_Tran_Day_Seq          STRING COMMENT '开始划款日顺序'"
+    },
+    {
+      "line": 27,
+      "text": "    ,End_Tran_Mth_Seq           STRING COMMENT '结束划款月顺序'"
+    },
+    {
+      "line": 28,
+      "text": "    ,End_Tran_Day_Seq           STRING COMMENT '截止划款日顺序'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Auto_Occu_Instr_Flag       STRING COMMENT '自动生成出金指令标志'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Hint_Trste_Flag            STRING COMMENT '提醒托管人标志'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Create_User                STRING COMMENT '创建人'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Chkr                       STRING COMMENT '复核人'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Chk_Time                   STRING COMMENT '复核时间'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Chk_Flag                   STRING COMMENT '复核标志'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Chk_Remark                 STRING COMMENT '复核备注'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Src_Id                     STRING COMMENT '源ID'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 44,
+      "text": ")COMMENT '托管产品账户定期划款明细'"
+    },
+    {
+      "line": 45,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 46,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 47,
+      "text": ""
+    },
+    {
+      "line": 48,
+      "text": "-- querySql"
+    },
+    {
+      "line": 49,
+      "text": "INSERT OVERWRITE TABLE T03_CSTD_PRD_ACCT_PDC_TRAN_DET PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 50,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 51,
+      "text": "--Group1: Source Table:[ODATA_N_CIS.P_TINS_DQHKSZ:定期划款设置表] "
+    },
+    {
+      "line": 52,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 53,
+      "text": "SELECT"
+    },
+    {
+      "line": 54,
+      "text": "     B.L_ZHID                                AS  Cstd_Bnk_Acct_Agt_Id    --托管产品银行账户协议编号"
+    },
+    {
+      "line": 55,
+      "text": "    ,'10221'                               AS  Cstd_Bnk_Acct_Agt_Modifr--托管产品银行账户协议修饰符  "
+    },
+    {
+      "line": 56,
+      "text": "    ,C_BFZH                                AS  Pymt_Bnk_Acct           --付款方银行账户              "
+    },
+    {
+      "line": 57,
+      "text": "    ,C_HKLB                                AS  Tran_Type_Cd            --转账类型代码               "
+    },
+    {
+      "line": 58,
+      "text": "    ,NVL(DW_CD_VAL,C_ZFPL)                 AS  Pay_Freq_Cd             --频率代码            "
+    },
+    {
+      "line": 59,
+      "text": "    ,C_SFZDKF                              AS  Auto_Redt_Fee_Flag      --自动扣费标志        "
+    },
+    {
+      "line": 60,
+      "text": "    ,CONCAT('MOT-',D.C_OUTSERIALNO)         AS  Prd_Id                  --产品编号            "
+    },
+    {
+      "line": 61,
+      "text": "    ,C_CPID                                AS  Src_Prd_Id              --源产品编号          "
+    },
+    {
+      "line": 62,
+      "text": "    ,C_YSCPMC                              AS  Prd_Name                --产品名称            "
+    },
+    {
+      "line": 63,
+      "text": "    ,C_ZYXX                                AS  Summ                    --摘要                "
+    },
+    {
+      "line": 64,
+      "text": "    ,C_SFZDSC                              AS  Auto_Occu_Jour_Flag     --自动生成流水标志    "
+    },
+    {
+      "line": 65,
+      "text": "    ,C_LSRLX                               AS  Jour_Day_Type           --流水日类型          "
+    },
+    {
+      "line": 66,
+      "text": "    ,C_ZFRLX                               AS  Pay_Day_Type            --支付日类型          "
+    },
+    {
+      "line": 67,
+      "text": "    ,L_LSSHYXH                             AS  Coll_Jour_Mth_Seq       --取流水月顺序        "
+    },
+    {
+      "line": 68,
+      "text": "    ,L_LSSHRXH                             AS  Coll_Jour_Day_Seq       --取流水日顺序        "
+    },
+    {
+      "line": 69,
+      "text": "    ,L_KSZFYXH                             AS  Strt_Tran_Mth_Seq       --开始划款月顺序      "
+    },
+    {
+      "line": 70,
+      "text": "    ,L_KSZFRXH                             AS  Strt_Tran_Day_Seq       --开始划款日顺序      "
+    },
+    {
+      "line": 71,
+      "text": "    ,L_JSZFYXH                             AS  End_Tran_Mth_Seq        --结束划款月顺序      "
+    },
+    {
+      "line": 72,
+      "text": "    ,L_JSZFRXH                             AS  End_Tran_Day_Seq        --截止划款日顺序      "
+    },
+    {
+      "line": 73,
+      "text": "    ,C_SFSCCJZL                            AS  Auto_Occu_Instr_Flag    --自动生成出金指令标志"
+    },
+    {
+      "line": 74,
+      "text": "    ,C_SFTXTGR                             AS  Hint_Trste_Flag         --提醒托管人标志      "
+    },
+    {
+      "line": 75,
+      "text": "    ,C_ZDRY                                AS  Create_User             --创建人              "
+    },
+    {
+      "line": 76,
+      "text": "    ,D_ZDSJ                                AS  Create_Time             --创建时间            "
+    },
+    {
+      "line": 77,
+      "text": "    ,C_FHR                                 AS  Chkr                    --复核人              "
+    },
+    {
+      "line": 78,
+      "text": "    ,D_FHSJ                                AS  Chk_Time                --复核时间    "
+    },
+    {
+      "line": 79,
+      "text": "    ,C_FHZT                                AS  Chk_Flag                --复核标志    "
+    },
+    {
+      "line": 80,
+      "text": "    ,C_FHBZ                                AS  Chk_Remark              --复核备注    "
+    },
+    {
+      "line": 81,
+      "text": "    ,C_BZ                                  AS  Remark                  --备注        "
+    },
+    {
+      "line": 82,
+      "text": "    ,L_ID                                  AS  Src_Id                  --源ID        "
+    },
+    {
+      "line": 83,
+      "text": "    ,'${data_src_cd}'                 AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 84,
+      "text": "    ,'${filename}'                    AS  Task_Name               --任务名"
+    },
+    {
+      "line": 85,
+      "text": "    ,'${data_day_str}'                AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 86,
+      "text": "    ,'${data_today_str}'              AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 87,
+      "text": "    ,'${data_today}'                  AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 88,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 89,
+      "text": "LEFT JOIN (SELECT L_ZHID,C_ZH  FROM ODATA_N_CIS.P_TINS_ZHXX  WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 90,
+      "text": "       ON A.C_BFZH=B.C_ZH"
+    },
+    {
+      "line": 91,
+      "text": "--LEFT JOIN (SELECT C_FUNDCODE,C_OUTSERIALNO FROM ODATA_N_MOT.M_TPDTFUNDINFO  WHERE  BUSI_DATE='${data_day_str}' )D"
+    },
+    {
+      "line": 92,
+      "text": "--       ON A.C_CPID=D.C_FUNDCODE     "
+    },
+    {
+      "line": 93,
+      "text": "LEFT JOIN (SELECT PRD_INNER_CODE  AS C_OUTSERIALNO --产品内部编码"
+    },
+    {
+      "line": 94,
+      "text": "                 ,PRD_CODE        AS C_FUNDCODE--产品主键"
+    },
+    {
+      "line": 95,
+      "text": "             FROM ODATA_N_CAP.S_BIZ_PRO_PRD_BASE_INFO "
+    },
+    {
+      "line": 96,
+      "text": "            WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 97,
+      "text": "              AND DELETED = '0' "
+    },
+    {
+      "line": 98,
+      "text": "           )D"
+    },
+    {
+      "line": 99,
+      "text": "       ON A.C_CPID=D.C_FUNDCODE   "
+    },
+    {
+      "line": 100,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 101,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 102,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 103,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_CSTD_PRD_ACCT_PDC_TRAN_DET' --modify by hzh 20240813 修改代码表目标表和目标字段，同步修改"
+    },
+    {
+      "line": 104,
+      "text": "            AND TGT_TAB_FLD  = 'Pay_Freq_Cd'"
+    },
+    {
+      "line": 105,
+      "text": "            AND SRC_TAB_NAME = 'TINS_DQHKSZ'"
+    },
+    {
+      "line": 106,
+      "text": "            AND SRC_FLD_NAME = 'C_ZFPL'"
+    },
+    {
+      "line": 107,
+      "text": "            AND SRC_SYS_NAME='CIS')C"
+    },
+    {
+      "line": 108,
+      "text": "   ON      A.C_ZFPL =C.SRC_CD_VAL                  --C_ZFPL 转码"
+    },
+    {
+      "line": 109,
+      "text": ";"
+    },
+    {
+      "line": 110,
+      "text": ""
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "task_id": "64342",
+  "default_schema": "PDATA_N",
+  "observed_at": "2026-09-05T01:06:24.948Z",
+  "payload_sha256": "0f7054cb5a6ee5ec12de095e4ba01ff07a0bca269470ba3ffc751c3f1c5144d5",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_PB_AST_UNIT_OPER_BUSI_RIGH("
+    },
+    {
+      "line": 10,
+      "text": "     AGT_ID                    STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,AGT_MODIFR                STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,CTRL_LAYER                STRING COMMENT '控制层次'"
+    },
+    {
+      "line": 13,
+      "text": "    ,PRD_ID                    STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,OPER_USER_ID              STRING COMMENT '操作员编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,COMB_ID                   STRING COMMENT '组合编号'"
+    },
+    {
+      "line": 16,
+      "text": "    ,QRY_FLAG                  STRING COMMENT '查询标志'"
+    },
+    {
+      "line": 17,
+      "text": "    ,OPER_FLAG                 STRING COMMENT '操作标志'"
+    },
+    {
+      "line": 18,
+      "text": "    ,COMPD_FLAG                STRING COMMENT '复合标志'"
+    },
+    {
+      "line": 19,
+      "text": "    ,ALLOW_OPER_STK            STRING COMMENT '允许操作证券'"
+    },
+    {
+      "line": 20,
+      "text": "    ,ALLOW_OPER_BUSI           STRING COMMENT '允许操作业务'"
+    },
+    {
+      "line": 21,
+      "text": "    ,ALLOW_IVST_RANGE          STRING COMMENT '允许投资范围'"
+    },
+    {
+      "line": 22,
+      "text": "    ,OPER_RIGH_STR             STRING COMMENT '操作权限字符串'"
+    },
+    {
+      "line": 23,
+      "text": "    ,ALLOW_OPER_ENTR           STRING COMMENT '允许操作委托'"
+    },
+    {
+      "line": 24,
+      "text": "    ,SYS_SRC_CD                STRING COMMENT '源系统来源代码'  "
+    },
+    {
+      "line": 25,
+      "text": "    ,DATA_SRC_CD               STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 26,
+      "text": "    ,TASK_NAME                 STRING COMMENT '任务名'"
+    },
+    {
+      "line": 27,
+      "text": "    ,DATA_ETL_DATE             STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 28,
+      "text": "    ,DATA_UPT_DATE             STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 29,
+      "text": "    ,DATA_TIME                 STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 30,
+      "text": ")COMMENT 'PB资产单元操作业务权限'"
+    },
+    {
+      "line": 31,
+      "text": "PARTITIONED BY (SRC_TBL   STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 32,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 33,
+      "text": ""
+    },
+    {
+      "line": 34,
+      "text": "-- querySql"
+    },
+    {
+      "line": 35,
+      "text": "INSERT OVERWRITE TABLE T03_PB_AST_UNIT_OPER_BUSI_RIGH PARTITION (SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 36,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 37,
+      "text": "--Group1: Source Table:[ODATA_N_GPB.U_OPERBUSIRIGHT:账户权限]"
+    },
+    {
+      "line": 38,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 39,
+      "text": "SELECT"
+    },
+    {
+      "line": 40,
+      "text": "       PROJECTID                                       AS AGT_ID              --协议编号"
+    },
+    {
+      "line": 41,
+      "text": "      ,CASE WHEN UPPER(SYS_AREA_CODE)='SH' THEN '10203-GPB-SH'"
+    },
+    {
+      "line": 42,
+      "text": "            WHEN UPPER(SYS_AREA_CODE)='SZ' THEN '10203-GPB-SZ'   "
+    },
+    {
+      "line": 43,
+      "text": "            ELSE ''"
+    },
+    {
+      "line": 44,
+      "text": "        END                                            AS AGT_MODIFR          --协议修饰符"
+    },
+    {
+      "line": 45,
+      "text": "      ,LAYER                                           AS CTRL_LAYER          --控制层次"
+    },
+    {
+      "line": 46,
+      "text": "      ,FUNDID                                          AS PRD_ID              --产品编号"
+    },
+    {
+      "line": 47,
+      "text": "      ,CASE WHEN NVL(TRIM(USERID),'') IN ('','0') THEN USERID"
+    },
+    {
+      "line": 48,
+      "text": "            ELSE (CASE WHEN UPPER(SYS_AREA_CODE)='SH' THEN CONCAT('GPB012-',USERID)"
+    },
+    {
+      "line": 49,
+      "text": "                       WHEN UPPER(SYS_AREA_CODE)='SZ' THEN CONCAT('GPB019-',USERID)"
+    },
+    {
+      "line": 50,
+      "text": "                       ELSE USERID"
+    },
+    {
+      "line": 51,
+      "text": "                   END )"
+    },
+    {
+      "line": 52,
+      "text": "        END                                            AS OPER_USER_ID        --操作员编号"
+    },
+    {
+      "line": 53,
+      "text": "      ,COMBID                                          AS COMB_ID             --组合编号"
+    },
+    {
+      "line": 54,
+      "text": "      ,QRYFLAG                                         AS QRY_FLAG            --查询标志"
+    },
+    {
+      "line": 55,
+      "text": "      ,OPERFLAG                                        AS OPER_FLAG           --操作标志"
+    },
+    {
+      "line": 56,
+      "text": "      ,CONFIRMFLAG                                     AS COMPD_FLAG          --复合标志"
+    },
+    {
+      "line": 57,
+      "text": "      ,PT_STKTYPES                                     AS ALLOW_OPER_STK      --允许操作证券"
+    },
+    {
+      "line": 58,
+      "text": "      ,PT_BUSINCLASSS                                  AS ALLOW_OPER_BUSI     --允许操作业务"
+    },
+    {
+      "line": 59,
+      "text": "      ,NVL(PT_INVESTKIND,'')                           AS ALLOW_IVST_RANGE    --允许投资范围"
+    },
+    {
+      "line": 60,
+      "text": "      ,NVL(TRADERIGHT,'')                              AS OPER_RIGH_STR       --操作权限字符串"
+    },
+    {
+      "line": 61,
+      "text": "      ,NVL(PT_BSFLAG,'')                               AS ALLOW_OPER_ENTR     --允许操作委托"
+    },
+    {
+      "line": 62,
+      "text": "      ,UPPER(SYS_AREA_CODE)                            AS SYS_SRC_CD          --源系统来源代码"
+    },
+    {
+      "line": 63,
+      "text": "      ,'${data_src_cd}'                           AS DATA_SRC_CD         --数据来源代码"
+    },
+    {
+      "line": 64,
+      "text": "      ,UPPER('${filename}')                       AS TASK_NAME           --任务名"
+    },
+    {
+      "line": 65,
+      "text": "      ,'${data_day_str}'                          AS DATA_ETL_DATE       --数据加载日期"
+    },
+    {
+      "line": 66,
+      "text": "      ,'${data_today_str}'                        AS DATA_UPT_DATE       --数据更新日期"
+    },
+    {
+      "line": 67,
+      "text": "      ,'${data_today}'                            AS DATA_TIME           --数据时间"
+    },
+    {
+      "line": 68,
+      "text": "FROM  (SELECT *  FROM ${src_table} "
+    },
+    {
+      "line": 69,
+      "text": "        WHERE  BUSI_DATE='${data_day_str}' "
+    },
+    {
+      "line": 70,
+      "text": "        )A"
+    },
+    {
+      "line": 71,
+      "text": ";"
+    },
+    {
+      "line": 72,
+      "text": ""
+    }
+  ]
+}

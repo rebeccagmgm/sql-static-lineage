@@ -1,0 +1,828 @@
+{
+  "task_id": "163682",
+  "default_schema": "pdata_n",
+  "observed_at": "2026-09-05T01:07:06.097Z",
+  "payload_sha256": "a5669ed47ecbdc6989d3a0a195f2f6757be53e00edffeeb26e86ed71fe7b9c13",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_FIN_LEAS_COMP_LOAN_DET("
+    },
+    {
+      "line": 10,
+      "text": "         Det_Id                     STRING COMMENT '明细编号'"
+    },
+    {
+      "line": 11,
+      "text": "        ,Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 12,
+      "text": "        ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 13,
+      "text": "        ,Contr_No                   STRING COMMENT '合同编号'"
+    },
+    {
+      "line": 14,
+      "text": "        ,Loan_Bat_No                STRING COMMENT '放款批次号'"
+    },
+    {
+      "line": 15,
+      "text": "        ,Contr_Name                 STRING COMMENT '合同名称'"
+    },
+    {
+      "line": 16,
+      "text": "        ,Leas_Busi_Type_Cd          STRING COMMENT '租赁业务类型代码'"
+    },
+    {
+      "line": 17,
+      "text": "        ,Proj_Id                    STRING COMMENT '项目编号'"
+    },
+    {
+      "line": 18,
+      "text": "        ,Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 19,
+      "text": "        ,Prin_User_Id               STRING COMMENT '负责人用户编号'"
+    },
+    {
+      "line": 20,
+      "text": "        ,Prin_Emp_Id                STRING COMMENT '负责人员工编号'"
+    },
+    {
+      "line": 21,
+      "text": "        ,Inr_Org_Id                 STRING COMMENT '内部机构编号'"
+    },
+    {
+      "line": 22,
+      "text": "        ,Contr_Loan_Stat_Cd         STRING COMMENT '合同放款状态代码'"
+    },
+    {
+      "line": 23,
+      "text": "        ,Pric_List                  STRING COMMENT '价目表'"
+    },
+    {
+      "line": 24,
+      "text": "        ,Dd_List_Id                 STRING COMMENT '尽职调查清单Id'"
+    },
+    {
+      "line": 25,
+      "text": "        ,Actl_Lease_Strt_Date       STRING COMMENT '实际租赁开始日期'"
+    },
+    {
+      "line": 26,
+      "text": "        ,Leas_Pd_Strt_Date          STRING COMMENT '租赁期开始日期'"
+    },
+    {
+      "line": 27,
+      "text": "        ,Leas_Pd_End_Date           STRING COMMENT '租赁到期日期'"
+    },
+    {
+      "line": 28,
+      "text": "        ,Leas_Times                 STRING COMMENT '租赁期数'"
+    },
+    {
+      "line": 29,
+      "text": "        ,Paid_Times                 STRING COMMENT '支付次数'"
+    },
+    {
+      "line": 30,
+      "text": "        ,Leas_Term                  STRING COMMENT '租赁期限'"
+    },
+    {
+      "line": 31,
+      "text": "        ,Recv_Acct                  STRING COMMENT '收款账户'"
+    },
+    {
+      "line": 32,
+      "text": "        ,Paid_Seq_Cd                STRING COMMENT '支付顺序代码'"
+    },
+    {
+      "line": 33,
+      "text": "        ,Inv_Method_Cd              STRING COMMENT '开票方式代码'"
+    },
+    {
+      "line": 34,
+      "text": "        ,Leas_Type_Cd               STRING COMMENT '租赁方式代码'"
+    },
+    {
+      "line": 35,
+      "text": "        ,Leas_Ast_Amt               STRING COMMENT '租赁资产金额'"
+    },
+    {
+      "line": 36,
+      "text": "        ,Rent_Calc_Id               STRING COMMENT '租金计算Id'"
+    },
+    {
+      "line": 37,
+      "text": "        ,Fir_Pymt_Paid_Type_Cd      STRING COMMENT '首付款支付类型代码'"
+    },
+    {
+      "line": 38,
+      "text": "        ,Fir_Paid_Amt               STRING COMMENT '首付金额'"
+    },
+    {
+      "line": 39,
+      "text": "        ,Fin_Amt                    STRING COMMENT '融资额'"
+    },
+    {
+      "line": 40,
+      "text": "        ,Leas_Amt                   STRING COMMENT '租金总额'"
+    },
+    {
+      "line": 41,
+      "text": "        ,Intr_Amt                   STRING COMMENT '利息总额'"
+    },
+    {
+      "line": 42,
+      "text": "        ,Oth_Income_Amt             STRING COMMENT '其他收入总额'"
+    },
+    {
+      "line": 43,
+      "text": "        ,Vat_Rate                   STRING COMMENT '增值税率'"
+    },
+    {
+      "line": 44,
+      "text": "        ,Cms                        STRING COMMENT '手续费'"
+    },
+    {
+      "line": 45,
+      "text": "        ,Consu_Advs_Fee             STRING COMMENT '咨询顾问费'"
+    },
+    {
+      "line": 46,
+      "text": "        ,Hire_Purch_Pric            STRING COMMENT '留购价款'"
+    },
+    {
+      "line": 47,
+      "text": "        ,Bail_Comut_Method_Cd       STRING COMMENT '保证金抵扣方式代码'"
+    },
+    {
+      "line": 48,
+      "text": "        ,Bail_Comut_Situ            STRING COMMENT '保证金抵扣情况'"
+    },
+    {
+      "line": 49,
+      "text": "        ,Bail                       STRING COMMENT '保证金'"
+    },
+    {
+      "line": 50,
+      "text": "        ,Bail_Bal                   STRING COMMENT '保证金余额'"
+    },
+    {
+      "line": 51,
+      "text": "        ,Prin_Bal                   STRING COMMENT '本金余额'"
+    },
+    {
+      "line": 52,
+      "text": "        ,Intr_Bal                   STRING COMMENT '利息余额'"
+    },
+    {
+      "line": 53,
+      "text": "        ,Recv_Amt                   STRING COMMENT '已收金额'"
+    },
+    {
+      "line": 54,
+      "text": "        ,Recv_Prin                  STRING COMMENT '已收本金'"
+    },
+    {
+      "line": 55,
+      "text": "        ,Intrt_Adj_Method_Cd        STRING COMMENT '利率调整方式代码'"
+    },
+    {
+      "line": 56,
+      "text": "        ,Intrt_Fix_Range            STRING COMMENT '利率幅度'"
+    },
+    {
+      "line": 57,
+      "text": "        ,Bm_Rate_Cate_Cd            STRING COMMENT '基准利率类别代码'"
+    },
+    {
+      "line": 58,
+      "text": "        ,Bm_Rate                    STRING COMMENT '基准利率'"
+    },
+    {
+      "line": 59,
+      "text": "        ,Leas_Rate                  STRING COMMENT '租赁利率'"
+    },
+    {
+      "line": 60,
+      "text": "        ,Rate_Type_Cd               STRING COMMENT '利率类型代码'"
+    },
+    {
+      "line": 61,
+      "text": "        ,Intrt_Precision            STRING COMMENT '利率精度'"
+    },
+    {
+      "line": 62,
+      "text": "        ,Inr_Yield                  STRING COMMENT '内部收益率'"
+    },
+    {
+      "line": 63,
+      "text": "        ,Ext_Inr_Yield              STRING COMMENT '扩展内部收益率'"
+    },
+    {
+      "line": 64,
+      "text": "        ,Free_Intr_Days             STRING COMMENT '免息天数'"
+    },
+    {
+      "line": 65,
+      "text": "        ,Ovdu_Fine_Rate             STRING COMMENT '逾期罚金率'"
+    },
+    {
+      "line": 66,
+      "text": "        ,Ovdu_Pd_Num                STRING COMMENT '逾期期数'"
+    },
+    {
+      "line": 67,
+      "text": "        ,Max_Ovdu_Days              STRING COMMENT '最大逾期天数'"
+    },
+    {
+      "line": 68,
+      "text": "        ,Ovdu_Amt                   STRING COMMENT '逾期金额'"
+    },
+    {
+      "line": 69,
+      "text": "        ,Ovdu_Fine_Intr             STRING COMMENT '逾期罚息'"
+    },
+    {
+      "line": 70,
+      "text": "        ,Ovdu_Flag                  STRING COMMENT '逾期标志'"
+    },
+    {
+      "line": 71,
+      "text": "        ,Deli_Flag                  STRING COMMENT '投放标志'"
+    },
+    {
+      "line": 72,
+      "text": "        ,Leas_Flag                  STRING COMMENT '租赁标志'"
+    },
+    {
+      "line": 73,
+      "text": "        ,Print_Flag                 STRING COMMENT '打印标志'"
+    },
+    {
+      "line": 74,
+      "text": "        ,Canc_Rsn                   STRING COMMENT '取消原因'"
+    },
+    {
+      "line": 75,
+      "text": "        ,Src_Data_Clas_Cd           STRING COMMENT '源数据分类代码'"
+    },
+    {
+      "line": 76,
+      "text": "        ,Remark                     STRING COMMENT '备注'"
+    },
+    {
+      "line": 77,
+      "text": "        ,Create_Time                STRING COMMENT '创建日期'"
+    },
+    {
+      "line": 78,
+      "text": "        ,Last_Upd_Time              STRING COMMENT '最后更新日期'"
+    },
+    {
+      "line": 79,
+      "text": "        ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 80,
+      "text": "        ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 81,
+      "text": "        ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 82,
+      "text": "        ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 83,
+      "text": "        ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 84,
+      "text": "        ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 85,
+      "text": "    )COMMENT '广发租赁合同放款明细'"
+    },
+    {
+      "line": 86,
+      "text": "    PARTITIONED BY (SRC_TBL  STRING COMMENT'源表')"
+    },
+    {
+      "line": 87,
+      "text": "    STORED AS ORC;"
+    },
+    {
+      "line": 88,
+      "text": ""
+    },
+    {
+      "line": 89,
+      "text": "-- querySql"
+    },
+    {
+      "line": 90,
+      "text": "INSERT OVERWRITE TABLE T03_FIN_LEAS_COMP_LOAN_DET PARTITION(SRC_TBL='${src_table}')"
+    },
+    {
+      "line": 91,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 92,
+      "text": "    --Group1: Source Table:[ODATA_N_GLM.P_CON_CONTRACT:融资租赁合同] "
+    },
+    {
+      "line": 93,
+      "text": "    -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 94,
+      "text": "    SELECT"
+    },
+    {
+      "line": 95,
+      "text": "         A.CONTRACT_ID                           AS  Det_Id                  --明细编号          "
+    },
+    {
+      "line": 96,
+      "text": "        ,A.PARENT_CON_ID                         AS  Agt_Id                  --协议编号          "
+    },
+    {
+      "line": 97,
+      "text": "        ,IF(NVL(TRIM(A.PARENT_CON_ID),'')='','','20408')"
+    },
+    {
+      "line": 98,
+      "text": "                                                 AS  Agt_Modifr              --协议修饰符        "
+    },
+    {
+      "line": 99,
+      "text": "        ,A.CONTRACT_HD_NUMBER                    AS  Contr_No                --合同编号          "
+    },
+    {
+      "line": 100,
+      "text": "        ,A.CONTRACT_NUMBER                       AS  Loan_Bat_No             --放款批次号        "
+    },
+    {
+      "line": 101,
+      "text": "        ,A.CONTRACT_NAME                         AS  Contr_Name              --合同名称          "
+    },
+    {
+      "line": 102,
+      "text": "        ,A.BUSINESS_TYPE                         AS  Leas_Busi_Type_Cd       --租赁业务类型代码  "
+    },
+    {
+      "line": 103,
+      "text": "        ,IF(NVL(TRIM(A.PROJECT_ID),'')='','',CONCAT('GLM012-',A.PROJECT_ID))"
+    },
+    {
+      "line": 104,
+      "text": "                                                 AS  Proj_Id                 --项目编号          "
+    },
+    {
+      "line": 105,
+      "text": "        ,IF(NVL(TRIM(A.BP_ID_TENANT),'')='','',CONCAT('GLM003-',A.BP_ID_TENANT))"
+    },
+    {
+      "line": 106,
+      "text": "                                                 AS  Pty_Id                  --当事人编号        "
+    },
+    {
+      "line": 107,
+      "text": "        ,A.OWNER_USER_ID                         AS  Prin_User_Id            --负责人用户编号    "
+    },
+    {
+      "line": 108,
+      "text": "        ,NVL(D.ERP_ID,A.OWNER_USER_ID)           AS  Prin_Emp_Id             --负责人员工编号    "
+    },
+    {
+      "line": 109,
+      "text": "        ,IF(NVL(TRIM(A.UNIT_ID),'')='','',CONCAT('GLM006-',A.UNIT_ID))"
+    },
+    {
+      "line": 110,
+      "text": "                                                 AS  Inr_Org_Id              --内部机构编号      "
+    },
+    {
+      "line": 111,
+      "text": "        ,NVL(A1.DW_CD_VAL,A.CONTRACT_STATUS)     AS  Contr_Loan_Stat_Cd      --合同放款状态代码  "
+    },
+    {
+      "line": 112,
+      "text": "        ,A.PRICE_LIST                            AS  Pric_List               --价目表            "
+    },
+    {
+      "line": 113,
+      "text": "        ,A.CDD_LIST_ID                           AS  Dd_List_Id              --尽职调查清单Id    "
+    },
+    {
+      "line": 114,
+      "text": "        ,SUBSTR(A.INCEPTION_OF_LEASE,1,10)       AS  Actl_Lease_Strt_Date    --实际租赁开始日期  "
+    },
+    {
+      "line": 115,
+      "text": "        ,SUBSTR(A.LEASE_START_DATE  ,1,10)       AS  Leas_Pd_Strt_Date       --租赁期开始日期    "
+    },
+    {
+      "line": 116,
+      "text": "        ,SUBSTR(A.LEASE_END_DATE    ,1,10)       AS  Leas_Pd_End_Date        --租赁到期日期      "
+    },
+    {
+      "line": 117,
+      "text": "        ,A.LEASE_TIMES                           AS  Leas_Times              --租赁期数          "
+    },
+    {
+      "line": 118,
+      "text": "        ,A.ANNUAL_PAY_TIMES                      AS  Paid_Times              --支付次数          "
+    },
+    {
+      "line": 119,
+      "text": "        ,A.LEASE_TERM                            AS  Leas_Term               --租赁期限          "
+    },
+    {
+      "line": 120,
+      "text": "        ,A.BANK_ACCOUNT_ID                       AS  Recv_Acct               --收款账户          "
+    },
+    {
+      "line": 121,
+      "text": "        ,A.PAY_TYPE                              AS  Paid_Seq_Cd             --支付顺序代码      "
+    },
+    {
+      "line": 122,
+      "text": "        ,A.BILLING_METHOD                        AS  Inv_Method_Cd           --开票方式代码      "
+    },
+    {
+      "line": 123,
+      "text": "        ,A.RENT_TYPE                             AS  Leas_Type_Cd            --租赁方式代码      "
+    },
+    {
+      "line": 124,
+      "text": "        ,A.LEASE_ITEM_AMOUNT                     AS  Leas_Ast_Amt            --租赁资产金额      "
+    },
+    {
+      "line": 125,
+      "text": "        ,A.CALC_SESSION_ID                       AS  Rent_Calc_Id            --租金计算Id        "
+    },
+    {
+      "line": 126,
+      "text": "        ,A.DOWN_PAYMENT_TYPE                     AS  Fir_Pymt_Paid_Type_Cd   --首付款支付类型代码"
+    },
+    {
+      "line": 127,
+      "text": "        ,A.DOWN_PAYMENT                          AS  Fir_Paid_Amt            --首付金额          "
+    },
+    {
+      "line": 128,
+      "text": "        ,A.FINANCE_AMOUNT                        AS  Fin_Amt                 --融资额            "
+    },
+    {
+      "line": 129,
+      "text": "        ,A.TOTAL_RENTAL                          AS  Leas_Amt                --租金总额          "
+    },
+    {
+      "line": 130,
+      "text": "        ,A.TOTAL_INTEREST                        AS  Intr_Amt                --利息总额          "
+    },
+    {
+      "line": 131,
+      "text": "        ,A.TOTAL_FEE                             AS  Oth_Income_Amt          --其他收入总额      "
+    },
+    {
+      "line": 132,
+      "text": "        ,A.VAT_RATE                              AS  Vat_Rate                --增值税率          "
+    },
+    {
+      "line": 133,
+      "text": "        ,A.LEASE_CHARGE                          AS  Cms                     --手续费            "
+    },
+    {
+      "line": 134,
+      "text": "        ,A.OTHER_FEE2                            AS  Consu_Advs_Fee          --咨询顾问费        "
+    },
+    {
+      "line": 135,
+      "text": "        ,A.RESIDUAL_VALUE                        AS  Hire_Purch_Pric         --留购价款          "
+    },
+    {
+      "line": 136,
+      "text": "        ,A.DEPOSIT_DEDUCTION                     AS  Bail_Comut_Method_Cd    --保证金抵扣方式代码"
+    },
+    {
+      "line": 137,
+      "text": "        ,A.HD_USER_COL_V01                       AS  Bail_Comut_Situ         --保证金抵扣情况    "
+    },
+    {
+      "line": 138,
+      "text": "        ,A.DEPOSIT                               AS  Bail                    --保证金            "
+    },
+    {
+      "line": 139,
+      "text": "        ,B.BALANCE_DEPOSIT                       AS  Bail_Bal                --保证金余额        "
+    },
+    {
+      "line": 140,
+      "text": "        ,B.PRINCIPAL_BALANCE                     AS  Prin_Bal                --本金余额          "
+    },
+    {
+      "line": 141,
+      "text": "        ,B.INTEREST_BALANCE                      AS  Intr_Bal                --利息余额          "
+    },
+    {
+      "line": 142,
+      "text": "        ,B.RECEIVED_AMOUNT                       AS  Recv_Amt                --已收金额          "
+    },
+    {
+      "line": 143,
+      "text": "        ,B.RECEIVED_PRINCIPAL                    AS  Recv_Prin               --已收本金          "
+    },
+    {
+      "line": 144,
+      "text": "        ,A.INT_RATE_FIXING_WAY                   AS  Intrt_Adj_Method_Cd     --利率调整方式代码  "
+    },
+    {
+      "line": 145,
+      "text": "        ,A.INT_RATE_FIXING_RANGE                 AS  Intrt_Fix_Range         --利率幅度          "
+    },
+    {
+      "line": 146,
+      "text": "        ,A.BASE_RATE_TYPE                        AS  Bm_Rate_Cate_Cd         --基准利率类别代码  "
+    },
+    {
+      "line": 147,
+      "text": "        ,A.BASE_RATE                             AS  Bm_Rate                 --基准利率          "
+    },
+    {
+      "line": 148,
+      "text": "        ,A.INT_RATE                              AS  Leas_Rate               --租赁利率          "
+    },
+    {
+      "line": 149,
+      "text": "        ,NVL(A2.DW_CD_VAL,A.INT_RATE_TYPE)       AS  Rate_Type_Cd            --利率类型代码      "
+    },
+    {
+      "line": 150,
+      "text": "        ,A.INT_RATE_PRECISION                    AS  Intrt_Precision         --利率精度          "
+    },
+    {
+      "line": 151,
+      "text": "        ,A.IRR                                   AS  Inr_Yield               --内部收益率        "
+    },
+    {
+      "line": 152,
+      "text": "        ,A.XIRR                                  AS  Ext_Inr_Yield           --扩展内部收益率    "
+    },
+    {
+      "line": 153,
+      "text": "        ,A.GRACE_PERIOD                          AS  Free_Intr_Days          --免息天数          "
+    },
+    {
+      "line": 154,
+      "text": "        ,A.PENALTY_RATE                          AS  Ovdu_Fine_Rate          --逾期罚金率        "
+    },
+    {
+      "line": 155,
+      "text": "        ,B.OVERDUE_TIMES                         AS  Ovdu_Pd_Num             --逾期期数          "
+    },
+    {
+      "line": 156,
+      "text": "        ,B.OVERDUE_MAX_DAYS                      AS  Max_Ovdu_Days           --最大逾期天数      "
+    },
+    {
+      "line": 157,
+      "text": "        ,B.OVERDUE_AMOUNT                        AS  Ovdu_Amt                --逾期金额          "
+    },
+    {
+      "line": 158,
+      "text": "        ,B.PENALTY                               AS  Ovdu_Fine_Intr          --逾期罚息          "
+    },
+    {
+      "line": 159,
+      "text": "        ,CASE WHEN B.OVERDUE_STATUS = 'Y' THEN '1'"
+    },
+    {
+      "line": 160,
+      "text": "              WHEN B.OVERDUE_STATUS = 'N' THEN '0'"
+    },
+    {
+      "line": 161,
+      "text": "              ELSE '0' END                       AS  Ovdu_Flag               --逾期标志          "
+    },
+    {
+      "line": 162,
+      "text": "        ,CASE WHEN B.DELIVER_STATUS = 'Y' THEN '1'"
+    },
+    {
+      "line": 163,
+      "text": "              WHEN B.DELIVER_STATUS = 'N' THEN '0'"
+    },
+    {
+      "line": 164,
+      "text": "              ELSE '0' END                       AS  Deli_Flag               --投放标志          "
+    },
+    {
+      "line": 165,
+      "text": "        ,CASE WHEN B.INCEPT_FLAG = 'Y' THEN '1'"
+    },
+    {
+      "line": 166,
+      "text": "              WHEN B.INCEPT_FLAG = 'N' THEN '0'"
+    },
+    {
+      "line": 167,
+      "text": "              ELSE '0' END                       AS  Leas_Flag               --租赁标志          "
+    },
+    {
+      "line": 168,
+      "text": "        ,CASE WHEN B.PRINTCHECK_FLAG = 'Y' THEN '1'"
+    },
+    {
+      "line": 169,
+      "text": "              WHEN B.PRINTCHECK_FLAG = 'N' THEN '0'"
+    },
+    {
+      "line": 170,
+      "text": "              ELSE '0' END                       AS  Print_Flag              --打印标志          "
+    },
+    {
+      "line": 171,
+      "text": "        ,A.CANCEL_REASON                         AS  Canc_Rsn                --取消原因          "
+    },
+    {
+      "line": 172,
+      "text": "        ,A.DATA_CLASS                            AS  Src_Data_Clas_Cd        --源数据分类代码    "
+    },
+    {
+      "line": 173,
+      "text": "        ,A.DESCRIPTION                           AS  Remark                  --备注              "
+    },
+    {
+      "line": 174,
+      "text": "        ,A.CREATION_DATE                         AS  Create_Time             --创建日期          "
+    },
+    {
+      "line": 175,
+      "text": "        ,A.LAST_UPDATE_DATE                      AS  Last_Upd_Time           --最后更新日期      "
+    },
+    {
+      "line": 176,
+      "text": "        ,'${data_src_cd}'                   AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 177,
+      "text": "        ,'${filename}'                      AS  Task_Name               --任务名"
+    },
+    {
+      "line": 178,
+      "text": "        ,'${data_day_str}'                  AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 179,
+      "text": "        ,'${data_day_str}'                  AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 180,
+      "text": "        ,'${data_today}'                    AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 181,
+      "text": "        ,'${src_table}'                     AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 182,
+      "text": "    FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' AND DEL_FLAG='N')A"
+    },
+    {
+      "line": 183,
+      "text": "    LEFT JOIN (SELECT *  FROM ODATA_N_GLM.P_CON_CONTRACT_RPT_NOW WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 184,
+      "text": "           ON A.CONTRACT_ID =B.CONTRACT_ID"
+    },
+    {
+      "line": 185,
+      "text": "    LEFT JOIN(SELECT *  FROM ODATA_N_GLM.P_SYS_USER  WHERE  Busi_Date='${data_day_str}' )C"
+    },
+    {
+      "line": 186,
+      "text": "           ON A.OWNER_USER_ID=C.USER_ID"
+    },
+    {
+      "line": 187,
+      "text": "    LEFT JOIN (SELECT DISTINCT ERP_ID,LOGIN_ID FROM ODATA_N_IOA.I_GF_USER WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 188,
+      "text": "                         AND MAIN_DEPARTMENT = 'true' AND ERP_ID IS NOT NULL"
+    },
+    {
+      "line": 189,
+      "text": "               UNION ALL"
+    },
+    {
+      "line": 190,
+      "text": "               SELECT DISTINCT ERP_ID,LOGIN_ID FROM ODATA_N_IOA.I_GF_USER_DEL WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 191,
+      "text": "                        AND MAIN_DEPARTMENT = 'true' AND ERP_ID IS NOT NULL) D"
+    },
+    {
+      "line": 192,
+      "text": "    ON lower(C.USER_NAME)= D.LOGIN_ID"
+    },
+    {
+      "line": 193,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 194,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 195,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 196,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_FIN_LEAS_COMP_LOAN_DET'"
+    },
+    {
+      "line": 197,
+      "text": "                AND TGT_TAB_FLD  = 'Contr_Loan_Stat_Cd'"
+    },
+    {
+      "line": 198,
+      "text": "                AND SRC_TAB_NAME = 'CON_CONTRACT'"
+    },
+    {
+      "line": 199,
+      "text": "                AND SRC_FLD_NAME = 'CONTRACT_STATUS'"
+    },
+    {
+      "line": 200,
+      "text": "                AND SRC_SYS_NAME='GLM')A1"
+    },
+    {
+      "line": 201,
+      "text": "       ON      A.CONTRACT_STATUS =A1.SRC_CD_VAL                  --CONTRACT_STATUS 转码"
+    },
+    {
+      "line": 202,
+      "text": "    LEFT JOIN ("
+    },
+    {
+      "line": 203,
+      "text": "             SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 204,
+      "text": "               FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 205,
+      "text": "             WHERE TGT_TAB_NAME = 'T03_FIN_LEAS_COMP_LOAN_DET'"
+    },
+    {
+      "line": 206,
+      "text": "                AND TGT_TAB_FLD  = 'Rate_Type_Cd'"
+    },
+    {
+      "line": 207,
+      "text": "                AND SRC_TAB_NAME = 'CON_CONTRACT'"
+    },
+    {
+      "line": 208,
+      "text": "                AND SRC_FLD_NAME = 'INT_RATE_TYPE'"
+    },
+    {
+      "line": 209,
+      "text": "                AND SRC_SYS_NAME='GLM')A2"
+    },
+    {
+      "line": 210,
+      "text": "       ON      A.INT_RATE_TYPE =A2.SRC_CD_VAL                  --INT_RATE_TYPE 转码"
+    },
+    {
+      "line": 211,
+      "text": "    ;"
+    },
+    {
+      "line": 212,
+      "text": ""
+    }
+  ]
+}

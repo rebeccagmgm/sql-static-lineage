@@ -1,0 +1,26 @@
+[
+  {
+    "observedAt": "2026-09-03T19:31:04.499Z",
+    "taskId": "233413",
+    "taskName": "odata_n_fam.w_asset_account_f",
+    "topicName": "ODATA_N_FAM",
+    "taskType": "19",
+    "database": "odata_n_fam",
+    "targetTable": "odata_n_fam.w_asset_account",
+    "tableName": "w_asset_account",
+    "insertMode": "truncate",
+    "querySql": "SELECT \nID_,\r\nREF_ID_,\r\nPARENT_ID_,\r\nUPDATE_VERSION_,\r\nASSET_TAG_NO,\r\nASSET_CODE,\r\nASSET_LEDGER,\r\nASSET_NAME,\r\nASSET_CLASSIFY_CODE,\r\nASSET_MODEL,\r\nASSET_PARENT,\r\nASSET_PARENT_NAME,\r\nASSET_SON,\r\nASSET_SON_NAME,\r\nSUPPLIER,\r\nNUM,\r\nORIGINAL_VALUE_NO_TAX,\r\nNET_VALUE,\r\nSTORE_NATURE,\r\nSTORE_NATURE_NAME,\r\nSTORE_TIME,\r\nASSET_NATURE,\r\nASSET_NATURE_NAME,\r\nASSET_ATTRIBUTE,\r\nASSET_ATTRIBUTE_NAME,\r\nMAIN_ASSET_CODE,\r\nASSET_USE_DEPT,\r\nASSET_USE_DEPT_NAME,\r\nASSET_RESPONSIBLE_PERSON,\r\nASSET_RESPONSIBLE_PERSON_NAME,\r\nSTATUS,\r\nSTATUS_NAME,\r\nASSET_BELONG_ADDRESS,\r\nNEW_OLD_REFER_NUM,\r\nIS_NEED_LABEL,\r\nIS_NEED_LABEL_NAME,\r\nIS_PRINT,\r\nIS_PRINT_NAME,\r\nIS_ANNOUNCE,\r\nIS_ANNOUNCE_NAME,\r\nIS_NEED_INSURE,\r\nIS_NEED_INSURE_NAME,\r\nREMARK,\r\nBUY_ORDER_CODE,\r\nCONTRACT_CODE,\r\nPO_NUM,\r\nUSE_PERIOD_TYPE,\r\nUSE_PERIOD_TYPE_NAME,\r\nUSE_TIME_START,\r\nUSE_TIME_END,\r\nUSE_UNIT,\r\nUSE_PERSON,\r\nPHONE,\r\nMAC_ADDRESS,\r\nDISK_SERIAL_NUM,\r\nCOMPUTER_TYPE,\r\nCOMPUTER_TYPE_NAME,\r\nINSURE_STATUS,\r\nINSURE_STATUS_NAME,\r\nINSURE_NUM,\r\nINSURE_START_DATE,\r\nINSURE_END_DATE,\r\nINST_ID_,\r\nINST_STATUS_,\r\nTENANT_ID_,\r\nCREATE_TIME_,\r\nCREATE_BY_,\r\nUPDATE_BY_,\r\nUPDATE_TIME_,\r\nCREATE_DEP_ID_,\r\nCOMPANY_ID_,\r\nUSER_INFO_,\r\nDELETED_,\r\nOLD_STATUS,\r\nOLD_STATUS_NAME,\r\nASSET_START_DATE,\r\nASSET_PLACE,\r\nASSET_USE_LIFE,\r\nCOST_BEAR_DEPT,\r\nCOST_BEAR_DEPT_NAME,\r\nCOST_BEAR_DEPT_CODE,\r\nASSET_PERSON_ERP_CODE,\r\nIS_BACK_DEVALUE_COST,\r\nIS_BACK_DEVALUE_COST_NAME,\r\nSHARE_SIGN,\r\nSHARE_SIGN_NAME,\r\nIS_DEVALUE,\r\nIS_DEVALUE_NAME,\r\nDEVALUE_METHOD,\r\nDEVALUE_MONTH,\r\nCURRENT_MONTH_DEVALUE,\r\nPROPOSE_DEVALUE,\r\nFINANCE_HANDLE_PERIOD,\r\nEXPECT_TRANSFER_TIME,\r\nSELL_BANK_ACCOUNT,\r\nSELL_BANK_WATER,\r\nIS_DEL,\r\nOPERATE_SYSTEM,\r\nBUY_AGENT_IS_VISIBLE,\r\nBUY_AGENT_IS_VISIBLE_NAME,\r\nANNOUNCE_DEPT,\r\nANNOUNCE_DEPT_NAME,\r\nANNOUNCE_PERSON,\r\nANNOUNCE_PERSON_NAME,\r\nIS_PUSH_SHARE,\r\nIS_INFO_INNOVATE,\r\nIS_INFO_INNOVATE_NAME,\r\nSN_NO,\r\nMACHINE_ROOM_DEVICE_STATUS,\r\nSCRAP_AMOUNT,\r\nSCRAP_COST,\r\nSCRAP_IN,\r\nENTRY_STATUS,\r\nSCRAP_REASON,\r\nENTRY_DATE,\r\nASSET_TYPE,\r\nASSET_TYPE_NAME,\r\nIS_PUSH_CMP,\r\nLOCK_STATUS,\r\nLOCK_STATUS_NAME,\r\nFLOW_START_USER,\r\nFLOW_START_USER_NAME,\r\nFLOW_TITLE,\r\nBPM_INST_ID,\r\nREVIEWER,\r\nREVIEWER_NAME,\r\nANNOUNCE_DEPT_VALUE,\r\nACCOUNT_PERIOD ,\ndate_format(SYSDATE(),\"%Y-%m-%d %T\") as data_time \nfrom fams_ac_paas_lowcode.w_asset_account "
+  },
+  {
+    "observedAt": "2026-09-05T13:01:41.918Z",
+    "taskId": "236331",
+    "taskName": "dm_fin_n.erp_fix_ast_ast_nature",
+    "topicName": "DM_FIN_N",
+    "taskType": "64",
+    "database": "dm_fin_n",
+    "targetTable": "dm_fin_n.erp_fix_ast_ast_nature",
+    "tableName": "erp_fix_ast_ast_nature",
+    "insertMode": "overwrite",
+    "querySql": "\nSELECT Ast_Id,\n\tFa_Ast_Id,\n\tAst_Clas_Cd,\n\tStrt_Date,\n\tEnd_Date FROM (\n\t select\n  Ast_Id,--固定资产资产编号\n  Fa_Ast_Id,--财务资产编号\n  Ast_Clas_Cd,--资产性质\n  Strt_Date,--开始日期\n  End_Date  --截至日期\nfrom\n  (\n    select\n      *\n    from\n      pdata_n.T10_AST_CLAS_H\n    where\n      ast_clas_type_cd = '03'\n      and SRC_TBL = 'ODATA_N_FAM.W_ASSET_ACCOUNT'\n  ) a\n  left join (\n    select\n      *\n    from\n      pdata_n.T10_OUR_FIX_AST_ADTNL_INFO\n    where\n      busi_date = '${yyyy-MM-dd}'\n  ) b on a.Ast_Id = b.Fix_Ast_Id \n\t) castTable"
+  }
+]

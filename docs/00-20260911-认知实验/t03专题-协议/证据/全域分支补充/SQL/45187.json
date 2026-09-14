@@ -1,0 +1,2848 @@
+{
+  "task_id": "45187",
+  "default_schema": "PDATA_N",
+  "observed_at": "2026-09-05T01:06:15.222Z",
+  "payload_sha256": "d13d51686e9ff2a5059bda91f95b54c941765ad2cb3665ad49a765bbe368c063",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_REF_COMP_INFO("
+    },
+    {
+      "line": 10,
+      "text": "      Agt_Id                 string comment '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "     ,Agt_Modifr             string comment '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "     ,Agt_Cate_Cd            string comment '协议类别代码'"
+    },
+    {
+      "line": 13,
+      "text": "     ,Agt_Type_Cd            string comment '协议类型代码'"
+    },
+    {
+      "line": 14,
+      "text": "     ,Inr_Org_Id             string comment '内部机构编号'"
+    },
+    {
+      "line": 15,
+      "text": "     ,Agt_Holder             string comment '协议持有人编号'"
+    },
+    {
+      "line": 16,
+      "text": "     ,Ast_Acct_Agt_Id        string comment '资产账户协议编号'"
+    },
+    {
+      "line": 17,
+      "text": "     ,Ast_Acct_Agt_Modifr    string comment '资产账户协议修饰符'"
+    },
+    {
+      "line": 18,
+      "text": "     ,Exch_Type_Cd           string comment '市场代码'"
+    },
+    {
+      "line": 19,
+      "text": "     ,Trd_Date               string comment '交易日期'"
+    },
+    {
+      "line": 20,
+      "text": "     ,Ref_Comp_Type_Cd       string comment '转融通合约类型代码'"
+    },
+    {
+      "line": 21,
+      "text": "     ,Csfc_Comp_Id           string comment '证金合约编号'"
+    },
+    {
+      "line": 22,
+      "text": "     ,Ori_Csfc_Comp_Id       string comment '原证金合约编号'"
+    },
+    {
+      "line": 23,
+      "text": "     ,Cutp_Csfc_Comp_Id      string comment '对手方证金合约编号'"
+    },
+    {
+      "line": 24,
+      "text": "     ,Brok_Id                string comment '券商编号'"
+    },
+    {
+      "line": 25,
+      "text": "     ,Scr_Acct_Agt_Id        string comment '证券账户协议编号'"
+    },
+    {
+      "line": 26,
+      "text": "     ,Scr_Acct_Agt_Modifr    string comment '证券账户协议修饰符'"
+    },
+    {
+      "line": 27,
+      "text": "     ,Seat_No                string comment '席位编号'"
+    },
+    {
+      "line": 28,
+      "text": "     ,Src_Prd_Cate_Cd        string comment '源产品类别代码'"
+    },
+    {
+      "line": 29,
+      "text": "     ,Prd_Id                 string comment '产品编号'"
+    },
+    {
+      "line": 30,
+      "text": "     ,Scr_Cd                 string comment '证券代码'"
+    },
+    {
+      "line": 31,
+      "text": "     ,Ref_Busi_Cate_Cd       string comment '转融通业务类别代码'"
+    },
+    {
+      "line": 32,
+      "text": "     ,Ref_Term_Days          string comment '转融通期限天数'"
+    },
+    {
+      "line": 33,
+      "text": "     ,Appt_No                string comment '约定号'"
+    },
+    {
+      "line": 34,
+      "text": "     ,Cutp_Scr_Acct          string comment '对方股东账户'"
+    },
+    {
+      "line": 35,
+      "text": "     ,Cutp_Seat_No           string comment '对方席位'"
+    },
+    {
+      "line": 36,
+      "text": "     ,Cutp_Cust_Name         string comment '对方客户名称'"
+    },
+    {
+      "line": 37,
+      "text": "     ,Crrc_Cd                string comment '币种类别'"
+    },
+    {
+      "line": 38,
+      "text": "     ,Comp_Amt               string comment '合约金额'"
+    },
+    {
+      "line": 39,
+      "text": "     ,Comp_Vol               string comment '合约数量'"
+    },
+    {
+      "line": 40,
+      "text": "     ,Retu_Amt               string comment '返还金额'"
+    },
+    {
+      "line": 41,
+      "text": "     ,Retu_Vol               string comment '返还数量'"
+    },
+    {
+      "line": 42,
+      "text": "     ,Retu_Prin              string comment '返还本金'"
+    },
+    {
+      "line": 43,
+      "text": "     ,Base_Rate              string comment '基准利率'"
+    },
+    {
+      "line": 44,
+      "text": "     ,Last_Pric              string comment '最新价'"
+    },
+    {
+      "line": 45,
+      "text": "     ,Expe_Intr              string comment '预计利息'"
+    },
+    {
+      "line": 46,
+      "text": "     ,Retu_Intr              string comment '返还利息'"
+    },
+    {
+      "line": 47,
+      "text": "     ,Fine_Bal               string comment '违约金'"
+    },
+    {
+      "line": 48,
+      "text": "     ,Retu_Fine_Bal          string comment '返还违约金'"
+    },
+    {
+      "line": 49,
+      "text": "     ,Cms_Coll_Method_Cd     string comment '佣金收取方式'"
+    },
+    {
+      "line": 50,
+      "text": "     ,Mtch_Amt_Rati          string comment '成交金额比例'"
+    },
+    {
+      "line": 51,
+      "text": "     ,Fix_Retu_Amt           string comment '固定返还金额'"
+    },
+    {
+      "line": 52,
+      "text": "     ,Max_Fee                string comment '最高费用'"
+    },
+    {
+      "line": 53,
+      "text": "     ,Min_Fee                string comment '最低费用'"
+    },
+    {
+      "line": 54,
+      "text": "     ,Ref_Comp_Stat_Cd       string comment '转融通合约状态代码'"
+    },
+    {
+      "line": 55,
+      "text": "     ,Renw_Times             string comment '展期次数'"
+    },
+    {
+      "line": 56,
+      "text": "     ,Accum_Renw_Days        string comment '累计展期天数'"
+    },
+    {
+      "line": 57,
+      "text": "     ,Renw_Stat_Cd           string comment '展期状态代码'"
+    },
+    {
+      "line": 58,
+      "text": "     ,Adv_Fnsh_Stat_Cd       string comment '提前了结状态'"
+    },
+    {
+      "line": 59,
+      "text": "     ,Renw_Cfm_Vol           string comment '展期确认数量'"
+    },
+    {
+      "line": 60,
+      "text": "     ,Renw_Cfm_Amt           string comment '展期确认金额'"
+    },
+    {
+      "line": 61,
+      "text": "     ,Renw_Cfm_Term          string comment '展期确认期限'"
+    },
+    {
+      "line": 62,
+      "text": "     ,Renw_Cfm_Rate          string comment '展期确认利率'"
+    },
+    {
+      "line": 63,
+      "text": "     ,Ref_Comp_Rmbrs_Dir_Cd  string comment '转融通合约偿还方向'"
+    },
+    {
+      "line": 64,
+      "text": "     ,Entr_No                string comment '委托编号'"
+    },
+    {
+      "line": 65,
+      "text": "     ,Rep_No                 string comment '申请编号'"
+    },
+    {
+      "line": 66,
+      "text": "     ,Susp_Days              string comment '停牌天数'"
+    },
+    {
+      "line": 67,
+      "text": "     ,Vld_Date               string comment '有效日期'"
+    },
+    {
+      "line": 68,
+      "text": "     ,Clr_Date               string comment '清算日期'"
+    },
+    {
+      "line": 69,
+      "text": "     ,Co_Retu_Stat_Cd        string comment '公司归还状态代码'"
+    },
+    {
+      "line": 70,
+      "text": "     ,Co_Retu_Amt            string comment '公司已还金额'"
+    },
+    {
+      "line": 71,
+      "text": "     ,Co_Retu_Vol            string comment '公司已还数量'"
+    },
+    {
+      "line": 72,
+      "text": "     ,Bel_Cntr               string comment '所属柜台'"
+    },
+    {
+      "line": 73,
+      "text": "     ,Csfc_Ref_Cate          string comment '证金转融通类别'"
+    },
+    {
+      "line": 74,
+      "text": "     ,Src_Grp_No             string comment '来源组编号'"
+    },
+    {
+      "line": 75,
+      "text": "     ,Cir_Type_Cd            string comment '流通类型'"
+    },
+    {
+      "line": 76,
+      "text": "     ,Stk_Prop               string comment '股份性质'"
+    },
+    {
+      "line": 77,
+      "text": "     ,Mtch_No                string comment '成交编号'"
+    },
+    {
+      "line": 78,
+      "text": "     ,Agt_No                 string comment '协议编号'"
+    },
+    {
+      "line": 79,
+      "text": "     ,Pos_Str                string comment '定位串'"
+    },
+    {
+      "line": 80,
+      "text": "     ,Remark                 string comment '备注'"
+    },
+    {
+      "line": 81,
+      "text": "     ,Del_Flag               string comment '删除标志'"
+    },
+    {
+      "line": 82,
+      "text": "     ,Del_Date               string comment '删除日期'"
+    },
+    {
+      "line": 83,
+      "text": "     ,Data_Src_Cd            string comment '数据来源代码'"
+    },
+    {
+      "line": 84,
+      "text": "     ,Task_Name              string comment '任务名'"
+    },
+    {
+      "line": 85,
+      "text": "     ,Data_Etl_Date          string comment '数据加载日期'"
+    },
+    {
+      "line": 86,
+      "text": "     ,Data_Upt_Date          string comment '数据更新日期'"
+    },
+    {
+      "line": 87,
+      "text": "     ,DATA_TIME              string comment '数据时间'"
+    },
+    {
+      "line": 88,
+      "text": "     ,Lend_Acct_Agt_Id       string comment '出借方账户协议编号'"
+    },
+    {
+      "line": 89,
+      "text": "     ,Lend_Acct_Agt_Modifr   string comment '出借方账户协议修饰符'"
+    },
+    {
+      "line": 90,
+      "text": "     ,Lend_Acct_Name         string comment '出借方账户名称'"
+    },
+    {
+      "line": 91,
+      "text": "     ,Lend_Acct_Pty_Id       string comment '出借方当事人编号'"
+    },
+    {
+      "line": 92,
+      "text": "     ,Lend_Acct_Pty_Name     string comment '出借方当事人名称'"
+    },
+    {
+      "line": 93,
+      "text": "     ,Ref_Comp_Ind_Cd        string comment '转融通合约标识代码'"
+    },
+    {
+      "line": 94,
+      "text": "     ,Yield_Ind_Cd           string comment '收益标识代码'"
+    },
+    {
+      "line": 95,
+      "text": "     ,Proj_Cate_Cd           string comment '项目类别代码'"
+    },
+    {
+      "line": 96,
+      "text": "     ,Req_Src_Cd             string comment '需求来源代码'"
+    },
+    {
+      "line": 97,
+      "text": "     ,Info_Set_Remark        string comment '信息设置备注'"
+    },
+    {
+      "line": 98,
+      "text": ")COMMENT '转融通合约信息'"
+    },
+    {
+      "line": 99,
+      "text": "PARTITIONED BY (BUSI_DATE  STRING COMMENT '业务日期',Src_Tbl string comment '源表')"
+    },
+    {
+      "line": 100,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 101,
+      "text": ""
+    },
+    {
+      "line": 102,
+      "text": "DROP   TABLE IF     EXISTS T03_REF_COMP_INFO_TEMP_RCC185;"
+    },
+    {
+      "line": 103,
+      "text": "CREATE TABLE IF NOT EXISTS T03_REF_COMP_INFO_TEMP_RCC185"
+    },
+    {
+      "line": 104,
+      "text": "AS"
+    },
+    {
+      "line": 105,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 106,
+      "text": "--Group1: Source Table:[ODATA_N_RCC.H_HIS_REFBCOMPACT:转融通借入合约历史表+当前表]"
+    },
+    {
+      "line": 107,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 108,
+      "text": "SELECT"
+    },
+    {
+      "line": 109,
+      "text": "        A.COMPACT_ID                                                          as Agt_Id1                  --协议编号"
+    },
+    {
+      "line": 110,
+      "text": "       ,'2010801'                                                             as Agt_Modifr1              --协议修饰符"
+    },
+    {
+      "line": 111,
+      "text": "       ,'201'                                                                 as Agt_Cate_Cd1             --协议类别代码"
+    },
+    {
+      "line": 112,
+      "text": "       ,'2010801'                                                             as Agt_Type_Cd1             --协议类型代码"
+    },
+    {
+      "line": 113,
+      "text": "       ,Lpad(A.BRANCH_NO,4,0)                                                 as Inr_Org_Id1              --内部机构编号"
+    },
+    {
+      "line": 114,
+      "text": "       ,A.CLIENT_ID                                                           as Agt_Holder1              --协议持有人编号"
+    },
+    {
+      "line": 115,
+      "text": "       ,A.FUND_ACCOUNT                                                        as Ast_Acct_Agt_Id1         --资产账户协议编号"
+    },
+    {
+      "line": 116,
+      "text": "       ,IF(A.FUND_ACCOUNT IS NOT NULL AND TRIM(A.FUND_ACCOUNT) !='','10201','') as Ast_Acct_Agt_Modifr1     --资产账户协议修饰符"
+    },
+    {
+      "line": 117,
+      "text": "       ,Nvl(C.DW_CD_VAL,A.EXCHANGE_TYPE)                                      as Exch_Type_Cd1            --市场代码"
+    },
+    {
+      "line": 118,
+      "text": "       ,A.INIT_DATE                                                           as Trd_Date1                --交易日期"
+    },
+    {
+      "line": 119,
+      "text": "       ,A.REFCOMPACT_TYPE                                                     as Ref_Comp_Type_Cd1        --转融通合约类型代码"
+    },
+    {
+      "line": 120,
+      "text": "       ,A.CSFC_COMPACT_ID                                                     as Csfc_Comp_Id1            --证金合约编号"
+    },
+    {
+      "line": 121,
+      "text": "       ,A.ORIG_CSFCCOMPACT_ID                                                 as Ori_Csfc_Comp_Id1        --原证金合约编号"
+    },
+    {
+      "line": 122,
+      "text": "       ,A.OPPCSFC_COMPACT_ID                                                  as Cutp_Csfc_Comp_Id1       --对手方证金合约编号"
+    },
+    {
+      "line": 123,
+      "text": "       ,A.COMPANY_NO                                                          as Brok_Id1                 --券商编号"
+    },
+    {
+      "line": 124,
+      "text": "       ,A.FUND_ACCOUNT                                                        as Scr_Acct_Agt_Id1         --证券账户协议编号"
+    },
+    {
+      "line": 125,
+      "text": "       ,IF(A.STOCK_ACCOUNT IS NOT NULL AND TRIM(A.STOCK_ACCOUNT) !='',Concat('10101-',A.EXCHANGE_TYPE,'-',A.STOCK_ACCOUNT),'') as Scr_Acct_Agt_Modifr1     --证券账户协议修饰符"
+    },
+    {
+      "line": 126,
+      "text": "       ,A.SEAT_NO                                                             as Seat_No1                 --席位编号"
+    },
+    {
+      "line": 127,
+      "text": "       ,A.STOCK_TYPE                                                          as Src_Prd_Cate_Cd1         --源产品类别代码"
+    },
+    {
+      "line": 128,
+      "text": "       ,Concat('RCC-',A.EXCHANGE_TYPE,'-',A.STOCK_CODE)                       as Prd_Id1                  --产品编号"
+    },
+    {
+      "line": 129,
+      "text": "       ,A.STOCK_CODE                                                          as Scr_Cd1                  --证券代码"
+    },
+    {
+      "line": 130,
+      "text": "       ,A.REF_TYPE                                                            as Ref_Busi_Cate_Cd1        --转融通业务类别代码"
+    },
+    {
+      "line": 131,
+      "text": "       ,A.REF_TERM                                                            as Ref_Term_Days1           --转融通期限天数"
+    },
+    {
+      "line": 132,
+      "text": "       ,A.CBPCONFER_ID                                                        as Appt_No1                 --约定号"
+    },
+    {
+      "line": 133,
+      "text": "       ,A.OPPO_STKACCOUNT                                                     as Cutp_Scr_Acct1           --对方股东账户"
+    },
+    {
+      "line": 134,
+      "text": "       ,A.OPPO_SEATNO                                                         as Cutp_Seat_No1            --对方席位"
+    },
+    {
+      "line": 135,
+      "text": "       ,A.OPPO_CLIENTNAME                                                     as Cutp_Cust_Name1          --对方客户名称"
+    },
+    {
+      "line": 136,
+      "text": "       ,Nvl(D.DW_CD_VAL,A.MONEY_TYPE)                                         as Crrc_Cd1                 --币种类别"
+    },
+    {
+      "line": 137,
+      "text": "       ,A.COMPACT_BALANCE                                                     as Comp_Amt1                --合约金额"
+    },
+    {
+      "line": 138,
+      "text": "       ,A.COMPACT_AMOUNT                                                      as Comp_Vol1                --合约数量"
+    },
+    {
+      "line": 139,
+      "text": "       ,A.RETURN_BALANCE                                                      as Retu_Amt1                --返还金额"
+    },
+    {
+      "line": 140,
+      "text": "       ,A.RETURN_AMOUNT                                                       as Retu_Vol1                --返还数量"
+    },
+    {
+      "line": 141,
+      "text": "       ,A.RETURN_PRINCIPAL                                                    as Retu_Prin1               --返还本金"
+    },
+    {
+      "line": 142,
+      "text": "       ,A.REFBASE_RATE                                                        as Base_Rate1               --基准利率"
+    },
+    {
+      "line": 143,
+      "text": "       ,A.LAST_PRICE                                                          as Last_Pric1               --最新价"
+    },
+    {
+      "line": 144,
+      "text": "       ,A.PRE_INTEREST                                                        as Expe_Intr1               --预计利息"
+    },
+    {
+      "line": 145,
+      "text": "       ,A.RETURN_INTEREST                                                     as Retu_Intr1               --返还利息"
+    },
+    {
+      "line": 146,
+      "text": "       ,A.PENALTY_BALANCE                                                     as Fine_Bal1                --违约金"
+    },
+    {
+      "line": 147,
+      "text": "       ,A.RETURN_PENALTY                                                      as Retu_Fine_Bal1           --返还违约金"
+    },
+    {
+      "line": 148,
+      "text": "       ,''                                                                    as Cms_Coll_Method_Cd1      --佣金收取方式"
+    },
+    {
+      "line": 149,
+      "text": "       ,''                                                                    as Mtch_Amt_Rati1           --成交金额比例"
+    },
+    {
+      "line": 150,
+      "text": "       ,''                                                                    as Fix_Retu_Amt1            --固定返还金额"
+    },
+    {
+      "line": 151,
+      "text": "       ,''                                                                    as Max_Fee1                 --最高费用"
+    },
+    {
+      "line": 152,
+      "text": "       ,''                                                                    as Min_Fee1                 --最低费用"
+    },
+    {
+      "line": 153,
+      "text": "       ,Nvl(E.DW_CD_VAL,A.REFCOMPACT_STATUS)                                  as Ref_Comp_Stat_Cd1        --转融通合约状态代码"
+    },
+    {
+      "line": 154,
+      "text": "       ,A.POSTPONE_TIMES                                                      as Renw_Times1              --展期次数"
+    },
+    {
+      "line": 155,
+      "text": "       ,A.SUM_POSTPONE_DAYS                                                   as Accum_Renw_Days1         --累计展期天数"
+    },
+    {
+      "line": 156,
+      "text": "       ,A.POSTPONE_STATUS                                                     as Renw_Stat_Cd1            --展期状态代码"
+    },
+    {
+      "line": 157,
+      "text": "       ,A.PREEND_STATUS                                                       as Adv_Fnsh_Stat_Cd1        --提前了结状态"
+    },
+    {
+      "line": 158,
+      "text": "       ,A.REFCONFIRM_AMOUNT                                                   as Renw_Cfm_Vol1            --展期确认数量"
+    },
+    {
+      "line": 159,
+      "text": "       ,A.REFCONFIRM_BALANCE                                                  as Renw_Cfm_Amt1            --展期确认金额"
+    },
+    {
+      "line": 160,
+      "text": "       ,A.REFCONFIRM_TERM                                                     as Renw_Cfm_Term1           --展期确认期限"
+    },
+    {
+      "line": 161,
+      "text": "       ,A.REFCONFIRM_RATE                                                     as Renw_Cfm_Rate1           --展期确认利率"
+    },
+    {
+      "line": 162,
+      "text": "       ,A.REFSETT_BS                                                          as Ref_Comp_Rmbrs_Dir_Cd1   --转融通合约偿还方向"
+    },
+    {
+      "line": 163,
+      "text": "       ,A.ENTRUST_NO                                                          as Entr_No1                 --委托编号"
+    },
+    {
+      "line": 164,
+      "text": "       ,A.REPORT_NO                                                           as Rep_No1                  --申请编号"
+    },
+    {
+      "line": 165,
+      "text": "       ,A.STOP_DAYS                                                           as Susp_Days1               --停牌天数"
+    },
+    {
+      "line": 166,
+      "text": "       ,A.VALID_DATE                                                          as Vld_Date1                --有效日期"
+    },
+    {
+      "line": 167,
+      "text": "       ,A.DATE_CLEAR                                                          as Clr_Date1                --清算日期"
+    },
+    {
+      "line": 168,
+      "text": "       ,A.CORPREPAID_STATUS                                                   as Co_Retu_Stat_Cd1         --公司归还状态代码"
+    },
+    {
+      "line": 169,
+      "text": "       ,A.CORPREPAID_BALANCE                                                  as Co_Retu_Amt1             --公司已还金额"
+    },
+    {
+      "line": 170,
+      "text": "       ,A.CORPREPAID_AMOUNT                                                   as Co_Retu_Vol1             --公司已还数量"
+    },
+    {
+      "line": 171,
+      "text": "       ,A.COUNTER_BELONGED                                                    as Bel_Cntr1                --所属柜台"
+    },
+    {
+      "line": 172,
+      "text": "       ,A.CSFC_REF_TYPE                                                       as Csfc_Ref_Cate1           --证金转融通类别"
+    },
+    {
+      "line": 173,
+      "text": "       ,A.FSMPSRCGROUP_ID                                                     as Src_Grp_No1              --来源组编号"
+    },
+    {
+      "line": 174,
+      "text": "       ,''                                                                    as Cir_Type_Cd1             --流通类型"
+    },
+    {
+      "line": 175,
+      "text": "       ,''                                                                    as Stk_Prop1                --股份性质"
+    },
+    {
+      "line": 176,
+      "text": "       ,''                                                                    as Mtch_No1                 --成交编号"
+    },
+    {
+      "line": 177,
+      "text": "       ,''                                                                    as Agt_No1                  --协议编号"
+    },
+    {
+      "line": 178,
+      "text": "       ,A.POSITION_STR                                                        as Pos_Str1                 --定位串"
+    },
+    {
+      "line": 179,
+      "text": "       ,A.REMARK                                                              as Remark1                  --备注"
+    },
+    {
+      "line": 180,
+      "text": "       ,'0'                                                                   as Del_Flag1                --删除标志"
+    },
+    {
+      "line": 181,
+      "text": "       ,''                                                                    as Del_Date1                --删除日期"
+    },
+    {
+      "line": 182,
+      "text": "       ,'RCC'                                                                 as DATA_SRC_CD1             --数据来源代码"
+    },
+    {
+      "line": 183,
+      "text": "       ,'ODATA_N_RCC.R_REFBCOMPACT'                                           as SRC_TBL1                 --源表"
+    },
+    {
+      "line": 184,
+      "text": "       ,UPPER('${filename}')                                             as TASK_NAME1               --任务名"
+    },
+    {
+      "line": 185,
+      "text": "       ,'${data_day_str}'                                                as DATA_ETL_DATE1           --数据加载日期"
+    },
+    {
+      "line": 186,
+      "text": "       ,'${data_today_str}'                                              as DATA_UPT_DATE1           --数据更新日期"
+    },
+    {
+      "line": 187,
+      "text": "       ,'${data_today}'                                                  as DATA_TIME1               --数据时间"
+    },
+    {
+      "line": 188,
+      "text": "       ,B.LENDER_CODE                                                         as Lend_Acct_Agt_Id1        --出借方账户协议编号"
+    },
+    {
+      "line": 189,
+      "text": "       ,'10212'                                                               as Lend_Acct_Agt_Modifr1    --出借方账户协议修饰符"
+    },
+    {
+      "line": 190,
+      "text": "       ,B.LENDER_ACCOUNT_NAME                                                 as Lend_Acct_Name1          --出借方账户名称"
+    },
+    {
+      "line": 191,
+      "text": "       ,B.LENDER_CLIENT_ID                                                    as Lend_Acct_Pty_Id1        --出借方当事人编号"
+    },
+    {
+      "line": 192,
+      "text": "       ,B.LENDER_NAME                                                         as Lend_Acct_Pty_Name1      --出借方当事人名称"
+    },
+    {
+      "line": 193,
+      "text": "       ,B.CONTRACT_MARK                                                       as Ref_Comp_Ind_Cd1         --转融通合约标识代码"
+    },
+    {
+      "line": 194,
+      "text": "       ,B.PROFIT_MARK                                                         as Yield_Ind_Cd1            --收益标识代码"
+    },
+    {
+      "line": 195,
+      "text": "       ,B.PROJECT_TYPE                                                        as Proj_Cate_Cd1            --项目类别代码"
+    },
+    {
+      "line": 196,
+      "text": "       ,B.DEMAND_SOURCE                                                       as Req_Src_Cd1              --需求来源代码"
+    },
+    {
+      "line": 197,
+      "text": "       ,B.REMARK                                                              as Info_Set_Remark1         --信息设置备注"
+    },
+    {
+      "line": 198,
+      "text": "FROM  (SELECT ${src_table_row} FROM ${src_table_rcc}.H_HIS_REFBCOMPACT WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 199,
+      "text": "       UNION ALL"
+    },
+    {
+      "line": 200,
+      "text": "       SELECT ${src_table_row} FROM ${src_table_rcc}.R_REFBCOMPACT     WHERE BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 201,
+      "text": "      )A"
+    },
+    {
+      "line": 202,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_SMS.Q_DC_REF_COMPACT_SETTING  WHERE BUSI_DATE='${data_day_str}') B"
+    },
+    {
+      "line": 203,
+      "text": "       ON A.COMPACT_ID=B.COMPACT_ID   --20230207修改逻辑"
+    },
+    {
+      "line": 204,
+      "text": ""
+    },
+    {
+      "line": 205,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 206,
+      "text": "          SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 207,
+      "text": "            FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 208,
+      "text": "           WHERE TGT_TAB_NAME = 'T03_REF_COMP_INFO'"
+    },
+    {
+      "line": 209,
+      "text": "            AND TGT_TAB_FLD  = 'Exch_Type_Cd'"
+    },
+    {
+      "line": 210,
+      "text": "            AND SRC_TAB_NAME = 'REFBCOMPACT'"
+    },
+    {
+      "line": 211,
+      "text": "            AND SRC_FLD_NAME = 'EXCHANGE_TYPE'"
+    },
+    {
+      "line": 212,
+      "text": "             AND SRC_SYS_NAME = 'RCC'"
+    },
+    {
+      "line": 213,
+      "text": "          )C"
+    },
+    {
+      "line": 214,
+      "text": "      ON  A.EXCHANGE_TYPE =C.SRC_CD_VAL"
+    },
+    {
+      "line": 215,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 216,
+      "text": "          SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 217,
+      "text": "            FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 218,
+      "text": "           WHERE TGT_TAB_NAME = 'T03_REF_COMP_INFO'"
+    },
+    {
+      "line": 219,
+      "text": "            AND TGT_TAB_FLD  = 'Crrc_Cd'"
+    },
+    {
+      "line": 220,
+      "text": "            AND SRC_TAB_NAME = 'REFBCOMPACT'"
+    },
+    {
+      "line": 221,
+      "text": "            AND SRC_FLD_NAME = 'MONEY_TYPE'"
+    },
+    {
+      "line": 222,
+      "text": "             AND SRC_SYS_NAME = 'RCC'"
+    },
+    {
+      "line": 223,
+      "text": "          )D"
+    },
+    {
+      "line": 224,
+      "text": "      ON  A.MONEY_TYPE =D.SRC_CD_VAL"
+    },
+    {
+      "line": 225,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 226,
+      "text": "          SELECT DISTINCT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 227,
+      "text": "            FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 228,
+      "text": "           WHERE TGT_TAB_NAME = 'T03_REF_COMP_INFO'"
+    },
+    {
+      "line": 229,
+      "text": "            AND TGT_TAB_FLD   = 'Ref_Comp_Stat_Cd'"
+    },
+    {
+      "line": 230,
+      "text": "            AND SRC_TAB_NAME  = 'REFLCOMPACT'          --沿用REFLCOMPACT的码值"
+    },
+    {
+      "line": 231,
+      "text": "            AND SRC_FLD_NAME  = 'REFCOMPACT_STATUS'  "
+    },
+    {
+      "line": 232,
+      "text": "             AND SRC_SYS_NAME = 'RCC'"
+    },
+    {
+      "line": 233,
+      "text": "          )E"
+    },
+    {
+      "line": 234,
+      "text": "      ON  A.REFCOMPACT_STATUS =E.SRC_CD_VAL"
+    },
+    {
+      "line": 235,
+      "text": ";"
+    },
+    {
+      "line": 236,
+      "text": ""
+    },
+    {
+      "line": 237,
+      "text": "DROP   TABLE IF     EXISTS T03_REF_COMP_INFO_MID_RCC185;"
+    },
+    {
+      "line": 238,
+      "text": "CREATE TABLE IF NOT EXISTS T03_REF_COMP_INFO_MID_RCC185"
+    },
+    {
+      "line": 239,
+      "text": "AS"
+    },
+    {
+      "line": 240,
+      "text": "SELECT"
+    },
+    {
+      "line": 241,
+      "text": "        A.*"
+    },
+    {
+      "line": 242,
+      "text": "       ,B.*"
+    },
+    {
+      "line": 243,
+      "text": "       ,CASE WHEN A.AGT_ID IS NULL AND B.AGT_ID1 IS NOT NULL THEN 'I' --新增"
+    },
+    {
+      "line": 244,
+      "text": "             WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID1 IS NULL THEN 'D' --删除"
+    },
+    {
+      "line": 245,
+      "text": "             WHEN A.AGT_ID IS NOT NULL AND B.AGT_ID1 IS NOT NULL AND ("
+    },
+    {
+      "line": 246,
+      "text": "                       COALESCE(A.Inr_Org_Id            ,'') <> COALESCE(B.Inr_Org_Id1            ,'')"
+    },
+    {
+      "line": 247,
+      "text": "                    OR COALESCE(A.Agt_Holder            ,'') <> COALESCE(B.Agt_Holder1            ,'')"
+    },
+    {
+      "line": 248,
+      "text": "                    OR COALESCE(A.Ast_Acct_Agt_Id       ,'') <> COALESCE(B.Ast_Acct_Agt_Id1       ,'')"
+    },
+    {
+      "line": 249,
+      "text": "                    OR COALESCE(A.Ast_Acct_Agt_Modifr   ,'') <> COALESCE(B.Ast_Acct_Agt_Modifr1   ,'')"
+    },
+    {
+      "line": 250,
+      "text": "                    OR COALESCE(A.Exch_Type_Cd          ,'') <> COALESCE(B.Exch_Type_Cd1          ,'')"
+    },
+    {
+      "line": 251,
+      "text": "                    OR COALESCE(A.Trd_Date              ,'') <> COALESCE(B.Trd_Date1              ,'')"
+    },
+    {
+      "line": 252,
+      "text": "                    OR COALESCE(A.Ref_Comp_Type_Cd      ,'') <> COALESCE(B.Ref_Comp_Type_Cd1      ,'')"
+    },
+    {
+      "line": 253,
+      "text": "                    OR COALESCE(A.Csfc_Comp_Id          ,'') <> COALESCE(B.Csfc_Comp_Id1          ,'')"
+    },
+    {
+      "line": 254,
+      "text": "                    OR COALESCE(A.Ori_Csfc_Comp_Id      ,'') <> COALESCE(B.Ori_Csfc_Comp_Id1      ,'')"
+    },
+    {
+      "line": 255,
+      "text": "                    OR COALESCE(A.Cutp_Csfc_Comp_Id     ,'') <> COALESCE(B.Cutp_Csfc_Comp_Id1     ,'')"
+    },
+    {
+      "line": 256,
+      "text": "                    OR COALESCE(A.Brok_Id               ,'') <> COALESCE(B.Brok_Id1               ,'')"
+    },
+    {
+      "line": 257,
+      "text": "                    OR COALESCE(A.Scr_Acct_Agt_Id       ,'') <> COALESCE(B.Scr_Acct_Agt_Id1       ,'')"
+    },
+    {
+      "line": 258,
+      "text": "                    OR COALESCE(A.Scr_Acct_Agt_Modifr   ,'') <> COALESCE(B.Scr_Acct_Agt_Modifr1   ,'')"
+    },
+    {
+      "line": 259,
+      "text": "                    OR COALESCE(A.Seat_No               ,'') <> COALESCE(B.Seat_No1               ,'')"
+    },
+    {
+      "line": 260,
+      "text": "                    OR COALESCE(A.Src_Prd_Cate_Cd       ,'') <> COALESCE(B.Src_Prd_Cate_Cd1       ,'')"
+    },
+    {
+      "line": 261,
+      "text": "                    OR COALESCE(A.Prd_Id                ,'') <> COALESCE(B.Prd_Id1                ,'')"
+    },
+    {
+      "line": 262,
+      "text": "                    OR COALESCE(A.Scr_Cd                ,'') <> COALESCE(B.Scr_Cd1                ,'')"
+    },
+    {
+      "line": 263,
+      "text": "                    OR COALESCE(A.Ref_Busi_Cate_Cd      ,'') <> COALESCE(B.Ref_Busi_Cate_Cd1      ,'')"
+    },
+    {
+      "line": 264,
+      "text": "                    OR COALESCE(A.Ref_Term_Days         ,'') <> COALESCE(B.Ref_Term_Days1         ,'')"
+    },
+    {
+      "line": 265,
+      "text": "                    OR COALESCE(A.Appt_No               ,'') <> COALESCE(B.Appt_No1               ,'')"
+    },
+    {
+      "line": 266,
+      "text": "                    OR COALESCE(A.Cutp_Scr_Acct         ,'') <> COALESCE(B.Cutp_Scr_Acct1         ,'')"
+    },
+    {
+      "line": 267,
+      "text": "                    OR COALESCE(A.Cutp_Seat_No          ,'') <> COALESCE(B.Cutp_Seat_No1          ,'')"
+    },
+    {
+      "line": 268,
+      "text": "                    OR COALESCE(A.Cutp_Cust_Name        ,'') <> COALESCE(B.Cutp_Cust_Name1        ,'')"
+    },
+    {
+      "line": 269,
+      "text": "                    OR COALESCE(A.Crrc_Cd               ,'') <> COALESCE(B.Crrc_Cd1               ,'')"
+    },
+    {
+      "line": 270,
+      "text": "                    OR COALESCE(A.Comp_Amt              ,'') <> COALESCE(B.Comp_Amt1              ,'')"
+    },
+    {
+      "line": 271,
+      "text": "                    OR COALESCE(A.Comp_Vol              ,'') <> COALESCE(B.Comp_Vol1              ,'')"
+    },
+    {
+      "line": 272,
+      "text": "                    OR COALESCE(A.Retu_Amt              ,'') <> COALESCE(B.Retu_Amt1              ,'')"
+    },
+    {
+      "line": 273,
+      "text": "                    OR COALESCE(A.Retu_Vol              ,'') <> COALESCE(B.Retu_Vol1              ,'')"
+    },
+    {
+      "line": 274,
+      "text": "                    OR COALESCE(A.Retu_Prin             ,'') <> COALESCE(B.Retu_Prin1             ,'')"
+    },
+    {
+      "line": 275,
+      "text": "                    OR COALESCE(A.Base_Rate             ,'') <> COALESCE(B.Base_Rate1             ,'')"
+    },
+    {
+      "line": 276,
+      "text": "                    OR COALESCE(A.Last_Pric             ,'') <> COALESCE(B.Last_Pric1             ,'')"
+    },
+    {
+      "line": 277,
+      "text": "                    OR COALESCE(A.Expe_Intr             ,'') <> COALESCE(B.Expe_Intr1             ,'')"
+    },
+    {
+      "line": 278,
+      "text": "                    OR COALESCE(A.Retu_Intr             ,'') <> COALESCE(B.Retu_Intr1             ,'')"
+    },
+    {
+      "line": 279,
+      "text": "                    OR COALESCE(A.Fine_Bal              ,'') <> COALESCE(B.Fine_Bal1              ,'')"
+    },
+    {
+      "line": 280,
+      "text": "                    OR COALESCE(A.Retu_Fine_Bal         ,'') <> COALESCE(B.Retu_Fine_Bal1         ,'')"
+    },
+    {
+      "line": 281,
+      "text": "                    OR COALESCE(A.Cms_Coll_Method_Cd    ,'') <> COALESCE(B.Cms_Coll_Method_Cd1    ,'')"
+    },
+    {
+      "line": 282,
+      "text": "                    OR COALESCE(A.Mtch_Amt_Rati         ,'') <> COALESCE(B.Mtch_Amt_Rati1         ,'')"
+    },
+    {
+      "line": 283,
+      "text": "                    OR COALESCE(A.Fix_Retu_Amt          ,'') <> COALESCE(B.Fix_Retu_Amt1          ,'')"
+    },
+    {
+      "line": 284,
+      "text": "                    OR COALESCE(A.Max_Fee               ,'') <> COALESCE(B.Max_Fee1               ,'')"
+    },
+    {
+      "line": 285,
+      "text": "                    OR COALESCE(A.Min_Fee               ,'') <> COALESCE(B.Min_Fee1               ,'')"
+    },
+    {
+      "line": 286,
+      "text": "                    OR COALESCE(A.Ref_Comp_Stat_Cd      ,'') <> COALESCE(B.Ref_Comp_Stat_Cd1      ,'')"
+    },
+    {
+      "line": 287,
+      "text": "                    OR COALESCE(A.Renw_Times            ,'') <> COALESCE(B.Renw_Times1            ,'')"
+    },
+    {
+      "line": 288,
+      "text": "                    OR COALESCE(A.Accum_Renw_Days       ,'') <> COALESCE(B.Accum_Renw_Days1       ,'')"
+    },
+    {
+      "line": 289,
+      "text": "                    OR COALESCE(A.Renw_Stat_Cd          ,'') <> COALESCE(B.Renw_Stat_Cd1          ,'')"
+    },
+    {
+      "line": 290,
+      "text": "                    OR COALESCE(A.Adv_Fnsh_Stat_Cd      ,'') <> COALESCE(B.Adv_Fnsh_Stat_Cd1      ,'')"
+    },
+    {
+      "line": 291,
+      "text": "                    OR COALESCE(A.Renw_Cfm_Vol          ,'') <> COALESCE(B.Renw_Cfm_Vol1          ,'')"
+    },
+    {
+      "line": 292,
+      "text": "                    OR COALESCE(A.Renw_Cfm_Amt          ,'') <> COALESCE(B.Renw_Cfm_Amt1          ,'')"
+    },
+    {
+      "line": 293,
+      "text": "                    OR COALESCE(A.Renw_Cfm_Term         ,'') <> COALESCE(B.Renw_Cfm_Term1         ,'')"
+    },
+    {
+      "line": 294,
+      "text": "                    OR COALESCE(A.Renw_Cfm_Rate         ,'') <> COALESCE(B.Renw_Cfm_Rate1         ,'')"
+    },
+    {
+      "line": 295,
+      "text": "                    OR COALESCE(A.Ref_Comp_Rmbrs_Dir_Cd ,'') <> COALESCE(B.Ref_Comp_Rmbrs_Dir_Cd1 ,'')"
+    },
+    {
+      "line": 296,
+      "text": "                    OR COALESCE(A.Entr_No               ,'') <> COALESCE(B.Entr_No1               ,'')"
+    },
+    {
+      "line": 297,
+      "text": "                    OR COALESCE(A.Rep_No                ,'') <> COALESCE(B.Rep_No1                ,'')"
+    },
+    {
+      "line": 298,
+      "text": "                    OR COALESCE(A.Susp_Days             ,'') <> COALESCE(B.Susp_Days1             ,'')"
+    },
+    {
+      "line": 299,
+      "text": "                    OR COALESCE(A.Vld_Date              ,'') <> COALESCE(B.Vld_Date1              ,'')"
+    },
+    {
+      "line": 300,
+      "text": "                    OR COALESCE(A.Clr_Date              ,'') <> COALESCE(B.Clr_Date1              ,'')"
+    },
+    {
+      "line": 301,
+      "text": "                    OR COALESCE(A.Co_Retu_Stat_Cd       ,'') <> COALESCE(B.Co_Retu_Stat_Cd1       ,'')"
+    },
+    {
+      "line": 302,
+      "text": "                    OR COALESCE(A.Co_Retu_Amt           ,'') <> COALESCE(B.Co_Retu_Amt1           ,'')"
+    },
+    {
+      "line": 303,
+      "text": "                    OR COALESCE(A.Co_Retu_Vol           ,'') <> COALESCE(B.Co_Retu_Vol1           ,'')"
+    },
+    {
+      "line": 304,
+      "text": "                    OR COALESCE(A.Bel_Cntr              ,'') <> COALESCE(B.Bel_Cntr1              ,'')"
+    },
+    {
+      "line": 305,
+      "text": "                    OR COALESCE(A.Csfc_Ref_Cate         ,'') <> COALESCE(B.Csfc_Ref_Cate1         ,'')"
+    },
+    {
+      "line": 306,
+      "text": "                    OR COALESCE(A.Src_Grp_No            ,'') <> COALESCE(B.Src_Grp_No1            ,'')"
+    },
+    {
+      "line": 307,
+      "text": "                    OR COALESCE(A.Cir_Type_Cd           ,'') <> COALESCE(B.Cir_Type_Cd1           ,'')"
+    },
+    {
+      "line": 308,
+      "text": "                    OR COALESCE(A.Stk_Prop              ,'') <> COALESCE(B.Stk_Prop1              ,'')"
+    },
+    {
+      "line": 309,
+      "text": "                    OR COALESCE(A.Mtch_No               ,'') <> COALESCE(B.Mtch_No1               ,'')"
+    },
+    {
+      "line": 310,
+      "text": "                    OR COALESCE(A.Agt_No                ,'') <> COALESCE(B.Agt_No1                ,'')"
+    },
+    {
+      "line": 311,
+      "text": "                    OR COALESCE(A.Pos_Str               ,'') <> COALESCE(B.Pos_Str1               ,'')"
+    },
+    {
+      "line": 312,
+      "text": "                    OR COALESCE(A.Remark                ,'') <> COALESCE(B.Remark1                ,'')"
+    },
+    {
+      "line": 313,
+      "text": "                    OR COALESCE(A.Lend_Acct_Agt_Id      ,'') <> COALESCE(B.Lend_Acct_Agt_Id1      ,'')"
+    },
+    {
+      "line": 314,
+      "text": "                    OR COALESCE(A.Lend_Acct_Agt_Modifr  ,'') <> COALESCE(B.Lend_Acct_Agt_Modifr1  ,'')"
+    },
+    {
+      "line": 315,
+      "text": "                    OR COALESCE(A.Lend_Acct_Name        ,'') <> COALESCE(B.Lend_Acct_Name1        ,'')"
+    },
+    {
+      "line": 316,
+      "text": "                    OR COALESCE(A.Lend_Acct_Pty_Id      ,'') <> COALESCE(B.Lend_Acct_Pty_Id1      ,'')"
+    },
+    {
+      "line": 317,
+      "text": "                    OR COALESCE(A.Lend_Acct_Pty_Name    ,'') <> COALESCE(B.Lend_Acct_Pty_Name1    ,'')"
+    },
+    {
+      "line": 318,
+      "text": "                    OR COALESCE(A.Ref_Comp_Ind_Cd       ,'') <> COALESCE(B.Ref_Comp_Ind_Cd1       ,'')"
+    },
+    {
+      "line": 319,
+      "text": "                    OR COALESCE(A.Yield_Ind_Cd          ,'') <> COALESCE(B.Yield_Ind_Cd1          ,'')"
+    },
+    {
+      "line": 320,
+      "text": "                    OR COALESCE(A.Proj_Cate_Cd          ,'') <> COALESCE(B.Proj_Cate_Cd1          ,'')"
+    },
+    {
+      "line": 321,
+      "text": "                    OR COALESCE(A.Req_Src_Cd            ,'') <> COALESCE(B.Req_Src_Cd1            ,'')"
+    },
+    {
+      "line": 322,
+      "text": "                    OR COALESCE(A.Info_Set_Remark       ,'') <> COALESCE(B.Info_Set_Remark1       ,'')"
+    },
+    {
+      "line": 323,
+      "text": "             ) THEN 'U' --变更"
+    },
+    {
+      "line": 324,
+      "text": "             ELSE 'S' --无变更"
+    },
+    {
+      "line": 325,
+      "text": "             END                 AS DATA_TYPE              --数据类型"
+    },
+    {
+      "line": 326,
+      "text": "FROM  (SELECT *"
+    },
+    {
+      "line": 327,
+      "text": "        FROM T03_REF_COMP_INFO"
+    },
+    {
+      "line": 328,
+      "text": "       WHERE BUSI_DATE=default.pretradedate('${data_day_str}',1) and Src_Tbl='ODATA_N_RCC.R_REFBCOMPACT')A"
+    },
+    {
+      "line": 329,
+      "text": "FULL OUTER JOIN T03_REF_COMP_INFO_TEMP_RCC185 B"
+    },
+    {
+      "line": 330,
+      "text": "ON    A.Agt_Id=B.Agt_Id1"
+    },
+    {
+      "line": 331,
+      "text": ";"
+    },
+    {
+      "line": 332,
+      "text": ""
+    },
+    {
+      "line": 333,
+      "text": "-- querySql"
+    },
+    {
+      "line": 334,
+      "text": "INSERT OVERWRITE TABLE T03_REF_COMP_INFO PARTITION(BUSI_DATE,Src_Tbl)"
+    },
+    {
+      "line": 335,
+      "text": "SELECT"
+    },
+    {
+      "line": 336,
+      "text": "      Agt_Id                                   --协议编号"
+    },
+    {
+      "line": 337,
+      "text": "     ,Agt_Modifr                               --协议修饰符"
+    },
+    {
+      "line": 338,
+      "text": "     ,Agt_Cate_Cd                              --协议类别代码"
+    },
+    {
+      "line": 339,
+      "text": "     ,Agt_Type_Cd                              --协议类型代码"
+    },
+    {
+      "line": 340,
+      "text": "     ,Inr_Org_Id                               --内部机构编号"
+    },
+    {
+      "line": 341,
+      "text": "     ,Agt_Holder                               --协议持有人编号"
+    },
+    {
+      "line": 342,
+      "text": "     ,Ast_Acct_Agt_Id                          --资产账户协议编号"
+    },
+    {
+      "line": 343,
+      "text": "     ,Ast_Acct_Agt_Modifr                      --资产账户协议修饰符"
+    },
+    {
+      "line": 344,
+      "text": "     ,Exch_Type_Cd                             --市场代码"
+    },
+    {
+      "line": 345,
+      "text": "     ,Trd_Date                                 --交易日期"
+    },
+    {
+      "line": 346,
+      "text": "     ,Ref_Comp_Type_Cd                         --转融通合约类型代码"
+    },
+    {
+      "line": 347,
+      "text": "     ,Csfc_Comp_Id                             --证金合约编号"
+    },
+    {
+      "line": 348,
+      "text": "     ,Ori_Csfc_Comp_Id                         --原证金合约编号"
+    },
+    {
+      "line": 349,
+      "text": "     ,Cutp_Csfc_Comp_Id                        --对手方证金合约编号"
+    },
+    {
+      "line": 350,
+      "text": "     ,Brok_Id                                  --券商编号"
+    },
+    {
+      "line": 351,
+      "text": "     ,Scr_Acct_Agt_Id                          --证券账户协议编号"
+    },
+    {
+      "line": 352,
+      "text": "     ,Scr_Acct_Agt_Modifr                      --证券账户协议修饰符"
+    },
+    {
+      "line": 353,
+      "text": "     ,Seat_No                                  --席位编号"
+    },
+    {
+      "line": 354,
+      "text": "     ,Src_Prd_Cate_Cd                          --源产品类别代码"
+    },
+    {
+      "line": 355,
+      "text": "     ,Prd_Id                                   --产品编号"
+    },
+    {
+      "line": 356,
+      "text": "     ,Scr_Cd                                   --证券代码"
+    },
+    {
+      "line": 357,
+      "text": "     ,Ref_Busi_Cate_Cd                         --转融通业务类别代码"
+    },
+    {
+      "line": 358,
+      "text": "     ,Ref_Term_Days                            --转融通期限天数"
+    },
+    {
+      "line": 359,
+      "text": "     ,Appt_No                                  --约定号"
+    },
+    {
+      "line": 360,
+      "text": "     ,Cutp_Scr_Acct                            --对方股东账户"
+    },
+    {
+      "line": 361,
+      "text": "     ,Cutp_Seat_No                             --对方席位"
+    },
+    {
+      "line": 362,
+      "text": "     ,Cutp_Cust_Name                           --对方客户名称"
+    },
+    {
+      "line": 363,
+      "text": "     ,Crrc_Cd                                  --币种类别"
+    },
+    {
+      "line": 364,
+      "text": "     ,Comp_Amt                                 --合约金额"
+    },
+    {
+      "line": 365,
+      "text": "     ,Comp_Vol                                 --合约数量"
+    },
+    {
+      "line": 366,
+      "text": "     ,Retu_Amt                                 --返还金额"
+    },
+    {
+      "line": 367,
+      "text": "     ,Retu_Vol                                 --返还数量"
+    },
+    {
+      "line": 368,
+      "text": "     ,Retu_Prin                                --返还本金"
+    },
+    {
+      "line": 369,
+      "text": "     ,Base_Rate                                --基准利率"
+    },
+    {
+      "line": 370,
+      "text": "     ,Last_Pric                                --最新价"
+    },
+    {
+      "line": 371,
+      "text": "     ,Expe_Intr                                --预计利息"
+    },
+    {
+      "line": 372,
+      "text": "     ,Retu_Intr                                --返还利息"
+    },
+    {
+      "line": 373,
+      "text": "     ,Fine_Bal                                 --违约金"
+    },
+    {
+      "line": 374,
+      "text": "     ,Retu_Fine_Bal                            --返还违约金"
+    },
+    {
+      "line": 375,
+      "text": "     ,Cms_Coll_Method_Cd                       --佣金收取方式"
+    },
+    {
+      "line": 376,
+      "text": "     ,Mtch_Amt_Rati                            --成交金额比例"
+    },
+    {
+      "line": 377,
+      "text": "     ,Fix_Retu_Amt                             --固定返还金额"
+    },
+    {
+      "line": 378,
+      "text": "     ,Max_Fee                                  --最高费用"
+    },
+    {
+      "line": 379,
+      "text": "     ,Min_Fee                                  --最低费用"
+    },
+    {
+      "line": 380,
+      "text": "     ,Ref_Comp_Stat_Cd                         --转融通合约状态代码"
+    },
+    {
+      "line": 381,
+      "text": "     ,Renw_Times                               --展期次数"
+    },
+    {
+      "line": 382,
+      "text": "     ,Accum_Renw_Days                          --累计展期天数"
+    },
+    {
+      "line": 383,
+      "text": "     ,Renw_Stat_Cd                             --展期状态代码"
+    },
+    {
+      "line": 384,
+      "text": "     ,Adv_Fnsh_Stat_Cd                         --提前了结状态"
+    },
+    {
+      "line": 385,
+      "text": "     ,Renw_Cfm_Vol                             --展期确认数量"
+    },
+    {
+      "line": 386,
+      "text": "     ,Renw_Cfm_Amt                             --展期确认金额"
+    },
+    {
+      "line": 387,
+      "text": "     ,Renw_Cfm_Term                            --展期确认期限"
+    },
+    {
+      "line": 388,
+      "text": "     ,Renw_Cfm_Rate                            --展期确认利率"
+    },
+    {
+      "line": 389,
+      "text": "     ,Ref_Comp_Rmbrs_Dir_Cd                    --转融通合约偿还方向"
+    },
+    {
+      "line": 390,
+      "text": "     ,Entr_No                                  --委托编号"
+    },
+    {
+      "line": 391,
+      "text": "     ,Rep_No                                   --申请编号"
+    },
+    {
+      "line": 392,
+      "text": "     ,Susp_Days                                --停牌天数"
+    },
+    {
+      "line": 393,
+      "text": "     ,Vld_Date                                 --有效日期"
+    },
+    {
+      "line": 394,
+      "text": "     ,Clr_Date                                 --清算日期"
+    },
+    {
+      "line": 395,
+      "text": "     ,Co_Retu_Stat_Cd                          --公司归还状态代码"
+    },
+    {
+      "line": 396,
+      "text": "     ,Co_Retu_Amt                              --公司已还金额"
+    },
+    {
+      "line": 397,
+      "text": "     ,Co_Retu_Vol                              --公司已还数量"
+    },
+    {
+      "line": 398,
+      "text": "     ,Bel_Cntr                                 --所属柜台"
+    },
+    {
+      "line": 399,
+      "text": "     ,Csfc_Ref_Cate                            --证金转融通类别"
+    },
+    {
+      "line": 400,
+      "text": "     ,Src_Grp_No                               --来源组编号"
+    },
+    {
+      "line": 401,
+      "text": "     ,Cir_Type_Cd                              --流通类型"
+    },
+    {
+      "line": 402,
+      "text": "     ,Stk_Prop                                 --股份性质"
+    },
+    {
+      "line": 403,
+      "text": "     ,Mtch_No                                  --成交编号"
+    },
+    {
+      "line": 404,
+      "text": "     ,Agt_No                                   --协议编号"
+    },
+    {
+      "line": 405,
+      "text": "     ,Pos_Str                                  --定位串"
+    },
+    {
+      "line": 406,
+      "text": "     ,Remark                                   --备注"
+    },
+    {
+      "line": 407,
+      "text": "     ,'0'        AS  Del_Flag                  --删除标志  --modify by hzh 20250114 无变化的del_flag 默认为0"
+    },
+    {
+      "line": 408,
+      "text": "     ,Del_Date                                 --删除日期"
+    },
+    {
+      "line": 409,
+      "text": "     ,DATA_SRC_CD                              --数据来源代码"
+    },
+    {
+      "line": 410,
+      "text": "     ,TASK_NAME                                --任务名"
+    },
+    {
+      "line": 411,
+      "text": "     ,DATA_ETL_DATE                            --数据加载日期"
+    },
+    {
+      "line": 412,
+      "text": "     ,DATA_UPT_DATE                            --数据更新日期"
+    },
+    {
+      "line": 413,
+      "text": "     ,DATA_TIME                                --数据时间"
+    },
+    {
+      "line": 414,
+      "text": "     ,Lend_Acct_Agt_Id                         --出借方账户协议编号"
+    },
+    {
+      "line": 415,
+      "text": "     ,Lend_Acct_Agt_Modifr                     --出借方账户协议修饰符"
+    },
+    {
+      "line": 416,
+      "text": "     ,Lend_Acct_Name                           --出借方账户名称"
+    },
+    {
+      "line": 417,
+      "text": "     ,Lend_Acct_Pty_Id                         --出借方当事人编号"
+    },
+    {
+      "line": 418,
+      "text": "     ,Lend_Acct_Pty_Name                       --出借方当事人名称"
+    },
+    {
+      "line": 419,
+      "text": "     ,Ref_Comp_Ind_Cd                          --转融通合约标识代码"
+    },
+    {
+      "line": 420,
+      "text": "     ,Yield_Ind_Cd                             --收益标识代码"
+    },
+    {
+      "line": 421,
+      "text": "     ,Proj_Cate_Cd                             --项目类别代码"
+    },
+    {
+      "line": 422,
+      "text": "     ,Req_Src_Cd                               --需求来源代码"
+    },
+    {
+      "line": 423,
+      "text": "     ,Info_Set_Remark                          --信息设置备注"
+    },
+    {
+      "line": 424,
+      "text": "     ,'${data_day_str}' AS BUSI_DATE      --业务日期"
+    },
+    {
+      "line": 425,
+      "text": "     ,Src_Tbl                AS Src_Tbl        --源表"
+    },
+    {
+      "line": 426,
+      "text": "FROM T03_REF_COMP_INFO_MID_RCC185 WHERE DATA_TYPE='S'  --插入无变化的数据"
+    },
+    {
+      "line": 427,
+      "text": " AND Src_Tbl='ODATA_N_RCC.R_REFBCOMPACT'"
+    },
+    {
+      "line": 428,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 429,
+      "text": "SELECT"
+    },
+    {
+      "line": 430,
+      "text": "      Agt_Id1                 AS Agt_Id                                   --协议编号"
+    },
+    {
+      "line": 431,
+      "text": "     ,Agt_Modifr1             AS Agt_Modifr                               --协议修饰符"
+    },
+    {
+      "line": 432,
+      "text": "     ,Agt_Cate_Cd1            AS Agt_Cate_Cd                              --协议类别代码"
+    },
+    {
+      "line": 433,
+      "text": "     ,Agt_Type_Cd1            AS Agt_Type_Cd                              --协议类型代码"
+    },
+    {
+      "line": 434,
+      "text": "     ,Inr_Org_Id1             AS Inr_Org_Id                               --内部机构编号"
+    },
+    {
+      "line": 435,
+      "text": "     ,Agt_Holder1             AS Agt_Holder                               --协议持有人编号"
+    },
+    {
+      "line": 436,
+      "text": "     ,Ast_Acct_Agt_Id1        AS Ast_Acct_Agt_Id                          --资产账户协议编号"
+    },
+    {
+      "line": 437,
+      "text": "     ,Ast_Acct_Agt_Modifr1    AS Ast_Acct_Agt_Modifr                      --资产账户协议修饰符"
+    },
+    {
+      "line": 438,
+      "text": "     ,Exch_Type_Cd1           AS Exch_Type_Cd                             --市场代码"
+    },
+    {
+      "line": 439,
+      "text": "     ,Trd_Date1               AS Trd_Date                                 --交易日期"
+    },
+    {
+      "line": 440,
+      "text": "     ,Ref_Comp_Type_Cd1       AS Ref_Comp_Type_Cd                         --转融通合约类型代码"
+    },
+    {
+      "line": 441,
+      "text": "     ,Csfc_Comp_Id1           AS Csfc_Comp_Id                             --证金合约编号"
+    },
+    {
+      "line": 442,
+      "text": "     ,Ori_Csfc_Comp_Id1       AS Ori_Csfc_Comp_Id                         --原证金合约编号"
+    },
+    {
+      "line": 443,
+      "text": "     ,Cutp_Csfc_Comp_Id1      AS Cutp_Csfc_Comp_Id                        --对手方证金合约编号"
+    },
+    {
+      "line": 444,
+      "text": "     ,Brok_Id1                AS Brok_Id                                  --券商编号"
+    },
+    {
+      "line": 445,
+      "text": "     ,Scr_Acct_Agt_Id1        AS Scr_Acct_Agt_Id                          --证券账户协议编号"
+    },
+    {
+      "line": 446,
+      "text": "     ,Scr_Acct_Agt_Modifr1    AS Scr_Acct_Agt_Modifr                      --证券账户协议修饰符"
+    },
+    {
+      "line": 447,
+      "text": "     ,Seat_No1                AS Seat_No                                  --席位编号"
+    },
+    {
+      "line": 448,
+      "text": "     ,Src_Prd_Cate_Cd1        AS Src_Prd_Cate_Cd                          --源产品类别代码"
+    },
+    {
+      "line": 449,
+      "text": "     ,Prd_Id1                 AS Prd_Id                                   --产品编号"
+    },
+    {
+      "line": 450,
+      "text": "     ,Scr_Cd1                 AS Scr_Cd                                   --证券代码"
+    },
+    {
+      "line": 451,
+      "text": "     ,Ref_Busi_Cate_Cd1       AS Ref_Busi_Cate_Cd                         --转融通业务类别代码"
+    },
+    {
+      "line": 452,
+      "text": "     ,Ref_Term_Days1          AS Ref_Term_Days                            --转融通期限天数"
+    },
+    {
+      "line": 453,
+      "text": "     ,Appt_No1                AS Appt_No                                  --约定号"
+    },
+    {
+      "line": 454,
+      "text": "     ,Cutp_Scr_Acct1          AS Cutp_Scr_Acct                            --对方股东账户"
+    },
+    {
+      "line": 455,
+      "text": "     ,Cutp_Seat_No1           AS Cutp_Seat_No                             --对方席位"
+    },
+    {
+      "line": 456,
+      "text": "     ,Cutp_Cust_Name1         AS Cutp_Cust_Name                           --对方客户名称"
+    },
+    {
+      "line": 457,
+      "text": "     ,Crrc_Cd1                AS Crrc_Cd                                  --币种类别"
+    },
+    {
+      "line": 458,
+      "text": "     ,Comp_Amt1               AS Comp_Amt                                 --合约金额"
+    },
+    {
+      "line": 459,
+      "text": "     ,Comp_Vol1               AS Comp_Vol                                 --合约数量"
+    },
+    {
+      "line": 460,
+      "text": "     ,Retu_Amt1               AS Retu_Amt                                 --返还金额"
+    },
+    {
+      "line": 461,
+      "text": "     ,Retu_Vol1               AS Retu_Vol                                 --返还数量"
+    },
+    {
+      "line": 462,
+      "text": "     ,Retu_Prin1              AS Retu_Prin                                --返还本金"
+    },
+    {
+      "line": 463,
+      "text": "     ,Base_Rate1              AS Base_Rate                                --基准利率"
+    },
+    {
+      "line": 464,
+      "text": "     ,Last_Pric1              AS Last_Pric                                --最新价"
+    },
+    {
+      "line": 465,
+      "text": "     ,Expe_Intr1              AS Expe_Intr                                --预计利息"
+    },
+    {
+      "line": 466,
+      "text": "     ,Retu_Intr1              AS Retu_Intr                                --返还利息"
+    },
+    {
+      "line": 467,
+      "text": "     ,Fine_Bal1               AS Fine_Bal                                 --违约金"
+    },
+    {
+      "line": 468,
+      "text": "     ,Retu_Fine_Bal1          AS Retu_Fine_Bal                            --返还违约金"
+    },
+    {
+      "line": 469,
+      "text": "     ,Cms_Coll_Method_Cd1     AS Cms_Coll_Method_Cd                       --佣金收取方式"
+    },
+    {
+      "line": 470,
+      "text": "     ,Mtch_Amt_Rati1          AS Mtch_Amt_Rati                            --成交金额比例"
+    },
+    {
+      "line": 471,
+      "text": "     ,Fix_Retu_Amt1           AS Fix_Retu_Amt                             --固定返还金额"
+    },
+    {
+      "line": 472,
+      "text": "     ,Max_Fee1                AS Max_Fee                                  --最高费用"
+    },
+    {
+      "line": 473,
+      "text": "     ,Min_Fee1                AS Min_Fee                                  --最低费用"
+    },
+    {
+      "line": 474,
+      "text": "     ,Ref_Comp_Stat_Cd1       AS Ref_Comp_Stat_Cd                         --转融通合约状态代码"
+    },
+    {
+      "line": 475,
+      "text": "     ,Renw_Times1             AS Renw_Times                               --展期次数"
+    },
+    {
+      "line": 476,
+      "text": "     ,Accum_Renw_Days1        AS Accum_Renw_Days                          --累计展期天数"
+    },
+    {
+      "line": 477,
+      "text": "     ,Renw_Stat_Cd1           AS Renw_Stat_Cd                             --展期状态代码"
+    },
+    {
+      "line": 478,
+      "text": "     ,Adv_Fnsh_Stat_Cd1       AS Adv_Fnsh_Stat_Cd                         --提前了结状态"
+    },
+    {
+      "line": 479,
+      "text": "     ,Renw_Cfm_Vol1           AS Renw_Cfm_Vol                             --展期确认数量"
+    },
+    {
+      "line": 480,
+      "text": "     ,Renw_Cfm_Amt1           AS Renw_Cfm_Amt                             --展期确认金额"
+    },
+    {
+      "line": 481,
+      "text": "     ,Renw_Cfm_Term1          AS Renw_Cfm_Term                            --展期确认期限"
+    },
+    {
+      "line": 482,
+      "text": "     ,Renw_Cfm_Rate1          AS Renw_Cfm_Rate                            --展期确认利率"
+    },
+    {
+      "line": 483,
+      "text": "     ,Ref_Comp_Rmbrs_Dir_Cd1  AS Ref_Comp_Rmbrs_Dir_Cd                    --转融通合约偿还方向"
+    },
+    {
+      "line": 484,
+      "text": "     ,Entr_No1                AS Entr_No                                  --委托编号"
+    },
+    {
+      "line": 485,
+      "text": "     ,Rep_No1                 AS Rep_No                                   --申请编号"
+    },
+    {
+      "line": 486,
+      "text": "     ,Susp_Days1              AS Susp_Days                                --停牌天数"
+    },
+    {
+      "line": 487,
+      "text": "     ,Vld_Date1               AS Vld_Date                                 --有效日期"
+    },
+    {
+      "line": 488,
+      "text": "     ,Clr_Date1               AS Clr_Date                                 --清算日期"
+    },
+    {
+      "line": 489,
+      "text": "     ,Co_Retu_Stat_Cd1        AS Co_Retu_Stat_Cd                          --公司归还状态代码"
+    },
+    {
+      "line": 490,
+      "text": "     ,Co_Retu_Amt1            AS Co_Retu_Amt                              --公司已还金额"
+    },
+    {
+      "line": 491,
+      "text": "     ,Co_Retu_Vol1            AS Co_Retu_Vol                              --公司已还数量"
+    },
+    {
+      "line": 492,
+      "text": "     ,Bel_Cntr1               AS Bel_Cntr                                 --所属柜台"
+    },
+    {
+      "line": 493,
+      "text": "     ,Csfc_Ref_Cate1          AS Csfc_Ref_Cate                            --证金转融通类别"
+    },
+    {
+      "line": 494,
+      "text": "     ,Src_Grp_No1             AS Src_Grp_No                               --来源组编号"
+    },
+    {
+      "line": 495,
+      "text": "     ,Cir_Type_Cd1            AS Cir_Type_Cd                              --流通类型"
+    },
+    {
+      "line": 496,
+      "text": "     ,Stk_Prop1               AS Stk_Prop                                 --股份性质"
+    },
+    {
+      "line": 497,
+      "text": "     ,Mtch_No1                AS Mtch_No                                  --成交编号"
+    },
+    {
+      "line": 498,
+      "text": "     ,Agt_No1                 AS Agt_No                                   --协议编号"
+    },
+    {
+      "line": 499,
+      "text": "     ,Pos_Str1                AS Pos_Str                                  --定位串"
+    },
+    {
+      "line": 500,
+      "text": "     ,Remark1                 AS Remark                                   --备注"
+    },
+    {
+      "line": 501,
+      "text": "     ,Del_Flag1               AS Del_Flag                                 --删除标志"
+    },
+    {
+      "line": 502,
+      "text": "     ,Del_Date1               AS Del_Date                                 --删除日期"
+    },
+    {
+      "line": 503,
+      "text": "     ,DATA_SRC_CD1            AS DATA_SRC_CD                              --数据来源代码"
+    },
+    {
+      "line": 504,
+      "text": "     ,TASK_NAME1              AS TASK_NAME                                --任务名"
+    },
+    {
+      "line": 505,
+      "text": "     ,DATA_ETL_DATE           AS DATA_ETL_DATE                            --数据加载日期"
+    },
+    {
+      "line": 506,
+      "text": "     ,DATA_UPT_DATE1          AS DATA_UPT_DATE                            --数据更新日期"
+    },
+    {
+      "line": 507,
+      "text": "     ,'${data_today}'    AS DATA_TIME                                --数据时间"
+    },
+    {
+      "line": 508,
+      "text": "     ,Lend_Acct_Agt_Id1       AS Lend_Acct_Agt_Id                         --出借方账户协议编号"
+    },
+    {
+      "line": 509,
+      "text": "     ,Lend_Acct_Agt_Modifr1   AS Lend_Acct_Agt_Modifr                     --出借方账户协议修饰符"
+    },
+    {
+      "line": 510,
+      "text": "     ,Lend_Acct_Name1         AS Lend_Acct_Name                           --出借方账户名称"
+    },
+    {
+      "line": 511,
+      "text": "     ,Lend_Acct_Pty_Id1       AS Lend_Acct_Pty_Id                         --出借方当事人编号"
+    },
+    {
+      "line": 512,
+      "text": "     ,Lend_Acct_Pty_Name1     AS Lend_Acct_Pty_Name                       --出借方当事人名称"
+    },
+    {
+      "line": 513,
+      "text": "     ,Ref_Comp_Ind_Cd1        AS Ref_Comp_Ind_Cd                          --转融通合约标识代码"
+    },
+    {
+      "line": 514,
+      "text": "     ,Yield_Ind_Cd1           AS Yield_Ind_Cd                             --收益标识代码"
+    },
+    {
+      "line": 515,
+      "text": "     ,Proj_Cate_Cd1           AS Proj_Cate_Cd                             --项目类别代码"
+    },
+    {
+      "line": 516,
+      "text": "     ,Req_Src_Cd1             AS Req_Src_Cd                               --需求来源代码"
+    },
+    {
+      "line": 517,
+      "text": "     ,Info_Set_Remark1        AS Info_Set_Remark                          --信息设置备注"
+    },
+    {
+      "line": 518,
+      "text": "     ,'${data_day_str}'  AS BUSI_DATE                                --业务日期"
+    },
+    {
+      "line": 519,
+      "text": "     ,Src_Tbl                 AS Src_Tbl                                  --源表"
+    },
+    {
+      "line": 520,
+      "text": "FROM T03_REF_COMP_INFO_MID_RCC185 WHERE DATA_TYPE='U'   --有变更的数据取变更的值"
+    },
+    {
+      "line": 521,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 522,
+      "text": "SELECT"
+    },
+    {
+      "line": 523,
+      "text": "      Agt_Id1                 AS Agt_Id                                   --协议编号"
+    },
+    {
+      "line": 524,
+      "text": "     ,Agt_Modifr1             AS Agt_Modifr                               --协议修饰符"
+    },
+    {
+      "line": 525,
+      "text": "     ,Agt_Cate_Cd1            AS Agt_Cate_Cd                              --协议类别代码"
+    },
+    {
+      "line": 526,
+      "text": "     ,Agt_Type_Cd1            AS Agt_Type_Cd                              --协议类型代码"
+    },
+    {
+      "line": 527,
+      "text": "     ,Inr_Org_Id1             AS Inr_Org_Id                               --内部机构编号"
+    },
+    {
+      "line": 528,
+      "text": "     ,Agt_Holder1             AS Agt_Holder                               --协议持有人编号"
+    },
+    {
+      "line": 529,
+      "text": "     ,Ast_Acct_Agt_Id1        AS Ast_Acct_Agt_Id                          --资产账户协议编号"
+    },
+    {
+      "line": 530,
+      "text": "     ,Ast_Acct_Agt_Modifr1    AS Ast_Acct_Agt_Modifr                      --资产账户协议修饰符"
+    },
+    {
+      "line": 531,
+      "text": "     ,Exch_Type_Cd1           AS Exch_Type_Cd                             --市场代码"
+    },
+    {
+      "line": 532,
+      "text": "     ,Trd_Date1               AS Trd_Date                                 --交易日期"
+    },
+    {
+      "line": 533,
+      "text": "     ,Ref_Comp_Type_Cd1       AS Ref_Comp_Type_Cd                         --转融通合约类型代码"
+    },
+    {
+      "line": 534,
+      "text": "     ,Csfc_Comp_Id1           AS Csfc_Comp_Id                             --证金合约编号"
+    },
+    {
+      "line": 535,
+      "text": "     ,Ori_Csfc_Comp_Id1       AS Ori_Csfc_Comp_Id                         --原证金合约编号"
+    },
+    {
+      "line": 536,
+      "text": "     ,Cutp_Csfc_Comp_Id1      AS Cutp_Csfc_Comp_Id                        --对手方证金合约编号"
+    },
+    {
+      "line": 537,
+      "text": "     ,Brok_Id1                AS Brok_Id                                  --券商编号"
+    },
+    {
+      "line": 538,
+      "text": "     ,Scr_Acct_Agt_Id1        AS Scr_Acct_Agt_Id                          --证券账户协议编号"
+    },
+    {
+      "line": 539,
+      "text": "     ,Scr_Acct_Agt_Modifr1    AS Scr_Acct_Agt_Modifr                      --证券账户协议修饰符"
+    },
+    {
+      "line": 540,
+      "text": "     ,Seat_No1                AS Seat_No                                  --席位编号"
+    },
+    {
+      "line": 541,
+      "text": "     ,Src_Prd_Cate_Cd1        AS Src_Prd_Cate_Cd                          --源产品类别代码"
+    },
+    {
+      "line": 542,
+      "text": "     ,Prd_Id1                 AS Prd_Id                                   --产品编号"
+    },
+    {
+      "line": 543,
+      "text": "     ,Scr_Cd1                 AS Scr_Cd                                   --证券代码"
+    },
+    {
+      "line": 544,
+      "text": "     ,Ref_Busi_Cate_Cd1       AS Ref_Busi_Cate_Cd                         --转融通业务类别代码"
+    },
+    {
+      "line": 545,
+      "text": "     ,Ref_Term_Days1          AS Ref_Term_Days                            --转融通期限天数"
+    },
+    {
+      "line": 546,
+      "text": "     ,Appt_No1                AS Appt_No                                  --约定号"
+    },
+    {
+      "line": 547,
+      "text": "     ,Cutp_Scr_Acct1          AS Cutp_Scr_Acct                            --对方股东账户"
+    },
+    {
+      "line": 548,
+      "text": "     ,Cutp_Seat_No1           AS Cutp_Seat_No                             --对方席位"
+    },
+    {
+      "line": 549,
+      "text": "     ,Cutp_Cust_Name1         AS Cutp_Cust_Name                           --对方客户名称"
+    },
+    {
+      "line": 550,
+      "text": "     ,Crrc_Cd1                AS Crrc_Cd                                  --币种类别"
+    },
+    {
+      "line": 551,
+      "text": "     ,Comp_Amt1               AS Comp_Amt                                 --合约金额"
+    },
+    {
+      "line": 552,
+      "text": "     ,Comp_Vol1               AS Comp_Vol                                 --合约数量"
+    },
+    {
+      "line": 553,
+      "text": "     ,Retu_Amt1               AS Retu_Amt                                 --返还金额"
+    },
+    {
+      "line": 554,
+      "text": "     ,Retu_Vol1               AS Retu_Vol                                 --返还数量"
+    },
+    {
+      "line": 555,
+      "text": "     ,Retu_Prin1              AS Retu_Prin                                --返还本金"
+    },
+    {
+      "line": 556,
+      "text": "     ,Base_Rate1              AS Base_Rate                                --基准利率"
+    },
+    {
+      "line": 557,
+      "text": "     ,Last_Pric1              AS Last_Pric                                --最新价"
+    },
+    {
+      "line": 558,
+      "text": "     ,Expe_Intr1              AS Expe_Intr                                --预计利息"
+    },
+    {
+      "line": 559,
+      "text": "     ,Retu_Intr1              AS Retu_Intr                                --返还利息"
+    },
+    {
+      "line": 560,
+      "text": "     ,Fine_Bal1               AS Fine_Bal                                 --违约金"
+    },
+    {
+      "line": 561,
+      "text": "     ,Retu_Fine_Bal1          AS Retu_Fine_Bal                            --返还违约金"
+    },
+    {
+      "line": 562,
+      "text": "     ,Cms_Coll_Method_Cd1     AS Cms_Coll_Method_Cd                       --佣金收取方式"
+    },
+    {
+      "line": 563,
+      "text": "     ,Mtch_Amt_Rati1          AS Mtch_Amt_Rati                            --成交金额比例"
+    },
+    {
+      "line": 564,
+      "text": "     ,Fix_Retu_Amt1           AS Fix_Retu_Amt                             --固定返还金额"
+    },
+    {
+      "line": 565,
+      "text": "     ,Max_Fee1                AS Max_Fee                                  --最高费用"
+    },
+    {
+      "line": 566,
+      "text": "     ,Min_Fee1                AS Min_Fee                                  --最低费用"
+    },
+    {
+      "line": 567,
+      "text": "     ,Ref_Comp_Stat_Cd1       AS Ref_Comp_Stat_Cd                         --转融通合约状态代码"
+    },
+    {
+      "line": 568,
+      "text": "     ,Renw_Times1             AS Renw_Times                               --展期次数"
+    },
+    {
+      "line": 569,
+      "text": "     ,Accum_Renw_Days1        AS Accum_Renw_Days                          --累计展期天数"
+    },
+    {
+      "line": 570,
+      "text": "     ,Renw_Stat_Cd1           AS Renw_Stat_Cd                             --展期状态代码"
+    },
+    {
+      "line": 571,
+      "text": "     ,Adv_Fnsh_Stat_Cd1       AS Adv_Fnsh_Stat_Cd                         --提前了结状态"
+    },
+    {
+      "line": 572,
+      "text": "     ,Renw_Cfm_Vol1           AS Renw_Cfm_Vol                             --展期确认数量"
+    },
+    {
+      "line": 573,
+      "text": "     ,Renw_Cfm_Amt1           AS Renw_Cfm_Amt                             --展期确认金额"
+    },
+    {
+      "line": 574,
+      "text": "     ,Renw_Cfm_Term1          AS Renw_Cfm_Term                            --展期确认期限"
+    },
+    {
+      "line": 575,
+      "text": "     ,Renw_Cfm_Rate1          AS Renw_Cfm_Rate                            --展期确认利率"
+    },
+    {
+      "line": 576,
+      "text": "     ,Ref_Comp_Rmbrs_Dir_Cd1  AS Ref_Comp_Rmbrs_Dir_Cd                    --转融通合约偿还方向"
+    },
+    {
+      "line": 577,
+      "text": "     ,Entr_No1                AS Entr_No                                  --委托编号"
+    },
+    {
+      "line": 578,
+      "text": "     ,Rep_No1                 AS Rep_No                                   --申请编号"
+    },
+    {
+      "line": 579,
+      "text": "     ,Susp_Days1              AS Susp_Days                                --停牌天数"
+    },
+    {
+      "line": 580,
+      "text": "     ,Vld_Date1               AS Vld_Date                                 --有效日期"
+    },
+    {
+      "line": 581,
+      "text": "     ,Clr_Date1               AS Clr_Date                                 --清算日期"
+    },
+    {
+      "line": 582,
+      "text": "     ,Co_Retu_Stat_Cd1        AS Co_Retu_Stat_Cd                          --公司归还状态代码"
+    },
+    {
+      "line": 583,
+      "text": "     ,Co_Retu_Amt1            AS Co_Retu_Amt                              --公司已还金额"
+    },
+    {
+      "line": 584,
+      "text": "     ,Co_Retu_Vol1            AS Co_Retu_Vol                              --公司已还数量"
+    },
+    {
+      "line": 585,
+      "text": "     ,Bel_Cntr1               AS Bel_Cntr                                 --所属柜台"
+    },
+    {
+      "line": 586,
+      "text": "     ,Csfc_Ref_Cate1          AS Csfc_Ref_Cate                            --证金转融通类别"
+    },
+    {
+      "line": 587,
+      "text": "     ,Src_Grp_No1             AS Src_Grp_No                               --来源组编号"
+    },
+    {
+      "line": 588,
+      "text": "     ,Cir_Type_Cd1            AS Cir_Type_Cd                              --流通类型"
+    },
+    {
+      "line": 589,
+      "text": "     ,Stk_Prop1               AS Stk_Prop                                 --股份性质"
+    },
+    {
+      "line": 590,
+      "text": "     ,Mtch_No1                AS Mtch_No                                  --成交编号"
+    },
+    {
+      "line": 591,
+      "text": "     ,Agt_No1                 AS Agt_No                                   --协议编号"
+    },
+    {
+      "line": 592,
+      "text": "     ,Pos_Str1                AS Pos_Str                                  --定位串"
+    },
+    {
+      "line": 593,
+      "text": "     ,Remark1                 AS Remark                                   --备注"
+    },
+    {
+      "line": 594,
+      "text": "     ,Del_Flag1               AS Del_Flag                                 --删除标志"
+    },
+    {
+      "line": 595,
+      "text": "     ,Del_Date1               AS Del_Date                                 --删除日期"
+    },
+    {
+      "line": 596,
+      "text": "     ,DATA_SRC_CD1            AS DATA_SRC_CD                              --数据来源代码"
+    },
+    {
+      "line": 597,
+      "text": "     ,TASK_NAME1              AS TASK_NAME                                --任务名"
+    },
+    {
+      "line": 598,
+      "text": "     ,DATA_ETL_DATE1          AS DATA_ETL_DATE                            --数据加载日期"
+    },
+    {
+      "line": 599,
+      "text": "     ,DATA_UPT_DATE1          AS DATA_UPT_DATE                            --数据更新日期"
+    },
+    {
+      "line": 600,
+      "text": "     ,'${data_today}'    AS DATA_TIME                                --数据时间"
+    },
+    {
+      "line": 601,
+      "text": "     ,Lend_Acct_Agt_Id1       AS Lend_Acct_Agt_Id                         --出借方账户协议编号"
+    },
+    {
+      "line": 602,
+      "text": "     ,Lend_Acct_Agt_Modifr1   AS Lend_Acct_Agt_Modifr                     --出借方账户协议修饰符"
+    },
+    {
+      "line": 603,
+      "text": "     ,Lend_Acct_Name1         AS Lend_Acct_Name                           --出借方账户名称"
+    },
+    {
+      "line": 604,
+      "text": "     ,Lend_Acct_Pty_Id1       AS Lend_Acct_Pty_Id                         --出借方当事人编号"
+    },
+    {
+      "line": 605,
+      "text": "     ,Lend_Acct_Pty_Name1     AS Lend_Acct_Pty_Name                       --出借方当事人名称"
+    },
+    {
+      "line": 606,
+      "text": "     ,Ref_Comp_Ind_Cd1        AS Ref_Comp_Ind_Cd                          --转融通合约标识代码"
+    },
+    {
+      "line": 607,
+      "text": "     ,Yield_Ind_Cd1           AS Yield_Ind_Cd                             --收益标识代码"
+    },
+    {
+      "line": 608,
+      "text": "     ,Proj_Cate_Cd1           AS Proj_Cate_Cd                             --项目类别代码"
+    },
+    {
+      "line": 609,
+      "text": "     ,Req_Src_Cd1             AS Req_Src_Cd                               --需求来源代码"
+    },
+    {
+      "line": 610,
+      "text": "     ,Info_Set_Remark1        AS Info_Set_Remark                          --信息设置备注"
+    },
+    {
+      "line": 611,
+      "text": "     ,'${data_day_str}'  AS BUSI_DATE                                --业务日期"
+    },
+    {
+      "line": 612,
+      "text": "     ,Src_Tbl1                AS Src_Tbl                                  --源表"
+    },
+    {
+      "line": 613,
+      "text": "FROM T03_REF_COMP_INFO_MID_RCC185 WHERE DATA_TYPE='I' --插入新增的数据"
+    },
+    {
+      "line": 614,
+      "text": "UNION ALL"
+    },
+    {
+      "line": 615,
+      "text": "SELECT"
+    },
+    {
+      "line": 616,
+      "text": "      Agt_Id                                   --协议编号"
+    },
+    {
+      "line": 617,
+      "text": "     ,Agt_Modifr                               --协议修饰符"
+    },
+    {
+      "line": 618,
+      "text": "     ,Agt_Cate_Cd                              --协议类别代码"
+    },
+    {
+      "line": 619,
+      "text": "     ,Agt_Type_Cd                              --协议类型代码"
+    },
+    {
+      "line": 620,
+      "text": "     ,Inr_Org_Id                               --内部机构编号"
+    },
+    {
+      "line": 621,
+      "text": "     ,Agt_Holder                               --协议持有人编号"
+    },
+    {
+      "line": 622,
+      "text": "     ,Ast_Acct_Agt_Id                          --资产账户协议编号"
+    },
+    {
+      "line": 623,
+      "text": "     ,Ast_Acct_Agt_Modifr                      --资产账户协议修饰符"
+    },
+    {
+      "line": 624,
+      "text": "     ,Exch_Type_Cd                             --市场代码"
+    },
+    {
+      "line": 625,
+      "text": "     ,Trd_Date                                 --交易日期"
+    },
+    {
+      "line": 626,
+      "text": "     ,Ref_Comp_Type_Cd                         --转融通合约类型代码"
+    },
+    {
+      "line": 627,
+      "text": "     ,Csfc_Comp_Id                             --证金合约编号"
+    },
+    {
+      "line": 628,
+      "text": "     ,Ori_Csfc_Comp_Id                         --原证金合约编号"
+    },
+    {
+      "line": 629,
+      "text": "     ,Cutp_Csfc_Comp_Id                        --对手方证金合约编号"
+    },
+    {
+      "line": 630,
+      "text": "     ,Brok_Id                                  --券商编号"
+    },
+    {
+      "line": 631,
+      "text": "     ,Scr_Acct_Agt_Id                          --证券账户协议编号"
+    },
+    {
+      "line": 632,
+      "text": "     ,Scr_Acct_Agt_Modifr                      --证券账户协议修饰符"
+    },
+    {
+      "line": 633,
+      "text": "     ,Seat_No                                  --席位编号"
+    },
+    {
+      "line": 634,
+      "text": "     ,Src_Prd_Cate_Cd                          --源产品类别代码"
+    },
+    {
+      "line": 635,
+      "text": "     ,Prd_Id                                   --产品编号"
+    },
+    {
+      "line": 636,
+      "text": "     ,Scr_Cd                                   --证券代码"
+    },
+    {
+      "line": 637,
+      "text": "     ,Ref_Busi_Cate_Cd                         --转融通业务类别代码"
+    },
+    {
+      "line": 638,
+      "text": "     ,Ref_Term_Days                            --转融通期限天数"
+    },
+    {
+      "line": 639,
+      "text": "     ,Appt_No                                  --约定号"
+    },
+    {
+      "line": 640,
+      "text": "     ,Cutp_Scr_Acct                            --对方股东账户"
+    },
+    {
+      "line": 641,
+      "text": "     ,Cutp_Seat_No                             --对方席位"
+    },
+    {
+      "line": 642,
+      "text": "     ,Cutp_Cust_Name                           --对方客户名称"
+    },
+    {
+      "line": 643,
+      "text": "     ,Crrc_Cd                                  --币种类别"
+    },
+    {
+      "line": 644,
+      "text": "     ,Comp_Amt                                 --合约金额"
+    },
+    {
+      "line": 645,
+      "text": "     ,Comp_Vol                                 --合约数量"
+    },
+    {
+      "line": 646,
+      "text": "     ,Retu_Amt                                 --返还金额"
+    },
+    {
+      "line": 647,
+      "text": "     ,Retu_Vol                                 --返还数量"
+    },
+    {
+      "line": 648,
+      "text": "     ,Retu_Prin                                --返还本金"
+    },
+    {
+      "line": 649,
+      "text": "     ,Base_Rate                                --基准利率"
+    },
+    {
+      "line": 650,
+      "text": "     ,Last_Pric                                --最新价"
+    },
+    {
+      "line": 651,
+      "text": "     ,Expe_Intr                                --预计利息"
+    },
+    {
+      "line": 652,
+      "text": "     ,Retu_Intr                                --返还利息"
+    },
+    {
+      "line": 653,
+      "text": "     ,Fine_Bal                                 --违约金"
+    },
+    {
+      "line": 654,
+      "text": "     ,Retu_Fine_Bal                            --返还违约金"
+    },
+    {
+      "line": 655,
+      "text": "     ,Cms_Coll_Method_Cd                       --佣金收取方式"
+    },
+    {
+      "line": 656,
+      "text": "     ,Mtch_Amt_Rati                            --成交金额比例"
+    },
+    {
+      "line": 657,
+      "text": "     ,Fix_Retu_Amt                             --固定返还金额"
+    },
+    {
+      "line": 658,
+      "text": "     ,Max_Fee                                  --最高费用"
+    },
+    {
+      "line": 659,
+      "text": "     ,Min_Fee                                  --最低费用"
+    },
+    {
+      "line": 660,
+      "text": "     ,Ref_Comp_Stat_Cd                         --转融通合约状态代码"
+    },
+    {
+      "line": 661,
+      "text": "     ,Renw_Times                               --展期次数"
+    },
+    {
+      "line": 662,
+      "text": "     ,Accum_Renw_Days                          --累计展期天数"
+    },
+    {
+      "line": 663,
+      "text": "     ,Renw_Stat_Cd                             --展期状态代码"
+    },
+    {
+      "line": 664,
+      "text": "     ,Adv_Fnsh_Stat_Cd                         --提前了结状态"
+    },
+    {
+      "line": 665,
+      "text": "     ,Renw_Cfm_Vol                             --展期确认数量"
+    },
+    {
+      "line": 666,
+      "text": "     ,Renw_Cfm_Amt                             --展期确认金额"
+    },
+    {
+      "line": 667,
+      "text": "     ,Renw_Cfm_Term                            --展期确认期限"
+    },
+    {
+      "line": 668,
+      "text": "     ,Renw_Cfm_Rate                            --展期确认利率"
+    },
+    {
+      "line": 669,
+      "text": "     ,Ref_Comp_Rmbrs_Dir_Cd                    --转融通合约偿还方向"
+    },
+    {
+      "line": 670,
+      "text": "     ,Entr_No                                  --委托编号"
+    },
+    {
+      "line": 671,
+      "text": "     ,Rep_No                                   --申请编号"
+    },
+    {
+      "line": 672,
+      "text": "     ,Susp_Days                                --停牌天数"
+    },
+    {
+      "line": 673,
+      "text": "     ,Vld_Date                                 --有效日期"
+    },
+    {
+      "line": 674,
+      "text": "     ,Clr_Date                                 --清算日期"
+    },
+    {
+      "line": 675,
+      "text": "     ,Co_Retu_Stat_Cd                          --公司归还状态代码"
+    },
+    {
+      "line": 676,
+      "text": "     ,Co_Retu_Amt                              --公司已还金额"
+    },
+    {
+      "line": 677,
+      "text": "     ,Co_Retu_Vol                              --公司已还数量"
+    },
+    {
+      "line": 678,
+      "text": "     ,Bel_Cntr                                 --所属柜台"
+    },
+    {
+      "line": 679,
+      "text": "     ,Csfc_Ref_Cate                            --证金转融通类别"
+    },
+    {
+      "line": 680,
+      "text": "     ,Src_Grp_No                               --来源组编号"
+    },
+    {
+      "line": 681,
+      "text": "     ,Cir_Type_Cd                              --流通类型"
+    },
+    {
+      "line": 682,
+      "text": "     ,Stk_Prop                                 --股份性质"
+    },
+    {
+      "line": 683,
+      "text": "     ,Mtch_No                                  --成交编号"
+    },
+    {
+      "line": 684,
+      "text": "     ,Agt_No                                   --协议编号"
+    },
+    {
+      "line": 685,
+      "text": "     ,Pos_Str                                  --定位串"
+    },
+    {
+      "line": 686,
+      "text": "     ,Remark                                   --备注"
+    },
+    {
+      "line": 687,
+      "text": "     ,'1' as Del_Flag                          --删除标志"
+    },
+    {
+      "line": 688,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 689,
+      "text": "           THEN DEL_DATE"
+    },
+    {
+      "line": 690,
+      "text": "           ELSE '${data_day_str}'"
+    },
+    {
+      "line": 691,
+      "text": "           END                AS  DEL_DATE     --删除日期"
+    },
+    {
+      "line": 692,
+      "text": "     ,DATA_SRC_CD                              --数据来源代码"
+    },
+    {
+      "line": 693,
+      "text": "     ,TASK_NAME                                --任务名"
+    },
+    {
+      "line": 694,
+      "text": "     ,DATA_ETL_DATE                            --数据加载日期"
+    },
+    {
+      "line": 695,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 696,
+      "text": "           THEN DATA_UPT_DATE"
+    },
+    {
+      "line": 697,
+      "text": "           ELSE '${data_today_str}'"
+    },
+    {
+      "line": 698,
+      "text": "           END              AS DATA_UPT_DATE  --数据更新日期"
+    },
+    {
+      "line": 699,
+      "text": "     ,CASE WHEN DEL_DATE !=''"
+    },
+    {
+      "line": 700,
+      "text": "           THEN DATA_TIME"
+    },
+    {
+      "line": 701,
+      "text": "           ELSE '${data_today}'"
+    },
+    {
+      "line": 702,
+      "text": "           END                  AS DATA_TIME   --数据时间"
+    },
+    {
+      "line": 703,
+      "text": "     ,Lend_Acct_Agt_Id                         --出借方账户协议编号"
+    },
+    {
+      "line": 704,
+      "text": "     ,Lend_Acct_Agt_Modifr                     --出借方账户协议修饰符"
+    },
+    {
+      "line": 705,
+      "text": "     ,Lend_Acct_Name                           --出借方账户名称"
+    },
+    {
+      "line": 706,
+      "text": "     ,Lend_Acct_Pty_Id                         --出借方当事人编号"
+    },
+    {
+      "line": 707,
+      "text": "     ,Lend_Acct_Pty_Name                       --出借方当事人名称"
+    },
+    {
+      "line": 708,
+      "text": "     ,Ref_Comp_Ind_Cd                          --转融通合约标识代码"
+    },
+    {
+      "line": 709,
+      "text": "     ,Yield_Ind_Cd                             --收益标识代码"
+    },
+    {
+      "line": 710,
+      "text": "     ,Proj_Cate_Cd                             --项目类别代码"
+    },
+    {
+      "line": 711,
+      "text": "     ,Req_Src_Cd                               --需求来源代码"
+    },
+    {
+      "line": 712,
+      "text": "     ,Info_Set_Remark                          --信息设置备注"
+    },
+    {
+      "line": 713,
+      "text": "     ,'${data_day_str}'    AS BUSI_DATE   --业务日期"
+    },
+    {
+      "line": 714,
+      "text": "     ,Src_Tbl                                  --源表"
+    },
+    {
+      "line": 715,
+      "text": "FROM T03_REF_COMP_INFO_MID_RCC185 WHERE DATA_TYPE='D'  --插入删除的数据"
+    },
+    {
+      "line": 716,
+      "text": ";"
+    },
+    {
+      "line": 717,
+      "text": ""
+    }
+  ]
+}

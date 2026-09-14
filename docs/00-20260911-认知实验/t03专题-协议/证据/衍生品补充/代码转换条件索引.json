@@ -1,0 +1,2855 @@
+{
+  "method": "SQL中转换表后14行窗口检索，未执行映射表查询，不包含映射行全集；同一任务可有多处相同配置",
+  "entries": [
+    {
+      "task_id": "103928",
+      "line": 61,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "MARGIN_ACCOUNT",
+      "SRC_FLD_NAME": "ENABLED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.ENABLED =B.SRC_CD_VAL                  --ENABLED 转码"
+      ]
+    },
+    {
+      "task_id": "103929",
+      "line": 61,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "CAPITAL_ACCOUNT",
+      "SRC_FLD_NAME": "ENABLED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.ENABLED =B.SRC_CD_VAL                  --ENABLED 转码"
+      ]
+    },
+    {
+      "task_id": "103930",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =D.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103937",
+      "line": 44,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103938",
+      "line": 44,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 323,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comb_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "TRS_BUNDLE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_BUNDLE_TYPE =B.SRC_CD_VAL                  --TRS_BUNDLE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 332,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 342,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =D.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 351,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A1.AUDIT_STATUS =E.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 360,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =F.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 369,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =G.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103941",
+      "line": 378,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =H.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 143,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =B.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 152,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_RATE_TYPE =C.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 161,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Intr_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_TYPE =E.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 170,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Inta_Pay_Method_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_PAYMENT_PERIOD",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_PAYMENT_PERIOD =F.SRC_CD_VAL                  --INTEREST_PAYMENT_PERIOD 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 179,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rset_Freq_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_RATE_RESET_FREQUENCY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_RATE_RESET_FREQUENCY =G.SRC_CD_VAL                  --INTEREST_RATE_RESET_FREQUENCY 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 188,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Clr_Spd_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "SETTLEMENT_SPEED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.SETTLEMENT_SPEED =H.SRC_CD_VAL                  --SETTLEMENT_SPEED 转码"
+      ]
+    },
+    {
+      "task_id": "103942",
+      "line": 197,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Intr_Cacl_Method_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_CALC_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_CALC_TYPE =I.SRC_CD_VAL                  --INTEREST_CALC_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 306,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 315,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =G.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 324,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_OPTION_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      H.AUDIT_STATUS =I.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 333,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =J.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 342,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =K.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 351,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =L.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 360,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Reed_Fee_Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "BACK_FEE_RATIO_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.BACK_FEE_RATIO_TYPE =M.SRC_CD_VAL                  --BACK_FEE_RATIO_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "103943",
+      "line": 369,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Larg_Nom_Prin_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "NOTIONAL_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.NOTIONAL_CHECK_STATUS =N.SRC_CD_VAL                  --NOTIONAL_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105053",
+      "line": 61,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "MARGIN_ACCOUNT",
+      "SRC_FLD_NAME": "ENABLED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.ENABLED =B.SRC_CD_VAL                  --ENABLED 转码"
+      ]
+    },
+    {
+      "task_id": "105054",
+      "line": 61,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "CAPITAL_ACCOUNT",
+      "SRC_FLD_NAME": "ENABLED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.ENABLED =B.SRC_CD_VAL                  --ENABLED 转码"
+      ]
+    },
+    {
+      "task_id": "105055",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =D.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 323,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comb_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "TRS_BUNDLE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_BUNDLE_TYPE =B.SRC_CD_VAL                  --TRS_BUNDLE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 332,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 342,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =D.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 351,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A1.AUDIT_STATUS =E.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 360,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =F.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 369,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =G.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105072",
+      "line": 378,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =H.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105073",
+      "line": 121,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =B.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "105073",
+      "line": 130,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_RATE_TYPE =C.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105073",
+      "line": 139,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Intr_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_TYPE =E.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 306,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 315,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =G.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 324,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_OPTION_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      H.AUDIT_STATUS =I.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 333,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =J.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 342,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =K.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 351,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =L.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 360,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Reed_Fee_Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "BACK_FEE_RATIO_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.BACK_FEE_RATIO_TYPE =M.SRC_CD_VAL                  --BACK_FEE_RATIO_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105074",
+      "line": 369,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Larg_Nom_Prin_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "NOTIONAL_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.NOTIONAL_CHECK_STATUS =N.SRC_CD_VAL                  --NOTIONAL_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105383",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =D.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105392",
+      "line": 278,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "EXCHANGE_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_MARKET =C.SRC_CD_VAL                  --EXCHANGE_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "105392",
+      "line": 287,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_COMMISSION_TYPE =D.SRC_CD_VAL                  --TRS_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105392",
+      "line": 296,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_TERMINATED_COMMISSION_TYPE =E.SRC_CD_VAL                  --TRS_TERMINATED_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105395",
+      "line": 195,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRADE_STATUS =D.SRC_CD_VAL                  --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "105395",
+      "line": 204,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Fee_Paid_Way_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "PAYOUT_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PAYOUT_TYPE =E.SRC_CD_VAL                  --PAYOUT_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "105522",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =D.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "106083",
+      "line": 278,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "EXCHANGE_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_MARKET =C.SRC_CD_VAL                  --EXCHANGE_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "106083",
+      "line": 287,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_COMMISSION_TYPE =D.SRC_CD_VAL                  --TRS_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "106083",
+      "line": 296,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_TERMINATED_COMMISSION_TYPE =E.SRC_CD_VAL                  --TRS_TERMINATED_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "106589",
+      "line": 247,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "106590",
+      "line": 291,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =B.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "106590",
+      "line": 300,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "EXCHANGE_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_MARKET =C.SRC_CD_VAL                  --EXCHANGE_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "107062",
+      "line": 247,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107284",
+      "line": 141,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107482",
+      "line": 141,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107625",
+      "line": 151,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "V_TRS_PARAM_FOR_RISK",
+      "SRC_FLD_NAME": "CONTRACT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_STATUS =B.SRC_CD_VAL                  --CONTRACT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107631",
+      "line": 159,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Risk_Lvl_Cd",
+      "SRC_TAB_NAME": "V_RETAIL_OPTION_PARAM",
+      "SRC_FLD_NAME": "PRODUCT_RISK_LEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PRODUCT_RISK_LEVEL =B.SRC_CD_VAL                  --PRODUCT_RISK_LEVEL 转码"
+      ]
+    },
+    {
+      "task_id": "107631",
+      "line": 168,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "V_RETAIL_OPTION_PARAM",
+      "SRC_FLD_NAME": "TERMOF_INVESTMENT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TERMOF_INVESTMENT =C.SRC_CD_VAL                  --TERMOF_INVESTMENT 转码"
+      ]
+    },
+    {
+      "task_id": "107636",
+      "line": 195,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRADE_STATUS =D.SRC_CD_VAL                  --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107636",
+      "line": 204,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Fee_Paid_Way_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "PAYOUT_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PAYOUT_TYPE =E.SRC_CD_VAL                  --PAYOUT_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "107647",
+      "line": 151,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "V_TRS_PARAM_FOR_RISK",
+      "SRC_FLD_NAME": "CONTRACT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_STATUS =B.SRC_CD_VAL                  --CONTRACT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "108951",
+      "line": 155,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_STRU_ELMN_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_OPTION_DEAL_STRUCTURE",
+      "SRC_FLD_NAME": "INTEREST_CALC_BASIS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_CALC_BASIS =B.SRC_CD_VAL                  --INTEREST_CALC_BASIS 转码"
+      ]
+    },
+    {
+      "task_id": "108952",
+      "line": 155,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_STRU_ELMN_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_OPTION_DEAL_STRUCTURE",
+      "SRC_FLD_NAME": "INTEREST_CALC_BASIS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_CALC_BASIS =B.SRC_CD_VAL                  --INTEREST_CALC_BASIS 转码"
+      ]
+    },
+    {
+      "task_id": "109369",
+      "line": 252,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =B.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "109369",
+      "line": 261,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "EXCHANGE_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_MARKET =C.SRC_CD_VAL                  --EXCHANGE_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "109973",
+      "line": 159,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Risk_Lvl_Cd",
+      "SRC_TAB_NAME": "V_RETAIL_OPTION_PARAM",
+      "SRC_FLD_NAME": "PRODUCT_RISK_LEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PRODUCT_RISK_LEVEL =B.SRC_CD_VAL                  --PRODUCT_RISK_LEVEL 转码"
+      ]
+    },
+    {
+      "task_id": "109973",
+      "line": 168,
+      "TGT_TAB_NAME": "T98_OTC_COMP_LDG_DET",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "V_RETAIL_OPTION_PARAM",
+      "SRC_FLD_NAME": "TERMOF_INVESTMENT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TERMOF_INVESTMENT =C.SRC_CD_VAL                  --TERMOF_INVESTMENT 转码"
+      ]
+    },
+    {
+      "task_id": "110164",
+      "line": 92,
+      "TGT_TAB_NAME": "T03_SB_OTC_COMP_TRD_FEE",
+      "TGT_TAB_FLD": "Pay_Freq_Cd",
+      "SRC_TAB_NAME": "TRD_FEE",
+      "SRC_FLD_NAME": "FREQUENCY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.FREQUENCY =B.SRC_CD_VAL                  --FREQUENCY 转码"
+      ]
+    },
+    {
+      "task_id": "110164",
+      "line": 101,
+      "TGT_TAB_NAME": "T03_SB_OTC_COMP_TRD_FEE",
+      "TGT_TAB_FLD": "Fee_Type_Cd",
+      "SRC_TAB_NAME": "TRD_FEE",
+      "SRC_FLD_NAME": "FEE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.FEE_TYPE =C.SRC_CD_VAL                  --FEE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "112119",
+      "line": 302,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "112120",
+      "line": 302,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "114023",
+      "line": 266,
+      "TGT_TAB_NAME": "T98_OTC_COMP_VALU_RPT_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "OPE_TRS_ELEMENT",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_TYPE =C.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "114023",
+      "line": 275,
+      "TGT_TAB_NAME": "T98_OTC_COMP_VALU_RPT_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "OPE_TRS_ELEMENT",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =D.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "121575",
+      "line": 446,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =B.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "121575",
+      "line": 455,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "121575",
+      "line": 464,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Ast_Type_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "ASSET_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.ASSET_TYPE =D.SRC_CD_VAL                  --ASSET_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "121575",
+      "line": 473,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRADE_STATUS =E.SRC_CD_VAL                  --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "121575",
+      "line": 482,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Comp_Dura_Stat_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "CONTRACT_EXIST_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_EXIST_STATUS =F.SRC_CD_VAL                  --CONTRACT_EXIST_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "121720",
+      "line": 446,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =B.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "121720",
+      "line": 455,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "121720",
+      "line": 464,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Ast_Type_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "ASSET_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.ASSET_TYPE =D.SRC_CD_VAL                  --ASSET_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "121720",
+      "line": 473,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRADE_STATUS =E.SRC_CD_VAL                  --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "121720",
+      "line": 482,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Comp_Dura_Stat_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "CONTRACT_EXIST_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_EXIST_STATUS =F.SRC_CD_VAL                  --CONTRACT_EXIST_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "123781",
+      "line": 95,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    on trs.Comp_Stat_Cd = trscs.DW_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "123781",
+      "line": 198,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    on opt.Comp_Stat_Cd = optcs.DW_CD_VAL            ",
+        "    on opt.Opt_Comp_Agt_Id = ods.Opt_Comp_Agt_Id"
+      ]
+    },
+    {
+      "task_id": "124561",
+      "line": 77,
+      "TGT_TAB_NAME": "T98_OTC_OPT_COMP_EDAY_PRVS_FEE",
+      "TGT_TAB_FLD": "Fee_Type_Cd",
+      "SRC_TAB_NAME": "TRD_DAILY_ACCRUAL_FEE",
+      "SRC_FLD_NAME": "FEE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.FEE_TYPE =C.SRC_CD_VAL                  --FEE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "124564",
+      "line": 137,
+      "TGT_TAB_NAME": "T05_OTC_SWAP_COMP_HOLD_CHG_DET",
+      "TGT_TAB_FLD": "Ofst_Clr_Spd_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_EVENT_STRUC_DETAIL",
+      "SRC_FLD_NAME": "CLOSE_SETTLEMENT_SPEED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CLOSE_SETTLEMENT_SPEED =C.SRC_CD_VAL                  --CLOSE_SETTLEMENT_SPEED 转码"
+      ]
+    },
+    {
+      "task_id": "124565",
+      "line": 275,
+      "TGT_TAB_NAME": "T05_OTC_COMP_DURA_CHG_EVT",
+      "TGT_TAB_FLD": "Evt_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_EVENT",
+      "SRC_FLD_NAME": "EVENT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EVENT_STATUS =B.SRC_CD_VAL                  --EVENT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "124565",
+      "line": 284,
+      "TGT_TAB_NAME": "T05_OTC_COMP_DURA_CHG_EVT",
+      "TGT_TAB_FLD": "Net_Dir_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_EVENT",
+      "SRC_FLD_NAME": "PAY_DIRECTION",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PAY_DIRECTION =C.SRC_CD_VAL                  --PAY_DIRECTION 转码"
+      ]
+    },
+    {
+      "task_id": "124565",
+      "line": 293,
+      "TGT_TAB_NAME": "T05_OTC_COMP_DURA_CHG_EVT",
+      "TGT_TAB_FLD": "Stru_Leg_Clr_Spd_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_EVENT",
+      "SRC_FLD_NAME": "STRUCTURE_SETTLEMENT_SPEED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.STRUCTURE_SETTLEMENT_SPEED =D.SRC_CD_VAL                  --STRUCTURE_SETTLEMENT_SPEED 转码"
+      ]
+    },
+    {
+      "task_id": "124565",
+      "line": 302,
+      "TGT_TAB_NAME": "T05_OTC_COMP_DURA_CHG_EVT",
+      "TGT_TAB_FLD": "Intr_Leg_Clr_Spd_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_EVENT",
+      "SRC_FLD_NAME": "INTEREST_SETTLEMENT_SPEED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_SETTLEMENT_SPEED =E.SRC_CD_VAL                  --INTEREST_SETTLEMENT_SPEED 转码"
+      ]
+    },
+    {
+      "task_id": "124566",
+      "line": 279,
+      "TGT_TAB_NAME": "T05_OTC_COMP_DURA_CHG_EVT",
+      "TGT_TAB_FLD": "Evt_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_OPTION_EVENT",
+      "SRC_FLD_NAME": "EVENT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EVENT_STATUS =B.SRC_CD_VAL                  --EVENT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "134323",
+      "line": 126,
+      "TGT_TAB_NAME": "T01_PTY_CUTP",
+      "TGT_TAB_FLD": "Cutp_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "IS_PROD_HOLDER",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.IS_PROD_HOLDER = B.SRC_CD_VAL                  --IS_PROD_HOLDER 转码"
+      ]
+    },
+    {
+      "task_id": "142888",
+      "line": 68,
+      "TGT_TAB_NAME": "T03_OTC_COMP_COMB_AGT_GRP_INFO",
+      "TGT_TAB_FLD": "Comb_Type_Cd",
+      "SRC_TAB_NAME": "TRD_BUNDLE_INFO",
+      "SRC_FLD_NAME": "BUNDLE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.BUNDLE_TYPE =B.SRC_CD_VAL                  --BUNDLE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "142888",
+      "line": 77,
+      "TGT_TAB_NAME": "T03_OTC_COMP_COMB_AGT_GRP_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "TRD_BUNDLE_INFO",
+      "SRC_FLD_NAME": "OPTION_DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.OPTION_DAY_COUNT =C.SRC_CD_VAL                  --OPTION_DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "142888",
+      "line": 86,
+      "TGT_TAB_NAME": "T03_OTC_DERI_COMP_COMB_ADTNL_INFO",
+      "TGT_TAB_FLD": "Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_BUNDLE_INFO",
+      "SRC_FLD_NAME": "BUNDLE_AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.BUNDLE_AUDIT_STATUS =D.SRC_CD_VAL                  --BUNDLE_AUDIT_STATUS 转码 --待维护"
+      ]
+    },
+    {
+      "task_id": "143973",
+      "line": 247,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "143974",
+      "line": 247,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144295",
+      "line": 278,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "EXCHANGE_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_MARKET =C.SRC_CD_VAL                  --EXCHANGE_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "144295",
+      "line": 287,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_COMMISSION_TYPE =D.SRC_CD_VAL                  --TRS_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144295",
+      "line": 296,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Cms_Mode_Cd",
+      "SRC_TAB_NAME": "POS_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_TERMINATED_COMMISSION_TYPE =E.SRC_CD_VAL                  --TRS_TERMINATED_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 323,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comb_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "TRS_BUNDLE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRS_BUNDLE_TYPE =B.SRC_CD_VAL                  --TRS_BUNDLE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 332,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 342,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =D.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 351,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A1.AUDIT_STATUS =E.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 360,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =F.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 369,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =G.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "144296",
+      "line": 378,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =H.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 143,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =B.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 152,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCHANGE_RATE_TYPE =C.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 161,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Intr_Type_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_TYPE =E.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 170,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Inta_Pay_Method_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_PAYMENT_PERIOD",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_PAYMENT_PERIOD =F.SRC_CD_VAL                  --INTEREST_PAYMENT_PERIOD 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 179,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rset_Freq_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_RATE_RESET_FREQUENCY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_RATE_RESET_FREQUENCY =G.SRC_CD_VAL                  --INTEREST_RATE_RESET_FREQUENCY 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 188,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Clr_Spd_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "SETTLEMENT_SPEED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.SETTLEMENT_SPEED =H.SRC_CD_VAL                  --SETTLEMENT_SPEED 转码"
+      ]
+    },
+    {
+      "task_id": "144299",
+      "line": 197,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Intr_Cacl_Method_Cd",
+      "SRC_TAB_NAME": "REF_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_CALC_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_CALC_TYPE =I.SRC_CD_VAL                  --INTEREST_CALC_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144556",
+      "line": 53,
+      "TGT_TAB_NAME": "T01_PTY",
+      "TGT_TAB_FLD": "Pty_Stat_Cd",
+      "SRC_TAB_NAME": "HK_COUNTERPARTY",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "          ON      A.AUDIT_STATUS =B.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144558",
+      "line": 82,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Corp_Cust_Clas_Cd",
+      "SRC_TAB_NAME": "HK_COUNTERPARTY",
+      "SRC_FLD_NAME": "CLIENT_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.CLIENT_TYPE = B.SRC_CD_VAL                  --CLIENT_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "144560",
+      "line": 43,
+      "TGT_TAB_NAME": "T01_PTY",
+      "TGT_TAB_FLD": "Pty_Stat_Cd",
+      "SRC_TAB_NAME": "HK_COUNTERPARTY",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "       ON      A.AUDIT_STATUS =B.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "144563",
+      "line": 126,
+      "TGT_TAB_NAME": "T01_PTY_CUTP",
+      "TGT_TAB_FLD": "Cutp_Type_Cd",
+      "SRC_TAB_NAME": "HK_COUNTERPARTY",
+      "SRC_FLD_NAME": "CLIENT_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.CLIENT_TYPE = B.SRC_CD_VAL                  --CLIENT_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "149556",
+      "line": 70,
+      "TGT_TAB_NAME": "T01_SAME_PTY_RELA_ADTNL_INFO",
+      "TGT_TAB_FLD": "Cert_Type_Cd",
+      "SRC_TAB_NAME": "SAME_COUNTERPARTY",
+      "SRC_FLD_NAME": "ID_KIND",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   --    ON      A.ID_KIND =C.SRC_CD_VAL                  --ID_KIND 转码 --待修改"
+      ]
+    },
+    {
+      "task_id": "149556",
+      "line": 79,
+      "TGT_TAB_NAME": "T01_SAME_PTY_RELA_ADTNL_INFO",
+      "TGT_TAB_FLD": "Cutp_Type_Cd",
+      "SRC_TAB_NAME": "SAME_COUNTERPARTY",
+      "SRC_FLD_NAME": "IS_PROD_HOLDER",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "       ON      A.IS_PROD_HOLDER =D.SRC_CD_VAL                  --IS_PROD_HOLDER 转码"
+      ]
+    },
+    {
+      "task_id": "149557",
+      "line": 121,
+      "TGT_TAB_NAME": "T01_BENE_OWNER_DD_INFO",
+      "TGT_TAB_FLD": "Bene_Owner_Clas_Cd",
+      "SRC_TAB_NAME": "AML_BENEFICIARY",
+      "SRC_FLD_NAME": "CLIENT_KIND",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.CLIENT_KIND =D.SRC_CD_VAL                  --CLIENT_KIND 转码"
+      ]
+    },
+    {
+      "task_id": "149557",
+      "line": 130,
+      "TGT_TAB_NAME": "T01_BENE_OWNER_DD_INFO",
+      "TGT_TAB_FLD": "Bene_Owner_Type_Cd",
+      "SRC_TAB_NAME": "AML_BENEFICIARY",
+      "SRC_FLD_NAME": "BENEFICIARY_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.BENEFICIARY_TYPE =E.SRC_CD_VAL                  --BENEFICIARY_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "149557",
+      "line": 139,
+      "TGT_TAB_NAME": "T01_BENE_OWNER_DD_INFO",
+      "TGT_TAB_FLD": "Sex_Cd",
+      "SRC_TAB_NAME": "AML_BENEFICIARY",
+      "SRC_FLD_NAME": "GENDER",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.GENDER =F.SRC_CD_VAL                  --GENDER 转码"
+      ]
+    },
+    {
+      "task_id": "149557",
+      "line": 148,
+      "TGT_TAB_NAME": "T01_BENE_OWNER_DD_INFO",
+      "TGT_TAB_FLD": "Cert_Type_Cd",
+      "SRC_TAB_NAME": "AML_BENEFICIARY",
+      "SRC_FLD_NAME": "ID_KIND",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.ID_KIND =G.SRC_CD_VAL                  --ID_KIND 转码"
+      ]
+    },
+    {
+      "task_id": "150757",
+      "line": 299,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Hks_Cms_Mode_Cd",
+      "SRC_TAB_NAME": "REF_COUNTER_PARTY",
+      "SRC_FLD_NAME": "HK_TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A1.HK_TRS_COMMISSION_TYPE =B.SRC_CD_VAL                  --HK_TRS_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "150757",
+      "line": 308,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Us_Stk_Cms_Mode_Cd",
+      "SRC_TAB_NAME": "REF_COUNTER_PARTY",
+      "SRC_FLD_NAME": "US_TRS_COMMISSION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A1.US_TRS_COMMISSION_TYPE =C.SRC_CD_VAL                  --US_TRS_COMMISSION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "150757",
+      "line": 317,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_COUNTER_PARTY",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A1.DAY_COUNT =D.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "150757",
+      "line": 326,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_COUNTER_PARTY",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A1.EXCHANGE_RATE_TYPE =E.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "156500",
+      "line": 155,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_AUTO_REDP_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_OPTION_AUTOCALL",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.DAY_COUNT =D.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "158028",
+      "line": 90,
+      "TGT_TAB_NAME": "T05_NEEQ_MAKE_MKT_UNDRL_EVAL_EVT",
+      "TGT_TAB_FLD": "Proc_Stat_Cd",
+      "SRC_TAB_NAME": "NEWTHREE_REVIEW_INSTRUCTION",
+      "SRC_FLD_NAME": "FLOWSTATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "          ON      A.FLOWSTATUS =B.SRC_CD_VAL                  --FLOWSTATUS 转码"
+      ]
+    },
+    {
+      "task_id": "159419",
+      "line": 121,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Otc_Deri_Trd_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_DEAL",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    ON A.TRADE_STATUS = B.SRC_CD_VAL           --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "159419",
+      "line": 130,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "TRD_DEAL",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    ON A.INVEST_TYPE = C.SRC_CD_VAL           --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "159419",
+      "line": 139,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "TRD_DEAL",
+      "SRC_FLD_NAME": "MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    ON A.MARKET = D.SRC_CD_VAL           --MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "159419",
+      "line": 148,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Buy_Sell_Dir_Cd",
+      "SRC_TAB_NAME": "TRD_DEAL",
+      "SRC_FLD_NAME": "TRADE_DIRECTION",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    ON UPPER(A.TRADE_DIRECTION) = E.SRC_CD_VAL    --TRADE_DIRECTION 转码"
+      ]
+    },
+    {
+      "task_id": "159419",
+      "line": 157,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Sb_Busi_Clas_Cd",
+      "SRC_TAB_NAME": "TRD_DEAL",
+      "SRC_FLD_NAME": "BUSINESS_CLASS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "    ON A.BUSINESS_CLASS = F.SRC_CD_VAL           --BUSINESS_CLASS 转码"
+      ]
+    },
+    {
+      "task_id": "159421",
+      "line": 56,
+      "TGT_TAB_NAME": "T04_ROLE_RIGH_H",
+      "TGT_TAB_FLD": "Righ_Obj_Type_Cd",
+      "SRC_TAB_NAME": "ADM_ROLE_ACCESS",
+      "SRC_FLD_NAME": "RESOURCE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON A.RESOURCE_TYPE = B.SRC_CD_VAL    --RESOURCE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "159421",
+      "line": 65,
+      "TGT_TAB_NAME": "T04_ROLE_RIGH_H",
+      "TGT_TAB_FLD": "User_Righ_Cd",
+      "SRC_TAB_NAME": "ADM_ROLE_ACCESS",
+      "SRC_FLD_NAME": "ACCESS_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON A.ACCESS_TYPE = C.SRC_CD_VAL      --ACCESS_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "159422",
+      "line": 52,
+      "TGT_TAB_NAME": "T04_USER",
+      "TGT_TAB_FLD": "User_Stat_Cd",
+      "SRC_TAB_NAME": "ADM_USER",
+      "SRC_FLD_NAME": "STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON A.STATUS = B.SRC_CD_VAL           --STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "160714",
+      "line": 111,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Buy_Sell_Dir_Cd",
+      "SRC_TAB_NAME": "PRD_NOTES_TRADE_RECORD",
+      "SRC_FLD_NAME": "TRADE_DIRECTION",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON UPPER(A.TRADE_DIRECTION) = B.SRC_CD_VAL    --TRADE_DIRECTION 转码"
+      ]
+    },
+    {
+      "task_id": "163712",
+      "line": 383,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON OI.TRADE_STATUS = tsc.SRC_CD_VAL                  --TRADE_STATUS 转码",
+        "on OI.key_book_id = rb.key_book_id"
+      ]
+    },
+    {
+      "task_id": "163771",
+      "line": 81,
+      "TGT_TAB_NAME": "T03_OTC_FX_FWD_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FX_FORWARD",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "169636",
+      "line": 64,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FX_FORWARD",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "          ON      A.CONTR_STATUS =A1.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "169638",
+      "line": 44,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FX_FORWARD",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.CONTR_STATUS =A1.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "173965",
+      "line": 75,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUTP_MARG_CHG_EVT",
+      "TGT_TAB_FLD": "Fnd_Chg_Type_Cd",
+      "SRC_TAB_NAME": "MARGIN_ACCOUNT_LEDGER",
+      "SRC_FLD_NAME": "MARGIN_ACTION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.MARGIN_ACTION_TYPE =C.SRC_CD_VAL                  --MARGIN_ACTION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "173966",
+      "line": 105,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUTP_FND_CHG_EVT",
+      "TGT_TAB_FLD": "Fnd_Chg_Type_Cd",
+      "SRC_TAB_NAME": "CAPITAL_ACCOUNT_LEDGER",
+      "SRC_FLD_NAME": "CAP_ACTION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CAP_ACTION_TYPE =C.SRC_CD_VAL                  --CAP_ACTION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "173966",
+      "line": 114,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUTP_FND_CHG_EVT",
+      "TGT_TAB_FLD": "Evt_Stat_Cd",
+      "SRC_TAB_NAME": "CAPITAL_ACCOUNT_LEDGER",
+      "SRC_FLD_NAME": "LEDGER_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.LEDGER_TYPE =D.SRC_CD_VAL                  --LEDGER_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "173967",
+      "line": 81,
+      "TGT_TAB_NAME": "T99_IDX_DEF_INFO",
+      "TGT_TAB_FLD": "Idx_Stat_Cd",
+      "SRC_TAB_NAME": "VALUE_REPORT_ELEMENT_CONFIG",
+      "SRC_FLD_NAME": "IS_DELETED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.IS_DELETED =C.SRC_CD_VAL                  --IS_DELETED 转码"
+      ]
+    },
+    {
+      "task_id": "173973",
+      "line": 51,
+      "TGT_TAB_NAME": "T99_OTC_DERI_VALU_RPT_IDX_DEF_ADTNL_INFO",
+      "TGT_TAB_FLD": "Idx_Stat_Cd",
+      "SRC_TAB_NAME": "VALUE_REPORT_ELEMENT_CONFIG",
+      "SRC_FLD_NAME": "IS_DELETED",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.IS_DELETED =B.SRC_CD_VAL                  --IS_DELETED 转码"
+      ]
+    },
+    {
+      "task_id": "183084",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "          ON      A.CONTR_STATUS =A1.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "183088",
+      "line": 44,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "183091",
+      "line": 295,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "183091",
+      "line": 304,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =C.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "183093",
+      "line": 140,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_TYPE =C.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "183096",
+      "line": 281,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_FAST_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =C.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "183098",
+      "line": 280,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_FAST_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =D.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "199176",
+      "line": 71,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "200060",
+      "line": 128,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_PLAN_INFO",
+      "TGT_TAB_FLD": "Perf_Marg_Plan_Stat_Cd",
+      "SRC_TAB_NAME": "MARGIN_PLAN",
+      "SRC_FLD_NAME": "PLAN_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.PLAN_STATUS =B.SRC_CD_VAL                  --PLAN_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "200060",
+      "line": 137,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_PLAN_INFO",
+      "TGT_TAB_FLD": "Chrg_Mode_Cd",
+      "SRC_TAB_NAME": "MARGIN_PLAN",
+      "SRC_FLD_NAME": "CHARGE_PATTERN",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CHARGE_PATTERN =C.SRC_CD_VAL                  --CHARGE_PATTERN 转码"
+      ]
+    },
+    {
+      "task_id": "202899",
+      "line": 82,
+      "TGT_TAB_NAME": "T05_OTC_DERI_SWAP_MTCH_RETU_EVT",
+      "TGT_TAB_FLD": "Exch_Type_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_UNDERLYING_DEAL",
+      "SRC_FLD_NAME": "MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.MARKET =B.SRC_CD_VAL                  --MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "202900",
+      "line": 63,
+      "TGT_TAB_NAME": "T05_OTC_DERI_SWAP_MTCH_RETU_ASGN_EVT",
+      "TGT_TAB_FLD": "Mtch_Retu_Opps_Ofst_Dir_Cd",
+      "SRC_TAB_NAME": "TRD_TRS_UDLY_DEAL_ALLO",
+      "SRC_FLD_NAME": "ALLOCATION_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.ALLOCATION_TYPE =B.SRC_CD_VAL                  --ALLOCATION_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "207935",
+      "line": 59,
+      "TGT_TAB_NAME": "T00_REQ_PROC_TPLT_INFO",
+      "TGT_TAB_FLD": "Req_Proc_Tplt_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_OPTION_PROCESS_DEF",
+      "SRC_FLD_NAME": "IS_ENABLE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.IS_ENABLE =B.SRC_CD_VAL                  --IS_ENABLE 转码"
+      ]
+    },
+    {
+      "task_id": "208593",
+      "line": 54,
+      "TGT_TAB_NAME": "T00_PRD_POOL_INFO",
+      "TGT_TAB_FLD": "Pool_Type_Cd",
+      "SRC_TAB_NAME": "EQ_EQUITY_SOURCE",
+      "SRC_FLD_NAME": "EQ_SOURCE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "       ON      A.EQ_SOURCE_TYPE =B.SRC_CD_VAL                  --EQ_SOURCE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 305,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 314,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Revw_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "REPEAT_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.REPEAT_CHECK_STATUS =G.SRC_CD_VAL                  --REPEAT_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 323,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Qta_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "TRD_OPTION_LIMIT_AUDIT",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      H.AUDIT_STATUS =I.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 332,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Var_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTASSET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A8.PROPERTY_VALUE =J.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 341,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Ivst_Term_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "INVESTMATURITY",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A9.PROPERTY_VALUE =K.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 350,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Risk_Grade_Cd",
+      "SRC_TAB_NAME": "TRD_OTC_CONTR_PROPS",
+      "SRC_FLD_NAME": "RISKLEVEL",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A10.PROPERTY_VALUE =L.SRC_CD_VAL                  --PROPERTY_VALUE 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 359,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Reed_Fee_Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "BACK_FEE_RATIO_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.BACK_FEE_RATIO_TYPE =M.SRC_CD_VAL                  --BACK_FEE_RATIO_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "209862",
+      "line": 368,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_INFO",
+      "TGT_TAB_FLD": "Larg_Nom_Prin_Appr_Stat_Cd",
+      "SRC_TAB_NAME": "REF_OTC_OPTION_DEAL",
+      "SRC_FLD_NAME": "NOTIONAL_CHECK_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.NOTIONAL_CHECK_STATUS =N.SRC_CD_VAL                  --NOTIONAL_CHECK_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "210339",
+      "line": 155,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_STRU_ELMN_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_OPTION_DEAL_STRUCTURE",
+      "SRC_FLD_NAME": "INTEREST_CALC_BASIS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INTEREST_CALC_BASIS =B.SRC_CD_VAL                  --INTEREST_CALC_BASIS 转码"
+      ]
+    },
+    {
+      "task_id": "211472",
+      "line": 281,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_FAST_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =C.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "211535",
+      "line": 111,
+      "TGT_TAB_NAME": "T05_OTC_DERI_BOOK_MTCH_EVT",
+      "TGT_TAB_FLD": "Buy_Sell_Dir_Cd",
+      "SRC_TAB_NAME": "PRD_NOTES_TRADE_RECORD",
+      "SRC_FLD_NAME": "TRADE_DIRECTION",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "ON CAST(UPPER(A.TRADE_DIRECTION) AS STRING)  = B.SRC_CD_VAL    --TRADE_DIRECTION 转码"
+      ]
+    },
+    {
+      "task_id": "211541",
+      "line": 65,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "          ON      A.CONTR_STATUS =A1.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "211547",
+      "line": 77,
+      "TGT_TAB_NAME": "T98_OTC_OPT_COMP_EDAY_PRVS_FEE",
+      "TGT_TAB_FLD": "Fee_Type_Cd",
+      "SRC_TAB_NAME": "TRD_DAILY_ACCRUAL_FEE",
+      "SRC_FLD_NAME": "FEE_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.FEE_TYPE =C.SRC_CD_VAL                  --FEE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "211596",
+      "line": 155,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_AUTO_REDP_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_OPTION_AUTOCALL",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.DAY_COUNT =D.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "211639",
+      "line": 118,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_LEG_INFO",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS_LEG",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "  ON      A.INTEREST_TYPE =C.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "211640",
+      "line": 295,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "211640",
+      "line": 304,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_INFO",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "REF_FAST_TRS",
+      "SRC_FLD_NAME": "DAY_COUNT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.DAY_COUNT =C.SRC_CD_VAL                  --DAY_COUNT 转码"
+      ]
+    },
+    {
+      "task_id": "211644",
+      "line": 280,
+      "TGT_TAB_NAME": "T03_OTC_SWAP_COMP_HOLD_INFO",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_FAST_TRS_LEG_HIS_POS",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =D.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "211809",
+      "line": 81,
+      "TGT_TAB_NAME": "T03_OTC_FX_FWD_COMP_INFO",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "REF_FX_FORWARD",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "229582",
+      "line": 59,
+      "TGT_TAB_NAME": "T98_OTC_DERI_ARBG_OPT_COMP_SETT_DET",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "EMAIL_FINBD_AIRBAGX_LIQUIDATION_DETAIL",
+      "SRC_FLD_NAME": "CURRENT_CONTRACT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CURRENT_CONTRACT_STATUS =B.SRC_CD_VAL                  --CURRENT_CONTRACT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "229583",
+      "line": 67,
+      "TGT_TAB_NAME": "T98_OTC_DERI_ARBG_OPT_COMP_OPT_FEE",
+      "TGT_TAB_FLD": "Comp_Stat_Cd",
+      "SRC_TAB_NAME": "EMAIL_FINBD_AIRBAG_OPTION_MONTHLY_FEE",
+      "SRC_FLD_NAME": "CONTRACT_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_STATUS =B.SRC_CD_VAL                  --CONTRACT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "232684",
+      "line": 67,
+      "TGT_TAB_NAME": "T03_OTC_DERI_COMP_COMB_MARG_CALL_INFO",
+      "TGT_TAB_FLD": "Cfm_Stat_Cd",
+      "SRC_TAB_NAME": "MARGIN_CALL_SETTING",
+      "SRC_FLD_NAME": "CONFIRM_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONFIRM_STATUS =C.SRC_CD_VAL                  --CONFIRM_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "242878",
+      "line": 84,
+      "TGT_TAB_NAME": "T95_CBO_SB_EQUI_IVST_BUSI_DET",
+      "TGT_TAB_FLD": "Long_Shor_Type_Cd",
+      "SRC_TAB_NAME": "V_REPORT_EQUITY_INV_A2004",
+      "SRC_FLD_NAME": "LONGORSHORT",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.LONGORSHORT =B.SRC_CD_VAL                  --LONGORSHORT 转码"
+      ]
+    },
+    {
+      "task_id": "243712",
+      "line": 446,
+      "TGT_TAB_NAME": "T98_OTC_BOOK_HOLD_SUM",
+      "TGT_TAB_FLD": "Ivst_Type_Cd",
+      "SRC_TAB_NAME": "POS_POSITION_DAILY",
+      "SRC_FLD_NAME": "INVEST_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.INVEST_TYPE =B.SRC_CD_VAL                  --INVEST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "243712",
+      "line": 455,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =C.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "243712",
+      "line": 464,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Ast_Type_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "ASSET_TYPE",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.ASSET_TYPE =D.SRC_CD_VAL                  --ASSET_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "243712",
+      "line": 473,
+      "TGT_TAB_NAME": "T03_OTC_OPT_COMP_SUB_TRD_INFO",
+      "TGT_TAB_FLD": "Trd_Stat_Cd",
+      "SRC_TAB_NAME": "REF_INS_OPTION_INFO",
+      "SRC_FLD_NAME": "TRADE_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.TRADE_STATUS =E.SRC_CD_VAL                  --TRADE_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "243712",
+      "line": 482,
+      "TGT_TAB_NAME": "T98_SB_TIT_DAY_HOLD_INDX",
+      "TGT_TAB_FLD": "Comp_Dura_Stat_Cd",
+      "SRC_TAB_NAME": "POS_EOD_CALC_METRICS",
+      "SRC_FLD_NAME": "CONTRACT_EXIST_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTRACT_EXIST_STATUS =F.SRC_CD_VAL                  --CONTRACT_EXIST_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "244380",
+      "line": 141,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "REF_TRS",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "246200",
+      "line": 50,
+      "TGT_TAB_NAME": "T03_AGT_INR_LIST_DET",
+      "TGT_TAB_FLD": "Agt_Modifr",
+      "SRC_TAB_NAME": "REF_QFII_PRODUCT_INFO",
+      "SRC_FLD_NAME": "EXCH_MARKET",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.EXCH_MARKET =B.SRC_CD_VAL                  --EXCH_MARKET 转码"
+      ]
+    },
+    {
+      "task_id": "35130",
+      "line": 100,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Org_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "NATURE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.NATURE = B.SRC_CD_VAL                  --NATURE转码"
+      ]
+    },
+    {
+      "task_id": "35130",
+      "line": 109,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Corp_Cust_Clas_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "IS_PROD_HOLDER",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.IS_PROD_HOLDER = C.SRC_CD_VAL            --IS_PROD_HOLDER转码"
+      ]
+    },
+    {
+      "task_id": "35130",
+      "line": 118,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Org_Econ_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "CAPITAL_ATTRIBUTE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.CAPITAL_ATTRIBUTE = D.SRC_CD_VAL                  --CAPITAL_ATTRIBUTE转码"
+      ]
+    },
+    {
+      "task_id": "37226",
+      "line": 311,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Rpt_Id_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "FILL_ROLE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.FILL_ROLE =B.SRC_CD_VAL                  --FILL_ROLE 转码"
+      ]
+    },
+    {
+      "task_id": "37226",
+      "line": 320,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.INTEREST_TYPE =C.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "37226",
+      "line": 329,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.EXCHANGE_RATE_TYPE =D.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "37226",
+      "line": 338,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_INFO",
+      "TGT_TAB_FLD": "Rgst_Stat_Cd",
+      "SRC_TAB_NAME": "COUNTERPARTY_MARGIN",
+      "SRC_FLD_NAME": "REPORT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.SUPPLEMENT_REPORT_STATUS =E.SRC_CD_VAL                     --SUPPLEMENT_REPORT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "37226",
+      "line": 347,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_INFO",
+      "TGT_TAB_FLD": "Rgst_Stat_Cd",
+      "SRC_TAB_NAME": "COUNTERPARTY_MARGIN",
+      "SRC_FLD_NAME": "REPORT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.GUARANTEE_REPORT_STATUS =F.SRC_CD_VAL                  --GUARANTEE_REPORT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "37232",
+      "line": 91,
+      "TGT_TAB_NAME": "T01_PTY_IMP_LKMAN(_H)",
+      "TGT_TAB_FLD": "Lkman_Cert_Type_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": null,
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "      ON  A.ADVISOR_CERT_TYPE = D.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "37235",
+      "line": 46,
+      "TGT_TAB_NAME": "T01_PTY_INDT_H",
+      "TGT_TAB_FLD": "Indt_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "INDUSTRY",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "            AND SRC_SYS_NAME='OIS') C ON        A.INDUSTRY = C.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "37332",
+      "line": 33,
+      "TGT_TAB_NAME": "T01_PTY_RAT(_H)",
+      "TGT_TAB_FLD": "Rat_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": "PROFESSIONAL_INVESTORS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON          A.PROFESSIONAL_INVESTORS = B.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "37332",
+      "line": 148,
+      "TGT_TAB_NAME": "T01_PTY_RAT(_H)",
+      "TGT_TAB_FLD": "Rat_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": "CLIENT_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON          A.CLIENT_TYPE = B.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "63132",
+      "line": 311,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Rpt_Id_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "FILL_ROLE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.FILL_ROLE =B.SRC_CD_VAL                  --FILL_ROLE 转码"
+      ]
+    },
+    {
+      "task_id": "63132",
+      "line": 320,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Inta_Bm_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "INTEREST_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.INTEREST_TYPE =C.SRC_CD_VAL                  --INTEREST_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "63132",
+      "line": 329,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUST",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "EXCHANGE_RATE_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.EXCHANGE_RATE_TYPE =D.SRC_CD_VAL                  --EXCHANGE_RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "63132",
+      "line": 338,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_INFO",
+      "TGT_TAB_FLD": "Rgst_Stat_Cd",
+      "SRC_TAB_NAME": "COUNTERPARTY_MARGIN",
+      "SRC_FLD_NAME": "REPORT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.SUPPLEMENT_REPORT_STATUS =E.SRC_CD_VAL                     --SUPPLEMENT_REPORT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "63132",
+      "line": 347,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_INFO",
+      "TGT_TAB_FLD": "Rgst_Stat_Cd",
+      "SRC_TAB_NAME": "COUNTERPARTY_MARGIN",
+      "SRC_FLD_NAME": "REPORT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.GUARANTEE_REPORT_STATUS =F.SRC_CD_VAL                  --GUARANTEE_REPORT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "63147",
+      "line": 46,
+      "TGT_TAB_NAME": "T01_PTY_INDT_H",
+      "TGT_TAB_FLD": "Indt_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "INDUSTRY",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "            AND SRC_SYS_NAME='OIS') C ON        A.INDUSTRY = C.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "63382",
+      "line": 100,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Org_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "NATURE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.NATURE = B.SRC_CD_VAL                  --NATURE转码"
+      ]
+    },
+    {
+      "task_id": "63382",
+      "line": 109,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Corp_Cust_Clas_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "IS_PROD_HOLDER",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.IS_PROD_HOLDER = C.SRC_CD_VAL            --IS_PROD_HOLDER转码"
+      ]
+    },
+    {
+      "task_id": "63382",
+      "line": 118,
+      "TGT_TAB_NAME": "T01_CORP_CUST",
+      "TGT_TAB_FLD": "Org_Econ_Type_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "CAPITAL_ATTRIBUTE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON        A.CAPITAL_ATTRIBUTE = D.SRC_CD_VAL                  --CAPITAL_ATTRIBUTE转码"
+      ]
+    },
+    {
+      "task_id": "63698",
+      "line": 91,
+      "TGT_TAB_NAME": "T01_PTY_IMP_LKMAN(_H)",
+      "TGT_TAB_FLD": "Lkman_Cert_Type_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": null,
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "      ON  A.ADVISOR_CERT_TYPE = D.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "63712",
+      "line": 33,
+      "TGT_TAB_NAME": "T01_PTY_RAT(_H)",
+      "TGT_TAB_FLD": "Rat_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": "PROFESSIONAL_INVESTORS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON          A.PROFESSIONAL_INVESTORS = B.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "63712",
+      "line": 148,
+      "TGT_TAB_NAME": "T01_PTY_RAT(_H)",
+      "TGT_TAB_FLD": "Rat_Cd",
+      "SRC_TAB_NAME": null,
+      "SRC_FLD_NAME": "CLIENT_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON          A.CLIENT_TYPE = B.SRC_CD_VAL"
+      ]
+    },
+    {
+      "task_id": "107663",
+      "line": 62,
+      "TGT_TAB_NAME": "T03_AGT",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "      ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "107666",
+      "line": 44,
+      "TGT_TAB_NAME": "T03_AGT_STAT_H",
+      "TGT_TAB_FLD": "Agt_Stat_Cd",
+      "SRC_TAB_NAME": "KS_TRADE_COMFIRM_INFO",
+      "SRC_FLD_NAME": "CONTR_STATUS",
+      "SRC_SYS_NAME": "TIT",
+      "join_lines": [
+        "   ON      A.CONTR_STATUS =B.SRC_CD_VAL                  --CONTR_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "136324",
+      "line": 76,
+      "TGT_TAB_NAME": "T05_OTC_CUTP_PROC_EXP_HINT_EVT",
+      "TGT_TAB_FLD": "Proc_Stat_Cd",
+      "SRC_TAB_NAME": "PROCESS_EXPIRED_REMIND ",
+      "SRC_FLD_NAME": "PROCESS_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "   ON      A.PROCESS_STATUS =B.SRC_CD_VAL                  --PROCESS_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "169644",
+      "line": 78,
+      "TGT_TAB_NAME": "T01_PTY_CUTP_SEND_OTC_DERI_VALU_RPT_PLAC_INFO",
+      "TGT_TAB_FLD": "Plac_Stat_Cd",
+      "SRC_TAB_NAME": "VALUE_REPORT_CTPTY_CONFIG",
+      "SRC_FLD_NAME": "STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "       ON      A.STATUS =B.SRC_CD_VAL                  --STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "176166",
+      "line": 67,
+      "TGT_TAB_NAME": "T01_CUTP_PERF_MARG_INFO",
+      "TGT_TAB_FLD": "Rgst_Stat_Cd",
+      "SRC_TAB_NAME": "COUNTERPARTY_MARGIN",
+      "SRC_FLD_NAME": "REPORT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "       ON      A.REPORT_STATUS =B.SRC_CD_VAL                  --REPORT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "212179",
+      "line": 50,
+      "TGT_TAB_NAME": "T01_PTY_RATE_H",
+      "TGT_TAB_FLD": "Rate_Type_Cd",
+      "SRC_TAB_NAME": "HK_FUNDS_INTEREST_REPAYMENT",
+      "SRC_FLD_NAME": "RATE_TYPE",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "       ON      A.RATE_TYPE =C.SRC_CD_VAL                  --RATE_TYPE 转码"
+      ]
+    },
+    {
+      "task_id": "216975",
+      "line": 713,
+      "TGT_TAB_NAME": "T01_PTY_INDT_H",
+      "TGT_TAB_FLD": "Indt_Cd",
+      "SRC_TAB_NAME": "OTC_DERIVATIVE_COUNTERPARTY",
+      "SRC_FLD_NAME": "INDUSTRY",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "        AND SRC_SYS_NAME = 'OIS') dict1 on dict1.SRC_CD_VAL = A.industry",
+        "                      and remark = 'OTC_DERIVATIVE_COUNTERPARTY.PROD_TYPE') dict2 on dict2.dw_cd_val = A.prod_type",
+        "         left join dict dict3 on dict3.dict_category = 'xz' and dict3.source = A.source and dict3.dict_value = A.nature",
+        "         left join dict dict4 on dict4.dict_category = 'nation' and  dict4.source = A.source and dict4.dict_value = A.register_country",
+        "         left join review_buffer B on B.client_id = A.client_id"
+      ]
+    },
+    {
+      "task_id": "212180",
+      "line": 47,
+      "TGT_TAB_NAME": "T01_OTC_DERI_CUTP_BUSI_PROC_PROG",
+      "TGT_TAB_FLD": "Appr_Stat_Cd",
+      "SRC_TAB_NAME": "HK_COUNTERPARTY_PROGRESS",
+      "SRC_FLD_NAME": "AUDIT_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON      A.AUDIT_STATUS =B.SRC_CD_VAL                  --AUDIT_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "229695",
+      "line": 95,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUST_TRAN_PROC",
+      "TGT_TAB_FLD": "Proc_Stat_Cd",
+      "SRC_TAB_NAME": "TRANSM_FLOW",
+      "SRC_FLD_NAME": "PROCESS_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON      nvl(trim(A.PROCESS_STATUS),'') =B.SRC_CD_VAL                  --PROCESS_STATUS 转码"
+      ]
+    },
+    {
+      "task_id": "229695",
+      "line": 104,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUST_TRAN_PROC",
+      "TGT_TAB_FLD": "Upld_Attach_Stat_Cd",
+      "SRC_TAB_NAME": "TRANSM_FLOW",
+      "SRC_FLD_NAME": "FILE_UPLOAD_RESULT",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON       nvl(trim(A.FILE_UPLOAD_RESULT),'')  =C.SRC_CD_VAL                  --FILE_UPLOAD_RESULT 转码"
+      ]
+    },
+    {
+      "task_id": "229695",
+      "line": 113,
+      "TGT_TAB_NAME": "T05_OTC_DERI_CUST_TRAN_PROC",
+      "TGT_TAB_FLD": "Tran_Stat_Cd",
+      "SRC_TAB_NAME": "TRANSM_FLOW",
+      "SRC_FLD_NAME": "XINYI_TRANSM_STATUS",
+      "SRC_SYS_NAME": "OIS",
+      "join_lines": [
+        "ON      nvl(trim(A.XINYI_TRANSM_STATUS),'')  =D.SRC_CD_VAL                  --XINYI_TRANSM_STATUS 转码"
+      ]
+    }
+  ]
+}

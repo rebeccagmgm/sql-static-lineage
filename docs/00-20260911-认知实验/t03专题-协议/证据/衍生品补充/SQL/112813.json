@@ -1,0 +1,347 @@
+{
+  "task_id": 112813,
+  "observed_at": "2026-09-05T01:06:47.084Z",
+  "payload_sha256": "ed0bf3d6042c9f958ade0d1f207baa7ba0ea7d3abf088fa7a505669f5237d811",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_OPT_COMP_OBSV_DATE_COUP_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Opt_Comp_Agt_Id            STRING COMMENT '期权合约协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Opt_Comp_Agt_Modifr        STRING COMMENT '期权合约协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Encb_Type                  STRING COMMENT '障碍类型'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Obsv_Date                  STRING COMMENT '观察日期'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Erly_Trmt_Date             STRING COMMENT '提前终止日期'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Up_Encb_Val                STRING COMMENT '上障碍值'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Up_Encb_Pct                STRING COMMENT '上障碍百分比'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Down_Encb_Val              STRING COMMENT '下障碍值'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Down_Encb_Pct              STRING COMMENT '下障碍百分比'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Rset_Encb_Val              STRING COMMENT '重置障碍值'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Rset_Encb_Pct              STRING COMMENT '重置障碍百分比'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Coup_Rate                  STRING COMMENT '票息率'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Real_Bal_Coup              STRING COMMENT '轧差票息'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Real_Bal_Coup_Rate         STRING COMMENT '轧差票息率'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Clasf_Coup                 STRING COMMENT '分档票息'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Coup_Pay_Date              STRING COMMENT '票息支付日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Inta_Mths                  STRING COMMENT '计息月数'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Inta_Days                  STRING COMMENT '计息天数'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Clos_Pric                  STRING COMMENT '收市价'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Creator                    STRING COMMENT '创建人'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Upd_User                   STRING COMMENT '更新人'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Ko_Lvl                     STRING COMMENT '敲出水平'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Ko_Lvl_Pric                STRING COMMENT '敲出水平价格'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Prtc_Rate                  STRING COMMENT '参与率'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Ki_Date                    STRING COMMENT '敲入日期'"
+    },
+    {
+      "line": 43,
+      "text": ")COMMENT '场外期权合约观察日票息信息'"
+    },
+    {
+      "line": 44,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 45,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 46,
+      "text": ""
+    },
+    {
+      "line": 47,
+      "text": "-- querySql"
+    },
+    {
+      "line": 48,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_OPT_COMP_OBSV_DATE_COUP_INFO PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 49,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 50,
+      "text": "--Group1.: Source Table:[ODATA_N_TIT.D_REF_OP_DEAL_AUTOCALL_KODATE:场外交易-期权敲出观察日及票息信息] "
+    },
+    {
+      "line": 51,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 52,
+      "text": "SELECT"
+    },
+    {
+      "line": 53,
+      "text": "     A.KEY_OTC_TRADE_ID                                AS  Opt_Comp_Agt_Id         --期权合约协议编号"
+    },
+    {
+      "line": 54,
+      "text": "    ,'20207'                                           AS  Opt_Comp_Agt_Modifr     --期权合约协议修饰符"
+    },
+    {
+      "line": 55,
+      "text": "    ,'KO'                                              AS  Encb_Type               --障碍类型                     'KO' --敲出"
+    },
+    {
+      "line": 56,
+      "text": "    ,SUBSTR(OBS_DATE,1,10)                             AS  Obsv_Date               --观察日期      "
+    },
+    {
+      "line": 57,
+      "text": "    ,SUBSTR(EARLY_TERMINATION_DATE,1,10)               AS  Erly_Trmt_Date          --提前终止日期  "
+    },
+    {
+      "line": 58,
+      "text": "    ,UP_KO_BARRIER                                     AS  Up_Encb_Val             --上障碍值      "
+    },
+    {
+      "line": 59,
+      "text": "    ,UP_KO_BARRIER_PCT                                 AS  Up_Encb_Pct             --上障碍百分比  "
+    },
+    {
+      "line": 60,
+      "text": "    ,DOWN_KO_BARRIER                                   AS  Down_Encb_Val           --下障碍值      "
+    },
+    {
+      "line": 61,
+      "text": "    ,DOWN_KO_BARRIER_PCT                               AS  Down_Encb_Pct           --下障碍百分比  "
+    },
+    {
+      "line": 62,
+      "text": "    ,''                                                AS  Rset_Encb_Val           --重置障碍值    "
+    },
+    {
+      "line": 63,
+      "text": "    ,''                                                AS  Rset_Encb_Pct           --重置障碍百分比"
+    },
+    {
+      "line": 64,
+      "text": "    ,COUPON_RATE                                       AS  Coup_Rate               --票息率        "
+    },
+    {
+      "line": 65,
+      "text": "    ,NETTING_COUPON                                    AS  Real_Bal_Coup           --轧差票息      "
+    },
+    {
+      "line": 66,
+      "text": "    ,NETTING_COUPON_RATE                               AS  Real_Bal_Coup_Rate      --轧差票息率    "
+    },
+    {
+      "line": 67,
+      "text": "    ,LAYERING_COUPON                                   AS  Clasf_Coup              --分档票息      "
+    },
+    {
+      "line": 68,
+      "text": "    ,SUBSTR(COUPON_PAYMENT_DATE,1,10)                  AS  Coup_Pay_Date           --票息支付日期  "
+    },
+    {
+      "line": 69,
+      "text": "    ,INTEREST_MONTHS                                   AS  Inta_Mths               --计息月数      "
+    },
+    {
+      "line": 70,
+      "text": "    ,INTEREST_DAYS                                     AS  Inta_Days               --计息天数      "
+    },
+    {
+      "line": 71,
+      "text": "    ,CLOSE                                             AS  Clos_Pric               --收市价        "
+    },
+    {
+      "line": 72,
+      "text": "    ,CREATED_BY                                        AS  Creator                 --创建人        "
+    },
+    {
+      "line": 73,
+      "text": "    ,CREATED_DATETIME                                  AS  Create_Time             --创建时间      "
+    },
+    {
+      "line": 74,
+      "text": "    ,UPDATED_BY                                        AS  Upd_User                --更新人        "
+    },
+    {
+      "line": 75,
+      "text": "    ,UPDATED_DATETIME                                  AS  Upd_Time                --更新时间      "
+    },
+    {
+      "line": 76,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 77,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 78,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 79,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 80,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 81,
+      "text": "    ,'${src_table}'                               AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 82,
+      "text": "    ,''                                                AS  Ko_Lvl                  --敲出水平"
+    },
+    {
+      "line": 83,
+      "text": "    ,''                                                AS  Ko_Lvl_Pric             --敲出水平价格"
+    },
+    {
+      "line": 84,
+      "text": "    ,''                                                AS  Prtc_Rate               --参与率"
+    },
+    {
+      "line": 85,
+      "text": "    ,''                                                AS  Ki_Date                 --敲入日期"
+    },
+    {
+      "line": 86,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 87,
+      "text": "INNER JOIN (SELECT KEY_OTC_TRADE_ID  FROM ODATA_N_TIT.D_REF_OTC_OPTION_DEAL WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 88,
+      "text": "        ON A.KEY_OTC_TRADE_ID =B.KEY_OTC_TRADE_ID "
+    },
+    {
+      "line": 89,
+      "text": ""
+    },
+    {
+      "line": 90,
+      "text": ""
+    },
+    {
+      "line": 91,
+      "text": ";"
+    },
+    {
+      "line": 92,
+      "text": ""
+    }
+  ]
+}

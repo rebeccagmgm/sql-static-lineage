@@ -48,4 +48,15 @@ describe("task-local materialization context", () => {
 
     expect(materializationRecordsForField(records, SOURCE, CONTEXT)).toEqual([record]);
   });
+
+  it("requires exact resolved control and read occurrence instead of statement fallback", () => {
+    const bridge = {
+      status: "RESOLVED", read_statement_id: CONTEXT.statementId, read_expression_ids: [],
+      read_control_refs: [{ relation_id: "filter:left", read_relation_id: "read:left", read_occurrence_id: "occ:left", resolution_status: "RESOLVED" }],
+    };
+    const records = new Map([["temp.stage\u0000id", [bridge]]]);
+    expect(materializationRecordsForField(records, SOURCE, { ...CONTEXT, controlRelationId: "filter:right" })).toEqual([]);
+    expect(materializationRecordsForField(records, SOURCE, { ...CONTEXT, controlRelationId: "filter:left", readOccurrenceId: "occ:right" })).toEqual([]);
+    expect(materializationRecordsForField(records, SOURCE, { ...CONTEXT, controlRelationId: "filter:left", readOccurrenceId: "occ:left" })).toEqual([bridge]);
+  });
 });

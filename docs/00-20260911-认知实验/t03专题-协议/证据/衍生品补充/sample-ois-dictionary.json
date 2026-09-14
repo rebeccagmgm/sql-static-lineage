@@ -1,0 +1,89 @@
+{
+  "acquired_date": "2026-09-12",
+  "method": "opencli szdata table-sample",
+  "environment": "数综 szdata 平台 sample；非测试库 JDBC；非全表或最新分区核验",
+  "row_limit": 10,
+  "contains_business_identity_values": false,
+  "rows": [
+    {
+      "dict_prompt": "丹东市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "锦州市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "营口市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "阜新市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "辽阳市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "盘锦市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "铁岭市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "朝阳市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "葫芦岛市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "辽宁省"
+    },
+    {
+      "dict_prompt": "长春市",
+      "dict_entry": "city",
+      "data_time": "2023-11-05 02:27:42",
+      "sort": "",
+      "busi_date": "2023-11-04",
+      "subentry": "吉林省"
+    }
+  ]
+}

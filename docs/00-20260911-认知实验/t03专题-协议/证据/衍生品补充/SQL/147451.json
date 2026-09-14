@@ -1,0 +1,227 @@
+{
+  "task_id": 147451,
+  "observed_at": "2026-09-05T01:06:59.518Z",
+  "payload_sha256": "7567038c6cc05b9cf6d57bca1ce286b31344b5bd26c0d90648cf112e491290dc",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T05_OTC_CUTP_VALU_RPT_EXEC_EVT("
+    },
+    {
+      "line": 10,
+      "text": "     Evt_Id                     STRING COMMENT '事件编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Valu_Rpt_Cfg_Id            STRING COMMENT '估值报告配置编号'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Valu_Date                  STRING COMMENT '估值日期'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Rpt_Date                   STRING COMMENT '报告日期'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Valu_Rpt_Exec_Stat_Cd      STRING COMMENT '估值报告执行状态代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Mail_Title                 STRING COMMENT '邮件标题'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Mail_Cont                  STRING COMMENT '邮件内容'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Valu_Rpt_File_Path         STRING COMMENT '估值报告文件路径'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Fail_Rsn                   STRING COMMENT '失败原因'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Timd_Time                  STRING COMMENT '定时时间'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Send_Time                  STRING COMMENT '发送时间'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 27,
+      "text": ")COMMENT '场外衍生品交易对手估值报告执行事件'"
+    },
+    {
+      "line": 28,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 29,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 30,
+      "text": ""
+    },
+    {
+      "line": 31,
+      "text": "-- querySql"
+    },
+    {
+      "line": 32,
+      "text": "INSERT OVERWRITE TABLE T05_OTC_CUTP_VALU_RPT_EXEC_EVT PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 33,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 34,
+      "text": "--Group1.: Source Table:[ODATA_N_OIS.G_VALUE_REPORT_EXECUTION:估值报告执行记录表] "
+    },
+    {
+      "line": 35,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 36,
+      "text": "SELECT"
+    },
+    {
+      "line": 37,
+      "text": "     CONCAT('OIS019-',ID,'-',STATUS,'-',VALUE_DATE,'-',UPDATE_TIME)"
+    },
+    {
+      "line": 38,
+      "text": "                                                       AS  Evt_Id                  --事件编号            "
+    },
+    {
+      "line": 39,
+      "text": "    ,ID                                                AS  Valu_Rpt_Cfg_Id         --估值报告配置编号    "
+    },
+    {
+      "line": 40,
+      "text": "    ,VALUE_DATE                                        AS  Valu_Date               --估值日期            "
+    },
+    {
+      "line": 41,
+      "text": "    ,REPORT_DATE                                       AS  Rpt_Date                --报告日期            "
+    },
+    {
+      "line": 42,
+      "text": "    ,STATUS                                            AS  Valu_Rpt_Exec_Stat_Cd   --估值报告执行状态代码"
+    },
+    {
+      "line": 43,
+      "text": "    ,MAIL_SUBJECT                                      AS  Mail_Title              --邮件标题            "
+    },
+    {
+      "line": 44,
+      "text": "    ,MAIL_CONTENT                                      AS  Mail_Cont               --邮件内容            "
+    },
+    {
+      "line": 45,
+      "text": "    ,FILE_PATH                                         AS  Valu_Rpt_File_Path      --估值报告文件路径    "
+    },
+    {
+      "line": 46,
+      "text": "    ,FAILURE_REASON                                    AS  Fail_Rsn                --失败原因            "
+    },
+    {
+      "line": 47,
+      "text": "    ,TIMING_TIME                                       AS  Timd_Time               --定时时间            "
+    },
+    {
+      "line": 48,
+      "text": "    ,SEND_TIME                                         AS  Send_Time               --发送时间            "
+    },
+    {
+      "line": 49,
+      "text": "    ,UPDATE_TIME                                       AS  Upd_Time                --更新时间            "
+    },
+    {
+      "line": 50,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 51,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 52,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 53,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 54,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 55,
+      "text": "    ,'ODATA_N_OIS.G_VALUE_REPORT_EXECUTION'            AS  SRC_TBL                 --源表"
+    },
+    {
+      "line": 56,
+      "text": "    ,BUSI_DATE                                         AS  BUSI_DATE               --业务日期"
+    },
+    {
+      "line": 57,
+      "text": "FROM (SELECT *,ROW_NUMBER()OVER(PARTITION BY ID,VALUE_DATE,UPDATE_TIME,STATUS ORDER BY SEND_TIME DESC) RN FROM ${src_table} "
+    },
+    {
+      "line": 58,
+      "text": "WHERE BUSI_DATE >=DEFAULT.ADD_MONTHS('${data_day_str}',-3) "
+    },
+    {
+      "line": 59,
+      "text": "  AND BUSI_DATE<='${data_day_str}')A"
+    },
+    {
+      "line": 60,
+      "text": "WHERE RN= 1"
+    },
+    {
+      "line": 61,
+      "text": ";"
+    },
+    {
+      "line": 62,
+      "text": ""
+    }
+  ]
+}

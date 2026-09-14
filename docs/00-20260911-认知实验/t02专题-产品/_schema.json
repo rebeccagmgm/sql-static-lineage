@@ -1,0 +1,222 @@
+{
+  "catalogSchema": [
+    {
+      "name": "assets",
+      "type": "table"
+    },
+    {
+      "name": "database_memberships",
+      "type": "table"
+    },
+    {
+      "name": "databases",
+      "type": "table"
+    },
+    {
+      "name": "events",
+      "type": "table"
+    },
+    {
+      "name": "groups",
+      "type": "table"
+    },
+    {
+      "name": "memberships",
+      "type": "table"
+    },
+    {
+      "name": "observed_classifications",
+      "type": "table"
+    },
+    {
+      "name": "pages",
+      "type": "table"
+    },
+    {
+      "name": "run",
+      "type": "table"
+    },
+    {
+      "name": "table_sources",
+      "type": "view"
+    },
+    {
+      "name": "union_tables",
+      "type": "view"
+    }
+  ],
+  "assetsCols": [
+    {
+      "cid": 0,
+      "name": "guid",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 1,
+      "name": "name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "database_name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "qualified_name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 4,
+      "name": "metadata_type",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 5,
+      "name": "first_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 6,
+      "name": "last_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 7,
+      "name": "raw_json",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    }
+  ],
+  "ocCols": [
+    {
+      "cid": 0,
+      "name": "guid",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 1,
+      "name": "path",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 2
+    },
+    {
+      "cid": 2,
+      "name": "category",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "first_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 4,
+      "name": "last_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    }
+  ],
+  "unionCols": [
+    {
+      "cid": 0,
+      "name": "guid",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 1,
+      "name": "name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "database_name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "qualified_name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 4,
+      "name": "metadata_type",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 5,
+      "name": "first_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 6,
+      "name": "last_seen",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 7,
+      "name": "raw_json",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    }
+  ]
+}

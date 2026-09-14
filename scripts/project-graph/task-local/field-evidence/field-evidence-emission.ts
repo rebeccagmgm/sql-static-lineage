@@ -6,6 +6,7 @@ import type {
   TaskLocalSubtypeReason,
 } from "../contract.ts";
 import { stableId } from "../ids.ts";
+import { classifyExpressionInputRoles } from "../expression-input-roles.ts";
 import {
   buildRelationTreeIndex,
   type RelationTreeIndex,
@@ -35,6 +36,13 @@ export interface ExpandedMaterializedField {
   readonly leafRelationId: string | null;
   readonly pathHadAggregation: boolean;
   readonly subtypeHops: readonly ExpressionSubtypeResult[];
+  /** Role after composing every materialization hop with the consumer. */
+  readonly dependencyRole?: "VALUE" | "CONDITIONAL";
+  /** Consumer-side source restricts folded evidence to the matching setop branch. */
+  readonly materializationInputField?: PhysicalFieldIdentity;
+  /** Raw consumer references already resolved to materializationInputField. */
+  readonly materializationInputFields?: readonly JsonRecord[];
+  readonly sourceInputFields?: readonly JsonRecord[];
 }
 
 export interface FieldEvidenceEmissionInput {
@@ -143,6 +151,7 @@ export function relationTypeForExpression(
 export function expressionAcceptsSourceField(
   expression: JsonRecord,
   sourceField: PhysicalFieldIdentity,
+  resolvedInputFields: readonly JsonRecord[] = [],
 ): boolean {
   const inputFields = Array.isArray(expression.input_fields) ? expression.input_fields : [];
   if (inputFields.length === 0) return false;
@@ -155,7 +164,10 @@ export function expressionAcceptsSourceField(
     if (column !== targetColumn) return false;
     const table = normalizeName(String(input.table ?? input.physical_dataset ?? ""));
     if (!table) return true;
-    return table === targetTable;
+    return table === targetTable || resolvedInputFields.some((resolved) =>
+      normalizeName(String(resolved.table ?? "")) === table
+      && normalizeName(String(resolved.column ?? "")) === column,
+    );
   });
 }
 
@@ -253,8 +265,15 @@ export function emitFieldEvidenceForInput(input: {
   readonly inputField: JsonRecord;
   readonly expanded: ExpandedMaterializedField;
   readonly indexes: FieldEvidenceIndexes;
+  /** The caller already selected the output ordinal in this setop branch. */
+  readonly branchScoped?: boolean;
 }): readonly EmittedFieldEvidence[] {
-  const expandedContexts = expandSetopBranchExpressions({
+  const expandedContexts: readonly FieldExpressionContext[] = input.branchScoped ? [{
+    expression: input.expression,
+    expressionId: String(input.expression.expression_id),
+    relationId: text(input.expression.relation_id),
+    ordinal: typeof input.expression.ordinal === "number" ? input.expression.ordinal : null,
+  }] : expandSetopBranchExpressions({
     expression: input.expression,
     expressionsByRelation: input.indexes.expressionsByRelation,
     index: input.indexes.relationTree,
@@ -270,16 +289,20 @@ export function emitFieldEvidenceForInput(input: {
     ? input.indexes.expressionsById.get(input.expanded.leafExpressionId) ?? null
     : null;
   for (const context of expressionContexts) {
-    const directSource = expressionAcceptsSourceField(
+    if (input.expanded.materializationInputField
+      && !expressionAcceptsSourceField(context.expression, input.expanded.materializationInputField,
+        input.expanded.materializationInputFields)) continue;
+    const directSource = !materializationLeafExpression && expressionAcceptsSourceField(
       context.expression,
       input.sourceField,
+      input.expanded.sourceInputFields,
     );
     const sourceExpression = directSource
       ? context.expression
       : materializationLeafExpression;
     if (
       !sourceExpression
-      || !expressionAcceptsSourceField(sourceExpression, input.sourceField)
+      || !expressionAcceptsSourceField(sourceExpression, input.sourceField, input.expanded.sourceInputFields)
     ) {
       continue;
     }
@@ -295,7 +318,12 @@ export function emitFieldEvidenceForInput(input: {
       sourceExpression,
       input.sourceField,
     );
-    const relationQualifiers = relationQualifiersForSourceField({
+    const roleQualifiers = input.expanded.sourceInputFields;
+    const hasRoleQualifiers = roleQualifiers && roleQualifiers.length > 0
+      && roleQualifiers.every((field) => text(field.qualifier));
+    const relationQualifiers = hasRoleQualifiers
+      ? [...new Set(roleQualifiers.map((field) => normalizeName(String(field.qualifier))))]
+      : relationQualifiersForSourceField({
       expression: sourceExpression,
       sourceField: input.sourceField,
       indexes: input.indexes,
@@ -311,18 +339,26 @@ export function emitFieldEvidenceForInput(input: {
     });
     // Split only structured physical references, never the set of possible reads.
     for (const relationQualifier of relationQualifiers ?? [null]) {
+      // These raw references were resolved to sourceField by the physical resolver.
+      // Match read occurrences in their original SQL namespace, retaining the
+      // canonical identity for the emitted field node. No tail-name matching.
+      const resolvedReferences = (input.expanded.sourceInputFields ?? []).filter((field) =>
+        !relationQualifier || normalizeName(String(field.qualifier ?? "")) === relationQualifier,
+      );
+      const referenceTables = [...new Set(resolvedReferences.map((field) => text(field.table)).filter((table): table is string => table !== null))];
+      const resolvedInput = resolvedReferences.length === 1 ? resolvedReferences[0] : null;
       const sourceResolution = resolveSourceReadOccurrence({
         taskId: input.taskId,
         expressionId: directSource
           ? context.expressionId
           : input.expanded.leafExpressionId ?? context.expressionId,
-        sourceTable: input.sourceField.qualifiedName,
+        sourceTable: referenceTables.length === 1 ? referenceTables[0]! : input.sourceField.qualifiedName,
         sourceColumn: input.sourceField.column,
         inputField: relationQualifier
-          ? { ...branchInputField, qualifier: relationQualifier }
-          : branchInputField,
+          ? { ...(resolvedInput ?? branchInputField), qualifier: relationQualifier }
+          : resolvedInput ?? branchInputField,
         expressionText: text(context.expression.expression_text),
-        ...(relationQualifiers && relationQualifiers.length > 1 && relationQualifier
+        ...(relationQualifiers && (hasRoleQualifiers || relationQualifiers.length > 1) && relationQualifier
           ? { referenceQualifier: relationQualifier }
           : {}),
         cteOutputColumn: cteInputReference?.outputColumn ?? null,
@@ -540,9 +576,5 @@ export function inputFieldRecordForSource(
 }
 
 export function isConstantExpression(expression: JsonRecord): boolean {
-  const dependencyStatus = text(expression.input_dependency_status);
-  if (dependencyStatus === "NO_PHYSICAL_INPUT") return true;
-  const inputFields = Array.isArray(expression.input_fields) ? expression.input_fields : [];
-  return inputFields.length === 0
-    && !/\bselect\b/i.test(text(expression.expression_text) ?? "");
+  return classifyExpressionInputRoles(expression).terminalKind === "LITERAL";
 }

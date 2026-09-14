@@ -1,0 +1,829 @@
+{
+  "task_id": "105395",
+  "source": "schedule-evidence.sqlite/evidence:hive-task",
+  "observed_at": "2026-09-05T01:06:44.777Z",
+  "payload_sha256": "23dd102ef7ea7053bb2b7af95996b8f47474ed147edbc8d9ada829f8e2b86aad",
+  "notice": "保存SQL与DDL上下文；人工审读范围见核验台账，保留原行号。配置敏感行如存在则省略。",
+  "lines": [
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_OTC_OPT_COMP_SUB_TRD_INFO("
+    },
+    {
+      "line": 10,
+      "text": "     Opt_ComP_Agt_Id            STRING COMMENT '期权合约协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Opt_ComP_Agt_Modifr        STRING COMMENT '期权合约协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Sub_Trd_Id                 STRING COMMENT '子交易编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Eff_Date                   STRING COMMENT '生效日期'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Exp_Date                   STRING COMMENT '到期日期'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Trd_Stat_Cd                STRING COMMENT '交易状态代码'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Sub_Trd_Seq                STRING COMMENT '子交易序号'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Sub_Trd_Trmt_Date          STRING COMMENT '子交易终止日期'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Sub_Trd_Coef               STRING COMMENT '子交易系数'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Prd_Id                     STRING COMMENT '产品编号'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Src_Prd_Id                 STRING COMMENT '源产品编号'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Src_Scr_Sub_Type_Cd        STRING COMMENT '源证券子类型代码'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Src_Prd_Cd_Shor_Name       STRING COMMENT '源产品代码简称'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Book_Agt_Id                STRING COMMENT '账簿协议编号'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Book_Agt_Modifr            STRING COMMENT '账簿协议修饰符'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Opt_Exec_Type_Cd           STRING COMMENT '期权执行类型代码'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Buy_Sell_Dir_Cd            STRING COMMENT '买卖方向代码'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Undrl_Cd                   STRING COMMENT '标的代码'"
+    },
+    {
+      "line": 28,
+      "text": "    ,Bgng_Prcg_Date             STRING COMMENT '期初定价日期'"
+    },
+    {
+      "line": 29,
+      "text": "    ,Maty_Date                  STRING COMMENT '到期日期'"
+    },
+    {
+      "line": 30,
+      "text": "    ,Yield_Pay_Date             STRING COMMENT '收益兑付日期'"
+    },
+    {
+      "line": 31,
+      "text": "    ,Prin                       STRING COMMENT '本金'"
+    },
+    {
+      "line": 32,
+      "text": "    ,Prin_Crrc_Cd               STRING COMMENT '本金币种代码'"
+    },
+    {
+      "line": 33,
+      "text": "    ,Qty                        STRING COMMENT '数量'"
+    },
+    {
+      "line": 34,
+      "text": "    ,Sett_Mode_Cd               STRING COMMENT '结算模式代码'"
+    },
+    {
+      "line": 35,
+      "text": "    ,Sett_Crrc_Cd               STRING COMMENT '结算币种代码'"
+    },
+    {
+      "line": 36,
+      "text": "    ,Sett_Date                  STRING COMMENT '结算日期'"
+    },
+    {
+      "line": 37,
+      "text": "    ,Undrl_Bgng_Pric            STRING COMMENT '标的期初价格'"
+    },
+    {
+      "line": 38,
+      "text": "    ,Ext_Comp_No                STRING COMMENT '外部合约编号'"
+    },
+    {
+      "line": 39,
+      "text": "    ,Obsv_Strt_Date             STRING COMMENT '观察开始日期'"
+    },
+    {
+      "line": 40,
+      "text": "    ,Obsv_End_Date              STRING COMMENT '观察结束日期'"
+    },
+    {
+      "line": 41,
+      "text": "    ,Encb_Type_Cd               STRING COMMENT '障碍类型代码'"
+    },
+    {
+      "line": 42,
+      "text": "    ,Encb_Val_Type_Cd           STRING COMMENT '障碍值类型代码'"
+    },
+    {
+      "line": 43,
+      "text": "    ,Look_Up_Down_Type_Cd       STRING COMMENT '看涨跌类型代码'"
+    },
+    {
+      "line": 44,
+      "text": "    ,Encb_Qty                   STRING COMMENT '障碍数量'"
+    },
+    {
+      "line": 45,
+      "text": "    ,Encb_Val                   STRING COMMENT '障碍值'"
+    },
+    {
+      "line": 46,
+      "text": "    ,Up_Encb_Val                STRING COMMENT '上障碍值'"
+    },
+    {
+      "line": 47,
+      "text": "    ,Down_Encb_Val              STRING COMMENT '下障碍值'"
+    },
+    {
+      "line": 48,
+      "text": "    ,Exec_Pric_Type_Cd          STRING COMMENT '执行价格类型代码'"
+    },
+    {
+      "line": 49,
+      "text": "    ,Exec_Pric                  STRING COMMENT '执行价'"
+    },
+    {
+      "line": 50,
+      "text": "    ,Up_Exec_Pric               STRING COMMENT '上执行价'"
+    },
+    {
+      "line": 51,
+      "text": "    ,Down_Exec_Pric             STRING COMMENT '下执行价'"
+    },
+    {
+      "line": 52,
+      "text": "    ,Obsv_Pd_Type_Cd            STRING COMMENT '观察周期类型代码'"
+    },
+    {
+      "line": 53,
+      "text": "    ,Obsv_Way_Cd                STRING COMMENT '观察方式代码'"
+    },
+    {
+      "line": 54,
+      "text": "    ,Refnd_Lmt_Type_Cd         STRING COMMENT '退款时限类型代码'"
+    },
+    {
+      "line": 55,
+      "text": "    ,Trgr_Date                  STRING COMMENT '触碰日期'"
+    },
+    {
+      "line": 56,
+      "text": "    ,Two_Val_Opt_Qty            STRING COMMENT '二值期权数量'"
+    },
+    {
+      "line": 57,
+      "text": "    ,Trgr_Line_Qty              STRING COMMENT '触线数量'"
+    },
+    {
+      "line": 58,
+      "text": "    ,Trgr_Line_Type_Cd          STRING COMMENT '触线类型代码'"
+    },
+    {
+      "line": 59,
+      "text": "    ,Trgr_Line_Val_Type_Cd      STRING COMMENT '触线值类型代码'"
+    },
+    {
+      "line": 60,
+      "text": "    ,Digit_Trgr_Line_Val        STRING COMMENT '二值期权触线值'"
+    },
+    {
+      "line": 61,
+      "text": "    ,Fee_Paid_Way_Cd            STRING COMMENT '费用支付方式代码'"
+    },
+    {
+      "line": 62,
+      "text": "    ,Prtc_Rate                  STRING COMMENT '参与率'"
+    },
+    {
+      "line": 63,
+      "text": "    ,Ko_Yield                   STRING COMMENT '敲出收益率'"
+    },
+    {
+      "line": 64,
+      "text": "    ,Up_Ko_Yield                STRING COMMENT '上敲出收益率'"
+    },
+    {
+      "line": 65,
+      "text": "    ,Down_Ko_Yield              STRING COMMENT '下敲出收益率'"
+    },
+    {
+      "line": 66,
+      "text": "    ,Ko_Paid_Date               STRING COMMENT '敲出支付日期'"
+    },
+    {
+      "line": 67,
+      "text": "    ,Res_End_Date               STRING COMMENT '限售结束日期'"
+    },
+    {
+      "line": 68,
+      "text": "    ,Comp_Prd_Id                STRING COMMENT '合约产品编号'"
+    },
+    {
+      "line": 69,
+      "text": "    ,Deal_Date                  STRING COMMENT '成交日期'"
+    },
+    {
+      "line": 70,
+      "text": "    ,Bgng_Rate_1                STRING COMMENT '期初汇率1'"
+    },
+    {
+      "line": 71,
+      "text": "    ,Bgng_Rate_2_Calc           STRING COMMENT '期初汇率2_计算'"
+    },
+    {
+      "line": 72,
+      "text": "    ,Bgng_Rate_2_User_Inpt      STRING COMMENT '期初汇率2_用户录入'"
+    },
+    {
+      "line": 73,
+      "text": "    ,End_Rate                   STRING COMMENT '期末汇率'"
+    },
+    {
+      "line": 74,
+      "text": "    ,Bgng_Rate1_Undrl_Cd        STRING COMMENT '期初汇率1标的代码'"
+    },
+    {
+      "line": 75,
+      "text": "    ,Bgng_Rate2_Undrl_Cd        STRING COMMENT '期初汇率2标的代码'"
+    },
+    {
+      "line": 76,
+      "text": "    ,Bgng_Rate_Undrl_Cd         STRING COMMENT '期初汇率标的代码'"
+    },
+    {
+      "line": 77,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 78,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 79,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 80,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 81,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 82,
+      "text": "    ,Create_User                STRING COMMENT '创建用户'"
+    },
+    {
+      "line": 83,
+      "text": "    ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 84,
+      "text": "    ,Upd_User                   STRING COMMENT '更新用户'"
+    },
+    {
+      "line": 85,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 86,
+      "text": "    ,Real_Src_Tbl               STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 87,
+      "text": "    ,Opt_Comp_Sub_Trd_Type_Cd   STRING COMMENT '期权合约子交易类型代码'"
+    },
+    {
+      "line": 88,
+      "text": "    ,Opt_Fee_Paid_Date          STRING COMMENT '期权费支付日期'"
+    },
+    {
+      "line": 89,
+      "text": "    ,Opt_Fee                    STRING COMMENT '期权费'"
+    },
+    {
+      "line": 90,
+      "text": ")COMMENT '场外期权合约子交易信息'"
+    },
+    {
+      "line": 91,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 92,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 93,
+      "text": ""
+    },
+    {
+      "line": 94,
+      "text": "-- querySql"
+    },
+    {
+      "line": 95,
+      "text": "INSERT OVERWRITE TABLE T03_OTC_OPT_COMP_SUB_TRD_INFO PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 96,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 97,
+      "text": "--Group1: Source Table:[ODATA_N_TIT.D_REF_INS_OPTION_INFO:期权合约信息表] "
+    },
+    {
+      "line": 98,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 99,
+      "text": "SELECT"
+    },
+    {
+      "line": 100,
+      "text": "     B.KEY_OTC_TRADE_ID                                  AS  Opt_ComP_Agt_Id         --期权合约协议编号"
+    },
+    {
+      "line": 101,
+      "text": "    ,CASE WHEN C.KEY_OTC_TRADE_ID IS NOT NULL THEN '20207'"
+    },
+    {
+      "line": 102,
+      "text": "          END                                          AS  Opt_ComP_Agt_Modifr     --期权合约协议修饰符      "
+    },
+    {
+      "line": 103,
+      "text": "    ,EXTERNAL_TRADE_ID                                 AS  Sub_Trd_Id              --子交易编号                              "
+    },
+    {
+      "line": 104,
+      "text": "    ,SUBSTR(VALID_STARTDATE,1,10)                      AS  Eff_Date                --生效日期                      "
+    },
+    {
+      "line": 105,
+      "text": "    ,SUBSTR(VALID_ENDDATE,1,10)                        AS  Exp_Date                --到期日期                      "
+    },
+    {
+      "line": 106,
+      "text": "    ,NVL(D.DW_CD_VAL,TRADE_STATUS)                     AS  Trd_Stat_Cd             --交易状态代码                          "
+    },
+    {
+      "line": 107,
+      "text": "    ,SEQ                                               AS  Sub_Trd_Seq             --子交易序号                              "
+    },
+    {
+      "line": 108,
+      "text": "    ,SUBSTR(TERMINATION_DATE,1,10)                     AS  Sub_Trd_Trmt_Date       --子交易终止日期 "
+    },
+    {
+      "line": 109,
+      "text": "    ,COEFFICIENT                                       AS  Sub_Trd_Coef            --子交易系数      "
+    },
+    {
+      "line": 110,
+      "text": "    ,CONCAT('TIT-',A.KEY_INSTRUMENT_ID)                  AS  Prd_Id                  --产品编号        "
+    },
+    {
+      "line": 111,
+      "text": "    ,A.KEY_INSTRUMENT_ID                                 AS  Src_Prd_Id              --源产品编号      "
+    },
+    {
+      "line": 112,
+      "text": "    ,PRODUCT_SUBTYPE                                   AS  Src_Scr_Sub_Type_Cd     --源证券子类型代码"
+    },
+    {
+      "line": 113,
+      "text": "    ,GFS_PRODUCT_REFERENCE                             AS  Src_Prd_Cd_Shor_Name    --源产品代码简称  "
+    },
+    {
+      "line": 114,
+      "text": "    ,KEY_BOOK_ID                                       AS  Book_Agt_Id             --账簿协议编号    "
+    },
+    {
+      "line": 115,
+      "text": "    ,IF(NVL(TRIM(KEY_BOOK_ID),'')='','','20411')       AS  Book_Agt_Modifr         --账簿协议修饰符  "
+    },
+    {
+      "line": 116,
+      "text": "    ,EXERCISE_TYPE                                     AS  Opt_Exec_Type_Cd        --期权执行类型代码"
+    },
+    {
+      "line": 117,
+      "text": "    ,CASE WHEN BUY_SELL = 'BUY'  THEN '1' "
+    },
+    {
+      "line": 118,
+      "text": "          WHEN BUY_SELL = 'SELL' THEN '2' END          AS  Buy_Sell_Dir_Cd         --买卖方向代码    "
+    },
+    {
+      "line": 119,
+      "text": "    ,CONCAT('TIT-',UNDERLYING_INS_ID)                  AS  Undrl_Cd                --标的代码                 "
+    },
+    {
+      "line": 120,
+      "text": "    ,SUBSTR(EFFECTIVE_DATE,1,10)                       AS  Bgng_Prcg_Date          --期初定价日期             "
+    },
+    {
+      "line": 121,
+      "text": "    ,SUBSTR(MATURITY_DATE,1,10)                        AS  Maty_Date               --到期日期                 "
+    },
+    {
+      "line": 122,
+      "text": "    ,SUBSTR(DELIVERY_DATE,1,10)                        AS  Yield_Pay_Date          --收益兑付日期             "
+    },
+    {
+      "line": 123,
+      "text": "    ,NOTIONAL                                          AS  Prin                    --本金        "
+    },
+    {
+      "line": 124,
+      "text": "    ,NOTIONAL_CURRENCY                                 AS  Prin_Crrc_Cd            --本金币种代码"
+    },
+    {
+      "line": 125,
+      "text": "    ,QUANTITY                                          AS  Qty                     --数量        "
+    },
+    {
+      "line": 126,
+      "text": "    ,SETTLE_TYPE                                       AS  Sett_Mode_Cd            --结算模式代码"
+    },
+    {
+      "line": 127,
+      "text": "    ,SETTLEMENT_CURRENCY                               AS  Sett_Crrc_Cd            --结算币种代码"
+    },
+    {
+      "line": 128,
+      "text": "    ,SETTLEMENT_DATE                                   AS  Sett_Date               --结算日期    "
+    },
+    {
+      "line": 129,
+      "text": "    ,INITIAL_UNDERLYING_PRICE                          AS  Undrl_Bgng_Pric         --标的期初价格"
+    },
+    {
+      "line": 130,
+      "text": "    ,EXTERNAL_CONTRACT_ID                              AS  Ext_Comp_No             --外部合约编号"
+    },
+    {
+      "line": 131,
+      "text": "    ,SUBSTR(START_DATE,1,10)                           AS  Obsv_Strt_Date          --观察开始日期                   "
+    },
+    {
+      "line": 132,
+      "text": "    ,SUBSTR(END_DATE,1,10)                             AS  Obsv_End_Date           --观察结束日期                   "
+    },
+    {
+      "line": 133,
+      "text": "    ,BARRIER_TYPE                                      AS  Encb_Type_Cd            --障碍类型代码     "
+    },
+    {
+      "line": 134,
+      "text": "    ,BARRIER_VALUE_TYPE                                AS  Encb_Val_Type_Cd        --障碍值类型代码   "
+    },
+    {
+      "line": 135,
+      "text": "    ,CALL_PUT                                          AS  Look_Up_Down_Type_Cd    --看涨跌类型代码   "
+    },
+    {
+      "line": 136,
+      "text": "    ,BARRIER_COUNT                                     AS  Encb_Qty                --障碍数量         "
+    },
+    {
+      "line": 137,
+      "text": "    ,BARRIER                                           AS  Encb_Val                --障碍值           "
+    },
+    {
+      "line": 138,
+      "text": "    ,UP_BARRIER                                        AS  Up_Encb_Val             --上障碍值         "
+    },
+    {
+      "line": 139,
+      "text": "    ,DOWN_BARRIER                                      AS  Down_Encb_Val           --下障碍值         "
+    },
+    {
+      "line": 140,
+      "text": "    ,STRIKE_TYPE                                       AS  Exec_Pric_Type_Cd       --执行价格类型代码 "
+    },
+    {
+      "line": 141,
+      "text": "    ,STRIKE                                            AS  Exec_Pric               --执行价           "
+    },
+    {
+      "line": 142,
+      "text": "    ,UPSTRIKE                                          AS  Up_Exec_Pric            --上执行价         "
+    },
+    {
+      "line": 143,
+      "text": "    ,DOWNSTRIKE                                        AS  Down_Exec_Pric          --下执行价         "
+    },
+    {
+      "line": 144,
+      "text": "    ,MONITORING_DURATION                               AS  Obsv_Pd_Type_Cd         --观察周期类型代码 "
+    },
+    {
+      "line": 145,
+      "text": "    ,MONITORING_WAY                                    AS  Obsv_Way_Cd             --观察方式代码     "
+    },
+    {
+      "line": 146,
+      "text": "    ,REBATE_TIMING                                     AS  Refnd_Lmt_Type_Cd      --退款时限类型代码"
+    },
+    {
+      "line": 147,
+      "text": "    ,TRIGGERED_DATE                                    AS  Trgr_Date               --触碰日期         "
+    },
+    {
+      "line": 148,
+      "text": "    ,DIGITAL_AMOUNT                                    AS  Two_Val_Opt_Qty         --二值期权数量     "
+    },
+    {
+      "line": 149,
+      "text": "    ,TRIGGER_COUNT                                     AS  Trgr_Line_Qty           --触线数量         "
+    },
+    {
+      "line": 150,
+      "text": "    ,TRIGGER_TYPE                                      AS  Trgr_Line_Type_Cd       --触线类型代码     "
+    },
+    {
+      "line": 151,
+      "text": "    ,TRIGGER_VALUE_TYPE                                AS  Trgr_Line_Val_Type_Cd   --触线值类型代码   "
+    },
+    {
+      "line": 152,
+      "text": "    ,DIGITAL_TRIGGER                                   AS  Digit_Trgr_Line_Val     --二值期权触线值   "
+    },
+    {
+      "line": 153,
+      "text": "    ,NVL(E.DW_CD_VAL,PAYOUT_TYPE)                      AS  Fee_Paid_Way_Cd         --费用支付方式代码 "
+    },
+    {
+      "line": 154,
+      "text": "    ,GFS_PARTICIPATION_RATE                            AS  Prtc_Rate               --参与率           "
+    },
+    {
+      "line": 155,
+      "text": "    ,REBATE_PERCENT                                    AS  Ko_Yield                --敲出收益率       "
+    },
+    {
+      "line": 156,
+      "text": "    ,UP_REBATE_PERCENT                                 AS  Up_Ko_Yield             --上敲出收益率     "
+    },
+    {
+      "line": 157,
+      "text": "    ,DOWN_REBATE_PERCENT                               AS  Down_Ko_Yield           --下敲出收益率"
+    },
+    {
+      "line": 158,
+      "text": "    ,SUBSTR(REBATE_PAYMENT_DATE,1,10)                  AS  Ko_Paid_Date            --敲出支付日期                      "
+    },
+    {
+      "line": 159,
+      "text": "    ,SUBSTR(RELEASE_DATE,1,10)                         AS  Res_End_Date            --限售结束日期                      "
+    },
+    {
+      "line": 160,
+      "text": "    ,CONCAT('TIT-',CONTRACT_INS_ID)                    AS  Comp_Prd_Id             --合约产品编号     "
+    },
+    {
+      "line": 161,
+      "text": "    ,TRADE_DATE                                        AS  Deal_Date               --成交日期         "
+    },
+    {
+      "line": 162,
+      "text": "    ,INIT_EXCHANGE_RATE_ORG                            AS  Bgng_Rate_1             --期初汇率1        "
+    },
+    {
+      "line": 163,
+      "text": "    ,INIT_NOTL_EXCHANGE_RATE                           AS  Bgng_Rate_2_Calc        --期初汇率2_计算   "
+    },
+    {
+      "line": 164,
+      "text": "    ,INIT_NOTL_EXCHANGE_RATE_ORG                       AS  Bgng_Rate_2_User_Inpt   --期初汇率2_用户录入"
+    },
+    {
+      "line": 165,
+      "text": "    ,END_EXCHANGE_RATE_ORG                             AS  End_Rate                --期末汇率         "
+    },
+    {
+      "line": 166,
+      "text": "    ,INIT_EXCHANGE_INS_ID                              AS  Bgng_Rate1_Undrl_Cd     --期初汇率1标的代码"
+    },
+    {
+      "line": 167,
+      "text": "    ,INIT_NOTL_EXCHANGE_INS_ID                         AS  Bgng_Rate2_Undrl_Cd     --期初汇率2标的代码"
+    },
+    {
+      "line": 168,
+      "text": "    ,END_EXCHANGE_INS_ID                               AS  Bgng_Rate_Undrl_Cd      --期初汇率标的代码 "
+    },
+    {
+      "line": 169,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 170,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 171,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 172,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 173,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 174,
+      "text": "    ,CREATED_BY                                        AS  Create_User              --创建用户"
+    },
+    {
+      "line": 175,
+      "text": "    ,CREATED_DATE                                      AS  Create_Time              --创建时间"
+    },
+    {
+      "line": 176,
+      "text": "    ,UPDATED_BY                                        AS  Upd_User                 --更新用户"
+    },
+    {
+      "line": 177,
+      "text": "    ,UPDATED_DATETIME                                  AS  Upd_Time                 --更新时间"
+    },
+    {
+      "line": 178,
+      "text": "    ,'${src_table}'                               AS  Real_Src_Tbl             --真实源表"
+    },
+    {
+      "line": 179,
+      "text": "    ,A1.ATTRIBUTE_VALUE                                AS Opt_Comp_Sub_Trd_Type_Cd                          --期权合约子交易类型代码"
+    },
+    {
+      "line": 180,
+      "text": "    ,A2.ATTRIBUTE_VALUE                                AS Opt_Fee_Paid_Date                                 --期权费支付日期"
+    },
+    {
+      "line": 181,
+      "text": "    ,A3.ATTRIBUTE_VALUE                                AS Opt_Fee                                           --期权费"
+    },
+    {
+      "line": 182,
+      "text": "FROM (SELECT * FROM ODATA_N_TIT.D_REF_INS_OPTION_INFO WHERE BUSI_DATE ='${data_day_str}') A"
+    },
+    {
+      "line": 183,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID,KEY_INSTRUMENT_ID FROM ODATA_N_TIT.D_TRD_OTC_TRADE  WHERE BUSI_DATE ='${data_day_str}'  )B"
+    },
+    {
+      "line": 184,
+      "text": "       ON A.CONTRACT_INS_ID=B.KEY_INSTRUMENT_ID"
+    },
+    {
+      "line": 185,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID  FROM ODATA_N_TIT.D_REF_OTC_OPTION_DEAL  WHERE BUSI_DATE ='${data_day_str}'  )C"
+    },
+    {
+      "line": 186,
+      "text": "       ON B.KEY_OTC_TRADE_ID=C.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 187,
+      "text": "LEFT JOIN (SELECT KEY_INSTRUMENT_ID,ATTRIBUTE_VALUE  FROM ODATA_N_TIT.D_REF_OPTION_ATTRIBUTE  WHERE BUSI_DATE ='${data_day_str}' AND ATTRIBUTE_NAME='GFS_OPTION_TYPE' )A1"
+    },
+    {
+      "line": 188,
+      "text": "       ON A.KEY_INSTRUMENT_ID=A1.KEY_INSTRUMENT_ID"
+    },
+    {
+      "line": 189,
+      "text": "LEFT JOIN (SELECT KEY_INSTRUMENT_ID,ATTRIBUTE_VALUE  FROM ODATA_N_TIT.D_REF_OPTION_ATTRIBUTE  WHERE BUSI_DATE ='${data_day_str}' AND ATTRIBUTE_NAME='PREMIUM_DATE' )A2"
+    },
+    {
+      "line": 190,
+      "text": "       ON A.KEY_INSTRUMENT_ID=A2.KEY_INSTRUMENT_ID"
+    },
+    {
+      "line": 191,
+      "text": "LEFT JOIN (SELECT KEY_INSTRUMENT_ID,ATTRIBUTE_VALUE  FROM ODATA_N_TIT.D_REF_OPTION_ATTRIBUTE  WHERE BUSI_DATE ='${data_day_str}' AND ATTRIBUTE_NAME='PREMIUM' )A3"
+    },
+    {
+      "line": 192,
+      "text": "       ON A.KEY_INSTRUMENT_ID=A3.KEY_INSTRUMENT_ID"
+    },
+    {
+      "line": 193,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 194,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 195,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 196,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_OPT_COMP_SUB_TRD_INFO'"
+    },
+    {
+      "line": 197,
+      "text": "            AND TGT_TAB_FLD  = 'Trd_Stat_Cd'"
+    },
+    {
+      "line": 198,
+      "text": "            AND SRC_TAB_NAME = 'REF_INS_OPTION_INFO'"
+    },
+    {
+      "line": 199,
+      "text": "            AND SRC_FLD_NAME = 'TRADE_STATUS'"
+    },
+    {
+      "line": 200,
+      "text": "            AND SRC_SYS_NAME='TIT')D"
+    },
+    {
+      "line": 201,
+      "text": "   ON      A.TRADE_STATUS =D.SRC_CD_VAL                  --TRADE_STATUS 转码"
+    },
+    {
+      "line": 202,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 203,
+      "text": "         SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 204,
+      "text": "           FROM PDATA_N.REF_CD_CVT_MAP"
+    },
+    {
+      "line": 205,
+      "text": "         WHERE TGT_TAB_NAME = 'T03_OTC_OPT_COMP_SUB_TRD_INFO'"
+    },
+    {
+      "line": 206,
+      "text": "            AND TGT_TAB_FLD  = 'Fee_Paid_Way_Cd'"
+    },
+    {
+      "line": 207,
+      "text": "            AND SRC_TAB_NAME = 'REF_INS_OPTION_INFO'"
+    },
+    {
+      "line": 208,
+      "text": "            AND SRC_FLD_NAME = 'PAYOUT_TYPE'"
+    },
+    {
+      "line": 209,
+      "text": "            AND SRC_SYS_NAME='TIT')E"
+    },
+    {
+      "line": 210,
+      "text": "   ON      A.PAYOUT_TYPE =E.SRC_CD_VAL                  --PAYOUT_TYPE 转码"
+    },
+    {
+      "line": 211,
+      "text": ";"
+    },
+    {
+      "line": 212,
+      "text": ""
+    }
+  ]
+}

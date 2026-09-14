@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-09-14T03:18:15.512Z",
+  "markdown_files": 27,
+  "local_json_parsed": 8,
+  "attachment_json_parsed": 5,
+  "broken_links": [],
+  "cross_topic_links": [],
+  "metadata_count": 179,
+  "platform_count": 182,
+  "main_object_count": 107,
+  "unique_main_names": 107,
+  "unclassified_or_wrong_topic": [],
+  "selected_sql_files": 43,
+  "sql_hash_or_line_errors": []
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Handle,
   Position,
@@ -194,20 +194,25 @@ function FieldRow({
   );
 }
 
-export function LineageNode(props: NodeProps) {
+export const LineageNode = memo(function LineageNode(props: NodeProps) {
   const { data } = props;
   const updateNodeInternals = useUpdateNodeInternals();
   const fieldListRef = useRef<HTMLDivElement | null>(null);
   const nodeData = data as LineageNodeData;
   const reportHidden = nodeData.onHiddenFieldsChange;
+  const pendingMeasure = useRef<number | undefined>(undefined);
+  const lastGeometry = useRef("");
+  const lastHidden = useRef("");
   const updateFieldViewport = useCallback(() => {
     const list = fieldListRef.current;
     if (!list) return;
     const bounds = list.getBoundingClientRect();
     const scale = list.offsetHeight ? bounds.height / list.offsetHeight : 1;
     const hidden: string[] = [];
+    const geometry = [list.clientWidth, list.clientHeight, list.scrollTop];
     for (const row of list.querySelectorAll<HTMLElement>(".field-row")) {
       const rect = row.getBoundingClientRect();
+      geometry.push(Math.round((rect.top - bounds.top) / scale), Math.round(rect.height / scale));
       const visible = fieldHandleVisible(
         rect.top,
         rect.bottom,
@@ -222,22 +227,40 @@ export function LineageNode(props: NodeProps) {
         }
       }
     }
-    reportHidden?.(props.id, [...new Set(hidden)].sort());
-    updateNodeInternals(props.id);
+    const ids = [...new Set(hidden)].sort();
+    const hiddenSignature = ids.join("|");
+    if (lastHidden.current !== hiddenSignature) {
+      lastHidden.current = hiddenSignature;
+      reportHidden?.(props.id, ids);
+    }
+    const geometrySignature = geometry.join("|");
+    if (lastGeometry.current !== geometrySignature) {
+      lastGeometry.current = geometrySignature;
+      updateNodeInternals(props.id);
+    }
   }, [props.id, reportHidden, updateNodeInternals]);
+  const scheduleFieldViewport = useCallback(() => {
+    if (pendingMeasure.current !== undefined) return;
+    pendingMeasure.current = requestAnimationFrame(() => {
+      pendingMeasure.current = undefined;
+      updateFieldViewport();
+    });
+  }, [updateFieldViewport]);
   useEffect(() => {
-    const frame = requestAnimationFrame(updateFieldViewport);
-    const observer = new ResizeObserver(updateFieldViewport);
+    lastGeometry.current = "";
+    scheduleFieldViewport();
+    const observer = new ResizeObserver(scheduleFieldViewport);
     if (fieldListRef.current) {
       observer.observe(fieldListRef.current);
       for (const row of fieldListRef.current.children) observer.observe(row);
     }
     return () => {
-      cancelAnimationFrame(frame);
+      if (pendingMeasure.current !== undefined) cancelAnimationFrame(pendingMeasure.current);
+      pendingMeasure.current = undefined;
       observer.disconnect();
-      reportHidden?.(props.id, []);
     };
-  }, [updateFieldViewport, reportHidden, props.id, nodeData.members]);
+  }, [scheduleFieldViewport, nodeData.members]);
+  useEffect(() => () => { reportHidden?.(props.id, []); }, [reportHidden, props.id]);
   const activeSignature = nodeData.highlightActive
     ? JSON.stringify(nodeData.activeFieldIds ?? [])
     : "";
@@ -264,8 +287,8 @@ export function LineageNode(props: NodeProps) {
           list.clientHeight / 2 +
           row.offsetHeight / 2;
     }
-    updateFieldViewport();
-  }, [activeSignature, updateFieldViewport]);
+    scheduleFieldViewport();
+  }, [activeSignature, scheduleFieldViewport]);
   const fieldAliases =
     (
       nodeData as LineageNodeData & {
@@ -308,6 +331,11 @@ export function LineageNode(props: NodeProps) {
           </span>
         )}
         <TableDescription description={first.metadata?.table.description} />
+        {!!nodeData.consumerTaskIds?.length && (
+          <small className="consumer-context" title={`供调度 ${nodeData.consumerTaskIds.join("、")} 读取；按已确认接续关系标注`}>
+            供调度 {nodeData.consumerTaskIds.join("、")} 读取
+          </small>
+        )}
         <small>
           {members.length} 个字段
           {nodeData.writeRefs?.length
@@ -318,7 +346,7 @@ export function LineageNode(props: NodeProps) {
         <div
           className="field-rows"
           ref={fieldListRef}
-          onScroll={updateFieldViewport}
+          onScroll={scheduleFieldViewport}
         >
           {members.map((member) => (
             <FieldRow
@@ -407,4 +435,4 @@ export function LineageNode(props: NodeProps) {
       <Handle type="source" position={Position.Right} />
     </div>
   );
-}
+}, (previous, next) => previous.id === next.id && previous.data === next.data && previous.selected === next.selected);

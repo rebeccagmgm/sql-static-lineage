@@ -1,0 +1,496 @@
+{
+  "taskId": "229695",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "2fc287efe65da86c7d20064cc2836122402fdac15a36476fcf616dc497b754d2",
+  "inGraph": false,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 229695"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: "
+    },
+    {
+      "line": 3,
+      "text": "-- source: SQL_MCP"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: "
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T07:22:20.799Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T05_OTC_DERI_CUST_TRAN_PROC ("
+    },
+    {
+      "line": 10,
+      "text": "  Evt_Id STRING COMMENT '事件编号',"
+    },
+    {
+      "line": 11,
+      "text": "  Proc_Id STRING COMMENT '流程编号',"
+    },
+    {
+      "line": 12,
+      "text": "  Cust_Pty_Id STRING COMMENT '客户当事人编号',"
+    },
+    {
+      "line": 13,
+      "text": "  Cust_Pty_Name STRING COMMENT '客户当事人名称',"
+    },
+    {
+      "line": 14,
+      "text": "  Tran_Instr_Type_Cd STRING COMMENT '划款指令类型代码',"
+    },
+    {
+      "line": 15,
+      "text": "  Recv_Name STRING COMMENT '收款人姓名',"
+    },
+    {
+      "line": 16,
+      "text": "  Recv_Acct STRING COMMENT '收款人账号',"
+    },
+    {
+      "line": 17,
+      "text": "  Recv_Bod_Name STRING COMMENT '收款人开户行名称',"
+    },
+    {
+      "line": 18,
+      "text": "  Paye_Info STRING COMMENT '收款方信息',"
+    },
+    {
+      "line": 19,
+      "text": "  Tran_Amt STRING COMMENT '划款金额元',"
+    },
+    {
+      "line": 20,
+      "text": "  Tran_Amt_Ch_Chart STRING COMMENT '划款金额中文大写',"
+    },
+    {
+      "line": 21,
+      "text": "  Tran_Usag STRING COMMENT '划款用途',"
+    },
+    {
+      "line": 22,
+      "text": "  Tran_Date STRING COMMENT '划款日期',"
+    },
+    {
+      "line": 23,
+      "text": "  Arr_Date STRING COMMENT '到账日期',"
+    },
+    {
+      "line": 24,
+      "text": "  Major_Amt_Paid_No STRING COMMENT '大额支付号',"
+    },
+    {
+      "line": 25,
+      "text": "  Payr_Name STRING COMMENT '出款人名称',"
+    },
+    {
+      "line": 26,
+      "text": "  Payr_Acct STRING COMMENT '出款人账号',"
+    },
+    {
+      "line": 27,
+      "text": "  Wthdr_Remark STRING COMMENT '出金备注',"
+    },
+    {
+      "line": 28,
+      "text": "  Proc_Lnch_User_Id STRING COMMENT '流程发起用户编号',"
+    },
+    {
+      "line": 29,
+      "text": "  Proc_Strt_Time STRING COMMENT '流程开始时间',"
+    },
+    {
+      "line": 30,
+      "text": "  Proc_Stat_Cd STRING COMMENT '流程状态代码',"
+    },
+    {
+      "line": 31,
+      "text": "  Join_Proc_Id STRING COMMENT '关联流程编号',"
+    },
+    {
+      "line": 32,
+      "text": "  Tran_Stat_Cd STRING COMMENT '转账状态代码',"
+    },
+    {
+      "line": 33,
+      "text": "  Upld_Attach_Stat_Cd STRING COMMENT '上传附件状态代码',"
+    },
+    {
+      "line": 34,
+      "text": "  Src_Data_Src_Cd STRING COMMENT '源数据来源代码',"
+    },
+    {
+      "line": 35,
+      "text": "  Proc_Src_Chan STRING COMMENT '流程来源渠道',"
+    },
+    {
+      "line": 36,
+      "text": "  Bel_Busi_Dept STRING COMMENT '所属业务部门',"
+    },
+    {
+      "line": 37,
+      "text": "  Create_User_Id STRING COMMENT '创建用户编号',"
+    },
+    {
+      "line": 38,
+      "text": "  Upd_User_Id STRING COMMENT '更新用户编号',"
+    },
+    {
+      "line": 39,
+      "text": "  Create_Time STRING COMMENT '创建时间',"
+    },
+    {
+      "line": 40,
+      "text": "  Upd_Time STRING COMMENT '更新时间',"
+    },
+    {
+      "line": 41,
+      "text": "  Data_Src_Cd STRING COMMENT '数据来源代码',"
+    },
+    {
+      "line": 42,
+      "text": "  Task_Name STRING COMMENT '任务名',"
+    },
+    {
+      "line": 43,
+      "text": "  Data_Etl_Date STRING COMMENT '数据加载日期',"
+    },
+    {
+      "line": 44,
+      "text": "  Data_Upt_Date STRING COMMENT '数据更新日期',"
+    },
+    {
+      "line": 45,
+      "text": "  Data_Time STRING COMMENT '数据时间',"
+    },
+    {
+      "line": 46,
+      "text": "  Real_Src_Tbl STRING COMMENT '真实源表'"
+    },
+    {
+      "line": 47,
+      "text": ")"
+    },
+    {
+      "line": 48,
+      "text": "COMMENT '场外衍生品客户划款流程'"
+    },
+    {
+      "line": 49,
+      "text": "PARTITIONED BY (SRC_TBL STRING COMMENT'源表')"
+    },
+    {
+      "line": 50,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 51,
+      "text": ""
+    },
+    {
+      "line": 52,
+      "text": "-- querySql"
+    },
+    {
+      "line": 53,
+      "text": "INSERT OVERWRITE TABLE T05_OTC_DERI_CUST_TRAN_PROC PARTITION(SRC_TBL='ODATA_N_OIS.G_TRANSM_FLOW')"
+    },
+    {
+      "line": 54,
+      "text": "SELECT"
+    },
+    {
+      "line": 55,
+      "text": "CONCAT('OIS057-',FLOW_ID)             AS  Evt_Id                  --事件编号"
+    },
+    {
+      "line": 56,
+      "text": ",FLOW_ID                               AS  Proc_Id                 --流程编号"
+    },
+    {
+      "line": 57,
+      "text": ",CLIENT_ID                             AS  Cust_Pty_Id             --客户当事人编号"
+    },
+    {
+      "line": 58,
+      "text": ",CTPTY_SHORT_NAME                      AS  Cust_Pty_Name           --客户当事人名称"
+    },
+    {
+      "line": 59,
+      "text": ",TRANSM_TYPE                           AS  Tran_Instr_Type_Cd      --划款指令类型代码"
+    },
+    {
+      "line": 60,
+      "text": ",GATHER_PERSON                         AS  Recv_Name               --收款人姓名"
+    },
+    {
+      "line": 61,
+      "text": ",BANK_ACCOUNT                          AS  Recv_Acct               --收款人账号"
+    },
+    {
+      "line": 62,
+      "text": ",OPENING_BANK                          AS  Recv_Bod_Name           --收款人开户行名称"
+    },
+    {
+      "line": 63,
+      "text": ",PAYEE                                 AS  Paye_Info               --收款方信息"
+    },
+    {
+      "line": 64,
+      "text": ",TRANSFER_AMOUNT                       AS  Tran_Amt                --划款金额元"
+    },
+    {
+      "line": 65,
+      "text": ",TRANSFER_AMOUNT_CAPITALIZE            AS  Tran_Amt_Ch_Chart       --划款金额中文大写"
+    },
+    {
+      "line": 66,
+      "text": ",PURPOSE_OF_TRANSFER                   AS  Tran_Usag               --划款用途"
+    },
+    {
+      "line": 67,
+      "text": ",TRANSM_DATE                           AS  Tran_Date               --划款日期"
+    },
+    {
+      "line": 68,
+      "text": ",DATE_OF_RECEIPT                       AS  Arr_Date                --到账日期"
+    },
+    {
+      "line": 69,
+      "text": ",LARGE_AMOUNT_PAYMENT_NO               AS  Major_Amt_Paid_No       --大额支付号"
+    },
+    {
+      "line": 70,
+      "text": ",TRANSACTOR                            AS  Payr_Name               --出款人名称"
+    },
+    {
+      "line": 71,
+      "text": ",DISBURSEMENT_ACCOUNT_NUMBER           AS  Payr_Acct               --出款人账号"
+    },
+    {
+      "line": 72,
+      "text": ",REMARKS                               AS  Wthdr_Remark            --出金备注"
+    },
+    {
+      "line": 73,
+      "text": ",OPERATOR                              AS  Proc_Lnch_User_Id       --流程发起用户编号"
+    },
+    {
+      "line": 74,
+      "text": ",PROCESS_CREATED_TIME                  AS  Proc_Strt_Time          --流程开始时间"
+    },
+    {
+      "line": 75,
+      "text": ",NVL(B.DW_CD_VAL,PROCESS_STATUS)       AS  Proc_Stat_Cd            --流程状态代码"
+    },
+    {
+      "line": 76,
+      "text": ",DOC_ID                                AS  Join_Proc_Id            --关联流程编号"
+    },
+    {
+      "line": 77,
+      "text": ",NVL(D.DW_CD_VAL,XINYI_TRANSM_STATUS)   AS  Tran_Stat_Cd            --转账状态代码"
+    },
+    {
+      "line": 78,
+      "text": ",NVL(C.DW_CD_VAL,FILE_UPLOAD_RESULT)   AS  Upld_Attach_Stat_Cd     --上传附件状态代码"
+    },
+    {
+      "line": 79,
+      "text": ",SOURCE                                AS  Src_Data_Src_Cd         --源数据来源代码"
+    },
+    {
+      "line": 80,
+      "text": ",TRADE_CHANNEL                         AS  Proc_Src_Chan           --流程来源渠道"
+    },
+    {
+      "line": 81,
+      "text": ",DEPARTMENT                            AS  Bel_Busi_Dept           --所属业务部门"
+    },
+    {
+      "line": 82,
+      "text": ",CREATED_BY                            AS  Create_User_Id          --创建用户编号"
+    },
+    {
+      "line": 83,
+      "text": ",UPDATED_BY                            AS  Upd_User_Id             --更新用户编号"
+    },
+    {
+      "line": 84,
+      "text": ",CREATED_DATETIME                      AS  Create_Time             --创建时间"
+    },
+    {
+      "line": 85,
+      "text": ",UPDATED_DATETIME                      AS  Upd_Time                --更新时间"
+    },
+    {
+      "line": 86,
+      "text": ",'OIS'                 AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 87,
+      "text": ",'PDATA_N.T05_OTC_DERI_CUST_TRAN_PROC_OIS057'                    AS  Task_Name               --任务名"
+    },
+    {
+      "line": 88,
+      "text": ",'2026-05-24'                AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 89,
+      "text": ",'2026-05-24'                AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 90,
+      "text": ",'2026-05-25 03:58:07'                  AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 91,
+      "text": ",'ODATA_N_OIS.G_TRANSM_FLOW'                   AS  Real_Src_Tbl            --真实源表"
+    },
+    {
+      "line": 92,
+      "text": "FROM   (SELECT *  FROM ODATA_N_OIS.G_TRANSM_FLOW WHERE  BUSI_DATE='2026-05-24' )A"
+    },
+    {
+      "line": 93,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 94,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 95,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 96,
+      "text": "WHERE TGT_TAB_NAME = 'T05_OTC_DERI_CUST_TRAN_PROC'"
+    },
+    {
+      "line": 97,
+      "text": "AND TGT_TAB_FLD  = 'Proc_Stat_Cd'"
+    },
+    {
+      "line": 98,
+      "text": "AND SRC_TAB_NAME = 'TRANSM_FLOW'"
+    },
+    {
+      "line": 99,
+      "text": "AND SRC_FLD_NAME = 'PROCESS_STATUS'"
+    },
+    {
+      "line": 100,
+      "text": "AND SRC_SYS_NAME='OIS')B"
+    },
+    {
+      "line": 101,
+      "text": "ON      nvl(trim(A.PROCESS_STATUS),'') =B.SRC_CD_VAL                  --PROCESS_STATUS 转码"
+    },
+    {
+      "line": 102,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 103,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 104,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 105,
+      "text": "WHERE TGT_TAB_NAME = 'T05_OTC_DERI_CUST_TRAN_PROC'"
+    },
+    {
+      "line": 106,
+      "text": "AND TGT_TAB_FLD  = 'Upld_Attach_Stat_Cd'"
+    },
+    {
+      "line": 107,
+      "text": "AND SRC_TAB_NAME = 'TRANSM_FLOW'"
+    },
+    {
+      "line": 108,
+      "text": "AND SRC_FLD_NAME = 'FILE_UPLOAD_RESULT'"
+    },
+    {
+      "line": 109,
+      "text": "AND SRC_SYS_NAME='OIS')C"
+    },
+    {
+      "line": 110,
+      "text": "ON       nvl(trim(A.FILE_UPLOAD_RESULT),'')  =C.SRC_CD_VAL                  --FILE_UPLOAD_RESULT 转码"
+    },
+    {
+      "line": 111,
+      "text": "LEFT JOIN ("
+    },
+    {
+      "line": 112,
+      "text": "SELECT SRC_CD_VAL,DW_CD_VAL"
+    },
+    {
+      "line": 113,
+      "text": "FROM PDATA_N.REF_CD_CVT_MAP_TEMP"
+    },
+    {
+      "line": 114,
+      "text": "WHERE TGT_TAB_NAME = 'T05_OTC_DERI_CUST_TRAN_PROC'"
+    },
+    {
+      "line": 115,
+      "text": "AND TGT_TAB_FLD  = 'Tran_Stat_Cd'"
+    },
+    {
+      "line": 116,
+      "text": "AND SRC_TAB_NAME = 'TRANSM_FLOW'"
+    },
+    {
+      "line": 117,
+      "text": "AND SRC_FLD_NAME = 'XINYI_TRANSM_STATUS'"
+    },
+    {
+      "line": 118,
+      "text": "AND SRC_SYS_NAME='OIS')D"
+    },
+    {
+      "line": 119,
+      "text": "ON      nvl(trim(A.XINYI_TRANSM_STATUS),'')  =D.SRC_CD_VAL                  --XINYI_TRANSM_STATUS 转码"
+    },
+    {
+      "line": 120,
+      "text": ";"
+    },
+    {
+      "line": 121,
+      "text": ""
+    }
+  ]
+}

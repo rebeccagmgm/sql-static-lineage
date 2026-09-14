@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldChoices, taskOptions, toggleAllVisible } from "./FieldSelector";
+import { fieldChoices, selectedTaskFields, taskOptions, toggleAllVisible } from "./FieldSelector";
 import type { GraphNode } from "../types";
 const fields: GraphNode[] = [
   {
@@ -42,6 +42,14 @@ const fields: GraphNode[] = [
   },
 ].map(field => ({...field, table:"dm.output"}));
 describe("FieldSelector helpers", () => {
+  it("limits query roots to the exact task without losing other selections", () => {
+    const ids = fields.map(field => field.id);
+    expect(selectedTaskFields(fields, ids, " 10 ").map(field => field.id)).toEqual(["a1", "a2"]);
+    expect(selectedTaskFields(fields, ids, "1")).toEqual([]);
+    expect(selectedTaskFields(fields, ids, "")).toEqual(fields);
+    expect(selectedTaskFields(fields, ["a1", "b1"], "10").map(field => field.id)).toEqual(["a1"]);
+    expect(ids).toEqual(fields.map(field => field.id));
+  });
   it("counts and numerically orders exact scheduling IDs", () =>
     expect(taskOptions(fields)).toEqual([
       { taskId: "2", count: 3 },

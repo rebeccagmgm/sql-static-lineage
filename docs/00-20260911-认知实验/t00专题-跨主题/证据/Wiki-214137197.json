@@ -1,0 +1,21 @@
+[
+  {
+    "pageId": "214137197",
+    "title": "基础模型",
+    "keyword": null,
+    "section": null,
+    "readMode": "full",
+    "contentChars": 1376,
+    "returnedChars": 1376,
+    "cacheHit": "Y",
+    "truncated": "N",
+    "complete": "Y",
+    "content": "## t01.当事人PTY\n\n主要存放客户、机构客户、管理人、托管人的名单，和一些基本信息。\n\n| 目标实体         | RCC | TA5 | ECR | ADS | IFC | OIS | CRM | STA | AMS | RMS |\n| ------------ | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 当事人          | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   | 1   |\n| 当事人名称历史      | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   | 1   |\n| 对公客户         | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   | 1   |\n| 当事人鉴别信息(历史)  | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   | 1   |\n| 当事人地址信息(历史)  | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   | 1   |\n| 当事人重要联系人(历史) | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   |     |     |\n| 当事人重要日期历史    | 1   | 1   |     | 1   | 1   | 1   |     | 1   |     | 1   |\n| 当事人评级(历史)    | 1   | 1   |     | 1   | 1   | 1   | 1   |     |     |     |\n| 当事人状态历史      | 1   | 1   | 1   | 1   | 1   | 1   |     | 1   | 1   |     |\n| 企业注册信息(历史)   | 1   | 1   | 1   | 1   | 1   | 1   |     |     |     | 1   |\n\n## t03.协议AGT\n\n* 账户（交易账户、资金账户）\n* 账户相关（如保证金浮动、额度变化）\n* 合约（合同合约、组合策略、订单）\n\n![]([内部链接已省略])\n\n## t04.内部机构ORG\n\n* 内部机构、部门\n* 员工信息\n* 服务团队等各种团队\n* 商机和承揽\n\n## t05.事件EVT\n\n* 交易类\n* 日志\n\n## t06.区域LOC\n\n* 国家、地区、行政区域\n\n## t07.营销CAM\n\n* 营销活动\n\n## t08.渠道CHN\n\n* 渠道、运营位\n* 设备\n\n## t09.财务FIN\n\n* 账目、账套\n* 采购\n\n## t00.跨主题CSA",
+    "relatedSections": [],
+    "contentHash": "acabff385d5b509949b7551d8918b27a9aea9bf559bc9db70dc2405db27b38d9",
+    "source": "remote_wiki_mcp_page",
+    "limitations": "Full remote Wiki page returned explicitly.",
+    "saved_content_sanitized": true,
+    "contentHash_note": "hash belongs to adapter source content before local URL removal"
+  }
+]
