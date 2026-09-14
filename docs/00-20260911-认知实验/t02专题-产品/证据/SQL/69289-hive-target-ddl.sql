@@ -1,8 +1,0 @@
--- task_id: 69289
--- hiveDb: 
--- hiveTable: 
--- qualifiedName: 
--- source: HORAE_LOG
--- ddlStatus: UNAVAILABLE
--- dataDate: 2026-08-27
--- observed_at: 2026-09-03T06:47:17.535Z
