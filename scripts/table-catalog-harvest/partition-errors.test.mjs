@@ -20,3 +20,14 @@ test('permissions, rate limits, unknown errors and recording failures still stop
     await assert.rejects(runPartitionTable(()=>{throw Error(code);},()=>assert.fail('must not quarantine')), {message:code});
   await assert.rejects(runPartitionTable(()=>{throw Error('SOURCE_METADATA_TYPE_MISSING');},()=>{throw Error('SQLITE_ERROR');}),{message:'SQLITE_ERROR'});
 });
+
+test('authorized null query error is recorded distinctly and the next table proceeds',async()=>{
+  assert.equal(partitionBusinessErrorCode({code:1,msg:'查询异常null'}),'SOURCE_PARTITION_QUERY_NULL');
+  for(const body of [{code:403,msg:'查询异常null'},{code:1,msg:null},{code:1,msg:'查询异常null other'}])
+    assert.equal(partitionBusinessErrorCode(body),'PORTAL_BUSINESS_ERROR');
+  const events=[];
+  assert.equal(await runPartitionTable(()=>{throw Error('SOURCE_PARTITION_QUERY_NULL');},code=>events.push(code)),'BLOCKED');
+  assert.equal(await runPartitionTable(()=> 'CAPTURED',()=>assert.fail('must not quarantine')),'CAPTURED');
+  assert.deepEqual(events,['SOURCE_PARTITION_QUERY_NULL']);
+  await assert.rejects(runPartitionTable(()=>{throw Error('SOURCE_PARTITION_QUERY_NULL');},()=>{throw Error('SQLITE_ERROR');}),{message:'SQLITE_ERROR'});
+});

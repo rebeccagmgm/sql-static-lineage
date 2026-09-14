@@ -55,6 +55,9 @@ Only one collector can hold the process lock. Requests run serially with a rando
 1–1.5 second delay after each response. The specifically verified business error
 `typeName is null` (HTTP 200, business code 1, exact observed message) marks that
 table BLOCKED, records an event, and immediately proceeds to the next table.
+The user-authorized exact response `查询异常null` (HTTP 200, business code 1)
+also skips only that table, recording `SOURCE_PARTITION_QUERY_NULL` and the
+message in the event. Its cause remains unverified; it does not prove deletion.
 Permissions, rate limits, unknown business errors and data validation failures
 still pause the entire run. A finished queue with BLOCKED tables is FINISHED_PARTIAL.
 

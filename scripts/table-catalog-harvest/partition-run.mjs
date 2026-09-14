@@ -77,11 +77,11 @@ try {
           db.prepare('INSERT INTO filters VALUES(?,?,?,?,?)').run(active.guid,key,ordinal,JSON.stringify(summary),now());
         }
         db.prepare('UPDATE tasks SET state=?,updated_at=? WHERE guid=?').run(keys.length?'CAPTURED_UNVERIFIED':'NO_KEYS_RETURNED',now(),active.guid);
-        },()=>{
+        },(code)=>{
           db.exec('BEGIN IMMEDIATE');
           try {
-            db.prepare("UPDATE tasks SET state='BLOCKED',error_code='SOURCE_METADATA_TYPE_MISSING',updated_at=? WHERE guid=?").run(now(),active.guid);
-            db.prepare('INSERT INTO events VALUES(?,?,?)').run(now(),'TASK_QUARANTINED',JSON.stringify({guid:active.guid,code:'SOURCE_METADATA_TYPE_MISSING'}));
+            db.prepare("UPDATE tasks SET state='BLOCKED',error_code=?,updated_at=? WHERE guid=?").run(code,now(),active.guid);
+            db.prepare('INSERT INTO events VALUES(?,?,?)').run(now(),'TASK_QUARANTINED',JSON.stringify({guid:active.guid,code,...(code==='SOURCE_PARTITION_QUERY_NULL'?{message:'查询异常null',cause:'UNVERIFIED'}:{})}));
             db.exec('COMMIT');
           }catch(error){db.exec('ROLLBACK');throw error;}
         });
