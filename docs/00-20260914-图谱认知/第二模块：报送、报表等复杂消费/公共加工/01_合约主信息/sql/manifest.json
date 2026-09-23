@@ -1,0 +1,112 @@
+{
+  "baseline": "2026-09-18 published SQL snapshot",
+  "ddlDifference": "86842: Futr_Type_Cd; other three: Futr_Type. Output positions preserved; real schema not checked.",
+  "branches": [
+    {
+      "name": "01_期权",
+      "taskId": "86840",
+      "grpId": "01",
+      "sha256": "cb3d1d0ba886be1df536f9b32dc382987d3b7fca45a2eb070b1c22faab28cc25",
+      "reference": "06_原始SQL/86840.sql",
+      "entry": "04_业务模块/01_期权/01_期权_主脚本.sql",
+      "stages": ["option_base", "option_underlying", "option_classified"],
+      "ctes": {
+        "deal": "option_contract",
+        "ds": "option_structure",
+        "rcm": "customer_mapping",
+        "c": "instrument_pool",
+        "rel": "related_contract",
+        "mrg": "margin_parameters",
+        "mr": "margin_trs_links",
+        "sct": "contract_type_dictionary",
+        "ssct": "subtype_dictionary",
+        "sutd": "underlying_type_dictionary",
+        "ins": "instrument_snapshot",
+        "fu": "future_properties",
+        "bc": "basket_summary",
+        "ods": "option_settlement",
+        "fee": "first_premium_fee",
+        "rodc": "coupon_terms",
+        "ko": "knockout_terms",
+        "ki": "knockin_terms",
+        "stk": "strike_terms",
+        "pr": "participation_terms",
+        "calc": "latest_valuation"
+      },
+      "groups": [
+        "source",
+        "underlying",
+        "terms",
+        "valuation"
+      ]
+    },
+    {
+      "name": "02_普通互换",
+      "taskId": "86841",
+      "grpId": "02",
+      "sha256": "43ad679d05f0bc95c744cb71d20585ea82050c7ea01f9f0ff4bd0d244797c949",
+      "reference": "06_原始SQL/86841.sql",
+      "entry": "04_业务模块/00_分支主脚本/02_普通互换.sql",
+      "ctes": {
+        "rt": "trs_contract",
+        "tocr": "settlement_report",
+        "rcm": "customer_mapping",
+        "rel": "related_contract",
+        "mrg": "margin_parameters",
+        "mr": "margin_option_links",
+        "sct": "contract_type_dictionary",
+        "sutd": "underlying_type_dictionary",
+        "rtl": "structure_legs",
+        "rtl_f": "interest_legs",
+        "his_ini": "initial_position",
+        "his_dy": "daily_position"
+      },
+      "groups": [
+        "source",
+        "legs",
+        "initial_position",
+        "daily_position"
+      ]
+    },
+    {
+      "name": "03_金仕达",
+      "taskId": "86842",
+      "grpId": "03",
+      "sha256": "287c930b0162150a4b3eb04e05d2717fe77a892029c343c78f1f75ec76dbc203",
+      "reference": "06_原始SQL/86842.sql",
+      "entry": "04_业务模块/00_分支主脚本/03_金仕达.sql",
+      "ctes": {
+        "a": "latest_confirmation",
+        "sct": "contract_type_dictionary",
+        "ins": "underlying_summary"
+      },
+      "groups": [
+        "source",
+        "underlying"
+      ]
+    },
+    {
+      "name": "04_指定FAST_TRS",
+      "taskId": "220650",
+      "grpId": "04",
+      "sha256": "a29a23c8ab40c62ec6fa084fb404b74c652493249acafd7392981ad0e5db3654",
+      "reference": "06_原始SQL/220650.sql",
+      "entry": "04_业务模块/00_分支主脚本/04_指定FAST_TRS.sql",
+      "ctes": {
+        "rt": "fast_contract",
+        "tocr": "settlement_report",
+        "rcm": "customer_mapping",
+        "rel": "related_contract",
+        "mrg": "margin_parameters",
+        "sct": "contract_type_dictionary",
+        "dy": "initial_position",
+        "np": "daily_position"
+      },
+      "groups": [
+        "source",
+        "initial_position",
+        "daily_position"
+      ]
+    }
+  ]
+}
