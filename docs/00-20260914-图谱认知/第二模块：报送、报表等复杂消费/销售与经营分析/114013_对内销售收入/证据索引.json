@@ -1,0 +1,27 @@
+{
+  "taskId": "114013",
+  "targetTable": "dm_otc_n.otc_inr_sale_daily_rpt",
+  "observedAt": "2026-08-31T09:36:10.129Z",
+  "sourceKind": "offline szdata-schedule-detail detail.querySql",
+  "querySqlFile": "证据_114013.sql",
+  "querySqlSha256": "f291c06d5914d607f566b5eae05805416ea36273322231c2a8bc09a121ba8f1a",
+  "querySqlLogicalLines": 345,
+  "outputColumns": 52,
+  "physicalSourceTables": [
+    "pdata_n.t98_otc_deri_comp_sale_info",
+    "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+    "pdata_n.t01_otc_deri_cust",
+    "pdata_n.t99_otc_deri_inr_base_mapping",
+    "pdata_n.t99_deri_comp_sprd_coef_ref",
+    "pdata_n.t99_otc_deri_inr_base_ref",
+    "pdata_n.t99_deri_comp_base_coef_ref",
+    "pdata_n.t98_otc_comp_mng_rela_info"
+  ],
+  "moduleRestore": "00 includes 01–06; CTE bodies are substituted back into their original FROM/JOIN sites by checks.test.mjs before token comparison",
+  "prepareSql": {
+    "present": true,
+    "scope": "not executed; documentation assembles querySql only"
+  },
+  "metadataFile": "来源字段证据.json",
+  "verificationBoundary": "static token restoration and local SQLite adaptation over constructed rows; not a Hive execution or production data acceptance"
+}

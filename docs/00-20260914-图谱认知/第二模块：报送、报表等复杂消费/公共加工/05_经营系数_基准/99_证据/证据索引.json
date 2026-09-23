@@ -1,0 +1,36 @@
+{
+  "scope": "基准生产与118141消费；静态阅读，不执行生产SQL",
+  "collectedForThisNote": "2026-09-22",
+  "snapshotFormatting": "本地SQL副本统一LF、移除行末空白、保留一个末尾换行；原来源和本地副本分别计算哈希",
+  "sources": [
+    {
+      "taskId": "133054",
+      "file": "证据_133054.sql",
+      "sourceSha256": "e8a916266d28894797a897a85fb77d6c99609ba6de7d7a66557e8290d9035a19",
+      "fileSha256": "bb4d8ab7c332f42fb83df4b33b2ae768139866ed1a3ee914dfd8d3ef4d15deaa",
+      "source": "schedule-evidence.sqlite / hive-task / LOCAL_CODE; SQL header observed_at 2026-09-05",
+      "boundary": "独立本地任务SQL快照，未证明与118141冻结快照同次运行"
+    },
+    {
+      "taskId": "133055",
+      "file": "证据_133055.sql",
+      "sourceSha256": "767274c1227b64bf812c678e024bec29877c9c38580f5c28555c7ec8c6b520a6",
+      "fileSha256": "a0917338525da262e1c8250883ca47c8cf665889c07e88ee2ac996e274c2e15f",
+      "source": "schedule-evidence.sqlite / hive-task / LOCAL_CODE; SQL header observed_at 2026-09-05",
+      "boundary": "独立本地任务SQL快照，未证明与118141冻结快照同次运行"
+    },
+    {
+      "taskId": "133056",
+      "file": "证据_133056.sql",
+      "sourceSha256": "f78d017555d5f38b44ab49cd0fefddcb58cf7a191aa967f47c56e6bdbaa32bdc",
+      "fileSha256": "05c3fd6749aa9db292a94fb667aaca4b7d37e7092120ec220412958c8894bf26",
+      "source": "schedule-evidence.sqlite / hive-task / LOCAL_CODE; SQL header observed_at 2026-09-05",
+      "boundary": "独立本地任务SQL快照，未证明与118141冻结快照同次运行"
+    }
+  ],
+  "consumer": {
+    "file": "../../04_经营系数_价差/99_证据/证据_118141.sql",
+    "fileSha256": "633235e763cac82cda29bf8fab9ac08d7a798980dc1644392b7304ca541a5e6b",
+    "boundary": "复用价差专题冻结SQL，不复制另一份；发布绑定信息见价差证据索引"
+  }
+}

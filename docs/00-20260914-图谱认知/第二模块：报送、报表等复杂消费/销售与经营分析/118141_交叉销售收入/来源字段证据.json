@@ -1,0 +1,318 @@
+{
+  "catalogFile": "table-metadata-7acdff82cd0affd9-0536ac87-6fd7-4c4e-b668-1a18cde959c0.sqlite",
+  "builtAt": "2026-09-16T01:22:43.476Z",
+  "physicalFilter": {
+    "platform": "hive",
+    "data_source": "gfhive"
+  },
+  "tables": [
+    {
+      "id": 32916,
+      "qualified_name": "odata_n_ois.g_cross_income_reward",
+      "description": "【AI】交叉收入奖励",
+      "collected_at": "2026-08-29T10:18:11.688Z",
+      "fields": [
+        {
+          "name": "id",
+          "comment": "【AI】ID"
+        },
+        {
+          "name": "accounting_date",
+          "comment": "核算日期"
+        },
+        {
+          "name": "branch_name",
+          "comment": "分支机构名称"
+        },
+        {
+          "name": "customer_manager_name",
+          "comment": "客户经理名称"
+        },
+        {
+          "name": "contract_no",
+          "comment": "合同编号"
+        },
+        {
+          "name": "abbreviation",
+          "comment": "交易对手简称"
+        },
+        {
+          "name": "option_type",
+          "comment": "衍生品类型"
+        },
+        {
+          "name": "expansion_dept_income",
+          "comment": "拓展方部门所得收入（元）"
+        },
+        {
+          "name": "notional",
+          "comment": "名义本金（元）"
+        },
+        {
+          "name": "corporate_name",
+          "comment": "公司名称"
+        },
+        {
+          "name": "signature_name",
+          "comment": "代签产品名称"
+        },
+        {
+          "name": "aptitude",
+          "comment": "客户类型"
+        },
+        {
+          "name": "remark",
+          "comment": "备注"
+        },
+        {
+          "name": "create_by",
+          "comment": "创建人"
+        },
+        {
+          "name": "create_time",
+          "comment": "创建时间"
+        },
+        {
+          "name": "update_by",
+          "comment": "更新人"
+        },
+        {
+          "name": "update_time",
+          "comment": "更新时间"
+        },
+        {
+          "name": "branch_office",
+          "comment": "所属分公司"
+        },
+        {
+          "name": "underlying_code",
+          "comment": "标的代码"
+        },
+        {
+          "name": "underlying_type",
+          "comment": "标的类型"
+        },
+        {
+          "name": "is_cross_border",
+          "comment": "是否跨境"
+        },
+        {
+          "name": "underlying_name",
+          "comment": "标的名称"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间"
+        },
+        {
+          "name": "accounting_start_date",
+          "comment": "【AI】核算开始日期"
+        },
+        {
+          "name": "accounting_end_date",
+          "comment": "【AI】核算结束日期"
+        },
+        {
+          "name": "busi_date",
+          "comment": "数据日期"
+        }
+      ]
+    },
+    {
+      "id": 44166,
+      "qualified_name": "pdata_n.t98_otc_deri_undrl_income_rwd_sum",
+      "description": "<font color='red'>T98</font>_场外衍生品收入奖励汇总",
+      "collected_at": "2026-08-29T12:09:40.681Z",
+      "fields": [
+        {
+          "name": "src_id",
+          "comment": "源ID"
+        },
+        {
+          "name": "sett_time",
+          "comment": "核算时间"
+        },
+        {
+          "name": "inpt_time",
+          "comment": "数据导入时间"
+        },
+        {
+          "name": "bel_div_org_name",
+          "comment": "所属分公司名称"
+        },
+        {
+          "name": "bel_inr_org_id",
+          "comment": "所属内部机构编号"
+        },
+        {
+          "name": "bel_inr_org_name",
+          "comment": "所属内部机构名称"
+        },
+        {
+          "name": "mngr_emp_name",
+          "comment": "客户经理员工名称"
+        },
+        {
+          "name": "cupt_name",
+          "comment": "交易对手简称"
+        },
+        {
+          "name": "otc_deri_type",
+          "comment": "衍生品类型"
+        },
+        {
+          "name": "annu_pric_diff",
+          "comment": "年化价差"
+        },
+        {
+          "name": "absl_pric_diff",
+          "comment": "绝对价差"
+        },
+        {
+          "name": "sale_coef",
+          "comment": "销售费系数"
+        },
+        {
+          "name": "absl_nom_prin",
+          "comment": "绝对名义本金"
+        },
+        {
+          "name": "dev_dept_rwd",
+          "comment": "拓展方部门所得收入"
+        },
+        {
+          "name": "bgng_prcg_date",
+          "comment": "期初定价日期"
+        },
+        {
+          "name": "accr_begn_date",
+          "comment": "计提起始日"
+        },
+        {
+          "name": "accr_end_date",
+          "comment": "计提终止日"
+        },
+        {
+          "name": "end_date",
+          "comment": "到期日(含提前终止日)"
+        },
+        {
+          "name": "accr_days",
+          "comment": "实际天数/计提天数"
+        },
+        {
+          "name": "erly_trmt_flag",
+          "comment": "提前终止标志"
+        },
+        {
+          "name": "erly_trmt_date",
+          "comment": "提前终止日期"
+        },
+        {
+          "name": "nom_prin",
+          "comment": "名义本金"
+        },
+        {
+          "name": "contr_id",
+          "comment": "合同编号"
+        },
+        {
+          "name": "pty_cutp_name",
+          "comment": "当事人交易对手名称"
+        },
+        {
+          "name": "sign_prd_name",
+          "comment": "代签产品名称"
+        },
+        {
+          "name": "undrl_cd",
+          "comment": "标的代码"
+        },
+        {
+          "name": "undrl_name",
+          "comment": "标的名称"
+        },
+        {
+          "name": "undrl_type",
+          "comment": "标的名称"
+        },
+        {
+          "name": "remark",
+          "comment": "备注"
+        },
+        {
+          "name": "dev_cust_flag",
+          "comment": "研发客户标志"
+        },
+        {
+          "name": "curr_payb_rwd",
+          "comment": "本期应发奖励"
+        },
+        {
+          "name": "curr_defr_rwd",
+          "comment": "本期递延奖励"
+        },
+        {
+          "name": "mtch_defr_rwd",
+          "comment": "历史累计递延奖励"
+        },
+        {
+          "name": "curr_actl_rwd",
+          "comment": "本期实发奖励"
+        },
+        {
+          "name": "cust_type_desc",
+          "comment": "客户类型描述"
+        },
+        {
+          "name": "matn_emp_id",
+          "comment": "维护员工编号"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间"
+        },
+        {
+          "name": "real_src_tbl",
+          "comment": "真实源表"
+        },
+        {
+          "name": "cros_bord_flag",
+          "comment": "跨境标志"
+        },
+        {
+          "name": "sett_strt_date",
+          "comment": "核算开始日期"
+        },
+        {
+          "name": "sett_end_date",
+          "comment": "核算结束日期"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期"
+        }
+      ]
+    }
+  ]
+}

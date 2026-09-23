@@ -1,0 +1,114 @@
+[
+  {
+    "taskId": "106204",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_COMP_RGST_SAC_EVT_TIT184",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "107347",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_COMP_RGST_SAC_EVT_TIT184",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "159419",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_BOOK_MTCH_EVT_TIT105",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "160714",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_BOOK_MTCH_EVT_TIT274",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "211535",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_BOOK_MTCH_EVT_TIT274",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "173966",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_CUTP_FND_CHG_EVT_TIT280",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "173965",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_CUTP_MARG_CHG_EVT_TIT279",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "202900",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_SWAP_MTCH_RETU_ASGN_EVT_TIT307",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "202899",
+    "ok": true,
+    "taskName": "PDATA_N.T05_OTC_DERI_SWAP_MTCH_RETU_EVT_TIT306",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "114026",
+    "ok": true,
+    "taskName": "PDATA_N.T05_SB_OTC_COMP_MODIF_LOG_TIT201",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "128578",
+    "ok": true,
+    "taskName": "PDATA_N.T05_TIT_PROC_INSTC_TIT233",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "210338",
+    "ok": true,
+    "taskName": "PDATA_N.T05_TIT_PROC_INSTC_TIT233_H15",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "128579",
+    "ok": true,
+    "taskName": "PDATA_N.T05_TIT_PROC_VAR_CHG_EVT_TIT235",
+    "coverage": "PROJECTED",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "error": null
+  },
+  {
+    "taskId": "106205",
+    "ok": false,
+    "taskName": null,
+    "coverage": null,
+    "graphVersion": null,
+    "error": "TASK_NOT_IN_PUBLISHED_GRAPH"
+  }
+]

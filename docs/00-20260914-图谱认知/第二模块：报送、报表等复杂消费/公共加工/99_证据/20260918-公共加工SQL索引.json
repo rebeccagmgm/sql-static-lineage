@@ -1,0 +1,475 @@
+[
+  {
+    "taskId": "86840",
+    "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO_TIT110",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "7a503781aa1166c9797aaf7b8cac40409f9d5cd52f0e633f125a132b6b7dcdd0",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/86840/versions/3b5eda96f4da7b71ad8362a055f824d592515e78002b431d987c41018fdd7782.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "cb3d1d0ba886be1df536f9b32dc382987d3b7fca45a2eb070b1c22faab28cc25",
+    "sqlFile": "86840-query.sql",
+    "lineCount": 378,
+    "writes": [
+      {
+        "taskId": "86840",
+        "id": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+        "observation": "write-observation:86840:8",
+        "targetNodeId": "target-write:a54980ebc87d068f420d84a49e0623c557078593ce4fc9217e01f5695988e74c",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:c8b59f52f5c815bb238c6827ffb85dad9ea9e58d91bce0cdb99de971ed85eecb",
+      "dataset:02ef8ebfbf962731bc12993db944c0560fe18f2e430b5ba70b4a01386cd528f0",
+      "dataset:17ec8795e0c6aa06925f2b9ab97070d99a933058b4dae96cd2a9a2dbfcece0d6",
+      "dataset:c28d15e1ea3de678a4d44dbf025e2f31774d383034e991a67097e79dfe63a714",
+      "dataset:aa94723fcb757f0d98188daf545dbdac49e731bf1b2bfa8bf25a3180bd39dcdb",
+      "dataset:175638359c6f948bb59f1f58d76f3b9749bc4615ecde009470e4bdddb4ba4ab8",
+      "dataset:c1f1ed0f3134ebea57061b01d2239d718710066082e618841c46eae3f32e9675",
+      "dataset:cf5dcc9bb3733cd04fffcd16bf854cd3dff4b11c9749c17a1688e2c1b56d9b3f",
+      "dataset:7f5cc0a8be047758b450eb44f1adbe4f40ef8af1bc3ec664a7c1355c18e7bbba",
+      "dataset:ed37459cabf78f4765c168763f9577211a232fa04b2cf1906d2e64e97607c849",
+      "dataset:78529405a01da382f5b56aef42a65f2107c3b71766724224277ddaed156d0ca1",
+      "dataset:ec3e9060634d4c4f5aeafa0167b2419f912b4bbecf27c5a9a31bb14b507f9b34",
+      "dataset:1d376c55916bd9a48001c370a364448fb612e1f6131da6bbee64a16f492d97ca",
+      "dataset:68652a17536233049ab6dbe09ac63311767556daaaf211d43d213c1939a49170",
+      "dataset:128b4323c3bdd43a207f140d975b8a52d13545002d34491b07a02b8a74b31269",
+      "dataset:f311723fba434ccf0daf31011307604a7a5fa76a26af8d53aae3c90a8d4c47ce",
+      "dataset:073eb6da06c6f454bb9b997ebea60902fe849166e4bbdf89d023cb717ea2bb31",
+      "dataset:7e4cc8dabe1e42b8c3af76ba205c0e7c584f7aae5400f0b3c0ffd54942c759b4",
+      "dataset:3bd892ec369505b9aeb5b5e2451de8c6560ac36a8ed2420836c242ad60d5f181",
+      "dataset:812ff791de8e25c60edd05b68affb2944728c43eac62de3809c2b042e51813e8",
+      "dataset:379c06429ed279a749b00aa79000def1db3920435953bca85fa4c1020ea790cf",
+      "dataset:b576c9ed367126e3d519493bcf2891cb0533a7c98a657e996c3849041c2bfe1e",
+      "dataset:4c11341cd0d0a4af98055b72c5d7e4d496926760b3c87498c4178666cd21b592",
+      "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "dataset:408de887602177a93fea27251a418b1c3bbe0a0c9f71660aad94dbc8e9d32e71",
+      "dataset:5eb7c572b506bf4dc9b91517cb40c64f0a5905bd991456252f9c4ce622467574",
+      "dataset:d447eec4d7b09da0d1148dc1abc768193e951a77731a7de1164d3e41c6f5588f"
+    ]
+  },
+  {
+    "taskId": "86841",
+    "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO_TIT111",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "a9a00f2bc4f9b4dedb3a511d979dc6d9070abf1690d5c3a36a704ef21309100b",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/86841/versions/79104e0a35eed8f1a47f3a468ad33dc5a9826c6389398131459ddf2cca7226b5.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "43ad679d05f0bc95c744cb71d20585ea82050c7ea01f9f0ff4bd0d244797c949",
+    "sqlFile": "86841-query.sql",
+    "lineCount": 293,
+    "writes": [
+      {
+        "taskId": "86841",
+        "id": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+        "observation": "write-observation:86841:8",
+        "targetNodeId": "target-write:fd30fb5f327d8d417ce62a65297013345cde752d5941d36befceeda9094958cf",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:175638359c6f948bb59f1f58d76f3b9749bc4615ecde009470e4bdddb4ba4ab8",
+      "dataset:c1f1ed0f3134ebea57061b01d2239d718710066082e618841c46eae3f32e9675",
+      "dataset:f6539e98207707a388fa281ec4ccc34fe26641f2abaf460442d94694b177767a",
+      "dataset:c28d15e1ea3de678a4d44dbf025e2f31774d383034e991a67097e79dfe63a714",
+      "dataset:17ec8795e0c6aa06925f2b9ab97070d99a933058b4dae96cd2a9a2dbfcece0d6",
+      "dataset:02ef8ebfbf962731bc12993db944c0560fe18f2e430b5ba70b4a01386cd528f0",
+      "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "dataset:1d376c55916bd9a48001c370a364448fb612e1f6131da6bbee64a16f492d97ca",
+      "dataset:68652a17536233049ab6dbe09ac63311767556daaaf211d43d213c1939a49170",
+      "dataset:f311723fba434ccf0daf31011307604a7a5fa76a26af8d53aae3c90a8d4c47ce",
+      "dataset:3bd892ec369505b9aeb5b5e2451de8c6560ac36a8ed2420836c242ad60d5f181",
+      "dataset:812ff791de8e25c60edd05b68affb2944728c43eac62de3809c2b042e51813e8",
+      "dataset:b576c9ed367126e3d519493bcf2891cb0533a7c98a657e996c3849041c2bfe1e",
+      "dataset:128b4323c3bdd43a207f140d975b8a52d13545002d34491b07a02b8a74b31269",
+      "dataset:873d0c7a43d9d5049eff6962ce38045eb0a4e27ed22edf8a69a135038ad65bef",
+      "dataset:5eb7c572b506bf4dc9b91517cb40c64f0a5905bd991456252f9c4ce622467574",
+      "dataset:9459f2cfb354cccb664ba509af6167f50a5c2c469e6b226acdd5aa0ba65ce336",
+      "dataset:d447eec4d7b09da0d1148dc1abc768193e951a77731a7de1164d3e41c6f5588f"
+    ]
+  },
+  {
+    "taskId": "86842",
+    "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO_TIT112",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "76ad92ab2bff03f95072620e71908f8b8300ebb9e2b5a83bd6a5c3f0acb681f9",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/86842/versions/e6baf9fa6d81de9486ef02e1b5ef01415e523ad80fd15f751ae5a1ff8141755b.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "287c930b0162150a4b3eb04e05d2717fe77a892029c343c78f1f75ec76dbc203",
+    "sqlFile": "86842-query.sql",
+    "lineCount": 169,
+    "writes": [
+      {
+        "taskId": "86842",
+        "id": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+        "observation": "write-observation:86842:8",
+        "targetNodeId": "target-write:e900d994c25ca7ed3f33873322ea7621490b7697aa8f6f564224390a693186c0",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:f74394f308e963480370ec72aa0eaad2cc37b9624ff84ef68bfb4d44eefa2cd8",
+      "dataset:175638359c6f948bb59f1f58d76f3b9749bc4615ecde009470e4bdddb4ba4ab8",
+      "dataset:fcbbb74554a183978d85300848161b17ee8c0276a9c1777d67962d9db260f59f",
+      "dataset:17ec8795e0c6aa06925f2b9ab97070d99a933058b4dae96cd2a9a2dbfcece0d6",
+      "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951"
+    ]
+  },
+  {
+    "taskId": "220650",
+    "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_INFO_TIT293",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "d086a96c48b8f9a3407bd464ac65c24378724d8dd68834dd6e7f44d00877accc",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220650/versions/eb9cab70651661d2474ed29da131e49126db8b5cde3c9170ba92574f6107d24e.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "a29a23c8ab40c62ec6fa084fb404b74c652493249acafd7392981ad0e5db3654",
+    "sqlFile": "220650-query.sql",
+    "lineCount": 212,
+    "writes": [
+      {
+        "taskId": "220650",
+        "id": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+        "observation": "write-observation:220650:8",
+        "targetNodeId": "target-write:130a207e0a5c632a2f62466d5b1116f4dbbc0edfcf8b6656fc5e9e5bc683d257",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:175638359c6f948bb59f1f58d76f3b9749bc4615ecde009470e4bdddb4ba4ab8",
+      "dataset:c1f1ed0f3134ebea57061b01d2239d718710066082e618841c46eae3f32e9675",
+      "dataset:17ec8795e0c6aa06925f2b9ab97070d99a933058b4dae96cd2a9a2dbfcece0d6",
+      "dataset:c24323edcad38e2aada48e93db7af6d9b1e07a0563fdd404a05a95352160492a",
+      "dataset:02ef8ebfbf962731bc12993db944c0560fe18f2e430b5ba70b4a01386cd528f0",
+      "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "dataset:1d376c55916bd9a48001c370a364448fb612e1f6131da6bbee64a16f492d97ca",
+      "dataset:f311723fba434ccf0daf31011307604a7a5fa76a26af8d53aae3c90a8d4c47ce",
+      "dataset:3bd892ec369505b9aeb5b5e2451de8c6560ac36a8ed2420836c242ad60d5f181",
+      "dataset:812ff791de8e25c60edd05b68affb2944728c43eac62de3809c2b042e51813e8",
+      "dataset:b576c9ed367126e3d519493bcf2891cb0533a7c98a657e996c3849041c2bfe1e",
+      "dataset:4c40c316442c4834f1ff96f690e0ccb50b2e01e3ef931ebcbb90f7562708d367",
+      "dataset:5eb7c572b506bf4dc9b91517cb40c64f0a5905bd991456252f9c4ce622467574",
+      "dataset:9459f2cfb354cccb664ba509af6167f50a5c2c469e6b226acdd5aa0ba65ce336",
+      "dataset:d447eec4d7b09da0d1148dc1abc768193e951a77731a7de1164d3e41c6f5588f"
+    ]
+  },
+  {
+    "taskId": "105743",
+    "taskName": "PDATA_N.T98_OTC_COMP_MNG_RELA_INFO",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "0c080221f7d35b5f578d8af8d96ca054f307d4cd4a45fd90e9d06107e499a261",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage/.evidence-cache/stock-day-repair-20260911/projections/tasks/105743/versions/7a4dbbee1ec9d1ca241ffd72e5a5626d7460b12b1ddbcbe4e85ac738aeb1542a.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "4f41d3eefca10d8b23da323ab612ef876fdf087e0c37cabee9e0ec4bb54e78d7",
+    "sqlFile": "105743-query.sql",
+    "lineCount": 250,
+    "writes": [
+      {
+        "taskId": "105743",
+        "id": "dataset:50c57a14a094c74eac2dc0af238deac69dec7577a2d79a18c4e2e325f174bd9e",
+        "observation": "write-observation:105743:8",
+        "targetNodeId": "target-write:9eb30a0895033565f901148ac862797021597bf30590548a66bd318f5200e527",
+        "qualification": "",
+        "recordType": "其他写入观察（非finalWrites）"
+      },
+      {
+        "taskId": "105743",
+        "id": "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+        "observation": "write-observation:105743:17",
+        "targetNodeId": "target-write:6c66cfc7ec7e3ec1cd3ae379a985b16841f617ba7eef93c9ee51d96b9cc1c0c7",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:175638359c6f948bb59f1f58d76f3b9749bc4615ecde009470e4bdddb4ba4ab8",
+      "dataset:b6fac60d70292560ccc78f3123043eeb12aa555d18e4fa3d466227eef2583f00",
+      "dataset:c28f37d6630b87e9a1b1a3f35b8399dd0caebfa0d4bae6299118d5e95566205c",
+      "dataset:4db8aa55ce40db06353dbe35858ca5eefae93df348e25de00ead4721dfb2b94f",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:bbac8a2464399a96abe6f0cb0a4ec3fe0a49fb1aad776f9f0ce6eff9fd863ef3",
+      "dataset:faec32ea3bd2a843e4ba2b13693fcab6025f649c67161a617697d7598c51fc34",
+      "dataset:b576c9ed367126e3d519493bcf2891cb0533a7c98a657e996c3849041c2bfe1e",
+      "dataset:b78a48d07536209bdf2d70ff37c6d6c5b4baf5c1b1b69244b1570a2cc0129530",
+      "dataset:cb1a0d28036b34c73c0fe807d5adf6801e39524d885dcbc305ea5882ec7fca63",
+      "dataset:87bb0c983bbd36efbb7599b806d1e6cf6427317bbf474cd3a1ae3e191638d224",
+      "dataset:f3220d17adb7ad0f6af98219cb6f23d95aef21d31d05d485365086740340522b"
+    ]
+  },
+  {
+    "taskId": "107491",
+    "taskName": "PDATA_N.T98_OTC_DERI_COMP_SALE_ADTNL_DET",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "64a08e488bc55d0601722f8eed87c67fca0b7f18dca8af64abfd207de7273482",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/107491/versions/6cc6bb2a5cdb78ddc0b789024cfdb8d5ca39a4cea6dabf6675a6ea2e7c1549f0.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "8f655b98522a2a9bf6e4c8aa4d945e163242145551096ab992c516dabc825ca6",
+    "sqlFile": "107491-query.sql",
+    "lineCount": 160,
+    "writes": [
+      {
+        "taskId": "107491",
+        "id": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+        "observation": "write-observation:107491:8",
+        "targetNodeId": "target-write:8f41bd679e0c0504cf81b67310b62bdf060502bb964c135e18163a5da43f8687",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:e3a03db788d798ae48c887e4ea13b782bb4fda56f1970a3020051a04cb555746",
+      "dataset:ed37459cabf78f4765c168763f9577211a232fa04b2cf1906d2e64e97607c849",
+      "dataset:f6539e98207707a388fa281ec4ccc34fe26641f2abaf460442d94694b177767a",
+      "dataset:873d0c7a43d9d5049eff6962ce38045eb0a4e27ed22edf8a69a135038ad65bef",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:f74394f308e963480370ec72aa0eaad2cc37b9624ff84ef68bfb4d44eefa2cd8",
+      "dataset:c24323edcad38e2aada48e93db7af6d9b1e07a0563fdd404a05a95352160492a",
+      "dataset:cb1719fbf4ac69c0ba2a46de327c2164840eb17d12f867d297c10d263703eb2d"
+    ]
+  },
+  {
+    "taskId": "118141",
+    "taskName": "DM_OTC_N.OTC_SALE_DAILY_RPT",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "b37226842aa8949b4c9ce16976c3d7f65d77fd45970000ca60f4e457537a7001",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/118141/versions/42659ef589fa6e4f77436101328932f1b5ee61a27466ae4fd5e108e1e1f5181b.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "3deef0d98f78f781092ddf8e42623c2e43b41b6d66f43e6e9e0f4a50b0acc9e5",
+    "sqlFile": "118141-query.sql",
+    "lineCount": 420,
+    "writes": [
+      {
+        "taskId": "118141",
+        "id": "dataset:bf49bbead54e21848def76aa3b3a33741b1b203eccef14ba6a29b227d2f78d4f",
+        "observation": "write-observation:118141:platform-target:0",
+        "targetNodeId": "target-write:eedd11d035fefdacfeb088cef3f8968e56030849d5cfca8602791171943a47fb",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:ac80bdd6e07e477c93a8df146a5a30e2969a335ba2c9e038eae0800caac7dbc8",
+      "dataset:5ff7183315a00614472462f2fce281dc0454210970d00d60b0e0ec5821b90054",
+      "dataset:99fd94dea7f1f99fdf01a4b43d53baa501c66940a972d8bb2f81ed7b407552db",
+      "dataset:2d6b6d3e58778fb35e9be007c66fa2790999291aa86e442e043fe52c99395a35",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "dataset:2157572b1ff76d76fe1c6c396eeb25ea0edb08da325e70c3f6c891fac1056bf0",
+      "dataset:e5292cf4c3d5d35ff5a02346ffe42f3e35387161c6acdad7aa25ede5dd0de3e1"
+    ]
+  },
+  {
+    "taskId": "118143",
+    "taskName": "DM_OTC_N.OTC_SALE_PARA",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "39409578702bddf7537e7e1c7ebdf3fc839865e0498a8987701dd03187e558a1",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/118143/versions/69cf1a2462a108fc0c758f49287edee1ee6c0ac7ecc782b0134efad92aa867e0.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "f342363e48a55e018795ea2632627ae4fa7864d5a63d0331b50630e56dfd6016",
+    "sqlFile": "118143-query.sql",
+    "lineCount": 224,
+    "writes": [
+      {
+        "taskId": "118143",
+        "id": "dataset:ac3e67db55b9d193a5eaaa9fe65eec5fb75e1833c0d7054fd473f98a1c40bed2",
+        "observation": "write-observation:118143:platform-target:0",
+        "targetNodeId": "target-write:efe96d06ccab320cb4e410347695e48796ded9333a35358553ce1f513de105f1",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5ff7183315a00614472462f2fce281dc0454210970d00d60b0e0ec5821b90054",
+      "dataset:99fd94dea7f1f99fdf01a4b43d53baa501c66940a972d8bb2f81ed7b407552db",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:2157572b1ff76d76fe1c6c396eeb25ea0edb08da325e70c3f6c891fac1056bf0",
+      "dataset:e5292cf4c3d5d35ff5a02346ffe42f3e35387161c6acdad7aa25ede5dd0de3e1"
+    ]
+  },
+  {
+    "taskId": "224351",
+    "taskName": "dm_otc_n.otc_cust_daily_dyna_nom_prin",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "2368460217adec6ee4630fbffb9091a76ba4e5629bb2d5ca3898c3fc59c3aad6",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/224351/versions/e4ea2a3f70199d5407eb4716cadd351a3f547bd5bd92e3a29fa58cb434cc9022.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "d324b5a88250d52a0420e90f94967cbc42710d8487f80b976440b7962e66f2f2",
+    "sqlFile": "224351-query.sql",
+    "lineCount": 167,
+    "writes": [
+      {
+        "taskId": "224351",
+        "id": "dataset:983492f77f67cc86ff894096182c1a866075c7d7842e546b0432dc7e48671af3",
+        "observation": "write-observation:224351:platform-target:0",
+        "targetNodeId": "target-write:3b2cc4ed96f8e812cdb60c7f00698c4276afcfe38bf6c994b0dc940397ae36a7",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f"
+    ]
+  },
+  {
+    "taskId": "171364",
+    "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Mth",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "9313280b9f8fe32b86decc409db6552124769c3ccc06207f37306641be42880b",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171364/versions/4401034fec63d8f465cad9ffccbf6163142ce33a876b4cc8679f5fe841b4fc0e.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "f209e722cb26dd6f533b869b6ab7d9631888515a2811bfef4df871c046b1ed17",
+    "sqlFile": "171364-query.sql",
+    "lineCount": 139,
+    "writes": [
+      {
+        "taskId": "171364",
+        "id": "dataset:8d23462bd3f6217f32ce6ae694f7e64376732c2daf6f94df93805b1c82ef3faa",
+        "observation": "write-observation:171364:platform-target:0",
+        "targetNodeId": "target-write:17dafb27f22bb2a262e793b2864cfd1a996301592583245524b6b5af6dfb77f8",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "dataset:dfbcba19f89e005e097e3b6df15998b0a6d1b13a3e172e3199f9e1fc4346c90b",
+      "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "dataset:8bfedab27396b1ef2107fed850807e8ed54089c754022acbff7bfb955880ded2"
+    ]
+  },
+  {
+    "taskId": "171347",
+    "taskName": "dm_index_n.index_grp1_DealScal_OtcDeri_Year",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "cb2f713a2ed5265e8763107eac9377fb79579223766855d1bb153d1c4dfe92bc",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171347/versions/92164e9a4d10d00a61a9afaf7f1ac4a775fde3b211de78d96119116ed9396ee3.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "388ff66a942a52b23ae7757e84f1efabb8210e2b8bfbaa61efd867ced9a72f96",
+    "sqlFile": "171347-query.sql",
+    "lineCount": 138,
+    "writes": [
+      {
+        "taskId": "171347",
+        "id": "dataset:2da45c1d6915b54f844205f7839047268fbbc8827dd150c7af4e65d4f8c68d4c",
+        "observation": "write-observation:171347:platform-target:0",
+        "targetNodeId": "target-write:ead95cf8db875c96365c3b009bfbb50709d56926b4b4968337468e56a063af1e",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "dataset:dfbcba19f89e005e097e3b6df15998b0a6d1b13a3e172e3199f9e1fc4346c90b",
+      "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "dataset:8bfedab27396b1ef2107fed850807e8ed54089c754022acbff7bfb955880ded2"
+    ]
+  },
+  {
+    "taskId": "171370",
+    "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Tdy",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "d98a91a095e578c0fe6f2f4bceb66b549303f47973a821e0898bb25940bb4e1c",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/171370/versions/feb62b5d6ff7068db923ddbb21ba8e51e1467180baa7ff541beb716f0cf28746.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "4947194a4e05cfb1d2cb3c33e4cd3b3e5d1e9fa49bd2acf9b97a5cebd41dc4e4",
+    "sqlFile": "171370-query.sql",
+    "lineCount": 149,
+    "writes": [
+      {
+        "taskId": "171370",
+        "id": "dataset:b341814c877de1d5a6fbd99ef0b2565d12b1cd803246fcb2c7ba59a96630165b",
+        "observation": "write-observation:171370:platform-target:0",
+        "targetNodeId": "target-write:54a0048e80252a24a7bda8789ab8b6b95ffd637c470d9c93122030526a99ec97",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "dataset:dfbcba19f89e005e097e3b6df15998b0a6d1b13a3e172e3199f9e1fc4346c90b",
+      "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "dataset:8bfedab27396b1ef2107fed850807e8ed54089c754022acbff7bfb955880ded2"
+    ]
+  },
+  {
+    "taskId": "206208",
+    "taskName": "dm_index_n.index_grp1_CompScal_OtcDeri_Cs_YearApd",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "9603b89f65d9b09fd85787bd58fdbc87c1d323ab1e96f6e3e85ac7f9b4dea1e6",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/206208/versions/4fc0d0515174d83a0b9ff266785d168021fee56d7c170cc0023afddd5183ea6e.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "443a777058e7aa06ab59e55bc91baec9f45672a4f4d2dbd0725a794e546e6e73",
+    "sqlFile": "206208-query.sql",
+    "lineCount": 118,
+    "writes": [
+      {
+        "taskId": "206208",
+        "id": "dataset:2fe88a55f83664cba3db589ff27ca95556c7b5d3667bc288344ab627201fbd60",
+        "observation": "write-observation:206208:platform-target:0",
+        "targetNodeId": "target-write:34831b8126ab09a9ef235c6afc785447498e9d78807600c4bb31e545cfbd00a4",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "dataset:dfbcba19f89e005e097e3b6df15998b0a6d1b13a3e172e3199f9e1fc4346c90b"
+    ]
+  },
+  {
+    "taskId": "220979",
+    "taskName": "DM_OTC_N.OTC_HK_SALE_DAILY_RPT",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "4e19c3491f7f824f77c142302a6f5705fc28d0c97cfb091af510b79290e5c707",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220979/versions/278d784ef45b15e627032dfda47cbd2b4b44a4375041dcfa12be8da101526ba2.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "3dec606ec6d508417c87a192bbaa8245f34086feb24f5e278f243cd48d041424",
+    "sqlFile": "220979-query.sql",
+    "lineCount": 516,
+    "writes": [
+      {
+        "taskId": "220979",
+        "id": "dataset:5c12eab320218b2152ef3c14b4f77ae7c159b138ef54b92f5faa2eed3ac0ec5f",
+        "observation": "write-observation:220979:platform-target:0",
+        "targetNodeId": "target-write:a0a729d49ff25c9f4b33efb62d523a74889182f763d46446d9ea64f889c2b987",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5723f123517360ae4bbd7bb1dfa3e02978febae18aafeccbc94a6a30ddcaa17b",
+      "dataset:98f05ec9d9c1dc747a5d78ac2f9998a2bdc7650f44c05bb80b23fdcf095d8fef",
+      "dataset:9ff32af23e0013fff110782ff4509aa2c3a8c5341ed6ccea063759b301da1648",
+      "dataset:b2908830cbf9fd34e43f14321dd744f2c2ce647ac9f763d9a2fca78b69e4799a",
+      "dataset:4a3b7d8e6b5f0057b982338dd605c74553c1e6b90c86d587e0db32014f13815b",
+      "dataset:d7f2062d76bf74e2d4262950c795e6a946b271af41c303b8e9b33f51faae5847",
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "dataset:0ba3bccdb438e92023de99592a0de39a4d8e727f72b200544f4ce679e3315f14",
+      "dataset:e6b67c0fc34ddfbadb97e4bbe7493b375c09386340e2e5bca62dcf7c3b2f625f",
+      "dataset:f64da54275544be64ad4f429c65fb309e117af6e25d2c88733487c80c41aa6e8",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:e2b739b64af71674a0cde9d4fe61d4528cfa5c4d9de4c0b16251ebbca10f1f3a",
+      "dataset:2157572b1ff76d76fe1c6c396eeb25ea0edb08da325e70c3f6c891fac1056bf0",
+      "dataset:16aea9526f9ae5ad6a480fda9b4732c183b3e02a4b7b5d282b4fd0000ba618a7",
+      "dataset:e5292cf4c3d5d35ff5a02346ffe42f3e35387161c6acdad7aa25ede5dd0de3e1"
+    ]
+  }
+]

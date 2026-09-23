@@ -1,0 +1,2492 @@
+{
+  "checkedAt": "2026-09-18T03:46:20.749Z",
+  "workspace": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage",
+  "scope": "Current main workspace graph only; excludes sql-static-lineage-next.",
+  "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+  "publishedAt": "2026-09-16T09:27:06.712137300+08:00[Asia/Shanghai]",
+  "manifestPath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage-data\\artifacts\\graphs\\titans-otc\\batches\\94c2f33b6a72717a4b335f2ee40220aba5e70e8441c3dbfe0fafa0557920cf82\\batch-manifest.json",
+  "manifestSha256": "b47e814d6f0e0cb29887b8cc56a91001454ae50b4a9ffaedfb334962babd8042",
+  "graphCoverage": {
+    "SCHEDULE_ONLY": 1324,
+    "PROJECTED": 6039,
+    "COLLECTION_FAILED": 115,
+    "coverageDisposition": {
+      "dataLineage": 6039,
+      "expectedScheduleReference": 977,
+      "materialGap": 462,
+      "scheduleOnlyExpected": 977,
+      "scheduleOnlyGap": 347,
+      "collectionFailedExpected": 0,
+      "collectionFailedGap": 115
+    }
+  },
+  "taskCount": 7478,
+  "projectedTasks": 6039,
+  "ioPhysicalTables": 6667,
+  "writeAssociatedPhysicalTables": 4301,
+  "sourceSeeds": [
+    "odata_n_tit",
+    "odata_n_ois"
+  ],
+  "schemaCounts": [
+    {
+      "schema": "odata_n_tit",
+      "tables": 608,
+      "written": 603,
+      "readOnly": 5,
+      "graphTerminal": 176
+    },
+    {
+      "schema": "dm_index_n",
+      "tables": 656,
+      "written": 454,
+      "readOnly": 202,
+      "graphTerminal": 55
+    },
+    {
+      "schema": "dm_otc_n",
+      "tables": 389,
+      "written": 384,
+      "readOnly": 5,
+      "graphTerminal": 58
+    },
+    {
+      "schema": "pdata_n",
+      "tables": 507,
+      "written": 334,
+      "readOnly": 173,
+      "graphTerminal": 42
+    },
+    {
+      "schema": "odata_n_uip",
+      "tables": 278,
+      "written": 248,
+      "readOnly": 30,
+      "graphTerminal": 7
+    },
+    {
+      "schema": "pdata_news_n",
+      "tables": 272,
+      "written": 207,
+      "readOnly": 65,
+      "graphTerminal": 22
+    },
+    {
+      "schema": "dm_hk_n",
+      "tables": 190,
+      "written": 190,
+      "readOnly": 0,
+      "graphTerminal": 24
+    },
+    {
+      "schema": "pdata_nds",
+      "tables": 204,
+      "written": 180,
+      "readOnly": 24,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "titans_etl",
+      "tables": 139,
+      "written": 139,
+      "readOnly": 0,
+      "graphTerminal": 139
+    },
+    {
+      "schema": "ods_titans",
+      "tables": 103,
+      "written": 103,
+      "readOnly": 0,
+      "graphTerminal": 103
+    },
+    {
+      "schema": "odata_n_rcc",
+      "tables": 92,
+      "written": 84,
+      "readOnly": 8,
+      "graphTerminal": 16
+    },
+    {
+      "schema": "dm_cisp_n",
+      "tables": 73,
+      "written": 73,
+      "readOnly": 0,
+      "graphTerminal": 71
+    },
+    {
+      "schema": "dm_om_n",
+      "tables": 74,
+      "written": 67,
+      "readOnly": 7,
+      "graphTerminal": 39
+    },
+    {
+      "schema": "odata_n_fia",
+      "tables": 62,
+      "written": 58,
+      "readOnly": 4,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "gf_otc",
+      "tables": 102,
+      "written": 57,
+      "readOnly": 45,
+      "graphTerminal": 51
+    },
+    {
+      "schema": "dm_rsk_n",
+      "tables": 56,
+      "written": 56,
+      "readOnly": 0,
+      "graphTerminal": 55
+    },
+    {
+      "schema": "odata_n_ois",
+      "tables": 57,
+      "written": 48,
+      "readOnly": 9,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "gfedw",
+      "tables": 46,
+      "written": 46,
+      "readOnly": 0,
+      "graphTerminal": 45
+    },
+    {
+      "schema": "odata_n_xir",
+      "tables": 59,
+      "written": 46,
+      "readOnly": 13,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "titans_dm",
+      "tables": 363,
+      "written": 41,
+      "readOnly": 322,
+      "graphTerminal": 28
+    },
+    {
+      "schema": "dm_fin_n",
+      "tables": 41,
+      "written": 41,
+      "readOnly": 0,
+      "graphTerminal": 31
+    },
+    {
+      "schema": "odata_n_lss",
+      "tables": 42,
+      "written": 40,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "spdata_n",
+      "tables": 65,
+      "written": 30,
+      "readOnly": 35,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_fii_n",
+      "tables": 29,
+      "written": 29,
+      "readOnly": 0,
+      "graphTerminal": 14
+    },
+    {
+      "schema": "dm_ecif",
+      "tables": 41,
+      "written": 28,
+      "readOnly": 13,
+      "graphTerminal": 20
+    },
+    {
+      "schema": "odata_n_icc",
+      "tables": 34,
+      "written": 26,
+      "readOnly": 8,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_pas",
+      "tables": 26,
+      "written": 26,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_crm",
+      "tables": 28,
+      "written": 23,
+      "readOnly": 5,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_cap",
+      "tables": 24,
+      "written": 23,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfheguidb",
+      "tables": 60,
+      "written": 19,
+      "readOnly": 41,
+      "graphTerminal": 12
+    },
+    {
+      "schema": "odata_n_fct",
+      "tables": 39,
+      "written": 19,
+      "readOnly": 20,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ta5",
+      "tables": 18,
+      "written": 18,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "a_epa",
+      "tables": 21,
+      "written": 18,
+      "readOnly": 3,
+      "graphTerminal": 18
+    },
+    {
+      "schema": "odata_n_prd",
+      "tables": 24,
+      "written": 17,
+      "readOnly": 7,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "temp_n",
+      "tables": 37,
+      "written": 17,
+      "readOnly": 20,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_co_n",
+      "tables": 18,
+      "written": 16,
+      "readOnly": 2,
+      "graphTerminal": 6
+    },
+    {
+      "schema": "public",
+      "tables": 19,
+      "written": 15,
+      "readOnly": 4,
+      "graphTerminal": 15
+    },
+    {
+      "schema": "gfval",
+      "tables": 14,
+      "written": 14,
+      "readOnly": 0,
+      "graphTerminal": 14
+    },
+    {
+      "schema": "perms_performance",
+      "tables": 13,
+      "written": 13,
+      "readOnly": 0,
+      "graphTerminal": 13
+    },
+    {
+      "schema": "spdata",
+      "tables": 13,
+      "written": 12,
+      "readOnly": 1,
+      "graphTerminal": 9
+    },
+    {
+      "schema": "odata_n_oom",
+      "tables": 12,
+      "written": 12,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "bd_dm_otc",
+      "tables": 12,
+      "written": 12,
+      "readOnly": 0,
+      "graphTerminal": 12
+    },
+    {
+      "schema": "odata_n_erp",
+      "tables": 11,
+      "written": 11,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sso",
+      "tables": 14,
+      "written": 11,
+      "readOnly": 3,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_rms",
+      "tables": 10,
+      "written": 10,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_cvs",
+      "tables": 10,
+      "written": 10,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_aum",
+      "tables": 12,
+      "written": 10,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_otc_test",
+      "tables": 11,
+      "written": 10,
+      "readOnly": 1,
+      "graphTerminal": 10
+    },
+    {
+      "schema": "dm_om_test",
+      "tables": 11,
+      "written": 10,
+      "readOnly": 1,
+      "graphTerminal": 10
+    },
+    {
+      "schema": "odata_n_ecr",
+      "tables": 16,
+      "written": 9,
+      "readOnly": 7,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_ecif",
+      "tables": 16,
+      "written": 9,
+      "readOnly": 7,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_ecom_n",
+      "tables": 8,
+      "written": 8,
+      "readOnly": 0,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "dm_crd_n",
+      "tables": 8,
+      "written": 8,
+      "readOnly": 0,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "odata_n_cso",
+      "tables": 8,
+      "written": 8,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "gf_edc",
+      "tables": 8,
+      "written": 8,
+      "readOnly": 0,
+      "graphTerminal": 8
+    },
+    {
+      "schema": "dm_opt_n",
+      "tables": 11,
+      "written": 8,
+      "readOnly": 3,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_ctms",
+      "tables": 8,
+      "written": 8,
+      "readOnly": 0,
+      "graphTerminal": 8
+    },
+    {
+      "schema": "titans_tradeflow",
+      "tables": 39,
+      "written": 8,
+      "readOnly": 31,
+      "graphTerminal": 8
+    },
+    {
+      "schema": "odata_n_acv",
+      "tables": 7,
+      "written": 7,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_lps",
+      "tables": 10,
+      "written": 7,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ioa",
+      "tables": 7,
+      "written": 7,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_ctms_n",
+      "tables": 11,
+      "written": 7,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_bma",
+      "tables": 10,
+      "written": 7,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "crmii",
+      "tables": 22,
+      "written": 6,
+      "readOnly": 16,
+      "graphTerminal": 6
+    },
+    {
+      "schema": "odata_n_nbo",
+      "tables": 11,
+      "written": 6,
+      "readOnly": 5,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ibs",
+      "tables": 7,
+      "written": 6,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_fms_n",
+      "tables": 6,
+      "written": 6,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_co_test",
+      "tables": 7,
+      "written": 6,
+      "readOnly": 1,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "odata_n_hts",
+      "tables": 6,
+      "written": 6,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "siebel",
+      "tables": 14,
+      "written": 5,
+      "readOnly": 9,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "dm_mast_n",
+      "tables": 12,
+      "written": 5,
+      "readOnly": 7,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dbcenter",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "src_gfjgj",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "odata_n_cps",
+      "tables": 6,
+      "written": 5,
+      "readOnly": 1,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "goats",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "manage",
+      "tables": 7,
+      "written": 5,
+      "readOnly": 2,
+      "graphTerminal": 5
+    },
+    {
+      "schema": "spdata_nds",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_dg_n",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_engin_n",
+      "tables": 6,
+      "written": 5,
+      "readOnly": 1,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "odata_n_hcr",
+      "tables": 5,
+      "written": 5,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_po3",
+      "tables": 12,
+      "written": 4,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_smt",
+      "tables": 7,
+      "written": 4,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "settle_cfg_gf",
+      "tables": 42,
+      "written": 4,
+      "readOnly": 38,
+      "graphTerminal": 4
+    },
+    {
+      "schema": "stars_refdata",
+      "tables": 4,
+      "written": 4,
+      "readOnly": 0,
+      "graphTerminal": 4
+    },
+    {
+      "schema": "dm_cisp_test",
+      "tables": 4,
+      "written": 4,
+      "readOnly": 0,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "odata_n_mot",
+      "tables": 5,
+      "written": 3,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_gpb",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_hfm",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_bpm",
+      "tables": 4,
+      "written": 3,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_cmi",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_cmpl_n",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_fms",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_scrm_n",
+      "tables": 4,
+      "written": 3,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_alm",
+      "tables": 4,
+      "written": 3,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfqgdb",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "udata_hg",
+      "tables": 4,
+      "written": 3,
+      "readOnly": 1,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "pdata_news_test",
+      "tables": 4,
+      "written": 3,
+      "readOnly": 1,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "dm_hk_test",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "bd_dm_fii_uat",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "mfis",
+      "tables": 3,
+      "written": 3,
+      "readOnly": 0,
+      "graphTerminal": 3
+    },
+    {
+      "schema": "titans_booking",
+      "tables": 8,
+      "written": 2,
+      "readOnly": 6,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_tit",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_oao",
+      "tables": 4,
+      "written": 2,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sta",
+      "tables": 5,
+      "written": 2,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_xpb",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "temp",
+      "tables": 50,
+      "written": 2,
+      "readOnly": 48,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "odata_n_rsk",
+      "tables": 7,
+      "written": 2,
+      "readOnly": 5,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sms",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gf_app",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "expl_jgj",
+      "tables": 3,
+      "written": 2,
+      "readOnly": 1,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "kgrp",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "gf_ficc",
+      "tables": 10,
+      "written": 2,
+      "readOnly": 8,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "odata_n_acp",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_cstd_n",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_news_n",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_aud_n",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_fin_test",
+      "tables": 3,
+      "written": 2,
+      "readOnly": 1,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_wm_n",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "acp_source",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 2
+    },
+    {
+      "schema": "dm_fii_test",
+      "tables": 2,
+      "written": 2,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_prd",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_admin",
+      "tables": 11,
+      "written": 1,
+      "readOnly": 10,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_rm",
+      "tables": 2,
+      "written": 1,
+      "readOnly": 1,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "aumcrmii",
+      "tables": 5,
+      "written": 1,
+      "readOnly": 4,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "ngrms_sirm",
+      "tables": 10,
+      "written": 1,
+      "readOnly": 9,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_hpb",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ppm",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_cfm",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ams",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_gks",
+      "tables": 2,
+      "written": 1,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sag",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_osc",
+      "tables": 2,
+      "written": 1,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_tpa",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sfb",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ifc",
+      "tables": 7,
+      "written": 1,
+      "readOnly": 6,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_css",
+      "tables": 6,
+      "written": 1,
+      "readOnly": 5,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_lia",
+      "tables": 2,
+      "written": 1,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_qca",
+      "tables": 4,
+      "written": 1,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cc_datasrc",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "gfkn",
+      "tables": 5,
+      "written": 1,
+      "readOnly": 4,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_cms",
+      "tables": 10,
+      "written": 1,
+      "readOnly": 9,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_crm",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_asm_sub_n",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "amlodata",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_sd_n",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_hr_n",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "pdata_hk",
+      "tables": 9,
+      "written": 1,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_oos",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfqg2",
+      "tables": 2,
+      "written": 1,
+      "readOnly": 1,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_rd_n",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_rd_test",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_rsk_test",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dm_eciif",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_aml",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gf_data",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_n_osh",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ods_gf1",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "dataportal3",
+      "tables": 1,
+      "written": 1,
+      "readOnly": 0,
+      "graphTerminal": 1
+    },
+    {
+      "schema": "odata_xir",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_refdata",
+      "tables": 18,
+      "written": 0,
+      "readOnly": 18,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_marketdata",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_staticdata",
+      "tables": 5,
+      "written": 0,
+      "readOnly": 5,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_service",
+      "tables": 14,
+      "written": 0,
+      "readOnly": 14,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_otcclearing",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "marketrisk",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_taquery",
+      "tables": 14,
+      "written": 0,
+      "readOnly": 14,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hsfa",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "prodtrade",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "service",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_cal",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "wind",
+      "tables": 136,
+      "written": 0,
+      "readOnly": 136,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_user",
+      "tables": 15,
+      "written": 0,
+      "readOnly": 15,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_prod",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_his",
+      "tables": 25,
+      "written": 0,
+      "readOnly": 25,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_asset",
+      "tables": 27,
+      "written": 0,
+      "readOnly": 27,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ea_custacct",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ea_pub",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "apps",
+      "tables": 8,
+      "written": 0,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_opt",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gifts",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "trade",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ei_srcdata",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfuser",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gl",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gf_hyhfm",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "applsys",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_df_enterprise",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "partner",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "subta40",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "xir_md",
+      "tables": 13,
+      "written": 0,
+      "readOnly": 13,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acs_gf50",
+      "tables": 10,
+      "written": 0,
+      "readOnly": 10,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ttmgrportal",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acbas_hs",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfbpm",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "d_possible_relation",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "datayes",
+      "tables": 30,
+      "written": 0,
+      "readOnly": 30,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "idc",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_ref",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ssgsgqjl",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfzq",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "query_upload",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "am_dc",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "tradezy",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "xir_trd",
+      "tables": 19,
+      "written": 0,
+      "readOnly": 19,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_sub_enterprises_extra",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ecifapp",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "sagg",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ioa",
+      "tables": 7,
+      "written": 0,
+      "readOnly": 7,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_aim",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "${src_table_crm}",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_ygt",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_icr",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_msg",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gffund",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "eos_kf",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cm_tradingdb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "es_system",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "jydb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gccis",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ecs",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfqh",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_bce",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ico",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cm_clearingdb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_mio",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "qgj",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfibs",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_tsc",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "fmss",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hsrisk3",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ei_ctmsdata",
+      "tables": 8,
+      "written": 0,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_0",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_1",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_2",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_15",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_3",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_4",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_5",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_6",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_7",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_8",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_9",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_10",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_11",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_12",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_13",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "db_szse_14",
+      "tables": 16,
+      "written": 0,
+      "readOnly": 16,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "aums",
+      "tables": 7,
+      "written": 0,
+      "readOnly": 7,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cimsdb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_crdt",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "xir_app",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "thsdb",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfbusin",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cm_historydb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_workflow",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ars",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "tradingdb",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_sip",
+      "tables": 17,
+      "written": 0,
+      "readOnly": 17,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ao3",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_foc",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_atb",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_tal",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_uaa",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_ads",
+      "tables": 6,
+      "written": 0,
+      "readOnly": 6,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_atp",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_zso",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "pdata_pcav_n",
+      "tables": 8,
+      "written": 0,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "prodbonus",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "jxkh",
+      "tables": 26,
+      "written": 0,
+      "readOnly": 26,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "livebos",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_secu",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_cpl",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gfcrossfund",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acp_history",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dpt_dw",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_lbr",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_operation",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "default",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_dbs",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acbas_yss",
+      "tables": 19,
+      "written": 0,
+      "readOnly": 19,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "risk",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gds_v2",
+      "tables": 11,
+      "written": 0,
+      "readOnly": 11,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "gftyzx",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_bdp",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_glm",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_margin",
+      "tables": 8,
+      "written": 0,
+      "readOnly": 8,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "margin_tradingdb",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "a5_mr_syncnode1_40",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "a5_mr_syncnode1_39",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_stockbank",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hs_tabase",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "management",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "titans_product",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "yy_valuation_core",
+      "tables": 43,
+      "written": 0,
+      "readOnly": 43,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "cboas",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acp_base",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "hms_tradingdb",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "jt_aml",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ods_img",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ods_market",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ods_broker",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "odata_n_mzq",
+      "tables": 4,
+      "written": 0,
+      "readOnly": 4,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "ecifsrc",
+      "tables": 3,
+      "written": 0,
+      "readOnly": 3,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "query_temp",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acbas",
+      "tables": 2,
+      "written": 0,
+      "readOnly": 2,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "acbas_dcp",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "choice_a",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    },
+    {
+      "schema": "dm_brk_n",
+      "tables": 1,
+      "written": 0,
+      "readOnly": 1,
+      "graphTerminal": 0
+    }
+  ],
+  "metadataPath": "../sql-static-lineage-cache/schedule-evidence/tasks-sqlite/table-metadata-catalog/table-metadata-7acdff82cd0affd9-0536ac87-6fd7-4c4e-b668-1a18cde959c0.sqlite",
+  "metadataMatches": {
+    "PHYSICAL_IDENTITY": 6425,
+    "NONE": 167,
+    "NAME_CANDIDATE": 75
+  },
+  "sqlLexicalProfiles": {
+    "多来源或计算线索": 2624,
+    "未见复杂算子线索": 3264,
+    "无可读SQL": 10,
+    "条件转换线索": 141
+  },
+  "businessResultsReviewed": 20,
+  "sharedReviewed": 5,
+  "projectionAnomaliesReviewed": 2,
+  "assetCandidates": {
+    "broad": 513,
+    "strong": 71,
+    "strongMissingIoName": 33,
+    "strongKinds": {
+      "indicator": 55,
+      "tag": 16
+    }
+  },
+  "traces": [
+    {
+      "sample": "new-trace-check",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 6,
+      "edges": 9,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\new-trace-check.json"
+    },
+    {
+      "sample": "trace-118141",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 21,
+      "edges": 20,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-118141.json"
+    },
+    {
+      "sample": "trace-114013",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 19,
+      "edges": 20,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-114013.json"
+    },
+    {
+      "sample": "trace-146622",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 10,
+      "edges": 9,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-146622.json"
+    },
+    {
+      "sample": "trace-121434",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 15,
+      "edges": 19,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-121434.json"
+    },
+    {
+      "sample": "trace-176827",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 22,
+      "edges": 28,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-176827.json"
+    },
+    {
+      "sample": "trace-176877",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 19,
+      "edges": 20,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-176877.json"
+    },
+    {
+      "sample": "trace-198806",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 9,
+      "edges": 12,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-198806.json"
+    },
+    {
+      "sample": "trace-207789",
+      "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+      "traversalScope": "TASK_SCHEDULE",
+      "nodes": 3,
+      "edges": 2,
+      "truncated": false,
+      "stoppedBy": "DEPTH_LIMIT",
+      "sourcePath": "E:\\02_area\\股衍数据-数据cookbook\\sql-static-lineage\\tmp\\consumption-inventory-20260918\\trace-207789.json"
+    }
+  ],
+  "limits": [
+    "Physical table counts use externalReads/finalWrites dataset IDs, not all PHYSICAL_DATASET graph nodes.",
+    "Write association is retained exactly as projected; export discrepancies are not silently repaired.",
+    "No Cartesian table pair or unrestricted structural closure is promoted to business consumption.",
+    "SQL token signals are heuristic screening, not semantic complexity labels.",
+    "Metadata descriptions may contain inferred or AI-authored text; name rules are candidates.",
+    "Asset catalog indicator snapshot is PARTIAL; name matching is not physical identity confirmation.",
+    "No business-row data, production runtime, final UI or receipt verification."
+  ],
+  "sqliteSqlAvailability": {
+    "counts": [
+      {
+        "evidence_type": "hive-target-ddl",
+        "records": 9052,
+        "tasks": 9052
+      },
+      {
+        "evidence_type": "hive-task",
+        "records": 26043,
+        "tasks": 26043
+      },
+      {
+        "evidence_type": "run-script",
+        "records": 787,
+        "tasks": 787
+      }
+    ],
+    "rows": [
+      {
+        "taskId": "91973",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "132277",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "146622",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "118141",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "114013",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "162610",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "176827",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "176877",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "75257497d22b5c044d04c8d8f66533fbf5db3f6830447e7bc63d336e18c2059e",
+            "chars": 12656,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "121327",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "198806",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "207789",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "15d8fd422de2ffec794b42d0ff00687880aa35c7d576fecc36b79a48cd085bad",
+            "chars": 12172,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "223239",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "d7d203dad3f7cd7fbeae85978b98814f602304e554fe46e27196a1b2fe64fd02",
+            "chars": 7652,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "129839",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "177414",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "224351",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "205224",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "56e56865181f404b9e85881baee81713e540616e9ac03719cbf36dcba5ee3fd5",
+            "chars": 9866,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "155157",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "138194",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "242349",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "9496ad1b5e654b2a19fa3d48a395137740cb06bf26378919b82b1cfc3e9ad1cf",
+            "chars": 2021,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "134140",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "121434",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "133136",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "118143",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "107491",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "d74d6e72ffe4fc02d1a0288e50790f89756df779c5a3f64f0a7a719a8eafefaf",
+            "chars": 8831,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "105743",
+        "sqlRecords": [
+          {
+            "evidence_type": "hive-task",
+            "content_sha256": "6d1865f7d65470c8da52291df68059eacaa888433356d83269084f8d1371e229",
+            "chars": 18312,
+            "observed_at": ""
+          }
+        ]
+      },
+      {
+        "taskId": "139120",
+        "sqlRecords": []
+      },
+      {
+        "taskId": "103457",
+        "sqlRecords": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,482 @@
+{
+  "catalogFile": "table-metadata-7acdff82cd0affd9-0536ac87-6fd7-4c4e-b668-1a18cde959c0.sqlite",
+  "builtAt": "2026-09-16T01:22:43.476Z",
+  "physicalFilter": {
+    "platform": "hive",
+    "data_source": "gfhive"
+  },
+  "tables": [
+    {
+      "id": 32968,
+      "qualified_name": "odata_n_ois.o_contract_base_rate",
+      "description": "【AI】合约基础系数表",
+      "collected_at": "2026-08-22T03:06:10.187Z",
+      "fields": [
+        {
+          "name": "contract_code",
+          "comment": "【AI】合约编号"
+        },
+        {
+          "name": "base_calculation",
+          "comment": "【AI】计算类型"
+        },
+        {
+          "name": "base_award_rate",
+          "comment": "【AI】基础收益率"
+        },
+        {
+          "name": "discription",
+          "comment": "【AI】描述或补充说明"
+        },
+        {
+          "name": "created_datetime",
+          "comment": "【AI】创建时间"
+        },
+        {
+          "name": "updated_datetime",
+          "comment": "【AI】更新时间"
+        },
+        {
+          "name": "created_by",
+          "comment": "【AI】创建人"
+        },
+        {
+          "name": "updated_by",
+          "comment": "【AI】更新人"
+        },
+        {
+          "name": "is_deleted",
+          "comment": "【AI】删除标志"
+        },
+        {
+          "name": "id",
+          "comment": "【AI】主键"
+        },
+        {
+          "name": "operator_name",
+          "comment": "【AI】经办人"
+        },
+        {
+          "name": "introduction_operator_name",
+          "comment": "【AI】主经办人"
+        },
+        {
+          "name": "data_time",
+          "comment": "【AI】数据时间"
+        },
+        {
+          "name": "have_additional_reward",
+          "comment": "是否有额外奖励"
+        },
+        {
+          "name": "additional_reward",
+          "comment": "额外奖励"
+        },
+        {
+          "name": "busi_date",
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": 32936,
+      "qualified_name": "odata_n_ois.g_inr_contract_base_rate",
+      "description": "内部销售合约基础系数表",
+      "collected_at": "2026-08-22T03:05:35.320Z",
+      "fields": [
+        {
+          "name": "id",
+          "comment": "主键"
+        },
+        {
+          "name": "contract_code",
+          "comment": "合约编号"
+        },
+        {
+          "name": "base_earning_rate",
+          "comment": "基础收益率"
+        },
+        {
+          "name": "draft_base_rate",
+          "comment": "拟定基础系数"
+        },
+        {
+          "name": "base_calculation",
+          "comment": "计算方式（ANNUALIZED、ABSOLUTE）"
+        },
+        {
+          "name": "created_datetime",
+          "comment": "创建时间"
+        },
+        {
+          "name": "updated_datetime",
+          "comment": "更新时间"
+        },
+        {
+          "name": "created_by",
+          "comment": "创建人"
+        },
+        {
+          "name": "updated_by",
+          "comment": "更新人"
+        },
+        {
+          "name": "discription",
+          "comment": "描述或补充说明"
+        },
+        {
+          "name": "is_deleted",
+          "comment": "删除标识"
+        },
+        {
+          "name": "operator_name",
+          "comment": "主经办人"
+        },
+        {
+          "name": "introduction_operator_name",
+          "comment": "引入经办人"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间"
+        },
+        {
+          "name": "busi_date",
+          "comment": "数据日期"
+        }
+      ]
+    },
+    {
+      "id": 32967,
+      "qualified_name": "odata_n_ois.o_bus_type_base_rate",
+      "description": "",
+      "collected_at": "2026-09-02T08:27:09.522Z",
+      "fields": [
+        {
+          "name": "id",
+          "comment": ""
+        },
+        {
+          "name": "business_type",
+          "comment": ""
+        },
+        {
+          "name": "contract_type",
+          "comment": ""
+        },
+        {
+          "name": "contract_type_name",
+          "comment": ""
+        },
+        {
+          "name": "underlying_type",
+          "comment": ""
+        },
+        {
+          "name": "effective_date",
+          "comment": ""
+        },
+        {
+          "name": "base_calculation",
+          "comment": ""
+        },
+        {
+          "name": "base_award_rate",
+          "comment": ""
+        },
+        {
+          "name": "created_datetime",
+          "comment": ""
+        },
+        {
+          "name": "updated_datetime",
+          "comment": ""
+        },
+        {
+          "name": "created_by",
+          "comment": ""
+        },
+        {
+          "name": "updated_by",
+          "comment": ""
+        },
+        {
+          "name": "discription",
+          "comment": ""
+        },
+        {
+          "name": "is_deleted",
+          "comment": ""
+        },
+        {
+          "name": "data_time",
+          "comment": ""
+        },
+        {
+          "name": "busi_date",
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": 44395,
+      "qualified_name": "pdata_n.t99_deri_comp_base_coef_ref",
+      "description": "衍生品合约基础系数参考信息",
+      "collected_at": "2026-08-22T03:05:10.653Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "协议编号"
+        },
+        {
+          "name": "agt_modifr",
+          "comment": "协议修饰符"
+        },
+        {
+          "name": "inr_comp_no",
+          "comment": "内部合约编号"
+        },
+        {
+          "name": "calc_type",
+          "comment": "计算类型"
+        },
+        {
+          "name": "coef_type",
+          "comment": "系数类型"
+        },
+        {
+          "name": "base_yield",
+          "comment": "基础收益率"
+        },
+        {
+          "name": "dft_base_coef",
+          "comment": "拟定基础系数"
+        },
+        {
+          "name": "desc",
+          "comment": "描述"
+        },
+        {
+          "name": "main_oper_prsn",
+          "comment": "主经办人"
+        },
+        {
+          "name": "intro_oper_prsn",
+          "comment": "引入经办人"
+        },
+        {
+          "name": "adtnl_rwd_flag",
+          "comment": "额外奖励标志"
+        },
+        {
+          "name": "adtnl_rwd",
+          "comment": "额外奖励"
+        },
+        {
+          "name": "estb_time",
+          "comment": "创建时间"
+        },
+        {
+          "name": "upd_time",
+          "comment": "更新时间"
+        },
+        {
+          "name": "creator",
+          "comment": "创建人"
+        },
+        {
+          "name": "upd_prsn",
+          "comment": "更新人"
+        },
+        {
+          "name": "del_flag",
+          "comment": "删除标志"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表"
+        }
+      ]
+    },
+    {
+      "id": 44397,
+      "qualified_name": "pdata_n.t99_deri_comp_type_base_coef_ref",
+      "description": "衍生品合约类型基础系数参考信息",
+      "collected_at": "2026-08-22T06:34:47.904Z",
+      "fields": [
+        {
+          "name": "busi_type",
+          "comment": "业务类型"
+        },
+        {
+          "name": "calc_type",
+          "comment": "计算类型"
+        },
+        {
+          "name": "coef_type",
+          "comment": "系数类型"
+        },
+        {
+          "name": "src_comp_type_cd",
+          "comment": "源合约类型代码"
+        },
+        {
+          "name": "src_comp_type_desc",
+          "comment": "源合约类型名称"
+        },
+        {
+          "name": "src_undrl_type_cd",
+          "comment": "源标的类型代码"
+        },
+        {
+          "name": "vld_date",
+          "comment": "生效日期"
+        },
+        {
+          "name": "base_yield",
+          "comment": "基础收益率"
+        },
+        {
+          "name": "estb_time",
+          "comment": "创建时间"
+        },
+        {
+          "name": "upd_time",
+          "comment": "更新时间"
+        },
+        {
+          "name": "creator",
+          "comment": "创建人"
+        },
+        {
+          "name": "upd_prsn",
+          "comment": "更新人"
+        },
+        {
+          "name": "desc",
+          "comment": "描述"
+        },
+        {
+          "name": "del_flag",
+          "comment": "删除标志"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间"
+        },
+        {
+          "name": "real_src_tbl",
+          "comment": "真实源表"
+        },
+        {
+          "name": "src_dept_no",
+          "comment": "源部门编码"
+        },
+        {
+          "name": "bgng_prcg_date_llmt",
+          "comment": "期初定价日下限"
+        },
+        {
+          "name": "bgng_prcg_date_ulmt",
+          "comment": "期初定价日上限"
+        },
+        {
+          "name": "bel_busi_dept",
+          "comment": "所属业务部门"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表"
+        }
+      ]
+    },
+    {
+      "id": 35974,
+      "qualified_name": "odata_n_tit.d_trd_otc_trade",
+      "description": "【AI】交易-OTC—交易表（父类）",
+      "collected_at": "2026-08-21T14:00:18.641Z",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "comment": "TRADEFLOW内部交易流水号"
+        },
+        {
+          "name": "internal_trade_id",
+          "comment": "交易内部编号"
+        }
+      ]
+    },
+    {
+      "id": 35918,
+      "qualified_name": "odata_n_tit.d_ref_trs",
+      "description": "场外交易-<font color='red'>TRS</font>",
+      "collected_at": "2026-08-21T18:56:36.647Z",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "comment": "TRADEFLOW内部交易流水号"
+        }
+      ]
+    },
+    {
+      "id": 35907,
+      "qualified_name": "odata_n_tit.d_ref_otc_option_deal",
+      "description": "场外交易-期权交易合同要素表",
+      "collected_at": "2026-08-21T13:57:14.944Z",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "comment": "内部合约ID"
+        }
+      ]
+    },
+    {
+      "id": 35736,
+      "qualified_name": "odata_n_tit.d_ks_trade_comfirm_info",
+      "description": "交易确认书信息表",
+      "collected_at": "2026-08-21T16:32:21.162Z",
+      "fields": [
+        {
+          "name": "key_trade_comfirm_id",
+          "comment": "金仕达交易确认书id"
+        }
+      ]
+    }
+  ]
+}

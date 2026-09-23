@@ -1,0 +1,944 @@
+{
+  "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+  "publishedAt": "2026-09-16T09:27:06.712137300+08:00[Asia/Shanghai]",
+  "scope": "九库全部写入关联对象，保留库外直接输入及外部相邻任务；非股衍业务范围认定",
+  "schemaWritten": {
+    "pdata_n": 334,
+    "pdata_news_n": 207,
+    "pdata_nds": 180,
+    "dm_otc_n": 384,
+    "dm_hk_n": 190,
+    "dm_rsk_n": 56,
+    "dm_fin_n": 41,
+    "dm_cisp_n": 73,
+    "dm_index_n": 454
+  },
+  "writtenTables": 1919,
+  "selectedTasks": 2698,
+  "roles": {
+    "中间加工待识别": 2191,
+    "第一模块文档命中（仅折叠生产侧候选）": 411,
+    "未见读取（原因待核，不聚组）": 13,
+    "推送类型任务（规则待核，暂不参与聚组）": 83
+  },
+  "documentBoundaryTables": 132,
+  "coreTasks": 2191,
+  "groupCount": 101,
+  "groupedTasks": 309,
+  "ungroupedCoreTasks": 1882,
+  "sharedInputs": 129,
+  "sensitivity": [
+    {
+      "hubLimit": 20,
+      "threshold": 0.45,
+      "groups": 93,
+      "groupedTasks": 288,
+      "largest": 9,
+      "links": 378
+    },
+    {
+      "hubLimit": 20,
+      "threshold": 0.55,
+      "groups": 92,
+      "groupedTasks": 265,
+      "largest": 9,
+      "links": 327
+    },
+    {
+      "hubLimit": 20,
+      "threshold": 0.65,
+      "groups": 86,
+      "groupedTasks": 236,
+      "largest": 9,
+      "links": 288
+    },
+    {
+      "hubLimit": 30,
+      "threshold": 0.45,
+      "groups": 99,
+      "groupedTasks": 334,
+      "largest": 14,
+      "links": 523
+    },
+    {
+      "hubLimit": 30,
+      "threshold": 0.55,
+      "groups": 101,
+      "groupedTasks": 309,
+      "largest": 12,
+      "links": 426
+    },
+    {
+      "hubLimit": 30,
+      "threshold": 0.65,
+      "groups": 97,
+      "groupedTasks": 273,
+      "largest": 9,
+      "links": 345
+    },
+    {
+      "hubLimit": 50,
+      "threshold": 0.45,
+      "groups": 112,
+      "groupedTasks": 393,
+      "largest": 28,
+      "links": 712
+    },
+    {
+      "hubLimit": 50,
+      "threshold": 0.55,
+      "groups": 112,
+      "groupedTasks": 362,
+      "largest": 24,
+      "links": 584
+    },
+    {
+      "hubLimit": 50,
+      "threshold": 0.65,
+      "groups": 113,
+      "groupedTasks": 322,
+      "largest": 10,
+      "links": 440
+    }
+  ],
+  "topShared": [
+    {
+      "id": "dataset:c068faabef5c1265f552c9dc8c7acd4f88a685b3ff46d87544746b4a30ae3ea7",
+      "name": "dm_index_n.grp_def",
+      "readers": 445,
+      "groups": [
+        "K019",
+        "K060",
+        "K007",
+        "K061",
+        "K062",
+        "K006",
+        "K064",
+        "K065",
+        "K066",
+        "K070",
+        "K075",
+        "K077",
+        "K078",
+        "K013",
+        "K080",
+        "K081",
+        "K082",
+        "K084",
+        "K085",
+        "K033",
+        "K034",
+        "K015",
+        "K020",
+        "K091",
+        "K016",
+        "K038",
+        "K094",
+        "K039",
+        "K040",
+        "K041",
+        "K042",
+        "K095",
+        "K022",
+        "K100",
+        "K083"
+      ]
+    },
+    {
+      "id": "dataset:71971a99b87b0481d0a8790abc33720ffa263533e9b532f22e3efb5b53846140",
+      "name": "pdata_n.ref_cd_cvt_map",
+      "readers": 221,
+      "groups": [
+        "K011",
+        "K005",
+        "K017",
+        "K024",
+        "K049",
+        "K025",
+        "K050",
+        "K051",
+        "K048",
+        "K001",
+        "K029",
+        "K008",
+        "K014",
+        "K031",
+        "K004",
+        "K009",
+        "K089",
+        "K021",
+        "K093"
+      ]
+    },
+    {
+      "id": "dataset:d1d317cd9977de850494e7de333613711dc9d5f0343bcf41f687737495ed186c",
+      "name": "pdata_news_n.t02_scr_base_info",
+      "readers": 209,
+      "groups": [
+        "K045",
+        "K046",
+        "K001",
+        "K053",
+        "K054",
+        "K055",
+        "K056",
+        "K057",
+        "K065",
+        "K032",
+        "K090",
+        "K037",
+        "K098",
+        "K074",
+        "K100",
+        "K043"
+      ]
+    },
+    {
+      "id": "dataset:ea13700b2ea673c78faf939fe9d42a6bd44807c4f225628c84b1e10dcf5ceceb",
+      "name": "dm_index_n.tag_def",
+      "readers": 190,
+      "groups": [
+        "K001",
+        "K052",
+        "K012",
+        "K061",
+        "K064",
+        "K065",
+        "K070",
+        "K077",
+        "K082",
+        "K075",
+        "K034",
+        "K039",
+        "K040",
+        "K041",
+        "K094",
+        "K083"
+      ]
+    },
+    {
+      "id": "dataset:f322d64cc13f2c1fedf2c1d26bc3f5dbf17e636b8ef92b75b28867c45f417aed",
+      "name": "pdata_n.t03_otc_deri_book_adtnl_info",
+      "readers": 149,
+      "groups": [
+        "K083",
+        "K086",
+        "K087",
+        "K034",
+        "K009",
+        "K008",
+        "K090",
+        "K093",
+        "K074"
+      ]
+    },
+    {
+      "id": "dataset:f89b8c64b0d26b2f8480485076dcb50d14a95d7da34aec1126864981495c5522",
+      "name": "pdata_news_n.t02_tit_scr_base_info",
+      "readers": 70,
+      "groups": [
+        "K068",
+        "K006",
+        "K030",
+        "K004",
+        "K087",
+        "K009",
+        "K090",
+        "K008"
+      ]
+    },
+    {
+      "id": "dataset:41c79fc4d5f07e133e0cf614fabc864f4c5f7426d422ca1b3720572872dec951",
+      "name": "pdata_n.ref_dw_cd_val",
+      "readers": 34,
+      "groups": [
+        "K044",
+        "K026",
+        "K048",
+        "K059",
+        "K066",
+        "K008",
+        "K087",
+        "K074"
+      ]
+    },
+    {
+      "id": "dataset:879c9ca3e7fa50b1981471a74f67a0842f2687b8d4a5dcc8fa24ac76caca5701",
+      "name": "pdata_news_n.t02_pub_covt_const",
+      "readers": 108,
+      "groups": [
+        "K055",
+        "K057",
+        "K030",
+        "K009",
+        "K090",
+        "K092",
+        "K098"
+      ]
+    },
+    {
+      "id": "dataset:23b13077753b594b6dc75f0395dd6620018b6e30f0d7ed7b83668862bf3d4c67",
+      "name": "pdata_n.t01_pty_name",
+      "readers": 42,
+      "groups": [
+        "K044",
+        "K026",
+        "K068",
+        "K087",
+        "K090",
+        "K093",
+        "K096"
+      ]
+    },
+    {
+      "id": "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "readers": 42,
+      "groups": [
+        "K006",
+        "K071",
+        "K072",
+        "K034",
+        "K038",
+        "K095",
+        "K099"
+      ]
+    },
+    {
+      "id": "dataset:87bb0c983bbd36efbb7599b806d1e6cf6427317bbf474cd3a1ae3e191638d224",
+      "name": "pdata_n.t98_org_brch_div_info",
+      "readers": 46,
+      "groups": [
+        "K012",
+        "K069",
+        "K073",
+        "K074",
+        "K077",
+        "K015"
+      ]
+    },
+    {
+      "id": "dataset:7ac42558fef06b1fd2fb083947bc3874a9851ff1ec7490ab3317346efecd9ccc",
+      "name": "pdata_n.t03_agt_stati_info_h",
+      "readers": 43,
+      "groups": [
+        "K027",
+        "K068",
+        "K008",
+        "K087",
+        "K090",
+        "K093"
+      ]
+    },
+    {
+      "id": "dataset:4bc6bd11ad92b856c0e3f26937a55c37bb91d12ffc689634e503d05b578c8b2f",
+      "name": "pdata_news_n.t02_fut_base_info",
+      "readers": 36,
+      "groups": [
+        "K068",
+        "K030",
+        "K004",
+        "K002",
+        "K090",
+        "K037"
+      ]
+    },
+    {
+      "id": "dataset:e2b739b64af71674a0cde9d4fe61d4528cfa5c4d9de4c0b16251ebbca10f1f3a",
+      "name": "pdata_news_n.t02_fxr_cfets_quot",
+      "readers": 27,
+      "groups": [
+        "K004",
+        "K008",
+        "K090",
+        "K093",
+        "K099",
+        "K043"
+      ]
+    },
+    {
+      "id": "dataset:6ebabb447f462a09ed915b5632b2638807e7870ada3725edaa3f3361364cff0e",
+      "name": "pdata_nds.om_flip_new_orgid",
+      "readers": 18,
+      "groups": [
+        "K013",
+        "K085",
+        "K039",
+        "K040",
+        "K042",
+        "K041"
+      ]
+    },
+    {
+      "id": "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "readers": 17,
+      "groups": [
+        "K006",
+        "K071",
+        "K072",
+        "K034",
+        "K038",
+        "K099"
+      ]
+    },
+    {
+      "id": "dataset:239a9b9edba7f63f77863d2822c27172249fd49cfeec086ceb1dd7395387b59c",
+      "name": "pdata_n.t01_pty_inr_org_rela_h",
+      "readers": 16,
+      "groups": [
+        "K044",
+        "K026",
+        "K039",
+        "K040",
+        "K042",
+        "K041"
+      ]
+    },
+    {
+      "id": "dataset:2eb2a33c62057a1e01375519b9e6c34ad4eabe5f525dd5f6b073fade8163badf",
+      "name": "pdata_n.t98_brok_indv_cust_base_info",
+      "readers": 70,
+      "groups": [
+        "K060",
+        "K069",
+        "K070",
+        "K074",
+        "K100"
+      ]
+    },
+    {
+      "id": "dataset:e4b3adf0b6ff37620a08c69009d1d80e6d37a0148814261f0adc2418edd6b23d",
+      "name": "pdata_n.t98_brok_corp_cust_base_info",
+      "readers": 67,
+      "groups": [
+        "K066",
+        "K069",
+        "K074",
+        "K070",
+        "K100"
+      ]
+    },
+    {
+      "id": "dataset:7a0a012ae59ca1cef54144681535a6ac8f9384c233f6208eb3817299d44374bc",
+      "name": "pdata_news_n.tyzx_exch_quot_h_fk",
+      "readers": 33,
+      "groups": [
+        "K035",
+        "K002",
+        "K010",
+        "K036",
+        "K037"
+      ]
+    },
+    {
+      "id": "dataset:2a28c31d675728b6bcbc6c1a6f4fbc6f26832e7103ee1bfd3c88ba3d543ae4fa",
+      "name": "pdata_n.t01_pty_emp_rela_adtnl_info",
+      "readers": 30,
+      "groups": [
+        "K085",
+        "K091",
+        "K040",
+        "K042",
+        "K041"
+      ]
+    },
+    {
+      "id": "dataset:ebe7b81d4e802129ab4551ebaf68dbb9f4e25312ec8e62d418dc5b3f63dcf3be",
+      "name": "pdata_news_n.t02_fin_fctr_def",
+      "readers": 26,
+      "groups": [
+        "K088",
+        "K002",
+        "K010",
+        "K036",
+        "K037"
+      ]
+    },
+    {
+      "id": "dataset:30a45da7fcbdb2d48cab3d0633a118bfbd9a81fe395bc3f35c8f3298e9b3e185",
+      "name": "pdata_n.t99_trd_cal_ref",
+      "readers": 23,
+      "groups": [
+        "K004",
+        "K002",
+        "K010",
+        "K021"
+      ]
+    },
+    {
+      "id": "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "name": "pdata_n.t98_otc_comp_mng_rela_info",
+      "readers": 21,
+      "groups": [
+        "K006",
+        "K071",
+        "K072",
+        "K099"
+      ]
+    },
+    {
+      "id": "dataset:5ae63b1571562da6b312951da1502799db1864df676a7975d1bba3482b707f6a",
+      "name": "pdata_n.t01_pty",
+      "readers": 20,
+      "groups": [
+        "K044",
+        "K048",
+        "K026",
+        "K078"
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/01-TIT源对象索引.md",
+      "sha256": "713dd2568baba04c155bb98b63bc654c7d0b5f8f51c38c6bc72138d13cf2da90"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/02-TIT入模去向.md",
+      "sha256": "48eb42c6c13d9460b67eff1c70f18c9638230174db7f0f537c7ed3f7df5d4a06"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/03-关键入模链路.md",
+      "sha256": "05f0cad03a9514561d4b0a657dcf951a2b55e04b7eacb4558f798e1a4525f14a"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/04-图谱覆盖与待补证据.md",
+      "sha256": "98f435d693ebff4138bc530c56ff27ce5229f83c24a86d70881dc6782d74dc50"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/05-去向与未命中分类.md",
+      "sha256": "77806f14df8aabea9e71c109e2752822a9bc0ea28a54467dc76c861690354b7e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/06-原库到贴源.md",
+      "sha256": "c81ca8f6df9c4e0fd718c3bcc4c0a801cb795d69491813f54de0922cb3cf2128"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/README.md",
+      "sha256": "53963382feec9803665f10fa3e56e78526565b56799653a4eb82d86eb1caf609"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/00 当事人与交易对手全貌.md",
+      "sha256": "755c7f8e49464ff6b1951064bf673c81cc0bd76a697f1fed5f449406fe11921f"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/01 主体身份与基础资料.md",
+      "sha256": "ab938cef00683f1bf1de58ce191ef1db2d3a92bf0d6fae3d2645156c3090a1fd"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/02 主体关系与外部身份.md",
+      "sha256": "59f30b681de4e7654488d100f1f80a3a8ae4d531250868ace89b0909fbdeadf7"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/03 客户属性与业务资格.md",
+      "sha256": "a9efbe0c7f8553d34ccd63dc4b51e9a082a001ba78c0d9a49db345f6ba2b6ec4"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/04 额度.md",
+      "sha256": "04add999614969142d91a2cb0c99f69149ce5ac35d6c64b30357bdfccdca8d6a"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/05 履保方案.md",
+      "sha256": "a52c1b37a1f14d0e19717cf258623c0bb87d6e55e0f80e48f0472a80c970b273"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/当事人与交易对手.md",
+      "sha256": "df030999e0b0491e2f980e99890f0d8bb556731a6a61745dbb570c906ed8a498"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T01-主体与交易对手/未命名.md",
+      "sha256": "9430301ada0701bb0ab4dea79d2466963e0ec7da97b6e593bde77db138456e9c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/00-产品基础资料全貌.md",
+      "sha256": "09b7343ec19404000799d7bbba3afdd1996a7ce2e0bdf7012eebe39093a7b805"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/01 金融工具主数据.md",
+      "sha256": "536e76397d48c37a1039bf6ad1a3c39a9e894b4e3606f7ab9d435a70d338404c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02 品种属性与条款.md",
+      "sha256": "98fcb0cf6649b5871300e1f373786ce096623cd2b7531e939f8fc12bda2fd3de"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.1 期货.md",
+      "sha256": "3cf517dd5b274465afa7d69c6a651f6137510e93c54ac4254ca60316ce12eae1"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.2 场内期权.md",
+      "sha256": "1bedf67ef6f66ff1a05f39cf85e25b9df453456e84a0d39d7756e21923d3c71b"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.3 货币利率.md",
+      "sha256": "65c834870818cacf02765378ac457d10ddddcdf82693c890164539a466afc8af"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.4 策略指数.md",
+      "sha256": "9f3b42d39ceea689dea9798ba5462d52d7f41694d563d2d0422209f6c3fe8972"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.4.1 策略指数基础知识讲解.md",
+      "sha256": "d0cce43396ae39e3ad9c4ae81133f47d7d15f7491975a9438b03e315f1578185"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/02.5 AUTOCALL风险障碍条款.md",
+      "sha256": "cb1ce13090374fe85811cdd3fdd1e454a8aab7a5d7fcc3270e95d38b2ac97351"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/03 发行产品与票据.md",
+      "sha256": "11790183e7c9f19e6e3148aea895cf35acd1213d588675da4bf9b55cdf93a60d"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/03.1 发行产品.md",
+      "sha256": "18b95ceb72c4374baf1f2d2a3096590558ca271c01740809c9fa59d20d84f233"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/03.2 票据条款.md",
+      "sha256": "634697736004b592f58f14d430444beadcc95ea3e5174cafe8f4cd832c0271f5"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/04 底层资产与组合关系.md",
+      "sha256": "c500eb89e72819cbe16156ac7a09a84a0cef00e95805252720a243aa6fea30e8"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/04.1 发行产品底层资产.md",
+      "sha256": "78617c28a6316c1d26d24ed9cb88315628c8df4a26cec5754fe24ad7b8b70b61"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/04.2 多标的期权篮子.md",
+      "sha256": "e46d6b78cd1c754396f51910b27df5862579ff2d38c4258c149e5467c14d9425"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05 配套资料.md",
+      "sha256": "330cd9488c14270283f30e5fd9b96660dea3e53dc6b258ca3df605280dc74707"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.1 外部编码与境外期权映射.md",
+      "sha256": "f4cc2849a2bd64d1d39b388037aa56efacef3a4e0f066efe835b2053da2f1d67"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.2 金融工具标签.md",
+      "sha256": "dc276571f9cbcb58b14afdb2c3b72d23716725e168f30824a168e58caa660408"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.3 标的池与白名单.md",
+      "sha256": "b8d676a6239fb85f6460bcfbd05a53de385ca084ebc2c74ee7bfbe9935656d1c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.4 受益人持股监控清单.md",
+      "sha256": "8fc702992d1622db5f1f09441f73696181365b7c5421e8d827092baa2789ec9f"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.5 交易日历.md",
+      "sha256": "ba2f189ffc1c39ad566e93b63d08fde443a36ebc06a928648ff06984c82869fd"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/05.6 公司行为.md",
+      "sha256": "dbccccf64323d244543945a157d7b62034a5ff8b4a7fba3be9957a43d1637eb6"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/01-产品基础资料/未命名.md",
+      "sha256": "4e288b1873b97f98b6caa4904fcc0ae0aabc4bea6eeab92a2c143a84ce5d2254"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/00-行情与市场参数全貌.md",
+      "sha256": "8e3fe19b23559765d666705882fd77ee54e9ce224915081c43e55cb53f53eec0"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/01 日常价格与净值.md",
+      "sha256": "ccb3b6a39017d2a2947a3abc9201e55630551cf365001670ba7d9236272f1a44"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/01.1 通用行情.md",
+      "sha256": "958d9b9cadcaca87d3f1637334221ade768be0cd6970b900d255c26a86f3e193"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/01.2 风管行情.md",
+      "sha256": "27e904c4bce23ae611021deaabadb541b73f2d249990db888d48896db18042d7"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/01.3 期权reset.md",
+      "sha256": "413f820297ec7c1842094b17da3c89c0df939838977cd6ed6633b1cec63e3cad"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/02 汇率与利率.md",
+      "sha256": "aef5fb328210e6a78084cd3d27bb0384a0a1c054dc43f9d60391cf1d1bf0c05e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/02.1 汇率中间价.md",
+      "sha256": "01176319e3fad7eea237ef1a72fb6c25165344ec756dcd3c5544aebbce742ace"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/02.2 利率报价.md",
+      "sha256": "6bf5605ee95f235f356e6aa732909329fdc881a96e458cf66dd55fa186ac555e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/03 收益率与分红曲线.md",
+      "sha256": "dacc8e0711f04db159e07a782c848b40e43fe1c4b59195aaa61cdd92f5ac8e15"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/03.1 收益率曲线.md",
+      "sha256": "719cddfce1248eaa64853cdb2337321610133031c3a1f3d640cc6c9c10a9e092"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/03.2 分红曲线.md",
+      "sha256": "ef86fa0d25e03efc6a2608cff02e5348fb0008fda2495ad3c860a0490aa17e15"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/04 波动率与相关性.md",
+      "sha256": "bf654b0cf4cec2bb46d008ee49cc10ce9453597903b831cde6fc5a184da1ce21"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/04.1 波动率曲面.md",
+      "sha256": "8cbe456412dcdc9851a0f56e5391f3d9803f7e56566f539471960bbc83328c23"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/04.2 相关性.md",
+      "sha256": "9ad5354767c4df60cfde2df00e41facad849178d82164cd3bb91db0afeffd9c9"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/05 定价环境与因子.md",
+      "sha256": "0fc5939bcf605489ccd624033c6b1c40df04fa933f6904aaf6f66f41f254f4dc"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/05.1 定价环境与参数选择.md",
+      "sha256": "96b2cc5f14b9ae5442e4cc76acd9358e66aca5588c839e034197fdf36b954fde"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/05.2 因子与市场数据的对应.md",
+      "sha256": "99b15909d2b0b3176b11af04a14d0bd124ba0b6abb6827837a44c01a0320ff2b"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06 估值与风险结果.md",
+      "sha256": "20509d59062d17fb0a925d17f89e72053035fd413767c0757e0b87c3c3a8d92f"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06.1 期权定价与Greeks.md",
+      "sha256": "ba1abd0885db747356b7041e1322d4330f45b6e2937d8b8d079505bc9fa01f34"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06.2 多标的定价指标.md",
+      "sha256": "70ea79dd3f85ad1472db849774e6c0da13f15efda64828e25a8f76d0db15f8da"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06.3 自营做市敏感度与损益.md",
+      "sha256": "9d1d3f85a39841a09b77ef5fc768f5d1b4f379f1f63ba4e68885d30a2a6c0110"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06.4 隐含参数.md",
+      "sha256": "e242698ffd11bbc8a5ebfa0c57db0a4cb55388e0a4f85cba5dc9527506c194e7"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/06.5 限售股估值.md",
+      "sha256": "d20ff10e96c3ad2120793dced8e2c22403c72fae3f3e70deed9b9e36c8872ba2"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/02-行情与市场参数/未命名.md",
+      "sha256": "450fb8e1ab4b1feec8de210285b4fa2df1c8bb6760aeae278aa75a2a58bc8f3e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/shujuyuan_排序版.md",
+      "sha256": "eef51473ecb282db857e47b5f058f9edbd26b8328a116ffcc44e93d5ceb384db"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/T02-分类入模加工与下游消费.md",
+      "sha256": "2975612c0d0e6bf8a978c9b7a357446b913ae4e47db5ae4bff3248d8d5d7810c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/tit：数据字典d_cfg_dictionary_desc.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/产品标的与市场数据.md",
+      "sha256": "c732aa38010916dc4d4041fde852bfa9a11fd1ac2913aa9bf30a37994004ee79"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/码值：源交易类别代码.md",
+      "sha256": "0c90afb813da08c348daf012bae9b6395b0b5465583c168f7a0e872aab612ff3"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T02-产品标的与市场数据/his/笔记.md",
+      "sha256": "e721a33df90bbacc38245a270df1fec1999665ed876375076b27f6806ee9cf2c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/00 协议账户与合约全貌.md",
+      "sha256": "292877f528d7b253d1a3950acb322e8bc23af963dcaf1e078009df95ed230159"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/00.1 公共协议模型.md",
+      "sha256": "52fc20d544ae1fc84bab85729a35d49c04e45170b010d3dc38edcd341a75c354"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/01 账户与账簿.md",
+      "sha256": "fffaa9097807b7b7a9408682a03aa20a1c1aae08b6e98398cbc6c60c7fa84c27"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/01.1 资金账户.md",
+      "sha256": "efb6531775ad2072e046b3c793244a65acaeb7a51f7635adb537fb1154d82bdc"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/01.2 保证金账户.md",
+      "sha256": "e5331dff70a6610c70b2d39e6af18573b0b9d205f12ae92b93543eaa4d67481e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/01.3 账簿.md",
+      "sha256": "8e9b5d4a92b6c08c3421feb021165f37946a3f7f963cdeddc813e7b1ac9d43ce"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/02 合约主数据与条款.md",
+      "sha256": "2be9ba977292bcbf1592f7e75cbb85866fabf42b2d15e9236fe0dc1a3739e72b"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/02.1 普通互换.md",
+      "sha256": "f65b9330d43e118d9cc5873f4c1e11f4367f7a1d40b7c8e5d9c8fd0845e8333d"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/02.2 极速互换.md",
+      "sha256": "717e49b0052ee99a077cc7e8d7279102acbee5dea0f99937f652412ead2e6aa3"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/02.3 场外期权.md",
+      "sha256": "69eb4def2f91617141ee58645783e8cf9acc54992fc047db4f0392a0430f5351"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/02.4 外汇远期.md",
+      "sha256": "629cad1c43edde09aaa4eebfd6348dbb16270526114a22cc24be4383b117d734"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/03 对象之间的关系.md",
+      "sha256": "be04d77b5e039c6dc702d7b637195e3260dded9c416596c5dee0d4a2f2008c00"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/03.1 合约→资金账户.md",
+      "sha256": "46fe244c23f322b900736a16fec7b2c30ff8132ab3fcdbac16e94d84c9abccdc"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/03.2 合约→合约.md",
+      "sha256": "b452de3f6f9f137a15162cfa2f25481e8e18b4cf233ff6cc0cc290ca43514e5e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/03.3 合约→账簿.md",
+      "sha256": "e9befc7c2136777b3eccf3ab9890cc3213d61a1c63c81e659219f02dc64bcf1b"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/03.4 账簿映射.md",
+      "sha256": "e80027ea254c30194fa99df09f693b91b63fca6729a88b809dc4b99831901d19"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/04 当事人与角色.md",
+      "sha256": "be7234e066ae75df99adb1ad74e3411d171a4a1429c4c36a5be8854aa05be0ab"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/05 合约与金融工具的关系.md",
+      "sha256": "6d2a9912265b75f04a2eb3d5fcf9e741b2b6710a24a37be40b73801464101522"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/06 合约分类与状态.md",
+      "sha256": "cbec941a902fe6a24a7c48274a5cf2984ddb860ced5ba8264ea2dc9d35ec5a40"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/06.1 业务分类.md",
+      "sha256": "fe1b04db3a6552d11865f12321d6a84d25eb98672340f1fe1ee8bf0dd75e0598"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/06.2 合约状态.md",
+      "sha256": "e52f6330dbea1e50276b1e4d3c4c507e4c0ec864310fe66663a00eaa22acf0f8"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/附录A 标准模型字典.md",
+      "sha256": "cb683bad3b0dde732a52e89fd5f8e5cd6e0827234f2bf1574e1541b58445b2e1"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T03-协议账户与合约/附录B TITANS源字典.md",
+      "sha256": "bb99304a1593263eeb58a479ad7caa7b574e52ec8d7219e055d7d8f0bc648089"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/00 机构用户与权限全貌.md",
+      "sha256": "38f75791bb255f55454a5269501ee60b8b7de8edc92dd2ee87ea59a36689579b"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/01 公司与部门.md",
+      "sha256": "f7254f4b596aa471489080822013ff3dc7f5f5ea973d36b9175ead6088dcfed5"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/02 部门配置与账簿归属.md",
+      "sha256": "053d9d9595dec69962b9bfaed627bb0a384e0ff924e3d4ffd1bf7fb7228775ad"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/03 系统用户与外部身份.md",
+      "sha256": "ef56cd54a7cc8efd044d12944fd4b11f139442804ce1564a7cb36886dd8d8def"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/04 角色与用户角色关系.md",
+      "sha256": "c95ede897bd690c1e03ef180321fc91c041931d42f9dc0bf007e3170c8017806"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T04-机构用户与权限/05 资源与菜单权限.md",
+      "sha256": "41610543b4f99abd798439074df2761b6fb8d5e90d999c03b829c2dd507e9b79"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/00 事件与业务处理全貌.md",
+      "sha256": "74b830dd36d99b41ff65c79a67c9283873d251305c202132a3536fb5f07ec0be"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/01 合约存续事件与持仓变化.md",
+      "sha256": "a078ceda85578c1b6b36b0e9cb993e026ab2e940f735bca514eda62371ffb4d2"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/01.1 存续事件与持仓明细的关系.md",
+      "sha256": "7103ddf19389108d48a04da87710752d6a2f02b91cdeaec4ab6977e75b76f002"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/02 收付款记录与金额口径.md",
+      "sha256": "bd2bc4b5acc5c745d35a431ab61f07f94d0d61798cfc5448b157facd2254a4d3"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/03 费用支付计划.md",
+      "sha256": "c616f5271e58529d89d14885346caa93d70c0f4d648453bc5a52c7d22248396c"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/04 结算通知与收付关系.md",
+      "sha256": "d873a35f1ed70578ad673c6bc849b89ca1bc4d92c6792cbbff552fa4dacd3b7e"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T05-业务事件与资金收付/写作模板.md",
+      "sha256": "e3bee00c1e291b5de52671a87c5149512f207e7701586f5fa08946368e0369d1"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/01-tit入模/T06 区域范围说明.md",
+      "sha256": "f52f8e1089020390c24f21c1edb6edaebbf3ce6c91b7c7be8250992b84965649"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/00-ois入模/01-客户身份与主体入模.md",
+      "sha256": "9bb9299a0c7ae8ba81ab70dbbf0098c129b081232e46b202c6dc36e55704b6d2"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/00-ois入模/02-产品合约与销售归属.md",
+      "sha256": "8a80d8507d0fd9f6463df1b88771c0c01522606fd2e513e335e197651afab959"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/00-ois入模/03-运营流程与机构属性.md",
+      "sha256": "5209cd4a367d9cce3aa27dacecf625763afaf59982b589fa17e689a89a74d6d2"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/00-ois入模/04-图谱用法与证据边界.md",
+      "sha256": "05ba6d4ac782406ed15d407f47e3dea822db3e10f0748228da34a6447331607a"
+    },
+    {
+      "path": "docs/00-20260914-图谱认知/00-ois入模/README.md",
+      "sha256": "515f1afb2900c5d7c36f52c53d293b4d7ed050d37586a7ae4d3724c4e40188b3"
+    }
+  ],
+  "inputSha256": "97624d9828aa864ed29567612dc0d1818642d52fcb9b07c31f6737e95081f7ce",
+  "method": "Only same confirmed-physical-identity read objects are compared as task-level structural evidence. Exclude documented model inputs and inputs read by >=30 core tasks from clustering features, not from evidence. Require >=2 remaining common inputs and inverse-log frequency weighted Jaccard >=0.55. Components are candidate review batches; no cross-task causality inferred, no business labels used. Old documentation match is only a name-based candidate.",
+  "limitations": [
+    "First-module documentation is incomplete and mixes snapshots; matching is a display-boundary candidate only.",
+    "Push-category tasks need SQL review; category does not prove simple transfer.",
+    "Shared-input analysis misses serial-only processing and low-overlap branches; isolated tasks remain in inventory.",
+    "All task writes stay associated with that task; no per-output dependency is inferred.",
+    "Nine-schema review pool includes non-OTC tasks.",
+    "Grouping thresholds are exploratory; sensitivity is not accuracy validation."
+  ]
+}

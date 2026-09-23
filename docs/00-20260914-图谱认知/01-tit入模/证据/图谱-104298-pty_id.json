@@ -1,0 +1,160 @@
+{
+  "checkedAt": "2026-09-14T03:11:46.1169513Z",
+  "command": "trace --task-id 104298 --column pty_id --confirmed-only --depth 4 --limit 60",
+  "graph": {
+    "id": "titans-otc",
+    "version": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46"
+  },
+  "ok": true,
+  "truncated": false,
+  "stoppedBy": null,
+  "frontierNodeIds": [],
+  "terminalNodes": [
+    {
+      "nodeId": "read-field:dca195095f45c93cef38f6510da997497ba4b2abc6f69580ef379b01ee84b81c",
+      "role": "TITANS_SOURCE",
+      "reason": "源端点边界，停止展开",
+      "ruleRef": "config/source-endpoint-boundary-rules.json#roles.TITANS_SOURCE.qualifiedNamePrefixes=titans_dm."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "write-field:055e6c18ad19aef19bd6e420177853ee57b961a60948bbe7a900902d052f0490",
+      "kind": "WRITE_FIELD",
+      "taskId": "104298",
+      "table": "pdata_n.t01_indv",
+      "column": "pty_id",
+      "writeId": "write-observation:104298:5",
+      "depth": 0
+    },
+    {
+      "id": "write-field:38b802435768008c05a8432ad02b60d0f7c905c505856170d9b7611ddbd46245",
+      "kind": "WRITE_FIELD",
+      "taskId": "104298",
+      "table": "temp.t01_indv_tit339",
+      "column": "pty_id",
+      "writeId": "write-observation:104298:1",
+      "depth": 0
+    },
+    {
+      "id": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "kind": "READ_FIELD",
+      "taskId": "104298",
+      "table": "odata_n_tit.d_ref_counterparty",
+      "column": "id",
+      "writeId": "",
+      "depth": 1
+    },
+    {
+      "id": "write-field:504f8f3fe84590b94d8ea2d91b70ec175c761a9b2c32ae3b269edeea032e4bb4",
+      "kind": "WRITE_FIELD",
+      "taskId": "213687",
+      "table": "odata_n_tit.d_ref_counterparty",
+      "column": "id",
+      "writeId": "write-observation:213687:platform-target:0",
+      "depth": 2
+    },
+    {
+      "id": "read-field:dca195095f45c93cef38f6510da997497ba4b2abc6f69580ef379b01ee84b81c",
+      "kind": "READ_FIELD",
+      "taskId": "213687",
+      "table": "titans_dm.ref_counterparty",
+      "column": "id",
+      "writeId": "",
+      "depth": 3
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:84f0f12ddd4ee81da828c165ca0a97223b79f91242798dfe282d594755d1a320",
+      "from": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "to": "write-field:055e6c18ad19aef19bd6e420177853ee57b961a60948bbe7a900902d052f0490",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "edge:8bf5118bfe318c4f9657b335969a252ca73c7ccd99a7901fc09765d84847afd5",
+      "from": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "to": "write-field:38b802435768008c05a8432ad02b60d0f7c905c505856170d9b7611ddbd46245",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "edge:d956ce1c19b4f9001a3679543262d779fa637353301de304b5f6d7748d222987",
+      "from": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "to": "write-field:055e6c18ad19aef19bd6e420177853ee57b961a60948bbe7a900902d052f0490",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "edge:de7ba6cf94c6c3ce0aa4a155632509116b169376d939fe663c57c263a8341fc7",
+      "from": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "to": "write-field:055e6c18ad19aef19bd6e420177853ee57b961a60948bbe7a900902d052f0490",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "edge:ec7b8670c25d7eb49e322fb1aa716eec879547cd229112324dd3a5bd34562f14",
+      "from": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "to": "write-field:055e6c18ad19aef19bd6e420177853ee57b961a60948bbe7a900902d052f0490",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "beeb1496da1d4bbda002b738e403ea93e31d7f6d1a53cabb08473c3d9a69c537",
+      "from": "write-field:504f8f3fe84590b94d8ea2d91b70ec175c761a9b2c32ae3b269edeea032e4bb4",
+      "to": "read-field:1342a4e78d469597cd3c99694ab47913fa59ecf10d415bebef8a8b2ee96a5807",
+      "kind": "CONTINUES",
+      "status": "CONFIRMED",
+      "producerTaskId": "213687",
+      "consumerTaskId": "104298",
+      "partitionMatchStatus": "CONFIRMED",
+      "partition": {
+        "column": "busi_date",
+        "values": [
+          "${YYYY-MM-DD}"
+        ],
+        "valueStatus": "RUNTIME_EXPRESSION",
+        "observedValue": "${YYYY-MM-DD}",
+        "expression": "${YYYY-MM-DD}",
+        "partitionStatus": "STATIC"
+      }
+    },
+    {
+      "id": "edge:1128a04c2e448a3f9fa63d2758102a3d765f24ae027aaacb9f959258cf12ec3d",
+      "from": "read-field:dca195095f45c93cef38f6510da997497ba4b2abc6f69580ef379b01ee84b81c",
+      "to": "write-field:504f8f3fe84590b94d8ea2d91b70ec175c761a9b2c32ae3b269edeea032e4bb4",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    }
+  ],
+  "meta": {
+    "backend": "arcadedb",
+    "elapsedMs": 543,
+    "projectionGenerations": 0
+  }
+}

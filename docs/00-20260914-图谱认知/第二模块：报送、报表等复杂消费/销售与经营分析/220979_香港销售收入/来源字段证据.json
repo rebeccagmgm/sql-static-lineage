@@ -1,0 +1,215 @@
+{
+  "catalog": "table-metadata-catalog/table-metadata-4877b15fb9a9accd-e5c48df0-e117-4469-8eb4-e62d3568950b.sqlite",
+  "verifiedAt": "2026-09-22",
+  "scope": "只读限定查询；保留完整物理来源身份与采集时间，未查询业务行数据。",
+  "fields": [
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hk_cross_income_reward",
+      "collected_at": "2026-08-22T05:15:59.666Z",
+      "name": "accounting_date",
+      "comment": "核算日期"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hk_cross_income_reward",
+      "collected_at": "2026-08-22T05:15:59.666Z",
+      "name": "expansion_dept_income",
+      "comment": "拓展方部门所得收入（元）"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hk_cross_income_reward",
+      "collected_at": "2026-08-22T05:15:59.666Z",
+      "name": "accounting_end_date",
+      "comment": "核算结束日期"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_trd_daily_rebate_interest",
+      "collected_at": "2026-08-21T19:25:29.897Z",
+      "name": "calc_date",
+      "comment": "计提日期"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_trd_daily_rebate_interest",
+      "collected_at": "2026-08-21T19:25:29.897Z",
+      "name": "daily_base_amount",
+      "comment": "本日计息基数"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t05_otc_comp_dura_chg_evt",
+      "collected_at": "2026-08-22T05:19:22.523Z",
+      "name": "mtch_full_pric",
+      "comment": "成交全价"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t05_otc_comp_dura_chg_evt",
+      "collected_at": "2026-08-22T05:19:22.523Z",
+      "name": "chg_vol",
+      "comment": "变动数量"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t05_otc_swap_comp_hold_chg_det",
+      "collected_at": "2026-08-22T05:10:05.491Z",
+      "name": "pric",
+      "comment": "价格"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t05_otc_swap_comp_hold_chg_det",
+      "collected_at": "2026-08-22T05:10:05.491Z",
+      "name": "occu_qty",
+      "comment": "发生数量"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_news_n.t02_fxr_cfets_quot",
+      "collected_at": "2026-08-29T10:28:18.721Z",
+      "name": "trd_dt",
+      "comment": "交易日期"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_news_n.t02_fxr_cfets_quot",
+      "collected_at": "2026-08-29T10:28:18.721Z",
+      "name": "src_crrc_cd",
+      "comment": "源头货币代码"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_news_n.t02_fxr_cfets_quot",
+      "collected_at": "2026-08-29T10:28:18.721Z",
+      "name": "mid_price",
+      "comment": "中间价"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "collected_at": "2026-08-22T03:04:24.478Z",
+      "name": "init_nom_prin",
+      "comment": "初始名义本金"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "collected_at": "2026-08-22T03:04:24.478Z",
+      "name": "dyna_nom_prin",
+      "comment": "动态名义本金"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "collected_at": "2026-08-22T03:04:24.478Z",
+      "name": "fee_rate",
+      "comment": "费率"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "cny_ex_rate",
+      "comment": "人民币汇率"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "init_nom_prin",
+      "comment": "初始名义本金"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "dyna_nom_prin",
+      "comment": "动态名义本金"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "inr_seri_no",
+      "comment": "内部流水号"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "otc_seri_no",
+      "comment": "场外合约流水号"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "init_marg_prop",
+      "comment": "初始保证金比例"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "ddct_ptrn",
+      "comment": "抵扣模式"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "fee_rate",
+      "comment": "实际费率"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "base_marg_rate",
+      "comment": "基础保证金率"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "marg_agt_id",
+      "comment": "保证金合约编号"
+    },
+    {
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "name": "sett_crrc_cd",
+      "comment": "结算币种代码"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+  "publishedAt": "2026-09-16T09:27:06.712137300+08:00[Asia/Shanghai]",
+  "manifestSha256": "b47e814d6f0e0cb29887b8cc56a91001454ae50b4a9ffaedfb334962babd8042",
+  "tables": 7255,
+  "tasks": 7478,
+  "writes": 7441,
+  "taskPlaceholders": 1439,
+  "taskRows": 8880,
+  "coverage": {
+    "SCHEDULE_ONLY": 1324,
+    "PROJECTED": 6039,
+    "COLLECTION_FAILED": 115,
+    "coverageDisposition": {
+      "dataLineage": 6039,
+      "expectedScheduleReference": 977,
+      "materialGap": 462,
+      "scheduleOnlyExpected": 977,
+      "scheduleOnlyGap": 347,
+      "collectionFailedExpected": 0,
+      "collectionFailedGap": 115
+    }
+  },
+  "additionalToIo": 588,
+  "metadataExact": 6938,
+  "sourceManifest": "../sql-static-lineage-data/artifacts/graphs/titans-otc/batches/94c2f33b6a72717a4b335f2ee40220aba5e70e8441c3dbfe0fafa0557920cf82/batch-manifest.json",
+  "sourceManifestSha256": "b47e814d6f0e0cb29887b8cc56a91001454ae50b4a9ffaedfb334962babd8042",
+  "sourceMethod": "逐一读取发布清单的7478份投影，核对每份contentHash；全量PHYSICAL_DATASET/TASK/TARGET_WRITE数量与同版本live status对齐",
+  "tableIdentitySetSha256": "02dbbc73798942805265076cceb52ab17e437ac56afa6c2dbf392b261fc3ec9e",
+  "taskIdentitySetSha256": "4250adff86f7824177fa4afe1977847f7b7f12a385c6092b5e0ee53c1a913251",
+  "targetWriteSetSha256": "d6da254319a4c330ddef5931544e1ed505e46c2305f0b7a98d748e6c2e6250e2",
+  "materialLimit": "分组结果仍仅是首批分析，不将新增对象直接视为第二模块或范围外；跨任务因果未由本次登记证明"
+}

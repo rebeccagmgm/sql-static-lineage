@@ -1,0 +1,664 @@
+{
+  "taskId": "147452",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "45860fc2e8e460ba8de8628dd34139528553ba246f18c24809a3b2dd7fc0c98b",
+  "inGraph": true,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 147452"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: pdata_n"
+    },
+    {
+      "line": 3,
+      "text": "-- source: LOCAL_CODE"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: BigData-GF_FDM_N/PTY/PDATA_N.T01_OTC_CUTP_VALU_RPT_CFG_INFO_OIS018.py"
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T01:06:59.525Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T01_OTC_CUTP_VALU_RPT_CFG_INFO("
+    },
+    {
+      "line": 10,
+      "text": "         Valu_Rpt_Cfg_Id            STRING COMMENT '估值报告配置编号'"
+    },
+    {
+      "line": 11,
+      "text": "        ,Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 12,
+      "text": "        ,Cutp_Shor_Name             STRING COMMENT '交易对手简称'"
+    },
+    {
+      "line": 13,
+      "text": "        ,Valu_Pd_Cd                 STRING COMMENT '估值周期代码'"
+    },
+    {
+      "line": 14,
+      "text": "        ,Valu_Days_Calc_Method_Cd   STRING COMMENT '估值天数计算方式代码'"
+    },
+    {
+      "line": 15,
+      "text": "        ,Valu_Days                  STRING COMMENT '估值天数'"
+    },
+    {
+      "line": 16,
+      "text": "        ,Vld_Flag                   STRING COMMENT '有效标志'"
+    },
+    {
+      "line": 17,
+      "text": "        ,Valu_Rpt_Type_Cd           STRING COMMENT '估值报告类型代码'"
+    },
+    {
+      "line": 18,
+      "text": "        ,Mail_Title_Tplt            STRING COMMENT '邮件标题模板'"
+    },
+    {
+      "line": 19,
+      "text": "        ,Mail_Cont_Tplt             STRING COMMENT '邮件内容模板'"
+    },
+    {
+      "line": 20,
+      "text": "        ,Mail_Recvr                 STRING COMMENT '收件人邮箱'"
+    },
+    {
+      "line": 21,
+      "text": "        ,Mail_Cc_Recvr              STRING COMMENT '抄送人邮箱'"
+    },
+    {
+      "line": 22,
+      "text": "        ,Mail_Bcc_Recvr             STRING COMMENT '密送人邮箱'"
+    },
+    {
+      "line": 23,
+      "text": "        ,Mail_Chkr                  STRING COMMENT '复核人邮箱 '"
+    },
+    {
+      "line": 24,
+      "text": "        ,Deri_Rpt_Cate_Cd           STRING COMMENT '估值报告类别代码'"
+    },
+    {
+      "line": 25,
+      "text": "        ,Time_Grp                   STRING COMMENT '时间组'"
+    },
+    {
+      "line": 26,
+      "text": "        ,Hldy_Task_Exec_Regu_Cd     STRING COMMENT '节假日任务执行规则代码'"
+    },
+    {
+      "line": 27,
+      "text": "        ,Hldy_Next_Exec_Date        STRING COMMENT '节假日后下一次执行日期'"
+    },
+    {
+      "line": 28,
+      "text": "        ,Send_Spd_Tn                STRING COMMENT '发送速度'"
+    },
+    {
+      "line": 29,
+      "text": "        ,Opt_Rstk_Type_Cd           STRING COMMENT '期权限售股类型代码'"
+    },
+    {
+      "line": 30,
+      "text": "        ,Swap_Rstk_Type_Cd          STRING COMMENT '互换限售股类型代码'"
+    },
+    {
+      "line": 31,
+      "text": "        ,Src_Dept_No                STRING COMMENT '源部门编码'"
+    },
+    {
+      "line": 32,
+      "text": "        ,Fnd_Acct_Split_Flag        STRING COMMENT '资金账户拆分标志'"
+    },
+    {
+      "line": 33,
+      "text": "        ,Both_Strt_End_Calc_Flag    STRING COMMENT '按算头算尾方式计算利息标志'"
+    },
+    {
+      "line": 34,
+      "text": "        ,Split_Fnd_Jour_Flag        STRING COMMENT '显示拆分资金流水标志'"
+    },
+    {
+      "line": 35,
+      "text": "        ,Add_Opt_Ref_Valu_Flag      STRING COMMENT '添加期权参考估值标志'"
+    },
+    {
+      "line": 36,
+      "text": "        ,Disp_Deal_Avg_Price_Flag   STRING COMMENT '展示未含费成交均价标志'"
+    },
+    {
+      "line": 37,
+      "text": "        ,Disp_Intrne_Val_Time_Val_Flag   STRING COMMENT '展示内在价值时间价值标志'"
+    },
+    {
+      "line": 38,
+      "text": "        ,Create_Time                STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 39,
+      "text": "        ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 40,
+      "text": "        ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 41,
+      "text": "        ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 42,
+      "text": "        ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 43,
+      "text": "        ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 44,
+      "text": "        ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 45,
+      "text": "   )COMMENT '场外衍生品交易对手估值报告配置信息'"
+    },
+    {
+      "line": 46,
+      "text": "   PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 47,
+      "text": "   STORED AS ORC;"
+    },
+    {
+      "line": 48,
+      "text": ""
+    },
+    {
+      "line": 49,
+      "text": "-- querySql"
+    },
+    {
+      "line": 50,
+      "text": "INSERT OVERWRITE TABLE T01_OTC_CUTP_VALU_RPT_CFG_INFO PARTITION(SRC_TBL,BUSI_DATE)"
+    },
+    {
+      "line": 51,
+      "text": "   SELECT"
+    },
+    {
+      "line": 52,
+      "text": "         Valu_Rpt_Cfg_Id            --估值报告配置编号"
+    },
+    {
+      "line": 53,
+      "text": "        ,Pty_Id                     --当事人编号"
+    },
+    {
+      "line": 54,
+      "text": "        ,Cutp_Shor_Name             --交易对手简称"
+    },
+    {
+      "line": 55,
+      "text": "        ,Valu_Pd_Cd                 --估值周期代码"
+    },
+    {
+      "line": 56,
+      "text": "        ,Valu_Days_Calc_Method_Cd   --估值天数计算方式代码"
+    },
+    {
+      "line": 57,
+      "text": "        ,Valu_Days                  --估值天数"
+    },
+    {
+      "line": 58,
+      "text": "        ,Vld_Flag                   --有效标志"
+    },
+    {
+      "line": 59,
+      "text": "        ,Valu_Rpt_Type_Cd           --估值报告类型代码"
+    },
+    {
+      "line": 60,
+      "text": "        ,Mail_Title_Tplt            --邮件标题模板"
+    },
+    {
+      "line": 61,
+      "text": "        ,Mail_Cont_Tplt             --邮件内容模板"
+    },
+    {
+      "line": 62,
+      "text": "        ,Mail_Recvr                 --收件人邮箱"
+    },
+    {
+      "line": 63,
+      "text": "        ,Mail_Cc_Recvr              --抄送人邮箱"
+    },
+    {
+      "line": 64,
+      "text": "        ,Mail_Bcc_Recvr             --密送人邮箱"
+    },
+    {
+      "line": 65,
+      "text": "        ,Mail_Chkr                  --复核人邮箱 "
+    },
+    {
+      "line": 66,
+      "text": "        ,Deri_Rpt_Cate_Cd           --估值报告类别代码"
+    },
+    {
+      "line": 67,
+      "text": "        ,Time_Grp                   --时间组"
+    },
+    {
+      "line": 68,
+      "text": "        ,Hldy_Task_Exec_Regu_Cd     --节假日任务执行规则代码"
+    },
+    {
+      "line": 69,
+      "text": "        ,Hldy_Next_Exec_Date        --节假日后下一次执行日期"
+    },
+    {
+      "line": 70,
+      "text": "        ,Send_Spd_Tn                --发送速度"
+    },
+    {
+      "line": 71,
+      "text": "        ,Opt_Rstk_Type_Cd           --期权限售股类型代码"
+    },
+    {
+      "line": 72,
+      "text": "        ,Swap_Rstk_Type_Cd          --互换限售股类型代码"
+    },
+    {
+      "line": 73,
+      "text": "        ,Src_Dept_No                --源部门编码"
+    },
+    {
+      "line": 74,
+      "text": "        ,Fnd_Acct_Split_Flag        --资金账户拆分标志"
+    },
+    {
+      "line": 75,
+      "text": "        ,Both_Strt_End_Calc_Flag    --按算头算尾方式计算利息标志"
+    },
+    {
+      "line": 76,
+      "text": "        ,Split_Fnd_Jour_Flag        --显示拆分资金流水标志"
+    },
+    {
+      "line": 77,
+      "text": "        ,Add_Opt_Ref_Valu_Flag      --添加期权参考估值标志"
+    },
+    {
+      "line": 78,
+      "text": "        ,Disp_Deal_Avg_Price_Flag   --展示未含费成交均价标志"
+    },
+    {
+      "line": 79,
+      "text": "        ,Disp_Intrne_Val_Time_Val_Flag   --展示内在价值时间价值标志"
+    },
+    {
+      "line": 80,
+      "text": "        ,Create_Time                --创建时间"
+    },
+    {
+      "line": 81,
+      "text": "        ,Upd_Time                   --更新时间"
+    },
+    {
+      "line": 82,
+      "text": "        ,Data_Src_Cd                --数据来源代码"
+    },
+    {
+      "line": 83,
+      "text": "        ,Task_Name                  --任务名"
+    },
+    {
+      "line": 84,
+      "text": "        ,Data_Etl_Date              --数据加载日期"
+    },
+    {
+      "line": 85,
+      "text": "        ,Data_Upt_Date              --数据更新日期"
+    },
+    {
+      "line": 86,
+      "text": "        ,Data_Time                  --数据时间"
+    },
+    {
+      "line": 87,
+      "text": "        ,Src_Tbl                    --源表"
+    },
+    {
+      "line": 88,
+      "text": "        ,Busi_Date                  --业务日期"
+    },
+    {
+      "line": 89,
+      "text": "   FROM T01_OTC_CUTP_VALU_RPT_CFG_INFO"
+    },
+    {
+      "line": 90,
+      "text": "   WHERE SRC_TBL='ODATA_N_OIS.G_VALUE_REPORT_CONFIG'"
+    },
+    {
+      "line": 91,
+      "text": "     AND BUSI_DATE=DATE_SUB('${data_day_str}',1)"
+    },
+    {
+      "line": 92,
+      "text": "   ;"
+    },
+    {
+      "line": 93,
+      "text": ""
+    },
+    {
+      "line": 94,
+      "text": "INSERT OVERWRITE TABLE T01_OTC_CUTP_VALU_RPT_CFG_INFO PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 95,
+      "text": "   -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 96,
+      "text": "   --Group1: Source Table:[ODATA_N_OIS.G_VALUE_REPORT_CONFIG:估值报告配置表] "
+    },
+    {
+      "line": 97,
+      "text": "   -----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 98,
+      "text": "   SELECT"
+    },
+    {
+      "line": 99,
+      "text": "         ID                                                AS  Valu_Rpt_Cfg_Id         --估值报告配置编号    "
+    },
+    {
+      "line": 100,
+      "text": "        ,B.CLIENT_ID                                       AS  Pty_Id                  --当事人编号          "
+    },
+    {
+      "line": 101,
+      "text": "        ,COUNTERPARTY                                      AS  Cutp_Shor_Name          --交易对手简称        "
+    },
+    {
+      "line": 102,
+      "text": "        ,LPAD(VALUE_PERIOD,2,'0')                          AS  Valu_Pd_Cd              --估值周期代码        "
+    },
+    {
+      "line": 103,
+      "text": "        ,VALUE_PERIOD_COUNT_TYPE                           AS  Valu_Days_Calc_Method_Cd--估值天数计算方式代码"
+    },
+    {
+      "line": 104,
+      "text": "        ,DAY_COUNTS                                        AS  Valu_Days               --估值天数            "
+    },
+    {
+      "line": 105,
+      "text": "        ,CASE WHEN EFFECT = '2' THEN '0'"
+    },
+    {
+      "line": 106,
+      "text": "              WHEN EFFECT = '1' THEN '1'"
+    },
+    {
+      "line": 107,
+      "text": "              ELSE EFFECT END                              AS  Vld_Flag                --有效标志            "
+    },
+    {
+      "line": 108,
+      "text": "        ,REPORT_TYPE                                       AS  Valu_Rpt_Type_Cd        --估值报告类型代码      "
+    },
+    {
+      "line": 109,
+      "text": "        ,MAIL_SUBJECT                                      AS  Mail_Title_Tplt         --邮件标题模板          "
+    },
+    {
+      "line": 110,
+      "text": "        ,MAIL_CONTENT                                      AS  Mail_Cont_Tplt          --邮件内容模板          "
+    },
+    {
+      "line": 111,
+      "text": "        ,MAIL_RECEIVER                                     AS  Mail_Recvr              --收件人邮箱            "
+    },
+    {
+      "line": 112,
+      "text": "        ,MAIL_CC_RECEIVER                                  AS  Mail_Cc_Recvr           --抄送人邮箱            "
+    },
+    {
+      "line": 113,
+      "text": "        ,MAIL_BCC_RECEIVER                                 AS  Mail_Bcc_Recvr          --密送人邮箱            "
+    },
+    {
+      "line": 114,
+      "text": "        ,REVIEWER_RECEIVER                                 AS  Mail_Chkr               --复核人邮箱            "
+    },
+    {
+      "line": 115,
+      "text": "        ,DERIV_REPORTTYPE_ARR                              AS  Deri_Rpt_Cate_Cd        --估值报告类别代码      "
+    },
+    {
+      "line": 116,
+      "text": "        ,TIME_GROUP                                        AS  Time_Grp                --时间组                "
+    },
+    {
+      "line": 117,
+      "text": "        ,HOLIDAY_RULE                                      AS  Hldy_Task_Exec_Regu_Cd  --节假日任务执行规则代码"
+    },
+    {
+      "line": 118,
+      "text": "        ,HOLIDAY_SEND_DATE                                 AS  Hldy_Next_Exec_Date     --节假日后下一次执行日期"
+    },
+    {
+      "line": 119,
+      "text": "        ,TRADE_DAY_CATEGORY                                AS  Send_Spd_Tn             --发送速度              "
+    },
+    {
+      "line": 120,
+      "text": "        ,OPTION_RESTRICTED_STOCK                           AS  Opt_Rstk_Type_Cd        --期权限售股类型代码    "
+    },
+    {
+      "line": 121,
+      "text": "        ,TRS_RESTRICTED_STOCK                              AS  Swap_Rstk_Type_Cd       --互换限售股类型代码    "
+    },
+    {
+      "line": 122,
+      "text": "        ,DEPARTMENT                                        AS  Src_Dept_No             --源部门编码            "
+    },
+    {
+      "line": 123,
+      "text": "        ,CASE WHEN IS_SPLIT_ASSET_ACCOUNT = 'true'  THEN '1'"
+    },
+    {
+      "line": 124,
+      "text": "              WHEN IS_SPLIT_ASSET_ACCOUNT = 'false' THEN '0'"
+    },
+    {
+      "line": 125,
+      "text": "              ELSE IS_SPLIT_ASSET_ACCOUNT END              AS  Fnd_Acct_Split_Flag     --资金账户拆分标志             "
+    },
+    {
+      "line": 126,
+      "text": "        ,CASE WHEN IS_INCLUDE_BOTH_ENDS = 'true'  THEN '1'"
+    },
+    {
+      "line": 127,
+      "text": "              WHEN IS_INCLUDE_BOTH_ENDS = 'false' THEN '0'"
+    },
+    {
+      "line": 128,
+      "text": "              ELSE IS_INCLUDE_BOTH_ENDS END                AS  Both_Strt_End_Calc_Flag --按算头算尾方式计算利息标志   "
+    },
+    {
+      "line": 129,
+      "text": "        ,CASE WHEN IS_SPLIT_CAPITAL_FLOW = 'true'  THEN '1'"
+    },
+    {
+      "line": 130,
+      "text": "              WHEN IS_SPLIT_CAPITAL_FLOW = 'false' THEN '0'"
+    },
+    {
+      "line": 131,
+      "text": "              ELSE IS_SPLIT_CAPITAL_FLOW END               AS  Split_Fnd_Jour_Flag     --显示拆分资金流水标志         "
+    },
+    {
+      "line": 132,
+      "text": "        ,CASE WHEN IS_ADD_OPTION_GUIDE_VALUE = 'true'  THEN '1'"
+    },
+    {
+      "line": 133,
+      "text": "              WHEN IS_ADD_OPTION_GUIDE_VALUE = 'false' THEN '0'"
+    },
+    {
+      "line": 134,
+      "text": "              ELSE IS_ADD_OPTION_GUIDE_VALUE END           AS  Add_Opt_Ref_Valu_Flag   --添加期权参考估值标志         "
+    },
+    {
+      "line": 135,
+      "text": "        ,CASE WHEN IS_AVERAGE_DEAL_PRICE = 'true'  THEN '1'"
+    },
+    {
+      "line": 136,
+      "text": "              WHEN IS_AVERAGE_DEAL_PRICE = 'false' THEN '0'"
+    },
+    {
+      "line": 137,
+      "text": "              ELSE IS_AVERAGE_DEAL_PRICE END               AS  Disp_Deal_Avg_Price_Flag--展示未含费成交均价标志       "
+    },
+    {
+      "line": 138,
+      "text": "        ,CASE WHEN IS_TIME_AND_INNER_VALUE = 'true'  THEN '1'"
+    },
+    {
+      "line": 139,
+      "text": "              WHEN IS_TIME_AND_INNER_VALUE = 'false' THEN '0'"
+    },
+    {
+      "line": 140,
+      "text": "              ELSE IS_TIME_AND_INNER_VALUE END             AS  Disp_Intrne_Val_Time_Val_Flag--展示内在价值时间价值标志"
+    },
+    {
+      "line": 141,
+      "text": "        ,CREATED_DATETIME                                  AS  Create_Time             --创建时间                     "
+    },
+    {
+      "line": 142,
+      "text": "        ,UPDATED_DATETIME                                  AS  Upd_Time                --更新时间                     "
+    },
+    {
+      "line": 143,
+      "text": "        ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 144,
+      "text": "        ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 145,
+      "text": "        ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 146,
+      "text": "        ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 147,
+      "text": "        ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 148,
+      "text": "   FROM (SELECT *  FROM ODATA_N_OIS.G_VALUE_REPORT_CONFIG WHERE  BUSI_DATE='${data_day_str}' )A"
+    },
+    {
+      "line": 149,
+      "text": "   LEFT JOIN(SELECT * FROM ("
+    },
+    {
+      "line": 150,
+      "text": "                            SELECT ABBREVIATION"
+    },
+    {
+      "line": 151,
+      "text": "                                  ,CLIENT_ID "
+    },
+    {
+      "line": 152,
+      "text": "                                  ,ROW_NUMBER()OVER(PARTITION BY ABBREVIATION  ORDER BY AUDIT_STATUS DESC, CLIENT_ID DESC)RN "
+    },
+    {
+      "line": 153,
+      "text": "                              FROM ("
+    },
+    {
+      "line": 154,
+      "text": "                                    SELECT REGEXP_REPLACE(ABBREVIATION,' ','') as ABBREVIATION,CLIENT_ID,AUDIT_STATUS FROM ODATA_N_OIS.O_OTC_DERIVATIVE_COUNTERPARTY WHERE DEPARTMENT<>'HK' AND BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 155,
+      "text": "                                      UNION ALL "
+    },
+    {
+      "line": 156,
+      "text": "                                    SELECT REGEXP_REPLACE(ABBREVIATION,' ','') as ABBREVIATION,CLIENT_ID,AUDIT_STATUS FROM ODATA_N_OIS.G_HK_COUNTERPARTY WHERE  BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 157,
+      "text": "                                    ) T1"
+    },
+    {
+      "line": 158,
+      "text": "                                 )T "
+    },
+    {
+      "line": 159,
+      "text": "              WHERE RN=1"
+    },
+    {
+      "line": 160,
+      "text": "                  )B"
+    },
+    {
+      "line": 161,
+      "text": "   ON REGEXP_REPLACE(A.COUNTERPARTY,' ','')=REGEXP_REPLACE(B.ABBREVIATION,' ','') "
+    },
+    {
+      "line": 162,
+      "text": "   ;"
+    },
+    {
+      "line": 163,
+      "text": ""
+    }
+  ]
+}

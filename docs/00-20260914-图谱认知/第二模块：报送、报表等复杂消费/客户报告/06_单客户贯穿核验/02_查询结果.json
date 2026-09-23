@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "capturedDate": "2026-09-23",
+  "timezone": "Asia/Shanghai",
+  "environment": "TEST_ONLY",
+  "database": "gf_otc",
+  "caseLabel": "案例客户A",
+  "reportDay": "2026-03-25",
+  "sampleSelection": {
+    "criterion": "报告日业务统计中同时有期权和互换类别；SQL端结果上限5，实际只有1个候选。未要求两类当日余额都为正。",
+    "optionStock": "0.0",
+    "swapStock": "1819276731.75",
+    "customerBinding": "查询SQL中的${company_id}为匿名化绑定；本机复核所需原标识仅保留于.evidence-cache/customer-case-binding-20260923.json。"
+  },
+  "resultEncoding": "JDBC CLI 将所有单元格字符串化，SQL NULL 输出为空字符串；本案例用独立 IS NULL / COALESCE 查询确认关键NULL，不能把所有文本空串自动当NULL。",
+  "freshness": {
+    "query": "SELECT 'amount_change' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_amount_change UNION ALL SELECT 'busi_stat' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_busi_stat UNION ALL SELECT 'cross_sale' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_cross_sale UNION ALL SELECT 'cust_index' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_cust_index UNION ALL SELECT 'cust_tag' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_cust_tag UNION ALL SELECT 'hold_pnl' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_hold_pnl UNION ALL SELECT 'swap_trd_stat' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_swap_trd_stat UNION ALL SELECT 'underlying_analysis' AS result_table,COUNT(*) AS rows_n,MIN(busi_date) AS first_day,MAX(busi_date) AS last_day FROM gf_otc.bi_otc_underlying_analysis UNION ALL SELECT 'year_revenue',COUNT(*),CAST(MIN(year) AS CHAR),CAST(MAX(year) AS CHAR) FROM gf_otc.bi_otc_year_revenue LIMIT 9",
+    "rows": [
+      {
+        "result_table": "amount_change",
+        "rows_n": "481",
+        "first_day": "2025-01-19",
+        "last_day": "2026-03-25"
+      },
+      {
+        "result_table": "busi_stat",
+        "rows_n": "344",
+        "first_day": "2026-03-13",
+        "last_day": "2026-03-25"
+      },
+      {
+        "result_table": "cross_sale",
+        "rows_n": "0",
+        "first_day": "",
+        "last_day": ""
+      },
+      {
+        "result_table": "cust_index",
+        "rows_n": "40",
+        "first_day": "2026-03-19",
+        "last_day": "2026-03-25"
+      },
+      {
+        "result_table": "cust_tag",
+        "rows_n": "100",
+        "first_day": "",
+        "last_day": ""
+      },
+      {
+        "result_table": "hold_pnl",
+        "rows_n": "109",
+        "first_day": "2026-03-25",
+        "last_day": "2026-03-25"
+      },
+      {
+        "result_table": "swap_trd_stat",
+        "rows_n": "8",
+        "first_day": "",
+        "last_day": ""
+      },
+      {
+        "result_table": "underlying_analysis",
+        "rows_n": "0",
+        "first_day": "",
+        "last_day": ""
+      },
+      {
+        "result_table": "year_revenue",
+        "rows_n": "20",
+        "first_day": "2025",
+        "last_day": "2026"
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "section_name": "coverage",
+      "source_name": "amount_change",
+      "n": "49",
+      "null_days": "0"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "busi_stat",
+      "n": "78",
+      "null_days": "0"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "cust_index",
+      "n": "4",
+      "null_days": "0"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "hold_pnl",
+      "n": "67",
+      "null_days": "0"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "cust_tag",
+      "n": "10",
+      "null_days": "10"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "swap_trd_stat",
+      "n": "2",
+      "null_days": "2"
+    },
+    {
+      "section_name": "coverage",
+      "source_name": "year_revenue",
+      "n": "2",
+      "null_days": ""
+    }
+  ],
+  "queries": {
+    "business": {
+      "query": "SELECT busi_type_1,busi_type_2,last_year_new_amount,this_year_new_amount,stock_size,cross_border_opt_amount,npv_revenue,real_pnl,profit_rate,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_busi_stat WHERE company_id='${company_id}' AND busi_date='2026-03-25' ORDER BY busi_type_1,busi_type_2 LIMIT 20",
+      "rows": [
+        {
+          "busi_type_1": "互换",
+          "busi_type_2": "其它互换类型",
+          "last_year_new_amount": "1119992099.31",
+          "this_year_new_amount": "2996890423.62",
+          "stock_size": "1311584457.91",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "0.0",
+          "real_pnl": "96511.28",
+          "profit_rate": "0.0001",
+          "synced_at": "2026-03-26 16:21:18"
+        },
+        {
+          "busi_type_1": "互换",
+          "busi_type_2": "南下跨境-其他股票市场",
+          "last_year_new_amount": "449698224.04",
+          "this_year_new_amount": "0.0",
+          "stock_size": "0.0",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "0.0",
+          "real_pnl": "0.0",
+          "profit_rate": "0.0",
+          "synced_at": "2026-03-26 16:21:18"
+        },
+        {
+          "busi_type_1": "互换",
+          "busi_type_2": "南下跨境股票",
+          "last_year_new_amount": "2807246925.4",
+          "this_year_new_amount": "653804505.59",
+          "stock_size": "507692273.84",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "0.0",
+          "real_pnl": "1425868.82",
+          "profit_rate": "0.0028",
+          "synced_at": "2026-03-26 16:21:18"
+        },
+        {
+          "busi_type_1": "期权",
+          "busi_type_2": "个股期权",
+          "last_year_new_amount": "614978332.33",
+          "this_year_new_amount": "100568822.97",
+          "stock_size": "0.0",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "2874113.85",
+          "real_pnl": "-1672774.7",
+          "profit_rate": "0.0",
+          "synced_at": "2026-03-26 16:21:18"
+        },
+        {
+          "busi_type_1": "期权",
+          "busi_type_2": "其他期权（除Risky和安全气囊X）",
+          "last_year_new_amount": "41999959.98",
+          "this_year_new_amount": "0.0",
+          "stock_size": "0.0",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "0.0",
+          "real_pnl": "0.0",
+          "profit_rate": "0.0",
+          "synced_at": "2026-03-26 16:21:18"
+        },
+        {
+          "busi_type_1": "期权",
+          "busi_type_2": "安全气囊",
+          "last_year_new_amount": "0.0",
+          "this_year_new_amount": "0.0",
+          "stock_size": "0.0",
+          "cross_border_opt_amount": "0.0",
+          "npv_revenue": "0.0",
+          "real_pnl": "0.0",
+          "profit_rate": "0.0",
+          "synced_at": "2026-03-26 16:21:18"
+        }
+      ]
+    },
+    "daily": {
+      "query": "SELECT CAST(busi_date AS CHAR) AS busi_date,option_amount_change,swap_amount_change,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_amount_change WHERE company_id='${company_id}' AND busi_date BETWEEN '2026-03-23' AND '2026-03-25' ORDER BY busi_date LIMIT 10",
+      "rows": [
+        {
+          "busi_date": "2026-03-23",
+          "option_amount_change": "0.0",
+          "swap_amount_change": "16.38",
+          "synced_at": "2026-03-26 16:16:54"
+        },
+        {
+          "busi_date": "2026-03-24",
+          "option_amount_change": "0.0",
+          "swap_amount_change": "17.33",
+          "synced_at": "2026-03-26 16:16:54"
+        },
+        {
+          "busi_date": "2026-03-25",
+          "option_amount_change": "0.0",
+          "swap_amount_change": "18.19",
+          "synced_at": "2026-03-26 16:16:54"
+        }
+      ]
+    },
+    "index": {
+      "query": "SELECT CAST(busi_date AS CHAR) AS busi_date,cust_hold_win_rate,cust_win_rate,margin_ratio,margin_call_line,outst_margin_amount,used_quota,approved_quota,margin_call_rate,swap_turnover_rate,swap_new_principal,swap_outst_month_end,swap_platform_fee,swap_bond_interest,swap_commission,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_cust_index WHERE company_id='${company_id}' AND busi_date='2026-03-25' LIMIT 5",
+      "rows": [
+        {
+          "busi_date": "2026-03-25",
+          "cust_hold_win_rate": "0.625",
+          "cust_win_rate": "个股期权:0.7777777777777778,其他期权（除Risky和安全气囊X）:0.2222222222222222",
+          "margin_ratio": "0.9069",
+          "margin_call_line": "0.1659",
+          "outst_margin_amount": "216012.18",
+          "used_quota": "216012.18",
+          "approved_quota": "23130000.0",
+          "margin_call_rate": "",
+          "swap_turnover_rate": "-0.072493",
+          "swap_new_principal": "79025.12",
+          "swap_outst_month_end": "21.14",
+          "swap_platform_fee": "",
+          "swap_bond_interest": "",
+          "swap_commission": "",
+          "synced_at": "2026-03-26 16:37:20"
+        }
+      ]
+    },
+    "year": {
+      "query": "SELECT year,option_revenue,swap_revenue,cross_sale_amount,cross_border_revenue,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_year_revenue WHERE company_id='${company_id}' AND year IN (2025,2026) ORDER BY year LIMIT 4",
+      "rows": [
+        {
+          "year": "2025",
+          "option_revenue": "-1431.6",
+          "swap_revenue": "616.08",
+          "cross_sale_amount": "148.86",
+          "cross_border_revenue": "-1127.16",
+          "synced_at": "2026-03-23 11:16:38"
+        },
+        {
+          "year": "2026",
+          "option_revenue": "-167.28",
+          "swap_revenue": "136.43",
+          "cross_sale_amount": "0.0",
+          "cross_border_revenue": "-38.0",
+          "synced_at": "2026-03-23 11:16:38"
+        }
+      ]
+    },
+    "hold": {
+      "query": "SELECT COUNT(*) AS rows_n,SUM(hold_amount) AS hold_wan,SUM(current_pnl) AS pnl_wan,SUM(ABS(current_pnl)) AS abs_pnl_wan,SUM(pnl_ratio) AS ratio_sum,SUM(ABS(pnl_ratio)) AS abs_ratio_sum,SUM(current_pnl IS NULL) AS null_pnl_rows,MIN(CAST(data_datetime AS CHAR)) AS first_sync,MAX(CAST(data_datetime AS CHAR)) AS last_sync FROM gf_otc.bi_otc_hold_pnl WHERE company_id='${company_id}' AND busi_date='2026-03-25' LIMIT 1",
+      "rows": [
+        {
+          "rows_n": "67",
+          "hold_wan": "181927.65",
+          "pnl_wan": "",
+          "abs_pnl_wan": "",
+          "ratio_sum": "",
+          "abs_ratio_sum": "",
+          "null_pnl_rows": "67",
+          "first_sync": "2026-03-31 15:26:24",
+          "last_sync": "2026-03-31 15:26:24"
+        }
+      ]
+    },
+    "trade": {
+      "query": "SELECT COALESCE(CAST(busi_date AS CHAR),'__SQL_NULL__') AS busi_date,time_period,weekly_trd_freq,avg_trd_amount,trd_win_rate,yield_rate,swap_first_trd_type,swap_second_trd_type,swap_first_trd_count,swap_second_trd_count,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_swap_trd_stat WHERE company_id='${company_id}' ORDER BY time_period LIMIT 5",
+      "rows": [
+        {
+          "busi_date": "__SQL_NULL__",
+          "time_period": "历史",
+          "weekly_trd_freq": "7.2995",
+          "avg_trd_amount": "14346922.16",
+          "trd_win_rate": "0.57377",
+          "yield_rate": "-0.000126",
+          "swap_first_trd_type": "南下跨境股票",
+          "swap_second_trd_type": "其它互换类型",
+          "swap_first_trd_count": "295",
+          "swap_second_trd_count": "231",
+          "synced_at": "2026-03-26 16:19:57"
+        },
+        {
+          "busi_date": "__SQL_NULL__",
+          "time_period": "近一年",
+          "weekly_trd_freq": "8.875",
+          "avg_trd_amount": "14133155.24",
+          "trd_win_rate": "0.57377",
+          "yield_rate": "-0.000131",
+          "swap_first_trd_type": "南下跨境股票",
+          "swap_second_trd_type": "其它互换类型",
+          "swap_first_trd_count": "295",
+          "swap_second_trd_count": "231",
+          "synced_at": "2026-03-26 16:19:57"
+        }
+      ]
+    },
+    "tags": {
+      "query": "SELECT tag_name,COALESCE(CAST(busi_date AS CHAR),'__SQL_NULL__') AS busi_date,CAST(data_datetime AS CHAR) AS synced_at FROM gf_otc.bi_otc_cust_tag WHERE company_id='${company_id}' ORDER BY tag_name LIMIT 20",
+      "rows": [
+        {
+          "tag_name": "T1客户",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:42:34"
+        },
+        {
+          "tag_name": "交易型履保",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:44:21"
+        },
+        {
+          "tag_name": "借券",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:33"
+        },
+        {
+          "tag_name": "前十大期权客户",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:11"
+        },
+        {
+          "tag_name": "单笔交易小",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:44:31"
+        },
+        {
+          "tag_name": "南下期货",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:42"
+        },
+        {
+          "tag_name": "定增客户",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:24"
+        },
+        {
+          "tag_name": "有垫资",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:44:07"
+        },
+        {
+          "tag_name": "累购",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:57"
+        },
+        {
+          "tag_name": "雪球",
+          "busi_date": "__SQL_NULL__",
+          "synced_at": "2026-04-03 13:43:50"
+        }
+      ]
+    },
+    "nulls": {
+      "query": "SELECT margin_call_rate IS NULL AS call_rate_is_null,swap_platform_fee IS NULL AS platform_fee_is_null,swap_bond_interest IS NULL AS bond_interest_is_null,swap_commission IS NULL AS commission_is_null FROM gf_otc.bi_otc_cust_index WHERE company_id='${company_id}' AND busi_date='2026-03-25' LIMIT 2",
+      "rows": [
+        {
+          "call_rate_is_null": "1",
+          "platform_fee_is_null": "1",
+          "bond_interest_is_null": "1",
+          "commission_is_null": "1"
+        }
+      ]
+    },
+    "comparison_days": {
+      "query": "SELECT CAST(busi_date AS CHAR) AS busi_date,SUM(CASE WHEN busi_type_1='互换' THEN stock_size ELSE 0 END) AS swap_stock_yuan,SUM(CASE WHEN busi_type_1='期权' THEN real_pnl ELSE 0 END) AS option_ytd_income_yuan,SUM(CASE WHEN busi_type_1='互换' THEN real_pnl ELSE 0 END) AS swap_ytd_income_yuan,COUNT(DISTINCT company_name) AS names_n FROM gf_otc.bi_otc_busi_stat WHERE company_id='${company_id}' AND busi_date BETWEEN '2026-03-22' AND '2026-03-25' GROUP BY busi_date ORDER BY busi_date LIMIT 4",
+      "rows": [
+        {
+          "busi_date": "2026-03-22",
+          "swap_stock_yuan": "1630753961.08",
+          "option_ytd_income_yuan": "-1672774.7",
+          "swap_ytd_income_yuan": "1424616.97",
+          "names_n": "1"
+        },
+        {
+          "busi_date": "2026-03-23",
+          "swap_stock_yuan": "1637787455.38",
+          "option_ytd_income_yuan": "-1672774.7",
+          "swap_ytd_income_yuan": "1447326.3",
+          "names_n": "1"
+        },
+        {
+          "busi_date": "2026-03-24",
+          "swap_stock_yuan": "1733450691.75",
+          "option_ytd_income_yuan": "-1672774.7",
+          "swap_ytd_income_yuan": "1497397.34",
+          "names_n": "1"
+        },
+        {
+          "busi_date": "2026-03-25",
+          "swap_stock_yuan": "1819276731.75",
+          "option_ytd_income_yuan": "-1672774.7",
+          "swap_ytd_income_yuan": "1522380.1",
+          "names_n": "1"
+        }
+      ]
+    },
+    "hold_columns": {
+      "query": "SELECT column_name,column_type,column_comment FROM information_schema.columns WHERE table_schema='gf_otc' AND table_name='bi_otc_hold_pnl' ORDER BY ordinal_position LIMIT 15",
+      "rows": [
+        {
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_COMMENT": "主键"
+        },
+        {
+          "COLUMN_NAME": "company_name",
+          "COLUMN_TYPE": "varchar(400)",
+          "COLUMN_COMMENT": "公司名称"
+        },
+        {
+          "COLUMN_NAME": "company_id",
+          "COLUMN_TYPE": "varchar(100)",
+          "COLUMN_COMMENT": "公司ID"
+        },
+        {
+          "COLUMN_NAME": "busi_date",
+          "COLUMN_TYPE": "date",
+          "COLUMN_COMMENT": "业务日期"
+        },
+        {
+          "COLUMN_NAME": "underlying_name",
+          "COLUMN_TYPE": "varchar(400)",
+          "COLUMN_COMMENT": "标的名称"
+        },
+        {
+          "COLUMN_NAME": "underlying_type",
+          "COLUMN_TYPE": "varchar(100)",
+          "COLUMN_COMMENT": "持仓标的类型"
+        },
+        {
+          "COLUMN_NAME": "hold_amount",
+          "COLUMN_TYPE": "decimal(20,2)",
+          "COLUMN_COMMENT": "规模(万元)"
+        },
+        {
+          "COLUMN_NAME": "current_pnl",
+          "COLUMN_TYPE": "decimal(20,2)",
+          "COLUMN_COMMENT": "当前盈亏(万元)"
+        },
+        {
+          "COLUMN_NAME": "pnl_ratio",
+          "COLUMN_TYPE": "decimal(10,4)",
+          "COLUMN_COMMENT": "盈亏比例"
+        },
+        {
+          "COLUMN_NAME": "data_datetime",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_COMMENT": "数据同步时间"
+        }
+      ]
+    },
+    "dates_null": {
+      "query": "SELECT 'cust_tag' AS source_name,COUNT(*) AS rows_n,SUM(busi_date IS NULL) AS null_dates FROM gf_otc.bi_otc_cust_tag UNION ALL SELECT 'swap_trd_stat',COUNT(*),SUM(busi_date IS NULL) FROM gf_otc.bi_otc_swap_trd_stat LIMIT 2",
+      "rows": [
+        {
+          "source_name": "cust_tag",
+          "rows_n": "100",
+          "null_dates": "100"
+        },
+        {
+          "source_name": "swap_trd_stat",
+          "rows_n": "8",
+          "null_dates": "8"
+        }
+      ]
+    },
+    "identity": {
+      "query": "SELECT 'busi_stat' AS source_name,COUNT(DISTINCT company_name) AS names_n FROM gf_otc.bi_otc_busi_stat WHERE company_id='${company_id}' AND busi_date='2026-03-25' UNION ALL SELECT 'cust_index',COUNT(DISTINCT company_name) FROM gf_otc.bi_otc_cust_index WHERE company_id='${company_id}' AND busi_date='2026-03-25' UNION ALL SELECT 'hold_pnl',COUNT(DISTINCT company_name) FROM gf_otc.bi_otc_hold_pnl WHERE company_id='${company_id}' AND busi_date='2026-03-25' UNION ALL SELECT 'year_revenue',COUNT(DISTINCT company_name) FROM gf_otc.bi_otc_year_revenue WHERE company_id='${company_id}' LIMIT 4",
+      "rows": [
+        {
+          "source_name": "busi_stat",
+          "names_n": "1"
+        },
+        {
+          "source_name": "cust_index",
+          "names_n": "1"
+        },
+        {
+          "source_name": "hold_pnl",
+          "names_n": "1"
+        },
+        {
+          "source_name": "year_revenue",
+          "names_n": "1"
+        }
+      ]
+    }
+  },
+  "upstreamAttempt": {
+    "status": "FAILED_AUTH",
+    "queryId": "1790093219064",
+    "dataTime": "2026-09-22",
+    "message": "用户token不存在",
+    "submittedQuery": "SELECT busi_date,grp_id,Busi_Type,COUNT(*) AS row_count,MIN(Accrued_Date) AS first_accrued,MAX(Accrued_Date) AS last_accrued,SUM(CASE WHEN Accrued_Date=busi_date THEN Dyna_Nom_Prin ELSE 0 END) AS current_principal FROM dm_otc_n.otc_rev_daily_rpt WHERE busi_date IN ('2026-03-25','2026-09-22') AND USCC='${company_id}' GROUP BY busi_date,grp_id,Busi_Type LIMIT 12",
+    "rowsReturned": false,
+    "automaticRetry": false
+  },
+  "transportEvidence": [
+    {
+      "taskId": "230263",
+      "observedAt": "2026-09-03T01:09:54.437Z",
+      "source": "schedule-evidence/tasks/230263/horae-task-type.json",
+      "querySql": "select\n  company_name,\n  company_id,\n  busi_date,\n  underlying_name,\n  hold_amount,\n  current_pnl,\n  pnl_ratio\nfrom dm_otc_n.bi_otc_hold_pnl\nwhere busi_date = '${yyyy-MM-dd}'\nand underlying_name not like '%;%'",
+      "querySha256": "4377478703a39435373a225fc22fcee74f3f5ed125e238eec39544b55ccac0c3",
+      "syncQuerySame": true,
+      "sourceRootFromRepository": "../sql-static-lineage-cache"
+    },
+    {
+      "taskId": "230264",
+      "observedAt": "2026-09-03T01:09:57.415Z",
+      "source": "schedule-evidence/tasks/230264/horae-task-type.json",
+      "querySql": "select\n company_name,\n company_id,\n busi_year,\n option_revenue,\n swap_revenue,\n cross_sale_amount,\n cross_border_revenue\nfrom dm_otc_n.bi_otc_year_revenue\nwhere busi_year in( '${yyyy, -1y}', '${yyyy}')",
+      "querySha256": "ffc714982fdeb747d89ceb5327435e0179e9db702ab45989954ec19d651fb2b8",
+      "syncQuerySame": true,
+      "sourceRootFromRepository": "../sql-static-lineage-cache"
+    },
+    {
+      "taskId": "230265",
+      "observedAt": "2026-09-03T01:10:00.439Z",
+      "source": "schedule-evidence/tasks/230265/horae-task-type.json",
+      "querySql": "select\ncompany_name\n,company_id\n,busi_date\n,option_amount_change\n,swap_amount_change\nfrom dm_otc_n.bi_otc_amount_change\nwhere busi_date between '${yyyy-MM-dd, -12M}' and '${yyyy-MM-dd}'",
+      "querySha256": "e3080084e0d454b5cc47fac2dc7c15b950712a461c4c6a2863057d9b26a930fb",
+      "syncQuerySame": true,
+      "sourceRootFromRepository": "../sql-static-lineage-cache"
+    }
+  ]
+}

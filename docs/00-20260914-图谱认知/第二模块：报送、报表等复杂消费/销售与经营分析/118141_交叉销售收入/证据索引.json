@@ -1,0 +1,66 @@
+{
+  "scope": "第一批：118141完整查询阅读主线与普通期权贯穿算例；保留其他分支，不代表已逐一讲透",
+  "organizedAt": "2026-09-22",
+  "target": "dm_otc_n.otc_sale_daily_rpt",
+  "finalOutputColumns": 92,
+  "sources": [
+    {
+      "taskId": "118141",
+      "file": "../../公共加工/04_经营系数_价差/99_证据/证据_118141.sql",
+      "fileSha256": "633235e763cac82cda29bf8fab9ac08d7a798980dc1644392b7304ca541a5e6b",
+      "sourceSha256": "3deef0d98f78f781092ddf8e42623c2e43b41b6d66f43e6e9e0f4a50b0acc9e5",
+      "lineCount": 420,
+      "source": "2026-09-16发布图9dbe5623；投影42659ef589fa6e4f77436101328932f1b5ee61a27466ae4fd5e108e1e1f5181b；沿用2026-09-18证据索引",
+      "boundary": "冻结SELECT，不是实时任务SQL；本阅读版不补造任务写入配置"
+    },
+    {
+      "taskId": "203358",
+      "file": "证据_203358.sql",
+      "fileSha256": "5f94dd52787542aa025c30a2335639a2acce5ed0aa734b419909c8f75092704b",
+      "sourceSha256": "9a71270bdb5d503f99cc3e0c1084bf0f0d95025f4ae9482b43a2b5b18f4125e5",
+      "sourceObservedAt": "2026-09-05T01:07:19.271Z",
+      "source": "本地schedule-evidence.sqlite / hive-task / LOCAL_CODE",
+      "copyFormatting": "LF、去行末空白、保留一个末尾换行",
+      "boundary": "独立上游来源快照，45列映射；不证明与118141属于同次运行"
+    }
+  ],
+  "stageMapping": [
+    {
+      "cte": "contract_day_income",
+      "originalAlias": "T",
+      "originalLines": [200, 405],
+      "modules": ["01_合约日与资料.sql", "02_原始当日收入.sql", "03_参数匹配.sql"]
+    },
+    {
+      "cte": "adjusted_day_income",
+      "originalAlias": "X",
+      "originalProjectionLines": [187, 198],
+      "originalRewardJoinLines": [407, 418],
+      "modules": ["04_收入调整.sql", "05_历史奖励.sql"]
+    },
+    {
+      "cte": "allocated_day_income",
+      "originalAlias": "castTable",
+      "originalProjectionLines": [93, 185],
+      "modules": ["06_分配与累计.sql"]
+    },
+    {
+      "stage": "final_output",
+      "originalProjectionLines": [1, 92],
+      "modules": ["07_日报输出.sql"]
+    }
+  ],
+  "parameterInputs": "03引用五个既有消费JOIN，保持原顺序；来源与元数据分别见公共加工三个经营系数专题",
+  "rewardMetadata": "来源字段证据.json",
+  "functionEvidence": {
+    "catalog": "本地function-catalog.sqlite",
+    "name": "gfgreatest",
+    "status": "DOCUMENTED",
+    "summary": "返回传入参数最大值",
+    "example": "default.gfgreatest(1,2,3)",
+    "sourceId": "cc29ee2813d26a906015103ff79bf90a20e8bd446c6fb599c90c907faa78eb6d",
+    "boundary": "未验证所有NULL、非法类型及Hive运行行为"
+  },
+  "validationBoundary": "从实际主脚本展开并递归内联3个CTE，对照完整原查询token与字段顺序；构造数据验证实际交付表达式，不等于生产运行、实际唯一性或历史覆盖验收",
+  "notIncluded": ["第二批全部特殊业务逐步算例", "第三批旧专题全面收拢", "线上任务与业务数据核验", "下游展示或支付交付证明"]
+}

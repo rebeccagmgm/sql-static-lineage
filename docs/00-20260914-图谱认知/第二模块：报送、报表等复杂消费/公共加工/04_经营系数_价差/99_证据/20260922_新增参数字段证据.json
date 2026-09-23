@@ -1,0 +1,374 @@
+{
+  "catalogBuiltAt": "2026-09-16T01:22:43.476Z",
+  "platform": "hive",
+  "tables": [
+    {
+      "id": 32951,
+      "stable_table_id": "odata_n_ois.g_rev_hkcpty_bid_ask_spread_coef__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hkcpty_bid_ask_spread_coef",
+      "table_name": "g_rev_hkcpty_bid_ask_spread_coef",
+      "description": "销售收入交易对手价差系数（香港）",
+      "description_normalized": "销售收入交易对手价差系数（香港）",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "a9eedfe30e2a6368a6a80897cd5465e4956489315113c2f7768d44a4c4ac9f18",
+      "ddl_hash": "4a18832b8946c40f5d55d239b799a4a6b24e682e7e7d966d0689178b8294842a",
+      "content_hash": "6654157750272f09059b286d821781faca908fcaa39421e366769780399918f4",
+      "collected_at": "2026-08-22T05:17:49.442Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "【AI】ID",
+          "is_partition": 0
+        },
+        {
+          "name": "client_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "交易对手编号",
+          "is_partition": 0
+        },
+        {
+          "name": "business_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "业务类型：OPTION-期权 TRS-互换",
+          "is_partition": 0
+        },
+        {
+          "name": "underlying_type",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "标的类型：股票-EQUITY、股指-INDEX、基金-FUND、股指期货-EQUITY_INDEX_FUTURE、商品期货-COMMODITY_FUTURE、其他-OTHER",
+          "is_partition": 0
+        },
+        {
+          "name": "annualized_spread",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "年化价差",
+          "is_partition": 0
+        },
+        {
+          "name": "absolute_spread",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "绝对价差",
+          "is_partition": 0
+        },
+        {
+          "name": "spread_calc_type",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "计算方式（年化-ANNUALIZED、绝对-ABSOLUTE）",
+          "is_partition": 0
+        },
+        {
+          "name": "commission_rate",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "价差费率",
+          "is_partition": 0
+        },
+        {
+          "name": "commis_calc_type",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "计算方式（年化-ANNUALIZED、绝对-ABSOLUTE）",
+          "is_partition": 0
+        },
+        {
+          "name": "start_date",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "期初定价日下限",
+          "is_partition": 0
+        },
+        {
+          "name": "end_date",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "期初定价日上限",
+          "is_partition": 0
+        },
+        {
+          "name": "created_datetime",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_datetime",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "created_by",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "创建人(admin)",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_by",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "更新人(admin)",
+          "is_partition": 0
+        },
+        {
+          "name": "is_deleted",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "删除标识",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 44400,
+      "stable_table_id": "pdata_n.t99_deri_cutp_comp_type_sprd_coef_ref__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t99_deri_cutp_comp_type_sprd_coef_ref",
+      "table_name": "t99_deri_cutp_comp_type_sprd_coef_ref",
+      "description": "衍生品对手方合约类型价差系数参考信息",
+      "description_normalized": "衍生品对手方合约类型价差系数参考信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "cfc120f609a918d77669cfba6aed936c7e410bbccd8804d1ab8153cef587c52a",
+      "ddl_hash": "8e50add255a8ed5cbda6735bd91fe26c46a5e7c75b74be410cd7e4f2335b9f3c",
+      "content_hash": "b74d751ff90f4ec0cf05a6421d1920df5a7652b0d0d1134577da9c5d8372d87b",
+      "collected_at": "2026-08-22T06:35:30.114Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "pty_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "当事人编号",
+          "is_partition": 0
+        },
+        {
+          "name": "pty_cate_cd",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "当事人类别代码",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "业务类型",
+          "is_partition": 0
+        },
+        {
+          "name": "calc_type",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "计算类型",
+          "is_partition": 0
+        },
+        {
+          "name": "coef_type",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "系数类型",
+          "is_partition": 0
+        },
+        {
+          "name": "src_comp_type_cd",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "源合约类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "src_comp_type_desc",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "源合约类型名称",
+          "is_partition": 0
+        },
+        {
+          "name": "src_undrl_type_cd",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "源标的类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "annu_sprd_coef",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "年化价差系数",
+          "is_partition": 0
+        },
+        {
+          "name": "absl_sprd_coef",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "绝对价差系数",
+          "is_partition": 0
+        },
+        {
+          "name": "vld_date",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "生效日期",
+          "is_partition": 0
+        },
+        {
+          "name": "desc",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "描述",
+          "is_partition": 0
+        },
+        {
+          "name": "estb_time",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "creator",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "创建人",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "bgng_prcg_date_llmt",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "期初定价日下限",
+          "is_partition": 0
+        },
+        {
+          "name": "bgng_prcg_date_ulmt",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "期初定价日上限",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 32928,
+      "stable_table_id": "odata_n_ois.g_hk_counterparty__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_hk_counterparty",
+      "table_name": "g_hk_counterparty",
+      "description": "香港交易对手",
+      "description_normalized": "香港交易对手",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl,local:tables-cache",
+      "source_hash": "52bf3e28c70d56c35f5c2c651979eed006dbfccc66573258f5ba65c933ac5786",
+      "ddl_hash": "ec3e4df36b67c118263d28c2401c76acf7587a52d2896d8712729f9f8f54b435",
+      "content_hash": "0273d7f4139bb7f15f73b8d790a9a3e02c7d3d3d428158eb1890b9b1619f95e6",
+      "collected_at": "2026-08-21T13:49:54.846Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "client_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "交易对手编号",
+          "is_partition": 0
+        },
+        {
+          "name": "client_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "客户类型",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 30,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    }
+  ]
+}

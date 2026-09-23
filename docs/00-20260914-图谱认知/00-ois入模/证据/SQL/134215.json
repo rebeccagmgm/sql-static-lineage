@@ -1,0 +1,324 @@
+{
+  "taskId": "134215",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "4a201f4704a337c90ca232bb4b054fd27e42fdd004c7f7bff8cb449f53130bd0",
+  "inGraph": true,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 134215"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: pdata_n"
+    },
+    {
+      "line": 3,
+      "text": "-- source: LOCAL_CODE"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: BigData-GF_FDM_N/AGT/PDATA_N.T03_AGT_DIV_RATI_OIS015.py"
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T01:06:53.708Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T03_AGT_DIV_RATI("
+    },
+    {
+      "line": 10,
+      "text": "     Agt_Id                     STRING COMMENT '协议编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Agt_Modifr                 STRING COMMENT '协议修饰符'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Src_Agt_Id                 STRING COMMENT '源协议编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Div_Type_Cd                STRING COMMENT '分成类别代码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Div_Obj_Type_Cd            STRING COMMENT '分成对象类别代码'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Div_Obj_Id                 STRING COMMENT '分成对象编号'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Div_Rati                   STRING COMMENT '分成比例'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Desc                       STRING COMMENT '描述'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Upd_Time                   STRING COMMENT '更新时间'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Estb_Time                  STRING COMMENT '创建时间'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Upd_Prsn                   STRING COMMENT '更新人'"
+    },
+    {
+      "line": 21,
+      "text": "    ,Creator                    STRING COMMENT '创建人'"
+    },
+    {
+      "line": 22,
+      "text": "    ,Del_Flag                   STRING COMMENT '删除标志'"
+    },
+    {
+      "line": 23,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 24,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 25,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 26,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 27,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 28,
+      "text": ")COMMENT '衍生品合约结算信息'"
+    },
+    {
+      "line": 29,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 30,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 31,
+      "text": ""
+    },
+    {
+      "line": 32,
+      "text": "-- querySql"
+    },
+    {
+      "line": 33,
+      "text": "INSERT OVERWRITE TABLE T03_AGT_DIV_RATI PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 34,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 35,
+      "text": "--Group1.: Source Table:[ODATA_N_OIS.O_CONTRACT_INTRODUCTION:合约开发关系分成表] "
+    },
+    {
+      "line": 36,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 37,
+      "text": "SELECT"
+    },
+    {
+      "line": 38,
+      "text": "     COALESCE(T2.KEY_OTC_TRADE_ID,T3.KEY_TRADE_COMFIRM_ID,T1.CONTRACT_CODE)         AS  Agt_Id                  --协议编号          "
+    },
+    {
+      "line": 39,
+      "text": "    ,CASE WHEN T4.KEY_OTC_TRADE_ID      IS NOT NULL THEN '20206'"
+    },
+    {
+      "line": 40,
+      "text": "          WHEN T5.KEY_OTC_TRADE_ID      IS NOT NULL THEN '20207'"
+    },
+    {
+      "line": 41,
+      "text": "          WHEN T3.KEY_TRADE_COMFIRM_ID  IS NOT NULL THEN '20206-KST'"
+    },
+    {
+      "line": 42,
+      "text": "          ELSE '' END         "
+    },
+    {
+      "line": 43,
+      "text": "                                                      AS  Agt_Modifr              --协议修饰符      "
+    },
+    {
+      "line": 44,
+      "text": "    ,T1.CONTRACT_CODE                                 AS  Src_Agt_Id              --源协议编号      "
+    },
+    {
+      "line": 45,
+      "text": "    ,'IB_CUST_DIV'                                    AS  Div_Type_Cd             --分成类别代码    "
+    },
+    {
+      "line": 46,
+      "text": "    ,'01'                                             AS  Div_Obj_Type_Cd         --分成对象类别代码"
+    },
+    {
+      "line": 47,
+      "text": "    ,NVL(D.ERP_ID,T1.CUSTOMER_MANAGER)                 AS  Div_Obj_Id              --分成对象编号     "
+    },
+    {
+      "line": 48,
+      "text": "    ,T1.ALLOCATION_PROPORTION                         AS  Div_Rati                --分成比例        "
+    },
+    {
+      "line": 49,
+      "text": "    ,T1.DISCRIPTION                                   AS  Desc                    --描述            "
+    },
+    {
+      "line": 50,
+      "text": "    ,T1.UPDATED_DATETIME                              AS  Upd_Time                --更新时间        "
+    },
+    {
+      "line": 51,
+      "text": "    ,T1.CREATED_DATETIME                              AS  Estb_Time               --创建时间        "
+    },
+    {
+      "line": 52,
+      "text": "    ,T1.UPDATED_BY                                    AS  Upd_Prsn                --更新人          "
+    },
+    {
+      "line": 53,
+      "text": "    ,T1.CREATED_BY                                    AS  Creator                 --创建人          "
+    },
+    {
+      "line": 54,
+      "text": "    ,CASE WHEN T1.IS_DELETED ='Y' THEN '1'"
+    },
+    {
+      "line": 55,
+      "text": "          WHEN T1.IS_DELETED ='N' THEN '0'"
+    },
+    {
+      "line": 56,
+      "text": "          ELSE T1.IS_DELETED END                       AS  Del_Flag                --删除标志        "
+    },
+    {
+      "line": 57,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 58,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 59,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 60,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 61,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 62,
+      "text": "FROM   (SELECT *  FROM ODATA_N_OIS.O_CONTRACT_INTRODUCTION WHERE  BUSI_DATE='${data_day_str}' )T1"
+    },
+    {
+      "line": 63,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_TIT.D_TRD_OTC_TRADE  WHERE  BUSI_DATE='${data_day_str}' )  T2 "
+    },
+    {
+      "line": 64,
+      "text": "       ON T1.CONTRACT_CODE=T2.INTERNAL_TRADE_ID "
+    },
+    {
+      "line": 65,
+      "text": "LEFT JOIN  (SELECT DISTINCT KEY_TRADE_COMFIRM_ID FROM ODATA_N_TIT.D_KS_TRADE_COMFIRM_INFO WHERE BUSI_DATE='${data_day_str}' ) T3"
+    },
+    {
+      "line": 66,
+      "text": "       ON T1.CONTRACT_CODE=T3.KEY_TRADE_COMFIRM_ID "
+    },
+    {
+      "line": 67,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_TIT.D_REF_TRS  WHERE BUSI_DATE ='${data_day_str}'  )T4"
+    },
+    {
+      "line": 68,
+      "text": "       ON T2.KEY_OTC_TRADE_ID=T4.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 69,
+      "text": "LEFT JOIN (SELECT KEY_OTC_TRADE_ID FROM ODATA_N_TIT.D_REF_OTC_OPTION_DEAL  WHERE BUSI_DATE ='${data_day_str}'  )T5"
+    },
+    {
+      "line": 70,
+      "text": "       ON T2.KEY_OTC_TRADE_ID=T5.KEY_OTC_TRADE_ID"
+    },
+    {
+      "line": 71,
+      "text": "LEFT JOIN (SELECT * FROM ODATA_N_IOA.I_GF_USER WHERE MAIN_DEPARTMENT='true' and NVL(TRIM(ERP_ID),'')<>'' AND BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 72,
+      "text": "           UNION ALL  "
+    },
+    {
+      "line": 73,
+      "text": "           SELECT * FROM ODATA_N_IOA.I_GF_USER_DEL WHERE MAIN_DEPARTMENT='true' and NVL(TRIM(ERP_ID),'')<>'' AND BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 74,
+      "text": "             ) D"
+    },
+    {
+      "line": 75,
+      "text": "       ON T1.CUSTOMER_MANAGER=D.LOGIN_ID"
+    },
+    {
+      "line": 76,
+      "text": ""
+    },
+    {
+      "line": 77,
+      "text": ";"
+    },
+    {
+      "line": 78,
+      "text": ""
+    }
+  ]
+}

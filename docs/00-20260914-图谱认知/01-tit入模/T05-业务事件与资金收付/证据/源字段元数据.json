@@ -1,0 +1,2281 @@
+[
+  {
+    "id": 35981,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_trs_event",
+    "description": "交易-<font color='red'>TRS</font>存续期事件表",
+    "collected_at": "2026-08-21T19:54:16.745Z",
+    "fields": [
+      {
+        "name": "key_trs_event_id",
+        "raw_type": "string",
+        "comment": "事件ID"
+      },
+      {
+        "name": "event_date",
+        "raw_type": "string",
+        "comment": "事件日期"
+      },
+      {
+        "name": "key_otc_trade_id",
+        "raw_type": "string",
+        "comment": "TRS交易ID"
+      },
+      {
+        "name": "event_type",
+        "raw_type": "string",
+        "comment": "业务标志，数据字典：TRS_EVENT_TYPE"
+      },
+      {
+        "name": "event_input_time",
+        "raw_type": "string",
+        "comment": "交易录入时间"
+      },
+      {
+        "name": "event_real_time",
+        "raw_type": "string",
+        "comment": "实际成交时间（审批结束时间）"
+      },
+      {
+        "name": "notional_before",
+        "raw_type": "string",
+        "comment": "调整前名义本金"
+      },
+      {
+        "name": "notional_delta",
+        "raw_type": "string",
+        "comment": "名义本金变动金额"
+      },
+      {
+        "name": "notional_after",
+        "raw_type": "string",
+        "comment": "调整后名义本金"
+      },
+      {
+        "name": "event_fee",
+        "raw_type": "string",
+        "comment": "平仓费"
+      },
+      {
+        "name": "currency",
+        "raw_type": "string",
+        "comment": "币种"
+      },
+      {
+        "name": "event_status",
+        "raw_type": "string",
+        "comment": "交易状态,数据字典:TRS_EVENT_STATUS"
+      },
+      {
+        "name": "event_amount",
+        "raw_type": "string",
+        "comment": "事件金额（本币）"
+      },
+      {
+        "name": "event_desc",
+        "raw_type": "string",
+        "comment": "交易备注"
+      },
+      {
+        "name": "trader",
+        "raw_type": "string",
+        "comment": "交易员"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "更新时间"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "交易记录创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "更新人"
+      },
+      {
+        "name": "exchange_rate",
+        "raw_type": "string",
+        "comment": "汇率"
+      },
+      {
+        "name": "event_amount_org",
+        "raw_type": "string",
+        "comment": "事件金额(原币)"
+      },
+      {
+        "name": "rmb_exchange_rate",
+        "raw_type": "string",
+        "comment": "当前人民币中间价（结算币种）"
+      },
+      {
+        "name": "payment_date_delay",
+        "raw_type": "string",
+        "comment": "兑付日延期"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "pay_direction",
+        "raw_type": "string",
+        "comment": "支付方向"
+      },
+      {
+        "name": "event_channel",
+        "raw_type": "string",
+        "comment": "发起渠道"
+      },
+      {
+        "name": "settle_pairs_exchange_rate",
+        "raw_type": "string",
+        "comment": "结算币种汇率"
+      },
+      {
+        "name": "payment_date",
+        "raw_type": "string",
+        "comment": "派息日"
+      },
+      {
+        "name": "div_ccy_underlying_code",
+        "raw_type": "string",
+        "comment": "分红汇率标的CODE"
+      },
+      {
+        "name": "key_leg_id",
+        "raw_type": "string",
+        "comment": "leg全局顺序号"
+      },
+      {
+        "name": "interest_dates_delay",
+        "raw_type": "string",
+        "comment": "计息日延期"
+      },
+      {
+        "name": "div_currency",
+        "raw_type": "string",
+        "comment": "分红币种"
+      },
+      {
+        "name": "settlement_generated",
+        "raw_type": "string",
+        "comment": "债券结算状态"
+      },
+      {
+        "name": "reset_interest_rate",
+        "raw_type": "string",
+        "comment": "重置利率"
+      },
+      {
+        "name": "structure_settlement_speed",
+        "raw_type": "string",
+        "comment": "结构腿清算速度"
+      },
+      {
+        "name": "structure_settlement_date",
+        "raw_type": "string",
+        "comment": "结构腿实际生效日"
+      },
+      {
+        "name": "interest_settlement_speed",
+        "raw_type": "string",
+        "comment": "利息腿清算速度"
+      },
+      {
+        "name": "interest_settlement_date",
+        "raw_type": "string",
+        "comment": "利息腿实际生效日"
+      },
+      {
+        "name": "div_ccy_underlying_id",
+        "raw_type": "string",
+        "comment": "分红汇率标的ID"
+      },
+      {
+        "name": "div_valuation_ccy_id",
+        "raw_type": "string",
+        "comment": "估值汇率来源"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      }
+    ]
+  },
+  {
+    "id": 35963,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_option_event",
+    "description": "交易-OTC<font color='red'>OPTION</font>存续期事件表",
+    "collected_at": "2026-08-21T19:34:24.306Z",
+    "fields": [
+      {
+        "name": "key_option_event_id",
+        "raw_type": "string",
+        "comment": "事件ID"
+      },
+      {
+        "name": "event_date",
+        "raw_type": "string",
+        "comment": "事件日期"
+      },
+      {
+        "name": "key_option_deal_id",
+        "raw_type": "string",
+        "comment": "场外期权合约ID"
+      },
+      {
+        "name": "event_type",
+        "raw_type": "string",
+        "comment": "业务标志，数据字典：TRD_EVENT_TYPE"
+      },
+      {
+        "name": "event_input_time",
+        "raw_type": "string",
+        "comment": "事件录入时间"
+      },
+      {
+        "name": "event_real_time",
+        "raw_type": "string",
+        "comment": "事件审批结束时间"
+      },
+      {
+        "name": "notional_before",
+        "raw_type": "string",
+        "comment": "调整前名义本金"
+      },
+      {
+        "name": "notional_delta",
+        "raw_type": "string",
+        "comment": "名义本金变动金额"
+      },
+      {
+        "name": "notional_after",
+        "raw_type": "string",
+        "comment": "调整后名义本金"
+      },
+      {
+        "name": "abs_notional_before",
+        "raw_type": "string",
+        "comment": "调整前绝对名义本金"
+      },
+      {
+        "name": "abs_notional_delta",
+        "raw_type": "string",
+        "comment": "绝对名义本金变动金额"
+      },
+      {
+        "name": "abs_notional_after",
+        "raw_type": "string",
+        "comment": "调整后绝对名义本金"
+      },
+      {
+        "name": "early_termination_price",
+        "raw_type": "string",
+        "comment": "提前终止价格"
+      },
+      {
+        "name": "early_term_intrinsic_value",
+        "raw_type": "string",
+        "comment": "内在价值(提前终止)"
+      },
+      {
+        "name": "early_term_present_value",
+        "raw_type": "string",
+        "comment": "内在价值(PV)"
+      },
+      {
+        "name": "event_fee",
+        "raw_type": "string",
+        "comment": "事件金额"
+      },
+      {
+        "name": "event_status",
+        "raw_type": "string",
+        "comment": "事件状态,数据字典:TRD_EVENT_STATUS"
+      },
+      {
+        "name": "event_desc",
+        "raw_type": "string",
+        "comment": "事件备注"
+      },
+      {
+        "name": "trader",
+        "raw_type": "string",
+        "comment": "交易员"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "更新时间"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "更新人"
+      },
+      {
+        "name": "payment_date",
+        "raw_type": "string",
+        "comment": "兑付日"
+      },
+      {
+        "name": "ex_date",
+        "raw_type": "string",
+        "comment": "除权除息日"
+      },
+      {
+        "name": "pre_ex_date_close",
+        "raw_type": "string",
+        "comment": "除权除息日-昨收盘价"
+      },
+      {
+        "name": "cash_ratio",
+        "raw_type": "string",
+        "comment": "每股现金红利"
+      },
+      {
+        "name": "rationed_shares_quantity",
+        "raw_type": "string",
+        "comment": "配股股数"
+      },
+      {
+        "name": "rationed_shares_price",
+        "raw_type": "string",
+        "comment": "配股价格"
+      },
+      {
+        "name": "bonus_ratio",
+        "raw_type": "string",
+        "comment": "每股红股"
+      },
+      {
+        "name": "conversed_ratio",
+        "raw_type": "string",
+        "comment": "每股转增股本"
+      },
+      {
+        "name": "price_reset_rate",
+        "raw_type": "string",
+        "comment": "调整比例"
+      },
+      {
+        "name": "initial_price_before_reset",
+        "raw_type": "string",
+        "comment": "调整前期初价格"
+      },
+      {
+        "name": "initial_price_after_reset",
+        "raw_type": "string",
+        "comment": "调整后期初价格"
+      },
+      {
+        "name": "fee_id",
+        "raw_type": "string",
+        "comment": "费用ID"
+      },
+      {
+        "name": "effective_date",
+        "raw_type": "string",
+        "comment": "期初定价日"
+      },
+      {
+        "name": "is_task_finish_flag",
+        "raw_type": "string",
+        "comment": "事件生效更新合约标识"
+      },
+      {
+        "name": "event_act_type",
+        "raw_type": "string",
+        "comment": "事件编辑类型(枚举类型：TrdEventActionType)"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "ca_underlying_ins_id",
+        "raw_type": "string",
+        "comment": "标的代码"
+      },
+      {
+        "name": "ori_early_term_intrinsic_value",
+        "raw_type": "string",
+        "comment": "内在价值(系统)"
+      },
+      {
+        "name": "non_payment",
+        "raw_type": "string",
+        "comment": "未支付费用"
+      },
+      {
+        "name": "time_value",
+        "raw_type": "string",
+        "comment": "提前终止支付时间价值"
+      },
+      {
+        "name": "initial_price_fx_before_reset",
+        "raw_type": "string",
+        "comment": "调整前期初Fx价格"
+      },
+      {
+        "name": "initial_price_fx_after_reset",
+        "raw_type": "string",
+        "comment": "调整后期初Fx价格"
+      },
+      {
+        "name": "quantity",
+        "raw_type": "string",
+        "comment": "数量"
+      },
+      {
+        "name": "tax_ratio",
+        "raw_type": "string",
+        "comment": "税率"
+      },
+      {
+        "name": "early_termination_price_fx",
+        "raw_type": "string",
+        "comment": "提前终止价格fx(compo记录标的币种价格)"
+      },
+      {
+        "name": "early_termination_fx_rate",
+        "raw_type": "string",
+        "comment": "提前终止汇率(实际-标的币种vs结算币种)"
+      },
+      {
+        "name": "daily_qty_before",
+        "raw_type": "string",
+        "comment": "调整前每日交易数量"
+      },
+      {
+        "name": "daily_qty_after",
+        "raw_type": "string",
+        "comment": "调整后每日交易数量"
+      },
+      {
+        "name": "fixed_payment_before",
+        "raw_type": "string",
+        "comment": "调整前固定金额"
+      },
+      {
+        "name": "fixed_payment_after",
+        "raw_type": "string",
+        "comment": "调整后固定金额"
+      },
+      {
+        "name": "strike_price",
+        "raw_type": "string",
+        "comment": "执行价格(元)"
+      },
+      {
+        "name": "strike_pct",
+        "raw_type": "string",
+        "comment": "执行价格%"
+      },
+      {
+        "name": "settlement_price",
+        "raw_type": "string",
+        "comment": "结算价格"
+      },
+      {
+        "name": "cumulator_start_date",
+        "raw_type": "string",
+        "comment": "cumulator观察期开始日"
+      },
+      {
+        "name": "cumulator_end_date",
+        "raw_type": "string",
+        "comment": "cumulator观察期结束日"
+      },
+      {
+        "name": "cumulate_qty",
+        "raw_type": "string",
+        "comment": "当期已累计数量"
+      },
+      {
+        "name": "cumulate_coupon",
+        "raw_type": "string",
+        "comment": "当期已累计票息"
+      },
+      {
+        "name": "origin_event_fee",
+        "raw_type": "string",
+        "comment": "事件金额(系统)"
+      },
+      {
+        "name": "early_term_fx_ins_id",
+        "raw_type": "string",
+        "comment": "提前终止货币对汇率证券定义id"
+      },
+      {
+        "name": "early_termination_fx_org",
+        "raw_type": "string",
+        "comment": "提前终止汇率(用户录入)"
+      },
+      {
+        "name": "linear_pnl",
+        "raw_type": "string",
+        "comment": "线性损益(结算币种)"
+      },
+      {
+        "name": "div_currency",
+        "raw_type": "string",
+        "comment": "分红币种(废弃)"
+      },
+      {
+        "name": "div_fx",
+        "raw_type": "string",
+        "comment": "分红汇率(分红币种兑结算币种)(废弃)"
+      },
+      {
+        "name": "div_event_fee",
+        "raw_type": "string",
+        "comment": "结算金额(分红币种)(废弃)"
+      },
+      {
+        "name": "early_term_datestring",
+        "raw_type": "string",
+        "comment": "提前终止日(提前锁定收益事件录入)"
+      },
+      {
+        "name": "dynamic_notional_delta",
+        "raw_type": "string",
+        "comment": "动态名义本金变动金额"
+      },
+      {
+        "name": "dynamic_notional_before",
+        "raw_type": "string",
+        "comment": "调整前动态名义本金"
+      },
+      {
+        "name": "dynamic_notional_after",
+        "raw_type": "string",
+        "comment": "调整后动态名义本金"
+      },
+      {
+        "name": "cash_currency",
+        "raw_type": "string",
+        "comment": "普通分红币种"
+      },
+      {
+        "name": "cash_fx",
+        "raw_type": "string",
+        "comment": "分红汇率(普通分红币种兑结算币种)"
+      },
+      {
+        "name": "cash_event_fee",
+        "raw_type": "string",
+        "comment": "结算金额(普通分红币种)"
+      },
+      {
+        "name": "sp_cash_ratio",
+        "raw_type": "string",
+        "comment": "特殊现金红利"
+      },
+      {
+        "name": "sp_cash_currency",
+        "raw_type": "string",
+        "comment": "特殊分红币种"
+      },
+      {
+        "name": "sp_cash_fx",
+        "raw_type": "string",
+        "comment": "分红汇率(特殊分红币种兑结算币种)"
+      },
+      {
+        "name": "sp_cash_event_fee",
+        "raw_type": "string",
+        "comment": "结算金额(特殊分红币种)"
+      },
+      {
+        "name": "use_early_lock_price",
+        "raw_type": "string",
+        "comment": "是否使用提前锁定价格"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      }
+    ]
+  },
+  {
+    "id": 35954,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_fast_trs_event",
+    "description": "极速互换存续期事件表",
+    "collected_at": "2026-08-21T19:27:14.084Z",
+    "fields": [
+      {
+        "name": "key_fast_trs_event_id",
+        "raw_type": "string",
+        "comment": "自增ID"
+      },
+      {
+        "name": "key_plan_id",
+        "raw_type": "string",
+        "comment": "业务方案ID"
+      },
+      {
+        "name": "key_instrument_id",
+        "raw_type": "string",
+        "comment": "合约ID"
+      },
+      {
+        "name": "key_fast_trs_leg_id",
+        "raw_type": "string",
+        "comment": "腿ID"
+      },
+      {
+        "name": "eq_source_id",
+        "raw_type": "string",
+        "comment": "券源ID"
+      },
+      {
+        "name": "event_date",
+        "raw_type": "string",
+        "comment": "事件日期"
+      },
+      {
+        "name": "event_type",
+        "raw_type": "string",
+        "comment": "事件类型(开仓、平仓、分红、送股)"
+      },
+      {
+        "name": "underlying_ins_id",
+        "raw_type": "string",
+        "comment": "标的ID"
+      },
+      {
+        "name": "wind_code",
+        "raw_type": "string",
+        "comment": "标的代码"
+      },
+      {
+        "name": "ins_sht_desc",
+        "raw_type": "string",
+        "comment": "标的简称"
+      },
+      {
+        "name": "ins_family",
+        "raw_type": "string",
+        "comment": "标的类型"
+      },
+      {
+        "name": "long_short",
+        "raw_type": "string",
+        "comment": "多空方向"
+      },
+      {
+        "name": "trade_direction",
+        "raw_type": "string",
+        "comment": "交易方向"
+      },
+      {
+        "name": "index_term",
+        "raw_type": "string",
+        "comment": "指数期限"
+      },
+      {
+        "name": "currency",
+        "raw_type": "string",
+        "comment": "标的币种"
+      },
+      {
+        "name": "settlement_currency",
+        "raw_type": "string",
+        "comment": "结算币种"
+      },
+      {
+        "name": "clearing_date",
+        "raw_type": "string",
+        "comment": "清算日期"
+      },
+      {
+        "name": "init_price",
+        "raw_type": "string",
+        "comment": "期初价格"
+      },
+      {
+        "name": "quantity",
+        "raw_type": "string",
+        "comment": "成交数量"
+      },
+      {
+        "name": "clean_price",
+        "raw_type": "string",
+        "comment": "成交净价"
+      },
+      {
+        "name": "full_price",
+        "raw_type": "string",
+        "comment": "成交全价"
+      },
+      {
+        "name": "quantity_delta",
+        "raw_type": "string",
+        "comment": "变动数量"
+      },
+      {
+        "name": "amount",
+        "raw_type": "string",
+        "comment": "成交金额"
+      },
+      {
+        "name": "fee_rate",
+        "raw_type": "string",
+        "comment": "佣金费率"
+      },
+      {
+        "name": "interest_rate",
+        "raw_type": "string",
+        "comment": "券息"
+      },
+      {
+        "name": "exchange_rate",
+        "raw_type": "string",
+        "comment": "结算汇率"
+      },
+      {
+        "name": "record_date",
+        "raw_type": "string",
+        "comment": "股权登记日"
+      },
+      {
+        "name": "ex_date",
+        "raw_type": "string",
+        "comment": "除权除息日"
+      },
+      {
+        "name": "ca_ratio",
+        "raw_type": "string",
+        "comment": "公司行为比例"
+      },
+      {
+        "name": "payment_date",
+        "raw_type": "string",
+        "comment": "支付日期"
+      },
+      {
+        "name": "dividend_currency",
+        "raw_type": "string",
+        "comment": "分红币种"
+      },
+      {
+        "name": "stock_div_mode",
+        "raw_type": "string",
+        "comment": "送股模式"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "创建时间"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "更新时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "更新人"
+      },
+      {
+        "name": "interest_delay",
+        "raw_type": "string",
+        "comment": "延期计息"
+      },
+      {
+        "name": "remark",
+        "raw_type": "string",
+        "comment": "备注"
+      },
+      {
+        "name": "trade_date",
+        "raw_type": "string",
+        "comment": "成交日期"
+      },
+      {
+        "name": "quantity_before_bonus",
+        "raw_type": "string",
+        "comment": "送股前数量"
+      },
+      {
+        "name": "fast_trs_leg_code",
+        "raw_type": "string",
+        "comment": "极速互换腿编号"
+      },
+      {
+        "name": "origin_exchange_rate",
+        "raw_type": "string",
+        "comment": "结算汇率（正向）"
+      },
+      {
+        "name": "init_price_before_bonus",
+        "raw_type": "string",
+        "comment": "送股前期初价格"
+      },
+      {
+        "name": "init_price_before_reset",
+        "raw_type": "string",
+        "comment": "重置前期初价格"
+      },
+      {
+        "name": "init_exrate_before_reset",
+        "raw_type": "string",
+        "comment": "重置前期初汇率"
+      },
+      {
+        "name": "origin_exrate_before_reset",
+        "raw_type": "string",
+        "comment": "重置前期初汇率(正向)"
+      },
+      {
+        "name": "key_ctpty_id",
+        "raw_type": "string",
+        "comment": "交易对手ID"
+      },
+      {
+        "name": "department",
+        "raw_type": "string",
+        "comment": "所属部门"
+      },
+      {
+        "name": "dividend_tax_rate",
+        "raw_type": "string",
+        "comment": "分红税率"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "数据日期"
+      }
+    ]
+  },
+  {
+    "id": 35983,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_trs_event_struc_detail",
+    "description": "交易-<font color='red'>TRS</font>存续期事件结构化腿明细表",
+    "collected_at": "2026-08-21T19:55:47.068Z",
+    "fields": [
+      {
+        "name": "id",
+        "raw_type": "string",
+        "comment": "开平仓交易明细UUID"
+      },
+      {
+        "name": "key_trs_event_id",
+        "raw_type": "string",
+        "comment": "开平仓交易ID"
+      },
+      {
+        "name": "key_leg_position_id",
+        "raw_type": "string",
+        "comment": "持仓ID"
+      },
+      {
+        "name": "key_leg_id",
+        "raw_type": "string",
+        "comment": "LEG_ID"
+      },
+      {
+        "name": "underlying_ins_id",
+        "raw_type": "string",
+        "comment": "持仓证券内码"
+      },
+      {
+        "name": "event_fee",
+        "raw_type": "string",
+        "comment": "事件相关费（如平仓费）"
+      },
+      {
+        "name": "price",
+        "raw_type": "string",
+        "comment": "事件价格"
+      },
+      {
+        "name": "quantity_before",
+        "raw_type": "string",
+        "comment": "事件前数量"
+      },
+      {
+        "name": "quantity_after",
+        "raw_type": "string",
+        "comment": "事件后数量"
+      },
+      {
+        "name": "amount",
+        "raw_type": "string",
+        "comment": "事件金额(本币)"
+      },
+      {
+        "name": "quantity",
+        "raw_type": "string",
+        "comment": "发生数量"
+      },
+      {
+        "name": "currency",
+        "raw_type": "string",
+        "comment": "币种"
+      },
+      {
+        "name": "realized_profit_delta",
+        "raw_type": "string",
+        "comment": "已实现变动额"
+      },
+      {
+        "name": "cost_delta",
+        "raw_type": "string",
+        "comment": "成本变动额"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "更新时间"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "交易记录创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "更新人"
+      },
+      {
+        "name": "exchange_rate",
+        "raw_type": "string",
+        "comment": "汇率"
+      },
+      {
+        "name": "amount_org",
+        "raw_type": "string",
+        "comment": "事件金额(原币)"
+      },
+      {
+        "name": "interest_interval",
+        "raw_type": "string",
+        "comment": "利息起止区间，数据字典："
+      },
+      {
+        "name": "init_clean_price",
+        "raw_type": "string",
+        "comment": "期初成交净价"
+      },
+      {
+        "name": "trd_fee_rate",
+        "raw_type": "string",
+        "comment": "交易费率"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "close_stock_commission",
+        "raw_type": "string",
+        "comment": "平仓佣金"
+      },
+      {
+        "name": "close_stock_clean_price",
+        "raw_type": "string",
+        "comment": "平仓成交净价"
+      },
+      {
+        "name": "close_average_price",
+        "raw_type": "string",
+        "comment": "平仓均价(未含费)"
+      },
+      {
+        "name": "cash_div_ratio",
+        "raw_type": "string",
+        "comment": "分红比例(1股送几元)"
+      },
+      {
+        "name": "close_stock_per_share_com",
+        "raw_type": "string",
+        "comment": "平仓每股佣金"
+      },
+      {
+        "name": "close_stock_commission_type",
+        "raw_type": "string",
+        "comment": "客户收佣模式（平仓）平仓事件"
+      },
+      {
+        "name": "close_stock_trd_fee_rate",
+        "raw_type": "string",
+        "comment": "平仓境外期货佣金费率"
+      },
+      {
+        "name": "close_stock_ab_future_rate",
+        "raw_type": "string",
+        "comment": "平仓终止佣金费率"
+      },
+      {
+        "name": "stock_div_ratio",
+        "raw_type": "string",
+        "comment": "送股比例(1股送几股)"
+      },
+      {
+        "name": "dividend_tax_amount",
+        "raw_type": "string",
+        "comment": "【AI】分红税金额_结算"
+      },
+      {
+        "name": "dividend_tax_rate",
+        "raw_type": "string",
+        "comment": "分红税率%"
+      },
+      {
+        "name": "close_bond_net_price",
+        "raw_type": "string",
+        "comment": "债券平仓净价"
+      },
+      {
+        "name": "close_bond_gross_price",
+        "raw_type": "string",
+        "comment": "债券平仓全价"
+      },
+      {
+        "name": "realized_profit_delta_org",
+        "raw_type": "string",
+        "comment": "已实现变动额(原币）"
+      },
+      {
+        "name": "allocation_id",
+        "raw_type": "string",
+        "comment": "成交回报分配流水ID"
+      },
+      {
+        "name": "close_settlement_speed",
+        "raw_type": "string",
+        "comment": "平仓清算速度"
+      },
+      {
+        "name": "init_price_before",
+        "raw_type": "string",
+        "comment": "原价格"
+      },
+      {
+        "name": "init_price_after",
+        "raw_type": "string",
+        "comment": "重置价格"
+      },
+      {
+        "name": "settle_exchange_rate_before",
+        "raw_type": "string",
+        "comment": "原汇率(兑结算币种)"
+      },
+      {
+        "name": "settle_exchange_rate_after",
+        "raw_type": "string",
+        "comment": "重置汇率(兑结算币种)"
+      },
+      {
+        "name": "base_exchange_rate_before",
+        "raw_type": "string",
+        "comment": "原汇率(兑本币种)"
+      },
+      {
+        "name": "base_exchange_rate_after",
+        "raw_type": "string",
+        "comment": "重置汇率(兑结算币种)"
+      },
+      {
+        "name": "settle_pairs_exc_before",
+        "raw_type": "string",
+        "comment": "展示原汇率(兑结算币种)"
+      },
+      {
+        "name": "settle_pairs_exc_after",
+        "raw_type": "string",
+        "comment": "展示重置汇率(兑结算币种)"
+      },
+      {
+        "name": "base_pairs_exc_before",
+        "raw_type": "string",
+        "comment": "展示原汇率(兑本币种)"
+      },
+      {
+        "name": "base_pairs_exc_after",
+        "raw_type": "string",
+        "comment": "展示重置汇率(兑结算币种)"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      }
+    ]
+  },
+  {
+    "id": 35919,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_ref_trs_leg",
+    "description": "场外交易-<font color='red'>TRS</font>-<font color='red'>leg</font>基本信息",
+    "collected_at": "2026-08-21T18:59:01.829Z",
+    "fields": [
+      {
+        "name": "key_leg_id",
+        "raw_type": "string",
+        "comment": "LEG 全局顺序号"
+      },
+      {
+        "name": "key_otc_trade_id",
+        "raw_type": "string",
+        "comment": "TRADEFLOW内部交易流水号"
+      },
+      {
+        "name": "leg_seq_id",
+        "raw_type": "string",
+        "comment": "LEG在TRADE中的顺序号（在TRADE中唯一）"
+      },
+      {
+        "name": "leg_type",
+        "raw_type": "string",
+        "comment": "LEG类型: 数据字典：TRS_LEG_TYPE"
+      },
+      {
+        "name": "direction",
+        "raw_type": "string",
+        "comment": "方向|LEG_DIRECTION"
+      },
+      {
+        "name": "currency",
+        "raw_type": "string",
+        "comment": "变种"
+      },
+      {
+        "name": "underlying_ins_id",
+        "raw_type": "string",
+        "comment": "浮动利率挂钩标的"
+      },
+      {
+        "name": "spread",
+        "raw_type": "string",
+        "comment": "利差"
+      },
+      {
+        "name": "deferraltype",
+        "raw_type": "string",
+        "comment": "递延方式|DEFERRALTYPE"
+      },
+      {
+        "name": "fixed_rate",
+        "raw_type": "string",
+        "comment": "固定利率"
+      },
+      {
+        "name": "day_count",
+        "raw_type": "string",
+        "comment": "计息方式"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "修改时间"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "修改人"
+      },
+      {
+        "name": "proportion_rate",
+        "raw_type": "string",
+        "comment": "比例系数"
+      },
+      {
+        "name": "interest_interval",
+        "raw_type": "string",
+        "comment": "利息起止区间，数据字典：INTEREST_INTERVAL"
+      },
+      {
+        "name": "fixed_exchange_rate",
+        "raw_type": "string",
+        "comment": "固定汇率"
+      },
+      {
+        "name": "calendar",
+        "raw_type": "string",
+        "comment": "日历"
+      },
+      {
+        "name": "init_rmb_exchange_rate",
+        "raw_type": "string",
+        "comment": "期初人民币汇率"
+      },
+      {
+        "name": "private_placement",
+        "raw_type": "string",
+        "comment": "是否限售"
+      },
+      {
+        "name": "release_date",
+        "raw_type": "string",
+        "comment": "限售期结束日"
+      },
+      {
+        "name": "restricted_stock_type",
+        "raw_type": "string",
+        "comment": "限售类型"
+      },
+      {
+        "name": "interest_frequency",
+        "raw_type": "string",
+        "comment": "利率周期"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "ipo_type",
+        "raw_type": "string",
+        "comment": "【AI】限售类型"
+      },
+      {
+        "name": "interest_calendar",
+        "raw_type": "string",
+        "comment": "计息日假期"
+      },
+      {
+        "name": "listed_date",
+        "raw_type": "string",
+        "comment": "限售股上市日期"
+      },
+      {
+        "name": "cost_method_before_listed_date",
+        "raw_type": "string",
+        "comment": "限售股上市日前是否使用成本估值法"
+      },
+      {
+        "name": "floating_rate_cap",
+        "raw_type": "string",
+        "comment": "浮动利率上限"
+      },
+      {
+        "name": "hk_spread",
+        "raw_type": "string",
+        "comment": "香港用资利差"
+      },
+      {
+        "name": "lookback_period",
+        "raw_type": "string",
+        "comment": "行情取值方式"
+      },
+      {
+        "name": "interest_type",
+        "raw_type": "string",
+        "comment": "计息方式"
+      },
+      {
+        "name": "lend_eq_source_type",
+        "raw_type": "string",
+        "comment": "借券券源类型"
+      },
+      {
+        "name": "exchange_rate_type",
+        "raw_type": "string",
+        "comment": "汇率类型"
+      },
+      {
+        "name": "long_short",
+        "raw_type": "string",
+        "comment": "多空方向"
+      },
+      {
+        "name": "rollover_interest",
+        "raw_type": "string",
+        "comment": "展期利息"
+      },
+      {
+        "name": "interest_payment_period",
+        "raw_type": "string",
+        "comment": "付息周期"
+      },
+      {
+        "name": "coupon_payment_type",
+        "raw_type": "string",
+        "comment": "券息支付类型"
+      },
+      {
+        "name": "interest_rate_reset_frequency",
+        "raw_type": "string",
+        "comment": "重置频率"
+      },
+      {
+        "name": "rate_observation_method",
+        "raw_type": "string",
+        "comment": "重置取值方法"
+      },
+      {
+        "name": "settlement_speed",
+        "raw_type": "string",
+        "comment": "清算速度"
+      },
+      {
+        "name": "interest_calc_type",
+        "raw_type": "string",
+        "comment": "计息模式(单利/复利)"
+      },
+      {
+        "name": "restricted_value_mode",
+        "raw_type": "string",
+        "comment": "限售股估值模式"
+      },
+      {
+        "name": "restricted_discount_rate",
+        "raw_type": "string",
+        "comment": "限售股折算率"
+      },
+      {
+        "name": "float_rate_direction",
+        "raw_type": "string",
+        "comment": "浮动利率方向"
+      },
+      {
+        "name": "leg_start_date",
+        "raw_type": "string",
+        "comment": "期初定价日"
+      },
+      {
+        "name": "floor_absolute_rate",
+        "raw_type": "string",
+        "comment": "【AI】利率下限"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      }
+    ]
+  },
+  {
+    "id": 35974,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_otc_trade",
+    "description": "【AI】交易-OTC—交易表（父类）",
+    "collected_at": "2026-08-21T14:00:18.641Z",
+    "fields": [
+      {
+        "name": "key_otc_trade_id",
+        "raw_type": "string",
+        "comment": "TRADEFLOW内部交易流水号"
+      },
+      {
+        "name": "key_instrument_id",
+        "raw_type": "string",
+        "comment": "场外合约交易流水号"
+      },
+      {
+        "name": "business_type",
+        "raw_type": "string",
+        "comment": "业务类型"
+      },
+      {
+        "name": "key_book_id",
+        "raw_type": "string",
+        "comment": "账簿ID"
+      },
+      {
+        "name": "internal_trade_id",
+        "raw_type": "string",
+        "comment": "交易内部编号"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "修改时间"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "修改人"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      }
+    ]
+  },
+  {
+    "id": 35978,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.d_trd_transfer",
+    "description": "交易-收付款记录表",
+    "collected_at": "2026-08-21T19:52:39.186Z",
+    "fields": [
+      {
+        "name": "transfer_id",
+        "raw_type": "string",
+        "comment": "收付款编号"
+      },
+      {
+        "name": "trade_id",
+        "raw_type": "string",
+        "comment": "交易编号"
+      },
+      {
+        "name": "key_contract_id",
+        "raw_type": "string",
+        "comment": "合同号"
+      },
+      {
+        "name": "payment_date",
+        "raw_type": "string",
+        "comment": "支付日"
+      },
+      {
+        "name": "transfer_type",
+        "raw_type": "string",
+        "comment": "收付款类型 字典项=TRANSFER_TYPE"
+      },
+      {
+        "name": "currency",
+        "raw_type": "string",
+        "comment": "币种"
+      },
+      {
+        "name": "payreceive_type",
+        "raw_type": "string",
+        "comment": "收付款方向 字典项=PAYRECEIVE_TYPE"
+      },
+      {
+        "name": "transfer_status",
+        "raw_type": "string",
+        "comment": "收付款状态 字典项=TRANSFER_STATUS"
+      },
+      {
+        "name": "book_id",
+        "raw_type": "string",
+        "comment": "账簿编号"
+      },
+      {
+        "name": "start_date",
+        "raw_type": "string",
+        "comment": "起始日期"
+      },
+      {
+        "name": "end_date",
+        "raw_type": "string",
+        "comment": "结束日期"
+      },
+      {
+        "name": "amount",
+        "raw_type": "string",
+        "comment": "金额"
+      },
+      {
+        "name": "key_ctpty_id",
+        "raw_type": "string",
+        "comment": "交易对手编号"
+      },
+      {
+        "name": "created_datetime",
+        "raw_type": "string",
+        "comment": "创建时间"
+      },
+      {
+        "name": "created_by",
+        "raw_type": "string",
+        "comment": "创建人"
+      },
+      {
+        "name": "updated_datetime",
+        "raw_type": "string",
+        "comment": "修改时间"
+      },
+      {
+        "name": "updated_by",
+        "raw_type": "string",
+        "comment": "修改人"
+      },
+      {
+        "name": "version",
+        "raw_type": "string",
+        "comment": "【AI】版本号"
+      },
+      {
+        "name": "key_instrument_id",
+        "raw_type": "string",
+        "comment": "【AI】证券内码"
+      },
+      {
+        "name": "clearing_date",
+        "raw_type": "string",
+        "comment": "清算日"
+      },
+      {
+        "name": "amount_adjusted",
+        "raw_type": "string",
+        "comment": "调整后应收付"
+      },
+      {
+        "name": "payable",
+        "raw_type": "string",
+        "comment": "我司应付"
+      },
+      {
+        "name": "receivalbe",
+        "raw_type": "string",
+        "comment": "我司应收"
+      },
+      {
+        "name": "transfer_fee_type",
+        "raw_type": "string",
+        "comment": "费用类型"
+      },
+      {
+        "name": "trs_leg_position_id",
+        "raw_type": "string",
+        "comment": "TRS结构化腿虚拟持仓ID"
+      },
+      {
+        "name": "underlying_wind_code",
+        "raw_type": "string",
+        "comment": "TRS结构化腿虚拟持仓标的wind代码"
+      },
+      {
+        "name": "ins_family",
+        "raw_type": "string",
+        "comment": "证券集"
+      },
+      {
+        "name": "exchange_rate",
+        "raw_type": "string",
+        "comment": "汇率"
+      },
+      {
+        "name": "underlying_quantity",
+        "raw_type": "string",
+        "comment": "UNDERLYING的数量"
+      },
+      {
+        "name": "price",
+        "raw_type": "string",
+        "comment": "结构化腿结算价格或利率"
+      },
+      {
+        "name": "key_leg_id",
+        "raw_type": "string",
+        "comment": "TRS 全局唯一LEG ID"
+      },
+      {
+        "name": "profit_type",
+        "raw_type": "string",
+        "comment": "收益类型：结构化收益|固定收益|其他费用"
+      },
+      {
+        "name": "key_trs_event_id",
+        "raw_type": "string",
+        "comment": "事件ID"
+      },
+      {
+        "name": "trs_event_type",
+        "raw_type": "string",
+        "comment": "业务标志，数据字典：TRS_EVENT_TYPE"
+      },
+      {
+        "name": "amount_receivalbe",
+        "raw_type": "string",
+        "comment": "调整后我司应付"
+      },
+      {
+        "name": "amount_payable",
+        "raw_type": "string",
+        "comment": "调整后我司应收"
+      },
+      {
+        "name": "actual_payment_date",
+        "raw_type": "string",
+        "comment": "实际支付日"
+      },
+      {
+        "name": "amount_org",
+        "raw_type": "string",
+        "comment": "金额(原币)"
+      },
+      {
+        "name": "payable_org",
+        "raw_type": "string",
+        "comment": "我司应付(原币)"
+      },
+      {
+        "name": "receivalbe_org",
+        "raw_type": "string",
+        "comment": "我司应收(原币)"
+      },
+      {
+        "name": "amount_adjusted_org",
+        "raw_type": "string",
+        "comment": "调整后应收付金额（原币）"
+      },
+      {
+        "name": "amount_receivalbe_org",
+        "raw_type": "string",
+        "comment": "调整后我司应收（原币）"
+      },
+      {
+        "name": "amount_payable_org",
+        "raw_type": "string",
+        "comment": "调整后我司应付（原币）"
+      },
+      {
+        "name": "clearing_type",
+        "raw_type": "string",
+        "comment": "清算类型"
+      },
+      {
+        "name": "key_fee_payment_id",
+        "raw_type": "string",
+        "comment": "支付日期编号"
+      },
+      {
+        "name": "data_time",
+        "raw_type": "string",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "业务日期"
+      },
+      {
+        "name": "trs_type",
+        "raw_type": "string",
+        "comment": "互换类型"
+      },
+      {
+        "name": "trs_fee_additional",
+        "raw_type": "string",
+        "comment": "是否TRS费用补录"
+      },
+      {
+        "name": "recon_net_revenue",
+        "raw_type": "string",
+        "comment": "对账金额"
+      },
+      {
+        "name": "key_plan_id",
+        "raw_type": "string",
+        "comment": "业务方案id"
+      },
+      {
+        "name": "sett_flag",
+        "raw_type": "string",
+        "comment": "结算标志||0-未结算 1-已结算"
+      }
+    ]
+  },
+  {
+    "id": 36193,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.f_trd_fee_payment_schedule",
+    "description": "交易-费用支付列表",
+    "collected_at": "2026-09-02T08:28:40.351Z",
+    "fields": [
+      {
+        "name": "KEY_FEE_PAYMENT_ID",
+        "raw_type": "STRING",
+        "comment": "费用支付列表项ID"
+      },
+      {
+        "name": "KEY_FEE_ID",
+        "raw_type": "STRING",
+        "comment": "费用定义ID"
+      },
+      {
+        "name": "PAYMENT_DATE",
+        "raw_type": "STRING",
+        "comment": "支付日期"
+      },
+      {
+        "name": "AMOUNT",
+        "raw_type": "STRING",
+        "comment": "金额（本币）"
+      },
+      {
+        "name": "AMOUNT_ORG",
+        "raw_type": "STRING",
+        "comment": "金额（原币）"
+      },
+      {
+        "name": "FEE_RATE",
+        "raw_type": "STRING",
+        "comment": "费率"
+      },
+      {
+        "name": "ACTUAL_PAYMENT",
+        "raw_type": "STRING",
+        "comment": "实际支付金额"
+      },
+      {
+        "name": "ACTUAL_PAYMENT_ORG",
+        "raw_type": "STRING",
+        "comment": "实际支付金额(原币）"
+      },
+      {
+        "name": "EXCHANGE_RATE",
+        "raw_type": "STRING",
+        "comment": "汇率"
+      },
+      {
+        "name": "STATUS",
+        "raw_type": "STRING",
+        "comment": "状态，数据字典,FEE_STATUS：取消|已支付"
+      },
+      {
+        "name": "KEY_TRS_EVENT_ID",
+        "raw_type": "STRING",
+        "comment": "事件ID"
+      },
+      {
+        "name": "UPDATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "更新时间"
+      },
+      {
+        "name": "CREATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "交易记录创建时间"
+      },
+      {
+        "name": "CREATED_BY",
+        "raw_type": "STRING",
+        "comment": "创建人"
+      },
+      {
+        "name": "UPDATED_BY",
+        "raw_type": "STRING",
+        "comment": "更新人"
+      },
+      {
+        "name": "AMOUNT_CNY",
+        "raw_type": "STRING",
+        "comment": ""
+      },
+      {
+        "name": "EXCHANGE_RATE_CNY",
+        "raw_type": "STRING",
+        "comment": ""
+      },
+      {
+        "name": "ACTUAL_PAYMENT_DATE",
+        "raw_type": "STRING",
+        "comment": "实际支付日"
+      },
+      {
+        "name": "PAYMENT_TYPE",
+        "raw_type": "STRING",
+        "comment": "支付类型"
+      },
+      {
+        "name": "SETTLE_PAIRS_EXCHANGE_RATE",
+        "raw_type": "STRING",
+        "comment": "汇率(展示)"
+      },
+      {
+        "name": "TRS_FEE_ADDITIONAL",
+        "raw_type": "STRING",
+        "comment": "是否TRS费用补录"
+      },
+      {
+        "name": "DATA_TIME",
+        "raw_type": "STRING",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "数据日期"
+      }
+    ]
+  },
+  {
+    "id": 36192,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.f_trd_fee",
+    "description": "交易-费用定义",
+    "collected_at": "2026-09-02T08:28:40.302Z",
+    "fields": [
+      {
+        "name": "KEY_FEE_ID",
+        "raw_type": "STRING",
+        "comment": "费用定义ID"
+      },
+      {
+        "name": "KEY_OTC_TRADE_ID",
+        "raw_type": "STRING",
+        "comment": "交易ID"
+      },
+      {
+        "name": "KEY_LEG_ID",
+        "raw_type": "STRING",
+        "comment": "LEG 全局顺序号"
+      },
+      {
+        "name": "START_DATE",
+        "raw_type": "STRING",
+        "comment": "起始日期"
+      },
+      {
+        "name": "END_DATE",
+        "raw_type": "STRING",
+        "comment": "终止日期"
+      },
+      {
+        "name": "FEE_NAME",
+        "raw_type": "STRING",
+        "comment": "费用名称"
+      },
+      {
+        "name": "FEE_TYPE",
+        "raw_type": "STRING",
+        "comment": "费用类型"
+      },
+      {
+        "name": "CURRENCY",
+        "raw_type": "STRING",
+        "comment": "币种"
+      },
+      {
+        "name": "FREQUENCY",
+        "raw_type": "STRING",
+        "comment": "支付频率"
+      },
+      {
+        "name": "AMOUNT",
+        "raw_type": "STRING",
+        "comment": "金额"
+      },
+      {
+        "name": "FEE_RATE",
+        "raw_type": "STRING",
+        "comment": "费率"
+      },
+      {
+        "name": "AMOUNT_TYPE",
+        "raw_type": "STRING",
+        "comment": "金额|费率"
+      },
+      {
+        "name": "UPDATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "更新时间"
+      },
+      {
+        "name": "CREATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "交易记录创建时间"
+      },
+      {
+        "name": "CREATED_BY",
+        "raw_type": "STRING",
+        "comment": "创建人"
+      },
+      {
+        "name": "UPDATED_BY",
+        "raw_type": "STRING",
+        "comment": "更新人"
+      },
+      {
+        "name": "CALENDAR",
+        "raw_type": "STRING",
+        "comment": "日历"
+      },
+      {
+        "name": "DATE_ROLL",
+        "raw_type": "STRING",
+        "comment": "递延方式|DATE_ROLL"
+      },
+      {
+        "name": "ENTITY_TYPE",
+        "raw_type": "STRING",
+        "comment": "费用所属主体的实体分类，对应枚举EntityType"
+      },
+      {
+        "name": "ENTITY_ID",
+        "raw_type": "STRING",
+        "comment": "费用所属主体的实体的ID"
+      },
+      {
+        "name": "KEY_INSTRUMENT_ID",
+        "raw_type": "STRING",
+        "comment": ""
+      },
+      {
+        "name": "IS_DISCOUNT",
+        "raw_type": "STRING",
+        "comment": "是否折现"
+      },
+      {
+        "name": "IS_REALIZED_ONCE_TERM",
+        "raw_type": "STRING",
+        "comment": "是否在所属实体结束时才算入已实现"
+      },
+      {
+        "name": "EVENT_CHANNEL",
+        "raw_type": "STRING",
+        "comment": "发起渠道"
+      },
+      {
+        "name": "FIXED_DAY",
+        "raw_type": "STRING",
+        "comment": "指定日期"
+      },
+      {
+        "name": "LAST_CLEARING_MODE",
+        "raw_type": "STRING",
+        "comment": "最后一期清算模式"
+      },
+      {
+        "name": "DATA_TIME",
+        "raw_type": "STRING",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "数据日期"
+      }
+    ]
+  },
+  {
+    "id": 36231,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.n_ope_settle_notice",
+    "description": "结算通知书主表",
+    "collected_at": "2026-09-04T05:41:46.412Z",
+    "fields": [
+      {
+        "name": "ID",
+        "raw_type": "STRING",
+        "comment": "结算通知书主表id"
+      },
+      {
+        "name": "KEY_OTC_TRADE_ID",
+        "raw_type": "STRING",
+        "comment": "合约id"
+      },
+      {
+        "name": "CLEARING_DATE",
+        "raw_type": "STRING",
+        "comment": "结算日"
+      },
+      {
+        "name": "STATUS",
+        "raw_type": "STRING",
+        "comment": "结算通知书状态"
+      },
+      {
+        "name": "INTERNAL_TRADE_ID",
+        "raw_type": "STRING",
+        "comment": "合约编号"
+      },
+      {
+        "name": "DEPT_NAME",
+        "raw_type": "STRING",
+        "comment": "公司名称"
+      },
+      {
+        "name": "RECIPIENTS",
+        "raw_type": "STRING",
+        "comment": "邮箱收件人组合,多邮箱以 ； 符号拼接"
+      },
+      {
+        "name": "CC",
+        "raw_type": "STRING",
+        "comment": "邮箱抄送人组合,预留暂不使用"
+      },
+      {
+        "name": "KEY_CAPITAL_ACCT_ID",
+        "raw_type": "STRING",
+        "comment": "资金账户id"
+      },
+      {
+        "name": "CAP_ACCT_CODE",
+        "raw_type": "STRING",
+        "comment": "资金账户编号"
+      },
+      {
+        "name": "KEY_CTPTY_ID",
+        "raw_type": "STRING",
+        "comment": "交易对手id"
+      },
+      {
+        "name": "CTPTY_SHORT_NAME",
+        "raw_type": "STRING",
+        "comment": "交易对手短名"
+      },
+      {
+        "name": "SUB_TYPE",
+        "raw_type": "STRING",
+        "comment": "期权/互换类型"
+      },
+      {
+        "name": "START_DATE",
+        "raw_type": "STRING",
+        "comment": "期初定价日"
+      },
+      {
+        "name": "END_DATE",
+        "raw_type": "STRING",
+        "comment": "期末定价日"
+      },
+      {
+        "name": "PAYMENT_DATE",
+        "raw_type": "STRING",
+        "comment": "兑付日"
+      },
+      {
+        "name": "FLOATING_PNL",
+        "raw_type": "STRING",
+        "comment": "浮动收益"
+      },
+      {
+        "name": "FIX_PNL",
+        "raw_type": "STRING",
+        "comment": "固定收益"
+      },
+      {
+        "name": "CLOSE_FEE",
+        "raw_type": "STRING",
+        "comment": "平仓费用"
+      },
+      {
+        "name": "CASH_DIVIDEND",
+        "raw_type": "STRING",
+        "comment": "现金分红"
+      },
+      {
+        "name": "OTHER_FUNDS",
+        "raw_type": "STRING",
+        "comment": "其他资金"
+      },
+      {
+        "name": "TOTAL_SETTLEMENT_AMOUNT",
+        "raw_type": "STRING",
+        "comment": "结算金额小计"
+      },
+      {
+        "name": "RETURN_MARGIN",
+        "raw_type": "STRING",
+        "comment": "本次保证金返还"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "raw_type": "STRING",
+        "comment": "合计金额"
+      },
+      {
+        "name": "TOTAL_NOTIONAL",
+        "raw_type": "STRING",
+        "comment": ""
+      },
+      {
+        "name": "CREATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "创建时间"
+      },
+      {
+        "name": "CREATED_BY",
+        "raw_type": "STRING",
+        "comment": "创建人"
+      },
+      {
+        "name": "UPDATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "修改时间"
+      },
+      {
+        "name": "UPDATED_BY",
+        "raw_type": "STRING",
+        "comment": "修改人"
+      },
+      {
+        "name": "CONTRACT_TYPE",
+        "raw_type": "STRING",
+        "comment": "合约类型"
+      },
+      {
+        "name": "STRIKE_PNL",
+        "raw_type": "STRING",
+        "comment": "行权收益"
+      },
+      {
+        "name": "OPTION_PNL",
+        "raw_type": "STRING",
+        "comment": "期权费"
+      },
+      {
+        "name": "SELLER",
+        "raw_type": "STRING",
+        "comment": "卖方"
+      },
+      {
+        "name": "REMAIN_NOTIONAL",
+        "raw_type": "STRING",
+        "comment": "剩余名义本金"
+      },
+      {
+        "name": "APPROVAL_DATE",
+        "raw_type": "STRING",
+        "comment": "transfer审批时间"
+      },
+      {
+        "name": "BUSINESS_TYPE",
+        "raw_type": "STRING",
+        "comment": "业务类型"
+      },
+      {
+        "name": "BASKET_TYPE",
+        "raw_type": "STRING",
+        "comment": "多标的-篮子类型"
+      },
+      {
+        "name": "CONTRACT_CODE",
+        "raw_type": "STRING",
+        "comment": "合约编号（对外）/交易编号"
+      },
+      {
+        "name": "FROM_EMAIL",
+        "raw_type": "STRING",
+        "comment": "邮箱发件人"
+      },
+      {
+        "name": "DEPARTMENT",
+        "raw_type": "STRING",
+        "comment": "所属部门"
+      },
+      {
+        "name": "DATA_TIME",
+        "raw_type": "STRING",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "数据日期"
+      }
+    ]
+  },
+  {
+    "id": 36232,
+    "platform": "hive",
+    "qualified_name": "odata_n_tit.n_ope_settle_notice_transfer",
+    "description": "结算通知书 - 已生成 Transfer 记录",
+    "collected_at": "2026-09-04T05:42:12.569Z",
+    "fields": [
+      {
+        "name": "KEY_SN_ID",
+        "raw_type": "STRING",
+        "comment": "结算通知书主表id"
+      },
+      {
+        "name": "TRANSFER_ID",
+        "raw_type": "STRING",
+        "comment": "Transfer id"
+      },
+      {
+        "name": "CREATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "创建时间"
+      },
+      {
+        "name": "CREATED_BY",
+        "raw_type": "STRING",
+        "comment": "创建人"
+      },
+      {
+        "name": "UPDATED_DATETIME",
+        "raw_type": "STRING",
+        "comment": "修改时间"
+      },
+      {
+        "name": "UPDATED_BY",
+        "raw_type": "STRING",
+        "comment": "修改人"
+      },
+      {
+        "name": "DATA_TIME",
+        "raw_type": "STRING",
+        "comment": "数据时间"
+      },
+      {
+        "name": "busi_date",
+        "raw_type": "string",
+        "comment": "数据日期"
+      }
+    ]
+  }
+]

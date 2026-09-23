@@ -1,0 +1,2292 @@
+{
+  "catalogFile": "table-metadata-7acdff82cd0affd9-0536ac87-6fd7-4c4e-b668-1a18cde959c0.sqlite",
+  "builtAt": "2026-09-16T01:22:43.476Z",
+  "physicalFilter": {
+    "platform": "hive",
+    "data_source": "gfhive"
+  },
+  "tables": [
+    {
+      "id": 44159,
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_info",
+      "description": "<font color='red'>T98</font>_场外衍生品合约销售收入基本信息表",
+      "collected_at": "2026-08-29T11:37:58.946Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_type",
+          "comment": "业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_id",
+          "comment": "交易对手客户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_shor_name",
+          "comment": "交易对手当事人简称",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_full_name",
+          "comment": "交易对手当事人名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "sign_prd_name",
+          "comment": "代签产品名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "indt_cd",
+          "comment": "行业代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "corp_qual",
+          "comment": "企业资质",
+          "raw_type": "string"
+        },
+        {
+          "name": "contr_type_cd",
+          "comment": "合约类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "contr_type_desc",
+          "comment": "合约类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_contr_type",
+          "comment": "源合约类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_contr_type_desc",
+          "comment": "源合约类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_sub_contr_type",
+          "comment": "源合约子类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_sub_contr_type_desc",
+          "comment": "源合约子类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_ins_id",
+          "comment": "标的ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_wd_cd",
+          "comment": "标的万得代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_name",
+          "comment": "标的名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_type",
+          "comment": "标的类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_type_desc",
+          "comment": "标的类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type",
+          "comment": "源标的类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type_desc",
+          "comment": "源标的类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "res_flag",
+          "comment": "限售标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "ipo_flag",
+          "comment": "IPO标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "buy_sell_dir_cd",
+          "comment": "买卖方向代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "cny_ex_rate",
+          "comment": "人民币汇率",
+          "raw_type": "string"
+        },
+        {
+          "name": "init_nom_prin",
+          "comment": "初始名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "dyna_nom_prin",
+          "comment": "动态名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "absl_nom_prin",
+          "comment": "绝对名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "strt_pric_date",
+          "comment": "期初定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "end_pric_date",
+          "comment": "期末定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "early_term_date",
+          "comment": "提前终止日",
+          "raw_type": "string"
+        },
+        {
+          "name": "earn_pymt_date",
+          "comment": "收益兑付日",
+          "raw_type": "string"
+        },
+        {
+          "name": "term_days",
+          "comment": "期限天数",
+          "raw_type": "string"
+        },
+        {
+          "name": "agt_stat_cd",
+          "comment": "协议状态代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_seri_no",
+          "comment": "内部流水号",
+          "raw_type": "string"
+        },
+        {
+          "name": "otc_seri_no",
+          "comment": "场外合约流水号",
+          "raw_type": "string"
+        },
+        {
+          "name": "bndl_id",
+          "comment": "组合编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "rel_agt_id",
+          "comment": "关联合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "init_marg_prop",
+          "comment": "初始保证金比例",
+          "raw_type": "string"
+        },
+        {
+          "name": "init_marg_bal",
+          "comment": "初始保证金",
+          "raw_type": "string"
+        },
+        {
+          "name": "ddct_ptrn",
+          "comment": "抵扣模式",
+          "raw_type": "string"
+        },
+        {
+          "name": "cms_rate",
+          "comment": "佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "fixed_rate",
+          "comment": "固定腿利率",
+          "raw_type": "string"
+        },
+        {
+          "name": "fee_rate",
+          "comment": "实际费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "hedg_type_cd",
+          "comment": "对冲类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "opt_fee",
+          "comment": "期权费",
+          "raw_type": "string"
+        },
+        {
+          "name": "opt_fee_paid_date",
+          "comment": "期权费支付日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "ko_prtc_rate",
+          "comment": "敲出参与率",
+          "raw_type": "string"
+        },
+        {
+          "name": "ko_yield",
+          "comment": "敲出收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "net_coll",
+          "comment": "交易净收取",
+          "raw_type": "string"
+        },
+        {
+          "name": "coup_rate",
+          "comment": "票息",
+          "raw_type": "string"
+        },
+        {
+          "name": "min_obs_date",
+          "comment": "最小观察日",
+          "raw_type": "string"
+        },
+        {
+          "name": "max_obs_date",
+          "comment": "最大观察日",
+          "raw_type": "string"
+        },
+        {
+          "name": "up_prtc_rate",
+          "comment": "向上参与率",
+          "raw_type": "string"
+        },
+        {
+          "name": "down_prtc_rate",
+          "comment": "向下参与率",
+          "raw_type": "string"
+        },
+        {
+          "name": "ki_barr_pct",
+          "comment": "敲入障碍价",
+          "raw_type": "string"
+        },
+        {
+          "name": "ko_barr_pct",
+          "comment": "敲出障碍价",
+          "raw_type": "string"
+        },
+        {
+          "name": "strk_pct",
+          "comment": "执行价",
+          "raw_type": "string"
+        },
+        {
+          "name": "down_strk_pct",
+          "comment": "下跌保护执行价格",
+          "raw_type": "string"
+        },
+        {
+          "name": "up_strk_pct",
+          "comment": "封顶价格",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "book_bel_dept",
+          "comment": "账簿所属部门",
+          "raw_type": "string"
+        },
+        {
+          "name": "bgng_npv",
+          "comment": "期初NPV",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_agt_stat_cd",
+          "comment": "源合约状态",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_long_name",
+          "comment": "标的长名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "qual_revw_flag",
+          "comment": "客户资质复核标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "ext_comp_no",
+          "comment": "外部合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "key_cutp_id",
+          "comment": "Titans客户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_curr",
+          "comment": "标的币种",
+          "raw_type": "string"
+        },
+        {
+          "name": "intr_marg",
+          "comment": "利差",
+          "raw_type": "string"
+        },
+        {
+          "name": "base_marg_rate",
+          "comment": "基础保证金率",
+          "raw_type": "string"
+        },
+        {
+          "name": "marg_agt_id",
+          "comment": "保证金合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "opt_fee_rate",
+          "comment": "期权费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "book_agt_id",
+          "comment": "账簿协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "book_name",
+          "comment": "账簿名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "cntr",
+          "comment": "柜台",
+          "raw_type": "string"
+        },
+        {
+          "name": "sler_cutp_pty_id",
+          "comment": "销售方交易对手当事人编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "futr_type",
+          "comment": "期货类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "agt_clas_cd",
+          "comment": "协议分类代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "cros_crrc_type_cd",
+          "comment": "跨币种类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "float_base_rate",
+          "comment": "浮动基础利率",
+          "raw_type": "string"
+        },
+        {
+          "name": "float_undrl_cd",
+          "comment": "浮动腿标的代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "flot_intrt_ulmt",
+          "comment": "浮动利率上限",
+          "raw_type": "string"
+        },
+        {
+          "name": "comp_usag_cd",
+          "comment": "合约用途代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "sett_crrc_cd",
+          "comment": "结算币种代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "ex_rate_model",
+          "comment": "汇率模式",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "grp_id",
+          "comment": "并行分组标识",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44158,
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "description": "T98_场外衍生品合约销售收入附加明细",
+      "collected_at": "2026-08-22T03:04:24.478Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_type",
+          "comment": "业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_id",
+          "comment": "交易对手客户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_ins_id",
+          "comment": "标的ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_wd_cd",
+          "comment": "标的万得代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_name",
+          "comment": "标的名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "strt_pric_date",
+          "comment": "期初定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "end_pric_date",
+          "comment": "期末定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "init_nom_prin",
+          "comment": "初始名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "dyna_nom_prin",
+          "comment": "动态名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "fee_rate",
+          "comment": "费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "inta",
+          "comment": "应计利息",
+          "raw_type": "string"
+        },
+        {
+          "name": "fnd_cost",
+          "comment": "用资成本",
+          "raw_type": "string"
+        },
+        {
+          "name": "trd_cms",
+          "comment": "交易佣金收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "trd_cms_cost",
+          "comment": "交易佣金成本",
+          "raw_type": "string"
+        },
+        {
+          "name": "marg_prop",
+          "comment": "保证金比例",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "grp_id",
+          "comment": "并行分组标识",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 42298,
+      "qualified_name": "pdata_n.t01_otc_deri_cust",
+      "description": "<font color='red'>OTC</font>衍生品客户",
+      "collected_at": "2026-08-29T12:20:04.462Z",
+      "fields": [
+        {
+          "name": "pty_id",
+          "comment": "当事人编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "pty_cate_cd",
+          "comment": "当事人类别代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_corp_nature",
+          "comment": "源企业性质",
+          "raw_type": "string"
+        },
+        {
+          "name": "prof_org_flag",
+          "comment": "专业机构标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "stkhold_info",
+          "comment": "股东信息",
+          "raw_type": "string"
+        },
+        {
+          "name": "sign_prd_name",
+          "comment": "代签产品名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_agt_id",
+          "comment": "主协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_agt_sign_date",
+          "comment": "主协议签订日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "supp_agt_id",
+          "comment": "补充协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "supp_agt_sign_date",
+          "comment": "补充协议签订日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "perf_guar_agt_id",
+          "comment": "履约保障协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "perf_guar_agt_sign_date",
+          "comment": "履约保障协议签署日",
+          "raw_type": "string"
+        },
+        {
+          "name": "deri_agt_type",
+          "comment": "衍生品协议类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_inr_org_id",
+          "comment": "主办内部机构编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "our_contr_side",
+          "comment": "我司合同方",
+          "raw_type": "string"
+        },
+        {
+          "name": "appr_stat",
+          "comment": "审核状态",
+          "raw_type": "string"
+        },
+        {
+          "name": "pty_a_lnkman",
+          "comment": "甲方联系人",
+          "raw_type": "string"
+        },
+        {
+          "name": "pty_b_lnkman",
+          "comment": "乙方联系人",
+          "raw_type": "string"
+        },
+        {
+          "name": "ivst_var",
+          "comment": "投资品种",
+          "raw_type": "string"
+        },
+        {
+          "name": "ivst_term",
+          "comment": "投资期限",
+          "raw_type": "string"
+        },
+        {
+          "name": "expe_income",
+          "comment": "预期收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "rep_stat",
+          "comment": "报备状态",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_inr_org_id",
+          "comment": "引入内部机构编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_user_id",
+          "comment": "客户经理用户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "oper_user_id",
+          "comment": "经办人用户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "perm_cred_stat_cd",
+          "comment": "允许授信状态",
+          "raw_type": "string"
+        },
+        {
+          "name": "perm_opt_lvl",
+          "comment": "允许参与期权级别",
+          "raw_type": "string"
+        },
+        {
+          "name": "scd_trdr_flag",
+          "comment": "二级交易商客户标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "scd_trdr",
+          "comment": "所属二级交易商",
+          "raw_type": "string"
+        },
+        {
+          "name": "retu_vst_date",
+          "comment": "回访日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "retu_vst_data_flag",
+          "comment": "回访资料上传标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "ext_scal_ratio",
+          "comment": "外部规模比率",
+          "raw_type": "string"
+        },
+        {
+          "name": "paye_min_tran_amt",
+          "comment": "接收方最小转移金额（元）",
+          "raw_type": "string"
+        },
+        {
+          "name": "pay_min_tran_amt",
+          "comment": "支付方最小转移金额（元）",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_coef",
+          "comment": "客户系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "marg_bal",
+          "comment": "保障金余额",
+          "raw_type": "string"
+        },
+        {
+          "name": "vld_flag",
+          "comment": "有效标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "del_flag",
+          "comment": "删除标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "del_date",
+          "comment": "删除日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "corp_qual",
+          "comment": "企业资质",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_user_id",
+          "comment": "引入经办人用户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_dept_no",
+          "comment": "源部门编码",
+          "raw_type": "string"
+        },
+        {
+          "name": "montr_flag",
+          "comment": "监控标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "auto_clbk_cust_flag",
+          "comment": "自动回访客户标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "sign_prd_rgst_stat_cd",
+          "comment": "代签产品报备状态代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "qual_nenh_rsn",
+          "comment": "资质不足原因",
+          "raw_type": "string"
+        },
+        {
+          "name": "his_deal_righ",
+          "comment": "历史交易权限",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_fnd_itpy_flag",
+          "comment": "客户资金返息标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "incl_cs_income_flag",
+          "comment": "涉及交叉销售收入标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "perm_busi_type",
+          "comment": "允许业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "oth_perm_busi_type",
+          "comment": "允许其他业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_rela_prd_type",
+          "comment": "业务挂钩产品类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "trd_method",
+          "comment": "交易方式",
+          "raw_type": "string"
+        },
+        {
+          "name": "oth_trd_method",
+          "comment": "其它交易方式",
+          "raw_type": "string"
+        },
+        {
+          "name": "oact_flag",
+          "comment": "开户标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "oact_doc_archv_flag",
+          "comment": "开户资料归档标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_agt_sign_flag",
+          "comment": "主协议签署标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_agt_doc_archv_flag",
+          "comment": "主协议资料归档标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "create_time",
+          "comment": "创建时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_time",
+          "comment": "更新时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "create_user",
+          "comment": "创建人",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_user",
+          "comment": "更新人",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_intr_marg",
+          "comment": "美股利差",
+          "raw_type": "string"
+        },
+        {
+          "name": "hks_intr_marg",
+          "comment": "港股利差",
+          "raw_type": "string"
+        },
+        {
+          "name": "hks_cms_mode_cd",
+          "comment": "港股佣金模式代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_cms_mode_cd",
+          "comment": "美股佣金模式代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "hks_cms_fee_rate",
+          "comment": "港股佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_cms_fee_rate",
+          "comment": "美股佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "hk_cutp_us_stk_cms_fee_rate",
+          "comment": "香港交易对手美股佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "hk_cutp_hks_cms_fee_rate",
+          "comment": "香港交易对手港股佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "hk_cutp_fix_yield",
+          "comment": "香港交易对手固定收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "hks_per_stk_cms",
+          "comment": "港股每股佣金",
+          "raw_type": "string"
+        },
+        {
+          "name": "hk_cutp_hks_per_stk_cms",
+          "comment": "香港交易对手港股每股佣金",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_per_stk_cms",
+          "comment": "美股每股佣金",
+          "raw_type": "string"
+        },
+        {
+          "name": "hk_cutp_us_stk_per_stk_cms",
+          "comment": "香港交易对手美股每股佣金",
+          "raw_type": "string"
+        },
+        {
+          "name": "join_side_flag",
+          "comment": "关联方标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "inta_bm_cd",
+          "comment": "计息基准代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "fix_intrt",
+          "comment": "固定利率",
+          "raw_type": "string"
+        },
+        {
+          "name": "rate_type_cd",
+          "comment": "利率类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "intr_strt_end_scop_type_cd",
+          "comment": "利息起止区间类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "nom_prin_ulmt",
+          "comment": "名义本金上限",
+          "raw_type": "string"
+        },
+        {
+          "name": "auth_lmt",
+          "comment": "授权额度",
+          "raw_type": "string"
+        },
+        {
+          "name": "auth_lmt_vld_pd",
+          "comment": "授权额度有效期",
+          "raw_type": "string"
+        },
+        {
+          "name": "overseas_futr_cms_fee_rate",
+          "comment": "境外期货佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "overseas_futr_lvrg_coef",
+          "comment": "境外期货杠杆系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_qual_revw_remark",
+          "comment": "客户资质复核备注",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_qual_revw_flag",
+          "comment": "客户资质复核标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "airbagx_trd_fee_rate",
+          "comment": "安全气囊X交易费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "flot_intrt_ulmt",
+          "comment": "浮动利率上限",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_flag",
+          "comment": "内部标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_hk_fee_rate_adj",
+          "comment": "美股香港费率调整",
+          "raw_type": "string"
+        },
+        {
+          "name": "hks_cross_flot_intrt_undrl",
+          "comment": "港股跨境浮动利率标的",
+          "raw_type": "string"
+        },
+        {
+          "name": "us_stk_cross_flot_intrt_undrl",
+          "comment": "美股跨境浮动利率标的",
+          "raw_type": "string"
+        },
+        {
+          "name": "dms_a_scr_opps_fee_rate",
+          "comment": "境内A股开仓费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "dms_a_scr_drop_fee_rate",
+          "comment": "境内A股平仓费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "mhs_opps_fee_rate",
+          "comment": "港股通开仓费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "mhs_drop_fee_rate",
+          "comment": "港股通平仓费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "divd_tax_rate",
+          "comment": "分红税率",
+          "raw_type": "string"
+        },
+        {
+          "name": "real_src_tbl",
+          "comment": "真实源表",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_sign_prd_id",
+          "comment": "源代签产品编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_prd_cate_cd",
+          "comment": "源产品类别代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_prd_sub_cate",
+          "comment": "源产品子类别",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_prd_maty_date",
+          "comment": "源产品到期日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "blt_appt_main_agt_id",
+          "comment": "双方约定主协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "blt_appt_supp_agt_id",
+          "comment": "双方约定补充协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "allow_deal_deri_busi_righ_cd_str",
+          "comment": "容许交易衍生品业务权限代码串",
+          "raw_type": "string"
+        },
+        {
+          "name": "intr_marg",
+          "comment": "利差",
+          "raw_type": "string"
+        },
+        {
+          "name": "cms_fee_rate",
+          "comment": "佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_join_side_chk_rslt_cd",
+          "comment": "交易对手关联方检查结果代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_qual_revw_rsn_cd_str",
+          "comment": "客户资质复核原因代码串",
+          "raw_type": "string"
+        },
+        {
+          "name": "fcs_cust_flag",
+          "comment": "关注类客户标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "rpt_id_type_cd",
+          "comment": "填报方身份类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "bene_shr_prop_excd_20pct_flag",
+          "comment": "受益人份额占比超20%标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "reg_nat",
+          "comment": "注册国家",
+          "raw_type": "string"
+        },
+        {
+          "name": "rela_list_co_flag",
+          "comment": "关联上市公司标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "rela_list_co_scr_cd",
+          "comment": "关联上市公司证券代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "prd_bene_rela_list_co_flag",
+          "comment": "产品受益人关联上市公司标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "prd_bene_rela_list_co_scr_cd",
+          "comment": "产品受益人关联上市公司证券代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "exch_rgst_flag",
+          "comment": "交易所报备标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "cupt_enqu_wechat_grp_name",
+          "comment": "交易对手询价微信群名",
+          "raw_type": "string"
+        },
+        {
+          "name": "remark",
+          "comment": "备注",
+          "raw_type": "string"
+        },
+        {
+          "name": "supp_agt_rgst_stat_cd",
+          "comment": "补充协议报备状态代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "perf_guar_agt_rgst_stat_cd",
+          "comment": "履约协议报备状态代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "fnd_cs_income_dect_rati",
+          "comment": "资金交叉销售收入提成比例",
+          "raw_type": "string"
+        },
+        {
+          "name": "deri_cs_income_dect_rati",
+          "comment": "衍生品交叉销售收入提成比例",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44509,
+      "qualified_name": "pdata_n.t99_otc_deri_inr_base_mapping",
+      "description": "场外衍生品合约销售收入内部基础参数分类映射表",
+      "collected_at": "2026-08-23T01:49:51.953Z",
+      "fields": [
+        {
+          "name": "otc_deri_comp_type",
+          "comment": "场外衍生品合约类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "op_mng_comp_type_id",
+          "comment": "运管合约类型编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "op_mng_comp_type_desc",
+          "comment": "运管合约类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_agt_type_cd",
+          "comment": "源协议类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_agt_type_desc",
+          "comment": "源协议类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_agt_sub_type_cd",
+          "comment": "源协议子类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_agt_sub_type_desc",
+          "comment": "源协议子类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type_cd_str",
+          "comment": "源标的类型代码串",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type_desc_str",
+          "comment": "源标的类型描述串",
+          "raw_type": "string"
+        },
+        {
+          "name": "create_time",
+          "comment": "创建时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_deleted_flag",
+          "comment": "源删除标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44396,
+      "qualified_name": "pdata_n.t99_deri_comp_sprd_coef_ref",
+      "description": "衍生品合约价差系数参考信息",
+      "collected_at": "2026-08-22T03:06:19.523Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "agt_modifr",
+          "comment": "协议修饰符",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_comp_no",
+          "comment": "内部合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_type",
+          "comment": "业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "coef_type",
+          "comment": "系数类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_comp_type_cd",
+          "comment": "源合约类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_comp_type_name",
+          "comment": "源合约类型名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type_cd",
+          "comment": "源标的类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "sprd_calc_type",
+          "comment": "价差计算类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "annu_sprd_coef",
+          "comment": "年化价差系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "absl_sprd_coef",
+          "comment": "绝对价差系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "vld_date",
+          "comment": "生效日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "desc",
+          "comment": "描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "estb_time",
+          "comment": "创建时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_time",
+          "comment": "更新时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "creator",
+          "comment": "创建人",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_prsn",
+          "comment": "更新人",
+          "raw_type": "string"
+        },
+        {
+          "name": "del_flag",
+          "comment": "删除标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "real_src_tbl",
+          "comment": "真实源表",
+          "raw_type": "string"
+        },
+        {
+          "name": "bel_busi_dept",
+          "comment": "所属业务部门",
+          "raw_type": "string"
+        },
+        {
+          "name": "cms_fee_rate",
+          "comment": "佣金费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44510,
+      "qualified_name": "pdata_n.t99_otc_deri_inr_base_ref",
+      "description": "场外衍生品合约销售收入内部基础参数表",
+      "collected_at": "2026-08-23T01:50:14.447Z",
+      "fields": [
+        {
+          "name": "op_mng_comp_type_id",
+          "comment": "运管合约类型编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "base_yield",
+          "comment": "基础收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "dft_base_coef",
+          "comment": "拟定基础系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "calc_way",
+          "comment": "计算方式",
+          "raw_type": "string"
+        },
+        {
+          "name": "adtnl_yield",
+          "comment": "附加收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "create_time",
+          "comment": "创建时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "actl_vld_day",
+          "comment": "实际生效日",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_deleted_flag",
+          "comment": "源删除标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44395,
+      "qualified_name": "pdata_n.t99_deri_comp_base_coef_ref",
+      "description": "衍生品合约基础系数参考信息",
+      "collected_at": "2026-08-22T03:05:10.653Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "协议编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "agt_modifr",
+          "comment": "协议修饰符",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_comp_no",
+          "comment": "内部合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "calc_type",
+          "comment": "计算类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "coef_type",
+          "comment": "系数类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "base_yield",
+          "comment": "基础收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "dft_base_coef",
+          "comment": "拟定基础系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "desc",
+          "comment": "描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_prsn",
+          "comment": "主经办人",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_prsn",
+          "comment": "引入经办人",
+          "raw_type": "string"
+        },
+        {
+          "name": "adtnl_rwd_flag",
+          "comment": "额外奖励标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "adtnl_rwd",
+          "comment": "额外奖励",
+          "raw_type": "string"
+        },
+        {
+          "name": "estb_time",
+          "comment": "创建时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_time",
+          "comment": "更新时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "creator",
+          "comment": "创建人",
+          "raw_type": "string"
+        },
+        {
+          "name": "upd_prsn",
+          "comment": "更新人",
+          "raw_type": "string"
+        },
+        {
+          "name": "del_flag",
+          "comment": "删除标志",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_tbl",
+          "comment": "源表",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 44150,
+      "qualified_name": "pdata_n.t98_otc_comp_mng_rela_info",
+      "description": "T98_OTC合约管理关系信息",
+      "collected_at": "2026-08-22T05:25:53.732Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "pty_id",
+          "comment": "客户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_id_1",
+          "comment": "引入部门ID_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_name_1",
+          "comment": "引入部门名称_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_id_1",
+          "comment": "所属分公司ID_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_name_1",
+          "comment": "所属分公司名称_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_user_id_1",
+          "comment": "客户经理USER_ID_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_name_1",
+          "comment": "客户经理姓名_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_id_1",
+          "comment": "客户经理员工编号_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "allo_prop_1",
+          "comment": "分配比例_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_id_2",
+          "comment": "引入部门ID_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_name_2",
+          "comment": "引入部门名称_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_id_2",
+          "comment": "所属分公司ID_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_name_2",
+          "comment": "所属分公司名称_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_user_id_2",
+          "comment": "客户经理USER_ID_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_name_2",
+          "comment": "客户经理姓名_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_id_2",
+          "comment": "客户经理员工编号_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "allo_prop_2",
+          "comment": "分配比例_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_id_3",
+          "comment": "引入部门ID_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_org_name_3",
+          "comment": "引入部门名称_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_id_3",
+          "comment": "所属分公司ID_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "div_org_name_3",
+          "comment": "所属分公司名称_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_user_id_3",
+          "comment": "客户经理USER_ID_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_name_3",
+          "comment": "客户经理姓名_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_id_3",
+          "comment": "客户经理员工编号_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "allo_prop_3",
+          "comment": "分配比例_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_user_id",
+          "comment": "主经办人ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_name",
+          "comment": "主经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_emp_id",
+          "comment": "主经办人员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_user_id",
+          "comment": "引入经办人ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_name",
+          "comment": "引入经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_emp_id",
+          "comment": "引入经办人员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_src_cd",
+          "comment": "数据来源代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "task_name",
+          "comment": "任务名",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_etl_date",
+          "comment": "数据加载日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_upt_date",
+          "comment": "数据更新日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_main_oper_user_id",
+          "comment": "内部主经办人ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_main_oper_name",
+          "comment": "内部主经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_main_oper_emp_id",
+          "comment": "内部主经办人员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_intro_oper_user_id",
+          "comment": "内部引入经办人ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_intro_oper_name",
+          "comment": "内部引入经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "inr_intro_oper_emp_id",
+          "comment": "内部引入经办人员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_oper_user_id",
+          "comment": "TITANS经办人ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_oper_name",
+          "comment": "TITANS经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_oper_emp_id",
+          "comment": "TITANS经办人员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_oper_inr_org_id",
+          "comment": "TITANS经办人所属部门编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_oper_inr_org_name",
+          "comment": "TITANS经办人所属部门名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_cust_mngr_user_id",
+          "comment": "TITANS客户经理ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_cust_mngr_name",
+          "comment": "TITANS客户经理姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_cust_mngr_emp_id",
+          "comment": "TITANS客户经理员工编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_cust_mngr_inr_org_id",
+          "comment": "TITANS客户经理所属部门编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "tit_cust_mngr_inr_org_name",
+          "comment": "TITANS客户经理所属部门名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_cd_1",
+          "comment": "客户经理员工状态代码_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_desc_1",
+          "comment": "客户经理员工状态描述_1",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_cd_2",
+          "comment": "客户经理员工状态代码_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_desc_2",
+          "comment": "客户经理员工状态描述_2",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_cd_3",
+          "comment": "客户经理员工状态代码_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "cust_mngr_emp_stat_desc_3",
+          "comment": "客户经理员工状态描述_3",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        }
+      ]
+    },
+    {
+      "id": 17972,
+      "qualified_name": "dm_otc_n.otc_inr_sale_daily_rpt",
+      "description": "场外衍生品合约对内销售收入日报",
+      "collected_at": "2026-08-23T01:49:25.726Z",
+      "fields": [
+        {
+          "name": "agt_id",
+          "comment": "合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_type",
+          "comment": "业务类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_id",
+          "comment": "交易对手客户编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_shor_name",
+          "comment": "交易对手当事人简称",
+          "raw_type": "string"
+        },
+        {
+          "name": "cutp_pty_full_name",
+          "comment": "交易对手当事人名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "sign_prd_name",
+          "comment": "代签产品名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "contr_type_cd",
+          "comment": "合约类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "contr_type_desc",
+          "comment": "合约类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_contr_type",
+          "comment": "源合约类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_contr_type_desc",
+          "comment": "源合约类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_sub_contr_type",
+          "comment": "源合约子类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_sub_contr_type_desc",
+          "comment": "源合约子类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "rel_agt_id",
+          "comment": "关联合约编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_wd_cd",
+          "comment": "标的WD代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_name",
+          "comment": "标的名称",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_type",
+          "comment": "标的类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "undrl_type_desc",
+          "comment": "标的类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type",
+          "comment": "源标的类型",
+          "raw_type": "string"
+        },
+        {
+          "name": "src_undrl_type_desc",
+          "comment": "源标的类型描述",
+          "raw_type": "string"
+        },
+        {
+          "name": "indt_cd",
+          "comment": "行业代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "hedg_type_cd",
+          "comment": "对冲类型代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "fee_rate",
+          "comment": "成交费率",
+          "raw_type": "string"
+        },
+        {
+          "name": "fin_rati",
+          "comment": "融资比例",
+          "raw_type": "string"
+        },
+        {
+          "name": "base_coef",
+          "comment": "基础系数",
+          "raw_type": "string"
+        },
+        {
+          "name": "base_rate",
+          "comment": "基础收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "sprd_rate",
+          "comment": "价差收益率",
+          "raw_type": "string"
+        },
+        {
+          "name": "strt_pric_date",
+          "comment": "期初定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "end_pric_date",
+          "comment": "期末定价日",
+          "raw_type": "string"
+        },
+        {
+          "name": "actl_days",
+          "comment": "实际天数",
+          "raw_type": "string"
+        },
+        {
+          "name": "is_preterm_flag",
+          "comment": "是否提前终止标识",
+          "raw_type": "string"
+        },
+        {
+          "name": "early_term_date",
+          "comment": "提前终止日",
+          "raw_type": "string"
+        },
+        {
+          "name": "agt_stat_cd",
+          "comment": "协议状态代码",
+          "raw_type": "string"
+        },
+        {
+          "name": "init_nom_prin",
+          "comment": "期初名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "dyna_nom_prin",
+          "comment": "动态名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "sales_income",
+          "comment": "当日计提销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "sales_income_main",
+          "comment": "主经办人当日计提销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "sales_income_intro",
+          "comment": "引入经办人当日计提销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_user_id",
+          "comment": "主经办人USER_ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_name",
+          "comment": "主经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "main_oper_emp_id",
+          "comment": "主经办人ERP编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_user_id",
+          "comment": "引入经办人USER_ID",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_name",
+          "comment": "引入经办人姓名",
+          "raw_type": "string"
+        },
+        {
+          "name": "intro_oper_emp_id",
+          "comment": "引入经办人ERP编号",
+          "raw_type": "string"
+        },
+        {
+          "name": "accrued_date",
+          "comment": "计提日期",
+          "raw_type": "string"
+        },
+        {
+          "name": "data_time",
+          "comment": "数据时间",
+          "raw_type": "string"
+        },
+        {
+          "name": "intr_marg",
+          "comment": "利差",
+          "raw_type": "string"
+        },
+        {
+          "name": "accum_dyna_nom_prin",
+          "comment": "累计动态名义本金",
+          "raw_type": "string"
+        },
+        {
+          "name": "accum_sales_income",
+          "comment": "累计销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "accum_sales_income_main",
+          "comment": "主经办人累计计提销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "accum_sales_income_intro",
+          "comment": "引入经办人累计销售收入",
+          "raw_type": "string"
+        },
+        {
+          "name": "ex_rate_model",
+          "comment": "汇率模式",
+          "raw_type": "string"
+        },
+        {
+          "name": "busi_date",
+          "comment": "业务日期",
+          "raw_type": "string"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "taskId": "220979",
+  "targetTable": "DM_OTC_N.OTC_HK_SALE_DAILY_RPT",
+  "scope": "离线冻结查询的阅读版；不执行SQL，不补造写入语句",
+  "frozenSql": "../../公共加工/99_证据/220979-query.sql",
+  "rawSha256": "3dec606ec6d508417c87a192bbaa8245f34086feb24f5e278f243cd48d041424",
+  "publishedBinding": {
+    "taskId": "220979",
+    "taskName": "DM_OTC_N.OTC_HK_SALE_DAILY_RPT",
+    "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "projectionContentHash": "4e19c3491f7f824f77c142302a6f5705fc28d0c97cfb091af510b79290e5c707",
+    "evidencePath": "E:/02_area/股衍数据-数据cookbook/sql-static-lineage-data/task-projections/tasks/220979/versions/278d784ef45b15e627032dfda47cbd2b4b44a4375041dcfa12be8da101526ba2.evidence-v4.json",
+    "sqlSlot": "query",
+    "sqlSha256": "3dec606ec6d508417c87a192bbaa8245f34086feb24f5e278f243cd48d041424",
+    "sqlFile": "220979-query.sql",
+    "lineCount": 516,
+    "writes": [
+      {
+        "taskId": "220979",
+        "id": "dataset:5c12eab320218b2152ef3c14b4f77ae7c159b138ef54b92f5faa2eed3ac0ec5f",
+        "observation": "write-observation:220979:platform-target:0",
+        "targetNodeId": "target-write:a0a729d49ff25c9f4b33efb62d523a74889182f763d46446d9ea64f889c2b987",
+        "qualification": "PLATFORM_TARGET",
+        "recordType": "输出写入（finalWrites）"
+      }
+    ],
+    "readPhysicalIds": [
+      "dataset:5723f123517360ae4bbd7bb1dfa3e02978febae18aafeccbc94a6a30ddcaa17b",
+      "dataset:98f05ec9d9c1dc747a5d78ac2f9998a2bdc7650f44c05bb80b23fdcf095d8fef",
+      "dataset:9ff32af23e0013fff110782ff4509aa2c3a8c5341ed6ccea063759b301da1648",
+      "dataset:b2908830cbf9fd34e43f14321dd744f2c2ce647ac9f763d9a2fca78b69e4799a",
+      "dataset:4a3b7d8e6b5f0057b982338dd605c74553c1e6b90c86d587e0db32014f13815b",
+      "dataset:d7f2062d76bf74e2d4262950c795e6a946b271af41c303b8e9b33f51faae5847",
+      "dataset:37a5d673846c0cb127f7fed7c44232647c94522662d3d2554e9c4492b1c4d66f",
+      "dataset:0ba3bccdb438e92023de99592a0de39a4d8e727f72b200544f4ce679e3315f14",
+      "dataset:e6b67c0fc34ddfbadb97e4bbe7493b375c09386340e2e5bca62dcf7c3b2f625f",
+      "dataset:f64da54275544be64ad4f429c65fb309e117af6e25d2c88733487c80c41aa6e8",
+      "dataset:5a5caef0289d22c7e3f34c3fb23f11ced5ca7ed35d22726c3bb48d046a2cf559",
+      "dataset:e305ba49f95bb496054a40c861934469db1d1ba96d36b45a53c258a6324bade1",
+      "dataset:e2b739b64af71674a0cde9d4fe61d4528cfa5c4d9de4c0b16251ebbca10f1f3a",
+      "dataset:2157572b1ff76d76fe1c6c396eeb25ea0edb08da325e70c3f6c891fac1056bf0",
+      "dataset:16aea9526f9ae5ad6a480fda9b4732c183b3e02a4b7b5d282b4fd0000ba618a7",
+      "dataset:e5292cf4c3d5d35ff5a02346ffe42f3e35387161c6acdad7aa25ede5dd0de3e1"
+    ]
+  },
+  "snapshot": {
+    "path": "../sql-static-lineage-cache/schedule-evidence/tasks/220979/szdata-schedule-detail.json",
+    "observedAt": "2026-09-01T08:21:43.217Z",
+    "normalizedQueryEqual": true
+  },
+  "sourceRanges": {
+    "01_合约日与资料.sql": "178-204,226-318,496-501",
+    "02_原始当日收入.sql": "205-225",
+    "03_参数匹配.sql": "355-495",
+    "04_返息基数与交易事件.sql": "319-354",
+    "05_保底与历史奖励.sql": "168-177,503-514",
+    "06_分配与累计.sql": "84-167",
+    "07_日报输出.sql": "1-83"
+  },
+  "rewrite": "原始收入、调整、分配三层子查询命名CTE，检查逐层还原后的完整token与输出顺序"
+}

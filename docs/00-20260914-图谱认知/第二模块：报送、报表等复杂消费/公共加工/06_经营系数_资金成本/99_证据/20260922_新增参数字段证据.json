@@ -1,0 +1,145 @@
+{
+  "catalogBuiltAt": "2026-09-16T01:22:43.476Z",
+  "platform": "hive",
+  "tables": [
+    {
+      "id": 32946,
+      "stable_table_id": "odata_n_ois.g_rev_hk_capital_cost__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hk_capital_cost",
+      "table_name": "g_rev_hk_capital_cost",
+      "description": "销售收入资金成本（香港）",
+      "description_normalized": "销售收入资金成本（香港）",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "6611e964960a8ebe5e8f56927c40178510db0585da7b05994c580640623c8734",
+      "ddl_hash": "ad914afb9e6a0c36363f07f157b52bee1816a70906956ef98bdf82415245140b",
+      "content_hash": "71cb8b831daf9d8c3fae3c373d1862d81924f00f631580570d514856d08c7194",
+      "collected_at": "2026-08-22T05:15:38.633Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "【AI】主键",
+          "is_partition": 0
+        },
+        {
+          "name": "business_type",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "业务类型：OPTION期权 TRS互换",
+          "is_partition": 0
+        },
+        {
+          "name": "contract_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "合约类型：OPTION_RISKY_AIRBAGX_PRI_STOCK -Risky和安全气囊X(限售)， OPTION_RISKY_AIRBAGX_CIR_STOCK-Risky和安全气囊X(流通)",
+          "is_partition": 0
+        },
+        {
+          "name": "contract_type_name",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "合约类型名称",
+          "is_partition": 0
+        },
+        {
+          "name": "underlying_type",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "标的类型：股票-EQUITY、股指-INDEX、基金-FUND、股指期货-EQUITY_INDEX_FUTURE、商品期货-COMMODITY_FUTURE、其他-OTHER",
+          "is_partition": 0
+        },
+        {
+          "name": "capital_cost",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "资金成本",
+          "is_partition": 0
+        },
+        {
+          "name": "created_datetime",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_datetime",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "created_by",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "创建人",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_by",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "更新人",
+          "is_partition": 0
+        },
+        {
+          "name": "description",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "描述或补充说明",
+          "is_partition": 0
+        },
+        {
+          "name": "is_deleted",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "逻辑删除标识",
+          "is_partition": 0
+        },
+        {
+          "name": "start_date",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "起息开始时间",
+          "is_partition": 0
+        },
+        {
+          "name": "end_date",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "起息结束时间",
+          "is_partition": 0
+        },
+        {
+          "name": "seq_id",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "排序",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    }
+  ]
+}

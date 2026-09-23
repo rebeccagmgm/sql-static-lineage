@@ -1,0 +1,23 @@
+{
+  "scope": "资金成本生产与118141消费；静态阅读，不执行生产SQL",
+  "collectedForThisNote": "2026-09-22",
+  "snapshotFormatting": "SQL副本统一LF、移除行末空白、保留一个末尾换行；sourceSha256为原来源证据哈希，fileSha256为本地文件字节哈希",
+  "sources": [
+    {
+      "file": "证据_133057.sql",
+      "fileSha256": "f73025d6db681fd9a2f8d3ece73bc0d4af6c1e8d5445f171d8feac97e50817b7",
+      "sourceSha256": "61c657be3dac237af803737eff9d8f69bb71a350e7e2be5c5135bdf1db9e50e4",
+      "source": "schedule-evidence.sqlite / hive-task / LOCAL_CODE; SQL header observed_at 2026-09-05"
+    },
+    {
+      "file": "证据_118141.sql",
+      "fileSha256": "633235e763cac82cda29bf8fab9ac08d7a798980dc1644392b7304ca541a5e6b",
+      "sourceSha256": "3deef0d98f78f781092ddf8e42623c2e43b41b6d66f43e6e9e0f4a50b0acc9e5",
+      "source": "价差专题冻结发布SQL副本；projection 42659ef589fa6e4f77436101328932f1b5ee61a27466ae4fd5e108e1e1f5181b；graph 9dbe5623"
+    },
+    {
+      "file": "来源字段证据.json",
+      "fileSha256": "9a05d95489d9ef0186894413043170c577103a415e024e476977108d113d4ac8"
+    }
+  ]
+}

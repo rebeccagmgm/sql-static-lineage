@@ -1,0 +1,856 @@
+{
+  "taskId": "92881",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "a2ba096f0f732afa14a5e6e1a0447bbf18690aa8a4d5d5e143ad60727039b556",
+  "inGraph": true,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 92881"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: pdata_news_n"
+    },
+    {
+      "line": 3,
+      "text": "-- source: LOCAL_CODE"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: BigData-pdata_news_n/news_dm02/pdata_news_n.t02_bnd_income_vchr_ois_OIS_incomecertificate_grp01"
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T01:06:39.881Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "create table if not exists  t02_bnd_income_vchr_ois"
+    },
+    {
+      "line": 10,
+      "text": "("
+    },
+    {
+      "line": 11,
+      "text": "     busi_date\t\t\tstring comment '数据日期'"
+    },
+    {
+      "line": 12,
+      "text": "    ,rec_id\t\t\t\tstring comment '记录编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,secu_id\t\t\tstring comment '统一证券编码'"
+    },
+    {
+      "line": 14,
+      "text": "    ,src_sys_prdno\t\tstring comment '源系统产品编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,corp_id\t\t\tstring comment '公司id'"
+    },
+    {
+      "line": 16,
+      "text": "    ,sav_cash\t\t\tstring comment '存量本金'"
+    },
+    {
+      "line": 17,
+      "text": "    ,low_ror\t\t\tstring comment '最低收益率'"
+    },
+    {
+      "line": 18,
+      "text": "    ,expe_ror\t\t\tstring comment '预期收益率'"
+    },
+    {
+      "line": 19,
+      "text": "    ,prd_strt_dt\t\tstring comment '产品开始日期'"
+    },
+    {
+      "line": 20,
+      "text": "    ,prd_val_dt\t\t\tstring comment '产品起息日期'"
+    },
+    {
+      "line": 21,
+      "text": "    ,prd_maty_dt\t\tstring comment '产品到期日期'"
+    },
+    {
+      "line": 22,
+      "text": "    ,pay_dt\t\t\t\tstring comment '兑付日期'"
+    },
+    {
+      "line": 23,
+      "text": "    ,inta_days\t\t\tstring comment '计息天数'"
+    },
+    {
+      "line": 24,
+      "text": "    ,prd_type\t\t\tstring comment '产品类型'"
+    },
+    {
+      "line": 25,
+      "text": "    ,prd_stru\t\t\tstring comment '产品结构'"
+    },
+    {
+      "line": 26,
+      "text": "    ,dept\t\t\t\tstring comment '部门'"
+    },
+    {
+      "line": 27,
+      "text": "    ,iss_site\t\t\tstring comment '发行场所'"
+    },
+    {
+      "line": 28,
+      "text": "    ,intrt_ulmt\t\t\tstring comment '利率上限'"
+    },
+    {
+      "line": 29,
+      "text": "    ,pay_intrt\t\t\tstring comment '兑付利率'"
+    },
+    {
+      "line": 30,
+      "text": "    ,pay_amt\t\t\tstring comment '兑付金额'"
+    },
+    {
+      "line": 31,
+      "text": "    ,bren_flag\t\t\tstring comment '是否保本'"
+    },
+    {
+      "line": 32,
+      "text": "    ,preterm_flag\t\tstring comment '是否提前终止'"
+    },
+    {
+      "line": 33,
+      "text": "    ,preterm_date\t\tstring comment '提前终止日期'"
+    },
+    {
+      "line": 34,
+      "text": "    ,last_upd_prsn_id\tstring comment '最后更新人id'"
+    },
+    {
+      "line": 35,
+      "text": "    ,cost_ulmt          string comment '特定成本上限'"
+    },
+    {
+      "line": 36,
+      "text": "    ,inta_regu          string comment '计息规则'"
+    },
+    {
+      "line": 37,
+      "text": "    ,itpy_regu          string comment '付息规则'"
+    },
+    {
+      "line": 38,
+      "text": "    ,ori_pay_dt         string comment '原始兑付日'"
+    },
+    {
+      "line": 39,
+      "text": "    ,actl_ivstr         string comment '实际投资人'"
+    },
+    {
+      "line": 40,
+      "text": "    ,fnd_type_cd        string comment '资金类型代码'    "
+    },
+    {
+      "line": 41,
+      "text": "    ,fnd_type_name      string comment '资金类型名称'    "
+    },
+    {
+      "line": 42,
+      "text": "    ,fwd_rela_flag      string comment '是否挂钩远期'    "
+    },
+    {
+      "line": 43,
+      "text": "    ,tot_cost           string comment '总成本'"
+    },
+    {
+      "line": 44,
+      "text": "    ,remark1\t\t\tstring comment '备注1'"
+    },
+    {
+      "line": 45,
+      "text": "    ,remark\t\t\t\tstring comment '备注'"
+    },
+    {
+      "line": 46,
+      "text": "    ,src_tbl\t\t\tstring comment '来源表'"
+    },
+    {
+      "line": 47,
+      "text": "    ,src_rec_id\t\t\tstring comment '来源记录'"
+    },
+    {
+      "line": 48,
+      "text": "    ,rec_upd_time\t\tstring comment '记录更新时间'"
+    },
+    {
+      "line": 49,
+      "text": "    ,rec_down_time\t\tstring comment '记录创建时间'"
+    },
+    {
+      "line": 50,
+      "text": ")"
+    },
+    {
+      "line": 51,
+      "text": "partitioned by (src_id string comment '数据来源',grp_id string comment '并行分组标识')"
+    },
+    {
+      "line": 52,
+      "text": "stored as ORC;"
+    },
+    {
+      "line": 53,
+      "text": ""
+    },
+    {
+      "line": 54,
+      "text": "-- querySql"
+    },
+    {
+      "line": 55,
+      "text": "set hive.merge.mapfiles = true ;"
+    },
+    {
+      "line": 56,
+      "text": "    set hive.merge.mapredfiles = true;"
+    },
+    {
+      "line": 57,
+      "text": "    set hive.merge.size.per.task=1073741824;"
+    },
+    {
+      "line": 58,
+      "text": "    set hive.merge.smallfiles.avgsize=1073741824;"
+    },
+    {
+      "line": 59,
+      "text": "    set hive.merge.orcfile.stripe.level=false;"
+    },
+    {
+      "line": 60,
+      "text": "    set hive.exec.dynamic.partition=true;"
+    },
+    {
+      "line": 61,
+      "text": "    set hive.exec.dynamic.partition.mode=nonstrict;"
+    },
+    {
+      "line": 62,
+      "text": "    set hive.exec.max.created.files=10000;"
+    },
+    {
+      "line": 63,
+      "text": "    set hive.exec.max.dynamic.partitions.pernode=10000;"
+    },
+    {
+      "line": 64,
+      "text": "    set hive.exec.max.dynamic.partitions=10000;"
+    },
+    {
+      "line": 65,
+      "text": "    set hive.auto.convert.join=false;"
+    },
+    {
+      "line": 66,
+      "text": "    set hive.optimize.sort.dynamic.partition=true;"
+    },
+    {
+      "line": 67,
+      "text": "    set hive.map.aggr = true;"
+    },
+    {
+      "line": 68,
+      "text": "    set hive.groupby.skewindata=true;"
+    },
+    {
+      "line": 69,
+      "text": "    set hive.support.concurrency=false;"
+    },
+    {
+      "line": 70,
+      "text": ""
+    },
+    {
+      "line": 71,
+      "text": "with t02_bnd_income_vchr_ois_temp AS ("
+    },
+    {
+      "line": 72,
+      "text": "    select"
+    },
+    {
+      "line": 73,
+      "text": "         '${data_day_str}'\t\t\t\t\t\t\t\t\t\tas busi_date\t\t\t--数据日期"
+    },
+    {
+      "line": 74,
+      "text": "        ,a.prd_no\t\t\t\t\t\t\t\t\t\t\t\t\tas rec_id\t\t\t\t--记录编号"
+    },
+    {
+      "line": 75,
+      "text": "        ,b.secu_id\t\t\t\t\t\t\t\t\t\t\t\t\tas secu_id\t\t\t\t--统一证券编码"
+    },
+    {
+      "line": 76,
+      "text": "        ,b.src_sys_prdno\t\t\t\t\t\t\t\t\t\t\tas src_sys_prdno\t\t--源系统产品编号"
+    },
+    {
+      "line": 77,
+      "text": "        ,''\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tas corp_id\t\t\t\t--公司id"
+    },
+    {
+      "line": 78,
+      "text": "        ,a.clbj\t\t\t\t\t\t\t\t\t\t\t\t\t\tas sav_cash\t\t\t\t--存量本金"
+    },
+    {
+      "line": 79,
+      "text": "        ,a.zdsyl\t\t\t\t\t\t\t\t\t\t\t\t\tas low_ror\t\t\t\t--最低收益率"
+    },
+    {
+      "line": 80,
+      "text": "        ,a.yqsyl\t\t\t\t\t\t\t\t\t\t\t\t\tas expe_ror\t\t\t\t--预期收益率"
+    },
+    {
+      "line": 81,
+      "text": "        ,regexp_replace(a.cpqsr,'-','')\t\t\t\t\t\t\t\tas prd_strt_dt\t\t\t--产品开始日期"
+    },
+    {
+      "line": 82,
+      "text": "        ,regexp_replace(a.cpqxr,'-','')\t\t\t\t\t\t\t\tas prd_val_dt\t\t\t--产品起息日期"
+    },
+    {
+      "line": 83,
+      "text": "        ,regexp_replace(a.cpdqr,'-','')\t\t\t\t\t\t\t\tas prd_maty_dt\t\t\t--产品到期日期"
+    },
+    {
+      "line": 84,
+      "text": "        ,regexp_replace(a.dfr,'-','')\t\t\t\t\t\t\t\tas pay_dt\t\t\t\t--兑付日期"
+    },
+    {
+      "line": 85,
+      "text": "        ,a.jxts\t\t\t\t\t\t\t\t\t\t\t\t\t\tas inta_days\t\t\t--计息天数"
+    },
+    {
+      "line": 86,
+      "text": "        ,a.lx\t\t\t\t\t\t\t\t\t\t\t\t\t\tas prd_type\t\t\t\t--产品类型"
+    },
+    {
+      "line": 87,
+      "text": "        ,a.cpjg\t\t\t\t\t\t\t\t\t\t\t\t\t\tas prd_stru\t\t\t\t--产品结构"
+    },
+    {
+      "line": 88,
+      "text": "        ,a.bm\t\t\t\t\t\t\t\t\t\t\t\t\t\tas dept\t\t\t\t\t--部门"
+    },
+    {
+      "line": 89,
+      "text": "        ,a.fxcs\t\t\t\t\t\t\t\t\t\t\t\t\t\tas iss_site\t\t\t\t--发行场所"
+    },
+    {
+      "line": 90,
+      "text": "        ,a.llsx\t\t\t\t\t\t\t\t\t\t\t\t\t\tas intrt_ulmt\t\t\t--利率上限"
+    },
+    {
+      "line": 91,
+      "text": "        ,a.dfll\t\t\t\t\t\t\t\t\t\t\t\t\t\tas pay_intrt\t\t\t--兑付利率"
+    },
+    {
+      "line": 92,
+      "text": "        ,a.dfje\t\t\t\t\t\t\t\t\t\t\t\t\t\tas pay_amt\t\t\t\t--兑付金额"
+    },
+    {
+      "line": 93,
+      "text": "        ,a.is_baoben\t\t\t\t\t\t\t\t\t\t\t\tas bren_flag\t\t\t--是否保本"
+    },
+    {
+      "line": 94,
+      "text": "        ,a.is_tqzz\t\t\t\t\t\t\t\t\t\t\t\t\tas preterm_flag\t\t\t--是否提前终止"
+    },
+    {
+      "line": 95,
+      "text": "        ,substr(a.pre_termination_date,1,19) \t\t\t\t\t\tas preterm_date\t\t\t--提前终止日期"
+    },
+    {
+      "line": 96,
+      "text": "        ,a.lastmodify_by\t\t\t\t\t\t\t\t\t\t\tas last_upd_prsn_id\t\t--最后更新人id"
+    },
+    {
+      "line": 97,
+      "text": "        ,a.specific_cost_max                                        as cost_ulmt            --特定成本上限  "
+    },
+    {
+      "line": 98,
+      "text": "        ,a.interest_calc_rules                                      as inta_regu            --计息规则"
+    },
+    {
+      "line": 99,
+      "text": "        ,case a.interest_payment_rules when 'BALLOON_PAYMENT' then '一次性到期还本' "
+    },
+    {
+      "line": 100,
+      "text": "                                        when 'AMORTIZED_PAYMENT' then '分期付息到期还本' "
+    },
+    {
+      "line": 101,
+      "text": "                                        end                         as itpy_regu            --付息规则"
+    },
+    {
+      "line": 102,
+      "text": "        ,default.date2datekey(a.original_maturity_date)             as ori_pay_dt           --原始兑付日"
+    },
+    {
+      "line": 103,
+      "text": "        ,a.actual_investor                                          as actl_ivstr           --实际投资人    "
+    },
+    {
+      "line": 104,
+      "text": "        ,c.const_cd                                                 as fnd_type_cd          --资金类型代码"
+    },
+    {
+      "line": 105,
+      "text": "        ,c.const_cn_desc                                            as fnd_type_name        --资金类型名称    "
+    },
+    {
+      "line": 106,
+      "text": "        ,case a.forward_linkage_flag when 'true' then '1' "
+    },
+    {
+      "line": 107,
+      "text": "                                        when 'false' then '0' "
+    },
+    {
+      "line": 108,
+      "text": "                                        end                         as fwd_rela_flag        --是否挂钩远期    "
+    },
+    {
+      "line": 109,
+      "text": "        ,''                                                         as tot_cost             --总成本"
+    },
+    {
+      "line": 110,
+      "text": "        ,a.bz\t\t\t\t\t\t\t\t\t\t\t\t\t\tas remark1\t\t\t\t--备注1"
+    },
+    {
+      "line": 111,
+      "text": "        ,''\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tas remark\t\t\t\t--备注"
+    },
+    {
+      "line": 112,
+      "text": "        ,'odata_n_ois.o_otc_incomecertificate'\t\t\t\t\t\tas src_tbl\t\t\t\t--来源表"
+    },
+    {
+      "line": 113,
+      "text": "        ,a.prd_no\t\t\t\t\t\t\t\t\t\t\t\t\tas src_rec_id\t\t\t--来源记录"
+    },
+    {
+      "line": 114,
+      "text": "        ,substr(a.lastmodify_time,1,19) \t\t\t\t\t\t\tas rec_upd_time\t\t\t--记录更新时间"
+    },
+    {
+      "line": 115,
+      "text": "        ,from_unixtime(unix_timestamp(),'yyyy-mm-dd hh:mm:ss')\t\tas rec_down_time\t\t--记录创建时间"
+    },
+    {
+      "line": 116,
+      "text": "    from ("
+    },
+    {
+      "line": 117,
+      "text": "        select "
+    },
+    {
+      "line": 118,
+      "text": "            * "
+    },
+    {
+      "line": 119,
+      "text": "        from odata_n_ois.o_otc_incomecertificate "
+    },
+    {
+      "line": 120,
+      "text": "        where busi_date = '${data_day_str}'"
+    },
+    {
+      "line": 121,
+      "text": "        ) a"
+    },
+    {
+      "line": 122,
+      "text": "    left join "
+    },
+    {
+      "line": 123,
+      "text": "        ("
+    },
+    {
+      "line": 124,
+      "text": "        select "
+    },
+    {
+      "line": 125,
+      "text": "             busi_date"
+    },
+    {
+      "line": 126,
+      "text": "            ,rec_id"
+    },
+    {
+      "line": 127,
+      "text": "            ,secu_id"
+    },
+    {
+      "line": 128,
+      "text": "            ,src_sys_prdno"
+    },
+    {
+      "line": 129,
+      "text": "            ,crrc_cd"
+    },
+    {
+      "line": 130,
+      "text": "            ,crrc_name"
+    },
+    {
+      "line": 131,
+      "text": "            ,cty_cd"
+    },
+    {
+      "line": 132,
+      "text": "            ,cty_name"
+    },
+    {
+      "line": 133,
+      "text": "            ,corp_id"
+    },
+    {
+      "line": 134,
+      "text": "            ,scr_stat"
+    },
+    {
+      "line": 135,
+      "text": "            ,min_pric_chg_unit"
+    },
+    {
+      "line": 136,
+      "text": "            ,peru"
+    },
+    {
+      "line": 137,
+      "text": "            ,scr_type"
+    },
+    {
+      "line": 138,
+      "text": "            ,ch_abbr"
+    },
+    {
+      "line": 139,
+      "text": "            ,scr_cd"
+    },
+    {
+      "line": 140,
+      "text": "            ,ch_abbr_pinyin"
+    },
+    {
+      "line": 141,
+      "text": "            ,ch_name"
+    },
+    {
+      "line": 142,
+      "text": "            ,en_name"
+    },
+    {
+      "line": 143,
+      "text": "            ,ch_abbr_l"
+    },
+    {
+      "line": 144,
+      "text": "            ,en_abbr"
+    },
+    {
+      "line": 145,
+      "text": "            ,mkt_cd"
+    },
+    {
+      "line": 146,
+      "text": "            ,mkt_ch_name"
+    },
+    {
+      "line": 147,
+      "text": "            ,in_code"
+    },
+    {
+      "line": 148,
+      "text": "            ,remark"
+    },
+    {
+      "line": 149,
+      "text": "            ,src_tbl"
+    },
+    {
+      "line": 150,
+      "text": "            ,src_rec_id"
+    },
+    {
+      "line": 151,
+      "text": "            ,rec_upd_time"
+    },
+    {
+      "line": 152,
+      "text": "            ,rec_down_time"
+    },
+    {
+      "line": 153,
+      "text": "            ,src_id"
+    },
+    {
+      "line": 154,
+      "text": "        from t02_scr_base_info "
+    },
+    {
+      "line": 155,
+      "text": "        where src_id = 'OTC' "
+    },
+    {
+      "line": 156,
+      "text": "        ) b "
+    },
+    {
+      "line": 157,
+      "text": "    on a.prd_no = b.scr_cd"
+    },
+    {
+      "line": 158,
+      "text": "    left join ("
+    },
+    {
+      "line": 159,
+      "text": "        select *"
+    },
+    {
+      "line": 160,
+      "text": "        from t02_pub_covt_const "
+    },
+    {
+      "line": 161,
+      "text": "        where src_id = 'OIS' and const_type_cd = 'var00512'"
+    },
+    {
+      "line": 162,
+      "text": "        ) c"
+    },
+    {
+      "line": 163,
+      "text": "    on a.fund_type = c.src_const_cd"
+    },
+    {
+      "line": 164,
+      "text": ""
+    },
+    {
+      "line": 165,
+      "text": ")"
+    },
+    {
+      "line": 166,
+      "text": "    INSERT OVERWRITE TABLE t02_bnd_income_vchr_ois PARTITION(src_id = 'OIS',grp_id = '01')"
+    },
+    {
+      "line": 167,
+      "text": " select "
+    },
+    {
+      "line": 168,
+      "text": "         busi_date"
+    },
+    {
+      "line": 169,
+      "text": "        ,rec_id"
+    },
+    {
+      "line": 170,
+      "text": "        ,secu_id"
+    },
+    {
+      "line": 171,
+      "text": "        ,src_sys_prdno"
+    },
+    {
+      "line": 172,
+      "text": "        ,corp_id"
+    },
+    {
+      "line": 173,
+      "text": "        ,sav_cash"
+    },
+    {
+      "line": 174,
+      "text": "        ,low_ror"
+    },
+    {
+      "line": 175,
+      "text": "        ,expe_ror"
+    },
+    {
+      "line": 176,
+      "text": "        ,prd_strt_dt"
+    },
+    {
+      "line": 177,
+      "text": "        ,prd_val_dt"
+    },
+    {
+      "line": 178,
+      "text": "        ,prd_maty_dt"
+    },
+    {
+      "line": 179,
+      "text": "        ,pay_dt"
+    },
+    {
+      "line": 180,
+      "text": "        ,inta_days"
+    },
+    {
+      "line": 181,
+      "text": "        ,prd_type"
+    },
+    {
+      "line": 182,
+      "text": "        ,prd_stru"
+    },
+    {
+      "line": 183,
+      "text": "        ,dept"
+    },
+    {
+      "line": 184,
+      "text": "        ,iss_site"
+    },
+    {
+      "line": 185,
+      "text": "        ,intrt_ulmt"
+    },
+    {
+      "line": 186,
+      "text": "        ,pay_intrt"
+    },
+    {
+      "line": 187,
+      "text": "        ,pay_amt"
+    },
+    {
+      "line": 188,
+      "text": "        ,bren_flag"
+    },
+    {
+      "line": 189,
+      "text": "        ,preterm_flag"
+    },
+    {
+      "line": 190,
+      "text": "        ,preterm_date"
+    },
+    {
+      "line": 191,
+      "text": "        ,last_upd_prsn_id"
+    },
+    {
+      "line": 192,
+      "text": "        ,cost_ulmt"
+    },
+    {
+      "line": 193,
+      "text": "        ,inta_regu"
+    },
+    {
+      "line": 194,
+      "text": "        ,itpy_regu"
+    },
+    {
+      "line": 195,
+      "text": "        ,ori_pay_dt"
+    },
+    {
+      "line": 196,
+      "text": "        ,actl_ivstr"
+    },
+    {
+      "line": 197,
+      "text": "        ,fnd_type_cd"
+    },
+    {
+      "line": 198,
+      "text": "        ,fnd_type_name"
+    },
+    {
+      "line": 199,
+      "text": "        ,fwd_rela_flag"
+    },
+    {
+      "line": 200,
+      "text": "        ,tot_cost"
+    },
+    {
+      "line": 201,
+      "text": "        ,remark1"
+    },
+    {
+      "line": 202,
+      "text": "        ,remark"
+    },
+    {
+      "line": 203,
+      "text": "        ,src_tbl"
+    },
+    {
+      "line": 204,
+      "text": "        ,src_rec_id"
+    },
+    {
+      "line": 205,
+      "text": "        ,rec_upd_time"
+    },
+    {
+      "line": 206,
+      "text": "        ,rec_down_time"
+    },
+    {
+      "line": 207,
+      "text": "    from t02_bnd_income_vchr_ois_temp"
+    },
+    {
+      "line": 208,
+      "text": "    where secu_id is not null;"
+    },
+    {
+      "line": 209,
+      "text": ""
+    },
+    {
+      "line": 210,
+      "text": "    ;"
+    },
+    {
+      "line": 211,
+      "text": ""
+    }
+  ]
+}

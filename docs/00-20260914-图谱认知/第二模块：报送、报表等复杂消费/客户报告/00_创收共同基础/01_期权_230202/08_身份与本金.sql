@@ -1,0 +1,20 @@
+-- SELECT前17列：info来自01合约主信息；cp公司客户、det逐日明细的实际查询与连接在00。
+-- 初始本金输出info.Init_Nom_Prin；动态本金输出COALESCE(det.Dyna_Nom_Prin,0)。
+-- 这个动态本金补0只作用展示列，06气囊公式仍直接读det.Dyna_Nom_Prin，不能把两者混同。
+    info.Agt_Id,  --合约编号
+    info.Busi_Type,  --业务类型
+    info.Cutp_Pty_Id,  --交易对手客户编号
+    info.Cutp_Pty_Shor_Name,  --交易对手当事人简称
+    info.Cutp_Pty_Full_Name,  --交易对手当事人名称
+    info.Sign_Prd_Name,  --代签产品名称
+    cp.USCC,  --统一社会信用代码
+    info.Contr_Type_Cd,  --合约类型代码
+    info.Contr_Type_Desc,  --合约类型描述
+    info.Src_Contr_Type,  --源合约类型
+    info.Src_Contr_Type_Desc,  --源合约类型描述
+    info.Src_Sub_Contr_Type,  --源合约子类型
+    info.Src_Sub_Contr_Type_Desc,  --源合约子类型描述
+    info.Undrl_Wd_Cd,  --标的万得代码
+    info.Undrl_Name,  --标的名称
+    info.Init_Nom_Prin,  --初始名义本金
+    coalesce(det.Dyna_Nom_Prin, 0) as Dyna_Nom_Prin,  --动态名义本金

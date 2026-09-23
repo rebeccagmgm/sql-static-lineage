@@ -1,0 +1,255 @@
+{
+  "catalogBuiltAt": "2026-09-16T01:22:43.476Z",
+  "tables": [
+    {
+      "id": 32901,
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_bus_type_capital_cost",
+      "description": "",
+      "collected_at": "2026-09-04T05:34:01.149Z",
+      "fields": [
+        {
+          "name": "ID",
+          "raw_type": "STRING",
+          "comment": "主键"
+        },
+        {
+          "name": "BUSINESS_TYPE",
+          "raw_type": "STRING",
+          "comment": "业务类型：OPTION期权 TRS互换"
+        },
+        {
+          "name": "CONTRACT_TYPE",
+          "raw_type": "STRING",
+          "comment": "合约类型"
+        },
+        {
+          "name": "CONTRACT_TYPE_NAME",
+          "raw_type": "STRING",
+          "comment": "合约类型名称"
+        },
+        {
+          "name": "UNDERLYING_TYPE",
+          "raw_type": "STRING",
+          "comment": "标的类型：STOCK个股/NON_STOCK非个股"
+        },
+        {
+          "name": "EFFECTIVE_DATE",
+          "raw_type": "STRING",
+          "comment": "实际生效日期"
+        },
+        {
+          "name": "CAPITAL_COST",
+          "raw_type": "STRING",
+          "comment": "资金成本"
+        },
+        {
+          "name": "CREATED_DATETIME",
+          "raw_type": "STRING",
+          "comment": "创建时间"
+        },
+        {
+          "name": "UPDATED_DATETIME",
+          "raw_type": "STRING",
+          "comment": "更新时间"
+        },
+        {
+          "name": "CREATED_BY",
+          "raw_type": "STRING",
+          "comment": "创建人"
+        },
+        {
+          "name": "UPDATED_BY",
+          "raw_type": "STRING",
+          "comment": "更新人"
+        },
+        {
+          "name": "DISCRIPTION",
+          "raw_type": "STRING",
+          "comment": "描述或补充说明"
+        },
+        {
+          "name": "IS_DELETED",
+          "raw_type": "STRING",
+          "comment": "逻辑删除标识"
+        },
+        {
+          "name": "DATA_TIME",
+          "raw_type": "String",
+          "comment": ""
+        },
+        {
+          "name": "busi_date",
+          "raw_type": "string",
+          "comment": ""
+        }
+      ]
+    },
+    {
+      "id": 44398,
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t99_deri_comp_type_fnd_cost_ref",
+      "description": "衍生品合约类型资金成本参考信息",
+      "collected_at": "2026-08-22T06:35:08.890Z",
+      "fields": [
+        {
+          "name": "busi_type",
+          "raw_type": "string",
+          "comment": "业务类型"
+        },
+        {
+          "name": "src_comp_type_cd",
+          "raw_type": "string",
+          "comment": "源合约类型代码"
+        },
+        {
+          "name": "src_comp_type_desc",
+          "raw_type": "string",
+          "comment": "源合约类型名称"
+        },
+        {
+          "name": "src_undrl_type_cd",
+          "raw_type": "string",
+          "comment": "源标的类型代码"
+        },
+        {
+          "name": "vld_date",
+          "raw_type": "string",
+          "comment": "生效日期"
+        },
+        {
+          "name": "fnd_cost",
+          "raw_type": "string",
+          "comment": "资金成本"
+        },
+        {
+          "name": "estb_time",
+          "raw_type": "string",
+          "comment": "创建时间"
+        },
+        {
+          "name": "upd_time",
+          "raw_type": "string",
+          "comment": "更新时间"
+        },
+        {
+          "name": "creator",
+          "raw_type": "string",
+          "comment": "创建人"
+        },
+        {
+          "name": "upd_prsn",
+          "raw_type": "string",
+          "comment": "更新人"
+        },
+        {
+          "name": "desc",
+          "raw_type": "string",
+          "comment": "描述"
+        },
+        {
+          "name": "del_flag",
+          "raw_type": "string",
+          "comment": "逻辑删除标识"
+        },
+        {
+          "name": "data_src_cd",
+          "raw_type": "string",
+          "comment": "数据来源代码"
+        },
+        {
+          "name": "task_name",
+          "raw_type": "string",
+          "comment": "任务名"
+        },
+        {
+          "name": "data_etl_date",
+          "raw_type": "string",
+          "comment": "数据加载日期"
+        },
+        {
+          "name": "data_upt_date",
+          "raw_type": "string",
+          "comment": "数据更新日期"
+        },
+        {
+          "name": "data_time",
+          "raw_type": "string",
+          "comment": "数据时间"
+        },
+        {
+          "name": "real_src_tbl",
+          "raw_type": "string",
+          "comment": "真实源表"
+        },
+        {
+          "name": "src_dept_no",
+          "raw_type": "string",
+          "comment": "源部门编码"
+        },
+        {
+          "name": "intr_strt_date",
+          "raw_type": "string",
+          "comment": "起息开始日期"
+        },
+        {
+          "name": "intr_end_date",
+          "raw_type": "string",
+          "comment": "起息结束日期"
+        },
+        {
+          "name": "bel_busi_dept",
+          "raw_type": "string",
+          "comment": "所属业务部门"
+        },
+        {
+          "name": "src_tbl",
+          "raw_type": "string",
+          "comment": "源表"
+        }
+      ]
+    },
+    {
+      "id": 44158,
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t98_otc_deri_comp_sale_adtnl_det",
+      "description": "T98_场外衍生品合约销售收入附加明细",
+      "collected_at": "2026-08-22T03:04:24.478Z",
+      "fields": [
+        {
+          "name": "fnd_cost",
+          "raw_type": "string",
+          "comment": "用资成本"
+        }
+      ]
+    },
+    {
+      "id": 35736,
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_ks_trade_comfirm_info",
+      "description": "交易确认书信息表",
+      "collected_at": "2026-08-21T16:32:21.162Z",
+      "fields": [
+        {
+          "name": "key_trade_comfirm_id",
+          "raw_type": "string",
+          "comment": "金仕达交易确认书id"
+        },
+        {
+          "name": "business_date",
+          "raw_type": "string",
+          "comment": "业务日期"
+        },
+        {
+          "name": "occupy_cost",
+          "raw_type": "string",
+          "comment": "用资成本"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "checkedAt": "2026-09-14T03:11:46.9337176Z",
+  "command": "trace --task-id 160750 --column prd_id --confirmed-only --depth 4 --limit 60",
+  "graph": {
+    "id": "titans-otc",
+    "version": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46"
+  },
+  "ok": true,
+  "truncated": false,
+  "stoppedBy": null,
+  "frontierNodeIds": [],
+  "terminalNodes": [
+    {
+      "nodeId": "read-field:5d3ed1f36f6dcc4721fd55c853b590155617ebd07854451294f8bfd93379d057",
+      "role": "TITANS_SOURCE",
+      "reason": "源端点边界，停止展开",
+      "ruleRef": "config/source-endpoint-boundary-rules.json#roles.TITANS_SOURCE.qualifiedNamePrefixes=titans_dm."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "write-field:ac8bd06df13bf7608eb1e3838addd913684fc2266a3794f94a91508f645ebc1f",
+      "kind": "WRITE_FIELD",
+      "taskId": "160750",
+      "table": "pdata_news_n.t02_tit_prd_info",
+      "column": "prd_id",
+      "writeId": "write-observation:160750:12",
+      "depth": 0
+    },
+    {
+      "id": "read-field:647b4d123287242e81706a98c824f3bab7aa1f3d35a58e85a84277a9f2800385",
+      "kind": "READ_FIELD",
+      "taskId": "160750",
+      "table": "odata_n_tit.p_prd_product",
+      "column": "key_prod_id",
+      "writeId": "",
+      "depth": 1
+    },
+    {
+      "id": "write-field:7c7ab4f51baf9b201bf81ab4b508e5c12d3a045d84cfda4b1ceb4c8780c4895f",
+      "kind": "WRITE_FIELD",
+      "taskId": "156659",
+      "table": "odata_n_tit.p_prd_product",
+      "column": "key_prod_id",
+      "writeId": "write-observation:156659:platform-target:0",
+      "depth": 2
+    },
+    {
+      "id": "write-field:5a222026af42a80936e9d0a2bba0c32d52ccd870a6cdd6822a8963083754821b",
+      "kind": "WRITE_FIELD",
+      "taskId": "211524",
+      "table": "odata_n_tit.p_prd_product",
+      "column": "key_prod_id",
+      "writeId": "write-observation:211524:platform-target:0",
+      "depth": 2
+    },
+    {
+      "id": "read-field:5d3ed1f36f6dcc4721fd55c853b590155617ebd07854451294f8bfd93379d057",
+      "kind": "READ_FIELD",
+      "taskId": "156659",
+      "table": "titans_dm.prd_product",
+      "column": "key_prod_id",
+      "writeId": "",
+      "depth": 3
+    },
+    {
+      "id": "read-field:45279600577916e809a9396f6f0f4c7600367a4e89f9c27d169f1625b8d6c039",
+      "kind": "READ_FIELD",
+      "taskId": "211524",
+      "table": "titans_product.prd_product",
+      "column": "key_prod_id",
+      "writeId": "",
+      "depth": 3
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:bbd2efa8a948d1883acd8e3180eac9b88dd9cb9f0a6a59487ecde99a351b6035",
+      "from": "read-field:647b4d123287242e81706a98c824f3bab7aa1f3d35a58e85a84277a9f2800385",
+      "to": "write-field:ac8bd06df13bf7608eb1e3838addd913684fc2266a3794f94a91508f645ebc1f",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "27305b517cb9ef83cf2a2456580081731d4240b423bd195d9999d776b89327d1",
+      "from": "write-field:7c7ab4f51baf9b201bf81ab4b508e5c12d3a045d84cfda4b1ceb4c8780c4895f",
+      "to": "read-field:647b4d123287242e81706a98c824f3bab7aa1f3d35a58e85a84277a9f2800385",
+      "kind": "CONTINUES",
+      "status": "CONFIRMED",
+      "producerTaskId": "156659",
+      "consumerTaskId": "160750",
+      "partitionMatchStatus": "CONFIRMED",
+      "partition": {
+        "column": "busi_date",
+        "values": [
+          "${YYYY-MM-DD}"
+        ],
+        "valueStatus": "RUNTIME_EXPRESSION",
+        "observedValue": "${YYYY-MM-DD}",
+        "expression": "${YYYY-MM-DD}",
+        "partitionStatus": "STATIC"
+      }
+    },
+    {
+      "id": "77b11d4d86b1524c4ffc5a4a6b00e98e7febff10ced8d1b8b9ca062aada4b2c2",
+      "from": "write-field:5a222026af42a80936e9d0a2bba0c32d52ccd870a6cdd6822a8963083754821b",
+      "to": "read-field:647b4d123287242e81706a98c824f3bab7aa1f3d35a58e85a84277a9f2800385",
+      "kind": "CONTINUES",
+      "status": "CONFIRMED",
+      "producerTaskId": "211524",
+      "consumerTaskId": "160750",
+      "partitionMatchStatus": "CONFIRMED",
+      "partition": {
+        "column": "busi_date",
+        "values": [
+          "${YYYY-MM-DD}"
+        ],
+        "valueStatus": "RUNTIME_EXPRESSION",
+        "observedValue": "${YYYY-MM-DD}",
+        "expression": "${YYYY-MM-DD}",
+        "partitionStatus": "STATIC"
+      }
+    },
+    {
+      "id": "edge:5fa07e2671621432707a81e4d284224fc5bfd7d1fad85b7ef58fd5d800df705e",
+      "from": "read-field:5d3ed1f36f6dcc4721fd55c853b590155617ebd07854451294f8bfd93379d057",
+      "to": "write-field:7c7ab4f51baf9b201bf81ab4b508e5c12d3a045d84cfda4b1ceb4c8780c4895f",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    },
+    {
+      "id": "edge:75ebf47e363b9b1a881172b75d3840057b6a86fb73ff80e6b884e68713ae1f85",
+      "from": "read-field:45279600577916e809a9396f6f0f4c7600367a4e89f9c27d169f1625b8d6c039",
+      "to": "write-field:5a222026af42a80936e9d0a2bba0c32d52ccd870a6cdd6822a8963083754821b",
+      "kind": "VALUE",
+      "status": "OBSERVED",
+      "producerTaskId": null,
+      "consumerTaskId": null,
+      "partitionMatchStatus": null,
+      "partition": null
+    }
+  ],
+  "meta": {
+    "backend": "arcadedb",
+    "elapsedMs": 565,
+    "projectionGenerations": 0
+  }
+}

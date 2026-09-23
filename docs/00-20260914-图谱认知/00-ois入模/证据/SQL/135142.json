@@ -1,0 +1,224 @@
+{
+  "taskId": "135142",
+  "evidenceType": "hive-task",
+  "observedAt": null,
+  "payloadSha256": "cd0665564e263ae0423932c8dda2318b6056899244ab4d37451ed39efb074452",
+  "inGraph": false,
+  "graphVersion": "8651e582cd851a22a3e8d58ce71683f7ac285f539a54364575a7d9391b1f8c46",
+  "lineNumbering": "Original SQLite payload; connection and sensitive header lines removed",
+  "removedLineCount": 0,
+  "lines": [
+    {
+      "line": 1,
+      "text": "-- task_id: 135142"
+    },
+    {
+      "line": 2,
+      "text": "-- hiveDb: pdata_n"
+    },
+    {
+      "line": 3,
+      "text": "-- source: LOCAL_CODE"
+    },
+    {
+      "line": 4,
+      "text": "-- sqlStatus: AVAILABLE"
+    },
+    {
+      "line": 5,
+      "text": "-- scriptPath: BigData-GF_FDM_N/PTY/PDATA_N.T01_CUST_EMP_ORG_COMB_DIV_RATI_OIS005.py"
+    },
+    {
+      "line": 6,
+      "text": "-- observed_at: 2026-09-05T01:06:53.942Z"
+    },
+    {
+      "line": 7,
+      "text": ""
+    },
+    {
+      "line": 8,
+      "text": "-- createSql"
+    },
+    {
+      "line": 9,
+      "text": "CREATE TABLE IF NOT EXISTS T01_CUST_EMP_ORG_COMB_DIV_RATI("
+    },
+    {
+      "line": 10,
+      "text": "     Pty_Id                     STRING COMMENT '当事人编号'"
+    },
+    {
+      "line": 11,
+      "text": "    ,Pty_Cate_Cd                STRING COMMENT '当事人类别代码'"
+    },
+    {
+      "line": 12,
+      "text": "    ,Emp_Id                     STRING COMMENT '员工编号'"
+    },
+    {
+      "line": 13,
+      "text": "    ,Emp_Oa_User_Id             STRING COMMENT '员工oa用户编号'"
+    },
+    {
+      "line": 14,
+      "text": "    ,Inr_Org_Id                 STRING COMMENT '内部机构编号'"
+    },
+    {
+      "line": 15,
+      "text": "    ,Div_Rati                   STRING COMMENT '分成比例'"
+    },
+    {
+      "line": 16,
+      "text": "    ,Data_Src_Cd                STRING COMMENT '数据来源代码'"
+    },
+    {
+      "line": 17,
+      "text": "    ,Task_Name                  STRING COMMENT '任务名'"
+    },
+    {
+      "line": 18,
+      "text": "    ,Data_Etl_Date              STRING COMMENT '数据加载日期'"
+    },
+    {
+      "line": 19,
+      "text": "    ,Data_Upt_Date              STRING COMMENT '数据更新日期'"
+    },
+    {
+      "line": 20,
+      "text": "    ,Data_Time                  STRING COMMENT '数据时间'"
+    },
+    {
+      "line": 21,
+      "text": ")COMMENT '客户员工机构组合分成比例'"
+    },
+    {
+      "line": 22,
+      "text": "PARTITIONED BY (SRC_TBL  STRING COMMENT'源表',BUSI_DATE  STRING COMMENT '业务日期')"
+    },
+    {
+      "line": 23,
+      "text": "STORED AS ORC;"
+    },
+    {
+      "line": 24,
+      "text": ""
+    },
+    {
+      "line": 25,
+      "text": "-- querySql"
+    },
+    {
+      "line": 26,
+      "text": "INSERT OVERWRITE TABLE T01_CUST_EMP_ORG_COMB_DIV_RATI PARTITION(SRC_TBL='${src_table}',BUSI_DATE='${data_day_str}')"
+    },
+    {
+      "line": 27,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 28,
+      "text": "--Group1: Source Table:[ODATA_N_OIS.O_COUNTERPARTY_INTRODUCTION:开发关系表] "
+    },
+    {
+      "line": 29,
+      "text": "-----------------------------------------------------------------------------------------------------"
+    },
+    {
+      "line": 30,
+      "text": "SELECT"
+    },
+    {
+      "line": 31,
+      "text": "     A.CLIENT_ID                                       AS  Pty_Id                  --当事人编号    "
+    },
+    {
+      "line": 32,
+      "text": "    ,CASE WHEN B.IS_PROD_HOLDER='01' THEN '110500'"
+    },
+    {
+      "line": 33,
+      "text": "          WHEN B.IS_PROD_HOLDER in ('02','03') THEN '210500'"
+    },
+    {
+      "line": 34,
+      "text": "          ELSE B.IS_PROD_HOLDER END                    AS  Pty_Cate_Cd             --当事人类别代码"
+    },
+    {
+      "line": 35,
+      "text": "    ,CUSTOMER_MANAGER                                  AS  Emp_Id                  --员工编号      "
+    },
+    {
+      "line": 36,
+      "text": "    ,NVL(C.ERP_ID,A.CUSTOMER_MANAGER)                  AS  Emp_Oa_User_Id          --员工oa用户编号"
+    },
+    {
+      "line": 37,
+      "text": "    ,LPAD(INTRODUCTION_DEPARTMENT,4,'0')               AS  Inr_Org_Id              --内部机构编号  "
+    },
+    {
+      "line": 38,
+      "text": "    ,ALLOCATION_PROPORTION                             AS  Div_Rati                --分成比例      "
+    },
+    {
+      "line": 39,
+      "text": "    ,'${data_src_cd}'                             AS  Data_Src_Cd             --数据来源代码"
+    },
+    {
+      "line": 40,
+      "text": "    ,'${filename}'                                AS  Task_Name               --任务名"
+    },
+    {
+      "line": 41,
+      "text": "    ,'${data_day_str}'                            AS  Data_Etl_Date           --数据加载日期"
+    },
+    {
+      "line": 42,
+      "text": "    ,'${data_today_str}'                          AS  Data_Upt_Date           --数据更新日期"
+    },
+    {
+      "line": 43,
+      "text": "    ,'${data_today}'                              AS  Data_Time               --数据时间"
+    },
+    {
+      "line": 44,
+      "text": "FROM   (SELECT *  FROM ${src_table} WHERE  BUSI_DATE='${data_day_str}' AND IS_DELETED='N' )A"
+    },
+    {
+      "line": 45,
+      "text": "LEFT JOIN (SELECT CLIENT_ID,IS_PROD_HOLDER FROM ODATA_N_OIS.O_OTC_DERIVATIVE_COUNTERPARTY  WHERE  BUSI_DATE='${data_day_str}' )B"
+    },
+    {
+      "line": 46,
+      "text": "       ON A.CLIENT_ID=B.CLIENT_ID"
+    },
+    {
+      "line": 47,
+      "text": "LEFT JOIN (SELECT ERP_ID,LOGIN_ID FROM ODATA_N_IOA.I_GF_USER WHERE MAIN_DEPARTMENT='true' AND NVL(TRIM(ERP_ID),'')<>'' AND BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 48,
+      "text": "             UNION ALL "
+    },
+    {
+      "line": 49,
+      "text": "           SELECT ERP_ID,LOGIN_ID FROM ODATA_N_IOA.I_GF_USER_DEL WHERE MAIN_DEPARTMENT='true' AND NVL(TRIM(ERP_ID),'')<>'' AND BUSI_DATE='${data_day_str}'"
+    },
+    {
+      "line": 50,
+      "text": "            ) C"
+    },
+    {
+      "line": 51,
+      "text": "       ON A.CUSTOMER_MANAGER=C.LOGIN_ID"
+    },
+    {
+      "line": 52,
+      "text": ";"
+    },
+    {
+      "line": 53,
+      "text": ""
+    }
+  ]
+}

@@ -1,0 +1,656 @@
+{
+  "catalogBuiltAt": "2026-09-16T01:22:43.476Z",
+  "platform": "hive",
+  "tables": [
+    {
+      "id": 32947,
+      "stable_table_id": "odata_n_ois.g_rev_hk_contract_commission_rate__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hk_contract_commission_rate",
+      "table_name": "g_rev_hk_contract_commission_rate",
+      "description": "交叉销售合约编号佣金费率系数正式表",
+      "description_normalized": "交叉销售合约编号佣金费率系数正式表",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "dfd5a8a1be8ef5c061659b5c9448d0490a5d8655b52ac82a4039aa617268db75",
+      "ddl_hash": "0e903987400bb6c194eb50c5deed2934d0345e4b0e6974b26be3e7c92e7364a6",
+      "content_hash": "21be3f85fea75128aa32ff4f215a6b74d9f3a356253bd7655d7b2accce4a0be5",
+      "collected_at": "2026-08-22T04:14:09.654Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "【AI】主键ID",
+          "is_partition": 0
+        },
+        {
+          "name": "contract_code",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "【AI】合约编号",
+          "is_partition": 0
+        },
+        {
+          "name": "business_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "业务类型：OPTION-期权 TRS-互换",
+          "is_partition": 0
+        },
+        {
+          "name": "contract_type",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "合约类型",
+          "is_partition": 0
+        },
+        {
+          "name": "contract_type_name",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "合约类型名称",
+          "is_partition": 0
+        },
+        {
+          "name": "underlying_type",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "标的类型：股票-EQUITY、股指-INDEX、基金-FUND、股指期货-EQUITY_INDEX_FUTURE、商品期货-COMMODITY_FUTURE、其他-OTHER",
+          "is_partition": 0
+        },
+        {
+          "name": "commission_rate",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "价差费率",
+          "is_partition": 0
+        },
+        {
+          "name": "commis_calc_type",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "计算方式（年化-ANNUALIZED、绝对-ABSOLUTE）",
+          "is_partition": 0
+        },
+        {
+          "name": "created_datetime",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_datetime",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "created_by",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "创建人",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_by",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "更新人",
+          "is_partition": 0
+        },
+        {
+          "name": "is_deleted",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "删除标识",
+          "is_partition": 0
+        },
+        {
+          "name": "discription",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "【AI】描述或补充说明",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "effective_date",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "【AI】生效日期",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 32950,
+      "stable_table_id": "odata_n_ois.g_rev_hkcpty_bid_ask_commission_rate__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_ois.g_rev_hkcpty_bid_ask_commission_rate",
+      "table_name": "g_rev_hkcpty_bid_ask_commission_rate",
+      "description": "销售收入交易对手佣金费率表（香港）",
+      "description_normalized": "销售收入交易对手佣金费率表（香港）",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "ac583be5ccf400a5b6f64cc60db620514260893ef69043d62223ceb332d32be6",
+      "ddl_hash": "cf0da9be17a4329075fa7430294135aca13c2b37c76d6e3617eb2089febb9bdf",
+      "content_hash": "377da97a28612fb16894d28fad63635a1454c44cc2fe9062ed9cf32b4168f317",
+      "collected_at": "2026-08-22T05:17:24.863Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "【AI】主键",
+          "is_partition": 0
+        },
+        {
+          "name": "client_id",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "交易对手编号",
+          "is_partition": 0
+        },
+        {
+          "name": "business_type",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "业务类型：OPTION-期权 TRS-互换",
+          "is_partition": 0
+        },
+        {
+          "name": "underlying_type",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "标的类型：股票-EQUITY、股指-INDEX、基金-FUND、股指期货-EQUITY_INDEX_FUTURE、商品期货-COMMODITY_FUTURE、其他-OTHER",
+          "is_partition": 0
+        },
+        {
+          "name": "commission_rate",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "佣金费率",
+          "is_partition": 0
+        },
+        {
+          "name": "commis_calc_type",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "计算方式（年化-ANNUALIZED、绝对-ABSOLUTE）",
+          "is_partition": 0
+        },
+        {
+          "name": "start_date",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "期初定价日下限",
+          "is_partition": 0
+        },
+        {
+          "name": "end_date",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "期初定价日上限",
+          "is_partition": 0
+        },
+        {
+          "name": "created_datetime",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_datetime",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "created_by",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "创建人(admin)",
+          "is_partition": 0
+        },
+        {
+          "name": "updated_by",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "更新人(admin)",
+          "is_partition": 0
+        },
+        {
+          "name": "is_deleted",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "删除标识",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 44396,
+      "stable_table_id": "pdata_n.t99_deri_comp_sprd_coef_ref__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "pdata_n.t99_deri_comp_sprd_coef_ref",
+      "table_name": "t99_deri_comp_sprd_coef_ref",
+      "description": "衍生品合约价差系数参考信息",
+      "description_normalized": "衍生品合约价差系数参考信息",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-task-relation+table-ddl",
+      "source_hash": "468439dbfcad82ed2b4446c891d02ae3308c472069c7cfa666c1734fdabbb0a7",
+      "ddl_hash": "11717493de5eab973e51e2717a19b993bd6878b4ef3c46e83746c4f846cc6ea7",
+      "content_hash": "702b052fc3860604ed5a55547f360d91ba270ac0c8aa91cac535b45911b915b2",
+      "collected_at": "2026-08-22T03:06:19.523Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "agt_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "协议编号",
+          "is_partition": 0
+        },
+        {
+          "name": "agt_modifr",
+          "ordinal": 1,
+          "raw_type": "string",
+          "comment": "协议修饰符",
+          "is_partition": 0
+        },
+        {
+          "name": "inr_comp_no",
+          "ordinal": 2,
+          "raw_type": "string",
+          "comment": "内部合约编号",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_type",
+          "ordinal": 3,
+          "raw_type": "string",
+          "comment": "业务类型",
+          "is_partition": 0
+        },
+        {
+          "name": "coef_type",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "系数类型",
+          "is_partition": 0
+        },
+        {
+          "name": "src_comp_type_cd",
+          "ordinal": 5,
+          "raw_type": "string",
+          "comment": "源合约类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "src_comp_type_name",
+          "ordinal": 6,
+          "raw_type": "string",
+          "comment": "源合约类型名称",
+          "is_partition": 0
+        },
+        {
+          "name": "src_undrl_type_cd",
+          "ordinal": 7,
+          "raw_type": "string",
+          "comment": "源标的类型代码",
+          "is_partition": 0
+        },
+        {
+          "name": "sprd_calc_type",
+          "ordinal": 8,
+          "raw_type": "string",
+          "comment": "价差计算类型",
+          "is_partition": 0
+        },
+        {
+          "name": "annu_sprd_coef",
+          "ordinal": 9,
+          "raw_type": "string",
+          "comment": "年化价差系数",
+          "is_partition": 0
+        },
+        {
+          "name": "absl_sprd_coef",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "绝对价差系数",
+          "is_partition": 0
+        },
+        {
+          "name": "vld_date",
+          "ordinal": 11,
+          "raw_type": "string",
+          "comment": "生效日期",
+          "is_partition": 0
+        },
+        {
+          "name": "desc",
+          "ordinal": 12,
+          "raw_type": "string",
+          "comment": "描述",
+          "is_partition": 0
+        },
+        {
+          "name": "estb_time",
+          "ordinal": 13,
+          "raw_type": "string",
+          "comment": "创建时间",
+          "is_partition": 0
+        },
+        {
+          "name": "upd_time",
+          "ordinal": 14,
+          "raw_type": "string",
+          "comment": "更新时间",
+          "is_partition": 0
+        },
+        {
+          "name": "creator",
+          "ordinal": 15,
+          "raw_type": "string",
+          "comment": "创建人",
+          "is_partition": 0
+        },
+        {
+          "name": "upd_prsn",
+          "ordinal": 16,
+          "raw_type": "string",
+          "comment": "更新人",
+          "is_partition": 0
+        },
+        {
+          "name": "del_flag",
+          "ordinal": 17,
+          "raw_type": "string",
+          "comment": "删除标志",
+          "is_partition": 0
+        },
+        {
+          "name": "data_src_cd",
+          "ordinal": 18,
+          "raw_type": "string",
+          "comment": "数据来源代码",
+          "is_partition": 0
+        },
+        {
+          "name": "task_name",
+          "ordinal": 19,
+          "raw_type": "string",
+          "comment": "任务名",
+          "is_partition": 0
+        },
+        {
+          "name": "data_etl_date",
+          "ordinal": 20,
+          "raw_type": "string",
+          "comment": "数据加载日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_upt_date",
+          "ordinal": 21,
+          "raw_type": "string",
+          "comment": "数据更新日期",
+          "is_partition": 0
+        },
+        {
+          "name": "data_time",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "数据时间",
+          "is_partition": 0
+        },
+        {
+          "name": "real_src_tbl",
+          "ordinal": 23,
+          "raw_type": "string",
+          "comment": "真实源表",
+          "is_partition": 0
+        },
+        {
+          "name": "bel_busi_dept",
+          "ordinal": 24,
+          "raw_type": "string",
+          "comment": "所属业务部门",
+          "is_partition": 0
+        },
+        {
+          "name": "cms_fee_rate",
+          "ordinal": 25,
+          "raw_type": "string",
+          "comment": "佣金费率",
+          "is_partition": 0
+        },
+        {
+          "name": "src_tbl",
+          "ordinal": 26,
+          "raw_type": "string",
+          "comment": "源表",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 35974,
+      "stable_table_id": "odata_n_tit.d_trd_otc_trade__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_trd_otc_trade",
+      "table_name": "d_trd_otc_trade",
+      "description": "【AI】交易-OTC—交易表（父类）",
+      "description_normalized": "【ai】交易-otc—交易表（父类）",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl,local:tables-cache,local:tables-cache",
+      "source_hash": "fd338af9dbf2a7ab17498fad709173333a702aeeecfdd8b716fad0594b4e79bb",
+      "ddl_hash": "d2837ea79b7d9a8e2e36c93cb587164e9d36bb69fd4df9284e485d3c66851037",
+      "content_hash": "13981a1e0d0102be8faeb347e3ee0bfb4990360adfe94a14fe93e8082e8040ef",
+      "collected_at": "2026-08-21T14:00:18.641Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "TRADEFLOW内部交易流水号",
+          "is_partition": 0
+        },
+        {
+          "name": "internal_trade_id",
+          "ordinal": 4,
+          "raw_type": "string",
+          "comment": "交易内部编号",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 10,
+          "raw_type": "string",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 35918,
+      "stable_table_id": "odata_n_tit.d_ref_trs__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_ref_trs",
+      "table_name": "d_ref_trs",
+      "description": "场外交易-<font color='red'>TRS</font>",
+      "description_normalized": "场外交易-<font color='red'>trs</font>",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "934cd1a98724e582424d926ad55d0cebff0113f319b9b85c9daea001b8b09390",
+      "ddl_hash": "918a12631ac1381b70716cd60183e64a04d97e54ab0d63c40437f975e317359f",
+      "content_hash": "4d7a7addc5e84893751d6e6649447a48c5709cb8ab829e5467e88ad4b49d29e8",
+      "collected_at": "2026-08-21T18:56:36.647Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "TRADEFLOW内部交易流水号",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 91,
+          "raw_type": "string",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 35907,
+      "stable_table_id": "odata_n_tit.d_ref_otc_option_deal__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_ref_otc_option_deal",
+      "table_name": "d_ref_otc_option_deal",
+      "description": "场外交易-期权交易合同要素表",
+      "description_normalized": "场外交易-期权交易合同要素表",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl,local:tables-cache,local:tables-cache",
+      "source_hash": "0d229a8701708825703210fb6406baa6d1154ae2533bf8900c9a5ebd0bbf6c4d",
+      "ddl_hash": "827ad6f8919be85fa23a4754aa1777ee926c66c96c1c0b6fb71f5c222127ebde",
+      "content_hash": "b2440f0a70a33d62e0f18cd7c70b6d9512a8ae3049d7c57390ec45637e79acba",
+      "collected_at": "2026-08-21T13:57:14.944Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "内部合约ID",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 97,
+          "raw_type": "string",
+          "comment": "业务日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 35843,
+      "stable_table_id": "odata_n_tit.d_ref_fx_forward__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_ref_fx_forward",
+      "table_name": "d_ref_fx_forward",
+      "description": "外汇远期-合约要素||<font color='red'>REF</font>_<font color='red'>FX</font>_<font color='red'>FORWARD</font>||<font color='red'>REF</font>_<font color='red'>FX</font>_<font color='red'>FORWARD</font>",
+      "description_normalized": "外汇远期-合约要素||<font color='red'>ref</font>_<font color='red'>fx</font>_<font color='red'>forward</font>||<font color='red'>ref</font>_<font color='red'>fx</font>_<font color='red'>forward</font>",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "422bf88a39f320d09e0fa4d48e8c8965ff0b82abbe5e66b001b90fb0828de82f",
+      "ddl_hash": "188c9808903e49ba05678f9561c67e20ed64ae54a962c0feb76adf3b15dfde3c",
+      "content_hash": "e1ef2d5b5e086bc65990d7ab0f76417022f06118d22a4f9d25f1615dbd9ebf73",
+      "collected_at": "2026-08-21T18:02:22.945Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "TRADEFLOW内部交易流水号",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 22,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    },
+    {
+      "id": 35834,
+      "stable_table_id": "odata_n_tit.d_ref_fast_trs__gfhive",
+      "platform": "hive",
+      "data_source": "gfhive",
+      "qualified_name": "odata_n_tit.d_ref_fast_trs",
+      "table_name": "d_ref_fast_trs",
+      "description": "极速互换合约要素表",
+      "description_normalized": "极速互换合约要素表",
+      "object_type": "hive_table",
+      "source": "opencli:szdata table-search+table-ddl",
+      "source_hash": "d94bfd9f8cb478ed6b6c0c14e2ee78d105d32c56a44743d0be37d3630be59d12",
+      "ddl_hash": "e5d6332980daf7d9e77c190bb0d25d811859a9d493777cda1492adabec1524bd",
+      "content_hash": "b4d45c81c8b1ee18cbe524f570ec84ce9050835e43de422d6e42070f768d6fe9",
+      "collected_at": "2026-08-21T17:57:06.281Z",
+      "updated_at": "2026-09-10T03:29:20.463Z",
+      "parse_status": "PARSED",
+      "fields": [
+        {
+          "name": "key_otc_trade_id",
+          "ordinal": 0,
+          "raw_type": "string",
+          "comment": "合约ID",
+          "is_partition": 0
+        },
+        {
+          "name": "busi_date",
+          "ordinal": 50,
+          "raw_type": "string",
+          "comment": "数据日期",
+          "is_partition": 1
+        }
+      ]
+    }
+  ]
+}

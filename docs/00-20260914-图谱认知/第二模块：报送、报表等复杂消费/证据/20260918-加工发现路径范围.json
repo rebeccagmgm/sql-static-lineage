@@ -1,0 +1,101 @@
+[
+  {
+    "taskId": "220979",
+    "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "scope": "TASK_SCHEDULE",
+    "depth": 2,
+    "edgeLimit": 200,
+    "truncated": false,
+    "stoppedBy": "DEPTH_LIMIT",
+    "nodes": 37,
+    "edges": 38,
+    "tasks": [
+      "220979",
+      "222561",
+      "228351",
+      "220650",
+      "86840",
+      "86841",
+      "86842",
+      "133055",
+      "107491",
+      "133052",
+      "144562",
+      "222562",
+      "124564",
+      "124565",
+      "216458",
+      "105743",
+      "228349",
+      "225209",
+      "105616",
+      "222564",
+      "222565"
+    ],
+    "sha256": "207458238aaefc3db0f1c01e27fd9d935281cbbf4e0f82ebeaca09efec72a804"
+  },
+  {
+    "taskId": "176330",
+    "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "scope": "TASK_SCHEDULE",
+    "depth": 2,
+    "edgeLimit": 200,
+    "truncated": false,
+    "stoppedBy": "DEPTH_LIMIT",
+    "nodes": 27,
+    "edges": 42,
+    "tasks": [
+      "176330",
+      "103942",
+      "106590",
+      "163672",
+      "107280",
+      "173965",
+      "106210",
+      "141595",
+      "141596",
+      "145871",
+      "105392",
+      "147139",
+      "103939",
+      "105616"
+    ],
+    "sha256": "02fdcb39ba1cb50d32cc42280cf56d2f84e48172c8dfa66d79781e1599360ac0"
+  },
+  {
+    "taskId": "93338",
+    "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "scope": "TASK_SCHEDULE",
+    "depth": 2,
+    "edgeLimit": 200,
+    "truncated": false,
+    "stoppedBy": "DEPTH_LIMIT",
+    "nodes": 10,
+    "edges": 9,
+    "tasks": [
+      "93338",
+      "107491",
+      "105743",
+      "86840",
+      "86841",
+      "86842"
+    ],
+    "sha256": "22f15a33293fc9b14fdab940261149821a5ba627ab7934574fc1ed8543bec97a"
+  },
+  {
+    "taskId": "237796",
+    "version": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+    "scope": "TASK_SCHEDULE",
+    "depth": 2,
+    "edgeLimit": 200,
+    "truncated": false,
+    "stoppedBy": "DEPTH_LIMIT",
+    "nodes": 3,
+    "edges": 2,
+    "tasks": [
+      "237796",
+      "237781"
+    ],
+    "sha256": "b2c18ccd72b8c4da6a2c0eeb13aebb00810570d4edd263fabda121cc0e68fda9"
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "taskId": "227701",
+  "graphVersion": "9dbe562350452a41ae13c1b95f260a631fce9d2f9b8dceeba43e79dbf65f7c02",
+  "slots": [
+    {
+      "slot": "query",
+      "content": "\nSELECT company_name,\n\tcompany_id,\n\toption_revenue,\n\tswap_revenue,\n\tcross_sale_amount,\n\tcross_border_revenue,\n\tbusi_year FROM (\n\t -- 更新2年\r\nSELECT\r\n    t1.company_name                  -- 公司名称\r\n    ,t1.company_id                   -- 公司ID\r\n    ,t1.option_revenue / 10000       as option_revenue        -- 期权业务创收万元\r\n    ,t1.swap_revenue / 10000         as swap_revenue          -- 互换业务创收万元\r\n    ,coalesce(t2.cross_sale_amount, 0) / 10000  as cross_sale_amount     -- 交叉销售金额万元\r\n    ,t1.cross_border_revenue / 10000  as cross_border_revenue  -- 跨境业务创收万元\r\n    ,t1.busi_year                    as busi_year             -- 年\r\nfrom (\r\n    -- 主表聚合：按公司、年统计各项创收（近2年）\r\n    SELECT\r\n        USCC                         as company_id           -- 公司ID\r\n        ,Cutp_Pty_Full_Name          as company_name         -- 公司名称\r\n        ,year(Accrued_Date)          as busi_year            -- 年\r\n        ,sum(case when Busi_Type = 'OPTION' then Curr_Rev else 0 end)  as option_revenue  -- 期权业务创收\r\n        ,sum(case when Busi_Type = 'TRS' then Curr_Rev else 0 end)     as swap_revenue    -- 互换业务创收\r\n        ,sum(case when Undrl_Curr != 'CNY' then Curr_Rev else 0 end)   as cross_border_revenue  -- 跨境业务创收\r\n    from DM_OTC_N.OTC_REV_DAILY_RPT\r\n    where busi_date = '${yyyy-MM-dd}'\r\n      and Accrued_Date between '${yyyy,-1y}-01-01' and '${yyyy-MM-dd}'\r\n      and Busi_Type in ('OPTION', 'TRS')\r\n    group by USCC, Cutp_Pty_Full_Name, year(Accrued_Date)\r\n) t1\r\nleft join (\r\n    -- 辅表聚合：按公司、年统计交叉销售金额（近2年）\r\n    SELECT\r\n        Pty_Cutp_Name\r\n        ,substr(Sett_Time, 1, 4)     as busi_year            -- 年\r\n        ,sum(Dev_Dept_Rwd)           as cross_sale_amount    -- 交叉销售金额\r\n    from pdata_n.T98_OTC_DERI_UNDRL_INCOME_RWD_SUM\r\n    where busi_date = '${yyyy-MM-dd}'\r\n      and src_tbl = 'ODATA_N_OIS.G_CROSS_INCOME_REWARD'\r\n      and Sett_Time between '${yyyy,-1y}01' and concat('${yyyy}0', quarter('${yyyy-MM-dd}')) -- 从去年一季度开始，到当前日期所在季度结束\r\n    group by Pty_Cutp_Name, substr(Sett_Time, 1, 4)\r\n) t2 on t1.company_name = t2.Pty_Cutp_Name and t1.busi_year = t2.busi_year \n\t) castTable",
+      "sha256": "f2629b4e488323533ff5de3bfbb36e7e5e99eb82c2441027df2a40cbeee3ba77"
+    },
+    {
+      "slot": "prepare",
+      "content": "CREATE TABLE IF NOT EXISTS  dm_otc_n.bi_otc_year_revenue( \n\t company_name string COMMENT '公司名称' , company_id string COMMENT '公司ID' , option_revenue string COMMENT '期权业务创收万元' , swap_revenue string COMMENT '互换业务创收万元' , cross_sale_amount string COMMENT '交叉销售金额万元' , cross_border_revenue string COMMENT '跨境业务创收万元' ) COMMENT 'OTC年度创收表' PARTITIONED BY ( busi_year string COMMENT '年' ) STORED AS ORC",
+      "sha256": "1f56e5c2720653e3b68324d96090de4ca8782772425a26bf138dc43a15c031d4"
+    }
+  ]
+}
