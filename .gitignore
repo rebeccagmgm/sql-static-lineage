@@ -42,6 +42,7 @@ tmp-inspect-*.ts
 # Excel lock files, workbooks, and editor junk
 ~$*
 *.xlsx
+!/docs/00-20260914-图谱认知/**/*.xlsx
 Thumbs.db
 
 # Generated analysis caches and nested install debris
