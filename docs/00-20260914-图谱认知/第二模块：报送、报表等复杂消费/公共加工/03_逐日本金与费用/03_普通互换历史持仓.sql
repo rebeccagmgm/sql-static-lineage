@@ -28,12 +28,17 @@ trs_position_history AS (
         and substring(src_busi_date,1,10) between date_sub('${data_day_str}',150) and '${data_day_str}'
     ),
 
+/*
+动态名义本金：
+    动态变动的是数量，价格锚定在期初价 Init_Price。
+    这是有意的——名义本金变动一般只跟持仓数量变化挂钩，不跟市价重估。所以叫"动态名义本金"指的是数量动态，不是价格动态。
+*/
 -- ③ 按交易、日期汇总：同一交易的多条结构腿在这里合并；腿或持仓重复匹配仍参与求和。
 trs_daily_positions AS (
     SELECT
         rtl.key_otc_trade_id, -- TRADEFLOW内部交易流水号，接info.Inr_Seri_No
         sum(his.Init_Price * his.Init_Quantity) as Init_Nom_Prin_Org,
-        sum(his.Init_Price * his.Quantity) as Dyna_Nom_Prin_Org, -- 【AI】期初交易价×数量，尚未乘汇率
+        sum(his.Init_Price * his.Quantity) as Dyna_Nom_Prin_Org, -- 【AI】期初交易价×数量，尚未乘汇率（动态名义本金-原币）
         substring(his.src_busi_date,1,10) as Accrued_Date
     FROM trs_structure_legs rtl
     inner join trs_position_history his
