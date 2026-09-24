@@ -9,6 +9,25 @@ function integer(value: number) {
   return { toNumber: () => value };
 }
 
+describe("task table query index isolation", () => {
+  it("isolates the unique-key seek before graph guards and adjacency matching", async () => {
+    const queries: string[] = [];
+    const store = new AssetGraphStore({} as never, "test", "g");
+    store.ready = async () => ({state: "READY", version: "v1"});
+    store.run = async (query: string) => {
+      queries.push(query);
+      return {records: query.includes("RETURN properties(n) AS node")
+        ? [record({node: {id: "task:218663", kind: "TASK", taskId: "218663", detail: "{}"}})]
+        : []} as never;
+    };
+    const result = await store.traverse({taskId: "218663", layer: "table", direction: "down", depth: 2});
+    expect(result.nodes.map(node => node.id)).toEqual(["task:218663"]);
+    // ArcadeDB may otherwise choose a graph-wide scan for this unique task lookup.
+    expect(queries[0]).toContain("{key:$key}) WITH n LIMIT 1 WHERE n.graphId=$graphId");
+    expect(queries.slice(1).every(query => query.includes("{key:$key}) WITH n LIMIT 1 MATCH"))).toBe(true);
+  });
+});
+
 describe("AssetGraphStore.upgradeOwnerEdgeSources", () => {
   function fixture(missing: Record<string, unknown>[], updated?: number) {
     const queries: string[] = [];

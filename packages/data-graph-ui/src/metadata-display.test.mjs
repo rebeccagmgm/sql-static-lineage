@@ -13,9 +13,9 @@ describe("graph metadata display", () => {
     const member={id:"w1",kind:"WRITE_FIELD",taskId:"p1",writeId:"write:1",table:"pdata.shared",column:"amount"};
     const aliases=["p2","p3","p4"].map(taskId=>({...member,id:taskId,taskId,writeId:`write:${taskId}`}));
     const html=renderToStaticMarkup(createElement(LineageNode,{id:"shared",data:{members:[member],fieldAliases:{w1:aliases},writeRefs:[member,...aliases].map(n=>({taskId:n.taskId,writeId:n.writeId}))}}));
-    expect(html).toContain("4 个生产任务");
-    expect(html).toContain("任务 p1、p2、p3、p4");
-    expect(html).toContain("4 组写入证据");
+    expect(html).not.toContain("4 个生产任务");
+    expect(html).not.toContain("任务 p1、p2、p3、p4");
+    expect(html).toContain("物理表");
   });
   it("retains the table description on a compact consumption card", () => {
     const html=renderToStaticMarkup(createElement(LineageNode,{
@@ -25,7 +25,9 @@ describe("graph metadata display", () => {
         metadata:{table:{status:"AVAILABLE",description:"两融委托与成交明细"},field:{status:"ANNOTATION_NOT_RECORDED"}},
       }]},
     }));
-    expect(html).toContain("共同消费汇合");
+    expect(html).toContain("物理表");
+    expect(html).not.toContain("读取调度 214294");
+    expect(html).not.toContain("共同消费汇合");
     expect(html).toContain("两融委托与成交明细");
     expect(html).toContain("展开说明");
   });
@@ -94,3 +96,29 @@ describe("merged field value origins", () => {
   });
 });
 
+
+
+it("keeps source range evidence in details without presenting an aggregate as the SQL read scope", () => {
+  const member = {id:"read",kind:"READ_FIELD",taskId:"163672",table:"pdata.t03",column:"acct_id"};
+  const context = {rawMembers:[member],scope:{status:"MULTIPLE",label:"共同消费 7 个范围",items:[]},writeRefs:[
+    {taskId:"112119",writeId:"write-112119",scope:{label:"busi_date=2026-09-14"},rawNodeIds:[],rawEdgeIds:[]},
+  ]};
+  const card = renderToStaticMarkup(createElement(LineageNode,{id:"read",data:{members:[member],...context}}));
+  expect(card).not.toContain("读取调度 163672");
+  expect(card).not.toContain("共同消费");
+  const detail = renderToStaticMarkup(createElement(DetailPanel,{node:member,fieldContext:context,loading:false}));
+  expect(detail).toContain("来源写入依据（1 组）");
+  expect(detail).toContain("写入调度 112119");
+  expect(detail).toContain("write-112119");
+  expect(detail).toContain("busi_date=2026-09-14");
+});
+
+
+it("keeps task ownership labels out of the physical table card", () => {
+  const read = {id:"r",kind:"READ_FIELD",taskId:"228812",table:"dm.shared",column:"created_by"};
+  const write = {...read,id:"w",kind:"WRITE_FIELD",taskId:"228609",writeId:"write"};
+  const html = renderToStaticMarkup(createElement(LineageNode,{id:"shared",data:{members:[read],fieldAliases:{r:[write]}}}));
+  expect(html).not.toContain("写入调度 228609");
+  expect(html).not.toContain("读取调度 228812");
+  expect(html).not.toContain("关联调度");
+});

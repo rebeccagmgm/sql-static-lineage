@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "../api";
 import { SqlCode } from "./SqlCode";
 import { TaskProcessingGraph } from "./TaskProcessingGraph";
+import { TargetDdlPanel } from "./TargetDdlPanel";
 import { isSameGraphVersion } from "../contract";
+import type { FieldSelectionContext } from "../graph-adapter";
 import type {
   GraphNode,
   MetadataStatus,
@@ -169,6 +171,7 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
       )}
       <TaskProcessingGraph detail={detail} />
       {finalBindings.length > 0 && <h3>最终输出字段</h3>}
+      <TargetDdlPanel key={stateKey} detail={detail} column={identity.column} writeId={identity.writeId} />
       {!finalBindings.length && detail.bindings.length > 0 && (
         <p className="muted">
           暂未取得最终输出字段，请重新选择任务加载。
@@ -219,20 +222,28 @@ function TaskEvidence({ detail }: { detail: TaskDetail }) {
 
 export function DetailPanel({
   node,
+  fieldContext,
   terminal,
   detail,
   details,
   loading,
   onContinue,
+  onNavigateTask,
+  children,
 }: {
   node?: GraphNode;
+  fieldContext?: FieldSelectionContext;
   terminal?: TerminalNode;
   detail?: TaskDetail;
   details?: TaskDetail[];
   loading: boolean;
   onContinue?: () => void;
+  onNavigateTask?: (taskId: string) => void;
+  children?: ReactNode;
 }) {
   const evidenceDetails = details?.length ? details : detail ? [detail] : [];
+  const reference = node?.detail?.scheduleReference as {upstreamTaskIds?: unknown; downstreamTaskIds?: unknown} | undefined;
+  const scheduleIds = (value: unknown): string[] => Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
   if (loading)
     return (
       <aside className="detail panel">
@@ -253,8 +264,24 @@ export function DetailPanel({
       {node && (
         <>
           <div className="eyebrow">{node.kind}</div>
-          <h3>{node.column ?? node.label ?? node.table ?? node.id}</h3>
-          <code className="identity">{node.id}</code>
+          <h3>{node.column || node.label || node.table || node.id}</h3>
+          <code className="identity">{node.physicalNodeId ?? node.id}</code>
+          {!!fieldContext?.writeRefs.length && <details>
+            <summary>来源写入依据（{fieldContext.writeRefs.length} 组）</summary>
+            <p className="muted">以下为接续使用的写入与范围证据，不代表 SQL 的读取次数。</p>
+            {fieldContext.writeRefs.map((ref, index) => <section key={`${ref.taskId}:${ref.writeId}:${index}`}>
+              <b>写入调度 {ref.taskId}</b>
+              <code className="identity">{ref.writeId}</code>
+              <p>{ref.scope?.label ?? "范围未收录"}</p>
+            </section>)}
+          </details>}
+          {node.kind === "TASK" && reference && <details>
+            <summary>配置中的调度上下游</summary>
+            <p className="muted">调度依赖供继续查看；是否经过当前表仍以读写证据为准。</p>
+            {([['上游', reference.upstreamTaskIds], ['下游', reference.downstreamTaskIds]] as const).map(([label, ids]) => <section key={label}>
+              <b>{label}</b>{scheduleIds(ids).length ? scheduleIds(ids).map(id => <button key={id} onClick={() => onNavigateTask?.(id)} disabled={!onNavigateTask}>查看调度 {id}</button>) : <p className="muted">未收录</p>}
+            </section>)}
+          </details>}
           {node.metadata && (
             <section className="metadata-detail">
               <h3>表说明与字段注释</h3>
@@ -328,6 +355,7 @@ export function DetailPanel({
           )}
         </>
       )}
+      {children}
       {terminal && (
         <div className="terminal-box">
           <b>追溯在此停止</b>

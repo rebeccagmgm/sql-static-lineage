@@ -1,4 +1,4 @@
--- 03：把同一客户／合约的多行介绍关系，放进一行的第1、2、3组列。
+-- 03：介绍关系补充人员/机构信息，并将前3名横排到一行
 -- 例：客户C1两行张三0.6、李四0.4 → C1一行：[张三0.6] [李四0.4] [空串0]。
 -- 合约A1的关系另成一行；这里不把客户关系和合约关系合为一套，最终选择在07。
 -- A来自01_介绍关系排序；D/org/dept来自02_人员与机构。
@@ -37,7 +37,7 @@ select
     max(case when A.seq = '3' then COALESCE(D.Emp_Id, D.OA_User_Id, '') else '' end) as Cust_Mngr_Emp_Id_3, -- 客户经理员工编号_3
     max(case when A.seq = '3' then A.Allocation_Proportion else '0' end) as Allo_Prop_3, -- 分配比例_3
 
-    -- 三组人员的员工状态：跟随对应名次，不用于筛除离职人员；列序沿用原表。
+    -- 员工状态跟随对应名次，仅输出，不用于过滤介绍人。
     max(case when A.seq = '1' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_1, -- 客户经理员工状态代码_1
     max(case when A.seq = '1' then D.Emp_Stat_Desc else '' end) as Cust_Mngr_Emp_Stat_Desc_1, -- 客户经理员工状态描述_1
     max(case when A.seq = '2' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_2, -- 客户经理员工状态代码_2
@@ -45,12 +45,12 @@ select
     max(case when A.seq = '3' then D.Emp_Stat_Cd else '' end) as Cust_Mngr_Emp_Stat_Cd_3, -- 客户经理员工状态代码_3
     max(case when A.seq = '3' then D.Emp_Stat_Desc else '' end) as Cust_Mngr_Emp_Stat_Desc_3 -- 客户经理员工状态描述_3
 -- 补资料：账号 → 员工；引入部门号 → OA部门 → 分公司。缺资料仍保留源关系。
-from introduction_ranked A
-LEFT JOIN introduction_employee D
+from introduction_ranked A --介绍关系排名
+LEFT JOIN introduction_employee D  --引入人员信息
 ON A.Customer_Manager = D.OA_User_Id
-left join oa_department org
+left join oa_department org --部门信息
 on A.Introduction_Department = org.dept_no
-left join branch_division dept
+left join branch_division dept --分公司信息
 on org.dept_no = dept.Inr_Org_Id
 -- 客户级／合约级分别成行。没有来源系统分组：同客户跨来源的同名次可能竞争MAX。
 -- MAX按每列独立取值，不是选择整条关系；超过第3名的行仍参与ELSE空串／0。

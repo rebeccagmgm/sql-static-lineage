@@ -2,6 +2,8 @@
 
 Agent 的正式消费入口是 `scripts/lineage-graph.ps1`。它可以从任意工作目录调用，读取已发布的 ArcadeDB 图；查询命令不生成 Facts、投影或接续索引。HTML 是辅助调查页。
 
+新增消费方式的用户目标、相对现有 Agent 的增量价值和待验证问题，见[图谱消费需求与价值验证](graph-consumption-requirements.md)。该文档是需求讨论稿，不改变本文查询合同。
+
 `metrics` 直接读取已发布版本的本地 INDEX，不需要运行图库。它不会用正在变化的材料重算历史发布结果。
 
 ## 首次调用
@@ -53,6 +55,10 @@ $graphCli = 'E:\02_area\股衍数据-数据cookbook\sql-static-lineage\scripts\l
 ```
 
 ## JSON 合同
+
+任务起点的普通表级 `trace --task-id 103935 --layer table --direction down --depth 2` 逐跳限定直接调度依赖，返回 `traversalScope: TASK_SCHEDULE`。调度关系只限定任务范围；主图仍需 `WRITES_TABLE` / `READS_TABLE` 证据，不以调度边替代数据边。`scheduleReferences` 保留查询涉及任务的调度邻居。
+
+该查询中的表 `id` 是带任务归属的展示标识，`physicalNodeId` 是原物理表；继续展开应原样传回 `id` 给 `--node-id`，不能替换成物理表 ID，否则会变为独立的全表调查。字段列表兼容这种表标识。边的 `detail.physicalEdgeId` 保留原发布边 ID。CLI 默认深度仍按边计数，任务→表→任务为两条边；字段、独立表及显式分区查询能力不变。本次不修改 Facts 或发布图。
 
 `metrics` 返回 `data.publicationVersion`、`compilerVersion`、`indexContentHash` 和 `metrics`。`snapshotKind: PUBLISHED_INDEX` 表示统计的是该历史发布快照；升级消费代码或终止规则后，需要重新 publish，发布指标才会改变。仅消费代码或规则变化可复用同一份 prepared 材料；材料或投影变化才需要重新 prepare。
 

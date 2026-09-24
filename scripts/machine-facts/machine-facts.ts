@@ -11,6 +11,7 @@ import type { PlanFacts } from "../plans/plan-contract.ts";
 import { maskWithInsertTargetForParser, sanitizeSqlForParser } from "../plans/parser-sql-input.ts";
 import { deriveOutputFieldBindings, type WriteOutputContext } from "./output-field-bindings.ts";
 import { qualifyBareTableName } from "../reconcile/shared/task-default-schema.ts";
+import { readCreateTableHeader } from "../plans/ddl-schema.ts";
 import { globalRelationId } from "./plan-occurrence-id.ts";
 import { globalizePlanScopeBindings } from "./plan-scope-bindings.ts";
 import {
@@ -1557,7 +1558,7 @@ function buildTaskBundle(
 						(item.statement_end === undefined || item.statement_end === sourceStatementEnd)
 					: item.statement_ordinal === undefined || item.statement_ordinal === localOrdinal),
 			);
-			const hasCtasBoundary = statementType === "CREATE_TABLE" && /\bAS\s+(?:SELECT|WITH)\b/i.test(rawSql);
+			const hasCtasBoundary = statementType === "CREATE_TABLE" && readCreateTableHeader(rawSql)?.asQuery === true;
 			const writeKind = statementType === "CREATE_TABLE" ? (hasCtasBoundary ? "CTAS" : "CREATE_TABLE") : statementType;
 			const fieldProducing = hasCtasBoundary || statementType === "INSERT_OVERWRITE" || statementType === "INSERT_INTO";
 			const producerEnumerationStatus = fieldProducing && producerComplete ? "COMPLETE" : fieldProducing ? "NOT_EVALUABLE" : "NOT_APPLICABLE";

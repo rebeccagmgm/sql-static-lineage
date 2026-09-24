@@ -160,7 +160,8 @@ export function readTaskScheduleContext(
   ].filter((value): value is string => value !== null);
   const observedAt = observedCandidates.sort().at(-1) ?? null;
   const topicName = detailField(detail, ["topicName", "topic_name", "topic"]);
-  const taskName = detailField(detail, ["taskName", "task_name", "name"]);
+  // Legacy task-type evidence stores taskDesc in `name`; it is not a task name.
+  const taskName = detailField(detail, ["taskName", "task_name"]);
 
   return {
     inSchedule: true,

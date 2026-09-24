@@ -1,0 +1,142 @@
+{
+  "repository": "https://github.com/finos/common-domain-model",
+  "tag": "7.0.0",
+  "commit": "a6ffe777bc12ef3d289579cb3a86d1cbffea63d2",
+  "retrieved_at": "2026-09-18T08:55:10.917863+00:00",
+  "selection": "Selected upstream originals for reading; dependencies and referenced media are not complete; not a runnable distribution.",
+  "files": [
+    {
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/README.md",
+      "bytes": 19330,
+      "sha256": "59bc1ed320420e5ad1c94cfd4853f82b2af514b0eaa1ea1ab79a132b3f2c37e1"
+    },
+    {
+      "path": "LICENSE.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/LICENSE.md",
+      "bytes": 16142,
+      "sha256": "edbf99eb78c11a79ec3f4f669746877cbc9182e8c13699adff4369717c96de21"
+    },
+    {
+      "path": "NOTICE.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/NOTICE.md",
+      "bytes": 2358,
+      "sha256": "c4b681d11530984d1dfd2c02ab73df7af8c44c576b117c64875e731217791871"
+    },
+    {
+      "path": "docs/common-domain-model.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/common-domain-model.md",
+      "bytes": 977,
+      "sha256": "3703f18a8c6d39736993a407f2d1896fa89838e27539d379abb5baeeec4f64d3"
+    },
+    {
+      "path": "docs/namespace.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/namespace.md",
+      "bytes": 3300,
+      "sha256": "4e8826f6ce1a041a3d73bc191e0708f86cfee0fc7e713bbabade26c57f2dad2f"
+    },
+    {
+      "path": "docs/product-model.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/product-model.md",
+      "bytes": 49485,
+      "sha256": "b09bf448f4601057b7e8c81023c4c0f6d8fb758c8c20275cc47c2dbb7dd03393"
+    },
+    {
+      "path": "docs/event-model.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/event-model.md",
+      "bytes": 38984,
+      "sha256": "71100342caa0d1048b0ef622bddbc4a54503f81e747f0d0ddf739f5adbbc191c"
+    },
+    {
+      "path": "docs/legal-agreements.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/legal-agreements.md",
+      "bytes": 20138,
+      "sha256": "5f117043d6dd299217074f51c658d33021c96763fa1ee2a25cf5aae83ae14418"
+    },
+    {
+      "path": "docs/serialization.md",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/docs/serialization.md",
+      "bytes": 3969,
+      "sha256": "9ea2fe092f07af478f74601ac1d532fa5c50ade4f8f6c35028f3d42c257ece89"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/base-datetime-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/base-datetime-type.rosetta",
+      "bytes": 27164,
+      "sha256": "2e13d9d22655573418bf13b1768ed362ca8bed89d8101b6f575653ebfaf628d1"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/base-math-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/base-math-type.rosetta",
+      "bytes": 10987,
+      "sha256": "7f63e590725e3a9c069cf1229fb9369c30ede17389625d8541701ada7e7984d7"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/base-staticdata-identifier-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/base-staticdata-identifier-type.rosetta",
+      "bytes": 3745,
+      "sha256": "45e35334685f59a8f493867d90c7d266ea8d9aad8324fca475a134fda8afd8d7"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/base-staticdata-party-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/base-staticdata-party-type.rosetta",
+      "bytes": 18000,
+      "sha256": "dd5b6377f0130d0fbe810e072006006c660e087fc10035857fa975556ad94ddf"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/base-staticdata-asset-common-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/base-staticdata-asset-common-type.rosetta",
+      "bytes": 29847,
+      "sha256": "083dbd053d759318a8fe5861c456304238e2240a8aa210247ae6ae18930860ca"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/observable-asset-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/observable-asset-type.rosetta",
+      "bytes": 46434,
+      "sha256": "806777ddb6393579bb0b66f5d15b26bc280ee120e447aa535a49bc4a077ebe64"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/product-template-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/product-template-type.rosetta",
+      "bytes": 94391,
+      "sha256": "94cc8eea076040fb1041bf8dc9f22726399cfe6aaeb7d5a22b13c4fcae33190e"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/product-asset-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/product-asset-type.rosetta",
+      "bytes": 83893,
+      "sha256": "c713c5f1b5cdc7812a217c57f17fd05e7912211c3485481b2cbac2af1fe0a340"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/product-common-settlement-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/product-common-settlement-type.rosetta",
+      "bytes": 52448,
+      "sha256": "fd0723d2512095c186eca1dbc911b69f2f8adf24cc44db1639f1455199168a7b"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/event-common-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/event-common-type.rosetta",
+      "bytes": 89936,
+      "sha256": "5c5bbe6f08e0bb49ba094a1972a37844d3220ccc9ce23d9087abf58a83d375e0"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/event-position-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/event-position-type.rosetta",
+      "bytes": 10657,
+      "sha256": "b526c2153b416a161eca7a2b2c0b5f08646fbd4e862af9bd12d493223db3913c"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/legaldocumentation-common-type.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/legaldocumentation-common-type.rosetta",
+      "bytes": 21641,
+      "sha256": "6f43a2d8f184e2b0140241c098f1f5e7427b252d2361fad90b5037c12cecf6e7"
+    },
+    {
+      "path": "rosetta-source/src/main/rosetta/product-qualification-func.rosetta",
+      "url": "https://raw.githubusercontent.com/finos/common-domain-model/a6ffe777bc12ef3d289579cb3a86d1cbffea63d2/rosetta-source/src/main/rosetta/product-qualification-func.rosetta",
+      "bytes": 128974,
+      "sha256": "4c522e928f4c8956d3edf3176a366950321d6af689d6a3a2e4cf56365a9743d7"
+    }
+  ],
+  "unavailable": []
+}

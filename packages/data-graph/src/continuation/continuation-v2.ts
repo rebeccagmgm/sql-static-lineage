@@ -22,6 +22,8 @@ import {
 export type PartitionMatchStatus =
   "CONFIRMED" | "ASSUMED" | "UNKNOWN" | "DISJOINT";
 
+export const CONTINUATION_MATCH_POLICY_VERSION = "business-partitions-first-v3";
+
 export type UnionContinuationEvidenceLayer = "L1" | "L2";
 
 export type UnionContinuationGapCode =
@@ -200,8 +202,69 @@ export function traceUnionContinuationV2(
     }
   }
 
-  const partitionCandidates = tableCandidates.map((candidate) => {
-    const status = partitionMatchStatus(read, candidate.writeObservation);
+  const businessPredicates = read.partitionPredicates.filter(
+    (p) => !isBusinessDate(p.column),
+  );
+  const businessRead: UnionContinuationReadOccurrence = {
+    ...read,
+    partitionPredicates: businessPredicates,
+    // A read constrained only by the deferred date reads all business scopes.
+    // Keep genuinely unresolved (empty NON_LITERAL_PRESENT) predicates unknown.
+    partitionPredicateStatus:
+      businessPredicates.length === 0 && read.partitionPredicates.length > 0
+        ? "NONE"
+        : read.partitionPredicateStatus,
+  };
+  const businessMatches = tableCandidates.map((candidate) => {
+    const write = withoutBusinessDate(candidate.writeObservation);
+    // No date was deferred: preserve the existing matching rules verbatim.
+    if (write === candidate.writeObservation)
+      return {
+        status: partitionMatchStatus(read, write),
+        key: businessPartitionKey(write),
+      };
+    const predicates = businessPredicates.filter((predicate) =>
+      write.partition.some(
+        (part) => normalizeName(part.column) === normalizeName(predicate.column),
+      ),
+    );
+    const status = partitionMatchStatus(
+      {
+        ...businessRead,
+        partitionPredicates: predicates,
+        partitionPredicateStatus:
+          predicates.length === 0 && read.partitionPredicates.length > 0
+            ? "NONE"
+            : businessRead.partitionPredicateStatus,
+      },
+      write,
+    );
+    return {
+      // Ordinary row filters do not constrain partition identity. Preserve an
+      // existing successful match for unconstrained dynamic business scopes;
+      // do not require new metadata merely because busi_date was deferred.
+      status:
+        status === "UNKNOWN" &&
+        predicates.length === 0 &&
+        partitionMatchStatus(read, candidate.writeObservation) === "CONFIRMED"
+          ? ("CONFIRMED" as const)
+          : status,
+      key: businessPartitionKey(write),
+    };
+  });
+  const matchingGroups = new Map<string, number>();
+  for (const match of businessMatches) {
+    if (match.status === "CONFIRMED")
+      matchingGroups.set(match.key, (matchingGroups.get(match.key) ?? 0) + 1);
+  }
+  const partitionCandidates = tableCandidates.map((candidate, index) => {
+    const match = businessMatches[index]!;
+    // Only equally matched business scopes compete on busi_date. Different
+    // business scopes can legitimately contribute to the same broad read.
+    const status =
+      match.status === "CONFIRMED" && (matchingGroups.get(match.key) ?? 0) > 1
+        ? partitionMatchStatus(read, candidate.writeObservation)
+        : match.status;
     return {
       ...candidate,
       partitionMatchStatus: status,
@@ -656,10 +719,56 @@ function shouldCompareWritePartitionColumn(
   );
 }
 
-/** Project policy: an unassigned busi_date does not constrain continuation.
- * Explicit batch labels still compare normally; other partition fields keep
- * their existing matching rules. This does not invent a value in Machine Facts.
- */
+function isBusinessDate(column: string): boolean {
+  return normalizeName(column) === "busi_date";
+}
+
+function withoutBusinessDate(
+  write: UnionContinuationWriteObservation,
+): UnionContinuationWriteObservation {
+  if (!write.partition.some((part) => isBusinessDate(part.column)))
+    return write;
+  const partition = write.partition.filter(
+    (part) => !isBusinessDate(part.column),
+  );
+  return {
+    ...write,
+    partition,
+    // The overall status is derived from the first partition in the producer
+    // index. Recompute it so a deferred date cannot poison business matching.
+    partitionStatus:
+      partition.find((part) => part.partitionStatus)?.partitionStatus ?? null,
+  };
+}
+
+function businessPartitionKey(
+  write: UnionContinuationWriteObservation,
+): string {
+  const ranges = expandPartitionAlternatives(write.partition);
+  // Malformed alternatives never receive CONFIRMED and cannot form a tie.
+  if (!ranges) return "UNKNOWN";
+  return JSON.stringify(
+    sortedUnique(
+      ranges.map((parts) =>
+        JSON.stringify(
+          parts
+            .map((part) => ({
+              column: normalizeName(part.column),
+              values: sortedUnique(
+                writePartitionRawValues(part).map((value) =>
+                  canonicalPartitionValue(part.column, value),
+                ),
+              ),
+              mayBeNull: part.mayBeNull ?? false,
+            }))
+            .sort((a, b) => compareText(a.column, b.column)),
+        ),
+      ),
+    ),
+  );
+}
+
+/** Unassigned dates remain unconstrained even when comparing tied writers. */
 function isUnassignedBusinessDate(part: ProducerPartition): boolean {
   if (normalizeName(part.column) !== "busi_date") return false;
   if (part.partitionStatus === "CONFLICT") return false;

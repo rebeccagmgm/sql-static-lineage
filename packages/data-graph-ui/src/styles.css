@@ -261,6 +261,7 @@ h1 {
   margin-top: 14px;
 }
 .results button {
+  position: relative;
   width: 100%;
   text-align: left;
   display: block;
@@ -584,6 +585,66 @@ h1 {
   font-size: 10px;
   font-weight: 600;
   line-height: 1.4;
+}
+.results button.selected-root {
+  border-color: #17635f;
+  background: #e6f2ed;
+  box-shadow: inset 3px 0 #17635f;
+}
+.result-check {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid #8da7a1;
+  border-radius: 4px;
+  color: #17635f;
+  font-weight: 700;
+}
+.multi-root-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid #b8cec8;
+  border-radius: 8px;
+  background: #f2f8f5;
+  font-size: 11px;
+}
+.multi-root-actions > button:last-child {
+  grid-column: 1 / -1;
+  border: 1px solid #b8cec8;
+  border-radius: 7px;
+  padding: 7px;
+  background: white;
+  color: #375a54;
+  cursor: pointer;
+}
+.edge-width-legend {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: #486863;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.edge-width-legend i {
+  display: inline-block;
+  width: 14px;
+  border-top: solid #547d76;
+}
+.edge-width-legend .thin { border-top-width: 1.5px; }
+.edge-width-legend .medium { border-top-width: 2.5px; }
+.edge-width-legend .wide { border-top-width: 3.5px; }
+.edge-width-legend .widest { border-top-width: 5px; }
+.edge-width-legend small {
+  margin-left: 2px;
+  color: #7b918d;
 }
 .task-node-topic {
   display: block;

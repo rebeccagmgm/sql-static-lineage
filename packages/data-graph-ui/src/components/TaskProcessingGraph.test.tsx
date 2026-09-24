@@ -7,6 +7,7 @@ import {
   processingAnchors,
 } from "./TaskProcessingGraph";
 import type { TaskFieldExplanation, TaskProcessingStage } from "../types";
+import { operationLabel, valuePresentation } from "./processing-presentation";
 
 const stage = (id: string, table: string, kind: TaskProcessingStage["kind"] = "WRITE"): TaskProcessingStage => ({
   id, table, kind, writeId: kind === "SOURCE" ? undefined : id,
@@ -30,7 +31,7 @@ const explanation = (): TaskFieldExplanation => ({
     { id: "temp-mid", from: "temp", to: "mid", kind: "VALUE" },
     { id: "old-mid", from: "old", to: "mid", kind: "CONDITION" },
     ...["I", "U", "S", "D"].flatMap((branch) => [
-      { id: `mid-${branch}`, from: "mid", to: branch, kind: "CONTROL" as const },
+      { id: `mid-${branch}`, from: "mid", to: branch, kind: "VALUE" as const },
       { id: `${branch}-final`, from: branch, to: "final", kind: "MATERIALIZATION" as const, label: "UNION ALL" },
     ]),
   ],
@@ -49,9 +50,9 @@ describe("task processing graph", () => {
     expect(html).toContain("temp_n.customer_temp");
     expect(html).toContain("temp_n.customer_mid");
     for (const branch of ["I", "U", "S", "D"]) expect(html).toContain(`${branch} 分支`);
-    expect(html.match(/data-processing-edge=/g)).toHaveLength(11);
+    expect(html.match(/data-processing-edge=/g)).toHaveLength(10);
     expect(html).toContain("UNION ALL");
-    expect(html).toContain("当前最终写入");
+    expect(html).toContain("当前查看字段");
   });
 
   it("shows per-stage create expressions, condition roles and SQL locations", () => {
@@ -69,14 +70,15 @@ describe("task processing graph", () => {
     expect(text).toContain("UPDATED_TS");
   });
 
-  it("draws distinct paths for value and condition dependencies between the same stages", () => {
+  it("defaults to value paths while retaining a control-view entry point", () => {
     const value = explanation();
     value.edges.push({ id: "source-temp-condition", from: "source", to: "temp", kind: "CONDITION" });
     const html = renderToStaticMarkup(<TaskProcessingGraphView explanation={value} />);
     const path = (id: string) => html.match(new RegExp(`data-processing-edge="${id}"[^>]*><path d="([^"]+)"`))?.[1];
     expect(path("source-temp")).toBeDefined();
-    expect(path("source-temp-condition")).toBeDefined();
-    expect(path("source-temp")).not.toBe(path("source-temp-condition"));
+    expect(path("source-temp-condition")).toBeUndefined();
+    expect(html).toContain("显示关联与过滤关系");
+    expect(value.edges.some(edge => edge.id === "source-temp-condition")).toBe(true);
   });
 
   it("keeps unresolved links and makes truncation and gaps visible", () => {
@@ -92,6 +94,8 @@ describe("task processing graph", () => {
     expect(html).toContain("同一字段存在多次候选写入");
     expect(html).toContain("待继续展开");
     expect(html).toContain("待确认");
+    expect(html).toContain('<details class="processing-gaps">');
+    expect(html).not.toContain('<details class="processing-gaps" open');
   });
 
   it("requires exact final binding identity and never guesses a write from table names", () => {
@@ -113,5 +117,51 @@ describe("task processing graph", () => {
     expect(layout.positions.size).toBe(2);
     expect(layout.cycleStageIds).toEqual(["a", "b"]);
     expect(layout.invalidEdgeIds).toEqual(["missing"]);
+  });
+
+  it("slices by the demanded field, excluding another value chain used only as a join key", () => {
+    const value = explanation();
+    value.anchor = { writeId: "mid", column: "fee1" };
+    value.stages.find(item => item.id === "mid")!.expressions = [{ id: "rename", column: "fee1", text: "B.fee AS fee1" }];
+    value.stages.find(item => item.id === "temp")!.expressions = [
+      { id: "fee", column: "fee", text: "A.fee AS fee" },
+      { id: "key", column: "id", text: "CONCAT('X', B.id) AS id" },
+    ];
+    value.edges = [
+      { id: "fee-input", from: "source", to: "temp", kind: "VALUE", columns: ["fee"], expressionIds: ["fee"] },
+      { id: "key-input", from: "old", to: "temp", kind: "VALUE", columns: ["id"], expressionIds: ["key"] },
+      { id: "rename", from: "temp", to: "mid", kind: "VALUE", columns: ["fee"], expressionIds: ["rename"] },
+      { id: "join", from: "temp", to: "mid", kind: "CONTROL", columns: ["id"] },
+    ];
+    const view = valuePresentation(value);
+    expect(view.stages.map(item => item.id)).toEqual(["source", "temp", "mid"]);
+    expect(view.edges.map(edge => edge.id)).toEqual(["fee-input", "rename"]);
+    const html = renderToStaticMarkup(<TaskProcessingGraphView explanation={value} />);
+    expect(html).toContain("fee1");
+    expect(html).toContain("原值传递");
+    expect(html).not.toContain('data-processing-stage="old"');
+    expect(html).not.toContain("CONCAT");
+  });
+
+  it("does not drop unresolved value paths or merge repeated writes", () => {
+    const value = explanation();
+    value.stages = [stage("first", "temp.same"), stage("second", "temp.same"), stage("final", "pdata_n.t")];
+    value.edges = ["first", "second"].map(from => ({ id: from, from, to: "final", kind: "VALUE", status: "UNRESOLVED" }));
+    expect(valuePresentation(value).stages).toHaveLength(3);
+    expect(valuePresentation(value).edges).toHaveLength(2);
+    expect(operationLabel("123 AS x")).toBe("固定值或参数");
+    expect(operationLabel("SUM(a.x) AS x")).toBe("表达式取值");
+  });
+
+  it("terminates a cyclic recorded dependency and retains its uncertainty", () => {
+    const value = explanation();
+    value.stages = [stage("first", "temp.same"), stage("final", "temp.same")];
+    value.edges = [
+      { id: "forward", from: "first", to: "final", kind: "VALUE", columns: ["x"] },
+      { id: "back", from: "final", to: "first", kind: "VALUE", columns: ["pty_name"] },
+    ];
+    const view = valuePresentation(value);
+    expect(view.stages).toHaveLength(2);
+    expect(layoutProcessingStages(view.stages, view.edges).cycleStageIds).toHaveLength(2);
   });
 });

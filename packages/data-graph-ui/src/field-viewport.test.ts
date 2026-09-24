@@ -30,3 +30,15 @@ describe("field viewport", () => {
     expect(edgeTouchesHiddenField({}, hidden)).toBe(false);
   });
 });
+
+
+it("folds both task segments when either original field is offscreen", () => {
+  const raw = {kind:"VALUE",from:"read",to:"write"};
+  const input = {sourceHandle:"read",targetHandle:"mapping:input",data:{raw}};
+  const output = {sourceHandle:"mapping:output",targetHandle:"write",data:{raw}};
+  for (const hidden of [new Set(["read"]), new Set(["write"])]) {
+    expect(edgeTouchesHiddenField(input, hidden)).toBe(true);
+    expect(edgeTouchesHiddenField(output, hidden)).toBe(true);
+  }
+  expect(edgeTouchesHiddenField(output, new Set())).toBe(false);
+});

@@ -1,5 +1,5 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { memo } from "react";
+import { Handle, Position, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
+import { memo, useEffect } from "react";
 import type { LineageNodeData } from "../graph-adapter";
 
 export interface TaskPort {
@@ -16,7 +16,7 @@ export type TaskNodeData = LineageNodeData & {
   onExpandCandidates?: () => void;
 };
 
-export const TaskNode = memo(function TaskNode({ data: rawData }: NodeProps) {
+export const TaskNode = memo(function TaskNode({ id, data: rawData }: NodeProps) {
   const data = rawData as TaskNodeData;
   const taskId = data.raw?.taskId ?? data.raw?.id.replace(/^task:/, "") ?? "—";
   const taskName =
@@ -25,6 +25,9 @@ export const TaskNode = memo(function TaskNode({ data: rawData }: NodeProps) {
     undefined;
   const cluster = typeof data.raw?.detail?.cluster === "string" ? data.raw.detail.cluster.trim() : "";
   const ports = data.taskPorts ?? [];
+  const updateNodeInternals = useUpdateNodeInternals();
+  const portSignature = JSON.stringify(ports.map(port => [port.id, port.direction]));
+  useEffect(() => { updateNodeInternals(id); }, [id, portSignature, updateNodeInternals]);
   const topicName =
     (typeof data.raw?.detail?.topicName === "string" &&
       data.raw.detail.topicName.trim()) ||
@@ -47,7 +50,10 @@ export const TaskNode = memo(function TaskNode({ data: rawData }: NodeProps) {
         type={type}
         position={position}
         title={`${port.direction === "input" ? "输入" : "输出"} · ${port.label}`}
-        style={{ top: `${24 + ((index + 1) / (items.length + 1)) * 56}%` }}
+        style={{
+          top: `${24 + ((index + 1) / (items.length + 1)) * 56}%`,
+          opacity: data.highlightActive && !data.activeFieldIds?.includes(port.fieldNodeId) ? 0.14 : 1,
+        }}
       />
     ));
   return (

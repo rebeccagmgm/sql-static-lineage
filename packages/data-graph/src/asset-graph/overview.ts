@@ -58,12 +58,17 @@ export async function getAssetGraphOverview(
   const initial = await store.ready();
   const regionLimit = bounded(input.regionLimit, 100, 100);
   const flowLimit = bounded(input.flowLimit, 150, 150);
+  // Seek selected tasks by their unique key, then deduplicate adjacent datasets.
+  // The unfiltered path keeps the direct dataset scan.
+  const datasetMatch = input.clusterTaskIds === undefined
+    ? "MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE "
+    : "UNWIND $clusterTaskIds AS taskId WITH $graphId+'|'+taskId AS taskKey MATCH (task:SLAssetNode {key:taskKey}) MATCH (task)-[r:SL_ASSET_EDGE]-(n:SLAssetNode) WHERE task.graphId=$graphId AND task.kind='TASK' AND r.graphId=$graphId AND r.kind IN ['READS_TABLE','WRITES_TABLE'] AND n.graphId=$graphId AND n.kind='PHYSICAL_DATASET' WITH DISTINCT n WHERE ";
   const excludedResult = await store.run(
-    `MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${clusterTablePredicate("n")} AND (size(split(coalesce(n.table,''),'.')) < 2 OR split(coalesce(n.table,''),'.')[0] = '' OR split(coalesce(n.table,''),'.')[1] = ''  ) RETURN count(*) AS datasetCount`,
+    `${datasetMatch}(size(split(coalesce(n.table,''),'.')) < 2 OR split(coalesce(n.table,''),'.')[0] = '' OR split(coalesce(n.table,''),'.')[1] = ''  ) RETURN count(*) AS datasetCount`,
     clusterParams(input.clusterTaskIds),
   );
   const regionResult = await store.run(
-    `MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${clusterTablePredicate("n")} AND ${tableVisibilityPredicate("n")} AND size(split(coalesce(n.table,''),'.')) >= 2 AND split(coalesce(n.table,''),'.')[0] <> '' AND split(coalesce(n.table,''),'.')[1] <> '' WITH split(n.table,'.')[0] AS schema,count(*) AS datasetCount RETURN schema,datasetCount ORDER BY datasetCount DESC,schema LIMIT $limit`,
+    `${datasetMatch}${tableVisibilityPredicate("n")} AND size(split(coalesce(n.table,''),'.')) >= 2 AND split(coalesce(n.table,''),'.')[0] <> '' AND split(coalesce(n.table,''),'.')[1] <> '' WITH split(n.table,'.')[0] AS schema,count(*) AS datasetCount RETURN schema,datasetCount ORDER BY datasetCount DESC,schema LIMIT $limit`,
     { limit: regionLimit + 1, hiddenTables, ...clusterParams(input.clusterTaskIds) },
   );
   const regionRows = regionResult.records.slice(0, regionLimit);

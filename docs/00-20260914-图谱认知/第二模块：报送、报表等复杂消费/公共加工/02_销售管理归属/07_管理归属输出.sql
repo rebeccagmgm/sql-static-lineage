@@ -1,10 +1,25 @@
--- 07：以销售合约为起点，把两条独立的人员线并排写入管理归属表。
--- 介绍关系：合约号找ci、客户号找cpi → 每个字段优先ci，NULL才取cpi。
--- 经办角色：普通、内部各自选账号；TIT按内部流水号取属性 → 分别补员工资料。
--- info/ci/fl/cpi来自04_合约与客户关系；cp/s_ba/is_ba及经办员工来自05_普通与内部经办；
--- tit及其员工资料来自06_TIT经办与客户经理。输入实际表与关键字段注释见对应文件。
--- 例：A1合约关系只有王五1.0，则第2/3组已是空串/0，不会再用客户的李四补齐。
--- SELECT DISTINCT去重全部59个输出值，不是每合约只取一行；此任务不计算收入分摊。
+/**
+-- 07｜生成合约管理归属：汇总介绍关系、OIS经办角色和TIT角色
+-- 以 sale_contract 中的销售合约为主表，一份合约同时补充三套彼此独立的人员信息：
+
+                         一份销售合约
+                              │
+          ┌───────────────────┼───────────────────┐
+          │                   │                   │
+      介绍关系             OIS经办              TIT角色
+          │                   │                   │
+   合约级 ci 优先       ┌─────┴─────┐      Inr_Seri_No
+   客户级 cpi 回退      普通        内部             │
+          │             │           │               ├─ operator
+       最多3组       s_ba→cp      is_ba→cp           └─ customerManager
+          │             │           │
+ 引入部门/分公司      主经办      内部主经办
+ 客户经理/比例        引入经办    内部引入经办
+
+它不是“合约介绍关系优先，缺几个介绍人就用客户介绍关系补几个”；而是对已经横排好的每个字段做 coalesce(ci, cpi)。
+
+
+*/
 insert overwrite table T98_OTC_COMP_MNG_RELA_INFO partition(busi_date = '${data_day_str}')
 select distinct
     info.Agt_Id, -- 合约编号
@@ -82,23 +97,23 @@ select distinct
     coalesce(ci.Cust_Mngr_Emp_Stat_Cd_3, cpi.Cust_Mngr_Emp_Stat_Cd_3) as Cust_Mngr_Emp_Stat_Cd_3, -- 客户经理员工状态代码_3
     coalesce(ci.Cust_Mngr_Emp_Stat_Desc_3, cpi.Cust_Mngr_Emp_Stat_Desc_3) as Cust_Mngr_Emp_Stat_Desc_3 -- 客户经理员工状态描述_3
 -- 以下依次接上资料；均为LEFT JOIN，缺少某侧资料不直接剔除销售合约。
--- ① 介绍关系：Agt_Id找合约关系ci；客户号找客户关系cpi。
-from sale_contract info
-left join contract_introduction ci
-on ci.Contract_Code = info.Agt_Id
-left join floating_voucher fl
-on fl.comp_no = info.Agt_Id
--- 满足特殊客户+凭证匹配才换查找键；Pty_Id输出不变，NULL替代键也不回原客户。
-left join customer_introduction cpi
-on cpi.client_id = if(info.Cutp_Pty_Id = 'DEV1100100652' and fl.comp_no is not null, fl.deal_cutp_no, info.Cutp_Pty_Id)
+-- ① 介绍关系：Agt_Id找合约关系ci；按交易对手客户编号查客户级介绍关系cpi。
+from sale_contract info --合约范围
+left join contract_introduction ci --合约级介绍关系
+    on ci.Contract_Code = info.Agt_Id
+left join floating_voucher fl --浮动收益凭证台账
+    on fl.comp_no = info.Agt_Id
+-- 这里只切换“客户关系的查找键”； 满足特殊客户+凭证匹配才换查找键；Pty_Id输出不变，NULL替代键也不回原客户。
+left join customer_introduction cpi --交易对手客户级介绍关系
+    on cpi.client_id = if(info.Cutp_Pty_Id = 'DEV1100100652' and fl.comp_no is not null, fl.deal_cutp_no, info.Cutp_Pty_Id)
 
 -- ② 客户经办cp：普通、内部经办共同使用的回退账号来源，不是介绍关系中的客户经理。
-left join customer_operator cp
+left join customer_operator cp --客户经办信息
 on cp.client_id = if(info.Cutp_Pty_Id = 'DEV1100100652' and fl.comp_no is not null, fl.deal_cutp_no, info.Cutp_Pty_Id)
 
 -- ③ 普通经办：普通合约参数s_ba优先，NULL账号才回退cp，再查员工。
 -- 参数仅匹配OTC；选中账号但查不到员工时，不会再换cp账号。
-left join contract_operator s_ba
+left join contract_operator s_ba --普通合约经办关系
 on info.agt_id = s_ba.CONTRACT_CODE and info.Book_Bel_Dept = 'OTC'
 LEFT JOIN operator_employee Main
 ON coalesce(s_ba.operator_name, cp.operator) = Main.OA_User_Id
@@ -106,7 +121,7 @@ LEFT JOIN operator_employee Intro
 ON coalesce(s_ba.introduction_operator_name, cp.introduction_operator) = Intro.OA_User_Id
 
 -- ④ 内部经办：内部参数is_ba独立选择，也可回退cp；无上面的OTC部门限制。
-left join internal_contract_operator is_ba
+left join internal_contract_operator is_ba --内部合约经办关系
 on info.agt_id = is_ba.CONTRACT_CODE
 LEFT JOIN operator_employee i_Main
 ON coalesce(is_ba.operator_name, cp.operator) = i_Main.OA_User_Id

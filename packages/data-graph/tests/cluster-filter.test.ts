@@ -27,4 +27,21 @@ describe("cluster entry filter", () => {
     const catalog = new ClusterCatalog({ ready, run: vi.fn().mockResolvedValue({ records: [] }) } as never, { resolveClusters: () => ({}) });
     await expect(catalog.read()).rejects.toThrow("ASSET_GRAPH_CHANGED_DURING_QUERY");
   });
+  it("refreshes cluster labels after expiry without rescanning unchanged published tasks", async () => {
+    const clock = vi.spyOn(Date, "now").mockReturnValue(1000);
+    try {
+      const ready = vi.fn().mockResolvedValue({ version: "v1" });
+      const run = vi.fn().mockResolvedValue({ records: [{ get: () => "task:1" }] });
+      const resolveClusters = vi.fn().mockReturnValue({ "1": "A" });
+      const catalog = new ClusterCatalog({ ready, run } as never, { resolveClusters });
+      expect(await catalog.select(["A"])).toEqual(["task:1"]);
+      clock.mockReturnValue(32000);
+      resolveClusters.mockReturnValue({ "1": "B" });
+      expect(await catalog.select(["B"])).toEqual(["task:1"]);
+      expect(run).toHaveBeenCalledTimes(1);
+      ready.mockResolvedValue({ version: "v2" });
+      await catalog.read();
+      expect(run).toHaveBeenCalledTimes(2);
+    } finally { clock.mockRestore(); }
+  });
 });

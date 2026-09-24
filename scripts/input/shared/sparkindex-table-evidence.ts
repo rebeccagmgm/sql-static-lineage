@@ -22,6 +22,11 @@ import {
 } from "./input-pack.ts";
 import { extractSqlWriteTableNames } from "./sql-target-evidence.ts";
 import { extractSqlReadTableNames } from "./sql-table-references.ts";
+import {
+  inferTaskDefaultSchema,
+  qualifyBareTableName,
+  type TaskDefaultSchema,
+} from "../../reconcile/shared/task-default-schema.ts";
 
 export const DEFAULT_HIVE_METADATA_SNAPSHOT_PATH =
   "E:\\02_area\\股衍数据-数据cookbook\\数综基础信息\\原信息\\hive元信息-20260831快照\\hive_table_restored.jsonl";
@@ -670,6 +675,7 @@ function isCompleteCreateSql(sql: string, targetEnd: number): boolean {
 function createStatementTargetMatches(
   rawTarget: string | undefined,
   qualifiedName: string,
+  defaultSchema: TaskDefaultSchema | null,
 ): boolean {
   if (rawTarget === undefined) return false;
   const parsed = normalizeSparkIndexQualifiedName(rawTarget);
@@ -677,23 +683,21 @@ function createStatementTargetMatches(
     return parsed.toLowerCase() === qualifiedName.toLowerCase();
   const tableOnly = normalizeIdentifierPart(rawTarget.trim());
   if (tableOnly === undefined || tableOnly.includes(".")) return false;
-  const expectedTable = qualifiedName.split(".").at(-1);
-  return (
-    expectedTable !== undefined &&
-    tableOnly.toLowerCase() === expectedTable.toLowerCase()
-  );
+  if (defaultSchema === null) return false;
+  return qualifyBareTableName(tableOnly, defaultSchema) === qualifiedName.toLowerCase();
 }
 
 function exactCreateStatements(
   sql: string,
   qualifiedName: string,
+  defaultSchema: TaskDefaultSchema | null,
 ): readonly string[] {
   const masked = maskSql(sql);
   const statements: string[] = [];
   CREATE_PATTERN.lastIndex = 0;
   for (const match of masked.matchAll(CREATE_PATTERN)) {
     const rawTarget = match[1];
-    if (!createStatementTargetMatches(rawTarget, qualifiedName)) continue;
+    if (!createStatementTargetMatches(rawTarget, qualifiedName, defaultSchema)) continue;
     const start = match.index ?? 0;
     const targetEnd = start + match[0].indexOf(rawTarget ?? "") + (rawTarget?.length ?? 0);
     const end = sqlStatementEnd(sql, start);
@@ -715,10 +719,11 @@ function uniqueCreateStatement(
 export function uniqueTaskSqlCreateStatement(
   sql: Partial<Record<SqlSlot, string>>,
   qualifiedName: string,
+  defaultSchema: TaskDefaultSchema | null = null,
 ): { readonly ddl?: string; readonly conflict: boolean } {
   return uniqueCreateStatement(
     Object.values(sql).flatMap((content) =>
-      exactCreateStatements(content ?? "", qualifiedName),
+      exactCreateStatements(content ?? "", qualifiedName, defaultSchema),
     ),
   );
 }
@@ -1136,10 +1141,8 @@ export function resolveSparkIndexTables(
       continue;
     }
 
-    const creates = uniqueCreateStatement(
-      Object.values(sql).flatMap((content) =>
-        exactCreateStatements(content ?? "", candidate.qualifiedName),
-      ),
+    const creates = uniqueTaskSqlCreateStatement(
+      sql, candidate.qualifiedName, inferTaskDefaultSchema(taskEvidence),
     );
     if (creates.conflict) {
       unavailable.push({ candidate, reason: "SQL_CREATE_CONFLICT" });

@@ -62,6 +62,124 @@ function client() {
   };
 }
 describe("bounded scope loading", () => {
+  it("keeps each writer's branch when expanding and replaying a mixed table/task scope", async () => {
+    const api = client();
+    const loaded = await loadScope([refs[0]!, refs[2]!], () => true, api);
+    const writers = ["7", "8"].map((taskId) => ({
+      id: `ctx:${taskId}`,
+      kind: "PHYSICAL_DATASET",
+      table: b.table,
+      physicalNodeId: b.id,
+      detail: {
+        taskTableContext: {
+          taskNodeId: `task:${taskId}`,
+          datasetId: b.id,
+          role: "WRITE",
+        },
+      },
+    }));
+    loaded.trace = {
+      ...loaded.trace,
+      nodes: [b, ...writers, task, { ...task, id: "task:8", taskId: "8" }],
+      edges: writers.map((w, i) => ({
+        id: `write:${i}`,
+        from: `task:${i + 7}`,
+        to: w.id,
+        kind: "WRITES_TABLE",
+      })),
+    };
+    const before = JSON.stringify(loaded);
+    api.trace.mockImplementation(async (input) => {
+      const id = (input as { nodeId?: string }).nodeId;
+      const index = writers.findIndex((n) => n.id === id);
+      if (index < 0) throw new Error("Unexpected global table query");
+      const reader: GraphNode = {
+        id: `task:${index + 20}`,
+        kind: "TASK",
+        taskId: String(index + 20),
+      };
+      return {
+        ...loaded.trace,
+        nodes: [writers[index]!, reader],
+        truncated: index === 1,
+        edges: [
+          {
+            id: `read:${index}`,
+            from: id!,
+            to: reader.id,
+            kind: "READS_TABLE",
+          },
+        ],
+      };
+    });
+    api.trace.mockClear();
+    const expanded = await expandScope(loaded, b.id, "down", () => true, api);
+    expect(
+      api.trace.mock.calls.map(([i]) => (i as { nodeId?: string }).nodeId),
+    ).toEqual(["ctx:7", "ctx:8"]);
+    expect(expanded.trace.edges.map((e) => [e.from, e.to])).toEqual([
+      ["task:7", "ctx:7"],
+      ["task:8", "ctx:8"],
+      ["ctx:7", "task:20"],
+      ["ctx:8", "task:21"],
+    ]);
+    expect(expanded.warnings).toContain("本次展开达到查询上限，关系不完整。");
+    expect(JSON.stringify(loaded)).toBe(before);
+    expect(collapseScope(expanded).trace).toEqual(loaded.trace);
+    const step = expanded.expansions!.at(-1)!;
+    const replayed = await expandScope(
+      loaded,
+      step.nodeId,
+      step.direction,
+      () => true,
+      api,
+    );
+    expect(replayed.trace).toEqual(expanded.trace);
+  });
+  it("expands a merged card with the original task contexts and saves it as one reversible step", async () => {
+    const api = client();
+    const loaded = await loadScope([refs[0]!], () => true, api);
+    loaded.trace = {
+      ...loaded.trace,
+      nodes: [
+        task,
+        ...["r1", "r2"].map((id, index) => ({
+          id,
+          kind: "PHYSICAL_DATASET",
+          table: "model.shared",
+          physicalNodeId: "dataset:shared",
+          detail: {
+            identityStatus: "CONFIRMED",
+            taskTableContext: {
+              taskNodeId: `task:${index + 1}`,
+              datasetId: "dataset:shared",
+              role: "READ",
+            },
+          },
+        })),
+      ],
+      edges: [],
+    };
+    api.trace.mockResolvedValue({ ...loaded.trace, nodes: [task], edges: [] });
+    api.trace.mockClear();
+    const expanded = await expandScope(
+      loaded,
+      "dataset:shared",
+      "up",
+      () => true,
+      api,
+    );
+    const anchors = api.trace.mock.calls.map(
+      ([input]) => (input as { nodeId?: string }).nodeId,
+    );
+    expect(anchors).toEqual(["r1", "r2"]);
+    expect(anchors).not.toContain("dataset:shared");
+    expect(expanded.expansions).toEqual([
+      { nodeId: "dataset:shared", direction: "up" },
+    ]);
+    expect(expanded.history).toHaveLength(1);
+    expect(collapseScope(expanded).trace).toEqual(loaded.trace);
+  });
   it("reads a known task directly and reuses its input and cluster metadata", async () => {
     const api = client();
     const loaded = await loadScope(

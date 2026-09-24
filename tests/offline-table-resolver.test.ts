@@ -17,6 +17,61 @@ import {
   preferredRdbmsDataSourceFromTaskSource,
 } from "../scripts/input/shared/horae-datasource-cache.ts";
 import { writeTableInput, type TaskEvidence } from "../scripts/input/shared/input-pack.ts";
+import { uniqueTaskSqlCreateStatement } from "../scripts/input/shared/sparkindex-table-evidence.ts";
+import { inferTaskDefaultSchema } from "../scripts/reconcile/shared/task-default-schema.ts";
+
+describe("task CREATE default schema", () => {
+  const sql = { create: "CREATE TABLE FILE_HK_HHZG (Subj_Cd STRING)" };
+  const context = inferTaskDefaultSchema({
+    taskName: "pdata_nds.file_hk_hhzg",
+    target: "pdata_nds.file_hk_hhzg",
+  });
+
+  it("binds a bare CREATE only inside the task default schema", () => {
+    expect(uniqueTaskSqlCreateStatement(sql, "pdata_nds.file_hk_hhzg", context).ddl).toBe(sql.create);
+    expect(uniqueTaskSqlCreateStatement(sql, "odata_n_sip.file_hk_hhzg", context).ddl).toBeUndefined();
+  });
+
+  it("does not bind bare CREATE without an unambiguous default schema", () => {
+    expect(uniqueTaskSqlCreateStatement(sql, "pdata_nds.file_hk_hhzg").ddl).toBeUndefined();
+    const conflicting = inferTaskDefaultSchema({ taskName: "other.file_hk_hhzg", target: "pdata_nds.file_hk_hhzg" });
+    expect(uniqueTaskSqlCreateStatement(sql, "pdata_nds.file_hk_hhzg", conflicting).ddl).toBeUndefined();
+  });
+
+  it("keeps explicitly qualified CREATE independent of the default schema", () => {
+    const explicit = { create: "CREATE TABLE odata_n_sip.file_hk_hhzg (security_code STRING)" };
+    expect(uniqueTaskSqlCreateStatement(explicit, "odata_n_sip.file_hk_hhzg", context).ddl).toBe(explicit.create);
+    expect(uniqueTaskSqlCreateStatement(explicit, "pdata_nds.file_hk_hhzg", context).ddl).toBeUndefined();
+  });
+
+  it("does not report a conflict for creates in different databases", () => {
+    const separate = { ...sql, prepare: "CREATE TABLE odata_n_sip.file_hk_hhzg (security_code STRING)" };
+    expect(uniqueTaskSqlCreateStatement(separate, "pdata_nds.file_hk_hhzg", context)).toEqual({ ddl: sql.create, conflict: false });
+  });
+
+  it("does not replace a rejected cross-schema CREATE with target projection columns", () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-create-default-"));
+    const catalog = loadOfflineTableCatalog({
+      hiveMetadataPath: writeJsonl(dir, "metadata.jsonl", [
+        { qualifiedname_clean: "odata_n_sip.file_hk_hhzg", datasource: "gfhive", status: "ACTIVE", type_name: "hive_table" },
+        { qualifiedname_clean: "pdata_nds.file_hk_hhzg", datasource: "gfhive", status: "ACTIVE", type_name: "hive_table" },
+      ]),
+      hiveDdlPath: writeJsonl(dir, "ddl.jsonl", []),
+      rdbmsCorePath: writeJsonl(dir, "core.jsonl", []),
+      rdbmsDdlPath: writeJsonl(dir, "rdbms-ddl.jsonl", []),
+      horaeDatasource: null,
+    });
+    const result = resolveOfflineTables(dir, task({
+      taskName: "pdata_nds.file_hk_hhzg",
+      taskCategory: "hiveTask",
+      target: "pdata_nds.file_hk_hhzg",
+      sql: { ...sql, query: "SELECT security_code AS Subj_Cd FROM odata_n_sip.file_hk_hhzg" },
+    }), catalog);
+    expect(result.resolved.map(item => item.qualifiedName)).toEqual(["pdata_nds.file_hk_hhzg"]);
+    expect(result.resolved[0]?.evidenceProvider).toBe("input-pack:task-sql-create");
+    expect(result.unavailable).toContainEqual({ qualifiedName: "odata_n_sip.file_hk_hhzg", reason: "HIVE_DDL_MISS" });
+  });
+});
 
 function writeJsonl(dir: string, name: string, lines: readonly unknown[]): string {
   const path = join(dir, name);
@@ -784,6 +839,7 @@ describe("offline table resolver", () => {
       mkdtempSync(join(tmpdir(), "pack-")),
       task({
         taskId: "151961",
+        taskName: "PDATA_N.T04_EMP_PERF_TGT",
         taskCategory: "hiveTask-2.0",
         target: "PDATA_N.T04_EMP_PERF_TGT",
         sql: { create, query: "INSERT OVERWRITE TABLE T04_EMP_PERF_TGT SELECT 1" },

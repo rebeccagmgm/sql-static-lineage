@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import {
-  Schema,
+	Schema,
+	tokenize,
   type SchemaMapping,
   type SchemaProvider,
 } from "sqllens";
@@ -93,26 +94,53 @@ function skipQuoted(text: string, start: number, quote: string): number {
 	return text.length;
 }
 
-function findOpenParenthesis(text: string, start: number): number {
-	for (let index = start; index < text.length; index += 1) {
-		const current = text[index]!;
-		if (current === "'" || current === '"' || current === "`") {
-			index = skipQuoted(text, index, current) - 1;
-			continue;
-		}
-		if (current === "-" && text[index + 1] === "-") {
-			const newline = text.indexOf("\n", index + 2);
-			index = newline < 0 ? text.length : newline;
-			continue;
-		}
-		if (current === "/" && text[index + 1] === "*") {
-			const close = text.indexOf("*/", index + 2);
-			index = close < 0 ? text.length : close + 1;
-			continue;
-		}
-		if (current === "(") return index;
+/** Lexical CREATE header only; SELECT semantics remain owned by the plan adapter. */
+export function readCreateTableHeader(sql: string): {
+	readonly target: string;
+	readonly columnListStart: number | null;
+	readonly asQuery: boolean;
+} | null {
+	const tokens = tokenize(sql, "databricks").filter(token => token.role !== "comment" && token.role !== "whitespace");
+	let index = 0;
+	// Metadata DDL may contain a preceding DROP. Only consider statement starts,
+	// never CREATE text inside a comment, string, or SELECT expression.
+	while (tokens[index] && tokens[index]!.text.toUpperCase() !== "CREATE") {
+		while (tokens[index] && tokens[index]!.text !== ";") index += 1;
+		index += 1;
 	}
-	return -1;
+	const take = (word: string): boolean => {
+		if (tokens[index]?.text.toUpperCase() !== word) return false;
+		index += 1;
+		return true;
+	};
+	if (!take("CREATE")) return null;
+	if (take("OR") && !take("REPLACE")) return null;
+	while (["EXTERNAL", "TEMPORARY", "TEMP"].includes(tokens[index]?.text.toUpperCase() ?? "")) index += 1;
+	if (!take("TABLE")) return null;
+	if (take("IF") && (!take("NOT") || !take("EXISTS"))) return null;
+	const parts: string[] = [];
+	do {
+		const token = tokens[index];
+		if (!token) return null;
+		const identifier = readIdentifier(sql, token.start);
+		if (!identifier) return null;
+		parts.push(identifier.name);
+		while (tokens[index] && tokens[index]!.start < identifier.end) index += 1;
+	} while (take("."));
+	const columnListStart = tokens[index]?.text === "(" ? tokens[index]!.start : null;
+	let depth = 0;
+	let asQuery = false;
+	for (; index < tokens.length; index += 1) {
+		const value = tokens[index]!.text.toUpperCase();
+		if (value === ";") break;
+		if (value === "(") depth += 1;
+		else if (value === ")") depth -= 1;
+		else if (depth === 0 && value === "AS" && ["SELECT", "WITH"].includes(tokens[index + 1]?.text.toUpperCase() ?? "")) {
+			asQuery = true;
+			break;
+		}
+	}
+	return { target: parts.join("."), columnListStart, asQuery };
 }
 
 function matchingParenthesis(text: string, open: number): number {
@@ -346,7 +374,7 @@ function parseSelectOutputColumns(sql: string): DdlColumn[] {
 }
 
 export function parseDdlSchema(ddl: string): ParsedDdlSchema {
-	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\b/i.exec(ddl);
+	const create = readCreateTableHeader(ddl);
 	if (!create) {
 		// SZData can return a view's defining SELECT through the table-ddl
 		// endpoint. Its output columns are still valid schema evidence for
@@ -356,8 +384,8 @@ export function parseDdlSchema(ddl: string): ParsedDdlSchema {
 			return { columns: viewColumns, partition_columns: [], warnings: [] };
 		return { columns: [], partition_columns: [], warnings: ["CREATE TABLE not found"] };
 	}
-	const open = findOpenParenthesis(ddl, create.index + create[0].length);
-	if (open < 0) return { columns: [], partition_columns: [], warnings: ["table column list not found"] };
+	const open = create.columnListStart;
+	if (open === null) return { columns: [], partition_columns: [], warnings: ["table column list not found"] };
 	const close = matchingParenthesis(ddl, open);
 	if (close < 0) return { columns: [], partition_columns: [], warnings: ["table column list is unbalanced"] };
 

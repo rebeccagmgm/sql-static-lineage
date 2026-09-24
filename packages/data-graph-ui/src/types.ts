@@ -63,6 +63,10 @@ export interface FieldValueOrigin {
   expression: string;
 }
 export interface GraphNode {
+  /** View-only members of a merged table card; original query nodes stay intact. */
+  tableContexts?: GraphNode[];
+  /** Canonical dataset behind a task-scoped display instance. */
+  physicalNodeId?: string;
   valueOrigin?: FieldValueOrigin;
   id: string;
   kind: string;
@@ -77,6 +81,8 @@ export interface GraphNode {
   [key: string]: unknown;
 }
 export interface GraphEdge {
+  /** All original table IO edges represented by this display line. */
+  tableRelations?: GraphEdge[];
   id?: string;
   key?: string;
   from: string;
@@ -152,10 +158,19 @@ export interface TerminalNode {
   ruleRef: string;
 }
 export interface TraceResult {
+  traversalScope?: "TASK_SCHEDULE";
+  scheduleReferences?: Array<{taskId: string; direction: Direction; neighborTaskIds: string[]}>;
   partitionSelection?: import("../../data-graph/src/asset-graph/partition-selection").PartitionSelection;
   scopeWarnings?: string[];
   /** Selected roots not queried because the combined relationship budget was reached. */
   unqueriedRootNodeIds?: string[];
+  /** Frontend-only completeness summary when independent table traces share one canvas. */
+  multiRootSummary?: {
+    requested: number;
+    completed: number;
+    failed: Array<{ rootId: string; label: string; message: string }>;
+    truncatedRootIds: string[];
+  };
   version: string;
   layer: GraphLayer;
   direction: Direction;
@@ -177,6 +192,14 @@ export interface TraceResult {
   elapsedMs: number;
 }
 export interface TaskDetail {
+  targetDdls?: Array<{
+    table: string;
+    writeId?: string;
+    status: "AVAILABLE" | "UNAVAILABLE" | "CHANGED";
+    content?: string;
+    source?: string;
+    collectedAt?: string;
+  }>;
   version: string;
   taskId: string;
   taskName?: string;
@@ -217,6 +240,8 @@ export interface Anchor {
   writeId?: string;
   /** Raw field members used when a visible field row represents several writes. */
   memberNodeIds?: string[];
+  /** View-only task-table anchors behind a merged physical table focus. */
+  tableContextIds?: string[];
   label: string;
 }
 export interface ProcessingSourceLocation {

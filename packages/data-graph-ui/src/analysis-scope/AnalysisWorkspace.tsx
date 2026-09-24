@@ -7,7 +7,11 @@ import {
   useNodesInitialized,
 } from "@xyflow/react";
 import { api } from "../api";
-import { adaptTrace, INPUT_EDGE_COLOR, OUTPUT_EDGE_COLOR } from "../graph-adapter";
+import {
+  adaptTrace,
+  INPUT_EDGE_COLOR,
+  OUTPUT_EDGE_COLOR,
+} from "../graph-adapter";
 import { createGraphHighlighter } from "../graph-highlight";
 import { DraggableLineageCanvas } from "../components/DraggableLineageCanvas";
 import { LineageNode } from "../components/LineageNode";
@@ -21,7 +25,7 @@ import {
   collectMultiFieldTrace,
   loadAllFieldPages,
 } from "../multi-field-trace";
-import type { GraphNode, TaskDetail, TraceResult } from "../types";
+import type { GraphEdge, GraphNode, TaskDetail, TraceResult } from "../types";
 import { loadScope, expandScope, collapseScope } from "./client";
 import { layoutTableTrace } from "./layout";
 import {
@@ -41,20 +45,46 @@ import {
   type ScopeRef,
   type ScopeExpansion,
 } from "./model";
-import { PRESETS } from "./presets";
+import { PRESETS, analysisScopeUrl, type ScopePreset } from "./presets";
+import { projectTableDisplay } from "./table-display";
+import { TableRelationsPanel } from "./TableRelationsPanel";
+import { loadPhysicalTableAnalysis } from "./physical-analysis";
 import "./style.css";
 
 const nodeTypes = { lineage: LineageNode, processingTask: TaskNode };
 
-export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: () => void; clusters: string[]; setClusters: (values: string[]) => void }) {
+interface PreviousScope {
+  name: string;
+  refs: ScopeRef[];
+  loaded: LoadedScope;
+  savedId?: string;
+  preset?: ScopePreset;
+  selectedId?: string;
+}
+
+export function AnalysisWorkspace({
+  onExit,
+  clusters,
+  setClusters,
+  initialPreset,
+}: {
+  onExit: () => void;
+  clusters: string[];
+  setClusters: (values: string[]) => void;
+  initialPreset?: ScopePreset;
+}) {
   const flow = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const lastFitted = useRef<TraceResult | undefined>(undefined);
-  const [name, setName] = useState("TIT → T01 · 当事人分类");
+  const [name, setName] = useState(initialPreset?.name ?? "新分析范围");
+  const [activePreset, setActivePreset] = useState<ScopePreset | undefined>(
+    initialPreset,
+  );
   const [refs, setRefs] = useState<ScopeRef[]>([]);
   const [loaded, setLoaded] = useState<LoadedScope>();
   const [saved, setSaved] = useState<SavedScope[]>([]);
   const [savedId, setSavedId] = useState<string>();
+  const [previousScopes, setPreviousScopes] = useState<PreviousScope[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,6 +97,7 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
   const [searchMore, setSearchMore] = useState(false);
   const [selected, setSelected] = useState<GraphNode>();
   const [inspected, setInspected] = useState<GraphNode>();
+  const [inspectedRelation, setInspectedRelation] = useState<GraphEdge>();
   const [fieldAnchor, setFieldAnchor] = useState<GraphNode>();
   const [detail, setDetail] = useState<TaskDetail>();
   const [detailBusy, setDetailBusy] = useState(false);
@@ -157,7 +188,9 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
       const entries = restoreScopes(localStorage.getItem(STORAGE_KEY));
       setSaved(entries);
       const last = entries.at(-1);
-      if (last) {
+      if (initialPreset) {
+        openPreset(initialPreset);
+      } else if (last) {
         setSavedId(last.id);
         setName(last.name);
         setRefs(last.members);
@@ -181,10 +214,29 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
     };
   }, []);
 
+  function setScopeLocation(presetId?: string) {
+    window.history.replaceState(
+      null,
+      "",
+      analysisScopeUrl(window.location.href, presetId),
+    );
+  }
+
+  function openPreset(preset: ScopePreset) {
+    setSavedId(undefined);
+    setActivePreset(preset);
+    setRefs(preset.members);
+    setName(preset.name);
+    setScopeLocation(preset.id);
+    void apply(preset.members, preset.name);
+  }
+
   function edit(next: ScopeRef[]) {
     ++sequence.current;
     setBusy(false);
     setRefs(next);
+    setActivePreset(undefined);
+    setScopeLocation();
     setDirty(true);
     setError("");
   }
@@ -215,6 +267,7 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
       );
       setSaved(entries);
       setSavedId(entry.id);
+      setScopeLocation();
       setNotice("已保存到当前浏览器；刷新后会重新读取此范围。");
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存失败");
@@ -253,9 +306,10 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
     ]);
   }
 
-  async function inspect(node: GraphNode) {
+  async function inspect(node: GraphNode, relation?: GraphEdge) {
     const request = ++detailSequence.current;
     setInspected(node);
+    setInspectedRelation(relation);
     setDetail(undefined);
     setDetailBusy(false);
     const taskId =
@@ -284,8 +338,104 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
     }
   }
 
+  function clearAnalysis() {
+    ++detailSequence.current;
+    setFieldTrace(undefined);
+    setTraceRootIds([]);
+    setFields([]);
+    setFieldIds([]);
+    setFieldTaskId("");
+    setFieldAnchor(undefined);
+    setInspected(undefined);
+    setInspectedRelation(undefined);
+    setDetail(undefined);
+    setDetailBusy(false);
+    setHighlight(undefined);
+  }
+
+  async function analyzePhysicalTable(node: GraphNode, source: LoadedScope) {
+    const request = ++sequence.current;
+    setBusy(true);
+    setError("");
+    setProgress("正在以物理表重新开始分析…");
+    try {
+      const result = await loadPhysicalTableAnalysis(node, clusters,
+        () => request === sequence.current, api,
+        message => { if (request === sequence.current) setProgress(message); });
+      if (request !== sequence.current) return;
+      setPreviousScopes(items => [...items.slice(-19), {
+        name, refs, loaded: source, savedId, preset: activePreset, selectedId: node.id,
+      }]);
+      clearAnalysis();
+      setLoaded(result.scope);
+      setRefs(result.scope.members.map(({ node: root, ...ref }) => ({ ...ref, id: root.id })));
+      const root = projectTableDisplay(result.scope.trace).nodes.find(n => n.id === result.scope.members[0]!.id)
+        ?? result.scope.members[0]!.node;
+      setSelected(root);
+      setInspected(root);
+      setFieldAnchor(root);
+      setFields(result.fields);
+      setName(`分析表 · ${root.table ?? root.label ?? root.id}`);
+      setSavedId(undefined);
+      setActivePreset(undefined);
+      setScopeLocation();
+      setDirty(false);
+      setNotice(`已以此物理表重新开始分析，退出原任务范围；${clusters.length ? "保留集群筛选，" : ""}已加载直接读写关系和 ${result.fields.length} 个输出字段。可返回上一分析范围。`);
+    } catch (e) {
+      if (request === sequence.current) setError(e instanceof Error ? e.message : "表分析加载失败，已保留原范围。");
+    } finally {
+      if (request === sequence.current) setBusy(false);
+    }
+  }
+
+  async function backToPreviousScope() {
+    const previous = previousScopes.at(-1);
+    if (!previous || busy) return;
+    const request = ++sequence.current;
+    setBusy(true);
+    setError("");
+    setProgress("正在恢复上一分析范围…");
+    try {
+      const version = String((await api.status()).version ?? "");
+      if (request !== sequence.current) return;
+      let result = previous.loaded;
+      if (version !== result.trace.version) {
+        result = await loadScope(previous.refs, () => request === sequence.current,
+          api, undefined, previous.loaded.clusters ?? []);
+        for (const step of previous.loaded.expansions ?? [])
+          result = await expandScope(result, step.nodeId, step.direction, () => request === sequence.current);
+      }
+      if (request !== sequence.current) return;
+      clearAnalysis();
+      setLoaded(result);
+      setRefs(result.members.map(({ node, ...ref }) => ({ ...ref, id: node.id })));
+      setName(previous.name);
+      setSavedId(previous.savedId);
+      setActivePreset(previous.preset);
+      setScopeLocation(previous.preset?.id);
+      setClusters(result.clusters ?? []);
+      ++searchSequence.current;
+      setSearchRows([]);
+      setSearchMore(false);
+      setSelected(projectTableDisplay(result.trace).nodes.find(n => n.id === previous.selectedId));
+      setDirty(false);
+      setPreviousScopes(items => items.slice(0, -1));
+      setNotice(version === previous.loaded.trace.version
+        ? "已返回上一分析范围，并恢复其集群筛选和已展开关系。"
+        : "图谱已换版，已按上一范围的起点和展开步骤重新查询。");
+    } catch (e) {
+      if (request === sequence.current) setError(e instanceof Error ? e.message : "恢复失败，已保留当前范围。");
+    } finally {
+      if (request === sequence.current) setBusy(false);
+    }
+  }
+
   async function chooseFields() {
-    if (!selected || !loaded || dirty) return;
+    if (!selected || !loaded || dirty || busy) return;
+    if (selected.kind === "PHYSICAL_DATASET") {
+      await analyzePhysicalTable(selected, loaded);
+      return;
+    }
     void inspect(selected);
     setFieldTrace(undefined);
     setFieldAnchor(selected);
@@ -426,7 +576,15 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
         : undefined,
     [loaded, fieldTrace, traceRootIds],
   );
-  const displayTrace = useMemo(() => projection ? fieldTrace ? projection.trace : layoutTableTrace(projection.trace) : undefined, [projection, fieldTrace]);
+  const displayTrace = useMemo(
+    () =>
+      projection
+        ? fieldTrace
+          ? projection.trace
+          : layoutTableTrace(projectTableDisplay(projection.trace))
+        : undefined,
+    [projection, fieldTrace],
+  );
   const baseGraph = useMemo(() => {
     if (!projection) return { nodes: [], edges: [] };
     return adaptTrace(
@@ -442,8 +600,25 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
       undefined,
     );
   }, [projection, displayTrace]);
-  const highlightGraph = useMemo(() => displayTrace ? createGraphHighlighter(displayTrace, baseGraph) : undefined, [displayTrace, baseGraph]);
-  const graph = useMemo(() => highlightGraph?.(highlight) ?? baseGraph, [highlightGraph, highlight, baseGraph]);
+  const inspectedRelations =
+    !fieldTrace && inspected?.kind === "PHYSICAL_DATASET"
+      ? inspectedRelation
+        ? [inspectedRelation]
+        : (displayTrace?.edges.filter(
+            (edge) => edge.from === inspected.id || edge.to === inspected.id,
+          ) ?? [])
+      : [];
+  const highlightGraph = useMemo(
+    () =>
+      displayTrace
+        ? createGraphHighlighter(displayTrace, baseGraph)
+        : undefined,
+    [displayTrace, baseGraph],
+  );
+  const graph = useMemo(
+    () => highlightGraph?.(highlight) ?? baseGraph,
+    [highlightGraph, highlight, baseGraph],
+  );
 
   const actionNode =
     selected && ["TASK", "PHYSICAL_DATASET"].includes(selected.kind)
@@ -456,7 +631,6 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
               )),
         )
       : undefined;
-
 
   function centerGraph() {
     return flow.fitView({
@@ -529,9 +703,10 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
           <h1>{name || "未命名范围"}</h1>
           <p>选择物理表、调度或二者混选，沿真实关系逐步展开上下游。</p>
         </div>
-        <button className="analysis-exit" onClick={onExit}>
-          返回自由探索
-        </button>
+        <div className="analysis-navigation">
+          {!!previousScopes.length && <button className="analysis-exit" disabled={busy} onClick={() => void backToPreviousScope()}>返回上一分析范围</button>}
+          <button className="analysis-exit" onClick={onExit}>返回自由探索</button>
+        </div>
       </header>
       <ResizableWorkspace>
         <aside className="search-panel panel analysis-panel">
@@ -562,16 +737,9 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
               <button
                 key={p.name}
                 disabled={busy}
-                onClick={() => {
-                  setSavedId(undefined);
-                  setRefs(p.members);
-                  setName(p.name);
-                  void apply(p.members, p.name);
-                }}
+                onClick={() => openPreset(p)}
               >
-                {p.name.endsWith("全部")
-                  ? "TIT → T01 全部"
-                  : "当事人分类 · 2 个调度"}
+                {p.label ?? p.name}
               </button>
             ))}
           </div>
@@ -605,6 +773,8 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
                 onChange={(e) => {
                   const entry = saved.find((s) => s.id === e.target.value);
                   if (entry) {
+                    setActivePreset(undefined);
+                    setScopeLocation();
                     setSavedId(entry.id);
                     setRefs(entry.members);
                     setName(entry.name);
@@ -800,7 +970,7 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
                       value={selected?.id ?? ""}
                       disabled={busy || dirty}
                       onChange={(e) => {
-                        const node = loaded.trace.nodes.find(
+                        const node = displayTrace?.nodes.find(
                           (n) => n.id === e.target.value,
                         );
                         if (node) {
@@ -813,7 +983,7 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
                       }}
                     >
                       <option value="">点击图中节点，或在此选择</option>
-                      {loaded.trace.nodes
+                      {displayTrace?.nodes
                         .filter((n) =>
                           ["TASK", "PHYSICAL_DATASET"].includes(n.kind),
                         )
@@ -889,6 +1059,12 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
               </button>
             </div>
           </div>
+          {activePreset?.description && (
+            <details className="analysis-boundary">
+              <summary>{activePreset.name} · 范围说明</summary>
+              <p>{activePreset.description}</p>
+            </details>
+          )}
           {busy && (
             <div className="notice neutral" role="status">
               {progress || "正在读取…"}{" "}
@@ -1012,6 +1188,24 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
                 scope={projection?.trace}
                 edges={graph.edges}
                 nodeTypes={nodeTypes}
+                onEdgeClick={(_, edge) => {
+                  if (busy || dirty || fieldTrace) return;
+                  const relation = edge.data?.raw as GraphEdge | undefined;
+                  if (
+                    !relation ||
+                    !["READS_TABLE", "WRITES_TABLE"].includes(relation.kind)
+                  )
+                    return;
+                  const table = displayTrace?.nodes.find(
+                    (node) =>
+                      node.kind === "PHYSICAL_DATASET" &&
+                      (node.id === relation.from || node.id === relation.to),
+                  );
+                  if (table) {
+                    setSelected(table);
+                    void inspect(table, relation);
+                  }
+                }}
                 onNodeClick={(_, n) => {
                   if (busy) return;
                   const raw = n.data.raw as GraphNode | undefined;
@@ -1073,11 +1267,24 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
             )}
           </div>
           <footer>
-            {!fieldTrace && <div className="legend"><span><i style={{borderColor: INPUT_EDGE_COLOR}} />输入</span><span><i style={{borderColor: OUTPUT_EDGE_COLOR}} />输出</span><span>拖动节点可调整位置</span></div>}
+            {!fieldTrace && (
+              <div className="legend">
+                <span>
+                  <i style={{ borderColor: INPUT_EDGE_COLOR }} />
+                  输入
+                </span>
+                <span>
+                  <i style={{ borderColor: OUTPUT_EDGE_COLOR }} />
+                  输出
+                </span>
+                <span>拖动节点可调整位置</span>
+              </div>
+            )}
             {!fieldTrace && (
               <p>
-                单击节点只选中并高亮上下游；再次点击或点击空白处取消高亮。点击“分析此表
-                / 分析此调度”进入字段分析，点击“查看加工证据”查看详情。
+                单击节点只选中并高亮上下游；上下游展开保留任务上下文。
+                “分析此表”以物理表重新开始，保留集群筛选；“分析此调度”在当前范围选择字段。
+                点击“查看加工证据”查看详情，点击连线查看读写记录。
               </p>
             )}
             <p>
@@ -1092,7 +1299,15 @@ export function AnalysisWorkspace({ onExit, clusters, setClusters }: { onExit: (
           node={inspected}
           detail={detail}
           loading={detailBusy}
-        />
+        >
+          {!!inspectedRelations.length && loaded && (
+            <TableRelationsPanel
+              edges={inspectedRelations}
+              nodes={loaded.trace.nodes}
+              onInspect={(node) => void inspect(node)}
+            />
+          )}
+        </DetailPanel>
       </ResizableWorkspace>
     </div>
   );

@@ -201,6 +201,12 @@ function stripWriteRecords(factsRoot: string, taskId: string): void {
 }
 
 describe("task-local coverage states", () => {
+  it("does not treat legacy task description as a scheduler name", () => {
+    const cacheRoot = mkdtempSync(join(tmpdir(), "task-description-name-"));
+    writeHoraeTaskTypeCache("245661", "2026-09-02T00:00:00.000Z",
+      { name: "105382,105388,244870" }, cacheRoot);
+    expect(readTaskScheduleContext("245661", cacheRoot)?.taskName).toBeNull();
+  });
   it("returns SCHEDULE_ONLY when schedule cache exists but Facts are unavailable", () => {
     const cacheRoot = mkdtempSync(join(tmpdir(), "task-local-schedule-only-"));
     const factsRoot = mkdtempSync(join(tmpdir(), "task-local-no-facts-"));

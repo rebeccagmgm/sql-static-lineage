@@ -1,6 +1,7 @@
 import { api } from "../api";
 import type { GraphNode, TraceResult } from "../types";
 import { restrictTableClusters, clusterBoundaryWarning } from "./clusters";
+import { scopeExpansionNodes } from "./table-display";
 import {
   MAX_MEMBERS,
   type LoadedScope,
@@ -324,22 +325,27 @@ export async function expandScope(
   client: Client = api,
 ): Promise<LoadedScope> {
   ensureCurrent(current);
-  const node = loaded.trace.nodes.find(
-    (n) => n.id === nodeId && ["TASK", "PHYSICAL_DATASET"].includes(n.kind),
+  const nodes = scopeExpansionNodes(loaded.trace, nodeId, direction).filter(
+    (n) => ["TASK", "PHYSICAL_DATASET"].includes(n.kind),
   );
-  if (!node) throw new Error("当前图中找不到要展开的表或调度，请重新选择。");
+  if (!nodes.length)
+    throw new Error("当前图中找不到要展开的表或调度，请重新选择。");
+  if (nodes.length > 60)
+    throw new Error("此表关联的任务上下文超过 60 个，请选择具体调度展开。");
   if ((loaded.expansions?.length ?? 0) >= 40)
     throw new Error("已展开 40 次，请先收起部分展开。");
-  const result = await request(
-    client.trace({
-      ...anchor(node),
-      layer: "table",
-      direction,
-      depth: 1,
-      includeCandidates: true,
-    }),
-    current,
-    "展开关系",
+  const results = await boundedMap(nodes, (node) =>
+    request(
+      client.trace({
+        ...anchor(node),
+        layer: "table",
+        direction,
+        depth: 1,
+        includeCandidates: true,
+      }),
+      current,
+      "展开关系",
+    ),
   );
   if (
     String(
@@ -348,7 +354,7 @@ export async function expandScope(
   )
     throw new Error("图谱已换版，请重新打开范围。");
   const restricted = restrictTableClusters(
-    mergeTraces([loaded.trace, result], loaded.trace.version),
+    mergeTraces([loaded.trace, ...results], loaded.trace.version),
     loaded.clusters ?? [],
     loaded.trace.nodes.map((n) => n.id),
   );
@@ -357,7 +363,9 @@ export async function expandScope(
     trace: restricted.trace,
     warnings: [
       ...loaded.warnings,
-      ...(result.truncated ? ["本次展开达到查询上限，关系不完整。"] : []),
+      ...(results.some((result) => result.truncated)
+        ? ["本次展开达到查询上限，关系不完整。"]
+        : []),
       ...clusterBoundaryWarning(restricted.omittedTaskIds),
     ],
     expansions: [...(loaded.expansions ?? []), { nodeId, direction }],

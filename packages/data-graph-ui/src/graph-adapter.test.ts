@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { adaptTrace, INPUT_EDGE_COLOR, OUTPUT_EDGE_COLOR } from "./graph-adapter";
 import { createGraphHighlighter } from "./graph-highlight";
-import type { ConsumptionGroup, GraphNode, TraceResult } from "./types";
+import type { ConsumptionGroup, GraphEdge, GraphNode, TraceResult } from "./types";
 
 const field = (
   id: string,
@@ -41,7 +41,10 @@ describe("repeated upstream cards", () => {
   });
   it("does not merge same-name cards when partition scope differs", () => {
     const other = {...group("g2"), scope:{status:"UNKNOWN" as const,label:"范围未证明",items:[]}};
-    expect(adaptTrace(input([group("g1"), other])).nodes.filter(node => node.data.members)).toHaveLength(2);
+    const source = input([group("g1"), {...other, rawNodeIds:["w2"]}]);
+    source.nodes.push({...source.nodes[0]!, id:"w2",writeId:"other-write"});
+    source.edges[1] = {...source.edges[1]!, from:"w2"};
+    expect(adaptTrace(source).nodes.filter(node => node.data.members)).toHaveLength(2);
   });
   it("keeps distinct write occurrences separate and labels their consumers", () => {
     const source = input([group("g1"), group("g2", "w2")]);
@@ -233,9 +236,9 @@ describe("field trial projection", () => {
     const folded = { ...trace, edges: trace.edges.map(edge => edge.id === "consume-a" ?
       { ...edge, detail: { ...edge.detail, materializationFolded: true, materializationBridgeIds: ["step1", "step2"] } } : edge) };
     const result = adaptTrace(folded, undefined, "out:a");
-    expect(result.edges.find(edge => edge.id === "consume-a")?.label).toBe("取值 · 经 2 个中间步骤");
+    expect(result.edges.find(edge => edge.id === "consume-a:output")?.label).toBe("产出 · 经 2 个中间步骤");
   });
-  it("coalesces fallback physical bridges and keeps field edges direct", () => {
+  it("coalesces physical bridges and routes exact field mappings through tasks", () => {
     const result = adaptTrace(trace);
     expect(containing(result, "producer:a")?.id).toBe(
       containing(result, "in:a")?.id,
@@ -245,16 +248,17 @@ describe("field trial projection", () => {
     );
     expect(
       result.nodes.filter(({ type }) => type === "processingTask"),
-    ).toEqual([]);
+    ).toHaveLength(2);
     expect(result.edges.some(({ source, target }) => source === target)).toBe(
       false,
     );
     expect(
       result.edges.filter(({ data }) => data?.raw === trace.edges[0]),
-    ).toHaveLength(1);
-    expect(result.edges.find(({ id }) => id === "consume-a")).toMatchObject({
+    ).toHaveLength(2);
+    expect(result.edges.find(({ id }) => id === "consume-a:input")).toMatchObject({
       sourceHandle: "in:a",
-      targetHandle: "out:a",
+      target: "task:consumer",
+      targetHandle: "consume-a:input",
       data: { raw: trace.edges[0] },
     });
   });
@@ -300,28 +304,34 @@ describe("field trial projection", () => {
         .map(({ id }) => id),
     ).toContain("producer:a");
     expect(
-      result.edges.find(({ id }) => id === "consume-a")?.style?.opacity,
+      result.edges.find(({ id }) => id === "consume-a:input")?.style?.opacity,
     ).toBe(1);
     expect(
-      result.edges.find(({ id }) => id === "consume-b")?.style?.opacity,
+      result.edges.find(({ id }) => id === "consume-b:output")?.style?.opacity,
     ).toBe(0.14);
   });
 
-  it("does not synthesize task-level bundles in field mode", () => {
-    const result = adaptTrace(trace, undefined, undefined, {
-      highlightedTaskId: "task:consumer",
-    });
-    expect(result.nodes.some(({ type }) => type === "processingTask")).toBe(
-      false,
-    );
-    expect(result.edges.map(({ id }) => id)).toEqual(
-      expect.arrayContaining([
-        "consume-a",
-        "consume-b",
-        "produce-a",
-        "produce-b",
-      ]),
-    );
+  it("focuses a task on its own input and output mappings", () => {
+    const result = adaptTrace(trace, undefined, undefined, { highlightedTaskId: "task:consumer" });
+    expect(result.nodes.filter(({ type }) => type === "processingTask").map(n => n.id)).toEqual(["task:consumer"]);
+    expect(result.edges.map(({ id }) => id).sort()).toEqual([
+      "consume-a:input", "consume-a:output", "consume-b:input", "consume-b:output",
+    ]);
+  });
+
+  it("keeps task cards clear of tables and each other in both directions", () => {
+    for (const direction of ["up", "down"] as const) {
+      const result = adaptTrace({...trace, direction});
+      for (const task of result.nodes.filter(n => n.type === "processingTask")) {
+        for (const other of result.nodes.filter(n => n.id !== task.id)) {
+          const separated = task.position.x + task.data.displayWidth! <= other.position.x ||
+            other.position.x + other.data.displayWidth! <= task.position.x ||
+            task.position.y + task.data.displayHeight! <= other.position.y ||
+            other.position.y + other.data.displayHeight! <= task.position.y;
+          expect(separated, `${direction}: ${task.id} overlaps ${other.id}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("does not merge an unconfirmed or self-read/write bridge", () => {
@@ -477,6 +487,28 @@ it("uses distinct input/output strokes and matching arrowheads", () => {
   expect(output?.markerEnd).toMatchObject({color:OUTPUT_EDGE_COLOR});
   expect(INPUT_EDGE_COLOR).not.toBe(OUTPUT_EDGE_COLOR);
 });
+it("uses bounded line width for the number of table relation records", () => {
+  const records: GraphEdge[] = Array.from({length: 4}, (_, index) => ({
+    id: `read:${index}`,
+    from: "dataset:source",
+    to: "task:consumer",
+    kind: "READS_TABLE",
+    status: "OBSERVED",
+  }));
+  const result = adaptTrace({
+    ...trace,
+    layer: "table",
+    nodes: [
+      {id:"dataset:source", kind:"PHYSICAL_DATASET", table:"pdata.source", label:"pdata.source"},
+      {id:"task:consumer", kind:"TASK", taskId:"consumer", label:"消费任务"},
+    ],
+    edges: [{...records[0]!, tableRelations: records}],
+  });
+
+  expect(result.edges).toHaveLength(1);
+  expect(result.edges[0]?.style?.strokeWidth).toBe(3.5);
+  expect(result.edges[0]?.label).toBe("输入 · 4 条记录");
+});
 it("reuses structural projection while preserving legacy highlight results", () => {
   for (const layer of ["table", "field"] as const) {
     const input = {...trace, layer};
@@ -545,4 +577,116 @@ describe("table view candidate boundaries", () => {
     expect(rendered.data?.raw).toEqual(candidate);
     expect(candidate.status).toBe("CANDIDATE");
   });
+});
+
+
+it("keeps both inputs of an expression and distinct sibling mappings through one task, including edges without IDs", () => {
+  const input: TraceResult = {...trace, edges: trace.edges.map(e => ({...e, id:undefined}))};
+  input.edges = [...input.edges, {from:"in:b",to:"out:a",kind:"VALUE"}];
+  const graph = adaptTrace(input);
+  const task = graph.nodes.find(n => n.id === "task:consumer")!;
+  expect(task.data.taskPorts).toHaveLength(6);
+  for (const edge of graph.edges.filter(e => e.source === task.id || e.target === task.id)) {
+    expect(task.data.taskPorts!.some(p => p.id === (edge.source === task.id ? edge.sourceHandle : edge.targetHandle))).toBe(true);
+  }
+  const highlighted = createGraphHighlighter(input, graph)("out:a");
+  expect(highlighted).toEqual(adaptTrace(input, undefined, "out:a"));
+  expect(highlighted.edges.filter(e => e.data?.raw === input.edges.at(-1) && e.style?.opacity === 1)).toHaveLength(2);
+});
+
+it("shows the producing task for an evidenced constant without inventing an input", () => {
+  const input: TraceResult = {...trace, nodes:[field("constant", "WRITE_FIELD", {
+    taskId:"constant-task", table:"dm.constant", column:"flag", depth:0,
+    valueOrigin:{kind:"CONSTANT",label:"常量：1",expression:"1"},
+  })], edges:[]};
+  const graph = adaptTrace(input);
+  expect(graph.nodes.some(n => n.id === "task:constant-task")).toBe(true);
+  expect(graph.edges).toHaveLength(1);
+  expect(graph.edges[0]).toMatchObject({source:"task:constant-task", targetHandle:"constant"});
+});
+
+
+describe("published read/write display continuity", () => {
+  const published = (): TraceResult => {
+    const nodes = trace.nodes.filter(n => !n.id.startsWith("candidate"));
+    const edges = trace.edges.filter(e => !e.id?.startsWith("candidate"));
+    const scope = {status:"EXPLICIT" as const,label:"day=1",items:[{column:"day",values:["1"]}]};
+    const grouped = new Map<string, GraphNode[]>();
+    for (const node of nodes) {
+      const key = `${node.taskId}:${node.kind}`;
+      grouped.set(key, [...(grouped.get(key) ?? []), node]);
+    }
+    const groups: ConsumptionGroup[] = [...grouped].map(([id, members]) => ({
+      id, role:members[0]!.kind === "READ_FIELD" ? "READ" : "WRITE",
+      presentation:"FIELD_GROUP",scopeEquivalence:"PROVEN",depth:members[0]!.depth!,scope,
+      rawNodeIds:members.map(n => n.id),rawEdgeIds:[],rootNodeIds:[],
+      fields:members.map(n => ({column:n.column!,rawNodeIds:[n.id],rawEdgeIds:[],writeRefs:[]})),
+      writeRefs:[],
+    }));
+    return {...trace,nodes,edges,consumption:{schemaVersion:"1.0.0",groups,branches:[],rootPaths:[]}};
+  };
+  it("uses one shared card between the two tasks while keeping aliases and evidence unchanged", () => {
+    const input = published();
+    const before = JSON.stringify(input);
+    const graph = adaptTrace(input, undefined, "out:a");
+    const shared = containing(graph,"in:a")!;
+    expect(shared.id).toBe(containing(graph,"producer:a")?.id);
+    expect(graph.edges.some(e => (e.data?.raw as GraphEdge | undefined)?.kind === "CONTINUES")).toBe(false);
+    expect(graph.edges.some(e => e.source === "task:producer" && e.target === shared.id)).toBe(true);
+    expect(graph.edges.some(e => e.source === shared.id && e.target === "task:consumer")).toBe(true);
+    expect(shared.data.activeFieldIds).toContain("producer:a");
+    expect(shared.data.activeFieldIds).not.toContain("producer:b");
+    expect(JSON.stringify(input)).toBe(before);
+    expect(createGraphHighlighter(input,adaptTrace(input))("out:a")).toEqual(graph);
+  });
+  it.each(["different scope", "unknown scope", "missing field bridge", "candidate", "same task"])("keeps separate cards for %s", reason => {
+    const input = published();
+    const group = input.consumption!.groups.find(g => g.id === "consumer:READ_FIELD")!;
+    if (reason === "different scope") group.scope = {status:"EXPLICIT",label:"day=2",items:[{column:"day",values:["2"]}]};
+    if (reason === "unknown scope") group.scope = {status:"UNKNOWN",label:"unknown",items:[]};
+    if (reason === "missing field bridge") input.edges = input.edges.filter(e => e.id !== "bridge-b");
+    if (reason === "candidate") {
+      input.nodes.push(field("hidden-candidate","WRITE_FIELD",{taskId:"other",table:"pdata.shared",writeId:"other-write",column:"a",depth:2}));
+      input.edges.push({from:"hidden-candidate",to:"in:a",kind:"CANDIDATE",status:"UNKNOWN"});
+    }
+    if (reason === "same task") input.nodes = input.nodes.map(n => n.taskId === "producer" ? {...n,taskId:"consumer"} : n);
+    const graph = adaptTrace(input);
+    expect(containing(graph,"in:a")?.id).not.toBe(containing(graph,"producer:a")?.id);
+  });
+});
+
+
+it("does not duplicate an exact write when multi-root responses place it at different depths",()=>{
+ const input:TraceResult={...trace,nodes:trace.nodes.filter(n=>!n.id.startsWith("candidate")),edges:trace.edges.filter(e=>!e.id?.startsWith("candidate"))};
+ const w=input.nodes.find(n=>n.id==="producer:a")!;
+ const scope={status:"EXPLICIT" as const,label:"day=1",items:[{column:"day",values:["1"]}]};
+ const group=(id:string,depth:number):ConsumptionGroup=>({id,role:"WRITE",presentation:"FIELD_GROUP",scopeEquivalence:"PROVEN",physicalIdentity:"known-write",scope,depth,rawNodeIds:[w.id],rawEdgeIds:[],fields:[],rootNodeIds:[],writeRefs:[]});
+ input.consumption={schemaVersion:"1.0.0",groups:[group("old-depth",4),group("root-depth",0)],branches:[],rootPaths:[]};
+ const graph=adaptTrace(input);
+ const owners=graph.nodes.filter(n=>[...(n.data.members??[]),...Object.values(n.data.fieldAliases??{}).flat()].some(m=>m.id===w.id));
+ expect(owners).toHaveLength(1);
+});
+
+it("uses a physical table identity across read, write, scope and query-depth projections",()=>{
+ const withIdentity=(n:GraphNode):GraphNode=>({...n,metadata:{table:{status:"AVAILABLE"},identity:{platform:"hive",dataSource:"one",qualifiedName:n.table!,stableTableId:n.table!+"__one"}}});
+ const input={...trace,nodes:trace.nodes.filter(n=>!n.id.startsWith("candidate")).map(withIdentity),edges:trace.edges.filter(e=>!e.id?.startsWith("candidate"))};
+ const graph=adaptTrace(input);
+ expect(containing(graph,"in:a")?.id).toBe(containing(graph,"producer:a")?.id);
+ expect(containing(graph,"in:a")?.id).toMatch(/^physical-table:/);
+});
+
+
+it("preserves self-table processing through a task without merging the actual field identities",()=>{
+ const node=(id:string,kind:"WRITE_FIELD"|"READ_FIELD",depth:number):GraphNode=>({id,kind,taskId:"self",writeId:kind==="WRITE_FIELD"?"write":undefined,column:"a",table:"dm.t",depth,detail:{occurrenceId:"read"},metadata:{table:{status:"AVAILABLE"},identity:{platform:"hive",dataSource:"one",qualifiedName:"dm.t",stableTableId:"dm.t__one"}}});
+ const input:TraceResult={...trace,nodes:[node("self-write","WRITE_FIELD",0),node("self-read","READ_FIELD",1)],edges:[{id:"self-value",from:"self-read",to:"self-write",kind:"VALUE"}]};
+ const graph=adaptTrace(input);
+ expect(graph.nodes).toHaveLength(2);
+ expect(graph.edges).toHaveLength(2);
+ expect(graph.edges[0]?.source).toBe(graph.edges[1]?.target);
+ expect(graph.edges[0]?.target).toBe("task:self");
+ expect(graph.edges[0]?.sourceHandle).toBe("self-read");
+ expect(graph.edges[1]?.targetHandle).toBe("self-write");
+ const task=graph.nodes.find(n=>n.id==="task:self")!;
+ const table=graph.nodes.find(n=>n.id!==task.id)!;
+ expect(task.position.x).toBeGreaterThanOrEqual(table.position.x+table.data.displayWidth!);
 });

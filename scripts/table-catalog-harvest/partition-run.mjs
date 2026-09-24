@@ -27,7 +27,8 @@ try {
     CREATE TABLE IF NOT EXISTS tasks(guid TEXT PRIMARY KEY,name TEXT,database_name TEXT,qualified_name TEXT,type TEXT,state TEXT DEFAULT 'PENDING',keys_json TEXT,updated_at TEXT,error_code TEXT);
     CREATE TABLE IF NOT EXISTS filters(guid TEXT REFERENCES tasks(guid),field TEXT,ordinal INTEGER,summary_json TEXT,collected_at TEXT,PRIMARY KEY(guid,field));
     CREATE TABLE IF NOT EXISTS run(id INTEGER PRIMARY KEY CHECK(id=1),status TEXT,updated_at TEXT,requests INTEGER,error_code TEXT);
-    CREATE TABLE IF NOT EXISTS events(at TEXT,kind TEXT,detail TEXT);`);
+    CREATE TABLE IF NOT EXISTS events(at TEXT,kind TEXT,detail TEXT);
+    CREATE TABLE IF NOT EXISTS graph_priority(guid TEXT PRIMARY KEY REFERENCES tasks(guid),publication_version TEXT,node_id TEXT);`);
   if(!db.prepare('SELECT 1 FROM run').get()) {
     const source=new DatabaseSync(resolve('outputs/table-catalog-union-20260911/catalog.sqlite'),{readOnly:true});
     const rows=source.prepare('SELECT guid,name,database_name,qualified_name,raw_json FROM assets').all();
@@ -63,7 +64,7 @@ try {
     else {
       report('STARTING');await t.open();
       while(!stopped()&&completed<limit){
-        active=db.prepare("SELECT * FROM tasks WHERE state IN ('PENDING','COLLECTING') ORDER BY CASE WHEN guid='687b993b-085a-4890-bab4-71d3aa716d93' THEN 0 WHEN database_name='pdata_n' THEN 1 WHEN type='hive_table' THEN 2 ELSE 3 END,guid LIMIT 1").get();
+        active=db.prepare("SELECT * FROM tasks WHERE state IN ('PENDING','COLLECTING') ORDER BY CASE WHEN EXISTS(SELECT 1 FROM graph_priority p WHERE p.guid=tasks.guid) THEN 0 ELSE 1 END,CASE WHEN guid='687b993b-085a-4890-bab4-71d3aa716d93' THEN 0 WHEN database_name='pdata_n' THEN 1 WHEN type='hive_table' THEN 2 ELSE 3 END,guid LIMIT 1").get();
         if(!active)break;
         await runPartitionTable(async()=>{
         let keys=active.keys_json?JSON.parse(active.keys_json):await request('getPartitionKeys.json',{guid:active.guid});

@@ -21,8 +21,8 @@ const names: Record<string, string> = {
   TASK: "任务",
   PHYSICAL_DATASET: "物理表",
   PHYSICAL_FIELD: "物理字段",
-  READ_FIELD: "表字段",
-  WRITE_FIELD: "表字段",
+  READ_FIELD: "物理表",
+  WRITE_FIELD: "物理表",
   READ_OCCURRENCE: "表读取",
   TARGET_WRITE: "表写入",
 };
@@ -300,47 +300,17 @@ export const LineageNode = memo(function LineageNode(props: NodeProps) {
   if (raw?.kind === "TASK") return <TaskNode {...props} />;
   if (members?.length) {
     const first = members[0]!;
-    const taskIds = [...new Set(members.flatMap(member =>
-      [member, ...(fieldAliases[member.id] ?? [])].map(alias => alias.taskId).filter((id): id is string => Boolean(id)),
-    ))].sort();
     return (
       <div
         className={`lineage-node grouped ${nodeData.compactRead ? "compact-read" : ""} ${isAnchor ? "anchor" : ""} ${Object.keys(memberTerminals).length ? "terminal" : ""}`}
         title={first.table}
       >
-        <div className="node-topline">
-          <span>
-            {nodeData.compactRead
-              ? "共同消费汇合"
-              : (names[first.kind] ?? first.kind)}
-          </span>
-          <span
-            title={taskIds.length > 1 ? `任务 ${taskIds.join("、")}` : first.writeId ?? String(first.detail?.occurrenceId ?? "")}
-          >
-            {taskIds.length > 1 ? `${taskIds.length} 个生产任务` : `任务 ${first.taskId ?? "—"}`}
-          </span>
-        </div>
+        <div className="node-topline"><span>物理表</span></div>
         <strong>{first.table ?? first.label ?? first.id}</strong>
         <SchemaDescription schema={first.metadata?.schema} />
-        {nodeData.scope && (
-          <span
-            className="scope-badge"
-            data-status={nodeData.scope.status.toLowerCase()}
-          >
-            {nodeData.scope.label}
-          </span>
-        )}
         <TableDescription description={first.metadata?.table.description} />
-        {!!nodeData.consumerTaskIds?.length && (
-          <small className="consumer-context" title={`供调度 ${nodeData.consumerTaskIds.join("、")} 读取；按已确认接续关系标注`}>
-            供调度 {nodeData.consumerTaskIds.join("、")} 读取
-          </small>
-        )}
         <small>
           {members.length} 个字段
-          {nodeData.writeRefs?.length
-            ? ` · ${nodeData.writeRefs.length} 组写入证据`
-            : ""}
           {" · 点击字段查看依据"}
         </small>
         <div

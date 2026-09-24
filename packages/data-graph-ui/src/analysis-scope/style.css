@@ -1,3 +1,8 @@
+.analysis-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .analysis-app .analysis-exit,
 .analysis-open {
   border: 1px solid #83bbb0;

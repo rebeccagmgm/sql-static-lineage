@@ -69,3 +69,6 @@ not proof of daily production cadence. No partition detail records are fetched.
 The option endpoint has no exposed total/pagination contract, so captures remain
 `CAPTURED_UNVERIFIED` / `UNVERIFIED_ENDPOINT_TOTAL`, not proven full snapshots.
 The values endpoint requires JSON; the keys endpoint accepts form parameters.
+
+Graph priority: graph_priority stores the published graph version and matched catalog GUIDs. Pending matches run before the original queue; completed or BLOCKED rows are not retried. graph-priority-matches.json records exact identity matches and user-authorized database/table-name approximate candidates (all candidates are prioritized, never merged). The full queue remains intact.
+

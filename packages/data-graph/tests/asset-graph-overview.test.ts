@@ -11,6 +11,20 @@ const record = (values: Record<string, unknown>) => ({
 });
 
 describe("asset graph live overview", () => {
+  it("seeks selected tasks and deduplicates their adjacent tables, including an empty selection", async () => {
+    for (const clusterTaskIds of [[], ["task:1", "task:2"]]) {
+      const run = vi.fn(async () => ({ records: [] }));
+      const store = { ready: async () => ({ version: "v1" }), run } as unknown as AssetGraphStore;
+      await getAssetGraphOverview(store, { clusterTaskIds });
+      expect(run).toHaveBeenCalledTimes(2);
+      for (const [query, params] of run.mock.calls as unknown as [string, Record<string, unknown>][]) {
+        expect(query).toContain("MATCH (task:SLAssetNode {key:taskKey})");
+        expect(query).toContain("WITH DISTINCT n WHERE");
+        expect(query).toContain("r.kind IN ['READS_TABLE','WRITES_TABLE']");
+        expect(params.clusterTaskIds).toEqual(clusterTaskIds);
+      }
+    }
+  });
   it("classifies only explicit warehouse schema prefixes", () => {
     expect(classifyRegion("odata_otc")).toBe("ODATA");
     expect(classifyRegion("PDATA_FI")).toBe("PDATA");

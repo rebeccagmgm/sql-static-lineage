@@ -28,6 +28,7 @@ import {
   type UnionContinuationIndexEntry,
 } from "../continuation/continuation-index.ts";
 import type { ProducerIndexWriter } from "../continuation/producer-writer.ts";
+import { CONTINUATION_MATCH_POLICY_VERSION } from "../continuation/continuation-v2.ts";
 import { buildWritePartitionParts } from "../../../../scripts/project-graph/task-local/write-partition-evidence.ts";
 import { expandPartitionAlternatives } from "../../../../scripts/project-graph/task-local/partition-alternatives.ts";
 import { calculateContinuationMetrics } from "./continuation-metrics.ts";
@@ -120,6 +121,7 @@ export async function publishAssetGraph(configPath?: string) {
     const manifest = readJson<PreparedManifest>(prepared.manifestPath),
       version = digest([
         ASSET_COMPILER_VERSION,
+        CONTINUATION_MATCH_POLICY_VERSION,
         prepared.version,
         terminalConfigHash,
         boundaryConfigHash,
@@ -170,7 +172,9 @@ export async function publishAssetGraph(configPath?: string) {
         String(prior.version),
         "union-continuation-index.json",
       );
-      if (existsSync(previous)) oldIndex = readJson(previous);
+      const previousReport = join(dirname(previous), "publication.json");
+      if (existsSync(previous) && existsSync(previousReport) &&
+        readJson<{ continuationMatchPolicyVersion?: string }>(previousReport).continuationMatchPolicyVersion === CONTINUATION_MATCH_POLICY_VERSION) oldIndex = readJson(previous);
     }
     await store.begin(version);
     progress("IMPORTING_LOCAL", { total: manifest.tasks.length });
@@ -499,6 +503,7 @@ export async function publishAssetGraph(configPath?: string) {
     const report = {
       version,
       compilerVersion: ASSET_COMPILER_VERSION,
+      continuationMatchPolicyVersion: CONTINUATION_MATCH_POLICY_VERSION,
       continuationIndexContentHash: index.contentHash,
       terminalPolicyContentHash: terminalPolicy.contentHash,
       terminalPolicyConfigHash: terminalConfigHash,

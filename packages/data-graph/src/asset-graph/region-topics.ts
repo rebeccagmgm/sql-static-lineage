@@ -5,7 +5,8 @@ import { normalizeHiddenTables } from "./node-visibility.ts";
 import { compileScopePatterns } from "./experimental-upstream-scope/pattern.ts";
 import { cachedUpstreamScope } from "./experimental-upstream-scope/endpoint.ts";
 
-export async function regionTopics(store: Pick<AssetGraphStore, "ready" | "run">, resolver: Pick<SchedulerTaskNameResolver, "resolveTopics" | "resolveTopicDescriptions">, query: URLSearchParams, clusterTaskIds?: string[]) {
+export async function regionTopics(store: Pick<AssetGraphStore, "ready" | "run">, resolver: Pick<SchedulerTaskNameResolver, "resolveTopics" | "resolveTopicDescriptions">, query: URLSearchParams, clusterTaskIds?: string[], signal?: AbortSignal) {
+  signal?.throwIfAborted();
   const schema = query.get("schema") ?? "";
   const batch = query.has("schemas");
   const schemaInput: unknown = batch ? JSON.parse(query.get("schemas")!) : [schema];
@@ -17,13 +18,16 @@ export async function regionTopics(store: Pick<AssetGraphStore, "ready" | "run">
   if (!Array.isArray(rawPatterns)) throw new Error("INVALID_SCOPE_PATTERNS");
   const patterns = rawPatterns.length ? compileScopePatterns(rawPatterns).map(p => p.pattern) : [];
   const initial = await store.ready();
+  signal?.throwIfAborted();
   const scope = patterns.length ? await cachedUpstreamScope(store, patterns) : undefined;
+  signal?.throwIfAborted();
   if (scope && scope.version !== String(initial.version)) throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");
   const result = await store.run(
     `MATCH (task:SLAssetNode {graphId:$graphId,kind:'TASK'})-[:SL_ASSET_EDGE {graphId:$graphId,kind:'WRITES_TABLE'}]->(n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) WHERE ${clusterTaskPredicate("task")} AND toLower(split(coalesce(n.table,''),'.')[0]) IN $schemas AND NOT toLower(coalesce(n.table,'')) IN $hiddenTables AND ($scoped=false OR n.id IN $scopeIds) RETURN DISTINCT task.id AS taskId,toLower(split(n.table,'.')[0]) AS schema,collect(DISTINCT n.id) AS tableIds ORDER BY schema,taskId LIMIT $limit`,
     { ...clusterParams(clusterTaskIds), schemas, hiddenTables, scoped: Boolean(scope), scopeIds: scope?.tables.map(table => table.id) ?? [], limit: batch ? 20001 : 5001 },
   );
   const limit = batch ? 20000 : 5000;
+  signal?.throwIfAborted();
   const rows = result.records.slice(0, limit).map(row => ({ id: String(row.get("taskId")).replace(/^task:/, ""), schema: batch ? String(row.get("schema")) : schema.toLowerCase(), tableIds: row.get("tableIds") as string[] }));
   const ids = [...new Set(rows.map(row => row.id))];
   const topics = resolver.resolveTopics(ids), descriptions = resolver.resolveTopicDescriptions(ids);

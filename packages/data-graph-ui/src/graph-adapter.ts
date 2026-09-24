@@ -1,3 +1,8 @@
+import { physicalTableKey } from "./field-object";
+import {
+  tableRelationLabel,
+  tableRelationStrokeWidth,
+} from "./table-relations";
 import { MarkerType, Position, type Edge, type Node } from "@xyflow/react";
 import { consumptionScopeIdentity } from "../../data-graph/src/asset-graph/consumption-scope";
 import { mergeTraceConsumptions } from "./trace-consumption";
@@ -5,10 +10,18 @@ import type {
   ConsumptionGroup,
   ConsumptionScope,
   ConsumptionWriteRef,
+  GraphEdge,
   GraphNode,
   TerminalNode,
   TraceResult,
 } from "./types";
+
+export function valueOutputLabel(edge: GraphEdge): string {
+  const bridges = edge.detail?.materializationBridgeIds;
+  return edge.detail?.materializationFolded === true && Array.isArray(bridges) && bridges.length
+    ? `产出 · 经 ${new Set(bridges).size} 个中间步骤`
+    : "产出";
+}
 
 export interface FieldSelectionContext {
   rawMembers: GraphNode[];
@@ -178,7 +191,7 @@ function buildGroups(
         Boolean(source.physicalIdentity) && writes.length > 0 &&
         writes.every(node => node?.kind === "WRITE_FIELD" && text(node.taskId) && text(node.writeId));
       const key = eligible ? JSON.stringify([
-        source.physicalIdentity, source.depth, consumptionScopeIdentity(source.scope),
+        source.physicalIdentity, consumptionScopeIdentity(source.scope),
         [...new Set(writes.map(node => JSON.stringify([node!.taskId, node!.writeId])))].sort(),
       ]) : source.id;
       const existing = unique.get(key);
@@ -194,7 +207,7 @@ function buildGroups(
         .sort((a, b) => (a.column ?? a.id).localeCompare(b.column ?? b.id));
       const combined = merged!.groups[0]!;
       const proven = existing.consumption!.scopeEquivalence === "PROVEN" && source.scopeEquivalence === "PROVEN";
-      unique.set(key, {...existing, members, consumption: {
+      unique.set(key, {...existing, depth: Math.min(existing.depth, group.depth), members, consumption: {
         ...combined,
         presentation: proven ? combined.presentation : "EVIDENCE_CONTAINER",
         scopeEquivalence: proven ? "PROVEN" : "NOT_ASSERTED",
@@ -283,6 +296,109 @@ function buildGroups(
     for (const [key, group] of groups) if (group === left) groups.delete(key);
   }
   return [...groups.values()];
+}
+
+/** Collapse only a fully witnessed read boundary into its single write card.
+ * Keep all raw identities: this is a display alias, never a new lineage edge.
+ */
+function coalescePublishedContinuations(groups: DisplayGroup[], trace: TraceResult): DisplayGroup[] {
+  const active = new Set(groups);
+  const groupByRawId = new Map(groups.flatMap(group =>
+    (group.members ?? (group.raw ? [group.raw] : [])).map(node => [node.id, group] as const),
+  ));
+  const nodes = new Map(trace.nodes.map(node => [node.id, node]));
+  const incoming = new Map<string, GraphEdge[]>();
+  for (const edge of trace.edges) {
+    if (!["CONTINUES", "CANDIDATE"].includes(edge.kind)) continue;
+    incoming.set(edge.to, [...(incoming.get(edge.to) ?? []), edge]);
+  }
+  const allowedNodeIds = new Set(groupByRawId.keys());
+  const allowedEdgeIds = new Set(trace.edges.map(rawEdgeId));
+  for (const readGroup of groups) {
+    if (!active.has(readGroup) || readGroup.consumption?.role !== "READ") continue;
+    const reads = readGroup.members ?? [];
+    if (!reads.length || reads.some(read => read.kind !== "READ_FIELD" ||
+      read.detail?.identityStatus !== "CONFIRMED" || !text(read.detail?.stableTableId))) continue;
+    const bridges = reads.flatMap(read => incoming.get(read.id) ?? []);
+    // Consult the full result, including collapsed candidates, before merging.
+    if (reads.some(read => !(incoming.get(read.id)?.length)) || bridges.some(edge =>
+      edge.kind !== "CONTINUES" || edge.status !== "CONFIRMED")) continue;
+    const sources = new Set(bridges.map(edge => groupByRawId.get(edge.from)));
+    if (sources.size !== 1) continue;
+    const writeGroup = [...sources][0];
+    if (!writeGroup || writeGroup === readGroup || writeGroup.consumption?.role !== "WRITE") continue;
+    const writes = (writeGroup.members ?? []).filter(node => node.kind === "WRITE_FIELD");
+    if (!writes.length || writes.some(node => !text(node.taskId) || !text(node.writeId)) ||
+      new Set(writes.map(node => JSON.stringify([node.taskId, node.writeId]))).size !== 1) continue;
+    if (bridges.some(edge => {
+      const write = nodes.get(edge.from), read = nodes.get(edge.to);
+      return write?.kind !== "WRITE_FIELD" || write.taskId === read?.taskId ||
+        !text(write.table) || text(write.table)?.toLowerCase() !== text(read?.table)?.toLowerCase() ||
+        !text(write.column) || text(write.column)?.toLowerCase() !== text(read?.column)?.toLowerCase() ||
+        (text(write.detail?.stableTableId) && write.detail?.stableTableId !== read?.detail?.stableTableId);
+    })) continue;
+    const leftScope = writeGroup.consumption.scope, rightScope = readGroup.consumption.scope;
+    const known = (scope: ConsumptionScope) => scope.status === "EXPLICIT" ||
+      (scope.status === "TABLE_LEVEL" && scope.nonPartitioned === true);
+    if (!known(leftScope) || !known(rightScope) ||
+      consumptionScopeIdentity(leftScope) !== consumptionScopeIdentity(rightScope)) continue;
+    const members = [...new Map([...(writeGroup.members ?? []), ...reads].map(n => [n.id, n])).values()];
+    const ids = new Set(members.map(n => n.id));
+    if (trace.edges.some(edge => edge.kind === "VALUE" && ids.has(edge.from) && ids.has(edge.to))) continue;
+    const combined = mergeTraceConsumptions({
+      consumptions: [{schemaVersion:"1.0.0", groups:[
+        {...readGroup.consumption, id:writeGroup.id}, writeGroup.consumption,
+      ], branches:[], rootPaths:[]}],
+      allowedNodeIds, allowedEdgeIds,
+      allRootNodeIds: [...new Set([...readGroup.consumption.rootNodeIds, ...writeGroup.consumption.rootNodeIds])],
+    })!.groups[0]!;
+    writeGroup.members = members;
+    writeGroup.depth = Math.min(writeGroup.depth, readGroup.depth);
+    writeGroup.consumption = combined;
+    members.forEach(node => groupByRawId.set(node.id, writeGroup));
+    active.delete(readGroup);
+  }
+  return [...active];
+}
+
+/** One display owner per physical field; raw read/write nodes remain the edge endpoints. */
+function projectFieldObjects(groups: DisplayGroup[], trace: TraceResult): DisplayGroup[] {
+  const buckets = new Map<string, {group: DisplayGroup; sources: Set<ConsumptionGroup>}>();
+  const owners = new Map<string, string>();
+  const others: DisplayGroup[] = [];
+  for (const source of groups) {
+    const members = source.members ?? (source.raw ? [source.raw] : []);
+    if (!members.length || members.some(node => !node.kind.includes("FIELD")) ||
+      (source.raw && !physicalTableKey(source.raw))) {
+      others.push(source);
+      continue;
+    }
+    for (const member of members) {
+      const physical = physicalTableKey(member);
+      const key = owners.get(member.id) ?? (physical ? `physical-table:${encodeURIComponent(physical)}` : source.id);
+      owners.set(member.id, key);
+      let bucket = buckets.get(key);
+      if (!bucket) {
+        bucket = {group:{id:key, depth:Number(member.depth ?? source.depth),members:[]}, sources:new Set()};
+        buckets.set(key,bucket);
+      }
+      if (!bucket.group.members!.some(node => node.id === member.id)) bucket.group.members!.push(member);
+      bucket.group.depth = Math.min(bucket.group.depth, Number(member.depth ?? source.depth));
+      if (source.consumption) bucket.sources.add(source.consumption);
+    }
+  }
+  for (const {group,sources} of buckets.values()) {
+    if (!sources.size) continue;
+    const members = group.members!;
+    group.consumption = mergeTraceConsumptions({
+      consumptions:[{schemaVersion:"1.0.0",groups:[...sources].map(source=>({...source,id:group.id})),branches:[],rootPaths:[]}],
+      allowedNodeIds:new Set(members.map(node=>node.id)),
+      allowedEdgeIds:new Set(trace.edges.map(rawEdgeId)),
+      allRootNodeIds:trace.nodes.filter(node=>node.depth===0).map(node=>node.id),
+    })?.groups[0];
+    if (group.consumption) group.consumption = {...group.consumption,depth:group.depth};
+  }
+  return [...others,...[...buckets.values()].map(bucket=>bucket.group)];
 }
 
 const candidateKey = (node: GraphNode | undefined) =>
@@ -401,17 +517,17 @@ export function adaptTrace(
   options: AdaptTraceOptions = {},
 ): { nodes: Node<LineageNodeData>[]; edges: Edge[] } {
   const highlight = relatedLineageHighlight(trace, highlightedFieldId);
+  const edgeIdentities = new Map(trace.edges.map((edge, index) => [edge, rawEdgeId(edge, index)]));
   const visibleIds = visibleRawIds(trace, options);
   const namedNodes = trace.nodes.map((node) => withSchedulerTaskName(trace, node));
   const visibleNodes = namedNodes.filter((node) => visibleIds.has(node.id));
   const visibleEdges = trace.edges.filter(
     (edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to),
   );
-  const displayGroups = buildGroups(
-    visibleNodes,
-    visibleEdges,
-    trace.consumption,
-  );
+  const grouped = buildGroups(visibleNodes, visibleEdges, trace.consumption);
+  const displayGroups = trace.layer === "field"
+    ? projectFieldObjects(trace.consumption ? coalescePublishedContinuations(grouped, trace) : grouped, trace)
+    : grouped;
   const depths = new Map<number, DisplayGroup[]>();
   for (const group of displayGroups) {
     const bucket = depths.get(group.depth) ?? [];
@@ -496,7 +612,7 @@ export function adaptTrace(
               (node) =>
                 node.kind.includes("FIELD") && highlight.nodeIds.has(node.id),
             )
-            .map((node) => node.id)
+            .map((node) => node.id).sort()
         : [];
       const cardActive =
         !highlight || rawNodes.some((node) => highlight.nodeIds.has(node.id));
@@ -542,6 +658,7 @@ export function adaptTrace(
             ? 120 + Math.min(120, (members?.length ?? 0) * 38)
             : members
               ? 112 + (consumerTaskIds.length ? 28 : 0) +
+                (rawNodes.some(n => n.kind === "READ_FIELD") && rawNodes.some(n => n.kind === "WRITE_FIELD") ? 16 : 0) +
                 Math.min(280, members.length * 38) +
                 (candidateTaskIds.size ? 32 : 0)
               : terminals.has(group.raw?.id ?? "")
@@ -554,7 +671,7 @@ export function adaptTrace(
           x:
             trace.layer === "table"
               ? columnX.get(depth)!
-              : (trace.direction === "up" ? maxDepth - depth : depth) * 420 +
+              : (trace.direction === "up" ? maxDepth - depth : depth) * (trace.layer === "field" ? 660 : 420) +
                 48,
           y,
         },
@@ -609,12 +726,13 @@ export function adaptTrace(
     const occupied = [...taskNodeById.values()]
       .filter((task) => Math.abs(task.position.x - x) < 20)
       .map((task) => task.position.y);
-    while (occupied.some((current) => Math.abs(current - y) < 76)) y += 78;
+    while (occupied.some((current) => Math.abs(current - y) < taskCardHeight + 28))
+      y += taskCardHeight + 28;
     return y;
   };
   const constantEdges: Edge[] = [];
   for (const edge of visibleEdges.filter(
-    ({ kind }) => kind === "VALUE" && trace.layer !== "field",
+    ({ kind }) => kind === "VALUE",
   )) {
     const target = nodeById.get(edge.to);
     const taskId = text(target?.taskId);
@@ -630,8 +748,9 @@ export function adaptTrace(
       );
       const left = Math.min(input?.position.x ?? 0, output?.position.x ?? 0);
       const right = Math.max(input?.position.x ?? 0, output?.position.x ?? 0);
-      const taskX =
-        left +
+      const taskX = trace.layer === "field"
+        ? (input?.id === output?.id ? right + (output?.data.displayWidth ?? 300) + 72 : right - taskCardWidth - 72)
+        : left +
         300 +
         Math.max(24, (right - left - 300 - taskCardWidth) / 2);
       task = {
@@ -654,16 +773,16 @@ export function adaptTrace(
       taskNodeById.set(id, task);
       nodes.push(task);
     }
-    const rawEdgeId = edge.id ?? edge.key ?? `${edge.from}->${edge.to}:VALUE`;
+    const mappingId = edgeIdentities.get(edge)!;
     task.data.taskPorts!.push(
       {
-        id: `${rawEdgeId}:input`,
+        id: `${mappingId}:input`,
         label: nodeById.get(edge.from)?.column ?? edge.from,
         direction: "input",
         fieldNodeId: edge.from,
       },
       {
-        id: `${rawEdgeId}:output`,
+        id: `${mappingId}:output`,
         label: target?.column ?? edge.to,
         direction: "output",
         fieldNodeId: edge.to,
@@ -675,7 +794,7 @@ export function adaptTrace(
   );
   for (const write of visibleNodes.filter(
     (node) =>
-      trace.layer !== "field" &&
+      (trace.layer !== "field" || node.valueOrigin?.kind === "CONSTANT") &&
       node.kind === "WRITE_FIELD" &&
       !valueTargets.has(node.id),
   )) {
@@ -690,8 +809,8 @@ export function adaptTrace(
         id: taskIdNode,
         type: "processingTask",
         position: {
-          x: tableNode.position.x - 166,
-          y: compactTaskY(tableNode.position.x - 166, tableNode.position.y),
+          x: tableNode.position.x - (trace.layer === "field" ? 260 : 166),
+          y: compactTaskY(tableNode.position.x - (trace.layer === "field" ? 260 : 166), tableNode.position.y),
         },
         data: {
           raw: {
@@ -741,7 +860,7 @@ export function adaptTrace(
       !highlight || fieldIds.some((id) => highlight.nodeIds.has(id));
     task.style = { opacity: active ? 1 : 0.22 };
     task.data.activeFieldIds = highlight
-      ? fieldIds.filter((id) => highlight.nodeIds.has(id))
+      ? fieldIds.filter((id) => highlight.nodeIds.has(id)).sort()
       : [];
   }
   const laneCounts = new Map<string, number>();
@@ -754,9 +873,8 @@ export function adaptTrace(
     laneCounts.set(key, lane + 1);
   }
 
-  const edges = visibleEdges.flatMap<Edge>((raw, index) => {
-    const edgeId =
-      raw.id ?? raw.key ?? `${raw.from}->${raw.to}:${raw.kind}:${index}`;
+  const edges = visibleEdges.flatMap<Edge>((raw) => {
+    const edgeId = edgeIdentities.get(raw)!;
     const candidate = raw.kind === "CANDIDATE" || raw.status === "CANDIDATE";
     const confirmed = raw.status === "CONFIRMED";
     const color = candidate ? "#b07a3b" : raw.kind === "READS_TABLE" ? INPUT_EDGE_COLOR : raw.kind === "WRITES_TABLE" ? OUTPUT_EDGE_COLOR : confirmed ? "#26746d" : "#6f8f8b";
@@ -791,8 +909,8 @@ export function adaptTrace(
                   Array.isArray(raw.detail.materializationBridgeIds) && raw.detail.materializationBridgeIds.length
                     ? `取值 · 经 ${new Set(raw.detail.materializationBridgeIds).size} 个中间步骤`
                     : "取值",
-                READS_TABLE: "输入",
-                WRITES_TABLE: "产出",
+                READS_TABLE: raw.kind === "READS_TABLE" ? tableRelationLabel(raw) : "输入",
+                WRITES_TABLE: raw.kind === "WRITES_TABLE" ? tableRelationLabel(raw) : "产出",
               } as Record<string, string>
             )[raw.kind] ?? raw.kind),
       markerEnd: {
@@ -801,15 +919,17 @@ export function adaptTrace(
       },
       style: {
         stroke: color,
-        strokeWidth: confirmed ? 2 : 1.5,
+        strokeWidth: ["READS_TABLE", "WRITES_TABLE"].includes(raw.kind)
+          ? tableRelationStrokeWidth(raw)
+          : confirmed
+            ? 2
+            : 1.5,
         strokeDasharray: candidate ? "6 5" : undefined,
         opacity: !highlight || highlight.edgeIds.has(edgeId) ? 1 : 0.14,
       },
       data: { raw },
     } satisfies Edge;
     if (raw.kind !== "VALUE")
-      return visual.source === visual.target ? [] : [visual];
-    if (trace.layer === "field")
       return visual.source === visual.target ? [] : [visual];
     const taskId = text(nodeById.get(raw.to)?.taskId);
     if (!taskId) return [visual];
@@ -830,7 +950,7 @@ export function adaptTrace(
         markerEnd: {...visual.markerEnd, color: candidate ? color : OUTPUT_EDGE_COLOR},
         source: `task:${taskId}`,
         sourceHandle: `${edgeId}:output`,
-        label: highlight?.edgeIds.has(edgeId) ? "产出" : undefined,
+        label: highlight?.edgeIds.has(edgeId) ? valueOutputLabel(raw) : undefined,
       },
     ];
   });

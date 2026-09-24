@@ -1,6 +1,9 @@
 import { ClusterCatalog, parseClusters } from "./cluster-filter.ts";
+import { join } from "node:path";
+import { readTargetDdls } from "./target-ddl.ts";
 import { createServer, type Server } from "node:http";
 import { regionTopics } from "./region-topics.ts";
+import { cancellableRead } from "./cancellable-read.ts";
 import { queryExperimentalUpstreamScope } from "./experimental-upstream-scope/endpoint.ts";
 import { readFileSync } from "node:fs";
 import { PublishedFieldOrigins, evidenceOrigins, bindingKey } from "./field-value-origin.ts";
@@ -27,6 +30,7 @@ import { buildTraceConsumptionFromRecords } from "./trace-consumption.ts";
 import { queryTaskFieldExplanation } from "./task-field-explanation-query.ts";
 import { PartitionQueries } from "./partition-query.ts";
 import { parsePartitionSelection } from "./partition-selection.ts";
+import { physicalTableNodeId } from "./task-table-context.ts";
 import { RequestPerformanceLog } from "./performance-log.ts";
 
 type GraphNode = Record<string, unknown>;
@@ -289,6 +293,13 @@ export async function startAssetGraphServer(
   const partitionQueries = new PartitionQueries(store, connection.paths.graphOutputRoot);
   const performanceLog = new RequestPerformanceLog();
   const server = createServer(async (req, res) => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    res.once("close", () => { if (!res.writableFinished) controller.abort(); });
+    const overviewStore = {
+      ready: () => cancellableRead(signal, () => store.ready()),
+      run: (...args: Parameters<typeof store.run>) => cancellableRead(signal, () => store.run(...args)),
+    };
     const requestId = performanceLog.start(req.url ?? "/");
     res.setHeader("X-Graph-Request-Id", requestId);
     res.once("finish", () => performanceLog.finish(requestId, res.statusCode));
@@ -340,11 +351,12 @@ export async function startAssetGraphServer(
       let value: unknown;
       const clusters = parseClusters(q.get("clusters"));
       const clusterTaskIds = await clusterCatalog.select(clusters);
+      if (signal.aborted) return;
       if (url.pathname === "/api/clusters") {
         const catalog = await clusterCatalog.read();
         value = { version: catalog.version, clusters: catalog.clusters };
       } else if (url.pathname === "/api/region-topics") {
-        value = await regionTopics(store, schedulerTaskNames, q, clusterTaskIds);
+        value = await regionTopics(store, schedulerTaskNames, q, clusterTaskIds, signal);
       } else if (url.pathname === "/api/experimental/upstream-scope") {
         value = await queryExperimentalUpstreamScope(store, q, clusterTaskIds);
       } else if (url.pathname === "/api/status") {
@@ -376,8 +388,15 @@ export async function startAssetGraphServer(
             clusterTaskIds,
           ),
         );
+        const searchNodes = value as GraphNode[];
+        const names = schedulerTaskNames.resolve(
+          searchNodes.filter(node => node.kind === "TASK").map(node => String(node.id).replace(/^task:/, "")),
+        );
+        value = searchNodes.map(node => node.kind === "TASK"
+          ? { ...node, label: names[String(node.id).replace(/^task:/, "")] ?? `任务 ${String(node.id).replace(/^task:/, "")}（名称未收录）` }
+          : node);
       } else if (url.pathname === "/api/partitions") {
-        const catalog = await partitionQueries.catalog(q.get("nodeId") ?? "");
+        const catalog = await partitionQueries.catalog(physicalTableNodeId(q.get("nodeId") ?? ""));
         const taskIds = catalog.options.flatMap(option => option.writes.map(write => write.taskId));
         value = {...catalog, taskClusters: schedulerTaskNames.resolveClusters(taskIds)};
       } else if (url.pathname === "/api/fields")
@@ -393,7 +412,7 @@ export async function startAssetGraphServer(
           }),
         );
       else if (url.pathname === "/api/overview")
-        value = await getAssetGraphOverview(store, {
+        value = await getAssetGraphOverview(overviewStore, {
           hiddenTables: JSON.parse(q.get("hiddenTables") ?? "[]"),
           clusterTaskIds,
           regionLimit: num("regionLimit", 100),
@@ -429,6 +448,9 @@ export async function startAssetGraphServer(
         );
         value = {
           ...detail,
+          ...(q.get("ddl") === "1" ? {
+            targetDdls: readTargetDdls(join(connection.paths.inputPackRoot, "tables"), detail.bindings),
+          } : {}),
           bindings: detail.bindings.filter((binding) => binding.outputScope === "FINAL"),
           taskName: schedulerTaskNames.resolve([taskId])[taskId],
           owner: schedulerTaskNames.resolveOwners([taskId])[taskId],
@@ -508,10 +530,12 @@ export async function startAssetGraphServer(
         res.end();
         return;
       }
+      if (signal.aborted) return;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.setHeader("Server-Timing", `graph;dur=${performanceLog.elapsed(requestId)}`);
       res.end(JSON.stringify(value));
     } catch (error) {
+      if (signal.aborted) return;
       const message = error instanceof Error ? error.message : "QUERY_FAILED";
       res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
       res.end(

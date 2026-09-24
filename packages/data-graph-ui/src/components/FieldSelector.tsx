@@ -1,3 +1,4 @@
+import { selectedFieldCount } from "../field-object";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GraphNode } from "../types";
 
@@ -128,7 +129,7 @@ export function FieldSelector(props: {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        本次已选 {fieldChoices(selectedTaskFields(props.fields, props.selectedIds, taskId), "", "").length} 个字段
+        本次已选 {selectedFieldCount(selectedTaskFields(props.fields, props.selectedIds, taskId))} 个字段
       </button>
       {open && (
         <div className="field-picker-popover">

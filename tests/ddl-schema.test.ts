@@ -6,10 +6,35 @@ import {
 	createTableLikeSource,
 	loadSchemaFromTablesRoot,
 	parseDdlSchema,
+	readCreateTableHeader,
 } from "../scripts/plans/ddl-schema.ts";
 import { writeTableInput, type TableEvidence } from "../scripts/input/shared/input-pack.ts";
 
 describe("DDL schema reader", () => {
+	it("recognizes CTAS keywords separated by comments without changing quoted identifiers", () => {
+		expect(readCreateTableHeader("/* CREATE TABLE fake (wrong int) */ CREATE /*c*/ TABLE demo.`stage--x` AS /*x*/ WITH src AS (SELECT 1 AS id) SELECT id FROM src"))
+			.toMatchObject({ target: "demo.stage--x", columnListStart: null, asQuery: true });
+	});
+
+	it("keeps DROP followed by CREATE DDL readable", () => {
+		expect(parseDdlSchema("DROP TABLE demo.stage; CREATE TABLE demo.stage (id int)").columns.map(c => c.name)).toEqual(["id"]);
+	});
+	it.each([
+		"AS SELECT coalesce(a.id, 0) AS id FROM demo.base a",
+		"AS -- business comment\n SELECT coalesce(a.id, 0) AS id FROM demo.base a",
+		"AS /* business comment */ WITH q AS (SELECT id FROM demo.base) SELECT id FROM q",
+	])("does not treat CTAS query parentheses as column definitions: %s", (query) => {
+		expect(parseDdlSchema(`CREATE TABLE demo.stage ${query}`).columns).toEqual([]);
+	});
+
+	it("does not borrow a later statement's column list for CREATE LIKE", () => {
+		expect(parseDdlSchema("CREATE TABLE demo.stage LIKE demo.base; SELECT coalesce(id, 0) FROM demo.base").columns).toEqual([]);
+	});
+
+	it("keeps comment markers and AS SELECT inside quoted DDL text", () => {
+		expect(parseDdlSchema("CREATE TABLE demo.`stage--name` (`id/*x*/` string COMMENT 'AS SELECT (fake)', value int)").columns.map(c => c.name))
+			.toEqual(["id/*x*/", "value"]);
+	});
 	it("reads Hive columns and appends partition columns", () => {
 		const result = parseDdlSchema(
 			"create table demo.orders (id bigint, amount decimal(18,2), note string comment 'a,b') partitioned by (busi_date string comment '业务日期') stored as orc",

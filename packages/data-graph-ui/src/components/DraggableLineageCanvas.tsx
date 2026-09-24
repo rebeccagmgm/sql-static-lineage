@@ -41,5 +41,5 @@ export function DraggableLineageCanvas({ nodes: projectedNodes, scope, placement
     }
     applyChanges(changes);
   }, [applyChanges]);
-  return <ReactFlow {...props} nodes={nodes} onNodesChange={onNodesChange} />;
+  return <ReactFlow {...props} onlyRenderVisibleElements nodes={nodes} onNodesChange={onNodesChange} />;
 }

@@ -78,3 +78,18 @@
 .task-processing-graph.is-expanded .processing-canvas { flex: 1; height: auto; min-height: 200px; }
 .task-processing-graph.is-expanded .processing-evidence-column { min-height: 0; overflow: auto; border-left: 1px solid #cbdcd6; }
 .task-processing-graph.is-expanded > .processing-gaps { max-height: 130px; overflow: auto; }
+.processing-view-choice { padding: 10px 14px; border-bottom: 1px solid #dce6e1; font-size: 12px; }
+.processing-view-choice label { display: flex; gap: 7px; align-items: center; cursor: pointer; }
+.processing-view-choice small { display: block; margin-top: 6px; color: #647c78; line-height: 1.6; }
+.processing-field-name { color: #175d57; font: 600 13px/1.5 Consolas, monospace; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.processing-operation { color: #366951; font-size: 12px; margin: 7px 0 3px; }
+.processing-expression-preview { font: 11px/1.5 Consolas, monospace; color: #536b61; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.processing-conditions { margin: 14px 0; }
+.processing-stage-evidence details { margin-top: 12px; }
+.processing-stage-evidence summary, .processing-gaps summary { cursor: pointer; }
+.processing-stage > strong { -webkit-line-clamp: 2; }
+@media (max-width: 850px) {
+  .task-processing-graph.is-expanded .processing-workspace { display: block; overflow: auto; }
+  .task-processing-graph.is-expanded .processing-canvas { height: 52vh; flex: none; }
+  .task-processing-graph.is-expanded .processing-evidence-column { overflow: visible; border-left: 0; }
+}

@@ -29,7 +29,7 @@ import {
 } from "../input/shared/input-pack.ts";
 import { buildTaskPartitionEvidence } from "../input/shared/task-partition-evidence.ts";
 import { extractSqlWrites } from "../evidence/sql-write-evidence.ts";
-import { createTableLikeSource, parseDdlSchema } from "../plans/ddl-schema.ts";
+import { createTableLikeSource, parseDdlSchema, readCreateTableHeader } from "../plans/ddl-schema.ts";
 import { buildPlanFacts } from "../plans/plan-adapter.ts";
 import { taskSqlDialect } from "../plans/task-sql-dialect.ts";
 import { loadStandardizedInput } from "../input/shared/standardized-sql.ts";
@@ -561,8 +561,7 @@ function pickCreateTableLikeSource(
 			normalizeToken(candidate.platform) === normalizeToken(target.platform) &&
 			normalizeToken(candidate.dataSource) === normalizeToken(target.dataSource),
 	);
-	const pool = samePhysical.length > 0 ? samePhysical : candidates;
-	return pool.length === 1 ? pool[0] : undefined;
+	return samePhysical.length === 1 ? samePhysical[0] : undefined;
 }
 
 function createLikeColumnResolver(
@@ -571,13 +570,12 @@ function createLikeColumnResolver(
 	issues: string[],
 ): (entry: PhysicalTableCatalogEntry) => readonly string[] {
 	const visiting = new Set<string>();
-	const resolve = (entry: PhysicalTableCatalogEntry, depth: number): readonly string[] => {
-		if (depth > 3) return [];
+	const resolve = (entry: PhysicalTableCatalogEntry): readonly string[] => {
 		const key = physicalTableKey(entry);
 		if (visiting.has(key)) return [];
 		visiting.add(key);
 		try {
-			const like = createTableLikeSource(readFileSync(entry.ddlPath, "utf8"));
+			const like = createTableLikeSource(verifiedFile(entry.ddlPath, entry.ddlSha256, "DDL").toString("utf8"));
 			if (!like) return [];
 			const source = pickCreateTableLikeSource(
 				entry,
@@ -596,7 +594,7 @@ function createLikeColumnResolver(
 			visiting.delete(key);
 		}
 	};
-	return (entry) => resolve(entry, 0);
+	return resolve;
 }
 
 export function loadPhysicalTableCatalog(
@@ -652,6 +650,7 @@ export function loadPhysicalTableCatalog(
 							join(dataRoot, "tables", platform, directoryName, "table.json"),
 						),
 				);
+	const queuedPaths = new Set(tablePaths);
 	for (const tablePath of tablePaths) {
 		try {
 			const raw: unknown = JSON.parse(readFileSync(tablePath, "utf8"));
@@ -711,6 +710,19 @@ export function loadPhysicalTableCatalog(
 				attemptedColumns = true;
 			});
 			entries.push(entry);
+			// LIKE sources are schema dependencies even when SQL never reads them.
+			// Only enqueue the exact physical source; the path set also bounds cycles.
+			if (referenceFilter !== undefined) {
+				const like = createTableLikeSource(verifiedFile(ddlPath, ddlHash, "DDL").toString("utf8"));
+				if (like) {
+					const sourceName = qualifyCreateTableLikeSource(entry.qualifiedName, like);
+					const sourcePath = join(dataRoot, "tables", entry.platform, `${sourceName}__${entry.dataSource}`, "table.json");
+					if (isWithin(join(dataRoot, "tables", entry.platform), sourcePath) && existsSync(sourcePath) && !queuedPaths.has(sourcePath)) {
+						queuedPaths.add(sourcePath);
+						tablePaths.push(sourcePath);
+					}
+				}
+			}
 		} catch (error) {
 			issues.push(`${relativeLocator(dataRoot, tablePath)}:${error instanceof Error ? error.message : String(error)}`);
 		}
@@ -1072,28 +1084,25 @@ function addSchemaMapping(mapping: SchemaMapping, qualifiedName: string, columns
 	current[parts.at(-1)!] = Object.fromEntries(columns.map((column) => [normalizeName(column), "unknown"]));
 }
 
-function taskLocalWriteTarget(sql: string): string | null {
-	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)[\s\S]*?\bas\s+(?:select|with)\b/i.exec(sql);
+function taskLocalWriteTarget(sql: string, create: ReturnType<typeof readCreateTableHeader>): string | null {
+	if (create?.asQuery) return normalizeName(create.target);
 	const insert = /\binsert\s+(?:overwrite|into)\s+(?:table\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
-	const raw = create?.[1] ?? insert?.[1];
+	const raw = insert?.[1];
 	if (!raw) return null;
 	return normalizeName(raw.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", ""));
 }
 
-function taskLocalCreateSchema(sql: string): {
+function taskLocalCreateSchema(sql: string, create: ReturnType<typeof readCreateTableHeader>): {
 	readonly target: string;
 	readonly columns: readonly string[];
 	readonly partitionColumns: ReadonlySet<string>;
 } | null {
-	const create = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_$`".\[\]-]+)/i.exec(sql);
-	const rawTarget = create?.[1];
-	if (!rawTarget) return null;
-	if (/\bas\s+(?:select|with)\b/i.test(sql)) return null;
+	if (!create || create.asQuery) return null;
 	const parsed = parseDdlSchema(sql);
 	const columns = parsed.columns.map((column) => normalizeName(column.name)).filter(Boolean);
 	if (columns.length === 0 || new Set(columns).size !== columns.length) return null;
 	return {
-		target: normalizeName(rawTarget.replaceAll("`", "").replaceAll('"', "").replaceAll("[", "").replaceAll("]", "")),
+		target: normalizeName(create.target),
 		columns,
 		partitionColumns: new Set(parsed.partition_columns.map(normalizeName)),
 	};
@@ -1199,6 +1208,7 @@ function deriveTaskLocalSchemas(
 		const split = SqlSession.create(source.analysisContent, dialect, { schema: new Schema(mapping) });
 		for (const cell of split.doc.statements) {
 			const rawSql = source.analysisContent.slice(cell.span.start, cell.span.end);
+			const createHeader = readCreateTableHeader(rawSql);
 			const createLike = taskLocalCreateLike(rawSql);
 			if (createLike) {
 				const createTarget = qualifyBareTableName(createLike.target, defaultSchema);
@@ -1232,7 +1242,7 @@ function deriveTaskLocalSchemas(
 					continue;
 				}
 			}
-			const createSchema = taskLocalCreateSchema(rawSql);
+			const createSchema = taskLocalCreateSchema(rawSql, createHeader);
 			const createTarget = createSchema
 				? qualifyBareTableName(createSchema.target, defaultSchema)
 				: null;
@@ -1258,7 +1268,7 @@ function deriveTaskLocalSchemas(
 					aliases: [],
 				});
 			}
-			const rawTarget = taskLocalWriteTarget(rawSql);
+			const rawTarget = taskLocalWriteTarget(rawSql, createHeader);
 			const target = rawTarget
 				? qualifyBareTableName(rawTarget, defaultSchema)
 				: null;
@@ -1268,7 +1278,7 @@ function deriveTaskLocalSchemas(
 				records.has(target)
 			) continue;
 			const physicalSchema = uniquePhysicalTableForReference(catalog, target);
-			const isCtas = /\bcreate\s+(?:(?:or\s+replace|external|temporary|temp)\s+)*table\b[\s\S]*?\bas\s+(?:select|with)\b/i.test(rawSql);
+			const isCtas = createHeader?.asQuery === true;
 			if (!isCtas && (physicalSchema?.columns.length ?? 0) > 0) continue;
 			const session = SqlSession.create(rawSql, dialect, { schema: new Schema(mapping) });
 			const statement = session.doc.statements[0];

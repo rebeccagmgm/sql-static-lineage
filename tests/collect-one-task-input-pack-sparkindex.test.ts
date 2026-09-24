@@ -475,6 +475,28 @@ describe("collect-one-task-input-pack-sparkindex", () => {
     }
   });
 
+  it("qualifies bare CREATE with the task default database before resolving source tables", () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "sparkindex-create-schema-"));
+    const snapshotPath = join(dataRoot, "snapshot.jsonl");
+    writeMetadataSnapshot(snapshotPath, ["target_db.same_name", "source_db.same_name"]);
+    const lookups: string[] = [];
+    const result = resolveSparkIndexTables(dataRoot, {
+      taskId: "bare-create-schema",
+      taskName: "target_db.same_name",
+      taskCategory: "sparkIndex",
+      target: "target_db.same_name",
+      sql: { create: "CREATE TABLE same_name (renamed_id STRING)", query: "SELECT id AS renamed_id FROM source_db.same_name" },
+    }, {
+      metadataSnapshotPath: snapshotPath,
+      tableMcpMinIntervalMs: 0,
+      runTableGuid: (database, table) => { lookups.push(`${database}.${table}`); throw new Error("TEST_SOURCE_DDL_UNAVAILABLE"); },
+      now: FIXED_NOW,
+    });
+    expect(result.resolved.map(item => item.evidence.qualifiedName)).toEqual(["target_db.same_name"]);
+    expect(lookups).toEqual(["source_db.same_name"]);
+    expect(result.unavailable.map(item => item.candidate.qualifiedName)).toEqual(["source_db.same_name"]);
+  });
+
   it("does not materialize exact CREATE without a usable metadata snapshot", () => {
     const dataRoot = mkdtempSync(join(tmpdir(), "sparkindex-input-pack-"));
     const cacheRoot = mkdtempSync(join(tmpdir(), "sparkindex-cache-"));

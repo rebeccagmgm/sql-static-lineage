@@ -1,4 +1,5 @@
 import { TRACE_EDGE_LIMIT } from "./graph-limits";
+import { createOverviewRequest } from "./overview-request";
 import { recordPerformance } from "./performance-log";
 import type {
   Anchor,
@@ -51,6 +52,10 @@ async function get<T>(
         ? String(body.error)
         : "查询失败";
     const partitionErrors: Record<string, string> = {
+      TASK_TABLE_CONTEXT_INVALID: "任务链路的表标识无效，请从原任务重新展开。",
+      TASK_TABLE_CONTEXT_MISSING: "这张表与原任务的读写关系已不存在，请从原任务重新展开。",
+      TASK_TABLE_ANCHOR_MISSING: "当前发布图未收录这个任务或表。",
+      TASK_SCHEDULE_NEIGHBOR_LIMIT: "该任务的调度邻居超过查询上限，未返回不完整的链路。",
       PARTITION_VERSION_CHANGED: "图谱已换版，请重新打开此表并选择分区。",
       PARTITION_SELECTION_INVALID: "保存的分区范围已失效，请重新选择分区。",
       PARTITION_FOCUS_OUTSIDE_SCOPE: "当前节点不在已选分区的查询范围内，请先从原起点继续展开。",
@@ -72,7 +77,7 @@ export const api = {
       maxEdges: 1000,
     }),
   status: () => get<Record<string, unknown>>("status"),
-  overview: (hiddenTables: string[] = [], clusters: string[] = []) => get<OverviewResult>("overview", { hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) }),
+  overview: createOverviewRequest((hiddenTables: string[] = [], clusters: string[] = [], signal: AbortSignal) => get<OverviewResult>("overview", { hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) }, signal)),
   region: (schema: string, offset = 0, limit = 50, hiddenTables: string[] = [], clusters: string[] = []) =>
     get<RegionResult>("regions", { schema, offset, limit, hiddenTables: JSON.stringify(hiddenTables), clusters: JSON.stringify(clusters) }),
   search: (q: string, offset = 0, limit = 31, clusters: string[] = [], signal?: AbortSignal) =>
@@ -97,6 +102,7 @@ export const api = {
       scopeDepth?: number;
       scopeDirection?: Direction;
     },
+    signal?: AbortSignal,
   ) =>
     get<TraceResult>("trace", {
       taskId: i.taskId,
@@ -115,15 +121,16 @@ export const api = {
       depthUnit: "table-hop",
       limit: TRACE_EDGE_LIMIT,
       candidates: i.includeCandidates ? 1 : 0,
-    }),
+    }, signal),
   task: (
     taskId: string,
-    i: { column?: string; writeId?: string; sql?: boolean } = {},
+    i: { column?: string; writeId?: string; sql?: boolean; ddl?: boolean } = {},
   ) =>
     get<TaskDetail>("task", {
       taskId,
       column: i.column,
       writeId: i.writeId,
       sql: i.sql ? 1 : undefined,
+      ddl: i.ddl ? 1 : undefined,
     }),
 };

@@ -972,7 +972,13 @@ describe("Input Pack-driven Machine Facts", () => {
     ).toBe(false);
   });
 
-  it("derives Task-local CTAS columns from the SELECT output instead of DDL-shaped text", () => {
+  it.each([
+    [" ", "demo.extra"],
+    [" -- business comment\n", "demo.extra"],
+    [" /* business comment */ ", "demo.extra"],
+    [" /* business comment */ WITH src AS (SELECT src_a FROM demo.extra) ", "src"],
+    [" /* union */ WITH src AS (SELECT src_a FROM demo.extra UNION ALL SELECT mid_a AS src_a FROM demo.mid) ", "src"],
+  ])("derives Task-local CTAS columns across trivia %j instead of DDL-shaped text", (trivia, source) => {
     const f = fixture();
     writeTaskInput(f.dataRoot, {
       taskId: "1210",
@@ -988,10 +994,10 @@ describe("Input Pack-driven Machine Facts", () => {
       sql: {
         query: {
           content:
-            "CREATE TABLE function_stage AS " +
+            "CREATE TABLE function_stage AS" + trivia +
             "SELECT e.src_a AS stage_a, " +
             "CEILING(DATEDIFF('2026-01-02','2026-01-01') / 7) + 1 AS rn " +
-            "FROM demo.extra e; " +
+            `FROM ${source} e; ` +
             "SELECT stage_a AS out_a, rn AS out_b FROM function_stage;",
           evidenceProvider: "synthetic:test",
         },
@@ -1016,11 +1022,36 @@ describe("Input Pack-driven Machine Facts", () => {
       table_status: "TASK_LOCAL",
       source: expect.stringContaining("input-pack-task-local-write:"),
     });
-    expect(
-      jsonl(join(bundle, "task-local-materializations.jsonl"))
-        .filter((bridge) => bridge.physical_dataset === "demo.function_stage")
-        .every((bridge) => bridge.status === "RESOLVED"),
-    ).toBe(true);
+    const bridges = jsonl(join(bundle, "task-local-materializations.jsonl"))
+      .filter((bridge) => bridge.physical_dataset === "demo.function_stage");
+    expect(bridges).toHaveLength(2);
+    expect(bridges.every((bridge) => bridge.status === "RESOLVED")).toBe(true);
+    const expressions = jsonl(join(bundle, "field-expression-nodes.jsonl"));
+    expect(expressions.some(expression => expression.input_dependency_status === "SQL_CANDIDATE")).toBe(false);
+    expect(expressions.some(expression => Array.isArray(expression.input_fields) &&
+      expression.input_fields.some((field: Record<string, unknown>) => field.table === "demo.extra" && field.column === "src_a"))).toBe(true);
+    if (trivia.includes("UNION ALL")) {
+      expect(expressions.some(expression => Array.isArray(expression.input_fields) &&
+        expression.input_fields.some((field: Record<string, unknown>) => field.table === "demo.mid" && field.column === "mid_a"))).toBe(true);
+    }
+  });
+
+  it.each(["*", "*, 1 AS known_col"])("does not certify an incomplete CTAS star schema: %s", (columns) => {
+    const f = fixture();
+    writeTaskInput(f.dataRoot, {
+      taskId: "1212",
+      taskCategory: "hiveTask-2.0",
+      taskName: "demo.unknown_ctas",
+      target: { platform: "hive", dataSource: "warehouse", qualifiedName: "demo.root" },
+      targetEvidenceKind: "DIRECT_PLATFORM_TARGET",
+      partition: null,
+      sql: { query: { content: `CREATE TABLE unknown_stage AS /* comment */ SELECT ${columns} FROM demo.missing; SELECT 1 AS out_a, 2 AS out_b;`, evidenceProvider: "synthetic:test" } },
+      evidenceProvider: "synthetic:test",
+      collectedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const prepared = prepareInputPackTask({ dataRoot: f.dataRoot, taskId: "1212" });
+    const records = prepared.schemaBundle.records as Record<string, unknown>[];
+    expect(records.some(record => record.qualified_name === "demo.unknown_stage")).toBe(false);
   });
 
   it("inherits Task-local CREATE LIKE columns and partitions from its exact Table Pack", () => {
@@ -2363,13 +2394,33 @@ describe("Input Pack-driven Machine Facts", () => {
       evidenceProvider: "synthetic:test",
       collectedAt: "2026-01-01T00:00:00.000Z",
     });
-    const catalog = loadPhysicalTableCatalog(f.dataRoot, { lazyDdl: true });
+    const catalog = loadPhysicalTableCatalog(f.dataRoot, { lazyDdl: true, references: { qualifiedNames: ["demo.mirror_account"], physicalKeys: [], nameTails: [] } });
     expect(catalog.issues).toHaveLength(0);
     expect(catalog.byQualifiedName.get("demo.mirror_account")?.[0]?.columns).toEqual([
       "acct_id",
       "bal",
     ]);
     expect(catalog.issues).toHaveLength(0);
+  });
+
+  it("keeps CREATE TABLE LIKE inside its physical source and handles dependency cycles", () => {
+    const f = fixture();
+    for (const [dataSource, name, ddl] of [
+      ["warehouse", "a", "create table demo.a like demo.b"],
+      ["warehouse", "b", "create table demo.b like demo.a"],
+      ["warehouse", "mirror", "create table demo.mirror like demo.external"],
+      ["other", "external", "create table demo.external (wrong_id string)"],
+    ]) {
+      writeTableInput(f.dataRoot, {
+        platform: "hive", dataSource, qualifiedName: `demo.${name}`,
+        objectType: "hive_table", partitionFields: [], ddl,
+        evidenceProvider: "synthetic:test", collectedAt: "2026-01-01T00:00:00.000Z",
+      });
+    }
+    const catalog = loadPhysicalTableCatalog(f.dataRoot, { lazyDdl: true });
+    expect(catalog.byQualifiedName.get("demo.mirror")?.[0]?.columns).toEqual([]);
+    expect(catalog.byQualifiedName.get("demo.a")?.[0]?.columns).toEqual([]);
+    expect(catalog.issues.some(issue => issue.includes("CREATE_TABLE_LIKE_SOURCE_UNRESOLVED:demo.mirror"))).toBe(true);
   });
 
   it("binds UNION output through a dynamic partition only when Input Pack proves it", () => {

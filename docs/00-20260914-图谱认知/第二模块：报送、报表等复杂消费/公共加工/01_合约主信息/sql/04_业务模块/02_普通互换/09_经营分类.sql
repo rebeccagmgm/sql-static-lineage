@@ -1,9 +1,11 @@
 /*
 09 / 这份互换在销售经营口径中归到哪一类？
 
-源合约类型回答“系统登记成什么产品”；经营分类把合约按报表口径分组。
-例如旧规则把CALL_SWAP（多头互换）、PUT_SWAP（空头互换）都归为“多空互换”。
-所以Contr_Type_Cd/Desc与Src_Contr_Type/Desc在11模块同时保留，不能混为一套类型。
+互换经营分类 Contr_Type 
+作用： 
+    Src_Contr_Type 表示源系统登记的产品类型； 
+    Contr_Type 表示【销售经营口径分类】，两者不能混用。 
+    例如 CALL_SWAP / PUT_SWAP 源类型不同，但旧口径都归为“多空互换”。
 
 输入地图：
   02合约 rt      → trs_type互换类型、START_DATE期初定价日、contract_use合约用途
@@ -12,14 +14,15 @@
   07初始持仓 his_ini → ins_family证券集、currency证券币种、interotc_underlying_category工具池标的小类
   02字典 sct     → dw_cd_val_desc源合约类型名称，仅旧01使用
 
-先选版本，再按顺序取首个命中；不是用加工日切换：
-  substring(rt.START_DATE, 1, 10) <= '2025-03-31' → 旧01～旧12
-  其余（包括START_DATE为NULL）                  → 新01～新07
+版本切换： 
+    START_DATE <= '2025-03-31' → 旧口径 
+    其他（含 NULL） → 新口径 
 
 规则对照（编号与下方代码、名称两段CASE对应）：
   下列简写仅为阅读，不是新增SQL条件：
-  股票 = ins_family IN ('EQUITY','GDR')；非IPO = ipo_type为'N'或NULL；
-  非限售 = Private_Placement为'N'或NULL；空串不等于NULL。
+  【股票】 = ins_family IN ('EQUITY','GDR')；
+  【非IPO】 = ipo_type为'N'或NULL；
+  【非限售】 = Private_Placement为'N'或NULL；空串不等于NULL。
 
   旧规则 / 条件 → 分类代码 → 中文名称
   旧01 OTC_HK部门 + CROSS_LEND_SWAP/HK_LONG_HOLD_SWAP/N_CROSS_FUTURE_SWAP/N_CROSS_QFII_SWAP
@@ -28,25 +31,25 @@
   旧03 CALL_SWAP/PUT_SWAP → TRS_LONG_SHORT → 多空互换
   旧04 S_CROSS_FUTURE_SWAP → TRS_S_CROSS_FUTURES → 南下期货
   旧05 S_CROSS_SWAP + 工具池标的小类BONDS → TRS_S_CROSS_BOND → 南下债券
-  旧06 S_CROSS_SWAP + 股票 + 币种非CNY + IPO='Y' → TRS_S_IPO → 南下IPO
-  旧07 S_CROSS_SWAP + 股票 + 币种非CNY + 非IPO + 限售='Y'
+  旧06 S_CROSS_SWAP + 【股票】 + 币种非CNY + IPO='Y' → TRS_S_IPO → 南下IPO
+  旧07 S_CROSS_SWAP + 【股票】 + 币种非CNY + 【非IPO】 + 限售='Y'
        → TRS_S_STOCK_LIMITED → 南下跨境互换（限售股）
-  旧08 S_CROSS_SWAP + 股票 + 币种HKD + 非IPO + 非限售
+  旧08 S_CROSS_SWAP + 【股票】 + 币种HKD + 【非IPO】 + 【非限售】
        → TRS_S_CROSS_HK → 南下跨境港股
-  旧09 S_CROSS_SWAP + 股票 + 币种非HKD且非CNY + 非IPO + 非限售
-       → TRS_S_CROSS_OTHER → 南下跨境-其他股票市场
+  旧09 S_CROSS_SWAP + 【股票】 + 币种非HKD且非CNY + 【非IPO】 + 【非限售】
+       → TRS_S_CROSS_OTHER → 南下跨境-其他【股票】市场
   旧10 GFS_HK公司 + FEE_SWAP + 用途REBATE_INTEREST → FEE_SWAP_HK → 费用合约
   旧11 GFS_HK公司 + INDEX_ENHANCE_SWAP → TRS_N_CROSS_INDEX_ENHANCE → 北上指数增强
   旧12 其余 → TRS_OTHER_SWAP → 其它互换类型
 
   新规则 / 条件 → 分类代码 → 中文名称
-  新01 LEND_SWAP + 股票 → TRS_SHORT_SELL → 借券互换
+  新01 LEND_SWAP + 【股票】 → TRS_SHORT_SELL → 借券互换
   新02 证券集QIS → TRS_S_CROSS_QTF_STRG_IDX → 南下量化策略指数互换
   新03 S_CROSS_FUTURE_SWAP → TRS_S_CROSS_FUTURES → 南下期货
-  新04 S_CROSS_SWAP/S_CROSS_OPTION_SWAP + 股票 + 币种非CNY + IPO='Y'
+  新04 S_CROSS_SWAP/S_CROSS_OPTION_SWAP + 【股票】 + 币种非CNY + IPO='Y'
        → TRS_S_IPO → 南下IPO
-  新05 S_CROSS_SWAP/S_CROSS_OPTION_SWAP + 股票 + 非IPO
-       → TRS_S_CROSS_STOCK → 南下跨境股票
+  新05 S_CROSS_SWAP/S_CROSS_OPTION_SWAP + 【股票】 + 【非IPO】
+       → TRS_S_CROSS_STOCK → 南下跨境【股票】
   新06 GFS_HK公司 + INDEX_ENHANCE_SWAP → TRS_N_CROSS_INDEX_ENHANCE → 北上指数增强
   新07 其余 → TRS_OTHER_SWAP → 其它互换类型
 
@@ -85,7 +88,7 @@ if(
             and his_ini.ins_family in ('EQUITY', 'GDR')
             and his_ini.currency != 'CNY'
             and rtl.ipo_type = 'Y'
-            then 'TRS_S_IPO' -- 非CNY股票且IPO；条件没有进一步限定必须为HKD
+            then 'TRS_S_IPO' -- 非CNY【股票】且IPO；条件没有进一步限定必须为HKD
         -- 旧07
         when rt.trs_type = 'S_CROSS_SWAP'
             and his_ini.ins_family in ('EQUITY', 'GDR')
@@ -198,7 +201,7 @@ if(
             and his_ini.currency not in ('HKD','CNY')
             and (rtl.ipo_type = 'N' or rtl.ipo_type is null)
             and (rtl.Private_Placement = 'N' or rtl.Private_Placement is null)
-            then '南下跨境-其他股票市场'
+            then '南下跨境-其他【股票】市场'
         -- 旧10
         when trade.company = 'GFS_HK'
             and rt.trs_type = 'FEE_SWAP'
@@ -233,7 +236,7 @@ if(
         when rt.trs_type in ('S_CROSS_SWAP', 'S_CROSS_OPTION_SWAP')
             and his_ini.ins_family in ('EQUITY', 'GDR')
             and (rtl.ipo_type = 'N' or rtl.ipo_type is null)
-            then '南下跨境股票'
+            then '南下跨境【股票】'
         -- 新06
         when trade.company = 'GFS_HK'
             and rt.trs_type = 'INDEX_ENHANCE_SWAP'

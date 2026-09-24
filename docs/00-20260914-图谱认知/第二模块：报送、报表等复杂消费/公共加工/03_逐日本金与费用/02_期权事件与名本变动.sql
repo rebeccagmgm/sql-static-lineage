@@ -2,26 +2,42 @@
 02 / 核心问题：期权没有像 TRS 那样的逐日持仓表，如何知道每天还剩多少名义本金？
 解决思路：期权动态本金：通过存续期事件还原每日名义本金变化。
 
-【背景】
-期权无逐日持仓，通过事件表记录本金调整。
-    【与互换对比】
-    普通互换：初始持仓+每日持仓变化 → 当天本金
-    期权：初始本金 + 存续期事件变化 → 每天本金 （部分终止、提前锁盈等事件）
+【核心问题】
+    期权不像普通TRS一样有逐日持仓表，无法直接读取“某一天还剩多少名义本金”。
+    因此这里不从每日持仓取本金，而是：
+    初始本金
+    + 存续期事件造成的累计本金变化
+    = 对应日期的动态本金
 
-【逻辑】
-事件表来源：odata_n_tit.d_trd_option_event（交易-OTC OPTION存续期事件表）。
-只选本次快照中已生效EFFECTIVE的部分终止PARTIAL_TERMINATION、提前锁盈EARLY_LOCK_PL事件。
-这里只算累计名本变化，不直接输出最终本金。
+【与普通互换的区别】
+    普通互换：
+    初始持仓 + 每日持仓变化 → 当日本金
+
+    期权：
+    初始本金 + 存续期事件累计变化 → 当日本金
+    当前只考虑会改变本金规模的两类已生效事件：PARTIAL_TERMINATION 部分终止、EARLY_LOCK_PL 提前锁盈
+
+    事件来源：交易-OTC OPTION存续期事件表
+
+【本模块输出什么】
+    本模块只计算：
+    每个事件日开始后生效的“累计名义本金变化 notional_change”
+
+    并把这个累计变化延续到下一事件日前一天。
+
+    它本身不直接计算最终本金。
+    主脚本后续使用：
+    动态本金 = 初始本金 + 累计本金变化 × Cny_Ex_Rate
 
 【处理流程】：
-(同合约同事件)日汇总→判断本金增减方向→累计名义本金变化→展开到下一事件日前一天
+    (同合约同事件)日汇总→判断本金增减方向→累计名义本金变化→展开到下一事件日前一天
 【主脚本】：
-动态本金 = 初始本金 + 累计变化 × 合约主信息中的Cny_Ex_Rate
+    动态本金 = 初始本金 + 累计变化 × 合约主信息中的Cny_Ex_Rate
 
 【示例】
-初始本金1000：
-9月19日减少200 → 累计变化-200，本金800
-9月20日减少100 → 累计变化-300，本金700
+    初始本金1000：
+    9月19日减少200 → 累计变化-200，本金800
+    9月20日减少100 → 累计变化-300，本金700
 
 【注意】
 - notional_delta为名本变动金额，不是事件后余额。
@@ -34,9 +50,9 @@
 ① 【同合约同事件日汇总事件】，得到调整前后本金及变动金额。
     主要处理终止/锁盈类事件导致的本金调整。【只考虑会影响本金规模的事件】
     按同合约、同事件日汇总：
-    最大调整前本金 = 当日事件开始前本金；
-    最小调整后本金 = 当日事件完成后本金；
-    delta求和 = 当日累计变动金额。
+    notional_before = 当日所有事件中最大的调整前本金 
+    notional_after = 当日所有事件中最小的调整后本金
+    notional_delta = 当日所有事件的变动金额之和
     同日多事件合并，不逐笔计算事件顺序。
 */
 option_event_daily AS (
@@ -52,24 +68,91 @@ option_event_daily AS (
     group by key_option_deal_id, event_date
     ),
 
--- ② 判断方向并累计：调整后<调整前时取负delta，其余取正delta；不额外取ABS或限制为非负。
--- next_date是下一事件日；最后一个事件的默认终点是加工日次日，不是合约终止日。
+/*
+② 判断方向并累计：
+    notional_after < notional_before 
+            → -notional_delta，本金减少 
+    notional_after >= notional_before 
+            → +notional_delta，本金增加或不减
+再按：
+key_option_deal_id + event_date顺序
+做累计SUM，得到：notional_change = 截至当前事件日的累计名义本金变化
+
+例如：
+9/19 -200 → 累计 -200
+9/20 -100 → 累计 -300
+
+同时计算下一事件日 next_date：
+    有下一事件 → 下一事件日期 
+    没有下一事件 → '${data_day_str}' + 1天
+
+*/
 option_event_balances AS (
     select
         key_option_deal_id,
-        sum(case when cast(notional_after as double) < cast(notional_before as double) then - notional_delta else notional_delta end) over(partition by key_option_deal_id order by event_date) as notional_change,
-        lead(event_date, 1, date_add('${data_day_str}',1)) over(partition by key_option_deal_id order by event_date) as next_date,
-        event_date
+        sum(
+            case
+                when cast(notional_after as double) < cast(notional_before as double)
+                    then -notional_delta
+                else notional_delta
+            end
+        ) over (
+            partition by key_option_deal_id
+            order by event_date
+        ) as notional_change, -- 截至当前事件日的累计名义本金变化
+
+        lead(
+            event_date,
+            1,
+            date_add('${data_day_str}', 1)
+        ) over (
+            partition by key_option_deal_id
+            order by event_date
+        ) as next_date, -- 下一事件日；最后一个事件默认取加工日次日
+
+        event_date --时间日期
     from option_event_daily x
     ),
 
--- ③ 延续到每天：[本事件日，下一事件日前一天]使用同一个累计变化。
--- 没有事件的日期不会在本模块补行；主脚本LEFT JOIN缺失时回退初始本金。
+/*
+③ ③ 将“事件之间的一段有效期”展开成逐日记录。
+
+每个事件形成一个日期区间：
+    [当前事件日, 下一事件日前一天]
+    整个区间内使用相同的 notional_change。
+
+注意：
+本模块不会生成“首个事件之前”的日期。
+
+因此：
+
+首个事件之前
+    → 主脚本JOIN不到 notional_change
+    → 使用初始本金
+
+首个事件之后
+    → 使用 初始本金 + 累计事件变化
+
+这正是该模块与主脚本配合还原每日动态本金的方式。
+
+| key_option_deal_id | Accrued_Date | notional_change |
+| ------------------ | ------------ | --------------: |
+| A1                 | 2026-09-19   |            -200 |
+| A1                 | 2026-09-20   |            -200 |
+| A1                 | 2026-09-21   |            -200 |
+*/
 option_event_days AS (
-    select
-        key_option_deal_id,
-        notional_change,
-        date_format(date_add(event_date, pos),'yyyy-MM-dd') as Accrued_Date
-    from option_event_balances t
-    lateral view posexplode(split(space(datediff(next_date, event_date)-1), ' ')) t as pos, val
+select
+    key_option_deal_id, -- 场外期权合约ID
+    notional_change, -- 截至该日已经生效的累计名义本金变化
+    date_format(date_add(event_date, pos),'yyyy-MM-dd') as Accrued_Date -- 累计变化对应的计提日期
+from option_event_balances t
+
+lateral view posexplode(
+    split(
+        space(datediff(next_date, event_date) - 1),
+        ' '
     )
+) t as pos, val
+
+)

@@ -23,6 +23,19 @@ or dependencies.
 
 ## Commands
 
+Cross-task field continuation matches physical identity and non-`busi_date`
+partitions first. A uniquely matched business scope follows the existing
+continuation eligibility checks without comparing `busi_date`. Only multiple
+writes with the same matched non-date partition scope use `busi_date` as a
+tie-breaker. Different business scopes remain independent; unresolved constraints
+on business partitions stay unresolved. Ordinary row filters are not partition
+constraints, and unrestricted reads retain existing continuation behavior.
+Writes without `busi_date` retain their original matching rules. Date ties retain
+all remaining write observations.
+This is a continuation policy, not a claim that runtime dates are equal; the
+original partition evidence is retained. Changing the policy invalidates the
+published continuation index without recompiling unchanged task-local graphs.
+
 ```text
 npm --prefix packages/data-graph ci --ignore-scripts
 npm --prefix packages/data-graph run typecheck

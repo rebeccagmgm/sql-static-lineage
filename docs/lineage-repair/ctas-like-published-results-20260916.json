@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "productionPublished": true,
+  "publishedAt": "2026-09-16T00:36:53.879714200+08:00[Asia/Shanghai]",
+  "version": "243350d5ad79d4f3def2c923b682b8be426368e3b14625eee003b4b6c8f63c88",
+  "taskCount": 7478,
+  "rebuiltTasks": 46,
+  "preservedTasks": 7432,
+  "removedTasks": 0,
+  "candidateOutputsBefore": 7942,
+  "candidateOutputsAfter": 6961,
+  "inScopeBefore": 2219,
+  "inScopeAfter": 1238,
+  "excluded": 5723,
+  "netReduction": 981,
+  "physicalInputReferencesPreserved": 16487,
+  "physicalInputReferencesLost": 0,
+  "focusedTestsPassed": 27,
+  "fullRelatedTests": {
+    "passed": 86,
+    "preExistingFailed": 3
+  },
+  "typecheck": "PRE_EXISTING_TS7016",
+  "cliVerified": true,
+  "httpVerified": true,
+  "counts": {
+    "version": "243350d5ad79d4f3def2c923b682b8be426368e3b14625eee003b4b6c8f63c88",
+    "totalCandidateOutputs": 6961,
+    "candidateTasks": 427,
+    "excludedCandidateOutputs": 5723,
+    "excludedCandidateTasks": 345,
+    "inScopeCandidateOutputs": 1238,
+    "inScopeCandidateTasks": 82
+  }
+}

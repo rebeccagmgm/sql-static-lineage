@@ -258,6 +258,256 @@ const producers: readonly ProducerIndexWriter[] = [
 ];
 
 describe("union-continuation-v2 (WP-8)", () => {
+  function matchBusinessPartitions(
+    writers: readonly ProducerIndexWriter[],
+    sources = ["A"],
+    readColumn = "src_tbl",
+  ) {
+    const readId = "read:business-first";
+    const readNodeId = "read-node:business-first";
+    const merge = mergeLoadedTasksForTest([
+      loadedTask({
+        taskId: "consumer",
+        nodes: [
+          readNode(readId, readNodeId, "A", "", "LITERAL", [
+            ...(sources.length ? [{ column: readColumn, values: sources }] : []),
+            { column: "busi_date", values: ["h13"] },
+          ]),
+        ],
+        localClosure: {
+          finalWrites: [],
+          externalReads: [
+            {
+              readOccurrenceId: readId,
+              readOccurrenceNodeId: readNodeId,
+              datasetNodeId: TABLE_ID,
+              qualifiedName: TABLE,
+              identityStatus: "CONFIRMED",
+            },
+          ],
+        },
+      }),
+      ...writers.map((w) =>
+        loadedTask({
+          taskId: w.taskId,
+          nodes: [],
+          localClosure: {
+            finalWrites: [
+              {
+                writeObservationId: w.writeObservationId!,
+                targetWriteNodeId: `target:${w.taskId}`,
+                datasetNodeId: TABLE_ID,
+                qualifiedName: TABLE,
+                outputQualification: w.outputQualification,
+              },
+            ],
+            externalReads: [],
+          },
+        }),
+      ),
+    ]);
+    return traceUnionContinuationV2({
+      merge,
+      readOccurrenceId: readId,
+      producerIndexWriters: writers,
+    }).tiers.partition.candidates;
+  }
+  function datedWriter(
+    id: string,
+    source: string,
+    date: string,
+  ): ProducerIndexWriter {
+    return {
+      ...producerWriter(id, `write:${id}`, source),
+      partition: [
+        {
+          column: "src_tbl",
+          values: [source],
+          partitionStatus: "COMPLETE",
+          valueStatus: "LITERAL",
+        },
+        {
+          column: "busi_date",
+          values: [date],
+          partitionStatus: "COMPLETE",
+          valueStatus: "LITERAL",
+        },
+      ],
+    };
+  }
+  it("ignores business date for a unique non-date match, pruning other business partitions first", () => {
+    const candidates = matchBusinessPartitions([
+      datedWriter("1", "A", "h20"),
+      datedWriter("2", "B", "h13"),
+    ]);
+    expect(
+      candidates.map((c) => [
+        c.writeObservation.taskId,
+        c.partitionMatchStatus,
+        c.l1Eligible,
+      ]),
+    ).toEqual([
+      ["1", "CONFIRMED", true],
+      ["2", "DISJOINT", false],
+    ]);
+    expect(candidates[0]!.writeObservation.partition[1]!.values).toEqual(["h20"]);
+  });
+  it("uses business date only to break ties between equal non-date partitions", () => {
+    const candidates = matchBusinessPartitions([
+      datedWriter("1", "A", "h20"),
+      datedWriter("2", "A", "h13"),
+    ]);
+    expect(candidates.map((c) => c.partitionMatchStatus)).toEqual([
+      "DISJOINT",
+      "CONFIRMED",
+    ]);
+  });
+  it("does not date-prune different matching business partitions", () => {
+    const candidates = matchBusinessPartitions(
+      [datedWriter("1", "A", "h20"), datedWriter("2", "B", "h20")],
+      ["A", "B"],
+    );
+    expect(candidates.map((c) => c.partitionMatchStatus)).toEqual([
+      "CONFIRMED",
+      "CONFIRMED",
+    ]);
+  });
+  it("retains every indistinguishable write instead of choosing an arbitrary task", () => {
+    expect(
+      matchBusinessPartitions([
+        datedWriter("1", "A", "h13"),
+        datedWriter("2", "A", "h13"),
+      ]).filter((c) => c.partitionMatchStatus !== "DISJOINT"),
+    ).toHaveLength(2);
+  });
+  it("ignores a sole date partition and preserves unknown dates when business scopes tie", () => {
+    const writer = datedWriter("1", "A", "h20");
+    expect(
+      matchBusinessPartitions([
+        { ...writer, partition: [writer.partition![1]!] },
+      ])[0],
+    ).toMatchObject({ partitionMatchStatus: "CONFIRMED", l1Eligible: true });
+    const runtime = (id: string) => ({
+      ...datedWriter(id, "A", "h20"),
+      partition: [
+        writer.partition![0]!,
+        {
+          column: "busi_date",
+          values: ["${YYYY-MM-DD}"],
+          valueStatus: "RUNTIME_EXPRESSION",
+        },
+      ],
+    });
+    expect(
+      matchBusinessPartitions([runtime("1"), runtime("2")]).map((c) => [
+        c.partitionMatchStatus,
+        c.l1Eligible,
+      ]),
+    ).toEqual([
+      ["ASSUMED", false],
+      ["ASSUMED", false],
+    ]);
+  });
+  it("recognizes equivalent business scopes regardless of column and value order", () => {
+    const first = datedWriter("1", "A", "h20");
+    const second = datedWriter("2", "A", "h13");
+    expect(
+      matchBusinessPartitions([
+        first,
+        {
+          ...second,
+          partition: [...second.partition!]
+            .reverse()
+            .map((part) => ({ ...part, column: part.column.toUpperCase() })),
+        },
+      ]).map((c) => c.partitionMatchStatus),
+    ).toEqual(["DISJOINT", "CONFIRMED"]);
+  });
+  it("treats a date-only read as unrestricted across known business scopes", () => {
+    expect(
+      matchBusinessPartitions(
+        [datedWriter("1", "A", "h20"), datedWriter("2", "B", "h20")],
+        [],
+      ).map((c) => c.partitionMatchStatus),
+    ).toEqual(["CONFIRMED", "CONFIRMED"]);
+  });
+  it("compares dates for equal business values even when evidence kinds differ", () => {
+    const writer = datedWriter("1", "A", "h20");
+    const runtimeSource = {
+      ...writer,
+      partition: [
+        { ...writer.partition![0]!, valueStatus: "RUNTIME_EXPRESSION" },
+        writer.partition![1]!,
+      ],
+    };
+    expect(
+      matchBusinessPartitions([runtimeSource, datedWriter("2", "A", "h13")]).map(
+        (c) => c.partitionMatchStatus,
+      ),
+    ).toEqual(["DISJOINT", "CONFIRMED"]);
+  });
+  it("does not promote unknown business partitions or SQL-unconsumed writes", () => {
+    const known = datedWriter("1", "A", "h20");
+    const unknown = {
+      ...known,
+      partition: [
+        { column: "src_tbl", values: [], valueStatus: "UNKNOWN" },
+        known.partition![1]!,
+      ],
+    };
+    expect(matchBusinessPartitions([unknown])[0]).toMatchObject({
+      partitionMatchStatus: "UNKNOWN",
+      l1Eligible: false,
+    });
+    expect(
+      matchBusinessPartitions([
+        { ...known, outputQualification: "SQL_UNCONSUMED" },
+      ])[0],
+    ).toMatchObject({ partitionMatchStatus: "CONFIRMED", l1Eligible: false });
+  });
+  it("does not mistake ordinary row filters for business partition constraints", () => {
+    expect(
+      matchBusinessPartitions(
+        [datedWriter("1", "A", "h20")],
+        ["OTC"],
+        "Book_Bel_Dept",
+      )[0],
+    ).toMatchObject({ partitionMatchStatus: "CONFIRMED", l1Eligible: true });
+  });
+  it("keeps existing matching unchanged for writes without busi_date", () => {
+    const writer = datedWriter("1", "A", "h13");
+    expect(
+      matchBusinessPartitions(
+        [{ ...writer, partition: [writer.partition![0]!] }],
+        ["OTC"],
+        "Book_Bel_Dept",
+      )[0],
+    ).toMatchObject({ partitionMatchStatus: "UNKNOWN", l1Eligible: false });
+  });
+  it("preserves existing continuation for unconstrained dynamic business partitions", () => {
+    const writer = datedWriter("1", "A", "h13");
+    const dynamic = {
+      ...writer,
+      partition: [
+        writer.partition![1]!,
+        {
+          column: "tag_id",
+          values: [],
+          valueStatus: "UNKNOWN",
+          partitionStatus: "DYNAMIC",
+        },
+      ],
+    };
+    expect(matchBusinessPartitions([dynamic], [])[0]).toMatchObject({
+      partitionMatchStatus: "CONFIRMED",
+      l1Eligible: true,
+    });
+    expect(matchBusinessPartitions([dynamic], ["A"], "tag_id")[0]).toMatchObject({
+      partitionMatchStatus: "UNKNOWN",
+      l1Eligible: false,
+    });
+  });
+
   it("uses the two real 119044 read occurrences and keeps table/partition/write tiers distinct", () => {
     const merge = real119044Merge();
     const result = traceUnionTaskContinuationV2({

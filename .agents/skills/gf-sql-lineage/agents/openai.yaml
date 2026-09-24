@@ -1,0 +1,6 @@
+interface:
+  display_name: "SQLLens 高精度血缘"
+  short_description: "静态解析 SQL 并追溯任务、表和字段血缘"
+  default_prompt: "使用 $gf-sql-lineage 解析或查询指定任务、表和字段的高精度 SQL 血缘。"
+policy:
+  allow_implicit_invocation: true

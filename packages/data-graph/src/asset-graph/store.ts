@@ -1,6 +1,8 @@
 import { clusterParams, clusterTablePredicate, clusterTaskPredicate } from "./cluster-filter.ts";
 import { int, type Driver } from "neo4j-driver";
 import type { AssetNode, AssetEdge, CompiledTask } from "./compile.ts";
+import { parseTaskTableId, physicalTableNodeId } from "./task-table-context.ts";
+import { traverseTaskTables, type TableNode, type TableEdge, type TableTraversalReader } from "./task-table-traversal.ts";
 const chunks = <T>(xs: readonly T[], size = 500) =>
   Array.from({ length: Math.ceil(xs.length / size) }, (_, i) =>
     xs.slice(i * size, (i + 1) * size),
@@ -301,6 +303,19 @@ export class AssetGraphStore {
     clusterTaskIds?: string[],
   ) {
     await this.ready();
+    const taskId = /^(?:task:)?(\d+)$/i.exec(text.trim())?.[1];
+    if (taskId) {
+      const result = await this.run(
+        `MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK',id:$task}) WHERE ${clusterTaskPredicate("n")} RETURN properties(n) AS node SKIP $offset LIMIT $limit`,
+        {
+          task: `task:${taskId}`,
+          ...clusterParams(clusterTaskIds),
+          limit: Math.max(1, Math.min(101, Math.trunc(limit))),
+          offset: Math.max(0, Math.trunc(offset)),
+        },
+      );
+      return result.records.map((record) => cleanNode(record.get("node")));
+    }
     const r = await this.run(
       `CALL { MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n UNION ALL MATCH (n:SLAssetNode {graphId:$graphId,kind:'PHYSICAL_DATASET'}) RETURN n } WITH n WHERE (toLower(n.label) CONTAINS $text OR n.id=$task OR (n.kind='PHYSICAL_DATASET' AND any(identity IN $metadataIdentities WHERE n.detail CONTAINS ('\\\"platform\\\":\\\"' + identity.platform + '\\\"') AND n.detail CONTAINS ('\\\"dataSource\\\":\\\"' + identity.dataSource + '\\\"') AND n.detail CONTAINS ('\\\"qualifiedName\\\":\\\"' + identity.qualifiedName + '\\\"')))) WITH collect(n) AS matchedNodes UNWIND matchedNodes AS n WITH n WHERE ((n.kind='TASK' AND ${clusterTaskPredicate("n")}) OR (n.kind='PHYSICAL_DATASET' AND ${clusterTablePredicate("n")})) RETURN properties(n) AS node ORDER BY n.kind,n.label,n.id SKIP $offset LIMIT $limit`,
       {
@@ -321,6 +336,7 @@ export class AssetGraphStore {
     limit?: number;
     offset?: number;
   }) {
+    if (input.nodeId) input = {...input, nodeId: physicalTableNodeId(input.nodeId)};
     await this.ready();
     const selectors = [input.taskId, input.table, input.nodeId].filter(
       (value) => value !== undefined,
@@ -395,6 +411,32 @@ export class AssetGraphStore {
       start = Date.now(),
       limit = Math.max(1, Math.min(1000, Math.trunc(input.limit ?? 150))),
       depth = Math.max(0, Math.min(12, Math.trunc(input.depth ?? 4)));
+    const taskTableAnchor = input.nodeId ?? (!input.table && input.taskId ? `task:${input.taskId}` : undefined);
+    if (input.layer === "table" && taskTableAnchor &&
+        (taskTableAnchor.startsWith("task:") || parseTaskTableId(taskTableAnchor))) {
+      const reader: TableTraversalReader = {
+        node: async id => {
+          // Keep the unique-key lookup separate: combining the graph guard lets
+          // ArcadeDB select a graph-wide scan even for one exact task ID.
+          const result = await this.run("MATCH (n:SLAssetNode {key:$key}) WITH n LIMIT 1 WHERE n.graphId=$graphId RETURN properties(n) AS node LIMIT 1", {key: key(this.graphId, id)});
+          return result.records[0] ? cleanNode(result.records[0].get("node")) as TableNode : undefined;
+        },
+        adjacent: async (id, direction, layer, rowLimit, allowedTaskIds) => {
+          const pattern = direction === "down" ? "(n)-[r:SL_ASSET_EDGE]->(m)" : "(n)<-[r:SL_ASSET_EDGE]-(m)";
+          const result = await this.run(
+            `MATCH (n:SLAssetNode {key:$key}) WITH n LIMIT 1 MATCH ${pattern} WHERE r.layer=$layer AND r.graphId=$graphId AND r.kind IN $kinds AND ($unrestricted OR m.id IN $allowedTaskIds) AND ($candidates OR r.status<>'CANDIDATE') RETURN properties(m) AS node,properties(r) AS edge ORDER BY r.key LIMIT $limit`,
+            {key: key(this.graphId, id), layer, kinds: layer === "schedule" ? ["SCHEDULE"] : ["READS_TABLE", "WRITES_TABLE"],
+              unrestricted: allowedTaskIds === undefined, allowedTaskIds: allowedTaskIds ?? [], candidates: input.includeCandidates !== false, limit: rowLimit},
+          );
+          return result.records.map(row => ({node: cleanNode(row.get("node")) as TableNode, edge: cleanEdge(row.get("edge")) as TableEdge}));
+        },
+      };
+      const trace = await traverseTaskTables(reader, {nodeId: taskTableAnchor, direction: input.direction ?? "up", depth,
+        depthUnit: input.depthUnit, limit, includeCandidates: input.includeCandidates !== false});
+      if ((await this.ready()).version !== initial.version) throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");
+      return {...trace, version: initial.version, layer: input.layer, direction: input.direction ?? "up",
+        depthLimit: depth, edgeLimit: limit, elapsedMs: Date.now() - start, projectionGenerations: 0};
+    }
     const nodes = new Map<string, Record<string, unknown>>(),
       edges = new Map<string, Record<string, unknown>>();
     const terminalNodes = new Map<

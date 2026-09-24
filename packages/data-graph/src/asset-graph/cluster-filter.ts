@@ -19,9 +19,16 @@ export class ClusterCatalog {
   async read() {
     const version = String((await this.store.ready()).version);
     if (!this.cached || this.cached.version !== version || this.cached.expires < Date.now()) {
-      const result = await this.store.run("MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n.id AS id ORDER BY n.id LIMIT $limit", { limit: 50001 });
-      if (result.records.length > 50000) throw new Error("CLUSTER_CATALOG_LIMIT");
-      const ids = result.records.map(r => String(r.get("id")));
+      // Published membership is immutable within a version; only local labels
+      // need the periodic refresh. Avoid a full graph scan on that refresh.
+      let ids: string[];
+      if (this.cached?.version === version) {
+        ids = this.cached.tasks.map(task => task.id);
+      } else {
+        const result = await this.store.run("MATCH (n:SLAssetNode {graphId:$graphId,kind:'TASK'}) RETURN n.id AS id ORDER BY n.id LIMIT $limit", { limit: 50001 });
+        if (result.records.length > 50000) throw new Error("CLUSTER_CATALOG_LIMIT");
+        ids = result.records.map(r => String(r.get("id")));
+      }
       const clusters = this.resolver.resolveClusters(ids.map(id => id.replace(/^task:/, "")));
       if (String((await this.store.ready()).version) !== version) throw new Error("ASSET_GRAPH_CHANGED_DURING_QUERY");
       this.cached = { version, expires: Date.now() + 30000, tasks: ids.map(id => ({ id, cluster: clusters[id.replace(/^task:/, "")] ?? "" })) };

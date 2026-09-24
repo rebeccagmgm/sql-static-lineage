@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { taskTableId } from "../../data-graph/src/asset-graph/task-table-context";
 import {
   EXPLORATION_STORAGE_KEY,
   EXPLORATION_STORAGE_VERSION,
@@ -41,6 +42,30 @@ const state = {
 };
 
 describe("exploration entries", () => {
+  it("saves all merged table contexts without conflating a standalone table entry", () => {
+    const ids = ["86840", "86841"].map(id => taskTableId({ taskNodeId: `task:${id}`, datasetId: "dataset:shared", role: "WRITE" }));
+    const member = explorationMember({ nodeId: "dataset:shared", tableContextIds: ids, label: "shared" });
+    const standalone = explorationMember({ nodeId: "dataset:shared", label: "shared" });
+    expect(member.id).not.toBe(standalone.id);
+    expect(explorationMember({ ...member.anchor, tableContextIds: [...ids].reverse() }).id).toBe(member.id);
+    const entry = createExplorationEntry({ id: "merged", name: "merged", description: "", graphVersion: "v1", member, state, now: "2026-09-21" });
+    const storage = new MemoryStorage();
+    writeExplorationEntries(storage, [entry]);
+    const restored = readExplorationEntries(storage).entries[0]!.members[0]!.anchor;
+    expect(restored.tableContextIds).toEqual(ids);
+    expect(assessExplorationAnchor(restored, ids).present).toBe(true);
+    expect(assessExplorationAnchor(restored, ["dataset:other"]).present).toBe(false);
+  });
+  it("retains task ownership when saving and reopening a shared-table instance", () => {
+    const storage = new MemoryStorage();
+    const nodeId = taskTableId({taskNodeId: "task:103935", datasetId: "dataset:shared", role: "WRITE"});
+    const member = explorationMember({nodeId, table: "pdata_n.t03_agt_rela_h", label: "协议关系历史"});
+    const entry = createExplorationEntry({id: "scoped", name: "任务链路", description: "", graphVersion: "v1", member, state, now: "2026-09-15T00:00:00Z"});
+    writeExplorationEntries(storage, [entry]);
+    const restored = readExplorationEntries(storage).entries[0]!;
+    expect(restored.members[0]!.anchor.nodeId).toBe(nodeId);
+    expect(assessExplorationAnchor(restored.members[0]!.anchor, [nodeId])).toMatchObject({present: true});
+  });
   it("persists a versioned entry and its independent canvas state", () => {
     const storage = new MemoryStorage();
     const entry = createExplorationEntry({

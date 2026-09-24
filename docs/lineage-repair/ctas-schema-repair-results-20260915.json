@@ -1,0 +1,883 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "CTAS local schema repair only",
+  "publishedBaseline": "91ca469f6c09f96618fb09bc088dcb950b43f189c0a61b1eb87026285360c9b5",
+  "isolated": true,
+  "productionPublished": true,
+  "taskCount": 28,
+  "candidateOutputsBefore": 887,
+  "candidateOutputsAfter": 4,
+  "netReduction": 883,
+  "oldCandidateKeysRemoved": 885,
+  "newCandidateKeysExposed": 2,
+  "previousPhysicalInputReferencesPreserved": 13485,
+  "previousPhysicalInputReferencesLost": 0,
+  "sameTaskAndSqlHashes": true,
+  "tasks": [
+    {
+      "taskId": "61526",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_rms001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_rms001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_rms001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_rms001",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "cf38f977d8b96fc8a542e5c659e925c9d127ab4b82e3a288ca22939422b7ba11",
+      "sqlHash": "169c8a9ce905c60be085260e4e7059ad9a4a9477a2edbe09d11f291fdc66382e"
+    },
+    {
+      "taskId": "61601",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_rcc002",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_rcc002",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_rcc002",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_rcc002",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "338fbcc1b4e156eae32be3aa495fcefdeb4b180fbce0970d905ff5f022b7c5fd",
+      "sqlHash": "91d60f65411d9faf468a4933ba978f6ea600af73b685b6881ccf2051843aa091"
+    },
+    {
+      "taskId": "61639",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 49,
+      "resolvedBridgesAfter": 75,
+      "schemasBefore": [
+        {
+          "table": "temp.t04_emp_grp_rms004_mid",
+          "columnCount": 53
+        },
+        {
+          "table": "temp.t04_emp_grp_rms004_temp",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t04_emp_grp_rms004_mid",
+          "columnCount": 53
+        },
+        {
+          "table": "temp.t04_emp_grp_rms004_temp",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "743f58c2c5de7d4e3338c1dc43985406f3acd30acf473ace737a2a642cab777c",
+      "sqlHash": "c67195ca0682ca887506d5c49ea5b07896b288ee648d4b10531ff5f7369a74a8"
+    },
+    {
+      "taskId": "63101",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_xpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_xpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_xpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_xpb008",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "af581b0130b1e7dd4aa6e77f28b0368a51a64fa2245a1586dc58550752672f8e",
+      "sqlHash": "d68d77a2b8295ad8a36954f9767f07267a567c065eab98d25454a00b2c83190b"
+    },
+    {
+      "taskId": "63113",
+      "state": "SUCCESS",
+      "candidateBefore": 36,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 75,
+      "resolvedBridgesAfter": 111,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_prd_info_mid_rcc068",
+          "columnCount": 77
+        },
+        {
+          "table": "temp.t01_pty_prd_info_temp_rcc068",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_prd_info_mid_rcc068",
+          "columnCount": 77
+        },
+        {
+          "table": "temp.t01_pty_prd_info_temp_rcc068",
+          "columnCount": 36
+        }
+      ],
+      "taskContentHash": "31dcb6b8f4a2b9494596a208a679440bdfa9ac6583d77a2b7473e1e3d260489f",
+      "sqlHash": "e893c6cbd1c65f84034cb5cd55e7e8ff470d281aa46673977aebc4e3362f92ee"
+    },
+    {
+      "taskId": "63115",
+      "state": "SUCCESS",
+      "candidateBefore": 77,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 154,
+      "resolvedBridgesAfter": 231,
+      "schemasBefore": [
+        {
+          "table": "temp.t03_marg_comp_info_mid",
+          "columnCount": 156
+        },
+        {
+          "table": "temp.t03_marg_comp_info_temp",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t03_marg_comp_info_mid",
+          "columnCount": 156
+        },
+        {
+          "table": "temp.t03_marg_comp_info_temp",
+          "columnCount": 77
+        }
+      ],
+      "taskContentHash": "28859af12f081a6fc07496fedeed7ac8f159b5ffe62f7f4f19e5c956b1198e9d",
+      "sqlHash": "64d771797dc524da2ac7789ca6bb9bbd25a92ae72b700000e2e033e523458ade"
+    },
+    {
+      "taskId": "63165",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_ta5001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_ta5001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_ta5001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_ta5001",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "67b6e3384efc0b5f94e28a345c576cdbea61f0711193a8ba30fec1d05a82e787",
+      "sqlHash": "44199327ec074273baa6bb8d0dfb4c5b6800ba2a336595f21492be25ba0193d3"
+    },
+    {
+      "taskId": "63179",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_sta001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_sta001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_sta001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_sta001",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "bcfd4bbc35c2e3414b15c7b8395afee0a25d1a049a2d9ba4bedd8c1e824a7f82",
+      "sqlHash": "db705cb7ec1e03c9232bae316013c826ada1fd5cabe1f03e71b803841baa0bb8"
+    },
+    {
+      "taskId": "63182",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_hpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_hpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_hpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_hpb008",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "073dc5a766bb169af0f44effce3d6c46bf7be157f7174aa2374f19f8b98c11a3",
+      "sqlHash": "0151d5f2592a2d850cf171cb2ce92a04d70e0efecca333f22de84ac25dd246f0"
+    },
+    {
+      "taskId": "63195",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_ecr001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_ecr001",
+          "columnCount": 2
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_ecr001",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_ecr001",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "86c9fcc1119196dcf9f0131ccac37a63b3417a45f12141f9a9851b1ad00eaa49",
+      "sqlHash": "8c083790a1536146200dce83a253f52bc62261d6aeac39b8157875993f92f945"
+    },
+    {
+      "taskId": "63262",
+      "state": "SUCCESS",
+      "candidateBefore": 12,
+      "candidateAfter": 4,
+      "resolvedBridgesBefore": 27,
+      "resolvedBridgesAfter": 39,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_pty_mid_gpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_gpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_pty_mid_gpb008",
+          "columnCount": 28
+        },
+        {
+          "table": "temp.t01_pty_temp_gpb008",
+          "columnCount": 12
+        }
+      ],
+      "taskContentHash": "a2eda1fff4b063c35d221d2907f5c88a5161caabcdd695736dc4d1ea2b6a4fb8",
+      "sqlHash": "5a2401c5484e211f9e43a8a43be9930c40cfdc3e35b5a9818bb19d52ea6d6406"
+    },
+    {
+      "taskId": "63348",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_rms001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rms001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_rms001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rms001",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "df29dfdaf6bb261396c0108d48cfd45f889c4f408a0a51c211e17f9a4c67034f",
+      "sqlHash": "c281dc1515ab521c826d48e2b46fc43d4c70574baeb199f39698742867502007"
+    },
+    {
+      "taskId": "63382",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_ois001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ois001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_ois001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ois001",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "74b2ba49deb111f983f3e1d6993ba577043f5c9b06c4eb9bf15e9ddf9b0e6fcb",
+      "sqlHash": "1138850f8695b7fff93de5f5ecc18e6a8d090de083759b304796b1f46964e67e"
+    },
+    {
+      "taskId": "63385",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_ta5001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ta5001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_ta5001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ta5001",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "c339933d1f219a361c072d3d649e8de190005cb81b59cca7b9c90b74433662b6",
+      "sqlHash": "b9057a518a051668bff76c46cabc00b191c516e4042b9678d29e70300d3fb9b5"
+    },
+    {
+      "taskId": "63413",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_ecr001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ecr001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_ecr001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_ecr001",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "3c139daa305c1e51eb3b58b73b719f26293e80617b32d9f6898cab06627ecd86",
+      "sqlHash": "abd2c9f7196fe70cdb51500d779c51d970c7143acf8bd2d8cca2b07dc953a408"
+    },
+    {
+      "taskId": "63416",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 60,
+      "resolvedBridgesAfter": 86,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_rcc003",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rcc003",
+          "columnCount": 1
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rcc003_fox",
+          "columnCount": 5
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_rcc003",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rcc003",
+          "columnCount": 26
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_rcc003_fox",
+          "columnCount": 5
+        }
+      ],
+      "taskContentHash": "9c9c6e23194ef2856d3b07fa2d54c0ac1b598a78bf087629767d45826b79d5db",
+      "sqlHash": "8d02b107d042c9e7973914a60fcad4de7361da924c85cc992937789bf30f4be3"
+    },
+    {
+      "taskId": "63418",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_hpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_hpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_hpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_hpb008",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "d53727b594b2bca5280eaf6eff3342afd68129640acc2605727c48d174bac8fe",
+      "sqlHash": "2c2afc2bd5b27e6a6e6d83056db50fd531a69fd884dabe420cff1e36dd01e394"
+    },
+    {
+      "taskId": "63419",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_xpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_xpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_xpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_xpb008",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "c59e5f01d8522ad9f10013c83309582ad0224ca7c943124938c4b1dd771d2411",
+      "sqlHash": "47bcea62021b1504cd25966a79ccfc86c223bd3e9d2908d846b2bafca6e62993"
+    },
+    {
+      "taskId": "63434",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_sta001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_sta001",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_sta001",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_sta001",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "08b34deb5102b7a66d657c988814590873657dff137ab856a7fe7f34adbfb145",
+      "sqlHash": "dcb566eccb5e49c6e406743b39479c8991fdec6e5910232098c2bc8390637e7a"
+    },
+    {
+      "taskId": "63460",
+      "state": "SUCCESS",
+      "candidateBefore": 33,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 69,
+      "resolvedBridgesAfter": 102,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t03_scr_acct_mid",
+          "columnCount": 70
+        },
+        {
+          "table": "pdata_n.t03_scr_acct_temp",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t03_scr_acct_mid",
+          "columnCount": 70
+        },
+        {
+          "table": "pdata_n.t03_scr_acct_temp",
+          "columnCount": 33
+        }
+      ],
+      "taskContentHash": "8adce715f2855e32ad26764c84d9fcbb12a8b8116b4342ce8f6f55a0e43ff2fe",
+      "sqlHash": "46eff5ecacc5e82f200cc35a03165c9b2437622934926785fdde97a5867a8276"
+    },
+    {
+      "taskId": "63478",
+      "state": "SUCCESS",
+      "candidateBefore": 26,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 55,
+      "resolvedBridgesAfter": 81,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_corp_cust_mid_gpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_gpb008",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_corp_cust_mid_gpb008",
+          "columnCount": 57
+        },
+        {
+          "table": "temp.t01_corp_cust_temp_gpb008",
+          "columnCount": 26
+        }
+      ],
+      "taskContentHash": "2d812d6990e47a1f979ebae5a5e40cfc26c595e584a5f20b11f491da22a872a0",
+      "sqlHash": "d874641baa6ba672c068f10b3ac335854b77cfa9cde0514d549ea81bd6333bb6"
+    },
+    {
+      "taskId": "63741",
+      "state": "SUCCESS",
+      "candidateBefore": 24,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 51,
+      "resolvedBridgesAfter": 75,
+      "schemasBefore": [
+        {
+          "table": "temp.t01_indv_mid_rcc002",
+          "columnCount": 53
+        },
+        {
+          "table": "temp.t01_indv_temp_rcc002",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t01_indv_mid_rcc002",
+          "columnCount": 53
+        },
+        {
+          "table": "temp.t01_indv_temp_rcc002",
+          "columnCount": 24
+        }
+      ],
+      "taskContentHash": "176a1459015aa9cab590146e188dfa0b8d6d1fc6662147335e22b1a0d1431354",
+      "sqlHash": "cb1d9bde215a8df6550791992d3da8893da96822f272b60b1cb00d3c5b0ea317"
+    },
+    {
+      "taskId": "64103",
+      "state": "SUCCESS",
+      "candidateBefore": 17,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 35,
+      "resolvedBridgesAfter": 52,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t03_agt_group2_mid",
+          "columnCount": 38
+        },
+        {
+          "table": "pdata_n.t03_agt_group2_temp",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t03_agt_group2_mid",
+          "columnCount": 38
+        },
+        {
+          "table": "pdata_n.t03_agt_group2_temp",
+          "columnCount": 17
+        }
+      ],
+      "taskContentHash": "9d2870bcacd935e669b8dec19cf3d856159ff71568d3ef7f4f5816e8008afe10",
+      "sqlHash": "c4ac7e850ccb15881ed8d6e3de848aad972f4daea16bed2e1981d1e822b65611"
+    },
+    {
+      "taskId": "64107",
+      "state": "SUCCESS",
+      "candidateBefore": 17,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 35,
+      "resolvedBridgesAfter": 52,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t03_agt_group1_mid",
+          "columnCount": 38
+        },
+        {
+          "table": "pdata_n.t03_agt_group1_temp",
+          "columnCount": 2
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t03_agt_group1_mid",
+          "columnCount": 38
+        },
+        {
+          "table": "pdata_n.t03_agt_group1_temp",
+          "columnCount": 17
+        }
+      ],
+      "taskContentHash": "1f51f0f6548275d6037e6178e1576651c31170c82de8e6e3b07fd1d092e1b041",
+      "sqlHash": "fd397f925c07094ee691cda108a318bfb68de38893552b867ce28e9d2c6b1d57"
+    },
+    {
+      "taskId": "64210",
+      "state": "SUCCESS",
+      "candidateBefore": 46,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 91,
+      "resolvedBridgesAfter": 137,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t03_oao_ord_info_group1_mid",
+          "columnCount": 96
+        },
+        {
+          "table": "pdata_n.t03_oao_ord_info_group1_temp",
+          "columnCount": 2
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t03_oao_ord_info_group1_mid",
+          "columnCount": 96
+        },
+        {
+          "table": "pdata_n.t03_oao_ord_info_group1_temp",
+          "columnCount": 46
+        }
+      ],
+      "taskContentHash": "d8148a2064868dfa8f4a782a4dda706829300cbd5c67c2eabe2ec18162464229",
+      "sqlHash": "95380afca74efb836e0eb9ce04e7a843c20259f5b6c3a8086c2af556ed6f943f"
+    },
+    {
+      "taskId": "150757",
+      "state": "SUCCESS",
+      "candidateBefore": 132,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 263,
+      "resolvedBridgesAfter": 395,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t01_otc_deri_cust_mid_tit339",
+          "columnCount": 265
+        },
+        {
+          "table": "pdata_n.t01_otc_deri_cust_temp_tit339",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t01_otc_deri_cust_mid_tit339",
+          "columnCount": 265
+        },
+        {
+          "table": "pdata_n.t01_otc_deri_cust_temp_tit339",
+          "columnCount": 132
+        }
+      ],
+      "taskContentHash": "e6f104dd81fcd1cdd0475fc61fadb1457b88226c8ce46a5c06f3cb737e70bc34",
+      "sqlHash": "2b625a277fbe7cc1a807507ab07e09a4d2111a38e9d079c5346f1aecdf75b56f"
+    },
+    {
+      "taskId": "179726",
+      "state": "SUCCESS",
+      "candidateBefore": 132,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 263,
+      "resolvedBridgesAfter": 395,
+      "schemasBefore": [
+        {
+          "table": "pdata_n.t01_otc_deri_cust_mid_ois030",
+          "columnCount": 265
+        },
+        {
+          "table": "pdata_n.t01_otc_deri_cust_temp_ois030",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "pdata_n.t01_otc_deri_cust_mid_ois030",
+          "columnCount": 265
+        },
+        {
+          "table": "pdata_n.t01_otc_deri_cust_temp_ois030",
+          "columnCount": 132
+        }
+      ],
+      "taskContentHash": "57b9baabff6a87f23ae7a0bfda6b165b57c444cd2e1e9f2178101ae7bdbd801b",
+      "sqlHash": "eade1b81f81cc83d63ba4f2492f5e4affb1fd1f91c89841385b466cbdf9497db"
+    },
+    {
+      "taskId": "211541",
+      "state": "SUCCESS",
+      "candidateBefore": 17,
+      "candidateAfter": 0,
+      "resolvedBridgesBefore": 37,
+      "resolvedBridgesAfter": 54,
+      "schemasBefore": [
+        {
+          "table": "temp.t03_agt_mid_tit293",
+          "columnCount": 38
+        },
+        {
+          "table": "temp.t03_agt_temp_tit293",
+          "columnCount": 1
+        }
+      ],
+      "schemasAfter": [
+        {
+          "table": "temp.t03_agt_mid_tit293",
+          "columnCount": 38
+        },
+        {
+          "table": "temp.t03_agt_temp_tit293",
+          "columnCount": 17
+        }
+      ],
+      "taskContentHash": "63e681e0f293676a6202cd4dc3a5ab778a93385f3029fffcd31c2742048cbbe7",
+      "sqlHash": "dab90e88ec1fb214c974bce9da577447d990cfd6716082fd027a6f604b9a48bd"
+    }
+  ],
+  "remaining": {
+    "taskId": "63262",
+    "source": "odata_n_gpb.u_sys_org",
+    "sourceFields": [
+      "orgid",
+      "orglongname",
+      "orgname"
+    ],
+    "outputFields": [
+      "pty_id",
+      "pty_name",
+      "pty_id1",
+      "pty_name1"
+    ]
+  },
+  "publicationVersion": "243350d5ad79d4f3def2c923b682b8be426368e3b14625eee003b4b6c8f63c88",
+  "publicationResults": "ctas-like-published-results-20260916.json"
+}

@@ -18,6 +18,7 @@ import {
   type JsonlOffsetIndex,
 } from "./jsonl-offset-index.ts";
 import { uniqueTaskSqlCreateStatement } from "./sparkindex-table-evidence.ts";
+import { inferTaskDefaultSchema, type TaskDefaultSchema } from "../../reconcile/shared/task-default-schema.ts";
 import { extractSqlWriteTableNames } from "./sql-target-evidence.ts";
 import {
   columnNamesFromCreateTable,
@@ -844,6 +845,7 @@ function hiveFromUniqueTaskCreateForTarget(
   sql: Partial<Record<SqlSlot, string>>,
   taskTarget: unknown,
   collectedAt: string,
+  defaultSchema: TaskDefaultSchema | null,
 ): TableEvidence | undefined {
   const target = parsePhysicalTableName(taskTarget);
   if (
@@ -852,7 +854,7 @@ function hiveFromUniqueTaskCreateForTarget(
     candidateLooksRelational(candidate)
   )
     return undefined;
-  const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
+  const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName, defaultSchema);
   if (created.conflict || created.ddl === undefined) return undefined;
   return hiveFromTaskCreate(candidate, created.ddl, collectedAt);
 }
@@ -1033,6 +1035,7 @@ function splicedRdbmsDdlForCandidate(
   sql: Partial<Record<SqlSlot, string>>,
   taskTarget: unknown,
   dataSourceHint?: string,
+  defaultSchema: TaskDefaultSchema | null = null,
 ): { readonly ddl: string; readonly evidenceProvider: string } | undefined {
   let columns = queryProjectionColumnNames(
     sql.query ?? "",
@@ -1047,7 +1050,7 @@ function splicedRdbmsDdlForCandidate(
       soleSource !== undefined &&
       sameQualifiedName(soleSource, candidate.qualifiedName)
     ) {
-      const created = uniqueTaskSqlCreateStatement(sql, target.qualifiedName);
+      const created = uniqueTaskSqlCreateStatement(sql, target.qualifiedName, defaultSchema);
       if (!created.conflict && created.ddl !== undefined) {
         columns = [...columnNamesFromCreateTable(created.ddl)];
         provider = SPLICED_FROM_HIVE_TARGET_CREATE;
@@ -1166,6 +1169,7 @@ function spliceFromTaskEvidence(
   preferredRdbmsDataSource: string | undefined,
   taskCategory: string | null | undefined,
   taskTarget: unknown,
+  defaultSchema: TaskDefaultSchema | null,
 ): TableEvidence | undefined {
   if (!isDatabaseSourceToHiveTask(taskCategory)) return undefined;
   const target = parsePhysicalTableName(taskTarget);
@@ -1183,6 +1187,7 @@ function spliceFromTaskEvidence(
     sql,
     taskTarget,
     preferredRdbmsDataSource,
+    defaultSchema,
   );
   if (splicedDdl === undefined) return undefined;
   const columns = columnNamesFromCreateTable(splicedDdl.ddl);
@@ -1205,6 +1210,7 @@ function resolveOne(
   taskCategory?: string | null,
   taskTarget?: unknown,
   resolvedThisPass: readonly TableEvidence[] = [],
+  defaultSchema: TaskDefaultSchema | null = null,
 ):
   | { readonly evidence: TableEvidence }
   | { readonly reason: string } {
@@ -1224,6 +1230,7 @@ function resolveOne(
       sql,
       taskTarget,
       collectedAt,
+      defaultSchema,
     );
     if (taskCreate !== undefined) return { evidence: taskCreate };
     return { reason: "HIVE_DDL_AMBIGUOUS" };
@@ -1256,7 +1263,7 @@ function resolveOne(
     }
   }
   if (hiveIdentity.status === "HIT") {
-    const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
+    const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName, defaultSchema);
     if (created.conflict) return { reason: "SQL_CREATE_CONFLICT" };
     if (created.ddl !== undefined) {
       const evidence = hiveFromMetadata(
@@ -1268,7 +1275,10 @@ function resolveOne(
       if (evidence === undefined) return { reason: "HIVE_PLATFORM_UNMAPPED" };
       return { evidence };
     }
-    const splicedColumns = queryOutputColumnNames(sql.query ?? "");
+    // Query output describes the task target, never an unrelated source table.
+    const splicedColumns = sameQualifiedName(parsePhysicalTableName(taskTarget)?.qualifiedName, candidate.qualifiedName)
+      ? queryOutputColumnNames(sql.query ?? "")
+      : [];
     if (splicedColumns.length > 0) {
       const evidence = hiveFromMetadata(
         hiveIdentity.record,
@@ -1296,7 +1306,7 @@ function resolveOne(
   }
 
   if (!candidateLooksRelational(candidate)) {
-    const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName);
+    const created = uniqueTaskSqlCreateStatement(sql, candidate.qualifiedName, defaultSchema);
     if (created.conflict) return { reason: "SQL_CREATE_CONFLICT" };
     if (created.ddl !== undefined) {
       const evidence = hiveFromTaskCreate(candidate, created.ddl, collectedAt);
@@ -1326,6 +1336,7 @@ function resolveOne(
           taskTarget,
           parsePhysicalTableName(coreLookup.record.qualifiedname)?.dataSource ??
             preferredRdbmsDataSource,
+          defaultSchema,
         );
         if (splicedDdl !== undefined) {
           const evidence = rdbmsFromCore(
@@ -1362,6 +1373,7 @@ function resolveOne(
     preferredRdbmsDataSource,
     taskCategory,
     taskTarget,
+    defaultSchema,
   );
   if (spliced !== undefined) return { evidence: spliced };
   const fromSource = hiveFromSourceDdl(
@@ -1449,6 +1461,7 @@ export function resolveOfflineTables(
       taskEvidence.taskCategory,
       taskEvidence.target,
       resolved,
+      inferTaskDefaultSchema(taskEvidence),
     );
     if ("evidence" in result) resolved.push(result.evidence);
     else

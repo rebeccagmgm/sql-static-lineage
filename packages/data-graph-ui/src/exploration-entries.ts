@@ -78,6 +78,8 @@ function isViewport(value: unknown): value is Viewport {
 }
 
 function isAnchor(value: unknown): value is Anchor {
+  if (isRecord(value) && value.tableContextIds !== undefined &&
+    (!isStringArray(value.tableContextIds) || !value.tableContextIds.length)) return false;
   if (isRecord(value) && value.partitionSelection !== undefined) {
     try { parsePartitionSelection(JSON.stringify(value.partitionSelection)); }
     catch { return false; }
@@ -133,6 +135,8 @@ function isEntry(value: unknown): value is ExplorationEntry {
 
 function stableMemberId(anchor: Anchor): string {
   if (anchor.taskId) return `task:${anchor.taskId}`;
+  if (anchor.nodeId && anchor.tableContextIds?.length)
+    return `node:${anchor.nodeId}:contexts:${JSON.stringify([...new Set(anchor.tableContextIds)].sort())}`;
   if (anchor.nodeId) return `node:${anchor.nodeId}`;
   return `table:${anchor.table ?? anchor.label}`;
 }
@@ -218,7 +222,8 @@ export function assessExplorationAnchor(
     (anchor.taskId ? `task:${anchor.taskId}` : `table:${anchor.table ?? anchor.label}`);
   return {
     expectedNodeId,
-    present: returnedNodeIds.includes(expectedNodeId),
+    present: returnedNodeIds.includes(expectedNodeId) ||
+      Boolean(anchor.tableContextIds?.some(id => returnedNodeIds.includes(id))),
   };
 }
 
